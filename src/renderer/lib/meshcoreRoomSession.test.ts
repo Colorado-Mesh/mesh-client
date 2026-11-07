@@ -528,6 +528,108 @@ describe('meshcoreRoomSession', () => {
     expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
   });
 
+  it('tryEnsureCanPost skips saved credential when session auth rejection used the same guest password', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+    await setMeshcoreRoomCredential(42, { guestPassword: 'same-secret' });
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'same-secret',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    mockRunMeshcoreRoomLogin.mockRejectedValue(new Error('Login rejected'));
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
+    expect(ok).toBe(false);
+    // Session attempt only (login retries internally); no second password path with the same secret.
+    expect(mockRunMeshcoreRoomLogin.mock.calls.every((c) => c[2] === 'same-secret')).toBe(true);
+    expect(mockRunMeshcoreRoomLogin.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it('tryEnsureCanPost tries a different saved guest password after session auth rejection', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+    await setMeshcoreRoomCredential(42, { guestPassword: 'saved-other' });
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'stale-session',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    mockRunMeshcoreRoomLogin
+      .mockRejectedValueOnce(new Error('Login rejected'))
+      .mockRejectedValueOnce(new Error('Login rejected'))
+      .mockResolvedValue({ permissions: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
+    expect(ok).toBe(true);
+    expect(mockRunMeshcoreRoomLogin.mock.calls.some((c) => c[2] === 'saved-other')).toBe(true);
+  });
+
+  it('tryEnsureCanPost retries saved credential after a transient session login failure', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+    await setMeshcoreRoomCredential(42, { guestPassword: 'same-secret' });
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'same-secret',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    mockRunMeshcoreRoomLogin
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockResolvedValue({ permissions: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
+    expect(ok).toBe(true);
+    expect(meshcoreRoomCanPost(42)).toBe(true);
+  });
+
+  it('tryEnsureCanPost ignores admin-only credentials', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+    await setMeshcoreRoomCredential(42, { adminPassword: 'ops-only' });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
+    expect(ok).toBe(false);
+    expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
+  });
+
   it('cancel before second retry stops after first login attempt', async () => {
     vi.useFakeTimers();
     mockRunMeshcoreRoomLogin.mockRejectedValueOnce(new Error('timeout'));

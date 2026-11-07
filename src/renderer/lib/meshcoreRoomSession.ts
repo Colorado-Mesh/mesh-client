@@ -512,7 +512,13 @@ export async function meshcoreRoomTryRelogin(
 
 /**
  * Ensure a postable room session before post (e.g. scheduled broadcast).
- * Tries session tryRelogin first, then saved guest credential when no session remains.
+ *
+ * Order: existing can-post session → session guest password SendLogin → saved
+ * guest credential SendLogin. Skips the credential attempt when session login
+ * was explicitly rejected and the saved guest password matches (same password
+ * would not help). Still retries the saved credential after transient session
+ * failures, or when the saved guest password differs. Admin-only credentials
+ * are ignored (no guestPassword key).
  */
 export async function meshcoreRoomTryEnsureCanPost(
   conn: MeshcoreRoomLoginConn,
@@ -524,12 +530,40 @@ export async function meshcoreRoomTryEnsureCanPost(
   },
 ): Promise<boolean> {
   if (meshcoreRoomCanPost(nodeId)) return true;
-  const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post', opts);
-  if (relogged && meshcoreRoomCanPost(nodeId)) return true;
+
+  const session = sessions.get(nodeId);
+  let sessionGuestTried: string | undefined;
+  let sessionAuthRejected = false;
+
+  if (session) {
+    sessionGuestTried = meshcoreRoomEffectiveGuestPassword(session.guestPassword);
+    try {
+      await meshcoreRoomLogin(conn, nodeId, pubKey, sessionGuestTried, {
+        adminPassword: session.adminPassword,
+        guestPassword: session.guestPassword,
+        hopsAway: opts?.hopsAway,
+        companionTransport: opts?.companionTransport,
+        forceRelogin: true,
+      });
+      if (meshcoreRoomCanPost(nodeId)) return true;
+    } catch (e: unknown) {
+      if (meshcoreIsRoomLoginAbortError(e)) throw e;
+      if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
+        sessionAuthRejected = true;
+      }
+      // Transient failure: fall through; saved credential may retry (possibly same password).
+    }
+  }
 
   const cred = getMeshcoreRoomCredential(nodeId);
-  if (!cred) return false;
+  if (cred == null || !Object.prototype.hasOwnProperty.call(cred, 'guestPassword')) {
+    return false;
+  }
   const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
+  if (sessionAuthRejected && sessionGuestTried !== undefined && password === sessionGuestTried) {
+    return false;
+  }
+
   try {
     await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
       guestPassword: password,

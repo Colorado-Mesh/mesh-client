@@ -42,4 +42,14 @@ describe('isScheduledBroadcastMeshcoreRoomEligible', () => {
     await setMeshcoreRoomCredential(0x13, { guestPassword: 'hello' });
     expect(isScheduledBroadcastMeshcoreRoomEligible(0x13)).toBe(true);
   });
+
+  it('returns true for an intentionally blank saved guest password', async () => {
+    await setMeshcoreRoomCredential(0x14, { guestPassword: '' });
+    expect(isScheduledBroadcastMeshcoreRoomEligible(0x14)).toBe(true);
+  });
+
+  it('returns false for admin-only credentials without a guest password key', async () => {
+    await setMeshcoreRoomCredential(0x15, { adminPassword: 'ops-only' });
+    expect(isScheduledBroadcastMeshcoreRoomEligible(0x15)).toBe(false);
+  });
 });

@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getMeshcoreRoomCredential,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
+  subscribeMeshcoreRoomCredentialChanges,
 } from './meshcoreRoomCredentialStorage';
 import {
   getCachedSecureSecret,
@@ -71,6 +73,25 @@ describe('meshcoreRoomCredentialStorage', () => {
     await setMeshcoreRoomCredential(0x1002, { guestPassword: 'hello' });
     await setMeshcoreRoomCredential(0x1002, null);
     expect(getMeshcoreRoomCredential(0x1002)).toBeUndefined();
+  });
+
+  it('meshcoreRoomHasSavedGuestCredential requires the guestPassword key', async () => {
+    await setMeshcoreRoomCredential(0x1010, { guestPassword: '' });
+    expect(meshcoreRoomHasSavedGuestCredential(0x1010)).toBe(true);
+    await setMeshcoreRoomCredential(0x1011, { adminPassword: 'ops' });
+    expect(meshcoreRoomHasSavedGuestCredential(0x1011)).toBe(false);
+  });
+
+  it('notifies subscribers when credentials are set or cleared', async () => {
+    const cb = vi.fn();
+    const unsub = subscribeMeshcoreRoomCredentialChanges(cb);
+    await setMeshcoreRoomCredential(0x1012, { guestPassword: 'hello' });
+    expect(cb).toHaveBeenCalledTimes(1);
+    await setMeshcoreRoomCredential(0x1012, null);
+    expect(cb).toHaveBeenCalledTimes(2);
+    unsub();
+    await setMeshcoreRoomCredential(0x1012, { guestPassword: 'again' });
+    expect(cb).toHaveBeenCalledTimes(2);
   });
 
   it('rejects legacy empty password objects', async () => {

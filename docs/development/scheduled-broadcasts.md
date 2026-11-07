@@ -33,8 +33,11 @@ resolves the live slot via `liveChannelKeyStore`; missing keys after a radio rem
 `channel-missing` for that target only.
 
 MeshCore room targets in the picker are limited to rooms that can post (logged in) or have a
-saved password (`isScheduledBroadcastMeshcoreRoomEligible`). Deliver uses
-`meshcoreRoomTryEnsureCanPost` (session tryRelogin, then saved credential) before `sendRoomPost`.
+saved guest password — including intentional blank guest (`isScheduledBroadcastMeshcoreRoomEligible`).
+Admin-only credentials are not listed. Deliver uses `meshcoreRoomTryEnsureCanPost` (session guest
+login, then saved guest credential; skips a same-password credential retry after explicit auth
+rejection) before `sendRoomPost`. The open picker re-filters when session or credential storage
+changes (including Forget).
 
 ## Protocol parity
 

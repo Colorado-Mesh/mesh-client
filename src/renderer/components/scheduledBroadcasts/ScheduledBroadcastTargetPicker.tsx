@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMeshcoreRoomCredentialRevision } from '@/renderer/hooks/useMeshcoreRoomCredentialRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import {
   formatScheduledBroadcastChannelLabel,
@@ -82,16 +83,18 @@ export function ScheduledBroadcastTargetPicker({
   const rrcHub = useRrcSessionStore((s) => s.hubDestHash);
   const rrcRooms = useRrcSessionStore((s) => s.rooms);
   const rrcHubs = useRrcHubStore((s) => s.hubs);
-  // Re-filter MeshCore rooms when login/logout changes canPost eligibility.
+  // Re-filter MeshCore rooms when login/logout or Forget/save password changes eligibility.
   const roomSessionRevision = useMeshcoreRoomSessionRevision();
+  const roomCredentialRevision = useMeshcoreRoomCredentialRevision();
   const rrcIdentityId = useMemo(
     () => Object.values(identities).find((i) => i.protocol.type === 'reticulum')?.id,
     [identities],
   );
 
   const { candidates, liveUnavailableByIdentity } = useMemo(() => {
-    // Re-read canPost / credentials after login/logout.
+    // Re-read canPost / guest credentials after login/logout or credential set/clear.
     touch(roomSessionRevision);
+    touch(roomCredentialRevision);
     const list: ScheduledBroadcastTarget[] = [];
     const liveUnavailable = new Map<string, boolean>();
 
@@ -179,6 +182,7 @@ export function ScheduledBroadcastTargetPicker({
     rrcHubs,
     rrcIdentityId,
     roomSessionRevision,
+    roomCredentialRevision,
     t,
   ]);
 

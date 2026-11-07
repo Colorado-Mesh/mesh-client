@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { setMeshcoreRoomCredential } from '@/renderer/lib/meshcoreRoomCredentialStorage';
@@ -198,6 +198,17 @@ describe('ScheduledBroadcastTargetPicker', () => {
     await setMeshcoreRoomCredential(nodeId, { guestPassword: 'hello' });
     render(<ScheduledBroadcastTargetPicker targets={[]} onChange={() => {}} />);
     expect(screen.getByLabelText('Saved Room')).toBeInTheDocument();
+  });
+
+  it('removes a MeshCore room from the open picker when its guest password is forgotten', async () => {
+    const { nodeId } = setupMeshcoreWithRoom({ name: 'Forgettable Room' });
+    await setMeshcoreRoomCredential(nodeId, { guestPassword: 'hello' });
+    render(<ScheduledBroadcastTargetPicker targets={[]} onChange={() => {}} />);
+    expect(screen.getByLabelText('Forgettable Room')).toBeInTheDocument();
+    await act(async () => {
+      await setMeshcoreRoomCredential(nodeId, null);
+    });
+    expect(screen.queryByLabelText('Forgettable Room')).not.toBeInTheDocument();
   });
 
   it('keeps ineligible selected MeshCore rooms under saved targets', () => {

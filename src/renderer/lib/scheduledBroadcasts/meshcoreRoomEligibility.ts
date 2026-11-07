@@ -1,10 +1,14 @@
-import { getMeshcoreRoomCredential } from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import { meshcoreRoomHasSavedGuestCredential } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import { meshcoreRoomCanPost } from '@/renderer/lib/meshcoreRoomSession';
 
 /**
- * MeshCore rooms offered as Scheduled Broadcast targets: currently able to post,
- * or a saved password (so deliver can log in when the schedule fires).
+ * Whether a MeshCore room may appear as a Scheduled Broadcast destination.
+ *
+ * Eligible when the room can post already, or when a guest password was saved
+ * (including an intentional blank guest) so deliver can log in via
+ * {@link meshcoreRoomTryEnsureCanPost}. Admin-only credentials are not enough —
+ * delivery uses guest SendLogin, not admin-only records.
  */
 export function isScheduledBroadcastMeshcoreRoomEligible(nodeId: number): boolean {
-  return meshcoreRoomCanPost(nodeId) || getMeshcoreRoomCredential(nodeId) != null;
+  return meshcoreRoomCanPost(nodeId) || meshcoreRoomHasSavedGuestCredential(nodeId);
 }
