@@ -10,8 +10,12 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
 /**
  * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
  * of `src/shared/ipLiteral.ts` (~33 KiB savings). Scheduled Broadcasts IPC/claim CAS adds ~9 KiB.
+ * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
+ * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
+ * Metal ensure+spawn as `ai-native-runtime.js` (not in index.js). Thin install-path checks
+ * stay in index.js for sync status. Keep HF catalog / prompt / native runtime in siblings.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 758 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 762 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
@@ -87,6 +91,22 @@ describe('esbuild-main-build', () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
       await buildMainProcess({ minify: true, outfile });
+      const summaryPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-summary-prompt.js'));
+      expect(summaryPromptBytes.length).toBeGreaterThan(1_000);
+      expect(summaryPromptBytes.toString('utf8')).toContain('buildAiSummaryPrompt');
+      const followUpPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-follow-up-prompt.js'));
+      expect(followUpPromptBytes.length).toBeGreaterThan(1_000);
+      expect(followUpPromptBytes.toString('utf8')).toContain('buildAiFollowUpPrompt');
+      const localModelsBytes = fs.readFileSync(path.join(tempDir, 'ai-local-models.js'));
+      expect(localModelsBytes.length).toBeGreaterThan(1_000);
+      expect(localModelsBytes.toString('utf8')).toContain('AI_LOCAL_MODELS');
+      const nativeRuntimeBytes = fs.readFileSync(path.join(tempDir, 'ai-native-runtime.js'));
+      expect(nativeRuntimeBytes.length).toBeGreaterThan(1_000);
+      expect(nativeRuntimeBytes.toString('utf8')).toContain('ensureMlxHelper');
+      const indexSource = fs.readFileSync(outfile, 'utf8');
+      expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
+      expect(indexSource).not.toContain('Missing Metal Toolchain');
+      expect(indexSource).not.toContain('discoverXcodeDeveloperDir');
       const worker = path.join(tempDir, 'translation-worker.js');
       const workerBytes = fs.readFileSync(worker);
       expect(workerBytes.length).toBeGreaterThan(10_000);

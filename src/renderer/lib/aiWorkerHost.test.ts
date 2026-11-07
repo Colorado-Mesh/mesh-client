@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RepetitiveAiOutputError } from './aiSummaryOutput';
 import {
+  AI_BUNDLED_N_CTX,
   AI_BUNDLED_RECOMMENDED_MIN_THREADS,
   AiWorkerHost,
   bundledWllamaThreadCount,
@@ -14,11 +15,15 @@ const fixture = vi.hoisted(() => ({
   exit: vi.fn(),
   completion: vi.fn(),
   compat: vi.fn(),
-  logger: { error: () => {} },
+  logger: {
+    error: (...args: unknown[]) => {
+      if (args.length < 0) throw new Error('unreachable');
+    },
+  },
 }));
 vi.mock('@wllama/wllama/esm/index', () => ({
   Wllama: class {
-    constructor(_paths: unknown, options: { logger: { error: () => void } }) {
+    constructor(_paths: unknown, options: { logger: { error: (...args: unknown[]) => void } }) {
       fixture.logger = options.logger;
     }
     loadModel = fixture.load;
@@ -146,6 +151,26 @@ describe('bundled AI worker lifecycle', () => {
     expect(fixture.exit).toHaveBeenCalledOnce();
   });
 
+  it('does not mask wllama inference errors as engineNotReady', async () => {
+    fixture.load.mockResolvedValue(undefined);
+    fixture.exit.mockResolvedValue(undefined);
+    fixture.completion.mockImplementation(async () => {
+      fixture.logger.error('Model returned an error:', {
+        message: 'request (5000 tokens) exceeds the available context size (8192 tokens)',
+      });
+      throw new Error('request (5000 tokens) exceeds the available context size (8192 tokens)');
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('model')),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(
+      new AiWorkerHost().generate(job, new AbortController().signal, vi.fn()),
+    ).rejects.toThrow(/exceeds the available context size/);
+    expect(warn).toHaveBeenCalledWith('[Catch up] wllama inference error');
+  });
+
   it('waits for an abort-triggered disposal before generation settles', async () => {
     fixture.load.mockResolvedValue(undefined);
     let finishDisposal!: () => void;
@@ -194,18 +219,22 @@ describe('bundled AI worker lifecycle', () => {
     expect(fixture.load).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({
-        n_ctx: 4096,
+        n_ctx: AI_BUNDLED_N_CTX,
         n_threads: bundledWllamaThreadCount(),
         n_gpu_layers: 0,
         n_parallel: 1,
         n_batch: 128,
         n_ubatch: 128,
+        jinja: true,
+        reasoning: false,
+        default_template_kwargs: { enable_thinking: false },
       }),
     );
     expect(fixture.completion).toHaveBeenCalledWith(
       expect.objectContaining({
-        repeat_penalty: 1.1,
-        repeat_last_n: 64,
+        penalty_repeat: 1.1,
+        penalty_last_n: 64,
+        chat_template_kwargs: { enable_thinking: false },
         onData: expect.any(Function),
       }),
     );

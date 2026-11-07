@@ -140,6 +140,34 @@ describe('always-on bundle workflow', () => {
             path.join(fixture, 'src/main/translation/bergamotWorkerEntry.ts'),
             `export const payload = ${JSON.stringify('x'.repeat(11_000))};`,
           );
+          // Sibling Catch up / catalog chunks that esbuild-main-build always emits.
+          fs.mkdirSync(path.join(fixture, 'src/shared'), { recursive: true });
+          fs.mkdirSync(path.join(fixture, 'src/main/ai/local'), { recursive: true });
+          fs.writeFileSync(
+            path.join(fixture, 'src/shared/aiSummaryPrompt.ts'),
+            `export function buildAiSummaryPrompt() {\n  return ${JSON.stringify('x'.repeat(1_100))};\n}\n`,
+          );
+          fs.writeFileSync(
+            path.join(fixture, 'src/shared/aiFollowUpPrompt.ts'),
+            `export function buildAiFollowUpPrompt() {\n  return ${JSON.stringify('x'.repeat(1_100))};\n}\n`,
+          );
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ai/local/modelCatalogData.ts'),
+            `export const AI_LOCAL_MODELS = ${JSON.stringify('x'.repeat(1_100))};\n`,
+          );
+          fs.mkdirSync(path.join(fixture, 'src/main/ai'), { recursive: true });
+          // Fixed ASCII pad only — do not embed JSON.stringify into generated source
+          // (CodeQL js/bad-code-sanitization).
+          const nativeRuntimePad = 'x'.repeat(1_100);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ai/nativeRuntime.ts'),
+            [
+              'export function ensureMlxHelper() {',
+              `  return '${nativeRuntimePad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

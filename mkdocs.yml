@@ -107,6 +107,7 @@ nav:
       - Catch up (unreleased): release-notes/ai-catch-up.md
   - User Guide:
       - Chat and messaging: chat.md
+      - Catch up (AI summaries): ai-catch-up.md
       - Scheduled Broadcasts: scheduled-broadcasts.md
       - Maps and offline maps: maps.md
       - TAK gateway: tak.md

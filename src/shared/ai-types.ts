@@ -21,6 +21,27 @@ export type AiSummaryScope =
 /** Prompt role for multi-pass Catch up (default final = existing five-bullet UX). */
 export type AiSummaryPassMode = 'map' | 'reduce' | 'final';
 
+/** How retained source material is framed in a follow-up prompt. */
+export type AiFollowUpContextKind = 'transcript' | 'digests' | 'none';
+
+/** One completed follow-up turn about a Catch up summary (session memory only). */
+export interface AiSummaryFollowUpTurn {
+  question: string;
+  answer: string;
+}
+
+/** Follow-up question attached to a Catch up request. */
+export interface AiSummaryFollowUp {
+  /** User question; controls stripped, capped at AI_MAX_FOLLOW_UP_QUESTION_CHARS. */
+  question: string;
+  /** Completed Catch up text the question refers to. */
+  summary: string;
+  /** Prior completed turns, oldest first, capped at AI_MAX_FOLLOW_UP_TURNS. */
+  turns: AiSummaryFollowUpTurn[];
+  /** How `messages` should be framed in the follow-up prompt. */
+  contextKind: AiFollowUpContextKind;
+}
+
 export interface AiSummaryRequest {
   /** Unique per call; used to correlate stream events and cancellation. */
   requestId: string;
@@ -36,6 +57,12 @@ export interface AiSummaryRequest {
   locale: string;
   messages: AiSummaryMessage[];
   scope: AiSummaryScope;
+  /**
+   * When present, main answers a follow-up instead of producing a Catch up.
+   * Follow-ups are always single-pass and may have an empty `messages` array
+   * (summary-only answers).
+   */
+  followUp?: AiSummaryFollowUp;
 }
 
 export interface AiSummaryChunk {
@@ -98,9 +125,37 @@ export interface AiProviderStatus {
   isRemote: boolean;
   /** bundled engine state */
   localEngine: { ready: boolean; modelId: string | null; downloading: boolean };
+  /**
+   * True when `mesh-ai-mlx` is present and usable (Apple Silicon only).
+   * MLX packs may still list/download when false; select/Catch up stay gated.
+   */
+  mlxHelperAvailable: boolean;
+  /** Coarse helper lifecycle for AI settings status lines. */
+  mlxHelperStatus: AiMlxHelperStatus;
+  /** Why Metal Catch up is unavailable (when status is `unavailable`). */
+  mlxHelperReason: AiMlxHelperReason | null;
   /** OS-AI engine state (probe result; computed only while enabled / while settings are open) */
   osAi: AiOsAiStatus;
 }
+
+/** UI lifecycle for the optional Apple Silicon Metal helper. */
+export type AiMlxHelperStatus = 'ready' | 'preparing' | 'unavailable' | 'unsupported';
+
+/**
+ * Structured reasons for in-app copy. Prefer product guidance over CLI; exception:
+ * `metalToolchainMissing` includes Apple's `xcodebuild -downloadComponent MetalToolchain`.
+ * Never instruct changing `xcode-select`. `ready` / `preparing` / `unsupported` mirror status.
+ */
+export type AiMlxHelperReason =
+  | 'ready'
+  | 'preparing'
+  | 'unsupported'
+  | 'helperMissing'
+  | 'sourcesUnavailable'
+  | 'xcodeNotFound'
+  | 'xcodeIncomplete'
+  | 'metalToolchainMissing'
+  | 'buildFailed';
 
 export interface AiEndpointConfig {
   engine: AiEngine;
@@ -120,6 +175,10 @@ export interface AiEndpointConfig {
   localModelId?: string | null;
 }
 
+export type AiModelRuntime = 'wllama' | 'mlx';
+/** Soft catalog badges: quality = recommended; fasterMachines = lighter/slower-host hint. */
+export type AiModelRecommendation = 'quality' | 'fasterMachines';
+
 export interface AiModelInfo {
   id: string;
   name: string;
@@ -128,6 +187,18 @@ export interface AiModelInfo {
   diskBytes: number;
   license: string;
   installed: boolean;
+  /** Inference backend; omitted for retired on-disk orphans. */
+  runtime?: AiModelRuntime;
+  /**
+   * Soft relative guidance for this host (MLX preferred on Apple Silicon).
+   * Relative speed/resource guidance only — not an accuracy guarantee.
+   */
+  recommendation?: AiModelRecommendation;
+  /**
+   * True when a pack directory remains on disk after the catalog dropped that id
+   * (e.g. after a model upgrade). Orphans can be removed but not selected/downloaded.
+   */
+  orphan?: boolean;
 }
 
 export interface AiModelProgress {
@@ -166,8 +237,17 @@ export const AI_DEFAULT_MAX_COLLECTED_MESSAGES = 2000;
 export const AI_MIN_MAX_COLLECTED_MESSAGES = 100;
 /** Hard product ceiling for one Catch up collection. */
 export const AI_MAX_MAX_COLLECTED_MESSAGES = 5000;
-/** Final catch-up bullet list (and single-pass summaries). */
+/** Compact final catch-up (≤5 bullets) and default single-pass summaries. */
 export const AI_MAX_OUTPUT_TOKENS = 250;
+/**
+ * Structured final catch-up (conversations + one-offs) for large / multi-pass jobs.
+ */
+export const AI_STRUCTURED_FINAL_OUTPUT_TOKENS = 512;
+/**
+ * Single-pass finals with more than this many messages use the structured style.
+ * Multi-pass finals always use structured regardless of digest count.
+ */
+export const AI_COMPACT_FINAL_MAX_MESSAGES = 40;
 /**
  * Map digests are intermediate; capping decode tokens cuts multi-pass wall time
  * roughly in proportion (bundled WASM decode dominates over prompt eval).
@@ -176,13 +256,49 @@ export const AI_MAP_OUTPUT_TOKENS = 96;
 export const AI_REDUCE_OUTPUT_TOKENS = 128;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
 
-export function aiSummaryOutputTokens(mode: AiSummaryPassMode = 'final'): number {
+/** Max characters accepted for a follow-up question. */
+export const AI_MAX_FOLLOW_UP_QUESTION_CHARS = 500;
+/** Max prior Q&A turns sent back to the model. */
+export const AI_MAX_FOLLOW_UP_TURNS = 6;
+/** Max characters of one prior answer included in the prompt. */
+export const AI_MAX_FOLLOW_UP_ANSWER_CHARS = 2_000;
+/** Max characters of the completed summary included in the prompt. */
+export const AI_MAX_FOLLOW_UP_SUMMARY_CHARS = 4_000;
+/**
+ * Newest-first body-character cap for transcript retained for follow-ups
+ * (renderer session memory). Over-cap ranges keep the newest window, not none.
+ */
+export const AI_FOLLOW_UP_CONTEXT_MAX_CHARS = 64_000;
+/** Completed follow-up turns retained per summary in the renderer. */
+export const AI_MAX_RETAINED_FOLLOW_UPS = 20;
+/** Output token budget for one follow-up answer. */
+export const AI_FOLLOW_UP_OUTPUT_TOKENS = 250;
+
+/** Final Catch-up output shape: compact bullets vs conversation/one-off sections. */
+export type AiSummaryFinalStyle = 'compact' | 'structured';
+
+export function resolveAiSummaryFinalStyle(
+  messageCount: number,
+  multiPassFinal = false,
+): AiSummaryFinalStyle {
+  if (multiPassFinal) return 'structured';
+  if (messageCount > AI_COMPACT_FINAL_MAX_MESSAGES) return 'structured';
+  return 'compact';
+}
+
+export function aiSummaryOutputTokens(
+  mode: AiSummaryPassMode = 'final',
+  finalStyle: AiSummaryFinalStyle = 'compact',
+): number {
   if (mode === 'map') return AI_MAP_OUTPUT_TOKENS;
   if (mode === 'reduce') return AI_REDUCE_OUTPUT_TOKENS;
-  return AI_MAX_OUTPUT_TOKENS;
+  return finalStyle === 'structured' ? AI_STRUCTURED_FINAL_OUTPUT_TOKENS : AI_MAX_OUTPUT_TOKENS;
 }
-/** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
-export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 3500;
+/**
+ * Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM.
+ * ~12 KiB leaves room for chat template + structured completion within bundled n_ctx 8192.
+ */
+export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 12_288;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */
 export const AI_ENDPOINT_MAX_PROMPT_BYTES = 64_000;
 export const AI_OS_MAX_CHARS = 9000;
@@ -259,6 +375,8 @@ export interface AiAPI {
   cancelLocalModel: (id: string) => Promise<void>;
   removeLocalModel: (id: string) => Promise<AiModelInfo[]>;
   selectLocalModel: (id: string | null) => Promise<AiProviderStatus>;
+  /** Re-run Metal helper ensure (Apple Silicon); no-op elsewhere. */
+  ensureMlxHelper: () => Promise<AiProviderStatus>;
   summarize: (request: AiSummaryRequest) => Promise<AiActionResult>;
   cancel: (requestId: string) => Promise<void>;
   onSummaryChunk: (cb: (chunk: AiSummaryChunk) => void) => () => void;

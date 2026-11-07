@@ -1,6 +1,15 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
+
+import { discoverXcodeDeveloperDir } from './lib/discover-xcode-developer-dir.mjs';
+import {
+  coLocateMlxSideBundles,
+  isMlxHelperInstallComplete,
+  MLX_SWIFT_BUILD_ARGS,
+  packageMlxCmlxMetallibBundle,
+  stageMlxHelperBinary,
+} from './lib/stage-mlx-helper.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const output = path.join(root, 'resources/ai-helper');
@@ -40,6 +49,57 @@ if (process.platform === 'darwin') {
   );
   mkdirSync(path.join(output, 'staged/darwin'), { recursive: true });
   cpSync(path.join(output, 'mesh-ai'), path.join(output, 'staged/darwin/mesh-ai'));
+  // Apple Silicon: Metal MLX Catch up helper. Discover Xcode.app (ignore CLT xcode-select).
+  // Soft-fail locally; hard-fail in CI so release DMGs ship mesh-ai-mlx.
+  if (process.arch === 'arm64') {
+    const mlxPackage = path.join(root, 'native/ai/mlx');
+    try {
+      const xcodeDeveloper = discoverXcodeDeveloperDir();
+      const env = { ...process.env };
+      if (xcodeDeveloper) env.DEVELOPER_DIR = xcodeDeveloper;
+      else if (!env.DEVELOPER_DIR) {
+        throw new Error(
+          'Xcode.app Contents/Developer not found under /Applications (install full Xcode; CLT-only is not enough)',
+        );
+      }
+      // Default swiftbuild links mesh-ai-mlx but skips Cmlx metallib resources;
+      // --build-system xcode fails resolving MLXHuggingFaceMacros on CI.
+      execFileSync('swift', MLX_SWIFT_BUILD_ARGS, {
+        cwd: mlxPackage,
+        stdio: 'inherit',
+        env,
+      });
+      const built = path.join(mlxPackage, '.build', 'release', 'mesh-ai-mlx');
+      if (!existsSync(built)) {
+        throw new Error(`mesh-ai-mlx binary missing at ${built}`);
+      }
+      coLocateMlxSideBundles(built, mlxPackage);
+      if (!isMlxHelperInstallComplete(built)) {
+        packageMlxCmlxMetallibBundle(built, mlxPackage, { env });
+      }
+      if (!isMlxHelperInstallComplete(built)) {
+        throw new Error(
+          `mesh-ai-mlx build missing mlx-swift_Cmlx.bundle next to ${built} (needed for default.metallib)`,
+        );
+      }
+      // Stage under staged/darwin only; the final active sync copies once (Hub/Crypto
+      // resource bundles are often mode 444 — a second cpSync into active hits EACCES).
+      stageMlxHelperBinary(built, path.join(output, 'staged/darwin/mesh-ai-mlx'));
+      console.debug(
+        '[build-ai-helper] Staged mesh-ai-mlx + Metal bundles for Apple Silicon Catch up',
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error;
+      if (process.env.CI) {
+        console.error('[build-ai-helper] MLX helper required in CI:', message);
+        throw error instanceof Error ? error : new Error(String(error));
+      }
+      console.warn(
+        '[build-ai-helper] Optional MLX helper build failed; MLX Catch up unavailable until ensure runs.',
+        message,
+      );
+    }
+  }
 } else if (process.platform === 'win32') {
   // Build both installer architectures on the Windows runner.
   for (const arch of ['x64', 'arm64']) {
@@ -67,6 +127,9 @@ if (process.platform === 'darwin' || process.platform === 'win32') {
     'staged',
     process.platform === 'darwin' ? 'darwin' : `win-${process.arch}`,
   );
-  mkdirSync(path.join(output, 'active'), { recursive: true });
-  cpSync(staged, path.join(output, 'active'), { recursive: true });
+  // Replace active wholesale so read-only SwiftPM bundles from a prior stage do not block cp.
+  const active = path.join(output, 'active');
+  rmSync(active, { recursive: true, force: true });
+  mkdirSync(active, { recursive: true });
+  cpSync(staged, active, { recursive: true });
 }

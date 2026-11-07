@@ -12,25 +12,34 @@ import {
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici';
 
 import {
+  AI_FOLLOW_UP_OUTPUT_TOKENS,
   AI_MAX_RESPONSE_BYTES,
   type AiActionResult,
+  type AiMlxHelperReason,
+  type AiMlxHelperStatus,
   type AiOsAiStatus,
   type AiProviderStatus,
   aiSummaryOutputTokens,
   aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
   clampAiMaxCollectedMessages,
+  resolveAiSummaryFinalStyle,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
 import { AiClient } from '../ai/aiClient';
 import { AiConfig } from '../ai/config';
 import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
-import { AI_LOCAL_MODELS } from '../ai/local/modelManifest';
+import { loadAiLocalModels } from '../ai/loadAiLocalModels';
+import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
+import { loadNativeAiRuntime } from '../ai/loadNativeAiRuntime';
+import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
+import { isAppleSiliconMac, isCatalogPackAvailable } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
-import { OsAiHelper } from '../ai/os/osAiHelper';
-import { buildSummaryPrompt } from '../ai/promptBuilder';
+import type { MlxAiHelper } from '../ai/os/mlxAiHelper';
+import { isMlxHelperInstallComplete, resolveMlxBinaryPath } from '../ai/os/mlxHelperInstall';
+import type { OsAiHelper } from '../ai/os/osAiHelper';
 import { classifyEndpoint, validateAiEndpointUrl } from '../ai/urlPolicy';
 import { validateAiConfig, validateAiRequest } from '../ai/validation';
 import { getDbForIpc } from '../db-ipc-lifecycle';
@@ -70,15 +79,49 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     // undici honors the pinned lookup dispatcher; Chromium net.fetch does not.
     return undiciFetch(href, init as UndiciRequestInit) as unknown as Promise<Response>;
   });
-  // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
-  const os = new OsAiHelper(() =>
+  const helperRoot = () =>
     path.join(
       app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources'),
       app.isPackaged ? 'ai-helper' : 'ai-helper/active',
-      process.platform === 'win32' ? 'mesh-ai.exe' : 'mesh-ai',
-    ),
-  );
+    );
+  const mlxUserBinary = () => path.join(app.getPath('userData'), 'ai-helper', 'mesh-ai-mlx');
+  const mlxBundledCandidates = () => [
+    path.join(helperRoot(), 'mesh-ai-mlx'),
+    path.join(app.getAppPath(), 'resources', 'ai-helper', 'staged', 'darwin', 'mesh-ai-mlx'),
+    path.join(app.getAppPath(), 'resources', 'ai-helper', 'mesh-ai-mlx'),
+  ];
+  const mlxBinaryPath = () =>
+    resolveMlxBinaryPath(mlxUserBinary(), mlxBundledCandidates()) ?? mlxUserBinary();
+  /** Sync disk check — stays in index.js; helper spawn/classes load via sibling runtime. */
+  const mlxAvailableOnHost = () =>
+    isAppleSiliconMac() && isMlxHelperInstallComplete(mlxBinaryPath());
+  let osHelper: OsAiHelper | null = null;
+  let mlxHelper: MlxAiHelper | null = null;
+  const getOsHelper = async (): Promise<OsAiHelper> => {
+    if (!osHelper) {
+      const { OsAiHelper } = await loadNativeAiRuntime();
+      // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
+      osHelper = new OsAiHelper(() =>
+        path.join(helperRoot(), process.platform === 'win32' ? 'mesh-ai.exe' : 'mesh-ai'),
+      );
+    }
+    return osHelper;
+  };
+  const getMlxHelper = async (): Promise<MlxAiHelper> => {
+    if (!mlxHelper) {
+      const { MlxAiHelper } = await loadNativeAiRuntime();
+      // OS-specific: Apple Silicon MLX Metal Catch up helper (bundled, userData, or ensure-built).
+      mlxHelper = new MlxAiHelper(() => mlxBinaryPath());
+    }
+    return mlxHelper;
+  };
   let osStatus: AiOsAiStatus = { available: false, platform: null, reason: 'unsupported-platform' };
+  let mlxHelperStatus: AiMlxHelperStatus = isAppleSiliconMac() ? 'unavailable' : 'unsupported';
+  let mlxHelperReason: AiMlxHelperReason | null = isAppleSiliconMac() ? 'helperMissing' : null;
+  let mlxEnsureInFlight: Promise<void> | null = null;
+  let mlxEnsureAttempted = false;
+  /** Bumped on dispose/stop so in-flight ensure cannot touch shared test settings or IPC. */
+  let mlxEnsureEpoch = 0;
   let revision = 0;
   const active = new Map<string, AbortController>();
   const reads = createIpcRateLimiter({ max: 180, windowMs: MS_PER_MINUTE, label: 'ai:read' });
@@ -97,16 +140,99 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   };
   const stop = () => {
     revision++;
+    mlxEnsureEpoch++;
+    mlxEnsureInFlight = null;
     for (const controller of active.values()) controller.abort();
     active.clear();
     multiPassJobs.clear();
-    os.kill();
+    osHelper?.kill();
+    mlxHelper?.kill();
   };
-  const status = async (): Promise<AiProviderStatus> => {
+  const bundledModelReady = async (modelId: string): Promise<boolean> => {
+    const catalog = await loadAiLocalModels();
+    const model = catalog.find((entry) => entry.id === modelId);
+    if (!model || !isCatalogPackAvailable(model)) return false;
+    if (!(await packs.verify(model.id, true))) return false;
+    if (model.runtime === 'mlx') {
+      if (!mlxAvailableOnHost()) return false;
+      return (await getMlxHelper()).probe();
+    }
+    return true;
+  };
+  const mlxPackSelectable = (pack: { runtime?: string }) =>
+    pack.runtime !== 'mlx' || mlxAvailableOnHost();
+  const syncMlxHelperFlagsFromDisk = () => {
+    if (!isAppleSiliconMac()) {
+      mlxHelperStatus = 'unsupported';
+      mlxHelperReason = null;
+      return;
+    }
+    if (mlxAvailableOnHost()) {
+      mlxHelperStatus = 'ready';
+      mlxHelperReason = 'ready';
+    } else if (mlxHelperStatus !== 'preparing') {
+      mlxHelperStatus = 'unavailable';
+      if (
+        !mlxHelperReason ||
+        mlxHelperReason === 'ready' ||
+        mlxHelperReason === 'preparing' ||
+        mlxHelperReason === 'unsupported'
+      )
+        mlxHelperReason = 'helperMissing';
+    }
+  };
+  const runEnsureMlxHelper = async (force = false): Promise<void> => {
+    if (!isAppleSiliconMac()) {
+      mlxHelperStatus = 'unsupported';
+      mlxHelperReason = null;
+      return;
+    }
+    if (!force && mlxAvailableOnHost()) {
+      mlxHelperStatus = 'ready';
+      mlxHelperReason = 'ready';
+      mlxEnsureAttempted = true;
+      return;
+    }
+    if (mlxEnsureInFlight) {
+      await mlxEnsureInFlight;
+      return;
+    }
+    mlxEnsureAttempted = true;
+    mlxHelperStatus = 'preparing';
+    mlxHelperReason = 'preparing';
+    const epoch = mlxEnsureEpoch;
+    mlxEnsureInFlight = (async () => {
+      if (epoch !== mlxEnsureEpoch) return;
+      send('ai:statusChanged', await statusSnapshot());
+      if (epoch !== mlxEnsureEpoch) return;
+      const { ensureMlxHelper } = await loadNativeAiRuntime();
+      if (epoch !== mlxEnsureEpoch) return;
+      const result = await ensureMlxHelper({
+        userBinary: mlxUserBinary(),
+        bundledCandidates: mlxBundledCandidates(),
+        mlxPackageRoot: path.join(app.getAppPath(), 'native', 'ai', 'mlx'),
+      });
+      if (epoch !== mlxEnsureEpoch) return;
+      mlxHelperStatus = result.available
+        ? 'ready'
+        : result.reason === 'unsupported'
+          ? 'unsupported'
+          : 'unavailable';
+      mlxHelperReason = result.reason;
+      mlxHelper?.kill();
+      send('ai:statusChanged', await statusSnapshot());
+    })().finally(() => {
+      if (epoch === mlxEnsureEpoch) mlxEnsureInFlight = null;
+    });
+    await mlxEnsureInFlight;
+  };
+  const statusSnapshot = async (): Promise<AiProviderStatus> => {
     const c = config.read();
-    const selectedModel = AI_LOCAL_MODELS.some((model) => model.id === c.localModelId)
-      ? c.localModelId
-      : null;
+    const catalog = await loadAiLocalModels();
+    const selectedPack = catalog.find((model) => model.id === c.localModelId);
+    const selectedModel =
+      selectedPack && isCatalogPackAvailable(selectedPack) ? selectedPack.id : null;
+    syncMlxHelperFlagsFromDisk();
     return {
       enabled: enabled(),
       engine: c.engine,
@@ -122,25 +248,59 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         return policy.ok && policy.cls === 'remote';
       })(),
       localEngine: {
-        ready: enabled() && !!selectedModel && (await packs.verify(selectedModel, true)),
+        ready: enabled() && !!selectedModel && (await bundledModelReady(selectedModel)),
         modelId: selectedModel,
         downloading: packs.progress().length > 0,
       },
+      mlxHelperAvailable: mlxAvailableOnHost(),
+      mlxHelperStatus,
+      mlxHelperReason:
+        mlxHelperStatus === 'unavailable'
+          ? mlxHelperReason &&
+            mlxHelperReason !== 'ready' &&
+            mlxHelperReason !== 'preparing' &&
+            mlxHelperReason !== 'unsupported'
+            ? mlxHelperReason
+            : 'helperMissing'
+          : mlxHelperStatus === 'preparing'
+            ? 'preparing'
+            : mlxHelperStatus === 'ready'
+              ? 'ready'
+              : null,
       osAi: osStatus,
     };
+  };
+  const status = async (): Promise<AiProviderStatus> => {
+    if (
+      enabled() &&
+      isAppleSiliconMac() &&
+      !mlxAvailableOnHost() &&
+      !mlxEnsureAttempted &&
+      !mlxEnsureInFlight
+    ) {
+      void runEnsureMlxHelper().catch((error: unknown) => {
+        console.warn('[ai] ensureMlxHelper failed', error instanceof Error ? error.message : error);
+      });
+    }
+    return statusSnapshot();
   };
   const check = async (): Promise<AiActionResult> => {
     if (!enabled()) return { ok: false, reason: 'disabled' };
     const c = config.read();
     if (!c.engine) return { ok: false, reason: 'notConfigured' };
     if (c.engine === 'os') {
-      osStatus = await os.probe();
+      osStatus = await (await getOsHelper()).probe();
       return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
     }
     if (c.engine === 'bundled') {
-      const model = AI_LOCAL_MODELS.find((model) => model.id === c.localModelId);
-      const ok = !!model && (await packs.verify(model.id));
-      return ok ? { ok } : { ok, reason: 'engineNotReady' };
+      const catalog = await loadAiLocalModels();
+      const model = catalog.find((entry) => entry.id === c.localModelId);
+      const mlxOk =
+        model?.runtime !== 'mlx' ||
+        (mlxAvailableOnHost() && (await (await getMlxHelper()).probe()));
+      const ok =
+        !!model && isCatalogPackAvailable(model) && (await packs.verify(model.id)) && mlxOk;
+      return ok ? { ok } : { ok: false, reason: 'engineNotReady' };
     }
     const policy = validateAiEndpointUrl(c.baseUrl, c.allowRemote);
     if (
@@ -151,9 +311,15 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'remoteNotAcknowledged' };
     return c.wireFormat && c.model ? { ok: true } : { ok: false, reason: 'notConfigured' };
   };
-  const id = (value: unknown) => {
+  const id = async (value: unknown) => {
     if (typeof value !== 'string') throw new Error('Invalid AI model');
-    packs.pack(value);
+    await packs.getPack(value);
+    return value;
+  };
+  /** Catalog packs and retired on-disk orphans share this id grammar. */
+  const packDirectoryId = (value: unknown) => {
+    if (typeof value !== 'string' || !/^[a-z0-9.-]+$/.test(value))
+      throw new Error('Invalid AI model');
     return value;
   };
   ipcMain.handle('ai:getHistory', (event, value: unknown) => {
@@ -173,21 +339,40 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     deps.setSetting('aiEnabled', value ? '1' : '0');
     stop();
     if (!value) await packs.cancelAll();
-    const next = await status();
+    if (value && isAppleSiliconMac()) {
+      mlxEnsureAttempted = false;
+      void runEnsureMlxHelper().catch((error: unknown) => {
+        console.warn(
+          '[ai] ensureMlxHelper on enable failed',
+          error instanceof Error ? error.message : error,
+        );
+      });
+    }
+    const next = await statusSnapshot();
     send('ai:statusChanged', next);
     return next;
+  });
+  ipcMain.handle('ai:ensureMlxHelper', async (event) => {
+    guard(event, 'ai:ensureMlxHelper', true);
+    if (!enabled()) return statusSnapshot();
+    await runEnsureMlxHelper(true);
+    return statusSnapshot();
   });
   ipcMain.handle('ai:probeOsAi', async (event) => {
     guard(event, 'ai:probeOsAi');
     if (!enabled()) return osStatus;
-    osStatus = await os.probe(true);
+    osStatus = await (await getOsHelper()).probe(true);
     return osStatus;
   });
   ipcMain.handle('ai:setConfig', async (event, value: unknown) => {
     guard(event, 'ai:setConfig', true);
     if (!enabled()) return status();
     const input = validateAiConfig(value);
-    if (input.localModelId) id(input.localModelId);
+    if (input.localModelId) {
+      const modelId = await id(input.localModelId);
+      if (!isCatalogPackAvailable(await packs.getPack(modelId)))
+        throw new Error('Invalid AI model');
+    }
     config.write(input);
     stop();
     const next = await status();
@@ -196,31 +381,44 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:listLocalModels', async (event) => {
     guard(event, 'ai:listLocalModels');
+    // Full platform-eligible catalog (MLX twins + GGUF); helper only gates select/ready.
     return enabled() ? packs.list() : [];
   });
   ipcMain.handle('ai:installLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:installLocalModel', true);
-    return packs.install(id(value));
+    const modelId = await id(value);
+    const pack = await packs.getPack(modelId);
+    // Allow MLX weight download without the Metal helper; select/Catch up stay gated.
+    if (!isCatalogPackAvailable(pack)) throw new Error('Invalid AI model');
+    return packs.install(modelId);
   });
   ipcMain.handle('ai:cancelLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:cancelLocalModel', true);
-    await packs.cancel(id(value));
+    await packs.cancel(await id(value));
   });
   ipcMain.handle('ai:removeLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:removeLocalModel', true);
+    const modelId = packDirectoryId(value);
     stop();
-    await packs.delete(id(value));
+    await packs.delete(modelId);
+    const stored = config.read();
+    if (stored.localModelId === modelId) config.clearLocalModelSelection();
     const next = await status();
     send('ai:statusChanged', next);
     return enabled() ? packs.list() : [];
   });
   ipcMain.handle('ai:selectLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:selectLocalModel', true);
-    if (!enabled()) return status();
-    if (value !== null) id(value);
+    if (!enabled()) return statusSnapshot();
+    if (value !== null) {
+      const modelId = await id(value);
+      const pack = await packs.getPack(modelId);
+      if (!isCatalogPackAvailable(pack) || !mlxPackSelectable(pack))
+        throw new Error('Invalid AI model');
+    }
     config.write({ engine: 'bundled', localModelId: value as string | null });
     stop();
-    const next = await status();
+    const next = await statusSnapshot();
     send('ai:statusChanged', next);
     return next;
   });
@@ -288,6 +486,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     guard(event, 'ai:summarize');
     const request = validateAiRequest(value);
     const mode = request.mode ?? 'final';
+    const followUp = request.followUp;
     if (request.jobId && multiPassJobs.has(request.jobId)) {
       // Child multi-pass step — already counted when the first map registered the job.
     } else if (request.jobId && mode === 'map') {
@@ -295,6 +494,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       if (multiPassJobs.size >= 32) multiPassJobs.delete(multiPassJobs.values().next().value!);
       multiPassJobs.add(request.jobId);
     } else {
+      // Follow-ups are single-pass and count like a final pass.
       summaries.checkOrThrow();
     }
     if (active.size >= 1) return { ok: false, reason: 'busy' };
@@ -323,7 +523,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       before !== revision ||
       !enabled() ||
       controller.signal.aborted ||
-      !request.messages.length
+      (!request.messages.length && !followUp)
     ) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (!ready.ok) return ready;
@@ -341,22 +541,70 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'notConfigured' };
     }
     const budget = aiSummaryPromptBudget(c.engine);
-    const prompt = buildSummaryPrompt({
-      ...request,
-      digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
-      mode: request.mode ?? 'final',
-      maxChars: budget.maxChars,
-      maxPromptBytes: budget.maxPromptBytes,
+    let finalStyle =
+      mode === 'final'
+        ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
+        : 'compact';
+    const buildSummaryPrompt = await loadBuildAiSummaryPrompt();
+    const buildCatchUpPrompt = (style: typeof finalStyle) => ({
+      ...buildSummaryPrompt({
+        ...request,
+        digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
+        mode: request.mode ?? 'final',
+        finalStyle: style,
+        maxChars: budget.maxChars,
+        maxPromptBytes: budget.maxPromptBytes,
+      }),
+      fits: true as const,
     });
-    if (!prompt.included) {
+    let prompt = followUp
+      ? (await loadBuildAiFollowUpPrompt())({
+          conversationLabel: request.conversationLabel,
+          protocol: request.protocol,
+          surface: request.surface,
+          locale: request.locale,
+          summary: followUp.summary,
+          question: followUp.question,
+          turns: followUp.turns,
+          messages: request.messages,
+          contextKind: followUp.contextKind,
+          maxChars: budget.maxChars,
+          maxPromptBytes: budget.maxPromptBytes,
+        })
+      : buildCatchUpPrompt(finalStyle);
+    // Structured finals cost ~512 B more system text; fall back to compact when that
+    // would truncate digests/transcript and fail multi-pass requireFullCoverage.
+    if (
+      !followUp &&
+      mode === 'final' &&
+      finalStyle === 'structured' &&
+      (prompt.truncated || prompt.included !== request.messages.length || !prompt.included)
+    ) {
+      finalStyle = 'compact';
+      prompt = buildCatchUpPrompt('compact');
+    }
+    if (!prompt.fits || (!followUp && !prompt.included)) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
       return { ok: false, reason: 'tooLarge' };
     }
-    if (c.engine === 'bundled') {
+    // Qwen3 defaults to thinking mode; disable it so Catch up stays within completion budgets.
+    if (
+      c.engine === 'bundled' &&
+      typeof c.localModelId === 'string' &&
+      c.localModelId.startsWith('qwen3-') &&
+      !prompt.user.includes('/no_think')
+    )
+      prompt = { ...prompt, user: `${prompt.user}\n/no_think` };
+    const outputTokens = followUp
+      ? AI_FOLLOW_UP_OUTPUT_TOKENS
+      : aiSummaryOutputTokens(mode, finalStyle);
+    const catalog = await loadAiLocalModels();
+    const bundledModel = catalog.find((m) => m.id === c.localModelId);
+    if (c.engine === 'bundled' && bundledModel?.runtime !== 'mlx') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
-      const model = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId)!;
+      const model = bundledModel!;
       return {
         ok: true,
         summaryInput: { messageCount: prompt.included, truncated: prompt.truncated },
@@ -367,11 +615,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           messageCount: prompt.included,
           truncated: prompt.truncated,
           model: model.name,
-          maxTokens: aiSummaryOutputTokens(mode),
+          maxTokens: outputTokens,
         },
       };
     }
-    const outputTokens = aiSummaryOutputTokens(mode);
     const signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(c.engine, c.timeoutSeconds)),
@@ -398,7 +645,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       };
       try {
         if (c.engine === 'os')
-          await os.generate(
+          await (
+            await getOsHelper()
+          ).generate(
             {
               requestId: request.requestId,
               system: prompt.system,
@@ -409,7 +658,26 @@ export function registerAiHandlers(deps: Dependencies): () => void {
             delta,
             aiSummaryTimeoutMs(c.engine, c.timeoutSeconds),
           );
-        else {
+        else if (c.engine === 'bundled' && bundledModel?.runtime === 'mlx') {
+          const { promises: fsp } = await import('node:fs');
+          const root = await fsp.realpath(directory());
+          const modelPath = await fsp.realpath(await packs.packDirectory(bundledModel.id));
+          if (!modelPath.startsWith(root + path.sep)) throw new AiFailure('engineNotReady');
+          await (
+            await getMlxHelper()
+          ).generate(
+            {
+              requestId: request.requestId,
+              system: prompt.system,
+              user: prompt.user,
+              maxTokens: outputTokens,
+              modelPath,
+            },
+            signal,
+            delta,
+            aiSummaryTimeoutMs(c.engine, c.timeoutSeconds),
+          );
+        } else {
           if (!c.wireFormat) throw new AiFailure('notConfigured');
           for await (const part of client.stream(
             c.wireFormat,
@@ -433,8 +701,18 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           send('ai:summaryDone', {
             requestId: request.requestId,
             text,
-            provider: c.engine === 'os' ? 'OS AI' : new URL(c.baseUrl).host,
-            model: c.engine === 'os' ? (osStatus.modelLabel ?? 'OS AI') : c.model,
+            provider:
+              c.engine === 'os'
+                ? 'OS AI'
+                : c.engine === 'bundled'
+                  ? 'MLX'
+                  : new URL(c.baseUrl).host,
+            model:
+              c.engine === 'os'
+                ? (osStatus.modelLabel ?? 'OS AI')
+                : c.engine === 'bundled'
+                  ? (bundledModel?.name ?? 'MLX')
+                  : c.model,
             messageCount: prompt.included,
             truncated: prompt.truncated,
           });

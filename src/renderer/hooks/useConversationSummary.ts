@@ -5,6 +5,8 @@ import { mergeSummaryMessages, selectSummaryMessages } from '@/renderer/lib/aiSu
 import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
+  askFollowUp as askFollowUpAction,
+  cancelFollowUp as cancelFollowUpAction,
   cancelSummary,
   dismissSummary,
   getAiSummaryRevision,
@@ -244,6 +246,12 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     key: input.key,
     showCatchUp: enabled && input.available !== false,
     canSummarize: aiReady(status) && input.available !== false,
+    /** Model/engine chosen but not runnable (e.g. MLX selected without Metal helper). */
+    engineNeedsFix:
+      !!status?.enabled &&
+      status.engine === 'bundled' &&
+      !!status.localEngine.modelId &&
+      !status.localEngine.ready,
     scope,
     setScope,
     run,
@@ -254,6 +262,13 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     },
     state,
     pending: loading || state?.streaming === true,
+    followUpPending: state?.followUps?.some((turn) => turn.streaming) ?? false,
+    askFollowUp: (question: string) => {
+      void askFollowUpAction(input.key, question);
+    },
+    cancelFollowUp: (id: string) => {
+      cancelFollowUpAction(input.key, id);
+    },
   };
 }
 export type ConversationSummaryController = ReturnType<typeof useConversationSummary>;

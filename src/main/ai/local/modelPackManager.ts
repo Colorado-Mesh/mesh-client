@@ -6,7 +6,14 @@ import path from 'node:path';
 import type { AiActionResult, AiModelInfo, AiModelProgress } from '../../../shared/ai-types';
 import { MS_PER_MINUTE } from '../../../shared/timeConstants';
 import { sanitizeLogMessage } from '../../sanitize-log-message';
-import { AI_LOCAL_MODELS, type AiLocalAsset, type AiLocalModel } from './modelManifest';
+import { loadAiLocalModels } from '../loadAiLocalModels';
+import {
+  type AiLocalAsset,
+  type AiLocalModel,
+  isAppleSiliconMac,
+  isCatalogPackAvailable,
+  resolveAssetUrl,
+} from './modelManifest';
 
 interface InstallJob {
   abort: AbortController;
@@ -22,21 +29,40 @@ export interface PackManagerDependencies {
   manifest?: AiLocalModel[];
   timeoutMs?: number;
   openHashStream?: (file: string) => AsyncIterable<Uint8Array>;
+  platform?: NodeJS.Platform;
+  arch?: NodeJS.Architecture;
 }
 
 /** No constructor I/O. Installs publish a complete verified directory in one rename. */
 export class AiModelPackManager {
-  private readonly manifest: AiLocalModel[];
+  private manifest: AiLocalModel[] | null;
+  private manifestLoad: Promise<AiLocalModel[]> | null = null;
   private readonly jobs = new Map<string, InstallJob>();
   private tail: Promise<unknown> = Promise.resolve();
   private readonly verified = new Map<string, { signature: string; valid: boolean }>();
   private readonly verifying = new Map<string, Promise<boolean>>();
 
   constructor(private readonly deps: PackManagerDependencies) {
-    this.manifest = deps.manifest ?? AI_LOCAL_MODELS;
+    this.manifest = deps.manifest ?? null;
+  }
+
+  private async ensureManifest(): Promise<AiLocalModel[]> {
+    if (this.manifest) return this.manifest;
+    this.manifestLoad ??= loadAiLocalModels().then((models) => {
+      this.manifest = models;
+      return models;
+    });
+    return this.manifestLoad;
+  }
+
+  /** Resolve a catalog pack after the sibling catalog has loaded. */
+  async getPack(id: string): Promise<AiLocalModel> {
+    await this.ensureManifest();
+    return this.pack(id);
   }
 
   pack(id: string): AiLocalModel {
+    if (!this.manifest) throw new Error('AI catalog not loaded');
     const pack = this.manifest.find((entry) => entry.id === id);
     if (!pack || !/^[a-z0-9.-]+$/.test(id)) throw new Error('Unknown ai pack');
     return pack;
@@ -51,7 +77,7 @@ export class AiModelPackManager {
   }
 
   async verify(id: string, advisory = false): Promise<boolean> {
-    const pack = this.pack(id);
+    const pack = await this.getPack(id);
     try {
       const dir = await fs.lstat(path.join(this.deps.directory(), id));
       if (!dir.isDirectory() || dir.isSymbolicLink()) return false;
@@ -165,27 +191,72 @@ export class AiModelPackManager {
     return valid;
   }
 
-  async list(): Promise<AiModelInfo[]> {
-    return Promise.all(
-      this.manifest.map(async (pack) => ({
-        id: pack.id,
-        name: pack.name,
-        paramsLabel: pack.paramsLabel,
-        license: pack.license,
-        downloadBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
-        diskBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
-        installed: await this.verify(pack.id, true),
-      })),
+  private hostPlatform(): NodeJS.Platform {
+    return this.deps.platform ?? process.platform;
+  }
+
+  private hostArch(): NodeJS.Architecture {
+    return this.deps.arch ?? process.arch;
+  }
+
+  /** Packs offered on this host (MLX only on Apple Silicon). */
+  visibleManifest(): AiLocalModel[] {
+    if (!this.manifest) return [];
+    return this.manifest.filter((pack) =>
+      isCatalogPackAvailable(pack, this.hostPlatform(), this.hostArch()),
     );
+  }
+
+  async packDirectory(id: string): Promise<string> {
+    await this.getPack(id);
+    return path.join(this.deps.directory(), id);
+  }
+
+  async list(): Promise<AiModelInfo[]> {
+    const manifest = await this.ensureManifest();
+    const preferMlx = isAppleSiliconMac(this.hostPlatform(), this.hostArch());
+    const visible = this.visibleManifest();
+    const catalog = await Promise.all(
+      visible.map(async (pack) => {
+        const recommend =
+          pack.recommendAs &&
+          ((preferMlx && pack.runtime === 'mlx') || (!preferMlx && pack.runtime === 'wllama'))
+            ? pack.recommendAs
+            : undefined;
+        return {
+          id: pack.id,
+          name: pack.name,
+          paramsLabel: pack.paramsLabel,
+          license: pack.license,
+          downloadBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
+          diskBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
+          installed: await this.verify(pack.id, true),
+          runtime: pack.runtime,
+          ...(recommend ? { recommendation: recommend } : {}),
+        };
+      }),
+    );
+    catalog.sort((a, b) => {
+      const runtimeRank = (runtime: string | undefined) => (runtime === 'mlx' ? 0 : 1);
+      const recommendRank = (value: string | undefined) =>
+        value === 'quality' ? 0 : value === 'fasterMachines' ? 1 : 2;
+      return (
+        runtimeRank(a.runtime) - runtimeRank(b.runtime) ||
+        recommendRank(a.recommendation) - recommendRank(b.recommendation) ||
+        a.name.localeCompare(b.name)
+      );
+    });
+    const orphans = await this.listOrphans(new Set(manifest.map((pack) => pack.id)));
+    return [...catalog, ...orphans];
   }
 
   progress(): AiModelProgress[] {
     return [...this.jobs.values()].map((job) => ({ ...job.progress }));
   }
 
-  install(id: string): Promise<AiActionResult> {
-    const pack = this.pack(id);
-    if (!this.deps.enabled()) return Promise.resolve({ ok: false, reason: 'disabled' });
+  async install(id: string): Promise<AiActionResult> {
+    const pack = await this.getPack(id);
+    if (!this.deps.enabled()) return { ok: false, reason: 'disabled' };
     const existing = this.jobs.get(id);
     if (existing) return existing.promise;
     const job: InstallJob = {
@@ -210,7 +281,7 @@ export class AiModelPackManager {
   }
 
   async cancel(id: string): Promise<void> {
-    this.pack(id);
+    await this.getPack(id);
     const job = this.jobs.get(id);
     if (job) {
       job.abort.abort();
@@ -225,7 +296,8 @@ export class AiModelPackManager {
   }
 
   async delete(id: string): Promise<void> {
-    this.pack(id);
+    // Catalog packs and retired on-disk orphans share the same id grammar.
+    if (!/^[a-z0-9.-]+$/.test(id)) throw new Error('Unknown ai pack');
     this.jobs.get(id)?.abort.abort();
     const operation = this.tail.then(async () => {
       await fs.rm(path.join(this.deps.directory(), id), { recursive: true, force: true });
@@ -249,6 +321,60 @@ export class AiModelPackManager {
     await operation;
   }
 
+  /** Pack directories left on disk after catalog removals / upgrades. */
+  private async listOrphans(catalogIds: Set<string>): Promise<AiModelInfo[]> {
+    let entries: string[];
+    try {
+      entries = await fs.readdir(this.deps.directory());
+    } catch {
+      // catch-no-log-ok missing models root means nothing to clean up
+      return [];
+    }
+    const orphans: AiModelInfo[] = [];
+    for (const name of entries) {
+      if (name.startsWith('.') || catalogIds.has(name) || !/^[a-z0-9.-]+$/.test(name)) continue;
+      const packDir = path.join(this.deps.directory(), name);
+      try {
+        const stat = await fs.lstat(packDir);
+        if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+        const diskBytes = await this.directoryByteSize(packDir);
+        if (diskBytes <= 0) continue;
+        orphans.push({
+          id: name,
+          name: name,
+          paramsLabel: '—',
+          license: '—',
+          downloadBytes: diskBytes,
+          diskBytes,
+          installed: true,
+          orphan: true,
+        });
+      } catch {
+        // catch-no-log-ok skip unreadable entries while listing orphans
+      }
+    }
+    orphans.sort((a, b) => a.id.localeCompare(b.id));
+    return orphans;
+  }
+
+  private async directoryByteSize(directory: string): Promise<number> {
+    let total = 0;
+    const stack = [directory];
+    while (stack.length) {
+      const current = stack.pop();
+      if (!current) break;
+      const children = await fs.readdir(current);
+      for (const child of children) {
+        const full = path.join(current, child);
+        const stat = await fs.lstat(full);
+        if (stat.isSymbolicLink()) continue;
+        if (stat.isDirectory()) stack.push(full);
+        else if (stat.isFile()) total += stat.size;
+      }
+    }
+    return total;
+  }
+
   private emit(job: InstallJob): void {
     const now = Date.now();
     if (job.lastEmitted?.state === job.progress.state && now - job.lastEmitted.at < 100) return;
@@ -267,7 +393,7 @@ export class AiModelPackManager {
       }
       await fs.mkdir(this.deps.directory(), { recursive: true, mode: 0o700 });
       temporary = await fs.mkdtemp(path.join(this.deps.directory(), '.install-'));
-      for (const asset of pack.assets) await this.download(asset, temporary, job);
+      for (const asset of pack.assets) await this.download(pack, asset, temporary, job);
       if (!this.deps.enabled() || job.abort.signal.aborted) throw new Error('Download cancelled');
       await fs.rm(path.join(this.deps.directory(), pack.id), { recursive: true, force: true });
       if (!this.deps.enabled() || job.abort.signal.aborted) throw new Error('Download cancelled');
@@ -296,7 +422,12 @@ export class AiModelPackManager {
     }
   }
 
-  private async download(asset: AiLocalAsset, directory: string, job: InstallJob): Promise<void> {
+  private async download(
+    pack: AiLocalModel,
+    asset: AiLocalAsset,
+    directory: string,
+    job: InstallJob,
+  ): Promise<void> {
     const idle = new AbortController();
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
     const resetDeadline = () => {
@@ -314,7 +445,7 @@ export class AiModelPackManager {
       const response =
         asset.content !== undefined
           ? new Response(asset.content)
-          : await this.deps.fetch(asset.url, { signal, redirect: 'follow' });
+          : await this.deps.fetch(resolveAssetUrl(pack, asset), { signal, redirect: 'follow' });
       if (!response.ok || !response.body) {
         await response.body?.cancel().catch(() => {
           // catch-no-log-ok failed download cleanup must not hide the HTTP failure

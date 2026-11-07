@@ -191,6 +191,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     cancelLocalModel: (id: string) => ipcRenderer.invoke('ai:cancelLocalModel', id),
     removeLocalModel: (id: string) => ipcRenderer.invoke('ai:removeLocalModel', id),
     selectLocalModel: (id: string | null) => ipcRenderer.invoke('ai:selectLocalModel', id),
+    ensureMlxHelper: () => ipcRenderer.invoke('ai:ensureMlxHelper'),
     summarize: (request: AiSummaryRequest) => ipcRenderer.invoke('ai:summarize', request),
     cancel: (requestId: string) => ipcRenderer.invoke('ai:cancel', requestId),
     onSummaryChunk: (cb: (value: AiSummaryChunk) => void) => {

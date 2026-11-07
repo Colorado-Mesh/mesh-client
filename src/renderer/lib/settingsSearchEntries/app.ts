@@ -798,6 +798,20 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.insecureKeyWarning': 'AI endpoint help; its setting is indexed',
     'aiSummary.urlHint': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.useModel': 'AI setting help, option, status or child action; parent is indexed',
+    'aiSummary.modelRecommendQuality':
+      'AI catalog soft recommendation badge; parent catalog is indexed',
+    'aiSummary.modelRecommendFasterMachines':
+      'AI catalog soft recommendation badge; parent catalog is indexed',
+    'aiSummary.modelRuntimeMlx': 'AI catalog runtime hint; parent catalog is indexed',
+    'aiSummary.modelRuntimeCpu': 'AI catalog runtime hint; parent catalog is indexed',
+    'aiSummary.mlxRecommendedOnMacos': 'AI catalog macOS recommendation; parent catalog is indexed',
+    'aiSummary.mlxHelperPreparing': 'AI catalog helper status; parent catalog is indexed',
+    'aiSummary.mlxHelperRetry': 'AI catalog helper action; parent catalog is indexed',
+    'aiSummary.mlxHelperRetryReady': 'AI catalog helper result notice; parent catalog is indexed',
+    'aiSummary.mlxHelperMissingSelected': 'AI catalog helper status; parent catalog is indexed',
+    'aiSummary.unusedDownloads': 'AI orphan downloads heading; parent catalog is indexed',
+    'aiSummary.unusedDownloadsHint': 'AI orphan downloads help; parent catalog is indexed',
+    'aiSummary.unusedDownloadRetired': 'AI orphan download status; parent catalog is indexed',
 
     'chatTranslation.offlinePrivacy':
       'Translation section help, status, or child action; its parent setting is indexed',

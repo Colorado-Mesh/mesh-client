@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AI_COMPACT_FINAL_MAX_MESSAGES,
   AI_DEFAULT_MAX_COLLECTED_MESSAGES,
   AI_ENDPOINT_MAX_PROMPT_BYTES,
   AI_MAP_OUTPUT_TOKENS,
@@ -10,15 +11,18 @@ import {
   AI_MIN_MAX_COLLECTED_MESSAGES,
   AI_ON_DEVICE_MAX_PROMPT_BYTES,
   AI_REDUCE_OUTPUT_TOKENS,
+  AI_STRUCTURED_FINAL_OUTPUT_TOKENS,
   AI_TYPICAL_SUMMARY_LINE_BYTES,
   aiSummaryOutputTokens,
   aiSummaryPromptBudget,
   clampAiMaxCollectedMessages,
   estimateAiSummaryMessageCapacity,
+  resolveAiSummaryFinalStyle,
 } from './ai-types';
 
 describe('AI summary capacity helpers', () => {
   it('exposes on-device and endpoint prompt budgets', () => {
+    expect(AI_ON_DEVICE_MAX_PROMPT_BYTES).toBe(12_288);
     expect(aiSummaryPromptBudget('os')).toEqual({
       maxChars: 9000,
       maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
@@ -49,7 +53,16 @@ describe('AI summary capacity helpers', () => {
     expect(aiSummaryOutputTokens('map')).toBe(AI_MAP_OUTPUT_TOKENS);
     expect(aiSummaryOutputTokens('reduce')).toBe(AI_REDUCE_OUTPUT_TOKENS);
     expect(aiSummaryOutputTokens('final')).toBe(AI_MAX_OUTPUT_TOKENS);
+    expect(aiSummaryOutputTokens('final', 'structured')).toBe(AI_STRUCTURED_FINAL_OUTPUT_TOKENS);
     expect(AI_MAP_OUTPUT_TOKENS).toBeLessThan(AI_MAX_OUTPUT_TOKENS);
+    expect(AI_MAX_OUTPUT_TOKENS).toBeLessThan(AI_STRUCTURED_FINAL_OUTPUT_TOKENS);
+  });
+
+  it('resolves compact vs structured final style by size and multi-pass', () => {
+    expect(resolveAiSummaryFinalStyle(1)).toBe('compact');
+    expect(resolveAiSummaryFinalStyle(AI_COMPACT_FINAL_MAX_MESSAGES)).toBe('compact');
+    expect(resolveAiSummaryFinalStyle(AI_COMPACT_FINAL_MAX_MESSAGES + 1)).toBe('structured');
+    expect(resolveAiSummaryFinalStyle(1, true)).toBe('structured');
   });
 
   it('clamps the user collection ceiling', () => {

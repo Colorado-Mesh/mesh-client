@@ -14,10 +14,13 @@ import type {
 } from '@/shared/ai-types';
 
 import {
+  askFollowUp,
+  cancelFollowUp,
   cancelSummary,
   dismissSummary,
   disposeAiSummaries,
   initializeAi,
+  mapAiError,
   refreshAiStatus,
   runSummary,
   useAiSummaryStore,
@@ -35,6 +38,9 @@ const ready: AiProviderStatus = {
   allowRemote: true,
   isRemote: true,
   localEngine: { ready: false, modelId: null, downloading: false },
+  mlxHelperAvailable: false,
+  mlxHelperStatus: 'unavailable',
+  mlxHelperReason: null,
   osAi: { available: false, platform: null },
 };
 let chunk: (value: AiSummaryChunk) => void;
@@ -135,6 +141,9 @@ describe('AI summary request correlation', () => {
       ...ready,
       engine: 'bundled',
       localEngine: { ready: true, modelId: 'test', downloading: false },
+      mlxHelperAvailable: false,
+      mlxHelperStatus: 'unavailable',
+      mlxHelperReason: null,
     });
     vi.mocked(api.summarize).mockResolvedValue({
       ok: true,
@@ -298,6 +307,9 @@ it.each(['os', 'bundled', 'local', 'remote'] as const)(
         timeoutSeconds: 720,
         maxCollectedMessages: 2000,
         localEngine: { ready: true, modelId: 'model', downloading: false },
+        mlxHelperAvailable: false,
+        mlxHelperStatus: 'unavailable',
+        mlxHelperReason: null,
       },
     });
     vi.mocked(api.summarize).mockReturnValue(new Promise(() => {}));
@@ -457,10 +469,10 @@ describe('AI startup status recovery', () => {
 
 describe('summary multi-pass', () => {
   it('runs map then final when the conversation exceeds one prompt budget', async () => {
-    const long = Array.from({ length: 80 }, (_, i) => ({
+    const long = Array.from({ length: 200 }, (_, i) => ({
       at: i + 1,
       sender: `N${i}`,
-      body: `update about site ${i} with enough text to fill the on-device budget`,
+      body: `update about site ${i} with enough text to fill the on-device budget after the 12 KiB ceiling`,
     }));
     useAiSummaryStore.getState().setStatus({
       ...ready,
@@ -494,10 +506,14 @@ describe('summary multi-pass', () => {
     expect(vi.mocked(api.summarize).mock.calls.some(([value]) => value.mode === 'final')).toBe(
       true,
     );
-    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+    const summary = useAiSummaryStore.getState().summaries.chat;
+    expect(summary).toMatchObject({
       streaming: false,
       text: 'final bullets',
     });
+    expect(summary?.followUpContext?.digests?.length).toBeGreaterThan(0);
+    expect(summary?.followUpContext?.messages?.length).toBeGreaterThan(0);
+    expect(summary?.followUpContext?.messages?.at(-1)?.body).toContain('site 199');
   });
 });
 
@@ -601,6 +617,9 @@ describe('summary queue', () => {
       ...ready,
       engine: 'bundled',
       localEngine: { ready: true, modelId: 'test', downloading: false },
+      mlxHelperAvailable: false,
+      mlxHelperStatus: 'unavailable',
+      mlxHelperReason: null,
     });
     vi.mocked(api.summarize).mockResolvedValue({
       ok: true,
@@ -648,6 +667,9 @@ it('waits for cancelled bundled worker cleanup before starting the next job', as
     ...ready,
     engine: 'bundled',
     localEngine: { ready: true, modelId: 'test', downloading: false },
+    mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: null,
   });
   vi.mocked(api.summarize).mockResolvedValue({
     ok: true,
@@ -689,4 +711,180 @@ it('waits for cancelled bundled worker cleanup before starting the next job', as
   await Promise.all([first, second]);
   expect(generate).toHaveBeenCalledTimes(2);
   expect(useAiSummaryStore.getState().summaries.two?.text).toBe('Next');
+});
+
+describe('AI follow-up questions', () => {
+  it('retains single-pass transcript context after a remote summary completes', async () => {
+    const pending = runSummary('chat', request);
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalled();
+    });
+    finish('id');
+    await pending;
+    expect(useAiSummaryStore.getState().summaries.chat?.followUpContext).toEqual({
+      messages: request.messages,
+      limited: false,
+    });
+    expect(useAiSummaryStore.getState().summaries.chat?.followUpBase?.conversationLabel).toBe(
+      'chat',
+    );
+  });
+
+  it('streams a follow-up answer without overwriting the summary', async () => {
+    const pending = runSummary('chat', request);
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalled();
+    });
+    finish('id');
+    await pending;
+    const summaryText = useAiSummaryStore.getState().summaries.chat?.text;
+    expect(summaryText).toBe('Completed');
+
+    let followUpId = '';
+    vi.mocked(api.summarize).mockImplementation((value) => {
+      followUpId = value.requestId;
+      return Promise.resolve({ ok: true, summaryInput: { messageCount: 1, truncated: false } });
+    });
+    const asking = askFollowUp('chat', 'How?');
+    await waitFor(() => {
+      expect(followUpId).toBeTruthy();
+      expect(useAiSummaryStore.getState().summaries.chat?.followUps?.[0]?.streaming).toBe(true);
+    });
+    chunk({ requestId: followUpId, delta: 'They ' });
+    chunk({ requestId: followUpId, delta: 'would expand it.' });
+    done({
+      requestId: followUpId,
+      text: 'They would expand it.',
+      provider: 'test',
+      model: 'test',
+      messageCount: 1,
+      truncated: false,
+    });
+    await asking;
+    const entry = useAiSummaryStore.getState().summaries.chat;
+    expect(entry?.text).toBe('Completed');
+    expect(entry?.followUps?.[0]).toMatchObject({
+      question: 'How?',
+      answer: 'They would expand it.',
+      streaming: false,
+    });
+    expect(api.summarize).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        followUp: expect.objectContaining({
+          question: 'How?',
+          contextKind: 'transcript',
+        }),
+      }),
+    );
+  });
+
+  it('caps prior follow-up answers before sending them over IPC', async () => {
+    const pending = runSummary('chat', request);
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalled();
+    });
+    finish('id');
+    await pending;
+    useAiSummaryStore.setState((state) => {
+      const current = state.summaries.chat;
+      if (!current) return {};
+      return {
+        summaries: {
+          ...state.summaries,
+          chat: {
+            ...current,
+            followUps: [
+              {
+                id: 'prior',
+                question: 'Who?',
+                answer: 'a'.repeat(2500),
+                streaming: false,
+              },
+            ],
+          },
+        },
+      };
+    });
+    let followUpId = '';
+    vi.mocked(api.summarize).mockImplementation((value) => {
+      followUpId = value.requestId;
+      return Promise.resolve({ ok: true, summaryInput: { messageCount: 1, truncated: false } });
+    });
+    const asking = askFollowUp('chat', 'Next?');
+    await waitFor(() => {
+      expect(followUpId).toBeTruthy();
+    });
+    expect(
+      vi.mocked(api.summarize).mock.calls.at(-1)?.[0].followUp?.turns?.[0]?.answer,
+    ).toHaveLength(2000);
+    done({
+      requestId: followUpId,
+      text: 'Ok',
+      provider: 'test',
+      model: 'test',
+      messageCount: 1,
+      truncated: false,
+    });
+    await asking;
+  });
+
+  it('cancels a follow-up without clearing the summary', async () => {
+    const pending = runSummary('chat', request);
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalled();
+    });
+    finish('id');
+    await pending;
+
+    let followUpId = '';
+    vi.mocked(api.summarize).mockImplementation(
+      (value) =>
+        new Promise((resolve) => {
+          followUpId = value.requestId;
+          resolve({ ok: true, summaryInput: { messageCount: 1, truncated: false } });
+        }),
+    );
+    const asking = askFollowUp('chat', 'Who objected?');
+    await waitFor(() => {
+      expect(useAiSummaryStore.getState().summaries.chat?.followUps?.[0]?.streaming).toBe(true);
+    });
+    cancelFollowUp('chat', followUpId);
+    await asking;
+    expect(useAiSummaryStore.getState().summaries.chat?.text).toBe('Completed');
+    expect(useAiSummaryStore.getState().summaries.chat?.followUps?.[0]).toMatchObject({
+      error: 'cancelled',
+      streaming: false,
+    });
+    expect(api.cancel).toHaveBeenCalledWith(followUpId);
+  });
+
+  it('refuses askFollowUp while the summary is still streaming', async () => {
+    vi.mocked(api.summarize).mockReturnValueOnce(new Promise(() => {}));
+    void runSummary('chat', request);
+    await waitFor(() => {
+      expect(useAiSummaryStore.getState().summaries.chat?.streaming).toBe(true);
+    });
+    await askFollowUp('chat', 'How?');
+    expect(useAiSummaryStore.getState().summaries.chat?.followUps ?? []).toHaveLength(0);
+  });
+});
+
+describe('mapAiError', () => {
+  const open = new AbortController().signal;
+  const abortReason = () => 'cancelled' as const;
+
+  it('maps wllama context-overflow messages to tooLarge', () => {
+    expect(
+      mapAiError(
+        new Error('request (5000 tokens) exceeds the available context size (8192 tokens)'),
+        open,
+        abortReason,
+      ),
+    ).toBe('tooLarge');
+    expect(mapAiError(new Error('kv_cache_full'), open, abortReason)).toBe('tooLarge');
+  });
+
+  it('keeps engineNotReady for the explicit readiness failure', () => {
+    expect(mapAiError(new Error('engineNotReady'), open, abortReason)).toBe('engineNotReady');
+  });
 });

@@ -101,7 +101,9 @@ describe('multi-pass summary orchestration', () => {
         requests.filter((request) => request.mode === 'map').flatMap((request) => request.messages),
       ).toEqual(messages);
       expect(requests.at(-1)?.mode).toBe('final');
-      expect(result).toEqual({ messageCount: 169, truncated: false });
+      expect(result.messageCount).toBe(169);
+      expect(result.truncated).toBe(false);
+      expect(result.digests.length).toBeGreaterThan(0);
       expect(callbacks.onFinalText).toHaveBeenCalledExactlyOnceWith('Useful digest.');
       expect(waiters.size).toBe(0);
     },
@@ -219,11 +221,13 @@ describe('multi-pass summary orchestration', () => {
     expect(callbacks.onFinalText).not.toHaveBeenCalled();
   });
   it('bounds reduction when a provider repeatedly returns digests that cannot converge', async () => {
+    // ~10.5 KiB digests: only one fits per on-device reduce/final chunk after the 12 KiB ceiling.
+    const bloatedDigest = '漢'.repeat(3500);
     vi.mocked(api.summarize).mockImplementation((request) => {
       requests.push(request);
       waiters
         .get(request.requestId)
-        ?.resolve({ text: '漢'.repeat(1000), messageCount: request.messages.length });
+        ?.resolve({ text: bloatedDigest, messageCount: request.messages.length });
       return Promise.resolve({
         ok: true,
         summaryInput: { messageCount: request.messages.length, truncated: false },
@@ -232,7 +236,7 @@ describe('multi-pass summary orchestration', () => {
     await expect(
       runMultiPassSummary({
         base,
-        messages: messages.slice(0, 40),
+        messages,
         status,
         signal: new AbortController().signal,
         callbacks,

@@ -26,9 +26,11 @@ import {
   aiSummaryTimeoutMs,
   estimateAiSummaryMessageCapacity,
 } from '@/shared/ai-types';
+import { AI_CATCH_UP_DOCS_URL } from '@/shared/docsSite';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { Button } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { CHECKBOX_CLASS, INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
@@ -252,69 +254,205 @@ export function AppAiSection() {
               model: status.osAi.available ? status.osAi.modelLabel : t('aiSummary.osUnavailable'),
             })}
           </div>
-          {engine === 'bundled' && (
+          {(engine === 'bundled' || models.some((item) => item.orphan)) && (
             <div data-setting-anchor="app.aiProvider.catalog" className="space-y-3">
-              <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
-              <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
-              {isBundledWllamaThreadBudgetLow() && (
-                <p role="alert" className="text-xs text-orange-400">
-                  {t('aiSummary.lowThreadBudgetWarning', {
-                    count: bundledWllamaThreadCount(),
-                  })}
-                </p>
-              )}
-              {models.map((item) => {
-                const p = progress.find((p) => p.modelId === item.id);
-                const downloading = p && ['queued', 'downloading', 'verifying'].includes(p.state);
-                return (
-                  <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
-                    <p>{item.name}</p>
-                    <p className="text-muted text-xs">
-                      {item.paramsLabel} · {(item.downloadBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
-                      {item.license}
+              {engine === 'bundled' && (
+                <>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
+                    <DocsSiteLink href={AI_CATCH_UP_DOCS_URL} />
+                  </div>
+                  <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
+                  {status.mlxHelperStatus === 'ready' &&
+                    models.some((item) => item.runtime === 'mlx') && (
+                      <p className="text-bright-green text-xs">
+                        {t('aiSummary.mlxRecommendedOnMacos')}
+                      </p>
+                    )}
+                  {status.mlxHelperStatus === 'preparing' && (
+                    <p role="status" className="text-muted text-xs">
+                      {t('aiSummary.mlxHelperPreparing')}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {downloading ? (
-                        <>
-                          <progress
-                            aria-label={t('aiSummary.download')}
-                            value={p.receivedBytes}
-                            max={p.totalBytes}
-                          />
-                          <Button
-                            size="sm"
-                            aria-label={t('aiSummary.cancel')}
-                            onClick={() => {
-                              void action(async () => {
-                                await window.electronAPI.ai.cancelLocalModel(item.id);
-                              });
-                            }}
-                          >
-                            {t('aiSummary.cancel')}
-                          </Button>
-                        </>
-                      ) : item.installed ? (
-                        <>
+                  )}
+                  {status.mlxHelperStatus === 'unavailable' && status.mlxHelperReason && (
+                    <div className="space-y-2">
+                      <p role="status" className="text-muted text-xs">
+                        {t(`aiSummary.mlxHelperReason.${status.mlxHelperReason}`)}
+                      </p>
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        aria-label={t('aiSummary.mlxHelperRetry')}
+                        onClick={() => {
+                          void action(async () => {
+                            const next = await window.electronAPI.ai.ensureMlxHelper();
+                            useAiSummaryStore.getState().setStatus(next);
+                            if (next.mlxHelperStatus === 'ready') {
+                              setNotice(t('aiSummary.mlxHelperRetryReady'));
+                            } else if (
+                              next.mlxHelperStatus === 'unavailable' &&
+                              next.mlxHelperReason
+                            ) {
+                              setNotice(t(`aiSummary.mlxHelperReason.${next.mlxHelperReason}`));
+                            } else {
+                              setNotice(t('aiSummary.settingsError'));
+                            }
+                          });
+                        }}
+                      >
+                        {t('aiSummary.mlxHelperRetry')}
+                      </Button>
+                    </div>
+                  )}
+                  {status.localEngine.modelId &&
+                    !status.localEngine.ready &&
+                    status.mlxHelperStatus === 'unavailable' &&
+                    models.some(
+                      (item) => item.id === status.localEngine.modelId && item.runtime === 'mlx',
+                    ) && (
+                      <p role="alert" className="text-xs text-orange-400">
+                        {t('aiSummary.mlxHelperMissingSelected')}
+                      </p>
+                    )}
+                  {isBundledWllamaThreadBudgetLow() && (
+                    <p role="alert" className="text-xs text-orange-400">
+                      {t('aiSummary.lowThreadBudgetWarning', {
+                        count: bundledWllamaThreadCount(),
+                      })}
+                    </p>
+                  )}
+                </>
+              )}
+              {engine === 'bundled' &&
+                models
+                  .filter((item) => !item.orphan)
+                  .map((item) => {
+                    const p = progress.find((entry) => entry.modelId === item.id);
+                    const downloading =
+                      p && ['queued', 'downloading', 'verifying'].includes(p.state);
+                    const mlxBlocked = item.runtime === 'mlx' && !status.mlxHelperAvailable;
+                    return (
+                      <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
+                        <p>{item.name}</p>
+                        <p className="text-muted text-xs">
+                          {item.paramsLabel} · {(item.downloadBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
+                          {item.license}
+                        </p>
+                        {item.recommendation === 'quality' && (
+                          <p className="text-bright-green text-xs">
+                            {t('aiSummary.modelRecommendQuality')}
+                          </p>
+                        )}
+                        {item.recommendation === 'fasterMachines' && (
+                          <p className="text-muted text-xs">
+                            {t('aiSummary.modelRecommendFasterMachines')}
+                          </p>
+                        )}
+                        {item.runtime === 'mlx' && (
+                          <p className="text-bright-green text-xs">
+                            {t('aiSummary.modelRuntimeMlx')}
+                          </p>
+                        )}
+                        {item.runtime === 'wllama' && (
+                          <p className="text-muted text-xs">{t('aiSummary.modelRuntimeCpu')}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {downloading ? (
+                            <>
+                              <progress
+                                aria-label={t('aiSummary.download')}
+                                value={p.receivedBytes}
+                                max={p.totalBytes}
+                              />
+                              <Button
+                                size="sm"
+                                aria-label={t('aiSummary.cancel')}
+                                onClick={() => {
+                                  void action(async () => {
+                                    await window.electronAPI.ai.cancelLocalModel(item.id);
+                                  });
+                                }}
+                              >
+                                {t('aiSummary.cancel')}
+                              </Button>
+                            </>
+                          ) : item.installed ? (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={busy || mlxBlocked}
+                                aria-label={t('aiSummary.useModel', { model: item.name })}
+                                onClick={() => {
+                                  void action(async () => {
+                                    useAiSummaryStore
+                                      .getState()
+                                      .setStatus(
+                                        await window.electronAPI.ai.selectLocalModel(item.id),
+                                      );
+                                  });
+                                }}
+                              >
+                                {status.localEngine.modelId === item.id
+                                  ? t('aiSummary.selected')
+                                  : t('aiSummary.select')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                aria-label={t('aiSummary.removeModel', { model: item.name })}
+                                onClick={() => {
+                                  void action(async () => {
+                                    setModels(
+                                      await window.electronAPI.ai.removeLocalModel(item.id),
+                                    );
+                                    await refreshAiStatus();
+                                  });
+                                }}
+                              >
+                                {t('aiSummary.remove')}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              disabled={busy}
+                              aria-label={t('aiSummary.downloadModel', { model: item.name })}
+                              onClick={() => {
+                                void window.electronAPI.ai.installLocalModel(item.id).then(
+                                  (result) => {
+                                    if (!result.ok) setNotice(t('aiSummary.settingsError'));
+                                  },
+                                  () => {
+                                    setNotice(t('aiSummary.settingsError'));
+                                  },
+                                );
+                              }}
+                            >
+                              {t('aiSummary.download')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              {models.some((item) => item.orphan) && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">{t('aiSummary.unusedDownloads')}</h4>
+                  <p className="text-muted text-xs">{t('aiSummary.unusedDownloadsHint')}</p>
+                  {models
+                    .filter((item) => item.orphan)
+                    .map((item) => (
+                      <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
+                        <p>{item.id}</p>
+                        <p className="text-muted text-xs">
+                          {(item.diskBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
+                          {t('aiSummary.unusedDownloadRetired')}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
                           <Button
                             size="sm"
                             disabled={busy}
-                            aria-label={t('aiSummary.useModel', { model: item.name })}
-                            onClick={() => {
-                              void action(async () => {
-                                useAiSummaryStore
-                                  .getState()
-                                  .setStatus(await window.electronAPI.ai.selectLocalModel(item.id));
-                              });
-                            }}
-                          >
-                            {status.localEngine.modelId === item.id
-                              ? t('aiSummary.selected')
-                              : t('aiSummary.select')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            disabled={busy}
-                            aria-label={t('aiSummary.removeModel', { model: item.name })}
+                            aria-label={t('aiSummary.removeModel', { model: item.id })}
                             onClick={() => {
                               void action(async () => {
                                 setModels(await window.electronAPI.ai.removeLocalModel(item.id));
@@ -324,30 +462,11 @@ export function AppAiSection() {
                           >
                             {t('aiSummary.remove')}
                           </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          disabled={busy}
-                          aria-label={t('aiSummary.downloadModel', { model: item.name })}
-                          onClick={() => {
-                            void window.electronAPI.ai.installLocalModel(item.id).then(
-                              (result) => {
-                                if (!result.ok) setNotice(t('aiSummary.settingsError'));
-                              },
-                              () => {
-                                setNotice(t('aiSummary.settingsError'));
-                              },
-                            );
-                          }}
-                        >
-                          {t('aiSummary.download')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
           {(engine === 'local' || engine === 'remote') && (

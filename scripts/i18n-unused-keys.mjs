@@ -14,6 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** Keep in sync with DYNAMIC_T_PREFIXES in check-i18n.mjs */
 export const DYNAMIC_T_PREFIXES = [
   { prefix: 'aiSummary.error.', leafKeys: true },
+  { prefix: 'aiSummary.mlxHelperReason.', leafKeys: true },
   { prefix: 'scheduledBroadcasts.interval.', leafKeys: true },
   { prefix: 'scheduledBroadcasts.status.', leafKeys: true },
   { prefix: 'scheduledBroadcasts.reasons.', leafKeys: true },

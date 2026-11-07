@@ -19,10 +19,30 @@ const manifest: AiLocalModel[] = [
     name: 'Test',
     paramsLabel: '1',
     license: 'MIT',
+    runtime: 'wllama',
+    recommendAs: 'fasterMachines',
     assets: [
       {
         file: 'model.gguf',
         url: 'https://model.test/model',
+        size: data.length,
+        sha256: createHash('sha256').update(data).digest('hex'),
+      },
+    ],
+  },
+  {
+    id: 'mlx-1',
+    name: 'MLX Test',
+    paramsLabel: '1',
+    license: 'MIT',
+    runtime: 'mlx',
+    recommendAs: 'fasterMachines',
+    platforms: ['darwin'],
+    archs: ['arm64'],
+    assets: [
+      {
+        file: 'config.json',
+        url: 'https://model.test/config',
         size: data.length,
         sha256: createHash('sha256').update(data).digest('hex'),
       },
@@ -37,7 +57,11 @@ beforeEach(async () => {
 afterEach(async () => {
   await fs.rm(temp, { recursive: true, force: true });
 });
-const create = (fetchImpl: typeof fetch, enabled = () => true) =>
+const create = (
+  fetchImpl: typeof fetch,
+  enabled = () => true,
+  host: { platform?: NodeJS.Platform; arch?: NodeJS.Architecture } = {},
+) =>
   new AiModelPackManager({
     directory: () => path.join(temp, 'models'),
     enabled,
@@ -45,6 +69,8 @@ const create = (fetchImpl: typeof fetch, enabled = () => true) =>
     onProgress: vi.fn(),
     manifest,
     openHashStream: hashReads,
+    platform: host.platform ?? 'linux',
+    arch: host.arch ?? 'x64',
   });
 describe('AI verified model downloads', () => {
   it.each(['linux', 'darwin', 'win32'])('keeps disabled state inert on %s', async () => {
@@ -75,6 +101,57 @@ describe('AI verified model downloads', () => {
     expect(await packs.verify('model-1')).toBe(false);
     await packs.delete('model-1');
     expect(await fs.readdir(path.join(temp, 'models'))).toEqual([]);
+  });
+  it('hides MLX packs off Apple Silicon and prefers them with recommendations on arm64 Mac', async () => {
+    const linux = create(
+      async () => new Response(data),
+      () => true,
+      {
+        platform: 'linux',
+        arch: 'x64',
+      },
+    );
+    const linuxList = await linux.list();
+    expect(linuxList.map((entry) => entry.id)).toEqual(['model-1']);
+    expect(linuxList[0]?.recommendation).toBe('fasterMachines');
+
+    const mac = create(
+      async () => new Response(data),
+      () => true,
+      {
+        platform: 'darwin',
+        arch: 'arm64',
+      },
+    );
+    const macList = await mac.list();
+    expect(macList.map((entry) => entry.id)).toEqual(['mlx-1', 'model-1']);
+    expect(macList[0]).toMatchObject({
+      id: 'mlx-1',
+      recommendation: 'fasterMachines',
+      runtime: 'mlx',
+    });
+    expect(macList[1]?.recommendation).toBeUndefined();
+  });
+
+  it('lists and deletes retired packs that are no longer in the catalog', async () => {
+    const modelsRoot = path.join(temp, 'models');
+    const orphanId = 'llama3.2-1b-instruct-q4';
+    await fs.mkdir(path.join(modelsRoot, orphanId), { recursive: true });
+    await fs.writeFile(path.join(modelsRoot, orphanId, 'weights.gguf'), Buffer.alloc(2048));
+    await fs.mkdir(path.join(modelsRoot, '.install-tmp'), { recursive: true });
+    const packs = create(async () => new Response(data));
+    const listed = await packs.list();
+    expect(listed.some((entry) => entry.id === 'model-1' && !entry.orphan)).toBe(true);
+    const orphan = listed.find((entry) => entry.id === orphanId);
+    expect(orphan).toMatchObject({
+      id: orphanId,
+      orphan: true,
+      installed: true,
+      diskBytes: 2048,
+    });
+    await packs.delete(orphanId);
+    expect((await packs.list()).some((entry) => entry.id === orphanId)).toBe(false);
+    expect(await fs.readdir(modelsRoot)).not.toContain(orphanId);
   });
   it.each(['linux', 'darwin', 'win32'])(
     'verifies inline attribution with model assets on %s',
@@ -125,6 +202,10 @@ describe('AI verified model downloads', () => {
         return new Response(data);
       });
       const install = packs.install('model-1');
+      // Wait until the install job is registered so delete aborts it (async catalog load).
+      await vi.waitFor(() => {
+        expect(packs.progress().some((job) => job.modelId === 'model-1')).toBe(true);
+      });
       const removal = packs.delete('model-1');
       release();
       await Promise.all([install, removal]);

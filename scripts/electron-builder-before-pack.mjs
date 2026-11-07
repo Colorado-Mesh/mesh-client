@@ -30,6 +30,15 @@ export function stageOptionalAiHelper(root, platform) {
     );
     return;
   }
+  if (!existsSync(path.join(staged, 'mesh-ai-mlx'))) {
+    console.warn(
+      '[beforePack] Optional MLX helper missing; Apple Silicon MLX Catch up will be unavailable.',
+    );
+  } else if (!existsSync(path.join(staged, 'mlx-swift_Cmlx.bundle'))) {
+    console.warn(
+      '[beforePack] mesh-ai-mlx staged without mlx-swift_Cmlx.bundle; Metal Catch up will fail to load default.metallib.',
+    );
+  }
   cpSync(staged, active, { recursive: true });
 }
 

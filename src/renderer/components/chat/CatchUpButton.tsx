@@ -24,13 +24,17 @@ function CatchUpControls({ summary }: { summary: ConversationSummaryController }
     return (
       <Button
         size="sm"
-        aria-label={t('aiSummary.setupCatchUp')}
-        title={t('aiSummary.settings')}
+        aria-label={
+          summary.engineNeedsFix ? t('aiSummary.fixCatchUpEngine') : t('aiSummary.setupCatchUp')
+        }
+        title={
+          summary.engineNeedsFix ? t('aiSummary.error.engineNotReady') : t('aiSummary.settings')
+        }
         onClick={() => {
           requestOpenSetting({ slot: 'App', id: 'app.aiProvider' });
         }}
       >
-        {t('aiSummary.setupCatchUp')}
+        {summary.engineNeedsFix ? t('aiSummary.fixCatchUpEngine') : t('aiSummary.setupCatchUp')}
       </Button>
     );
   const value = summary.scope.kind === 'hours' ? String(summary.scope.hours) : summary.scope.kind;

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { AI_LOCAL_MODELS } from './modelManifest';
+import { loadAiLocalModels } from '../loadAiLocalModels';
 import type { AiModelPackManager } from './modelPackManager';
 
 export function createAiModelProtocol(deps: {
@@ -14,7 +14,8 @@ export function createAiModelProtocol(deps: {
     if (!deps.enabled()) return new Response(null, { status: 403 });
     try {
       const url = new URL(request.url);
-      const model = AI_LOCAL_MODELS.find((m) => m.id === url.hostname);
+      const catalog = await loadAiLocalModels();
+      const model = catalog.find((m) => m.id === url.hostname);
       const file = decodeURIComponent(url.pathname.slice(1));
       if (
         !model ||

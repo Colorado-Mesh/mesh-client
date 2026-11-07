@@ -13,10 +13,10 @@ test.describe('chat scroll to latest', () => {
   test('hides the button after scrolling down and after jumping to latest', async () => {
     launched = await launchApp();
     const { page } = launched;
-    await page
+    const meshcore = page
       .getByRole('radiogroup', { name: 'Protocol switcher' })
-      .getByRole('radio', { name: 'Switch to MeshCore' })
-      .click();
+      .getByRole('radio', { name: 'Switch to MeshCore' });
+    await meshcore.click();
     await page.evaluate(async () => {
       const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
       const start = Date.now() - 120_000;
@@ -32,7 +32,16 @@ test.describe('chat scroll to latest', () => {
       }
     });
     await page.reload();
+    // Reload can restore Meshtastic before MeshCore hydration; reselect so the seeded
+    // channel messages are visible (macOS E2E saw Meshtastic checked with 80 MeshCore unread).
+    await meshcore.click();
     await openPanel(page, 'Chat');
+    await page
+      .getByRole('button', { name: 'Dismiss location prompt for this session' })
+      .click({ timeout: 5_000 })
+      .catch(() => {
+        // catch-no-log-ok location prompt is optional by host GPS state
+      });
     const stream = page
       .locator('div.overflow-y-auto')
       .filter({ has: page.locator('[data-chat-message-key]') });
