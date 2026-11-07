@@ -2,8 +2,11 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Locate an Xcode Developer directory that includes the Metal toolchain.
- * Does not read or change the global `xcode-select` path (CLT-only selects miss `metal`).
+ * Locate an Xcode `Contents/Developer` directory.
+ * Does not read or change the global `xcode-select` path (CLT-only selects miss full Xcode).
+ *
+ * Modern Xcode may serve `metal` only via `xcrun` / MobileAsset — do not require
+ * `usr/bin/metal` on disk. Callers probe Metal with `xcrun -sdk macosx metal`.
  *
  * @param {string} [applicationsDir='/Applications']
  * @returns {string | null} Absolute `…/Contents/Developer` path, or null.
@@ -21,9 +24,7 @@ export function discoverXcodeDeveloperDir(applicationsDir = '/Applications') {
     // catch-no-op Applications may be unreadable in sandboxed tests
   }
   for (const developer of candidates) {
-    if (!existsSync(developer)) continue;
-    const metal = path.join(developer, 'usr', 'bin', 'metal');
-    if (existsSync(metal)) return developer;
+    if (existsSync(developer)) return developer;
   }
   return null;
 }

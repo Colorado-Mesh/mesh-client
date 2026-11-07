@@ -116,19 +116,20 @@ async function probeMetalToolchain(
   developer: string,
   runCommand: EnsureMlxCommand,
 ): Promise<'ok' | 'metalToolchainMissing' | 'unknown'> {
-  const metalBin = path.join(developer, 'usr', 'bin', 'metal');
   const env = { ...process.env, DEVELOPER_DIR: developer };
   try {
-    // `-help` exercises the Metal frontend without compiling; missing toolchain
-    // surfaces the same downloadComponent error as a full Swift build.
-    await runCommand(metalBin, ['-help'], { env, maxBuffer: 1024 * 1024 });
+    // Prefer `xcrun`: modern Xcode serves metal from a MobileAsset cryptex, so
+    // `Developer/usr/bin/metal` often does not exist on disk.
+    await runCommand('xcrun', ['-sdk', 'macosx', 'metal', '-v'], {
+      env,
+      maxBuffer: 1024 * 1024,
+    });
     return 'ok';
   } catch (error) {
     // catch-no-log-ok classified into return value; ensureMlxHelper logs the final reason
     const text = commandOutputText(error);
     if (isMetalToolchainMissingOutput(text)) return 'metalToolchainMissing';
-    // Some toolchains exit non-zero on -help while still being usable; allow build.
-    if (existsSync(metalBin) && !isMetalToolchainMissingOutput(text)) return 'unknown';
+    // Non-zero exit without the missing-toolchain signature: still attempt swift build.
     return 'unknown';
   }
 }

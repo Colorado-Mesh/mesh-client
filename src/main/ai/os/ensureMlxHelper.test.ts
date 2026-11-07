@@ -11,11 +11,10 @@ import {
   resolveMlxBinaryPath,
 } from './ensureMlxHelper';
 
-function seedXcodeWithMetal(appsRoot: string): string {
-  const metalDir = path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer', 'usr', 'bin');
-  mkdirSync(metalDir, { recursive: true });
-  writeFileSync(path.join(metalDir, 'metal'), '');
-  return path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer');
+function seedXcodeDeveloper(appsRoot: string): string {
+  const developer = path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer');
+  mkdirSync(developer, { recursive: true });
+  return developer;
 }
 
 describe('isMetalToolchainMissingOutput', () => {
@@ -102,7 +101,7 @@ describe('ensureMlxHelper', () => {
   it('returns sourcesUnavailable when the Swift package root is missing', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const apps = path.join(root, 'Apps');
-    seedXcodeWithMetal(apps);
+    seedXcodeDeveloper(apps);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const result = await ensureMlxHelper({
       userBinary: path.join(root, 'user', 'mesh-ai-mlx'),
@@ -121,10 +120,10 @@ describe('ensureMlxHelper', () => {
     );
   });
 
-  it('returns metalToolchainMissing when the metal probe reports a missing toolchain', async () => {
+  it('returns metalToolchainMissing when the xcrun metal probe reports a missing toolchain', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const apps = path.join(root, 'Apps');
-    seedXcodeWithMetal(apps);
+    seedXcodeDeveloper(apps);
     mkdirSync(path.join(root, 'pkg'), { recursive: true });
     const runCommand = vi.fn<EnsureMlxCommand>().mockRejectedValue(
       Object.assign(new Error('metal failed'), {
@@ -147,17 +146,18 @@ describe('ensureMlxHelper', () => {
       binaryPath: null,
     });
     expect(runCommand).toHaveBeenCalledTimes(1);
-    expect(runCommand.mock.calls[0]?.[1]).toEqual(['-help']);
+    expect(runCommand.mock.calls[0]?.[0]).toBe('xcrun');
+    expect(runCommand.mock.calls[0]?.[1]).toEqual(['-sdk', 'macosx', 'metal', '-v']);
   });
 
   it('returns metalToolchainMissing when swift build stderr mentions MetalToolchain', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const apps = path.join(root, 'Apps');
-    seedXcodeWithMetal(apps);
+    seedXcodeDeveloper(apps);
     mkdirSync(path.join(root, 'pkg'), { recursive: true });
     const runCommand = vi
       .fn<EnsureMlxCommand>()
-      .mockResolvedValueOnce({ stdout: 'Metal', stderr: '' })
+      .mockResolvedValueOnce({ stdout: 'Apple metal version', stderr: '' })
       .mockRejectedValueOnce(
         Object.assign(new Error('swift build failed'), {
           stderr:

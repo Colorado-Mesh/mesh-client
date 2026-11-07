@@ -52,7 +52,7 @@ if (process.platform === 'darwin') {
       if (xcodeDeveloper) env.DEVELOPER_DIR = xcodeDeveloper;
       else if (!env.DEVELOPER_DIR) {
         throw new Error(
-          'Xcode.app with Metal toolchain not found under /Applications (CLT-only is not enough)',
+          'Xcode.app Contents/Developer not found under /Applications (install full Xcode; CLT-only is not enough)',
         );
       }
       execFileSync('swift', ['build', '-c', 'release', '--product', 'mesh-ai-mlx'], {

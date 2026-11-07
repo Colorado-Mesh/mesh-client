@@ -515,6 +515,7 @@ describe('AI IPC lifecycle and opt-in', () => {
   it('allows MLX download but rejects select when the Metal helper binary is missing', async () => {
     settings.set('aiEnabled', '1');
     const manifest = await import('../ai/local/modelManifest');
+    const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
     const install = vi
@@ -559,6 +560,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         });
       });
     } finally {
+      appleSilicon.mockRestore();
       available.mockRestore();
       host.mockRestore();
       install.mockRestore();
@@ -578,6 +580,7 @@ describe('AI IPC lifecycle and opt-in', () => {
       }),
     );
     const manifest = await import('../ai/local/modelManifest');
+    const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
     const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
@@ -596,6 +599,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         });
       });
     } finally {
+      appleSilicon.mockRestore();
       available.mockRestore();
       verify.mockRestore();
       host.mockRestore();
@@ -617,6 +621,7 @@ describe('AI IPC lifecycle and opt-in', () => {
       recursive: true,
     });
     const manifest = await import('../ai/local/modelManifest');
+    const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
     const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(true);
@@ -655,6 +660,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         expect.any(Number),
       );
     } finally {
+      appleSilicon.mockRestore();
       available.mockRestore();
       verify.mockRestore();
       host.mockRestore();

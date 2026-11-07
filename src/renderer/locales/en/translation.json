@@ -8150,7 +8150,7 @@
       "helperMissing": "Metal Catch up is not ready in this installation. Choose a portable CPU model below, or update Mesh Client if this release should include Metal. You can still download MLX models now and Use them after Metal is ready.",
       "sourcesUnavailable": "This Mesh Client build does not include Metal Catch up sources. Choose a portable CPU model below, or update Mesh Client if a release includes Metal.",
       "xcodeNotFound": "Metal Catch up could not find Xcode on this Mac. Open Xcode from Applications (or install it from the App Store), finish any first-launch setup, then tap Retry. Meanwhile use a portable CPU model.",
-      "xcodeIncomplete": "Xcode is installed but its Metal tools are not ready yet. Open Xcode from Applications, finish any first-launch setup, then tap Retry. Meanwhile use a portable CPU model.",
+      "xcodeIncomplete": "Xcode is installed but its developer tools folder is incomplete. Open Xcode from Applications, finish any first-launch setup, then tap Retry. Meanwhile use a portable CPU model.",
       "metalToolchainMissing": "Xcode is installed, but the Metal Toolchain component is missing. In Terminal run: xcodebuild -downloadComponent MetalToolchain Then open Xcode if prompted, wait for the download, and tap Retry. Meanwhile use a portable CPU model.",
       "buildFailed": "Metal Catch up could not finish preparing on this Mac. Tap Retry after opening Xcode once, or use a portable CPU model. Updating Mesh Client may also help if a release includes Metal."
     },

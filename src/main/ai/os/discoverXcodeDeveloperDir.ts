@@ -6,8 +6,12 @@ import path from 'node:path';
 export type XcodeDiscoveryClass = 'ready' | 'xcodeNotFound' | 'xcodeIncomplete';
 
 /**
- * Locate an Xcode Developer directory that includes the Metal toolchain.
+ * Locate an Xcode `Contents/Developer` directory.
  * Does not read or change the global `xcode-select` path.
+ *
+ * Modern Xcode may serve `metal` only via `xcrun` / MobileAsset cryptex — there is often
+ * **no** `usr/bin/metal` stub under Developer. Metal readiness is probed separately with
+ * `xcrun -sdk macosx metal`.
  */
 export function discoverXcodeDeveloperDir(applicationsDir = '/Applications'): string | null {
   const candidates: string[] = [];
@@ -22,9 +26,7 @@ export function discoverXcodeDeveloperDir(applicationsDir = '/Applications'): st
     // catch-no-log-ok Applications may be unreadable in tests
   }
   for (const developer of candidates) {
-    if (!existsSync(developer)) continue;
-    const metal = path.join(developer, 'usr', 'bin', 'metal');
-    if (existsSync(metal)) return developer;
+    if (existsSync(developer)) return developer;
   }
   return null;
 }
