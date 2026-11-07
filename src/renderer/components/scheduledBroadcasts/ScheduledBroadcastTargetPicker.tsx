@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { formatScheduledBroadcastChannelLabel } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import { SCHEDULED_BROADCAST_MAX_TARGETS } from '@/renderer/lib/scheduledBroadcasts/constants';
+import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
@@ -57,6 +59,7 @@ export function ScheduledBroadcastTargetPicker({
 }: ScheduledBroadcastTargetPickerProps) {
   const { t } = useTranslation();
   const identities = useIdentityStore((s) => s.identities);
+  const devices = useDeviceStore((s) => s.devices);
   const nodesByIdentity = useNodeStore((s) => s.nodes);
   const liveByProtocol = useLiveChannelKeyStore((s) => s.byProtocol);
   const rrcHub = useRrcSessionStore((s) => s.hubDestHash);
@@ -89,19 +92,19 @@ export function ScheduledBroadcastTargetPicker({
             .sort((a, b) => a - b)
         : [...FALLBACK_CHANNEL_INDEXES];
 
+      const device = devices[identity.id];
       for (const channelIndex of channelIndexes) {
-        const kindLabel =
-          kind === 'meshtastic-channel'
-            ? t('scheduledBroadcasts.targetKind.meshtasticChannel')
-            : t('scheduledBroadcasts.targetKind.meshcoreChannel');
         const channelKey = live?.keyByIndex[channelIndex];
-        list.push({
+        const partial = {
           kind,
           identityId: identity.id,
-          label: `${kindLabel} ${channelIndex}`,
-          enabled: true,
           channelIndex,
           ...(channelKey ? { channelKey } : {}),
+        } as const;
+        list.push({
+          ...partial,
+          label: formatScheduledBroadcastChannelLabel(partial, t, device),
+          enabled: true,
         });
       }
       for (const room of rooms) {
@@ -132,7 +135,7 @@ export function ScheduledBroadcastTargetPicker({
     }
 
     return { candidates: list, liveUnavailableByIdentity: liveUnavailable };
-  }, [identities, nodesByIdentity, liveByProtocol, rrcHub, rrcRooms, rrcIdentityId, t]);
+  }, [identities, devices, nodesByIdentity, liveByProtocol, rrcHub, rrcRooms, rrcIdentityId, t]);
 
   const isSelected = (candidate: ScheduledBroadcastTarget): boolean => {
     const liveUnavailable = liveUnavailableByIdentity.get(candidate.identityId) === true;
@@ -182,6 +185,10 @@ export function ScheduledBroadcastTargetPicker({
             {orphanTargets.map((saved) => {
               const key = targetKey(saved);
               const id = `sb-saved-${key}`;
+              const displayLabel =
+                saved.kind === 'meshtastic-channel' || saved.kind === 'meshcore-channel'
+                  ? formatScheduledBroadcastChannelLabel(saved, t, devices[saved.identityId])
+                  : saved.label;
               return (
                 <li key={key}>
                   <label htmlFor={id} className="text-label text-ink-100 flex items-center gap-2">
@@ -192,9 +199,9 @@ export function ScheduledBroadcastTargetPicker({
                       onChange={() => {
                         removeSaved(saved);
                       }}
-                      aria-label={saved.label}
+                      aria-label={displayLabel}
                     />
-                    {saved.label}
+                    {displayLabel}
                   </label>
                 </li>
               );
