@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 import { discoverXcodeDeveloperDir } from './lib/discover-xcode-developer-dir.mjs';
@@ -82,10 +82,9 @@ if (process.platform === 'darwin') {
           `mesh-ai-mlx build missing mlx-swift_Cmlx.bundle next to ${built} (needed for default.metallib)`,
         );
       }
-      const stagedMlx = path.join(output, 'staged/darwin/mesh-ai-mlx');
-      stageMlxHelperBinary(built, stagedMlx);
-      // Dev active path used by unpackaged Electron (`resources/ai-helper/active`).
-      stageMlxHelperBinary(built, path.join(output, 'active/mesh-ai-mlx'));
+      // Stage under staged/darwin only; the final active sync copies once (Hub/Crypto
+      // resource bundles are often mode 444 — a second cpSync into active hits EACCES).
+      stageMlxHelperBinary(built, path.join(output, 'staged/darwin/mesh-ai-mlx'));
       console.debug(
         '[build-ai-helper] Staged mesh-ai-mlx + Metal bundles for Apple Silicon Catch up',
       );
@@ -128,6 +127,9 @@ if (process.platform === 'darwin' || process.platform === 'win32') {
     'staged',
     process.platform === 'darwin' ? 'darwin' : `win-${process.arch}`,
   );
-  mkdirSync(path.join(output, 'active'), { recursive: true });
-  cpSync(staged, path.join(output, 'active'), { recursive: true });
+  // Replace active wholesale so read-only SwiftPM bundles from a prior stage do not block cp.
+  const active = path.join(output, 'active');
+  rmSync(active, { recursive: true, force: true });
+  mkdirSync(active, { recursive: true });
+  cpSync(staged, active, { recursive: true });
 }

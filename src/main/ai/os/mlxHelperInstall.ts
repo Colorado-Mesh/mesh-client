@@ -186,6 +186,17 @@ export function stageMlxHelperBinary(sourceBinary: string, destBinary: string): 
     if (!existsSync(from)) continue;
     rmSync(to, { recursive: true, force: true });
     cpSync(from, to, { recursive: true });
+    chmodTreeUserWritable(to);
+  }
+}
+
+function chmodTreeUserWritable(target: string): void {
+  if (!existsSync(target)) return;
+  chmodSync(target, 0o755);
+  for (const entry of readdirSync(target, { withFileTypes: true })) {
+    const child = path.join(target, entry.name);
+    if (entry.isDirectory()) chmodTreeUserWritable(child);
+    else chmodSync(child, 0o644);
   }
 }
 

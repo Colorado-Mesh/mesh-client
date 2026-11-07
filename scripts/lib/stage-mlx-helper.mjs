@@ -210,5 +210,18 @@ export function stageMlxHelperBinary(sourceBinary, destBinary) {
     if (!existsSync(from)) continue;
     rmSync(to, { recursive: true, force: true });
     cpSync(from, to, { recursive: true });
+    // SwiftPM resource files are often 444; make the copy writable for later restage.
+    chmodTreeUserWritable(to);
+  }
+}
+
+/** @param {string} target */
+function chmodTreeUserWritable(target) {
+  if (!existsSync(target)) return;
+  chmodSync(target, 0o755);
+  for (const entry of readdirSync(target, { withFileTypes: true })) {
+    const child = path.join(target, entry.name);
+    if (entry.isDirectory()) chmodTreeUserWritable(child);
+    else chmodSync(child, 0o644);
   }
 }
