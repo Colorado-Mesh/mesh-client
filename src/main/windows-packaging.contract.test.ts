@@ -103,6 +103,8 @@ describe('Windows packaging (contract)', () => {
     );
     expect(beforeBuild).toContain('stripUsocketPackages');
     expect(beforeBuild).toContain('usocket');
+    // void/undefined is treated as false and skips pack-time native rebuild.
+    expect(beforeBuild).toMatch(/return true\s*;/);
   });
 
   it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {

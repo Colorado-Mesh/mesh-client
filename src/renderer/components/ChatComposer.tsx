@@ -18,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -368,6 +369,8 @@ export function ChatComposer({
   const floodScopeMenuRef = useRef<HTMLDivElement | null>(null);
   const floodScopeSplitRef = useRef<HTMLDivElement | null>(null);
   const floodScopeCustomInputRef = useRef<HTMLInputElement | null>(null);
+  /** When true, the next menu open came from keyboard activation (focus first item). */
+  const floodScopeMenuOpenedByKeyboardRef = useRef(false);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
@@ -427,7 +430,7 @@ export function ChatComposer({
     [floodScopePresets, onRememberFloodScopePreset],
   );
 
-  // Close flood-scope menu on outside click (split button + portaled menu).
+  // Close flood-scope / Send-options menu on outside click (split button + portaled menu).
   useEffect(() => {
     if (!floodScopeMenuOpen) return;
     const handleMouseDown = (e: MouseEvent) => {
@@ -459,6 +462,34 @@ export function ChatComposer({
       window.removeEventListener('resize', handleDismiss);
     };
   }, [closeFloodScopeMenu, floodScopeMenuOpen]);
+
+  // Keyboard open: move focus into the portaled menu. Pointer open leaves focus on the chevron.
+  useLayoutEffect(() => {
+    if (!floodScopeMenuOpen || !floodScopeMenuPos) return;
+    if (!floodScopeMenuOpenedByKeyboardRef.current) return;
+    floodScopeMenuOpenedByKeyboardRef.current = false;
+    const menu = floodScopeMenuRef.current;
+    if (!menu) return;
+    const firstEnabled = menu.querySelector<HTMLButtonElement>('button:not([disabled])');
+    (firstEnabled ?? menu).focus();
+  }, [floodScopeMenuOpen, floodScopeMenuPos]);
+
+  // Escape closes the menu and returns focus to the chevron (custom-editing Escape is local).
+  useEffect(() => {
+    if (!floodScopeMenuOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (floodScopeCustomEditing) return;
+      e.preventDefault();
+      e.stopPropagation();
+      closeFloodScopeMenu();
+      floodScopeMenuButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [closeFloodScopeMenu, floodScopeCustomEditing, floodScopeMenuOpen]);
 
   useEffect(() => {
     if (!floodScopeCustomEditing) return;
@@ -1742,8 +1773,14 @@ export function ChatComposer({
                 onMouseDown={(e) => {
                   e.preventDefault();
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    floodScopeMenuOpenedByKeyboardRef.current = true;
+                  }
+                }}
                 onClick={() => {
                   if (floodScopeMenuOpen) {
+                    floodScopeMenuOpenedByKeyboardRef.current = false;
                     closeFloodScopeMenu();
                     return;
                   }
@@ -1800,6 +1837,7 @@ export function ChatComposer({
                     <div
                       ref={floodScopeMenuRef}
                       id={showFloodScopeOverride ? undefined : sendMenuPanelId}
+                      tabIndex={-1}
                       style={{
                         position: 'fixed',
                         bottom: floodScopeMenuPos.bottom,
@@ -1826,6 +1864,7 @@ export function ChatComposer({
                             onKeyDown={(e) => {
                               if (e.key === 'Escape') {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 setFloodScopeCustomEditing(false);
                                 setFloodScopeCustomDraft('');
                                 setFloodScopeCustomError(null);

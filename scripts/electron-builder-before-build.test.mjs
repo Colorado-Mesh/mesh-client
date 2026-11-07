@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { findUsocketPackageDirs, stripUsocketPackages } from './electron-builder-before-build.mjs';
+import beforeBuild, {
+  findUsocketPackageDirs,
+  stripUsocketPackages,
+} from './electron-builder-before-build.mjs';
 
 describe('electron-builder-before-build usocket strip', () => {
   it('finds nested usocket package dirs by package.json name', () => {
@@ -56,5 +59,9 @@ describe('electron-builder-before-build usocket strip', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'mesh-usocket-empty-'));
     mkdirSync(path.join(root, 'foo'), { recursive: true });
     expect(stripUsocketPackages(root)).toEqual([]);
+  });
+
+  it('returns true so electron-builder continues pack-time native rebuild', async () => {
+    await expect(beforeBuild()).resolves.toBe(true);
   });
 });

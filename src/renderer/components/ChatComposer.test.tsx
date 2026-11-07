@@ -2134,4 +2134,67 @@ describe('ChatComposer', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Send later' }));
     expect(await screen.findByRole('heading', { name: 'Schedule message' })).toBeInTheDocument();
   });
+
+  it('moves focus to the first enabled Send options item on keyboard open', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox
+        allowScheduledSend
+        queueOutbox={vi.fn().mockResolvedValue({ id: 'out-1' })}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later' } });
+    const chevron = screen.getByRole('button', { name: 'Send options' });
+    chevron.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).toHaveFocus();
+  });
+
+  it('returns focus to the Send options chevron on Escape', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox
+        allowScheduledSend
+        queueOutbox={vi.fn().mockResolvedValue({ id: 'out-1' })}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later' } });
+    const chevron = screen.getByRole('button', { name: 'Send options' });
+    chevron.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menuitem', { name: 'Send later' })).toBeNull();
+    expect(chevron).toHaveFocus();
+  });
+
+  it('does not move focus into the menu when opened with a pointer', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox
+        allowScheduledSend
+        queueOutbox={vi.fn().mockResolvedValue({ id: 'out-1' })}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later' } });
+    const chevron = screen.getByRole('button', { name: 'Send options' });
+    await user.click(chevron);
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).not.toHaveFocus();
+  });
 });
