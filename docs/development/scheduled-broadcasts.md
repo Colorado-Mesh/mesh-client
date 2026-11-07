@@ -32,6 +32,10 @@ Channel targets store `channelKey` (identity digest) plus a cached `channelIndex
 resolves the live slot via `liveChannelKeyStore`; missing keys after a radio remap yield
 `channel-missing` for that target only.
 
+MeshCore room targets in the picker are limited to rooms that can post (logged in) or have a
+saved password (`isScheduledBroadcastMeshcoreRoomEligible`). Deliver uses
+`meshcoreRoomTryEnsureCanPost` (session tryRelogin, then saved credential) before `sendRoomPost`.
+
 ## Protocol parity
 
 Reticulum has no LXMF “channel”; RRC rooms are the broadcast surface. Gate pickers with

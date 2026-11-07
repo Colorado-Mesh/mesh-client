@@ -7,6 +7,7 @@ import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
+import { getMeshcoreRoomCredential } from './meshcoreRoomCredentialStorage';
 import {
   clearMeshcoreRoomLoginQueue,
   dequeueMeshcoreRoomLogin,
@@ -507,6 +508,41 @@ export async function meshcoreRoomTryRelogin(
   }
   const roleOk = mode === 'admin' ? meshcoreRoomCanAdmin(nodeId) : meshcoreRoomCanPost(nodeId);
   return roleOk;
+}
+
+/**
+ * Ensure a postable room session before post (e.g. scheduled broadcast).
+ * Tries session tryRelogin first, then saved guest credential when no session remains.
+ */
+export async function meshcoreRoomTryEnsureCanPost(
+  conn: MeshcoreRoomLoginConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  opts?: {
+    hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
+): Promise<boolean> {
+  if (meshcoreRoomCanPost(nodeId)) return true;
+  const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post', opts);
+  if (relogged && meshcoreRoomCanPost(nodeId)) return true;
+
+  const cred = getMeshcoreRoomCredential(nodeId);
+  if (!cred) return false;
+  const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
+  try {
+    await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+      guestPassword: password,
+      adminPassword: cred.adminPassword ?? '',
+      hopsAway: opts?.hopsAway,
+      companionTransport: opts?.companionTransport,
+      forceRelogin: true,
+    });
+  } catch (e: unknown) {
+    if (meshcoreIsRoomLoginAbortError(e)) throw e;
+    return false;
+  }
+  return meshcoreRoomCanPost(nodeId);
 }
 
 /** Best-effort admin login before room server status/telemetry/CLI. */

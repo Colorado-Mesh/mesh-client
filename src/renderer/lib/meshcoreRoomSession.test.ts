@@ -23,6 +23,7 @@ import {
   meshcoreRoomLoginFailureMessage,
   meshcoreRoomLogout,
   meshcoreRoomTryAdminLogin,
+  meshcoreRoomTryEnsureCanPost,
   meshcoreRoomTryRelogin,
   meshcoreTryRemoteServerLogin,
 } from './meshcoreRoomSession';
@@ -482,6 +483,47 @@ describe('meshcoreRoomSession', () => {
       role: 'readwrite',
     });
     const ok = await meshcoreRoomTryRelogin(conn, 42, pubKey, 'admin');
+    expect(ok).toBe(false);
+    expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
+  });
+
+  it('tryEnsureCanPost logs in from saved credential when no session exists', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+    await setMeshcoreRoomCredential(42, { guestPassword: 'saved-guest' });
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
+    expect(ok).toBe(true);
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledWith(conn, pubKey, 'saved-guest', {
+      hopsAway: undefined,
+      signal: expect.any(AbortSignal),
+    });
+    expect(meshcoreRoomCanPost(42)).toBe(true);
+  });
+
+  it('tryEnsureCanPost returns false with neither session nor credential', async () => {
+    meshcoreClearAllRoomSessions();
+    localStorage.clear();
+    const { resetSecureSecretCacheForTests } = await import('./secureSecretStorage');
+    resetSecureSecretCacheForTests();
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const ok = await meshcoreRoomTryEnsureCanPost(conn, 42, pubKey);
     expect(ok).toBe(false);
     expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
   });

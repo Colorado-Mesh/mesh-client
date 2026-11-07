@@ -404,7 +404,7 @@ import {
   meshcoreRoomLoginErrorIsNoRoute,
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
-  meshcoreRoomTryRelogin,
+  meshcoreRoomTryEnsureCanPost,
   meshcoreThrowIfRoomLoginAborted,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
@@ -7452,11 +7452,11 @@ export function useMeshcoreRuntime() {
         meshcoreCancelRoomLogin(nodeId);
       }
       if (!meshcoreRoomCanPost(nodeId)) {
-        const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post', {
+        const ensured = await meshcoreRoomTryEnsureCanPost(conn, nodeId, pubKey, {
           hopsAway: resolveRoomLoginHopsForNode(nodeId),
           companionTransport: meshcoreConnectTypeRef.current,
         });
-        if (!relogged || !meshcoreRoomCanPost(nodeId)) {
+        if (!ensured || !meshcoreRoomCanPost(nodeId)) {
           throw new Error('Room session expired — log in again to post');
         }
       }
