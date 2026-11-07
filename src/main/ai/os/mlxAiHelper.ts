@@ -1,11 +1,12 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
-import fs from 'node:fs';
+import path from 'node:path';
 import { createInterface } from 'node:readline';
 
 import { AI_MAX_RESPONSE_BYTES, AI_REQUEST_TIMEOUT_MS } from '../../../shared/ai-types';
 import { MS_PER_SECOND } from '../../../shared/timeConstants';
 import { AiFailure } from '../errors';
 import { isAppleSiliconMac } from '../local/modelManifest';
+import { isMlxHelperInstallComplete } from './ensureMlxHelper';
 
 interface Reply {
   type: string;
@@ -34,16 +35,24 @@ export class MlxAiHelper {
   ) {}
 
   availableOnHost(): boolean {
-    return isAppleSiliconMac(this.platform, this.arch) && fs.existsSync(this.binary());
+    return isAppleSiliconMac(this.platform, this.arch) && isMlxHelperInstallComplete(this.binary());
   }
 
   private start(): void {
     clearTimeout(this.idle);
     if (this.process) return;
     if (!this.availableOnHost()) throw new AiFailure('engineNotReady');
-    const child = spawn(this.binary(), [], { stdio: ['pipe', 'pipe', 'pipe'] });
+    const binary = this.binary();
+    // cwd = binary dir so adjacent SwiftPM bundles (default.metallib) resolve.
+    const child = spawn(binary, [], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: path.dirname(binary),
+    });
     this.process = child;
-    child.stderr.resume();
+    child.stderr.on('data', (chunk: Buffer) => {
+      const text = chunk.toString('utf8').trim();
+      if (text) console.warn('[mesh-ai-mlx]', text.slice(0, 500));
+    });
     const lines = createInterface({ input: child.stdout });
     this.reader = lines;
     let bytes = 0;
@@ -59,8 +68,8 @@ export class MlxAiHelper {
         if (reply && typeof reply === 'object' && 'type' in reply && typeof reply.type === 'string')
           for (const listener of this.listeners) listener(reply as Reply);
       } catch {
-        // catch-no-log-ok malformed native output is a fixed failure
-        this.kill();
+        // catch-no-log-ok mlx-swift may print non-JSON diagnostics on stdout
+        console.warn('[mesh-ai-mlx] non-JSON stdout', line.slice(0, 300));
       }
     });
     const exit = () => {

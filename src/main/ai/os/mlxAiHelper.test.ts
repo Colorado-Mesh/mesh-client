@@ -31,6 +31,8 @@ describe('MlxAiHelper', () => {
     temp = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-helper-'));
     binary = path.join(temp, 'mesh-ai-mlx');
     fs.writeFileSync(binary, '#!/bin/sh\n');
+    // Metallib bundle required next to the binary for availableOnHost().
+    fs.mkdirSync(path.join(temp, 'mlx-swift_Cmlx.bundle'), { recursive: true });
     child = Object.assign(new EventEmitter(), {
       stdin: new PassThrough(),
       stdout: new PassThrough(),
@@ -56,11 +58,18 @@ describe('MlxAiHelper', () => {
     expect(helper.availableOnHost()).toBe(false);
   });
 
+  it('is unavailable when the metallib bundle is missing', () => {
+    fs.rmSync(path.join(temp, 'mlx-swift_Cmlx.bundle'), { recursive: true, force: true });
+    helper = new MlxAiHelper(() => binary, 'darwin', 'arm64');
+    expect(helper.availableOnHost()).toBe(false);
+  });
+
   it('probes and streams generate on Apple Silicon when the helper responds', async () => {
     helper = new MlxAiHelper(() => binary, 'darwin', 'arm64');
     expect(helper.availableOnHost()).toBe(true);
 
     const probe = helper.probe();
+    expect(mockedSpawn).toHaveBeenCalledWith(binary, [], expect.objectContaining({ cwd: temp }));
     expect(child.stdin.read()?.toString()).toContain('"type":"probe"');
     child.stdout.write('{"type":"probe","available":true,"modelLabel":"MLX"}\n');
     await expect(probe).resolves.toBe(true);

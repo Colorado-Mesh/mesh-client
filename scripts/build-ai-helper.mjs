@@ -3,6 +3,7 @@ import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { discoverXcodeDeveloperDir } from './lib/discover-xcode-developer-dir.mjs';
+import { isMlxHelperInstallComplete, stageMlxHelperBinary } from './lib/stage-mlx-helper.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const output = path.join(root, 'resources/ai-helper');
@@ -64,8 +65,18 @@ if (process.platform === 'darwin') {
       if (!existsSync(built)) {
         throw new Error(`mesh-ai-mlx binary missing at ${built}`);
       }
-      cpSync(built, path.join(output, 'staged/darwin/mesh-ai-mlx'));
-      console.debug('[build-ai-helper] Staged mesh-ai-mlx for Apple Silicon Catch up');
+      if (!isMlxHelperInstallComplete(built)) {
+        throw new Error(
+          `mesh-ai-mlx build missing mlx-swift_Cmlx.bundle next to ${built} (needed for default.metallib)`,
+        );
+      }
+      const stagedMlx = path.join(output, 'staged/darwin/mesh-ai-mlx');
+      stageMlxHelperBinary(built, stagedMlx);
+      // Dev active path used by unpackaged Electron (`resources/ai-helper/active`).
+      stageMlxHelperBinary(built, path.join(output, 'active/mesh-ai-mlx'));
+      console.debug(
+        '[build-ai-helper] Staged mesh-ai-mlx + Metal bundles for Apple Silicon Catch up',
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : error;
       if (process.env.CI) {

@@ -8,13 +8,22 @@ import type { EnsureMlxCommand } from './ensureMlxHelper';
 import {
   ensureMlxHelper,
   isMetalToolchainMissingOutput,
+  isMlxHelperInstallComplete,
   resolveMlxBinaryPath,
+  stageMlxHelperBinary,
 } from './ensureMlxHelper';
 
 function seedXcodeDeveloper(appsRoot: string): string {
   const developer = path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer');
   mkdirSync(developer, { recursive: true });
   return developer;
+}
+
+/** Minimal install: binary + Cmlx bundle (required for resolve/available). */
+function seedMlxInstall(binaryPath: string, contents = 'bin'): void {
+  mkdirSync(path.dirname(binaryPath), { recursive: true });
+  writeFileSync(binaryPath, contents);
+  mkdirSync(path.join(path.dirname(binaryPath), 'mlx-swift_Cmlx.bundle'), { recursive: true });
 }
 
 describe('isMetalToolchainMissingOutput', () => {
@@ -51,8 +60,7 @@ describe('ensureMlxHelper', () => {
   it('uses an existing user binary without building', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const userBinary = path.join(root, 'user', 'mesh-ai-mlx');
-    mkdirSync(path.dirname(userBinary), { recursive: true });
-    writeFileSync(userBinary, 'bin');
+    seedMlxInstall(userBinary);
     const result = await ensureMlxHelper({
       userBinary,
       bundledCandidates: [],
@@ -64,12 +72,21 @@ describe('ensureMlxHelper', () => {
     expect(result).toEqual({ available: true, reason: 'ready', binaryPath: userBinary });
   });
 
-  it('copies a bundled candidate into userData', async () => {
+  it('ignores a binary without the Cmlx metallib bundle', () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const userBinary = path.join(root, 'user', 'mesh-ai-mlx');
+    mkdirSync(path.dirname(userBinary), { recursive: true });
+    writeFileSync(userBinary, 'bin-only');
+    expect(isMlxHelperInstallComplete(userBinary)).toBe(false);
+    expect(resolveMlxBinaryPath(userBinary, [])).toBeNull();
+  });
+
+  it('copies a bundled candidate and its Metal bundles into userData', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const bundled = path.join(root, 'bundled', 'mesh-ai-mlx');
     const userBinary = path.join(root, 'user', 'mesh-ai-mlx');
-    mkdirSync(path.dirname(bundled), { recursive: true });
-    writeFileSync(bundled, 'bundled-bin');
+    seedMlxInstall(bundled, 'bundled-bin');
+    writeFileSync(path.join(root, 'bundled', 'mlx-swift_Cmlx.bundle', 'marker'), 'metallib');
     const result = await ensureMlxHelper({
       userBinary,
       bundledCandidates: [bundled],
@@ -80,7 +97,18 @@ describe('ensureMlxHelper', () => {
     });
     expect(result.available).toBe(true);
     expect(result.binaryPath).toBe(userBinary);
+    expect(isMlxHelperInstallComplete(userBinary)).toBe(true);
     expect(resolveMlxBinaryPath(userBinary, [bundled])).toBe(userBinary);
+  });
+
+  it('stageMlxHelperBinary copies adjacent SwiftPM bundles', () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const src = path.join(root, 'src', 'mesh-ai-mlx');
+    const dest = path.join(root, 'dest', 'mesh-ai-mlx');
+    seedMlxInstall(src, 'src-bin');
+    writeFileSync(path.join(root, 'src', 'mlx-swift_Cmlx.bundle', 'default.metallib'), 'metal');
+    stageMlxHelperBinary(src, dest);
+    expect(isMlxHelperInstallComplete(dest)).toBe(true);
   });
 
   it('returns xcodeNotFound when Applications has no Xcode', async () => {

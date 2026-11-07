@@ -48,6 +48,7 @@ You do **not** need to run Terminal commands or change developer tools for norma
 ## Troubleshooting
 
 - If `xcodebuild -downloadComponent MetalToolchain` loops (keeps downloading or never finishes), reboot the Mac and run the command again, then tap **Retry Metal Catch up**.
+- If Catch up says **Could not summarize** after Metal is ready, tap **Retry Metal Catch up** (or re-run the AI helper build) so the Metal library bundle is installed next to the helper. A helper binary alone is not enough.
 
 ## Follow-up questions
 
