@@ -945,7 +945,7 @@
     "scheduleSendSave": "Redden",
     "scheduleSendPreset1h": "Binnen 1 uur",
     "scheduleSendPresetTomorrow": "Morgen 9.00 uur",
-    "scheduleSendHint": "Geplande berichten worden op dit apparaat opgeslagen en verzonden wanneer de tijd daar is en de radio is aangesloten. De app moet actief zijn.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorPast": "Kies een tijdstip in de toekomst.",
     "scheduleSendErrorEmpty": "Bericht mag niet leeg zijn.",
     "outboxStatusScheduled": "Gepland op {{time}}",
@@ -8306,7 +8306,8 @@
       "noTargets": "Geen doelen",
       "deferred": "Uitgesteld (looptijdlimiet)",
       "sendFailed": "Verzenden mislukt",
-      "emptyText": "Bericht is leeg"
+      "emptyText": "Bericht is leeg",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic kanaal",

@@ -967,7 +967,7 @@
     "scheduleSendErrorFar": "Vyberte čas během následujících 30 dnů.",
     "scheduleSendErrorPast": "Vyberte čas v budoucnu.",
     "scheduleSendErrorEmpty": "Zpráva nemůže být prázdná.",
-    "scheduleSendHint": "Naplánované zprávy se ukládají do tohoto zařízení a odesílají se, když přijde čas a je připojeno rádio. Aplikace musí být spuštěna.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "outboxScheduledEdit": "Upravit",
     "outboxStatusScheduled": "Naplánováno na {{time}}",
     "outboxStatusScheduledDue": "Naplánováno – čeká na odeslání",
@@ -8389,7 +8389,8 @@
       "noTargets": "Žádné cíle",
       "deferred": "Odloženo (časový limit běhu)",
       "sendFailed": "Odeslání se nezdařilo.",
-      "emptyText": "Zpráva je prázdná"
+      "emptyText": "Zpráva je prázdná",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic kanál",

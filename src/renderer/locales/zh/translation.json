@@ -945,7 +945,7 @@
     "scheduleSendPresetTomorrow": "明天9:00",
     "scheduleSendConfirm": "赛程表",
     "scheduleSendSave": "保存",
-    "scheduleSendHint": "定时消息保存在此设备上，并在时间到达和无线电连接时发送。应用必须正在运行。",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorEmpty": "信息不能为空",
     "scheduleSendErrorFar": "请在接下来的30天内选择一个时间。",
     "scheduleSendFailed": "无法保存定时消息。请重试。",
@@ -8306,7 +8306,8 @@
       "noTargets": "没有目标",
       "deferred": "延期（运行时间限制）",
       "sendFailed": "发送失败",
-      "emptyText": "信息是空的"
+      "emptyText": "信息是空的",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic频道",

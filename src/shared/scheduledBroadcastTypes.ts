@@ -12,8 +12,13 @@ export interface ScheduledBroadcastTarget {
   /** Display snapshot; refreshed from live data at render time, never used for routing. */
   label: string;
   enabled: boolean;
-  /** `*-channel` only. */
+  /** `*-channel` only — live slot at last save; remapped at deliver via `channelKey`. */
   channelIndex?: number;
+  /**
+   * `*-channel` only — stable channel identity key (name+PSK digest). Prefer this over
+   * `channelIndex` when the radio changes and slots reorder or drop.
+   */
+  channelKey?: string;
   /** `meshcore-room` only — stable across nodeId churn. */
   roomPubKeyHex?: string;
   /** `meshcore-room` only — cached, resolved live before send. */

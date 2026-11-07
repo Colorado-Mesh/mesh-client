@@ -146,6 +146,12 @@ function validateTarget(t: unknown, index: number): ScheduledBroadcastTarget {
       throw new TypeError(`targets[${index}].channelIndex invalid`);
     }
     target.channelIndex = o.channelIndex as number;
+    if (o.channelKey != null) {
+      if (typeof o.channelKey !== 'string' || !/^[0-9a-fA-F]{8,128}$/.test(o.channelKey)) {
+        throw new TypeError(`targets[${index}].channelKey invalid`);
+      }
+      target.channelKey = o.channelKey.toLowerCase();
+    }
   }
   if (kind === 'meshcore-room') {
     if (typeof o.roomPubKeyHex !== 'string' || !/^[0-9a-fA-F]{8,128}$/.test(o.roomPubKeyHex)) {

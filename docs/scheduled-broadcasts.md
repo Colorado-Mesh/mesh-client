@@ -9,6 +9,10 @@ messages (B1–B12) to Meshtastic or MeshCore channels, MeshCore rooms, or RRC r
 - The radio for each target must be **connected** at fire time.
 - Missed occurrences (app closed, asleep, or radio down) are **skipped**, not sent late —
   the slot shows a **Missed** result and advances to the next time.
+- Channel targets remember a stable **channel identity** (name + key), not only a slot
+  number. If you switch radios and channels reorder, delivery follows the same channel
+  when it is still present; if that channel is missing on the new radio, that target
+  fails with **Channel not on this radio** and other targets still run.
 
 ## Courtesy
 

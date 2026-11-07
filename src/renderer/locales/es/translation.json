@@ -943,7 +943,7 @@
     "scheduleSendPreset15m": "en 15 minutos",
     "scheduleSendPreset1h": "En 1 hora",
     "scheduleSendPresetTomorrow": "Mañana a las 9:00",
-    "scheduleSendHint": "Los mensajes programados se guardan en este dispositivo y se envían cuando llega la hora y se conecta la radio. La aplicación debe estar en ejecución.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Horario",
     "scheduleSendSave": "Guardar",
     "scheduleSendErrorPast": "Selecciona un día no futuro.",
@@ -8306,7 +8306,8 @@
       "noTargets": "Sin objetivos",
       "deferred": "Diferido (límite de tiempo de ejecución)",
       "sendFailed": "Envío Fallido",
-      "emptyText": "El mensaje esta vacio"
+      "emptyText": "El mensaje esta vacio",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic canal",

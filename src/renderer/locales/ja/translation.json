@@ -947,7 +947,7 @@
     "scheduleSendPresetTomorrow": "明日9:00",
     "scheduleSendErrorPast": "将来の時間を選択してください。",
     "scheduleSendErrorFar": "今後 30 日以内の時間を選択してください。",
-    "scheduleSendHint": "スケジュールされたメッセージはこのデバイスに保存され、時間が到着して無線が接続されたときに送信されます。アプリが実行されている必要があります。",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "outboxStatusScheduledDue": "スケジュール済み — 送信を待機中",
     "scheduleSendFailed": "スケジュールされたメッセージを保存できませんでした。もう一度やり直してください。",
     "outboxScheduledEdit": "編集",
@@ -8306,7 +8306,8 @@
       "noTargets": "ターゲットが見つかりません",
       "deferred": "延期（実行時間制限）",
       "sendFailed": "送信に失敗しました",
-      "emptyText": "メッセージが空です"
+      "emptyText": "メッセージが空です",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtasticチャンネル",

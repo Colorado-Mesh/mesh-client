@@ -52,6 +52,7 @@ function reasonKey(reason: string): string {
     deferred: 'deferred',
     'send-failed': 'sendFailed',
     'empty-text': 'emptyText',
+    'channel-missing': 'channelMissing',
   };
   return map[reason] ?? 'sendFailed';
 }

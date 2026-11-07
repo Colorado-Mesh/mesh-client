@@ -113,6 +113,45 @@ describe('deliverScheduledBroadcast', () => {
     expect(h.sendChat).toHaveBeenCalledWith('mt', { text: 'hello mesh', channelIndex: 2 });
   });
 
+  it('remaps channelKey to the live slot after radio channel reorder', async () => {
+    const { setLiveChannelKeys, resetLiveChannelKeyStoreForTests } =
+      await import('../../stores/liveChannelKeyStore');
+    resetLiveChannelKeyStoreForTests();
+    setLiveChannelKeys('meshtastic', {
+      radioNodeId: 9,
+      keyByIndex: { 5: 'aabbccdd', 0: 'other' },
+    });
+    const h = harness();
+    const r = await deliverScheduledBroadcast(
+      slot([target({ channelIndex: 0, channelKey: 'aabbccdd' })]),
+      h.deps,
+    );
+    expect(r.outcome).toBe('sent');
+    expect(h.sendChat).toHaveBeenCalledWith('mt', { text: 'hello mesh', channelIndex: 5 });
+    resetLiveChannelKeyStoreForTests();
+  });
+
+  it('fails a channel target when its identity key is missing on this radio', async () => {
+    const { setLiveChannelKeys, resetLiveChannelKeyStoreForTests } =
+      await import('../../stores/liveChannelKeyStore');
+    resetLiveChannelKeyStoreForTests();
+    setLiveChannelKeys('meshtastic', {
+      radioNodeId: 9,
+      keyByIndex: { 0: 'only' },
+    });
+    const h = harness();
+    const r = await deliverScheduledBroadcast(
+      slot([target({ channelIndex: 1, channelKey: 'missingkey' })]),
+      h.deps,
+    );
+    expect(r).toMatchObject({
+      outcome: 'failed',
+      targets: [{ ok: false, reason: 'channel-missing' }],
+    });
+    expect(h.sendChat).not.toHaveBeenCalled();
+    resetLiveChannelKeyStoreForTests();
+  });
+
   it('never splits or chunks long text', async () => {
     const h = harness();
     const r = await deliverScheduledBroadcast(slot([target({})], 'x'.repeat(229)), h.deps);

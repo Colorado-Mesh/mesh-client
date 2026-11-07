@@ -39,6 +39,7 @@ import {
   SCHEDULED_BROADCAST_RUN_MAX_MS,
   SCHEDULED_BROADCAST_TARGET_GAP_MS,
 } from './constants';
+import { resolveChannelTargetIndex } from './resolveChannelTarget';
 
 export type ScheduledBroadcastFailReason =
   | 'not-connected'
@@ -47,6 +48,7 @@ export type ScheduledBroadcastFailReason =
   | 'room-unknown'
   | 'room-login-required'
   | 'rrc-not-connected'
+  | 'channel-missing'
   | 'send-failed';
 
 /** Run-level reasons (no per-target result exists). */
@@ -189,8 +191,10 @@ async function sendChannel(
 ): Promise<Attempt> {
   const { identityId } = target;
   const isMeshtastic = target.kind === 'meshtastic-channel';
-  if (target.channelIndex == null) return fail('send-failed');
   if (!deps.isIdentityConnected(identityId)) return fail('not-connected');
+
+  const resolved = resolveChannelTargetIndex(target);
+  if (!resolved.ok) return fail(resolved.reason);
 
   const limit = isMeshtastic
     ? getComposerPayloadLimit({ protocol: 'meshtastic' })
@@ -203,7 +207,7 @@ async function sendChannel(
       });
   if (countMessageWireBytes(text) > limit) return fail('text-too-long');
 
-  const request: ChatSendRequest = { text, channelIndex: target.channelIndex };
+  const request: ChatSendRequest = { text, channelIndex: resolved.channelIndex };
   const send = (): string | undefined => deps.sendChat(identityId, request);
   const messageId = isMeshtastic ? await withMeshtasticTextSendPacing(send) : send();
   if (messageId == null) return fail('send-failed');

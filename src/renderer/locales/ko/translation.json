@@ -945,7 +945,7 @@
     "scheduleSendSave": "구하다",
     "scheduleSendPresetTomorrow": "내일 9시",
     "scheduleSendPreset1h": "1시간 후",
-    "scheduleSendHint": "예약된 메시지는 이 기기에 저장되어 있으며, 시간이 되어 라디오가 연결되면 전송됩니다. 앱이 실행 중이어야 합니다.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorPast": "미래의 시간을 선택하세요.",
     "scheduleSendErrorFar": "앞으로 30일 이내의 시간을 선택하세요.",
     "outboxStatusScheduled": "{{time}}에 예정됨",
@@ -8306,7 +8306,8 @@
       "noTargets": "타겟 없음",
       "deferred": "지연 (실행 시간 제한)",
       "sendFailed": "전송 실패",
-      "emptyText": "메시지가 비어 있습니다"
+      "emptyText": "메시지가 비어 있습니다",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic 채널",

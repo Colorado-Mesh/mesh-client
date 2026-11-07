@@ -943,7 +943,7 @@
     "scheduleSendPreset15m": "in 15 minutes",
     "scheduleSendPreset1h": "in 1 Stunde",
     "scheduleSendPresetTomorrow": "Morgen um 9:00 Uhr",
-    "scheduleSendHint": "Geplante Nachrichten werden auf diesem Gerät gespeichert und gesendet, wenn die Zeit gekommen ist und das Funkgerät angeschlossen ist. Die App muss ausgeführt werden.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Ihre Behandlungstermine",
     "scheduleSendSave": "Speichern",
     "scheduleSendErrorPast": "Wählen Sie ein Datum in der Zukunft.",
@@ -8306,7 +8306,8 @@
       "noTargets": "Keine Zielvorgaben",
       "deferred": "Zurückgestellt (Laufzeitbegrenzung)",
       "sendFailed": "Senden fehlgeschlagen.",
-      "emptyText": "Ihre Nachricht ist leer."
+      "emptyText": "Ihre Nachricht ist leer.",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic Channel",

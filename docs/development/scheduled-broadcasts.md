@@ -23,9 +23,14 @@ renderer-mounted scheduler. The app must be running with the target radio connec
 | Store + hydrate | `src/renderer/stores/scheduledBroadcastsStore.ts` (awaited from `main.tsx`)             |
 | Recurrence      | `src/renderer/lib/scheduledBroadcasts/recurrence.ts`                                    |
 | Scheduler       | `src/renderer/lib/scheduledBroadcasts/scheduler.ts` + `useScheduledBroadcastScheduler`  |
-| Deliver         | `src/renderer/lib/scheduledBroadcasts/deliver.ts`                                       |
+| Deliver         | `src/renderer/lib/scheduledBroadcasts/deliver.ts` + `resolveChannelTarget.ts`           |
+| Boot            | `src/renderer/lib/scheduledBroadcasts/bootScheduler.ts` (from `main.tsx`, not App)      |
 | UI              | `src/renderer/components/scheduledBroadcasts/`                                          |
-| Tab             | `ScheduledBroadcasts` in Chat section                                                   |
+| Tab             | `ScheduledBroadcasts` last under Chat section                                           |
+
+Channel targets store `channelKey` (identity digest) plus a cached `channelIndex`. Deliver
+resolves the live slot via `liveChannelKeyStore`; missing keys after a radio remap yield
+`channel-missing` for that target only.
 
 ## Protocol parity
 

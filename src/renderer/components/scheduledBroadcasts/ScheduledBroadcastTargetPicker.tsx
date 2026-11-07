@@ -3,14 +3,16 @@ import { useTranslation } from 'react-i18next';
 
 import { SCHEDULED_BROADCAST_MAX_TARGETS } from '@/renderer/lib/scheduledBroadcasts/constants';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { ScheduledBroadcastTarget } from '@/shared/scheduledBroadcastTypes';
 
-const CHANNEL_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+const FALLBACK_CHANNEL_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
 function targetKey(t: ScheduledBroadcastTarget): string {
   if (t.kind === 'meshtastic-channel' || t.kind === 'meshcore-channel') {
+    if (t.channelKey) return `${t.kind}:${t.identityId}:key:${t.channelKey}`;
     return `${t.kind}:${t.identityId}:${t.channelIndex}`;
   }
   if (t.kind === 'meshcore-room') {
@@ -31,6 +33,7 @@ export function ScheduledBroadcastTargetPicker({
   const { t } = useTranslation();
   const identities = useIdentityStore((s) => s.identities);
   const nodesByIdentity = useNodeStore((s) => s.nodes);
+  const liveByProtocol = useLiveChannelKeyStore((s) => s.byProtocol);
   const rrcHub = useRrcSessionStore((s) => s.hubDestHash);
   const rrcRooms = useRrcSessionStore((s) => s.rooms);
   const rrcIdentityId = useMemo(
@@ -62,23 +65,32 @@ export function ScheduledBroadcastTargetPicker({
           protocolId === 'meshcore'
             ? Object.values(nodes).filter((n) => n.hwModel === 'Room' && n.publicKeyHex)
             : [];
+        const live = liveByProtocol[protocolId];
+        const channelIndexes = live
+          ? Object.keys(live.keyByIndex)
+              .map(Number)
+              .filter((n) => Number.isInteger(n) && n >= 0)
+              .sort((a, b) => a - b)
+          : [...FALLBACK_CHANNEL_INDEXES];
         return (
           <fieldset key={identity.id} className="border-ink-700 rounded-card border p-2">
             <legend className="text-ink-200 text-label px-1">
               {identity.displayName ?? identity.id.slice(0, 8)}
             </legend>
             <ul className="flex flex-col gap-1">
-              {CHANNEL_INDEXES.map((channelIndex) => {
+              {channelIndexes.map((channelIndex) => {
                 const kindLabel =
                   kind === 'meshtastic-channel'
                     ? t('scheduledBroadcasts.targetKind.meshtasticChannel')
                     : t('scheduledBroadcasts.targetKind.meshcoreChannel');
+                const channelKey = live?.keyByIndex[channelIndex];
                 const candidate: ScheduledBroadcastTarget = {
                   kind,
                   identityId: identity.id,
                   label: `${kindLabel} ${channelIndex}`,
                   enabled: true,
                   channelIndex,
+                  ...(channelKey ? { channelKey } : {}),
                 };
                 const key = targetKey(candidate);
                 const id = `sb-target-${key}`;

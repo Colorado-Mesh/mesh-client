@@ -985,7 +985,7 @@
     "scheduleSendErrorEmpty": "Wiadomość nie może być pusta.",
     "outboxScheduledEdit": "Redagować",
     "outboxScheduledEditAria": "Edytuj zaplanowaną wiadomość",
-    "scheduleSendHint": "Zaplanowane wiadomości są zapisywane na tym urządzeniu i wysyłane, gdy nadejdzie pora i radio zostanie podłączone. Aplikacja musi być uruchomiona.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "outboxScheduledSendNowAria": "Wyślij teraz zaplanowaną wiadomość",
     "outboxStatusScheduledDue": "Zaplanowano — oczekuje na wysłanie",
     "scheduleSendFailed": "Nie można zapisać zaplanowanej wiadomości. Spróbuj ponownie.",
@@ -8448,7 +8448,8 @@
       "noTargets": "Brak celów",
       "deferred": "Odroczone (limit czasu pracy)",
       "sendFailed": "Wysyłanie nieudane",
-      "emptyText": "Wiadomość jest pusta."
+      "emptyText": "Wiadomość jest pusta.",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Kanał Meshtastic",

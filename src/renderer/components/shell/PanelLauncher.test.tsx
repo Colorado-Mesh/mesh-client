@@ -212,21 +212,21 @@ describe('PanelLauncher', () => {
       name: 'Search panels, contacts, channels and settings',
     });
     const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
-    const broadcasts = screen.getByRole('button', { name: 'Broadcasts' });
+    const rooms = screen.getByRole('button', { name: 'Rooms, 2 unread' });
     expect(activeEntryRows()).toEqual([chat]);
     expect(chat.className).toContain('focus-visible:outline-brand-green');
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(broadcasts).toHaveFocus();
-    expect(activeEntryRows()).toEqual([broadcasts]);
+    expect(rooms).toHaveFocus();
+    expect(activeEntryRows()).toEqual([rooms]);
 
-    fireEvent.keyDown(broadcasts, { key: 'ArrowDown' });
+    fireEvent.keyDown(rooms, { key: 'ArrowDown' });
     const third = document.activeElement;
     expect(third).toHaveAttribute('data-launcher-entry');
-    expect(third).not.toBe(broadcasts);
+    expect(third).not.toBe(rooms);
     fireEvent.keyDown(third as HTMLElement, { key: 'ArrowUp' });
-    expect(broadcasts).toHaveFocus();
-    fireEvent.keyDown(broadcasts, { key: 'ArrowUp' });
+    expect(rooms).toHaveFocus();
+    fireEvent.keyDown(rooms, { key: 'ArrowUp' });
     expect(chat).toHaveFocus();
     fireEvent.keyDown(chat, { key: 'ArrowUp' });
     expect(input).toHaveFocus();

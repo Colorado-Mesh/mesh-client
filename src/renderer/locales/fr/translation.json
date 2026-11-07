@@ -946,7 +946,7 @@
     "scheduleSendSave": "Sauvegarder",
     "scheduleSendConfirm": "Horaire",
     "scheduleSendErrorEmpty": "Le message ne peut pas être vide.",
-    "scheduleSendHint": "Les messages programmés sont enregistrés sur cet appareil et envoyés lorsque l'heure arrive et que la radio est connectée. L'application doit être en cours d'exécution.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorFar": "Choisissez une heure dans les 30 prochains jours.",
     "scheduleSendErrorPast": "Choisissez un moment dans le futur.",
     "scheduleSendFailed": "Impossible d'enregistrer le message programmé. Réessayez.",
@@ -8306,7 +8306,8 @@
       "noTargets": "Aucun objectif fixé7",
       "deferred": "Différé (limite de temps d'exécution)",
       "sendFailed": "Échec de l'envoi",
-      "emptyText": "Le Message est vide"
+      "emptyText": "Le Message est vide",
+      "channelMissing": "Channel not on this radio"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic canal",

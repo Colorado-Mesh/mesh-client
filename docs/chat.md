@@ -175,11 +175,13 @@ The inbox lists **received** messages from every enabled protocol, newest first,
 
 ## Scheduled send
 
-Schedule a message to go out later instead of now.
+Schedule a **one-time** message to go out later instead of now.
 
 1. Type the message in a channel or DM and click **Schedule send** next to the other composer buttons.
 2. Pick **In 15 minutes**, **In 1 hour**, or **Tomorrow 9:00**, or set any date and time in **Send at**.
 3. Click **Schedule**.
+
+For **repeating** schedules (hourly, daily, weekly, and so on), use the **Broadcasts** sub-tab under Chat — see [Scheduled Broadcasts](scheduled-broadcasts.md).
 
 Rules:
 
