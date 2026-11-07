@@ -81,6 +81,11 @@ import type {
   RrcSetNicknameRequest,
   RrcUpsertHubRequest,
 } from './rrc-types';
+import type {
+  ScheduledBroadcastInput,
+  ScheduledBroadcastLastResult,
+  ScheduledBroadcastRow,
+} from './scheduledBroadcastTypes';
 import type { ServiceAnnouncementFetchResult } from './serviceAnnouncementFeed';
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
@@ -411,6 +416,21 @@ export interface ElectronAPI {
     getIncidents: () => Promise<IncidentSnapshot>;
     saveIncidents: (snapshot: IncidentSnapshot) => Promise<void>;
     seedIncidents: (legacyJson: string | null) => Promise<IncidentSnapshot>;
+    listScheduledBroadcasts: () => Promise<ScheduledBroadcastRow[]>;
+    saveScheduledBroadcast: (input: ScheduledBroadcastInput) => Promise<ScheduledBroadcastRow>;
+    deleteScheduledBroadcast: (slot: number) => Promise<void>;
+    clearScheduledBroadcasts: () => Promise<void>;
+    claimScheduledBroadcastDue: (
+      slot: number,
+      expectedNextDueAt: number,
+      nextDueAt: number,
+      claimedAt: number,
+    ) => Promise<{ claimed: boolean }>;
+    setScheduledBroadcastResult: (
+      slot: number,
+      lastAttemptAt: number,
+      lastResult: ScheduledBroadcastLastResult,
+    ) => Promise<void>;
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

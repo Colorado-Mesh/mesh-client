@@ -74,6 +74,10 @@ import type {
   SystemReticulumInstance,
 } from '../shared/reticulum-types';
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
+import type {
+  ScheduledBroadcastInput,
+  ScheduledBroadcastLastResult,
+} from '../shared/scheduledBroadcastTypes';
 import type { ServiceAnnouncementFetchResult } from '../shared/serviceAnnouncementFeed';
 import type {
   TAKChannelChatMessage,
@@ -253,6 +257,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveIncidents: (snapshot: IncidentSnapshot) => ipcRenderer.invoke('db:saveIncidents', snapshot),
     seedIncidents: (legacyJson: string | null) =>
       ipcRenderer.invoke('db:seedIncidents', legacyJson),
+    listScheduledBroadcasts: () => ipcRenderer.invoke('db:listScheduledBroadcasts'),
+    saveScheduledBroadcast: (input: ScheduledBroadcastInput) =>
+      ipcRenderer.invoke('db:saveScheduledBroadcast', input),
+    deleteScheduledBroadcast: (slot: number) =>
+      ipcRenderer.invoke('db:deleteScheduledBroadcast', slot),
+    clearScheduledBroadcasts: () => ipcRenderer.invoke('db:clearScheduledBroadcasts'),
+    claimScheduledBroadcastDue: (
+      slot: number,
+      expectedNextDueAt: number,
+      nextDueAt: number,
+      claimedAt: number,
+    ) =>
+      ipcRenderer.invoke(
+        'db:claimScheduledBroadcastDue',
+        slot,
+        expectedNextDueAt,
+        nextDueAt,
+        claimedAt,
+      ),
+    setScheduledBroadcastResult: (
+      slot: number,
+      lastAttemptAt: number,
+      lastResult: ScheduledBroadcastLastResult,
+    ) => ipcRenderer.invoke('db:setScheduledBroadcastResult', slot, lastAttemptAt, lastResult),
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

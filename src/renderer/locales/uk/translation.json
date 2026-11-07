@@ -977,7 +977,7 @@
     "scheduleSendPreset15m": "15 хв.",
     "scheduleSendPreset1h": "За 1 годину",
     "scheduleSendPresetTomorrow": "Завтра о 9:00",
-    "scheduleSendHint": "Заплановані повідомлення зберігаються на цьому пристрої та надсилаються, коли настає час і підключено радіо. Має бути запущена програма.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Розклад",
     "scheduleSendSave": "Зберегти",
     "scheduleSendErrorPast": "Виберіть дату в майбутньому.",
@@ -5930,7 +5930,8 @@
     "rrc": "RRC",
     "remote": "Віддалений",
     "games": "Ігри",
-    "incident": "Подія"
+    "incident": "Подія",
+    "scheduledbroadcasts": "Трансляції"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -8388,5 +8389,79 @@
       "unverifiedBoard": "Радіо не ідентифіковано — вибір плати не перевірено. Хибна плата може зламати пристрій."
     },
     "warningsTitle": "Перед прошивкою"
+  },
+  "scheduledBroadcasts": {
+    "title": "Заплановані трансляції",
+    "intro": "Повторювані повідомлення з одним пакетом на канали, MeshCore кімнати або кімнати RRC. Додаток повинен працювати з підключеним радіо — пропущений час пропускається, а не надсилається пізно.",
+    "enabled": "Увімкнути заплановані трансляції",
+    "enabledHint": "Коли таймер вимкнено, він залишається беззбройним. Конфігурації слотів зберігаються.",
+    "disabledBySetting": "Головний перемикач вимкнено — графіки не спрацьовують.",
+    "slotLabel": "Трансляція {{n}}",
+    "add": "Додати трансляцію",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "deleteConfirm": "Видалити цю заплановану трансляцію?",
+    "sendNow": "Відправити зараз",
+    "label": "Мітка",
+    "text": "Повідомлення",
+    "textHint": "Лише один пакет — текст великого розміру не може бути збережений.",
+    "targets": "Targets",
+    "targetsHint": "Виберіть до 8 напрямків. Для доставки потрібен підключений радіоприймач.",
+    "noTargets": "Додайте принаймні одну ввімкнену ціль.",
+    "schedule": "Розклад",
+    "intervalLabel": "Повтор",
+    "interval": {
+      "hourly": "Погодинно",
+      "daily": "Щоденний",
+      "weekly": "Щотижневий",
+      "biweekly": "Кожних два тижні",
+      "monthly": "Щомісяця"
+    },
+    "timeOfDay": "Час",
+    "weekday": "будень",
+    "weekdays": {
+      "0": "Неділя",
+      "1": "Понеділок",
+      "2": "Вівторок",
+      "3": "Середа",
+      "4": "Четвер",
+      "5": "П'ятниця",
+      "6": "Субота"
+    },
+    "dayOfMonth": "День місяця-04",
+    "anchorDate": "Двотижнева дата прив'язки",
+    "nextDue": "Наступний термін",
+    "never": "Ніколи",
+    "status": {
+      "sent": "Надіслано",
+      "partial": "Частково ({{ok}}/{{total}})",
+      "failed": "Помилка",
+      "skipped": "Пропущено",
+      "missed": "Пропущено"
+    },
+    "reasons": {
+      "notConnected": "Не підключено",
+      "roomLoginRequired": "Обов'язковий вхід",
+      "roomUnknown": "Кімната невідома",
+      "rrcNotConnected": "Концентратор RRC не підключений",
+      "textTooLong": "Текст занадто довгий для цілі",
+      "noTargets": "Немає цілей",
+      "deferred": "Відкладено (обмеження часу роботи)",
+      "sendFailed": "Не вдалося надіслати",
+      "emptyText": "ваше повідомлення порожнє",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic канал",
+      "meshcoreChannel": "MeshCore канал",
+      "meshcoreRoom": "MeshCore кімната",
+      "rrcRoom": "Кімната КПП"
+    },
+    "airtimeWarning": "Погодинні графіки з великою кількістю цілей використовують багато ефірного часу.",
+    "respectWarning": "Поважайте спільний LoRa ефірний час та інших операторів. Не розсилайте спам каналам, кімнатам або концентраторам — віддайте перевагу рідкісним графікам, мало цільових показників та повідомлень, які насправді потрібні сіті.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Збережені цілі"
   }
 }

@@ -943,7 +943,7 @@
     "scheduleSendPreset15m": "en 15 minutos",
     "scheduleSendPreset1h": "En 1 hora",
     "scheduleSendPresetTomorrow": "Mañana a las 9:00",
-    "scheduleSendHint": "Los mensajes programados se guardan en este dispositivo y se envían cuando llega la hora y se conecta la radio. La aplicación debe estar en ejecución.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Horario",
     "scheduleSendSave": "Guardar",
     "scheduleSendErrorPast": "Selecciona un día no futuro.",
@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Remoto",
     "games": "Juegos",
-    "incident": "Incidente"
+    "incident": "Incidente",
+    "scheduledbroadcasts": "Broadcasts"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -8246,5 +8247,79 @@
       "unverifiedBoard": "Radio no identificada — elección de placa sin verificar. Placa incorrecta puede inutilizar el dispositivo."
     },
     "warningsTitle": "Antes de flashear"
+  },
+  "scheduledBroadcasts": {
+    "title": "Transmisiones programadas",
+    "intro": "Mensajes periódicos de un solo paquete a canales, salas MeshCore o salas RRC. La aplicación debe estar en ejecución con la radio conectada: los horarios perdidos se omiten, no se envían tarde.",
+    "enabled": "Habilitar transmisiones programadas",
+    "enabledHint": "Cuando está apagado, los temporizadores permanecen desarmados. Se mantienen las configuraciones de ranura.",
+    "disabledBySetting": "El interruptor principal está apagado: los horarios no se activarán.",
+    "slotLabel": "Transmisión {{n}}",
+    "add": "Añadir difusión",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar esta transmisión programada?",
+    "sendNow": "Enviar ahora",
+    "label": "Designación",
+    "text": "Mensaje",
+    "textHint": "Solo un paquete: el texto de gran tamaño no se puede guardar.",
+    "targets": "Objetivos",
+    "targetsHint": "Elige hasta 8 destinos. La entrega necesita esa radio conectada.",
+    "noTargets": "Añade al menos un objetivo habilitado.",
+    "schedule": "Horario",
+    "intervalLabel": "Repetir",
+    "interval": {
+      "hourly": "Por hora",
+      "daily": "Diario",
+      "weekly": "Semanal",
+      "biweekly": "Cada dos semanas",
+      "monthly": "Mensual"
+    },
+    "timeOfDay": "Hora",
+    "weekday": "Día hábil",
+    "weekdays": {
+      "0": "Domingo",
+      "1": "Lunes",
+      "2": "Martes",
+      "3": "Miércoles",
+      "4": "Jueves",
+      "5": "Viernes",
+      "6": "Saturday"
+    },
+    "dayOfMonth": "Día del mes",
+    "anchorDate": "Fecha de anclaje quincenal",
+    "nextDue": "Siguiente Fecha",
+    "never": "Nunca",
+    "status": {
+      "sent": "Enviado",
+      "partial": "Parcial ({{ok}}/{{total}})",
+      "failed": "Error",
+      "skipped": "Omitido",
+      "missed": "No hecho"
+    },
+    "reasons": {
+      "notConnected": "No conectado",
+      "roomLoginRequired": "Es necesario iniciar sesión",
+      "roomUnknown": "Sala desconocida",
+      "rrcNotConnected": "Hub RRC no conectado",
+      "textTooLong": "Texto demasiado largo para un objetivo",
+      "noTargets": "Sin objetivos",
+      "deferred": "Diferido (límite de tiempo de ejecución)",
+      "sendFailed": "Envío Fallido",
+      "emptyText": "El mensaje esta vacio",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic canal",
+      "meshcoreChannel": "MeshCore canal",
+      "meshcoreRoom": "Sala MeshCore",
+      "rrcRoom": "Sala RRC"
+    },
+    "airtimeWarning": "Los horarios por hora con muchos objetivos utilizan mucho tiempo al aire.",
+    "respectWarning": "Sé respetuoso con el tiempo de transmisión compartido de LoRa y otros operadores. No envíe spam a canales, salas o centros: prefiera horarios poco frecuentes, pocos objetivos y mensajes que la malla realmente necesite.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Objetivos guardados"
   }
 }

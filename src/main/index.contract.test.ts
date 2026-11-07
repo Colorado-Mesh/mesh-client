@@ -55,9 +55,9 @@ describe('renderer origin cutover (source contract)', () => {
 
   it('hydrates operational state before mounting any protocol effects', () => {
     const renderer = readFileSync(join(__dirname, '../renderer/main.tsx'), 'utf8');
-    const hydration = renderer.indexOf(
-      'await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()])',
-    );
+    expect(renderer).toContain('hydrateScheduledBroadcastsStore()');
+    const hydration = renderer.indexOf('hydrateDurableRendererSettings()');
+    expect(renderer).toContain('hydrateIncidentStore()');
     expect(hydration).toBeGreaterThan(renderer.indexOf('async function prepareRendererStorage()'));
     expect(hydration).toBeLessThan(renderer.indexOf('installRendererPreferencePersistence();'));
     expect(renderer.indexOf('installDevElectronApiStubIfNeeded();')).toBeLessThan(
@@ -889,6 +889,7 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:validateConfig'");
     expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
     expect(INDEX_SOURCE).toContain('registerRrcDbIpcHandlers');
+    expect(INDEX_SOURCE).toContain('registerScheduledBroadcastIpcHandlers');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");

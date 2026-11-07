@@ -67,7 +67,7 @@ describe('computeNavSections', () => {
   it('groups MeshCore tabs as in the Option B mockups, with the maintainer moves', () => {
     // Telemetry sits with the device it reports on; TAK is a network bridge, not a device.
     expect(slotsBySection(PROTOCOLS[1])).toEqual({
-      chat: ['Chat', 'Rooms'],
+      chat: ['Chat', 'Rooms', 'ScheduledBroadcasts'],
       network: ['Nodes', 'Modules', 'Graph', 'TAK'],
       map: ['Map'],
       monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF'],

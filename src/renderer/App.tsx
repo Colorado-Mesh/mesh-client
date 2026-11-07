@@ -29,6 +29,7 @@ import {
 } from '@/renderer/hooks/useEmergencyOutboxDrain';
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { useRetainedChannelRemapContext } from '@/renderer/hooks/useRetainedChannelRemapContext';
+import { useScheduledBroadcastScheduler } from '@/renderer/hooks/useScheduledBroadcastScheduler';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
   buildMeshcoreChannelKeyByIndex,
@@ -253,6 +254,7 @@ import {
   RFHistogramsPanel,
   RoomsPanel,
   RrcPanel,
+  ScheduledBroadcastsPanel,
   SecurityPanel,
   TakServerPanel,
   TelemetryPanel,
@@ -285,6 +287,7 @@ import {
   RF_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
   RRC_PANEL_INDEX,
+  SCHEDULED_BROADCASTS_PANEL_INDEX,
   SECURITY_PANEL_INDEX,
   SNIFFER_PANEL_INDEX,
   STATS_PANEL_INDEX,
@@ -1032,6 +1035,7 @@ function AppContent() {
   const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
     typeof useReticulumPanelActions
   >;
+  useScheduledBroadcastScheduler({ sendRoomPost: meshcorePanelActions.sendRoomPost });
   const activeFacade = useProtocolFacade(protocol, allPanelActions, allConnectionActions);
   const panelActions = activeFacade.panel.actions;
   const {
@@ -6053,6 +6057,21 @@ function AppContent() {
                                 meshcoreIdentityId={meshcoreIdentityId}
                                 reticulumIdentityId={reticulumIdentityId}
                               />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${SCHEDULED_BROADCASTS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), SCHEDULED_BROADCASTS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== SCHEDULED_BROADCASTS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === SCHEDULED_BROADCASTS_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <ScheduledBroadcastsPanel />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

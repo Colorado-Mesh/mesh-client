@@ -55,6 +55,7 @@ import { PROTOCOL_THEME } from '../lib/protocolTheme';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { writeReduceMotion } from '../lib/reduceMotionPreference';
 import { getActiveSavedLocation, useSavedLocations } from '../lib/savedLocations';
+import { SCHEDULED_BROADCASTS_ENABLED_SETTING } from '../lib/scheduledBroadcasts/constants';
 import { nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   applyThemeColors,
@@ -89,6 +90,7 @@ import { getLiveChannelKey } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useScheduledBroadcastsStore } from '../stores/scheduledBroadcastsStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { AppAiSection } from './AppAiSection';
 import { AppSupportSection } from './AppSupportSection';
@@ -3259,6 +3261,17 @@ export default function AppPanel({
                     await window.electronAPI.db.clearMessages();
                   }
                   await window.electronAPI.db.clearNodes();
+                  // Disable the master switch first so the scheduler cannot fire mid-clear.
+                  mergeAppSetting(
+                    SCHEDULED_BROADCASTS_ENABLED_SETTING,
+                    false,
+                    'AppPanel clearAllLocalData',
+                  );
+                  await window.electronAPI.appSettings.set(
+                    SCHEDULED_BROADCASTS_ENABLED_SETTING,
+                    'false',
+                  );
+                  await useScheduledBroadcastsStore.getState().clearAll();
                   await window.electronAPI.clearSessionData();
                 },
               });

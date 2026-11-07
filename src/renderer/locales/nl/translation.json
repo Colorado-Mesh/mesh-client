@@ -945,7 +945,7 @@
     "scheduleSendSave": "Redden",
     "scheduleSendPreset1h": "Binnen 1 uur",
     "scheduleSendPresetTomorrow": "Morgen 9.00 uur",
-    "scheduleSendHint": "Geplande berichten worden op dit apparaat opgeslagen en verzonden wanneer de tijd daar is en de radio is aangesloten. De app moet actief zijn.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorPast": "Kies een tijdstip in de toekomst.",
     "scheduleSendErrorEmpty": "Bericht mag niet leeg zijn.",
     "outboxStatusScheduled": "Gepland op {{time}}",
@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Op afstand",
     "games": "Games",
-    "incident": "Incident"
+    "incident": "Incident",
+    "scheduledbroadcasts": "Berichten"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -8246,5 +8247,79 @@
       "unverifiedBoard": "Radio niet herkend — boardkeuze ongecontroleerd. Verkeerd board kan apparaat unbootable maken."
     },
     "warningsTitle": "Vóór het flashen"
+  },
+  "scheduledBroadcasts": {
+    "title": "Geplande uitzendingen",
+    "intro": "Terugkerende berichten van één pakket naar kanalen, MeshCore-ruimtes of RRC-ruimtes. De app moet draaien met de radio verbonden — gemiste tijden worden overgeslagen, niet later verzonden.",
+    "enabled": "Geplande uitzendingen inschakelen",
+    "enabledHint": "Wanneer uitgeschakeld, blijven de timers uitgeschakeld. Slotconfiguraties worden bewaard.",
+    "disabledBySetting": "Hoofdschakelaar is uitgeschakeld — schema's worden niet geactiveerd.",
+    "slotLabel": "Uitzending {{n}}",
+    "add": "Nieuwe uitzending toevoegen",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "deleteConfirm": "Deze geplande uitzending verwijderen?",
+    "sendNow": "Nu verzenden",
+    "label": "Label",
+    "text": "Bericht",
+    "textHint": "Alleen één pakket — extra grote tekst kan niet worden opgeslagen.",
+    "targets": "Doel",
+    "targetsHint": "Kies maximaal 8 bestemmingen. Bezorging heeft die radio nodig die is aangesloten.",
+    "savedTargets": "Opgeslagen doelen",
+    "noTargets": "Voeg ten minste één ingeschakeld doel toe.",
+    "schedule": "Planning",
+    "intervalLabel": "Herhalen",
+    "interval": {
+      "hourly": "Per uur",
+      "daily": "Dagelijks",
+      "weekly": "Wekelijks",
+      "biweekly": "Tweewekelijks",
+      "monthly": "Maandelijks"
+    },
+    "timeOfDay": "Tijd",
+    "weekday": "Weekdag",
+    "weekdays": {
+      "0": "Zondag",
+      "1": "Maandag",
+      "2": "Dinsdag",
+      "3": "Woensdag",
+      "4": "Donderdag",
+      "5": "Vrijdag",
+      "6": "Zaterdag"
+    },
+    "dayOfMonth": "Dag van de maand",
+    "anchorDate": "Tweewekelijkse ankerdatum",
+    "nextDue": "Volgende keer",
+    "never": "Nooit",
+    "status": {
+      "sent": "Verzonden",
+      "partial": "Gedeeltelijk ({{ok}}/{{total}})",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen",
+      "missed": "Gemist"
+    },
+    "reasons": {
+      "notConnected": "Niet verbonden",
+      "roomLoginRequired": "Inlognaam vereist",
+      "roomUnknown": "Onbekende ruimte",
+      "rrcNotConnected": "RRC-hub niet aangesloten",
+      "textTooLong": "Tekst te lang voor een doel",
+      "noTargets": "Geen doelen",
+      "deferred": "Uitgesteld (looptijdlimiet)",
+      "sendFailed": "Verzenden mislukt",
+      "emptyText": "Bericht is leeg",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic kanaal",
+      "meshcoreChannel": "MeshCore kanaal",
+      "meshcoreRoom": "MeshCore-ruimte",
+      "rrcRoom": "RRC-ruimte"
+    },
+    "airtimeWarning": "Uurschema's met veel doelen gebruiken veel zendtijd.",
+    "respectWarning": "Respecteer gedeelde LoRa-zendtijd en andere operators. Spam geen kanalen, ruimtes of hubs — geef de voorkeur aan onregelmatige schema's, weinig doelen en berichten die het netwerk echt nodig heeft.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

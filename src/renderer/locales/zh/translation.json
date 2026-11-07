@@ -945,7 +945,7 @@
     "scheduleSendPresetTomorrow": "明天9:00",
     "scheduleSendConfirm": "赛程表",
     "scheduleSendSave": "保存",
-    "scheduleSendHint": "定时消息保存在此设备上，并在时间到达和无线电连接时发送。应用必须正在运行。",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorEmpty": "信息不能为空",
     "scheduleSendErrorFar": "请在接下来的30天内选择一个时间。",
     "scheduleSendFailed": "无法保存定时消息。请重试。",
@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "远程",
     "games": "出賽",
-    "incident": "事件"
+    "incident": "事件",
+    "scheduledbroadcasts": "广播"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -8246,5 +8247,79 @@
       "unverifiedBoard": "无线电未自动识别 — 板型选择未验证。错误板型可能导致无法启动。"
     },
     "warningsTitle": "刷写前"
+  },
+  "scheduledBroadcasts": {
+    "title": "定时广播",
+    "intro": "向频道、MeshCore房间或RRC房间重复发送单数据包消息。应用程序必须在无线电连接的情况下运行—跳过错过的次数，而不是延迟发送。",
+    "enabled": "启用定时广播",
+    "enabledHint": "关闭时，计时器保持放电状态。保持插槽配置。",
+    "disabledBySetting": "主开关关闭—时间表不会触发。",
+    "slotLabel": "广播{{n}}",
+    "add": "添加广播",
+    "edit": "修改",
+    "delete": "删除",
+    "deleteConfirm": "删除此计划的广播？",
+    "sendNow": "现在发送",
+    "label": "标号",
+    "text": "信息",
+    "textHint": "仅限单个数据包—无法保存超大文本。",
+    "targets": "章节目标",
+    "targetsHint": "最多可选择8个目的地。派送需要无线电连接。",
+    "noTargets": "添加至少一个启用的目标。",
+    "schedule": "赛程表",
+    "intervalLabel": "重复",
+    "interval": {
+      "hourly": "每小時預報",
+      "daily": "每天",
+      "weekly": "每周",
+      "biweekly": "每两周发布一次",
+      "monthly": "每月"
+    },
+    "timeOfDay": "时间",
+    "weekday": "工作日",
+    "weekdays": {
+      "0": "周日",
+      "1": "星期一",
+      "2": "星期二",
+      "3": "周三",
+      "4": "星期四",
+      "5": "星期五",
+      "6": "星期六"
+    },
+    "dayOfMonth": "每月的某些天",
+    "anchorDate": "每两周锚定日期",
+    "nextDue": "接下来由于",
+    "never": "从未",
+    "status": {
+      "sent": "已发送",
+      "partial": "部分（ {{ok}}/{{total}} ）",
+      "failed": "失败",
+      "skipped": "已跳过",
+      "missed": "未抢到"
+    },
+    "reasons": {
+      "notConnected": "未连接",
+      "roomLoginRequired": "需要登录",
+      "roomUnknown": "房间未知",
+      "rrcNotConnected": "RRC集线器未连接",
+      "textTooLong": "文本对目标来说太长",
+      "noTargets": "没有目标",
+      "deferred": "延期（运行时间限制）",
+      "sendFailed": "发送失败",
+      "emptyText": "信息是空的",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic频道",
+      "meshcoreChannel": "MeshCore频道",
+      "meshcoreRoom": "MeshCore房间",
+      "rrcRoom": "RRC房间"
+    },
+    "airtimeWarning": "许多目标的小时班表使用大量的通话时间。",
+    "respectWarning": "请尊重共享的LoRa通话时间和其他操作员。不要向频道、房间或集线器发送垃圾邮件--更喜欢不频繁的时间表、很少的目标和网格实际需要的消息。",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "已保存的目标"
   }
 }

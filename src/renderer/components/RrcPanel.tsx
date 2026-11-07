@@ -38,8 +38,8 @@ import {
   takePendingRrcHubOpen,
 } from '@/renderer/lib/openRrcHubFromLink';
 import { reconcileRrcHubAfterDeadSend } from '@/renderer/lib/reconcileRrcSessionsFromSnapshot';
-import { withReticulumIpcSendDeadline } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { rrcSendBounded, type RrcSendResult } from '@/renderer/lib/rrc/rrcSendBounded';
 import {
   isRrcDmRoom,
   parseRrcDmRoomKey,
@@ -152,14 +152,6 @@ function persistCollapsed(key: string, next: boolean) {
   } catch {
     // catch-no-log-ok localStorage may be unavailable
   }
-}
-
-type RrcSendArgs = Parameters<typeof window.electronAPI.reticulum.rrc.send>[0];
-type RrcSendResult = Awaited<ReturnType<typeof window.electronAPI.reticulum.rrc.send>>;
-
-/** Bound RRC send so a stuck proxy cannot hang the composer. */
-function rrcSendBounded(args: RrcSendArgs): Promise<RrcSendResult> {
-  return withReticulumIpcSendDeadline(window.electronAPI.reticulum.rrc.send(args));
 }
 
 /** A `/msg` that did not send. handleSend rethrows it so ChatComposer keeps the text and shows why. */

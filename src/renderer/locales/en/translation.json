@@ -969,7 +969,7 @@
     "scheduleSendPreset15m": "In 15 minutes",
     "scheduleSendPreset1h": "In 1 hour",
     "scheduleSendPresetTomorrow": "Tomorrow 9:00",
-    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Schedule",
     "scheduleSendSave": "Save",
     "scheduleSendErrorPast": "Pick a time in the future.",
@@ -6971,7 +6971,8 @@
     "rf": "RF",
     "graph": "Graph",
     "topology": "Network topology",
-    "admin": "Administration"
+    "admin": "Administration",
+    "scheduledbroadcasts": "Broadcasts"
   },
   "takContacts": {
     "affiliationFriend": "Friendly",
@@ -7446,6 +7447,80 @@
     "standingAlertViewAria": "Open the Incident tab",
     "standingAlertDismiss": "Mark seen",
     "standingAlertDismissAria": "Mark the emergency from {{sender}} as seen"
+  },
+  "scheduledBroadcasts": {
+    "title": "Scheduled broadcasts",
+    "intro": "Recurring one-packet messages to channels, MeshCore rooms, or RRC rooms. The app must be running with the radio connected — missed times are skipped, not sent late.",
+    "respectWarning": "Be respectful of shared LoRa airtime and other operators. Do not spam channels, rooms, or hubs — prefer infrequent schedules, few targets, and messages the mesh actually needs.",
+    "enabled": "Enable scheduled broadcasts",
+    "enabledHint": "When off, timers stay disarmed. Slot configurations are kept.",
+    "disabledBySetting": "Master switch is off — schedules will not fire.",
+    "slotLabel": "Broadcast {{n}}",
+    "add": "Add broadcast",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this scheduled broadcast?",
+    "sendNow": "Send now",
+    "label": "Label",
+    "text": "Message",
+    "textHint": "Single packet only — oversize text cannot be saved.",
+    "targets": "Targets",
+    "targetsHint": "Choose up to 8 destinations. Delivery needs that radio connected.",
+    "savedTargets": "Saved targets",
+    "noTargets": "Add at least one enabled target.",
+    "schedule": "Schedule",
+    "intervalLabel": "Repeat",
+    "interval": {
+      "hourly": "Hourly",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "biweekly": "Every two weeks",
+      "monthly": "Monthly"
+    },
+    "timeOfDay": "Time",
+    "weekday": "Weekday",
+    "weekdays": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "dayOfMonth": "Day of month",
+    "anchorDate": "Biweekly anchor date",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "nextDue": "Next due",
+    "never": "Never",
+    "status": {
+      "sent": "Sent",
+      "partial": "Partial ({{ok}}/{{total}})",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "missed": "Missed"
+    },
+    "reasons": {
+      "notConnected": "Not connected",
+      "roomLoginRequired": "Room login required",
+      "roomUnknown": "Room unknown",
+      "rrcNotConnected": "RRC hub not connected",
+      "textTooLong": "Text too long for a target",
+      "noTargets": "No targets",
+      "deferred": "Deferred (run time limit)",
+      "sendFailed": "Send failed",
+      "emptyText": "Message is empty",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic channel",
+      "meshcoreChannel": "MeshCore channel",
+      "meshcoreRoom": "MeshCore room",
+      "rrcRoom": "RRC room"
+    },
+    "airtimeWarning": "Hourly schedules with many targets use a lot of airtime."
   },
   "mecp": {
     "severity": {

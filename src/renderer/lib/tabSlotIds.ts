@@ -23,6 +23,7 @@ export const TAB_SLOT_IDS = [
   'RF',
   'Graph',
   'Topology',
+  'ScheduledBroadcasts',
 ] as const;
 
 export type TabSlotId = (typeof TAB_SLOT_IDS)[number];

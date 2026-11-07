@@ -25,6 +25,7 @@ export function troubleshootingDocsUrl(protocol: MeshProtocol): string {
 
 export const DIAGNOSTICS_DOCS_URL = docsSitePageUrl('diagnostics');
 export const CHAT_DOCS_URL = docsSitePageUrl('chat');
+export const SCHEDULED_BROADCASTS_DOCS_URL = docsSitePageUrl('scheduled-broadcasts');
 export const MAPS_DOCS_URL = docsSitePageUrl('maps');
 export const TAK_DOCS_URL = docsSitePageUrl('tak');
 export const FIRMWARE_DOCS_URL = docsSitePageUrl('firmware');

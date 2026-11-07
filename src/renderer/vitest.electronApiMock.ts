@@ -92,6 +92,46 @@ export function createElectronAPIMock(): ElectronAPI {
       getIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),
       saveIncidents: vi.fn().mockResolvedValue(undefined),
       seedIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),
+      listScheduledBroadcasts: vi.fn().mockResolvedValue([]),
+      saveScheduledBroadcast: vi
+        .fn()
+        .mockImplementation(
+          (input: {
+            slot: number;
+            label?: string;
+            text?: string;
+            enabled?: boolean;
+            interval?: string;
+            timeOfDayMin?: number;
+            weekday?: number | null;
+            dayOfMonth?: number | null;
+            anchorYmd?: string | null;
+            nextDueAt?: number | null;
+            lastAttemptAt?: number | null;
+            lastResult?: unknown;
+            targets?: unknown[];
+          }) =>
+            Promise.resolve({
+              slot: input.slot,
+              label: input.label ?? '',
+              text: input.text ?? '',
+              enabled: input.enabled ?? false,
+              interval: input.interval ?? 'weekly',
+              timeOfDayMin: input.timeOfDayMin ?? 540,
+              weekday: input.weekday ?? null,
+              dayOfMonth: input.dayOfMonth ?? null,
+              anchorYmd: input.anchorYmd ?? null,
+              nextDueAt: input.nextDueAt ?? null,
+              lastAttemptAt: input.lastAttemptAt ?? null,
+              lastResult: input.lastResult ?? null,
+              targets: input.targets ?? [],
+              updatedAt: Date.now(),
+            }),
+        ),
+      deleteScheduledBroadcast: vi.fn().mockResolvedValue(undefined),
+      clearScheduledBroadcasts: vi.fn().mockResolvedValue(undefined),
+      claimScheduledBroadcastDue: vi.fn().mockResolvedValue({ claimed: true }),
+      setScheduledBroadcastResult: vi.fn().mockResolvedValue(undefined),
       saveMessage: vi.fn().mockResolvedValue(undefined),
       getMessages: vi.fn().mockResolvedValue([]),
       listMeshtasticDmPeers: vi.fn().mockResolvedValue([]),

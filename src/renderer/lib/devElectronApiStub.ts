@@ -1,6 +1,7 @@
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 import { parseLegacyIncidentStorage } from '@/shared/incidentStorage';
 import type { IncidentSnapshot } from '@/shared/incidentTypes';
+import type { ScheduledBroadcastInput } from '@/shared/scheduledBroadcastTypes';
 import type { TakStyleSettings } from '@/shared/tak-types';
 
 /* eslint-disable @typescript-eslint/require-await -- no-op async IPC stubs for browser dev */
@@ -57,6 +58,27 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         incidents ??= parseLegacyIncidentStorage(legacyJson);
         return structuredClone(incidents);
       },
+      listScheduledBroadcasts: async () => [],
+      saveScheduledBroadcast: async (input: ScheduledBroadcastInput) => ({
+        slot: input.slot,
+        label: input.label ?? '',
+        text: input.text ?? '',
+        enabled: input.enabled ?? false,
+        interval: input.interval ?? 'weekly',
+        timeOfDayMin: input.timeOfDayMin ?? 540,
+        weekday: input.weekday ?? null,
+        dayOfMonth: input.dayOfMonth ?? null,
+        anchorYmd: input.anchorYmd ?? null,
+        nextDueAt: input.nextDueAt ?? null,
+        lastAttemptAt: input.lastAttemptAt ?? null,
+        lastResult: input.lastResult ?? null,
+        targets: input.targets ?? [],
+        updatedAt: Date.now(),
+      }),
+      deleteScheduledBroadcast: noopAsync,
+      clearScheduledBroadcasts: noopAsync,
+      claimScheduledBroadcastDue: async () => ({ claimed: true }),
+      setScheduledBroadcastResult: noopAsync,
       saveMessage: noopAsync,
       getMessages: async () => [],
       listMeshtasticDmPeers: async () => [],

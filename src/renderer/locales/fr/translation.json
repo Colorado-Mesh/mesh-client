@@ -946,7 +946,7 @@
     "scheduleSendSave": "Sauvegarder",
     "scheduleSendConfirm": "Horaire",
     "scheduleSendErrorEmpty": "Le message ne peut pas être vide.",
-    "scheduleSendHint": "Les messages programmés sont enregistrés sur cet appareil et envoyés lorsque l'heure arrive et que la radio est connectée. L'application doit être en cours d'exécution.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendErrorFar": "Choisissez une heure dans les 30 prochains jours.",
     "scheduleSendErrorPast": "Choisissez un moment dans le futur.",
     "scheduleSendFailed": "Impossible d'enregistrer le message programmé. Réessayez.",
@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "À distance",
     "games": "Jeux",
-    "incident": "Incident"
+    "incident": "Incident",
+    "scheduledbroadcasts": "Messages généraux"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -8246,5 +8247,79 @@
       "unverifiedBoard": "Radio non identifiée — choix de carte non vérifié. Mauvaise carte peut rendre l’appareil inutilisable."
     },
     "warningsTitle": "Avant de flasher"
+  },
+  "scheduledBroadcasts": {
+    "title": "Diffusions programmées",
+    "intro": "Messages récurrents d’un seul paquet vers des canaux, salles MeshCore ou salles RRC. L’application doit être ouverte avec la radio connectée — les occurrences manquées sont ignorées, pas envoyées en retard.",
+    "enabled": "Activer les diffusions programmées",
+    "enabledHint": "Lorsqu'elles sont désactivées, les minuteries restent désarmées. Les configurations d'emplacements sont conservées.",
+    "disabledBySetting": "L'interrupteur principal est éteint — les horaires ne se déclencheront pas.",
+    "slotLabel": "Diffusion {{n}}",
+    "add": "Ajouter une diffusion",
+    "edit": "editer",
+    "delete": "Effacer",
+    "deleteConfirm": "Supprimer cette diffusion programmée ?",
+    "sendNow": "Envoyer maintenant",
+    "label": "Dénomination",
+    "text": "Message",
+    "textHint": "Un seul paquet — le texte surdimensionné ne peut pas être enregistré.",
+    "targets": "Cibles",
+    "targetsHint": "Choisissez jusqu'à 8 destinations. La livraison a besoin que la radio soit connectée.",
+    "noTargets": "Ajoutez au moins une cible activée.",
+    "schedule": "Horaire",
+    "intervalLabel": "Répéter",
+    "interval": {
+      "hourly": "Toutes les heures",
+      "daily": "Tous les jours",
+      "weekly": "Hebdomadaire",
+      "biweekly": "Toutes les deux semaines",
+      "monthly": "Mensuelle"
+    },
+    "timeOfDay": "Heure",
+    "weekday": "Jour ouvré",
+    "weekdays": {
+      "0": "Dimanche",
+      "1": "Cyber Monday!",
+      "2": "Mardi",
+      "3": "Mercredi",
+      "4": "Jeudi",
+      "5": "Vendredi",
+      "6": "Samedi"
+    },
+    "dayOfMonth": "Jour du mois",
+    "anchorDate": "Date d'ancrage bimensuelle",
+    "nextDue": "Prochaine échéance",
+    "never": "Jamais",
+    "status": {
+      "sent": "Envoyé",
+      "partial": "Partiel ({{ok}}/{{total}})",
+      "failed": "Échec",
+      "skipped": "Ignorer",
+      "missed": "Manqué"
+    },
+    "reasons": {
+      "notConnected": "Non connecté",
+      "roomLoginRequired": "Connexion requise",
+      "roomUnknown": "Salle inconnue",
+      "rrcNotConnected": "Hub RRC non connecté",
+      "textTooLong": "Texte trop long pour une cible",
+      "noTargets": "Aucun objectif fixé7",
+      "deferred": "Différé (limite de temps d'exécution)",
+      "sendFailed": "Échec de l'envoi",
+      "emptyText": "Le Message est vide",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic canal",
+      "meshcoreChannel": "MeshCore canal",
+      "meshcoreRoom": "Salle MeshCore",
+      "rrcRoom": "Salle RRC"
+    },
+    "airtimeWarning": "Les horaires horaires avec de nombreuses cibles utilisent beaucoup de temps d'antenne.",
+    "respectWarning": "Respectez le temps d'antenne partagé LoRa et les autres opérateurs. Ne spammez pas les canaux, les salles ou les hubs — préférez des horaires peu fréquents, peu de cibles et des messages dont le maillage a réellement besoin.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Cibles enregistrées"
   }
 }

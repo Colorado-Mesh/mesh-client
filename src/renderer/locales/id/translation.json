@@ -943,7 +943,7 @@
     "scheduleSendPreset15m": "Dalam 15 menit",
     "scheduleSendPreset1h": "Dalam 1 jam",
     "scheduleSendPresetTomorrow": "Besok 09:00",
-    "scheduleSendHint": "Pesan terjadwal disimpan di perangkat ini dan dikirim saat waktunya tiba serta radio terhubung. Aplikasi harus sedang berjalan.",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
     "scheduleSendConfirm": "Jadwalkan",
     "scheduleSendSave": "Simpan",
     "scheduleSendErrorPast": "Pilih waktu di masa depan.",
@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Jarak jauh",
     "games": "Game",
-    "incident": "Insiden"
+    "incident": "Insiden",
+    "scheduledbroadcasts": "Siaran"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -8246,5 +8247,79 @@
       "unverifiedBoard": "Radio tidak teridentifikasi — pilihan papan belum diverifikasi. Papan salah bisa brick perangkat."
     },
     "warningsTitle": "Sebelum flash"
+  },
+  "scheduledBroadcasts": {
+    "title": "Siaran terjadwal",
+    "intro": "Pesan berulang satu paket ke saluran, ruangan MeshCore, atau ruangan RRC. Aplikasi harus berjalan dengan radio terhubung — waktu yang terlewat dilewati, tidak dikirim terlambat.",
+    "enabled": "Aktifkan siaran terjadwal",
+    "enabledHint": "Saat tidak aktif, timer tetap dilucuti. Konfigurasi slot disimpan.",
+    "disabledBySetting": "Sakelar master mati — jadwal tidak akan menyala.",
+    "slotLabel": "Siaran {{n}}",
+    "add": "Tambahkan siaran",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "deleteConfirm": "Hapus siaran terjadwal ini?",
+    "sendNow": "Kirim sekarang",
+    "label": "Kertas Label Harga",
+    "text": "Pesan",
+    "textHint": "Hanya satu paket — teks berukuran besar tidak dapat disimpan.",
+    "targets": "Target",
+    "targetsHint": "Pilih hingga 8 destinasi. Pengiriman membutuhkan radio yang terhubung.",
+    "savedTargets": "Target tersimpan",
+    "noTargets": "Tambahkan setidaknya satu target yang diaktifkan.",
+    "schedule": "Lampiran",
+    "intervalLabel": "Ulangi",
+    "interval": {
+      "hourly": "Setiap jam",
+      "daily": "Harian",
+      "weekly": "Mingguan",
+      "biweekly": "setiap dua minggu",
+      "monthly": "Bulanan"
+    },
+    "timeOfDay": "Waktu",
+    "weekday": "Hari kerja",
+    "weekdays": {
+      "0": "Minggu",
+      "1": "Senin",
+      "2": "Selasa",
+      "3": "Rabu",
+      "4": "Kamis",
+      "5": "Jumat",
+      "6": "Sabtu"
+    },
+    "dayOfMonth": "Hari dalam Sebulan",
+    "anchorDate": "Tanggal jangkar dua mingguan",
+    "nextDue": "Jatuh tempo berikutnya",
+    "never": "Tidak pernah",
+    "status": {
+      "sent": "Terkirim",
+      "partial": "Sebagian ({{ok}}/{{total}})",
+      "failed": "Gagal",
+      "skipped": "Dilewati",
+      "missed": "Terlewatkan"
+    },
+    "reasons": {
+      "notConnected": "Tidak terhubung",
+      "roomLoginRequired": "Log Masuk Diperlukan",
+      "roomUnknown": "Ruangan tidak dikenal",
+      "rrcNotConnected": "Hub RRC tidak terhubung",
+      "textTooLong": "Teks terlalu panjang untuk target",
+      "noTargets": "Tidak ada target",
+      "deferred": "Ditangguhkan (batas waktu berjalan)",
+      "sendFailed": "Pengiriman gagal",
+      "emptyText": "Pesan Kosong",
+      "channelMissing": "Channel not on this radio"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic saluran",
+      "meshcoreChannel": "MeshCore saluran",
+      "meshcoreRoom": "Ruangan MeshCore",
+      "rrcRoom": "Ruang RRC"
+    },
+    "airtimeWarning": "Jadwal per jam dengan banyak target menggunakan banyak airtime.",
+    "respectWarning": "Hormati waktu tayang LoRa bersama dan operator lainnya. Jangan mengirim spam ke saluran, ruangan, atau hub — lebih suka jadwal yang jarang, beberapa target, dan pesan yang benar-benar dibutuhkan mesh.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }
