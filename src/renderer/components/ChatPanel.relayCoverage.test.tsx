@@ -27,6 +27,7 @@ vi.mock('@tanstack/react-virtual', () => ({
       })),
     getTotalSize: () => opts.count * 96,
     measureElement: () => {},
+    resizeItem: () => {},
     isAtEnd: () => true,
     scrollToEnd: () => {},
     scrollToIndex: () => {},

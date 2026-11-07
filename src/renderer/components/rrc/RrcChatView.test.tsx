@@ -37,6 +37,7 @@ vi.mock('@tanstack/react-virtual', () => ({
         })),
       getTotalSize: () => count * 22,
       measureElement: mockMeasureElement,
+      resizeItem: vi.fn(),
       containerRef: { current: null },
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
@@ -200,29 +201,22 @@ describe.each(['linux', 'darwin', 'win32'] as const)('RRC unread markers on %s',
     expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center', behavior: 'smooth' });
   });
 
-  it('re-measures rows already on screen when the unread divider moves', () => {
-    const messages = [makeMsg({ id: 'old', body: 'Read already', timestamp: 100 })];
+  // Dropping every measured size here put rows back at estimates that leave out reaction
+  // chips: the chips covered the next line, and catching up pushed the view off the bottom.
+  it('keeps measured row sizes when the unread divider appears and clears', () => {
+    const messages = [
+      makeMsg({ id: 'old', body: 'Read already', timestamp: 100 }),
+      makeMsg({ id: 'new', body: 'Incoming', timestamp: 101 }),
+    ];
     const { rerender } = render(<RrcChatView {...baseProps} messages={messages} />);
-    const firstRow = screen.getByText('Read already').closest('[data-index="0"]');
-    expect(firstRow).not.toBeNull();
     mockMeasure.mockClear();
-    mockMeasureElement.mockClear();
 
-    rerender(
-      <RrcChatView
-        {...baseProps}
-        unreadWatermark={100}
-        messages={[...messages, makeMsg({ id: 'new', body: 'Incoming', timestamp: 101 })]}
-      />,
-    );
+    rerender(<RrcChatView {...baseProps} unreadWatermark={100} messages={messages} />);
+    expect(screen.getByRole('separator')).toBeInTheDocument();
+    rerender(<RrcChatView {...baseProps} unreadWatermark={null} messages={messages} />);
+    expect(screen.queryByRole('separator')).toBeNull();
 
-    expect(mockMeasure).toHaveBeenCalledTimes(1);
-    // The first row stays mounted, so only the reset reports its real height again.
-    const firstRowCall = mockMeasureElement.mock.calls.findIndex(([row]) => row === firstRow);
-    expect(firstRowCall).toBeGreaterThanOrEqual(0);
-    expect(mockMeasureElement.mock.invocationCallOrder[firstRowCall]).toBeGreaterThan(
-      mockMeasure.mock.invocationCallOrder[0],
-    );
+    expect(mockMeasure).not.toHaveBeenCalled();
   });
 
   it('marks an incoming whisper and isolates openings for the same room on another hub', () => {
