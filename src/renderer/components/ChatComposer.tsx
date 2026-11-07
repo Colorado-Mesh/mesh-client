@@ -267,6 +267,7 @@ export interface ChatComposerProps {
   allowScheduledSend?: boolean;
 }
 
+/** Shared channel/DM/room compose box: draft, mentions, macros, GIF, schedule, and send. */
 export function ChatComposer({
   protocol,
   viewKey,
@@ -1082,6 +1083,10 @@ export function ChatComposer({
 
   const closeMacroDialog = useCallback(() => {
     setMacroDialogFocus(null);
+  }, []);
+
+  const closeScheduleDialog = useCallback(() => {
+    setScheduleDialogOpen(false);
   }, []);
 
   const sendGifWire = useCallback(
@@ -2125,9 +2130,7 @@ export function ChatComposer({
           mode="create"
           text={input.trim()}
           onConfirm={({ scheduledAt }) => handleScheduleSend(scheduledAt)}
-          onCancel={() => {
-            setScheduleDialogOpen(false);
-          }}
+          onCancel={closeScheduleDialog}
         />
       )}
 

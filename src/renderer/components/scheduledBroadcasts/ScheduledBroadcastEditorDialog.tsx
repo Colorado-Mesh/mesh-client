@@ -76,6 +76,10 @@ export interface ScheduledBroadcastEditorDialogProps {
   onSave: (input: ScheduledBroadcastInput) => Promise<void>;
 }
 
+/**
+ * Edit one scheduled-broadcast slot (label, text, schedule, targets).
+ * Focus trap mounts once with `preventScroll` so unstable `onClose` identities do not snap scroll.
+ */
 export function ScheduledBroadcastEditorDialog({
   slot,
   existing,
@@ -99,17 +103,25 @@ export function ScheduledBroadcastEditorDialog({
   const [targets, setTargets] = useState<ScheduledBroadcastTarget[]>(existing?.targets ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  // Focus first control on open; Escape closes; Tab stays inside; restore opener on close.
+  // Focus once on mount only. Do not depend on onClose — parent may pass an inline
+  // callback that changes every render; re-focusing the first control snaps scroll to top.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusOpts = { preventScroll: true } as const;
+    panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus(focusOpts);
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -120,18 +132,19 @@ export function ScheduledBroadcastEditorDialog({
       const active = document.activeElement;
       if (e.shiftKey && (active === first || !panel.contains(active))) {
         e.preventDefault();
-        last.focus();
+        last.focus(focusOpts);
       } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
         e.preventDefault();
-        first.focus();
+        first.focus(focusOpts);
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      if (previous && document.contains(previous)) previous.focus();
+      const prev = previouslyFocusedRef.current;
+      if (prev && document.contains(prev)) prev.focus(focusOpts);
     };
-  }, [onClose]);
+  }, []);
 
   const enabledTargets = targets.filter((x) => x.enabled);
   const textFailures = useMemo(
@@ -212,7 +225,7 @@ export function ScheduledBroadcastEditorDialog({
     >
       <div
         ref={panelRef}
-        className="bg-ink-900 rounded-modal shadow-level-3 flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto p-4"
+        className="bg-ink-900 rounded-modal shadow-level-3 flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto overscroll-contain p-4"
       >
         <h2 id="sb-editor-title" className="text-ink-100 text-base font-semibold">
           {t('scheduledBroadcasts.edit')} — {t('scheduledBroadcasts.slotLabel', { n: slot })}

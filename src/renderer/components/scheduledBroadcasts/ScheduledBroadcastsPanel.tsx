@@ -35,6 +35,7 @@ function formatNextDue(ms: number | null | undefined, neverLabel: string): strin
   }
 }
 
+/** Chat-section panel for enabling and editing the 12 scheduled-broadcast slots. */
 export default function ScheduledBroadcastsPanel() {
   const { t } = useTranslation();
   const slots = useScheduledBroadcastsStore((s) => s.slots);
@@ -54,6 +55,10 @@ export default function ScheduledBroadcastsPanel() {
           '[ScheduledBroadcasts] persist master switch failed ' + errLikeToLogString(err),
         );
       });
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setEditingSlot(null);
   }, []);
 
   const slotNumbers = useMemo(
@@ -219,9 +224,7 @@ export default function ScheduledBroadcastsPanel() {
         <ScheduledBroadcastEditorDialog
           slot={editingSlot}
           existing={slots[editingSlot] ?? null}
-          onClose={() => {
-            setEditingSlot(null);
-          }}
+          onClose={closeEditor}
           onSave={handleSave}
         />
       ) : null}

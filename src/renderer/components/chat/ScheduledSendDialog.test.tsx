@@ -137,6 +137,58 @@ describe('ScheduledSendDialog', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it('does not re-focus the first control when onCancel identity changes', () => {
+    const { rerender } = render(
+      <ScheduledSendDialog
+        mode="create"
+        text="x"
+        initialAt={Date.now() + HOUR}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const when = screen.getByLabelText('Send at');
+    when.focus();
+    expect(document.activeElement).toBe(when);
+
+    rerender(
+      <ScheduledSendDialog
+        mode="create"
+        text="x"
+        initialAt={Date.now() + HOUR}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(when);
+  });
+
+  it('calls the latest onCancel after the callback identity changes', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = render(
+      <ScheduledSendDialog
+        mode="create"
+        text="x"
+        initialAt={Date.now() + HOUR}
+        onConfirm={vi.fn()}
+        onCancel={first}
+      />,
+    );
+    rerender(
+      <ScheduledSendDialog
+        mode="create"
+        text="x"
+        initialAt={Date.now() + HOUR}
+        onConfirm={vi.fn()}
+        onCancel={second}
+      />,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
+  });
+
   it('has no axe violations', async () => {
     const { container } = render(
       <ScheduledSendDialog

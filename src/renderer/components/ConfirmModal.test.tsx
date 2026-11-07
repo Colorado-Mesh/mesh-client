@@ -82,6 +82,59 @@ describe('ConfirmModal', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it('does not re-focus the first control when onCancel identity changes', () => {
+    const { rerender } = render(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const yes = screen.getByRole('button', { name: 'Yes' });
+    yes.focus();
+    expect(document.activeElement).toBe(yes);
+
+    rerender(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(yes);
+  });
+
+  it('calls the latest onCancel after the callback identity changes', async () => {
+    const user = userEvent.setup();
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = render(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        onConfirm={vi.fn()}
+        onCancel={first}
+      />,
+    );
+    rerender(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        onConfirm={vi.fn()}
+        onCancel={second}
+      />,
+    );
+    await user.keyboard('{Escape}');
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
+  });
+
   it('calls onConfirm when confirm button is clicked', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
