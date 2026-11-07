@@ -369,21 +369,21 @@ export const CANONICAL_TABLES_DDL = `
       );
 
       CREATE TABLE IF NOT EXISTS scheduled_broadcasts (
-        slot              INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),
-        label             TEXT    NOT NULL DEFAULT '',
-        text              TEXT    NOT NULL DEFAULT '',
-        enabled           INTEGER NOT NULL DEFAULT 0,
-        interval          TEXT    NOT NULL DEFAULT 'weekly'
-                          CHECK (interval IN ('hourly','daily','weekly','biweekly','monthly')),
-        time_of_day_min   INTEGER NOT NULL DEFAULT 540 CHECK (time_of_day_min BETWEEN 0 AND 1439),
-        weekday           INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 0 AND 6),
-        day_of_month      INTEGER CHECK (day_of_month IS NULL OR day_of_month BETWEEN 1 AND 31),
-        anchor_ymd        TEXT,
-        next_due_at       INTEGER,
-        last_attempt_at   INTEGER,
-        last_result_json  TEXT,
-        targets_json      TEXT    NOT NULL DEFAULT '[]',
-        updated_at        INTEGER NOT NULL
+        slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),
+        label TEXT NOT NULL DEFAULT '',
+        text TEXT NOT NULL DEFAULT '',
+        enabled INTEGER NOT NULL DEFAULT 0,
+        interval TEXT NOT NULL DEFAULT 'weekly'
+          CHECK (interval IN ('hourly','daily','weekly','biweekly','monthly')),
+        time_of_day_min INTEGER NOT NULL DEFAULT 540 CHECK (time_of_day_min BETWEEN 0 AND 1439),
+        weekday INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 0 AND 6),
+        day_of_month INTEGER CHECK (day_of_month IS NULL OR day_of_month BETWEEN 1 AND 31),
+        anchor_ymd TEXT,
+        next_due_at INTEGER,
+        last_attempt_at INTEGER,
+        last_result_json TEXT,
+        targets_json TEXT NOT NULL DEFAULT '[]',
+        updated_at INTEGER NOT NULL
       );
     `;
 
