@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -8,9 +8,11 @@ import type { EnsureMlxCommand } from './ensureMlxHelper';
 import {
   coLocateMlxSideBundles,
   ensureMlxHelper,
+  findMlxSwiftCheckout,
   isMetalToolchainMissingOutput,
   isMlxHelperInstallComplete,
   MLX_SWIFT_BUILD_ARGS,
+  packageMlxCmlxMetallibBundle,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './ensureMlxHelper';
@@ -124,6 +126,38 @@ describe('ensureMlxHelper', () => {
     writeFileSync(binary, 'bin');
     expect(isMlxHelperInstallComplete(binary)).toBe(false);
     coLocateMlxSideBundles(binary, root);
+    expect(isMlxHelperInstallComplete(binary)).toBe(true);
+  });
+
+  it('findMlxSwiftCheckout locates mlx-generated metal under checkouts', () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const metal = path.join(
+      root,
+      '.build',
+      'checkouts',
+      'mlx-swift',
+      'Source',
+      'Cmlx',
+      'mlx-generated',
+      'metal',
+    );
+    mkdirSync(metal, { recursive: true });
+    expect(findMlxSwiftCheckout(root)).toBe(path.join(root, '.build', 'checkouts', 'mlx-swift'));
+  });
+
+  it('packageMlxCmlxMetallibBundle writes default.metallib beside the binary', () => {
+    if (process.platform !== 'darwin') return;
+    const packageRoot = path.resolve(import.meta.dirname, '../../../../native/ai/mlx');
+    if (!findMlxSwiftCheckout(packageRoot)) return;
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const binary = path.join(root, 'mesh-ai-mlx');
+    writeFileSync(binary, 'bin');
+    packageMlxCmlxMetallibBundle(binary, packageRoot);
+    expect(
+      existsSync(
+        path.join(root, 'mlx-swift_Cmlx.bundle', 'Contents', 'Resources', 'default.metallib'),
+      ),
+    ).toBe(true);
     expect(isMlxHelperInstallComplete(binary)).toBe(true);
   });
 

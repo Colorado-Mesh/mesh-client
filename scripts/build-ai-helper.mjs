@@ -7,6 +7,7 @@ import {
   coLocateMlxSideBundles,
   isMlxHelperInstallComplete,
   MLX_SWIFT_BUILD_ARGS,
+  packageMlxCmlxMetallibBundle,
   stageMlxHelperBinary,
 } from './lib/stage-mlx-helper.mjs';
 
@@ -61,8 +62,8 @@ if (process.platform === 'darwin') {
           'Xcode.app Contents/Developer not found under /Applications (install full Xcode; CLT-only is not enough)',
         );
       }
-      // Xcode build system compiles Cmlx Metal shaders into mlx-swift_Cmlx.bundle;
-      // native/swiftbuild links the binary without that metallib bundle (CI used to).
+      // Default swiftbuild links mesh-ai-mlx but skips Cmlx metallib resources;
+      // --build-system xcode fails resolving MLXHuggingFaceMacros on CI.
       execFileSync('swift', MLX_SWIFT_BUILD_ARGS, {
         cwd: mlxPackage,
         stdio: 'inherit',
@@ -74,8 +75,11 @@ if (process.platform === 'darwin') {
       }
       coLocateMlxSideBundles(built, mlxPackage);
       if (!isMlxHelperInstallComplete(built)) {
+        packageMlxCmlxMetallibBundle(built, mlxPackage, { env });
+      }
+      if (!isMlxHelperInstallComplete(built)) {
         throw new Error(
-          `mesh-ai-mlx build missing mlx-swift_Cmlx.bundle next to ${built} (needed for default.metallib; use Xcode build system + Metal Toolchain)`,
+          `mesh-ai-mlx build missing mlx-swift_Cmlx.bundle next to ${built} (needed for default.metallib)`,
         );
       }
       const stagedMlx = path.join(output, 'staged/darwin/mesh-ai-mlx');

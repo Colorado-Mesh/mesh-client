@@ -1,4 +1,15 @@
-import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import {
+  chmodSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 /**
@@ -13,19 +24,40 @@ export const MLX_HELPER_SIDE_BUNDLES = [
 ];
 
 /**
- * Native/swiftbuild often links `mesh-ai-mlx` without compiling Cmlx Metal shaders into
- * `mlx-swift_Cmlx.bundle`. The Xcode build system emits that bundle (default.metallib).
- * Keep in sync with `src/main/ai/os/mlxHelperInstall.ts` (`MLX_SWIFT_BUILD_ARGS`).
+ * Default Swift build (swiftbuild). Do **not** use `--build-system xcode` —
+ * Xcode SPM fails to resolve `MLXHuggingFaceMacros` on CI. Metallib packaging is
+ * a separate post-step (`packageMlxCmlxMetallibBundle`).
+ * Keep in sync with `src/main/ai/os/mlxHelperInstall.ts`.
  */
-export const MLX_SWIFT_BUILD_ARGS = [
-  'build',
-  '-c',
-  'release',
-  '--product',
-  'mesh-ai-mlx',
-  '--build-system',
-  'xcode',
+export const MLX_SWIFT_BUILD_ARGS = ['build', '-c', 'release', '--product', 'mesh-ai-mlx'];
+
+/** Metal kernels shipped under mlx-swift `mlx-generated/metal` (see fix-metal-includes.sh). */
+const MLX_CMLX_METAL_KERNELS = [
+  'arg_reduce.metal',
+  'conv.metal',
+  'dot.metal',
+  'layer_norm.metal',
+  'random.metal',
+  'rms_norm.metal',
+  'rope.metal',
+  'scaled_dot_product_attention.metal',
+  'searchsorted.metal',
+  'steel/attn/kernels/steel_attention.metal',
 ];
+
+const CMLX_BUNDLE_INFO_PLIST = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+\t<key>CFBundleIdentifier</key>
+\t<string>mlx-swift.Cmlx.resources</string>
+\t<key>CFBundleName</key>
+\t<string>mlx-swift_Cmlx</string>
+\t<key>CFBundlePackageType</key>
+\t<string>BNDL</string>
+</dict>
+</plist>
+`;
 
 /** True when the binary and the Cmlx metallib bundle are present. */
 export function isMlxHelperInstallComplete(binaryPath) {
@@ -74,6 +106,88 @@ export function coLocateMlxSideBundles(binaryPath, packageRoot) {
     if (!found) continue;
     rmSync(dest, { recursive: true, force: true });
     cpSync(found, dest, { recursive: true });
+  }
+}
+
+/**
+ * @param {string} packageRoot
+ * @returns {string | null}
+ */
+export function findMlxSwiftCheckout(packageRoot) {
+  const checkouts = path.join(packageRoot, '.build', 'checkouts');
+  if (!existsSync(checkouts)) return null;
+  for (const entry of readdirSync(checkouts, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name !== 'mlx-swift' && !entry.name.startsWith('mlx-swift-')) continue;
+    const metalRoot = path.join(checkouts, entry.name, 'Source', 'Cmlx', 'mlx-generated', 'metal');
+    if (existsSync(metalRoot)) return path.join(checkouts, entry.name);
+  }
+  return null;
+}
+
+/**
+ * Compile mlx-swift Cmlx Metal kernels into `mlx-swift_Cmlx.bundle` next to the binary.
+ * Needed because default SwiftPM (swiftbuild) links without emitting that resource bundle.
+ *
+ * @param {string} binaryPath
+ * @param {string} packageRoot
+ * @param {{ env?: NodeJS.ProcessEnv }} [opts]
+ */
+export function packageMlxCmlxMetallibBundle(binaryPath, packageRoot, opts = {}) {
+  const destBundle = path.join(path.dirname(binaryPath), 'mlx-swift_Cmlx.bundle');
+  if (existsSync(path.join(destBundle, 'Contents', 'Resources', 'default.metallib'))) return;
+
+  const checkout = findMlxSwiftCheckout(packageRoot);
+  if (!checkout) {
+    throw new Error(
+      `mlx-swift checkout with mlx-generated/metal not found under ${packageRoot}/.build/checkouts`,
+    );
+  }
+  const metalRoot = path.join(checkout, 'Source', 'Cmlx', 'mlx-generated', 'metal');
+  const env = opts.env ?? process.env;
+  const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-metallib-'));
+  try {
+    /** @type {string[]} */
+    const airFiles = [];
+    for (const relative of MLX_CMLX_METAL_KERNELS) {
+      const source = path.join(metalRoot, relative);
+      if (!existsSync(source)) {
+        throw new Error(`Missing Metal kernel ${relative} under ${metalRoot}`);
+      }
+      const airName = `${path.basename(relative, '.metal')}.air`;
+      const airPath = path.join(work, airName);
+      execFileSync(
+        'xcrun',
+        [
+          '-sdk',
+          'macosx',
+          'metal',
+          '-c',
+          '-fno-fast-math',
+          '-Wno-c++17-extensions',
+          '-Wno-c++20-extensions',
+          '-I',
+          metalRoot,
+          source,
+          '-o',
+          airPath,
+        ],
+        { env, stdio: 'pipe' },
+      );
+      airFiles.push(airPath);
+    }
+    const metallib = path.join(work, 'default.metallib');
+    execFileSync('xcrun', ['-sdk', 'macosx', 'metallib', ...airFiles, '-o', metallib], {
+      env,
+      stdio: 'pipe',
+    });
+    const resources = path.join(destBundle, 'Contents', 'Resources');
+    rmSync(destBundle, { recursive: true, force: true });
+    mkdirSync(resources, { recursive: true });
+    writeFileSync(path.join(destBundle, 'Contents', 'Info.plist'), CMLX_BUNDLE_INFO_PLIST);
+    cpSync(metallib, path.join(resources, 'default.metallib'));
+  } finally {
+    rmSync(work, { recursive: true, force: true });
   }
 }
 

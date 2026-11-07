@@ -9,15 +9,18 @@ import {
   coLocateMlxSideBundles,
   isMlxHelperInstallComplete,
   MLX_SWIFT_BUILD_ARGS,
+  packageMlxCmlxMetallibBundle,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './mlxHelperInstall';
 
 export {
   coLocateMlxSideBundles,
+  findMlxSwiftCheckout,
   isMlxHelperInstallComplete,
   MLX_HELPER_SIDE_BUNDLES,
   MLX_SWIFT_BUILD_ARGS,
+  packageMlxCmlxMetallibBundle,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './mlxHelperInstall';
@@ -208,6 +211,15 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
       return { available: false, reason: 'buildFailed', binaryPath: null };
     }
     coLocateMlxSideBundles(built, paths.mlxPackageRoot);
+    if (!isMlxHelperInstallComplete(built)) {
+      try {
+        packageMlxCmlxMetallibBundle(built, paths.mlxPackageRoot, env);
+      } catch (error) {
+        // catch-no-log-ok logged via logEnsureFailure
+        logEnsureFailure('buildFailed', commandOutputText(error));
+        return { available: false, reason: 'buildFailed', binaryPath: null };
+      }
+    }
     if (!isMlxHelperInstallComplete(built)) {
       logEnsureFailure('buildFailed', 'mlx-swift_Cmlx.bundle missing next to release binary');
       return { available: false, reason: 'buildFailed', binaryPath: null };
