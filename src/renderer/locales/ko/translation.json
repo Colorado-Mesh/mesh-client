@@ -8351,6 +8351,7 @@
     "respectWarning": "공용 LoRa 방송 시간 및 기타 운영자를 존중하세요. 채널, 방 또는 허브를 스팸하지 마십시오. 빈번하지 않은 일정, 몇 가지 목표 및 메시지에 실제로 필요한 메시지를 선호합니다.",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "channelNamed": "{{kind}} {{index}}: {{name}}"
   }
 }

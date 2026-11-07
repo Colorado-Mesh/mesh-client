@@ -7522,6 +7522,7 @@
       "meshcoreRoom": "MeshCore room",
       "rrcRoom": "RRC room"
     },
+    "channelNamed": "{{kind}} {{index}}: {{name}}",
     "airtimeWarning": "Hourly schedules with many targets use a lot of airtime."
   },
   "mecp": {

@@ -5,8 +5,11 @@ import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsSt
 import { DEFAULT_APP_SETTINGS_SHARED } from '@/renderer/lib/defaultAppSettings';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
+import { formatScheduledBroadcastTargetLabel } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import { SCHEDULED_BROADCASTS_ENABLED_SETTING } from '@/renderer/lib/scheduledBroadcasts/constants';
 import { getScheduledBroadcastScheduler } from '@/renderer/lib/scheduledBroadcasts/scheduler';
+import { useDeviceStore } from '@/renderer/stores/deviceStore';
+import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useScheduledBroadcastsStore } from '@/renderer/stores/scheduledBroadcastsStore';
 import type { ScheduledBroadcastInput } from '@/shared/scheduledBroadcastTypes';
 import { SCHEDULED_BROADCAST_SLOT_COUNT } from '@/shared/scheduledBroadcastTypes';
@@ -41,6 +44,8 @@ export default function ScheduledBroadcastsPanel() {
   const slots = useScheduledBroadcastsStore((s) => s.slots);
   const save = useScheduledBroadcastsStore((s) => s.save);
   const remove = useScheduledBroadcastsStore((s) => s.remove);
+  const devices = useDeviceStore((s) => s.devices);
+  useLiveChannelKeyStore((s) => s.byProtocol);
   const [masterEnabled, setMasterEnabled] = useState(readMasterEnabled);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [busySlot, setBusySlot] = useState<number | null>(null);
@@ -175,7 +180,7 @@ export default function ScheduledBroadcastsPanel() {
                             key={`${tg.kind}-${tg.identityId}-${tg.channelIndex ?? tg.room ?? tg.roomPubKeyHex}`}
                             className="bg-ink-700 text-ink-200 rounded-badge text-2xs px-1.5 py-0.5"
                           >
-                            {tg.label}
+                            {formatScheduledBroadcastTargetLabel(tg, t, devices[tg.identityId])}
                           </span>
                         ))}
                     </div>
