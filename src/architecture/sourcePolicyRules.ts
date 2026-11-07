@@ -163,7 +163,7 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     when: /(?:data-setting-anchor|anchorId)\s*=\s*["']/,
     // Two or three lower-camel segments, spelled out as alternatives to avoid nested quantifiers.
     forbid:
-      /(?:data-setting-anchor|anchorId)\s*=\s*(["'])(?!(?:connection|chat|games|rrc|nomadNetwork|remote|nodes|map|radio|modules|admin|rooms|telemetry|security|tak|incident|app|diagnostics|stats|sniffer|rf|graph|topology)\.(?:[a-z][a-zA-Z0-9]*|[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*)\1)/,
+      /(?:data-setting-anchor|anchorId)\s*=\s*(["'])(?!(?:connection|chat|scheduledBroadcasts|games|rrc|nomadNetwork|remote|nodes|map|radio|modules|admin|rooms|telemetry|security|tak|incident|app|diagnostics|stats|sniffer|rf|graph|topology)\.(?:[a-z][a-zA-Z0-9]*|[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*)\1)/,
     message:
       'Setting anchor ids are <slotCamel>.<subsectionCamel>.<settingCamel> and live in the owning panel (see docs/development/settings-search.md)',
   },

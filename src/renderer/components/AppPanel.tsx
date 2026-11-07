@@ -3259,6 +3259,23 @@ export default function AppPanel({
                     await window.electronAPI.db.clearMessages();
                   }
                   await window.electronAPI.db.clearNodes();
+                  try {
+                    const { useScheduledBroadcastsStore } =
+                      await import('../stores/scheduledBroadcastsStore');
+                    await useScheduledBroadcastsStore.getState().clearAll();
+                    const { mergeAppSetting } = await import('../lib/appSettingsStorage');
+                    mergeAppSetting(
+                      'scheduledBroadcastsEnabled',
+                      false,
+                      'AppPanel clearAllLocalData',
+                    );
+                    await window.electronAPI.appSettings.set('scheduledBroadcastsEnabled', 'false');
+                  } catch (err) {
+                    console.warn(
+                      '[AppPanel] clearScheduledBroadcasts failed:',
+                      err instanceof Error ? err.message : String(err),
+                    );
+                  }
                   await window.electronAPI.clearSessionData();
                 },
               });

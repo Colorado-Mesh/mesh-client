@@ -275,6 +275,7 @@ These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/cha
 - **Global message search**: `Ctrl/Cmd+Shift+F` searches stored messages across enabled protocols and opens the conversation at the hit — see [Chat: Finding messages](docs/chat.md#finding-messages)
 - **Unified inbox**: `Ctrl/Cmd+Shift+U` lists recent received messages across enabled protocols with protocol/text filters; copy, export, star, or delete locally — see [Chat: Unified inbox](docs/chat.md#unified-inbox)
 - **Scheduled send**: presets (15 minutes, 1 hour, tomorrow 09:00) or a custom time; stored on this device and sent only while the app is running and the radio can send (MeshCore MQTT-only waits for RF) — see [Chat: Scheduled send](docs/chat.md#scheduled-send)
+- **Scheduled Broadcasts**: up to twelve recurring one-packet messages to channels, MeshCore rooms, or RRC rooms (Chat → Broadcasts); timers run only while the app is open — see [Scheduled Broadcasts](docs/scheduled-broadcasts.md)
 - **Conversation pin / archive**: pin conversations to the front of the chip list; archive to hide them — separate from message starring — see [Chat: Channels and conversations](docs/chat.md#channels-and-conversations)
 - **Conversation search**: toolbar search filters the open conversation (Escape clears); use with jump-to-date for local navigation — see [Chat guide](docs/chat.md)
 

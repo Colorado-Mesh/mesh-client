@@ -5892,7 +5892,8 @@
     "rrc": "RRC",
     "remote": "Vzdálený přístup",
     "games": "Herní aktivity",
-    "incident": "Incident"
+    "incident": "Incident",
+    "scheduledbroadcasts": "Broadcasts"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -8329,5 +8330,74 @@
       "unverifiedBoard": "Rádio nebylo automaticky identifikováno — volba desky není ověřena. Špatná deska může zařízení znefunkčnit."
     },
     "warningsTitle": "Před flashováním"
+  },
+  "scheduledBroadcasts": {
+    "title": "Plánované vysílání",
+    "intro": "Opakující se zprávy na jeden balíček do kanálů, pokojů MeshCore nebo pokojů RRC. Aplikace musí být spuštěna s připojeným rádiem — zmeškané časy jsou přeskočeny, nejsou odeslány pozdě.",
+    "enabled": "Povolit naplánované vysílání",
+    "enabledHint": "Když je čas vypnutý, časovače zůstanou deaktivovány. Konfigurace slotů jsou zachovány.",
+    "disabledBySetting": "Hlavní vypínač je vypnutý — rozvrhy se nespustí.",
+    "slotLabel": "Vysílání {{n}}",
+    "add": "Přidat vysílání",
+    "edit": "Upravit",
+    "delete": "Odstranit",
+    "deleteConfirm": "Smazat toto naplánované vysílání?",
+    "sendNow": "Odeslat hned",
+    "label": "Označení",
+    "text": "Zpráva",
+    "textHint": "Pouze jeden paket — nadměrný text nelze uložit.",
+    "targets": "Cíle",
+    "targetsHint": "Vyber si až 8 destinací. Doručení vyžaduje, aby bylo rádio připojeno.",
+    "noTargets": "Přidejte alespoň jeden povolený cíl.",
+    "schedule": "Naplánovat",
+    "intervalLabel": "Opakovat",
+    "interval": {
+      "hourly": "Hodinově",
+      "daily": "denně",
+      "weekly": "Týdně",
+      "biweekly": "Každé 2 týdny",
+      "monthly": "Měsíčně"
+    },
+    "timeOfDay": "Hod",
+    "weekday": "Všední den",
+    "weekdays": {
+      "0": "Neděle",
+      "1": "Pondělí",
+      "2": "Úterý",
+      "3": "Středa",
+      "4": "Čtvrtek",
+      "5": "Pátek",
+      "6": "Sobota"
+    },
+    "dayOfMonth": "Den v měsíci",
+    "anchorDate": "Dvoutýdenní datum ukotvení",
+    "nextDue": "Příští termín",
+    "never": "Nikdy",
+    "status": {
+      "sent": "Odesláno",
+      "partial": "Částečné ({{ok}}/{{total}})",
+      "failed": "Nezdařilo se",
+      "skipped": "Přeskočeno",
+      "missed": "Zmeškané"
+    },
+    "reasons": {
+      "notConnected": "Nepřipojeno",
+      "roomLoginRequired": "Je vyžadováno přihlášení",
+      "roomUnknown": "Pokoj neznámý",
+      "rrcNotConnected": "Rozbočovač RRC není připojen",
+      "textTooLong": "Text je pro cíl příliš dlouhý",
+      "noTargets": "Žádné cíle",
+      "deferred": "Odloženo (časový limit běhu)",
+      "sendFailed": "Odeslání se nezdařilo.",
+      "emptyText": "Zpráva je prázdná"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic kanál",
+      "meshcoreChannel": "MeshCore kanál",
+      "meshcoreRoom": "MeshCore pokoj",
+      "rrcRoom": "Místnost RRC"
+    },
+    "airtimeWarning": "Hodinové rozvrhy s mnoha cíli spotřebují spoustu vysílacího času.",
+    "respectWarning": "Respektuj sdílený LoRa vysílací čas a ostatní operátory. Nespamujte kanály, místnosti ani rozbočovače — dejte přednost nepravidelným plánům, několika cílům a zprávám, které síť skutečně potřebuje."
   }
 }

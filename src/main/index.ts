@@ -177,6 +177,7 @@ import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
+import { registerScheduledBroadcastIpcHandlers } from './ipc/scheduled-broadcast-handlers';
 import { registerServiceAnnouncementIpcHandlers } from './ipc/service-announcement-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
@@ -3745,6 +3746,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'reticulumRmapPublishIfac',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
+  'scheduledBroadcastsEnabled',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 
@@ -6901,6 +6903,7 @@ void app
 
       initDatabase();
       registerIncidentIpcHandlers();
+      registerScheduledBroadcastIpcHandlers();
       protocol.handle(
         RENDERER_SCHEME,
         createRendererOriginProtocolHandler({

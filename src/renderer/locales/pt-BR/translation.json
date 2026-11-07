@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Remoto",
     "games": "Jogos",
-    "incident": "Incidente"
+    "incident": "Incidente",
+    "scheduledbroadcasts": "Transmissões"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -8246,5 +8247,74 @@
       "unverifiedBoard": "Rádio não identificado — escolha de placa não verificada. Placa errada pode inutilizar."
     },
     "warningsTitle": "Antes do flash"
+  },
+  "scheduledBroadcasts": {
+    "title": "Transmissões programadas",
+    "intro": "Mensagens recorrentes de um pacote para canais, salas MeshCore ou salas RRC. O aplicativo deve estar em execução com o rádio conectado — os horários perdidos são ignorados, não enviados com atraso.",
+    "enabled": "Ativar transmissões agendadas",
+    "enabledHint": "Quando desligado, os temporizadores permanecem desarmados. As configurações de slot são mantidas.",
+    "disabledBySetting": "O interruptor principal está desligado — os horários não serão acionados.",
+    "slotLabel": "Transmissão {{n}}",
+    "add": "Adicionar transmissão",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir esta transmissão agendada?",
+    "sendNow": "Enviar agora",
+    "label": "Etiqueta",
+    "text": "Mensagem",
+    "textHint": "Apenas um pacote — o texto de grandes dimensões não pode ser guardado.",
+    "targets": "Alvos",
+    "targetsHint": "Escolha até 8 destinos. A entrega precisa que o rádio esteja conectado.",
+    "noTargets": "Adicione pelo menos um alvo ativado.",
+    "schedule": "Agendar",
+    "intervalLabel": "Repetir",
+    "interval": {
+      "hourly": "Por hora",
+      "daily": "Diariamente",
+      "weekly": "Semanalmente",
+      "biweekly": "Quinzenalmente",
+      "monthly": "Mensalmente"
+    },
+    "timeOfDay": "Tempo",
+    "weekday": "Dia da semana",
+    "weekdays": {
+      "0": "Domingo",
+      "1": "Segunda-feira",
+      "2": "Terça-feira",
+      "3": "Quarta-feira",
+      "4": "Quinta-feira",
+      "5": "Sexta-feira",
+      "6": "Sábado"
+    },
+    "dayOfMonth": "Dia do Mês",
+    "anchorDate": "Data de ancoragem quinzenal",
+    "nextDue": "Próxima data",
+    "never": "Nunca",
+    "status": {
+      "sent": "Sent",
+      "partial": "Parcial ({{ok}}/{{total}})",
+      "failed": "Falha",
+      "skipped": "Ignorado",
+      "missed": "Perdida"
+    },
+    "reasons": {
+      "notConnected": "Não Conectado",
+      "roomLoginRequired": "Login Obrigatório",
+      "roomUnknown": "Sala desconhecida",
+      "rrcNotConnected": "Hub RRC não conectado",
+      "textTooLong": "Texto muito longo para um alvo",
+      "noTargets": "Nenhuma meta",
+      "deferred": "Diferido (limite de tempo de execução)",
+      "sendFailed": "Falha no envio",
+      "emptyText": "A mensagem está vazia."
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic canal",
+      "meshcoreChannel": "MeshCore canal",
+      "meshcoreRoom": "Sala MeshCore",
+      "rrcRoom": "Sala RRC"
+    },
+    "airtimeWarning": "Horários com muitos alvos usam muito tempo de antena.",
+    "respectWarning": "Respeite o tempo de antena LoRa compartilhado e outros operadores. Não envie spam para canais, salas ou hubs — prefira horários infrequentes, poucos alvos e mensagens que a mesh realmente precisa."
   }
 }

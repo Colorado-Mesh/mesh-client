@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "リモート",
     "games": "ゲーム",
-    "incident": "案件"
+    "incident": "案件",
+    "scheduledbroadcasts": "放送"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -8246,5 +8247,74 @@
       "unverifiedBoard": "無線機未識別 — ボード選択未検証。誤ったボードは起動不能にする可能性。"
     },
     "warningsTitle": "フラッシュ前"
+  },
+  "scheduledBroadcasts": {
+    "title": "スケジュールされたブロードキャスト",
+    "intro": "チャンネル、MeshCoreルーム、またはRRCルームへの1パケットメッセージの繰り返し。アプリはラジオが接続された状態で実行されている必要があります。見逃した時間はスキップされ、遅れて送信されることはありません。",
+    "enabled": "スケジュールされたブロードキャストを有効に",
+    "enabledHint": "オフの場合、タイマーは武装解除されたままになります。スロット構成は保持されます。",
+    "disabledBySetting": "マスタースイッチがオフになっています—スケジュールは起動しません。",
+    "slotLabel": "ブロードキャスト{{n}}",
+    "add": "ブロードキャストを追加",
+    "edit": "編集",
+    "delete": "削除",
+    "deleteConfirm": "このスケジュールされたブロードキャストを削除します",
+    "sendNow": "今すぐ送信",
+    "label": "ラベル",
+    "text": "メッセージ",
+    "textHint": "単一パケットのみ—オーバーサイズのテキストは保存できません。",
+    "targets": "ターゲット",
+    "targetsHint": "最大8つの目的地を選択できます。配達には無線が接続されている必要があります。",
+    "noTargets": "少なくとも1つの有効なターゲットを追加します。",
+    "schedule": "予定",
+    "intervalLabel": "繰り返し",
+    "interval": {
+      "hourly": "毎時",
+      "daily": "毎日",
+      "weekly": "週に1回",
+      "biweekly": "２週間ごと",
+      "monthly": "月に1回"
+    },
+    "timeOfDay": "時間",
+    "weekday": "Weekday",
+    "weekdays": {
+      "0": "日曜日",
+      "1": "月曜日",
+      "2": "火曜日",
+      "3": "水曜日",
+      "4": "木曜日",
+      "5": "金曜日",
+      "6": "土曜日"
+    },
+    "dayOfMonth": "日",
+    "anchorDate": "隔週のアンカー日",
+    "nextDue": "次回の予定",
+    "never": "まったく行わない",
+    "status": {
+      "sent": "送信済み",
+      "partial": "一部（ {{ok}}/{{total}} ）",
+      "failed": "失敗しました",
+      "skipped": "スキップ済み",
+      "missed": "欠席"
+    },
+    "reasons": {
+      "notConnected": "未接続",
+      "roomLoginRequired": "ログインが必要です",
+      "roomUnknown": "不明なルーム",
+      "rrcNotConnected": "RRCハブが接続されていません",
+      "textTooLong": "ターゲットにはテキストが長すぎます",
+      "noTargets": "ターゲットが見つかりません",
+      "deferred": "延期（実行時間制限）",
+      "sendFailed": "送信に失敗しました",
+      "emptyText": "メッセージが空です"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtasticチャンネル",
+      "meshcoreChannel": "MeshCoreチャンネル",
+      "meshcoreRoom": "MeshCoreルーム",
+      "rrcRoom": "RRC室"
+    },
+    "airtimeWarning": "多くのターゲットを持つ時間単位のスケジュールは、多くの放送時間を使用します。",
+    "respectWarning": "共有LoRa放送時間や他のオペレーターを尊重してください。チャンネル、ルーム、またはハブにスパムを送信しないでください。まれなスケジュール、少数のターゲット、およびメッシュが実際に必要とするメッセージを好みます。"
   }
 }

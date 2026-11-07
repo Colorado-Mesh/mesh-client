@@ -571,6 +571,10 @@ export function exportDatabase(destPath: string): void {
 
 const MAX_MERGE_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
 
+/**
+ * Merge copies only `nodes` and `messages`. Other tables (including
+ * `scheduled_broadcasts`) are intentionally not merged.
+ */
 export function mergeDatabase(sourcePath: string) {
   try {
     const stat = fs.statSync(sourcePath);

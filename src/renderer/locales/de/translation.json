@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Fernbedienung",
     "games": "Spiele",
-    "incident": "Vorfall"
+    "incident": "Vorfall",
+    "scheduledbroadcasts": "Mitteilungen"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -8246,5 +8247,74 @@
       "unverifiedBoard": "Funkgerät nicht erkannt — Boardwahl ungeprüft. Falsches Board kann Gerät unbootbar machen."
     },
     "warningsTitle": "Vor dem Flashen"
+  },
+  "scheduledBroadcasts": {
+    "title": "Geplante Sendungen",
+    "intro": "Wiederkehrende Ein-Paket-Nachrichten an Kanäle, MeshCore -Räume oder RRC-Räume. Die App muss mit angeschlossenem Funkgerät ausgeführt werden — verpasste Zeiten werden übersprungen und nicht verspätet gesendet.",
+    "enabled": "Geplante Sendungen aktivieren",
+    "enabledHint": "Wenn sie ausgeschaltet sind, bleiben die Timer deaktiviert. Slot-Konfigurationen werden beibehalten.",
+    "disabledBySetting": "Der Hauptschalter ist ausgeschaltet — die Zeitpläne werden nicht ausgelöst.",
+    "slotLabel": "Sendung {{n}}",
+    "add": "Sendung hinzufügen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleteConfirm": "Diese geplante Übertragung löschen?",
+    "sendNow": "Jetzt abschicken",
+    "label": "Etikett",
+    "text": "Meldung",
+    "textHint": "Nur Einzelpaket — übergroßer Text kann nicht gespeichert werden.",
+    "targets": "Ziele",
+    "targetsHint": "Wählen Sie bis zu 8 Reiseziele. Die Lieferung erfordert, dass das Funkgerät angeschlossen ist.",
+    "noTargets": "Fügen Sie mindestens ein aktiviertes Ziel hinzu.",
+    "schedule": "Ihre Behandlungstermine",
+    "intervalLabel": "Wiederholen",
+    "interval": {
+      "hourly": "Stündlich",
+      "daily": "täglich",
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "monthly": "Einmal im Monat"
+    },
+    "timeOfDay": "Uhrzeit",
+    "weekday": "Wochentag",
+    "weekdays": {
+      "0": "Sonntag",
+      "1": "Montag",
+      "2": "Dienstag",
+      "3": "Mittwoch",
+      "4": "Donnerst.",
+      "5": "Freitag",
+      "6": "Samstag"
+    },
+    "dayOfMonth": "Monatstag",
+    "anchorDate": "Zweiwöchentlicher Ankertermin",
+    "nextDue": "Nächster Termin",
+    "never": "Nie",
+    "status": {
+      "sent": "Gesendet",
+      "partial": "Teilweise ({{ok}}/{{total}})",
+      "failed": "Nicht bestanden",
+      "skipped": "Übersprungen",
+      "missed": "Verpasst"
+    },
+    "reasons": {
+      "notConnected": "Nicht verbunden",
+      "roomLoginRequired": "Anmeldung erforderlich",
+      "roomUnknown": "- Raum: unknown",
+      "rrcNotConnected": "RRC-Hub nicht angeschlossen",
+      "textTooLong": "Text zu lang für ein Ziel",
+      "noTargets": "Keine Zielvorgaben",
+      "deferred": "Zurückgestellt (Laufzeitbegrenzung)",
+      "sendFailed": "Senden fehlgeschlagen.",
+      "emptyText": "Ihre Nachricht ist leer."
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic Channel",
+      "meshcoreChannel": "MeshCore Channel",
+      "meshcoreRoom": "MeshCore-Raum",
+      "rrcRoom": "RRC-Raum"
+    },
+    "airtimeWarning": "Stundenpläne mit vielen Zielen verbrauchen viel Sendezeit.",
+    "respectWarning": "Achte auf die gemeinsame Sendezeit von LoRa und anderen Betreibern. Spamen Sie keine Kanäle, Räume oder Hubs — bevorzugen Sie seltene Zeitpläne, wenige Ziele und Nachrichten, die das Netz tatsächlich benötigt."
   }
 }

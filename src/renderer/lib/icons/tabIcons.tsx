@@ -13,6 +13,7 @@ import {
   Link2,
   Lock,
   MapPin,
+  Megaphone,
   MessageCircle,
   Network,
   Radio,
@@ -41,6 +42,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'ScheduledBroadcasts':
+      return <Megaphone {...p} />;
     case 'Incident':
       return <Siren {...p} />;
     case 'Games':

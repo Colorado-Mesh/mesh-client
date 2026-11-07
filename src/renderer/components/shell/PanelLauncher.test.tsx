@@ -16,6 +16,7 @@ import { PanelLauncher } from './PanelLauncher';
 const LABELS: Record<string, string> = {
   'tabs.connection': 'Connection',
   'tabs.chat': 'Chat',
+  'tabs.scheduledbroadcasts': 'Broadcasts',
   'tabs.contacts': 'Contacts',
   'tabs.map': 'Map',
   'tabs.radio': 'Radio',
@@ -134,13 +135,15 @@ describe('PanelLauncher', () => {
     );
   });
 
-  it('lists all 18 MeshCore panels grouped by section', () => {
+  it('lists all 19 MeshCore panels grouped by section', () => {
     renderLauncher();
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
-    expect(within(dialog).getByText('18 panels')).toBeInTheDocument();
+    expect(within(dialog).getByText('19 panels')).toBeInTheDocument();
     for (const group of ['Chat', 'Network', 'Monitor', 'Device', 'Other']) {
       expect(within(dialog).getByRole('region', { name: group })).toBeInTheDocument();
     }
+    const chat = within(dialog).getByRole('region', { name: 'Chat' });
+    expect(within(chat).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
     const other = within(dialog).getByRole('region', { name: 'Other' });
     expect(within(other).getByRole('button', { name: 'Map' })).toBeInTheDocument();
     expect(within(other).getByRole('button', { name: 'Incident' })).toBeInTheDocument();
@@ -209,21 +212,21 @@ describe('PanelLauncher', () => {
       name: 'Search panels, contacts, channels and settings',
     });
     const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
-    const rooms = screen.getByRole('button', { name: 'Rooms, 2 unread' });
+    const broadcasts = screen.getByRole('button', { name: 'Broadcasts' });
     expect(activeEntryRows()).toEqual([chat]);
     expect(chat.className).toContain('focus-visible:outline-brand-green');
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(rooms).toHaveFocus();
-    expect(activeEntryRows()).toEqual([rooms]);
+    expect(broadcasts).toHaveFocus();
+    expect(activeEntryRows()).toEqual([broadcasts]);
 
-    fireEvent.keyDown(rooms, { key: 'ArrowDown' });
+    fireEvent.keyDown(broadcasts, { key: 'ArrowDown' });
     const third = document.activeElement;
     expect(third).toHaveAttribute('data-launcher-entry');
-    expect(third).not.toBe(rooms);
+    expect(third).not.toBe(broadcasts);
     fireEvent.keyDown(third as HTMLElement, { key: 'ArrowUp' });
-    expect(rooms).toHaveFocus();
-    fireEvent.keyDown(rooms, { key: 'ArrowUp' });
+    expect(broadcasts).toHaveFocus();
+    fireEvent.keyDown(broadcasts, { key: 'ArrowUp' });
     expect(chat).toHaveFocus();
     fireEvent.keyDown(chat, { key: 'ArrowUp' });
     expect(input).toHaveFocus();
@@ -239,25 +242,25 @@ describe('PanelLauncher', () => {
     });
     await user.type(input, 'a');
     const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
-    const contacts = screen.getByRole('button', { name: 'Contacts' });
+    const broadcasts = screen.getByRole('button', { name: 'Broadcasts' });
     expect(activeEntryRows()).toEqual([chat]);
 
     await user.keyboard('{ArrowDown}');
-    expect(contacts).toHaveFocus();
-    expect(activeEntryRows()).toEqual([contacts]);
+    expect(broadcasts).toHaveFocus();
+    expect(activeEntryRows()).toEqual([broadcasts]);
 
     act(() => {
       input.focus();
     });
     await user.keyboard('{Enter}');
-    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Contacts'));
+    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Broadcasts'));
 
     onOpenTab.mockClear();
     act(() => {
-      contacts.focus();
+      broadcasts.focus();
     });
     await user.keyboard('{Enter}');
-    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Contacts'));
+    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Broadcasts'));
   });
 
   it('sends typing on a row back to the search field', () => {

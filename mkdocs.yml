@@ -107,6 +107,7 @@ nav:
       - Catch up (unreleased): release-notes/ai-catch-up.md
   - User Guide:
       - Chat and messaging: chat.md
+      - Scheduled Broadcasts: scheduled-broadcasts.md
       - Maps and offline maps: maps.md
       - TAK gateway: tak.md
       - Firmware and device maintenance: firmware.md
@@ -153,6 +154,7 @@ nav:
           - Renderer origin and recovery: development/renderer-origin-coi.md
           - BLE and serial: development/ble-serial.md
           - Chat: development/chat.md
+          - Scheduled Broadcasts: development/scheduled-broadcasts.md
           - AI summaries: development/ai-summarization.md
           - Connection panel: development/connection-panel.md
           - Meshtastic: development/meshtastic.md

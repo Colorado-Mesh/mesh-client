@@ -5930,7 +5930,8 @@
     "rrc": "RRC",
     "remote": "Zdalny",
     "games": "Gry",
-    "incident": "Zdarzenie"
+    "incident": "Zdarzenie",
+    "scheduledbroadcasts": "Transmisje"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -8388,5 +8389,74 @@
       "unverifiedBoard": "Radio nie rozpoznane — wybór płytki niezweryfikowany. Zła płytka może zablokować urządzenie."
     },
     "warningsTitle": "Przed flashowaniem"
+  },
+  "scheduledBroadcasts": {
+    "title": "Zaplanowane transmisje",
+    "intro": "Powtarzające się jednopakietowe wiadomości do kanałów, pokoi MeshCore lub pokoi RRC. Aplikacja musi działać z podłączonym radiem — pominięte godziny są pomijane, a nie wysyłane z opóźnieniem.",
+    "enabled": "Włącz zaplanowane transmisje",
+    "enabledHint": "Gdy jest wyłączony, timery pozostają rozbrojone. Konfiguracje gniazd są zachowane.",
+    "disabledBySetting": "Przełącznik główny jest wyłączony — harmonogramy nie zadziałają.",
+    "slotLabel": "Transmisja {{n}}",
+    "add": "Dodaj transmisję",
+    "edit": "Edytuj",
+    "delete": "Delete",
+    "deleteConfirm": "Usunąć tę zaplanowaną transmisję?",
+    "sendNow": "Wyślij teraz",
+    "label": "Oznaczenie",
+    "text": "Wiadomość",
+    "textHint": "Tylko pojedynczy pakiet — nie można zapisać zbyt dużego tekstu.",
+    "targets": "Miejsca przechowywania",
+    "targetsHint": "Wybierz maksymalnie 8 miejsc docelowych. Dostawa wymaga podłączenia radia.",
+    "noTargets": "Dodaj co najmniej jeden włączony cel.",
+    "schedule": "Załącznik",
+    "intervalLabel": "Powtórz",
+    "interval": {
+      "hourly": "Co godzinę",
+      "daily": "Raz dziennie",
+      "weekly": "Raz w tygodniu",
+      "biweekly": "Raz na dwa tygodnie",
+      "monthly": "Co miesiąc"
+    },
+    "timeOfDay": "Okres",
+    "weekday": "Dzień tygodnia",
+    "weekdays": {
+      "0": "Sunday",
+      "1": "poniedziałek",
+      "2": "wtorek",
+      "3": "Środa",
+      "4": "czwartek",
+      "5": "piątek",
+      "6": "Sobota"
+    },
+    "dayOfMonth": "Dzień miesiąca",
+    "anchorDate": "Data zakotwiczenia co dwa tygodnie",
+    "nextDue": "Następny termin",
+    "never": "Nigdy",
+    "status": {
+      "sent": "Wysłano",
+      "partial": "Częściowo ({{ok}}/{{total}})",
+      "failed": "Zakończone niepowodzeniem",
+      "skipped": "Pominięto",
+      "missed": "Nietrafiony"
+    },
+    "reasons": {
+      "notConnected": "Nie połączono",
+      "roomLoginRequired": "Wymagane logowanie",
+      "roomUnknown": "Nieznany pokój",
+      "rrcNotConnected": "Koncentrator RRC nie jest podłączony",
+      "textTooLong": "Tekst zbyt długi dla celu",
+      "noTargets": "Brak celów",
+      "deferred": "Odroczone (limit czasu pracy)",
+      "sendFailed": "Wysyłanie nieudane",
+      "emptyText": "Wiadomość jest pusta."
+    },
+    "targetKind": {
+      "meshtasticChannel": "Kanał Meshtastic",
+      "meshcoreChannel": "Kanał MeshCore",
+      "meshcoreRoom": "Pokój: MeshCore",
+      "rrcRoom": "Pokój RRC"
+    },
+    "airtimeWarning": "Rozkłady godzinowe z wieloma celami zużywają dużo czasu antenowego.",
+    "respectWarning": "Szanuj wspólny czas antenowy LoRa i innych operatorów. Nie spamuj kanałów, pokoi ani centrów — preferuj rzadkie harmonogramy, kilka celów i wiadomości, których siatka faktycznie potrzebuje."
   }
 }

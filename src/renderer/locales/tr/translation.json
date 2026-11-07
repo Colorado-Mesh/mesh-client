@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "Uzak",
     "games": "Oyun",
-    "incident": "Olay"
+    "incident": "Olay",
+    "scheduledbroadcasts": "Yayınlar"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -8246,5 +8247,74 @@
       "unverifiedBoard": "Radyo tanımlanmadı — kart seçimi doğrulanmadı. Yanlış kart cihazı kullanılamaz yapabilir."
     },
     "warningsTitle": "Flaşlamadan önce"
+  },
+  "scheduledBroadcasts": {
+    "title": "Planlanmış yayınlar",
+    "intro": "Kanallara, MeshCore odalarına veya RRC odalarına yinelenen tek paketli mesajlar. Uygulama, radyo bağlıyken çalışıyor olmalıdır; kaçırılan saatler atlanır, geç gönderilmez.",
+    "enabled": "Zamanlanmış yayınları etkinleştir",
+    "enabledHint": "Kapalıyken, zamanlayıcılar devre dışı kalır. Slot konfigürasyonları korunur.",
+    "disabledBySetting": "Ana şalter kapalı — çizelgeler çalışmaz.",
+    "slotLabel": "Yayın {{n}}",
+    "add": "Yayın Ekle",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "deleteConfirm": "Bu programlanmış yayın silinsin mi?",
+    "sendNow": "Şimdi gönder",
+    "label": "languages",
+    "text": "Mesaj",
+    "textHint": "Yalnızca tek paket — büyük boyutlu metin kaydedilemez.",
+    "targets": "Hedefler",
+    "targetsHint": "En fazla 8 varış noktası seçin. Teslimat için telsizin bağlı olması gerekir.",
+    "noTargets": "En az bir etkin hedef ekleyin.",
+    "schedule": "Zaman Çizelgesi",
+    "intervalLabel": "Tekrar",
+    "interval": {
+      "hourly": "Saatlik",
+      "daily": "Her gün",
+      "weekly": "Haftada",
+      "biweekly": "İki haftada bir",
+      "monthly": "Aylık"
+    },
+    "timeOfDay": "Zaman",
+    "weekday": "Hafta içi",
+    "weekdays": {
+      "0": "Pazar",
+      "1": "Pazartesi",
+      "2": "Salı",
+      "3": "Çarşamba",
+      "4": "Perşembe",
+      "5": "Cuma",
+      "6": "Cumartesi"
+    },
+    "dayOfMonth": "Ayın Günü",
+    "anchorDate": "İki haftada bir çapa tarihi",
+    "nextDue": "Sonraki vade tarihi",
+    "never": "Hiç",
+    "status": {
+      "sent": "Gönderilen",
+      "partial": "Kısmi ({{ok}}/{{total}})",
+      "failed": "Başarısız",
+      "skipped": "Atlandı",
+      "missed": "Kaçırılmış"
+    },
+    "reasons": {
+      "notConnected": "Bağlı değil",
+      "roomLoginRequired": "Üye Girişi Gerekli",
+      "roomUnknown": "Oda bilinmiyor",
+      "rrcNotConnected": "RRC dağıtıcısı bağlı değil",
+      "textTooLong": "Bir hedef için metin çok uzun",
+      "noTargets": "Hedef yok",
+      "deferred": "Ertelenmiş (çalışma süresi sınırı)",
+      "sendFailed": "Gönderilemedi",
+      "emptyText": "Mesaj boş"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic kanal",
+      "meshcoreChannel": "MeshCore kanal",
+      "meshcoreRoom": "MeshCore oda",
+      "rrcRoom": "RRC odası"
+    },
+    "airtimeWarning": "Birçok hedefi olan saatlik programlar çok fazla yayın süresi kullanır.",
+    "respectWarning": "Paylaşılan LoRa yayın süresine ve diğer operatörlere saygılı olun. Kanallara, odalara veya merkezlere istenmeyen e - posta göndermeyin — sık olmayan programları, az sayıda hedefi ve mesh'in gerçekten ihtiyaç duyduğu mesajları tercih edin."
   }
 }

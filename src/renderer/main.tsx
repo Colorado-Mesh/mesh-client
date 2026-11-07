@@ -27,6 +27,7 @@ import {
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 import { hydrateIncidentStore } from './stores/incidentStore';
 import { hydrateReticulumDismissedContacts } from './stores/reticulumPeerStore';
+import { hydrateScheduledBroadcastsStore } from './stores/scheduledBroadcastsStore';
 import { hydrateWeatherFilterPreferences } from './stores/weatherFilterStore';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
@@ -47,7 +48,11 @@ let stopPreferencePersistence: (() => void) | undefined;
 import.meta.hot?.dispose(() => stopPreferencePersistence?.());
 
 async function prepareRendererStorage(): Promise<void> {
-  await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()]);
+  await Promise.all([
+    hydrateDurableRendererSettings(),
+    hydrateIncidentStore(),
+    hydrateScheduledBroadcastsStore(),
+  ]);
 }
 
 async function finishRendererStorage(): Promise<void> {
@@ -65,6 +70,15 @@ async function finishRendererStorage(): Promise<void> {
   stopPreferencePersistence ??= installRendererPreferencePersistence();
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();
+  // Own chunk (not App): avoids deliver/store edges reshuffling the App entry past 1000 kB.
+  void import('./lib/scheduledBroadcasts/bootScheduler')
+    .then((m) => m.bootScheduledBroadcastScheduler())
+    .catch((e: unknown) => {
+      console.warn(
+        '[main] scheduled broadcast scheduler boot failed:',
+        e instanceof Error ? e.message : String(e),
+      );
+    });
 }
 
 if (import.meta.env.DEV) {

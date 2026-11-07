@@ -123,4 +123,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    * Stored as a hidden list so newly registered protocols default to enabled.
    */
   hiddenProtocols: [] as MeshProtocol[],
+  /** Master switch for Scheduled Broadcasts timers (default off — safe). */
+  scheduledBroadcastsEnabled: false,
 };

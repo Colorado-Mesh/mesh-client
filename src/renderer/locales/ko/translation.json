@@ -5848,7 +5848,8 @@
     "rrc": "RRC",
     "remote": "원격",
     "games": "게임",
-    "incident": "인시던트"
+    "incident": "인시던트",
+    "scheduledbroadcasts": "방송"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -8246,5 +8247,74 @@
       "unverifiedBoard": "무선기 미식별 — 보드 선택 미검증. 잘못된 보드는 기기를 사용 불가로 만들 수 있음."
     },
     "warningsTitle": "플래시 전"
+  },
+  "scheduledBroadcasts": {
+    "title": "예정된 방송",
+    "intro": "채널, MeshCore 방 또는 RRC 방으로 보내는 반복적인 원패킷 메시지. 앱이 라디오가 연결된 상태에서 실행 중이어야 합니다. 누락된 시간은 건너뛰고 늦게 전송하지 않습니다.",
+    "enabled": "예약 방송 활성화",
+    "enabledHint": "꺼져 있으면 타이머가 해제된 상태로 유지됩니다. 슬롯 구성이 유지됩니다.",
+    "disabledBySetting": "마스터 스위치가 꺼져 있습니다. 일정이 실행되지 않습니다.",
+    "slotLabel": "브로드캐스트 {{n}}",
+    "add": "방송 추가",
+    "edit": "편집",
+    "delete": "삭제",
+    "deleteConfirm": "예정된 방송을 삭제하시겠어요?",
+    "sendNow": "지금 보냄",
+    "label": "레이블",
+    "text": "메시지",
+    "textHint": "단일 패킷만 — 크기가 큰 텍스트는 저장할 수 없습니다.",
+    "targets": "대상",
+    "targetsHint": "최대 8개의 목적지를 선택하세요. 배달에는 해당 라디오가 연결되어 있어야 합니다.",
+    "noTargets": "활성화된 대상을 하나 이상 추가하십시오.",
+    "schedule": "예약하기",
+    "intervalLabel": "재교부",
+    "interval": {
+      "hourly": "시간별",
+      "daily": "일일",
+      "weekly": "주간",
+      "biweekly": "격주로",
+      "monthly": "월간"
+    },
+    "timeOfDay": "시간",
+    "weekday": "평일",
+    "weekdays": {
+      "0": "일요일",
+      "1": "월요일",
+      "2": "화요일",
+      "3": "수요일",
+      "4": "목요일",
+      "5": "금요일",
+      "6": "토요일"
+    },
+    "dayOfMonth": "날짜",
+    "anchorDate": "격주 기준일",
+    "nextDue": "다음 마감일",
+    "never": "절대",
+    "status": {
+      "sent": "보냄",
+      "partial": "부분 ({{ok}}/{{total}})",
+      "failed": "실패함",
+      "skipped": "건너뜀",
+      "missed": "누락됨"
+    },
+    "reasons": {
+      "notConnected": "연결되지 않음",
+      "roomLoginRequired": "로그인 필요",
+      "roomUnknown": "알 수 없는 방",
+      "rrcNotConnected": "RRC 허브가 연결되지 않음",
+      "textTooLong": "대상에 대한 텍스트가 너무 깁니다",
+      "noTargets": "타겟 없음",
+      "deferred": "지연 (실행 시간 제한)",
+      "sendFailed": "전송 실패",
+      "emptyText": "메시지가 비어 있습니다"
+    },
+    "targetKind": {
+      "meshtasticChannel": "Meshtastic 채널",
+      "meshcoreChannel": "MeshCore 채널",
+      "meshcoreRoom": "MeshCore 방",
+      "rrcRoom": "RRC실"
+    },
+    "airtimeWarning": "목표가 많은 시간대 스케줄은 방송 시간을 많이 사용합니다.",
+    "respectWarning": "공용 LoRa 방송 시간 및 기타 운영자를 존중하세요. 채널, 방 또는 허브를 스팸하지 마십시오. 빈번하지 않은 일정, 몇 가지 목표 및 메시지에 실제로 필요한 메시지를 선호합니다."
   }
 }
