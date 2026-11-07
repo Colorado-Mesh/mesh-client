@@ -258,6 +258,26 @@ export function AppAiSection() {
                 <>
                   <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
                   <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
+                  {status.mlxHelperAvailable && models.some((item) => item.runtime === 'mlx') && (
+                    <p className="text-bright-green text-xs">
+                      {t('aiSummary.mlxRecommendedOnMacos')}
+                    </p>
+                  )}
+                  {!status.mlxHelperAvailable && (
+                    <p role="status" className="text-muted text-xs">
+                      {t('aiSummary.mlxHelperUnavailable')}
+                    </p>
+                  )}
+                  {status.localEngine.modelId &&
+                    !status.localEngine.ready &&
+                    !status.mlxHelperAvailable &&
+                    models.some(
+                      (item) => item.id === status.localEngine.modelId && item.runtime === 'mlx',
+                    ) && (
+                      <p role="alert" className="text-xs text-orange-400">
+                        {t('aiSummary.mlxHelperMissingSelected')}
+                      </p>
+                    )}
                   {isBundledWllamaThreadBudgetLow() && (
                     <p role="alert" className="text-xs text-orange-400">
                       {t('aiSummary.lowThreadBudgetWarning', {
@@ -274,6 +294,7 @@ export function AppAiSection() {
                     const p = progress.find((entry) => entry.modelId === item.id);
                     const downloading =
                       p && ['queued', 'downloading', 'verifying'].includes(p.state);
+                    const mlxBlocked = item.runtime === 'mlx' && !status.mlxHelperAvailable;
                     return (
                       <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
                         <p>{item.name}</p>
@@ -292,7 +313,9 @@ export function AppAiSection() {
                           </p>
                         )}
                         {item.runtime === 'mlx' && (
-                          <p className="text-muted text-xs">{t('aiSummary.modelRuntimeMlx')}</p>
+                          <p className="text-bright-green text-xs">
+                            {t('aiSummary.modelRuntimeMlx')}
+                          </p>
                         )}
                         {item.runtime === 'wllama' && (
                           <p className="text-muted text-xs">{t('aiSummary.modelRuntimeCpu')}</p>
@@ -321,7 +344,7 @@ export function AppAiSection() {
                             <>
                               <Button
                                 size="sm"
-                                disabled={busy}
+                                disabled={busy || mlxBlocked}
                                 aria-label={t('aiSummary.useModel', { model: item.name })}
                                 onClick={() => {
                                   void action(async () => {

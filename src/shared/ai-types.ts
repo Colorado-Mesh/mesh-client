@@ -125,6 +125,11 @@ export interface AiProviderStatus {
   isRemote: boolean;
   /** bundled engine state */
   localEngine: { ready: boolean; modelId: string | null; downloading: boolean };
+  /**
+   * True when the staged `mesh-ai-mlx` binary is present (Apple Silicon only).
+   * MLX catalog packs are offered only when this is true.
+   */
+  mlxHelperAvailable: boolean;
   /** OS-AI engine state (probe result; computed only while enabled / while settings are open) */
   osAi: AiOsAiStatus;
 }

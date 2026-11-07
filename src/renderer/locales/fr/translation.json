@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (portable)",
     "unusedDownloads": "Téléchargements inutilisés",
     "unusedDownloadsHint": "Ces modèles ne sont plus dans le catalogue (par exemple après une mise à niveau) mais utilisent toujours de l'espace disque. Retirez-les si vous n'en avez pas besoin.",
-    "unusedDownloadRetired": "N'est plus dans le catalogue"
+    "unusedDownloadRetired": "N'est plus dans le catalogue",
+    "fixCatchUpEngine": "Corriger le moteur de rattrapage",
+    "mlxRecommendedOnMacos": "Sur ce Mac, les modèles Apple Silicon (MLX) sont recommandés pour le rattrapage.",
+    "mlxHelperUnavailable": "MLX Catchup a besoin de l'assistant en métal, qui est manquant dans cette installation. Choisissez un téléchargement de processeur portable ci-dessous, ou sur un Mac de développement, installez Xcode complet et exécutez la version AI Helper.",
+    "mlxHelperMissingSelected": "Le modèle MLX sélectionné ne peut pas être exécuté car l'assistant Metal est manquant. Choisissez un téléchargement de processeur portable, ou installez Xcode complet et reconstruisez l'assistant IA."
   },
   "chatOrder": {
     "title": "Réorganiser les discussions",

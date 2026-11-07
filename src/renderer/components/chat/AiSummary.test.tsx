@@ -20,6 +20,7 @@ const create = (): ConversationSummaryController & {
   key: 'chat',
   showCatchUp: true,
   canSummarize: true,
+  engineNeedsFix: false,
   scope: { kind: 'unread' },
   setScope: vi.fn(),
   run: vi.fn(),
@@ -69,6 +70,22 @@ describe('AI catch up controls', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
       expect(summary.run).toHaveBeenCalledOnce();
       expect(screen.getByRole('combobox', { name: 'Summary range' })).toBeInTheDocument();
+    } finally {
+      unsubscribe();
+    }
+  });
+  it('offers Fix Catch up engine when a model is selected but not ready', () => {
+    const summary = { ...create(), canSummarize: false, engineNeedsFix: true };
+    const openSetting = vi.fn();
+    const unsubscribe = subscribeOpenSettingRequests(openSetting);
+    try {
+      render(<CatchUpButton summary={summary} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Fix Catch up engine' }));
+      expect(openSetting).toHaveBeenCalledExactlyOnceWith({ slot: 'App', id: 'app.aiProvider' });
+      expect(screen.getByRole('button', { name: 'Fix Catch up engine' })).toHaveAttribute(
+        'title',
+        i18n.t('aiSummary.error.engineNotReady'),
+      );
     } finally {
       unsubscribe();
     }

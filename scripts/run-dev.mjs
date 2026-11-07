@@ -31,6 +31,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/shared/aiSummaryPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-summary-prompt.js --format=cjs --watch';
   const followUpPromptBuild =
     'esbuild src/shared/aiFollowUpPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-follow-up-prompt.js --format=cjs --watch';
+  const localModelsBuild =
+    'esbuild src/main/ai/local/modelCatalogData.ts --bundle --platform=node --outfile=dist-electron/main/ai-local-models.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -39,12 +41,13 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,vite,electron',
+    'main,preload,translation,summary,followup,models,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
     summaryPromptBuild,
     followUpPromptBuild,
+    localModelsBuild,
     'vite',
     electronLaunch,
   ];

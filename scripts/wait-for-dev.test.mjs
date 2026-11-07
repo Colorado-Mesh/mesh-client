@@ -84,3 +84,13 @@ it('requires the follow-up prompt chunk before launching Electron', () => {
     }),
   ).toBe(false);
 });
+
+it('requires the local models catalog chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.localModels).toContain('ai-local-models.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('ai-local-models.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});

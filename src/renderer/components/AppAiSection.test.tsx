@@ -29,6 +29,7 @@ it('explains offline processing time in the downloaded-model settings', async ()
     allowRemote: false,
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
+    mlxHelperAvailable: false,
     osAi: { available: false, platform: null },
   };
   const unsubscribe = () => () => {};
@@ -109,6 +110,7 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
     allowRemote: false,
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
+    mlxHelperAvailable: false,
     osAi: { available: false, platform: null },
     ...patch,
   };
@@ -205,6 +207,7 @@ it.each(['linux', 'darwin', 'win32'])(
       allowRemote: false,
       isRemote: false,
       localEngine: { ready: false, modelId: null, downloading: false },
+      mlxHelperAvailable: true,
       osAi: { available: false, platform: null },
     };
     const unsubscribe = () => () => {};
@@ -284,9 +287,12 @@ it.each(['linux', 'darwin', 'win32'])(
       await toggled;
     });
     expect(await screen.findByText('Llama 3.2 3B Instruct MLX 4-bit')).toBeVisible();
+    expect(
+      screen.getByText('On this Mac, Apple Silicon (MLX) models are recommended for Catch up.'),
+    ).toBeVisible();
     expect(screen.getByText('Recommended for quality')).toBeVisible();
     expect(screen.getByText('Faster for slower machines')).toBeVisible();
-    expect(screen.getAllByText(/Apple Silicon \(MLX\)/)).toHaveLength(2);
+    expect(screen.getAllByText(/Recommended on macOS/)).toHaveLength(2);
     expect(screen.getAllByText(/CPU \(portable\)/)).toHaveLength(2);
     const names = Array.from(container.querySelectorAll('.border-ink-700 > p:first-child')).map(
       (node) => node.textContent,
@@ -314,6 +320,7 @@ it('lists retired on-disk models so they can be removed', async () => {
     allowRemote: false,
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
+    mlxHelperAvailable: false,
     osAi: {
       available: true,
       platform: 'apple-foundation-models',

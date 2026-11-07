@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (draagbaar)",
     "unusedDownloads": "Ongebruikte downloads",
     "unusedDownloadsHint": "Deze modellen staan niet meer in de catalogus (bijvoorbeeld na een upgrade) maar gebruiken nog steeds schijfruimte. Verwijder ze als je ze niet nodig hebt.",
-    "unusedDownloadRetired": "Niet meer in catalogus"
+    "unusedDownloadRetired": "Niet meer in catalogus",
+    "fixCatchUpEngine": "Fix Inhaalmotor",
+    "mlxRecommendedOnMacos": "Op deze Mac worden Apple Silicon (MLX) -modellen aanbevolen voor inhalen.",
+    "mlxHelperUnavailable": "MLX Catch up heeft de Metal helper nodig, die ontbreekt in deze installatie. Kies hieronder een draagbare CPU-download of installeer de volledige Xcode op een ontwikkelings-Mac en voer de AI-helper-build uit.",
+    "mlxHelperMissingSelected": "Het geselecteerde MLX-model kan niet worden uitgevoerd omdat de metalen helper ontbreekt. Kies een draagbare CPU-download of installeer de volledige Xcode en herbouw de AI-helper."
   },
   "chatOrder": {
     "title": "Chats ordenen",

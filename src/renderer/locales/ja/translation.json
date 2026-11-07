@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU （ポータブル）",
     "unusedDownloads": "未使用のダウンロード",
     "unusedDownloadsHint": "これらのモデルはカタログにはありませんが（アップグレード後など）、ディスク領域を使用します。必要ない場合は削除してください。",
-    "unusedDownloadRetired": "もはやカタログにはありません"
+    "unusedDownloadRetired": "もはやカタログにはありません",
+    "fixCatchUpEngine": "キャッチアップエンジンを修正",
+    "mlxRecommendedOnMacos": "このMacでは、キャッチアップにApple Silicon （ MLX ）モデルをお勧めします。",
+    "mlxHelperUnavailable": "MLXキャッチアップにはメタルヘルパーが必要です。このインストールにはメタルヘルパーがありません。以下のポータブルCPUダウンロードを選択するか、開発用Macで完全なXcodeをインストールし、AIヘルパービルドを実行します。",
+    "mlxHelperMissingSelected": "Metalヘルパーが見つからないため、選択したMLXモデルを実行できません。ポータブルCPUのダウンロードを選択するか、完全なXcodeをインストールしてAIヘルパーを再構築します。"
   },
   "chatOrder": {
     "title": "チャットを並べ替える",

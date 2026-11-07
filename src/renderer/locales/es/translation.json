@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (portátil)",
     "unusedDownloads": "Descargas no utilizadas",
     "unusedDownloadsHint": "Estos modelos ya no están en el catálogo (por ejemplo, después de una actualización), pero siguen utilizando espacio en disco. Elimínelos si no los necesita.",
-    "unusedDownloadRetired": "Ya no está en el catálogo"
+    "unusedDownloadRetired": "Ya no está en el catálogo",
+    "fixCatchUpEngine": "Arreglar el motor de recuperación",
+    "mlxRecommendedOnMacos": "En este Mac, se recomiendan los modelos Apple Silicon (MLX) para ponerse al día.",
+    "mlxHelperUnavailable": "MLX Catch up necesita el Metal helper, que falta en esta instalación. Elija una descarga de CPU portátil a continuación, o en un Mac de desarrollo instale Xcode completo y ejecute la compilación del ayudante de IA.",
+    "mlxHelperMissingSelected": "El modelo MLX seleccionado no se puede ejecutar porque falta el ayudante de metal. Elija una descarga de CPU portátil o instale Xcode completo y reconstruya el ayudante de IA."
   },
   "chatOrder": {
     "title": "Ordenar chats",

@@ -202,6 +202,10 @@ describe('AI verified model downloads', () => {
         return new Response(data);
       });
       const install = packs.install('model-1');
+      // Wait until the install job is registered so delete aborts it (async catalog load).
+      await vi.waitFor(() => {
+        expect(packs.progress().some((job) => job.modelId === 'model-1')).toBe(true);
+      });
       const removal = packs.delete('model-1');
       release();
       await Promise.all([install, removal]);

@@ -506,6 +506,28 @@ describe('AI IPC lifecycle and opt-in', () => {
     }
   });
 
+  it('rejects MLX install and select when the Metal helper binary is missing', async () => {
+    settings.set('aiEnabled', '1');
+    const manifest = await import('../ai/local/modelManifest');
+    const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
+    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
+    const install = vi.spyOn(AiModelPackManager.prototype, 'install');
+    try {
+      await expect(
+        handler('ai:installLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
+      ).rejects.toThrow('Invalid AI model');
+      await expect(
+        handler('ai:selectLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
+      ).rejects.toThrow('Invalid AI model');
+      expect(install).not.toHaveBeenCalled();
+      expect(await handler('ai:getStatus')({})).toMatchObject({ mlxHelperAvailable: false });
+    } finally {
+      available.mockRestore();
+      host.mockRestore();
+      install.mockRestore();
+    }
+  });
+
   it('reports MLX readiness engineNotReady when the helper is missing', async () => {
     settings.set('aiEnabled', '1');
     settings.set(
@@ -529,6 +551,7 @@ describe('AI IPC lifecycle and opt-in', () => {
       });
       expect(await handler('ai:getStatus')({})).toMatchObject({
         localEngine: { ready: false, modelId: 'qwen2.5-1.5b-instruct-mlx-4bit' },
+        mlxHelperAvailable: false,
       });
     } finally {
       available.mockRestore();

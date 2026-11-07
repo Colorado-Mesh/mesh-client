@@ -8121,7 +8121,11 @@
     "modelRuntimeCpu": "ЦП (портативный)",
     "unusedDownloads": "Неиспользованные загрузки",
     "unusedDownloadsHint": "Эти модели больше не находятся в каталоге (например, после обновления), но все еще используют дисковое пространство. Удалите их, если они вам не нужны.",
-    "unusedDownloadRetired": "Больше нет в каталоге"
+    "unusedDownloadRetired": "Больше нет в каталоге",
+    "fixCatchUpEngine": "Fix Catch up engine",
+    "mlxRecommendedOnMacos": "На этом Mac модели Apple Silicon (MLX) рекомендуются для Catch up.",
+    "mlxHelperUnavailable": "Для MLX Catch up требуется Metal helper, который отсутствует в этой установке. Выберите портативный процессор, загруженный ниже, или на Mac для разработки установите полный Xcode и запустите сборку AI helper.",
+    "mlxHelperMissingSelected": "Выбранная модель MLX не может быть запущена, так как отсутствует металлический помощник. Выберите загрузку портативного процессора или установите полный Xcode и перестройте помощник AI."
   },
   "chatOrder": {
     "title": "Изменить порядок чатов",

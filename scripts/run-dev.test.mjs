@@ -14,6 +14,9 @@ describe('run-dev', () => {
     ).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/shared/aiSummaryPrompt.ts'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/shared/aiFollowUpPrompt.ts'))).toBe(true);
+    expect(
+      args.some((arg) => arg.startsWith('esbuild src/main/ai/local/modelCatalogData.ts')),
+    ).toBe(true);
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);

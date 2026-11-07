@@ -246,6 +246,12 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     key: input.key,
     showCatchUp: enabled && input.available !== false,
     canSummarize: aiReady(status) && input.available !== false,
+    /** Model/engine chosen but not runnable (e.g. MLX selected without Metal helper). */
+    engineNeedsFix:
+      !!status?.enabled &&
+      status.engine === 'bundled' &&
+      !!status.localEngine.modelId &&
+      !status.localEngine.ready,
     scope,
     setScope,
     run,

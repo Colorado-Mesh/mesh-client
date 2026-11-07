@@ -28,9 +28,10 @@ import { AiClient } from '../ai/aiClient';
 import { AiConfig } from '../ai/config';
 import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
+import { loadAiLocalModels } from '../ai/loadAiLocalModels';
 import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
 import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
-import { AI_LOCAL_MODELS, isCatalogPackAvailable } from '../ai/local/modelManifest';
+import { isCatalogPackAvailable } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
 import { MlxAiHelper } from '../ai/os/mlxAiHelper';
@@ -111,15 +112,19 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     mlx.kill();
   };
   const bundledModelReady = async (modelId: string): Promise<boolean> => {
-    const model = AI_LOCAL_MODELS.find((entry) => entry.id === modelId);
+    const catalog = await loadAiLocalModels();
+    const model = catalog.find((entry) => entry.id === modelId);
     if (!model || !isCatalogPackAvailable(model)) return false;
     if (!(await packs.verify(model.id, true))) return false;
     if (model.runtime === 'mlx') return mlx.availableOnHost() && (await mlx.probe());
     return true;
   };
+  const mlxPackUsable = (pack: { runtime?: string }) =>
+    pack.runtime !== 'mlx' || mlx.availableOnHost();
   const status = async (): Promise<AiProviderStatus> => {
     const c = config.read();
-    const selectedPack = AI_LOCAL_MODELS.find((model) => model.id === c.localModelId);
+    const catalog = await loadAiLocalModels();
+    const selectedPack = catalog.find((model) => model.id === c.localModelId);
     const selectedModel =
       selectedPack && isCatalogPackAvailable(selectedPack) ? selectedPack.id : null;
     return {
@@ -141,6 +146,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         modelId: selectedModel,
         downloading: packs.progress().length > 0,
       },
+      mlxHelperAvailable: mlx.availableOnHost(),
       osAi: osStatus,
     };
   };
@@ -153,7 +159,8 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
     }
     if (c.engine === 'bundled') {
-      const model = AI_LOCAL_MODELS.find((entry) => entry.id === c.localModelId);
+      const catalog = await loadAiLocalModels();
+      const model = catalog.find((entry) => entry.id === c.localModelId);
       const ok =
         !!model &&
         isCatalogPackAvailable(model) &&
@@ -170,9 +177,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'remoteNotAcknowledged' };
     return c.wireFormat && c.model ? { ok: true } : { ok: false, reason: 'notConfigured' };
   };
-  const id = (value: unknown) => {
+  const id = async (value: unknown) => {
     if (typeof value !== 'string') throw new Error('Invalid AI model');
-    packs.pack(value);
+    await packs.getPack(value);
     return value;
   };
   /** Catalog packs and retired on-disk orphans share this id grammar. */
@@ -213,8 +220,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     if (!enabled()) return status();
     const input = validateAiConfig(value);
     if (input.localModelId) {
-      const modelId = id(input.localModelId);
-      if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+      const modelId = await id(input.localModelId);
+      if (!isCatalogPackAvailable(await packs.getPack(modelId)))
+        throw new Error('Invalid AI model');
     }
     config.write(input);
     stop();
@@ -224,17 +232,22 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:listLocalModels', async (event) => {
     guard(event, 'ai:listLocalModels');
-    return enabled() ? packs.list() : [];
+    if (!enabled()) return [];
+    const listed = await packs.list();
+    // Hide MLX catalog cards when the Metal helper is missing; keep installed packs for Remove.
+    if (mlx.availableOnHost()) return listed;
+    return listed.filter((entry) => entry.runtime !== 'mlx' || entry.installed);
   });
   ipcMain.handle('ai:installLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:installLocalModel', true);
-    const modelId = id(value);
-    if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+    const modelId = await id(value);
+    const pack = await packs.getPack(modelId);
+    if (!isCatalogPackAvailable(pack) || !mlxPackUsable(pack)) throw new Error('Invalid AI model');
     return packs.install(modelId);
   });
   ipcMain.handle('ai:cancelLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:cancelLocalModel', true);
-    await packs.cancel(id(value));
+    await packs.cancel(await id(value));
   });
   ipcMain.handle('ai:removeLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:removeLocalModel', true);
@@ -251,8 +264,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     guard(event, 'ai:selectLocalModel', true);
     if (!enabled()) return status();
     if (value !== null) {
-      const modelId = id(value);
-      if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+      const modelId = await id(value);
+      const pack = await packs.getPack(modelId);
+      if (!isCatalogPackAvailable(pack) || !mlxPackUsable(pack))
+        throw new Error('Invalid AI model');
     }
     config.write({ engine: 'bundled', localModelId: value as string | null });
     stop();
@@ -437,7 +452,8 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const outputTokens = followUp
       ? AI_FOLLOW_UP_OUTPUT_TOKENS
       : aiSummaryOutputTokens(mode, finalStyle);
-    const bundledModel = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId);
+    const catalog = await loadAiLocalModels();
+    const bundledModel = catalog.find((m) => m.id === c.localModelId);
     if (c.engine === 'bundled' && bundledModel?.runtime !== 'mlx') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
@@ -496,7 +512,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         else if (c.engine === 'bundled' && bundledModel?.runtime === 'mlx') {
           const { promises: fsp } = await import('node:fs');
           const root = await fsp.realpath(directory());
-          const modelPath = await fsp.realpath(packs.packDirectory(bundledModel.id));
+          const modelPath = await fsp.realpath(await packs.packDirectory(bundledModel.id));
           if (!modelPath.startsWith(root + path.sep)) throw new AiFailure('engineNotReady');
           await mlx.generate(
             {

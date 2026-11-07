@@ -26,6 +26,7 @@ const ready: AiProviderStatus = {
   allowRemote: false,
   isRemote: false,
   localEngine: { ready: false, modelId: null, downloading: false },
+  mlxHelperAvailable: false,
   osAi: { available: false, platform: null },
 };
 const input = {
@@ -81,6 +82,7 @@ describe('Catch up availability', () => {
           ...ready,
           engine: 'bundled',
           localEngine: { ready: true, modelId: 'llama-3.2-1b', downloading: false },
+          mlxHelperAvailable: false,
         });
       });
       expect(result.current).toMatchObject({ showCatchUp: true, canSummarize: true });

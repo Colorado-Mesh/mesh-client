@@ -38,6 +38,7 @@ const ready: AiProviderStatus = {
   allowRemote: true,
   isRemote: true,
   localEngine: { ready: false, modelId: null, downloading: false },
+  mlxHelperAvailable: false,
   osAi: { available: false, platform: null },
 };
 let chunk: (value: AiSummaryChunk) => void;
@@ -138,6 +139,7 @@ describe('AI summary request correlation', () => {
       ...ready,
       engine: 'bundled',
       localEngine: { ready: true, modelId: 'test', downloading: false },
+      mlxHelperAvailable: false,
     });
     vi.mocked(api.summarize).mockResolvedValue({
       ok: true,
@@ -301,6 +303,7 @@ it.each(['os', 'bundled', 'local', 'remote'] as const)(
         timeoutSeconds: 720,
         maxCollectedMessages: 2000,
         localEngine: { ready: true, modelId: 'model', downloading: false },
+        mlxHelperAvailable: false,
       },
     });
     vi.mocked(api.summarize).mockReturnValue(new Promise(() => {}));
@@ -608,6 +611,7 @@ describe('summary queue', () => {
       ...ready,
       engine: 'bundled',
       localEngine: { ready: true, modelId: 'test', downloading: false },
+      mlxHelperAvailable: false,
     });
     vi.mocked(api.summarize).mockResolvedValue({
       ok: true,
@@ -655,6 +659,7 @@ it('waits for cancelled bundled worker cleanup before starting the next job', as
     ...ready,
     engine: 'bundled',
     localEngine: { ready: true, modelId: 'test', downloading: false },
+    mlxHelperAvailable: false,
   });
   vi.mocked(api.summarize).mockResolvedValue({
     ok: true,

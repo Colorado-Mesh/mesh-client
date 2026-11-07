@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (portabel)",
     "unusedDownloads": "Unduhan yang tidak digunakan",
     "unusedDownloadsHint": "Model - model ini tidak lagi ada dalam katalog (misalnya setelah upgrade) tetapi masih menggunakan ruang disk. Hapus jika Anda tidak membutuhkannya.",
-    "unusedDownloadRetired": "Tidak ada lagi di katalog"
+    "unusedDownloadRetired": "Tidak ada lagi di katalog",
+    "fixCatchUpEngine": "Perbaiki Catch up engine",
+    "mlxRecommendedOnMacos": "Di Mac ini, model Apple Silicon (MLX) direkomendasikan untuk Catch up.",
+    "mlxHelperUnavailable": "MLX Catch up membutuhkan Metal helper, yang hilang dari instalasi ini. Pilih unduhan CPU portabel di bawah ini, atau pada pengembangan Mac instal Xcode lengkap dan jalankan build AI helper.",
+    "mlxHelperMissingSelected": "Model MLX yang dipilih tidak dapat berjalan karena Metal helper hilang. Pilih unduhan CPU portabel, atau instal Xcode lengkap dan bangun kembali AI helper."
   },
   "chatOrder": {
     "title": "Atur urutan obrolan",

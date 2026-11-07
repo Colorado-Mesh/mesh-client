@@ -8121,7 +8121,11 @@
     "modelRuntimeCpu": "Procesor (przenośny)",
     "unusedDownloads": "Nieużywane pliki do pobrania",
     "unusedDownloadsHint": "Modeli tych nie ma już w katalogu (na przykład po aktualizacji), ale nadal wykorzystują miejsce na dysku. Usuń je, jeśli nie są potrzebne.",
-    "unusedDownloadRetired": "Nie ma już w katalogu"
+    "unusedDownloadRetired": "Nie ma już w katalogu",
+    "fixCatchUpEngine": "Napraw silnik nadrabiania zaległości",
+    "mlxRecommendedOnMacos": "Na tym komputerze Mac zalecane są modele Apple Silicon (MLX) do nadrabiania zaległości.",
+    "mlxHelperUnavailable": "MLX Catch up potrzebuje Metalowego pomocnika, którego brakuje w tej instalacji. Wybierz przenośny procesor do pobrania poniżej lub na komputerze Mac zainstaluj pełny Xcode i uruchom kompilację pomocniczą AI.",
+    "mlxHelperMissingSelected": "Wybrany model MLX nie może zostać uruchomiony, ponieważ brakuje Metalowego pomocnika. Wybierz przenośny procesor do pobrania lub zainstaluj pełny Xcode i odbuduj pomocnika sztucznej inteligencji."
   },
   "chatOrder": {
     "title": "Zmień kolejność czatów",

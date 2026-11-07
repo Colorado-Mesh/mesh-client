@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (휴대용)",
     "unusedDownloads": "사용되지 않은 다운로드",
     "unusedDownloadsHint": "이러한 모델은 더 이상 카탈로그에 없지만 (예: 업그레이드 후) 여전히 디스크 공간을 사용합니다. 필요하지 않은 경우 제거하십시오.",
-    "unusedDownloadRetired": "더 이상 카탈로그에 없음"
+    "unusedDownloadRetired": "더 이상 카탈로그에 없음",
+    "fixCatchUpEngine": "캐치업 엔진 수정",
+    "mlxRecommendedOnMacos": "이 Mac에서는 Apple Silicon (MLX) 모델이 따라잡기에 권장됩니다.",
+    "mlxHelperUnavailable": "MLX 따라잡기에는 이 설치에서 누락된 금속 도우미가 필요합니다. 아래에서 휴대용 CPU 다운로드를 선택하거나 개발 Mac에서 전체 Xcode를 설치하고 AI 도우미 빌드를 실행하십시오.",
+    "mlxHelperMissingSelected": "금속 도우미가 없어 선택한 MLX 모델을 실행할 수 없습니다. 휴대용 CPU 다운로드를 선택하거나 전체 Xcode를 설치하고 AI 도우미를 다시 구축하십시오."
   },
   "chatOrder": {
     "title": "채팅 순서 변경",

@@ -8067,7 +8067,11 @@
     "modelRuntimeCpu": "CPU (přenosný)",
     "unusedDownloads": "Nepoužité soubory ke stažení",
     "unusedDownloadsHint": "Tyto modely již nejsou v katalogu (například po upgradu), ale stále využívají místo na disku. Pokud je nepotřebujete, odstraňte je.",
-    "unusedDownloadRetired": "Již není v katalogu"
+    "unusedDownloadRetired": "Již není v katalogu",
+    "fixCatchUpEngine": "Opravit Dohnat motor",
+    "mlxRecommendedOnMacos": "Na tomto Macu se pro Catch up doporučují modely Apple Silicon (MLX).",
+    "mlxHelperUnavailable": "MLX Catch up potřebuje kovového pomocníka, který v této instalaci chybí. Níže vyberte přenosný procesor ke stažení nebo na vývojovém Macu nainstalujte plný Xcode a spusťte sestavení pomocníka AI.",
+    "mlxHelperMissingSelected": "Vybraný model MLX nelze spustit, protože chybí kovový pomocník. Vyberte si přenosný procesor ke stažení nebo nainstalujte plný Xcode a znovu sestavte pomocníka AI."
   },
   "chatOrder": {
     "title": "Změnit pořadí chatů",

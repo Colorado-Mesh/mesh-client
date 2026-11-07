@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "CPU (taşınabilir)",
     "unusedDownloads": "Kullanılmayan indirmeler",
     "unusedDownloadsHint": "Bu modeller artık katalogda değil (örneğin bir yükseltmeden sonra) ancak yine de disk alanı kullanıyor. İhtiyacınız yoksa bunları kaldırın.",
-    "unusedDownloadRetired": "Artık katalogda yok"
+    "unusedDownloadRetired": "Artık katalogda yok",
+    "fixCatchUpEngine": "Onar Motoru yakala",
+    "mlxRecommendedOnMacos": "Bu Mac'te, Yakalama için Apple Silicon (MLX) modelleri önerilir.",
+    "mlxHelperUnavailable": "MLX Catch up, bu kurulumda eksik olan Metal yardımcıya ihtiyaç duyar. Aşağıdan veya bir geliştirme Mac'inden taşınabilir bir CPU indirmeyi seçin, tam Xcode'u yükleyin ve AI yardımcı derlemesini çalıştırın.",
+    "mlxHelperMissingSelected": "Metal yardımcı eksik olduğundan seçilen MLX modeli çalıştırılamıyor. Taşınabilir bir CPU indirmesi seçin veya tam Xcode'u yükleyin ve AI yardımcısını yeniden oluşturun."
   },
   "chatOrder": {
     "title": "Sohbetleri sırala",

@@ -7989,7 +7989,11 @@
     "modelRuntimeCpu": "计划工作站（便携式）",
     "unusedDownloads": "未使用的下载",
     "unusedDownloadsHint": "这些型号不再在目录中（例如升级后） ，但仍使用磁盘空间。如果您不需要它们，请将其移除。",
-    "unusedDownloadRetired": "不再在目录中"
+    "unusedDownloadRetired": "不再在目录中",
+    "fixCatchUpEngine": "修复追赶引擎",
+    "mlxRecommendedOnMacos": "在这款Mac上，建议使用Apple Silicon (MLX)型号进行追赶。",
+    "mlxHelperUnavailable": "MLX Catch up需要Metal helper ，此安装中缺少Metal helper。在下面选择一个便携式CPU下载，或者在开发Mac上安装完整的Xcode并运行AI助手版本。",
+    "mlxHelperMissingSelected": "所选MLX模型无法运行，因为缺少金属助手。选择便携式CPU下载，或安装完整的Xcode并重建AI助手。"
   },
   "chatOrder": {
     "title": "调整聊天顺序",
