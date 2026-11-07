@@ -40,8 +40,15 @@ export function ConfirmModal({
   const messageId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCancelRef = useRef(onCancel);
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
 
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
+
+  // Focus once on mount only. Do not depend on onCancel — parents often pass an inline
+  // callback that changes every render; re-focusing the first control snaps scroll / steals focus.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
@@ -49,22 +56,18 @@ export function ConfirmModal({
     previouslyFocusedRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
+    const focusOpts = { preventScroll: true } as const;
     const focusables = () =>
       [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
         (el) => el.offsetParent !== null || el === document.activeElement,
       );
 
-    const focusFirst = () => {
-      const nodes = focusables();
-      nodes[0]?.focus();
-    };
-
-    focusFirst();
+    focusables()[0]?.focus(focusOpts);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onCancel();
+        onCancelRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -79,11 +82,11 @@ export function ConfirmModal({
       if (e.shiftKey) {
         if (active === first || !panel.contains(active)) {
           e.preventDefault();
-          last.focus();
+          last.focus(focusOpts);
         }
       } else if (active === last || !panel.contains(active)) {
         e.preventDefault();
-        first.focus();
+        first.focus(focusOpts);
       }
     };
 
@@ -92,10 +95,10 @@ export function ConfirmModal({
       document.removeEventListener('keydown', onKeyDown);
       const prev = previouslyFocusedRef.current;
       if (prev && document.contains(prev)) {
-        prev.focus();
+        prev.focus(focusOpts);
       }
     };
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

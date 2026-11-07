@@ -45,16 +45,25 @@ export function ScheduledSendDialog({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const presets = useMemo(() => schedulePresetTimes(), []);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
 
+  // Focus once on mount only. Do not depend on onCancel — parent may pass an inline
+  // callback that changes every render; re-focusing the first control snaps scroll to top.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusOpts = { preventScroll: true } as const;
+    panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus(focusOpts);
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onCancel();
+        onCancelRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -65,18 +74,19 @@ export function ScheduledSendDialog({
       const active = document.activeElement;
       if (e.shiftKey && (active === first || !panel.contains(active))) {
         e.preventDefault();
-        last.focus();
+        last.focus(focusOpts);
       } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
         e.preventDefault();
-        first.focus();
+        first.focus(focusOpts);
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      if (previous && document.contains(previous)) previous.focus();
+      const prev = previouslyFocusedRef.current;
+      if (prev && document.contains(prev)) prev.focus(focusOpts);
     };
-  }, [onCancel]);
+  }, []);
 
   const submit = async () => {
     if (busy) return;

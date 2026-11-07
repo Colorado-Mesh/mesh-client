@@ -2216,6 +2216,9 @@ function ChatPanel({
   });
 
   const [editingScheduledRow, setEditingScheduledRow] = useState<OutboxEntry | null>(null);
+  const closeEditingScheduled = useCallback(() => {
+    setEditingScheduledRow(null);
+  }, []);
 
   const viewOutboxRows = useMemo(
     () => outboxRows.filter((r) => outboxRowVisibleForConversation(r, viewKey, identityId)),
@@ -5364,9 +5367,7 @@ function ChatPanel({
             if (ok) setEditingScheduledRow(null);
             return ok;
           }}
-          onCancel={() => {
-            setEditingScheduledRow(null);
-          }}
+          onCancel={closeEditingScheduled}
         />
       )}
 

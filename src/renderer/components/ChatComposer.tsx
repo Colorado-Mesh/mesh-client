@@ -1084,6 +1084,10 @@ export function ChatComposer({
     setMacroDialogFocus(null);
   }, []);
 
+  const closeScheduleDialog = useCallback(() => {
+    setScheduleDialogOpen(false);
+  }, []);
+
   const sendGifWire = useCallback(
     async (wireText: string) => {
       if (sending || disabled) return;
@@ -2125,9 +2129,7 @@ export function ChatComposer({
           mode="create"
           text={input.trim()}
           onConfirm={({ scheduledAt }) => handleScheduleSend(scheduledAt)}
-          onCancel={() => {
-            setScheduleDialogOpen(false);
-          }}
+          onCancel={closeScheduleDialog}
         />
       )}
 

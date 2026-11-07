@@ -56,6 +56,10 @@ export default function ScheduledBroadcastsPanel() {
       });
   }, []);
 
+  const closeEditor = useCallback(() => {
+    setEditingSlot(null);
+  }, []);
+
   const slotNumbers = useMemo(
     () => Array.from({ length: SCHEDULED_BROADCAST_SLOT_COUNT }, (_, i) => i + 1),
     [],
@@ -219,9 +223,7 @@ export default function ScheduledBroadcastsPanel() {
         <ScheduledBroadcastEditorDialog
           slot={editingSlot}
           existing={slots[editingSlot] ?? null}
-          onClose={() => {
-            setEditingSlot(null);
-          }}
+          onClose={closeEditor}
           onSave={handleSave}
         />
       ) : null}
