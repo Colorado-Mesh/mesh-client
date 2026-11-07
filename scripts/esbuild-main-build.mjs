@@ -67,6 +67,8 @@ export async function buildMainProcess(opts = {}) {
     format: 'cjs',
     define: {
       __MESH_CLIENT_BUILD_INFO__: JSON.stringify(buildInfoRaw),
+      // Drop the Vitest-only follow-up prompt import from the production main bundle.
+      'process.env.VITEST': 'undefined',
     },
     minify,
     metafile: Boolean(metafilePath),
@@ -80,6 +82,18 @@ export async function buildMainProcess(opts = {}) {
     platform: 'node',
     format: 'cjs',
     outfile: path.join(path.dirname(outfile), 'translation-worker.js'),
+    minify,
+    logLevel: 'info',
+  });
+
+  // Keep Catch up follow-up prompt text out of the measured main `index.js` budget.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/shared/aiFollowUpPrompt.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'ai-follow-up-prompt.js'),
     minify,
     logLevel: 'info',
   });

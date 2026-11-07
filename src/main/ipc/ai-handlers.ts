@@ -28,6 +28,7 @@ import { AiClient } from '../ai/aiClient';
 import { AiConfig } from '../ai/config';
 import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
+import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
 import { AI_LOCAL_MODELS } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
@@ -350,7 +351,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
         : 'compact';
     const prompt = followUp
-      ? (await import('../../shared/aiFollowUpPrompt')).buildAiFollowUpPrompt({
+      ? (await loadBuildAiFollowUpPrompt())({
           conversationLabel: request.conversationLabel,
           protocol: request.protocol,
           surface: request.surface,

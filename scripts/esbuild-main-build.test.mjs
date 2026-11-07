@@ -10,7 +10,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
 /**
  * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
  * of `src/shared/ipLiteral.ts` (~33 KiB savings). Scheduled Broadcasts IPC/claim CAS adds ~9 KiB.
- * Catch up follow-up questions (prompt + validation on ai:summarize) add ~2.5 KiB.
+ * Catch up follow-up prompt text ships as sibling `ai-follow-up-prompt.js` (not in index.js).
+ * Remaining Catch up follow-up validation / summary prompt wiring is covered by this budget.
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 761 * 1024;
 
@@ -88,6 +89,9 @@ describe('esbuild-main-build', () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
       await buildMainProcess({ minify: true, outfile });
+      const followUpPrompt = path.join(tempDir, 'ai-follow-up-prompt.js');
+      expect(fs.statSync(followUpPrompt).size).toBeGreaterThan(1_000);
+      expect(fs.readFileSync(followUpPrompt, 'utf8')).toContain('buildAiFollowUpPrompt');
       const worker = path.join(tempDir, 'translation-worker.js');
       const workerBytes = fs.readFileSync(worker);
       expect(workerBytes.length).toBeGreaterThan(10_000);
