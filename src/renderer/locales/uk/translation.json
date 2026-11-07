@@ -8461,6 +8461,7 @@
     "respectWarning": "Поважайте спільний LoRa ефірний час та інших операторів. Не розсилайте спам каналам, кімнатам або концентраторам — віддайте перевагу рідкісним графікам, мало цільових показників та повідомлень, які насправді потрібні сіті.",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Збережені цілі"
   }
 }

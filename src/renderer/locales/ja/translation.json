@@ -8319,6 +8319,7 @@
     "respectWarning": "共有LoRa放送時間や他のオペレーターを尊重してください。チャンネル、ルーム、またはハブにスパムを送信しないでください。まれなスケジュール、少数のターゲット、およびメッシュが実際に必要とするメッセージを好みます。",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "保存されたターゲット"
   }
 }

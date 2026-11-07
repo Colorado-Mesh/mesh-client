@@ -8265,6 +8265,7 @@
     "textHint": "Hanya satu paket — teks berukuran besar tidak dapat disimpan.",
     "targets": "Target",
     "targetsHint": "Pilih hingga 8 destinasi. Pengiriman membutuhkan radio yang terhubung.",
+    "savedTargets": "Target tersimpan",
     "noTargets": "Tambahkan setidaknya satu target yang diaktifkan.",
     "schedule": "Lampiran",
     "intervalLabel": "Ulangi",

@@ -8265,6 +8265,7 @@
     "textHint": "Yalnızca tek paket — büyük boyutlu metin kaydedilemez.",
     "targets": "Hedefler",
     "targetsHint": "En fazla 8 varış noktası seçin. Teslimat için telsizin bağlı olması gerekir.",
+    "savedTargets": "Kayıtlı hedefler",
     "noTargets": "En az bir etkin hedef ekleyin.",
     "schedule": "Zaman Çizelgesi",
     "intervalLabel": "Tekrar",

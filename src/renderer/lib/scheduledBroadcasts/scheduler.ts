@@ -339,6 +339,9 @@ export function createScheduledBroadcastScheduler(
       if (enabled && !running) {
         // Turning the switch on after a long off period must not replay what it missed.
         await normalizeSlots(justEnabled ? 'skip-missed' : 'fill-null');
+      } else if (justEnabled && running) {
+        // Defer skip-missed until finishRun so a mid-delivery enable cannot replay stale dues.
+        reconcilePending = true;
       }
       arm();
     },

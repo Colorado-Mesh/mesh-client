@@ -7466,6 +7466,7 @@
     "textHint": "Single packet only — oversize text cannot be saved.",
     "targets": "Targets",
     "targetsHint": "Choose up to 8 destinations. Delivery needs that radio connected.",
+    "savedTargets": "Saved targets",
     "noTargets": "Add at least one enabled target.",
     "schedule": "Schedule",
     "intervalLabel": "Repeat",

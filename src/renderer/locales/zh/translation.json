@@ -8319,6 +8319,7 @@
     "respectWarning": "请尊重共享的LoRa通话时间和其他操作员。不要向频道、房间或集线器发送垃圾邮件--更喜欢不频繁的时间表、很少的目标和网格实际需要的消息。",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "已保存的目标"
   }
 }

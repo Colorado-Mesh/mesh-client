@@ -8319,6 +8319,7 @@
     "respectWarning": "Achte auf die gemeinsame Sendezeit von LoRa und anderen Betreibern. Spamen Sie keine Kanäle, Räume oder Hubs — bevorzugen Sie seltene Zeitpläne, wenige Ziele und Nachrichten, die das Netz tatsächlich benötigt.",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Gespeicherte Ziele"
   }
 }

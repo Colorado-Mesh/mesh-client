@@ -8265,6 +8265,7 @@
     "textHint": "Alleen één pakket — extra grote tekst kan niet worden opgeslagen.",
     "targets": "Doel",
     "targetsHint": "Kies maximaal 8 bestemmingen. Bezorging heeft die radio nodig die is aangesloten.",
+    "savedTargets": "Opgeslagen doelen",
     "noTargets": "Voeg ten minste één ingeschakeld doel toe.",
     "schedule": "Planning",
     "intervalLabel": "Herhalen",

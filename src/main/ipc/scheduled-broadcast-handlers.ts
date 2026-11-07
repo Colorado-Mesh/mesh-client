@@ -77,6 +77,16 @@ function isValidTargetStored(t: unknown): boolean {
   return true;
 }
 
+function isValidTargetResultStored(t: unknown): boolean {
+  if (!t || typeof t !== 'object') return false;
+  const o = t as Record<string, unknown>;
+  if (!KIND_SET.has(String(o.kind))) return false;
+  if (typeof o.label !== 'string') return false;
+  if (typeof o.ok !== 'boolean') return false;
+  if (o.reason != null && typeof o.reason !== 'string') return false;
+  return true;
+}
+
 function parseLastResult(raw: string | null): ScheduledBroadcastLastResult | null {
   if (!raw) return null;
   try {
@@ -90,7 +100,23 @@ function parseLastResult(raw: string | null): ScheduledBroadcastLastResult | nul
     ) {
       return null;
     }
-    return parsed as ScheduledBroadcastLastResult;
+    if (o.targets.length > SCHEDULED_BROADCAST_MAX_TARGETS) return null;
+    const targets = o.targets.filter(isValidTargetResultStored).map((entry) => {
+      const t = entry as Record<string, unknown>;
+      const result: ScheduledBroadcastLastResult['targets'][number] = {
+        kind: t.kind as ScheduledBroadcastTargetKind,
+        label: t.label as string,
+        ok: t.ok as boolean,
+      };
+      if (typeof t.reason === 'string') result.reason = t.reason;
+      return result;
+    });
+    if (targets.length !== o.targets.length) return null;
+    return {
+      at: o.at as number,
+      outcome: o.outcome as ScheduledBroadcastRunOutcome,
+      targets,
+    };
   } catch {
     // catch-no-log-ok malformed last_result_json → treat as no result
     return null;
@@ -191,6 +217,35 @@ function validateTargets(raw: unknown): ScheduledBroadcastTarget[] {
   return targets;
 }
 
+function validateTargetResult(
+  t: unknown,
+  index: number,
+): ScheduledBroadcastLastResult['targets'][number] {
+  if (!t || typeof t !== 'object') {
+    throw new TypeError(`lastResult.targets[${index}] must be an object`);
+  }
+  const o = t as Record<string, unknown>;
+  if (typeof o.kind !== 'string' || !KIND_SET.has(o.kind)) {
+    throw new TypeError(`lastResult.targets[${index}].kind invalid`);
+  }
+  if (typeof o.label !== 'string') {
+    throw new TypeError(`lastResult.targets[${index}].label invalid`);
+  }
+  if (typeof o.ok !== 'boolean') {
+    throw new TypeError(`lastResult.targets[${index}].ok invalid`);
+  }
+  if (o.reason != null && typeof o.reason !== 'string') {
+    throw new TypeError(`lastResult.targets[${index}].reason invalid`);
+  }
+  const entry: ScheduledBroadcastLastResult['targets'][number] = {
+    kind: o.kind as ScheduledBroadcastTargetKind,
+    label: o.label,
+    ok: o.ok,
+  };
+  if (typeof o.reason === 'string') entry.reason = o.reason;
+  return entry;
+}
+
 function validateLastResult(raw: unknown): ScheduledBroadcastLastResult {
   if (!raw || typeof raw !== 'object') throw new TypeError('lastResult must be an object');
   const o = raw as Record<string, unknown>;
@@ -199,10 +254,13 @@ function validateLastResult(raw: unknown): ScheduledBroadcastLastResult {
     throw new TypeError('lastResult.outcome invalid');
   }
   if (!Array.isArray(o.targets)) throw new TypeError('lastResult.targets invalid');
+  if (o.targets.length > SCHEDULED_BROADCAST_MAX_TARGETS) {
+    throw new TypeError(`lastResult.targets length must be ≤ ${SCHEDULED_BROADCAST_MAX_TARGETS}`);
+  }
   const result: ScheduledBroadcastLastResult = {
     at: o.at as number,
     outcome: o.outcome as ScheduledBroadcastRunOutcome,
-    targets: o.targets as ScheduledBroadcastLastResult['targets'],
+    targets: o.targets.map((entry, i) => validateTargetResult(entry, i)),
   };
   const json = JSON.stringify(result);
   if (json.length > LAST_RESULT_JSON_MAX) throw new TypeError('last_result_json too large');

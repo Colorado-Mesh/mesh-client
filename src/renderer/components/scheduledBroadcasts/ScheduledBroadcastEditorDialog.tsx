@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { countMessageWireBytes } from '@/renderer/lib/chatComposerLimits';
@@ -27,6 +27,10 @@ const INTERVALS: ScheduledBroadcastInterval[] = [
   'biweekly',
   'monthly',
 ];
+
+/** Same focusable set as PanelLauncher / ScheduledSendDialog for Tab trapping. */
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function todayYmd(): string {
   const d = new Date();
@@ -79,6 +83,7 @@ export function ScheduledBroadcastEditorDialog({
   onSave,
 }: ScheduledBroadcastEditorDialogProps) {
   const { t } = useTranslation();
+  const panelRef = useRef<HTMLDivElement>(null);
   const [label, setLabel] = useState(existing?.label ?? '');
   const [text, setText] = useState(existing?.text ?? '');
   const [enabled, setEnabled] = useState(existing?.enabled ?? true);
@@ -94,6 +99,39 @@ export function ScheduledBroadcastEditorDialog({
   const [targets, setTargets] = useState<ScheduledBroadcastTarget[]>(existing?.targets ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Focus first control on open; Escape closes; Tab stays inside; restore opener on close.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)];
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (previous && document.contains(previous)) previous.focus();
+    };
+  }, [onClose]);
 
   const enabledTargets = targets.filter((x) => x.enabled);
   const textFailures = useMemo(
@@ -172,7 +210,10 @@ export function ScheduledBroadcastEditorDialog({
       aria-labelledby="sb-editor-title"
       className="bg-ink-950/80 fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div className="bg-ink-900 rounded-modal shadow-level-3 flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto p-4">
+      <div
+        ref={panelRef}
+        className="bg-ink-900 rounded-modal shadow-level-3 flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto p-4"
+      >
         <h2 id="sb-editor-title" className="text-ink-100 text-base font-semibold">
           {t('scheduledBroadcasts.edit')} — {t('scheduledBroadcasts.slotLabel', { n: slot })}
         </h2>

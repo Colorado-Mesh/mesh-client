@@ -197,6 +197,38 @@ describe('scheduledBroadcast scheduler', () => {
       expect(vi.getTimerCount()).toBe(0);
       s.stop();
     });
+
+    it('turning it on mid-run defers skip-missed until finishRun', async () => {
+      const gates: (() => void)[] = [];
+      const r = rig(
+        [row(1, { nextDueAt: at(10, 5) }), row(2, { nextDueAt: at(9, 0), timeOfDayMin: 9 * 60 })],
+        {
+          deliver: vi.fn(async (x: ScheduledBroadcastRow) => {
+            r.calls.push(`deliver:${x.slot}`);
+            await new Promise<void>((resolve) => gates.push(resolve));
+            return SENT;
+          }),
+        },
+      );
+      r.enabled.value = false;
+      const s = createScheduledBroadcastScheduler(r.deps);
+      await s.start();
+
+      // Start a manual send while disabled so a run is active, then enable.
+      r.enabled.value = true;
+      const send = s.sendNow(1);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(s.isRunning()).toBe(true);
+      await s.refresh();
+      // Stale slot 2 must not be marked missed until the run finishes.
+      expect(r.slots.get(2)?.lastResult?.outcome).not.toBe('missed');
+      gates[0]?.();
+      await send;
+      await vi.advanceTimersByTimeAsync(0);
+      expect(r.slots.get(2)?.lastResult?.outcome).toBe('missed');
+      expect(r.calls.filter((c) => c.startsWith('deliver'))).toEqual(['deliver:1']);
+      s.stop();
+    });
   });
 
   describe('timer', () => {

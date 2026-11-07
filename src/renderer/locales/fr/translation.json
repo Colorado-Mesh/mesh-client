@@ -8319,6 +8319,7 @@
     "respectWarning": "Respectez le temps d'antenne partagé LoRa et les autres opérateurs. Ne spammez pas les canaux, les salles ou les hubs — préférez des horaires peu fréquents, peu de cibles et des messages dont le maillage a réellement besoin.",
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date."
+    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "savedTargets": "Cibles enregistrées"
   }
 }

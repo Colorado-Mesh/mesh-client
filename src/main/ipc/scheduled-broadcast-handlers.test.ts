@@ -169,6 +169,62 @@ describe('scheduled broadcast IPC boundary', () => {
     expect(rows[0]?.lastResult?.outcome).toBe('sent');
   });
 
+  it('rejects lastResult with invalid target entries or too many targets', () => {
+    handlers.get('db:saveScheduledBroadcast')!(event, { slot: 1, text: 'a' });
+    const at = Date.now();
+    expect(() =>
+      handlers.get('db:setScheduledBroadcastResult')!(event, 1, at, {
+        at,
+        outcome: 'sent',
+        targets: [{ kind: 'not-a-kind', label: 'x', ok: true }],
+      }),
+    ).toThrow(/lastResult\.targets/);
+    expect(() =>
+      handlers.get('db:setScheduledBroadcastResult')!(event, 1, at, {
+        at,
+        outcome: 'sent',
+        targets: Array.from({ length: 9 }, (_, i) => ({
+          kind: 'meshtastic-channel',
+          label: `Ch${i}`,
+          ok: true,
+        })),
+      }),
+    ).toThrow(/lastResult\.targets length/);
+  });
+
+  it('list drops lastResult when stored targets are malformed or oversized', () => {
+    handlers.get('db:saveScheduledBroadcast')!(event, { slot: 1, text: 'a' });
+    const at = Date.now();
+    db.prepareOnce(
+      `UPDATE scheduled_broadcasts SET last_result_json = ?, last_attempt_at = ? WHERE slot = 1`,
+    ).run(
+      JSON.stringify({
+        at,
+        outcome: 'sent',
+        targets: [{ kind: 'meshtastic-channel', label: 'Ch0', ok: 'yes' }],
+      }),
+      at,
+    );
+    let rows = handlers.get('db:listScheduledBroadcasts')!(event) as {
+      lastResult: unknown;
+    }[];
+    expect(rows[0]?.lastResult).toBeNull();
+
+    db.prepareOnce(`UPDATE scheduled_broadcasts SET last_result_json = ? WHERE slot = 1`).run(
+      JSON.stringify({
+        at,
+        outcome: 'sent',
+        targets: Array.from({ length: 9 }, (_, i) => ({
+          kind: 'meshtastic-channel',
+          label: `Ch${i}`,
+          ok: true,
+        })),
+      }),
+    );
+    rows = handlers.get('db:listScheduledBroadcasts')!(event) as { lastResult: unknown }[];
+    expect(rows[0]?.lastResult).toBeNull();
+  });
+
   it('creates scheduled_broadcasts table via schema sync', () => {
     const cols = db.prepareOnce(`PRAGMA table_info(scheduled_broadcasts)`).all() as {
       name: string;

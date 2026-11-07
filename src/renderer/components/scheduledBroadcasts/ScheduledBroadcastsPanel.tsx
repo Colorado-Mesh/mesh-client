@@ -72,6 +72,10 @@ export default function ScheduledBroadcastsPanel() {
       if (result.status === 'busy') {
         console.warn(`[ScheduledBroadcasts] sendNow busy slot=${String(slot)}`);
       }
+    } catch (err: unknown) {
+      console.warn(
+        `[ScheduledBroadcasts] sendNow failed slot=${String(slot)} ` + errLikeToLogString(err),
+      );
     } finally {
       setBusySlot(null);
     }
@@ -79,7 +83,13 @@ export default function ScheduledBroadcastsPanel() {
 
   const handleDelete = async (slot: number) => {
     if (!window.confirm(t('scheduledBroadcasts.deleteConfirm'))) return;
-    await remove(slot);
+    try {
+      await remove(slot);
+    } catch (err: unknown) {
+      console.warn(
+        `[ScheduledBroadcasts] delete failed slot=${String(slot)} ` + errLikeToLogString(err),
+      );
+    }
   };
 
   return (
