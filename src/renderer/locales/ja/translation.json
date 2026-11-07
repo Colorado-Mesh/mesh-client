@@ -982,7 +982,9 @@
       "sending": "{{name}} を送信中…",
       "tooltip": "この LXMF ダイレクトメッセージでファイルまたは写真を送信（ネイティブ添付 — rncp ではありません）。最大 {{count}} ファイル、合計 {{limitKib}} KiB。写真はリサイズされメタデータは削除されます。",
       "transfersAria": "送信中の添付"
-    }
+    },
+    "sendLater": "後で送信する",
+    "sendMenuButton": "送信設定"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

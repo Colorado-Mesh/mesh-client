@@ -177,7 +177,7 @@ The inbox lists **received** messages from every enabled protocol, newest first,
 
 Schedule a **one-time** message to go out later instead of now.
 
-1. Type the message in a channel or DM and click **Schedule send** next to the other composer buttons.
+1. Type the message in a channel or DM, open **Send options** (chevron next to Send), and choose **Send later**.
 2. Pick **In 15 minutes**, **In 1 hour**, or **Tomorrow 9:00**, or set any date and time in **Send at**.
 3. Click **Schedule**.
 

@@ -21,6 +21,8 @@ publish:
   repo: mesh-client
   # Keep GitHub Releases as drafts until a maintainer publishes manually.
   releaseType: draft
+# Strip Unix-only usocket before @electron/rebuild (allowBuilds only covers pnpm install).
+beforeBuild: scripts/electron-builder-before-build.mjs
 beforePack: scripts/electron-builder-before-pack.mjs
 extraResources:
   - from: resources/ai-helper/active

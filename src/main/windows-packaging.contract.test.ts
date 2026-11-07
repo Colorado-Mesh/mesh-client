@@ -89,6 +89,24 @@ describe('Windows packaging (contract)', () => {
     }
   });
 
+  it('strips usocket in beforeBuild so Windows pack-time native rebuild skips it', () => {
+    const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
+    expect(yml).toMatch(/beforeBuild:\s*scripts\/electron-builder-before-build\.mjs/);
+    expect(yml).toMatch(/beforePack:\s*scripts\/electron-builder-before-pack\.mjs/);
+
+    const workspaceYaml = readFileSync(join(REPO_ROOT, 'pnpm-workspace.yaml'), 'utf-8');
+    expect(workspaceYaml).toMatch(/usocket:\s*false/);
+
+    const beforeBuild = readFileSync(
+      join(REPO_ROOT, 'scripts', 'electron-builder-before-build.mjs'),
+      'utf-8',
+    );
+    expect(beforeBuild).toContain('stripUsocketPackages');
+    expect(beforeBuild).toContain('usocket');
+    // void/undefined is treated as false and skips pack-time native rebuild.
+    expect(beforeBuild).toMatch(/return true\s*;/);
+  });
+
   it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
     expect(yml).toMatch(/beforePack:\s*scripts\/electron-builder-before-pack\.mjs/);
