@@ -141,6 +141,60 @@ describe('AI key storage and configuration', () => {
     config.write({ engine: 'bundled', localModelId: null });
     expect(config.read().localModelId).toBeNull();
   });
+  it('clears local model selection without dropping engine or timeouts', () => {
+    let raw: string | undefined;
+    const config = new AiConfig({
+      read: () => raw,
+      write: (value) => {
+        raw = value;
+      },
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: vi.fn(),
+        decryptString: vi.fn(),
+      },
+    });
+    config.write({
+      engine: 'bundled',
+      localModelId: 'qwen3-1.7b-instruct-q4',
+      timeoutSeconds: 600,
+      maxCollectedMessages: 2000,
+    });
+    config.clearLocalModelSelection();
+    expect(config.read()).toMatchObject({
+      engine: 'bundled',
+      localModelId: null,
+      timeoutSeconds: 600,
+      maxCollectedMessages: 2000,
+    });
+    expect(JSON.parse(raw ?? '{}')).toMatchObject({ engine: 'bundled', localModelId: null });
+  });
+  it('keeps durable fields when a saved config omitted engine', () => {
+    const config = new AiConfig({
+      read: () =>
+        JSON.stringify({
+          wireFormat: null,
+          baseUrl: '',
+          model: '',
+          timeoutSeconds: 600,
+          maxCollectedMessages: 2000,
+          allowRemote: false,
+          localModelId: null,
+        }),
+      write: vi.fn(),
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: vi.fn(),
+        decryptString: vi.fn(),
+      },
+    });
+    expect(config.read()).toMatchObject({
+      engine: null,
+      timeoutSeconds: 600,
+      maxCollectedMessages: 2000,
+      localModelId: null,
+    });
+  });
   it('refuses plaintext fallback', () => {
     const config = new AiConfig({
       read: () => undefined,

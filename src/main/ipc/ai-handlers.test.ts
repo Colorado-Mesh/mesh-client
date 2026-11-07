@@ -384,12 +384,70 @@ describe('AI IPC lifecycle and opt-in', () => {
       }),
     );
     const remove = vi.spyOn(AiModelPackManager.prototype, 'delete').mockResolvedValue();
-    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue([]);
+    const listed = [
+      {
+        id: 'llama3.2-3b-instruct-q4',
+        name: 'Llama',
+        paramsLabel: '3B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'MIT',
+        installed: false,
+        runtime: 'wllama' as const,
+      },
+    ];
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue(listed);
     try {
-      expect(await handler('ai:removeLocalModel')({}, 'llama3.2-3b-instruct-q4')).toEqual([]);
+      expect(await handler('ai:removeLocalModel')({}, 'llama3.2-3b-instruct-q4')).toEqual(listed);
       expect(remove).toHaveBeenCalledWith('llama3.2-3b-instruct-q4');
       expect(JSON.parse(settings.get('aiProviderConfig') ?? '{}')).toMatchObject({
+        engine: 'bundled',
         localModelId: null,
+      });
+    } finally {
+      remove.mockRestore();
+      list.mockRestore();
+    }
+  });
+
+  it('removes an orphan without clearing the selected engine', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen3-1.7b-instruct-q4',
+        timeoutSeconds: 600,
+      }),
+    );
+    const remove = vi.spyOn(AiModelPackManager.prototype, 'delete').mockResolvedValue();
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue([
+      {
+        id: 'qwen2.5-1.5b-instruct-q4',
+        name: 'Qwen2.5',
+        paramsLabel: '1.5B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'Apache-2.0',
+        installed: true,
+        runtime: 'wllama' as const,
+      },
+    ]);
+    try {
+      const result = await handler('ai:removeLocalModel')({}, 'qwen3-1.7b-instruct-q4');
+      expect(result).toHaveLength(1);
+      expect(JSON.parse(settings.get('aiProviderConfig') ?? '{}')).toEqual(
+        expect.objectContaining({
+          engine: 'bundled',
+          localModelId: null,
+          timeoutSeconds: 600,
+        }),
+      );
+      expect(await handler('ai:getStatus')({})).toMatchObject({
+        engine: 'bundled',
+        timeoutSeconds: 600,
       });
     } finally {
       remove.mockRestore();

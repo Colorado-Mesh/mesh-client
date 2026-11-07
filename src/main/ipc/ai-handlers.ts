@@ -242,8 +242,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     stop();
     await packs.delete(modelId);
     const stored = config.read();
-    if (stored.localModelId === modelId)
-      config.write({ engine: stored.engine ?? 'bundled', localModelId: null });
+    if (stored.localModelId === modelId) config.clearLocalModelSelection();
     const next = await status();
     send('ai:statusChanged', next);
     return enabled() ? packs.list() : [];

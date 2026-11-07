@@ -37,14 +37,16 @@ export class AiConfig {
       const value: unknown = JSON.parse(this.deps.read() ?? 'null');
       if (!value || typeof value !== 'object') return { ...EMPTY_AI_CONFIG };
       const c = value as Partial<StoredAiConfig>;
-      if (
-        !['os', 'bundled', 'local', 'remote'].includes(c.engine ?? '') ||
-        typeof c.baseUrl !== 'string' ||
-        typeof c.model !== 'string'
-      )
+      // Missing engine (e.g. a partial write that omitted it) must not wipe timeouts /
+      // selected model / keys — only reject when the durable string fields are corrupt.
+      if (typeof c.baseUrl !== 'string' || typeof c.model !== 'string')
         return { ...EMPTY_AI_CONFIG };
+      const engine: AiEngine | null =
+        c.engine === 'os' || c.engine === 'bundled' || c.engine === 'local' || c.engine === 'remote'
+          ? c.engine
+          : null;
       return {
-        engine: c.engine ?? null,
+        engine,
         wireFormat: ['openai', 'anthropic', 'gemini', 'ollama'].includes(c.wireFormat ?? '')
           ? c.wireFormat!
           : null,
@@ -62,6 +64,29 @@ export class AiConfig {
       // catch-no-log-ok corrupt settings stay dormant
       return { ...EMPTY_AI_CONFIG };
     }
+  }
+  /**
+   * Drop the selected downloaded pack without rewriting engine / endpoint / key fields.
+   * Full `write({ localModelId: null })` used to omit `engine` (JSON drops undefined) and
+   * reset the provider, which hid the offline catalog after removing an orphan pack.
+   */
+  clearLocalModelSelection(): void {
+    const old = this.read();
+    this.deps.write(
+      JSON.stringify({
+        engine: old.engine,
+        wireFormat: old.wireFormat,
+        baseUrl: old.baseUrl,
+        model: old.model,
+        ...(typeof old.timeoutSeconds === 'number' ? { timeoutSeconds: old.timeoutSeconds } : {}),
+        ...(typeof old.maxCollectedMessages === 'number'
+          ? { maxCollectedMessages: old.maxCollectedMessages }
+          : {}),
+        ...(typeof old.encryptedKey === 'string' ? { encryptedKey: old.encryptedKey } : {}),
+        allowRemote: old.allowRemote,
+        localModelId: null,
+      } satisfies StoredAiConfig),
+    );
   }
   write(input: AiEndpointConfig): void {
     const old = this.read();
