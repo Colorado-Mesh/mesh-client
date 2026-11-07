@@ -10,8 +10,9 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
 /**
  * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
  * of `src/shared/ipLiteral.ts` (~33 KiB savings). Scheduled Broadcasts IPC/claim CAS adds ~9 KiB.
+ * Catch up follow-up questions (prompt + validation on ai:summarize) add ~2.5 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 758 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 761 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

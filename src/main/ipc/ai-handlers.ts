@@ -12,6 +12,7 @@ import {
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici';
 
 import {
+  AI_FOLLOW_UP_OUTPUT_TOKENS,
   AI_MAX_RESPONSE_BYTES,
   type AiActionResult,
   type AiOsAiStatus,
@@ -288,6 +289,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     guard(event, 'ai:summarize');
     const request = validateAiRequest(value);
     const mode = request.mode ?? 'final';
+    const followUp = request.followUp;
     if (request.jobId && multiPassJobs.has(request.jobId)) {
       // Child multi-pass step — already counted when the first map registered the job.
     } else if (request.jobId && mode === 'map') {
@@ -295,6 +297,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       if (multiPassJobs.size >= 32) multiPassJobs.delete(multiPassJobs.values().next().value!);
       multiPassJobs.add(request.jobId);
     } else {
+      // Follow-ups are single-pass and count like a final pass.
       summaries.checkOrThrow();
     }
     if (active.size >= 1) return { ok: false, reason: 'busy' };
@@ -323,7 +326,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       before !== revision ||
       !enabled() ||
       controller.signal.aborted ||
-      !request.messages.length
+      (!request.messages.length && !followUp)
     ) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (!ready.ok) return ready;
@@ -341,18 +344,36 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'notConfigured' };
     }
     const budget = aiSummaryPromptBudget(c.engine);
-    const prompt = buildSummaryPrompt({
-      ...request,
-      digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
-      mode: request.mode ?? 'final',
-      maxChars: budget.maxChars,
-      maxPromptBytes: budget.maxPromptBytes,
-    });
-    if (!prompt.included) {
+    const prompt = followUp
+      ? (await import('../../shared/aiFollowUpPrompt')).buildAiFollowUpPrompt({
+          conversationLabel: request.conversationLabel,
+          protocol: request.protocol,
+          surface: request.surface,
+          locale: request.locale,
+          summary: followUp.summary,
+          question: followUp.question,
+          turns: followUp.turns,
+          messages: request.messages,
+          contextKind: followUp.contextKind,
+          maxChars: budget.maxChars,
+          maxPromptBytes: budget.maxPromptBytes,
+        })
+      : {
+          ...buildSummaryPrompt({
+            ...request,
+            digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
+            mode: request.mode ?? 'final',
+            maxChars: budget.maxChars,
+            maxPromptBytes: budget.maxPromptBytes,
+          }),
+          fits: true as const,
+        };
+    if (!prompt.fits || (!followUp && !prompt.included)) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
       return { ok: false, reason: 'tooLarge' };
     }
+    const outputTokens = followUp ? AI_FOLLOW_UP_OUTPUT_TOKENS : aiSummaryOutputTokens(mode);
     if (c.engine === 'bundled') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
@@ -367,11 +388,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           messageCount: prompt.included,
           truncated: prompt.truncated,
           model: model.name,
-          maxTokens: aiSummaryOutputTokens(mode),
+          maxTokens: outputTokens,
         },
       };
     }
-    const outputTokens = aiSummaryOutputTokens(mode);
     const signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(c.engine, c.timeoutSeconds)),

@@ -1,6 +1,6 @@
 import type { AiSummaryMessage, AiSummaryPassMode } from './ai-types';
 
-const utf8Bytes = (value: string): number => new TextEncoder().encode(value).byteLength;
+export const utf8Bytes = (value: string): number => new TextEncoder().encode(value).byteLength;
 
 function systemPrompt(mode: AiSummaryPassMode): string {
   if (mode === 'map')
@@ -21,6 +21,73 @@ function userSuffix(mode: AiSummaryPassMode): string {
 function userPrefix(mode: AiSummaryPassMode, meta: string): string {
   if (mode === 'reduce') return `${meta}\nBEGIN_UNTRUSTED_DIGESTS\n`;
   return `${meta}\nBEGIN_UNTRUSTED_TRANSCRIPT\n`;
+}
+
+function createTimestampFormatter(timeZone: string): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZoneName: 'longOffset',
+  });
+}
+
+function formatTranscriptLine(message: AiSummaryMessage, timestamps: Intl.DateTimeFormat): string {
+  const parts = Object.fromEntries(
+    timestamps.formatToParts(new Date(message.at)).map(({ type, value }) => [type, value]),
+  );
+  const zoneName = parts.timeZoneName;
+  if (!zoneName) throw new Error('Missing local timezone offset');
+  const offset = zoneName.replace('GMT', 'UTC').replace('−', '-');
+  const stamp = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} ${offset === 'UTC' ? 'UTC+00:00' : offset}`;
+  // JSON quoting prevents senders from forging transcript delimiters or additional lines.
+  return `[${stamp}] ${JSON.stringify(message.sender.slice(0, 120))}: ${JSON.stringify(message.body)}`;
+}
+
+function formatDigestLine(message: AiSummaryMessage): string {
+  return JSON.stringify(message.body);
+}
+
+/** Newest-first inclusion under char and UTF-8 budgets; returns chronological lines. */
+export function selectContextLines(
+  messages: AiSummaryMessage[],
+  options: {
+    digests: boolean;
+    maxChars: number;
+    maxBytes: number;
+    reservedBytes: number;
+    timeZone: string;
+  },
+): { lines: string[]; truncated: boolean; promptBytes: number } {
+  const timestamps = options.digests ? null : createTimestampFormatter(options.timeZone);
+  const ordered = [...messages].sort((a, b) => a.at - b.at);
+  const lines: string[] = [];
+  let size = 0;
+  let promptBytes = options.reservedBytes;
+  for (const message of ordered.reverse()) {
+    const line =
+      options.digests || !timestamps
+        ? formatDigestLine(message)
+        : formatTranscriptLine(message, timestamps);
+    const bytes = utf8Bytes(line) + 1;
+    if (size + line.length + 1 > options.maxChars || promptBytes + bytes > options.maxBytes) {
+      if (line.length + 1 > options.maxChars || options.reservedBytes + bytes > options.maxBytes)
+        continue;
+      break;
+    }
+    lines.push(line);
+    size += line.length + 1;
+    promptBytes += bytes;
+  }
+  return {
+    lines: lines.reverse(),
+    truncated: lines.length < messages.length,
+    promptBytes,
+  };
 }
 
 export function buildAiSummaryPrompt(
@@ -54,47 +121,18 @@ export function buildAiSummaryPrompt(
   const suffix = digests
     ? userSuffix(mode).replace('END_UNTRUSTED_TRANSCRIPT', 'END_UNTRUSTED_DIGESTS')
     : userSuffix(mode);
-  const timestamps = new Intl.DateTimeFormat('sv-SE', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    timeZoneName: 'longOffset',
-  });
-  const baseBytes = utf8Bytes(system + prefix + suffix);
   const maxBytes = input.maxPromptBytes ?? Infinity;
-  let promptBytes = baseBytes;
-  const ordered = [...input.messages].sort((a, b) => a.at - b.at);
-  const lines: string[] = [];
-  let size = 0;
-  for (const message of ordered.reverse()) {
-    const parts = Object.fromEntries(
-      timestamps.formatToParts(new Date(message.at)).map(({ type, value }) => [type, value]),
-    );
-    const zoneName = parts.timeZoneName;
-    if (!zoneName) throw new Error('Missing local timezone offset');
-    const offset = zoneName.replace('GMT', 'UTC').replace('−', '-');
-    const stamp = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} ${offset === 'UTC' ? 'UTC+00:00' : offset}`;
-    // JSON quoting prevents senders from forging transcript delimiters or additional lines.
-    const line = digests
-      ? JSON.stringify(message.body)
-      : `[${stamp}] ${JSON.stringify(message.sender.slice(0, 120))}: ${JSON.stringify(message.body)}`;
-    const bytes = utf8Bytes(line) + 1;
-    if (size + line.length + 1 > input.maxChars || promptBytes + bytes > maxBytes) {
-      if (line.length + 1 > input.maxChars || baseBytes + bytes > maxBytes) continue;
-      break;
-    }
-    lines.push(line);
-    size += line.length + 1;
-    promptBytes += bytes;
-  }
+  const selected = selectContextLines(input.messages, {
+    digests,
+    maxChars: input.maxChars,
+    maxBytes,
+    reservedBytes: utf8Bytes(system + prefix + suffix),
+    timeZone,
+  });
   return {
     system,
-    user: `${prefix}${lines.reverse().join('\n')}${suffix}`,
-    included: lines.length,
-    truncated: lines.length < input.messages.length,
+    user: `${prefix}${selected.lines.join('\n')}${suffix}`,
+    included: selected.lines.length,
+    truncated: selected.truncated,
   };
 }

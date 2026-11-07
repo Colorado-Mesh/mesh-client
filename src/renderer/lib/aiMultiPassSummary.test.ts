@@ -101,7 +101,9 @@ describe('multi-pass summary orchestration', () => {
         requests.filter((request) => request.mode === 'map').flatMap((request) => request.messages),
       ).toEqual(messages);
       expect(requests.at(-1)?.mode).toBe('final');
-      expect(result).toEqual({ messageCount: 169, truncated: false });
+      expect(result.messageCount).toBe(169);
+      expect(result.truncated).toBe(false);
+      expect(result.digests.length).toBeGreaterThan(0);
       expect(callbacks.onFinalText).toHaveBeenCalledExactlyOnceWith('Useful digest.');
       expect(waiters.size).toBe(0);
     },

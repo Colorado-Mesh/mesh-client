@@ -310,6 +310,57 @@ describe('AI IPC lifecycle and opt-in', () => {
     await Promise.resolve();
     expect(send.mock.calls.filter(([channel]) => channel === 'ai:summaryDone')).toHaveLength(0);
   });
+  it('accepts empty messages for a follow-up on the bundled engine', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-1b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          messages: [],
+          followUp: {
+            question: 'How would they expand it?',
+            summary: '• Trashcan13 suggested expanding the mesh.',
+            turns: [],
+            contextKind: 'none',
+          },
+        },
+      );
+      expect(result).toMatchObject({ ok: true });
+      expect((result as { localJob?: { user: string } }).localJob?.user).toContain(
+        'How would they expand it?',
+      );
+    } finally {
+      verify.mockRestore();
+    }
+  });
+  it('rejects a disabled follow-up without starting inference', async () => {
+    expect(
+      await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          messages: [],
+          followUp: {
+            question: 'How?',
+            summary: '• Summary',
+            turns: [],
+            contextKind: 'none',
+          },
+        },
+      ),
+    ).toEqual({ ok: false, reason: 'disabled' });
+  });
 });
 
 it.each(['linux', 'darwin', 'win32'])(

@@ -62,6 +62,27 @@ warns and leaves OS AI unavailable; it does not block local distribution builds.
 Swift returns cumulative snapshots, so its helper emits only new suffixes. Windows has no
 max-output-token option in this API; its helper uses a conservative 1,000-character bound.
 
+## Follow-up questions
+
+After a Catch up completes, the shared card offers an inline Ask field. Answers stream under the
+summary with prior turns kept in session memory. Follow-ups are **stateless re-prompts** on the
+existing `ai:summarize` IPC: the request carries an optional `followUp` object (question, summary,
+prior turns, `contextKind`) plus selected source messages — no new channel, no mesh posting, no
+persistence.
+
+Context retention (renderer session only):
+
+- Single-pass: retain the transcript when total body characters ≤ `AI_FOLLOW_UP_CONTEXT_MAX_CHARS`
+  (64,000); otherwise summary-only with a limited-context disclosure.
+- Multi-pass: retain the final pre-final digest list (dense, small).
+- On-device engines (`os` / `bundled`): a deterministic relevance selector scores messages with
+  question + summary tokens so anaphoric asks like “how?” can still find the bullet’s subject.
+- Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.
+
+Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
+on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per
+generation (show the loading phase). Answers never overwrite Catch up bullet text.
+
 ## Data and runtime boundaries
 
 `src/shared/ai-types.ts` is the preload contract. Main services are under `src/main/ai/`;

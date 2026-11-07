@@ -21,6 +21,27 @@ export type AiSummaryScope =
 /** Prompt role for multi-pass Catch up (default final = existing five-bullet UX). */
 export type AiSummaryPassMode = 'map' | 'reduce' | 'final';
 
+/** How retained source material is framed in a follow-up prompt. */
+export type AiFollowUpContextKind = 'transcript' | 'digests' | 'none';
+
+/** One completed follow-up turn about a Catch up summary (session memory only). */
+export interface AiSummaryFollowUpTurn {
+  question: string;
+  answer: string;
+}
+
+/** Follow-up question attached to a Catch up request. */
+export interface AiSummaryFollowUp {
+  /** User question; controls stripped, capped at AI_MAX_FOLLOW_UP_QUESTION_CHARS. */
+  question: string;
+  /** Completed Catch up text the question refers to. */
+  summary: string;
+  /** Prior completed turns, oldest first, capped at AI_MAX_FOLLOW_UP_TURNS. */
+  turns: AiSummaryFollowUpTurn[];
+  /** How `messages` should be framed in the follow-up prompt. */
+  contextKind: AiFollowUpContextKind;
+}
+
 export interface AiSummaryRequest {
   /** Unique per call; used to correlate stream events and cancellation. */
   requestId: string;
@@ -36,6 +57,12 @@ export interface AiSummaryRequest {
   locale: string;
   messages: AiSummaryMessage[];
   scope: AiSummaryScope;
+  /**
+   * When present, main answers a follow-up instead of producing a Catch up.
+   * Follow-ups are always single-pass and may have an empty `messages` array
+   * (summary-only answers).
+   */
+  followUp?: AiSummaryFollowUp;
 }
 
 export interface AiSummaryChunk {
@@ -175,6 +202,24 @@ export const AI_MAX_OUTPUT_TOKENS = 250;
 export const AI_MAP_OUTPUT_TOKENS = 96;
 export const AI_REDUCE_OUTPUT_TOKENS = 128;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
+
+/** Max characters accepted for a follow-up question. */
+export const AI_MAX_FOLLOW_UP_QUESTION_CHARS = 500;
+/** Max prior Q&A turns sent back to the model. */
+export const AI_MAX_FOLLOW_UP_TURNS = 6;
+/** Max characters of one prior answer included in the prompt. */
+export const AI_MAX_FOLLOW_UP_ANSWER_CHARS = 2_000;
+/** Max characters of the completed summary included in the prompt. */
+export const AI_MAX_FOLLOW_UP_SUMMARY_CHARS = 4_000;
+/**
+ * Retain the original single-pass transcript for follow-ups only when its total
+ * body characters are at or below this cap (renderer session memory).
+ */
+export const AI_FOLLOW_UP_CONTEXT_MAX_CHARS = 64_000;
+/** Completed follow-up turns retained per summary in the renderer. */
+export const AI_MAX_RETAINED_FOLLOW_UPS = 20;
+/** Output token budget for one follow-up answer. */
+export const AI_FOLLOW_UP_OUTPUT_TOKENS = 250;
 
 export function aiSummaryOutputTokens(mode: AiSummaryPassMode = 'final'): number {
   if (mode === 'map') return AI_MAP_OUTPUT_TOKENS;
