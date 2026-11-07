@@ -6,6 +6,7 @@ import type { ScheduledBroadcastTarget } from '@/shared/scheduledBroadcastTypes'
 
 import { resolveChannelTargetIndex } from './resolveChannelTarget';
 
+/** Localized kind prefix (`Meshtastic channel` / `MeshCore channel`). */
 function channelKindLabel(kind: 'meshtastic-channel' | 'meshcore-channel', t: TFunction): string {
   return kind === 'meshtastic-channel'
     ? t('scheduledBroadcasts.targetKind.meshtasticChannel')
@@ -42,7 +43,11 @@ export function formatScheduledBroadcastChannelLabel(
   }
   const kindLabel = channelKindLabel(target.kind, t);
   const resolved = resolveChannelTargetIndex(target);
-  const channelIndex = resolved.ok ? resolved.channelIndex : (target.channelIndex ?? 0);
+  if (!resolved.ok) {
+    // Key missing / no live map — do not guess a name from a stale saved index.
+    return `${kindLabel} ${target.channelIndex ?? 0}`;
+  }
+  const { channelIndex } = resolved;
   const name = lookupChannelName(target.kind, target.identityId, channelIndex, deviceOverride);
   if (name) {
     return t('scheduledBroadcasts.channelNamed', {

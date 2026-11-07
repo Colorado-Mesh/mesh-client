@@ -135,6 +135,25 @@ describe('formatScheduledBroadcastChannelLabel', () => {
       ),
     ).toBe('Meshtastic channel 3: Remapped');
   });
+
+  it('omits the name when channelKey resolution fails', () => {
+    setLiveChannelKeys('meshtastic', {
+      radioNodeId: 1,
+      keyByIndex: { 0: 'other' },
+    });
+    setDeviceChannels('mt', [{ index: 0, name: 'LongFast' }], []);
+    expect(
+      formatScheduledBroadcastChannelLabel(
+        {
+          kind: 'meshtastic-channel',
+          identityId: 'mt',
+          channelIndex: 0,
+          channelKey: 'gone',
+        },
+        t,
+      ),
+    ).toBe('Meshtastic channel 0');
+  });
 });
 
 describe('formatScheduledBroadcastTargetLabel', () => {

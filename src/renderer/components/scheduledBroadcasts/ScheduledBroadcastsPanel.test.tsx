@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -85,5 +85,11 @@ describe('ScheduledBroadcastsPanel', () => {
     });
     render(<ScheduledBroadcastsPanel />);
     expect(screen.getByText('Meshtastic channel 0: LongFast')).toBeInTheDocument();
+
+    act(() => {
+      setDeviceChannels('mt', [{ index: 0, name: 'MediumSlow' }], []);
+    });
+    expect(screen.getByText('Meshtastic channel 0: MediumSlow')).toBeInTheDocument();
+    expect(screen.queryByText('Meshtastic channel 0: LongFast')).not.toBeInTheDocument();
   });
 });
