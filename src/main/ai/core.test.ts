@@ -583,9 +583,63 @@ describe('AI summary final styles', () => {
     });
     expect(prompt.system).toContain('Conversations:');
     expect(prompt.system).toContain('One-offs:');
+    expect(prompt.system).toContain('no markdown bold');
+    expect(prompt.system).toContain('never “…asked what”');
+    expect(prompt.system).toContain('Do not infer intent, awareness, motives');
+    expect(prompt.system).toContain('put weakly related or standalone items under One-offs');
+    expect(prompt.system).not.toContain('incomplete digests');
     expect(prompt.system).not.toContain('Output up to five short factual bullets');
-    expect(prompt.user).toContain('Conversations: and One-offs:');
+    expect(prompt.user).toContain('plain Conversations: and One-offs:');
+    expect(prompt.user).toContain('do not infer intent');
     expect(prompt.user).toContain('"finalStyle":"structured"');
+  });
+
+  it('adds digest-gap wording for structured finals over digests', () => {
+    const prompt = buildSummaryPrompt({
+      conversationLabel: 'chat',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'en',
+      messages: [
+        { at: 1, sender: 'Part 1', body: 'Alice asked Bob about the north ridge repeater.' },
+      ],
+      maxChars: 9000,
+      mode: 'final',
+      digests: true,
+      finalStyle: 'structured',
+    });
+    expect(prompt.system).toContain('incomplete digests');
+    expect(prompt.system).toContain('treat gaps as unknown');
+    expect(prompt.user).toContain('END_UNTRUSTED_DIGESTS');
+  });
+
+  it('keeps question objects and forbids invented threads in map and reduce', () => {
+    const map = buildSummaryPrompt({
+      conversationLabel: 'chat',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'en',
+      messages: [{ at: 1, sender: 'Alice', body: 'Who checked the repeater?' }],
+      maxChars: 9000,
+      mode: 'map',
+    });
+    expect(map.system).toContain('never “asked what”');
+    expect(map.system).toContain('Do not invent details, threads, or intent/causality');
+    expect(map.user).toContain('Keep who/what complete');
+
+    const reduce = buildSummaryPrompt({
+      conversationLabel: 'chat',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'en',
+      messages: [{ at: 1, sender: 'Part 1', body: 'Alice asked who checked the repeater.' }],
+      maxChars: 9000,
+      mode: 'reduce',
+      digests: true,
+    });
+    expect(reduce.system).toContain('never collapse to “asked what”');
+    expect(reduce.system).toContain('Do not invent details, causal links, or a thread');
+    expect(reduce.user).toContain('do not invent threads');
   });
 
   it('needs more on-device headroom for structured digests than compact', () => {
