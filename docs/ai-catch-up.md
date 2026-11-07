@@ -45,6 +45,10 @@ If Metal Catch up is not ready:
 
 You do **not** need to run Terminal commands or change developer tools for normal use.
 
+## Troubleshooting
+
+- If `xcodebuild -downloadComponent MetalToolchain` loops (keeps downloading or never finishes), reboot the Mac and run the command again, then tap **Retry Metal Catch up**.
+
 ## Follow-up questions
 
 After a Catch up finishes, you can ask follow-up questions in the summary card. Answers use the summary plus retained source messages for that Catch up and stay in session memory (they are not posted to the mesh).
