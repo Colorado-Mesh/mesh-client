@@ -7999,8 +7999,11 @@
       "helperMissing": "Penangkapan Logam belum siap dalam instalasi ini. Pilih model CPU portabel di bawah ini, atau perbarui Mesh Client jika rilis ini harus menyertakan Metal. Anda masih dapat mengunduh model MLX sekarang dan menggunakannya setelah Metal siap.",
       "xcodeNotFound": "Metal Catch up tidak dapat menemukan Xcode di Mac ini. Buka Xcode dari Aplikasi (atau instal dari App Store), selesaikan pengaturan peluncuran pertama, lalu ketuk Coba Lagi. Sementara itu, gunakan model CPU portabel.",
       "xcodeIncomplete": "Xcode diinstal tetapi alat Metal - nya belum siap. Buka Xcode dari Aplikasi, selesaikan pengaturan peluncuran pertama, lalu ketuk Coba Lagi. Sementara itu, gunakan model CPU portabel.",
-      "buildFailed": "Metal Catch up tidak dapat menyelesaikan persiapan di Mac ini. Ketuk Coba lagi setelah membuka Xcode sekali, atau gunakan model CPU portabel. Memperbarui Klien Mesh juga dapat membantu jika rilis menyertakan Metal."
-    }
+      "buildFailed": "Metal Catch up tidak dapat menyelesaikan persiapan di Mac ini. Ketuk Coba lagi setelah membuka Xcode sekali, atau gunakan model CPU portabel. Memperbarui Klien Mesh juga dapat membantu jika rilis menyertakan Metal.",
+      "sourcesUnavailable": "Build Klien Mesh ini tidak termasuk sumber Metal Catch up. Pilih model CPU portabel di bawah ini, atau perbarui Mesh Client jika rilis menyertakan Metal.",
+      "metalToolchainMissing": "Xcode diinstal, tetapi komponen Metal Toolchain hilang. Di Terminal run: xcodebuild - downloadComponent MetalToolchain Kemudian buka Xcode jika diminta, tunggu unduhan, dan ketuk Coba Lagi. Sementara itu, gunakan model CPU portabel."
+    },
+    "mlxHelperRetryReady": "Metal Catch up sudah siap di Mac ini."
   },
   "chatOrder": {
     "title": "Atur urutan obrolan",

@@ -7999,8 +7999,11 @@
       "helperMissing": "Der Metallaufholer ist in dieser Installation nicht bereit. Wählen Sie unten ein tragbares CPU-Modell oder aktualisieren Sie den Mesh-Client, wenn diese Version Metal enthalten sollte. Sie können MLX-Modelle jetzt noch herunterladen und verwenden, nachdem Metal fertig ist.",
       "xcodeNotFound": "Metal Catch up konnte Xcode auf diesem Mac nicht finden. Öffnen Sie Xcode aus Anwendungen (oder installieren Sie es aus dem App Store), schließen Sie das Setup für den ersten Start ab und tippen Sie dann auf Wiederholen. Verwenden Sie in der Zwischenzeit ein tragbares CPU-Modell.",
       "xcodeIncomplete": "Xcode ist installiert, aber die Metallwerkzeuge sind noch nicht fertig. Öffnen Sie Xcode aus Anwendungen, schließen Sie alle Einstellungen für den ersten Start ab und tippen Sie dann auf Wiederholen. Verwenden Sie in der Zwischenzeit ein tragbares CPU-Modell.",
-      "buildFailed": "Metal Catch up konnte die Vorbereitung auf diesem Mac nicht beenden. Tippen Sie auf Wiederholen, nachdem Sie Xcode einmal geöffnet haben, oder verwenden Sie ein tragbares CPU-Modell. Das Aktualisieren des Mesh-Clients kann auch hilfreich sein, wenn eine Version Metall enthält."
-    }
+      "buildFailed": "Metal Catch up konnte die Vorbereitung auf diesem Mac nicht beenden. Tippen Sie auf Wiederholen, nachdem Sie Xcode einmal geöffnet haben, oder verwenden Sie ein tragbares CPU-Modell. Das Aktualisieren des Mesh-Clients kann auch hilfreich sein, wenn eine Version Metall enthält.",
+      "sourcesUnavailable": "Dieser Mesh-Client-Build enthält keine Metal Catch-up-Quellen. Wählen Sie unten ein tragbares CPU-Modell oder aktualisieren Sie den Mesh-Client, wenn eine Version Metal enthält.",
+      "metalToolchainMissing": "Xcode ist installiert, aber die Metal Toolchain-Komponente fehlt. Führen Sie im Terminal aus: xcodebuild -downloadComponent MetalToolchain Öffnen Sie dann Xcode, wenn Sie dazu aufgefordert werden, warten Sie auf den Download und tippen Sie auf Wiederholen. Verwenden Sie in der Zwischenzeit ein tragbares CPU-Modell."
+    },
+    "mlxHelperRetryReady": "Metall-Aufholjagd ist auf diesem Mac bereit."
   },
   "chatOrder": {
     "title": "Chats sortieren",

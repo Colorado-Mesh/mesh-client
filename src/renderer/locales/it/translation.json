@@ -7999,8 +7999,11 @@
       "helperMissing": "Metal Recupero non è pronto in questa installazione. Scegli un modello di CPU portatile di seguito o aggiorna Mesh Client se questa versione dovrebbe includere Metal. Puoi ancora scaricare i modelli MLX ora e usarli dopo che Metal è pronto.",
       "xcodeNotFound": "Metal Recupero non è riuscito a trovare Xcode su questo Mac. Apri Xcode dalle applicazioni (o installalo dall'App Store), completa qualsiasi configurazione di primo avvio, quindi tocca Riprova. Nel frattempo utilizza un modello di CPU portatile.",
       "xcodeIncomplete": "Xcode è installato ma i suoi strumenti Metal non sono ancora pronti. Apri Xcode da Applicazioni, completa qualsiasi configurazione di primo avvio, quindi tocca Riprova. Nel frattempo utilizza un modello di CPU portatile.",
-      "buildFailed": "Metal Recupero non è riuscito a completare la preparazione su questo Mac. Toccare Riprova dopo aver aperto Xcode una volta o utilizzare un modello di CPU portatile. L'aggiornamento di Mesh Client può anche essere utile se una versione include Metal."
-    }
+      "buildFailed": "Metal Recupero non è riuscito a completare la preparazione su questo Mac. Toccare Riprova dopo aver aperto Xcode una volta o utilizzare un modello di CPU portatile. L'aggiornamento di Mesh Client può anche essere utile se una versione include Metal.",
+      "sourcesUnavailable": "Questa build di Mesh Client non include fonti di recupero metalli. Scegli un modello di CPU portatile di seguito o aggiorna Mesh Client se una versione include Metal.",
+      "metalToolchainMissing": "Xcode è installato, ma manca il componente Metal Toolchain. In Esecuzione terminale: xcodebuild -downloadComponent MetalToolchain Quindi aprire Xcode se richiesto, attendere il download e toccare Riprova. Nel frattempo utilizza un modello di CPU portatile."
+    },
+    "mlxHelperRetryReady": "Metal Recupero è pronto su questo Mac."
   },
   "chatOrder": {
     "title": "Riordina le chat",

@@ -4,7 +4,30 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ensureMlxHelper, resolveMlxBinaryPath } from './ensureMlxHelper';
+import type { EnsureMlxCommand } from './ensureMlxHelper';
+import {
+  ensureMlxHelper,
+  isMetalToolchainMissingOutput,
+  resolveMlxBinaryPath,
+} from './ensureMlxHelper';
+
+function seedXcodeWithMetal(appsRoot: string): string {
+  const metalDir = path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer', 'usr', 'bin');
+  mkdirSync(metalDir, { recursive: true });
+  writeFileSync(path.join(metalDir, 'metal'), '');
+  return path.join(appsRoot, 'Xcode.app', 'Contents', 'Developer');
+}
+
+describe('isMetalToolchainMissingOutput', () => {
+  it('matches Apple MetalToolchain download guidance', () => {
+    expect(
+      isMetalToolchainMissingOutput(
+        "error: error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain",
+      ),
+    ).toBe(true);
+    expect(isMetalToolchainMissingOutput('swift: linker failed')).toBe(false);
+  });
+});
 
 describe('ensureMlxHelper', () => {
   let root: string;
@@ -74,5 +97,83 @@ describe('ensureMlxHelper', () => {
       applicationsDir: apps,
     });
     expect(result).toEqual({ available: false, reason: 'xcodeNotFound', binaryPath: null });
+  });
+
+  it('returns sourcesUnavailable when the Swift package root is missing', async () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const apps = path.join(root, 'Apps');
+    seedXcodeWithMetal(apps);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await ensureMlxHelper({
+      userBinary: path.join(root, 'user', 'mesh-ai-mlx'),
+      bundledCandidates: [],
+      mlxPackageRoot: path.join(root, 'missing-pkg'),
+      platform: 'darwin',
+      arch: 'arm64',
+      applicationsDir: apps,
+      runCommand: vi.fn(),
+    });
+    expect(result).toEqual({ available: false, reason: 'sourcesUnavailable', binaryPath: null });
+    expect(warn).toHaveBeenCalledWith(
+      '[ensureMlxHelper] Metal helper unavailable',
+      'sourcesUnavailable',
+      expect.any(String),
+    );
+  });
+
+  it('returns metalToolchainMissing when the metal probe reports a missing toolchain', async () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const apps = path.join(root, 'Apps');
+    seedXcodeWithMetal(apps);
+    mkdirSync(path.join(root, 'pkg'), { recursive: true });
+    const runCommand = vi.fn<EnsureMlxCommand>().mockRejectedValue(
+      Object.assign(new Error('metal failed'), {
+        stderr:
+          "error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain",
+      }),
+    );
+    const result = await ensureMlxHelper({
+      userBinary: path.join(root, 'user', 'mesh-ai-mlx'),
+      bundledCandidates: [],
+      mlxPackageRoot: path.join(root, 'pkg'),
+      platform: 'darwin',
+      arch: 'arm64',
+      applicationsDir: apps,
+      runCommand,
+    });
+    expect(result).toEqual({
+      available: false,
+      reason: 'metalToolchainMissing',
+      binaryPath: null,
+    });
+    expect(runCommand).toHaveBeenCalledTimes(1);
+    expect(runCommand.mock.calls[0]?.[1]).toEqual(['-help']);
+  });
+
+  it('returns metalToolchainMissing when swift build stderr mentions MetalToolchain', async () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const apps = path.join(root, 'Apps');
+    seedXcodeWithMetal(apps);
+    mkdirSync(path.join(root, 'pkg'), { recursive: true });
+    const runCommand = vi
+      .fn<EnsureMlxCommand>()
+      .mockResolvedValueOnce({ stdout: 'Metal', stderr: '' })
+      .mockRejectedValueOnce(
+        Object.assign(new Error('swift build failed'), {
+          stderr:
+            "error: error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain",
+        }),
+      );
+    const result = await ensureMlxHelper({
+      userBinary: path.join(root, 'user', 'mesh-ai-mlx'),
+      bundledCandidates: [],
+      mlxPackageRoot: path.join(root, 'pkg'),
+      platform: 'darwin',
+      arch: 'arm64',
+      applicationsDir: apps,
+      runCommand,
+    });
+    expect(result.reason).toBe('metalToolchainMissing');
+    expect(runCommand).toHaveBeenCalledTimes(2);
   });
 });

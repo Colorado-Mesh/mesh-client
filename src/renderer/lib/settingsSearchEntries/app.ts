@@ -807,6 +807,7 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.mlxRecommendedOnMacos': 'AI catalog macOS recommendation; parent catalog is indexed',
     'aiSummary.mlxHelperPreparing': 'AI catalog helper status; parent catalog is indexed',
     'aiSummary.mlxHelperRetry': 'AI catalog helper action; parent catalog is indexed',
+    'aiSummary.mlxHelperRetryReady': 'AI catalog helper result notice; parent catalog is indexed',
     'aiSummary.mlxHelperMissingSelected': 'AI catalog helper status; parent catalog is indexed',
     'aiSummary.unusedDownloads': 'AI orphan downloads heading; parent catalog is indexed',
     'aiSummary.unusedDownloadsHint': 'AI orphan downloads help; parent catalog is indexed',

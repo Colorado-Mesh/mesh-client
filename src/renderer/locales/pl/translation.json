@@ -8131,8 +8131,11 @@
       "helperMissing": "Metalowe nadrabianie zaległości nie jest gotowe w tej instalacji. Wybierz poniżej model przenośnego procesora lub zaktualizuj Mesh Client, jeśli ta wersja powinna zawierać Metal. Nadal możesz pobrać modele MLX i używać ich, gdy Metal będzie gotowy.",
       "xcodeNotFound": "Metalowe nadrabianie zaległości nie mogło znaleźć Xcode na tym komputerze Mac. Otwórz Xcode z aplikacji (lub zainstaluj go ze sklepu App Store), dokończ konfigurację pierwszego uruchomienia, a następnie naciśnij Ponów. W międzyczasie użyj przenośnego modelu procesora.",
       "xcodeIncomplete": "Xcode jest zainstalowany, ale jego narzędzia metalowe nie są jeszcze gotowe. Otwórz Xcode z Aplikacji, zakończ konfigurację pierwszego uruchomienia, a następnie stuknij Ponów. W międzyczasie użyj przenośnego modelu procesora.",
-      "buildFailed": "Metalowe nadrabianie zaległości nie mogło zakończyć się na tym Macu. Stuknij Ponów po jednokrotnym otwarciu Xcode lub użyj modelu przenośnego procesora. Aktualizacja Mesh Client może również pomóc, jeśli wydanie zawiera Metal."
-    }
+      "buildFailed": "Metalowe nadrabianie zaległości nie mogło zakończyć się na tym Macu. Stuknij Ponów po jednokrotnym otwarciu Xcode lub użyj modelu przenośnego procesora. Aktualizacja Mesh Client może również pomóc, jeśli wydanie zawiera Metal.",
+      "sourcesUnavailable": "Ta konstrukcja klienta Mesh nie zawiera źródeł metalowych nadrabiania zaległości. Wybierz poniżej model przenośnego procesora lub zaktualizuj Mesh Client, jeśli wersja zawiera Metal.",
+      "metalToolchainMissing": "Xcode jest zainstalowany, ale brakuje komponentu Metal Toolchain. W trybie pracy terminala: xcodebuild -downloadComponent MetalToolchain Następnie otwórz Xcode, jeśli zostaniesz o to poproszony, poczekaj na pobranie i stuknij Retry. W międzyczasie użyj przenośnego modelu procesora."
+    },
+    "mlxHelperRetryReady": "Metalowe nadrabianie zaległości jest gotowe na tym komputerze Mac."
   },
   "chatOrder": {
     "title": "Zmień kolejność czatów",

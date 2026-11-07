@@ -7999,8 +7999,11 @@
       "helperMissing": "Metal Catch up não está pronto nesta instalação. Escolha um modelo de CPU portátil abaixo ou atualize o Mesh Client se esta versão incluir Metal. Você ainda pode baixar os modelos MLX agora e usá-los depois que o Metal estiver pronto.",
       "xcodeNotFound": "Metal Catch up não conseguiu encontrar o Xcode neste Mac. Abra o Xcode em Aplicativos (ou instale-o na App Store), conclua qualquer configuração de primeira inicialização e toque em Repetir. Enquanto isso, use um modelo de CPU portátil.",
       "xcodeIncomplete": "O Xcode está instalado, mas suas ferramentas de metal ainda não estão prontas. Abra o Xcode em Aplicativos, conclua qualquer configuração de primeiro lançamento e toque em Repetir. Enquanto isso, use um modelo de CPU portátil.",
-      "buildFailed": "O Metal Catch up não conseguiu terminar a preparação neste Mac. Toque em Tentar novamente depois de abrir o Xcode uma vez ou use um modelo de CPU portátil. Atualizar o Cliente Mesh também pode ajudar se uma versão incluir Metal."
-    }
+      "buildFailed": "O Metal Catch up não conseguiu terminar a preparação neste Mac. Toque em Tentar novamente depois de abrir o Xcode uma vez ou use um modelo de CPU portátil. Atualizar o Cliente Mesh também pode ajudar se uma versão incluir Metal.",
+      "sourcesUnavailable": "Esta compilação do cliente de malha não inclui fontes de recuperação de metal. Escolha um modelo de CPU portátil abaixo ou atualize o Mesh Client se uma versão incluir Metal.",
+      "metalToolchainMissing": "O Xcode está instalado, mas o componente Metal Toolchain está ausente. No Terminal, execute: xcodebuild -downloadComponent MetalToolchain Em seguida, abra o Xcode, se solicitado, aguarde o download e toque em Repetir. Enquanto isso, use um modelo de CPU portátil."
+    },
+    "mlxHelperRetryReady": "Metal Catch up está pronto neste Mac."
   },
   "chatOrder": {
     "title": "Reordenar conversas",

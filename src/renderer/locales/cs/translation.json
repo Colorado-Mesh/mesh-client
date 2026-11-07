@@ -8077,8 +8077,11 @@
       "helperMissing": "Funkce Metal Catch Up není v této instalaci připravena. Níže vyberte přenosný model procesoru nebo aktualizujte Mesh Client, pokud by tato verze měla obsahovat Metal. Stále si můžete stáhnout modely MLX a používat je, až bude Metal připraven.",
       "xcodeNotFound": "Metal Catch up nemohl na tomto Macu najít Xcode. Otevřete Xcode z aplikací (nebo jej nainstalujte z App Store), dokončete nastavení prvního spuštění a klepněte na Zkusit znovu. Mezitím použijte přenosný model procesoru.",
       "xcodeIncomplete": "Xcode je nainstalován, ale jeho kovové nástroje ještě nejsou připraveny. Otevřete Xcode z aplikací, dokončete nastavení prvního spuštění a klepněte na Opakovat. Mezitím použijte přenosný model procesoru.",
-      "buildFailed": "Metal Catch up nemohl na tomto Macu dokončit přípravu. Po jednom otevření Xcode klepni na Opakovat nebo použij přenosný model procesoru. Aktualizace Mesh Client může také pomoci, pokud verze obsahuje Metal."
-    }
+      "buildFailed": "Metal Catch up nemohl na tomto Macu dokončit přípravu. Po jednom otevření Xcode klepni na Opakovat nebo použij přenosný model procesoru. Aktualizace Mesh Client může také pomoci, pokud verze obsahuje Metal.",
+      "sourcesUnavailable": "Tato sestava Mesh Client nezahrnuje zdroje Metal Catch up. Níže vyberte přenosný model procesoru nebo aktualizujte Mesh Client, pokud verze obsahuje Metal.",
+      "metalToolchainMissing": "Xcode je nainstalován, ale chybí komponenta Metal Toolchain. V Terminálu spusťte: xcodebuild -downloadComponent MetalToolchain Poté otevřete Xcode, pokud se zobrazí výzva, počkejte na stažení a klepněte na Opakovat. Mezitím použijte přenosný model procesoru."
+    },
+    "mlxHelperRetryReady": "Metal Catch up je na tomto Macu připraven."
   },
   "chatOrder": {
     "title": "Změnit pořadí chatů",

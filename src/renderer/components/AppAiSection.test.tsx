@@ -479,3 +479,133 @@ it.each(['os', 'bundled'] as const)(
     expect(test).toBeDisabled();
   },
 );
+
+it('shows a Retry notice when Metal Catch up is still unavailable', async () => {
+  await i18n.changeLanguage('en');
+  const status: AiProviderStatus = {
+    enabled: true,
+    engine: 'bundled',
+    wireFormat: null,
+    baseUrl: '',
+    model: '',
+    hasApiKey: false,
+    timeoutSeconds: 300,
+    maxCollectedMessages: 2000,
+    allowRemote: false,
+    isRemote: false,
+    localEngine: { ready: false, modelId: null, downloading: false },
+    mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: 'metalToolchainMissing',
+    osAi: { available: false, platform: null },
+  };
+  const nextStatus: AiProviderStatus = { ...status };
+  const ensureMlxHelper = vi.fn().mockResolvedValue(nextStatus);
+  const unsubscribe = () => () => {};
+  Object.defineProperty(window, 'electronAPI', {
+    configurable: true,
+    value: {
+      ai: {
+        getStatus: vi.fn().mockResolvedValue(status),
+        listLocalModels: vi.fn().mockResolvedValue([]),
+        ensureMlxHelper,
+        probeOsAi: vi.fn().mockResolvedValue(status.osAi),
+        onSummaryChunk: unsubscribe,
+        onSummaryDone: unsubscribe,
+        onSummaryError: unsubscribe,
+        onStatusChanged: unsubscribe,
+        onModelProgress: unsubscribe,
+      },
+    },
+  });
+  useAiSummaryStore.setState({ status });
+  const { container } = render(<AppAiSection />);
+  const details = container.querySelector('details')!;
+  await act(async () => {
+    const toggled = new Promise<void>((resolve) => {
+      details.addEventListener(
+        'toggle',
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+    });
+    details.open = true;
+    await toggled;
+  });
+  expect(await screen.findByRole('button', { name: 'Retry Metal Catch up' })).toBeVisible();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Retry Metal Catch up' }));
+    await Promise.resolve();
+  });
+  expect(ensureMlxHelper).toHaveBeenCalled();
+  expect(
+    screen.getAllByText(/xcodebuild -downloadComponent MetalToolchain/).length,
+  ).toBeGreaterThanOrEqual(2);
+});
+
+it('shows a success notice when Retry makes Metal Catch up ready', async () => {
+  await i18n.changeLanguage('en');
+  const status: AiProviderStatus = {
+    enabled: true,
+    engine: 'bundled',
+    wireFormat: null,
+    baseUrl: '',
+    model: '',
+    hasApiKey: false,
+    timeoutSeconds: 300,
+    maxCollectedMessages: 2000,
+    allowRemote: false,
+    isRemote: false,
+    localEngine: { ready: false, modelId: null, downloading: false },
+    mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: 'helperMissing',
+    osAi: { available: false, platform: null },
+  };
+  const ensureMlxHelper = vi.fn().mockResolvedValue({
+    ...status,
+    mlxHelperAvailable: true,
+    mlxHelperStatus: 'ready',
+    mlxHelperReason: 'ready',
+  });
+  const unsubscribe = () => () => {};
+  Object.defineProperty(window, 'electronAPI', {
+    configurable: true,
+    value: {
+      ai: {
+        getStatus: vi.fn().mockResolvedValue(status),
+        listLocalModels: vi.fn().mockResolvedValue([]),
+        ensureMlxHelper,
+        probeOsAi: vi.fn().mockResolvedValue(status.osAi),
+        onSummaryChunk: unsubscribe,
+        onSummaryDone: unsubscribe,
+        onSummaryError: unsubscribe,
+        onStatusChanged: unsubscribe,
+        onModelProgress: unsubscribe,
+      },
+    },
+  });
+  useAiSummaryStore.setState({ status });
+  const { container } = render(<AppAiSection />);
+  const details = container.querySelector('details')!;
+  await act(async () => {
+    const toggled = new Promise<void>((resolve) => {
+      details.addEventListener(
+        'toggle',
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+    });
+    details.open = true;
+    await toggled;
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Retry Metal Catch up' }));
+    await Promise.resolve();
+  });
+  expect(screen.getByText('Metal Catch up is ready on this Mac.')).toBeVisible();
+});

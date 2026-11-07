@@ -40,6 +40,7 @@ If Metal Catch up is not ready:
 - **Use model** for MLX stays unavailable until Metal is ready.
 - Use a **portable CPU** model for Catch up in the meantime.
 - Follow the on-screen next steps (for example open **Xcode** from Applications if prompted, finish any first-launch setup, then tap **Retry Metal Catch up**).
+- If settings say the **Metal Toolchain** is missing, run `xcodebuild -downloadComponent MetalToolchain` in Terminal, finish any Xcode prompts, wait for the download, then tap **Retry Metal Catch up**.
 - Updating Mesh Client can help when a release should already include Metal.
 
 You do **not** need to run Terminal commands or change developer tools for normal use.

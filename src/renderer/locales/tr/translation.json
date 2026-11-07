@@ -7999,8 +7999,11 @@
       "helperMissing": "Metal Yakalama bu kurulumda hazır değildir. Aşağıdan taşınabilir bir CPU modeli seçin veya bu sürümün Metal içermesi gerekiyorsa Mesh Client'ı güncelleyin. MLX modellerini şimdi indirebilir ve Metal hazır olduktan sonra kullanabilirsiniz.",
       "xcodeNotFound": "Metal Yakalama bu Mac'te Xcode bulamadı. Uygulamalardan Xcode'u açın (veya App Store'dan yükleyin), herhangi bir ilk başlatma kurulumunu tamamlayın, ardından Yeniden Dene'ye dokunun. Bu arada taşınabilir bir CPU modeli kullanın.",
       "xcodeIncomplete": "Xcode yüklendi ancak Metal araçları henüz hazır değil. Uygulamalar'dan Xcode'u açın, herhangi bir ilk başlatma kurulumunu tamamlayın, ardından Yeniden Dene'ye dokunun. Bu arada taşınabilir bir CPU modeli kullanın.",
-      "buildFailed": "Metal Yakalama, bu Mac'te hazırlığı bitiremedi. Xcode'u bir kez açtıktan sonra Yeniden Dene'ye dokunun veya taşınabilir bir CPU modeli kullanın. Mesh İstemcisini güncellemek, bir sürüm Metal içeriyorsa da yardımcı olabilir."
-    }
+      "buildFailed": "Metal Yakalama, bu Mac'te hazırlığı bitiremedi. Xcode'u bir kez açtıktan sonra Yeniden Dene'ye dokunun veya taşınabilir bir CPU modeli kullanın. Mesh İstemcisini güncellemek, bir sürüm Metal içeriyorsa da yardımcı olabilir.",
+      "sourcesUnavailable": "Bu Ağ İstemcisi yapısı, Metal Yakalama kaynaklarını içermez. Aşağıdan taşınabilir bir CPU modeli seçin veya bir sürüm Metal içeriyorsa Mesh Client'ı güncelleyin.",
+      "metalToolchainMissing": "Xcode yüklendi, ancak Metal Takım Zinciri bileşeni eksik. Terminal çalıştırmasında: xcodebuild - downloadComponent MetalToolchain İstenirse Xcode'u açın, indirmeyi bekleyin ve Yeniden Dene'ye dokunun. Bu arada taşınabilir bir CPU modeli kullanın."
+    },
+    "mlxHelperRetryReady": "Metal Yakalama bu Mac'te hazır."
   },
   "chatOrder": {
     "title": "Sohbetleri sırala",

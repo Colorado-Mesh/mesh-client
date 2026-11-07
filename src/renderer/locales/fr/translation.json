@@ -7999,8 +7999,11 @@
       "helperMissing": "Metal Catch up n'est pas prêt dans cette installation. Choisissez un modèle de processeur portable ci-dessous ou mettez à jour Mesh Client si cette version doit inclure Metal. Vous pouvez toujours télécharger des modèles MLX maintenant et les utiliser une fois que Metal est prêt.",
       "xcodeNotFound": "Metal Catchup n'a pas pu trouver Xcode sur ce Mac. Ouvrez Xcode à partir des applications (ou installez-le à partir de l'App Store), terminez la configuration du premier lancement, puis appuyez sur Réessayer. En attendant, utilisez un modèle de CPU portable.",
       "xcodeIncomplete": "Xcode est installé mais ses outils Metal ne sont pas encore prêts. Ouvrez Xcode à partir des applications, terminez la configuration du premier lancement, puis appuyez sur Réessayer. En attendant, utilisez un modèle de CPU portable.",
-      "buildFailed": "Metal Catch up n'a pas pu terminer la préparation sur ce Mac. Appuyez sur Réessayer après avoir ouvert Xcode une fois, ou utilisez un modèle de processeur portable. La mise à jour du client Mesh peut également aider si une version inclut du métal."
-    }
+      "buildFailed": "Metal Catch up n'a pas pu terminer la préparation sur ce Mac. Appuyez sur Réessayer après avoir ouvert Xcode une fois, ou utilisez un modèle de processeur portable. La mise à jour du client Mesh peut également aider si une version inclut du métal.",
+      "sourcesUnavailable": "Cette version du client Mesh n'inclut pas les sources de rattrapage de métal. Choisissez un modèle de processeur portable ci-dessous ou mettez à jour Mesh Client si une version inclut Metal.",
+      "metalToolchainMissing": "Xcode est installé, mais le composant Metal Toolchain est manquant. Dans Terminal run : xcodebuild -downloadComponent MetalToolchain Ensuite, ouvrez Xcode si vous y êtes invité, attendez le téléchargement et appuyez sur Réessayer. En attendant, utilisez un modèle de CPU portable."
+    },
+    "mlxHelperRetryReady": "Metal Catch up est prêt sur ce Mac."
   },
   "chatOrder": {
     "title": "Réorganiser les discussions",

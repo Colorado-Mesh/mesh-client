@@ -142,16 +142,19 @@ export interface AiProviderStatus {
 export type AiMlxHelperStatus = 'ready' | 'preparing' | 'unavailable' | 'unsupported';
 
 /**
- * Structured reasons for in-app copy (never CLI/`xcode-select` instructions).
- * `ready` / `preparing` / `unsupported` mirror status; others explain `unavailable`.
+ * Structured reasons for in-app copy. Prefer product guidance over CLI; exception:
+ * `metalToolchainMissing` includes Apple's `xcodebuild -downloadComponent MetalToolchain`.
+ * Never instruct changing `xcode-select`. `ready` / `preparing` / `unsupported` mirror status.
  */
 export type AiMlxHelperReason =
   | 'ready'
   | 'preparing'
   | 'unsupported'
   | 'helperMissing'
+  | 'sourcesUnavailable'
   | 'xcodeNotFound'
   | 'xcodeIncomplete'
+  | 'metalToolchainMissing'
   | 'buildFailed';
 
 export interface AiEndpointConfig {

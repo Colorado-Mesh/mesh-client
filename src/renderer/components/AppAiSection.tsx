@@ -285,9 +285,18 @@ export function AppAiSection() {
                         aria-label={t('aiSummary.mlxHelperRetry')}
                         onClick={() => {
                           void action(async () => {
-                            useAiSummaryStore
-                              .getState()
-                              .setStatus(await window.electronAPI.ai.ensureMlxHelper());
+                            const next = await window.electronAPI.ai.ensureMlxHelper();
+                            useAiSummaryStore.getState().setStatus(next);
+                            if (next.mlxHelperStatus === 'ready') {
+                              setNotice(t('aiSummary.mlxHelperRetryReady'));
+                            } else if (
+                              next.mlxHelperStatus === 'unavailable' &&
+                              next.mlxHelperReason
+                            ) {
+                              setNotice(t(`aiSummary.mlxHelperReason.${next.mlxHelperReason}`));
+                            } else {
+                              setNotice(t('aiSummary.settingsError'));
+                            }
                           });
                         }}
                       >

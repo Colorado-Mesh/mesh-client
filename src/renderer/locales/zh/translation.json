@@ -7999,8 +7999,11 @@
       "helperMissing": "在此安装中，金属追赶尚未准备就绪。在下面选择一个便携式CPU型号，如果此版本应包含Metal ，则更新Mesh Client。您现在仍然可以下载MLX模型，并在Metal准备就绪后使用它们。",
       "xcodeNotFound": "Metal Catch up在此Mac上找不到Xcode。从应用程序打开Xcode （或从App Store安装） ，完成首次启动设置，然后点击重试。同时使用便携式计划工作站(CPU)型号。",
       "xcodeIncomplete": "Xcode已安装，但其Metal工具尚未准备就绪。打开应用程序中的Xcode ，完成任何首次启动设置，然后点击重试。同时使用便携式计划工作站(CPU)型号。",
-      "buildFailed": "Metal Catch up无法在此Mac上完成准备。打开Xcode一次后点击重试，或使用便携式CPU型号。如果版本包含Metal ，更新Mesh Client也可能有所帮助。"
-    }
+      "buildFailed": "Metal Catch up无法在此Mac上完成准备。打开Xcode一次后点击重试，或使用便携式CPU型号。如果版本包含Metal ，更新Mesh Client也可能有所帮助。",
+      "sourcesUnavailable": "此网格客户端版本不包括Metal Catch Up源。在下面选择一个便携式CPU型号，如果版本包含Metal ，则更新Mesh Client。",
+      "metalToolchainMissing": "已安装Xcode ，但缺少Metal Toolchain组件。在终端运行： xcodebuild -downloadComponent MetalToolchain然后在出现提示时打开Xcode ，等待下载，然后点击重试。同时使用便携式计划工作站(CPU)型号。"
+    },
+    "mlxHelperRetryReady": "这款Mac上的Metal Catch up已准备就绪。"
   },
   "chatOrder": {
     "title": "调整聊天顺序",
