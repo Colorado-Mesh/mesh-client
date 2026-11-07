@@ -155,6 +155,11 @@ describe('always-on bundle workflow', () => {
             path.join(fixture, 'src/main/ai/local/modelCatalogData.ts'),
             `export const AI_LOCAL_MODELS = ${JSON.stringify('x'.repeat(1_100))};\n`,
           );
+          fs.mkdirSync(path.join(fixture, 'src/main/ai'), { recursive: true });
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ai/nativeRuntime.ts'),
+            `export function ensureMlxHelper() { return ${JSON.stringify('x'.repeat(1_100))}; }\n`,
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

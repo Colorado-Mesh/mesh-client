@@ -118,6 +118,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // OS AI / MLX Metal ensure+spawn — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ai/nativeRuntime.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'ai-native-runtime.js'),
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

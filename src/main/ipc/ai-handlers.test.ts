@@ -9,6 +9,7 @@ import { AI_ON_DEVICE_MAX_PROMPT_BYTES } from '../../shared/ai-types';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import * as ensureMlxHelperModule from '../ai/os/ensureMlxHelper';
 import { MlxAiHelper } from '../ai/os/mlxAiHelper';
+import * as mlxHelperInstall from '../ai/os/mlxHelperInstall';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
 
@@ -517,7 +518,7 @@ describe('AI IPC lifecycle and opt-in', () => {
     const manifest = await import('../ai/local/modelManifest');
     const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
-    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
+    const host = vi.spyOn(mlxHelperInstall, 'isMlxHelperInstallComplete').mockReturnValue(false);
     const install = vi
       .spyOn(AiModelPackManager.prototype, 'install')
       .mockResolvedValue({ ok: true });
@@ -583,7 +584,7 @@ describe('AI IPC lifecycle and opt-in', () => {
     const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
-    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
+    const host = vi.spyOn(mlxHelperInstall, 'isMlxHelperInstallComplete').mockReturnValue(false);
     try {
       expect(await handler('ai:testConfig')({})).toEqual({ ok: false, reason: 'engineNotReady' });
       expect(await handler('ai:summarize')({}, request)).toEqual({
@@ -624,7 +625,7 @@ describe('AI IPC lifecycle and opt-in', () => {
     const appleSilicon = vi.spyOn(manifest, 'isAppleSiliconMac').mockReturnValue(true);
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
-    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(true);
+    const host = vi.spyOn(mlxHelperInstall, 'isMlxHelperInstallComplete').mockReturnValue(true);
     const probe = vi.spyOn(MlxAiHelper.prototype, 'probe').mockResolvedValue(true);
     const generate = vi
       .spyOn(MlxAiHelper.prototype, 'generate')

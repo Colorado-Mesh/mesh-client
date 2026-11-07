@@ -18,6 +18,7 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   summaryPrompt: path.join(projectRoot, 'dist-electron/main/ai-summary-prompt.js'),
   followUpPrompt: path.join(projectRoot, 'dist-electron/main/ai-follow-up-prompt.js'),
   localModels: path.join(projectRoot, 'dist-electron/main/ai-local-models.js'),
+  nativeAiRuntime: path.join(projectRoot, 'dist-electron/main/ai-native-runtime.js'),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */

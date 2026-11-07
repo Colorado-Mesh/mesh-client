@@ -6,7 +6,7 @@ import { AI_MAX_RESPONSE_BYTES, AI_REQUEST_TIMEOUT_MS } from '../../../shared/ai
 import { MS_PER_SECOND } from '../../../shared/timeConstants';
 import { AiFailure } from '../errors';
 import { isAppleSiliconMac } from '../local/modelManifest';
-import { isMlxHelperInstallComplete } from './ensureMlxHelper';
+import { isMlxHelperInstallComplete } from './mlxHelperInstall';
 
 interface Reply {
   type: string;

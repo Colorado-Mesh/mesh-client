@@ -11,13 +11,11 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
  * of `src/shared/ipLiteral.ts` (~33 KiB savings). Scheduled Broadcasts IPC/claim CAS adds ~9 KiB.
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
- * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js` (not in
- * index.js). +1 KiB vs the follow-up raise covers MLX Metal host glue (`mesh-ai-mlx`);
- * +4 KiB for in-app Metal helper ensure (Xcode discovery + staging); +1 KiB for Metal
- * Toolchain / Retry outcome glue; +1 KiB for metallib bundle staging checks. Keep HF
- * catalog / prompt text in siblings — do not fold them back into index.js.
+ * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
+ * Metal ensure+spawn as `ai-native-runtime.js` (not in index.js). Thin install-path checks
+ * stay in index.js for sync status. Keep HF catalog / prompt / native runtime in siblings.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 768 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 762 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
@@ -102,7 +100,13 @@ describe('esbuild-main-build', () => {
       const localModelsBytes = fs.readFileSync(path.join(tempDir, 'ai-local-models.js'));
       expect(localModelsBytes.length).toBeGreaterThan(1_000);
       expect(localModelsBytes.toString('utf8')).toContain('AI_LOCAL_MODELS');
-      expect(fs.readFileSync(outfile, 'utf8')).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
+      const nativeRuntimeBytes = fs.readFileSync(path.join(tempDir, 'ai-native-runtime.js'));
+      expect(nativeRuntimeBytes.length).toBeGreaterThan(1_000);
+      expect(nativeRuntimeBytes.toString('utf8')).toContain('ensureMlxHelper');
+      const indexSource = fs.readFileSync(outfile, 'utf8');
+      expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
+      expect(indexSource).not.toContain('Missing Metal Toolchain');
+      expect(indexSource).not.toContain('discoverXcodeDeveloperDir');
       const worker = path.join(tempDir, 'translation-worker.js');
       const workerBytes = fs.readFileSync(worker);
       expect(workerBytes.length).toBeGreaterThan(10_000);
