@@ -874,6 +874,7 @@ export interface ChatPanelProps {
   onSendLocationWaypoint?: (lat: number, lon: number, channel: number) => Promise<void>;
 }
 
+/** Protocol chat UI: conversation switcher, message stream, composer, and outbox. */
 function ChatPanel({
   messages,
   getReceptionStats,

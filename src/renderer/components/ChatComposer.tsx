@@ -267,6 +267,7 @@ export interface ChatComposerProps {
   allowScheduledSend?: boolean;
 }
 
+/** Shared channel/DM/room compose box: draft, mentions, macros, GIF, schedule, and send. */
 export function ChatComposer({
   protocol,
   viewKey,

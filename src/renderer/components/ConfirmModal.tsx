@@ -21,6 +21,10 @@ export interface ConfirmModalProps {
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Modal confirm/cancel dialog with a mount-once focus trap.
+ * Keeps the latest `onCancel` in a ref so parent re-renders do not re-focus or steal focus.
+ */
 export function ConfirmModal({
   title,
   message,

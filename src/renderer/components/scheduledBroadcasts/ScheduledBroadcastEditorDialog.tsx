@@ -76,6 +76,10 @@ export interface ScheduledBroadcastEditorDialogProps {
   onSave: (input: ScheduledBroadcastInput) => Promise<void>;
 }
 
+/**
+ * Edit one scheduled-broadcast slot (label, text, schedule, targets).
+ * Focus trap mounts once with `preventScroll` so unstable `onClose` identities do not snap scroll.
+ */
 export function ScheduledBroadcastEditorDialog({
   slot,
   existing,

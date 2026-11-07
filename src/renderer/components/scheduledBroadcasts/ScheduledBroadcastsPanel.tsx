@@ -35,6 +35,7 @@ function formatNextDue(ms: number | null | undefined, neverLabel: string): strin
   }
 }
 
+/** Chat-section panel for enabling and editing the 12 scheduled-broadcast slots. */
 export default function ScheduledBroadcastsPanel() {
   const { t } = useTranslation();
   const slots = useScheduledBroadcastsStore((s) => s.slots);
