@@ -251,7 +251,7 @@ export function aiSummaryOutputTokens(
   return finalStyle === 'structured' ? AI_STRUCTURED_FINAL_OUTPUT_TOKENS : AI_MAX_OUTPUT_TOKENS;
 }
 /** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
-export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 3500;
+export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 4096;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */
 export const AI_ENDPOINT_MAX_PROMPT_BYTES = 64_000;
 export const AI_OS_MAX_CHARS = 9000;

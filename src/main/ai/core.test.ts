@@ -531,6 +531,31 @@ describe('AI summary final styles', () => {
     expect(prompt.user).toContain('Conversations: and One-offs:');
     expect(prompt.user).toContain('"finalStyle":"structured"');
   });
+
+  it('needs more on-device headroom for structured digests than compact', () => {
+    const messages = Array.from({ length: 14 }, (_, index) => ({
+      at: index + 1,
+      sender: `Part ${index + 1}`,
+      body: 'x'.repeat(200),
+    }));
+    const frame = {
+      conversationLabel: 'chat',
+      protocol: 'meshcore' as const,
+      surface: 'channel' as const,
+      locale: 'en',
+      messages,
+      maxChars: 20_000,
+      maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      mode: 'final' as const,
+      digests: true,
+    };
+    const structured = buildSummaryPrompt({ ...frame, finalStyle: 'structured' });
+    const compact = buildSummaryPrompt({ ...frame, finalStyle: 'compact' });
+    expect(structured.truncated).toBe(true);
+    expect(structured.included).toBeLessThan(messages.length);
+    expect(compact.truncated).toBe(false);
+    expect(compact.included).toBe(messages.length);
+  });
 });
 describe('AI wire adapters', () => {
   it.each(['openai', 'anthropic', 'gemini', 'ollama'] as const)(

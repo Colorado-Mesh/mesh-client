@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ipcMain, net } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AI_ON_DEVICE_MAX_PROMPT_BYTES } from '../../shared/ai-types';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
@@ -213,7 +214,9 @@ describe('AI IPC lifecycle and opt-in', () => {
       );
       expect(retry).toMatchObject({ ok: true, localJob: { truncated: true } });
       const prompt = (retry as { localJob: { system: string; user: string } }).localJob;
-      expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(3500);
+      expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(
+        AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      );
       finish(true);
       await Promise.resolve();
     } finally {
@@ -360,6 +363,47 @@ describe('AI IPC lifecycle and opt-in', () => {
         },
       ),
     ).toEqual({ ok: false, reason: 'disabled' });
+  });
+
+  it('falls back to compact when structured cannot cover all multi-pass digests', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-1b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    const messages = Array.from({ length: 14 }, (_, index) => ({
+      at: index + 1,
+      sender: `Part ${index + 1}`,
+      body: 'x'.repeat(200),
+    }));
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          requestId: 'structured-fallback',
+          jobId: 'job-structured-fallback',
+          mode: 'final',
+          messages,
+        },
+      );
+      expect(result).toMatchObject({
+        ok: true,
+        localJob: { messageCount: messages.length, truncated: false },
+      });
+      const prompt = (result as { localJob: { system: string; maxTokens: number } }).localJob;
+      expect(prompt.system).toContain('Output up to five short factual bullets');
+      expect(prompt.system).not.toContain('Conversations:');
+      expect(prompt.maxTokens).toBe(250);
+    } finally {
+      verify.mockRestore();
+    }
   });
 });
 

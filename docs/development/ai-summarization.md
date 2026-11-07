@@ -79,7 +79,7 @@ Context retention (renderer session only):
 - On-device engines (`os` / `bundled`): a deterministic relevance selector scores messages with
   question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
   “how?” can still find the subject, then packs priority matches ahead of newest-first fill under
-  the ~3.5 KB prompt budget.
+  the ~4 KB prompt budget.
 - Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.
 
 Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
@@ -165,7 +165,7 @@ App → AI shows an approximate per-engine **per-pass** message capacity
 (`estimateAiSummaryMessageCapacity`) and a user-configurable **Catch up message limit**
 (`maxCollectedMessages`, default 2000, range 100–5000). When the collected range exceeds one
 prompt budget, Catch up runs hierarchical multi-pass summarization (map digests → reduce → final
-structured catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
+structured catch-up) while keeping on-device ~4 KB / endpoint 64 KB budgets per inference.
 Small single-pass jobs still ask for up to five factual bullets; larger single-pass jobs and all
 multi-pass finals use a structured summary (Conversations + One-offs) with a higher completion
 token budget. Follow-ups keep a newest-first capped raw transcript (and multi-pass digests) in

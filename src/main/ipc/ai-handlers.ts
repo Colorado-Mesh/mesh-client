@@ -346,11 +346,22 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'notConfigured' };
     }
     const budget = aiSummaryPromptBudget(c.engine);
-    const finalStyle =
+    let finalStyle =
       mode === 'final'
         ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
         : 'compact';
-    const prompt = followUp
+    const buildCatchUpPrompt = (style: typeof finalStyle) => ({
+      ...buildSummaryPrompt({
+        ...request,
+        digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
+        mode: request.mode ?? 'final',
+        finalStyle: style,
+        maxChars: budget.maxChars,
+        maxPromptBytes: budget.maxPromptBytes,
+      }),
+      fits: true as const,
+    });
+    let prompt = followUp
       ? (await loadBuildAiFollowUpPrompt())({
           conversationLabel: request.conversationLabel,
           protocol: request.protocol,
@@ -364,17 +375,18 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           maxChars: budget.maxChars,
           maxPromptBytes: budget.maxPromptBytes,
         })
-      : {
-          ...buildSummaryPrompt({
-            ...request,
-            digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
-            mode: request.mode ?? 'final',
-            finalStyle,
-            maxChars: budget.maxChars,
-            maxPromptBytes: budget.maxPromptBytes,
-          }),
-          fits: true as const,
-        };
+      : buildCatchUpPrompt(finalStyle);
+    // Structured finals cost ~512 B more system text; fall back to compact when that
+    // would truncate digests/transcript and fail multi-pass requireFullCoverage.
+    if (
+      !followUp &&
+      mode === 'final' &&
+      finalStyle === 'structured' &&
+      (prompt.truncated || prompt.included !== request.messages.length || !prompt.included)
+    ) {
+      finalStyle = 'compact';
+      prompt = buildCatchUpPrompt('compact');
+    }
     if (!prompt.fits || (!followUp && !prompt.included)) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);

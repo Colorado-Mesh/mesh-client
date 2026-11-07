@@ -89,9 +89,9 @@ describe('esbuild-main-build', () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
       await buildMainProcess({ minify: true, outfile });
-      const followUpPrompt = path.join(tempDir, 'ai-follow-up-prompt.js');
-      expect(fs.statSync(followUpPrompt).size).toBeGreaterThan(1_000);
-      expect(fs.readFileSync(followUpPrompt, 'utf8')).toContain('buildAiFollowUpPrompt');
+      const followUpPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-follow-up-prompt.js'));
+      expect(followUpPromptBytes.length).toBeGreaterThan(1_000);
+      expect(followUpPromptBytes.toString('utf8')).toContain('buildAiFollowUpPrompt');
       const worker = path.join(tempDir, 'translation-worker.js');
       const workerBytes = fs.readFileSync(worker);
       expect(workerBytes.length).toBeGreaterThan(10_000);

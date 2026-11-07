@@ -7,7 +7,11 @@ import type {
   AiSummaryPassMode,
   AiSummaryRequest,
 } from '@/shared/ai-types';
-import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
+import {
+  AI_MAX_RESPONSE_BYTES,
+  aiSummaryTimeoutMs,
+  resolveAiSummaryFinalStyle,
+} from '@/shared/ai-types';
 import {
   type AiSummaryPromptContext,
   packAiDigestChunks,
@@ -44,7 +48,14 @@ export function shouldUseMultiPass(
   engine: AiEngine,
   context: Partial<AiSummaryPromptContext> = {},
 ): boolean {
-  return packAiSummaryChunks(messages, engine, { ...context, mode: 'final' }).length > 1;
+  const finalStyle = resolveAiSummaryFinalStyle(messages.length, false);
+  return (
+    packAiSummaryChunks(messages, engine, {
+      ...context,
+      mode: 'final',
+      finalStyle,
+    }).length > 1
+  );
 }
 
 function raceAbort<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {

@@ -231,10 +231,12 @@ describe('multi-pass summary orchestration', () => {
         summaryInput: { messageCount: request.messages.length, truncated: false },
       });
     });
+    // Need multiple map digests so reduce runs; a single 1000-char digest fits the
+    // on-device final budget alone after the 4096 B ceiling bump.
     await expect(
       runMultiPassSummary({
         base,
-        messages: messages.slice(0, 40),
+        messages: messages.slice(0, 80),
         status,
         signal: new AbortController().signal,
         callbacks,
