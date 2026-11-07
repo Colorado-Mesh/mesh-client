@@ -459,10 +459,10 @@ describe('AI startup status recovery', () => {
 
 describe('summary multi-pass', () => {
   it('runs map then final when the conversation exceeds one prompt budget', async () => {
-    const long = Array.from({ length: 80 }, (_, i) => ({
+    const long = Array.from({ length: 200 }, (_, i) => ({
       at: i + 1,
       sender: `N${i}`,
-      body: `update about site ${i} with enough text to fill the on-device budget`,
+      body: `update about site ${i} with enough text to fill the on-device budget after the 12 KiB ceiling`,
     }));
     useAiSummaryStore.getState().setStatus({
       ...ready,
@@ -503,7 +503,7 @@ describe('summary multi-pass', () => {
     });
     expect(summary?.followUpContext?.digests?.length).toBeGreaterThan(0);
     expect(summary?.followUpContext?.messages?.length).toBeGreaterThan(0);
-    expect(summary?.followUpContext?.messages?.at(-1)?.body).toContain('site 79');
+    expect(summary?.followUpContext?.messages?.at(-1)?.body).toContain('site 199');
   });
 });
 

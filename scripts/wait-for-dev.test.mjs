@@ -65,6 +65,16 @@ it('requires the translation worker before launching Electron', () => {
   ).toBe(false);
 });
 
+it('requires the summary prompt chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.summaryPrompt).toContain('ai-summary-prompt.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('ai-summary-prompt.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});
+
 it('requires the follow-up prompt chunk before launching Electron', () => {
   expect(DEV_ELECTRON_BUNDLE_PATHS.followUpPrompt).toContain('ai-follow-up-prompt.js');
   expect(

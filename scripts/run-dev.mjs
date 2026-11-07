@@ -27,6 +27,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs --watch';
   const translationBuild =
     'esbuild src/main/translation/bergamotWorkerEntry.ts --bundle --platform=node --outfile=dist-electron/main/translation-worker.js --format=cjs --watch';
+  const summaryPromptBuild =
+    'esbuild src/shared/aiSummaryPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-summary-prompt.js --format=cjs --watch';
   const followUpPromptBuild =
     'esbuild src/shared/aiFollowUpPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-follow-up-prompt.js --format=cjs --watch';
   const electronLaunch =
@@ -37,10 +39,11 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,followup,vite,electron',
+    'main,preload,translation,summary,followup,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
+    summaryPromptBuild,
     followUpPromptBuild,
     'vite',
     electronLaunch,

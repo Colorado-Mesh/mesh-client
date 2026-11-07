@@ -78,7 +78,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
@@ -112,7 +112,7 @@ describe('AI IPC lifecycle and opt-in', () => {
     expect(await handler('ai:getStatus')({})).toMatchObject({ enabled: false, engine: null });
     expect(await handler('ai:summarize')({}, request)).toEqual({ ok: false, reason: 'disabled' });
     expect(await handler('ai:listLocalModels')({})).toEqual([]);
-    expect(await handler('ai:installLocalModel')({}, 'llama3.2-1b-instruct-q4')).toEqual({
+    expect(await handler('ai:installLocalModel')({}, 'llama3.2-3b-instruct-q4')).toEqual({
       ok: false,
       reason: 'disabled',
     });
@@ -161,7 +161,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
@@ -181,7 +181,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     let finish!: (value: boolean) => void;
@@ -223,7 +223,13 @@ describe('AI IPC lifecycle and opt-in', () => {
       verify.mockRestore();
     }
   });
-  it.each(['removed-model', 'qwen2.5-0.5b-instruct-q4', 'smollm2-1.7b-instruct-q4'])(
+  it.each([
+    'removed-model',
+    'qwen2.5-0.5b-instruct-q4',
+    'qwen2.5-1.5b-instruct-q4',
+    'llama3.2-1b-instruct-q4',
+    'smollm2-1.7b-instruct-q4',
+  ])(
     'reports removed model %s as not ready without verifying an unknown pack',
     async (localModelId) => {
       settings.set('aiEnabled', '1');
@@ -321,7 +327,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
@@ -365,6 +371,36 @@ describe('AI IPC lifecycle and opt-in', () => {
     ).toEqual({ ok: false, reason: 'disabled' });
   });
 
+  it('appends /no_think for bundled Qwen3 Catch up prompts', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen3-1.7b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          requestId: 'qwen3-no-think',
+          messages: [{ at: 1, sender: 'Alice', body: 'Net at 20:00.' }],
+        },
+      );
+      expect(result).toMatchObject({ ok: true });
+      const user = (result as { localJob: { user: string } }).localJob.user;
+      expect(user).toContain('/no_think');
+      expect(user.trimEnd().endsWith('/no_think')).toBe(true);
+    } finally {
+      verify.mockRestore();
+    }
+  });
+
   it('falls back to compact when structured cannot cover all multi-pass digests', async () => {
     settings.set('aiEnabled', '1');
     settings.set(
@@ -373,14 +409,15 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
-    const messages = Array.from({ length: 14 }, (_, index) => ({
+    // Fat digests that still exceed the on-device budget under structured framing.
+    const messages = Array.from({ length: 35 }, (_, index) => ({
       at: index + 1,
       sender: `Part ${index + 1}`,
-      body: 'x'.repeat(200),
+      body: 'x'.repeat(320),
     }));
     try {
       const result = await handler('ai:summarize')(

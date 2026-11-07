@@ -131,10 +131,10 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
         listLocalModels: vi.fn().mockResolvedValue([
           {
             id: 'llama',
-            name: 'Llama 3.2 1B',
-            paramsLabel: '1B',
-            downloadBytes: 807694464,
-            diskBytes: 807694464,
+            name: 'Llama 3.2 3B',
+            paramsLabel: '3B',
+            downloadBytes: 2019377696,
+            diskBytes: 2019377696,
             license: 'Llama 3.2 Community License',
             installed: false,
           },
@@ -170,7 +170,7 @@ it.each(['linux', 'darwin', 'win32'])(
   'saves a validated timeout and shows factual model metadata on %s',
   async () => {
     const { setConfig } = await openSettings();
-    expect(await screen.findByText('Llama 3.2 1B')).toBeVisible();
+    expect(await screen.findByText('Llama 3.2 3B')).toBeVisible();
     expect(screen.queryByText(/Smaller download and memory/)).toBeNull();
     const input = screen.getByLabelText('Summary timeout (seconds)');
     fireEvent.change(input, { target: { value: '29' } });

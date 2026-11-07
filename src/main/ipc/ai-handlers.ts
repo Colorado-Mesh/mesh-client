@@ -29,11 +29,11 @@ import { AiConfig } from '../ai/config';
 import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
 import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
+import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
 import { AI_LOCAL_MODELS } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
 import { OsAiHelper } from '../ai/os/osAiHelper';
-import { buildSummaryPrompt } from '../ai/promptBuilder';
 import { classifyEndpoint, validateAiEndpointUrl } from '../ai/urlPolicy';
 import { validateAiConfig, validateAiRequest } from '../ai/validation';
 import { getDbForIpc } from '../db-ipc-lifecycle';
@@ -350,6 +350,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       mode === 'final'
         ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
         : 'compact';
+    const buildSummaryPrompt = await loadBuildAiSummaryPrompt();
     const buildCatchUpPrompt = (style: typeof finalStyle) => ({
       ...buildSummaryPrompt({
         ...request,
@@ -392,6 +393,14 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
       return { ok: false, reason: 'tooLarge' };
     }
+    // Qwen3 defaults to thinking mode; disable it so Catch up stays within completion budgets.
+    if (
+      c.engine === 'bundled' &&
+      typeof c.localModelId === 'string' &&
+      c.localModelId.startsWith('qwen3-') &&
+      !prompt.user.includes('/no_think')
+    )
+      prompt = { ...prompt, user: `${prompt.user}\n/no_think` };
     const outputTokens = followUp
       ? AI_FOLLOW_UP_OUTPUT_TOKENS
       : aiSummaryOutputTokens(mode, finalStyle);

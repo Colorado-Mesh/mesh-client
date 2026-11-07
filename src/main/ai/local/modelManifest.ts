@@ -10,20 +10,20 @@ export interface AiLocalModel {
   license: string;
   assets: AiLocalAsset[];
 }
-// Checked 2026-10-16 against publisher metadata; immutable revisions and LFS SHA-256.
+// Checked 2026-11-07 against publisher metadata; immutable revisions and LFS SHA-256.
 export const AI_LOCAL_MODELS: AiLocalModel[] = [
   {
-    id: 'llama3.2-1b-instruct-q4',
-    name: 'Llama 3.2 1B Instruct Q4_K_M',
-    paramsLabel: '1B',
+    id: 'llama3.2-3b-instruct-q4',
+    name: 'Llama 3.2 3B Instruct Q4_K_M',
+    paramsLabel: '3B',
     license: 'Llama 3.2 Community License',
     assets: [
       {
-        file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf',
+        file: 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
         // eslint-disable-next-line no-secrets/no-secrets -- public, immutable model asset URL
-        url: 'https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/067b946cf014b7c697f3654f621d577a3e3afd1c/Llama-3.2-1B-Instruct-Q4_K_M.gguf',
-        size: 807694464,
-        sha256: '6f85a640a97cf2bf5b8e764087b1e83da0fdb51d7c9fab7d0fece9385611df83',
+        url: 'https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/c1f82a567baf4622ef1be9094a208511846e60df/Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+        size: 2019377696,
+        sha256: '6c1a2b41161032677be168d354123594c0e6e67d2b9227c84f296ad037c728ff',
       },
       {
         file: 'LICENSE.txt',
@@ -41,16 +41,17 @@ export const AI_LOCAL_MODELS: AiLocalModel[] = [
     ],
   },
   {
-    id: 'qwen2.5-1.5b-instruct-q4',
-    name: 'Qwen2.5 1.5B Instruct Q4_K_M',
-    paramsLabel: '1.5B',
+    id: 'qwen3-1.7b-instruct-q4',
+    name: 'Qwen3 1.7B Instruct Q4_K_M',
+    paramsLabel: '1.7B',
     license: 'Apache-2.0',
     assets: [
       {
-        file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf',
-        url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf',
-        size: 1117320736,
-        sha256: '6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e',
+        file: 'Qwen_Qwen3-1.7B-Q4_K_M.gguf',
+        // eslint-disable-next-line no-secrets/no-secrets -- public, immutable model asset URL
+        url: 'https://huggingface.co/bartowski/Qwen_Qwen3-1.7B-GGUF/resolve/dcb19155b962dbb6389f4691a982043a8e651022/Qwen_Qwen3-1.7B-Q4_K_M.gguf',
+        size: 1282439584,
+        sha256: '72c5c3cb38fa32d5256e2fe30d03e7a64c6c79e668ad84057e3bd66e250b24fb',
       },
     ],
   },

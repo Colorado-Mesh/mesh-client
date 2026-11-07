@@ -12,6 +12,7 @@ describe('run-dev', () => {
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/translation/bergamotWorkerEntry.ts')),
     ).toBe(true);
+    expect(args.some((arg) => arg.startsWith('esbuild src/shared/aiSummaryPrompt.ts'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/shared/aiFollowUpPrompt.ts'))).toBe(true);
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);

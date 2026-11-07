@@ -102,9 +102,10 @@ fails rather than claiming a complete summary. Reduction must shrink the digests
 to eight rounds, preventing a provider from looping forever. Intermediate and final digests are
 quoted without synthetic ordering timestamps, so the model cannot mistake sequence numbers for
 1970 chat dates. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
-to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (3,500) for both Apple’s and the WASM engine’s 4,096-token
-contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote
-context capacity remains model-dependent, with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
+to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (12,288) for both Apple’s and the WASM engine’s 4,096-token
+contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization while using
+more of `n_ctx` for structured Catch up finals. Remote context capacity remains model-dependent,
+with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
 These budgets are shared via `aiSummaryPromptBudget` so App → AI capacity copy stays aligned.
 
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
@@ -205,22 +206,21 @@ never authorize serving bytes. Missing/corrupt metadata falls back to hashing. C
 full verifications of the same model and file signature share one hash operation; advisory
 metadata hits cannot satisfy runtime verification.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
-checked on 2026-10-16. The catalog offers Llama 3.2 1B and Qwen2.5 1.5B,
+checked on 2026-11-07. The catalog offers Llama 3.2 3B Instruct and Qwen3 1.7B Instruct,
 both Q4_K_M. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License.
 Its full license and Meta NOTICE are verified and atomically installed beside the GGUF;
 inline notices use the same size/hash verification as downloaded assets. Built with Llama.
 Wllama and llama.cpp use MIT. The npm license report covers runtime dependencies;
 model attribution belongs in credits. No weights ship in the installer.
+Bundled Qwen3 Catch up prompts append `/no_think` so thinking mode does not consume the
+completion budget.
 
-Qwen 0.5B was removed after unreliable real-model trials. A saved selection of a removed model
-becomes not-ready; the app never silently selects or downloads a replacement. Choose explicitly
-from the catalog. SmolLM2 was also removed following transcript copying and timeout reports.
-Model cards show factual metadata (name, parameter count, bytes and license) without quality claims.
-None is an accuracy guarantee. Synthetic 41-message trials using the production worker completed
-in about 86 seconds for Llama 3.2 1B and about 136 seconds for Qwen2.5 1.5B. Llama omitted useful
-facts and added a weak attribution bullet. A historical trial of the removed SmolLM2 model took
-about 187 seconds, misattributed speakers and reversed one routing instruction. These bounded
-checks establish runtime compatibility and limitations, not summary accuracy or comparative quality.
+Older catalog ids (Llama 3.2 1B, Qwen2.5 1.5B, Qwen 0.5B, SmolLM2) are removed. A saved
+selection of a removed model becomes not-ready; the app never silently selects or downloads a
+replacement. Choose explicitly from the catalog. Model cards show factual metadata (name,
+parameter count, bytes and license) without quality claims. None is an accuracy guarantee.
+Historical synthetic trials of prior smaller catalog models established runtime compatibility
+and limitations, not summary accuracy or comparative quality.
 
 RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
 without marking the transcript read. The first incoming prose/whisper row carries a measured

@@ -250,8 +250,11 @@ export function aiSummaryOutputTokens(
   if (mode === 'reduce') return AI_REDUCE_OUTPUT_TOKENS;
   return finalStyle === 'structured' ? AI_STRUCTURED_FINAL_OUTPUT_TOKENS : AI_MAX_OUTPUT_TOKENS;
 }
-/** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
-export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 4096;
+/**
+ * Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts).
+ * ~12 KiB leaves room for chat template + structured completion within n_ctx 4096.
+ */
+export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 12_288;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */
 export const AI_ENDPOINT_MAX_PROMPT_BYTES = 64_000;
 export const AI_OS_MAX_CHARS = 9000;

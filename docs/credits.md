@@ -89,11 +89,11 @@ modifying their data. No model, vocabulary, language-ID file or translation WASM
 The optional offline engine bundles [wllama](https://github.com/ngxson/wllama) and
 [llama.cpp](https://github.com/ggml-org/llama.cpp) under MIT. Their notices ship in
 `dist-electron/main/ai-licenses/`. After explicit download, the catalog offers Apache-2.0
-[Qwen2.5](https://huggingface.co/Qwen) weights, plus
-[Llama 3.2](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) under the
+[Qwen3](https://huggingface.co/Qwen/Qwen3-1.7B) weights, plus
+[Llama 3.2](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct) under the
 [Llama 3.2 Community License](https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/LICENSE).
 Built with Llama. Llama downloads include the full license and Meta attribution notice.
-The Llama GGUF quantization is published by
+The Llama and Qwen3 GGUF quantizations used by the catalog are published by
 [bartowski](https://huggingface.co/bartowski).
 Immutable revisions, sizes and checksums are in `src/main/ai/local/modelManifest.ts`.
 No model weights ship in the installer.

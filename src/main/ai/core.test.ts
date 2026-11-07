@@ -643,10 +643,10 @@ describe('AI summary final styles', () => {
   });
 
   it('needs more on-device headroom for structured digests than compact', () => {
-    const messages = Array.from({ length: 14 }, (_, index) => ({
+    const messages = Array.from({ length: 35 }, (_, index) => ({
       at: index + 1,
       sender: `Part ${index + 1}`,
-      body: 'x'.repeat(200),
+      body: 'x'.repeat(320),
     }));
     const frame = {
       conversationLabel: 'chat',

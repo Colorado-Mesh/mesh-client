@@ -22,6 +22,7 @@ import {
 
 describe('AI summary capacity helpers', () => {
   it('exposes on-device and endpoint prompt budgets', () => {
+    expect(AI_ON_DEVICE_MAX_PROMPT_BYTES).toBe(12_288);
     expect(aiSummaryPromptBudget('os')).toEqual({
       maxChars: 9000,
       maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
