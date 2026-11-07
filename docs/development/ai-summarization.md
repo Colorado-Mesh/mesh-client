@@ -72,16 +72,19 @@ persistence.
 
 Context retention (renderer session only):
 
-- Single-pass: retain the transcript when total body characters ≤ `AI_FOLLOW_UP_CONTEXT_MAX_CHARS`
-  (64,000); otherwise summary-only with a limited-context disclosure.
-- Multi-pass: retain the final pre-final digest list (dense, small).
+- Always retain a newest-first raw transcript window capped at `AI_FOLLOW_UP_CONTEXT_MAX_CHARS`
+  (64,000 body characters), with a limited-context disclosure when clipped or otherwise truncated.
+- Multi-pass: also retain the final pre-final digest list; follow-ups prefer raw messages when
+  present and fall back to digests only when no messages were kept.
 - On-device engines (`os` / `bundled`): a deterministic relevance selector scores messages with
-  question + summary tokens so anaphoric asks like “how?” can still find the bullet’s subject.
+  question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
+  “how?” can still find the subject, then packs priority matches ahead of newest-first fill under
+  the ~3.5 KB prompt budget.
 - Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.
 
 Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
 on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per
-generation (show the loading phase). Answers never overwrite Catch up bullet text.
+generation (show the loading phase). Answers never overwrite Catch up summary text.
 
 ## Data and runtime boundaries
 
@@ -162,11 +165,14 @@ App → AI shows an approximate per-engine **per-pass** message capacity
 (`estimateAiSummaryMessageCapacity`) and a user-configurable **Catch up message limit**
 (`maxCollectedMessages`, default 2000, range 100–5000). When the collected range exceeds one
 prompt budget, Catch up runs hierarchical multi-pass summarization (map digests → reduce → final
-five-bullet catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
-History is paginated until the configured ceiling. Bundled WASM reuses a loaded model across
-map/reduce steps. Map and reduce passes use a lower completion token budget than the final
-five-bullet pass so multi-pass wall time stays closer to proportional to coverage rather than
-maxing out every intermediate digest. The whole job shares the configured timeout; large ranges
+structured catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
+Small single-pass jobs still ask for up to five factual bullets; larger single-pass jobs and all
+multi-pass finals use a structured summary (Conversations + One-offs) with a higher completion
+token budget. Follow-ups keep a newest-first capped raw transcript (and multi-pass digests) in
+session memory so pasted channel lines can be grounded. History is paginated until the configured
+ceiling. Bundled WASM reuses a loaded model across map/reduce steps. Map and reduce passes use a
+lower completion token budget than the final pass so multi-pass wall time stays closer to
+proportional to coverage rather than maxing out every intermediate digest. The whole job shares the configured timeout; large ranges
 often need several minutes on downloaded CPU models (a local/remote server is much faster for
 1000+ messages). The Catch up card reports progress (`part i of n` / merging),
 collected vs included counts, and ceiling truncation when the user limit stops collection.

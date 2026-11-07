@@ -430,6 +430,107 @@ describe('AI follow-up prompts', () => {
     });
     expect(prompt.fits).toBe(false);
   });
+  it('keeps a pasted match in source under a tight on-device budget', () => {
+    const pasted = 'We need a second repeater on the north ridge before the weekend net.';
+    const messages = [
+      {
+        at: Date.parse('2026-11-01T18:00:00Z'),
+        sender: 'Trashcan13',
+        body: pasted,
+      },
+      ...Array.from({ length: 30 }, (_, index) => ({
+        at: Date.parse('2026-11-07T21:00:00Z') + index * 60_000,
+        sender: `N${index}`,
+        body: `Recent chatter line ${index} with enough filler to consume the budget quickly.`,
+      })),
+    ];
+    const prompt = buildAiFollowUpPrompt(
+      {
+        conversationLabel: '#general',
+        protocol: 'meshtastic',
+        surface: 'channel',
+        locale: 'en',
+        summary: '• Short catch-up bullets about recent chatter.',
+        question: pasted,
+        turns: [],
+        messages,
+        contextKind: 'transcript',
+        maxChars: 9000,
+        maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      },
+      'UTC',
+    );
+    expect(prompt.fits).toBe(true);
+    expect(prompt.included).toBeGreaterThan(0);
+    expect(prompt.user).toContain(JSON.stringify(pasted));
+    expect(new TextEncoder().encode(prompt.system + prompt.user).byteLength).toBeLessThanOrEqual(
+      AI_ON_DEVICE_MAX_PROMPT_BYTES,
+    );
+  });
+  it('truncates a long question before dropping all source context', () => {
+    const prompt = buildAiFollowUpPrompt(
+      {
+        conversationLabel: 'chat',
+        protocol: 'meshcore',
+        surface: 'channel',
+        locale: 'en',
+        summary: '• Summary line.',
+        question: 'Please explain this exact channel message: '.concat('detail '.repeat(80)),
+        turns: [],
+        messages: [
+          {
+            at: Date.parse('2026-11-07T21:05:00Z'),
+            sender: 'Alice',
+            body: 'Repeater restored on north ridge.',
+          },
+        ],
+        contextKind: 'transcript',
+        maxChars: 9000,
+        maxPromptBytes: 1600,
+      },
+      'UTC',
+    );
+    expect(prompt.fits).toBe(true);
+    expect(prompt.truncated).toBe(true);
+    expect(prompt.included).toBe(1);
+    expect(prompt.user).toContain('Repeater restored on north ridge.');
+    expect(prompt.user).toContain('Question:');
+    expect(prompt.user).toContain('…');
+  });
+});
+
+describe('AI summary final styles', () => {
+  it('uses compact five-bullet instructions by default', () => {
+    const prompt = buildSummaryPrompt({
+      conversationLabel: 'chat',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'en',
+      messages: [{ at: 1, sender: 'Alice', body: 'Net at 20:00.' }],
+      maxChars: 9000,
+      finalStyle: 'compact',
+    });
+    expect(prompt.system).toContain('Output up to five short factual bullets');
+    expect(prompt.system).not.toContain('Conversations:');
+    expect(prompt.user).toContain('Write the catch-up bullets now');
+  });
+
+  it('uses conversation and one-off instructions for structured finals', () => {
+    const prompt = buildSummaryPrompt({
+      conversationLabel: 'chat',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'en',
+      messages: [{ at: 1, sender: 'Alice', body: 'Net at 20:00.' }],
+      maxChars: 9000,
+      finalStyle: 'structured',
+    });
+    expect(prompt.system).toContain('Conversations:');
+    expect(prompt.system).toContain('One-offs:');
+    expect(prompt.system).not.toContain('Output up to five short factual bullets');
+    expect(prompt.user).toContain('Conversations: and One-offs:');
+    expect(prompt.user).toContain('"finalStyle":"structured"');
+  });
 });
 describe('AI wire adapters', () => {
   it.each(['openai', 'anthropic', 'gemini', 'ollama'] as const)(

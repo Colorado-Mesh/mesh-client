@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { retainFollowUpMessages } from '@/renderer/lib/aiFollowUpContext';
 import {
   type MultiPassProgress,
   runMultiPassSummary,
@@ -17,11 +18,7 @@ import type {
   AiSummaryRequest,
   AiSummaryScope,
 } from '@/shared/ai-types';
-import {
-  AI_FOLLOW_UP_CONTEXT_MAX_CHARS,
-  AI_MAX_RESPONSE_BYTES,
-  aiSummaryTimeoutMs,
-} from '@/shared/ai-types';
+import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** UI status while a summary is pending; `queued` is renderer-only (FIFO wait). */
@@ -614,15 +611,17 @@ export async function runSummary(
         },
       });
       signal.throwIfAborted();
+      const retained = retainFollowUpMessages(request.messages);
       patch(key, id, {
         messageCount: result.messageCount,
-        truncated: result.truncated || historyTruncated || ceilingTruncated,
+        truncated: result.truncated || historyTruncated || ceilingTruncated || retained.clipped,
         streaming: false,
         progress: null,
         phase: undefined,
         followUpContext: {
           digests: result.digests,
-          limited: result.truncated || historyTruncated || ceilingTruncated,
+          messages: retained.messages,
+          limited: result.truncated || historyTruncated || ceilingTruncated || retained.clipped,
         },
         ...(!useAiSummaryStore.getState().summaries[key]?.text.trim()
           ? { error: 'invalidResponse' as const }
@@ -652,20 +651,27 @@ export async function runSummary(
       patch(key, id, { error: result.reason as AiSummaryErrorReason, streaming: false });
       return;
     }
-    const contextChars = request.messages.reduce((sum, message) => sum + message.body.length, 0);
-    const retainMessages = contextChars <= AI_FOLLOW_UP_CONTEXT_MAX_CHARS;
+    const retained = retainFollowUpMessages(request.messages);
     const followUpContextFromSinglePass = (
       promptTruncated: boolean,
     ): ConversationSummary['followUpContext'] => ({
-      ...(retainMessages ? { messages: request.messages } : {}),
-      limited: historyTruncated || ceilingTruncated || !retainMessages || promptTruncated,
+      messages: retained.messages,
+      limited: historyTruncated || ceilingTruncated || retained.clipped || promptTruncated,
     });
-    if (result.summaryInput) {
-      patch(key, id, {
-        messageCount: result.summaryInput.messageCount,
-        truncated: result.summaryInput.truncated || historyTruncated || ceilingTruncated,
-      });
-    }
+    // Attach capped context before streaming finishes so Ask never races an empty context.
+    patch(key, id, {
+      ...(result.summaryInput
+        ? {
+            messageCount: result.summaryInput.messageCount,
+            truncated:
+              result.summaryInput.truncated ||
+              historyTruncated ||
+              ceilingTruncated ||
+              retained.clipped,
+          }
+        : {}),
+      followUpContext: followUpContextFromSinglePass(false),
+    });
     if (result.localJob) {
       const job = result.localJob;
       const { AiWorkerHost } = await Promise.race([import('@/renderer/lib/aiWorkerHost'), aborted]);
@@ -675,7 +681,7 @@ export async function runSummary(
       patch(key, id, {
         model: job.model,
         messageCount: job.messageCount,
-        truncated: job.truncated || historyTruncated || ceilingTruncated,
+        truncated: job.truncated || historyTruncated || ceilingTruncated || retained.clipped,
       });
       await host.generate(
         job,

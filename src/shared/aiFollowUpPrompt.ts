@@ -10,6 +10,22 @@ const FOLLOW_UP_SYSTEM =
   'Do not invent details. Keep the answer under about 120 words unless the user asks for more detail. ' +
   'Timestamps are user-local time with UTC offsets, not UTC.';
 
+/** Leave at least this many UTF-8 bytes for transcript/digest lines when messages exist. */
+const FOLLOW_UP_SOURCE_RESERVE_BYTES = 1200;
+
+function normalizeWs(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function isQuestionPasteMatch(question: string, body: string): boolean {
+  const normalizedBody = normalizeWs(body);
+  if (normalizedBody.length < 12) return false;
+  const normalizedQuestion = normalizeWs(question);
+  if (!normalizedQuestion) return false;
+  if (normalizedQuestion.includes(normalizedBody)) return true;
+  return normalizedBody.includes(normalizedQuestion) && normalizedQuestion.length >= 12;
+}
+
 export interface AiFollowUpPromptInput {
   conversationLabel: string;
   protocol: string;
@@ -28,8 +44,9 @@ export interface AiFollowUpPromptInput {
 
 /**
  * Build a follow-up Q&A prompt from the Catch up summary, prior turns, and
- * retained source context. Degrades prior turns → summary → context under budget;
- * returns `fits: false` when even the framing cannot fit.
+ * retained source context. Degrades prior turns → summary → question under budget
+ * while reserving space for source; returns `fits: false` when even the framing
+ * cannot fit.
  */
 export function buildAiFollowUpPrompt(
   input: AiFollowUpPromptInput,
@@ -44,18 +61,28 @@ export function buildAiFollowUpPrompt(
     timeZone,
     mode: 'followup',
   });
-  const questionBlock = `\n\nQuestion: ${input.question}\nAnswer:`;
   const maxBytes = input.maxPromptBytes ?? Infinity;
   const digests = input.contextKind === 'digests';
   const contextOpen = digests ? 'BEGIN_UNTRUSTED_DIGESTS' : 'BEGIN_UNTRUSTED_TRANSCRIPT';
   const contextClose = digests ? 'END_UNTRUSTED_DIGESTS' : 'END_UNTRUSTED_TRANSCRIPT';
   const emptyContextLine = '(No source messages were retained for this summary.)';
+  const hasSource = input.contextKind !== 'none' && input.messages.length > 0;
+  // Keep enough headroom for system + minimal framing; do not reserve more than leftover.
+  const minFramingBytes = utf8Bytes(system) + 120;
+  const sourceReserve =
+    hasSource && Number.isFinite(maxBytes)
+      ? Math.min(FOLLOW_UP_SOURCE_RESERVE_BYTES, Math.max(0, maxBytes - minFramingBytes))
+      : 0;
+  const framingBudget = Number.isFinite(maxBytes)
+    ? Math.max(0, maxBytes - sourceReserve)
+    : Infinity;
 
   let turns = input.turns.map((turn) => ({
     question: turn.question,
     answer: turn.answer.slice(0, AI_MAX_FOLLOW_UP_ANSWER_CHARS),
   }));
   let summary = input.summary.slice(0, AI_MAX_FOLLOW_UP_SUMMARY_CHARS);
+  let question = input.question;
   let truncated =
     summary.length < input.summary.length ||
     turns.some(
@@ -63,42 +90,54 @@ export function buildAiFollowUpPrompt(
         turn.answer.length < (input.turns[index]?.answer.length ?? turn.answer.length),
     );
 
-  const buildFraming = (summaryText: string, prior: typeof turns) => {
+  const buildFraming = (summaryText: string, prior: typeof turns, questionText: string) => {
     const summaryBlock = `BEGIN_UNTRUSTED_CATCH_UP_SUMMARY\n${JSON.stringify(summaryText)}\nEND_UNTRUSTED_CATCH_UP_SUMMARY`;
     const priorBlock =
       prior.length === 0
         ? ''
         : `\nBEGIN_UNTRUSTED_PRIOR_ANSWERS\n${JSON.stringify(prior)}\nEND_UNTRUSTED_PRIOR_ANSWERS`;
-    return { summaryBlock, priorBlock };
+    const questionBlock = `\n\nQuestion: ${questionText}\nAnswer:`;
+    return { summaryBlock, priorBlock, questionBlock };
   };
 
-  let framing = buildFraming(summary, turns);
+  let framing = buildFraming(summary, turns, question);
   let base = `${meta}\n${framing.summaryBlock}${framing.priorBlock}\n${contextOpen}\n`;
-  let baseTail = `\n${contextClose}${questionBlock}`;
+  let baseTail = `\n${contextClose}${framing.questionBlock}`;
   let baseBytes = utf8Bytes(system + base + baseTail);
 
-  while (baseBytes > maxBytes && turns.length > 0) {
+  while (baseBytes > framingBudget && turns.length > 0) {
     turns = turns.slice(1);
     truncated = true;
-    framing = buildFraming(summary, turns);
+    framing = buildFraming(summary, turns, question);
     base = `${meta}\n${framing.summaryBlock}${framing.priorBlock}\n${contextOpen}\n`;
-    baseTail = `\n${contextClose}${questionBlock}`;
+    baseTail = `\n${contextClose}${framing.questionBlock}`;
     baseBytes = utf8Bytes(system + base + baseTail);
   }
 
-  while (baseBytes > maxBytes && summary.length > 0) {
+  while (baseBytes > framingBudget && summary.length > 0) {
     const nextLength = Math.max(0, Math.floor(summary.length * 0.75) - 1);
     summary = nextLength === 0 ? '' : `${summary.slice(0, nextLength)}…`;
     truncated = true;
-    framing = buildFraming(summary, turns);
+    framing = buildFraming(summary, turns, question);
     base = `${meta}\n${framing.summaryBlock}${framing.priorBlock}\n${contextOpen}\n`;
-    baseTail = `\n${contextClose}${questionBlock}`;
+    baseTail = `\n${contextClose}${framing.questionBlock}`;
     baseBytes = utf8Bytes(system + base + baseTail);
     if (nextLength === 0) break;
   }
 
+  while (baseBytes > framingBudget && question.length > 1) {
+    const nextLength = Math.max(0, Math.floor(question.length * 0.75) - 1);
+    question = nextLength <= 0 ? '…' : `${question.slice(0, nextLength)}…`;
+    truncated = true;
+    framing = buildFraming(summary, turns, question);
+    base = `${meta}\n${framing.summaryBlock}${framing.priorBlock}\n${contextOpen}\n`;
+    baseTail = `\n${contextClose}${framing.questionBlock}`;
+    baseBytes = utf8Bytes(system + base + baseTail);
+    if (nextLength <= 0) break;
+  }
+
   if (baseBytes > maxBytes) {
-    const minimal = `${meta}\n${questionBlock}`;
+    const minimal = `${meta}\n${framing.questionBlock}`;
     if (utf8Bytes(system + minimal) > maxBytes)
       return { system, user: '', included: 0, truncated: true, fits: false };
     return {
@@ -114,10 +153,10 @@ export function buildAiFollowUpPrompt(
     (sum, turn) => sum + turn.question.length + turn.answer.length,
     0,
   );
-  const reservedChars = summary.length + input.question.length + turnsChars;
+  const reservedChars = summary.length + question.length + turnsChars;
   const availableChars = Math.max(0, input.maxChars - reservedChars);
 
-  if (input.contextKind === 'none' || input.messages.length === 0) {
+  if (!hasSource) {
     const emptyBytes = utf8Bytes(emptyContextLine);
     if (baseBytes + emptyBytes <= maxBytes && emptyContextLine.length <= availableChars) {
       return {
@@ -143,8 +182,9 @@ export function buildAiFollowUpPrompt(
     maxBytes,
     reservedBytes: baseBytes,
     timeZone,
+    priority: (message) => isQuestionPasteMatch(question, message.body),
   });
-  truncated = truncated || selected.truncated;
+  truncated = truncated || selected.truncated || question.length < input.question.length;
   return {
     system,
     user: `${base}${selected.lines.join('\n')}${baseTail}`,

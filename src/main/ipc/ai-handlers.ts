@@ -21,6 +21,7 @@ import {
   aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
   clampAiMaxCollectedMessages,
+  resolveAiSummaryFinalStyle,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
 import { AiClient } from '../ai/aiClient';
@@ -344,6 +345,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'notConfigured' };
     }
     const budget = aiSummaryPromptBudget(c.engine);
+    const finalStyle =
+      mode === 'final'
+        ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
+        : 'compact';
     const prompt = followUp
       ? (await import('../../shared/aiFollowUpPrompt')).buildAiFollowUpPrompt({
           conversationLabel: request.conversationLabel,
@@ -363,6 +368,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
             ...request,
             digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
             mode: request.mode ?? 'final',
+            finalStyle,
             maxChars: budget.maxChars,
             maxPromptBytes: budget.maxPromptBytes,
           }),
@@ -373,7 +379,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
       return { ok: false, reason: 'tooLarge' };
     }
-    const outputTokens = followUp ? AI_FOLLOW_UP_OUTPUT_TOKENS : aiSummaryOutputTokens(mode);
+    const outputTokens = followUp
+      ? AI_FOLLOW_UP_OUTPUT_TOKENS
+      : aiSummaryOutputTokens(mode, finalStyle);
     if (c.engine === 'bundled') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);

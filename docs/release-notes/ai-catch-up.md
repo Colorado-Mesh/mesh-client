@@ -1,6 +1,7 @@
 # Catch up release notes (unreleased)
 
-- Ask follow-up questions about a completed Catch up. Answers use the summary plus the retained transcript or multi-pass digests, stream into the card, and stay in session memory.
+- Ask follow-up questions about a completed Catch up. Answers use the summary plus a capped raw transcript (and multi-pass digests as fallback), stream into the card, and stay in session memory.
+- Scale large Catch ups beyond five bullets: structured Conversations + One-offs summaries with a higher completion budget; keep compact five-bullet output for small single-pass jobs.
 - Add optional conversation summaries across supported protocols, using OS AI, downloaded models or configured endpoints.
 - Offer Llama 3.2 1B and Qwen2.5 1.5B Q4_K_M downloads. Remove Qwen 0.5B and SmolLM2; choose a replacement explicitly if a removed model was selected.
 - Keep a Set up Catch up action visible after enabling AI when the engine or model is not ready. It opens AI settings without reading history or starting a summary.

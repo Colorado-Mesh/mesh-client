@@ -193,8 +193,17 @@ export const AI_DEFAULT_MAX_COLLECTED_MESSAGES = 2000;
 export const AI_MIN_MAX_COLLECTED_MESSAGES = 100;
 /** Hard product ceiling for one Catch up collection. */
 export const AI_MAX_MAX_COLLECTED_MESSAGES = 5000;
-/** Final catch-up bullet list (and single-pass summaries). */
+/** Compact final catch-up (≤5 bullets) and default single-pass summaries. */
 export const AI_MAX_OUTPUT_TOKENS = 250;
+/**
+ * Structured final catch-up (conversations + one-offs) for large / multi-pass jobs.
+ */
+export const AI_STRUCTURED_FINAL_OUTPUT_TOKENS = 512;
+/**
+ * Single-pass finals with more than this many messages use the structured style.
+ * Multi-pass finals always use structured regardless of digest count.
+ */
+export const AI_COMPACT_FINAL_MAX_MESSAGES = 40;
 /**
  * Map digests are intermediate; capping decode tokens cuts multi-pass wall time
  * roughly in proportion (bundled WASM decode dominates over prompt eval).
@@ -212,8 +221,8 @@ export const AI_MAX_FOLLOW_UP_ANSWER_CHARS = 2_000;
 /** Max characters of the completed summary included in the prompt. */
 export const AI_MAX_FOLLOW_UP_SUMMARY_CHARS = 4_000;
 /**
- * Retain the original single-pass transcript for follow-ups only when its total
- * body characters are at or below this cap (renderer session memory).
+ * Newest-first body-character cap for transcript retained for follow-ups
+ * (renderer session memory). Over-cap ranges keep the newest window, not none.
  */
 export const AI_FOLLOW_UP_CONTEXT_MAX_CHARS = 64_000;
 /** Completed follow-up turns retained per summary in the renderer. */
@@ -221,10 +230,25 @@ export const AI_MAX_RETAINED_FOLLOW_UPS = 20;
 /** Output token budget for one follow-up answer. */
 export const AI_FOLLOW_UP_OUTPUT_TOKENS = 250;
 
-export function aiSummaryOutputTokens(mode: AiSummaryPassMode = 'final'): number {
+/** Final Catch-up output shape: compact bullets vs conversation/one-off sections. */
+export type AiSummaryFinalStyle = 'compact' | 'structured';
+
+export function resolveAiSummaryFinalStyle(
+  messageCount: number,
+  multiPassFinal = false,
+): AiSummaryFinalStyle {
+  if (multiPassFinal) return 'structured';
+  if (messageCount > AI_COMPACT_FINAL_MAX_MESSAGES) return 'structured';
+  return 'compact';
+}
+
+export function aiSummaryOutputTokens(
+  mode: AiSummaryPassMode = 'final',
+  finalStyle: AiSummaryFinalStyle = 'compact',
+): number {
   if (mode === 'map') return AI_MAP_OUTPUT_TOKENS;
   if (mode === 'reduce') return AI_REDUCE_OUTPUT_TOKENS;
-  return AI_MAX_OUTPUT_TOKENS;
+  return finalStyle === 'structured' ? AI_STRUCTURED_FINAL_OUTPUT_TOKENS : AI_MAX_OUTPUT_TOKENS;
 }
 /** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
 export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 3500;

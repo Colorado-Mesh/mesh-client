@@ -496,10 +496,14 @@ describe('summary multi-pass', () => {
     expect(vi.mocked(api.summarize).mock.calls.some(([value]) => value.mode === 'final')).toBe(
       true,
     );
-    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+    const summary = useAiSummaryStore.getState().summaries.chat;
+    expect(summary).toMatchObject({
       streaming: false,
       text: 'final bullets',
     });
+    expect(summary?.followUpContext?.digests?.length).toBeGreaterThan(0);
+    expect(summary?.followUpContext?.messages?.length).toBeGreaterThan(0);
+    expect(summary?.followUpContext?.messages?.at(-1)?.body).toContain('site 79');
   });
 });
 
