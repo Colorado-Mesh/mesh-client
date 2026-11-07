@@ -718,6 +718,8 @@
       
         
       
+        
+      
     
     
     
@@ -778,6 +780,34 @@
     
   
     Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-catch-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catch up (AI summaries)
   
 
     
@@ -2918,8 +2948,11 @@
 
 <h1 id="catch-up-release-notes-unreleased">Catch up release notes (unreleased)<a class="headerlink" href="#catch-up-release-notes-unreleased" title="Permanent link">&para;</a></h1>
 <ul>
+<li>Ask follow-up questions about a completed Catch up. Answers use the summary plus a capped raw transcript (and multi-pass digests as fallback), stream into the card, and stay in session memory.</li>
+<li>Scale large Catch ups beyond five bullets: structured Conversations + One-offs summaries with a higher completion budget; keep compact five-bullet output for small single-pass jobs.</li>
 <li>Add optional conversation summaries across supported protocols, using OS AI, downloaded models or configured endpoints.</li>
-<li>Offer Llama 3.2 1B and Qwen2.5 1.5B Q4_K_M downloads. Remove Qwen 0.5B and SmolLM2; choose a replacement explicitly if a removed model was selected.</li>
+<li>Offer Llama 3.2 3B Instruct (recommended for quality) and Qwen2.5 1.5B Instruct Q4_K_M (faster for slower machines) downloads, plus Apple Silicon MLX twins. Raise on-device Catch up prompt headroom so bundled engines keep Conversations/One-offs when digests fit. Prior Qwen3 1.7B / 1B (and older) catalog ids become not-ready until the user picks a current model.</li>
+<li>On Apple Silicon, prepare Metal Catch up when AI is enabled (bundled helper or local Xcode discovery without changing <code>xcode-select</code>); list both MLX twins even while Metal is preparing; allow MLX downloads before Metal is ready; gate Use/Catch up on the helper with in-app Retry and user-guide docs. Detect a missing Metal Toolchain and show <code>xcodebuild -downloadComponent MetalToolchain</code>; always surface a Retry success or failure notice. Document rebooting when that download loops. Treat modern Xcode (Metal via <code>xcrun</code> / cryptex, no on-disk <code>usr/bin/metal</code> stub) as valid for discovery. Stage <code>mlx-swift_Cmlx.bundle</code> (default.metallib) next to <code>mesh-ai-mlx</code> so Catch up does not fail with a generic summarize error.</li>
 <li>Keep a Set up Catch up action visible after enabling AI when the engine or model is not ready. It opens AI settings without reading history or starting a summary.</li>
 <li>Recover from failed or stalled startup status reads. Saved opt-in keeps the setup shortcut available while readiness is unknown; generation still requires a ready engine.</li>
 <li>Start waiting summaries automatically when the active summary finishes, fails or is cancelled. Preserve cancellation and timeouts after endpoint acknowledgement.</li>
@@ -2957,7 +2990,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 18, 2026 03:13:20 UTC">October 18, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 7, 2026 21:35:53 UTC">November 7, 2026</span>
   </span>
 
     

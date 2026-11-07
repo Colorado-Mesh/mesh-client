@@ -655,6 +655,8 @@
       
         
       
+        
+      
     
     
     
@@ -715,6 +717,34 @@
     
   
     Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-catch-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catch up (AI summaries)
   
 
     
@@ -2332,6 +2362,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#follow-up-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#data-and-runtime-boundaries" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2952,6 +2993,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#follow-up-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#data-and-runtime-boundaries" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3010,6 +3062,7 @@
 
 
 <h1 id="ai-conversation-summaries">AI conversation summaries<a class="headerlink" href="#ai-conversation-summaries" title="Permanent link">&para;</a></h1>
+<p>End-user workflow (engines, MLX vs CPU, Metal helper messaging): <a href="../../ai-catch-up/">Catch up user guide</a>.</p>
 <p>Catch up summarizes the selected conversation without posting to the mesh. It supports
 Meshtastic and MeshCore channels/DMs, Reticulum LXMF DMs, MeshCore rooms and RRC rooms.
 The shared button and card provide unread/hour/loaded scopes, streamed text, cancellation,
@@ -3064,9 +3117,14 @@ reduce prompt injection risk; they do not guarantee model obedience.</p>
 <td>Copilot+ hardware, ready model, Microsoft LAF token/attestation and supported package identity with <code>systemAIModels</code></td>
 </tr>
 <tr>
-<td>Downloaded model</td>
+<td>Downloaded (GGUF)</td>
 <td>macOS, Windows, Linux</td>
 <td>Explicit verified GGUF download and selection; bundled wllama 3.8.1 CPU WASM worker</td>
+</tr>
+<tr>
+<td>Downloaded (MLX)</td>
+<td>macOS Apple Silicon</td>
+<td>Explicit verified MLX pack download; staged arm64 <code>mesh-ai-mlx</code> helper (mlx-swift-lm); Metal Catch up</td>
 </tr>
 <tr>
 <td>Local server</td>
@@ -3088,10 +3146,34 @@ maintainer-provided <code>AiLafToken</code>/<code>AiLafAttestation</code> MSBuil
 or request a model download during a probe. Native CI compiles both Windows RIDs, but NSIS packaging deliberately excludes the
 helper and its self-contained runtime until package identity is supported. The other engines are available without those Windows requirements.</p>
 <p>Native helper source lives in <code>native/ai/</code>; <code>scripts/build-ai-helper.mjs</code> stages binaries and
-runtime dependencies under <code>resources/ai-helper/</code>. Build/release CI compiles the Apple helper before packaging. A missing optional helper
-warns and leaves OS AI unavailable; it does not block local distribution builds. Large binaries and Swift caches are excluded from Git and packaged resources.
-Swift returns cumulative snapshots, so its helper emits only new suffixes. Windows has no
-max-output-token option in this API; its helper uses a conservative 1,000-character bound.</p>
+runtime dependencies under <code>resources/ai-helper/</code>. Build/release CI compiles the Apple Foundation
+Models helper before packaging. On Apple Silicon hosts the same script also builds optional
+<code>mesh-ai-mlx</code> (SwiftPM under <code>native/ai/mlx/</code>). A missing optional helper warns and leaves OS AI
+and/or MLX Catch up unavailable; it does not block local distribution builds. Large binaries and
+Swift caches are excluded from Git and packaged resources. Swift Foundation Models returns
+cumulative snapshots, so its helper emits only new suffixes. Windows has no max-output-token option
+in this API; its helper uses a conservative 1,000-character bound.</p>
+<h2 id="follow-up-questions">Follow-up questions<a class="headerlink" href="#follow-up-questions" title="Permanent link">&para;</a></h2>
+<p>After a Catch up completes, the shared card offers an inline Ask field. Answers stream under the
+summary with prior turns kept in session memory. Follow-ups are <strong>stateless re-prompts</strong> on the
+existing <code>ai:summarize</code> IPC: the request carries an optional <code>followUp</code> object (question, summary,
+prior turns, <code>contextKind</code>) plus selected source messages — no new channel, no mesh posting, no
+persistence.</p>
+<p>Context retention (renderer session only):</p>
+<ul>
+<li>Always retain a newest-first raw transcript window capped at <code>AI_FOLLOW_UP_CONTEXT_MAX_CHARS</code>
+  (64,000 body characters), with a limited-context disclosure when clipped or otherwise truncated.</li>
+<li>Multi-pass: also retain the final pre-final digest list; follow-ups prefer raw messages when
+  present and fall back to digests only when no messages were kept.</li>
+<li>On-device engines (<code>os</code> / <code>bundled</code>): a deterministic relevance selector scores messages with
+  question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
+  “how?” can still find the subject, then packs priority matches ahead of newest-first fill under
+  the ~4 KB prompt budget.</li>
+<li>Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.</li>
+</ul>
+<p>Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
+on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per
+generation (show the loading phase). Answers never overwrite Catch up summary text.</p>
 <h2 id="data-and-runtime-boundaries">Data and runtime boundaries<a class="headerlink" href="#data-and-runtime-boundaries" title="Permanent link">&para;</a></h2>
 <p><code>src/shared/ai-types.ts</code> is the preload contract. Main services are under <code>src/main/ai/</code>;
 <code>src/main/ipc/ai-handlers.ts</code> owns validation, rate limits and lifecycle. Registration is inert.
@@ -3107,9 +3189,11 @@ fails rather than claiming a complete summary. Reduction must shrink the digests
 to eight rounds, preventing a provider from looping forever. Intermediate and final digests are
 quoted without synthetic ordering timestamps, so the model cannot mistake sequence numbers for
 1970 chat dates. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
-to <code>AI_ON_DEVICE_MAX_PROMPT_BYTES</code> (3,500) for both Apple’s and the WASM engine’s 4,096-token
-contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote
-context capacity remains model-dependent, with an <code>AI_ENDPOINT_MAX_PROMPT_BYTES</code> (64,000) cap.
+to <code>AI_ON_DEVICE_MAX_PROMPT_BYTES</code> (12,288) for Apple Intelligence and the bundled WASM engine
+(<code>AI_BUNDLED_N_CTX</code> = 8,192). That leaves output/template headroom after tokenization for
+structured Catch up finals. Leftover selected <code>qwen3-*</code> ids still append <code>/no_think</code> and disable
+wllama thinking; the shipped Qwen2.5 pack has no thinking mode. Remote context
+capacity remains model-dependent, with an <code>AI_ENDPOINT_MAX_PROMPT_BYTES</code> (64,000) cap.
 These budgets are shared via <code>aiSummaryPromptBudget</code> so App → AI capacity copy stays aligned.</p>
 <p>A dedicated <code>ai:getHistory</code> query preserves existing generic DB query semantics while adding
 inclusive time bounds and exact conversation filters <strong>before</strong> each page’s limit (default 500,
@@ -3167,11 +3251,14 @@ App → AI shows an approximate per-engine <strong>per-pass</strong> message cap
 (<code>estimateAiSummaryMessageCapacity</code>) and a user-configurable <strong>Catch up message limit</strong>
 (<code>maxCollectedMessages</code>, default 2000, range 100–5000). When the collected range exceeds one
 prompt budget, Catch up runs hierarchical multi-pass summarization (map digests → reduce → final
-five-bullet catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
-History is paginated until the configured ceiling. Bundled WASM reuses a loaded model across
-map/reduce steps. Map and reduce passes use a lower completion token budget than the final
-five-bullet pass so multi-pass wall time stays closer to proportional to coverage rather than
-maxing out every intermediate digest. The whole job shares the configured timeout; large ranges
+structured catch-up) while keeping on-device ~4 KB / endpoint 64 KB budgets per inference.
+Small single-pass jobs still ask for up to five factual bullets; larger single-pass jobs and all
+multi-pass finals use a structured summary (Conversations + One-offs) with a higher completion
+token budget. Follow-ups keep a newest-first capped raw transcript (and multi-pass digests) in
+session memory so pasted channel lines can be grounded. History is paginated until the configured
+ceiling. Bundled WASM reuses a loaded model across map/reduce steps. Map and reduce passes use a
+lower completion token budget than the final pass so multi-pass wall time stays closer to
+proportional to coverage rather than maxing out every intermediate digest. The whole job shares the configured timeout; large ranges
 often need several minutes on downloaded CPU models (a local/remote server is much faster for
 1000+ messages). The Catch up card reports progress (<code>part i of n</code> / merging),
 collected vs included counts, and ceiling truncation when the user limit stops collection.
@@ -3203,21 +3290,20 @@ never authorize serving bytes. Missing/corrupt metadata falls back to hashing. C
 full verifications of the same model and file signature share one hash operation; advisory
 metadata hits cannot satisfy runtime verification.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
-checked on 2026-10-16. The catalog offers Llama 3.2 1B and Qwen2.5 1.5B,
-both Q4_K_M. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License.
-Its full license and Meta NOTICE are verified and atomically installed beside the GGUF;
-inline notices use the same size/hash verification as downloaded assets. Built with Llama.
-Wllama and llama.cpp use MIT. The npm license report covers runtime dependencies;
-model attribution belongs in credits. No weights ship in the installer.</p>
-<p>Qwen 0.5B was removed after unreliable real-model trials. A saved selection of a removed model
-becomes not-ready; the app never silently selects or downloads a replacement. Choose explicitly
-from the catalog. SmolLM2 was also removed following transcript copying and timeout reports.
-Model cards show factual metadata (name, parameter count, bytes and license) without quality claims.
-None is an accuracy guarantee. Synthetic 41-message trials using the production worker completed
-in about 86 seconds for Llama 3.2 1B and about 136 seconds for Qwen2.5 1.5B. Llama omitted useful
-facts and added a weak attribution bullet. A historical trial of the removed SmolLM2 model took
-about 187 seconds, misattributed speakers and reversed one routing instruction. These bounded
-checks establish runtime compatibility and limitations, not summary accuracy or comparative quality.</p>
+checked on 2026-11-07. Cross-platform packs are Llama 3.2 3B Instruct and Qwen2.5 1.5B Instruct
+GGUF Q4_K_M (wllama CPU). On Apple Silicon (<code>darwin</code> + <code>arm64</code>) the catalog also offers MLX 4-bit
+twins of the same models, listed first, for Metal Catch up via <code>mesh-ai-mlx</code>. Main filters MLX
+rows (and install/select) to that host only. Soft relative recommendations: Llama = quality
+(recommended), Qwen = faster for slower machines — assigned to the <strong>MLX</strong> twins on Apple Silicon
+and to the <strong>GGUF</strong> twins elsewhere. These labels are relative speed/resource guidance only, not
+accuracy guarantees. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License. Llama
+downloads include the full license and Meta NOTICE beside the weights. Built with Llama.
+Wllama/llama.cpp use MIT; MLX Swift uses the mlx-swift / mlx-swift-lm stack. Attribution belongs
+in credits. No weights ship in the installer.</p>
+<p>Older catalog ids (Llama 3.2 1B, Qwen3 1.7B, Qwen 0.5B, SmolLM2) are removed. A saved
+selection of a removed or off-platform model becomes not-ready; the app never silently selects or
+downloads a replacement. Choose explicitly from the catalog. Model cards show factual metadata
+(name, parameter count, bytes, license, runtime) plus the soft recommendation line when set.</p>
 <p>RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
 without marking the transcript read. The first incoming prose/whisper row carries a measured
 New messages divider; hub notices and self echoes do not anchor it. Without saved read state,
@@ -3262,7 +3348,7 @@ connection tests, native probes and model-download idle limits remain separate.<
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 26, 2026 21:58:52 UTC">October 26, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 7, 2026 21:35:53 UTC">November 7, 2026</span>
   </span>
 
     
