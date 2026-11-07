@@ -467,6 +467,62 @@ describe('AI follow-up prompts', () => {
       AI_ON_DEVICE_MAX_PROMPT_BYTES,
     );
   });
+  it('stays on a quoted catch-up bullet and packs its source over other topics', () => {
+    const mapBody = 'Nodes keep flooding the mesh with location traffic just to map.';
+    const mapBullet = 'A user mentioned nodes flooding the mesh with location traffic to "map".';
+    const summary = [
+      '**Conversations**',
+      '',
+      '* Half Live Elecrow asked what M3SHGHØST 03 said, after mentioning that there are no laws with "claws" in the mesh.',
+      '* M3SHGHØST 03 replied with a statement about handling brown liquor due to brandy dependence.',
+      '',
+      '**One-offs**',
+      '',
+      `* ${mapBullet}`,
+      '* Another user expressed difficulty in handling brown liquor due to brandy dependence.',
+      '* Users discussed byte hash modes and rye whiskey, old-fashioned cocktails.',
+    ].join('\n');
+    const messages = [
+      {
+        at: Date.parse('2026-11-01T18:00:00Z'),
+        sender: 'MapWatcher',
+        body: mapBody,
+      },
+      {
+        at: Date.parse('2026-11-02T18:00:00Z'),
+        sender: 'M3SHGHØST 03',
+        body: 'I have difficulty handling brown liquor due to brandy dependence.',
+      },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        at: Date.parse('2026-11-07T21:00:00Z') + index * 60_000,
+        sender: `N${index}`,
+        body: `Recent brandy chatter line ${index} with enough filler to consume the budget quickly.`,
+      })),
+    ];
+    const prompt = buildAiFollowUpPrompt(
+      {
+        conversationLabel: '#general',
+        protocol: 'meshtastic',
+        surface: 'channel',
+        locale: 'en',
+        summary,
+        question: `expand on "* ${mapBullet}"`,
+        turns: [],
+        messages,
+        contextKind: 'transcript',
+        maxChars: 9000,
+        maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      },
+      'UTC',
+    );
+    expect(prompt.fits).toBe(true);
+    expect(prompt.system).toContain("Answer only the user's asked point");
+    expect(prompt.system).toContain('do not mix facts or speakers from other summary bullets');
+    expect(prompt.user).toContain(JSON.stringify(mapBody));
+    expect(new TextEncoder().encode(prompt.system + prompt.user).byteLength).toBeLessThanOrEqual(
+      AI_ON_DEVICE_MAX_PROMPT_BYTES,
+    );
+  });
   it('truncates a long question before dropping all source context', () => {
     const prompt = buildAiFollowUpPrompt(
       {

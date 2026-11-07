@@ -1,54 +1,16 @@
 import type { AiEngine, AiFollowUpContextKind, AiSummaryMessage } from '@/shared/ai-types';
 import { AI_FOLLOW_UP_CONTEXT_MAX_CHARS } from '@/shared/ai-types';
+import {
+  countFollowUpQueryHits,
+  FOLLOW_UP_FOCUS_HIT_MIN,
+  followUpContentTokens,
+  followUpQueryTokens,
+} from '@/shared/aiFollowUpFocus';
 
-const STOPWORDS = new Set([
-  'the',
-  'and',
-  'for',
-  'with',
-  'that',
-  'this',
-  'from',
-  'what',
-  'when',
-  'where',
-  'who',
-  'why',
-  'how',
-  'did',
-  'does',
-  'was',
-  'were',
-  'are',
-  'is',
-  'it',
-  'they',
-  'them',
-  'about',
-  'give',
-  'more',
-  'information',
-  'please',
-  'tell',
-  'say',
-  'said',
-  'any',
-  'anyone',
-  'some',
-  'can',
-  'could',
-  'would',
-]);
+export { extractQuotedSummaryFocus } from '@/shared/aiFollowUpFocus';
 
 /** Minimum body length for paste / substring force-include. */
 const PASTE_MATCH_MIN_BODY = 12;
-
-function tokens(value: string): string[] {
-  return value
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((token) => token.length >= 3 && !STOPWORDS.has(token));
-}
 
 function normalizeWs(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -112,9 +74,9 @@ export interface FollowUpContextSelection {
  * - Raw retained transcript wins when present (needed for verbatim paste grounding).
  * - Digests are a fallback when only multi-pass digests were kept.
  * - Endpoint engines get the full retained transcript.
- * - On-device engines get a deterministic relevance subset, using both the
- *   question and the summary as the query (so "how?" can still find the
- *   bullet's subject).
+ * - On-device engines get a deterministic relevance subset, using the question
+ *   plus either a quoted summary focus or the full summary (so "how?" can still
+ *   find the bullet's subject).
  */
 export function selectFollowUpContext(
   question: string,
@@ -151,9 +113,9 @@ export function selectFollowUpContext(
 }
 
 /**
- * Score messages by question + summary tokens (summary weighted lower), always
- * keep paste matches and the newest 8, take the top `max`, then return
- * chronological unique rows.
+ * Score messages by question (+ quoted focus or full summary) tokens, always
+ * keep paste matches, focus matches, and the newest 8, take the top `max`, then
+ * return chronological unique rows.
  */
 export function selectRelevantMessages(
   question: string,
@@ -161,22 +123,38 @@ export function selectRelevantMessages(
   messages: AiSummaryMessage[],
   max = 24,
 ): AiSummaryMessage[] {
-  const questionTokens = new Set(tokens(question));
-  const summaryTokens = new Set(tokens(summary));
+  const { tokens: queryTokens, focusOnly } = followUpQueryTokens(question, summary);
+  const questionTokens = new Set(followUpContentTokens(question));
+  const summaryTokens = focusOnly ? new Set<string>() : new Set(followUpContentTokens(summary));
   const pasteMatches = messages.filter((message) => isFollowUpPasteMatch(question, message.body));
-  if (!questionTokens.size && !summaryTokens.size && !pasteMatches.length) return messages;
+  const focusMatches = focusOnly
+    ? messages.filter(
+        (message) => countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN,
+      )
+    : [];
+  if (!queryTokens.size && !pasteMatches.length) return messages;
   const scored = messages.map((message, index) => {
     const sender = message.sender.toLowerCase();
     const body = message.body.toLowerCase();
     let score = index / Math.max(1, messages.length); // recency tiebreak
     if (isFollowUpPasteMatch(question, message.body)) score += 1000;
+    if (focusOnly && countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN)
+      score += 500;
     for (const token of questionTokens) {
       if (sender.includes(token)) score += 4;
       if (body.includes(token)) score += 2;
     }
-    for (const token of summaryTokens) {
-      if (sender.includes(token)) score += 2;
-      if (body.includes(token)) score += 1;
+    if (focusOnly) {
+      for (const token of queryTokens) {
+        if (questionTokens.has(token)) continue;
+        if (sender.includes(token)) score += 4;
+        if (body.includes(token)) score += 2;
+      }
+    } else {
+      for (const token of summaryTokens) {
+        if (sender.includes(token)) score += 2;
+        if (body.includes(token)) score += 1;
+      }
     }
     return { message, index, score };
   });
@@ -186,7 +164,8 @@ export function selectRelevantMessages(
     .slice(0, max)
     .map((entry) => entry.message);
   const byKey = new Map<string, AiSummaryMessage>();
-  for (const message of [...pasteMatches, ...top, ...newest])
+  // Focus/paste first so callers that take a prefix still keep the asked point.
+  for (const message of [...pasteMatches, ...focusMatches, ...top, ...newest])
     byKey.set(messageKey(message), message);
   return [...byKey.values()].sort((a, b) => a.at - b.at);
 }
