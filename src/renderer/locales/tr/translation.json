@@ -982,7 +982,8 @@
       "sending": "{{name}} gönderiliyor…",
       "tooltip": "Bu LXMF doğrudan mesajında dosya veya fotoğraf gönderin (yerel ek — rncp değil). En fazla {{count}} dosya, toplam {{limitKib}} KiB. Fotoğraflar yeniden boyutlandırılır ve meta veriler kaldırılır.",
       "transfersAria": "Gönderilen ekler"
-    }
+    },
+    "sendLater": "Sonra Gönder"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

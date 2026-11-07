@@ -982,7 +982,8 @@
       "sending": "{{name}} wordt verzonden…",
       "tooltip": "Bestanden of een foto in dit LXMF-directbericht verzenden (native bijlage — geen rncp). Tot {{count}} bestanden, {{limitKib}} KiB totaal. Foto’s worden verkleind en metadata verwijderd.",
       "transfersAria": "Bijlagen worden verzonden"
-    }
+    },
+    "sendLater": "Later verzenden"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

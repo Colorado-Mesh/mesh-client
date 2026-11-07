@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
@@ -12,6 +12,10 @@ const HOUR = 60 * 60 * 1000;
 
 beforeEach(async () => {
   await i18n.changeLanguage('en');
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('ScheduledSendDialog', () => {
@@ -74,6 +78,9 @@ describe('ScheduledSendDialog', () => {
   });
 
   it('applies presets and lets edit mode change the text', async () => {
+    // Freeze time so preset fill, validation, and expectation share one clock.
+    const frozenNow = Date.parse('2026-06-15T12:00:00.000Z');
+    vi.useFakeTimers({ now: frozenNow });
     const onConfirm = vi
       .fn<(r: { text: string; scheduledAt: number }) => Promise<boolean>>()
       .mockResolvedValue(true);
@@ -91,11 +98,12 @@ describe('ScheduledSendDialog', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'In 15 minutes' }));
     const input = screen.getByLabelText<HTMLInputElement>('Send at');
-    expect(input.value).toBe(toDateTimeLocalValue(Date.now() + 15 * 60_000));
+    expect(input.value).toBe(toDateTimeLocalValue(frozenNow + 15 * 60_000));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => {
-      expect(onConfirm).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await Promise.resolve();
     });
+    expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm.mock.calls[0][0].text).toBe('new text');
   });
 

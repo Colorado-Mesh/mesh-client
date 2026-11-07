@@ -1016,7 +1016,8 @@
       "sending": "Wysyłanie {{name}}…",
       "tooltip": "Wyślij pliki lub zdjęcie w tej wiadomości bezpośredniej LXMF (natywny załącznik — nie rncp). Do {{count}} plików, łącznie {{limitKib}} KiB. Zdjęcia są skalowane i metadane usuwane.",
       "transfersAria": "Wysyłane załączniki"
-    }
+    },
+    "sendLater": "Wyślij później"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

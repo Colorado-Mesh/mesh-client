@@ -982,7 +982,8 @@
       "sending": "{{name}} wird gesendet…",
       "tooltip": "Dateien oder ein Foto in dieser LXMF-Direktnachricht senden (nativer Anhang — nicht rncp). Bis zu {{count}} Dateien, insgesamt {{limitKib}} KiB. Fotos werden verkleinert und Metadaten entfernt.",
       "transfersAria": "Anhänge werden gesendet"
-    }
+    },
+    "sendLater": "Später senden"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

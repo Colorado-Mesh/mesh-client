@@ -982,7 +982,8 @@
       "sending": "{{name}} 전송 중…",
       "tooltip": "이 LXMF DM에서 파일 또는 사진을 보냅니다(네이티브 첨부 — rncp 아님). 최대 {{count}}개 파일, 총 {{limitKib}} KiB. 사진은 크기 조정되고 메타데이터가 제거됩니다.",
       "transfersAria": "전송 중인 첨부"
-    }
+    },
+    "sendLater": "나중에 보냄( l)"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

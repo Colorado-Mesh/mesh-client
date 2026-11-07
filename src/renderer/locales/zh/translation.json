@@ -982,7 +982,8 @@
       "sending": "正在发送 {{name}}…",
       "tooltip": "在此 LXMF 私信中发送文件或照片（原生附件 — 非 rncp）。最多 {{count}} 个文件，共 {{limitKib}} KiB。照片会缩放并去除元数据。",
       "transfersAria": "正在发送的附件"
-    }
+    },
+    "sendLater": "稍后发送"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
