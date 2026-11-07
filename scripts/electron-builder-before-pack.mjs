@@ -30,6 +30,11 @@ export function stageOptionalAiHelper(root, platform) {
     );
     return;
   }
+  if (!existsSync(path.join(staged, 'mesh-ai-mlx'))) {
+    console.warn(
+      '[beforePack] Optional MLX helper missing; Apple Silicon MLX Catch up will be unavailable.',
+    );
+  }
   cpSync(staged, active, { recursive: true });
 }
 

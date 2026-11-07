@@ -13,8 +13,8 @@ export interface AiWorkerGenerateOptions {
   keepAlive?: boolean;
 }
 
-// Wllama forwards these llama.cpp wire names unchanged; its v3 types use older names.
-const sampling = { repeat_penalty: 1.1, repeat_last_n: 64 };
+// Wllama v3 SamplingParams names (llama-server completion JSON).
+const sampling = { penalty_repeat: 1.1, penalty_last_n: 64 };
 
 /**
  * Comfort floor for bundled Catch up WASM threads (not a wall-clock guarantee;
@@ -22,6 +22,12 @@ const sampling = { repeat_penalty: 1.1, repeat_last_n: 64 };
  * budget is lower. See docs/development/ai-summarization.md for calibration notes.
  */
 export const AI_BUNDLED_RECOMMENDED_MIN_THREADS = 6;
+
+/**
+ * WASM context tokens. Sized above the on-device prompt byte budget so chat
+ * templates, system framing, and structured finals still fit after tokenization.
+ */
+export const AI_BUNDLED_N_CTX = 8192;
 
 /**
  * Thread count for bundled CPU WASM. Multi-thread needs SharedArrayBuffer
@@ -116,7 +122,17 @@ export class AiWorkerHost {
               debug: quiet,
               log: quiet,
               warn: quiet,
-              error: () => {
+              error: (...args: unknown[]) => {
+                const head = typeof args[0] === 'string' ? args[0] : '';
+                // Inference failures log then throw WllamaError; racing failRuntime
+                // would mask them as engineNotReady ("OS AI / download a model").
+                if (
+                  head.includes('Model returned an error') ||
+                  head.includes('Failed to parse JSON')
+                ) {
+                  console.warn('[Catch up] wllama inference error');
+                  return;
+                }
                 this.failRuntime();
               },
             },
@@ -131,12 +147,16 @@ export class AiWorkerHost {
         signal.throwIfAborted();
         await raced(
           runtime.loadModel([blob], {
-            n_ctx: 4096,
+            n_ctx: AI_BUNDLED_N_CTX,
             n_threads: bundledWllamaThreadCount(),
             n_gpu_layers: 0,
             n_parallel: 1,
             n_batch: 128,
             n_ubatch: 128,
+            // Qwen3 (and similar) default to thinking; disable so Catch up stays in n_ctx.
+            jinja: true,
+            reasoning: false,
+            default_template_kwargs: { enable_thinking: false },
           }),
         );
         console.debug(
@@ -166,6 +186,7 @@ export class AiWorkerHost {
           top_p: 0.9,
           stream: true,
           abortSignal: signal,
+          chat_template_kwargs: { enable_thinking: false },
           onData: (chunk) => {
             signal.throwIfAborted();
             const delta = chunk.choices[0]?.delta.content;

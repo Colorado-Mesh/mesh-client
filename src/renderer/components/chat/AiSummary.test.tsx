@@ -26,6 +26,9 @@ const create = (): ConversationSummaryController & {
   cancel: vi.fn(),
   dismiss: vi.fn(),
   pending: false,
+  followUpPending: false,
+  askFollowUp: vi.fn(),
+  cancelFollowUp: vi.fn(),
   state: {
     requestId: 'id',
     text: 'Synthetic summary',
@@ -172,6 +175,46 @@ describe('AI catch up controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(summary.cancel).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Regenerate' })).toBeNull();
+  });
+  it('hides the Ask form while the summary is streaming or errored', () => {
+    const streaming = { ...create(), pending: true };
+    streaming.state.streaming = true;
+    const { rerender } = render(<ChatSummaryCard summary={streaming} />);
+    expect(screen.queryByLabelText('Ask a follow-up question')).toBeNull();
+    const errored = create();
+    errored.state.error = 'timeout';
+    errored.state.text = '';
+    rerender(<ChatSummaryCard summary={errored} />);
+    expect(screen.queryByLabelText('Ask a follow-up question')).toBeNull();
+  });
+  it('submits a follow-up question and renders streaming turns with cancel', async () => {
+    const summary = create();
+    summary.state.followUpContext = { messages: [], limited: true };
+    const { container, rerender } = render(<ChatSummaryCard summary={summary} />);
+    const input = screen.getByLabelText('Ask a follow-up question');
+    expect(input).toHaveAttribute('maxLength', '500');
+    fireEvent.change(input, { target: { value: '  How?  ' } });
+    fireEvent.submit(input.closest('form')!);
+    expect(summary.askFollowUp).toHaveBeenCalledWith('How?');
+    expect(screen.getByText(/This answer uses only the summary/)).toBeInTheDocument();
+
+    const pending = create();
+    pending.followUpPending = true;
+    pending.state.followUps = [
+      {
+        id: 'turn-1',
+        question: 'How?',
+        answer: '',
+        streaming: true,
+      },
+    ];
+    rerender(<ChatSummaryCard summary={pending} />);
+    expect(screen.getByText('How?')).toBeInTheDocument();
+    expect(screen.getByText('Answering…')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel follow-up' }));
+    expect(pending.cancelFollowUp).toHaveBeenCalledWith('turn-1');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

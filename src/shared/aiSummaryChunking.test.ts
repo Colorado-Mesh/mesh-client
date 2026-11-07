@@ -11,6 +11,9 @@ function msgs(count: number, body = 'hello mesh'): AiSummaryMessage[] {
   }));
 }
 
+/** Long enough that ~200 rows exceed the on-device 12 KiB prompt ceiling. */
+const DENSE_BODY = 'Short radio note about batteries, north ridge coverage, and evening net plans.';
+
 describe('aiSummaryChunking', () => {
   it('keeps a small conversation in one chunk', () => {
     const chunks = packAiSummaryChunks(msgs(5), 'os');
@@ -19,20 +22,23 @@ describe('aiSummaryChunking', () => {
   });
 
   it('splits a large conversation for on-device budgets', () => {
-    const chunks = packAiSummaryChunks(msgs(200, 'short'), 'os');
+    const messages = msgs(200, DENSE_BODY);
+    const chunks = packAiSummaryChunks(messages, 'os');
     expect(chunks.length).toBeGreaterThan(1);
-    expect(needsMultiPass(msgs(200, 'short'), 'os')).toBe(true);
+    expect(needsMultiPass(messages, 'os')).toBe(true);
     expect(chunks.reduce((n, c) => n + c.length, 0)).toBe(200);
   });
 
   it('uses fewer chunks for endpoint engines', () => {
-    const onDevice = packAiSummaryChunks(msgs(200, 'short'), 'bundled');
-    const endpoint = packAiSummaryChunks(msgs(200, 'short'), 'local');
+    const messages = msgs(200, DENSE_BODY);
+    const onDevice = packAiSummaryChunks(messages, 'bundled');
+    const endpoint = packAiSummaryChunks(messages, 'local');
+    expect(onDevice.length).toBeGreaterThan(1);
     expect(endpoint.length).toBeLessThan(onDevice.length);
   });
 
   it('packs digests for reduce passes', () => {
-    const digests = Array.from({ length: 40 }, (_, i) => `Digest facts ${i} `.repeat(8));
+    const digests = Array.from({ length: 80 }, (_, i) => `Digest facts ${i} `.repeat(20));
     const batches = packAiDigestChunks(digests, 'os');
     expect(batches.length).toBeGreaterThan(1);
   });

@@ -8106,7 +8106,22 @@
     "maxCollectedMessagesHint": "Maksymalna liczba wiadomości, które może zebrać jedna osoba do nadrobienia zaległości (100–5000). Domyślnie 2000. Wyższe wartości trwają dłużej i mogą wymagać większego limitu czasu.",
     "capacityHint": "Około {{count}} typowych wiadomości siatkowych pasuje do jednego przejścia wnioskowania w tym silniku (najpierw nowsze). Nadrabianie zaległości pozwala przetworzyć do {{ceiling}} wiadomości za pomocą wielu przejść. Dłuższe wiadomości zużywają więcej z każdego przejścia. Duże zasięgi wymagają dłuższego czasu oczekiwania.",
     "capacityHintChooseEngine": "Wbudowana sztuczna inteligencja systemu operacyjnego i pobrane modele pasują do około {{onDevice}} typowych wiadomości na przejazd; lokalny lub zdalny serwer około {{endpoint}}. Nadrabianie zaległości może pokryć do {{ceiling}} wiadomości za pomocą wielu przepustek. Zwiększ limit komunikatów i limit czasu dla zajętych siatek.",
-    "lowThreadBudgetWarning": "To urządzenie ma tylko {{count}} nadrobić zaległości w wątkach WASM. Podsumowania pobranych modeli zwykle potrzebują około 6 lub więcej, aby działać dobrze i potrwa to dłużej. Preferuj inny silnik lub zwiększ limit czasu poniżej."
+    "lowThreadBudgetWarning": "To urządzenie ma tylko {{count}} nadrobić zaległości w wątkach WASM. Podsumowania pobranych modeli zwykle potrzebują około 6 lub więcej, aby działać dobrze i potrwa to dłużej. Preferuj inny silnik lub zwiększ limit czasu poniżej.",
+    "followUps": "Pytania następcze",
+    "followUpQuestion": "Zadaj pytanie uzupełniające",
+    "followUpPlaceholder": "Zapytaj o to podsumowanie, np. jak?",
+    "askFollowUp": "Zapytaj",
+    "followUpWorking": "Odbieranie…",
+    "followUpQueued": "Oczekiwanie na zakończenie bieżącego podsumowania…",
+    "cancelFollowUp": "Anuluj działania następcze",
+    "followUpContextLimited": "Ta odpowiedź wykorzystuje tylko podsumowanie i zachowane dla niego komunikaty źródłowe. Niektóre starsze szczegóły mogą być niedostępne.",
+    "modelRecommendQuality": "Polecane ze względu na jakość",
+    "modelRecommendFasterMachines": "Szybciej dla wolniejszych maszyn",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — szybsze nadrabianie zaległości na tym komputerze Mac",
+    "modelRuntimeCpu": "Procesor (przenośny)",
+    "unusedDownloads": "Nieużywane pliki do pobrania",
+    "unusedDownloadsHint": "Modeli tych nie ma już w katalogu (na przykład po aktualizacji), ale nadal wykorzystują miejsce na dysku. Usuń je, jeśli nie są potrzebne.",
+    "unusedDownloadRetired": "Nie ma już w katalogu"
   },
   "chatOrder": {
     "title": "Zmień kolejność czatów",

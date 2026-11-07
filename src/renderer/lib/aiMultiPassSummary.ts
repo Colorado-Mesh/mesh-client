@@ -7,7 +7,11 @@ import type {
   AiSummaryPassMode,
   AiSummaryRequest,
 } from '@/shared/ai-types';
-import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
+import {
+  AI_MAX_RESPONSE_BYTES,
+  aiSummaryTimeoutMs,
+  resolveAiSummaryFinalStyle,
+} from '@/shared/ai-types';
 import {
   type AiSummaryPromptContext,
   packAiDigestChunks,
@@ -33,6 +37,7 @@ export interface MultiPassCallbacks {
   /** Final pass: stream chunks onto the card, then resolve when done. */
   waitForStreamingRemoteDone: (
     requestId: string,
+    onChunk?: (delta: string) => void,
   ) => Promise<{ text: string; messageCount: number }>;
   /** Drop a waiter when main returns a bundled localJob instead of streaming. */
   cancelRemoteWaiter: (requestId: string) => void;
@@ -43,7 +48,14 @@ export function shouldUseMultiPass(
   engine: AiEngine,
   context: Partial<AiSummaryPromptContext> = {},
 ): boolean {
-  return packAiSummaryChunks(messages, engine, { ...context, mode: 'final' }).length > 1;
+  const finalStyle = resolveAiSummaryFinalStyle(messages.length, false);
+  return (
+    packAiSummaryChunks(messages, engine, {
+      ...context,
+      mode: 'final',
+      finalStyle,
+    }).length > 1
+  );
 }
 
 function raceAbort<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -88,7 +100,19 @@ async function runLocalJob(
   return text;
 }
 
-async function executePass(
+export interface ExecutePassOptions {
+  /**
+   * When true (default), truncated prompts or partial inclusion throw `tooLarge`.
+   * Follow-ups intentionally send a subset and may truncate further — pass false.
+   */
+  requireFullCoverage?: boolean;
+}
+
+/**
+ * One summarize acknowledge → localJob or remote stream cycle.
+ * Shared by multi-pass Catch up and follow-up questions.
+ */
+export async function executePass(
   request: AiSummaryRequest,
   signal: AbortSignal,
   host: AiWorkerHost | null,
@@ -96,12 +120,16 @@ async function executePass(
   callbacks: MultiPassCallbacks,
   keepAlive: boolean,
   timeoutMs: number,
+  options: ExecutePassOptions = {},
 ): Promise<{ text: string; messageCount: number; truncated: boolean; host: AiWorkerHost | null }> {
+  const requireFullCoverage = options.requireFullCoverage !== false;
   signal = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]);
   signal.throwIfAborted();
   // Register before summarize so remote done/chunk events cannot race the waiter.
   const remoteDone = stream
-    ? callbacks.waitForStreamingRemoteDone(request.requestId)
+    ? callbacks.waitForStreamingRemoteDone(request.requestId, (delta) => {
+        callbacks.onFinalDelta(delta);
+      })
     : callbacks.waitForSilentRemoteDone(request.requestId);
   void remoteDone.catch(() => {
     /* catch-no-log-ok waiter may reject while acknowledgement is pending */
@@ -115,7 +143,10 @@ async function executePass(
     if (!result.ok) throw new Error(result.reason ?? 'error');
     const messageCount = result.summaryInput?.messageCount ?? result.localJob?.messageCount;
     const truncated = result.summaryInput?.truncated ?? result.localJob?.truncated ?? false;
-    if (truncated || (messageCount !== undefined && messageCount !== request.messages.length))
+    if (
+      requireFullCoverage &&
+      (truncated || (messageCount !== undefined && messageCount !== request.messages.length))
+    )
       throw new Error('tooLarge');
     if (result.localJob) {
       callbacks.cancelRemoteWaiter(request.requestId);
@@ -133,8 +164,10 @@ async function executePass(
         if (stream) callbacks.onFinalText(text);
         return {
           text,
-          messageCount: request.messages.length,
-          truncated: false,
+          messageCount: requireFullCoverage
+            ? request.messages.length
+            : (messageCount ?? request.messages.length),
+          truncated: requireFullCoverage ? false : truncated,
           host: keepAlive ? nextHost : null,
         };
       } catch (error) {
@@ -143,10 +176,16 @@ async function executePass(
       }
     }
     const done = await raceAbort(remoteDone, signal);
-    if (done.messageCount !== request.messages.length) throw new Error('tooLarge');
+    if (requireFullCoverage && done.messageCount !== request.messages.length)
+      throw new Error('tooLarge');
     if (!done.text.trim()) throw new Error('invalidResponse');
     if (stream) callbacks.onFinalText(done.text);
-    return { text: done.text, messageCount: done.messageCount, truncated: false, host };
+    return {
+      text: done.text,
+      messageCount: done.messageCount,
+      truncated: requireFullCoverage ? false : truncated,
+      host,
+    };
   } finally {
     callbacks.cancelRemoteWaiter(request.requestId);
     if (signal.aborted) {
@@ -175,7 +214,7 @@ export async function runMultiPassSummary(input: {
   status: AiProviderStatus;
   signal: AbortSignal;
   callbacks: MultiPassCallbacks;
-}): Promise<{ messageCount: number; truncated: boolean }> {
+}): Promise<{ messageCount: number; truncated: boolean; digests: string[] }> {
   const engine = input.status.engine;
   if (!engine) throw new Error('notConfigured');
   const jobId = crypto.randomUUID();
@@ -273,7 +312,7 @@ export async function runMultiPassSummary(input: {
     );
     host = null;
     anyTruncated = anyTruncated || final.truncated;
-    return { messageCount: input.messages.length, truncated: anyTruncated };
+    return { messageCount: input.messages.length, truncated: anyTruncated, digests: level };
   } catch (error) {
     await host?.dispose().catch(() => {
       /* catch-no-log-ok */

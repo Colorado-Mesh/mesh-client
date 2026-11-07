@@ -15,6 +15,8 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   main: path.join(projectRoot, 'dist-electron/main/index.js'),
   preload: path.join(projectRoot, 'dist-electron/preload/index.js'),
   translation: path.join(projectRoot, 'dist-electron/main/translation-worker.js'),
+  summaryPrompt: path.join(projectRoot, 'dist-electron/main/ai-summary-prompt.js'),
+  followUpPrompt: path.join(projectRoot, 'dist-electron/main/ai-follow-up-prompt.js'),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */

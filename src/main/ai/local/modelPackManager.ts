@@ -6,7 +6,13 @@ import path from 'node:path';
 import type { AiActionResult, AiModelInfo, AiModelProgress } from '../../../shared/ai-types';
 import { MS_PER_MINUTE } from '../../../shared/timeConstants';
 import { sanitizeLogMessage } from '../../sanitize-log-message';
-import { AI_LOCAL_MODELS, type AiLocalAsset, type AiLocalModel } from './modelManifest';
+import {
+  AI_LOCAL_MODELS,
+  type AiLocalAsset,
+  type AiLocalModel,
+  isAppleSiliconMac,
+  isCatalogPackAvailable,
+} from './modelManifest';
 
 interface InstallJob {
   abort: AbortController;
@@ -22,6 +28,8 @@ export interface PackManagerDependencies {
   manifest?: AiLocalModel[];
   timeoutMs?: number;
   openHashStream?: (file: string) => AsyncIterable<Uint8Array>;
+  platform?: NodeJS.Platform;
+  arch?: NodeJS.Architecture;
 }
 
 /** No constructor I/O. Installs publish a complete verified directory in one rename. */
@@ -165,18 +173,61 @@ export class AiModelPackManager {
     return valid;
   }
 
-  async list(): Promise<AiModelInfo[]> {
-    return Promise.all(
-      this.manifest.map(async (pack) => ({
-        id: pack.id,
-        name: pack.name,
-        paramsLabel: pack.paramsLabel,
-        license: pack.license,
-        downloadBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
-        diskBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
-        installed: await this.verify(pack.id, true),
-      })),
+  private hostPlatform(): NodeJS.Platform {
+    return this.deps.platform ?? process.platform;
+  }
+
+  private hostArch(): NodeJS.Architecture {
+    return this.deps.arch ?? process.arch;
+  }
+
+  /** Packs offered on this host (MLX only on Apple Silicon). */
+  visibleManifest(): AiLocalModel[] {
+    return this.manifest.filter((pack) =>
+      isCatalogPackAvailable(pack, this.hostPlatform(), this.hostArch()),
     );
+  }
+
+  packDirectory(id: string): string {
+    this.pack(id);
+    return path.join(this.deps.directory(), id);
+  }
+
+  async list(): Promise<AiModelInfo[]> {
+    const preferMlx = isAppleSiliconMac(this.hostPlatform(), this.hostArch());
+    const visible = this.visibleManifest();
+    const catalog = await Promise.all(
+      visible.map(async (pack) => {
+        const recommend =
+          pack.recommendAs &&
+          ((preferMlx && pack.runtime === 'mlx') || (!preferMlx && pack.runtime === 'wllama'))
+            ? pack.recommendAs
+            : undefined;
+        return {
+          id: pack.id,
+          name: pack.name,
+          paramsLabel: pack.paramsLabel,
+          license: pack.license,
+          downloadBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
+          diskBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
+          installed: await this.verify(pack.id, true),
+          runtime: pack.runtime,
+          ...(recommend ? { recommendation: recommend } : {}),
+        };
+      }),
+    );
+    catalog.sort((a, b) => {
+      const runtimeRank = (runtime: string | undefined) => (runtime === 'mlx' ? 0 : 1);
+      const recommendRank = (value: string | undefined) =>
+        value === 'quality' ? 0 : value === 'fasterMachines' ? 1 : 2;
+      return (
+        runtimeRank(a.runtime) - runtimeRank(b.runtime) ||
+        recommendRank(a.recommendation) - recommendRank(b.recommendation) ||
+        a.name.localeCompare(b.name)
+      );
+    });
+    const orphans = await this.listOrphans(new Set(this.manifest.map((pack) => pack.id)));
+    return [...catalog, ...orphans];
   }
 
   progress(): AiModelProgress[] {
@@ -225,7 +276,8 @@ export class AiModelPackManager {
   }
 
   async delete(id: string): Promise<void> {
-    this.pack(id);
+    // Catalog packs and retired on-disk orphans share the same id grammar.
+    if (!/^[a-z0-9.-]+$/.test(id)) throw new Error('Unknown ai pack');
     this.jobs.get(id)?.abort.abort();
     const operation = this.tail.then(async () => {
       await fs.rm(path.join(this.deps.directory(), id), { recursive: true, force: true });
@@ -247,6 +299,60 @@ export class AiModelPackManager {
       // catch-no-log-ok caller receives destructive operation failure
     });
     await operation;
+  }
+
+  /** Pack directories left on disk after catalog removals / upgrades. */
+  private async listOrphans(catalogIds: Set<string>): Promise<AiModelInfo[]> {
+    let entries: string[];
+    try {
+      entries = await fs.readdir(this.deps.directory());
+    } catch {
+      // catch-no-log-ok missing models root means nothing to clean up
+      return [];
+    }
+    const orphans: AiModelInfo[] = [];
+    for (const name of entries) {
+      if (name.startsWith('.') || catalogIds.has(name) || !/^[a-z0-9.-]+$/.test(name)) continue;
+      const packDir = path.join(this.deps.directory(), name);
+      try {
+        const stat = await fs.lstat(packDir);
+        if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+        const diskBytes = await this.directoryByteSize(packDir);
+        if (diskBytes <= 0) continue;
+        orphans.push({
+          id: name,
+          name: name,
+          paramsLabel: '—',
+          license: '—',
+          downloadBytes: diskBytes,
+          diskBytes,
+          installed: true,
+          orphan: true,
+        });
+      } catch {
+        // catch-no-log-ok skip unreadable entries while listing orphans
+      }
+    }
+    orphans.sort((a, b) => a.id.localeCompare(b.id));
+    return orphans;
+  }
+
+  private async directoryByteSize(directory: string): Promise<number> {
+    let total = 0;
+    const stack = [directory];
+    while (stack.length) {
+      const current = stack.pop();
+      if (!current) break;
+      const children = await fs.readdir(current);
+      for (const child of children) {
+        const full = path.join(current, child);
+        const stat = await fs.lstat(full);
+        if (stat.isSymbolicLink()) continue;
+        if (stat.isDirectory()) stack.push(full);
+        else if (stat.isFile()) total += stat.size;
+      }
+    }
+    return total;
   }
 
   private emit(job: InstallJob): void {

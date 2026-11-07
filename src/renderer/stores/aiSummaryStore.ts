@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { retainFollowUpMessages } from '@/renderer/lib/aiFollowUpContext';
 import {
   type MultiPassProgress,
   runMultiPassSummary,
@@ -13,6 +14,7 @@ import type {
   AiActionResult,
   AiProviderStatus,
   AiSummaryErrorReason,
+  AiSummaryMessage,
   AiSummaryRequest,
   AiSummaryScope,
 } from '@/shared/ai-types';
@@ -21,6 +23,17 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** UI status while a summary is pending; `queued` is renderer-only (FIFO wait). */
 export type AiSummaryPhase = AiWorkerPhase | 'queued' | 'chunking' | 'merging';
+
+export interface AiFollowUpTurnState {
+  id: string;
+  question: string;
+  answer: string;
+  streaming: boolean;
+  queued?: boolean;
+  phase?: AiWorkerPhase;
+  error?: AiSummaryErrorReason;
+  truncated?: boolean;
+}
 
 export interface ConversationSummary {
   requestId: string;
@@ -37,6 +50,19 @@ export interface ConversationSummary {
   ceilingTruncated?: boolean;
   error?: AiSummaryErrorReason;
   disclosure: string;
+  /** Base request fields retained so follow-ups do not need to re-plumb the hook. */
+  followUpBase?: Pick<
+    AiSummaryRequest,
+    'conversationLabel' | 'protocol' | 'surface' | 'locale' | 'scope'
+  >;
+  /** Source context retained for follow-ups (session memory only). */
+  followUpContext?: {
+    messages?: AiSummaryMessage[];
+    digests?: string[];
+    limited: boolean;
+  };
+  /** Completed follow-up turns, oldest first. */
+  followUps?: AiFollowUpTurnState[];
 }
 interface AiState {
   status: AiProviderStatus | null;
@@ -48,6 +74,8 @@ interface AiState {
   setStatus: (status: AiProviderStatus) => void;
 }
 const controllers = new Map<string, AbortController>();
+/** turn id -> abort controller for follow-up answers. */
+const followUpControllers = new Map<string, AbortController>();
 let queueTail: Promise<void> | undefined;
 let revision = 0;
 let unsubscribe: (() => void) | undefined;
@@ -60,9 +88,17 @@ interface RemoteWaiter {
   resolve: (value: { text: string; messageCount: number }) => void;
   reject: (reason?: unknown) => void;
   silent: boolean;
+  onChunk?: (delta: string) => void;
 }
 /** Remote pass waiters (silent map/reduce or streaming final). */
 const remoteWaiters = new Map<string, RemoteWaiter>();
+
+function abortAllFollowUps(): void {
+  for (const controller of followUpControllers.values())
+    controller.abort(new DOMException('Follow-up cancelled', 'AbortError'));
+  followUpControllers.clear();
+}
+
 export function getAiSummaryRevision(): number {
   return revision;
 }
@@ -80,6 +116,7 @@ export const useAiSummaryStore = create<AiState>((set) => ({
     revision++;
     for (const controller of controllers.values()) controller.abort();
     controllers.clear();
+    abortAllFollowUps();
     if (!status.enabled) unsubscribe?.();
     set({ status, summaries: {} });
     mergeAppSettingsPartial({ aiEnabled: status.enabled }, 'AI settings');
@@ -91,6 +128,23 @@ function patch(key: string, id: string, update: Partial<ConversationSummary>) {
       ? { summaries: { ...state.summaries, [key]: { ...state.summaries[key], ...update } } }
       : {},
   );
+}
+function patchFollowUp(key: string, id: string, update: Partial<AiFollowUpTurnState>) {
+  useAiSummaryStore.setState((state) => {
+    const entry = state.summaries[key];
+    if (!entry?.followUps?.some((turn) => turn.id === id)) return {};
+    return {
+      summaries: {
+        ...state.summaries,
+        [key]: {
+          ...entry,
+          followUps: entry.followUps.map((turn) =>
+            turn.id === id ? { ...turn, ...update } : turn,
+          ),
+        },
+      },
+    };
+  });
 }
 export function subscribeAiEvents(): void {
   if (unsubscribe) return;
@@ -104,6 +158,10 @@ export function subscribeAiEvents(): void {
     api.onSummaryChunk((value) => {
       const waiter = remoteWaiters.get(value.requestId);
       if (waiter?.silent) return;
+      if (waiter?.onChunk) {
+        waiter.onChunk(value.delta);
+        return;
+      }
       const key = keyFor(value.requestId);
       if (key) {
         const current = useAiSummaryStore.getState().summaries[key];
@@ -115,7 +173,9 @@ export function subscribeAiEvents(): void {
       const waiter = remoteWaiters.get(value.requestId);
       if (waiter) {
         remoteWaiters.delete(value.requestId);
-        if (!waiter.silent && ownerKey) {
+        // Callback-driven streams (onChunk) own UI updates via onFinalText — do not
+        // clobber ConversationSummary.text (follow-ups must never overwrite Catch up).
+        if (!waiter.silent && !waiter.onChunk && ownerKey) {
           const currentId = useAiSummaryStore.getState().summaries[ownerKey]?.requestId;
           if (currentId)
             patch(ownerKey, currentId, {
@@ -179,10 +239,11 @@ function waitForRemotePassDone(
   requestId: string,
   conversationKey: string,
   silent: boolean,
+  onChunk?: (delta: string) => void,
 ): Promise<{ text: string; messageCount: number }> {
   passOwners.set(requestId, conversationKey);
   return new Promise((resolve, reject) => {
-    remoteWaiters.set(requestId, { resolve, reject, silent });
+    remoteWaiters.set(requestId, { resolve, reject, silent, onChunk });
   });
 }
 
@@ -300,12 +361,19 @@ export function cancelSummary(key: string): void {
   const entry = useAiSummaryStore.getState().summaries[key];
   if (!entry) return;
   controllers.get(key)?.abort();
+  for (const turn of entry.followUps ?? []) {
+    if (turn.streaming) cancelFollowUp(key, turn.id);
+  }
   patch(key, entry.requestId, { streaming: false, error: 'cancelled' });
   void window.electronAPI.ai.cancel(entry.requestId).catch(() => {
     // catch-no-log-ok local cancellation already invalidated the result
   });
 }
 export function dismissSummary(key: string): void {
+  const entry = useAiSummaryStore.getState().summaries[key];
+  for (const turn of entry?.followUps ?? []) {
+    if (turn.streaming) cancelFollowUp(key, turn.id);
+  }
   cancelSummary(key);
   useAiSummaryStore.setState((state) => {
     const summaries = Object.fromEntries(
@@ -314,6 +382,63 @@ export function dismissSummary(key: string): void {
     return { summaries };
   });
 }
+
+/** Abort one follow-up turn without clearing the Catch up summary text. */
+export function cancelFollowUp(key: string, id: string): void {
+  const controller = followUpControllers.get(id);
+  if (!controller) return;
+  followUpControllers.delete(id);
+  controller.abort(new DOMException('Follow-up cancelled', 'AbortError'));
+  patchFollowUp(key, id, {
+    streaming: false,
+    queued: false,
+    phase: undefined,
+    error: 'cancelled',
+  });
+  void window.electronAPI.ai.cancel(id).catch(() => {
+    // catch-no-log-ok local state already reflects cancellation
+  });
+}
+/** Map thrown/abort failures to `AiSummaryErrorReason` without retaining conversation text. */
+export function mapAiError(
+  error: unknown,
+  signal: AbortSignal,
+  abortReason: () => AiSummaryErrorReason,
+): AiSummaryErrorReason {
+  if (signal.aborted) return abortReason();
+  if (error instanceof DOMException && error.name === 'TimeoutError') return 'timeout';
+  if (error instanceof RepetitiveAiOutputError) return 'repetitiveOutput';
+  if (error instanceof Error) {
+    const message = error.message;
+    if (
+      [
+        'disabled',
+        'noMessages',
+        'notConfigured',
+        'engineNotReady',
+        'remoteNotAcknowledged',
+        'rateLimited',
+        'busy',
+        'timeout',
+        'tooLarge',
+        'httpError',
+        'invalidResponse',
+        'cancelled',
+      ].includes(message)
+    )
+      return message as AiSummaryErrorReason;
+    const lower = message.toLowerCase();
+    // wllama / llama-server when the tokenized prompt does not fit n_ctx
+    if (
+      (lower.includes('exceed') && lower.includes('context')) ||
+      lower.includes('kv_cache_full') ||
+      lower.includes('exceed_context_size')
+    )
+      return 'tooLarge';
+  }
+  return 'error';
+}
+
 export async function runSummary(
   key: string,
   request: AiSummaryRequest,
@@ -325,11 +450,22 @@ export async function runSummary(
   const status = useAiSummaryStore.getState().status;
   if (!aiReady(status) || !status) return;
   subscribeAiEvents();
+  const existing = useAiSummaryStore.getState().summaries[key];
+  for (const turn of existing?.followUps ?? []) {
+    if (turn.streaming) cancelFollowUp(key, turn.id);
+  }
   const before = revision;
   const id = request.requestId;
   let disclosure = '';
   if (status.engine === 'local' || status.engine === 'remote')
     disclosure = new URL(status.baseUrl).host;
+  const followUpBase: ConversationSummary['followUpBase'] = {
+    conversationLabel: request.conversationLabel,
+    protocol: request.protocol,
+    surface: request.surface,
+    locale: request.locale,
+    scope: request.scope,
+  };
   const entry: ConversationSummary = {
     requestId: id,
     text: '',
@@ -341,6 +477,8 @@ export async function runSummary(
     truncated: historyTruncated || ceilingTruncated,
     ceilingTruncated,
     disclosure,
+    followUpBase,
+    followUps: [],
   };
   useAiSummaryStore.setState((state) => ({
     summaries: {
@@ -470,9 +608,9 @@ export async function runSummary(
               activePassIds.delete(requestId);
             });
           },
-          waitForStreamingRemoteDone: (requestId) => {
+          waitForStreamingRemoteDone: (requestId, onChunk) => {
             activePassIds.add(requestId);
-            return waitForRemotePassDone(requestId, key, false).finally(() => {
+            return waitForRemotePassDone(requestId, key, false, onChunk).finally(() => {
               activePassIds.delete(requestId);
             });
           },
@@ -483,12 +621,18 @@ export async function runSummary(
         },
       });
       signal.throwIfAborted();
+      const retained = retainFollowUpMessages(request.messages);
       patch(key, id, {
         messageCount: result.messageCount,
-        truncated: result.truncated || historyTruncated || ceilingTruncated,
+        truncated: result.truncated || historyTruncated || ceilingTruncated || retained.clipped,
         streaming: false,
         progress: null,
         phase: undefined,
+        followUpContext: {
+          digests: result.digests,
+          messages: retained.messages,
+          limited: result.truncated || historyTruncated || ceilingTruncated || retained.clipped,
+        },
         ...(!useAiSummaryStore.getState().summaries[key]?.text.trim()
           ? { error: 'invalidResponse' as const }
           : {}),
@@ -517,12 +661,27 @@ export async function runSummary(
       patch(key, id, { error: result.reason as AiSummaryErrorReason, streaming: false });
       return;
     }
-    if (result.summaryInput) {
-      patch(key, id, {
-        messageCount: result.summaryInput.messageCount,
-        truncated: result.summaryInput.truncated || historyTruncated || ceilingTruncated,
-      });
-    }
+    const retained = retainFollowUpMessages(request.messages);
+    const followUpContextFromSinglePass = (
+      promptTruncated: boolean,
+    ): ConversationSummary['followUpContext'] => ({
+      messages: retained.messages,
+      limited: historyTruncated || ceilingTruncated || retained.clipped || promptTruncated,
+    });
+    // Attach capped context before streaming finishes so Ask never races an empty context.
+    patch(key, id, {
+      ...(result.summaryInput
+        ? {
+            messageCount: result.summaryInput.messageCount,
+            truncated:
+              result.summaryInput.truncated ||
+              historyTruncated ||
+              ceilingTruncated ||
+              retained.clipped,
+          }
+        : {}),
+      followUpContext: followUpContextFromSinglePass(false),
+    });
     if (result.localJob) {
       const job = result.localJob;
       const { AiWorkerHost } = await Promise.race([import('@/renderer/lib/aiWorkerHost'), aborted]);
@@ -532,7 +691,7 @@ export async function runSummary(
       patch(key, id, {
         model: job.model,
         messageCount: job.messageCount,
-        truncated: job.truncated || historyTruncated || ceilingTruncated,
+        truncated: job.truncated || historyTruncated || ceilingTruncated || retained.clipped,
       });
       await host.generate(
         job,
@@ -550,11 +709,17 @@ export async function runSummary(
       patch(key, id, {
         text,
         streaming: false,
+        followUpContext: followUpContextFromSinglePass(job.truncated),
         ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
       });
     } else {
       passOwners.set(id, key);
       await Promise.race([completed, aborted]);
+      const current = useAiSummaryStore.getState().summaries[key];
+      if (current?.requestId === id && !current.error)
+        patch(key, id, {
+          followUpContext: followUpContextFromSinglePass(current.truncated),
+        });
     }
   } catch (error) {
     // catch-no-log-ok never retain runtime error details containing conversation content
@@ -563,29 +728,7 @@ export async function runSummary(
         streaming: false,
         text: '',
         progress: null,
-        error: signal.aborted
-          ? abortReason()
-          : error instanceof DOMException && error.name === 'TimeoutError'
-            ? 'timeout'
-            : error instanceof RepetitiveAiOutputError
-              ? 'repetitiveOutput'
-              : error instanceof Error &&
-                  [
-                    'disabled',
-                    'noMessages',
-                    'notConfigured',
-                    'engineNotReady',
-                    'remoteNotAcknowledged',
-                    'rateLimited',
-                    'busy',
-                    'timeout',
-                    'tooLarge',
-                    'httpError',
-                    'invalidResponse',
-                    'cancelled',
-                  ].includes(error.message)
-                ? (error.message as AiSummaryErrorReason)
-                : 'error',
+        error: mapAiError(error, signal, abortReason),
       });
   } finally {
     signal.removeEventListener('abort', onAbort);
@@ -600,6 +743,24 @@ export async function runSummary(
   }
 }
 
+/** Queue a follow-up about a completed Catch up (lazy-loads the heavy runner). */
+export async function askFollowUp(key: string, question: string): Promise<void> {
+  const { runAskFollowUp } = await import('@/renderer/lib/aiFollowUpRunner');
+  await runAskFollowUp(key, question, {
+    getRevision: () => revision,
+    getQueueTail: () => queueTail,
+    setQueueTail: (tail) => {
+      queueTail = tail;
+    },
+    followUpControllers,
+    patchFollowUp,
+    waitForRemotePassDone,
+    cancelRemoteWaiter,
+    subscribeAiEvents,
+    mapAiError,
+  });
+}
+
 export function disposeAiSummaries(): void {
   stopInitialization?.();
   for (const request of statusRequests) request.abort();
@@ -607,6 +768,7 @@ export function disposeAiSummaries(): void {
   revision++;
   for (const controller of controllers.values()) controller.abort();
   controllers.clear();
+  abortAllFollowUps();
   unsubscribe?.();
   useAiSummaryStore.setState({ summaries: {}, scopes: {} });
 }

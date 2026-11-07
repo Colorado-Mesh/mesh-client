@@ -5,7 +5,9 @@ import path from 'node:path';
 import { ipcMain, net } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AI_ON_DEVICE_MAX_PROMPT_BYTES } from '../../shared/ai-types';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
+import { MlxAiHelper } from '../ai/os/mlxAiHelper';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
 
@@ -77,7 +79,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
@@ -111,7 +113,7 @@ describe('AI IPC lifecycle and opt-in', () => {
     expect(await handler('ai:getStatus')({})).toMatchObject({ enabled: false, engine: null });
     expect(await handler('ai:summarize')({}, request)).toEqual({ ok: false, reason: 'disabled' });
     expect(await handler('ai:listLocalModels')({})).toEqual([]);
-    expect(await handler('ai:installLocalModel')({}, 'llama3.2-1b-instruct-q4')).toEqual({
+    expect(await handler('ai:installLocalModel')({}, 'llama3.2-3b-instruct-q4')).toEqual({
       ok: false,
       reason: 'disabled',
     });
@@ -160,7 +162,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
@@ -180,7 +182,7 @@ describe('AI IPC lifecycle and opt-in', () => {
         engine: 'bundled',
         model: '',
         baseUrl: '',
-        localModelId: 'llama3.2-1b-instruct-q4',
+        localModelId: 'llama3.2-3b-instruct-q4',
       }),
     );
     let finish!: (value: boolean) => void;
@@ -213,14 +215,22 @@ describe('AI IPC lifecycle and opt-in', () => {
       );
       expect(retry).toMatchObject({ ok: true, localJob: { truncated: true } });
       const prompt = (retry as { localJob: { system: string; user: string } }).localJob;
-      expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(3500);
+      expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(
+        AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      );
       finish(true);
       await Promise.resolve();
     } finally {
       verify.mockRestore();
     }
   });
-  it.each(['removed-model', 'qwen2.5-0.5b-instruct-q4', 'smollm2-1.7b-instruct-q4'])(
+  it.each([
+    'removed-model',
+    'qwen2.5-0.5b-instruct-q4',
+    'qwen3-1.7b-instruct-q4',
+    'llama3.2-1b-instruct-q4',
+    'smollm2-1.7b-instruct-q4',
+  ])(
     'reports removed model %s as not ready without verifying an unknown pack',
     async (localModelId) => {
       settings.set('aiEnabled', '1');
@@ -309,6 +319,354 @@ describe('AI IPC lifecycle and opt-in', () => {
     await handler('ai:setEnabled')({}, false);
     await Promise.resolve();
     expect(send.mock.calls.filter(([channel]) => channel === 'ai:summaryDone')).toHaveLength(0);
+  });
+  it('accepts empty messages for a follow-up on the bundled engine', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-3b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          messages: [],
+          followUp: {
+            question: 'How would they expand it?',
+            summary: '• Trashcan13 suggested expanding the mesh.',
+            turns: [],
+            contextKind: 'none',
+          },
+        },
+      );
+      expect(result).toMatchObject({ ok: true });
+      expect((result as { localJob?: { user: string } }).localJob?.user).toContain(
+        'How would they expand it?',
+      );
+    } finally {
+      verify.mockRestore();
+    }
+  });
+  it('rejects a disabled follow-up without starting inference', async () => {
+    expect(
+      await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          messages: [],
+          followUp: {
+            question: 'How?',
+            summary: '• Summary',
+            turns: [],
+            contextKind: 'none',
+          },
+        },
+      ),
+    ).toEqual({ ok: false, reason: 'disabled' });
+  });
+
+  it('clears the selected model when removing it from disk', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-3b-instruct-q4',
+      }),
+    );
+    const remove = vi.spyOn(AiModelPackManager.prototype, 'delete').mockResolvedValue();
+    const listed = [
+      {
+        id: 'llama3.2-3b-instruct-q4',
+        name: 'Llama',
+        paramsLabel: '3B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'MIT',
+        installed: false,
+        runtime: 'wllama' as const,
+      },
+    ];
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue(listed);
+    try {
+      expect(await handler('ai:removeLocalModel')({}, 'llama3.2-3b-instruct-q4')).toEqual(listed);
+      expect(remove).toHaveBeenCalledWith('llama3.2-3b-instruct-q4');
+      expect(JSON.parse(settings.get('aiProviderConfig') ?? '{}')).toMatchObject({
+        engine: 'bundled',
+        localModelId: null,
+      });
+    } finally {
+      remove.mockRestore();
+      list.mockRestore();
+    }
+  });
+
+  it('removes an orphan without clearing the selected engine', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen3-1.7b-instruct-q4',
+        timeoutSeconds: 600,
+      }),
+    );
+    const remove = vi.spyOn(AiModelPackManager.prototype, 'delete').mockResolvedValue();
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue([
+      {
+        id: 'qwen2.5-1.5b-instruct-q4',
+        name: 'Qwen2.5',
+        paramsLabel: '1.5B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'Apache-2.0',
+        installed: true,
+        runtime: 'wllama' as const,
+      },
+    ]);
+    try {
+      const result = await handler('ai:removeLocalModel')({}, 'qwen3-1.7b-instruct-q4');
+      expect(result).toHaveLength(1);
+      expect(JSON.parse(settings.get('aiProviderConfig') ?? '{}')).toEqual(
+        expect.objectContaining({
+          engine: 'bundled',
+          localModelId: null,
+          timeoutSeconds: 600,
+        }),
+      );
+      expect(await handler('ai:getStatus')({})).toMatchObject({
+        engine: 'bundled',
+        timeoutSeconds: 600,
+      });
+    } finally {
+      remove.mockRestore();
+      list.mockRestore();
+    }
+  });
+
+  it('removes retired on-disk packs that are no longer in the catalog', async () => {
+    settings.set('aiEnabled', '1');
+    const remove = vi.spyOn(AiModelPackManager.prototype, 'delete').mockResolvedValue();
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue([]);
+    try {
+      expect(await handler('ai:removeLocalModel')({}, 'llama3.2-1b-instruct-q4')).toEqual([]);
+      expect(remove).toHaveBeenCalledWith('llama3.2-1b-instruct-q4');
+    } finally {
+      remove.mockRestore();
+      list.mockRestore();
+    }
+  });
+
+  it('rejects installing a catalog pack that is unavailable on this host', async () => {
+    settings.set('aiEnabled', '1');
+    const manifest = await import('../ai/local/modelManifest');
+    const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(false);
+    const install = vi.spyOn(AiModelPackManager.prototype, 'install');
+    try {
+      await expect(handler('ai:installLocalModel')({}, 'qwen2.5-1.5b-instruct-q4')).rejects.toThrow(
+        'Invalid AI model',
+      );
+      expect(install).not.toHaveBeenCalled();
+      expect(available).toHaveBeenCalled();
+    } finally {
+      available.mockRestore();
+      install.mockRestore();
+    }
+  });
+
+  it('rejects MLX install and select off Apple Silicon hosts', async () => {
+    settings.set('aiEnabled', '1');
+    const manifest = await import('../ai/local/modelManifest');
+    const available = vi
+      .spyOn(manifest, 'isCatalogPackAvailable')
+      .mockImplementation((pack) => pack.runtime !== 'mlx');
+    const install = vi.spyOn(AiModelPackManager.prototype, 'install');
+    try {
+      await expect(
+        handler('ai:installLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
+      ).rejects.toThrow('Invalid AI model');
+      await expect(
+        handler('ai:selectLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
+      ).rejects.toThrow('Invalid AI model');
+      expect(install).not.toHaveBeenCalled();
+    } finally {
+      available.mockRestore();
+      install.mockRestore();
+    }
+  });
+
+  it('reports MLX readiness engineNotReady when the helper is missing', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen2.5-1.5b-instruct-mlx-4bit',
+      }),
+    );
+    const manifest = await import('../ai/local/modelManifest');
+    const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
+    try {
+      expect(await handler('ai:testConfig')({})).toEqual({ ok: false, reason: 'engineNotReady' });
+      expect(await handler('ai:summarize')({}, request)).toEqual({
+        ok: false,
+        reason: 'engineNotReady',
+      });
+      expect(await handler('ai:getStatus')({})).toMatchObject({
+        localEngine: { ready: false, modelId: 'qwen2.5-1.5b-instruct-mlx-4bit' },
+      });
+    } finally {
+      available.mockRestore();
+      verify.mockRestore();
+      host.mockRestore();
+    }
+  });
+
+  it('streams MLX Catch up through the helper without returning a localJob', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen2.5-1.5b-instruct-mlx-4bit',
+      }),
+    );
+    await fs.mkdir(path.join(fixture.directory, 'ai-models', 'qwen2.5-1.5b-instruct-mlx-4bit'), {
+      recursive: true,
+    });
+    const manifest = await import('../ai/local/modelManifest');
+    const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(true);
+    const probe = vi.spyOn(MlxAiHelper.prototype, 'probe').mockResolvedValue(true);
+    const generate = vi
+      .spyOn(MlxAiHelper.prototype, 'generate')
+      .mockImplementation((_input, _signal, onDelta) => {
+        onDelta('MLX ');
+        onDelta('summary');
+        return Promise.resolve();
+      });
+    try {
+      const result = await handler('ai:summarize')({}, { ...request, requestId: 'mlx-stream' });
+      expect(result).toEqual({
+        ok: true,
+        summaryInput: { messageCount: 1, truncated: false },
+      });
+      expect(result).not.toHaveProperty('localJob');
+      await vi.waitFor(() => {
+        expect(send).toHaveBeenCalledWith(
+          'ai:summaryDone',
+          expect.objectContaining({
+            requestId: 'mlx-stream',
+            text: 'MLX summary',
+            provider: 'MLX',
+          }),
+        );
+      });
+      expect(generate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestId: 'mlx-stream',
+          modelPath: expect.stringContaining('qwen2.5-1.5b-instruct-mlx-4bit'),
+        }),
+        expect.any(AbortSignal),
+        expect.any(Function),
+        expect.any(Number),
+      );
+    } finally {
+      available.mockRestore();
+      verify.mockRestore();
+      host.mockRestore();
+      probe.mockRestore();
+      generate.mockRestore();
+    }
+  });
+
+  it('does not append /no_think for bundled Qwen2.5 Catch up prompts', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen2.5-1.5b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          requestId: 'qwen25-no-no-think',
+          messages: [{ at: 1, sender: 'Alice', body: 'Net at 20:00.' }],
+        },
+      );
+      expect(result).toMatchObject({ ok: true });
+      const user = (result as { localJob: { user: string } }).localJob.user;
+      expect(user).not.toContain('/no_think');
+    } finally {
+      verify.mockRestore();
+    }
+  });
+
+  it('falls back to compact when structured cannot cover all multi-pass digests', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-3b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    // Fat digests that still exceed the on-device budget under structured framing.
+    const messages = Array.from({ length: 35 }, (_, index) => ({
+      at: index + 1,
+      sender: `Part ${index + 1}`,
+      body: 'x'.repeat(320),
+    }));
+    try {
+      const result = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          requestId: 'structured-fallback',
+          jobId: 'job-structured-fallback',
+          mode: 'final',
+          messages,
+        },
+      );
+      expect(result).toMatchObject({
+        ok: true,
+        localJob: { messageCount: messages.length, truncated: false },
+      });
+      const prompt = (result as { localJob: { system: string; maxTokens: number } }).localJob;
+      expect(prompt.system).toContain('Output up to five short factual bullets');
+      expect(prompt.system).not.toContain('Conversations:');
+      expect(prompt.maxTokens).toBe(250);
+    } finally {
+      verify.mockRestore();
+    }
   });
 });
 

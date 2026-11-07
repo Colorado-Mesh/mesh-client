@@ -7974,7 +7974,22 @@
     "maxCollectedMessagesHint": "Maximale Anzahl von Nachrichten, die ein Catch-up sammeln kann (100–5000). Standard 2000. Höhere Werte dauern länger und benötigen möglicherweise eine längere Zeitüberschreitung.",
     "capacityHint": "Über {{count}} typische Mesh-Nachrichten passen zu einem Inferenzdurchgang mit dieser Engine (neuere zuerst). Nachholen kann bis zu {{ceiling}} Nachrichten über mehrere Durchgänge verarbeiten. Längere Nachrichten verbrauchen mehr von jedem Durchgang. Große Reichweiten benötigen ein längeres Timeout.",
     "capacityHintChooseEngine": "Die integrierte Betriebssystem-KI und heruntergeladene Modelle passen zu {{onDevice}} typischen Nachrichten pro Durchgang; ein lokaler oder Remote-Server zu {{endpoint}}. Nachholen kann bis zu {{ceiling}} Nachrichten mit Multi-Pass abdecken. Erhöhen Sie das Nachrichtenlimit und die Zeitüberschreitung für ausgelastete Netze.",
-    "lowThreadBudgetWarning": "Dieses Gerät hat nur {{count}} Aufhol-WASM-Thread (s). Zusammenfassungen von heruntergeladenen Modellen benötigen in der Regel etwa 6 oder mehr, um gut zu laufen, und werden hier länger dauern. Bevorzugen Sie einen anderen Motor oder erhöhen Sie die Zeitüberschreitung unten."
+    "lowThreadBudgetWarning": "Dieses Gerät hat nur {{count}} Aufhol-WASM-Thread (s). Zusammenfassungen von heruntergeladenen Modellen benötigen in der Regel etwa 6 oder mehr, um gut zu laufen, und werden hier länger dauern. Bevorzugen Sie einen anderen Motor oder erhöhen Sie die Zeitüberschreitung unten.",
+    "followUps": "Rückfragen",
+    "followUpQuestion": "Stellen Sie eine Folgefrage",
+    "followUpPlaceholder": "Fragen Sie nach dieser Zusammenfassung, z. B. wie?",
+    "askFollowUp": "Fragen",
+    "followUpWorking": "Antworten",
+    "followUpQueued": "Warten auf Abschluss der aktuellen Zusammenfassung...",
+    "cancelFollowUp": "Folgen abbrechen",
+    "followUpContextLimited": "Diese Antwort verwendet nur die Zusammenfassung und die dafür aufbewahrten Quellnachrichten. Einige ältere Details sind möglicherweise nicht verfügbar.",
+    "modelRecommendQuality": "Empfohlen für Qualität",
+    "modelRecommendFasterMachines": "Schneller für langsamere Maschinen",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — schnelleres Aufholen auf diesem Mac",
+    "modelRuntimeCpu": "CPU (tragbar)",
+    "unusedDownloads": "Nicht verwendete Downloads",
+    "unusedDownloadsHint": "Diese Modelle sind nicht mehr im Katalog (zum Beispiel nach einem Upgrade), nutzen aber immer noch Speicherplatz. Entfernen Sie sie, wenn Sie sie nicht benötigen.",
+    "unusedDownloadRetired": "Nicht mehr im Katalog"
   },
   "chatOrder": {
     "title": "Chats sortieren",

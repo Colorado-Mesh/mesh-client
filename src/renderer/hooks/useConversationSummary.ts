@@ -5,6 +5,8 @@ import { mergeSummaryMessages, selectSummaryMessages } from '@/renderer/lib/aiSu
 import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
+  askFollowUp as askFollowUpAction,
+  cancelFollowUp as cancelFollowUpAction,
   cancelSummary,
   dismissSummary,
   getAiSummaryRevision,
@@ -254,6 +256,13 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     },
     state,
     pending: loading || state?.streaming === true,
+    followUpPending: state?.followUps?.some((turn) => turn.streaming) ?? false,
+    askFollowUp: (question: string) => {
+      void askFollowUpAction(input.key, question);
+    },
+    cancelFollowUp: (id: string) => {
+      cancelFollowUpAction(input.key, id);
+    },
   };
 }
 export type ConversationSummaryController = ReturnType<typeof useConversationSummary>;

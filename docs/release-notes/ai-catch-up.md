@@ -1,7 +1,9 @@
 # Catch up release notes (unreleased)
 
+- Ask follow-up questions about a completed Catch up. Answers use the summary plus a capped raw transcript (and multi-pass digests as fallback), stream into the card, and stay in session memory.
+- Scale large Catch ups beyond five bullets: structured Conversations + One-offs summaries with a higher completion budget; keep compact five-bullet output for small single-pass jobs.
 - Add optional conversation summaries across supported protocols, using OS AI, downloaded models or configured endpoints.
-- Offer Llama 3.2 1B and Qwen2.5 1.5B Q4_K_M downloads. Remove Qwen 0.5B and SmolLM2; choose a replacement explicitly if a removed model was selected.
+- Offer Llama 3.2 3B Instruct (recommended for quality) and Qwen2.5 1.5B Instruct Q4_K_M (faster for slower machines) downloads, plus Apple Silicon MLX twins. Raise on-device Catch up prompt headroom so bundled engines keep Conversations/One-offs when digests fit. Prior Qwen3 1.7B / 1B (and older) catalog ids become not-ready until the user picks a current model.
 - Keep a Set up Catch up action visible after enabling AI when the engine or model is not ready. It opens AI settings without reading history or starting a summary.
 - Recover from failed or stalled startup status reads. Saved opt-in keeps the setup shortcut available while readiness is unknown; generation still requires a ready engine.
 - Start waiting summaries automatically when the active summary finishes, fails or is cancelled. Preserve cancellation and timeouts after endpoint acknowledgement.

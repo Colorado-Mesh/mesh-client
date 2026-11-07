@@ -1,4 +1,8 @@
 import {
+  AI_MAX_FOLLOW_UP_ANSWER_CHARS,
+  AI_MAX_FOLLOW_UP_QUESTION_CHARS,
+  AI_MAX_FOLLOW_UP_SUMMARY_CHARS,
+  AI_MAX_FOLLOW_UP_TURNS,
   AI_MAX_MAX_COLLECTED_MESSAGES,
   AI_MAX_MESSAGES,
   AI_MAX_TIMEOUT_SECONDS,
@@ -6,6 +10,8 @@ import {
   AI_MIN_MAX_COLLECTED_MESSAGES,
   AI_MIN_TIMEOUT_SECONDS,
   type AiEndpointConfig,
+  type AiFollowUpContextKind,
+  type AiSummaryFollowUp,
   type AiSummaryPassMode,
   type AiSummaryRequest,
 } from '../../shared/ai-types';
@@ -15,6 +21,13 @@ const record = (value: unknown): value is Record<string, unknown> =>
 const text = (value: unknown, cap: number): value is string =>
   typeof value === 'string' && value.length <= cap;
 const PASS_MODES: AiSummaryPassMode[] = ['map', 'reduce', 'final'];
+const CONTEXT_KINDS: AiFollowUpContextKind[] = ['transcript', 'digests', 'none'];
+
+/** Strip nonprinting controls from untrusted / user-authored AI text. */
+export const stripNonprinting = (value: string): string =>
+  // eslint-disable-next-line no-control-regex -- strip nonprinting controls from untrusted text
+  value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
+
 export function validateAiConfig(value: unknown): AiEndpointConfig {
   if (
     !record(value) ||
@@ -66,6 +79,40 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
     ...(value.localModelId !== undefined ? { localModelId: value.localModelId } : {}),
   };
 }
+
+/** Validate and sanitize a follow-up payload; rejects jobId / non-final mode at the caller. */
+function validateFollowUp(value: unknown): AiSummaryFollowUp {
+  if (
+    !record(value) ||
+    !text(value.question, AI_MAX_FOLLOW_UP_QUESTION_CHARS) ||
+    !value.question.trim() ||
+    !text(value.summary, AI_MAX_FOLLOW_UP_SUMMARY_CHARS) ||
+    !Array.isArray(value.turns) ||
+    value.turns.length > AI_MAX_FOLLOW_UP_TURNS ||
+    typeof value.contextKind !== 'string' ||
+    !CONTEXT_KINDS.includes(value.contextKind as AiFollowUpContextKind)
+  )
+    throw new Error('Invalid AI follow-up');
+  const turns = value.turns.map((turn: unknown) => {
+    if (
+      !record(turn) ||
+      !text(turn.question, AI_MAX_FOLLOW_UP_QUESTION_CHARS) ||
+      !text(turn.answer, AI_MAX_FOLLOW_UP_ANSWER_CHARS)
+    )
+      throw new Error('Invalid AI follow-up');
+    return {
+      question: stripNonprinting(turn.question),
+      answer: stripNonprinting(turn.answer),
+    };
+  });
+  return {
+    question: stripNonprinting(value.question),
+    summary: stripNonprinting(value.summary),
+    turns,
+    contextKind: value.contextKind as AiFollowUpContextKind,
+  };
+}
+
 export function validateAiRequest(value: unknown): AiSummaryRequest {
   if (
     !record(value) ||
@@ -96,6 +143,14 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
       (typeof value.mode !== 'string' || !PASS_MODES.includes(value.mode as AiSummaryPassMode)))
   )
     throw new Error('Invalid AI summary request');
+
+  let followUp: AiSummaryFollowUp | undefined;
+  if (value.followUp !== undefined) {
+    followUp = validateFollowUp(value.followUp);
+    if (value.jobId !== undefined || (value.mode !== undefined && value.mode !== 'final'))
+      throw new Error('Invalid AI follow-up');
+  }
+
   if (!Array.isArray(value.messages) || value.messages.length > AI_MAX_MESSAGES)
     throw new Error('Invalid AI messages');
   let chars = 0;
@@ -115,8 +170,7 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
     return {
       at: message.at,
       sender: message.sender,
-      // eslint-disable-next-line no-control-regex -- strip nonprinting controls from untrusted transcript text
-      body: message.body.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ''),
+      body: stripNonprinting(message.body),
     };
   });
   return {
@@ -124,5 +178,6 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
     messages,
     ...(value.jobId !== undefined ? { jobId: value.jobId } : {}),
     ...(value.mode !== undefined ? { mode: value.mode as AiSummaryPassMode } : {}),
+    ...(followUp ? { followUp } : {}),
   };
 }

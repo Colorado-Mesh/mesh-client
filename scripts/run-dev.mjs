@@ -22,11 +22,15 @@ export function resolveDevExitCode(code, signal) {
 }
 
 export function buildDevConcurrentlyArgs() {
-  const mainBuild = `esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js ${mainEsbuildExternalArgs().join(' ')} --format=cjs --watch`;
+  const mainBuild = `esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js ${mainEsbuildExternalArgs().join(' ')} --format=cjs --define:process.env.VITEST=undefined --watch`;
   const preloadBuild =
     'esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs --watch';
   const translationBuild =
     'esbuild src/main/translation/bergamotWorkerEntry.ts --bundle --platform=node --outfile=dist-electron/main/translation-worker.js --format=cjs --watch';
+  const summaryPromptBuild =
+    'esbuild src/shared/aiSummaryPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-summary-prompt.js --format=cjs --watch';
+  const followUpPromptBuild =
+    'esbuild src/shared/aiFollowUpPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-follow-up-prompt.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -35,10 +39,12 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,vite,electron',
+    'main,preload,translation,summary,followup,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
+    summaryPromptBuild,
+    followUpPromptBuild,
     'vite',
     electronLaunch,
   ];

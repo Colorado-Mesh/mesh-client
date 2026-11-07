@@ -9,4 +9,5 @@ ignore: |
   pnpm-lock.yaml
   node_modules/
   .rsstack/
+  .build/
   .github/rulesets/
