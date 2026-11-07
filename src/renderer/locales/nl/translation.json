@@ -7982,7 +7982,14 @@
     "followUpWorking": "Beantwoorden",
     "followUpQueued": "Wachten tot het huidige overzicht is voltooid...",
     "cancelFollowUp": "Volgen annuleren",
-    "followUpContextLimited": "Dit antwoord gebruikt alleen de samenvatting en de bronboodschappen die ervoor zijn bewaard. Sommige oudere gegevens zijn mogelijk niet beschikbaar."
+    "followUpContextLimited": "Dit antwoord gebruikt alleen de samenvatting en de bronboodschappen die ervoor zijn bewaard. Sommige oudere gegevens zijn mogelijk niet beschikbaar.",
+    "modelRecommendQuality": "Aanbevolen voor kwaliteit",
+    "modelRecommendFasterMachines": "Sneller voor langzamere machines",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — sneller Inhalen op deze Mac",
+    "modelRuntimeCpu": "CPU (draagbaar)",
+    "unusedDownloads": "Ongebruikte downloads",
+    "unusedDownloadsHint": "Deze modellen staan niet meer in de catalogus (bijvoorbeeld na een upgrade) maar gebruiken nog steeds schijfruimte. Verwijder ze als je ze niet nodig hebt.",
+    "unusedDownloadRetired": "Niet meer in catalogus"
   },
   "chatOrder": {
     "title": "Chats ordenen",

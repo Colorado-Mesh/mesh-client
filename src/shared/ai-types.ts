@@ -147,6 +147,10 @@ export interface AiEndpointConfig {
   localModelId?: string | null;
 }
 
+export type AiModelRuntime = 'wllama' | 'mlx';
+/** Soft catalog badges: quality = recommended; fasterMachines = lighter/slower-host hint. */
+export type AiModelRecommendation = 'quality' | 'fasterMachines';
+
 export interface AiModelInfo {
   id: string;
   name: string;
@@ -155,6 +159,18 @@ export interface AiModelInfo {
   diskBytes: number;
   license: string;
   installed: boolean;
+  /** Inference backend; omitted for retired on-disk orphans. */
+  runtime?: AiModelRuntime;
+  /**
+   * Soft relative guidance for this host (MLX preferred on Apple Silicon).
+   * Relative speed/resource guidance only — not an accuracy guarantee.
+   */
+  recommendation?: AiModelRecommendation;
+  /**
+   * True when a pack directory remains on disk after the catalog dropped that id
+   * (e.g. after a model upgrade). Orphans can be removed but not selected/downloaded.
+   */
+  orphan?: boolean;
 }
 
 export interface AiModelProgress {
@@ -251,8 +267,8 @@ export function aiSummaryOutputTokens(
   return finalStyle === 'structured' ? AI_STRUCTURED_FINAL_OUTPUT_TOKENS : AI_MAX_OUTPUT_TOKENS;
 }
 /**
- * Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts).
- * ~12 KiB leaves room for chat template + structured completion within n_ctx 4096.
+ * Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM.
+ * ~12 KiB leaves room for chat template + structured completion within bundled n_ctx 8192.
  */
 export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 12_288;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */

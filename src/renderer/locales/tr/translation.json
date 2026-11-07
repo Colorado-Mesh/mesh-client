@@ -7982,7 +7982,14 @@
     "followUpWorking": "Cevaplama",
     "followUpQueued": "Mevcut özetin bitmesi bekleniyor…",
     "cancelFollowUp": "Takibi iptal et",
-    "followUpContextLimited": "Bu cevap sadece özeti ve bunun için saklanan kaynak mesajları kullanır. Bazı eski bilgiler kullanılamayabilir."
+    "followUpContextLimited": "Bu cevap sadece özeti ve bunun için saklanan kaynak mesajları kullanır. Bazı eski bilgiler kullanılamayabilir.",
+    "modelRecommendQuality": "Kalite için önerilir",
+    "modelRecommendFasterMachines": "Daha yavaş makineler için daha hızlı",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — bu Mac'te daha hızlı Yakalama",
+    "modelRuntimeCpu": "CPU (taşınabilir)",
+    "unusedDownloads": "Kullanılmayan indirmeler",
+    "unusedDownloadsHint": "Bu modeller artık katalogda değil (örneğin bir yükseltmeden sonra) ancak yine de disk alanı kullanıyor. İhtiyacınız yoksa bunları kaldırın.",
+    "unusedDownloadRetired": "Artık katalogda yok"
   },
   "chatOrder": {
     "title": "Sohbetleri sırala",

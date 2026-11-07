@@ -7982,7 +7982,14 @@
     "followUpWorking": "Rispondere",
     "followUpQueued": "In attesa che il riepilogo corrente finisca...",
     "cancelFollowUp": "Annulla follow-up",
-    "followUpContextLimited": "Questa risposta utilizza solo il riepilogo e i messaggi di origine conservati per essa. Alcuni dettagli meno recenti potrebbero non essere disponibili."
+    "followUpContextLimited": "Questa risposta utilizza solo il riepilogo e i messaggi di origine conservati per essa. Alcuni dettagli meno recenti potrebbero non essere disponibili.",
+    "modelRecommendQuality": "Consigliato per la qualità",
+    "modelRecommendFasterMachines": "Più veloce per macchine più lente",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — Recupero più veloce su questo Mac",
+    "modelRuntimeCpu": "CPU (portatile)",
+    "unusedDownloads": "Download non utilizzati",
+    "unusedDownloadsHint": "Questi modelli non sono più a catalogo (ad esempio dopo un upgrade) ma utilizzano comunque spazio su disco. Rimuovili se non ne hai bisogno.",
+    "unusedDownloadRetired": "Non più a catalogo"
   },
   "chatOrder": {
     "title": "Riordina le chat",

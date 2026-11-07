@@ -7982,7 +7982,14 @@
     "followUpWorking": "답변 중...",
     "followUpQueued": "현재 요약이 완료되기를 기다리는 중...",
     "cancelFollowUp": "후속 조치 취소",
-    "followUpContextLimited": "이 답변은 요약과 원본 메시지만 사용합니다. 일부 이전 정보는 제공되지 않을 수 있습니다."
+    "followUpContextLimited": "이 답변은 요약과 원본 메시지만 사용합니다. 일부 이전 정보는 제공되지 않을 수 있습니다.",
+    "modelRecommendQuality": "퀄리티 높은 숙소로 추천",
+    "modelRecommendFasterMachines": "느린 기계의 경우 더 빠름",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — 이 Mac에서 더 빠르게 따라잡기",
+    "modelRuntimeCpu": "CPU (휴대용)",
+    "unusedDownloads": "사용되지 않은 다운로드",
+    "unusedDownloadsHint": "이러한 모델은 더 이상 카탈로그에 없지만 (예: 업그레이드 후) 여전히 디스크 공간을 사용합니다. 필요하지 않은 경우 제거하십시오.",
+    "unusedDownloadRetired": "더 이상 카탈로그에 없음"
   },
   "chatOrder": {
     "title": "채팅 순서 변경",

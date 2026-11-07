@@ -8060,7 +8060,14 @@
     "followUpWorking": "Odpovídá",
     "followUpQueued": "Čeká se na dokončení aktuálního shrnutí...",
     "cancelFollowUp": "Zrušit sledování",
-    "followUpContextLimited": "Tato odpověď používá pouze shrnutí a zdrojové zprávy, které jsou pro ni uchovány. Některé starší údaje nemusí být k dispozici."
+    "followUpContextLimited": "Tato odpověď používá pouze shrnutí a zdrojové zprávy, které jsou pro ni uchovány. Některé starší údaje nemusí být k dispozici.",
+    "modelRecommendQuality": "Doporučeno pro kvalitu",
+    "modelRecommendFasterMachines": "Rychlejší pro pomalejší stroje",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — rychlejší dohánění na tomto Macu",
+    "modelRuntimeCpu": "CPU (přenosný)",
+    "unusedDownloads": "Nepoužité soubory ke stažení",
+    "unusedDownloadsHint": "Tyto modely již nejsou v katalogu (například po upgradu), ale stále využívají místo na disku. Pokud je nepotřebujete, odstraňte je.",
+    "unusedDownloadRetired": "Již není v katalogu"
   },
   "chatOrder": {
     "title": "Změnit pořadí chatů",

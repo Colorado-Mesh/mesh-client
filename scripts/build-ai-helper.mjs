@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -40,6 +40,34 @@ if (process.platform === 'darwin') {
   );
   mkdirSync(path.join(output, 'staged/darwin'), { recursive: true });
   cpSync(path.join(output, 'mesh-ai'), path.join(output, 'staged/darwin/mesh-ai'));
+  // Apple Silicon only: Metal MLX Catch up helper (optional — fail soft if SPM build fails).
+  // Requires full Xcode (metal compiler); Command Line Tools alone are not enough.
+  if (process.arch === 'arm64') {
+    const mlxPackage = path.join(root, 'native/ai/mlx');
+    try {
+      const xcodeDeveloper = '/Applications/Xcode.app/Contents/Developer';
+      const env = { ...process.env };
+      if (existsSync(xcodeDeveloper) && !env.DEVELOPER_DIR) {
+        env.DEVELOPER_DIR = xcodeDeveloper;
+      }
+      execFileSync('swift', ['build', '-c', 'release', '--product', 'mesh-ai-mlx'], {
+        cwd: mlxPackage,
+        stdio: 'inherit',
+        env,
+      });
+      const built = path.join(mlxPackage, '.build', 'release', 'mesh-ai-mlx');
+      if (!existsSync(built)) {
+        throw new Error(`mesh-ai-mlx binary missing at ${built}`);
+      }
+      cpSync(built, path.join(output, 'staged/darwin/mesh-ai-mlx'));
+      console.debug('[build-ai-helper] Staged mesh-ai-mlx for Apple Silicon Catch up');
+    } catch (error) {
+      console.warn(
+        '[build-ai-helper] Optional MLX helper build failed; MLX catalog models will be unavailable.',
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 } else if (process.platform === 'win32') {
   // Build both installer architectures on the Windows runner.
   for (const arch of ['x64', 'arm64']) {

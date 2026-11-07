@@ -400,7 +400,7 @@ export function cancelFollowUp(key: string, id: string): void {
   });
 }
 /** Map thrown/abort failures to `AiSummaryErrorReason` without retaining conversation text. */
-function mapAiError(
+export function mapAiError(
   error: unknown,
   signal: AbortSignal,
   abortReason: () => AiSummaryErrorReason,
@@ -408,24 +408,34 @@ function mapAiError(
   if (signal.aborted) return abortReason();
   if (error instanceof DOMException && error.name === 'TimeoutError') return 'timeout';
   if (error instanceof RepetitiveAiOutputError) return 'repetitiveOutput';
-  if (
-    error instanceof Error &&
-    [
-      'disabled',
-      'noMessages',
-      'notConfigured',
-      'engineNotReady',
-      'remoteNotAcknowledged',
-      'rateLimited',
-      'busy',
-      'timeout',
-      'tooLarge',
-      'httpError',
-      'invalidResponse',
-      'cancelled',
-    ].includes(error.message)
-  )
-    return error.message as AiSummaryErrorReason;
+  if (error instanceof Error) {
+    const message = error.message;
+    if (
+      [
+        'disabled',
+        'noMessages',
+        'notConfigured',
+        'engineNotReady',
+        'remoteNotAcknowledged',
+        'rateLimited',
+        'busy',
+        'timeout',
+        'tooLarge',
+        'httpError',
+        'invalidResponse',
+        'cancelled',
+      ].includes(message)
+    )
+      return message as AiSummaryErrorReason;
+    const lower = message.toLowerCase();
+    // wllama / llama-server when the tokenized prompt does not fit n_ctx
+    if (
+      (lower.includes('exceed') && lower.includes('context')) ||
+      lower.includes('kv_cache_full') ||
+      lower.includes('exceed_context_size')
+    )
+      return 'tooLarge';
+  }
   return 'error';
 }
 

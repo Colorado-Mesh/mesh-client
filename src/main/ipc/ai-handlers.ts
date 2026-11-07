@@ -30,9 +30,10 @@ import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
 import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
 import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
-import { AI_LOCAL_MODELS } from '../ai/local/modelManifest';
+import { AI_LOCAL_MODELS, isCatalogPackAvailable } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
+import { MlxAiHelper } from '../ai/os/mlxAiHelper';
 import { OsAiHelper } from '../ai/os/osAiHelper';
 import { classifyEndpoint, validateAiEndpointUrl } from '../ai/urlPolicy';
 import { validateAiConfig, validateAiRequest } from '../ai/validation';
@@ -73,14 +74,17 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     // undici honors the pinned lookup dispatcher; Chromium net.fetch does not.
     return undiciFetch(href, init as UndiciRequestInit) as unknown as Promise<Response>;
   });
-  // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
-  const os = new OsAiHelper(() =>
+  const helperRoot = () =>
     path.join(
       app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources'),
       app.isPackaged ? 'ai-helper' : 'ai-helper/active',
-      process.platform === 'win32' ? 'mesh-ai.exe' : 'mesh-ai',
-    ),
+    );
+  // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
+  const os = new OsAiHelper(() =>
+    path.join(helperRoot(), process.platform === 'win32' ? 'mesh-ai.exe' : 'mesh-ai'),
   );
+  // OS-specific: Apple Silicon MLX Metal Catch up helper (optional staged binary).
+  const mlx = new MlxAiHelper(() => path.join(helperRoot(), 'mesh-ai-mlx'));
   let osStatus: AiOsAiStatus = { available: false, platform: null, reason: 'unsupported-platform' };
   let revision = 0;
   const active = new Map<string, AbortController>();
@@ -104,12 +108,20 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     active.clear();
     multiPassJobs.clear();
     os.kill();
+    mlx.kill();
+  };
+  const bundledModelReady = async (modelId: string): Promise<boolean> => {
+    const model = AI_LOCAL_MODELS.find((entry) => entry.id === modelId);
+    if (!model || !isCatalogPackAvailable(model)) return false;
+    if (!(await packs.verify(model.id, true))) return false;
+    if (model.runtime === 'mlx') return mlx.availableOnHost() && (await mlx.probe());
+    return true;
   };
   const status = async (): Promise<AiProviderStatus> => {
     const c = config.read();
-    const selectedModel = AI_LOCAL_MODELS.some((model) => model.id === c.localModelId)
-      ? c.localModelId
-      : null;
+    const selectedPack = AI_LOCAL_MODELS.find((model) => model.id === c.localModelId);
+    const selectedModel =
+      selectedPack && isCatalogPackAvailable(selectedPack) ? selectedPack.id : null;
     return {
       enabled: enabled(),
       engine: c.engine,
@@ -125,7 +137,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         return policy.ok && policy.cls === 'remote';
       })(),
       localEngine: {
-        ready: enabled() && !!selectedModel && (await packs.verify(selectedModel, true)),
+        ready: enabled() && !!selectedModel && (await bundledModelReady(selectedModel)),
         modelId: selectedModel,
         downloading: packs.progress().length > 0,
       },
@@ -141,9 +153,13 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
     }
     if (c.engine === 'bundled') {
-      const model = AI_LOCAL_MODELS.find((model) => model.id === c.localModelId);
-      const ok = !!model && (await packs.verify(model.id));
-      return ok ? { ok } : { ok, reason: 'engineNotReady' };
+      const model = AI_LOCAL_MODELS.find((entry) => entry.id === c.localModelId);
+      const ok =
+        !!model &&
+        isCatalogPackAvailable(model) &&
+        (await packs.verify(model.id)) &&
+        (model.runtime !== 'mlx' || (mlx.availableOnHost() && (await mlx.probe())));
+      return ok ? { ok } : { ok: false, reason: 'engineNotReady' };
     }
     const policy = validateAiEndpointUrl(c.baseUrl, c.allowRemote);
     if (
@@ -157,6 +173,12 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   const id = (value: unknown) => {
     if (typeof value !== 'string') throw new Error('Invalid AI model');
     packs.pack(value);
+    return value;
+  };
+  /** Catalog packs and retired on-disk orphans share this id grammar. */
+  const packDirectoryId = (value: unknown) => {
+    if (typeof value !== 'string' || !/^[a-z0-9.-]+$/.test(value))
+      throw new Error('Invalid AI model');
     return value;
   };
   ipcMain.handle('ai:getHistory', (event, value: unknown) => {
@@ -190,7 +212,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     guard(event, 'ai:setConfig', true);
     if (!enabled()) return status();
     const input = validateAiConfig(value);
-    if (input.localModelId) id(input.localModelId);
+    if (input.localModelId) {
+      const modelId = id(input.localModelId);
+      if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+    }
     config.write(input);
     stop();
     const next = await status();
@@ -203,7 +228,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:installLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:installLocalModel', true);
-    return packs.install(id(value));
+    const modelId = id(value);
+    if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+    return packs.install(modelId);
   });
   ipcMain.handle('ai:cancelLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:cancelLocalModel', true);
@@ -211,8 +238,12 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:removeLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:removeLocalModel', true);
+    const modelId = packDirectoryId(value);
     stop();
-    await packs.delete(id(value));
+    await packs.delete(modelId);
+    const stored = config.read();
+    if (stored.localModelId === modelId)
+      config.write({ engine: stored.engine ?? 'bundled', localModelId: null });
     const next = await status();
     send('ai:statusChanged', next);
     return enabled() ? packs.list() : [];
@@ -220,7 +251,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   ipcMain.handle('ai:selectLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:selectLocalModel', true);
     if (!enabled()) return status();
-    if (value !== null) id(value);
+    if (value !== null) {
+      const modelId = id(value);
+      if (!isCatalogPackAvailable(packs.pack(modelId))) throw new Error('Invalid AI model');
+    }
     config.write({ engine: 'bundled', localModelId: value as string | null });
     stop();
     const next = await status();
@@ -404,10 +438,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const outputTokens = followUp
       ? AI_FOLLOW_UP_OUTPUT_TOKENS
       : aiSummaryOutputTokens(mode, finalStyle);
-    if (c.engine === 'bundled') {
+    const bundledModel = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId);
+    if (c.engine === 'bundled' && bundledModel?.runtime !== 'mlx') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
-      const model = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId)!;
+      const model = bundledModel!;
       return {
         ok: true,
         summaryInput: { messageCount: prompt.included, truncated: prompt.truncated },
@@ -459,7 +494,24 @@ export function registerAiHandlers(deps: Dependencies): () => void {
             delta,
             aiSummaryTimeoutMs(c.engine, c.timeoutSeconds),
           );
-        else {
+        else if (c.engine === 'bundled' && bundledModel?.runtime === 'mlx') {
+          const { promises: fsp } = await import('node:fs');
+          const root = await fsp.realpath(directory());
+          const modelPath = await fsp.realpath(packs.packDirectory(bundledModel.id));
+          if (!modelPath.startsWith(root + path.sep)) throw new AiFailure('engineNotReady');
+          await mlx.generate(
+            {
+              requestId: request.requestId,
+              system: prompt.system,
+              user: prompt.user,
+              maxTokens: outputTokens,
+              modelPath,
+            },
+            signal,
+            delta,
+            aiSummaryTimeoutMs(c.engine, c.timeoutSeconds),
+          );
+        } else {
           if (!c.wireFormat) throw new AiFailure('notConfigured');
           for await (const part of client.stream(
             c.wireFormat,
@@ -483,8 +535,18 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           send('ai:summaryDone', {
             requestId: request.requestId,
             text,
-            provider: c.engine === 'os' ? 'OS AI' : new URL(c.baseUrl).host,
-            model: c.engine === 'os' ? (osStatus.modelLabel ?? 'OS AI') : c.model,
+            provider:
+              c.engine === 'os'
+                ? 'OS AI'
+                : c.engine === 'bundled'
+                  ? 'MLX'
+                  : new URL(c.baseUrl).host,
+            model:
+              c.engine === 'os'
+                ? (osStatus.modelLabel ?? 'OS AI')
+                : c.engine === 'bundled'
+                  ? (bundledModel?.name ?? 'MLX')
+                  : c.model,
             messageCount: prompt.included,
             truncated: prompt.truncated,
           });

@@ -7982,7 +7982,14 @@
     "followUpWorking": "Menjawab…",
     "followUpQueued": "Menunggu ringkasan saat ini selesai...",
     "cancelFollowUp": "Batalkan tindak lanjut",
-    "followUpContextLimited": "Jawaban ini hanya menggunakan ringkasan dan pesan sumber yang disimpan untuk itu. Beberapa detail yang lebih lama mungkin tidak tersedia."
+    "followUpContextLimited": "Jawaban ini hanya menggunakan ringkasan dan pesan sumber yang disimpan untuk itu. Beberapa detail yang lebih lama mungkin tidak tersedia.",
+    "modelRecommendQuality": "Direkomendasikan untuk kualitas",
+    "modelRecommendFasterMachines": "Lebih cepat untuk mesin yang lebih lambat",
+    "modelRuntimeMlx": "Apple Silicon (MLX) — lebih cepat mengejar ketinggalan di Mac ini",
+    "modelRuntimeCpu": "CPU (portabel)",
+    "unusedDownloads": "Unduhan yang tidak digunakan",
+    "unusedDownloadsHint": "Model - model ini tidak lagi ada dalam katalog (misalnya setelah upgrade) tetapi masih menggunakan ruang disk. Hapus jika Anda tidak membutuhkannya.",
+    "unusedDownloadRetired": "Tidak ada lagi di katalog"
   },
   "chatOrder": {
     "title": "Atur urutan obrolan",

@@ -35,3 +35,5 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build both installer architectures
         run: node scripts/build-ai-helper.mjs
+        # macOS: Foundation Models helper (universal) plus optional mesh-ai-mlx on arm64
+        # runners (needs full Xcode metal toolchain; failures warn and leave MLX unavailable).

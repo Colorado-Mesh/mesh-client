@@ -20,6 +20,7 @@ import {
   dismissSummary,
   disposeAiSummaries,
   initializeAi,
+  mapAiError,
   refreshAiStatus,
   runSummary,
   useAiSummaryStore,
@@ -850,5 +851,25 @@ describe('AI follow-up questions', () => {
     });
     await askFollowUp('chat', 'How?');
     expect(useAiSummaryStore.getState().summaries.chat?.followUps ?? []).toHaveLength(0);
+  });
+});
+
+describe('mapAiError', () => {
+  const open = new AbortController().signal;
+  const abortReason = () => 'cancelled' as const;
+
+  it('maps wllama context-overflow messages to tooLarge', () => {
+    expect(
+      mapAiError(
+        new Error('request (5000 tokens) exceeds the available context size (8192 tokens)'),
+        open,
+        abortReason,
+      ),
+    ).toBe('tooLarge');
+    expect(mapAiError(new Error('kv_cache_full'), open, abortReason)).toBe('tooLarge');
+  });
+
+  it('keeps engineNotReady for the explicit readiness failure', () => {
+    expect(mapAiError(new Error('engineNotReady'), open, abortReason)).toBe('engineNotReady');
   });
 });

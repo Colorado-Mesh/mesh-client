@@ -252,69 +252,148 @@ export function AppAiSection() {
               model: status.osAi.available ? status.osAi.modelLabel : t('aiSummary.osUnavailable'),
             })}
           </div>
-          {engine === 'bundled' && (
+          {(engine === 'bundled' || models.some((item) => item.orphan)) && (
             <div data-setting-anchor="app.aiProvider.catalog" className="space-y-3">
-              <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
-              <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
-              {isBundledWllamaThreadBudgetLow() && (
-                <p role="alert" className="text-xs text-orange-400">
-                  {t('aiSummary.lowThreadBudgetWarning', {
-                    count: bundledWllamaThreadCount(),
-                  })}
-                </p>
-              )}
-              {models.map((item) => {
-                const p = progress.find((p) => p.modelId === item.id);
-                const downloading = p && ['queued', 'downloading', 'verifying'].includes(p.state);
-                return (
-                  <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
-                    <p>{item.name}</p>
-                    <p className="text-muted text-xs">
-                      {item.paramsLabel} · {(item.downloadBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
-                      {item.license}
+              {engine === 'bundled' && (
+                <>
+                  <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
+                  <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
+                  {isBundledWllamaThreadBudgetLow() && (
+                    <p role="alert" className="text-xs text-orange-400">
+                      {t('aiSummary.lowThreadBudgetWarning', {
+                        count: bundledWllamaThreadCount(),
+                      })}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {downloading ? (
-                        <>
-                          <progress
-                            aria-label={t('aiSummary.download')}
-                            value={p.receivedBytes}
-                            max={p.totalBytes}
-                          />
-                          <Button
-                            size="sm"
-                            aria-label={t('aiSummary.cancel')}
-                            onClick={() => {
-                              void action(async () => {
-                                await window.electronAPI.ai.cancelLocalModel(item.id);
-                              });
-                            }}
-                          >
-                            {t('aiSummary.cancel')}
-                          </Button>
-                        </>
-                      ) : item.installed ? (
-                        <>
+                  )}
+                </>
+              )}
+              {engine === 'bundled' &&
+                models
+                  .filter((item) => !item.orphan)
+                  .map((item) => {
+                    const p = progress.find((entry) => entry.modelId === item.id);
+                    const downloading =
+                      p && ['queued', 'downloading', 'verifying'].includes(p.state);
+                    return (
+                      <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
+                        <p>{item.name}</p>
+                        <p className="text-muted text-xs">
+                          {item.paramsLabel} · {(item.downloadBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
+                          {item.license}
+                        </p>
+                        {item.recommendation === 'quality' && (
+                          <p className="text-bright-green text-xs">
+                            {t('aiSummary.modelRecommendQuality')}
+                          </p>
+                        )}
+                        {item.recommendation === 'fasterMachines' && (
+                          <p className="text-muted text-xs">
+                            {t('aiSummary.modelRecommendFasterMachines')}
+                          </p>
+                        )}
+                        {item.runtime === 'mlx' && (
+                          <p className="text-muted text-xs">{t('aiSummary.modelRuntimeMlx')}</p>
+                        )}
+                        {item.runtime === 'wllama' && (
+                          <p className="text-muted text-xs">{t('aiSummary.modelRuntimeCpu')}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {downloading ? (
+                            <>
+                              <progress
+                                aria-label={t('aiSummary.download')}
+                                value={p.receivedBytes}
+                                max={p.totalBytes}
+                              />
+                              <Button
+                                size="sm"
+                                aria-label={t('aiSummary.cancel')}
+                                onClick={() => {
+                                  void action(async () => {
+                                    await window.electronAPI.ai.cancelLocalModel(item.id);
+                                  });
+                                }}
+                              >
+                                {t('aiSummary.cancel')}
+                              </Button>
+                            </>
+                          ) : item.installed ? (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                aria-label={t('aiSummary.useModel', { model: item.name })}
+                                onClick={() => {
+                                  void action(async () => {
+                                    useAiSummaryStore
+                                      .getState()
+                                      .setStatus(
+                                        await window.electronAPI.ai.selectLocalModel(item.id),
+                                      );
+                                  });
+                                }}
+                              >
+                                {status.localEngine.modelId === item.id
+                                  ? t('aiSummary.selected')
+                                  : t('aiSummary.select')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                aria-label={t('aiSummary.removeModel', { model: item.name })}
+                                onClick={() => {
+                                  void action(async () => {
+                                    setModels(
+                                      await window.electronAPI.ai.removeLocalModel(item.id),
+                                    );
+                                    await refreshAiStatus();
+                                  });
+                                }}
+                              >
+                                {t('aiSummary.remove')}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              disabled={busy}
+                              aria-label={t('aiSummary.downloadModel', { model: item.name })}
+                              onClick={() => {
+                                void window.electronAPI.ai.installLocalModel(item.id).then(
+                                  (result) => {
+                                    if (!result.ok) setNotice(t('aiSummary.settingsError'));
+                                  },
+                                  () => {
+                                    setNotice(t('aiSummary.settingsError'));
+                                  },
+                                );
+                              }}
+                            >
+                              {t('aiSummary.download')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              {models.some((item) => item.orphan) && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">{t('aiSummary.unusedDownloads')}</h4>
+                  <p className="text-muted text-xs">{t('aiSummary.unusedDownloadsHint')}</p>
+                  {models
+                    .filter((item) => item.orphan)
+                    .map((item) => (
+                      <div key={item.id} className="border-ink-700 rounded-lg border p-2 text-sm">
+                        <p>{item.id}</p>
+                        <p className="text-muted text-xs">
+                          {(item.diskBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
+                          {t('aiSummary.unusedDownloadRetired')}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
                           <Button
                             size="sm"
                             disabled={busy}
-                            aria-label={t('aiSummary.useModel', { model: item.name })}
-                            onClick={() => {
-                              void action(async () => {
-                                useAiSummaryStore
-                                  .getState()
-                                  .setStatus(await window.electronAPI.ai.selectLocalModel(item.id));
-                              });
-                            }}
-                          >
-                            {status.localEngine.modelId === item.id
-                              ? t('aiSummary.selected')
-                              : t('aiSummary.select')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            disabled={busy}
-                            aria-label={t('aiSummary.removeModel', { model: item.name })}
+                            aria-label={t('aiSummary.removeModel', { model: item.id })}
                             onClick={() => {
                               void action(async () => {
                                 setModels(await window.electronAPI.ai.removeLocalModel(item.id));
@@ -324,30 +403,11 @@ export function AppAiSection() {
                           >
                             {t('aiSummary.remove')}
                           </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          disabled={busy}
-                          aria-label={t('aiSummary.downloadModel', { model: item.name })}
-                          onClick={() => {
-                            void window.electronAPI.ai.installLocalModel(item.id).then(
-                              (result) => {
-                                if (!result.ok) setNotice(t('aiSummary.settingsError'));
-                              },
-                              () => {
-                                setNotice(t('aiSummary.settingsError'));
-                              },
-                            );
-                          }}
-                        >
-                          {t('aiSummary.download')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
           {(engine === 'local' || engine === 'remote') && (

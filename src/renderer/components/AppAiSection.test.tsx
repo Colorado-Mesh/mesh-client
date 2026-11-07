@@ -137,6 +137,8 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
             diskBytes: 2019377696,
             license: 'Llama 3.2 Community License',
             installed: false,
+            runtime: 'wllama',
+            recommendation: 'quality',
           },
         ]),
         probeOsAi: vi.fn().mockResolvedValue(status.osAi),
@@ -171,6 +173,9 @@ it.each(['linux', 'darwin', 'win32'])(
   async () => {
     const { setConfig } = await openSettings();
     expect(await screen.findByText('Llama 3.2 3B')).toBeVisible();
+    expect(screen.getByText('Recommended for quality')).toBeVisible();
+    expect(screen.getByText(/CPU \(portable\)/)).toBeVisible();
+    expect(screen.queryByText(/Faster for slower machines/)).toBeNull();
     expect(screen.queryByText(/Smaller download and memory/)).toBeNull();
     const input = screen.getByLabelText('Summary timeout (seconds)');
     fireEvent.change(input, { target: { value: '29' } });
@@ -184,6 +189,191 @@ it.each(['linux', 'darwin', 'win32'])(
     expect(input).toHaveValue(900);
   },
 );
+
+it.each(['linux', 'darwin', 'win32'])(
+  'shows Apple Silicon MLX recommendations ahead of portable GGUF cards on %s',
+  async () => {
+    const status: AiProviderStatus = {
+      enabled: true,
+      engine: 'bundled',
+      wireFormat: null,
+      baseUrl: '',
+      model: '',
+      hasApiKey: false,
+      timeoutSeconds: 300,
+      maxCollectedMessages: 2000,
+      allowRemote: false,
+      isRemote: false,
+      localEngine: { ready: false, modelId: null, downloading: false },
+      osAi: { available: false, platform: null },
+    };
+    const unsubscribe = () => () => {};
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        ai: {
+          getStatus: vi.fn().mockResolvedValue(status),
+          setConfig: vi.fn(),
+          listLocalModels: vi.fn().mockResolvedValue([
+            {
+              id: 'llama3.2-3b-instruct-mlx-4bit',
+              name: 'Llama 3.2 3B Instruct MLX 4-bit',
+              paramsLabel: '3B',
+              downloadBytes: 1_800_000_000,
+              diskBytes: 1_800_000_000,
+              license: 'Llama 3.2 Community License',
+              installed: false,
+              runtime: 'mlx',
+              recommendation: 'quality',
+            },
+            {
+              id: 'qwen2.5-1.5b-instruct-mlx-4bit',
+              name: 'Qwen2.5 1.5B Instruct MLX 4-bit',
+              paramsLabel: '1.5B',
+              downloadBytes: 900_000_000,
+              diskBytes: 900_000_000,
+              license: 'Apache-2.0',
+              installed: false,
+              runtime: 'mlx',
+              recommendation: 'fasterMachines',
+            },
+            {
+              id: 'llama3.2-3b-instruct-q4',
+              name: 'Llama 3.2 3B Instruct Q4_K_M',
+              paramsLabel: '3B',
+              downloadBytes: 2_019_377_696,
+              diskBytes: 2_019_377_696,
+              license: 'Llama 3.2 Community License',
+              installed: false,
+              runtime: 'wllama',
+            },
+            {
+              id: 'qwen2.5-1.5b-instruct-q4',
+              name: 'Qwen2.5 1.5B Instruct Q4_K_M',
+              paramsLabel: '1.5B',
+              downloadBytes: 1_117_320_736,
+              diskBytes: 1_117_320_736,
+              license: 'Apache-2.0',
+              installed: false,
+              runtime: 'wllama',
+            },
+          ]),
+          probeOsAi: vi.fn().mockResolvedValue(status.osAi),
+          onSummaryChunk: unsubscribe,
+          onSummaryDone: unsubscribe,
+          onSummaryError: unsubscribe,
+          onStatusChanged: unsubscribe,
+          onModelProgress: unsubscribe,
+        },
+      },
+    });
+    useAiSummaryStore.setState({ status });
+    const { container } = render(<AppAiSection />);
+    const details = container.querySelector('details')!;
+    await act(async () => {
+      const toggled = new Promise<void>((resolve) => {
+        details.addEventListener(
+          'toggle',
+          () => {
+            resolve();
+          },
+          { once: true },
+        );
+      });
+      details.open = true;
+      await toggled;
+    });
+    expect(await screen.findByText('Llama 3.2 3B Instruct MLX 4-bit')).toBeVisible();
+    expect(screen.getByText('Recommended for quality')).toBeVisible();
+    expect(screen.getByText('Faster for slower machines')).toBeVisible();
+    expect(screen.getAllByText(/Apple Silicon \(MLX\)/)).toHaveLength(2);
+    expect(screen.getAllByText(/CPU \(portable\)/)).toHaveLength(2);
+    const names = Array.from(container.querySelectorAll('.border-ink-700 > p:first-child')).map(
+      (node) => node.textContent,
+    );
+    expect(names.slice(0, 4)).toEqual([
+      'Llama 3.2 3B Instruct MLX 4-bit',
+      'Qwen2.5 1.5B Instruct MLX 4-bit',
+      'Llama 3.2 3B Instruct Q4_K_M',
+      'Qwen2.5 1.5B Instruct Q4_K_M',
+    ]);
+  },
+);
+
+it('lists retired on-disk models so they can be removed', async () => {
+  const removeLocalModel = vi.fn().mockResolvedValue([]);
+  const status: AiProviderStatus = {
+    enabled: true,
+    engine: 'os',
+    wireFormat: null,
+    baseUrl: '',
+    model: '',
+    hasApiKey: false,
+    timeoutSeconds: 300,
+    maxCollectedMessages: 2000,
+    allowRemote: false,
+    isRemote: false,
+    localEngine: { ready: false, modelId: null, downloading: false },
+    osAi: {
+      available: true,
+      platform: 'apple-foundation-models',
+      modelLabel: 'Apple Intelligence',
+    },
+  };
+  const unsubscribe = () => () => {};
+  Object.defineProperty(window, 'electronAPI', {
+    configurable: true,
+    value: {
+      ai: {
+        getStatus: vi.fn().mockResolvedValue(status),
+        setConfig: vi.fn(),
+        listLocalModels: vi.fn().mockResolvedValue([
+          {
+            id: 'llama3.2-1b-instruct-q4',
+            name: 'llama3.2-1b-instruct-q4',
+            paramsLabel: '—',
+            downloadBytes: 807694464,
+            diskBytes: 807694464,
+            license: '—',
+            installed: true,
+            orphan: true,
+          },
+        ]),
+        removeLocalModel,
+        probeOsAi: vi.fn().mockResolvedValue(status.osAi),
+        onSummaryChunk: unsubscribe,
+        onSummaryDone: unsubscribe,
+        onSummaryError: unsubscribe,
+        onStatusChanged: unsubscribe,
+        onModelProgress: unsubscribe,
+      },
+    },
+  });
+  useAiSummaryStore.setState({ status });
+  const { container } = render(<AppAiSection />);
+  const details = container.querySelector('details')!;
+  await act(async () => {
+    const toggled = new Promise<void>((resolve) => {
+      details.addEventListener(
+        'toggle',
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+    });
+    details.open = true;
+    await toggled;
+  });
+  expect(await screen.findByText('Unused downloads')).toBeVisible();
+  expect(screen.getByText('llama3.2-1b-instruct-q4')).toBeVisible();
+  expect(screen.getByText(/No longer in catalog/)).toBeVisible();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /Remove llama3.2-1b-instruct-q4/ }));
+    await Promise.resolve();
+  });
+  expect(removeLocalModel).toHaveBeenCalledWith('llama3.2-1b-instruct-q4');
+});
 it.each(['http://192.168.1.2:1234', 'http://ollama.local:1234', 'http://127.mesh.local:1234'])(
   'warns about saved and newly typed HTTP LAN credentials at %s',
   async (baseUrl) => {

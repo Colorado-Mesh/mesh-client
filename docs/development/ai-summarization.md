@@ -44,7 +44,8 @@ reduce prompt injection risk; they do not guarantee model obedience.
 | ------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Apple Intelligence | macOS 26+             | Eligible hardware, Apple Intelligence enabled, staged universal Foundation Models helper                             |
 | Windows Phi Silica | Windows 11 24H2+      | Copilot+ hardware, ready model, Microsoft LAF token/attestation and supported package identity with `systemAIModels` |
-| Downloaded model   | macOS, Windows, Linux | Explicit verified GGUF download and selection; bundled wllama 3.8.1 CPU WASM worker                                  |
+| Downloaded (GGUF)  | macOS, Windows, Linux | Explicit verified GGUF download and selection; bundled wllama 3.8.1 CPU WASM worker                                  |
+| Downloaded (MLX)   | macOS Apple Silicon   | Explicit verified MLX pack download; staged arm64 `mesh-ai-mlx` helper (mlx-swift-lm); Metal Catch up                |
 | Local server       | All                   | Ollama, LM Studio, llama.cpp, vLLM, LocalAI or compatible endpoint                                                   |
 | Remote provider    | All                   | OpenAI-compatible, Anthropic, Gemini or Ollama wire format, HTTPS and acknowledgment                                 |
 
@@ -57,10 +58,13 @@ or request a model download during a probe. Native CI compiles both Windows RIDs
 helper and its self-contained runtime until package identity is supported. The other engines are available without those Windows requirements.
 
 Native helper source lives in `native/ai/`; `scripts/build-ai-helper.mjs` stages binaries and
-runtime dependencies under `resources/ai-helper/`. Build/release CI compiles the Apple helper before packaging. A missing optional helper
-warns and leaves OS AI unavailable; it does not block local distribution builds. Large binaries and Swift caches are excluded from Git and packaged resources.
-Swift returns cumulative snapshots, so its helper emits only new suffixes. Windows has no
-max-output-token option in this API; its helper uses a conservative 1,000-character bound.
+runtime dependencies under `resources/ai-helper/`. Build/release CI compiles the Apple Foundation
+Models helper before packaging. On Apple Silicon hosts the same script also builds optional
+`mesh-ai-mlx` (SwiftPM under `native/ai/mlx/`). A missing optional helper warns and leaves OS AI
+and/or MLX Catch up unavailable; it does not block local distribution builds. Large binaries and
+Swift caches are excluded from Git and packaged resources. Swift Foundation Models returns
+cumulative snapshots, so its helper emits only new suffixes. Windows has no max-output-token option
+in this API; its helper uses a conservative 1,000-character bound.
 
 ## Follow-up questions
 
@@ -102,10 +106,11 @@ fails rather than claiming a complete summary. Reduction must shrink the digests
 to eight rounds, preventing a provider from looping forever. Intermediate and final digests are
 quoted without synthetic ordering timestamps, so the model cannot mistake sequence numbers for
 1970 chat dates. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
-to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (12,288) for both Apple’s and the WASM engine’s 4,096-token
-contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization while using
-more of `n_ctx` for structured Catch up finals. Remote context capacity remains model-dependent,
-with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
+to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (12,288) for Apple Intelligence and the bundled WASM engine
+(`AI_BUNDLED_N_CTX` = 8,192). That leaves output/template headroom after tokenization for
+structured Catch up finals. Leftover selected `qwen3-*` ids still append `/no_think` and disable
+wllama thinking; the shipped Qwen2.5 pack has no thinking mode. Remote context
+capacity remains model-dependent, with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
 These budgets are shared via `aiSummaryPromptBudget` so App → AI capacity copy stays aligned.
 
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
@@ -206,21 +211,21 @@ never authorize serving bytes. Missing/corrupt metadata falls back to hashing. C
 full verifications of the same model and file signature share one hash operation; advisory
 metadata hits cannot satisfy runtime verification.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
-checked on 2026-11-07. The catalog offers Llama 3.2 3B Instruct and Qwen3 1.7B Instruct,
-both Q4_K_M. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License.
-Its full license and Meta NOTICE are verified and atomically installed beside the GGUF;
-inline notices use the same size/hash verification as downloaded assets. Built with Llama.
-Wllama and llama.cpp use MIT. The npm license report covers runtime dependencies;
-model attribution belongs in credits. No weights ship in the installer.
-Bundled Qwen3 Catch up prompts append `/no_think` so thinking mode does not consume the
-completion budget.
+checked on 2026-11-07. Cross-platform packs are Llama 3.2 3B Instruct and Qwen2.5 1.5B Instruct
+GGUF Q4_K_M (wllama CPU). On Apple Silicon (`darwin` + `arm64`) the catalog also offers MLX 4-bit
+twins of the same models, listed first, for Metal Catch up via `mesh-ai-mlx`. Main filters MLX
+rows (and install/select) to that host only. Soft relative recommendations: Llama = quality
+(recommended), Qwen = faster for slower machines — assigned to the **MLX** twins on Apple Silicon
+and to the **GGUF** twins elsewhere. These labels are relative speed/resource guidance only, not
+accuracy guarantees. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License. Llama
+downloads include the full license and Meta NOTICE beside the weights. Built with Llama.
+Wllama/llama.cpp use MIT; MLX Swift uses the mlx-swift / mlx-swift-lm stack. Attribution belongs
+in credits. No weights ship in the installer.
 
-Older catalog ids (Llama 3.2 1B, Qwen2.5 1.5B, Qwen 0.5B, SmolLM2) are removed. A saved
-selection of a removed model becomes not-ready; the app never silently selects or downloads a
-replacement. Choose explicitly from the catalog. Model cards show factual metadata (name,
-parameter count, bytes and license) without quality claims. None is an accuracy guarantee.
-Historical synthetic trials of prior smaller catalog models established runtime compatibility
-and limitations, not summary accuracy or comparative quality.
+Older catalog ids (Llama 3.2 1B, Qwen3 1.7B, Qwen 0.5B, SmolLM2) are removed. A saved
+selection of a removed or off-platform model becomes not-ready; the app never silently selects or
+downloads a replacement. Choose explicitly from the catalog. Model cards show factual metadata
+(name, parameter count, bytes, license, runtime) plus the soft recommendation line when set.
 
 RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
 without marking the transcript read. The first incoming prose/whisper row carries a measured

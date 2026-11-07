@@ -7982,7 +7982,14 @@
     "followUpWorking": "回答",
     "followUpQueued": "正在等待当前摘要完成……",
     "cancelFollowUp": "取消关注",
-    "followUpContextLimited": "此答案仅使用摘要和为其保留的源消息。某些较早的详细信息可能不可用。"
+    "followUpContextLimited": "此答案仅使用摘要和为其保留的源消息。某些较早的详细信息可能不可用。",
+    "modelRecommendQuality": "质量推荐",
+    "modelRecommendFasterMachines": "对于速度较慢的机器，速度更快",
+    "modelRuntimeMlx": "Apple Silicon (MLX) —更快地赶上这款Mac",
+    "modelRuntimeCpu": "计划工作站（便携式）",
+    "unusedDownloads": "未使用的下载",
+    "unusedDownloadsHint": "这些型号不再在目录中（例如升级后） ，但仍使用磁盘空间。如果您不需要它们，请将其移除。",
+    "unusedDownloadRetired": "不再在目录中"
   },
   "chatOrder": {
     "title": "调整聊天顺序",

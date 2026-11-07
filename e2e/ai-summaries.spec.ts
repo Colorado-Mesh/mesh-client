@@ -150,7 +150,7 @@ test.describe('AI conversation summaries', () => {
     });
     const section = await openAiSettings(launched);
     await section.getByRole('combobox', { name: 'Engine', exact: true }).selectOption('bundled');
-    for (const modelId of ['llama3.2-3b-instruct-q4', 'qwen3-1.7b-instruct-q4']) {
+    for (const modelId of ['llama3.2-3b-instruct-q4', 'qwen2.5-1.5b-instruct-q4']) {
       const installed = await launched.page.evaluate(async (id) => {
         const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
         const result = await api.ai.installLocalModel(id);
@@ -208,13 +208,13 @@ test.describe('AI conversation summaries', () => {
     await section.getByRole('combobox', { name: 'Engine', exact: true }).selectOption('bundled');
     const install = await launched.page.evaluate(() =>
       (window as unknown as { electronAPI: ElectronAPI }).electronAPI.ai.installLocalModel(
-        'qwen3-1.7b-instruct-q4',
+        'qwen2.5-1.5b-instruct-q4',
       ),
     );
     expect(install.ok).toBe(true);
     await launched.page.evaluate(() =>
       (window as unknown as { electronAPI: ElectronAPI }).electronAPI.ai.selectLocalModel(
-        'qwen3-1.7b-instruct-q4',
+        'qwen2.5-1.5b-instruct-q4',
       ),
     );
     await openChat(launched);
@@ -223,7 +223,7 @@ test.describe('AI conversation summaries', () => {
     await expect(card.getByRole('button', { name: 'Regenerate', exact: true })).toBeVisible({
       timeout: 310000,
     });
-    await expect(card).toContainText('Qwen3');
+    await expect(card).toContainText('Qwen2.5');
     await expect(card).toContainText('Processed on this device');
     await expect(card.getByRole('status')).not.toContainText('Could not summarize');
     await expect(card.getByRole('status')).not.toContainText('unsupported response');
