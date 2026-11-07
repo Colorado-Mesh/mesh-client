@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import beforeBuild, {
+import {
   findUsocketPackageDirs,
+  runBeforeBuild,
   stripUsocketPackages,
 } from './electron-builder-before-build.mjs';
 
@@ -62,6 +63,10 @@ describe('electron-builder-before-build usocket strip', () => {
   });
 
   it('returns true so electron-builder continues pack-time native rebuild', async () => {
-    await expect(beforeBuild()).resolves.toBe(true);
+    // Use an empty temp tree so the hook cannot touch the project's real node_modules.
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-usocket-before-build-'));
+    mkdirSync(path.join(root, 'serialport'), { recursive: true });
+    await expect(runBeforeBuild(root)).resolves.toBe(true);
+    expect(existsSync(path.join(root, 'serialport'))).toBe(true);
   });
 });

@@ -83,13 +83,14 @@ export function stripUsocketPackages(nodeModulesRoot = path.join(projectRoot, 'n
 }
 
 /**
- * Must resolve to `true` so electron-builder continues pack-time native rebuild.
+ * Strip usocket then signal electron-builder to continue pack-time native rebuild.
  * Returning void/undefined is treated as false and skips installOrRebuild entirely.
  *
- * @type {(context: import('app-builder-lib').BeforeBuildContext) => Promise<boolean>}
+ * @param {string} [nodeModulesRoot]
+ * @returns {Promise<boolean>}
  */
-export default async function beforeBuild() {
-  const removed = stripUsocketPackages();
+export async function runBeforeBuild(nodeModulesRoot = path.join(projectRoot, 'node_modules')) {
+  const removed = stripUsocketPackages(nodeModulesRoot);
   if (removed.length === 0) {
     console.debug('[beforeBuild] No usocket packages found under node_modules');
   } else {
@@ -98,4 +99,11 @@ export default async function beforeBuild() {
     );
   }
   return true;
+}
+
+/**
+ * @type {(context: import('app-builder-lib').BeforeBuildContext) => Promise<boolean>}
+ */
+export default async function beforeBuild() {
+  return runBeforeBuild();
 }

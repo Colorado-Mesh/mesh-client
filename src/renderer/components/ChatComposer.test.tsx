@@ -2178,7 +2178,7 @@ describe('ChatComposer', () => {
     expect(chevron).toHaveFocus();
   });
 
-  it('does not move focus into the menu when opened with a pointer', async () => {
+  it('moves focus from the textarea to the Send options chevron on pointer open', async () => {
     const user = userEvent.setup();
     render(
       <ChatComposer
@@ -2191,10 +2191,39 @@ describe('ChatComposer', () => {
         onSendChunk={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later' } });
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'later' } });
+    textarea.focus();
+    expect(textarea).toHaveFocus();
     const chevron = screen.getByRole('button', { name: 'Send options' });
     await user.click(chevron);
     expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Send later' })).not.toHaveFocus();
+    expect(chevron).toHaveFocus();
+  });
+
+  it('keeps Send later available when flood scopeKey is null', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox
+        allowScheduledSend
+        showFloodScopeOverride
+        floodScopeStorageKey={null}
+        floodScopePresets={['#eu']}
+        queueOutbox={vi.fn().mockResolvedValue({ id: 'out-1' })}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later' } });
+    const chevron = screen.getByRole('button', { name: 'Change flood scope for this channel' });
+    expect(chevron).toBeEnabled();
+    await user.click(chevron);
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Default scope' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Custom scope…' })).toBeDisabled();
   });
 });

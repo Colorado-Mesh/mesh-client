@@ -463,15 +463,19 @@ export function ChatComposer({
     };
   }, [closeFloodScopeMenu, floodScopeMenuOpen]);
 
-  // Keyboard open: move focus into the portaled menu. Pointer open leaves focus on the chevron.
+  // Keyboard open: focus first enabled item. Pointer open: focus the chevron (mousedown is
+  // preventDefault'd so the textarea would otherwise keep focus and Enter would send).
   useLayoutEffect(() => {
     if (!floodScopeMenuOpen || !floodScopeMenuPos) return;
-    if (!floodScopeMenuOpenedByKeyboardRef.current) return;
-    floodScopeMenuOpenedByKeyboardRef.current = false;
-    const menu = floodScopeMenuRef.current;
-    if (!menu) return;
-    const firstEnabled = menu.querySelector<HTMLButtonElement>('button:not([disabled])');
-    (firstEnabled ?? menu).focus();
+    if (floodScopeMenuOpenedByKeyboardRef.current) {
+      floodScopeMenuOpenedByKeyboardRef.current = false;
+      const menu = floodScopeMenuRef.current;
+      if (!menu) return;
+      const firstEnabled = menu.querySelector<HTMLButtonElement>('button:not([disabled])');
+      (firstEnabled ?? menu).focus();
+      return;
+    }
+    floodScopeMenuButtonRef.current?.focus();
   }, [floodScopeMenuOpen, floodScopeMenuPos]);
 
   // Escape closes the menu and returns focus to the chevron (custom-editing Escape is local).
@@ -1794,7 +1798,12 @@ export function ChatComposer({
                   }
                   setFloodScopeMenuOpen(true);
                 }}
-                disabled={disabled || sending || (showFloodScopeOverride && scopeKey === null)}
+                disabled={
+                  disabled ||
+                  sending ||
+                  // Null flood scopeKey must not block Send later when scheduling is allowed.
+                  (showFloodScopeOverride && !scheduleSendAllowed && scopeKey === null)
+                }
                 aria-label={sendMenuChevronAria}
                 aria-haspopup={showFloodScopeOverride ? 'listbox' : 'menu'}
                 aria-expanded={floodScopeMenuOpen}
@@ -1857,6 +1866,7 @@ export function ChatComposer({
                             id={floodScopeCustomInputId}
                             type="text"
                             value={floodScopeCustomDraft}
+                            disabled={scopeKey === null}
                             onChange={(e) => {
                               setFloodScopeCustomDraft(e.target.value);
                               setFloodScopeCustomError(null);
@@ -1872,6 +1882,7 @@ export function ChatComposer({
                               }
                               if (e.key === 'Enter') {
                                 e.preventDefault();
+                                if (scopeKey === null) return;
                                 commitCustomFloodScopeDraft();
                               }
                             }}
@@ -1899,10 +1910,11 @@ export function ChatComposer({
                             </button>
                             <button
                               type="button"
+                              disabled={scopeKey === null}
                               onClick={() => {
                                 commitCustomFloodScopeDraft();
                               }}
-                              className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 text-2xs rounded px-2 py-1 font-medium"
+                              className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 text-2xs rounded px-2 py-1 font-medium disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {t('chatPanel.floodScopeOverrideCustomApply')}
                             </button>
@@ -1967,11 +1979,12 @@ export function ChatComposer({
                                   >
                                     <button
                                       type="button"
+                                      disabled={scopeKey === null}
                                       onClick={() => {
                                         persistFloodScopeOverride(option.value);
                                         closeFloodScopeMenu();
                                       }}
-                                      className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                                      className={`w-full px-3 py-1.5 text-left text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                                         selected
                                           ? 'text-brand-green bg-ink-800'
                                           : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100'
@@ -1985,6 +1998,7 @@ export function ChatComposer({
                               <li role="presentation" className="border-ink-700 mt-1 border-t pt-1">
                                 <button
                                   type="button"
+                                  disabled={scopeKey === null}
                                   onClick={() => {
                                     setFloodScopeCustomEditing(true);
                                     setFloodScopeCustomDraft(
@@ -1996,7 +2010,7 @@ export function ChatComposer({
                                     );
                                     setFloodScopeCustomError(null);
                                   }}
-                                  className="hover:bg-ink-800 w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:text-cyan-200"
+                                  className="hover:bg-ink-800 w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {t('chatPanel.floodScopeOverrideCustom')}
                                 </button>
