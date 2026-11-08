@@ -1,11 +1,16 @@
 import L from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Marker, useMap, useMapEvents } from 'react-leaflet';
 
 import { sensorColorForValue } from '@/renderer/lib/environmentSensorDisplay';
 import { idwTemperature } from '@/renderer/lib/map/internetWeatherRender';
 import type { WeatherGrid, WeatherTempUnit } from '@/shared/weather/types';
 import { convertTemp, roundDisplay, tempUnitLabel } from '@/shared/weather/units';
+
+/** Lattice spacing: ≥4 px, ≤~256 samples along the longer canvas edge. */
+function sampleStepPx(w: number, h: number): number {
+  return Math.max(4, Math.ceil(Math.max(w, h) / 256));
+}
 
 export function TemperatureLayer({
   grid,
@@ -16,6 +21,10 @@ export function TemperatureLayer({
 }): React.JSX.Element | null {
   const map = useMap();
   const overlayRef = useRef<L.ImageOverlay | null>(null);
+  const [view, setView] = useState(() => ({
+    zoom: map.getZoom(),
+    center: map.getCenter(),
+  }));
 
   const validPoints = useMemo(
     () =>
@@ -36,6 +45,9 @@ export function TemperatureLayer({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.min(2048, Math.max(1, Math.floor(size.x * dpr)));
     const h = Math.min(2048, Math.max(1, Math.floor(size.y * dpr)));
+    // After the 2048 cap, canvas px ≠ CSS px × dpr — use actual scales.
+    const scaleX = size.x > 0 ? w / size.x : 1;
+    const scaleY = size.y > 0 ? h / size.y : 1;
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
@@ -43,10 +55,10 @@ export function TemperatureLayer({
     if (!ctx) return;
     const img = ctx.createImageData(w, h);
     const bounds = map.getBounds();
-    const step = 2;
+    const step = sampleStepPx(w, h);
     for (let py = 0; py < h; py += step) {
       for (let px = 0; px < w; px += step) {
-        const latlng = map.containerPointToLatLng([px / dpr, py / dpr]);
+        const latlng = map.containerPointToLatLng([px / scaleX, py / scaleY]);
         const v = idwTemperature(latlng.lat, latlng.lng, validPoints);
         if (v == null) continue;
         const color = sensorColorForValue('temperature', v);
@@ -74,9 +86,14 @@ export function TemperatureLayer({
     overlayRef.current = overlay;
   };
 
+  const syncView = () => {
+    setView({ zoom: map.getZoom(), center: map.getCenter() });
+    redraw();
+  };
+
   useMapEvents({
-    moveend: redraw,
-    zoomend: redraw,
+    moveend: syncView,
+    zoomend: syncView,
   });
 
   useEffect(() => {
@@ -90,10 +107,9 @@ export function TemperatureLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grid, map, validPoints]);
 
-  const zoom = map.getZoom();
-  if (zoom < 8 || validPoints.length === 0) return null;
+  if (view.zoom < 8 || validPoints.length === 0) return null;
 
-  const center = map.getCenter();
+  const { center } = view;
   const nearest = [...validPoints]
     .sort(
       (a, b) =>

@@ -45,7 +45,7 @@ export function WeatherOverlayBar(): React.JSX.Element | null {
 
   if (!frames || frames.frames.length === 0) {
     return (
-      <div className={`${MAP_OVERLAY_PANEL_CLASS} absolute bottom-8 left-3 z-[500] max-w-xs`}>
+      <div className={`${MAP_OVERLAY_PANEL_CLASS} max-w-xs`}>
         <div className="text-ink-300 text-xs">{t('internetWeather.noRadar')}</div>
       </div>
     );
@@ -57,7 +57,7 @@ export function WeatherOverlayBar(): React.JSX.Element | null {
 
   return (
     <div
-      className={`${MAP_OVERLAY_PANEL_CLASS} absolute bottom-8 left-3 z-[500] flex max-w-sm flex-col gap-2`}
+      className={`${MAP_OVERLAY_PANEL_CLASS} flex max-w-sm flex-col gap-2`}
       role="group"
       aria-label={t('internetWeather.layerRadar')}
     >

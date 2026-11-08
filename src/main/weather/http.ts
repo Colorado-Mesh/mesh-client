@@ -108,6 +108,13 @@ async function fetchPinned(
   }
 }
 
+/** Drop an unused Response body so undici / fetch can release the connection. */
+function discardResponseBody(response: Response): void {
+  void response.body?.cancel().catch(() => {
+    // catch-no-log-ok stream may already be closed
+  });
+}
+
 export async function fetchBounded(
   url: string,
   opts: {
@@ -157,17 +164,23 @@ export async function fetchBounded(
 
     if (response.status >= 300 && response.status < 400) {
       const loc = response.headers.get('location');
-      if (!loc || hop === WEATHER_MAX_REDIRECTS) return null;
+      if (!loc || hop === WEATHER_MAX_REDIRECTS) {
+        discardResponseBody(response);
+        return null;
+      }
       try {
         current = new URL(loc, current).toString();
       } catch {
         // catch-no-log-ok malformed redirect Location
+        discardResponseBody(response);
         return null;
       }
+      discardResponseBody(response);
       continue;
     }
 
     if (!response.ok) {
+      discardResponseBody(response);
       console.warn(`[weather] upstream status ${response.status}`);
       return null;
     }
@@ -183,6 +196,7 @@ export async function fetchBounded(
         (a) => a.endsWith('/*') && contentType.startsWith(a.replace('/*', '/')),
       );
       if (!wildcardOk && !accepted.includes(contentType)) {
+        discardResponseBody(response);
         console.warn('[weather] unexpected content-type ' + sanitizeLogMessage(contentType));
         return null;
       }

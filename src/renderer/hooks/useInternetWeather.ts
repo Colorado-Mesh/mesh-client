@@ -86,7 +86,10 @@ export function useInternetWeather(): void {
       } catch (e) {
         if (gen !== generationRef.current) return;
         console.warn('[useInternetWeather] refresh failed ' + errLikeToLogString(e));
-        useInternetWeatherStore.getState().setError({
+        const store = useInternetWeatherStore.getState();
+        if (store.gridStatus === 'loading') store.setGridStatus('error');
+        if (store.radarStatus === 'loading') store.setRadarStatus('error');
+        store.setError({
           code: 'provider_error',
           message: 'provider_error',
         });
@@ -108,9 +111,20 @@ export function useInternetWeather(): void {
   });
 
   useEffect(() => {
+    if (!enabled) {
+      // Invalidate in-flight refresh so clear() is not overwritten by stale writes.
+      generationRef.current += 1;
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      return;
+    }
     schedule();
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      // Discard pending requests from this map instance / effect generation.
+      generationRef.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh when toggles/provider change
   }, [enabled, showRadar, showTemp, showWind, radarProvider]);

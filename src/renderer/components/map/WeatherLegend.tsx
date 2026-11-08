@@ -29,7 +29,7 @@ export function WeatherLegend(): React.JSX.Element | null {
 
   return (
     <div
-      className={`${MAP_OVERLAY_PANEL_CLASS} absolute bottom-36 left-3 z-[500] max-w-[14rem] space-y-1`}
+      className={`${MAP_OVERLAY_PANEL_CLASS} max-w-[14rem] space-y-1`}
       aria-label={t('internetWeather.legend')}
     >
       {showTemp ? (

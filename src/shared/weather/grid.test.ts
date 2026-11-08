@@ -58,4 +58,19 @@ describe('weather grid', () => {
   it('rounds cache keys to two decimals', () => {
     expect(weatherPointCacheKey(47.6062, -122.3321)).toBe('47.61,-122.33');
   });
+
+  it('covers the full latitude span when capped instead of truncating northern rows', () => {
+    const bounds = { north: 60, south: 20, east: 40, west: -40 };
+    const cells = buildGridCells({
+      bounds,
+      zoom: 10,
+      stepDeg: 0.25,
+      maxPoints: WEATHER_GRID_MAX_POINTS,
+    });
+    expect(cells.length).toBeLessThanOrEqual(WEATHER_GRID_MAX_POINTS);
+    const lats = cells.map((c) => c.lat);
+    // Even subsample keeps edges — not only the southern rows of a south→north walk.
+    expect(Math.min(...lats)).toBeLessThanOrEqual(bounds.south + 0.5);
+    expect(Math.max(...lats)).toBeGreaterThanOrEqual(bounds.north - 0.5);
+  });
 });

@@ -38,6 +38,25 @@ interface ParsedWeatherTile {
 }
 
 const LAG_SET = new Set<number>(IEM_RADAR_LAGS);
+/** Plain non-negative decimal integers only (no sign, exponent, or leading zeros). */
+const DECIMAL_DIGITS = /^(0|[1-9]\d*)$/;
+
+function parseDecimalDigits(raw: string): number | null {
+  if (!DECIMAL_DIGITS.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Stable cache / inflight key from parsed identity (not raw request.url spelling). */
+export function weatherTileCacheKey(parsed: ParsedWeatherTile): string {
+  if (parsed.kind === 'coverage') {
+    return `coverage/rainviewer/${parsed.z}/${parsed.x}/${parsed.y}`;
+  }
+  if (parsed.provider === 'iem') {
+    return `radar/iem/${parsed.frameId}/${parsed.z}/${parsed.x}/${parsed.y}?t=${parsed.bucket}`;
+  }
+  return `radar/rainviewer/${parsed.frameId}/${parsed.z}/${parsed.x}/${parsed.y}`;
+}
 
 export function parseMeshWeatherUrl(urlString: string): ParsedWeatherTile | null {
   let url: URL;
@@ -60,28 +79,29 @@ export function parseMeshWeatherUrl(urlString: string): ParsedWeatherTile | null
     if (parts.length !== 4) return null;
     const [provider, zS, xS, yS] = parts;
     if (provider !== 'rainviewer') return null;
-    const z = Number(zS);
-    const x = Number(xS);
-    const y = Number(yS);
-    if (!validTile(z, x, y)) return null;
+    const z = parseDecimalDigits(zS);
+    const x = parseDecimalDigits(xS);
+    const y = parseDecimalDigits(yS);
+    if (z == null || x == null || y == null || !validTile(z, x, y)) return null;
     return { kind: 'coverage', provider: 'rainviewer', frameId: '', z, x, y, bucket: null };
   }
   if (parts.length !== 5) return null;
   const [provider, frameId, zS, xS, yS] = parts;
   if (provider !== 'rainviewer' && provider !== 'iem') return null;
-  const z = Number(zS);
-  const x = Number(xS);
-  const y = Number(yS);
-  if (!validTile(z, x, y)) return null;
+  const z = parseDecimalDigits(zS);
+  const x = parseDecimalDigits(xS);
+  const y = parseDecimalDigits(yS);
+  if (z == null || x == null || y == null || !validTile(z, x, y)) return null;
   if (provider === 'iem') {
-    const lag = Number(frameId);
-    if (!LAG_SET.has(lag)) return null;
+    const lag = parseDecimalDigits(frameId);
+    if (lag == null || !LAG_SET.has(lag)) return null;
     const t = url.searchParams.get('t');
-    const bucket = t != null ? Number(t) : Number.NaN;
+    if (t == null || !DECIMAL_DIGITS.test(t)) return null;
+    const bucket = Number(t);
     if (!Number.isFinite(bucket)) return null;
     return { kind: 'radar', provider: 'iem', frameId: String(lag), z, x, y, bucket };
   }
-  if (!/^\d+$/.test(frameId)) return null;
+  if (!DECIMAL_DIGITS.test(frameId)) return null;
   return { kind: 'radar', provider: 'rainviewer', frameId, z, x, y, bucket: null };
 }
 
@@ -123,6 +143,8 @@ export interface WeatherProtocolState {
   rainViewerCircuit: ProviderCircuit;
   iemCircuit: ProviderCircuit;
   manifestCache: TtlCache<string, RainViewerManifest>;
+  /** Shared in-flight RainViewer manifest fetch (cache miss + frame refresh). */
+  manifestInflight: Promise<RainViewerManifest | null> | null;
   inflight: Map<string, Promise<WeatherTileInflightResult>>;
   lastFailLogMs: Map<string, number>;
 }
@@ -141,6 +163,7 @@ export function createWeatherProtocolState(): WeatherProtocolState {
     rainViewerCircuit: new ProviderCircuit('rainviewer'),
     iemCircuit: new ProviderCircuit('iem-nexrad'),
     manifestCache: new TtlCache({ maxEntries: 1, ttlMs: 5 * MS_PER_MINUTE }),
+    manifestInflight: null,
     inflight: new Map(),
     lastFailLogMs: new Map(),
   };
@@ -168,18 +191,20 @@ export function createWeatherProtocolHandler(
     const parsed = parseMeshWeatherUrl(request.url);
     if (!parsed) return emptyResponse(400);
 
-    const cacheKey = request.url;
+    const cacheKey = weatherTileCacheKey(parsed);
     const cached = state.tileCache.get(cacheKey, deps.now?.());
     if (cached) return pngResponse(cached);
 
     if (!state.tileLimiter.tryAcquire(deps.now?.())) return emptyResponse(429);
 
+    const circuit = parsed.provider === 'iem' ? state.iemCircuit : state.rainViewerCircuit;
+    // Open circuit blocks resolveUpstream (including RainViewer manifest fetches).
+    if (!circuit.canAttempt(deps.now?.())) return emptyResponse(503);
+
     const shared = await withInflightDedup(state.inflight, cacheKey, async () => {
       try {
         const upstream = await resolveUpstream(parsed, deps, state);
         if (!upstream) return { ok: false as const, status: 404 };
-        const circuit = parsed.provider === 'iem' ? state.iemCircuit : state.rainViewerCircuit;
-        if (!circuit.canAttempt(deps.now?.())) return { ok: false as const, status: 503 };
 
         const result = await fetchBounded(upstream, {
           timeoutMs: WEATHER_TILE_TIMEOUT_MS,
@@ -211,6 +236,27 @@ export function createWeatherProtocolHandler(
   };
 }
 
+async function loadRainViewerManifest(
+  deps: WeatherProtocolDeps,
+  state: WeatherProtocolState,
+): Promise<RainViewerManifest | null> {
+  const cached = state.manifestCache.get('manifest', deps.now?.());
+  if (cached) return cached;
+  state.manifestInflight ??= fetchRainViewerManifest(deps)
+    .then((manifest) => {
+      if (manifest) {
+        state.manifestCache.set('manifest', manifest, deps.now?.());
+      } else {
+        state.rainViewerCircuit.recordFailure('manifest unavailable', deps.now?.());
+      }
+      return manifest;
+    })
+    .finally(() => {
+      state.manifestInflight = null;
+    });
+  return state.manifestInflight;
+}
+
 async function resolveUpstream(
   parsed: ParsedWeatherTile,
   deps: WeatherProtocolDeps,
@@ -226,11 +272,7 @@ async function resolveUpstream(
     return buildIemNexradUrl(iemUpstreamLayer(lag), parsed.z, parsed.x, parsed.y);
   }
 
-  let manifest = state.manifestCache.get('manifest', deps.now?.());
-  if (!manifest) {
-    manifest = (await fetchRainViewerManifest(deps)) ?? undefined;
-    if (manifest) state.manifestCache.set('manifest', manifest, deps.now?.());
-  }
+  let manifest = await loadRainViewerManifest(deps, state);
   if (!manifest) return null;
 
   if (parsed.kind === 'coverage') {
@@ -240,9 +282,10 @@ async function resolveUpstream(
   const timeSeconds = Number(parsed.frameId);
   let path = pathForRainViewerTime(manifest, timeSeconds);
   if (!path) {
-    const refreshed = await fetchRainViewerManifest(deps);
+    // Force a shared refresh (bypass TTL by clearing cache entry via fresh fetch path).
+    state.manifestCache.clear();
+    const refreshed = await loadRainViewerManifest(deps, state);
     if (refreshed) {
-      state.manifestCache.set('manifest', refreshed, deps.now?.());
       path = pathForRainViewerTime(refreshed, timeSeconds);
       manifest = refreshed;
     }

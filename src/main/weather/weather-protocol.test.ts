@@ -5,6 +5,7 @@ import {
   createWeatherProtocolHandler,
   createWeatherProtocolState,
   parseMeshWeatherUrl,
+  weatherTileCacheKey,
 } from './weather-protocol';
 
 describe('weather-protocol', () => {
@@ -18,6 +19,17 @@ describe('weather-protocol', () => {
     expect(parseMeshWeatherUrl('mesh-weather://radar/iem/7/10/1/2.png?t=1')).toBeNull();
     expect(parseMeshWeatherUrl('https://evil/x')).toBeNull();
     expect(parseMeshWeatherUrl('mesh-weather://radar/rainviewer/1/99/0/0.png')).toBeNull();
+    expect(parseMeshWeatherUrl('mesh-weather://radar/rainviewer/1/07/0/0.png')).toBeNull();
+    expect(parseMeshWeatherUrl('mesh-weather://radar/iem/5/10/1/2.png?t=1e3')).toBeNull();
+  });
+
+  it('builds a stable cache key from parsed identity', () => {
+    const a = parseMeshWeatherUrl('mesh-weather://radar/rainviewer/1700000000/7/20/45.png');
+    const b = parseMeshWeatherUrl('mesh-weather://radar/rainviewer/1700000000/7/20/45.png#frag');
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    expect(weatherTileCacheKey(a!)).toBe(weatherTileCacheKey(b!));
+    expect(weatherTileCacheKey(a!)).toBe('radar/rainviewer/1700000000/7/20/45');
   });
 
   it('returns no-store and 503 when offline', async () => {

@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Marker, useMap, useMapEvents } from 'react-leaflet';
 
 import {
@@ -25,6 +25,10 @@ export function WindLayer({
 }): React.JSX.Element | null {
   const map = useMap();
   const canvasRef = useRef<L.ImageOverlay | null>(null);
+  const [view, setView] = useState(() => ({
+    zoom: map.getZoom(),
+    center: map.getCenter(),
+  }));
 
   const points = useMemo(
     () =>
@@ -48,12 +52,14 @@ export function WindLayer({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.min(2048, Math.max(1, Math.floor(size.x * dpr)));
     const h = Math.min(2048, Math.max(1, Math.floor(size.y * dpr)));
+    const scaleX = size.x > 0 ? w / size.x : 1;
+    const scaleY = size.y > 0 ? h / size.y : 1;
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.scale(dpr, dpr);
+    ctx.scale(scaleX, scaleY);
 
     for (const p of points) {
       const pt = map.latLngToContainerPoint([p.latitude, p.longitude]);
@@ -103,7 +109,12 @@ export function WindLayer({
     canvasRef.current = overlay;
   };
 
-  useMapEvents({ moveend: redraw, zoomend: redraw });
+  const syncView = () => {
+    setView({ zoom: map.getZoom(), center: map.getCenter() });
+    redraw();
+  };
+
+  useMapEvents({ moveend: syncView, zoomend: syncView });
   useEffect(() => {
     redraw();
     return () => {
@@ -115,9 +126,8 @@ export function WindLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grid, map, points]);
 
-  const zoom = map.getZoom();
-  if (zoom < 9) return null;
-  const center = map.getCenter();
+  if (view.zoom < 9) return null;
+  const { center } = view;
   const nearest = [...points]
     .sort(
       (a, b) =>

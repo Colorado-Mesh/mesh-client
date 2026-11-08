@@ -213,8 +213,12 @@ export function MeshMapShell({
         {showIncidents ? <IncidentMarkersLayer /> : null}
       </MapContainer>
 
-      {internetWeatherEnabled && showRadar ? <WeatherOverlayBar /> : null}
-      {internetWeatherEnabled ? <WeatherLegend /> : null}
+      {internetWeatherEnabled ? (
+        <div className="absolute bottom-8 left-3 z-[500] flex max-w-sm flex-col items-stretch gap-2">
+          <WeatherLegend />
+          {showRadar ? <WeatherOverlayBar /> : null}
+        </div>
+      ) : null}
       {overlay}
     </div>
   );
