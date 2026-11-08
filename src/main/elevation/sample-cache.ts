@@ -77,10 +77,18 @@ export class ElevationSampleCache {
       entries[key] = value;
     }
     const payload: SampleCacheFile = { version: 1, entries };
-    const tmp = this.filePath() + '.tmp';
-    await fs.writeFile(tmp, JSON.stringify(payload), 'utf8');
-    await fs.rename(tmp, this.filePath());
-    this.dirty = false;
+    // Unique stage name — CodeQL js/insecure-temporary-file rejects predictable `*.tmp`.
+    const tmp = path.join(this.cacheDir, `samples.${process.pid}.${Date.now()}.tmp`);
+    try {
+      await fs.writeFile(tmp, JSON.stringify(payload), 'utf8');
+      await fs.rename(tmp, this.filePath());
+      this.dirty = false;
+    } catch (err) {
+      await fs.unlink(tmp).catch(() => {
+        // catch-no-log-ok cleanup
+      });
+      throw err;
+    }
   }
 
   async clear(): Promise<void> {
