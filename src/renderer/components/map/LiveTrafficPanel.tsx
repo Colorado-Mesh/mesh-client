@@ -45,6 +45,7 @@ import { useBeaconTraffic } from '@/renderer/hooks/useBeaconTraffic';
 import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import type { OurPosition } from '@/renderer/lib/gpsSource';
+import { liveTrafficLocalEmptyCopy } from '@/renderer/lib/map/liveTrafficEmptyState';
 import { groupLiveTrafficEvents, liveTrafficPointKey } from '@/renderer/lib/map/liveTrafficGroups';
 import {
   buildLiveTrafficEvents,
@@ -504,6 +505,10 @@ export default function LiveTrafficPanel({
   }, [active, paused, visible, liveEvents.length]);
 
   const events = paused ? frozenEvents : liveEvents;
+  const localPacketLogCount = meshtastic
+    ? (meshtasticPackets?.length ?? 0)
+    : (meshcorePackets?.length ?? 0);
+  const localEmptyCopy = liveTrafficLocalEmptyCopy(localPacketLogCount);
   const points = useMemo(
     () => (regional ? beacon.points : [...index.points.values()]),
     [regional, beacon.points, index],
@@ -944,7 +949,9 @@ export default function LiveTrafficPanel({
               <div className="pointer-events-none absolute inset-0 z-[450] flex items-center justify-center p-5">
                 <div className="border-ink-700 bg-deep-black/95 rounded-card shadow-level-2 max-w-xs border p-5 text-center">
                   <Radio aria-hidden className="text-muted mx-auto mb-3 h-6 w-6" />
-                  <h3 className="mb-1 text-sm font-medium">{t('liveTraffic.waiting')}</h3>
+                  <h3 className="mb-1 text-sm font-medium">
+                    {t(regional ? 'liveTraffic.waiting' : localEmptyCopy.waiting)}
+                  </h3>
                   <p className="text-muted text-xs leading-relaxed">
                     {t(
                       regional
@@ -953,7 +960,7 @@ export default function LiveTrafficPanel({
                           : provider === 'corescope'
                             ? 'liveTraffic.corescope.waitingHint'
                             : 'liveTraffic.beacon.waitingHint'
-                        : 'liveTraffic.waitingHint',
+                        : localEmptyCopy.waitingHint,
                     )}
                   </p>
                 </div>
@@ -987,6 +994,7 @@ export default function LiveTrafficPanel({
                         : 'liveTraffic.animationDisclaimer',
                     )}
                   </p>
+                  {!regional && <p className="text-muted">{t('liveTraffic.retentionHint')}</p>}
                   <p className="text-muted">{t('liveTraffic.packetColorHint')}</p>
                   {filteredEvents.some((event) => event.routeStatus === 'estimated') && (
                     <p className="text-status-warning">{t('liveTraffic.estimatedRouteHint')}</p>
@@ -1084,7 +1092,13 @@ export default function LiveTrafficPanel({
                 <div className="min-h-16 flex-1 overflow-y-auto">
                   {feed.length === 0 ? (
                     <p className="text-muted p-4 text-xs leading-relaxed">
-                      {t(events.length ? 'liveTraffic.noFilterMatches' : 'liveTraffic.emptyFeed')}
+                      {t(
+                        events.length
+                          ? 'liveTraffic.noFilterMatches'
+                          : regional
+                            ? 'liveTraffic.emptyFeed'
+                            : localEmptyCopy.emptyFeed,
+                      )}
                     </p>
                   ) : (
                     <ol aria-label={t('liveTraffic.packetList')}>

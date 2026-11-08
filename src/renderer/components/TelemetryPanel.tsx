@@ -277,7 +277,7 @@ export default function TelemetryPanel({
           {showLiveSignalMeter && <SignalMeter rssi={latestSignal?.rssi} snr={latestSignal?.snr} />}
         </div>
         <div className="flex items-center gap-2">
-          {showEnvironment && (hasTemp || hasMcuTemp) && (
+          {showEnvironment ? (
             <button
               type="button"
               onClick={onToggleFahrenheit}
@@ -287,7 +287,7 @@ export default function TelemetryPanel({
             >
               {useFahrenheit ? t('telemetryPanel.tempUnitF') : t('telemetryPanel.tempUnitC')}
             </button>
-          )}
+          ) : null}
           {(telemetry.length > 0 ||
             signalTelemetry.length > 0 ||
             environmentTelemetry.length > 0) && (

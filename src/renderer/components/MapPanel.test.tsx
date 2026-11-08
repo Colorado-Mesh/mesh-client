@@ -95,7 +95,14 @@ const mockMapInstance = {
   invalidateSize: vi.fn(),
   getContainer: vi.fn(() => document.createElement('div')),
   createPane: vi.fn().mockReturnValue({ style: {} }),
-  getBounds: vi.fn().mockReturnValue({ isValid: () => false }),
+  getBounds: vi.fn().mockReturnValue({
+    isValid: () => false,
+    getNorth: () => 1,
+    getSouth: () => 0,
+    getEast: () => 1,
+    getWest: () => 0,
+  }),
+  attributionControl: { addAttribution: vi.fn(), removeAttribution: vi.fn() },
 };
 
 vi.mock('react-leaflet', () => ({
@@ -125,6 +132,11 @@ vi.mock('leaflet', () => ({
   divIcon: vi.fn().mockReturnValue({}),
   icon: leafletIconMock,
   latLngBounds: vi.fn().mockReturnValue({ isValid: () => false }),
+  DomEvent: {
+    disableClickPropagation: vi.fn(),
+    disableScrollPropagation: vi.fn(),
+    off: vi.fn(),
+  },
 }));
 
 const defaultFilter = {

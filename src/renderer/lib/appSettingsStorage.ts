@@ -155,6 +155,71 @@ export function isWeatherOnlinePlaceLookupEnabled(): boolean {
     : DEFAULT_APP_SETTINGS_SHARED.weatherOnlinePlaceLookup;
 }
 
+export function isInternetWeatherEnabled(): boolean {
+  const parsed = parseStoredJson<{ internetWeatherEnabled?: unknown }>(
+    getAppSettingsRaw(),
+    'isInternetWeatherEnabled',
+  );
+  return typeof parsed?.internetWeatherEnabled === 'boolean'
+    ? parsed.internetWeatherEnabled
+    : DEFAULT_APP_SETTINGS_SHARED.internetWeatherEnabled;
+}
+
+export function setInternetWeatherEnabled(enabled: boolean): void {
+  mergeAppSetting('internetWeatherEnabled', enabled, 'setInternetWeatherEnabled');
+}
+
+export function getWeatherUnits(): {
+  wind: 'kmh' | 'mph' | 'ms' | 'kn';
+  precip: 'mm' | 'in';
+} {
+  const parsed = parseStoredJson<{
+    mapWeatherWindUnit?: unknown;
+    mapWeatherPrecipUnit?: unknown;
+  }>(getAppSettingsRaw(), 'getWeatherUnits');
+  const wind =
+    parsed?.mapWeatherWindUnit === 'kmh' ||
+    parsed?.mapWeatherWindUnit === 'mph' ||
+    parsed?.mapWeatherWindUnit === 'ms' ||
+    parsed?.mapWeatherWindUnit === 'kn'
+      ? parsed.mapWeatherWindUnit
+      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherWindUnit;
+  const precip =
+    parsed?.mapWeatherPrecipUnit === 'mm' || parsed?.mapWeatherPrecipUnit === 'in'
+      ? parsed.mapWeatherPrecipUnit
+      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherPrecipUnit;
+  return { wind, precip };
+}
+
+export function getRadarPreferences(): {
+  provider: 'auto' | 'rainviewer' | 'iem-nexrad';
+  opacity: number;
+  showCoverage: boolean;
+} {
+  const parsed = parseStoredJson<{
+    mapWeatherRadarProvider?: unknown;
+    mapWeatherRadarOpacity?: unknown;
+    mapWeatherRadarCoverage?: unknown;
+  }>(getAppSettingsRaw(), 'getRadarPreferences');
+  const provider =
+    parsed?.mapWeatherRadarProvider === 'auto' ||
+    parsed?.mapWeatherRadarProvider === 'rainviewer' ||
+    parsed?.mapWeatherRadarProvider === 'iem-nexrad'
+      ? parsed.mapWeatherRadarProvider
+      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherRadarProvider;
+  const rawOpacity =
+    typeof parsed?.mapWeatherRadarOpacity === 'number' &&
+    Number.isFinite(parsed.mapWeatherRadarOpacity)
+      ? parsed.mapWeatherRadarOpacity
+      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherRadarOpacity;
+  const opacity = Math.min(0.9, Math.max(0.2, rawOpacity));
+  const showCoverage =
+    typeof parsed?.mapWeatherRadarCoverage === 'boolean'
+      ? parsed.mapWeatherRadarCoverage
+      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherRadarCoverage;
+  return { provider, opacity, showCoverage };
+}
+
 export interface OperationalAlertSettings {
   /** null = protocol capability defaults. */
   nodeSilenceAlertMinutes: number | null;

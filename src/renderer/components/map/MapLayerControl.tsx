@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
 import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
+import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
+import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 
 import { SELECT_BOX_SM_CLASS } from '../ui/formClasses';
 import { MAP_CONTROL_CLASS, MAP_OVERLAY_PANEL_CLASS } from './mapControlClasses';
@@ -55,6 +57,24 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
   const setShowMgrsGrid = useMapLayerStore((s) => s.setShowMgrsGrid);
   const showWeatherForecasts = useMapLayerStore((s) => s.showWeatherForecasts);
   const setShowWeatherForecasts = useMapLayerStore((s) => s.setShowWeatherForecasts);
+  const showRadar = useMapLayerStore((s) => s.showRadar);
+  const setShowRadar = useMapLayerStore((s) => s.setShowRadar);
+  const showWeatherTemperature = useMapLayerStore((s) => s.showWeatherTemperature);
+  const setShowWeatherTemperature = useMapLayerStore((s) => s.setShowWeatherTemperature);
+  const showWeatherWind = useMapLayerStore((s) => s.showWeatherWind);
+  const setShowWeatherWind = useMapLayerStore((s) => s.setShowWeatherWind);
+
+  const weatherEnabled = useInternetWeatherStore((s) => s.enabled);
+  const setWeatherEnabled = useInternetWeatherStore((s) => s.setEnabled);
+  const radarProvider = useInternetWeatherStore((s) => s.radarProvider);
+  const setRadarProvider = useInternetWeatherStore((s) => s.setRadarProvider);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const setUseFahrenheit = useTemperatureUnitStore((s) => s.setUseFahrenheit);
+  const windUnit = useInternetWeatherStore((s) => s.windUnit);
+  const setWindUnit = useInternetWeatherStore((s) => s.setWindUnit);
+  const precipUnit = useInternetWeatherStore((s) => s.precipUnit);
+  const setPrecipUnit = useInternetWeatherStore((s) => s.setPrecipUnit);
+  const lastError = useInternetWeatherStore((s) => s.lastError);
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -93,6 +113,115 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
               ))}
             </select>
           </div>
+
+          <div className="space-y-1.5">
+            <div className="text-2xs text-ink-400 font-medium">{t('internetWeather.heading')}</div>
+            <MapLayerRow
+              label={t('internetWeather.enable')}
+              checked={weatherEnabled}
+              onChange={setWeatherEnabled}
+            />
+            <p className="text-muted text-2xs">{t('internetWeather.enableHint')}</p>
+            {weatherEnabled ? (
+              <>
+                <MapLayerRow
+                  label={t('internetWeather.layerRadar')}
+                  checked={showRadar}
+                  onChange={setShowRadar}
+                />
+                <MapLayerRow
+                  label={t('internetWeather.layerTemperature')}
+                  checked={showWeatherTemperature}
+                  onChange={setShowWeatherTemperature}
+                />
+                <MapLayerRow
+                  label={t('internetWeather.layerWind')}
+                  checked={showWeatherWind}
+                  onChange={setShowWeatherWind}
+                />
+                {showRadar ? (
+                  <label className="text-muted flex flex-col gap-1 text-xs">
+                    <span>{t('internetWeather.providerHeading')}</span>
+                    <select
+                      aria-label={t('internetWeather.providerHeading')}
+                      className={`${SELECT_BOX_SM_CLASS} w-full`}
+                      value={radarProvider}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === 'auto' || v === 'rainviewer' || v === 'iem-nexrad') {
+                          setRadarProvider(v);
+                        }
+                      }}
+                    >
+                      <option value="auto">{t('internetWeather.providerAuto')}</option>
+                      <option value="rainviewer">{t('internetWeather.providerRainViewer')}</option>
+                      <option value="iem-nexrad">{t('internetWeather.providerNexrad')}</option>
+                    </select>
+                  </label>
+                ) : null}
+                <div className="grid grid-cols-1 gap-1">
+                  <label className="text-muted flex flex-col gap-1 text-xs">
+                    <span>{t('internetWeather.unitsTemp')}</span>
+                    <select
+                      aria-label={t('internetWeather.unitsTemp')}
+                      className={`${SELECT_BOX_SM_CLASS} w-full`}
+                      value={useFahrenheit ? 'f' : 'c'}
+                      onChange={(e) => {
+                        if (e.target.value === 'c' || e.target.value === 'f') {
+                          setUseFahrenheit(e.target.value === 'f');
+                        }
+                      }}
+                    >
+                      <option value="c">{t('internetWeather.unitC')}</option>
+                      <option value="f">{t('internetWeather.unitF')}</option>
+                    </select>
+                  </label>
+                  <label className="text-muted flex flex-col gap-1 text-xs">
+                    <span>{t('internetWeather.unitsWind')}</span>
+                    <select
+                      aria-label={t('internetWeather.unitsWind')}
+                      className={`${SELECT_BOX_SM_CLASS} w-full`}
+                      value={windUnit}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === 'kmh' || v === 'mph' || v === 'ms' || v === 'kn') {
+                          setWindUnit(v);
+                        }
+                      }}
+                    >
+                      <option value="kmh">{t('internetWeather.unitKmh')}</option>
+                      <option value="mph">{t('internetWeather.unitMph')}</option>
+                      <option value="ms">{t('internetWeather.unitMs')}</option>
+                      <option value="kn">{t('internetWeather.unitKn')}</option>
+                    </select>
+                  </label>
+                  <label className="text-muted flex flex-col gap-1 text-xs">
+                    <span>{t('internetWeather.unitsPrecip')}</span>
+                    <select
+                      aria-label={t('internetWeather.unitsPrecip')}
+                      className={`${SELECT_BOX_SM_CLASS} w-full`}
+                      value={precipUnit}
+                      onChange={(e) => {
+                        if (e.target.value === 'mm' || e.target.value === 'in') {
+                          setPrecipUnit(e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="mm">{t('internetWeather.unitMm')}</option>
+                      <option value="in">{t('internetWeather.unitIn')}</option>
+                    </select>
+                  </label>
+                </div>
+                {lastError?.code === 'offline' ? (
+                  <p className="text-2xs text-orange-400">{t('internetWeather.offline')}</p>
+                ) : null}
+                {lastError && lastError.code !== 'offline' ? (
+                  <p className="text-2xs text-orange-400">{t('internetWeather.loadFailed')}</p>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+
           <div className="space-y-1.5">
             <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.layersHeading')}</div>
             {extraRows}

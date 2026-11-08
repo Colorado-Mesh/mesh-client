@@ -21,6 +21,9 @@ interface MapLayerPersisted {
   mapSensorMetric?: unknown;
   mapShowTakContacts?: unknown;
   mapShowWeatherForecasts?: unknown;
+  mapShowRadar?: unknown;
+  mapShowWeatherTemperature?: unknown;
+  mapShowWeatherWind?: unknown;
 }
 
 export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
@@ -37,6 +40,9 @@ function loadPersisted(): {
   sensorMetric: MapSensorMetric;
   showTakContacts: boolean;
   showWeatherForecasts: boolean;
+  showRadar: boolean;
+  showWeatherTemperature: boolean;
+  showWeatherWind: boolean;
 } {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
@@ -57,6 +63,9 @@ function loadPersisted(): {
       : 'temperature',
     showTakContacts: readPersistedBoolean(settings?.mapShowTakContacts, true),
     showWeatherForecasts: readPersistedBoolean(settings?.mapShowWeatherForecasts, true),
+    showRadar: readPersistedBoolean(settings?.mapShowRadar, false),
+    showWeatherTemperature: readPersistedBoolean(settings?.mapShowWeatherTemperature, false),
+    showWeatherWind: readPersistedBoolean(settings?.mapShowWeatherWind, false),
   };
 }
 
@@ -70,6 +79,9 @@ interface MapLayerState {
   sensorMetric: MapSensorMetric;
   showTakContacts: boolean;
   showWeatherForecasts: boolean;
+  showRadar: boolean;
+  showWeatherTemperature: boolean;
+  showWeatherWind: boolean;
   layersPanelOpen: boolean;
   setBasemapId: (id: MapBasemapId) => void;
   setShowNodes: (enabled: boolean) => void;
@@ -80,6 +92,9 @@ interface MapLayerState {
   setSensorMetric: (metric: MapSensorMetric) => void;
   setShowTakContacts: (enabled: boolean) => void;
   setShowWeatherForecasts: (enabled: boolean) => void;
+  setShowRadar: (enabled: boolean) => void;
+  setShowWeatherTemperature: (enabled: boolean) => void;
+  setShowWeatherWind: (enabled: boolean) => void;
   setLayersPanelOpen: (open: boolean) => void;
   hydrateFromDatabase: () => Promise<void>;
 }
@@ -102,6 +117,9 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   sensorMetric: initial.sensorMetric,
   showTakContacts: initial.showTakContacts,
   showWeatherForecasts: initial.showWeatherForecasts,
+  showRadar: initial.showRadar,
+  showWeatherTemperature: initial.showWeatherTemperature,
+  showWeatherWind: initial.showWeatherWind,
   layersPanelOpen: false,
   setBasemapId: (basemapId) => {
     mergeAppSetting('mapBasemapId', basemapId, 'mapLayerStore setBasemapId');
@@ -143,6 +161,22 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
       'mapLayerStore setShowWeatherForecasts',
     );
     set({ showWeatherForecasts });
+  },
+  setShowRadar: (showRadar) => {
+    mergeAppSetting('mapShowRadar', showRadar, 'mapLayerStore setShowRadar');
+    set({ showRadar });
+  },
+  setShowWeatherTemperature: (showWeatherTemperature) => {
+    mergeAppSetting(
+      'mapShowWeatherTemperature',
+      showWeatherTemperature,
+      'mapLayerStore setShowWeatherTemperature',
+    );
+    set({ showWeatherTemperature });
+  },
+  setShowWeatherWind: (showWeatherWind) => {
+    mergeAppSetting('mapShowWeatherWind', showWeatherWind, 'mapLayerStore setShowWeatherWind');
+    set({ showWeatherWind });
   },
   setLayersPanelOpen: (layersPanelOpen) => {
     set({ layersPanelOpen });

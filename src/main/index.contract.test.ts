@@ -990,6 +990,13 @@ describe('Native crash observability (source contract)', () => {
     expect(INDEX_SOURCE).toContain('createMeshTilesProtocolHandler');
   });
 
+  it('registers mesh-weather as a privileged scheme before ready and handles it', () => {
+    expect(INDEX_SOURCE).toContain("scheme: 'mesh-weather'");
+    expect(INDEX_SOURCE).toContain("protocol.handle(\n      'mesh-weather'");
+    expect(INDEX_SOURCE).toContain('createWeatherProtocolHandler');
+    expect(INDEX_SOURCE).toContain('registerWeatherIpcHandlers');
+  });
+
   it('flushes logs on uncaught errors and records will-quit breadcrumbs', () => {
     expect(INDEX_SOURCE).toContain('void flushLogBeforeQuit()');
     expect(INDEX_SOURCE).toContain('flushLogBeforeQuit()');

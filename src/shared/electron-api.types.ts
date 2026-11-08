@@ -117,6 +117,15 @@ import type {
   VoiceOkResponse,
   VoiceStatusResponse,
 } from './voice-types';
+import type {
+  RadarFrames,
+  WeatherGrid,
+  WeatherGridRequest,
+  WeatherPointForecast,
+  WeatherPointRequest,
+  WeatherRadarFramesRequest,
+  WeatherResult,
+} from './weather/types';
 
 export type { MeshProtocol, SupportBundleMode };
 
@@ -1435,6 +1444,14 @@ export interface ElectronAPI {
   // ─── Place lookup (weather forecast map layer) ──────────────────────────────
   geo: {
     resolvePlace: (request: GeoResolvePlaceRequest) => Promise<GeoResolvedPlace | null>;
+  };
+
+  // ─── Internet weather (map overlays; main-side fetches) ─────────────────────
+  weather: {
+    pointForecast: (request: WeatherPointRequest) => Promise<WeatherResult<WeatherPointForecast>>;
+    grid: (request: WeatherGridRequest) => Promise<WeatherResult<WeatherGrid>>;
+    radarFrames: (request: WeatherRadarFramesRequest) => Promise<WeatherResult<RadarFrames>>;
+    clearMemoryCache: () => Promise<{ ok: true }>;
   };
 
   // ─── GPS / position export ───────────────────────────────────────────────────

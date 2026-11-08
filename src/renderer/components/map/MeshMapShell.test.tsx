@@ -51,6 +51,14 @@ vi.mock('./WeatherForecastLayer', () => ({
   ),
 }));
 
+vi.mock('./WeatherPanes', () => ({ WeatherPanes: () => null }));
+vi.mock('./WeatherPopup', () => ({ WeatherPopup: () => null }));
+vi.mock('./WeatherOverlayBar', () => ({ WeatherOverlayBar: () => null }));
+vi.mock('./WeatherLegend', () => ({ WeatherLegend: () => null }));
+vi.mock('./RadarLayer', () => ({ RadarLayer: () => null }));
+vi.mock('./TemperatureLayer', () => ({ TemperatureLayer: () => null }));
+vi.mock('./WindLayer', () => ({ WindLayer: () => null }));
+
 vi.mock('./emcommMapLayers', () => ({
   IncidentMarkersLayer: () => <div data-testid="incident-layer" />,
   MeasureControl: () => null,

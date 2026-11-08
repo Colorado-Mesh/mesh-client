@@ -61,6 +61,7 @@ import {
   REBROADCAST_MODE_OPTIONS,
   REGION_OPTIONS,
 } from '@/renderer/lib/meshtastic/protobufEnumOptions';
+import { syncAppUnitsFromMeshtasticDisplayUnits } from '@/renderer/lib/meshtasticDisplayUnitsSync';
 import type { IdentityId } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
@@ -115,6 +116,7 @@ function setOwnerApplyErrorMessage(
   }
   return err instanceof Error ? err.message : t('common.unknown');
 }
+
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import {
   type OffloadContactsFromRadioFn,
@@ -1088,6 +1090,7 @@ export default function RadioPanel({
 
   useSyncFormFromConfig(meshtasticConfigSlices?.display, (cfg) => {
     if (typeof cfg.screenOnSecs === 'number') setScreenOnSecs(cfg.screenOnSecs);
+    // Form only — do not push device units into App prefs on hydrate (wipes persisted Layers °F/mph/in).
     if (typeof cfg.units === 'number') setDisplayUnits(cfg.units);
     if (typeof cfg.autoScreenCarouselSecs === 'number')
       setAutoScreenCarouselSecs(cfg.autoScreenCarouselSecs);
@@ -3269,7 +3272,10 @@ export default function RadioPanel({
             label={t('radioPanel.displayUnitsFieldLabel')}
             value={displayUnits}
             options={displayUnitOptions}
-            onChange={setDisplayUnits}
+            onChange={(v) => {
+              setDisplayUnits(v);
+              syncAppUnitsFromMeshtasticDisplayUnits(v);
+            }}
             disabled={disabled || applyingSection !== null}
           />
           <ConfigNumber

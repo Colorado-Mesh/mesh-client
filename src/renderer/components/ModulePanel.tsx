@@ -38,6 +38,7 @@ import {
 } from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
 import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/meshtasticSerialModuleApply';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
+import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
@@ -557,6 +558,9 @@ export default function ModulePanel({
     setTelEnvEnabled(cfgBool(cfg.environmentMeasurementEnabled, false));
     setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
     setTelEnvScreenEnabled(cfgBool(cfg.environmentScreenEnabled, false));
+    // Device env-screen °F is form state only — do not clobber App °C/°F on hydrate
+    // (Radio Display Units / Telemetry / Layers own the App preference; hydrate often
+    // ships environmentDisplayFahrenheit=false even when Display Units is Imperial).
     setTelEnvFahrenheit(cfgBool(cfg.environmentDisplayFahrenheit, false));
     setTelAirQualityEnabled(cfgBool(cfg.airQualityEnabled, false));
     setTelAirQualityInterval(cfgNum(cfg.airQualityInterval, 0));
@@ -1413,7 +1417,10 @@ export default function ModulePanel({
           <ConfigToggle
             label={t('modulePanel.fields.telEnvFahrenheit')}
             checked={telEnvFahrenheit}
-            onChange={setTelEnvFahrenheit}
+            onChange={(v) => {
+              setTelEnvFahrenheit(v);
+              useTemperatureUnitStore.getState().setUseFahrenheit(v);
+            }}
             disabled={disabled || !telEnvEnabled}
             description={t('modulePanel.fields.telEnvFahrenheitDesc')}
           />

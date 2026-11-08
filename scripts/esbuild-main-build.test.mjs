@@ -10,12 +10,13 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
 /**
  * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
  * of `src/shared/ipLiteral.ts` (~33 KiB savings). Scheduled Broadcasts IPC/claim CAS adds ~9 KiB.
+ * Internet weather (Open-Meteo / RainViewer / NEXRAD protocol + IPC) adds ~18 KiB.
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
  * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
  * Metal ensure+spawn as `ai-native-runtime.js` (not in index.js). Thin install-path checks
  * stay in index.js for sync status. Keep HF catalog / prompt / native runtime in siblings.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 762 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 790 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
