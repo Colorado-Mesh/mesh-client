@@ -169,4 +169,87 @@ describe('useDiagnosticSeverityAlerts', () => {
     expect(fireNotification).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
   });
+
+  it('does not re-alert a standing error after the cooldown elapses', () => {
+    vi.useFakeTimers();
+    const { rerender } = renderHook(
+      (props: { settings: OperationalAlertSettings }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: 'meshtastic',
+          settings: props.settings,
+        });
+      },
+      { initialProps: { settings: { ...baseSettings, notifyOnDiagnosticErrors: true } } },
+    );
+    const row = {
+      kind: 'routing' as const,
+      id: 'routing:8:bad_route',
+      nodeId: 8,
+      type: 'bad_route' as const,
+      severity: 'error' as const,
+      description: 'Bad route',
+      detectedAt: 1,
+    };
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [row] });
+    });
+    rerender({ settings: { ...baseSettings, notifyOnDiagnosticErrors: true } });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(DIAGNOSTIC_ALERT_COOLDOWN_MS + 1);
+      useDiagnosticsStore.setState({
+        diagnosticRows: [{ ...row, detectedAt: 2, description: 'Still bad' }],
+      });
+    });
+    rerender({ settings: { ...baseSettings, notifyOnDiagnosticErrors: true } });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('seeds the visible rows when the protocol changes instead of notifying them', () => {
+    const row = {
+      kind: 'routing' as const,
+      id: 'routing:9:bad_route',
+      nodeId: 9,
+      type: 'bad_route' as const,
+      severity: 'error' as const,
+      description: 'Bad route',
+      detectedAt: 1,
+    };
+    useDiagnosticsStore.setState({ diagnosticRows: [row] });
+    const initialProps: { protocol: 'meshtastic' | 'meshcore' } = { protocol: 'meshtastic' };
+    const { rerender } = renderHook(
+      (props: { protocol: 'meshtastic' | 'meshcore' }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: props.protocol,
+          settings: { ...baseSettings, notifyOnDiagnosticErrors: true },
+        });
+      },
+      { initialProps },
+    );
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    rerender({ protocol: 'meshcore' });
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    act(() => {
+      useDiagnosticsStore.setState({
+        diagnosticRows: [
+          row,
+          {
+            kind: 'routing',
+            id: 'routing:10:hop_goblin',
+            nodeId: 10,
+            type: 'hop_goblin',
+            severity: 'error',
+            description: 'Hop goblin',
+            detectedAt: 2,
+          },
+        ],
+      });
+    });
+    rerender({ protocol: 'meshcore' });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+  });
 });

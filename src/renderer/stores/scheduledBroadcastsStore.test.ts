@@ -146,4 +146,81 @@ describe('scheduledBroadcastsStore', () => {
     expect(save).not.toHaveBeenCalled();
     expect(useScheduledBroadcastsStore.getState().slots[1]?.nextDueAt).toBe(200);
   });
+
+  it('does not replace a newer save nextDueAt when applying an older run', async () => {
+    await hydrateScheduledBroadcastsStore();
+    save.mockResolvedValue({
+      slot: 1,
+      label: '',
+      text: 'saved',
+      enabled: true,
+      interval: 'daily',
+      timeOfDayMin: 540,
+      weekday: null,
+      dayOfMonth: null,
+      anchorYmd: null,
+      nextDueAt: 900,
+      lastAttemptAt: null,
+      lastResult: null,
+      targets: [],
+      updatedAt: 20,
+    });
+    await useScheduledBroadcastsStore.getState().save({ slot: 1, text: 'saved' });
+    useScheduledBroadcastsStore.getState().applyRuntimeState(
+      1,
+      {
+        nextDueAt: 100,
+        lastAttemptAt: 150,
+        lastResult: { at: 150, outcome: 'sent', targets: [] },
+      },
+      { expectedUpdatedAt: 5 },
+    );
+    const slot = useScheduledBroadcastsStore.getState().slots[1];
+    expect(slot?.nextDueAt).toBe(900);
+    expect(slot?.text).toBe('saved');
+    expect(slot?.lastResult?.outcome).toBe('sent');
+  });
+
+  it('leaves hydrate retryable when list fails and succeeds on the next call', async () => {
+    list.mockRejectedValueOnce(new Error('db down'));
+    await withMockedConsoleWarn(async () => {
+      await hydrateScheduledBroadcastsStore();
+    });
+    expect(useScheduledBroadcastsStore.getState().hydrated).toBe(false);
+    list.mockResolvedValueOnce([
+      {
+        slot: 2,
+        label: '',
+        text: 'later',
+        enabled: true,
+        interval: 'daily',
+        timeOfDayMin: 540,
+        weekday: null,
+        dayOfMonth: null,
+        anchorYmd: null,
+        nextDueAt: null,
+        lastAttemptAt: null,
+        lastResult: null,
+        targets: [],
+        updatedAt: 3,
+      },
+    ]);
+    await hydrateScheduledBroadcastsStore();
+    expect(useScheduledBroadcastsStore.getState().hydrated).toBe(true);
+    expect(useScheduledBroadcastsStore.getState().slots[2]?.text).toBe('later');
+  });
+
+  it('treats a missing list API as terminal', async () => {
+    window.electronAPI = {
+      ...window.electronAPI,
+      db: {
+        ...window.electronAPI.db,
+        listScheduledBroadcasts: undefined as unknown as typeof list,
+      },
+    };
+    await hydrateScheduledBroadcastsStore();
+    expect(useScheduledBroadcastsStore.getState().hydrated).toBe(true);
+    await hydrateScheduledBroadcastsStore();
+    expect(list).not.toHaveBeenCalled();
+  });
 });

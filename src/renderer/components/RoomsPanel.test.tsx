@@ -1403,6 +1403,61 @@ describe('RoomsPanel', () => {
     );
   });
 
+  it('does not enable auto-login from an admin-only credential', async () => {
+    const room = makeRoom(0x102c1, 'Admin Only Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { adminPassword: 'ops' });
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test admin-only auto-login',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id }, { toasts: true });
+    await act(async () => {});
+    if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
+      fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+    }
+    fireEvent.click(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' }));
+
+    await waitFor(() => {
+      expect(shownToasts()).toContain('roomsPanel.autoLoginRequiresSavedPassword');
+    });
+    expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(false);
+    expect(getMeshcoreRoomCredential(room.node_id)).toEqual({ adminPassword: 'ops' });
+  });
+
+  it('saves the session guest password when auto-login is enabled on an admin-only record', async () => {
+    const room = makeRoom(0x102c2, 'Admin Plus Session Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { adminPassword: 'ops' });
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test admin-only session guest',
+    );
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    await act(async () => {});
+    if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
+      fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+    }
+    await userEvent.click(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' }));
+
+    await waitFor(() => {
+      expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(true);
+    });
+    expect(getMeshcoreRoomCredential(room.node_id)).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'ops',
+    });
+  });
+
   it('keeps the Auto-sync edit and says so when saving sync settings fails', async () => {
     const room = makeRoom(0x102c, 'Full Disk Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);

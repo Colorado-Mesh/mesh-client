@@ -38,6 +38,14 @@ export function TerrainProfileControl(): React.JSX.Element {
     };
   }, []);
 
+  // Match MeasureControl: leaving the map (protocol switch unmounts MapPanel)
+  // must not leave profile clicks stealing node/map selection.
+  useEffect(() => {
+    return () => {
+      setProfileActive(false);
+    };
+  }, [setProfileActive]);
+
   useEffect(() => {
     if (!profileActive) return;
     const onClick = (e: LeafletMouseEvent) => {

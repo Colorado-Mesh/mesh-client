@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ScheduledBroadcastRow } from '@/shared/scheduledBroadcastTypes';
 
+import { mergeScheduledBroadcastRuntimePatch } from '../../stores/scheduledBroadcastsStore';
 import { MS_PER_MINUTE } from '../timeConstants';
 import { MAX_TIMER_DELAY_MS } from './constants';
 import type { DeliverResult } from './deliver';
 import {
   createScheduledBroadcastScheduler,
+  SCHEDULER_ROOM_POST_RETRY_MS,
   SCHEDULER_SAFETY_INTERVAL_MS,
   type SchedulerDeps,
 } from './scheduler';
@@ -84,11 +86,12 @@ function rig(rows: ScheduledBroadcastRow[], over: Partial<SchedulerDeps> = {}): 
     claimDue,
     saveNextDueAt,
     setResult,
-    applyRuntimeState: (slot, patch) => {
+    applyRuntimeState: (slot, patch, opts) => {
       const cur = slots.get(slot);
-      if (cur) slots.set(slot, { ...cur, ...patch });
+      if (cur) slots.set(slot, mergeScheduledBroadcastRuntimePatch(cur, patch, opts));
     },
     deliver,
+    isMeshcoreRoomPostReady: () => true,
     ...over,
   };
   return { slots, enabled, calls, deps, claimDue, saveNextDueAt, setResult, deliver };
@@ -269,6 +272,84 @@ describe('scheduledBroadcast scheduler', () => {
       // Next timer is armed for tomorrow.
       expect(vi.getTimerCount()).toBe(2);
       await vi.advanceTimersByTimeAsync(30 * MS_PER_MINUTE);
+      expect(r.deliver).toHaveBeenCalledTimes(1);
+      s.stop();
+    });
+
+    it('keeps a newer save when an in-flight delivery completes', async () => {
+      const original = row(1, {
+        updatedAt: 5,
+        text: 'old-text',
+        targets: [
+          {
+            kind: 'meshtastic-channel',
+            identityId: 'mt',
+            label: 'Old',
+            enabled: true,
+            channelIndex: 0,
+          },
+        ],
+      });
+      const r = rig([original]);
+      r.deps.deliver = (delivered) => {
+        expect(delivered.text).toBe('old-text');
+        expect(delivered.targets[0]?.label).toBe('Old');
+        const cur = r.slots.get(1);
+        if (!cur) throw new Error('missing slot');
+        r.slots.set(1, {
+          ...cur,
+          text: 'new-text',
+          targets: [
+            {
+              kind: 'meshtastic-channel',
+              identityId: 'mt',
+              label: 'New',
+              enabled: true,
+              channelIndex: 1,
+            },
+          ],
+          nextDueAt: at(18, 0),
+          updatedAt: 50,
+        });
+        return Promise.resolve(SENT);
+      };
+      const s = createScheduledBroadcastScheduler(r.deps);
+      await s.start();
+      await vi.advanceTimersByTimeAsync(at(10, 5) - T0);
+      expect(r.slots.get(1)).toMatchObject({
+        text: 'new-text',
+        nextDueAt: at(18, 0),
+        lastResult: { outcome: 'sent' },
+      });
+      expect(r.slots.get(1)?.targets[0]?.label).toBe('New');
+      s.stop();
+    });
+
+    it('does not claim a MeshCore room slot until the room poster is registered', async () => {
+      let ready = false;
+      const r = rig([
+        row(1, {
+          targets: [
+            {
+              kind: 'meshcore-room',
+              identityId: 'mc',
+              label: 'Room',
+              enabled: true,
+              roomPubKeyHex: 'ab',
+            },
+          ],
+        }),
+      ]);
+      r.deps.isMeshcoreRoomPostReady = () => ready;
+      const s = createScheduledBroadcastScheduler(r.deps);
+      await s.start();
+      await vi.advanceTimersByTimeAsync(at(10, 5) - T0);
+      expect(r.claimDue).not.toHaveBeenCalled();
+      expect(r.deliver).not.toHaveBeenCalled();
+      expect(r.slots.get(1)?.nextDueAt).toBe(at(10, 5));
+      ready = true;
+      await vi.advanceTimersByTimeAsync(SCHEDULER_ROOM_POST_RETRY_MS);
+      expect(r.claimDue).toHaveBeenCalledTimes(1);
       expect(r.deliver).toHaveBeenCalledTimes(1);
       s.stop();
     });

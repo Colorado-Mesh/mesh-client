@@ -1436,6 +1436,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               senderHash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
               nickname: typeof p.nickname === 'string' ? p.nickname : null,
               localIdentityHash: session.localIdentityHash,
+              localNickname: session.nickname,
               timestampMs: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
             }).catch((err: unknown) => {
               console.warn('[useReticulumRuntime] RRC MECP inbound failed', err);

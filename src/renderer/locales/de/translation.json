@@ -945,7 +945,7 @@
     "scheduleSendPreset15m": "in 15 minutes",
     "scheduleSendPreset1h": "in 1 Stunde",
     "scheduleSendPresetTomorrow": "Morgen um 9:00 Uhr",
-    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
+    "scheduleSendHint": "Öffnen Sie die Sendeoptionen und wählen Sie Später senden. Geplante Nachrichten werden auf diesem Gerät gespeichert und gesendet, wenn die Uhrzeit erreicht ist und das Funkgerät verbunden ist. Die App muss laufen. Für wiederkehrende Zeitpläne (stündlich, täglich, wöchentlich und so weiter) nutzen Sie den Tab Mitteilungen unter Chat.",
     "scheduleSendConfirm": "Ihre Behandlungstermine",
     "scheduleSendSave": "Speichern",
     "scheduleSendErrorPast": "Wählen Sie ein Datum in der Zukunft.",
@@ -7097,7 +7097,7 @@
     "previewFailed": "Dieser Sound konnte nicht abgespielt werden. Versuchen Sie es mit einer anderen Datei oder setzen Sie sie auf den ursprünglichen Ton zurück.",
     "connectionLost": "Richtfunkverbindung",
     "batteryLow": "Niedriger Akkustand",
-    "diagnosticError": "PLC-Diagnosefehler"
+    "diagnosticError": "Diagnosefehler"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} Akku schwach",
@@ -8388,7 +8388,7 @@
       "deferred": "Zurückgestellt (Laufzeitbegrenzung)",
       "sendFailed": "Senden fehlgeschlagen.",
       "emptyText": "Ihre Nachricht ist leer.",
-      "channelMissing": "Channel not on this radio"
+      "channelMissing": "Kanal ist auf diesem Funkgerät nicht vorhanden"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic Channel",
@@ -8398,9 +8398,9 @@
     },
     "airtimeWarning": "Stundenpläne mit vielen Zielen verbrauchen viel Sendezeit.",
     "respectWarning": "Achte auf die gemeinsame Sendezeit von LoRa und anderen Betreibern. Spamen Sie keine Kanäle, Räume oder Hubs — bevorzugen Sie seltene Zeitpläne, wenige Ziele und Nachrichten, die das Netz tatsächlich benötigt.",
-    "invalidTime": "Enter a valid time.",
-    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "invalidTime": "Geben Sie eine gültige Uhrzeit ein.",
+    "invalidDayOfMonth": "Der Tag im Monat muss zwischen 1 und 31 liegen.",
+    "invalidAnchorDate": "Geben Sie ein gültiges zweiwöchentliches Ankerdatum ein.",
     "savedTargets": "Gespeicherte Ziele",
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (verbunden)",
@@ -8429,7 +8429,7 @@
     "loading": "Lade Prognose",
     "loadFailed": "Wetterdaten nicht verfügbar.",
     "noRadar": "Keine Radarrahmen verfügbar.",
-    "unitsTemp": "Temperature unit",
+    "unitsTemp": "Temperatureinheit",
     "unitsWind": "Windeinheit",
     "unitsPrecip": "Niederschlagseinheit",
     "unitC": "Celsius (°C)",
@@ -8457,7 +8457,7 @@
     "radarLegend": "Radar: leichte → Starkniederschläge (regionale Auflösung außerhalb der USA).",
     "conditions": {
       "clear": "Klar",
-      "mainlyClear": "Überwiegend klarweather condition",
+      "mainlyClear": "Überwiegend klar",
       "partlyCloudy": "Wechselnd bewölkt",
       "overcast": "Bewölkt",
       "fog": "Nebelig",
@@ -8482,13 +8482,13 @@
       "lightSnowShowers": "Leichte Schneeschauer",
       "snowShowers": "Schneeschauer",
       "thunderstorm": "Gewittersturm",
-      "thunderstormHail": "Gewitter mit Hagelweather condition",
+      "thunderstormHail": "Gewitter mit Hagel",
       "thunderstormHeavyHail": "Gewitter mit starkem Hagel",
       "unknown": "Unbekannte Bedingungen"
     }
   },
   "diagnosticAlerts": {
-    "title": "PLC-Diagnosefehler",
+    "title": "Diagnosefehler",
     "body": "{{description}}"
   }
 }

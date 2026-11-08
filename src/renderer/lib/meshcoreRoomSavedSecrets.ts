@@ -5,6 +5,7 @@ import {
 } from './meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import {
@@ -50,12 +51,14 @@ export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<vo
  * Returns true when it saved a new credential.
  */
 export async function saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId: number): Promise<boolean> {
-  if (getMeshcoreRoomCredential(nodeId) != null) return false;
+  if (meshcoreRoomHasSavedGuestCredential(nodeId)) return false;
   const session = meshcoreGetRoomSession(nodeId);
   if (!session) return false;
+  const existing = getMeshcoreRoomCredential(nodeId);
+  const adminPassword = existing?.adminPassword || session.adminPassword;
   await setMeshcoreRoomCredential(nodeId, {
     guestPassword: session.guestPassword,
-    ...(session.adminPassword.length > 0 ? { adminPassword: session.adminPassword } : {}),
+    ...(adminPassword.length > 0 ? { adminPassword } : {}),
   });
   return true;
 }

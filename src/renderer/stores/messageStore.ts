@@ -8,6 +8,7 @@ import {
   clearHeardRepeatWindowIfMessage,
   renameHeardRepeatWindowMessageId,
 } from '../lib/meshcore/heardRepeatTracker';
+import { trimMeshcoreMemoryWindow } from '../lib/meshcoreMessageMemoryWindow';
 import { getMeshtasticMessageLoadLimit } from '../lib/meshtasticMessageLoadLimit';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
@@ -252,14 +253,20 @@ function isProtectedFromLiveTrim(message: MessageRecord): boolean {
   return message.status === 'sending';
 }
 
-/** Keep newest `cap` rows; return the trimmed bucket and ids that were dropped. */
+/**
+ * MeshCore keeps each logical channel's hydration floor, then surplus up to `cap`.
+ * Other protocols drop the oldest rows down to `cap`.
+ */
 function trimIdentityBucketToNewest(
   byIdentity: Record<string, MessageRecord>,
   cap: number,
+  protocol: string | undefined,
 ): { next: Record<string, MessageRecord>; evictedIds: string[] } {
   const values = Object.values(byIdentity);
   const size = values.length;
   if (size <= cap) return { next: byIdentity, evictedIds: [] };
+  // MeshCore-only: SQL hydration floors are not the shared newest-N cap.
+  if (protocol === 'meshcore') return trimMeshcoreIdentityBucket(byIdentity, values, cap);
 
   const protectedRows = values.filter(isProtectedFromLiveTrim);
   const evictable = values
@@ -282,6 +289,36 @@ function trimIdentityBucketToNewest(
     if (!evicted.has(message.id)) next[message.id] = message;
   }
   for (const message of evictable.slice(evictCount)) next[message.id] = message;
+  return { next, evictedIds };
+}
+
+function trimMeshcoreIdentityBucket(
+  byIdentity: Record<string, MessageRecord>,
+  values: MessageRecord[],
+  cap: number,
+): { next: Record<string, MessageRecord>; evictedIds: string[] } {
+  const kept = trimMeshcoreMemoryWindow(
+    values,
+    (message) => ({
+      timestamp: message.timestamp,
+      localOrder: message.localOrder,
+      channelIndex: message.channelIndex,
+      to: message.to,
+      roomServerId: message.roomServerId,
+      status: message.status,
+      trimId: message.id,
+    }),
+    cap,
+  );
+  if (kept.length === values.length) return { next: byIdentity, evictedIds: [] };
+  const keepIds = new Set<string>();
+  for (const message of kept) keepIds.add(message.id);
+  const next: Record<string, MessageRecord> = {};
+  const evictedIds: string[] = [];
+  for (const message of values) {
+    if (keepIds.has(message.id)) next[message.id] = message;
+    else evictedIds.push(message.id);
+  }
   return { next, evictedIds };
 }
 
@@ -310,7 +347,11 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
     const grown = { ...byIdentity, [message.id]: message };
     if (!existing) {
       inserted = message;
-      const trimmed = trimIdentityBucketToNewest(grown, resolveLiveMessageCap(identityId));
+      const trimmed = trimIdentityBucketToNewest(
+        grown,
+        resolveLiveMessageCap(identityId),
+        getIdentity(identityId)?.protocol.type,
+      );
       evictedIds = trimmed.evictedIds;
       return mergeIdentityMessages(s, identityId, trimmed.next);
     }
@@ -346,7 +387,11 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const grown = { ...byIdentity, [message.id]: merged };
     if (!existing) {
       inserted = merged;
-      const trimmed = trimIdentityBucketToNewest(grown, resolveLiveMessageCap(identityId));
+      const trimmed = trimIdentityBucketToNewest(
+        grown,
+        resolveLiveMessageCap(identityId),
+        getIdentity(identityId)?.protocol.type,
+      );
       evictedIds = trimmed.evictedIds;
       return mergeIdentityMessages(s, identityId, trimmed.next);
     }

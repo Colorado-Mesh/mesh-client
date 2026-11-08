@@ -947,7 +947,7 @@
     "scheduleSendPresetTomorrow": "明天9:00",
     "scheduleSendConfirm": "赛程表",
     "scheduleSendSave": "保存",
-    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
+    "scheduleSendHint": "打开发送选项并选择稍后发送。定时消息保存在此设备上，在时间到达且电台已连接时发送。应用必须处于运行状态。重复日程（每小时、每天、每周等）请使用聊天下的广播标签页。",
     "scheduleSendErrorEmpty": "信息不能为空",
     "scheduleSendErrorFar": "请在接下来的30天内选择一个时间。",
     "scheduleSendFailed": "无法保存定时消息。请重试。",
@@ -8376,7 +8376,7 @@
       "partial": "部分（ {{ok}}/{{total}} ）",
       "failed": "失败",
       "skipped": "已跳过",
-      "missed": "未抢到"
+      "missed": "已错过"
     },
     "reasons": {
       "notConnected": "未连接",
@@ -8388,7 +8388,7 @@
       "deferred": "延期（运行时间限制）",
       "sendFailed": "发送失败",
       "emptyText": "信息是空的",
-      "channelMissing": "Channel not on this radio"
+      "channelMissing": "此电台上没有该频道"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic频道",
@@ -8398,9 +8398,9 @@
     },
     "airtimeWarning": "许多目标的小时班表使用大量的通话时间。",
     "respectWarning": "请尊重共享的LoRa通话时间和其他操作员。不要向频道、房间或集线器发送垃圾邮件--更喜欢不频繁的时间表、很少的目标和网格实际需要的消息。",
-    "invalidTime": "Enter a valid time.",
-    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "invalidTime": "请输入有效时间。",
+    "invalidDayOfMonth": "日必须在 1 到 31 之间。",
+    "invalidAnchorDate": "请输入有效的双周锚点日期。",
     "savedTargets": "已保存的目标",
     "channelNamed": "{{kind}} {{index}} ： {{name}}",
     "identityConnected": "{{name}} （已连接）",
@@ -8429,7 +8429,7 @@
     "loading": "正在加载预测…",
     "loadFailed": "天气数据不可用。",
     "noRadar": "没有可用的雷达帧。",
-    "unitsTemp": "Temperature unit",
+    "unitsTemp": "温度单位",
     "unitsWind": "风力单位( W) ：",
     "unitsPrecip": "降水单位",
     "unitC": "Celsius (°C)",
@@ -8457,7 +8457,7 @@
     "radarLegend": "雷达：→轻度强降水（美国以外的区域分辨率）。",
     "conditions": {
       "clear": "清空",
-      "mainlyClear": "晴朗为主weather condition",
+      "mainlyClear": "大部晴朗",
       "partlyCloudy": "少云",
       "overcast": "阴天",
       "fog": "雾气",
@@ -8471,19 +8471,19 @@
       "rain": "下雨",
       "heavyRain": "大雨",
       "lightFreezingRain": "小冻雨",
-      "freezingRain": "Freezing rain",
+      "freezingRain": "冻雨",
       "lightSnow": "小雪",
-      "snow": "Snow",
-      "heavySnow": "Heavy snow",
+      "snow": "雪",
+      "heavySnow": "大雪",
       "snowGrains": "雪粒",
       "lightShowers": "小阵雨",
       "showers": "阵雨",
       "violentShowers": "暴力淋浴",
-      "lightSnowShowers": "Light snow showers",
+      "lightSnowShowers": "小阵雪",
       "snowShowers": "阵雪",
       "thunderstorm": "雷雨",
       "thunderstormHail": "冰雹雷雨",
-      "thunderstormHeavyHail": "最近有雷暴夹大冰雹weather condition",
+      "thunderstormHeavyHail": "雷暴伴大冰雹",
       "unknown": "未知条件"
     }
   },

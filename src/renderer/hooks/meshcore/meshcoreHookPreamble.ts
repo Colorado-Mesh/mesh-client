@@ -6,7 +6,6 @@ import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { withTimeout } from '../../../shared/withTimeout';
 import { resolveChannelKeyForPersist } from '../../lib/channelIdentity';
-import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import { hasStoredStaticGps, overlayStoredStaticGpsOnSelfNode } from '../../lib/gpsSource';
 import type {
@@ -29,6 +28,7 @@ import {
   isMeshcoreLocallyDeletedContact,
   shouldApplyMeshcoreContact,
 } from '../../lib/meshcoreLocallyDeletedContacts';
+import { trimMeshcoreChatMessages } from '../../lib/meshcoreMessageMemoryWindow';
 import { observeMeshcoreMessageLocalOrder } from '../../lib/meshcoreMessageOrder';
 import {
   CONTACT_TYPE_LABELS,
@@ -795,7 +795,7 @@ export function mergeMeshcoreDbHydrationWithLive(
       if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
       return (a.id ?? 0) - (b.id ?? 0);
     });
-    return trimChatMessagesToMax(sorted, MAX_IN_MEMORY_CHAT_MESSAGES);
+    return trimMeshcoreChatMessages(sorted);
   }
   const dbLoose = new Set(fromDb.map(meshcoreLoosePersistenceMatchKey));
   const inFlight = prev.filter((m) => {
@@ -807,7 +807,7 @@ export function mergeMeshcoreDbHydrationWithLive(
     if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
     return (a.id ?? 0) - (b.id ?? 0);
   });
-  return trimChatMessagesToMax(merged, MAX_IN_MEMORY_CHAT_MESSAGES);
+  return trimMeshcoreChatMessages(merged);
 }
 
 /** Hop metadata row from shared `nodes` table. */

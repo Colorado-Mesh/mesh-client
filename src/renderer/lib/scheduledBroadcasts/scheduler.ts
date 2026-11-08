@@ -16,11 +16,14 @@ import type {
   ScheduledBroadcastRow,
 } from '@/shared/scheduledBroadcastTypes';
 
-import { useScheduledBroadcastsStore } from '../../stores/scheduledBroadcastsStore';
+import {
+  type ScheduledBroadcastRuntimePatchOptions,
+  useScheduledBroadcastsStore,
+} from '../../stores/scheduledBroadcastsStore';
 import { getAppSettingsRaw } from '../appSettingsStorage';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { parseStoredJson } from '../parseStoredJson';
-import { MS_PER_MINUTE } from '../timeConstants';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '../timeConstants';
 import { MAX_TIMER_DELAY_MS, SCHEDULED_BROADCASTS_ENABLED_SETTING } from './constants';
 import { type DeliverResult, deliverScheduledBroadcast } from './deliver';
 import { getScheduledBroadcastDeliveryAdapters } from './deliveryAdapters';
@@ -28,6 +31,9 @@ import { advancePastDue, computeNextDue, type ScheduledBroadcastRule } from './r
 
 /** Safety re-check cadence while armed. */
 export const SCHEDULER_SAFETY_INTERVAL_MS = MS_PER_MINUTE;
+
+/** Retry when a due MeshCore room slot is waiting for App to register sendRoomPost. */
+export const SCHEDULER_ROOM_POST_RETRY_MS = MS_PER_SECOND;
 
 type RuntimePatch = Pick<ScheduledBroadcastRow, 'nextDueAt' | 'lastResult' | 'lastAttemptAt'>;
 
@@ -49,8 +55,14 @@ export interface SchedulerDeps {
     lastAttemptAt: number,
     lastResult: ScheduledBroadcastLastResult,
   ) => Promise<void>;
-  applyRuntimeState: (slot: number, patch: RuntimePatch) => void;
+  applyRuntimeState: (
+    slot: number,
+    patch: RuntimePatch,
+    opts?: ScheduledBroadcastRuntimePatchOptions,
+  ) => void;
   deliver: (slot: ScheduledBroadcastRow) => Promise<DeliverResult>;
+  /** False until App registers MeshCore `sendRoomPost`. Room slots wait instead of failing. */
+  isMeshcoreRoomPostReady: () => boolean;
 }
 
 export type SendNowResult =
@@ -91,10 +103,12 @@ export function createDefaultSchedulerDeps(): SchedulerDeps {
       useScheduledBroadcastsStore.getState().save({ slot, nextDueAt }),
     setResult: (slot, lastAttemptAt, lastResult) =>
       window.electronAPI.db.setScheduledBroadcastResult(slot, lastAttemptAt, lastResult),
-    applyRuntimeState: (slot, patch) => {
-      useScheduledBroadcastsStore.getState().applyRuntimeState(slot, patch);
+    applyRuntimeState: (slot, patch, opts) => {
+      useScheduledBroadcastsStore.getState().applyRuntimeState(slot, patch, opts);
     },
     deliver: (row) => deliverScheduledBroadcast(row, getScheduledBroadcastDeliveryAdapters()),
+    isMeshcoreRoomPostReady: () =>
+      typeof getScheduledBroadcastDeliveryAdapters().sendRoomPost === 'function',
   };
 }
 
@@ -126,8 +140,13 @@ export function createScheduledBroadcastScheduler(
   /** Bumped on power resume; a run in progress stops firing stale slots when it changes. */
   let resumeEpoch = 0;
   let lastEnabled = false;
+  /** A due room slot was not claimed because the room poster is not registered yet. */
+  let roomPosterPending = false;
 
   const enabledSlots = (): ScheduledBroadcastRow[] => deps.getSlots().filter((s) => s.enabled);
+
+  const slotNeedsMeshcoreRoomPost = (row: ScheduledBroadcastRow): boolean =>
+    row.targets.some((target) => target.enabled && target.kind === 'meshcore-room');
 
   const clearTimers = (): void => {
     if (timer != null) clearTimeout(timer);
@@ -153,7 +172,11 @@ export function createScheduledBroadcastScheduler(
       if (earliest == null || s.nextDueAt < earliest) earliest = s.nextDueAt;
     }
     if (earliest == null) return;
-    const delay = Math.min(Math.max(earliest - deps.now(), 0), MAX_TIMER_DELAY_MS);
+    let delay = Math.min(Math.max(earliest - deps.now(), 0), MAX_TIMER_DELAY_MS);
+    if (roomPosterPending) {
+      const base = delay <= 0 ? SCHEDULER_ROOM_POST_RETRY_MS : delay;
+      delay = Math.min(base, SCHEDULER_ROOM_POST_RETRY_MS);
+    }
     timer = setTimeout(() => {
       timer = null;
       void tick();
@@ -189,7 +212,11 @@ export function createScheduledBroadcastScheduler(
           targets: [],
         };
         await deps.setResult(row.slot, now, lastResult);
-        deps.applyRuntimeState(row.slot, { nextDueAt: next, lastResult, lastAttemptAt: now });
+        deps.applyRuntimeState(
+          row.slot,
+          { nextDueAt: next, lastResult, lastAttemptAt: now },
+          { expectedUpdatedAt: row.updatedAt },
+        );
         logRun(row.slot, 'missed', row.text.length);
       } catch (e: unknown) {
         console.warn(
@@ -202,6 +229,7 @@ export function createScheduledBroadcastScheduler(
   async function deliverAndRecord(
     row: ScheduledBroadcastRow,
     advance: { nextDueAt: number | null },
+    seenUpdatedAt: number,
   ): Promise<DeliverResult> {
     let result: DeliverResult;
     try {
@@ -223,11 +251,17 @@ export function createScheduledBroadcastScheduler(
         `[scheduledBroadcasts] slot=${row.slot} setResult failed ` + errLikeToLogString(e),
       );
     }
-    deps.applyRuntimeState(row.slot, {
-      nextDueAt: advance.nextDueAt,
-      lastResult,
-      lastAttemptAt: attemptedAt,
-    });
+    // Already-started send keeps the claimed text and targets. A save during
+    // delivery owns nextDueAt; this only records the attempt on that newer row.
+    deps.applyRuntimeState(
+      row.slot,
+      {
+        nextDueAt: advance.nextDueAt,
+        lastResult,
+        lastAttemptAt: attemptedAt,
+      },
+      { expectedUpdatedAt: seenUpdatedAt },
+    );
     logRun(row.slot, result.outcome, row.text.length);
     return result;
   }
@@ -236,6 +270,11 @@ export function createScheduledBroadcastScheduler(
   async function fireDueSlot(row: ScheduledBroadcastRow): Promise<boolean> {
     const due = row.nextDueAt;
     if (due == null) return false;
+    if (slotNeedsMeshcoreRoomPost(row) && !deps.isMeshcoreRoomPostReady()) {
+      roomPosterPending = true;
+      return false;
+    }
+    const seenUpdatedAt = row.updatedAt;
     const now = deps.now();
     const next = computeNextDue(ruleOf(row), Math.max(now, due));
     if (next == null) {
@@ -251,12 +290,16 @@ export function createScheduledBroadcastScheduler(
     }
     if (!claimed) return false;
     // Reflect the advance immediately so the UI never shows a stale "due now" during delivery.
-    deps.applyRuntimeState(row.slot, {
-      nextDueAt: next,
-      lastResult: row.lastResult,
-      lastAttemptAt: row.lastAttemptAt,
-    });
-    await deliverAndRecord(row, { nextDueAt: next });
+    deps.applyRuntimeState(
+      row.slot,
+      {
+        nextDueAt: next,
+        lastResult: row.lastResult,
+        lastAttemptAt: row.lastAttemptAt,
+      },
+      { expectedUpdatedAt: seenUpdatedAt },
+    );
+    await deliverAndRecord(row, { nextDueAt: next }, seenUpdatedAt);
     return true;
   }
 
@@ -289,6 +332,7 @@ export function createScheduledBroadcastScheduler(
       return;
     }
     running = true;
+    roomPosterPending = false;
     const epoch = resumeEpoch;
     // Slots already attempted this run, keyed by slot+due so an unclaimable slot cannot spin.
     const attempted = new Set<string>();
@@ -370,7 +414,7 @@ export function createScheduledBroadcastScheduler(
       if (running) return { status: 'busy' };
       running = true;
       try {
-        const result = await deliverAndRecord(row, { nextDueAt: row.nextDueAt });
+        const result = await deliverAndRecord(row, { nextDueAt: row.nextDueAt }, row.updatedAt);
         return { status: 'done', result };
       } finally {
         await finishRun();

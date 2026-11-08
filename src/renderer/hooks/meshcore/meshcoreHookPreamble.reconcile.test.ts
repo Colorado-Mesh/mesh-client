@@ -310,4 +310,24 @@ describe('mergeMeshcoreDbHydrationWithLive', () => {
   it('default merge keeps in-flight prev messages not yet in DB', () => {
     expect(mergeMeshcoreDbHydrationWithLive(prev, fromDb)).toEqual(prev);
   });
+
+  it('replaceFromDb keeps a quiet channel when the snapshot exceeds 2000', () => {
+    const fromDbMany: ChatMessage[] = [];
+    for (let channel = 0; channel < 21; channel++) {
+      for (let i = 0; i < 100; i++) {
+        fromDbMany.push({
+          id: channel * 100 + i,
+          sender_id: 1,
+          sender_name: 'Ops',
+          payload: `ch${channel}-${i}`,
+          channel,
+          timestamp: channel * 1_000 + i,
+          status: 'acked',
+        });
+      }
+    }
+    const kept = mergeMeshcoreDbHydrationWithLive(prev, fromDbMany, { replaceFromDb: true });
+    expect(kept.filter((message) => message.channel === 0)).toHaveLength(100);
+    expect(kept.some((message) => message.payload === 'ch0-0')).toBe(true);
+  });
 });

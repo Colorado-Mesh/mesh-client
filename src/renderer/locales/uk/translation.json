@@ -979,7 +979,7 @@
     "scheduleSendPreset15m": "15 хв.",
     "scheduleSendPreset1h": "За 1 годину",
     "scheduleSendPresetTomorrow": "Завтра о 9:00",
-    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
+    "scheduleSendHint": "Відкрийте параметри надсилання й виберіть «Надіслати пізніше». Заплановані повідомлення зберігаються на цьому пристрої й надсилаються, коли настає час і радіо підключено. Програма має бути запущена. Для повторюваних розкладів (щогодини, щодня, щотижня тощо) використовуйте вкладку «Трансляції» в розділі «Розмова».",
     "scheduleSendConfirm": "Розклад",
     "scheduleSendSave": "Зберегти",
     "scheduleSendErrorPast": "Виберіть дату в майбутньому.",
@@ -7128,7 +7128,7 @@
       "channelIndex": "Індекс каналу",
       "reticulumKind": "Reticulum тип цілі",
       "reticulumKindLxmf": "LXMF вузол",
-      "reticulumKindRrc": "Кімната КПП",
+      "reticulumKindRrc": "Кімната RRC",
       "reticulumPeerHash": "Reticulum геш призначення вузла",
       "reticulumPeerPlaceholder": "32-символьний хеш, або * для будь-якого вузла (лише джерело)",
       "reticulumHubHash": "Хеш пункту призначення RRC Hub",
@@ -8509,7 +8509,7 @@
       "5": "П'ятниця",
       "6": "Субота"
     },
-    "dayOfMonth": "День місяця-04",
+    "dayOfMonth": "День місяця",
     "anchorDate": "Двотижнева дата прив'язки",
     "nextDue": "Наступний термін",
     "never": "Ніколи",
@@ -8518,7 +8518,7 @@
       "partial": "Частково ({{ok}}/{{total}})",
       "failed": "Помилка",
       "skipped": "Пропущено",
-      "missed": "Пропущено"
+      "missed": "Пропущений час"
     },
     "reasons": {
       "notConnected": "Не підключено",
@@ -8530,19 +8530,19 @@
       "deferred": "Відкладено (обмеження часу роботи)",
       "sendFailed": "Не вдалося надіслати",
       "emptyText": "ваше повідомлення порожнє",
-      "channelMissing": "Channel not on this radio"
+      "channelMissing": "Каналу немає на цьому радіо"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtastic канал",
       "meshcoreChannel": "MeshCore канал",
       "meshcoreRoom": "MeshCore кімната",
-      "rrcRoom": "Кімната КПП"
+      "rrcRoom": "Кімната RRC"
     },
     "airtimeWarning": "Погодинні графіки з великою кількістю цілей використовують багато ефірного часу.",
     "respectWarning": "Поважайте спільний LoRa ефірний час та інших операторів. Не розсилайте спам каналам, кімнатам або концентраторам — віддайте перевагу рідкісним графікам, мало цільових показників та повідомлень, які насправді потрібні сіті.",
-    "invalidTime": "Enter a valid time.",
-    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "invalidTime": "Введіть дійсний час.",
+    "invalidDayOfMonth": "День місяця має бути від 1 до 31.",
+    "invalidAnchorDate": "Введіть дійсну опорну дату для двох тижнів.",
     "savedTargets": "Збережені цілі",
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (підключено)",
@@ -8571,7 +8571,7 @@
     "loading": "Завантаження прогнозу…",
     "loadFailed": "Дані про погоду недоступні.",
     "noRadar": "Немає доступних радарних кадрів.",
-    "unitsTemp": "Temperature unit",
+    "unitsTemp": "Одиниця температури",
     "unitsWind": "Одиниця вітру",
     "unitsPrecip": "Блок опадів",
     "unitC": "Celsius (°C)",
@@ -8599,7 +8599,7 @@
     "radarLegend": "Радар: → сильні опади (регіональна роздільна здатність за межами США).",
     "conditions": {
       "clear": "Ясно",
-      "mainlyClear": "Переважно безхмарноweather condition",
+      "mainlyClear": "Переважно безхмарно",
       "partlyCloudy": "Часткова хмарність",
       "overcast": "Хмарно",
       "fog": "Туман",
@@ -8607,13 +8607,13 @@
       "lightDrizzle": "невелика мряка",
       "drizzle": "Мряка",
       "denseDrizzle": "Густа мряка",
-      "lightFreezingDrizzle": "Легкий дрібний льодяний дощweather condition",
-      "freezingDrizzle": "Дрібний льодяний дощweather forecast",
+      "lightFreezingDrizzle": "Слабка крижана мряка",
+      "freezingDrizzle": "Крижана мряка",
       "lightRain": "Невеликий дощ",
       "rain": "Дощ",
       "heavyRain": "Злива",
       "lightFreezingRain": "Невеликий крижаний дощ",
-      "freezingRain": "Льодяний дощweather forecast",
+      "freezingRain": "Льодяний дощ",
       "lightSnow": "Легкий сніг",
       "snow": "Сніг",
       "heavySnow": "Сильний сніг",
@@ -8624,8 +8624,8 @@
       "lightSnowShowers": "Легкий дощ зі снігом",
       "snowShowers": "Сніг з дощем",
       "thunderstorm": "Гроза",
-      "thunderstormHail": "Громова буря з градомweather condition",
-      "thunderstormHeavyHail": "Недавня громова буря з сильним градомweather condition",
+      "thunderstormHail": "Гроза з градом",
+      "thunderstormHeavyHail": "Гроза з сильним градом",
       "unknown": "Невідомі умови"
     }
   },

@@ -6,7 +6,11 @@ renderer-mounted scheduler. The app must be running with the target radio connec
 ## Product rules
 
 - **Skip-missed:** occurrences that elapsed while closed/asleep are recorded as `missed`, not sent late.
-- **At-most-once:** SQLite `claimDue` advances `next_due_at` before transmit.
+- **At-most-once:** SQLite `claimDue` advances `next_due_at` before transmit. A save during an
+  in-flight send keeps that occurrence's text and targets; completion records the attempt but does
+  not replace the newer save's `nextDueAt`.
+- **Room poster:** a MeshCore room target is not claimed until App has registered `sendRoomPost`,
+  so startup cannot mark that occurrence failed while the adapter is still missing.
 - **No chunking:** save and send reject text that exceeds any enabled target’s single-packet limit.
 - **No DMs.** Device factory reset does not wipe rows; App → Danger Zone → Clear All Local Data does
   (and turns the master switch off).

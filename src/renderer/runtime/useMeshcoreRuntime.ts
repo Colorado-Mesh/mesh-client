@@ -370,6 +370,7 @@ import {
   getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import {
@@ -7139,8 +7140,8 @@ export function useMeshcoreRuntime() {
   const loginRoomWithSaved = useCallback(
     async (nodeId: number, loginOpts?: { abortIfStale?: () => boolean }): Promise<void> => {
       const cred = getMeshcoreRoomCredential(nodeId);
-      if (!cred) {
-        throw new Error('No saved room credential');
+      if (!cred || !meshcoreRoomHasSavedGuestCredential(nodeId)) {
+        throw new Error('No saved room guest credential');
       }
       const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       await loginRoom(nodeId, password, {
@@ -7169,7 +7170,7 @@ export function useMeshcoreRuntime() {
       const nodeIds = candidateIds.filter((id) => !meshcoreIsRoomLoggedIn(id));
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
-        if (!cred) continue;
+        if (!cred || !meshcoreRoomHasSavedGuestCredential(nodeId)) continue;
         const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
         try {
           await loginRoom(nodeId, guestPassword, {
@@ -7218,7 +7219,7 @@ export function useMeshcoreRuntime() {
     if (!target) return;
 
     const cred = getMeshcoreRoomCredential(target.nodeId);
-    if (!cred) return;
+    if (!cred || !meshcoreRoomHasSavedGuestCredential(target.nodeId)) return;
 
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
@@ -7298,7 +7299,7 @@ export function useMeshcoreRuntime() {
       const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();
       const targets = selectMeshcoreRoomAutoLoginTargets(configuredIds, (nodeId) => ({
         isRoom: getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model === 'Room',
-        hasCredential: Boolean(getMeshcoreRoomCredential(nodeId)),
+        hasCredential: meshcoreRoomHasSavedGuestCredential(nodeId),
         hasPubKey: Boolean(pubKeyMapRef.current.get(nodeId)),
         loggedIn: meshcoreIsRoomLoggedIn(nodeId),
         queued: meshcoreIsRoomLoginQueued(nodeId),
@@ -7349,7 +7350,7 @@ export function useMeshcoreRuntime() {
     const target = pickMostOverdueRoom(roomNodes, now);
     if (!target) return;
     const cred = getMeshcoreRoomCredential(target.nodeId);
-    if (!cred) return;
+    if (!cred || !meshcoreRoomHasSavedGuestCredential(target.nodeId)) return;
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
     if (meshcoreIsRoomLoginQueued(target.nodeId)) {

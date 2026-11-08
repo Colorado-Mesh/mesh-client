@@ -544,6 +544,50 @@ describe.each(['meshcore', 'reticulum'] as const)(
   },
 );
 
+describe('messageStore MeshCore fair channel floors', () => {
+  const TRIM_ID = 'identity-trim-meshcore-floors';
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+    addIdentity({
+      id: TRIM_ID,
+      protocol: { type: 'meshcore' } as unknown as Protocol,
+      signature: '',
+      transports: [],
+      createdAt: 0,
+      lastSeenAt: 0,
+    });
+  });
+
+  afterEach(() => {
+    removeIdentity(TRIM_ID);
+  });
+
+  it('keeps a quiet channel when a live insert follows a >2000 fair hydration', () => {
+    const seeded: MessageRecord[] = [];
+    for (let channel = 0; channel < 21; channel++) {
+      for (let i = 0; i < 100; i++) {
+        seeded.push({
+          ...sampleRecord(`${channel}-${i}`),
+          channelIndex: channel,
+          timestamp: channel * 1_000 + i,
+        });
+      }
+    }
+    replaceMessageRecordsForIdentity(TRIM_ID, seeded);
+    addMessage(TRIM_ID, {
+      ...sampleRecord('live'),
+      channelIndex: 20,
+      timestamp: 999_999,
+    });
+
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(bucket['0-0']).toBeDefined();
+    expect(Object.values(bucket).filter((message) => message.channelIndex === 0)).toHaveLength(100);
+    expect(bucket.live).toBeDefined();
+  });
+});
+
 describe('messageStore live trim keeps sending rows', () => {
   const TRIM_ID = 'identity-trim-sending';
 

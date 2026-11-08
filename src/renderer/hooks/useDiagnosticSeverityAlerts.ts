@@ -29,11 +29,13 @@ export function useDiagnosticSeverityAlerts({
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const firedRef = useRef<Map<string, number>>(new Map());
   const primedRef = useRef(false);
+  const protocolRef = useRef<MeshProtocol | null>(null);
 
   useEffect(() => {
     if (!settings.notifyOnDiagnosticErrors) {
       firedRef.current.clear();
       primedRef.current = false;
+      protocolRef.current = null;
       return;
     }
 
@@ -42,23 +44,29 @@ export function useDiagnosticSeverityAlerts({
     );
     const now = Date.now();
     const fired = firedRef.current;
+    const present = new Set(rows.map((row) => row.id));
 
-    // Prune expired cooldowns (keep entries after a row clears so reappearances stay quiet).
+    // Drop a cooldown only after the row has been gone for the full window.
+    // A standing error stays suppressed for as long as it is present.
     for (const [id, at] of fired) {
+      if (present.has(id)) continue;
       if (now - at >= DIAGNOSTIC_ALERT_COOLDOWN_MS) fired.delete(id);
     }
 
-    // On first enable / first mount with the setting on, seed without notifying
-    // so a restart does not replay every persisted error row.
-    if (!primedRef.current) {
+    // First enable, and each protocol change, seed the rows already on screen
+    // (including a pre-clear snapshot) so they are not announced as new.
+    if (!primedRef.current || protocolRef.current !== protocol) {
       for (const row of rows) fired.set(row.id, now);
       primedRef.current = true;
+      protocolRef.current = protocol;
       return;
     }
 
     for (const row of rows) {
-      const last = fired.get(row.id);
-      if (last != null && now - last < DIAGNOSTIC_ALERT_COOLDOWN_MS) continue;
+      if (fired.has(row.id)) {
+        fired.set(row.id, now);
+        continue;
+      }
       fired.set(row.id, now);
       const title = i18n.t('diagnosticAlerts.title');
       const description =

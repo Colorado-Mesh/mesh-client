@@ -11,6 +11,7 @@ import {
   RETICULUM_RUNTIME_PREFIX,
   roomsSavedPasswordsCrossKeyIssues,
   roomsSidebarMarkerCrossKeyIssues,
+  scheduledBroadcastStatusCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 function expectIssue(issues, substring) {
@@ -2577,5 +2578,137 @@ describe('i18n accuracy sweep (meaning-gated rules)', () => {
       val: 'Non sono ancora disponibili dati sull’utilizzo del canale',
     });
     expect(issues.some((msg) => msg.includes('dash placeholder'))).toBe(false);
+  });
+});
+
+describe('audit locale guards', () => {
+  it('flags glossary junk and unchanged weather conditions', () => {
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'internetWeather.conditions.mainlyClear',
+        enVal: 'Mainly clear',
+        val: 'Überwiegend klarweather condition',
+      }),
+      'glossary artifact',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'ko',
+        flatKey: 'internetWeather.conditions.clear',
+        enVal: 'Clear',
+        val: '책임',
+      }),
+      'false friend',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'zh',
+        flatKey: 'internetWeather.conditions.snow',
+        enVal: 'Snow',
+        val: 'Snow',
+      }),
+      'identical to English',
+    );
+  });
+
+  it('flags Open-Meteo splitting, PLC, RRC, CAT suffix, and missed-status false friends', () => {
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'id',
+        flatKey: 'internetWeather.enableHint',
+        enVal: 'Sends the map area you are viewing to Open-Meteo and RainViewer.',
+        val: 'Ke Open - Meteo',
+      }),
+      'Open-Meteo',
+    );
+    expect(
+      localeStringQualityIssues({
+        locale: 'id',
+        flatKey: 'weatherFilter.onlinePlaceLookupHint',
+        enVal: 'Open-Meteo',
+        val: 'Open - Meteo',
+      }),
+    ).toEqual([]);
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'diagnosticAlerts.title',
+        enVal: 'Diagnostics error',
+        val: 'PLC-Diagnosefehler',
+      }),
+      'PLC-',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'ru',
+        flatKey: 'scheduledBroadcasts.intro',
+        enVal: 'RRC rooms',
+        val: 'комнаты СУКП ОР',
+      }),
+      'RRC',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'scheduledBroadcasts.dayOfMonth',
+        enVal: 'Day of month',
+        val: 'День місяця-04',
+      }),
+      'CAT suffix',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'ja',
+        flatKey: 'scheduledBroadcasts.status.missed',
+        enVal: 'Missed',
+        val: '欠席',
+      }),
+      '欠席',
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'zh',
+        flatKey: 'scheduledBroadcasts.status.missed',
+        enVal: 'Missed',
+        val: '未抢到',
+      }),
+      '未抢到',
+    );
+  });
+
+  it('requires the audited English-identical keys to be translated', () => {
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'scheduledBroadcasts.invalidTime',
+        enVal: 'Enter a valid time.',
+        val: 'Enter a valid time.',
+      }),
+      'identical to English',
+    );
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'internetWeather.layerRadar',
+        enVal: 'Radar',
+        val: 'Radar',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags skipped and missed when they collapse', () => {
+    expect(
+      scheduledBroadcastStatusCrossKeyIssues(
+        {
+          'scheduledBroadcasts.status.skipped': 'Пропущено',
+          'scheduledBroadcasts.status.missed': 'Пропущено',
+        },
+        {
+          'scheduledBroadcasts.status.skipped': 'Skipped',
+          'scheduledBroadcasts.status.missed': 'Missed',
+        },
+      ).join('\n'),
+    ).toContain('status.missed');
   });
 });

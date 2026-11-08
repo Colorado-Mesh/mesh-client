@@ -32,6 +32,7 @@ import {
 } from './meshcoreDbCacheHydration';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { rebuildMeshcoreDedupeIndex } from './meshcoreMessageDedupeIndex';
+import { trimMeshcoreChatMessages } from './meshcoreMessageMemoryWindow';
 import { meshcoreMessageStoreId } from './meshcoreStoreDedup';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
@@ -323,7 +324,7 @@ function applyMeshcoreMessagesFromSnapshot(
       '[hydrateMeshcoreMessagesFromDb] sender repair persist failed ' + errLikeToLogString(e),
     );
   });
-  const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
+  const trimmed = trimMeshcoreChatMessages(mapped);
   const records = meshcoreHydratedMessageRecords(trimmed);
   if (messagesMode === 'replace') {
     replaceMessageRecordsForIdentity(identityId, records);

@@ -72,7 +72,10 @@ import {
   subscribeMeshcoreRoomAutoLoginFailureChanges,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
 import { mergeDisplayedRoomPostChunks } from '@/renderer/lib/meshcoreRoomChunkMerge';
-import { listMeshcoreRoomCredentialNodeIds } from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
+  listMeshcoreRoomCredentialNodeIds,
+  meshcoreRoomHasSavedGuestCredential,
+} from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   getMeshcoreRoomLoginQueueSnapshot,
   meshcoreIsRoomLoginQueued,
@@ -924,7 +927,7 @@ export default function RoomsPanel({
           await disableMeshcoreRoomAutoLogin(nodeId);
         } else {
           await saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId);
-          if (!getMeshcoreRoomSavedSecretsSummary(nodeId).hasCredential) {
+          if (!meshcoreRoomHasSavedGuestCredential(nodeId)) {
             // The room logged out under the switch: with no session and no saved password,
             // connect auto-login could never use the setting, so leave it off.
             if (selectedRoomIdRef.current === nodeId) setAutoLoginOnConnect(false);

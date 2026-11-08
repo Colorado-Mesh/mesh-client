@@ -36,7 +36,48 @@ export interface RrcMecpInboundArgs {
   nickname: string | null;
   /** Own local identity hash — skip when the sender is us. */
   localIdentityHash: string | null;
+  /**
+   * Local RRC nickname. A hashless hub echo is own only when this matches,
+   * the same rule `rrcSessionStore` uses for unread. A hash that does not
+   * match is never own, even if the nickname does.
+   */
+  localNickname?: string | null;
   timestampMs?: number;
+}
+
+/**
+ * Own when the sender hash is ours, or when the hub omitted the hash and the
+ * nickname is ours (local echo). Nickname is not trusted once a hash is present.
+ */
+export function rrcMecpSenderIsOwn(args: {
+  senderHash: string | null;
+  nickname: string | null;
+  localIdentityHash: string | null;
+  localNickname?: string | null;
+}): boolean {
+  const hash = args.senderHash?.trim().toLowerCase() ?? '';
+  const localHash = args.localIdentityHash?.trim().toLowerCase() ?? '';
+  if (hash && localHash && hash === localHash) return true;
+  const nick = args.nickname?.trim() ?? '';
+  const localNick = args.localNickname?.trim() ?? '';
+  return !hash && nick.length > 0 && nick === localNick;
+}
+
+/**
+ * Throttle/block identity. Hashed senders use the hash. Hashless senders are
+ * keyed by nickname, or by message id when there is no nickname, so they do
+ * not share one `unknown` bucket.
+ */
+export function rrcMecpSenderBucket(args: {
+  senderHash: string | null;
+  nickname: string | null;
+  messageId: string;
+}): string {
+  const hash = args.senderHash?.trim().toLowerCase() ?? '';
+  if (hash) return hash;
+  const nick = args.nickname?.trim().toLowerCase() ?? '';
+  if (nick) return `nick:${nick}`;
+  return `anon:${args.messageId}`;
 }
 
 const seenIds = new Set<string>();
@@ -81,10 +122,22 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
   const room = args.room.trim();
   if (!hub || !room || room.startsWith('[') || room.startsWith('@')) return;
 
-  const senderId = (args.senderHash ?? '').toLowerCase() || 'unknown';
-  const local = args.localIdentityHash?.toLowerCase() ?? null;
-  const isOwn = Boolean(local && senderId && local === senderId);
-  if (isOwn) return;
+  if (
+    rrcMecpSenderIsOwn({
+      senderHash: args.senderHash,
+      nickname: args.nickname,
+      localIdentityHash: args.localIdentityHash,
+      localNickname: args.localNickname,
+    })
+  ) {
+    return;
+  }
+
+  const senderId = rrcMecpSenderBucket({
+    senderHash: args.senderHash,
+    nickname: args.nickname,
+    messageId: args.messageId,
+  });
 
   const senderLabel = args.nickname?.trim() || senderId.slice(0, 8) || 'unknown';
   const blocked = isMecpSenderBlocked('reticulum', senderId);
