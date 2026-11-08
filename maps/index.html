@@ -974,6 +974,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#internet-weather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internet weather
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2181,6 +2192,8 @@
       
         
       
+        
+      
     
     
     
@@ -2802,6 +2815,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/internet-weather/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internet weather
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/live-packet-map/" class="md-nav__link">
         
   
@@ -3160,6 +3201,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#internet-weather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internet weather
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3385,6 +3437,37 @@
 <p><strong>Weather forecasts</strong> (Layers → <strong>Weather forecasts</strong>) draws circles for forecasts parsed from marked Meshtastic and MeshCore weather senders. Place names use a built-in gazetteer; optional online place lookup is under the weather filter settings. Forecasts expire about 12 hours after local receive time.</p>
 <p><strong>Sensors</strong> (Layers → <strong>Sensors</strong>) plots the latest temperature, humidity, or pressure from nodes that report environment telemetry (including MeshCore Cayenne LPP). Pick the metric from the layer control; sparklines show recent history when available.</p>
 <hr />
+<h2 id="internet-weather">Internet weather<a class="headerlink" href="#internet-weather" title="Permanent link">&para;</a></h2>
+<p>Optional <strong>Layers → Internet weather</strong> overlays (default off) fetch live data over HTTPS when you enable them:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Coverage</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Point forecast (click the map)</td>
+<td>Global</td>
+<td>Open-Meteo current + hourly + 7-day</td>
+</tr>
+<tr>
+<td>Temperature / wind fields</td>
+<td>Global</td>
+<td>Open-Meteo grid samples for the viewport; temperature uses the App Telemetry °C/°F preference</td>
+</tr>
+<tr>
+<td>Radar</td>
+<td>Global (RainViewer); higher detail in CONUS (NEXRAD via IEM)</td>
+<td>RainViewer is regional (native zoom ≤ 7). Coverage gaps are normal over oceans and some land areas.</td>
+</tr>
+</tbody>
+</table>
+<p>Data is memory-cached for the session only (no weather disk cache). The map area you are viewing is sent to Open-Meteo and RainViewer (and IEM/NWS for US radar). Attribution appears on the map when layers are active.</p>
+<p>Developer reference: <a href="../development/internet-weather/">Internet weather</a>.</p>
+<hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../troubleshooting/#map-tab-without-internet-offline--no-wan">Map tab without internet (offline / no WAN)</a></li>
@@ -3419,7 +3502,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 18:13:48 UTC">November 8, 2026</span>
   </span>
 
     

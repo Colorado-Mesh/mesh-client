@@ -2098,6 +2098,8 @@
       
         
       
+        
+      
     
     
     
@@ -2719,6 +2721,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/internet-weather/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internet weather
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/live-packet-map/" class="md-nav__link">
         
   
@@ -3150,6 +3180,7 @@
 <li>Push-based environment charts (temperature, humidity, pressure, air quality) from Meshtastic telemetry packets, displayed in the Telemetry tab</li>
 <li><strong>Sensor history and map layer</strong>: environment readings from RF, MeshCore remote telemetry, and Meshtastic MQTT are saved to SQLite and shown on the Map as a <strong>Sensors</strong> layer (pick temperature, humidity, or pressure; node popups include sparklines). History loads are capped (newest 2,000 nodes, 500 points per node)</li>
 <li><strong>Weather forecasts layer</strong>: channel forecast posts from senders marked as weather senders are placed on the Map (<strong>Layers → Weather forecasts</strong>) at the named place, or near the sender when the place can't be found. Each place shows its newest forecast, and wx broadcasts drop off the map <strong>12 hours</strong> after they were sent — including posts loaded from chat history at startup</li>
+<li><strong>Internet weather</strong> (opt-in, <strong>Layers → Internet weather</strong>): click-anywhere Open-Meteo forecast, temperature/wind overlays, and radar (RainViewer global; NEXRAD in CONUS). Online only; session memory cache — see <a href="../maps/#internet-weather">Maps: Internet weather</a></li>
 </ul>
 <p><strong>Packet Redundancy</strong></p>
 <ul>
@@ -3245,7 +3276,7 @@
 <li><strong>Offline maps</strong>: basemap tiles are served through the privileged <strong><code>mesh-tiles:</code></strong> protocol and cached under app <strong>userData</strong> <code>tile-cache/</code> (~1 GiB LRU; viewed tiles cache automatically while online). With <strong>USGS Topo</strong> selected, use <strong>Layers → Offline maps → Download current view</strong> to pre-fetch a region (estimate + confirm; single-job size capped so downloads are not immediately evicted), or enable <strong>Auto-cache</strong>. OpenStreetMap permits ordinary viewed-tile caching, but not region downloads or prefetching. <strong>Clear tile cache</strong> is available for all basemaps. Uncached areas are blank offline; markers and trails still render from local/SQLite state — see <a href="../maps/">Maps guide</a> and <a href="../troubleshooting/#map-tab-without-internet-offline--no-wan">Troubleshooting — Map offline</a></li>
 <li><strong>Custom map sources</strong>: add a validated, user-confirmed XYZ tile URL (HTTPS public hosts only; caches tiles you view, up to 16 sources / 256 MiB per XYZ source) or import an MBTiles package for offline use; custom sources do not support USGS-style region download — see <a href="../maps/#custom-map-sources">Maps: Custom map sources</a></li>
 <li><strong>Saved locations</strong> (App tab, Diagnostics, or a startup strip): when the radio has no GPS, save named places this computer is used from (Home, EOC). Each launch asks "Still at …?" unless the location is marked "doesn't move". Coordinates can be pasted as decimal, degrees/minutes/seconds with N/S/E/W, MGRS, or a Google / Apple / OpenStreetMap share link. Only this session's radio GPS fix counts as device GPS; MeshCore advert coordinates do not</li>
-<li><strong>Layers</strong> control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open <strong>incidents</strong>, <strong>MGRS grid</strong>, <strong>Sensors</strong>, <strong>Weather forecasts</strong>, and <strong>TAK units</strong> from ATAK clients and the remote TAK server); basemap preference persists in SQLite and localStorage</li>
+<li><strong>Layers</strong> control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open <strong>incidents</strong>, <strong>MGRS grid</strong>, <strong>Sensors</strong>, <strong>Weather forecasts</strong>, optional <strong>Internet weather</strong>, and <strong>TAK units</strong> from ATAK clients and the remote TAK server); basemap preference persists in SQLite and localStorage</li>
 <li><strong>Show on map</strong> from the node list pin or node detail; switches to the Map tab and flies to that node</li>
 <li><strong>Position trail</strong>: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; senders of open incidents keep their track through retention pruning until the incident is resolved; toggle and window size in App tab; wipe via Danger Zone</li>
 <li><strong>SAR tools</strong>: MGRS grid overlay and a distance <strong>measure</strong> tool on the Map tab</li>
@@ -3471,7 +3502,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 7, 2026 23:28:19 UTC">November 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 18:14:29 UTC">November 8, 2026</span>
   </span>
 
     
