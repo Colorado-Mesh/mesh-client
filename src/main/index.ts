@@ -10,6 +10,7 @@ import {
   MenuItem,
   type NativeImage,
   nativeImage,
+  net,
   Notification,
   powerMonitor,
   powerSaveBlocker,
@@ -2483,6 +2484,7 @@ function createWindow() {
       getAppVersion: () => app.getVersion(),
       userDataPath: app.getPath('userData'),
       getMainWindow: () => mainWindow,
+      isOnline: () => net.isOnline(),
     });
   }
 }

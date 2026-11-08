@@ -1,3 +1,4 @@
+import { net } from 'electron';
 import path from 'path';
 
 import { computeTerrainClearance, sampleGreatCirclePoints } from '@/shared/elevation/profileMath';
@@ -52,8 +53,12 @@ export interface ElevationService {
   clearCache(): Promise<void>;
 }
 
+/**
+ * Prefer Electron `net.isOnline()`. Do not fall back to Node's global `navigator.onLine`:
+ * Node exposes `navigator` but leaves `onLine` undefined, which is falsy and falsely reports offline.
+ */
 function isOnline(deps: ElevationServiceDeps): boolean {
-  return deps.isOnline?.() ?? (typeof navigator === 'undefined' ? true : navigator.onLine);
+  return deps.isOnline ? deps.isOnline() : net.isOnline();
 }
 
 export function createElevationService(deps: ElevationServiceDeps): ElevationService {
@@ -194,12 +199,7 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
         return {
           ok: false,
           error: {
-            code:
-              usedNetwork || !isOnline(deps)
-                ? isOnline(deps)
-                  ? 'no_elevation'
-                  : 'offline'
-                : 'no_elevation',
+            code: isOnline(deps) ? 'no_elevation' : 'offline',
             message: 'no_elevation',
           },
         };
