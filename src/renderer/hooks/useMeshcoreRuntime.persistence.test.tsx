@@ -56,18 +56,27 @@ function sampleIncomingDmMeshcoreDbRow() {
   };
 }
 
+function mockMountHydration(opts?: {
+  contacts?: unknown[];
+  nodes?: unknown[];
+  hopHistory?: unknown[];
+  messages?: unknown[];
+}): void {
+  vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+    contacts: opts?.contacts ?? [],
+    nodes: (opts?.nodes ?? []) as never[],
+    hopHistory: (opts?.hopHistory ?? []) as never[],
+    messages: opts?.messages ?? [],
+  });
+}
+
 describe('useMeshcoreRuntime mount hydration', () => {
   beforeEach(() => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleMeshcoreDbRow(),
-    ]);
+    mockMountHydration({ messages: [sampleMeshcoreDbRow()] });
   });
 
   afterEach(() => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    mockMountHydration();
   });
 
   it('loads persisted meshcore messages from SQLite on mount without connecting a device', async () => {
@@ -89,13 +98,10 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('hydrates hops_away for message stub senders from nodes table when meshcore_contacts has no row', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleMeshcoreDbRow(),
-    ]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
-      { node_id: SENDER_ID, hops: 5, hops_away: null },
-    ] as never[]);
+    mockMountHydration({
+      messages: [sampleMeshcoreDbRow()],
+      nodes: [{ node_id: SENDER_ID, hops: 5, hops_away: null }],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -105,31 +111,31 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('hydrates hops from nodes table for both meshcore_contacts rows and message-only stubs in one DB load', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
-      {
-        node_id: CONTACT_ONLY_ID,
-        public_key: CONTACT_ONLY_PUBKEY_HEX,
-        adv_name: 'ContactOnly',
-        contact_type: 2,
-        last_advert: 1_700_000_000,
-        adv_lat: null as number | null,
-        adv_lon: null as number | null,
-        last_snr: 0,
-        last_rssi: 0,
-        favorited: 0,
-        nickname: null as string | null,
-        hops_away: null as number | null,
-        on_radio: 0,
-        last_synced_from_radio: null as string | null,
-      },
-    ] as never[]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleMeshcoreDbRow(),
-    ]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
-      { node_id: CONTACT_ONLY_ID, hops: 3, hops_away: null },
-      { node_id: SENDER_ID, hops: 7, hops_away: null },
-    ] as never[]);
+    mockMountHydration({
+      contacts: [
+        {
+          node_id: CONTACT_ONLY_ID,
+          public_key: CONTACT_ONLY_PUBKEY_HEX,
+          adv_name: 'ContactOnly',
+          contact_type: 2,
+          last_advert: 1_700_000_000,
+          adv_lat: null as number | null,
+          adv_lon: null as number | null,
+          last_snr: 0,
+          last_rssi: 0,
+          favorited: 0,
+          nickname: null as string | null,
+          hops_away: null as number | null,
+          on_radio: 0,
+          last_synced_from_radio: null as string | null,
+        },
+      ],
+      messages: [sampleMeshcoreDbRow()],
+      nodes: [
+        { node_id: CONTACT_ONLY_ID, hops: 3, hops_away: null },
+        { node_id: SENDER_ID, hops: 7, hops_away: null },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -140,13 +146,10 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('uses nodes.hops_away when nodes.hops is null for a message stub', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleMeshcoreDbRow(),
-    ]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
-      { node_id: SENDER_ID, hops: null, hops_away: 4 },
-    ] as never[]);
+    mockMountHydration({
+      messages: [sampleMeshcoreDbRow()],
+      nodes: [{ node_id: SENDER_ID, hops: null, hops_away: 4 }],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -156,36 +159,33 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('leaves messages empty when the DB returns no rows', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
+    mockMountHydration({ messages: [] });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     expect(result.current.messages).toEqual([]);
   });
 
   it('does not surface persisted ack transport-status lines as chat messages', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleAckOnlyMeshcoreDbRow(),
-    ]);
+    mockMountHydration({ messages: [sampleAckOnlyMeshcoreDbRow()] });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     expect(result.current.messages).toEqual([]);
   });
 
   it('filters ack transport lines from DB but keeps normal messages', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      sampleAckOnlyMeshcoreDbRow(),
-      { ...sampleMeshcoreDbRow(), id: 43 },
-    ]);
+    mockMountHydration({
+      messages: [sampleAckOnlyMeshcoreDbRow(), { ...sampleMeshcoreDbRow(), id: 43 }],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -199,7 +199,7 @@ describe('useMeshcoreRuntime mount hydration', () => {
 
   it('hydrates persisted incoming DMs with to_node for DM filtering', async () => {
     const dmRow = sampleIncomingDmMeshcoreDbRow();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([dmRow]);
+    mockMountHydration({ messages: [dmRow] });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -214,13 +214,15 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('hydrates payloads containing colons as-is when sender_name is set (not wire re-parse)', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 60,
-        payload: 'Re: see below — 12:30 meet',
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 60,
+          payload: 'Re: see below — 12:30 meet',
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -235,25 +237,27 @@ describe('useMeshcoreRuntime mount hydration', () => {
   it('hydrates reaction rows with emoji, reply_id, and numeric coercion from DB', async () => {
     const parentTs = 1_700_000_000_100;
     const likeCode = 0x1f44d;
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 61,
-        payload: 'parent text',
-        timestamp: parentTs,
-        packet_id: 77 as number | null,
-      },
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 62,
-        sender_id: SENDER_ID + 1,
-        sender_name: 'Bob',
-        payload: String.fromCodePoint(likeCode),
-        timestamp: parentTs + 1000,
-        emoji: likeCode,
-        reply_id: 77 as number | null,
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 61,
+          payload: 'parent text',
+          timestamp: parentTs,
+          packet_id: 77 as number | null,
+        },
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 62,
+          sender_id: SENDER_ID + 1,
+          sender_name: 'Bob',
+          payload: String.fromCodePoint(likeCode),
+          timestamp: parentTs + 1000,
+          emoji: likeCode,
+          reply_id: 77 as number | null,
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -270,24 +274,26 @@ describe('useMeshcoreRuntime mount hydration', () => {
 
   it('coerces string emoji and reply_id from DB drivers into numbers', async () => {
     const parentTs = 1_700_000_000_200;
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 70,
-        payload: 'x',
-        timestamp: parentTs,
-        packet_id: 99 as number | null,
-      },
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 71,
-        sender_name: 'Bob',
-        payload: '👍',
-        timestamp: parentTs + 500,
-        emoji: '128077' as unknown as number | null,
-        reply_id: '99' as unknown as number | null,
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 70,
+          payload: 'x',
+          timestamp: parentTs,
+          packet_id: 99 as number | null,
+        },
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 71,
+          sender_name: 'Bob',
+          payload: '👍',
+          timestamp: parentTs + 500,
+          emoji: '128077' as unknown as number | null,
+          reply_id: '99' as unknown as number | null,
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -300,16 +306,18 @@ describe('useMeshcoreRuntime mount hydration', () => {
   });
 
   it('legacy DB: Unknown sender + long wire-style line still normalizes once', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 80,
-        sender_id: null,
-        sender_name: 'Unknown',
-        payload: 'NVON 01: legacy full line body',
-        timestamp: 1_700_000_000_300,
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 80,
+          sender_id: null,
+          sender_name: 'Unknown',
+          payload: 'NVON 01: legacy full line body',
+          timestamp: 1_700_000_000_300,
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -327,7 +335,7 @@ describe('useMeshcoreRuntime mount hydration', () => {
    * MQTT subscription exercises this without a radio; `flushSync` keeps persist aligned with state.
    */
   it('synthetic mqtt onMeshcoreChat invokes saveMeshcoreMessage (shared path with RF inbound)', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
+    mockMountHydration({ messages: [] });
     let meshcoreChatHandler: ((raw: unknown) => void) | undefined;
     vi.mocked(window.electronAPI.mqtt.onMeshcoreChat).mockImplementation((cb) => {
       meshcoreChatHandler = cb;
@@ -367,15 +375,17 @@ describe('useMeshcoreRuntime mount hydration', () => {
 
   it('mqtt placeholder persistence does not overwrite an existing real contact name', async () => {
     const senderNodeId = 0xabcd1234;
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 74,
-        sender_id: senderNodeId,
-        sender_name: 'ExistingRealName',
-        payload: 'Prior persisted message',
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 74,
+          sender_id: senderNodeId,
+          sender_name: 'ExistingRealName',
+          payload: 'Prior persisted message',
+        },
+      ],
+    });
     let meshcoreChatHandler: ((raw: unknown) => void) | undefined;
     vi.mocked(window.electronAPI.mqtt.onMeshcoreChat).mockImplementation((cb) => {
       meshcoreChatHandler = cb;
@@ -418,17 +428,19 @@ describe('useMeshcoreRuntime mount hydration', () => {
   it('merges RF history + MQTT duplicate into one message with receivedVia both', async () => {
     const senderName = 'SynthUser';
     const baseTs = 1_700_000_010_000;
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        ...sampleMeshcoreDbRow(),
-        id: 91,
-        sender_id: meshcoreChatStubNodeIdFromDisplayName(senderName),
-        sender_name: senderName,
-        payload: 'same dedup body',
-        timestamp: baseTs,
-        received_via: 'rf',
-      },
-    ]);
+    mockMountHydration({
+      messages: [
+        {
+          ...sampleMeshcoreDbRow(),
+          id: 91,
+          sender_id: meshcoreChatStubNodeIdFromDisplayName(senderName),
+          sender_name: senderName,
+          payload: 'same dedup body',
+          timestamp: baseTs,
+          received_via: 'rf',
+        },
+      ],
+    });
     let meshcoreChatHandler: ((raw: unknown) => void) | undefined;
     vi.mocked(window.electronAPI.mqtt.onMeshcoreChat).mockImplementation((cb) => {
       meshcoreChatHandler = cb;
@@ -488,11 +500,7 @@ describe('useMeshcoreRuntime disconnect DB rehydration', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue(
-      sampleContactWithHops(4),
-    );
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    mockMountHydration({ contacts: sampleContactWithHops(4) });
   });
 
   it('reloads persisted hops from SQLite after disconnect (reconnect merge baseline)', async () => {
@@ -510,7 +518,7 @@ describe('useMeshcoreRuntime disconnect DB rehydration', () => {
       expect(result.current.nodes.get(NODE_ID)?.hops_away).toBe(4);
     });
     expect(
-      vi.mocked(window.electronAPI.db.getMeshcoreContacts).mock.calls.length,
+      vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mock.calls.length,
     ).toBeGreaterThanOrEqual(2);
   });
 });

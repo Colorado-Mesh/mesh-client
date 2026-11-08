@@ -20,7 +20,7 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Fair MeshCore chat hydration SQL (`selectMeshcoreMessagesForHydration`) adds a small
  * window-function query so quiet group channels are not crowded out of the newest-N load.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 797 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 800 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

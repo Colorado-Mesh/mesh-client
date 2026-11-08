@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { runConnectionPanelStorageMigrations } from '@/renderer/lib/connectionPanelStorageMigrations';
+import { markLaunchMilestone } from '@/renderer/lib/launchTimings';
 import { getPreparedRendererPreferences } from '@/renderer/lib/rendererPreferences';
 import {
   forgetUnavailableStartupCredentials,
@@ -93,6 +94,7 @@ export function SecureSecretsStartup({
       .then(() => {
         if (!active) return;
         runConnectionPanelStorageMigrations();
+        markLaunchMilestone('secretsReady');
         setState('ready');
       })
       .catch(() => {

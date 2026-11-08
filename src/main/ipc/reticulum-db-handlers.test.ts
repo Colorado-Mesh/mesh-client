@@ -71,6 +71,7 @@ describe('reticulum-db-handlers validation', () => {
 
   it('registers expected handlers', () => {
     expect(handlers.has('db:getReticulumMessages')).toBe(true);
+    expect(handlers.has('db:getReticulumIdentityHydration')).toBe(true);
     expect(handlers.has('db:saveReticulumMessage')).toBe(true);
     expect(handlers.has('db:searchReticulumMessages')).toBe(true);
     expect(handlers.has('db:clearReticulumContactDestinations')).toBe(true);

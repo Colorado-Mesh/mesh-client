@@ -261,9 +261,14 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
       ...rowWithHops,
       hops_away: null,
     };
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts)
-      .mockResolvedValueOnce([rowWithHops])
-      .mockResolvedValueOnce([rowWithoutHops]);
+    // Mount hydrate uses batched IPC; refreshNodesFromDb still reads contacts alone.
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [rowWithHops],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
+    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([rowWithoutHops]);
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 
@@ -284,6 +289,19 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
     resetMeshcoreRuntimeElectronMocks();
     vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
+    getContactsMock.mockReset();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: REMOTE_PUBKEY,
+        advName: 'RemotePeer',
+        type: 1,
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        outPath: new Uint8Array(),
+        outPathLen: 0,
+      },
+    ]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
@@ -299,24 +317,27 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
-      {
-        node_id: REMOTE_NODE_ID,
-        public_key: REMOTE_PUBKEY_HEX,
-        adv_name: 'RemotePeer',
-        contact_type: 1,
-        last_advert: 1_700_000_000,
-        adv_lat: null,
-        adv_lon: null,
-        last_snr: null,
-        last_rssi: null,
-        favorited: 0,
-        nickname: null,
-        hops_away: 2,
-      },
-    ]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        {
+          node_id: REMOTE_NODE_ID,
+          public_key: REMOTE_PUBKEY_HEX,
+          adv_name: 'RemotePeer',
+          contact_type: 1,
+          last_advert: 1_700_000_000,
+          adv_lat: null,
+          adv_lon: null,
+          last_snr: null,
+          last_rssi: null,
+          favorited: 0,
+          nickname: null,
+          hops_away: 2,
+        },
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
   });
 
   afterEach(() => {
@@ -335,7 +356,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -408,24 +429,27 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
-      {
-        node_id: REMOTE_NODE_ID,
-        public_key: REMOTE_PUBKEY_HEX,
-        adv_name: 'RemotePeer',
-        contact_type: 1,
-        last_advert: 1_700_000_000,
-        adv_lat: null,
-        adv_lon: null,
-        last_snr: null,
-        last_rssi: null,
-        favorited: 0,
-        nickname: null,
-        hops_away: 2,
-      },
-    ]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        {
+          node_id: REMOTE_NODE_ID,
+          public_key: REMOTE_PUBKEY_HEX,
+          adv_name: 'RemotePeer',
+          contact_type: 1,
+          last_advert: 1_700_000_000,
+          adv_lat: null,
+          adv_lon: null,
+          last_snr: null,
+          last_rssi: null,
+          favorited: 0,
+          nickname: null,
+          hops_away: 2,
+        },
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
   });
 
   it('records success outcome for traceRoute on the used path hash', async () => {
@@ -444,7 +468,7 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
 
     const { result } = renderHook(() => useMeshcoreRuntime());
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
     await act(async () => {
       await result.current.connect('serial');
@@ -484,7 +508,7 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
 
     const { result } = renderHook(() => useMeshcoreRuntime());
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
     await act(async () => {
       await result.current.connect('serial');

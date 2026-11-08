@@ -121,8 +121,8 @@ import {
   shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import {
+  loadMeshcoreIdentityHydrationSnapshot,
   loadMeshcoreMessagesForHydration,
-  loadMeshcoreSavedHopRowsForHydration,
   meshcoreHydratedMessageRecords,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
@@ -265,6 +265,7 @@ import {
   resolveMeshcoreChannelMessageSender,
   resolveMeshcoreOutboundWireText,
 } from '../lib/meshcoreChannelText';
+import { markMeshcoreColdStoreHydrated } from '../lib/meshcoreColdStoreHydration';
 import {
   buildSetAutoaddConfigFrame,
   fetchMeshcoreAutoaddConfigFromConn,
@@ -1289,19 +1290,15 @@ export function useMeshcoreRuntime() {
       // The mount load runs before App's post-prune hydrate; without this wait it reads rows the
       // startup prune is about to delete, and the later upsert hydrate never removes them.
       await afterStartupDbPrune();
-      const [rows, dbMsgs, savedNodes] = await Promise.all([
-        window.electronAPI.db.getMeshcoreContacts(),
-        loadMeshcoreMessagesForHydration(),
-        loadMeshcoreSavedHopRowsForHydration(),
-      ]);
+      const snap = await loadMeshcoreIdentityHydrationSnapshot();
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
-      const dbContacts = rows as MeshcoreContactDbRow[];
-      const meshcoreRows = dbMsgs;
+      const dbContacts = snap.contacts;
+      const meshcoreRows = snap.messages;
       const mappedPreview = mapMeshcoreDbRowsToChatMessages(meshcoreRows);
       const initial = buildMeshcoreNodeMapFromDb(
         dbContacts,
-        savedNodes,
+        snap.savedNodes,
         mappedPreview,
         myNodeNumRef.current,
       );
@@ -1354,6 +1351,10 @@ export function useMeshcoreRuntime() {
         if (storeId) {
           upsertMessageRecordsForIdentity(storeId, meshcoreHydratedMessageRecords(mapped));
         }
+      }
+      if (opts?.hydrateMessages) {
+        // App post-prune MeshCore refresh skips when mount already wrote identity stores.
+        markMeshcoreColdStoreHydrated();
       }
     },
     [],

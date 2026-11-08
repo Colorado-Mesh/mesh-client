@@ -81,6 +81,7 @@ import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { markLaunchMilestone } from '@/renderer/lib/launchTimings';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { ownSenderIdSet, resolveIncidentWithBeaconCancel } from '@/renderer/lib/mecp/beaconCancel';
 import {
@@ -94,6 +95,7 @@ import {
   writeMeshcoreAutoOffloadWhenFull,
 } from '@/renderer/lib/meshcore/meshcoreContactCapacityPush';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
+import { hasMeshcoreColdStoreHydrated } from '@/renderer/lib/meshcoreColdStoreHydration';
 import { meshcoreConfiguredChannelIndexSet } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
@@ -1157,6 +1159,7 @@ function AppContent() {
   useAppStartupDbPrune(
     useCallback(() => {
       ensureOfflineProtocolIdentities();
+      markLaunchMilestone('pruneDone');
       setStartupPruneDone(true);
       scheduleReticulumVacuumIfNeeded();
     }, []),
@@ -1165,6 +1168,8 @@ function AppContent() {
   useEffect(() => {
     if (!startupPruneDone) return;
     let cancelled = false;
+    let idleId: number | undefined;
+    let idleTimeout: ReturnType<typeof setTimeout> | undefined;
     const identityByProtocol: Record<MeshProtocol, string | null | undefined> = {
       meshtastic: meshtasticIdentityId,
       meshcore: meshcoreIdentityId,
@@ -1175,22 +1180,64 @@ function AppContent() {
       meshcore: refreshMeshcoreAllFromDb,
       reticulum: refreshReticulumAllFromDb,
     };
-    void (async () => {
-      const order: MeshProtocol[] = [
-        protocol,
-        ...REGISTERED_MESH_PROTOCOLS.filter((p) => p !== protocol),
-      ];
-      for (const p of order) {
-        if (cancelled) return;
-        if (hydratedProtocolsRef.current.has(p)) continue;
-        const id = identityByProtocol[p];
-        if (!id) continue;
+
+    const shouldSkipProtocol = (p: MeshProtocol): boolean => {
+      if (hydratedProtocolsRef.current.has(p)) return true;
+      // MeshCore mount reload is authoritative for cold identity-store hydrate.
+      if (p === 'meshcore' && hasMeshcoreColdStoreHydrated()) {
         hydratedProtocolsRef.current.add(p);
-        await refreshByProtocol[p]();
+        return true;
       }
+      return false;
+    };
+
+    const hydrateOne = async (p: MeshProtocol): Promise<boolean> => {
+      if (cancelled || shouldSkipProtocol(p)) return false;
+      const id = identityByProtocol[p];
+      if (!id) return false;
+      hydratedProtocolsRef.current.add(p);
+      await refreshByProtocol[p]();
+      return true;
+    };
+
+    const scheduleIdle = (run: () => void): void => {
+      const ric = (
+        window as Window & {
+          requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback;
+      if (typeof ric === 'function') {
+        idleId = ric(run, { timeout: 5_000 });
+        return;
+      }
+      idleTimeout = setTimeout(run, 0);
+    };
+
+    void (async () => {
+      const others = REGISTERED_MESH_PROTOCOLS.filter((p) => p !== protocol);
+      const didActive = await hydrateOne(protocol);
+      if (cancelled) return;
+      if (didActive || hydratedProtocolsRef.current.has(protocol)) {
+        markLaunchMilestone('activeHydrateDone');
+      }
+      scheduleIdle(() => {
+        void (async () => {
+          for (const p of others) {
+            if (cancelled) return;
+            await hydrateOne(p);
+          }
+          if (!cancelled) markLaunchMilestone('inactiveHydrateDone');
+        })();
+      });
     })();
     return () => {
       cancelled = true;
+      if (idleId != null) {
+        (window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(
+          idleId,
+        );
+      }
+      if (idleTimeout != null) clearTimeout(idleTimeout);
     };
   }, [
     startupPruneDone,

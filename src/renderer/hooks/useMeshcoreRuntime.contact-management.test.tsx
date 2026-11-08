@@ -42,7 +42,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -58,7 +58,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     await expect(result.current.applyMeshcoreContactAutoAdd(APPLY_PARAMS)).rejects.toThrow(
@@ -70,7 +70,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -81,22 +81,27 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
   });
 
   it('setNodeFavorited passes synthetic pubkey hex when contact has no key in memory (DB insert path)', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
-      {
-        id: 1,
-        sender_id: STUB_SENDER_ID,
-        sender_name: 'Alice',
-        payload: 'hi',
-        channel_idx: 0,
-        timestamp: 1_700_000_000_000,
-        status: 'acked',
-        packet_id: null,
-        emoji: null,
-        reply_id: null,
-        to_node: null,
-        received_via: 'mqtt',
-      },
-    ]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [],
+      nodes: [],
+      hopHistory: [],
+      messages: [
+        {
+          id: 1,
+          sender_id: STUB_SENDER_ID,
+          sender_name: 'Alice',
+          payload: 'hi',
+          channel_idx: 0,
+          timestamp: 1_700_000_000_000,
+          status: 'acked',
+          packet_id: null,
+          emoji: null,
+          reply_id: null,
+          to_node: null,
+          received_via: 'mqtt',
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useMeshcoreRuntime());
 

@@ -16,6 +16,7 @@ import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDest
 import { sanitizeReticulumDisplayNameForDb } from '../../shared/reticulumDisplayName';
 import { isAllowedReticulumReceivedVia } from '../../shared/reticulumMessageTransport';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
+import { readReticulumIdentityHydration } from '../identityHydrationSnapshot';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -131,6 +132,25 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       finishDbIpcHandler('db:getReticulumMessages', err);
     }
   });
+
+  ipcMain.handle(
+    'db:getReticulumIdentityHydration',
+    (event, identityId: unknown, messageLimit?: unknown) => {
+      try {
+        assertIpcSender(event, 'db:getReticulumIdentityHydration');
+        if (typeof identityId !== 'string' || identityId.length > 128) {
+          return { destinations: [], messages: [] };
+        }
+        const db = getDbForIpc('db:getReticulumIdentityHydration');
+        if (!db) return { destinations: [], messages: [] };
+        const limit =
+          typeof messageLimit === 'number' && Number.isFinite(messageLimit) ? messageLimit : 500;
+        return readReticulumIdentityHydration(db, identityId, limit);
+      } catch (err) {
+        finishDbIpcHandler('db:getReticulumIdentityHydration', err);
+      }
+    },
+  );
 
   ipcMain.handle('db:saveReticulumMessage', (event, message: unknown) => {
     try {

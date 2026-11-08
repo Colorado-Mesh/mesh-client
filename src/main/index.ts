@@ -161,6 +161,10 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import {
+  readMeshcoreIdentityHydration,
+  readMeshtasticIdentityHydration,
+} from './identityHydrationSnapshot';
 import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
@@ -5610,6 +5614,38 @@ ipcMain.handle(
   },
 );
 
+ipcMain.handle('db:getMeshtasticIdentityHydration', (event, messageLimit?: number) => {
+  try {
+    assertIpcSender(event, 'db:getMeshtasticIdentityHydration');
+    const db = getDbForIpc('db:getMeshtasticIdentityHydration');
+    if (!db) return { nodes: [], meshcoreContacts: [], messages: [] };
+    return readMeshtasticIdentityHydration(db, messageLimit);
+  } catch (err) {
+    finishDbIpcHandler('db:getMeshtasticIdentityHydration', err);
+  }
+});
+
+ipcMain.handle(
+  'db:getMeshcoreIdentityHydration',
+  (
+    event,
+    limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    },
+  ) => {
+    try {
+      assertIpcSender(event, 'db:getMeshcoreIdentityHydration');
+      const db = getDbForIpc('db:getMeshcoreIdentityHydration');
+      if (!db) return { contacts: [], nodes: [], hopHistory: [], messages: [] };
+      return readMeshcoreIdentityHydration(db, limits);
+    } catch (err) {
+      finishDbIpcHandler('db:getMeshcoreIdentityHydration', err);
+    }
+  },
+);
+
 ipcMain.handle('db:searchMessages', (event, query: string, limit?: number) => {
   try {
     assertIpcSender(event, 'db:searchMessages');
@@ -6931,6 +6967,10 @@ void app
   .whenReady()
   .then(() => {
     try {
+      const whenReadyAt = performance.now();
+      const logStartupMark = (label: string): void => {
+        console.debug(`[Startup] ${label} +${(performance.now() - whenReadyAt).toFixed(1)}ms`);
+      };
       initLogFile();
       console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
       try {
@@ -6954,6 +6994,7 @@ void app
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
       initDatabase();
+      logStartupMark('initDatabase');
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
       protocol.handle(
@@ -6962,61 +7003,7 @@ void app
           distRoot: path.join(__dirname, '../../dist/renderer'),
         }),
       );
-
-      // Auto-restore TAK server if auto-start is enabled
-      const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
-      try {
-        if (fs.existsSync(takSettingsPath)) {
-          const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
-          // Backfill autoStart for settings files saved before the field was added.
-          if (
-            raw != null &&
-            typeof raw === 'object' &&
-            typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
-          ) {
-            (raw as Record<string, unknown>).autoStart = false;
-          }
-          const saved = raw;
-          validateTakSettings(saved);
-          if (saved.autoStart) {
-            void ensureTakServerManager()
-              .then((m) => m.start(saved))
-              .catch((e: unknown) => {
-                console.error(
-                  '[TAK] Auto-start failed:',
-                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-                );
-              });
-          }
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[TAK] Settings restore failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-
-      // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified or
-      // unencrypted relay is only started by hand, so a hand-edited settings file cannot make it
-      // connect at launch.
-      try {
-        const remoteSettings = loadTakRemoteSettings();
-        if (remoteSettings?.autoConnect && canAutoConnectTakRemote(remoteSettings)) {
-          void ensureTakServerManager()
-            .then((m) => m.startRemote(remoteSettings))
-            .catch((e: unknown) => {
-              console.error(
-                '[TAK] Remote relay auto-connect failed:',
-                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-              );
-            });
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[TAK] Remote relay settings restore failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
+      logStartupMark('rendererProtocol');
 
       // Force the dock icon in development on macOS
       if (!app.isPackaged && process.platform === 'darwin') {
@@ -7026,7 +7013,69 @@ void app
         );
         app.dock?.setIcon(iconPath);
       }
+      // Window first — TAK restore is not required for first paint.
       createWindow();
+      logStartupMark('createWindow');
+
+      // Auto-restore TAK server if auto-start is enabled (after window so sync FS/JSON
+      // does not delay createWindow).
+      const kickoffTakAutoStart = (): void => {
+        const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
+        try {
+          if (fs.existsSync(takSettingsPath)) {
+            const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+            // Backfill autoStart for settings files saved before the field was added.
+            if (
+              raw != null &&
+              typeof raw === 'object' &&
+              typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
+            ) {
+              (raw as Record<string, unknown>).autoStart = false;
+            }
+            const saved = raw;
+            validateTakSettings(saved);
+            if (saved.autoStart) {
+              void ensureTakServerManager()
+                .then((m) => m.start(saved))
+                .catch((e: unknown) => {
+                  console.error(
+                    '[TAK] Auto-start failed:',
+                    sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                  );
+                });
+            }
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[TAK] Settings restore failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+
+        // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified or
+        // unencrypted relay is only started by hand, so a hand-edited settings file cannot make it
+        // connect at launch.
+        try {
+          const remoteSettings = loadTakRemoteSettings();
+          if (remoteSettings?.autoConnect && canAutoConnectTakRemote(remoteSettings)) {
+            void ensureTakServerManager()
+              .then((m) => m.startRemote(remoteSettings))
+              .catch((e: unknown) => {
+                console.error(
+                  '[TAK] Remote relay auto-connect failed:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
+              });
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[TAK] Remote relay settings restore failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+        logStartupMark('takAutoStartKickoff');
+      };
+      setImmediate(kickoffTakAutoStart);
 
       rendererHeartbeatWatchdog.startStallWatchdog(() => {
         const win = mainWindow;

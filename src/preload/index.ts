@@ -311,6 +311,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getMessages: (channel?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMessages', channel, limit),
+    getMeshtasticIdentityHydration: (messageLimit?: number) =>
+      ipcRenderer.invoke('db:getMeshtasticIdentityHydration', messageLimit),
     listMeshtasticDmPeers: (ownNodeId: number, limit?: number) =>
       ipcRenderer.invoke('db:listMeshtasticDmPeers', ownNodeId, limit),
 
@@ -427,6 +429,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       perChannelLimit?: number;
       roomLimit?: number;
     }) => ipcRenderer.invoke('db:getMeshcoreMessagesForHydration', limits),
+    getMeshcoreIdentityHydration: (limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    }) => ipcRenderer.invoke('db:getMeshcoreIdentityHydration', limits),
     listMeshcoreDmPeers: (ownNodeId: number, limit?: number) =>
       ipcRenderer.invoke('db:listMeshcoreDmPeers', ownNodeId, limit),
     searchMessages: (query: string, limit?: number) =>
@@ -454,6 +461,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       rx_hops?: number | null;
       room_server_id?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
+    getReticulumIdentityHydration: (identityId: string, messageLimit?: number) =>
+      ipcRenderer.invoke('db:getReticulumIdentityHydration', identityId, messageLimit),
     getReticulumMessages: (identityId: string, limit?: number) =>
       ipcRenderer.invoke('db:getReticulumMessages', identityId, limit),
     searchReticulumMessages: (identityId: string, query: string, limit?: number) =>
