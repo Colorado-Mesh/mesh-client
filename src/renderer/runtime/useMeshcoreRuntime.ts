@@ -179,7 +179,6 @@ import type {
   MeshCoreConnection,
   MeshcoreContactDbRow,
   MeshCoreContactRaw,
-  MeshcoreMessageDbRow,
   MeshCoreNeighborEntry,
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
@@ -8623,10 +8622,7 @@ export function useMeshcoreRuntime() {
   const refreshMessagesFromDb = useCallback(
     async (opts?: { replaceFromDb?: boolean }) => {
       try {
-        const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
-          undefined,
-          500,
-        )) as MeshcoreMessageDbRow[];
+        const dbMsgs = await loadMeshcoreMessagesForHydration();
         const mapped = repairMeshcoreHydratedMessages(
           mapMeshcoreDbRowsToChatMessages(dbMsgs),
           meshcoreRoomServerIdsFromNodes(readMeshcoreNodes().values()),

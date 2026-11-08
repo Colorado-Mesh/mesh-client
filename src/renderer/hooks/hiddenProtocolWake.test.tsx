@@ -33,7 +33,7 @@ describe('hidden protocol wake', () => {
       .mockImplementation(() => new Promise(() => {}));
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     window.electronAPI.onPowerSuspend = vi.fn(() => () => {});
     window.electronAPI.onPowerResume = vi.fn((cb: () => void) => {
       resumeCb = cb;

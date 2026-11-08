@@ -325,7 +325,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
   });
 

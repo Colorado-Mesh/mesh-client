@@ -185,7 +185,7 @@ describe('useMeshcoreRuntime DB pubkey backfill for DM send', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {
         node_id: PEER_NODE_ID,
@@ -332,7 +332,9 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue(messagesFromDb);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue(
+      messagesFromDb,
+    );
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([contactRow]);
   }
 
@@ -397,7 +399,7 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
     });
 
     await act(async () => {

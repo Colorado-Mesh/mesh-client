@@ -9,6 +9,7 @@ import {
   MESHCORE_MESSAGE_CHANNEL_SQL,
   type MeshcoreMessageRowParams,
   persistMeshcoreMessage,
+  selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
 
@@ -415,6 +416,68 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
         { payload: 'hi', sender_name: 'B', radio_node_id: null },
         { payload: 'new', sender_name: 'A', radio_node_id: 42 },
       ]);
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe('selectMeshcoreMessagesForHydration', () => {
+  it('keeps quiet channel rows outside the global newest window', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      const insert = db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp) VALUES (1, ?, ?, ?)',
+      );
+      for (let i = 0; i < 20; i += 1) {
+        insert.run(`public-${i}`, 0, 1_000 + i);
+      }
+      insert.run('emergency-old', 1, 500);
+      insert.run('room-old', -2, 400);
+      db.prepareOnce('UPDATE meshcore_messages SET room_server_id = 99 WHERE payload = ?').run(
+        'room-old',
+      );
+
+      const rows = selectMeshcoreMessagesForHydration(db, {
+        globalLimit: 5,
+        perChannelLimit: 2,
+        roomLimit: 2,
+      });
+      const payloads = rows.map((row) => String(row.payload));
+      // Newest ids are room + emergency + recent Public; quiet emergency still loads via per-channel.
+      expect(payloads).toContain('emergency-old');
+      expect(payloads).toContain('room-old');
+      expect(payloads).toContain('public-19');
+      expect(payloads.filter((p) => p.startsWith('public-')).length).toBeGreaterThanOrEqual(2);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('applies the higher room cap while capping other logical channels', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      const insert = db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp, room_server_id) VALUES (1, ?, ?, ?, ?)',
+      );
+      for (let i = 0; i < 8; i += 1) {
+        insert.run(`room-${i}`, -2, 2_000 + i, 55);
+      }
+      for (let i = 0; i < 8; i += 1) {
+        insert.run(`ch1-${i}`, 1, 3_000 + i, null);
+      }
+
+      const rows = selectMeshcoreMessagesForHydration(db, {
+        globalLimit: 1,
+        perChannelLimit: 3,
+        roomLimit: 6,
+      });
+      const room = rows.filter((row) => String(row.payload).startsWith('room-'));
+      const ch1 = rows.filter((row) => String(row.payload).startsWith('ch1-'));
+      expect(room).toHaveLength(6);
+      expect(ch1).toHaveLength(3);
     } finally {
       db.close();
     }

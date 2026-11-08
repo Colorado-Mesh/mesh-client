@@ -214,6 +214,7 @@ import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
   persistMeshcoreMessage,
+  selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
 import {
@@ -5578,6 +5579,36 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
     finishDbIpcHandler('db:getMeshcoreMessages', err);
   }
 });
+
+ipcMain.handle(
+  'db:getMeshcoreMessagesForHydration',
+  (
+    event,
+    limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    },
+  ) => {
+    try {
+      assertIpcSender(event, 'db:getMeshcoreMessagesForHydration');
+      const db = getDbForIpc('db:getMeshcoreMessagesForHydration');
+      if (!db) return [];
+      // Defaults match src/shared/meshcoreMessageHydration.ts (500 / 100 / 200).
+      const rows = selectMeshcoreMessagesForHydration(db, {
+        globalLimit: clampQueryLimit(limits?.globalLimit, { default: 500, max: 10000 }),
+        perChannelLimit: clampQueryLimit(limits?.perChannelLimit, { default: 100, max: 10000 }),
+        roomLimit: clampQueryLimit(limits?.roomLimit, { default: 200, max: 10000 }),
+      });
+      return rows.map((row) => ({
+        ...row,
+        timestamp: effectiveMessageTimestampMs(Number(row.timestamp)),
+      }));
+    } catch (err) {
+      finishDbIpcHandler('db:getMeshcoreMessagesForHydration', err);
+    }
+  },
+);
 
 ipcMain.handle('db:searchMessages', (event, query: string, limit?: number) => {
   try {

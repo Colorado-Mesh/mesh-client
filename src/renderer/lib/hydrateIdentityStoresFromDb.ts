@@ -1,3 +1,8 @@
+import {
+  MESHCORE_DB_MESSAGE_LOAD_LIMIT,
+  MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
+  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+} from '@/shared/meshcoreMessageHydration';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 
 import {
@@ -7,7 +12,6 @@ import {
   type MeshcoreSavedNodeHopRow,
   persistMeshcoreMessageSenderRepairs,
 } from '../hooks/meshcore/meshcoreHookPreamble';
-import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
@@ -45,39 +49,32 @@ import {
 } from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
-/** MeshCore SQLite message load cap (matches runtime mount hydration). */
-export const MESHCORE_DB_MESSAGE_LOAD_LIMIT = 500;
+export {
+  MESHCORE_DB_MESSAGE_LOAD_LIMIT,
+  MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
+  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+};
 
-/** Extra room BBS rows loaded by channel (-2) and merged with the global window. */
-export const MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT = 200;
-
-/** Merge global + room-channel SQLite rows for hydration (dedupe by row id). */
+/** Merge hydration SQLite row lists (dedupe by row id; oldest-first). */
 export function mergeMeshcoreDbMessageRowsForHydration(
-  globalRows: MeshcoreMessageDbRow[],
-  roomRows: MeshcoreMessageDbRow[],
+  ...rowLists: MeshcoreMessageDbRow[][]
 ): MeshcoreMessageDbRow[] {
   const byId = new Map<number, MeshcoreMessageDbRow>();
-  for (const row of globalRows) {
-    if (typeof row.id === 'number') byId.set(row.id, row);
-  }
-  for (const row of roomRows) {
-    if (typeof row.id === 'number') byId.set(row.id, row);
+  for (const rows of rowLists) {
+    for (const row of rows) {
+      if (typeof row.id === 'number') byId.set(row.id, row);
+    }
   }
   return Array.from(byId.values()).sort((a, b) => a.id - b.id);
 }
 
 export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessageDbRow[]> {
-  const [globalRows, roomRows] = await Promise.all([
-    window.electronAPI.db.getMeshcoreMessages(undefined, MESHCORE_DB_MESSAGE_LOAD_LIMIT),
-    window.electronAPI.db.getMeshcoreMessages(
-      MESHCORE_ROOM_MESSAGE_CHANNEL,
-      MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
-    ),
-  ]);
-  return mergeMeshcoreDbMessageRowsForHydration(
-    globalRows as MeshcoreMessageDbRow[],
-    roomRows as MeshcoreMessageDbRow[],
-  );
+  const rows = await window.electronAPI.db.getMeshcoreMessagesForHydration({
+    globalLimit: MESHCORE_DB_MESSAGE_LOAD_LIMIT,
+    perChannelLimit: MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
+    roomLimit: MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+  });
+  return rows as MeshcoreMessageDbRow[];
 }
 
 /**

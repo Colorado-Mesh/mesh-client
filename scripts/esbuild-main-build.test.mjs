@@ -17,8 +17,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
  * Metal ensure+spawn as `ai-native-runtime.js` (not in index.js). Thin install-path checks
  * stay in index.js for sync status. Keep HF catalog / prompt / native runtime in siblings.
+ * Fair MeshCore chat hydration SQL (`selectMeshcoreMessagesForHydration`) adds a small
+ * window-function query so quiet group channels are not crowded out of the newest-N load.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 796 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 797 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

@@ -221,7 +221,7 @@ describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
   beforeEach(() => {
     capturedConn = null;
     resetIdentityStores();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {
         node_id: REMOTE_NODE_ID,
@@ -328,7 +328,7 @@ describe('useMeshcoreRuntime buildNodesFromContacts merges nodes-table hops when
   beforeEach(() => {
     capturedConn = null;
     resetIdentityStores();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
       { node_id: REMOTE_NODE_ID, hops: 7, hops_away: null },

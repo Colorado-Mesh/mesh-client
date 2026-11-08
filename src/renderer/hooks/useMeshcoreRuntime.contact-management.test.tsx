@@ -33,7 +33,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
   beforeEach(() => {
     resetMeshcoreLocallyDeletedContactsForTests();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.clearMeshcoreContacts).mockResolvedValue(undefined);
     vi.mocked(window.electronAPI.db.deleteMeshcoreContact).mockResolvedValue(undefined);
   });
@@ -42,7 +42,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -58,7 +58,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
     });
 
     await expect(result.current.applyMeshcoreContactAutoAdd(APPLY_PARAMS)).rejects.toThrow(
@@ -70,7 +70,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -81,7 +81,7 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
   });
 
   it('setNodeFavorited passes synthetic pubkey hex when contact has no key in memory (DB insert path)', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([
       {
         id: 1,
         sender_id: STUB_SENDER_ID,

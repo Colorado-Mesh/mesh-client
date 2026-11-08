@@ -422,6 +422,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMeshcoreMessages', channelIdx, limit),
+    getMeshcoreMessagesForHydration: (limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    }) => ipcRenderer.invoke('db:getMeshcoreMessagesForHydration', limits),
     listMeshcoreDmPeers: (ownNodeId: number, limit?: number) =>
       ipcRenderer.invoke('db:listMeshcoreDmPeers', ownNodeId, limit),
     searchMessages: (query: string, limit?: number) =>

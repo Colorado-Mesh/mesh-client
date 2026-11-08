@@ -189,6 +189,7 @@ export function createElectronAPIMock(): ElectronAPI {
       updateMessageReceivedVia: vi.fn().mockResolvedValue(undefined),
       updateMessagePacketId: vi.fn().mockResolvedValue(undefined),
       getMeshcoreMessages: vi.fn().mockResolvedValue([]),
+      getMeshcoreMessagesForHydration: vi.fn().mockResolvedValue([]),
       listMeshcoreDmPeers: vi.fn().mockResolvedValue([]),
       getReticulumMessages: vi.fn().mockResolvedValue([]),
       searchReticulumMessages: vi.fn().mockResolvedValue([]),

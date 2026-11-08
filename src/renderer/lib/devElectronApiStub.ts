@@ -127,6 +127,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       updateMessageReceivedVia: noopAsync,
       updateMessagePacketId: noopAsync,
       getMeshcoreMessages: async () => [],
+      getMeshcoreMessagesForHydration: async () => [],
       listMeshcoreDmPeers: async () => [],
       getReticulumMessages: async () => [],
       clearReticulumMessages: async () => ({ changes: 0 }),

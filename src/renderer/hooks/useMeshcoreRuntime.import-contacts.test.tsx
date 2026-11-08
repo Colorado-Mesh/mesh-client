@@ -24,7 +24,7 @@ const IMPORT_NODE_ID = pubkeyToNodeId(pubKeyBytesFromHex(HEX32));
 describe('useMeshcoreRuntime importContacts', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(null);
     vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
   });
