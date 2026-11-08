@@ -4668,7 +4668,11 @@ function checkAuditLocaleFixes(ctx) {
   if (AUDIT_RRC_TOKEN_KEYS.has(flatKey) && enVal.includes('RRC') && !val.includes('RRC')) {
     issues.push('preserve the RRC token');
   }
-  if (/-0\d+$/.test(val) && !/-0\d+$/.test(enVal)) {
+  // CAT tools glue "-0" plus digits onto translated prose ("День місяця-04").
+  // A single ASCII token such as "ESP32-01" is a code-like literal, not that artifact.
+  const catSuffix = /-0\d+$/.test(val) && !/-0\d+$/.test(enVal);
+  const catProse = /\s/.test(val) || /[^\u0020-\u007e]/.test(val);
+  if (catSuffix && catProse) {
     issues.push('CAT suffix "-0" plus digits is not allowed');
   }
   if (flatKey === 'scheduledBroadcasts.status.missed' && locale === 'ja' && val === '欠席') {

@@ -29,6 +29,10 @@ export interface ScheduledBroadcastRuntimePatchOptions {
   expectedUpdatedAt?: number;
 }
 
+/**
+ * Apply a scheduler attempt onto a slot. When `expectedUpdatedAt` does not match,
+ * a newer save owns `nextDueAt` and only the attempt result is recorded.
+ */
 export function mergeScheduledBroadcastRuntimePatch(
   prev: ScheduledBroadcastRow,
   patch: Pick<ScheduledBroadcastRow, 'nextDueAt' | 'lastResult' | 'lastAttemptAt'>,

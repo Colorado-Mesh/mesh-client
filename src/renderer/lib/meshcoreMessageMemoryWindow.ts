@@ -30,12 +30,14 @@ export interface MeshcoreMemoryWindowFields {
   trimId: string;
 }
 
+/** Recent messages kept for one logical channel (rooms use the larger floor). */
 function floorForLogicalChannel(logical: number): number {
   return logical === MESHCORE_ROOM_MESSAGE_CHANNEL
     ? MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT
     : MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT;
 }
 
+/** Newest first, then higher local order, then id. */
 function compareNewestFirst(a: MeshcoreMemoryWindowFields, b: MeshcoreMemoryWindowFields): number {
   if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
   const aOrder = a.localOrder ?? 0;
@@ -44,6 +46,7 @@ function compareNewestFirst(a: MeshcoreMemoryWindowFields, b: MeshcoreMemoryWind
   return b.trimId.localeCompare(a.trimId);
 }
 
+/** Latest timestamp in a channel group, used only to rank extra channels. */
 function newestTimestamp<T>(
   items: readonly T[],
   fieldsOf: (item: T) => MeshcoreMemoryWindowFields,
@@ -118,6 +121,7 @@ export function trimMeshcoreMemoryWindow<T>(
   return items.filter((item) => kept.has(item));
 }
 
+/** Map a MeshCore chat row onto the fields the fair memory window groups by. */
 export function meshcoreChatMessageWindowFields(message: ChatMessage): MeshcoreMemoryWindowFields {
   return {
     timestamp: message.timestamp,

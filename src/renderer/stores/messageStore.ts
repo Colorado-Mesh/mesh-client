@@ -292,6 +292,7 @@ function trimIdentityBucketToNewest(
   return { next, evictedIds };
 }
 
+/** Drop MeshCore rows that sit outside each channel floor and the surplus cap. */
 function trimMeshcoreIdentityBucket(
   byIdentity: Record<string, MessageRecord>,
   values: MessageRecord[],

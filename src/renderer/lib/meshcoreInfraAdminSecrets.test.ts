@@ -47,6 +47,23 @@ describe('meshcoreInfraAdminSecrets', () => {
     expect(JSON.stringify(localStorage)).not.toContain('room-admin');
   });
 
+  it('room setAdminPassword does not invent a guest password when none was saved', async () => {
+    await setAdminPassword(0x21, 'Room', 'room-admin', { persist: true });
+    expect(getMeshcoreRoomCredential(0x21)).toEqual({ adminPassword: 'room-admin' });
+    await setMeshcoreRoomCredential(0x23, { adminPassword: 'old' });
+    await setAdminPassword(0x23, 'Room', 'new-admin', { persist: true });
+    expect(getMeshcoreRoomCredential(0x23)).toEqual({ adminPassword: 'new-admin' });
+  });
+
+  it('room setAdminPassword keeps an intentional blank guest password', async () => {
+    await setMeshcoreRoomCredential(0x24, { guestPassword: '', adminPassword: 'old' });
+    await setAdminPassword(0x24, 'Room', 'new-admin', { persist: true });
+    expect(getMeshcoreRoomCredential(0x24)).toEqual({
+      guestPassword: '',
+      adminPassword: 'new-admin',
+    });
+  });
+
   it('room setAdminPassword keeps guest and sync/auto-login when patching admin', async () => {
     await setMeshcoreRoomCredential(0x30, {
       guestPassword: 'hello',

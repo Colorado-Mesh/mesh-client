@@ -2077,11 +2077,13 @@ export default function RoomsPanel({
                   void handleAutoLoginOnConnectChange(selectedRoomId, checked);
                 }}
                 disabled={
-                  !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
+                  !meshcoreRoomHasSavedGuestCredential(selectedRoomId) &&
+                  !meshcoreIsRoomLoggedIn(selectedRoomId)
                 }
                 label={t('roomsPanel.autoLoginOnConnect')}
                 description={
-                  !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
+                  !meshcoreRoomHasSavedGuestCredential(selectedRoomId) &&
+                  !meshcoreIsRoomLoggedIn(selectedRoomId)
                     ? t('roomsPanel.autoLoginRequiresSavedPassword')
                     : t('roomsPanel.autoLoginOnConnectTooltip')
                 }

@@ -46,8 +46,10 @@ export interface RrcMecpInboundArgs {
 }
 
 /**
- * Own when the sender hash is ours, or when the hub omitted the hash and the
- * nickname is ours (local echo). Nickname is not trusted once a hash is present.
+ * Own when the sender hash matches ours, or when the hub omitted the hash and
+ * the nickname matches exactly. Matches `rrcSessionStore` unread: any truthy
+ * hash, including whitespace, counts as present, and nicknames are not trimmed.
+ * A present hash that does not match is never own.
  */
 export function rrcMecpSenderIsOwn(args: {
   senderHash: string | null;
@@ -55,12 +57,15 @@ export function rrcMecpSenderIsOwn(args: {
   localIdentityHash: string | null;
   localNickname?: string | null;
 }): boolean {
-  const hash = args.senderHash?.trim().toLowerCase() ?? '';
-  const localHash = args.localIdentityHash?.trim().toLowerCase() ?? '';
-  if (hash && localHash && hash === localHash) return true;
-  const nick = args.nickname?.trim() ?? '';
-  const localNick = args.localNickname?.trim() ?? '';
-  return !hash && nick.length > 0 && nick === localNick;
+  const senderHash = args.senderHash ?? '';
+  const localHash = args.localIdentityHash ?? '';
+  const senderKey = senderHash ? senderHash.toLowerCase() : '';
+  const localKey = localHash ? localHash.toLowerCase() : '';
+  if (senderKey && senderKey === localKey) return true;
+  if (senderHash) return false;
+  const nick = args.nickname ?? '';
+  const localNick = args.localNickname ?? '';
+  return Boolean(nick && nick === localNick);
 }
 
 /**

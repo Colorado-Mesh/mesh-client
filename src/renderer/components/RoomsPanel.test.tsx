@@ -1418,13 +1418,28 @@ describe('RoomsPanel', () => {
     if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
       fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
     }
-    fireEvent.click(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' }));
-
-    await waitFor(() => {
-      expect(shownToasts()).toContain('roomsPanel.autoLoginRequiresSavedPassword');
-    });
+    const toggle = screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' });
+    expect(toggle).toBeDisabled();
     expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(false);
     expect(getMeshcoreRoomCredential(room.node_id)).toEqual({ adminPassword: 'ops' });
+  });
+
+  it('leaves auto-login available for an intentional blank guest password', async () => {
+    const room = makeRoom(0x102c3, 'Blank Guest Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: '' });
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test blank guest auto-login',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    await act(async () => {});
+    if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
+      fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+    }
+    expect(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })).toBeEnabled();
   });
 
   it('saves the session guest password when auto-login is enabled on an admin-only record', async () => {

@@ -36,6 +36,7 @@ describe('useDiagnosticSeverityAlerts', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     useDiagnosticsStore.getState().clearDiagnostics();
   });
 
@@ -251,5 +252,42 @@ describe('useDiagnosticSeverityAlerts', () => {
     });
     rerender({ protocol: 'meshcore' });
     expect(fireNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not notify a row seeded on protocol switch when it returns inside the cooldown', () => {
+    vi.useFakeTimers();
+    const hidden = {
+      kind: 'rf' as const,
+      id: 'rf:1:reticulum_down',
+      nodeId: 1,
+      condition: 'reticulum/interface down',
+      cause: 'down',
+      severity: 'error' as const,
+      detectedAt: 1,
+    };
+    useDiagnosticsStore.setState({ diagnosticRows: [hidden] });
+    const { rerender } = renderHook(
+      (props: { protocol: 'meshtastic' | 'reticulum' }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: props.protocol,
+          settings: { ...baseSettings, notifyOnDiagnosticErrors: true },
+        });
+      },
+      { initialProps: { protocol: 'meshtastic' as 'meshtastic' | 'reticulum' } },
+    );
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    rerender({ protocol: 'reticulum' });
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [] });
+    });
+    rerender({ protocol: 'reticulum' });
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [{ ...hidden, detectedAt: 2 }] });
+    });
+    rerender({ protocol: 'reticulum' });
+    expect(fireNotification).not.toHaveBeenCalled();
   });
 });

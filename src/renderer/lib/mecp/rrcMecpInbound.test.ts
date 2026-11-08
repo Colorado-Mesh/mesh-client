@@ -135,6 +135,31 @@ describe('handleRrcMecpInbound', () => {
     expect(recordMecpAlertMock).not.toHaveBeenCalled();
   });
 
+  it('does not treat a whitespace hash or a padded nickname as our echo', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-ws-hash',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: '   ',
+      nickname: 'MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    await handleRrcMecpInbound({
+      messageId: 'm-padded-nick',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: '',
+      nickname: ' MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    expect(sendMecpRebroadcastOnProtocol).toHaveBeenCalledTimes(2);
+    expect(upsertFromMecpMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not treat a different hash as own just because the nickname matches', async () => {
     await handleRrcMecpInbound({
       messageId: 'm-spoof-nick',

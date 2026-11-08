@@ -7,6 +7,7 @@ import {
   trimMeshcoreChatMessages,
   trimMeshcoreMemoryWindow,
 } from './meshcoreMessageMemoryWindow';
+import { loadRuntimeSource } from './sourceContractTestHelpers';
 import type { ChatMessage } from './types';
 
 function fields(
@@ -120,5 +121,47 @@ describe('trimMeshcoreChatMessages', () => {
     const kept = trimMeshcoreChatMessages(messages);
     expect(kept.filter((message) => message.channel === 0)).toHaveLength(100);
     expect(kept.some((message) => message.payload === '0-0')).toBe(true);
+  });
+
+  it('keeps a quiet channel when a live or optimistic row is appended past the cap', () => {
+    const prev: ChatMessage[] = [];
+    for (let channel = 0; channel < 21; channel++) {
+      for (let i = 0; i < 100; i++) {
+        prev.push(
+          chat({
+            id: channel * 100 + i,
+            channel,
+            timestamp: channel * 1_000 + i,
+            payload: `ch${channel}-${i}`,
+          }),
+        );
+      }
+    }
+    const live = trimMeshcoreChatMessages([
+      ...prev,
+      chat({ id: 90000, channel: 20, timestamp: 999_999, payload: 'live' }),
+    ]);
+    const temp = trimMeshcoreChatMessages([
+      ...prev,
+      chat({
+        channel: -1,
+        timestamp: 999_999,
+        payload: 'temp',
+        status: 'sending',
+        to: 42,
+      }),
+    ]);
+    expect(live.filter((message) => message.channel === 0)).toHaveLength(100);
+    expect(live.some((message) => message.payload === 'live')).toBe(true);
+    expect(temp.filter((message) => message.channel === 0)).toHaveLength(100);
+    expect(temp.some((message) => message.payload === 'temp')).toBe(true);
+  });
+});
+
+describe('useMeshcoreRuntime message trim', () => {
+  it('uses the fair MeshCore window for live ingest and optimistic sends', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    expect(source).toContain('trimMeshcoreChatMessages');
+    expect(source).not.toContain('trimChatMessagesToMax');
   });
 });

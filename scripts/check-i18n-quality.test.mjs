@@ -2659,6 +2659,23 @@ describe('audit locale guards', () => {
     );
     expectIssue(
       localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'scheduledBroadcasts.dayOfMonth',
+        enVal: 'Day of month',
+        val: 'Tag im Monat-04',
+      }),
+      'CAT suffix',
+    );
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'scheduledBroadcasts.dayOfMonth',
+        enVal: 'Day of month',
+        val: 'ESP32-01',
+      }).some((msg) => msg.includes('CAT suffix')),
+    ).toBe(false);
+    expectIssue(
+      localeStringQualityIssues({
         locale: 'ja',
         flatKey: 'scheduledBroadcasts.status.missed',
         enVal: 'Missed',

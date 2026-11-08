@@ -107,7 +107,6 @@ import {
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyGattRfLink } from '../lib/bleReconnectHelper';
-import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
@@ -298,6 +297,7 @@ import {
   restoreMeshcoreLocallyDeletedContactsFromStorage,
   shouldApplyMeshcoreContact,
 } from '../lib/meshcoreLocallyDeletedContacts';
+import { trimMeshcoreChatMessages } from '../lib/meshcoreMessageMemoryWindow';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
@@ -1447,7 +1447,7 @@ export function useMeshcoreRuntime() {
               return prev;
             }
             inserted = true;
-            return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+            return trimMeshcoreChatMessages([...prev, msg]);
           });
         });
         result = {
@@ -1481,7 +1481,7 @@ export function useMeshcoreRuntime() {
               }
               return prev;
             }
-            return trimChatMessagesToMax([...prev, result.message], MAX_IN_MEMORY_CHAT_MESSAGES);
+            return trimMeshcoreChatMessages([...prev, result.message]);
           });
         });
       }
@@ -1558,7 +1558,7 @@ export function useMeshcoreRuntime() {
               continue;
             }
           }
-          next = trimChatMessagesToMax([...next, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+          next = trimMeshcoreChatMessages([...next, msg]);
         }
         return next;
       });
@@ -4555,9 +4555,7 @@ export function useMeshcoreRuntime() {
           to: destNodeId,
           replyId: replyField,
         };
-        setMessages((prev) =>
-          trimChatMessagesToMax([...prev, tempMsg], MAX_IN_MEMORY_CHAT_MESSAGES),
-        );
+        setMessages((prev) => trimMeshcoreChatMessages([...prev, tempMsg]));
 
         // Calculate dynamic timeout based on hop count for multi-hop paths
         const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
