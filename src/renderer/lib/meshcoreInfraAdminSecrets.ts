@@ -12,6 +12,7 @@ import { meshcoreRepeaterHasResolvablePassword } from './meshcoreRepeaterSession
 import {
   getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 
@@ -61,6 +62,8 @@ export function hasResolvableAdminPassword(nodeId: number, hwModel: string | und
  * Set admin password for ops (Status/CLI/etc.).
  * Repeater: ephemeral always when non-empty; persist when `persist` is true.
  * Room: session ephemeral always when non-empty; patch persisted `adminPassword` when `persist`.
+ * An existing guest password is kept, including an intentional blank. A missing guest
+ * field stays missing so admin-only records are not treated as a saved guest login.
  */
 export async function setAdminPassword(
   nodeId: number,
@@ -77,7 +80,9 @@ export async function setAdminPassword(
     if (!persist) return;
     const prev = getMeshcoreRoomCredential(nodeId);
     await setMeshcoreRoomCredential(nodeId, {
-      guestPassword: prev?.guestPassword ?? '',
+      ...(meshcoreRoomHasSavedGuestCredential(nodeId)
+        ? { guestPassword: prev?.guestPassword ?? '' }
+        : {}),
       adminPassword: trimmed,
     });
     return;

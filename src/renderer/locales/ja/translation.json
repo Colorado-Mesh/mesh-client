@@ -949,7 +949,7 @@
     "scheduleSendPresetTomorrow": "明日9:00",
     "scheduleSendErrorPast": "将来の時間を選択してください。",
     "scheduleSendErrorFar": "今後 30 日以内の時間を選択してください。",
-    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running. For repeating schedules (hourly, daily, weekly, and so on), use the Broadcasts tab under Chat.",
+    "scheduleSendHint": "送信オプションを開き、「後で送信する」を選びます。予約したメッセージはこの端末に保存され、時刻になり無線機が接続されているときに送信されます。アプリは起動したままである必要があります。繰り返す予定（毎時、毎日、毎週など）は、チャットの「放送」タブを使います。",
     "outboxStatusScheduledDue": "スケジュール済み — 送信を待機中",
     "scheduleSendFailed": "スケジュールされたメッセージを保存できませんでした。もう一度やり直してください。",
     "outboxScheduledEdit": "編集",
@@ -8376,7 +8376,7 @@
       "partial": "一部（ {{ok}}/{{total}} ）",
       "failed": "失敗しました",
       "skipped": "スキップ済み",
-      "missed": "欠席"
+      "missed": "見逃し"
     },
     "reasons": {
       "notConnected": "未接続",
@@ -8388,7 +8388,7 @@
       "deferred": "延期（実行時間制限）",
       "sendFailed": "送信に失敗しました",
       "emptyText": "メッセージが空です",
-      "channelMissing": "Channel not on this radio"
+      "channelMissing": "この無線機にないチャンネル"
     },
     "targetKind": {
       "meshtasticChannel": "Meshtasticチャンネル",
@@ -8398,9 +8398,9 @@
     },
     "airtimeWarning": "多くのターゲットを持つ時間単位のスケジュールは、多くの放送時間を使用します。",
     "respectWarning": "共有LoRa放送時間や他のオペレーターを尊重してください。チャンネル、ルーム、またはハブにスパムを送信しないでください。まれなスケジュール、少数のターゲット、およびメッシュが実際に必要とするメッセージを好みます。",
-    "invalidTime": "Enter a valid time.",
-    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
-    "invalidAnchorDate": "Enter a valid biweekly anchor date.",
+    "invalidTime": "有効な時刻を入力してください。",
+    "invalidDayOfMonth": "日は 1 から 31 の間にしてください。",
+    "invalidAnchorDate": "有効な隔週の基準日を入力してください。",
     "savedTargets": "保存されたターゲット",
     "channelNamed": "{{kind}} {{index}} ： {{name}}",
     "identityConnected": "{{name}} （接続済み）",
@@ -8410,7 +8410,7 @@
   "internetWeather": {
     "heading": "インターネットの天気",
     "enable": "インターネット天気を有効にする",
-    "enableHint": "表示しているマップ領域をOpen - MeteoおよびRainViewer （または米国のNEXRAD ）に送信します。",
+    "enableHint": "表示しているマップ領域をOpen-MeteoおよびRainViewer （または米国のNEXRAD ）に送信します。",
     "layerRadar": "レーダー",
     "layerTemperature": "温度",
     "layerWind": "かぜ",
@@ -8429,7 +8429,7 @@
     "loading": "予測を読み込んでいます…",
     "loadFailed": "気象データは利用できません。",
     "noRadar": "利用可能なレーダーフレームがありません。",
-    "unitsTemp": "Temperature unit",
+    "unitsTemp": "温度の単位",
     "unitsWind": "ウインドユニット",
     "unitsPrecip": "降水量単位",
     "unitC": "Celsius (°C)",

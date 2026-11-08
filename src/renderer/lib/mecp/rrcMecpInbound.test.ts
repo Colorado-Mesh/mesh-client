@@ -119,6 +119,112 @@ describe('handleRrcMecpInbound', () => {
     expect(sendMecpRebroadcastOnProtocol).not.toHaveBeenCalled();
   });
 
+  it('skips a hashless echo of our nickname before incident or rebroadcast', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-own-nick',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: null,
+      nickname: 'MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    expect(sendMecpRebroadcastOnProtocol).not.toHaveBeenCalled();
+    expect(upsertFromMecpMock).not.toHaveBeenCalled();
+    expect(recordMecpAlertMock).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a whitespace hash or a padded nickname as our echo', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-ws-hash',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: '   ',
+      nickname: 'MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    await handleRrcMecpInbound({
+      messageId: 'm-padded-nick',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: '',
+      nickname: ' MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    expect(sendMecpRebroadcastOnProtocol).toHaveBeenCalledTimes(2);
+    expect(upsertFromMecpMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not treat a different hash as own just because the nickname matches', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-spoof-nick',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      nickname: 'MeshOp',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    expect(sendMecpRebroadcastOnProtocol).toHaveBeenCalled();
+    expect(recordMecpAlertMock).toHaveBeenCalledWith('reticulum:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+  });
+
+  it('gives hashless strangers separate throttle buckets', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-ada',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: null,
+      nickname: 'Ada',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    await handleRrcMecpInbound({
+      messageId: 'm-bob',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: null,
+      nickname: 'Bob',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    await handleRrcMecpInbound({
+      messageId: 'm-anon-1',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: null,
+      nickname: null,
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    await handleRrcMecpInbound({
+      messageId: 'm-anon-2',
+      body: 'MECP/0/M01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: '  ',
+      nickname: '  ',
+      localIdentityHash: '11112222333344445555666677778888',
+      localNickname: 'MeshOp',
+    });
+    expect(recordMecpAlertMock.mock.calls.map((call) => call[0])).toEqual([
+      'reticulum:nick:ada',
+      'reticulum:nick:bob',
+      'reticulum:anon:m-anon-1',
+      'reticulum:anon:m-anon-2',
+    ]);
+    expect(upsertFromMecpMock).toHaveBeenCalledTimes(4);
+  });
+
   it('audits drills without rebroadcast or throttle', async () => {
     await handleRrcMecpInbound({
       messageId: 'm-drill',

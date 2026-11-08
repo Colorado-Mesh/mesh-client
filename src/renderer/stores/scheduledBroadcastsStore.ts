@@ -17,7 +17,34 @@ interface ScheduledBroadcastsState {
   applyRuntimeState: (
     slot: number,
     patch: Pick<ScheduledBroadcastRow, 'nextDueAt' | 'lastResult' | 'lastAttemptAt'>,
+    opts?: ScheduledBroadcastRuntimePatchOptions,
   ) => void;
+}
+
+export interface ScheduledBroadcastRuntimePatchOptions {
+  /**
+   * `updatedAt` from the row the scheduler claimed. When the store row is newer,
+   * keep that save's `nextDueAt` and only record the in-flight attempt.
+   */
+  expectedUpdatedAt?: number;
+}
+
+/**
+ * Apply a scheduler attempt onto a slot. When `expectedUpdatedAt` does not match,
+ * a newer save owns `nextDueAt` and only the attempt result is recorded.
+ */
+export function mergeScheduledBroadcastRuntimePatch(
+  prev: ScheduledBroadcastRow,
+  patch: Pick<ScheduledBroadcastRow, 'nextDueAt' | 'lastResult' | 'lastAttemptAt'>,
+  opts?: ScheduledBroadcastRuntimePatchOptions,
+): ScheduledBroadcastRow {
+  const preserveNextDueAt =
+    opts?.expectedUpdatedAt != null && prev.updatedAt !== opts.expectedUpdatedAt;
+  return {
+    ...prev,
+    ...patch,
+    ...(preserveNextDueAt ? { nextDueAt: prev.nextDueAt } : {}),
+  };
 }
 
 function emptySlots(): Record<number, ScheduledBroadcastRow | null> {
@@ -51,8 +78,9 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
         }
         set({ slots, hydrated: true });
       } catch (error) {
+        // Leave hydrated false and drop the in-flight promise so a later hydrate can retry.
+        // A missing list API above stays terminal: there is no IPC to retry.
         console.warn('[scheduledBroadcasts] hydrate failed:', error);
-        set({ hydrated: true });
       } finally {
         hydration = null;
       }
@@ -90,17 +118,14 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
     }
   },
 
-  applyRuntimeState: (slot, patch) => {
+  applyRuntimeState: (slot, patch, opts) => {
     set((s) => {
       const prev = s.slots[slot];
       if (!prev) return s;
       return {
         slots: {
           ...s.slots,
-          [slot]: {
-            ...prev,
-            ...patch,
-          },
+          [slot]: mergeScheduledBroadcastRuntimePatch(prev, patch, opts),
         },
       };
     });

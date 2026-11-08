@@ -36,6 +36,7 @@ describe('useDiagnosticSeverityAlerts', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     useDiagnosticsStore.getState().clearDiagnostics();
   });
 
@@ -168,5 +169,125 @@ describe('useDiagnosticSeverityAlerts', () => {
     rerender({ settings: { ...baseSettings, notifyOnDiagnosticErrors: true } });
     expect(fireNotification).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
+  });
+
+  it('does not re-alert a standing error after the cooldown elapses', () => {
+    vi.useFakeTimers();
+    const { rerender } = renderHook(
+      (props: { settings: OperationalAlertSettings }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: 'meshtastic',
+          settings: props.settings,
+        });
+      },
+      { initialProps: { settings: { ...baseSettings, notifyOnDiagnosticErrors: true } } },
+    );
+    const row = {
+      kind: 'routing' as const,
+      id: 'routing:8:bad_route',
+      nodeId: 8,
+      type: 'bad_route' as const,
+      severity: 'error' as const,
+      description: 'Bad route',
+      detectedAt: 1,
+    };
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [row] });
+    });
+    rerender({ settings: { ...baseSettings, notifyOnDiagnosticErrors: true } });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(DIAGNOSTIC_ALERT_COOLDOWN_MS + 1);
+      useDiagnosticsStore.setState({
+        diagnosticRows: [{ ...row, detectedAt: 2, description: 'Still bad' }],
+      });
+    });
+    rerender({ settings: { ...baseSettings, notifyOnDiagnosticErrors: true } });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('seeds the visible rows when the protocol changes instead of notifying them', () => {
+    const row = {
+      kind: 'routing' as const,
+      id: 'routing:9:bad_route',
+      nodeId: 9,
+      type: 'bad_route' as const,
+      severity: 'error' as const,
+      description: 'Bad route',
+      detectedAt: 1,
+    };
+    useDiagnosticsStore.setState({ diagnosticRows: [row] });
+    const initialProps: { protocol: 'meshtastic' | 'meshcore' } = { protocol: 'meshtastic' };
+    const { rerender } = renderHook(
+      (props: { protocol: 'meshtastic' | 'meshcore' }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: props.protocol,
+          settings: { ...baseSettings, notifyOnDiagnosticErrors: true },
+        });
+      },
+      { initialProps },
+    );
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    rerender({ protocol: 'meshcore' });
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    act(() => {
+      useDiagnosticsStore.setState({
+        diagnosticRows: [
+          row,
+          {
+            kind: 'routing',
+            id: 'routing:10:hop_goblin',
+            nodeId: 10,
+            type: 'hop_goblin',
+            severity: 'error',
+            description: 'Hop goblin',
+            detectedAt: 2,
+          },
+        ],
+      });
+    });
+    rerender({ protocol: 'meshcore' });
+    expect(fireNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not notify a row seeded on protocol switch when it returns inside the cooldown', () => {
+    vi.useFakeTimers();
+    const hidden = {
+      kind: 'rf' as const,
+      id: 'rf:1:reticulum_down',
+      nodeId: 1,
+      condition: 'reticulum/interface down',
+      cause: 'down',
+      severity: 'error' as const,
+      detectedAt: 1,
+    };
+    useDiagnosticsStore.setState({ diagnosticRows: [hidden] });
+    const { rerender } = renderHook(
+      (props: { protocol: 'meshtastic' | 'reticulum' }) => {
+        useDiagnosticSeverityAlerts({
+          protocol: props.protocol,
+          settings: { ...baseSettings, notifyOnDiagnosticErrors: true },
+        });
+      },
+      { initialProps: { protocol: 'meshtastic' as 'meshtastic' | 'reticulum' } },
+    );
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    rerender({ protocol: 'reticulum' });
+    expect(fireNotification).not.toHaveBeenCalled();
+
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [] });
+    });
+    rerender({ protocol: 'reticulum' });
+    act(() => {
+      useDiagnosticsStore.setState({ diagnosticRows: [{ ...hidden, detectedAt: 2 }] });
+    });
+    rerender({ protocol: 'reticulum' });
+    expect(fireNotification).not.toHaveBeenCalled();
   });
 });

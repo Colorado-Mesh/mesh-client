@@ -5,6 +5,7 @@ import {
 } from './meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import {
@@ -32,6 +33,23 @@ export function getMeshcoreRoomSavedSecretsSummary(
   };
 }
 
+/**
+ * Guest password from a Remember-password login, plus an admin password only when
+ * this login supplied one or a previous save already had one.
+ */
+export function meshcoreRoomRememberedCredential(
+  guestPassword: string,
+  suppliedAdminPassword: string,
+  existingAdminPassword: string | undefined,
+): { guestPassword: string; adminPassword?: string } {
+  const adminPassword =
+    suppliedAdminPassword.length > 0 ? suppliedAdminPassword : (existingAdminPassword ?? '');
+  return {
+    guestPassword,
+    ...(adminPassword.length > 0 ? { adminPassword } : {}),
+  };
+}
+
 /** Clears saved password and disables auto-login + periodic auto-sync for a room. */
 export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<void> {
   const prev = getMeshcoreRoomSyncConfig(nodeId);
@@ -50,12 +68,14 @@ export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<vo
  * Returns true when it saved a new credential.
  */
 export async function saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId: number): Promise<boolean> {
-  if (getMeshcoreRoomCredential(nodeId) != null) return false;
+  if (meshcoreRoomHasSavedGuestCredential(nodeId)) return false;
   const session = meshcoreGetRoomSession(nodeId);
   if (!session) return false;
+  const existing = getMeshcoreRoomCredential(nodeId);
+  const adminPassword = existing?.adminPassword || session.adminPassword;
   await setMeshcoreRoomCredential(nodeId, {
     guestPassword: session.guestPassword,
-    ...(session.adminPassword.length > 0 ? { adminPassword: session.adminPassword } : {}),
+    ...(adminPassword.length > 0 ? { adminPassword } : {}),
   });
   return true;
 }

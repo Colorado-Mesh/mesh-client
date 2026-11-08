@@ -633,6 +633,44 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(emergency[0]?.payload).toBe('emergency history outside global window');
   });
 
+  it('keeps quiet channels when fair hydration and replace exceed 2000 rows', async () => {
+    const rows = [];
+    for (let channel = 0; channel < 21; channel++) {
+      for (let i = 0; i < 100; i++) {
+        rows.push({
+          id: channel * 100 + i + 1,
+          sender_id: 0xabc,
+          sender_name: 'Ops',
+          payload: `ch${channel}-${i}`,
+          channel_idx: channel,
+          timestamp: channel * 1_000 + i,
+          status: 'acked',
+          packet_id: null,
+          emoji: null,
+          reply_id: null,
+          to_node: null,
+        });
+      }
+    }
+    expect(rows).toHaveLength(2100);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreIdentityHydration').mockResolvedValue({
+      contacts: [],
+      nodes: [],
+      hopHistory: [],
+      messages: rows,
+    });
+
+    await hydrateMeshcoreMessagesFromDb(ID_MC, 'replace');
+
+    const messages = messageRecordsToChatMessages(
+      Object.values(useMessageStore.getState().messages[ID_MC] ?? {}),
+    );
+    const quiet = messages.filter((message) => message.channel === 0);
+    expect(quiet).toHaveLength(100);
+    expect(quiet.some((message) => message.payload === 'ch0-0')).toBe(true);
+    expect(messages.length).toBeGreaterThan(2000);
+  });
+
   it('assigns author-inclusive canonical ids to hydrated room posts', async () => {
     const roomMsg = buildMeshcoreRoomIncomingMessage({
       rawText: 'persisted room post',

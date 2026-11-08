@@ -19,6 +19,18 @@ describe('meshcoreRoomSyncStorage', () => {
     expect(getMeshcoreRoomSyncConfig(99).autoLoginOnConnect).toBe(false);
   });
 
+  it('does not default auto-login for an admin-only credential', async () => {
+    await setMeshcoreRoomCredential(56, { adminPassword: 'ops' });
+    expect(getMeshcoreRoomSyncConfig(56).autoLoginOnConnect).toBe(false);
+    expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).not.toContain(56);
+  });
+
+  it('defaults auto-login for an intentional blank guest password', async () => {
+    await setMeshcoreRoomCredential(57, { guestPassword: '' });
+    expect(getMeshcoreRoomSyncConfig(57).autoLoginOnConnect).toBe(true);
+    expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toContain(57);
+  });
+
   it('defaults autoLoginOnConnect to true when room password is saved', async () => {
     await setMeshcoreRoomCredential(55, { guestPassword: 'hello' });
     expect(getMeshcoreRoomSyncConfig(55).autoLoginOnConnect).toBe(true);

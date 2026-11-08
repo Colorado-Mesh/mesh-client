@@ -4595,6 +4595,127 @@ function checkBareDashPlaceholderIssues(ctx) {
   return [`${flatKey} dash placeholder must equal English ${JSON.stringify(enVal)}`];
 }
 
+/** Keys that shipped as unchanged English prose and must be translated. */
+const AUDIT_MUST_TRANSLATE_KEYS = new Set([
+  'chatPanel.scheduleSendHint',
+  'scheduledBroadcasts.invalidTime',
+  'scheduledBroadcasts.invalidDayOfMonth',
+  'scheduledBroadcasts.invalidAnchorDate',
+  'scheduledBroadcasts.reasons.channelMissing',
+  'internetWeather.unitsTemp',
+]);
+
+/** Short product strings whose English `RRC` token must survive translation. */
+const AUDIT_RRC_TOKEN_KEYS = new Set([
+  'scheduledBroadcasts.intro',
+  'scheduledBroadcasts.targetKind.rrcRoom',
+  'mecp.rebroadcast.reticulumKindRrc',
+]);
+
+/** Exact false friends seen on internet weather condition labels. */
+const WEATHER_CONDITION_FORBIDDEN = [
+  { key: 'internetWeather.conditions.clear', re: /책임|^Сбросить$/ },
+  { key: 'internetWeather.conditions.rain', re: /정지훈/ },
+  { key: 'internetWeather.conditions.showers', re: /샤워실|^Душ$/ },
+  { key: 'internetWeather.conditions.violentShowers', re: /샤워/ },
+  { key: 'internetWeather.conditions.rimeFog', re: /라임/ },
+  { key: 'internetWeather.conditions.freezingDrizzle', re: /^우박$/ },
+  { key: 'internetWeather.conditions.lightDrizzle', re: /^Светлый$/ },
+  { key: 'internetWeather.conditions.lightFreezingRain', re: /^Светлый$/ },
+];
+
+/**
+ * Focused guards for the one-time locale audit (glossary junk, unchanged English,
+ * RRC, Open-Meteo, PLC, CAT `-0` suffixes). Not a general untranslated-prose scan.
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkAuditLocaleFixes(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  if (locale === 'en') return [];
+  const issues = [];
+  if (AUDIT_MUST_TRANSLATE_KEYS.has(flatKey) && val === enVal) {
+    issues.push(`"${flatKey}" is still identical to English — translate it`);
+  }
+  if (flatKey.startsWith('internetWeather.conditions.')) {
+    if (/weather condition|weather forecast/i.test(val)) {
+      issues.push(
+        'glossary artifact "weather condition" or "weather forecast" is not a condition label',
+      );
+    }
+    if (val === enVal) {
+      issues.push('internetWeather condition is still identical to English');
+    }
+    for (const rule of WEATHER_CONDITION_FORBIDDEN) {
+      if (rule.key === flatKey && rule.re.test(val)) {
+        issues.push(`weather condition false friend on ${flatKey}`);
+      }
+    }
+  }
+  if (
+    flatKey === 'internetWeather.enableHint' &&
+    enVal.includes('Open-Meteo') &&
+    !val.includes('Open-Meteo')
+  ) {
+    issues.push('preserve the Open-Meteo name (not "Open - Meteo")');
+  }
+  if (
+    (flatKey === 'diagnosticAlerts.title' || flatKey === 'notificationSounds.diagnosticError') &&
+    val.includes('PLC-')
+  ) {
+    issues.push('mesh diagnostics must not use the PLC- prefix');
+  }
+  if (AUDIT_RRC_TOKEN_KEYS.has(flatKey) && enVal.includes('RRC') && !val.includes('RRC')) {
+    issues.push('preserve the RRC token');
+  }
+  // CAT tools glue "-0" plus digits onto translated prose ("День місяця-04").
+  // A single ASCII token such as "ESP32-01" is a code-like literal, not that artifact.
+  const catSuffix = /-0\d+$/.test(val) && !/-0\d+$/.test(enVal);
+  const catProse = /\s/.test(val) || /[^\u0020-\u007e]/.test(val);
+  if (catSuffix && catProse) {
+    issues.push('CAT suffix "-0" plus digits is not allowed');
+  }
+  if (flatKey === 'scheduledBroadcasts.status.missed' && locale === 'ja' && val === '欠席') {
+    issues.push('missed is a missed broadcast, not meeting absence 欠席');
+  }
+  if (
+    flatKey === 'scheduledBroadcasts.status.missed' &&
+    locale === 'zh' &&
+    val.includes('未抢到')
+  ) {
+    issues.push('missed is a missed broadcast, not 未抢到');
+  }
+  return issues;
+}
+
+/**
+ * skipped (not sent) and missed (time passed) must stay distinct when English is.
+ * @param {Record<string, string>} localeFlat
+ * @param {Record<string, string>} enFlat
+ * @returns {string[]}
+ */
+export function scheduledBroadcastStatusCrossKeyIssues(localeFlat, enFlat) {
+  const skippedKey = 'scheduledBroadcasts.status.skipped';
+  const missedKey = 'scheduledBroadcasts.status.missed';
+  const skipped = localeFlat[skippedKey];
+  const missed = localeFlat[missedKey];
+  const enSkipped = enFlat[skippedKey];
+  const enMissed = enFlat[missedKey];
+  if (
+    typeof skipped === 'string' &&
+    typeof missed === 'string' &&
+    typeof enSkipped === 'string' &&
+    typeof enMissed === 'string' &&
+    enSkipped !== enMissed &&
+    skipped === missed
+  ) {
+    return [
+      'status.missed must differ from status.skipped (missed occurrence vs intentionally skipped)',
+    ];
+  }
+  return [];
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -4630,6 +4751,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkFloodRoutingUiIssues,
   checkGamesPanelQualityIssues,
   checkBareDashPlaceholderIssues,
+  checkAuditLocaleFixes,
 ];
 
 /**

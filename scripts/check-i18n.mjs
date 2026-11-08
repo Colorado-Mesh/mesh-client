@@ -59,6 +59,7 @@ import {
   reticulumDefaultHubsCrossKeyIssues,
   roomsSavedPasswordsCrossKeyIssues,
   roomsSidebarMarkerCrossKeyIssues,
+  scheduledBroadcastStatusCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 import { collectUsedI18nKeys, DYNAMIC_T_PREFIXES } from './i18n-unused-keys.mjs';
 import { isKeepEnglishKey } from './i18n-auto-translate-lib.mjs';
@@ -632,6 +633,12 @@ for (const dir of localeDirs) {
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
     if (branchEnglishKeys) continue;
     console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
+    errors++;
+  }
+
+  for (const issue of scheduledBroadcastStatusCrossKeyIssues(localeFlat, en)) {
+    if (branchEnglishKeys) continue;
+    console.error(`Locale quality in "${dir}" (scheduled broadcast status): ${issue}.`);
     errors++;
   }
 

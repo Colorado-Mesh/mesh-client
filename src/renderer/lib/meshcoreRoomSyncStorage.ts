@@ -6,8 +6,8 @@ import {
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
-  getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
+  meshcoreRoomHasSavedGuestCredential,
 } from './meshcoreRoomCredentialStorage';
 import { parseStoredJson } from './parseStoredJson';
 import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
@@ -70,10 +70,10 @@ export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfi
   );
   const key = meshcoreRoomSyncSettingForNode(nodeId);
   const parsed = settings ? parseSyncConfig(settings[key]) : undefined;
-  const hasSavedPassword = getMeshcoreRoomCredential(nodeId) != null;
-  // Saved room passwords imply connect-time login; default auto-login when the flag
-  // was never persisted (legacy installs and first save after password).
-  const autoLoginOnConnect = parsed?.autoLoginOnConnect ?? hasSavedPassword;
+  const hasSavedGuest = meshcoreRoomHasSavedGuestCredential(nodeId);
+  // A saved guest password (including intentional blank) implies connect-time login.
+  // Admin-only records do not. Default auto-login when the flag was never persisted.
+  const autoLoginOnConnect = parsed?.autoLoginOnConnect ?? hasSavedGuest;
   return {
     enabled: parsed?.enabled ?? false,
     intervalMinutes: parsed?.intervalMinutes ?? MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES,
@@ -204,5 +204,5 @@ export function listMeshcoreRoomAutoLoginOnConnectNodeIds(): number[] {
       ids.add(nodeId);
     }
   }
-  return [...ids].filter((nodeId) => getMeshcoreRoomCredential(nodeId) != null);
+  return [...ids].filter((nodeId) => meshcoreRoomHasSavedGuestCredential(nodeId));
 }

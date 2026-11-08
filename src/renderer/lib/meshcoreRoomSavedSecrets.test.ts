@@ -16,7 +16,10 @@ import {
   disableMeshcoreRoomLoginAfterAuthFailure,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
+  meshcoreRoomRememberedCredential,
+  saveMeshcoreRoomSessionPasswordIfUnsaved,
 } from './meshcoreRoomSavedSecrets';
+import { meshcoreApplyRoomSession, meshcoreClearRoomSession } from './meshcoreRoomSession';
 import {
   getMeshcoreRoomSyncConfig,
   meshcoreRoomSyncSettingForNode,
@@ -27,6 +30,7 @@ describe('meshcoreRoomSavedSecrets', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.mocked(window.electronAPI.appSettings.set).mockClear();
+    meshcoreClearRoomSession(0x18);
   });
 
   it('summarizes credential and sync flags', async () => {
@@ -131,6 +135,39 @@ describe('meshcoreRoomSavedSecrets', () => {
     );
     expect(shouldSkipMeshcoreRoomAutoLogin(0x17)).toBe(true);
     expect(getMeshcoreRoomSyncConfig(0x17).autoLoginOnConnect).toBe(false);
+  });
+
+  it('saves a session guest password into an admin-only record', async () => {
+    await setMeshcoreRoomCredential(0x18, { adminPassword: 'ops' });
+    meshcoreApplyRoomSession(0x18, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    expect(await saveMeshcoreRoomSessionPasswordIfUnsaved(0x18)).toBe(true);
+    expect(getMeshcoreRoomCredential(0x18)).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'ops',
+    });
+    meshcoreClearRoomSession(0x18);
+  });
+
+  it('remembered login keeps a saved admin password when no new admin password is supplied', () => {
+    expect(meshcoreRoomRememberedCredential('hello', '', 'ops')).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'ops',
+    });
+    expect(meshcoreRoomRememberedCredential('hello', 'new-admin', 'ops')).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'new-admin',
+    });
+    expect(meshcoreRoomRememberedCredential('', '', undefined)).toEqual({ guestPassword: '' });
+  });
+
+  it('does not save when no session guest password is available', async () => {
+    await setMeshcoreRoomCredential(0x18, { adminPassword: 'ops' });
+    expect(await saveMeshcoreRoomSessionPasswordIfUnsaved(0x18)).toBe(false);
+    expect(getMeshcoreRoomCredential(0x18)).toEqual({ adminPassword: 'ops' });
   });
 
   it('disableMeshcoreRoomLoginAfterAuthFailure disables sync but keeps credential and failure', async () => {

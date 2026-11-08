@@ -107,7 +107,6 @@ import {
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyGattRfLink } from '../lib/bleReconnectHelper';
-import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
@@ -298,6 +297,7 @@ import {
   restoreMeshcoreLocallyDeletedContactsFromStorage,
   shouldApplyMeshcoreContact,
 } from '../lib/meshcoreLocallyDeletedContacts';
+import { trimMeshcoreChatMessages } from '../lib/meshcoreMessageMemoryWindow';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
@@ -370,6 +370,7 @@ import {
   getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
+  meshcoreRoomHasSavedGuestCredential,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import {
@@ -379,7 +380,10 @@ import {
 } from '../lib/meshcoreRoomLoginPathSync';
 import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
-import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
+import {
+  applyMeshcoreRoomLoginFailure,
+  meshcoreRoomRememberedCredential,
+} from '../lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreRoomPostSendErrorMessage,
   meshcoreRoomPostSendErrorStored,
@@ -408,7 +412,11 @@ import {
   meshcoreThrowIfRoomLoginAborted,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
-import { pickMostOverdueRoom, type RoomSyncSchedulerNode } from '../lib/meshcoreRoomSyncScheduler';
+import {
+  isMeshcoreRoomSyncSelectable,
+  pickMostOverdueRoom,
+  type RoomSyncSchedulerNode,
+} from '../lib/meshcoreRoomSyncScheduler';
 import {
   getMeshcoreRoomLastPostAt,
   getMeshcoreRoomSyncConfig,
@@ -1446,7 +1454,7 @@ export function useMeshcoreRuntime() {
               return prev;
             }
             inserted = true;
-            return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+            return trimMeshcoreChatMessages([...prev, msg]);
           });
         });
         result = {
@@ -1480,7 +1488,7 @@ export function useMeshcoreRuntime() {
               }
               return prev;
             }
-            return trimChatMessagesToMax([...prev, result.message], MAX_IN_MEMORY_CHAT_MESSAGES);
+            return trimMeshcoreChatMessages([...prev, result.message]);
           });
         });
       }
@@ -1557,7 +1565,7 @@ export function useMeshcoreRuntime() {
               continue;
             }
           }
-          next = trimChatMessagesToMax([...next, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+          next = trimMeshcoreChatMessages([...next, msg]);
         }
         return next;
       });
@@ -4554,9 +4562,7 @@ export function useMeshcoreRuntime() {
           to: destNodeId,
           replyId: replyField,
         };
-        setMessages((prev) =>
-          trimChatMessagesToMax([...prev, tempMsg], MAX_IN_MEMORY_CHAT_MESSAGES),
-        );
+        setMessages((prev) => trimMeshcoreChatMessages([...prev, tempMsg]));
 
         // Calculate dynamic timeout based on hop count for multi-hop paths
         const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
@@ -7049,7 +7055,14 @@ export function useMeshcoreRuntime() {
               loginAbortSignal,
             );
             if (opts?.rememberPassword) {
-              await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
+              await setMeshcoreRoomCredential(
+                nodeId,
+                meshcoreRoomRememberedCredential(
+                  guestPassword,
+                  adminPassword,
+                  getMeshcoreRoomCredential(nodeId)?.adminPassword,
+                ),
+              );
               const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
               await setMeshcoreRoomSyncConfig(nodeId, {
                 enabled: syncCfg.enabled,
@@ -7139,8 +7152,8 @@ export function useMeshcoreRuntime() {
   const loginRoomWithSaved = useCallback(
     async (nodeId: number, loginOpts?: { abortIfStale?: () => boolean }): Promise<void> => {
       const cred = getMeshcoreRoomCredential(nodeId);
-      if (!cred) {
-        throw new Error('No saved room credential');
+      if (!cred || !meshcoreRoomHasSavedGuestCredential(nodeId)) {
+        throw new Error('No saved room guest credential');
       }
       const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       await loginRoom(nodeId, password, {
@@ -7169,7 +7182,7 @@ export function useMeshcoreRuntime() {
       const nodeIds = candidateIds.filter((id) => !meshcoreIsRoomLoggedIn(id));
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
-        if (!cred) continue;
+        if (!cred || !meshcoreRoomHasSavedGuestCredential(nodeId)) continue;
         const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
         try {
           await loginRoom(nodeId, guestPassword, {
@@ -7204,6 +7217,12 @@ export function useMeshcoreRuntime() {
 
     const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
       .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
+      .filter((id) =>
+        isMeshcoreRoomSyncSelectable({
+          hasSavedGuestCredential: meshcoreRoomHasSavedGuestCredential(id),
+          hasActiveSession: meshcoreIsRoomLoggedIn(id),
+        }),
+      )
       .map((id) => {
         const cfg = getMeshcoreRoomSyncConfig(id);
         return {
@@ -7217,18 +7236,18 @@ export function useMeshcoreRuntime() {
     const target = pickMostOverdueRoom(roomNodes, now);
     if (!target) return;
 
-    const cred = getMeshcoreRoomCredential(target.nodeId);
-    if (!cred) return;
-
-    const pubKey = pubKeyMapRef.current.get(target.nodeId);
-    if (!pubKey) return;
-
     if (meshcoreIsRoomLoggedIn(target.nodeId)) {
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
       roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
       return;
     }
+
+    const cred = getMeshcoreRoomCredential(target.nodeId);
+    if (!cred || !meshcoreRoomHasSavedGuestCredential(target.nodeId)) return;
+
+    const pubKey = pubKeyMapRef.current.get(target.nodeId);
+    if (!pubKey) return;
 
     if (meshcoreIsRoomLoginQueued(target.nodeId)) {
       return;
@@ -7298,7 +7317,7 @@ export function useMeshcoreRuntime() {
       const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();
       const targets = selectMeshcoreRoomAutoLoginTargets(configuredIds, (nodeId) => ({
         isRoom: getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model === 'Room',
-        hasCredential: Boolean(getMeshcoreRoomCredential(nodeId)),
+        hasCredential: meshcoreRoomHasSavedGuestCredential(nodeId),
         hasPubKey: Boolean(pubKeyMapRef.current.get(nodeId)),
         loggedIn: meshcoreIsRoomLoggedIn(nodeId),
         queued: meshcoreIsRoomLoginQueued(nodeId),
@@ -7337,6 +7356,12 @@ export function useMeshcoreRuntime() {
     const now = Date.now();
     const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
       .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
+      .filter((id) =>
+        isMeshcoreRoomSyncSelectable({
+          hasSavedGuestCredential: meshcoreRoomHasSavedGuestCredential(id),
+          hasActiveSession: meshcoreIsRoomLoggedIn(id),
+        }),
+      )
       .map((id) => {
         const cfg = getMeshcoreRoomSyncConfig(id);
         return {
@@ -7348,8 +7373,13 @@ export function useMeshcoreRuntime() {
       });
     const target = pickMostOverdueRoom(roomNodes, now);
     if (!target) return;
+    if (meshcoreIsRoomLoggedIn(target.nodeId)) {
+      lastMeshcoreRoomSyncTxAtRef.current = Date.now();
+      await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+      return;
+    }
     const cred = getMeshcoreRoomCredential(target.nodeId);
-    if (!cred) return;
+    if (!cred || !meshcoreRoomHasSavedGuestCredential(target.nodeId)) return;
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
     if (meshcoreIsRoomLoginQueued(target.nodeId)) {
