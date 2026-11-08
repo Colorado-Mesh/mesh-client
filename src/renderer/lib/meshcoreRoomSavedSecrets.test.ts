@@ -16,6 +16,7 @@ import {
   disableMeshcoreRoomLoginAfterAuthFailure,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
+  meshcoreRoomRememberedCredential,
   saveMeshcoreRoomSessionPasswordIfUnsaved,
 } from './meshcoreRoomSavedSecrets';
 import { meshcoreApplyRoomSession, meshcoreClearRoomSession } from './meshcoreRoomSession';
@@ -149,6 +150,18 @@ describe('meshcoreRoomSavedSecrets', () => {
       adminPassword: 'ops',
     });
     meshcoreClearRoomSession(0x18);
+  });
+
+  it('remembered login keeps a saved admin password when no new admin password is supplied', () => {
+    expect(meshcoreRoomRememberedCredential('hello', '', 'ops')).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'ops',
+    });
+    expect(meshcoreRoomRememberedCredential('hello', 'new-admin', 'ops')).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'new-admin',
+    });
+    expect(meshcoreRoomRememberedCredential('', '', undefined)).toEqual({ guestPassword: '' });
   });
 
   it('does not save when no session guest password is available', async () => {

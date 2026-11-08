@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1037,6 +1037,38 @@ describe('RoomsPanel', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('login overlay does not offer auto-login for an admin-only credential', async () => {
+    const room = makeRoom(0x10221, 'Admin Only Login Card');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { adminPassword: 'ops' });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
+    expect(screen.getByText('roomsPanel.statusPasswordSaved')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'roomsPanel.enableAutoLoginAria' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('login overlay can re-enable auto-login for a blank guest password', async () => {
+    const room = makeRoom(0x10222, 'Blank Guest Login Card');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: '' });
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test blank guest enable auto',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'roomsPanel.enableAutoLoginAria' })).toBeEnabled();
+    });
+  });
+
   it('login overlay can re-enable auto-login when saved credential has it turned off', async () => {
     const room = makeRoom(0x1023, 'Enable Auto Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
@@ -2070,6 +2102,31 @@ describe('RoomsPanel', () => {
       expect(screen.getByText('beta post')).toBeInTheDocument();
     });
     expect(lastRoomsVirtualizerOptions?.count).toBe(2);
+  });
+
+  it('does not count an admin-only credential as a Log in all target', async () => {
+    const adminOnly = makeRoom(0x10311, 'Admin Only List');
+    const guest = makeRoom(0x10312, 'Guest List');
+    const nodes = new Map<number, MeshNode>([
+      [adminOnly.node_id, adminOnly],
+      [guest.node_id, guest],
+    ]);
+    await setMeshcoreRoomCredential(adminOnly.node_id, { adminPassword: 'ops' });
+    const onLoginAllSaved = vi.fn().mockResolvedValue(undefined);
+
+    renderRoomsPanel(nodes, { onLoginAllSaved });
+    const loginAll = screen.getByRole('button', { name: 'roomsPanel.loginAllSavedAria' });
+    expect(loginAll).toBeDisabled();
+
+    cleanup();
+    await setMeshcoreRoomCredential(guest.node_id, { guestPassword: 'hello' });
+    renderRoomsPanel(nodes, { onLoginAllSaved });
+    const enabled = screen.getByRole('button', { name: 'roomsPanel.loginAllSavedAria' });
+    expect(enabled).toBeEnabled();
+    await userEvent.click(enabled);
+    await waitFor(() => {
+      expect(onLoginAllSaved).toHaveBeenCalledWith([guest.node_id]);
+    });
   });
 
   it('hides the room list, persists the preference, and shows it again from the header', async () => {

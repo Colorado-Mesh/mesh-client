@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isMeshcoreRoomSyncSelectable,
   isRoomSyncEligible,
   pickMostOverdueRoom,
   type RoomSyncSchedulerNode,
@@ -31,6 +32,44 @@ describe('meshcoreRoomSyncScheduler', () => {
       { ...base, nodeId: 30, roomSyncEnabled: false },
     ];
     expect(pickMostOverdueRoom(nodes, now)?.nodeId).toBe(20);
+  });
+
+  it('isMeshcoreRoomSyncSelectable keeps a guest credential or a live session', () => {
+    expect(
+      isMeshcoreRoomSyncSelectable({
+        hasSavedGuestCredential: false,
+        hasActiveSession: false,
+      }),
+    ).toBe(false);
+    expect(
+      isMeshcoreRoomSyncSelectable({
+        hasSavedGuestCredential: true,
+        hasActiveSession: false,
+      }),
+    ).toBe(true);
+    expect(
+      isMeshcoreRoomSyncSelectable({
+        hasSavedGuestCredential: false,
+        hasActiveSession: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('pickMostOverdueRoom skips an admin-only room when the caller filters first', () => {
+    const now = 5_000_000;
+    const adminOnly = 10;
+    const guestRoom = 20;
+    const nodes: RoomSyncSchedulerNode[] = [
+      { ...base, nodeId: adminOnly, lastRoomSyncAt: now - 400 * 60_000 },
+      { ...base, nodeId: guestRoom, lastRoomSyncAt: now - 120 * 60_000 },
+    ];
+    const selectable = new Set([guestRoom]);
+    expect(
+      pickMostOverdueRoom(
+        nodes.filter((node) => selectable.has(node.nodeId)),
+        now,
+      )?.nodeId,
+    ).toBe(guestRoom);
   });
 
   it('pickMostOverdueRoom returns undefined when none eligible', () => {

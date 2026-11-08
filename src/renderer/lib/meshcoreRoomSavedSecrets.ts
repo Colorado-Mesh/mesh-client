@@ -33,6 +33,23 @@ export function getMeshcoreRoomSavedSecretsSummary(
   };
 }
 
+/**
+ * Guest password from a Remember-password login, plus an admin password only when
+ * this login supplied one or a previous save already had one.
+ */
+export function meshcoreRoomRememberedCredential(
+  guestPassword: string,
+  suppliedAdminPassword: string,
+  existingAdminPassword: string | undefined,
+): { guestPassword: string; adminPassword?: string } {
+  const adminPassword =
+    suppliedAdminPassword.length > 0 ? suppliedAdminPassword : (existingAdminPassword ?? '');
+  return {
+    guestPassword,
+    ...(adminPassword.length > 0 ? { adminPassword } : {}),
+  };
+}
+
 /** Clears saved password and disables auto-login + periodic auto-sync for a room. */
 export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<void> {
   const prev = getMeshcoreRoomSyncConfig(nodeId);

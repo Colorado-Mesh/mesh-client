@@ -17,6 +17,17 @@ export function isRoomSyncEligible(node: RoomSyncSchedulerNode, now: number): bo
   return now - last >= interval * 60_000;
 }
 
+/**
+ * A periodic sync can advance a room that already has a session or a saved guest
+ * password (including a blank guest password). Admin-only records are neither.
+ */
+export function isMeshcoreRoomSyncSelectable(opts: {
+  hasSavedGuestCredential: boolean;
+  hasActiveSession: boolean;
+}): boolean {
+  return opts.hasSavedGuestCredential || opts.hasActiveSession;
+}
+
 export function pickMostOverdueRoom(
   nodes: RoomSyncSchedulerNode[],
   now: number,

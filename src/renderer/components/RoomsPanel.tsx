@@ -1076,10 +1076,16 @@ export default function RoomsPanel({
     selectedRoomId,
   ]);
 
+  const savedGuestRoomIds = useMemo(
+    () => [...storedRoomIds].filter((id) => meshcoreRoomHasSavedGuestCredential(id)),
+    [storedRoomIds],
+  );
+
   const handleLoginAllSaved = useCallback(() => {
     if (!onLoginAllSaved) return;
+    const guestIds = new Set(savedGuestRoomIds);
     const targets = roomServers
-      .filter((r) => storedRoomIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id))
+      .filter((r) => guestIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id))
       .map((r) => r.node_id);
     if (targets.length === 0) return;
     for (const nodeId of targets) {
@@ -1093,7 +1099,7 @@ export default function RoomsPanel({
       .finally(() => {
         setLocalLoginRoomIds(new Set());
       });
-  }, [onLoginAllSaved, roomServers, storedRoomIds]);
+  }, [onLoginAllSaved, roomServers, savedGuestRoomIds]);
 
   const handleLogin = useCallback(() => {
     if (selectedRoomId == null) return;
@@ -1436,14 +1442,14 @@ export default function RoomsPanel({
       : '';
   const savedRoomsNotLoggedInCount = useMemo(() => {
     touch(roomSessionRevision);
-    return roomServers.filter(
-      (r) => storedRoomIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id),
-    ).length;
-  }, [roomServers, roomSessionRevision, storedRoomIds]);
-  const savedRoomCount = useMemo(
-    () => roomServers.filter((r) => storedRoomIds.has(r.node_id)).length,
-    [roomServers, storedRoomIds],
-  );
+    const guestIds = new Set(savedGuestRoomIds);
+    return roomServers.filter((r) => guestIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id))
+      .length;
+  }, [roomServers, roomSessionRevision, savedGuestRoomIds]);
+  const savedRoomCount = useMemo(() => {
+    const guestIds = new Set(savedGuestRoomIds);
+    return roomServers.filter((r) => guestIds.has(r.node_id)).length;
+  }, [roomServers, savedGuestRoomIds]);
   const loginAllSavedDisabled = !isConnected || savedRoomsNotLoggedInCount === 0;
   const loginAllSavedDisabledReason = !isConnected
     ? t('roomsPanel.loginAllSavedDisabledNotConnected')
@@ -1997,7 +2003,8 @@ export default function RoomsPanel({
                   {t('roomsPanel.stopAutoLogin')}
                 </Button>
               )}
-              {selectedRoomSecretsSummary.hasCredential &&
+              {selectedRoomId != null &&
+                meshcoreRoomHasSavedGuestCredential(selectedRoomId) &&
                 !selectedRoomSecretsSummary.autoLoginOnConnect && (
                   <Button
                     size="sm"
