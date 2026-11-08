@@ -25,11 +25,18 @@ export function TerrainProfileChart({
   const paths = useMemo(() => {
     if (!result || result.samples.length < 2) return null;
     const samples = result.samples;
-    const elevs = samples.map((s) => s.elevationM).filter((e): e is number => e != null);
+    const terrainVals = samples
+      .map((s) => s.effectiveElevationM ?? s.elevationM)
+      .filter((e): e is number => e != null);
     const losVals = samples.map((s) => s.losHeightM).filter((e): e is number => e != null);
-    if (elevs.length === 0) return null;
-    const minY = Math.min(...elevs, ...(losVals.length ? losVals : elevs)) - 5;
-    const maxY = Math.max(...elevs, ...(losVals.length ? losVals : elevs)) + 5;
+    const fresnelLowerVals = samples
+      .filter((s) => s.losHeightM != null && s.fresnelRadiusM != null)
+      .map((s) => s.losHeightM! - s.fresnelRadiusM!);
+    if (terrainVals.length === 0) return null;
+    const minY =
+      Math.min(...terrainVals, ...(losVals.length ? losVals : terrainVals), ...fresnelLowerVals) -
+      5;
+    const maxY = Math.max(...terrainVals, ...(losVals.length ? losVals : terrainVals)) + 5;
     const maxX = result.totalDistanceM || 1;
     const plotW = WIDTH - PAD.left - PAD.right;
     const plotH = HEIGHT - PAD.top - PAD.bottom;
@@ -38,10 +45,14 @@ export function TerrainProfileChart({
     const yScale = (v: number) => PAD.top + plotH - ((v - minY) / (maxY - minY || 1)) * plotH;
 
     const terrain = samples
-      .filter((s) => s.elevationM != null)
+      .map((s) => ({
+        distanceM: s.distanceM,
+        y: s.effectiveElevationM ?? s.elevationM,
+      }))
+      .filter((s): s is { distanceM: number; y: number } => s.y != null)
       .map(
         (s, i) =>
-          `${i === 0 ? 'M' : 'L'}${xScale(s.distanceM).toFixed(1)},${yScale(s.elevationM!).toFixed(1)}`,
+          `${i === 0 ? 'M' : 'L'}${xScale(s.distanceM).toFixed(1)},${yScale(s.y).toFixed(1)}`,
       )
       .join(' ');
 

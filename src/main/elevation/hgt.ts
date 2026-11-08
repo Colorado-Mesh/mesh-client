@@ -14,7 +14,8 @@ import { createPinnedPublicAgent, isGlobalPublicAddress } from '../pinnedPublicC
 /** Approx uncompressed SRTM1 tile size (3601² × 2 bytes). */
 export const HGT_TILE_BYTES = 3601 * 3601 * 2;
 const HGT_SIDE = 3601;
-const HGT_FETCH_TIMEOUT_MS = 60 * MS_PER_SECOND;
+/** ~25 MiB gzipped tiles need headroom on slow links (60s was too short). */
+const HGT_FETCH_TIMEOUT_MS = 3 * 60 * MS_PER_SECOND;
 const HGT_MAX_BYTES = HGT_TILE_BYTES + 64 * 1024; // gzip overhead headroom after inflate check
 
 export const ALLOWED_HGT_HOSTS = new Set(['s3.amazonaws.com']);
@@ -97,6 +98,69 @@ export async function listHgtTiles(
   return { count: names.length, bytes, names: names.map((n) => n.replace(/\.hgt$/, '')) };
 }
 
+function hgtSampleOffset(lat: number, lon: number): number | null {
+  const latFloor = Math.floor(lat);
+  const lonFloor = Math.floor(lon);
+  const row = Math.round((latFloor + 1 - lat) * (HGT_SIDE - 1));
+  const col = Math.round((lon - lonFloor) * (HGT_SIDE - 1));
+  if (row < 0 || row >= HGT_SIDE || col < 0 || col >= HGT_SIDE) return null;
+  return (row * HGT_SIDE + col) * 2;
+}
+
+export interface HgtElevationReader {
+  read(lat: number, lon: number): Promise<number | null>;
+  close(): Promise<void>;
+}
+
+/**
+ * Open HGT tiles once and read 2-byte samples by offset (avoids full-tile reloads).
+ */
+export function createHgtElevationReader(cacheDir: string): HgtElevationReader {
+  const handles = new Map<string, { fh: Awaited<ReturnType<typeof fs.open>>; size: number }>();
+
+  return {
+    async read(lat, lon) {
+      const offset = hgtSampleOffset(lat, lon);
+      if (offset == null) return null;
+      const tileName = hgtTileName(lat, lon);
+      const file = hgtPath(cacheDir, tileName);
+      let entry = handles.get(file);
+      if (!entry) {
+        try {
+          const fh = await fs.open(file, 'r');
+          const st = await fh.stat();
+          if (st.size < HGT_TILE_BYTES) {
+            await fh.close().catch(() => {
+              // catch-no-log-ok
+            });
+            return null;
+          }
+          entry = { fh, size: st.size };
+          handles.set(file, entry);
+        } catch {
+          // catch-no-log-ok miss
+          return null;
+        }
+      }
+      if (offset + 2 > entry.size) return null;
+      const buf = Buffer.alloc(2);
+      const { bytesRead } = await entry.fh.read(buf, 0, 2, offset);
+      if (bytesRead < 2) return null;
+      const value = buf.readInt16BE(0);
+      if (value === -32768) return null; // SRTM void
+      return value;
+    },
+    async close() {
+      for (const { fh } of handles.values()) {
+        await fh.close().catch(() => {
+          // catch-no-log-ok
+        });
+      }
+      handles.clear();
+    },
+  };
+}
+
 /**
  * Read elevation (meters) from a local SRTM1 HGT file.
  * Returns null for voids (0x8000) or missing/corrupt tiles.
@@ -106,26 +170,22 @@ export async function readHgtElevation(
   lat: number,
   lon: number,
 ): Promise<number | null> {
-  const tileName = hgtTileName(lat, lon);
-  const file = hgtPath(cacheDir, tileName);
-  let buf: Buffer;
+  const reader = createHgtElevationReader(cacheDir);
   try {
-    buf = await fs.readFile(file);
-  } catch {
-    // catch-no-log-ok miss
-    return null;
+    return await reader.read(lat, lon);
+  } finally {
+    await reader.close();
   }
-  if (buf.byteLength < HGT_TILE_BYTES) return null;
+}
 
-  const latFloor = Math.floor(lat);
-  const lonFloor = Math.floor(lon);
-  const row = Math.round((latFloor + 1 - lat) * (HGT_SIDE - 1));
-  const col = Math.round((lon - lonFloor) * (HGT_SIDE - 1));
-  if (row < 0 || row >= HGT_SIDE || col < 0 || col >= HGT_SIDE) return null;
-  const offset = (row * HGT_SIDE + col) * 2;
-  const value = buf.readInt16BE(offset);
-  if (value === -32768) return null; // SRTM void
-  return value;
+function hgtFetchSignal(caller?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(HGT_FETCH_TIMEOUT_MS);
+  if (!caller) return timeout;
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([caller, timeout]);
+  }
+  // Fallback: prefer caller; timeout alone would ignore cancel.
+  return caller;
 }
 
 async function resolvePublicAddress(host: string): Promise<string | null> {
@@ -165,7 +225,7 @@ export async function downloadHgtTile(
           Accept: 'application/gzip,application/octet-stream,*/*',
           'User-Agent': `mesh-client/${deps.getAppVersion()} (+https://github.com/Colorado-Mesh/mesh-client)`,
         },
-        signal: deps.signal ?? AbortSignal.timeout(HGT_FETCH_TIMEOUT_MS),
+        signal: hgtFetchSignal(deps.signal),
       });
     } else {
       const parsed = new URL(url);
@@ -180,7 +240,7 @@ export async function downloadHgtTile(
             Accept: 'application/gzip,application/octet-stream,*/*',
             'User-Agent': `mesh-client/${deps.getAppVersion()} (+https://github.com/Colorado-Mesh/mesh-client)`,
           },
-          signal: deps.signal ?? AbortSignal.timeout(HGT_FETCH_TIMEOUT_MS),
+          signal: hgtFetchSignal(deps.signal),
           dispatcher: agent,
           redirect: 'manual',
         })) as unknown as Response;

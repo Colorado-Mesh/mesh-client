@@ -13,6 +13,7 @@ interface SampleCacheFile {
 
 const MAX_ENTRIES = 50_000;
 
+/** Network Open-Meteo sample cache only — do not store HGT DEM samples here. */
 export class ElevationSampleCache {
   private entries = new Map<string, { elevationM: number; updatedAt: number }>();
   private dirty = false;
@@ -71,6 +72,8 @@ export class ElevationSampleCache {
 
   async flush(): Promise<void> {
     if (!this.dirty) return;
+    // Clear before await so concurrent set() can mark dirty again without being wiped on success.
+    this.dirty = false;
     await fs.mkdir(this.cacheDir, { recursive: true });
     const entries: SampleCacheFile['entries'] = {};
     for (const [key, value] of this.entries) {
@@ -82,8 +85,8 @@ export class ElevationSampleCache {
     try {
       await fs.writeFile(tmp, JSON.stringify(payload), 'utf8');
       await fs.rename(tmp, this.filePath());
-      this.dirty = false;
     } catch (err) {
+      this.dirty = true;
       await fs.unlink(tmp).catch(() => {
         // catch-no-log-ok cleanup
       });

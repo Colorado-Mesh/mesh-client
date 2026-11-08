@@ -92,4 +92,42 @@ describe('computeTerrainClearance', () => {
     expect(result.clearance).toBe('obstructed');
     expect(result.minClearanceM).toBeLessThan(0);
   });
+
+  it('returns unknown when any mid-path elevation is missing (even if others clear)', () => {
+    const result = computeTerrainClearance({
+      distancesM: [0, 5000, 10000],
+      elevationsM: [100, null, 100],
+      frequencyMhz: 915,
+      antennaHeightStartM: 20,
+      antennaHeightEndM: 20,
+    });
+    expect(result.clearance).toBe('unknown');
+  });
+
+  it('prefers obstructed over unknown when a known sample blocks', () => {
+    const result = computeTerrainClearance({
+      distancesM: [0, 2500, 5000, 10000],
+      elevationsM: [100, 500, null, 100],
+      frequencyMhz: 915,
+      antennaHeightStartM: 2,
+      antennaHeightEndM: 2,
+    });
+    expect(result.clearance).toBe('obstructed');
+  });
+
+  it('subtracts earth bulge from clearance mid-path', () => {
+    const result = computeTerrainClearance({
+      distancesM: [0, 5000, 10000],
+      elevationsM: [100, 100, 100],
+      frequencyMhz: 915,
+      antennaHeightStartM: 20,
+      antennaHeightEndM: 20,
+    });
+    const mid = result.samples[1];
+    expect(mid).toBeDefined();
+    expect(mid.effectiveElevationM).toBeGreaterThan(mid.elevationM ?? 0);
+    expect(mid.clearanceM).toBeLessThan(
+      (mid.losHeightM ?? 0) - (mid.elevationM ?? 0) - (mid.fresnelRadiusM ?? 0),
+    );
+  });
 });

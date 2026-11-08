@@ -1420,17 +1420,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
             },
           );
           // MECP in RRC rooms is not on messageStore — bridge into incidents / rebroadcast.
-          if (
-            kind === 'msg' &&
-            !isDirect &&
-            typeof hubDestHash === 'string' &&
-            hubDestHash.length >= 8
-          ) {
+          // Prefer resolved session hub (view.hub) when the event omits hub_dest_hash.
+          const mecpHub =
+            typeof view.hub === 'string' && view.hub.length >= 8
+              ? view.hub
+              : typeof hubDestHash === 'string' && hubDestHash.length >= 8
+                ? hubDestHash
+                : null;
+          if (kind === 'msg' && !isDirect && mecpHub) {
             void handleRrcMecpInbound({
               messageId,
               body: p.body,
               room,
-              hubDestHash,
+              hubDestHash: mecpHub,
               senderHash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
               nickname: typeof p.nickname === 'string' ? p.nickname : null,
               localIdentityHash: session.localIdentityHash,

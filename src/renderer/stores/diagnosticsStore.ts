@@ -376,7 +376,13 @@ function loadCuHistoryPersistEnabled(): boolean {
 
 function loadCuHistorySnapshot(): Map<number, CuSample[]> {
   if (!loadCuHistoryPersistEnabled()) return new Map();
-  const raw = localStorage.getItem(CU_HISTORY_STORAGE_KEY);
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(CU_HISTORY_STORAGE_KEY);
+  } catch {
+    // catch-no-log-ok localStorage unavailable during module init
+    return new Map();
+  }
   const parsed = parseStoredJson<CuHistorySnapshot>(raw, 'diagnosticsStore loadCuHistorySnapshot');
   if (parsed?.v !== 1 || !Array.isArray(parsed.entries)) return new Map();
   const now = Date.now();

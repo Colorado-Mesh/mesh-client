@@ -33,13 +33,15 @@ vi.mock('@/renderer/lib/mecp/mecpAlert', () => ({
   notifyMecpAlertsSuppressed: vi.fn(),
 }));
 
+const recordMecpAlertMock = vi.fn().mockReturnValue({ alert: true, notify: null });
 vi.mock('@/renderer/lib/mecp/mecpAlertThrottle', () => ({
-  recordMecpAlert: () => ({ alert: true, notify: null }),
+  recordMecpAlert: (key: string) => recordMecpAlertMock(key) as { alert: boolean; notify: null },
 }));
 
+const upsertFromMecpMock = vi.fn();
 vi.mock('@/renderer/stores/incidentStore', () => ({
   useIncidentStore: {
-    getState: () => ({ upsertFromMecp: vi.fn() }),
+    getState: () => ({ upsertFromMecp: upsertFromMecpMock }),
   },
 }));
 
@@ -62,6 +64,8 @@ describe('handleRrcMecpInbound', () => {
     clearRrcMecpInboundSeenForTests();
     clearMecpRebroadcastFingerprintsForTests();
     vi.mocked(sendMecpRebroadcastOnProtocol).mockClear();
+    recordMecpAlertMock.mockClear();
+    upsertFromMecpMock.mockClear();
     vi.stubGlobal('window', {
       electronAPI: {
         mecp: {
@@ -83,6 +87,7 @@ describe('handleRrcMecpInbound', () => {
     });
     expect(sendMecpRebroadcastOnProtocol).toHaveBeenCalled();
     const first = vi.mocked(sendMecpRebroadcastOnProtocol).mock.calls[0];
+    expect(first).toBeDefined();
     expect(first[0]).toMatchObject({ protocol: 'meshtastic', channelIndex: 1 });
     expect(first[1]).toBe('MECP/0/M01');
   });
@@ -111,6 +116,28 @@ describe('handleRrcMecpInbound', () => {
       nickname: 'Me',
       localIdentityHash: self,
     });
+    expect(sendMecpRebroadcastOnProtocol).not.toHaveBeenCalled();
+  });
+
+  it('audits drills without rebroadcast or throttle', async () => {
+    await handleRrcMecpInbound({
+      messageId: 'm-drill',
+      body: 'MECP/0/D01',
+      room: '#emcomm',
+      hubDestHash: HUB,
+      senderHash: 'aabbccddeeff0011aabbccddeeff0011',
+      nickname: 'Ada',
+      localIdentityHash: '11112222333344445555666677778888',
+    });
+    expect(recordMecpAlertMock).not.toHaveBeenCalled();
+    expect(upsertFromMecpMock).toHaveBeenCalled();
+    expect(window.electronAPI.mecp.appendReceived).toHaveBeenCalledWith(
+      expect.objectContaining({
+        drill: true,
+        direction: 'received',
+        messageId: 'm-drill',
+      }),
+    );
     expect(sendMecpRebroadcastOnProtocol).not.toHaveBeenCalled();
   });
 });

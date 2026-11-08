@@ -19,6 +19,7 @@ import {
   resolveMecpSourceChannelName,
   sendMecpRebroadcastOnProtocol,
 } from '@/renderer/lib/mecp/sendMecpRebroadcast';
+import { isRrcRoomMuted, rrcMuteViewKey } from '@/renderer/lib/rrcMention';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
 import {
   isMecpSenderBlocked,
@@ -83,7 +84,7 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
   const senderId = (args.senderHash ?? '').toLowerCase() || 'unknown';
   const local = args.localIdentityHash?.toLowerCase() ?? null;
   const isOwn = Boolean(local && senderId && local === senderId);
-  if (isOwn || parsed.isDrill) return;
+  if (isOwn) return;
 
   const senderLabel = args.nickname?.trim() || senderId.slice(0, 8) || 'unknown';
   const blocked = isMecpSenderBlocked('reticulum', senderId);
@@ -95,8 +96,9 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
   });
 
   if (!blocked) {
-    const decision = recordMecpAlert(mecpBlockKey('reticulum', senderId));
-    const quiet = !decision.alert;
+    // Drills skip throttle/alert noise but still upsert + audit (matches useMecpAlertWatcher).
+    const decision = parsed.isDrill ? null : recordMecpAlert(mecpBlockKey('reticulum', senderId));
+    const quiet = decision?.alert === false;
     useIncidentStore.getState().upsertFromMecp({
       protocol: 'reticulum',
       parsed,
@@ -110,17 +112,22 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
     });
     if (!quiet) {
       const mutedViews = loadMutedViews('reticulum');
+      const viewKey = rrcMuteViewKey(hub, room);
+      // Soft room match (#/case) — seed exact viewKey when muted so triggerMecpAlert.has works.
+      const effectiveMuted = isRrcRoomMuted(hub, room, mutedViews)
+        ? new Set([...mutedViews, viewKey])
+        : mutedViews;
       triggerMecpAlert({
         severity: parsed.severity,
         isDrill: parsed.isDrill,
         senderLabel,
-        viewKey: `rrc:${hub}:${room.toLowerCase()}`,
-        mutedViews,
+        viewKey,
+        mutedViews: effectiveMuted,
         notifyHiddenWindow: true,
         dedupeKey: `reticulum:rrc:${args.messageId}`,
       });
     }
-    if (decision.notify) {
+    if (decision?.notify) {
       notifyMecpAlertsSuppressed(decision.notify, senderLabel, () => {
         useMecpBlockStore.getState().block('reticulum', senderId, senderLabel);
       });

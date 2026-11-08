@@ -2,6 +2,10 @@
 
 const C_M_S = 299_792_458;
 const EARTH_RADIUS_KM = 6371;
+/** ITU-R radio refraction k-factor (4/3 earth) for effective-radius bulge. */
+const K_FACTOR = 4 / 3;
+const EARTH_RADIUS_M = EARTH_RADIUS_KM * 1000;
+const EFFECTIVE_EARTH_RADIUS_M = K_FACTOR * EARTH_RADIUS_M;
 
 export type TerrainFrequencyMhz = 433 | 868 | 915;
 
@@ -14,6 +18,8 @@ export interface TerrainSamplePoint {
 export interface TerrainClearanceSample {
   distanceM: number;
   elevationM: number | null;
+  /** Elevation plus earth-curvature bulge (meters); used for charting vs LOS. */
+  effectiveElevationM: number | null;
   losHeightM: number | null;
   fresnelRadiusM: number | null;
   clearanceM: number | null;
@@ -47,6 +53,16 @@ export function fresnelRadiusM(frequencyMhz: TerrainFrequencyMhz, d1M: number, d
   if (d2M <= 0 || d1M <= 0) return 0;
   const lambda = wavelengthM(frequencyMhz);
   return 0.5 * Math.sqrt((lambda * d1M * d2M) / dM);
+}
+
+/**
+ * Earth-curvature bulge (meters) at distance d1M along a path of length dM,
+ * using 4/3 effective earth radius.
+ */
+export function earthBulgeM(d1M: number, dM: number): number {
+  if (!(dM > 0) || !(d1M > 0) || d1M >= dM) return 0;
+  const d2M = dM - d1M;
+  return (d1M * d2M) / (2 * EFFECTIVE_EARTH_RADIUS_M);
 }
 
 export function interpolateLatLon(
@@ -116,9 +132,13 @@ export function computeTerrainClearance(opts: {
   if (startElev == null || endElev == null || !(dM > 0)) {
     const samples: TerrainClearanceSample[] = [];
     for (let i = 0; i < n; i++) {
+      const elevationM = elevationsM[i] ?? null;
+      const distanceM = distancesM[i] ?? 0;
+      const bulge = elevationM != null ? earthBulgeM(distanceM, dM) : 0;
       samples.push({
-        distanceM: distancesM[i] ?? 0,
-        elevationM: elevationsM[i] ?? null,
+        distanceM,
+        elevationM,
+        effectiveElevationM: elevationM != null ? elevationM + bulge : null,
         losHeightM: null,
         fresnelRadiusM: null,
         clearanceM: null,
@@ -129,7 +149,7 @@ export function computeTerrainClearance(opts: {
 
   let minClearance: number | null = null;
   let anyObstructed = false;
-  let anyKnown = false;
+  let anyMissingElevation = false;
   const samples: TerrainClearanceSample[] = [];
 
   for (let i = 0; i < n; i++) {
@@ -144,26 +164,30 @@ export function computeTerrainClearance(opts: {
       antennaHeightStartM,
       antennaHeightEndM,
     );
+    const bulge = earthBulgeM(distanceM, dM);
     let clearanceM: number | null = null;
     if (elevationM != null) {
-      clearanceM = los - elevationM - fresnel;
-      anyKnown = true;
+      clearanceM = los - elevationM - fresnel - bulge;
       if (clearanceM < 0) anyObstructed = true;
       if (minClearance == null || clearanceM < minClearance) minClearance = clearanceM;
+    } else {
+      anyMissingElevation = true;
     }
     samples.push({
       distanceM,
       elevationM,
+      effectiveElevationM: elevationM != null ? elevationM + bulge : null,
       losHeightM: los,
       fresnelRadiusM: fresnel,
       clearanceM,
     });
   }
 
-  const clearance: TerrainClearanceStatus = !anyKnown
-    ? 'unknown'
-    : anyObstructed
-      ? 'obstructed'
+  // Obstructed wins; otherwise unknown if any sample lacks elevation; clear only when complete.
+  const clearance: TerrainClearanceStatus = anyObstructed
+    ? 'obstructed'
+    : anyMissingElevation
+      ? 'unknown'
       : 'clear';
   return { clearance, minClearanceM: minClearance, samples };
 }

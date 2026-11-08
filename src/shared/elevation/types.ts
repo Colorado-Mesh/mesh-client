@@ -30,8 +30,13 @@ export interface ElevationProfileSample extends ElevationSamplePoint {
   losHeightM: number | null;
   /** First Fresnel zone radius (meters) at this distance. */
   fresnelRadiusM: number | null;
-  /** losHeightM − elevationM − fresnelRadiusM; negative means obstructed. */
+  /**
+   * losHeightM − elevationM − fresnelRadiusM − earth bulge (4/3 earth);
+   * negative means obstructed.
+   */
   clearanceM: number | null;
+  /** Elevation plus earth-curvature bulge for charting against LOS. */
+  effectiveElevationM?: number | null;
 }
 
 export type ElevationProfileClearance = 'clear' | 'obstructed' | 'unknown';

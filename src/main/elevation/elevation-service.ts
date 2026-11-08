@@ -23,12 +23,13 @@ import {
   weatherUserAgent,
 } from '../weather/http';
 import {
+  createHgtElevationReader,
   downloadHgtTile,
   HGT_TILE_BYTES,
+  type HgtElevationReader,
   hgtTileExists,
   hgtTilesForBounds,
   listHgtTiles,
-  readHgtElevation,
 } from './hgt';
 import { ElevationSampleCache } from './sample-cache';
 
@@ -75,22 +76,24 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
   async function elevationAt(
     lat: number,
     lon: number,
+    hgtReader: HgtElevationReader,
   ): Promise<{
     elevationM: number | null;
-    fromNetwork: boolean;
+    /** True when value came from persisted Open-Meteo sample cache (not offline DEM). */
+    fromSampleCache: boolean;
     fromHgt: boolean;
   }> {
     await ensureLoaded();
+    // Prefer HGT DEM over rounded network sample cache (higher resolution; not mixed into cache).
+    const hgt = await hgtReader.read(lat, lon);
+    if (hgt != null) {
+      return { elevationM: hgt, fromSampleCache: false, fromHgt: true };
+    }
     const cached = sampleCache.get(lat, lon);
     if (cached != null) {
-      return { elevationM: cached, fromNetwork: false, fromHgt: false };
+      return { elevationM: cached, fromSampleCache: true, fromHgt: false };
     }
-    const hgt = await readHgtElevation(cacheDir, lat, lon);
-    if (hgt != null) {
-      sampleCache.set(lat, lon, hgt);
-      return { elevationM: hgt, fromNetwork: false, fromHgt: true };
-    }
-    return { elevationM: null, fromNetwork: false, fromHgt: false };
+    return { elevationM: null, fromSampleCache: false, fromHgt: false };
   }
 
   async function fetchOpenMeteoBatch(
@@ -150,39 +153,60 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
 
       const elevations: (number | null)[] = Array.from({ length: pathPoints.length }, () => null);
       let usedNetwork = false;
+      let anySampleCacheHit = false;
+      let allResolvedFromHgt = true;
       const needNetwork: { index: number; lat: number; lon: number }[] = [];
+      const hgtReader = createHgtElevationReader(cacheDir);
 
-      for (let i = 0; i < pathPoints.length; i++) {
-        const p = pathPoints[i];
-        if (!p) continue;
-        const local = await elevationAt(p.lat, p.lon);
-        if (local.elevationM != null) {
-          elevations[i] = local.elevationM;
-        } else {
-          needNetwork.push({ index: i, lat: p.lat, lon: p.lon });
-        }
-      }
-
-      // fullyOffline: every sample resolved without a network fetch on this call.
-      let fullyOffline = needNetwork.length === 0;
-
-      if (needNetwork.length > 0 && isOnline(deps)) {
-        for (let offset = 0; offset < needNetwork.length; offset += BATCH_SIZE) {
-          const batch = needNetwork.slice(offset, offset + BATCH_SIZE);
-          const values = await fetchOpenMeteoBatch(batch);
-          usedNetwork = true;
-          fullyOffline = false;
-          for (let j = 0; j < batch.length; j++) {
-            const elev = values[j];
-            const item = batch[j];
-            if (item && elev != null) {
-              elevations[item.index] = elev;
-              sampleCache.set(item.lat, item.lon, elev);
+      try {
+        for (let i = 0; i < pathPoints.length; i++) {
+          const p = pathPoints[i];
+          if (!p) continue;
+          const local = await elevationAt(p.lat, p.lon, hgtReader);
+          if (local.elevationM != null) {
+            elevations[i] = local.elevationM;
+            if (local.fromSampleCache) {
+              anySampleCacheHit = true;
+              allResolvedFromHgt = false;
+            } else if (!local.fromHgt) {
+              allResolvedFromHgt = false;
             }
+          } else {
+            allResolvedFromHgt = false;
+            needNetwork.push({ index: i, lat: p.lat, lon: p.lon });
           }
         }
-        await sampleCache.flush();
+
+        if (needNetwork.length > 0 && isOnline(deps)) {
+          for (let offset = 0; offset < needNetwork.length; offset += BATCH_SIZE) {
+            const batch = needNetwork.slice(offset, offset + BATCH_SIZE);
+            const values = await fetchOpenMeteoBatch(batch);
+            usedNetwork = true;
+            for (let j = 0; j < batch.length; j++) {
+              const elev = values[j];
+              const item = batch[j];
+              if (item && elev != null) {
+                elevations[item.index] = elev;
+                sampleCache.set(item.lat, item.lon, elev);
+              }
+            }
+          }
+          try {
+            await sampleCache.flush();
+          } catch (err: unknown) {
+            console.warn(
+              '[elevation] sampleCache.flush ' +
+                sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+            );
+          }
+        }
+      } finally {
+        await hgtReader.close();
       }
+
+      // fullyOffline: every sample from HGT DEM this call (network sample-cache hits do not count).
+      const fullyOffline =
+        !usedNetwork && !anySampleCacheHit && allResolvedFromHgt && needNetwork.length === 0;
 
       const freq = req.frequencyMhz ?? 915;
       const antStart = req.antennaHeightStartM ?? 2;
@@ -215,6 +239,7 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
           losHeightM: c?.losHeightM ?? null,
           fresnelRadiusM: c?.fresnelRadiusM ?? null,
           clearanceM: c?.clearanceM ?? null,
+          effectiveElevationM: c?.effectiveElevationM ?? null,
         };
       });
 

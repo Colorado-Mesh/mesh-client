@@ -1,6 +1,7 @@
 /** Re-export shared terrain / Fresnel math for renderer imports. */
 export {
   computeTerrainClearance,
+  earthBulgeM,
   fresnelRadiusM,
   interpolateLatLon,
   losHeightM,

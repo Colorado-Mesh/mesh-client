@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { boundsFromViewport } from '@/renderer/lib/map/mapViewportBounds';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 
 import { formatBytes } from './CustomMapSourcesSection';
-import { boundsFromViewport } from './OfflineMapsSection';
 
 /**
  * Download SRTM HGT tiles for the current map viewport so terrain profiles work offline.
@@ -122,7 +122,16 @@ export function ElevationOfflineSection(): React.JSX.Element {
     setProgress({ jobId, completed: 0, total: confirm.missing, failed: 0 });
     setConfirm(null);
     try {
-      await api.downloadHgt({ ...confirm.bounds, jobId });
+      const res = await api.downloadHgt({ ...confirm.bounds, jobId });
+      if (!res.ok) {
+        setProgress(null);
+        setStatusLine(
+          res.error.code === 'cancelled'
+            ? t('mapPanel.terrainProfile.hgtCancelled')
+            : t('mapPanel.terrainProfile.hgtDownloadFailed'),
+        );
+      }
+      // Success / progress-done messaging comes from onHgtProgress when done=true.
     } catch (err: unknown) {
       console.warn('[ElevationOffline] download ' + errLikeToLogString(err));
       setProgress(null);

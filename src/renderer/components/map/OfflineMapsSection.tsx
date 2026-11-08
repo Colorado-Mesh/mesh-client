@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { boundsFromViewport } from '@/renderer/lib/map/mapViewportBounds';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import {
@@ -13,6 +14,8 @@ import { OFFLINE_MAP_MAX_ZOOM } from '@/shared/offlineMaps/tileMath';
 
 import { CustomMapSourcesSection, formatBytes } from './CustomMapSourcesSection';
 import { ElevationOfflineSection } from './ElevationOfflineSection';
+
+export { boundsFromViewport };
 
 const AUTO_CACHE_KEY = 'mesh-client:offlineMapsAutoCache';
 
@@ -31,23 +34,6 @@ function writeAutoCache(on: boolean): void {
   } catch {
     // catch-no-log-ok
   }
-}
-
-/** Approximate geographic bounds for a center+zoom (Web Mercator viewport). */
-export function boundsFromViewport(
-  center: [number, number],
-  zoom: number,
-): { north: number; south: number; east: number; west: number } {
-  const z = Math.max(0, Math.floor(zoom));
-  const latSpan = 360 / 2 ** z;
-  const lonSpan = 360 / 2 ** z;
-  const [lat, lon] = center;
-  return {
-    north: Math.min(85.05, lat + latSpan / 2),
-    south: Math.max(-85.05, lat - latSpan / 2),
-    east: lon + lonSpan / 2,
-    west: lon - lonSpan / 2,
-  };
 }
 
 interface ProgressState {
