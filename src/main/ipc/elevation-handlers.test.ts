@@ -50,7 +50,8 @@ describe('elevation IPC handlers', () => {
     resetElevationServiceForTests();
     registerElevationIpcHandlers({
       getAppVersion: () => 'test',
-      userDataPath: '/tmp/elevation-test',
+      // Non-/tmp path: CodeQL js/insecure-temporary-file taints os.tmpdir() strings into sample-cache writes.
+      userDataPath: '/var/empty/elevation-test',
       getMainWindow: () => null,
     });
   });
