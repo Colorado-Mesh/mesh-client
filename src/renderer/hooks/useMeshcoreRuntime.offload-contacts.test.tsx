@@ -218,7 +218,7 @@ describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
       offloadCallOrder.push('batch');
       return Promise.resolve(0);
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.markAllMeshcoreContactsOffRadio).mockResolvedValue(undefined);

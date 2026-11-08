@@ -238,7 +238,7 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
   });
 
@@ -299,7 +299,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {
@@ -408,7 +408,7 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {

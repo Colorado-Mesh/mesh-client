@@ -11,7 +11,6 @@ import {
   hydrateMeshtasticMessagesFromDb,
   hydrateMeshtasticNodesFromDb,
   mergeMeshcoreDbMessageRowsForHydration,
-  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
   meshcoreHydratedMessageRecords,
   replaceNodesMapInIdentityStore,
   syncNodesMapToIdentityStore,
@@ -147,7 +146,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getAllMeshcoreHopHistory').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([]);
 
     await hydrateMeshcoreNodesFromDb(ID_MC, 'replace');
 
@@ -344,13 +343,15 @@ describe('hydrateIdentityStoresFromDb', () => {
       },
     ]);
 
-    type SavedMcMsg = Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreMessages>>[number];
+    type SavedMcMsg = Awaited<
+      ReturnType<typeof window.electronAPI.db.getMeshcoreMessagesForHydration>
+    >[number];
     let resolveStaleMsgs!: (rows: SavedMcMsg[]) => void;
     const staleMsgs = new Promise<SavedMcMsg[]>((resolve) => {
       resolveStaleMsgs = resolve;
     });
     let serveFreshMessages = false;
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockImplementation(() => {
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockImplementation(() => {
       if (!serveFreshMessages) return staleMsgs;
       return Promise.resolve([
         {
@@ -434,7 +435,7 @@ describe('hydrateIdentityStoresFromDb', () => {
       },
     ]);
     vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([
       {
         id: 3,
         sender_id: 0xabc,
@@ -460,7 +461,7 @@ describe('hydrateIdentityStoresFromDb', () => {
   it('MeshCore DB hydration preserves unread eligibility (no isHistory on persisted rows)', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([
       {
         id: 7,
         sender_id: 0xdef,
@@ -519,12 +520,10 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(mergeMeshcoreDbMessageRowsForHydration(channelRows, roomRows)).toHaveLength(610);
 
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockImplementation((channelIdx) => {
-      if (channelIdx === MESHCORE_ROOM_MESSAGE_CHANNEL) {
-        return Promise.resolve(roomRows.slice(0, MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT));
-      }
-      return Promise.resolve(channelRows);
-    });
+    // Fair hydrate IPC already returns global ∪ room (and per-channel) rows.
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue(
+      mergeMeshcoreDbMessageRowsForHydration(channelRows, roomRows),
+    );
 
     await hydrateMeshcoreMessagesFromDb(ID_MC);
 
@@ -534,6 +533,51 @@ describe('hydrateIdentityStoresFromDb', () => {
     );
     expect(roomPosts).toHaveLength(10);
     expect(roomPosts[0]?.payload).toBe('room-post-0');
+  });
+
+  it('hydrates quiet group-channel rows that fall outside the global load window', async () => {
+    const publicRows = Array.from({ length: 500 }, (_, i) => ({
+      id: i + 1,
+      sender_id: 0xabc,
+      sender_name: 'Public',
+      payload: `public-${i}`,
+      channel_idx: 0,
+      timestamp: 10_000 + i,
+      status: 'acked',
+      packet_id: null,
+      emoji: null,
+      reply_id: null,
+      to_node: null,
+    }));
+    const emergencyRows = [
+      {
+        id: 50,
+        sender_id: 0x11,
+        sender_name: 'Ops',
+        payload: 'emergency history outside global window',
+        channel_idx: 1,
+        timestamp: 5_000,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+      },
+    ];
+
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue(
+      mergeMeshcoreDbMessageRowsForHydration(publicRows, emergencyRows),
+    );
+
+    await hydrateMeshcoreMessagesFromDb(ID_MC);
+
+    const messages = messageRecordsToChatMessages(
+      Object.values(useMessageStore.getState().messages[ID_MC] ?? {}),
+    );
+    const emergency = messages.filter((m) => m.channel === 1);
+    expect(emergency).toHaveLength(1);
+    expect(emergency[0]?.payload).toBe('emergency history outside global window');
   });
 
   it('assigns author-inclusive canonical ids to hydrated room posts', async () => {
@@ -546,7 +590,7 @@ describe('hydrateIdentityStoresFromDb', () => {
       receivedVia: 'rf',
     });
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([
       {
         id: 99,
         sender_id: roomMsg.sender_id,
@@ -626,7 +670,7 @@ describe('hydrateIdentityStoresFromDb', () => {
       .spyOn(window.electronAPI.db, 'getMeshcoreContacts')
       .mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getMessages').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([]);
 
     await hydrateIdentityStoresFromDb('meshtastic', ID_MT, { nodes: true, messages: true });
     await hydrateIdentityStoresFromDb('meshcore', ID_MC, { nodes: true, messages: true });

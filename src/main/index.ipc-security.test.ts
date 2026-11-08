@@ -641,6 +641,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'db:getMessageChannels',
     'db:getNodeNote',
     'db:getMeshcoreMessages',
+    'db:getMeshcoreMessagesForHydration',
     'db:listMeshtasticDmPeers',
     'db:listMeshcoreDmPeers',
     'db:searchMessages',
@@ -947,6 +948,7 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
   const dbReadChannels = [
     'db:getNodeNote',
     'db:getMeshcoreMessages',
+    'db:getMeshcoreMessagesForHydration',
     'db:listMeshtasticDmPeers',
     'db:listMeshcoreDmPeers',
     'db:searchMessages',
@@ -968,9 +970,8 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
   ] as const;
 
   it.each(dbReadChannels)('%s calls assertIpcSender', (channel) => {
-    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    const handlerBody = ipcHandlerBody(channel);
+    expect(handlerBody.length).toBeGreaterThan(0);
     expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
   });
 

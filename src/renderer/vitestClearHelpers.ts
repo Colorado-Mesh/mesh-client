@@ -4,10 +4,12 @@ import { vi } from 'vitest';
 export function resetMeshcoreRuntimeElectronMocks(): void {
   vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockClear();
   vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockClear();
+  vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockClear();
   vi.mocked(window.electronAPI.connectGatt).mockClear();
   vi.mocked(window.electronAPI.disconnectGatt).mockClear();
   vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
   vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+  vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
   vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
   vi.mocked(window.electronAPI.disconnectGatt).mockResolvedValue(undefined);
 }

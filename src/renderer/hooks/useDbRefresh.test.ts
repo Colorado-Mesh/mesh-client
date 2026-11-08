@@ -82,7 +82,7 @@ describe('useProtocolDbRefresh', () => {
   it('refreshMessagesFromDb loads MeshCore messages only', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([
       {
         id: 1,
         sender_id: 0x11,

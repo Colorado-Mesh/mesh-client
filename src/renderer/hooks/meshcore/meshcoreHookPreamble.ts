@@ -783,7 +783,7 @@ function meshcoreLoosePersistenceMatchKey(msg: ChatMessage): string {
   ].join('|');
 }
 
-/** RF/MQTT can deliver lines before `getMeshcoreMessages` resolves; replacing state would drop them. */
+/** RF/MQTT can deliver lines before hydration `getMeshcoreMessagesForHydration` resolves; replacing state would drop them. */
 export function mergeMeshcoreDbHydrationWithLive(
   prev: ChatMessage[],
   fromDb: ChatMessage[],
@@ -873,7 +873,7 @@ export function buildMeshcoreNodeMapFromDb(
   return overlayStoredStaticGpsOnSelfNode(mergedInitial, resolvedSelf);
 }
 
-/** Row shape from `db:getMeshcoreMessages` — shared by initConn, mount load, refreshMessagesFromDb. */
+/** Row shape from MeshCore message DB IPC — shared by initConn, mount load, refreshMessagesFromDb. */
 export interface MeshcoreMessageDbRow {
   id: number;
   local_order?: number | null;

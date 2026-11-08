@@ -626,6 +626,15 @@ export interface ElectronAPI {
     ) => Promise<void>;
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
+    /**
+     * Fair MeshCore hydrate: newest global rows ∪ newest per logical channel
+     * (quiet group slots are not crowded out by Public traffic).
+     */
+    getMeshcoreMessagesForHydration: (limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    }) => Promise<unknown[]>;
     /** Distinct MeshCore DM peers (`channel_idx = -1`) for History. */
     listMeshcoreDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;

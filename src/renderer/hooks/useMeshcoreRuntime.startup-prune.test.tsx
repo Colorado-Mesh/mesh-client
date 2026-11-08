@@ -67,7 +67,7 @@ describe('useMeshcoreRuntime mount load and the startup prune', () => {
     // The prune is still running, so the mount load must not have read SQLite yet.
     expect(pruneSettled).toBe(false);
     expect(window.electronAPI.db.getMeshcoreContacts).not.toHaveBeenCalled();
-    expect(window.electronAPI.db.getMeshcoreMessages).not.toHaveBeenCalled();
+    expect(window.electronAPI.db.getMeshcoreMessagesForHydration).not.toHaveBeenCalled();
 
     releasePrune();
     await act(async () => {
@@ -76,7 +76,7 @@ describe('useMeshcoreRuntime mount load and the startup prune', () => {
     await act(async () => {});
 
     expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
-    expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+    expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
   });
 
   it('reads at mount without waiting when no startup prune has started', async () => {
@@ -84,6 +84,6 @@ describe('useMeshcoreRuntime mount load and the startup prune', () => {
     await act(async () => {});
 
     expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
-    expect(window.electronAPI.db.getMeshcoreMessages).toHaveBeenCalled();
+    expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
   });
 });

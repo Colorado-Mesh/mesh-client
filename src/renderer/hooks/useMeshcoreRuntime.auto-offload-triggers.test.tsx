@@ -158,7 +158,7 @@ describe('useMeshcoreRuntime auto-offload triggers', () => {
       maxContacts: 100,
     });
     importContactMock.mockReset();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.markAllMeshcoreContactsOffRadio).mockResolvedValue(undefined);

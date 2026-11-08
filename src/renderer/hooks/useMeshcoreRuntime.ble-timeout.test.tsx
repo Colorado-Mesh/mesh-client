@@ -25,7 +25,7 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.disconnectGatt).mockResolvedValue(undefined);
     vi.mocked(withTimeout).mockImplementation((promise: Promise<unknown>) => promise);
@@ -364,7 +364,7 @@ describe('useMeshcoreRuntime Linux BLE routing', () => {
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
       );
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
     vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
   });
 
