@@ -11,7 +11,7 @@ import { useMapToolStore } from '@/renderer/stores/mapToolStore';
 import { WeatherPopup } from './WeatherPopup';
 
 const handlers: {
-  click?: (e: { latlng: { lat: number; lng: number } }) => void;
+  click?: (e: { latlng: { lat: number; lng: number }; originalEvent?: Event }) => void;
   dragstart?: () => void;
   dragend?: () => void;
 } = {};
@@ -54,6 +54,20 @@ describe('WeatherPopup', () => {
     });
     expect(window.electronAPI.weather.pointForecast).not.toHaveBeenCalled();
     expect(screen.queryByTestId('popup')).toBeNull();
+  });
+
+  it('skips fetch when the click came from map chrome', () => {
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    render(<WeatherPopup />);
+    act(() => {
+      handlers.click?.({
+        latlng: { lat: 40, lng: -105 },
+        originalEvent: { target: button } as unknown as Event,
+      });
+    });
+    expect(window.electronAPI.weather.pointForecast).not.toHaveBeenCalled();
+    button.remove();
   });
 
   it('shows loading then success', async () => {

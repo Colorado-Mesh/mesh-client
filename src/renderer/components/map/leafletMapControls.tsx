@@ -1,6 +1,6 @@
-import L from 'leaflet';
+import L, { DomEvent } from 'leaflet';
 import { Crosshair, PARENT_HOVER_ATTR } from 'lucide-react-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, useMap } from 'react-leaflet';
 
@@ -104,11 +104,22 @@ export function LocateMeControl({
   onLocateMe?: () => Promise<{ lat: number; lon: number } | null>;
 }) {
   const map = useMap();
+  const controlRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [locatedPos, setLocatedPos] = useState<[number, number] | null>(null);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const locateTrigger = useParentIconTrigger();
+
+  useEffect(() => {
+    const el = controlRef.current;
+    if (!el) return;
+    DomEvent.disableClickPropagation(el);
+    DomEvent.disableScrollPropagation(el);
+    return () => {
+      DomEvent.off(el);
+    };
+  }, []);
 
   const handleLocate = async () => {
     setLoading(true);
@@ -148,6 +159,7 @@ export function LocateMeControl({
     <>
       <div className="leaflet-top leaflet-left" style={{ pointerEvents: 'none' }}>
         <div
+          ref={controlRef}
           className="leaflet-control leaflet-bar leaflet-locate-control"
           style={{ marginTop: '80px', pointerEvents: 'auto' }}
         >
@@ -158,7 +170,8 @@ export function LocateMeControl({
             aria-busy={loading}
             {...{ [PARENT_HOVER_ATTR]: '' }}
             className={`leaflet-bar-part flex h-7.5 w-7.5 cursor-pointer items-center justify-center border-0 p-0 ${loading ? 'locating' : ''}`}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               void handleLocate();
             }}
           >

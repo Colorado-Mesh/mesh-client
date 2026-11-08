@@ -132,6 +132,11 @@ vi.mock('leaflet', () => ({
   divIcon: vi.fn().mockReturnValue({}),
   icon: leafletIconMock,
   latLngBounds: vi.fn().mockReturnValue({ isValid: () => false }),
+  DomEvent: {
+    disableClickPropagation: vi.fn(),
+    disableScrollPropagation: vi.fn(),
+    off: vi.fn(),
+  },
 }));
 
 const defaultFilter = {

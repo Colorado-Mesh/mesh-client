@@ -4,6 +4,7 @@ import { Popup, useMapEvents } from 'react-leaflet';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
+import { isMapChromeClick } from '@/renderer/lib/map/isMapChromeClick';
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapToolStore } from '@/renderer/stores/mapToolStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
@@ -44,6 +45,7 @@ export function WeatherPopup(): React.JSX.Element | null {
     },
     click: (e) => {
       if (!enabled || measureActive || draggedRef.current) return;
+      if (isMapChromeClick(e.originalEvent)) return;
       const { lat, lng: lon } = e.latlng;
       setState({ status: 'loading', lat, lon });
       const api = window.electronAPI?.weather;

@@ -1,6 +1,6 @@
-import type { LeafletMouseEvent } from 'leaflet';
+import { DomEvent, type LeafletMouseEvent } from 'leaflet';
 import { Ruler } from 'lucide-react-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, Polyline, Rectangle, Tooltip, useMap } from 'react-leaflet';
 
@@ -124,9 +124,20 @@ export function MgrsGridLayer() {
 export function MeasureControl() {
   const map = useMap();
   const { t } = useTranslation();
+  const controlRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   const [points, setPoints] = useState<LatLon[]>([]);
   const setMeasureActive = useMapToolStore((s) => s.setMeasureActive);
+
+  useEffect(() => {
+    const el = controlRef.current;
+    if (!el) return;
+    DomEvent.disableClickPropagation(el);
+    DomEvent.disableScrollPropagation(el);
+    return () => {
+      DomEvent.off(el);
+    };
+  }, []);
 
   useEffect(() => {
     setMeasureActive(active);
@@ -151,6 +162,7 @@ export function MeasureControl() {
     <>
       <div className="leaflet-top leaflet-left" style={{ pointerEvents: 'none' }}>
         <div
+          ref={controlRef}
           className="leaflet-control flex flex-col items-start gap-1"
           style={{ marginTop: '120px', pointerEvents: 'auto' }}
         >
@@ -160,7 +172,8 @@ export function MeasureControl() {
             aria-label={t(active ? 'mapPanel.measureStopAria' : 'mapPanel.measureStartAria')}
             title={t(active ? 'mapPanel.measureStopAria' : 'mapPanel.measureStartAria')}
             className={MAP_CONTROL_CLASS}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setActive((a) => !a);
               setPoints([]);
             }}
