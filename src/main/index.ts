@@ -182,6 +182,7 @@ import { registerServiceAnnouncementIpcHandlers } from './ipc/service-announceme
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
 import { registerTranslationHandlers } from './ipc/translation-handlers';
+import { registerWeatherIpcHandlers } from './ipc/weather-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
@@ -265,6 +266,7 @@ import type { TakServerManager } from './tak-server-manager';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
 import { assertIpcSender, suspendIpcSender, validateIpcSender } from './validate-ipc-sender';
+import { createWeatherProtocolHandler } from './weather/weather-protocol';
 import {
   beginRendererStorageReset,
   checkRendererOriginStorageHealth,
@@ -313,6 +315,10 @@ protocol.registerSchemesAsPrivileged([
   },
   {
     scheme: 'mesh-tiles',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+  {
+    scheme: 'mesh-weather',
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
   },
 ]);
@@ -2465,6 +2471,13 @@ function createWindow() {
       () => offlineTileCache,
       () => customMapSources,
     );
+    protocol.handle(
+      'mesh-weather',
+      createWeatherProtocolHandler({
+        getAppVersion: () => app.getVersion(),
+      }),
+    );
+    registerWeatherIpcHandlers({ getAppVersion: () => app.getVersion() });
   }
 }
 

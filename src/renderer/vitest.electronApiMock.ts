@@ -789,6 +789,21 @@ export function createElectronAPIMock(): ElectronAPI {
     geo: {
       resolvePlace: vi.fn().mockResolvedValue(null),
     },
+    weather: {
+      pointForecast: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: 'offline', message: 'offline' },
+      }),
+      grid: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: 'offline', message: 'offline' },
+      }),
+      radarFrames: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: 'offline', message: 'offline' },
+      }),
+      clearMemoryCache: vi.fn().mockResolvedValue({ ok: true }),
+    },
     gps: {
       exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
     },

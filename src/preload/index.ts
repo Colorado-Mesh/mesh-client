@@ -105,6 +105,15 @@ import type {
   TranslationProgress,
   TranslationRequest,
 } from '../shared/translation-types';
+import type {
+  RadarFrames,
+  WeatherGrid,
+  WeatherGridRequest,
+  WeatherPointForecast,
+  WeatherPointRequest,
+  WeatherRadarFramesRequest,
+  WeatherResult,
+} from '../shared/weather/types';
 
 export type { GattBleDevice, GattBleSessionId, SerialPort };
 
@@ -1845,6 +1854,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   geo: {
     resolvePlace: (request: GeoResolvePlaceRequest) =>
       ipcRenderer.invoke('geo:resolvePlace', request) as Promise<GeoResolvedPlace | null>,
+  },
+
+  weather: {
+    pointForecast: (request: WeatherPointRequest) =>
+      ipcRenderer.invoke('weather:pointForecast', request) as Promise<
+        WeatherResult<WeatherPointForecast>
+      >,
+    grid: (request: WeatherGridRequest) =>
+      ipcRenderer.invoke('weather:grid', request) as Promise<WeatherResult<WeatherGrid>>,
+    radarFrames: (request: WeatherRadarFramesRequest) =>
+      ipcRenderer.invoke('weather:radarFrames', request) as Promise<WeatherResult<RadarFrames>>,
+    clearMemoryCache: () => ipcRenderer.invoke('weather:clearMemoryCache') as Promise<{ ok: true }>,
   },
 
   // ─── Chat export ─────────────────────────────────────────────────

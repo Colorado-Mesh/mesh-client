@@ -18,6 +18,9 @@ export default tseslint.config(
       '**/out/**',
       '**/node_modules/**',
       '.cache/**',
+      '**/.build/**',
+      'native/**',
+      'reticulum-sidecar/target/**',
       'src/renderer/lib/nomad/vendor/**',
       'src/main/translation/vendor/*.js',
       'eslint.config.mjs',
@@ -34,6 +37,7 @@ export default tseslint.config(
       'test-results/**',
     ],
   },
+
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
