@@ -12,6 +12,7 @@ import {
 } from '@/renderer/lib/map/mgrsGrid';
 import type { EmergencyIncident } from '@/renderer/lib/mecp/incidentTypes';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import { useMapToolStore } from '@/renderer/stores/mapToolStore';
 
 import { MAP_CONTROL_CLASS } from './mapControlClasses';
 
@@ -125,6 +126,14 @@ export function MeasureControl() {
   const { t } = useTranslation();
   const [active, setActive] = useState(false);
   const [points, setPoints] = useState<LatLon[]>([]);
+  const setMeasureActive = useMapToolStore((s) => s.setMeasureActive);
+
+  useEffect(() => {
+    setMeasureActive(active);
+    return () => {
+      setMeasureActive(false);
+    };
+  }, [active, setMeasureActive]);
 
   useEffect(() => {
     if (!active) return;

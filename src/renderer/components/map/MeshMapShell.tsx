@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 
 import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
 import { MAP_MAX_ZOOM, meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
+import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
@@ -18,7 +19,14 @@ import {
   MapViewportSaver,
 } from './leafletMapControls';
 import { MapLayerControl } from './MapLayerControl';
+import { RadarLayer } from './RadarLayer';
+import { TemperatureLayer } from './TemperatureLayer';
 import { WeatherForecastLayer } from './WeatherForecastLayer';
+import { WeatherLegend } from './WeatherLegend';
+import { WeatherOverlayBar } from './WeatherOverlayBar';
+import { WeatherPanes } from './WeatherPanes';
+import { WeatherPopup } from './WeatherPopup';
+import { WindLayer } from './WindLayer';
 
 /**
  * How the map frames its points on first mount when no viewport was saved.
@@ -129,6 +137,14 @@ export function MeshMapShell({
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const showWeatherForecasts = useMapLayerStore((s) => s.showWeatherForecasts);
+  const showRadar = useMapLayerStore((s) => s.showRadar);
+  const showWeatherTemperature = useMapLayerStore((s) => s.showWeatherTemperature);
+  const showWeatherWind = useMapLayerStore((s) => s.showWeatherWind);
+  const internetWeatherEnabled = useInternetWeatherStore((s) => s.enabled);
+  const radarFrames = useInternetWeatherStore((s) => s.radarFrames);
+  const weatherGrid = useInternetWeatherStore((s) => s.grid);
+  const tempUnit = useInternetWeatherStore((s) => s.tempUnit);
+  const windUnit = useInternetWeatherStore((s) => s.windUnit);
   const basemap = useMapBasemap(basemapId);
 
   useEffect(() => {
@@ -157,6 +173,7 @@ export function MeshMapShell({
       >
         <MapResizeInvalidator active />
         {beforeTiles}
+        <WeatherPanes />
         <MapViewportSaver hasAnyPositions={hasAnyPositions} />
         <MapFocusController />
         <MapFitter fit={fit} defaultCenter={defaultCenter} defaultZoom={defaultZoom} />
@@ -173,6 +190,16 @@ export function MeshMapShell({
             updateWhenIdle
           />
         )}
+        {internetWeatherEnabled && showRadar && radarFrames ? (
+          <RadarLayer frames={radarFrames} />
+        ) : null}
+        {internetWeatherEnabled && showWeatherTemperature && weatherGrid ? (
+          <TemperatureLayer grid={weatherGrid} unit={tempUnit} />
+        ) : null}
+        {internetWeatherEnabled && showWeatherWind && weatherGrid ? (
+          <WindLayer grid={weatherGrid} unit={windUnit} />
+        ) : null}
+        {internetWeatherEnabled ? <WeatherPopup /> : null}
         {showMgrsGrid ? <MgrsGridLayer /> : null}
         {showWeatherForecasts ? (
           <WeatherForecastLayer onSenderClick={onForecastSenderClick} />
@@ -181,6 +208,8 @@ export function MeshMapShell({
         {showIncidents ? <IncidentMarkersLayer /> : null}
       </MapContainer>
 
+      {internetWeatherEnabled && showRadar ? <WeatherOverlayBar /> : null}
+      {internetWeatherEnabled ? <WeatherLegend /> : null}
       {overlay}
     </div>
   );

@@ -254,10 +254,13 @@ describe('store shape contracts', () => {
           "showIncidents",
           "showMgrsGrid",
           "showNodes",
+          "showRadar",
           "showSensors",
           "showTakContacts",
           "showWaypoints",
           "showWeatherForecasts",
+          "showWeatherTemperature",
+          "showWeatherWind",
         ]
       `);
     });
@@ -273,10 +276,13 @@ describe('store shape contracts', () => {
           "setShowIncidents",
           "setShowMgrsGrid",
           "setShowNodes",
+          "setShowRadar",
           "setShowSensors",
           "setShowTakContacts",
           "setShowWaypoints",
           "setShowWeatherForecasts",
+          "setShowWeatherTemperature",
+          "setShowWeatherWind",
         ]
       `);
     });

@@ -125,4 +125,15 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   hiddenProtocols: [] as MeshProtocol[],
   /** Master switch for Scheduled Broadcasts timers (default off — safe). */
   scheduledBroadcastsEnabled: false,
+  /** Opt-in internet weather overlays on the shared map (default off). */
+  internetWeatherEnabled: false,
+  mapShowRadar: false,
+  mapShowWeatherTemperature: false,
+  mapShowWeatherWind: false,
+  mapWeatherRadarProvider: 'auto' as 'auto' | 'rainviewer' | 'iem-nexrad',
+  mapWeatherRadarOpacity: 0.65,
+  mapWeatherRadarCoverage: false,
+  mapWeatherTempUnit: 'c' as 'c' | 'f',
+  mapWeatherWindUnit: 'kmh' as 'kmh' | 'mph' | 'ms' | 'kn',
+  mapWeatherPrecipUnit: 'mm' as 'mm' | 'in',
 };

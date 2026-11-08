@@ -42,16 +42,29 @@ const {
   };
 });
 
+const reticulumMapInstance = {
+  setView: vi.fn(),
+  fitBounds: vi.fn(),
+  flyTo: flyToMock,
+  getPane: vi.fn().mockReturnValue(null),
+  createPane: vi.fn().mockReturnValue({ style: {} }),
+  getBounds: vi.fn().mockReturnValue({
+    getNorth: () => 1,
+    getSouth: () => 0,
+    getEast: () => 1,
+    getWest: () => 0,
+  }),
+  getZoom: vi.fn().mockReturnValue(3),
+  attributionControl: { addAttribution: vi.fn(), removeAttribution: vi.fn() },
+};
+
 vi.mock('react-leaflet', () => ({
   MapContainer: mapContainerMock,
   TileLayer: () => null,
   Marker: markerMock,
   Popup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  useMap: () => ({
-    setView: vi.fn(),
-    fitBounds: vi.fn(),
-    flyTo: flyToMock,
-  }),
+  useMap: () => reticulumMapInstance,
+  useMapEvents: () => reticulumMapInstance,
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
