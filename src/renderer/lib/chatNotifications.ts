@@ -40,7 +40,9 @@ export type ChatNotificationType =
   /** US EAS-style attention signal (853+960 Hz) for MECP severity 1 URGENT. */
   | 'mecpEas'
   | 'connectionLost'
-  | 'batteryLow';
+  | 'batteryLow'
+  /** New error-severity diagnostic row (opt-in via App → ops alerts). */
+  | 'diagnosticError';
 
 type SoundProfile =
   | { kind: 'single'; freq: number; dur: number; gain?: number }
@@ -132,6 +134,15 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
   // Falling pair (inverse of the DM rise) so a dropped link does not read as a new message.
   connectionLost: { kind: 'dual', pulse1Freq: 783.99, pulse2Freq: 523.25, dur: 0.12, gap: 0.06 },
   batteryLow: { kind: 'dual', pulse1Freq: 440, pulse2Freq: 440, dur: 0.1, gap: 0.12 },
+  // Rising triple (same shape as the alert preset) so diagnostics cut through chat tones.
+  diagnosticError: {
+    kind: 'triple',
+    freqs: [784, 988, 1175],
+    dur: 0.12,
+    gap: 0.06,
+    gain: 0.45,
+    repeats: 1,
+  },
 };
 
 const PRESET_PROFILES: Record<

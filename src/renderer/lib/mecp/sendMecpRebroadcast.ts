@@ -22,9 +22,16 @@ function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore') {
 export function resolveMecpSourceChannelName(
   protocol: 'meshtastic' | 'meshcore' | 'reticulum',
   channelIndex: number,
+  opts?: { rrcRoom?: string; rrcHubDestHash?: string },
 ): string {
-  // Reticulum has no channel names; the bridge notice names the LXMF transport instead.
-  if (protocol === 'reticulum') return 'LXMF';
+  // Reticulum has no numbered channels — name LXMF or the RRC room for bridge notices.
+  if (protocol === 'reticulum') {
+    if (opts?.rrcRoom) {
+      const hub = opts.rrcHubDestHash?.slice(0, 8);
+      return hub ? `${hub}/${opts.rrcRoom}` : opts.rrcRoom;
+    }
+    return 'LXMF';
+  }
   const identity = findIdentityForProtocol(protocol);
   if (!identity) {
     return protocol === 'meshtastic' && channelIndex === 0 ? 'Primary' : 'unnamed';

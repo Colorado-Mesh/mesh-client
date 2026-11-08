@@ -12,6 +12,7 @@ import { isCustomMapSourceId } from '@/shared/offlineMaps/customMapSources';
 import { OFFLINE_MAP_MAX_ZOOM } from '@/shared/offlineMaps/tileMath';
 
 import { CustomMapSourcesSection, formatBytes } from './CustomMapSourcesSection';
+import { ElevationOfflineSection } from './ElevationOfflineSection';
 
 const AUTO_CACHE_KEY = 'mesh-client:offlineMapsAutoCache';
 
@@ -357,6 +358,7 @@ export function OfflineMapsSection() {
         {t('mapPanel.offlineMaps.clear')}
       </button>
       {statusLine ? <p className="text-2xs text-ink-400">{statusLine}</p> : null}
+      <ElevationOfflineSection />
       <CustomMapSourcesSection />
     </div>
   );

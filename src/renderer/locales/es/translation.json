@@ -527,7 +527,9 @@
     "memoryDomNodes": "Nodos DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Las publicaciones de la sala tienen su propio límite del mismo tamaño, por lo que los canales ocupados nunca las expulsan."
+    "meshcoreRoomPostRetentionHint": "Las publicaciones de la sala tienen su propio límite del mismo tamaño, por lo que los canales ocupados nunca las expulsan.",
+    "notifyOnDiagnosticErrors": "Notificar sobre nuevos errores de diagnóstico",
+    "notifyOnDiagnosticErrorsHint": "Notificación de escritorio y sonido cuando aparece un nuevo diagnóstico de gravedad de error para el protocolo activo. Las filas existentes no se reproducen en el lanzamiento."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos",
     "exportJson": "Exportar a Json",
     "exportJsonAria": "Exportar filas de diagnóstico visibles como JSON",
-    "meshcoreUnknownNode": "Nodo desconocido"
+    "meshcoreUnknownNode": "Nodo desconocido",
+    "cuHistoryPersistedHint": "Las muestras se guardan localmente para que este cuadro sobreviva a los reinicios de la aplicación (borrado con diagnósticos claros)."
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -2787,6 +2790,42 @@
       "urlLabel": "URL de teselas (https, con {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · caché limitada a {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Perfil los",
+      "startAria": "Perfil de la línea de visión del terreno inicial",
+      "stopAria": "Detener el perfil del terreno y despejar",
+      "hint": "Haga clic en dos puntos o nodos en el mapa",
+      "ready": "Perfil listo: ajuste la frecuencia si es necesario",
+      "frequency": "recorrido",
+      "frequencyAria": "LoRa frecuencia para el despeje de Fresnel",
+      "title": "perfil del terreno",
+      "chartAria": "Tabla de despeje de terreno y Fresnel",
+      "loading": "Alzado de muestreo...",
+      "needEndpoints": "Seleccione dos puntos finales para trazar el despeje.",
+      "clear": "Borrar",
+      "obstructed": "obstruido",
+      "unknown": "Desconocido",
+      "meta": "{{mhz}} MHz · {{km}} km · distancia mínima {{clearance}}",
+      "offlineSource": "sin conexión DEM",
+      "networkSource": "cota de la red",
+      "errorUnavailable": "El servicio de elevación no está disponible.",
+      "errorOffline": "Sin conexión y sin alzado en caché para esta ruta.",
+      "errorFetch": "No se ha podido muestrear el alzado para esta ruta.",
+      "hgtHeading": "Elevación fuera de línea (DEM)",
+      "hgtHint": "Descargue los mosaicos SRTM para la vista actual para que LOS perfiles los funcionen sin una red.",
+      "hgtDownloadView": "Descargar alzado para ver",
+      "hgtDownloadAria": "Estimar y descargar mosaicos de alzado para la vista de mapa actual",
+      "hgtConfirm": "{{count}} mosaicos (~{{size}}). ¿Descargar ahora?",
+      "hgtConfirmYesAria": "Confirmar descarga de mosaico de alzado",
+      "hgtProgress": "{{completed}} / {{total}} mosaicos ({{failed}} falló)",
+      "hgtCancelAria": "Cancelar descarga de mosaico de alzado",
+      "hgtCancelled": "Descarga de alzado cancelada.",
+      "hgtDone": "Se han descargado {{completed}} mosaicos de alzado ({{failed}} ha fallado).",
+      "hgtAlreadyCached": "Los mosaicos de alzado para esta vista ya están en caché.",
+      "hgtEstimateFailed": "No se ha podido estimar la descarga de la cota.",
+      "hgtDownloadFailed": "Error al descargar el alzado.",
+      "hgtCacheStats": "Caché de alzado: {{count}} mosaicos ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
     "hybridMqttPathAria": "Ruta RF y MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
-    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
+    "echoReliability": "Fiabilidad del eco",
+    "echoReliabilityTooltip": "Proxy de sesión de los totales de paquetes escuchados en comparación con los duplicados, no la tasa de ACK de entrega de extremo a extremo.",
+    "echoReliabilityDetail": "{{duplicates}} hace eco en {{total}} observaciones",
+    "pathReliability": "Fiabilidad de la ruta",
+    "pathReliabilityTooltip": "MeshCore el éxito de la ruta frente a los recuentos de fallos (suavizado por Laplace) — no PDR ACK de extremo a extremo.",
+    "pathReliabilityDetail": "{{attempts}} intentos de ruta registrados"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "No se han podido guardar los ajustes de sonido. Su selección anterior no ha cambiado.",
     "previewFailed": "No se ha podido reproducir este sonido. Prueba con otro archivo o restablece el tono original.",
     "connectionLost": "radioenlace",
-    "batteryLow": "Batería baja"
+    "batteryLow": "Batería baja",
+    "diagnosticError": "Error de diagnóstico"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} batería baja",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Tormenta eléctrica con fuerte granizo recienteweather condition",
       "unknown": "Condiciones desconocidas"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Error de diagnóstico",
+    "body": "{{description}}"
   }
 }

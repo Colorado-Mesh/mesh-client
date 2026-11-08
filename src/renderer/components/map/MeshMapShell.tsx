@@ -25,6 +25,8 @@ import {
 import { MapLayerControl } from './MapLayerControl';
 import { RadarLayer } from './RadarLayer';
 import { TemperatureLayer } from './TemperatureLayer';
+import { TerrainProfileControl } from './TerrainProfileControl';
+import { TerrainProfileOverlay } from './TerrainProfileOverlay';
 import { WeatherForecastLayer } from './WeatherForecastLayer';
 import { WeatherLegend } from './WeatherLegend';
 import { WeatherOverlayBar } from './WeatherOverlayBar';
@@ -184,6 +186,7 @@ export function MeshMapShell({
         <MapFitter fit={fit} defaultCenter={defaultCenter} defaultZoom={defaultZoom} />
         <LocateMeControl onLocateMe={onLocateMe} />
         <MeasureControl />
+        <TerrainProfileControl />
         {meshTilesAvailable() && (
           <TileLayer
             key={basemapId}
@@ -219,6 +222,7 @@ export function MeshMapShell({
           {showRadar ? <WeatherOverlayBar /> : null}
         </div>
       ) : null}
+      <TerrainProfileOverlay />
       {overlay}
     </div>
   );

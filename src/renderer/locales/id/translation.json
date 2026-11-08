@@ -527,7 +527,9 @@
     "memoryDomNodes": "Simpul DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Pesan ruangan memiliki batas sendiri dengan ukuran yang sama, jadi saluran yang ramai tidak pernah menggesernya."
+    "meshcoreRoomPostRetentionHint": "Pesan ruangan memiliki batas sendiri dengan ukuran yang sama, jadi saluran yang ramai tidak pernah menggesernya.",
+    "notifyOnDiagnosticErrors": "Beri tahu tentang kesalahan diagnostik baru",
+    "notifyOnDiagnosticErrorsHint": "Pemberitahuan dan suara desktop ketika diagnostik tingkat keparahan kesalahan baru muncul untuk protokol aktif. Baris yang ada tidak diputar ulang saat peluncuran."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik",
     "exportJson": "Ekspor ke JSON",
     "exportJsonAria": "Ekspor baris diagnostik yang terlihat sebagai JSON",
-    "meshcoreUnknownNode": "Node tidak dikenal"
+    "meshcoreUnknownNode": "Node tidak dikenal",
+    "cuHistoryPersistedHint": "Sampel disimpan secara lokal sehingga bagan ini bertahan dari restart aplikasi (dibersihkan dengan diagnostik Clear)."
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -2787,6 +2790,42 @@
       "urlLabel": "URL tile (https, dengan {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · cache dibatasi {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Profil LOS",
+      "startAria": "Mulai profil line - of - sight medan",
+      "stopAria": "Hentikan profil medan dan bersihkan",
+      "hint": "Klik dua titik atau simpul di peta",
+      "ready": "Profil siap — sesuaikan frekuensi jika diperlukan",
+      "frequency": "Band?!",
+      "frequencyAria": "LoRa frekuensi untuk pembersihan Fresnel",
+      "title": "Profil medan",
+      "chartAria": "Grafik jarak bebas medan dan Fresnel",
+      "loading": "Elevasi pengambilan sampel…",
+      "needEndpoints": "Pilih dua titik akhir untuk membersihkan plot.",
+      "clear": "Kosongkan",
+      "obstructed": "Terhalang",
+      "unknown": "Tidak Diketahui",
+      "meta": "{{mhz}} MHz · {{km}} km · izin minimum {{clearance}}",
+      "offlineSource": "dEM OFFLINE",
+      "networkSource": "elevasi jaringan",
+      "errorUnavailable": "Layanan elevasi tidak tersedia.",
+      "errorOffline": "Offline dan tidak ada elevasi cache untuk jalur ini.",
+      "errorFetch": "Tidak dapat mengambil sampel elevasi untuk jalur ini.",
+      "hgtHeading": "Elevasi offline (DEM)",
+      "hgtHint": "Unduh ubin SRTM untuk tampilan saat ini sehingga profil LOS berfungsi tanpa jaringan.",
+      "hgtDownloadView": "Unduh elevasi untuk dilihat",
+      "hgtDownloadAria": "Perkirakan dan unduh ubin elevasi untuk tampilan peta saat ini",
+      "hgtConfirm": "{{count}} tiles (~{{size}}). Unduh sekarang?",
+      "hgtConfirmYesAria": "Konfirmasi unduhan ubin elevasi",
+      "hgtProgress": "{{completed}} / {{total}} ubin ({{failed}} gagal)",
+      "hgtCancelAria": "Batalkan unduhan ubin elevasi",
+      "hgtCancelled": "Pengunduhan elevasi dibatalkan.",
+      "hgtDone": "Mengunduh {{completed}} ubin elevasi ({{failed}} gagal).",
+      "hgtAlreadyCached": "Ubin elevasi untuk tampilan ini sudah di - cache.",
+      "hgtEstimateFailed": "Tidak dapat memperkirakan unduhan ketinggian.",
+      "hgtDownloadFailed": "Pengunduhan ketinggian gagal.",
+      "hgtCacheStats": "Cache elevasi: {{count}} ubin ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
     "hybridMqttPathAria": "Jalur RF dan MQTT",
     "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
-    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT",
+    "echoReliability": "Keandalan gema",
+    "echoReliabilityTooltip": "Proksi sesi dari total paket yang terdengar vs duplikat — bukan tingkat ACK pengiriman ujung ke ujung.",
+    "echoReliabilityDetail": "{{duplicates}} bergema dalam observasi {{total}}",
+    "pathReliability": "Keandalan jalur",
+    "pathReliabilityTooltip": "MeshCore jalur keberhasilan vs jumlah kegagalan (dihaluskan Laplace) — bukan ACK PDR ujung ke ujung.",
+    "pathReliabilityDetail": "{{attempts}} upaya jalur dicatat"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "Tidak dapat menyimpan pengaturan suara. Pilihan Anda sebelumnya tidak berubah.",
     "previewFailed": "Tidak dapat memutar suara ini. Coba file lain atau atur ulang ke nada asli.",
     "connectionLost": "Tautan radio hilang",
-    "batteryLow": "Baterai node lemah"
+    "batteryLow": "Baterai node lemah",
+    "diagnosticError": "Kesalahan diagnostik"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} baterai lemah",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Badai petir dengan hujan es lebat",
       "unknown": "Kondisi tidak diketahui"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Kesalahan diagnostik",
+    "body": "{{description}}"
   }
 }

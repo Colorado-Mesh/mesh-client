@@ -35,6 +35,7 @@ export function WeatherPopup(): React.JSX.Element | null {
   const windUnit = useInternetWeatherStore((s) => s.windUnit);
   const precipUnit = useInternetWeatherStore((s) => s.precipUnit);
   const measureActive = useMapToolStore((s) => s.measureActive);
+  const profileActive = useMapToolStore((s) => s.profileActive);
   const use24h = useTimeFormatStore((s) => s.use24HourTime);
   const [state, setState] = useState<LoadState>({ status: 'idle' });
   const draggedRef = useRef(false);
@@ -78,7 +79,7 @@ export function WeatherPopup(): React.JSX.Element | null {
       }, 0);
     },
     click: (e) => {
-      if (!enabled || measureActive || draggedRef.current) return;
+      if (!enabled || measureActive || profileActive || draggedRef.current) return;
       if (isMapChromeClick(e.originalEvent)) return;
       const { lat, lng: lon } = e.latlng;
       requestForecast(lat, lon);

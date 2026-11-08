@@ -1044,6 +1044,9 @@ export default function DiagnosticsPanel({
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                  <p className="text-2xs text-muted mt-2">
+                    {t('diagnosticsPanel.cuHistoryPersistedHint')}
+                  </p>
                 </div>
               );
             })()}

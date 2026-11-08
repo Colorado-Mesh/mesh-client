@@ -322,14 +322,50 @@ describe('mecpRebroadcast → Reticulum', () => {
     ).toEqual([]);
   });
 
-  it('RRC endpoints are destination-only (do not match inbound Reticulum)', () => {
+  it('RRC endpoints match inbound hub+room candidates as sources', () => {
     const rule: MecpRebroadcastRule = { ...rrcRule, bidirectional: true };
+    // LXMF-shaped candidate still does not match an RRC endpoint.
     expect(
       resolveMecpRebroadcastTargets(
         { ...candidate, protocol: 'reticulum', channelIndex: 0, reticulumSenderHash: PEER },
         [rule],
       ),
     ).toEqual([]);
+    const [t] = resolveMecpRebroadcastTargets(
+      {
+        ...candidate,
+        protocol: 'reticulum',
+        channelIndex: 0,
+        rrcHubDestHash: HUB,
+        rrcRoom: '#emcomm',
+      },
+      [rule],
+    );
+    expect(t.protocol).toBe('meshtastic');
+    expect(t.channelIndex).toBe(1);
+  });
+
+  it('forwards RRC room MECP to a Meshtastic channel', () => {
+    const rule: MecpRebroadcastRule = {
+      id: 'rrc-src',
+      enabled: true,
+      bidirectional: false,
+      endpointA: { protocol: 'reticulum', kind: 'rrc', hubDestHash: HUB, room: '#emcomm' },
+      endpointB: { protocol: 'meshtastic', channelIndex: 0 },
+    };
+    const targets = resolveMecpRebroadcastTargets(
+      {
+        ...candidate,
+        protocol: 'reticulum',
+        channelIndex: 0,
+        rrcHubDestHash: HUB.toUpperCase(),
+        rrcRoom: '#EMCOMM',
+      },
+      [rule],
+    );
+    expect(targets).toHaveLength(1);
+    expect(targets[0]?.protocol).toBe('meshtastic');
+    expect(targets[0]?.channelIndex).toBe(0);
   });
 
   it('fingerprints per RRC room so two rooms each get one copy', () => {

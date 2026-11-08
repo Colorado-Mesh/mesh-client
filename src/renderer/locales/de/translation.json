@@ -527,7 +527,9 @@
     "memoryDomNodes": "DOM Knoten: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Raumbeiträge haben ein eigenes Limit von der gleichen Größe, so dass belebte Kanäle sie nie verdrängen."
+    "meshcoreRoomPostRetentionHint": "Raumbeiträge haben ein eigenes Limit von der gleichen Größe, so dass belebte Kanäle sie nie verdrängen.",
+    "notifyOnDiagnosticErrors": "Bei neuen Diagnosefehlern benachrichtigen",
+    "notifyOnDiagnosticErrorsHint": "Desktop-Benachrichtigung und Ton, wenn eine neue Fehlerdiagnose für das aktive Protokoll angezeigt wird. Vorhandene Zeilen werden beim Start nicht wiedergegeben."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Nur MQTT-Knoten ausgrauen und von der Diagnose ausschließen",
     "exportJson": "Exportieren JSON",
     "exportJsonAria": "Sichtbare Diagnosezeilen als json exportieren",
-    "meshcoreUnknownNode": "Unbekannter Knoten"
+    "meshcoreUnknownNode": "Unbekannter Knoten",
+    "cuHistoryPersistedHint": "Proben werden lokal gespeichert, so dass dieses Diagramm den Neustart der App übersteht (mit Clear-Diagnose gelöscht)."
   },
   "diagnosticsPing": {
     "title": "Kontinuierlicher Ping",
@@ -2787,6 +2790,42 @@
       "urlLabel": "Kachel-URL (https, mit {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · Cache begrenzt auf {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "LOS-Profil",
+      "startAria": "Start Geländelinie-Sichtprofil",
+      "stopAria": "Stoppen Sie das Geländeprofil und räumen Sie",
+      "hint": "Klicken Sie auf zwei Punkte oder Knoten auf der Karte",
+      "ready": "Profil bereit — Frequenz bei Bedarf anpassen",
+      "frequency": "Band",
+      "frequencyAria": "LoRa Frequenz für Fresnel-Freigabe",
+      "title": "Geländeprofil",
+      "chartAria": "Gelände- und Fresnelabstandsdiagramm",
+      "loading": "Probenehmerhebung…",
+      "needEndpoints": "Wählen Sie zwei Endpunkte aus, um die Freigabe zu zeichnen.",
+      "clear": "Löschen",
+      "obstructed": "Behindert",
+      "unknown": "Unbekannt",
+      "meta": "{{mhz}} MHz · {{km}} km · min Abstand {{clearance}}",
+      "offlineSource": "offline DEM",
+      "networkSource": "netzwerk höhe",
+      "errorUnavailable": "Elevation Service nicht verfügbar.",
+      "errorOffline": "Offline und keine zwischengespeicherte Höhe für diesen Pfad.",
+      "errorFetch": "Die Erhebung für diesen Pfad konnte nicht abgetastet werden.",
+      "hgtHeading": "Offline-Höhe (DEM)",
+      "hgtHint": "Laden Sie SRTM-Kacheln für die aktuelle Ansicht herunter, damit LOS-Profile ohne Netzwerk funktionieren.",
+      "hgtDownloadView": "Laden Sie die Höhe zur Ansicht herunter",
+      "hgtDownloadAria": "Höhenkacheln für die aktuelle Kartenansicht schätzen und herunterladen",
+      "hgtConfirm": "{{count}} Kacheln (~{{size}}). Jetzt herunterladen?",
+      "hgtConfirmYesAria": "Herunterladen der Höhenkachel bestätigen",
+      "hgtProgress": "{{completed}} / {{total}} Kacheln ({{failed}} fehlgeschlagen)",
+      "hgtCancelAria": "Herunterladen der Höhenkachel abbrechen",
+      "hgtCancelled": "Elevation-Download abgebrochen.",
+      "hgtDone": "{{completed}} Höhenkacheln heruntergeladen ({{failed}} fehlgeschlagen).",
+      "hgtAlreadyCached": "Höhenkacheln für diese Ansicht sind bereits zwischengespeichert.",
+      "hgtEstimateFailed": "Herunterladen der Höhenangabe konnte nicht geschätzt werden.",
+      "hgtDownloadFailed": "Herunterladen der Höhe fehlgeschlagen.",
+      "hgtCacheStats": "Höhencache: {{count}} Kacheln ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "Über RF empfangen; einige Pakete verwenden einen MQTT-Relay-Pfad",
     "hybridMqttPathAria": "RF- und MQTT-Pfad",
     "connectedViaRfAndMqttTooltip": "Anbindung über RF und MQTT",
-    "connectedViaRfAndMqttAria": "Anbindung über RF und MQTT"
+    "connectedViaRfAndMqttAria": "Anbindung über RF und MQTT",
+    "echoReliability": "Echo-Zuverlässigkeit",
+    "echoReliabilityTooltip": "Sitzungsproxy von mitgehörten Paketen summiert sich im Vergleich zu Duplikaten — keine End-to-End-Zustellungs-ACK-Rate.",
+    "echoReliabilityDetail": "{{duplicates}} Echos in {{total}} Beobachtungen",
+    "pathReliability": "Pfadzuverlässigkeit",
+    "pathReliabilityTooltip": "MeshCore Path Success vs Failure Counts (Laplace-smoothed) — nicht End-to-End ACK PDR.",
+    "pathReliabilityDetail": "{{attempts}} PFADVERSUCHE aufgezeichnet"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "Soundeinstellungen konnten nicht gespeichert werden. Ihre vorherige Auswahl ist unverändert.",
     "previewFailed": "Dieser Sound konnte nicht abgespielt werden. Versuchen Sie es mit einer anderen Datei oder setzen Sie sie auf den ursprünglichen Ton zurück.",
     "connectionLost": "Richtfunkverbindung",
-    "batteryLow": "Niedriger Akkustand"
+    "batteryLow": "Niedriger Akkustand",
+    "diagnosticError": "PLC-Diagnosefehler"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} Akku schwach",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Gewitter mit starkem Hagel",
       "unknown": "Unbekannte Bedingungen"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "PLC-Diagnosefehler",
+    "body": "{{description}}"
   }
 }

@@ -527,7 +527,9 @@
     "memoryDomNodes": "DOM nodes: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Berichten in de ruimte hebben hun eigen limiet van dezelfde grootte, zodat drukke kanalen ze nooit verdringen."
+    "meshcoreRoomPostRetentionHint": "Berichten in de ruimte hebben hun eigen limiet van dezelfde grootte, zodat drukke kanalen ze nooit verdringen.",
+    "notifyOnDiagnosticErrors": "Melden bij nieuwe diagnostische fouten",
+    "notifyOnDiagnosticErrorsHint": "Bureaubladmelding en geluid wanneer een nieuwe foutmelding verschijnt voor het actieve protocol. Bestaande rijen worden niet opnieuw afgespeeld bij het opstarten."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek",
     "exportJson": "Exporteer als JSON",
     "exportJsonAria": "Zichtbare diagnoserijen exporteren als JSON",
-    "meshcoreUnknownNode": "Onbekende node-type"
+    "meshcoreUnknownNode": "Onbekende node-type",
+    "cuHistoryPersistedHint": "Monsters worden lokaal opgeslagen, zodat deze grafiek de herstart van de app overleeft (gewist met Clear diagnostics)."
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -2787,6 +2790,42 @@
       "urlLabel": "Tile-URL (https, met {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · cache max. {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "LOS PROFIEL",
+      "startAria": "Start zichtlijnprofiel terrein",
+      "stopAria": "Terreinprofiel stoppen en wissen",
+      "hint": "Klik op twee punten of knooppunten op de kaart",
+      "ready": "Profiel gereed — pas de frequentie aan indien nodig",
+      "frequency": "Band",
+      "frequencyAria": "LoRa frequentie voor Fresnel-ontruiming",
+      "title": "terreinprofiel",
+      "chartAria": "Terrein- en Fresnel-ontruimingsgrafiek",
+      "loading": "Bemonsteringsverhoging...",
+      "needEndpoints": "Selecteer twee eindpunten om de ontruiming in kaart te brengen.",
+      "clear": "Wissen",
+      "obstructed": "belemmerd;",
+      "unknown": "Onbekend",
+      "meta": "{{mhz}} MHz · {{km}} km · min klaring {{clearance}}",
+      "offlineSource": "offline DEM",
+      "networkSource": "netwerkverhoging",
+      "errorUnavailable": "Elevatieservice niet beschikbaar.",
+      "errorOffline": "Offline en geen in de cache opgeslagen hoogte voor dit pad.",
+      "errorFetch": "Kan hoogte niet bemonsteren voor dit pad.",
+      "hgtHeading": "Offline hoogte (DEM)",
+      "hgtHint": "Download SRTM-tegels voor de huidige weergave, zodat LOS profielen zonder netwerk werken.",
+      "hgtDownloadView": "Download hoogte voor weergave",
+      "hgtDownloadAria": "Schatting en download hoogte tegels voor de huidige kaartweergave",
+      "hgtConfirm": "{{count}} tegels (~{{size}}). Nu downloaden?",
+      "hgtConfirmYesAria": "Bevestig het downloaden van de hoogtetegel",
+      "hgtProgress": "{{completed}} / {{total}} tegels ({{failed}} mislukt)",
+      "hgtCancelAria": "Download van hoogtetegel annuleren",
+      "hgtCancelled": "Het downloaden van de hoogte is geannuleerd.",
+      "hgtDone": "Gedownloade {{completed}} hoogte tegels ({{failed}} mislukt).",
+      "hgtAlreadyCached": "Hoogtetegels voor deze weergave zijn al in de cache opgeslagen.",
+      "hgtEstimateFailed": "Kan het downloaden van de hoogte niet schatten.",
+      "hgtDownloadFailed": "Het downloaden van de hoogte is mislukt.",
+      "hgtCacheStats": "Hoogtecache: {{count}} tegels ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "Ontvangen via RF; sommige pakketten gebruiken een MQTT-relaispad",
     "hybridMqttPathAria": "RF- en MQTT-pad",
     "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
-    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
+    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT",
+    "echoReliability": "Echobetrouwbaarheid",
+    "echoReliabilityTooltip": "Sessieproxy van overhoord pakkettotalen versus duplicaten — geen end-to-end levering ACK-tarief.",
+    "echoReliabilityDetail": "{{duplicates}} weerklinkt in {{total}} observaties",
+    "pathReliability": "Padbetrouwbaarheid",
+    "pathReliabilityTooltip": "MeshCore Path success vs failure counts (Laplace-smoothed) — not end-to-end ACK PDR.",
+    "pathReliabilityDetail": "{{attempts}} Path-pogingen geregistreerd"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "Kon geluidsinstellingen niet opslaan. Uw vorige selectie is ongewijzigd.",
     "previewFailed": "Kan dit geluid niet afspelen. Probeer een ander bestand of zet de oorspronkelijke toon terug.",
     "connectionLost": "straalverbinding",
-    "batteryLow": "LAGE BATTERIJ"
+    "batteryLow": "LAGE BATTERIJ",
+    "diagnosticError": "Diagnostische fout"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} batterij bijna leeg",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Recent onweer met zware hagelweather condition",
       "unknown": "Onbekende voorwaarden"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Diagnostische fout",
+    "body": "{{description}}"
   }
 }

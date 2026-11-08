@@ -543,7 +543,9 @@
     "memoryDomNodes": "Вузли DOM: {{count}}",
     "memoryHistoryHeap": "купа {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Дописи в кімнатах мають свої обмеження однакового розміру, тому зайняті канали ніколи не виштовхують їх."
+    "meshcoreRoomPostRetentionHint": "Дописи в кімнатах мають свої обмеження однакового розміру, тому зайняті канали ніколи не виштовхують їх.",
+    "notifyOnDiagnosticErrors": "Повідомляти про нові діагностичні помилки",
+    "notifyOnDiagnosticErrorsHint": "Сповіщення та звук на робочому столі, коли з'являється нова діагностика серйозності помилок для активного протоколу. Існуючі рядки не відтворюються при запуску."
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -2308,7 +2310,8 @@
     "warningCount_many": "{{count}} попереджень",
     "exportJson": "Експортувати JSON",
     "exportJsonAria": "Експортувати видимі рядки діагностики як JSON",
-    "meshcoreUnknownNode": "Невідомий вузол"
+    "meshcoreUnknownNode": "Невідомий вузол",
+    "cuHistoryPersistedHint": "Зразки зберігаються локально, тому ця діаграма зберігається після перезапуску програми (очищено за допомогою Clear diagnostics (Очистити діагностику))."
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -2839,6 +2842,42 @@
       "urlLabel": "URL тайлів (https, з {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · кеш до {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Профіль LOS",
+      "startAria": "Початковий профіль місцевості з прямою видимістю",
+      "stopAria": "Зупинити профіль місцевості та очистити",
+      "hint": "Натисніть дві точки або вузли на карті",
+      "ready": "Профіль готовий — за потреби відрегулюйте частоту",
+      "frequency": "Діапазон заробітної плати",
+      "frequencyAria": "LoRa частота для кліренсу Френеля",
+      "title": "{}ПРОФІЛЬ РЕЛЬЄФУ{}",
+      "chartAria": "Діаграма місцевості та розмінування за Френелем",
+      "loading": "Висота вибірки...",
+      "needEndpoints": "Виберіть дві кінцеві точки для очищення графіка.",
+      "clear": "Очистити",
+      "obstructed": "Обструкція",
+      "unknown": "Невідомо",
+      "meta": "{{mhz}} МГц · {{km}} км · хв кліренс {{clearance}}",
+      "offlineSource": "офлайн DEM",
+      "networkSource": "висота мережі",
+      "errorUnavailable": "Послуга підйому недоступна.",
+      "errorOffline": "Офлайн і немає кешованого піднесення для цього шляху.",
+      "errorFetch": "Не вдалося вибрати висоту для цього шляху.",
+      "hgtHeading": "Автономна висота (DEM)",
+      "hgtHint": "Завантажте плитки SRTM для поточного перегляду, щоб профілі LOS працювали без мережі.",
+      "hgtDownloadView": "Завантажити висоту для перегляду",
+      "hgtDownloadAria": "Оцінка та завантаження плиток висоти для поточного перегляду карти",
+      "hgtConfirm": "{{count}} плитки (~{{size}}). Завантажити зараз?",
+      "hgtConfirmYesAria": "Підтвердити завантаження плитки висоти",
+      "hgtProgress": "{{completed}} / {{total}} плитки ({{failed}} не вдалося)",
+      "hgtCancelAria": "Скасувати завантаження плитки висоти",
+      "hgtCancelled": "Завантаження висоти скасовано.",
+      "hgtDone": "Завантажено {{completed}} плитки висоти ({{failed}} не вдалося).",
+      "hgtAlreadyCached": "Плитки висоти для цього подання вже кешуються.",
+      "hgtEstimateFailed": "Не вдалося оцінити завантаження висоти.",
+      "hgtDownloadFailed": "Не вдалося завантажити висоту.",
+      "hgtCacheStats": "Кеш висоти: {{count}} плитки ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3879,7 +3918,13 @@
     "changes_few": "{{count}} зміни",
     "changes_many": "{{count}} змін",
     "echoes_few": "{{count}} луни",
-    "echoes_many": "{{count}} лун"
+    "echoes_many": "{{count}} лун",
+    "echoReliability": "Надійність Echo",
+    "echoReliabilityTooltip": "Проксі-сервер сеансу з підслуханих пакетів сумарно проти дублікатів — не наскрізна швидкість ACK доставки.",
+    "echoReliabilityDetail": "{{duplicates}} відлуння в {{total}} спостереженнях",
+    "pathReliability": "Надійність траєкторії",
+    "pathReliabilityTooltip": "MeshCore path success vs failure counts (Laplace-smoothed) — not end-to-end ACK PDR.",
+    "pathReliabilityDetail": "Зафіксовано {{attempts}} спроб шляху"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакти оновлено.",
@@ -7161,7 +7206,8 @@
     "saveFailed": "Не вдалося зберегти налаштування звуку. Попередній вибір не змінився.",
     "previewFailed": "Не вдалося відтворити цей звук. Спробуйте інший файл або поверніться до початкового тону.",
     "connectionLost": "Радіоканал втрачено",
-    "batteryLow": "Низький заряд батареї"
+    "batteryLow": "Низький заряд батареї",
+    "diagnosticError": "Помилка діагностики"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} низький заряд акумулятора",
@@ -8582,5 +8628,9 @@
       "thunderstormHeavyHail": "Недавня громова буря з сильним градомweather condition",
       "unknown": "Невідомі умови"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Помилка діагностики",
+    "body": "{{description}}"
   }
 }

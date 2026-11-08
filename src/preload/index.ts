@@ -40,6 +40,15 @@ import type {
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
 import type {
+  ElevationCacheStats,
+  ElevationHgtEstimate,
+  ElevationHgtEstimateRequest,
+  ElevationHgtProgress,
+  ElevationProfileRequest,
+  ElevationProfileResult,
+  ElevationResult,
+} from '../shared/elevation/types';
+import type {
   EnvironmentReading,
   EnvironmentTelemetrySource,
 } from '../shared/environmentTelemetry';
@@ -1866,6 +1875,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
     radarFrames: (request: WeatherRadarFramesRequest) =>
       ipcRenderer.invoke('weather:radarFrames', request) as Promise<WeatherResult<RadarFrames>>,
     clearMemoryCache: () => ipcRenderer.invoke('weather:clearMemoryCache') as Promise<{ ok: true }>,
+  },
+
+  elevation: {
+    sampleProfile: (request: ElevationProfileRequest) =>
+      ipcRenderer.invoke('elevation:sampleProfile', request) as Promise<
+        ElevationResult<ElevationProfileResult>
+      >,
+    estimateHgt: (request: ElevationHgtEstimateRequest) =>
+      ipcRenderer.invoke('elevation:estimateHgt', request) as Promise<
+        ElevationResult<ElevationHgtEstimate>
+      >,
+    downloadHgt: (request: ElevationHgtEstimateRequest & { jobId?: string }) =>
+      ipcRenderer.invoke('elevation:downloadHgt', request) as Promise<
+        ElevationResult<{ completed: number; failed: number }>
+      >,
+    cancelHgtDownload: (jobId: string) =>
+      ipcRenderer.invoke('elevation:cancelHgtDownload', jobId) as Promise<{ ok: boolean }>,
+    cacheStats: () => ipcRenderer.invoke('elevation:cacheStats') as Promise<ElevationCacheStats>,
+    clearCache: () => ipcRenderer.invoke('elevation:clearCache') as Promise<{ ok: true }>,
+    onHgtProgress: (cb: (progress: ElevationHgtProgress) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: ElevationHgtProgress) => {
+        cb(progress);
+      };
+      ipcRenderer.on('elevation:hgtProgress', handler);
+      return () => {
+        ipcRenderer.removeListener('elevation:hgtProgress', handler);
+      };
+    },
   },
 
   // ─── Chat export ─────────────────────────────────────────────────

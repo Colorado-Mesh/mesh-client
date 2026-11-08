@@ -39,7 +39,7 @@ describe('WeatherPopup', () => {
     handlers.dragend = undefined;
     useInternetWeatherStore.getState().clear();
     useInternetWeatherStore.setState({ enabled: true });
-    useMapToolStore.setState({ measureActive: false });
+    useMapToolStore.setState({ measureActive: false, profileActive: false });
     useTemperatureUnitStore.setState({ useFahrenheit: false });
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,

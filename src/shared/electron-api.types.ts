@@ -3,6 +3,15 @@ import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { AiAPI } from './ai-types';
 import type { BeaconFeedApi } from './beacon';
 import type {
+  ElevationCacheStats,
+  ElevationHgtEstimate,
+  ElevationHgtEstimateRequest,
+  ElevationHgtProgress,
+  ElevationProfileRequest,
+  ElevationProfileResult,
+  ElevationResult,
+} from './elevation/types';
+import type {
   EnvironmentReading,
   EnvironmentTelemetryRow,
   EnvironmentTelemetrySource,
@@ -1452,6 +1461,23 @@ export interface ElectronAPI {
     grid: (request: WeatherGridRequest) => Promise<WeatherResult<WeatherGrid>>;
     radarFrames: (request: WeatherRadarFramesRequest) => Promise<WeatherResult<RadarFrames>>;
     clearMemoryCache: () => Promise<{ ok: true }>;
+  };
+
+  // ─── Terrain elevation / LOS profile (map tool; main-side fetches + HGT cache)
+  elevation: {
+    sampleProfile: (
+      request: ElevationProfileRequest,
+    ) => Promise<ElevationResult<ElevationProfileResult>>;
+    estimateHgt: (
+      request: ElevationHgtEstimateRequest,
+    ) => Promise<ElevationResult<ElevationHgtEstimate>>;
+    downloadHgt: (
+      request: ElevationHgtEstimateRequest & { jobId?: string },
+    ) => Promise<ElevationResult<{ completed: number; failed: number }>>;
+    cancelHgtDownload: (jobId: string) => Promise<{ ok: boolean }>;
+    cacheStats: () => Promise<ElevationCacheStats>;
+    clearCache: () => Promise<{ ok: true }>;
+    onHgtProgress: (cb: (progress: ElevationHgtProgress) => void) => () => void;
   };
 
   // ─── GPS / position export ───────────────────────────────────────────────────

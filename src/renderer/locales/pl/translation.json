@@ -543,7 +543,9 @@
     "memoryDomNodes": "Węzły DOM: {{count}}",
     "memoryHistoryHeap": "hałda {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Posty w pokojach mają własny limit tej samej wielkości, więc zajęte kanały nigdy ich nie wypychają."
+    "meshcoreRoomPostRetentionHint": "Posty w pokojach mają własny limit tej samej wielkości, więc zajęte kanały nigdy ich nie wypychają.",
+    "notifyOnDiagnosticErrors": "Powiadamiaj o nowych błędach diagnostycznych",
+    "notifyOnDiagnosticErrorsHint": "Powiadomienie na pulpicie i dźwięk, gdy pojawi się nowa diagnostyka istotności błędu dla aktywnego protokołu. Istniejące wiersze nie odtwarzają się ponownie po uruchomieniu."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -2308,7 +2310,8 @@
     "warningCount_many": "{{count}} ostrzeżeń",
     "exportJson": "Eksportowanie jako JSON",
     "exportJsonAria": "Eksportuj widoczne wiersze diagnostyki jako JSON",
-    "meshcoreUnknownNode": "Nieznany węzeł"
+    "meshcoreUnknownNode": "Nieznany węzeł",
+    "cuHistoryPersistedHint": "Próbki są zapisywane lokalnie, więc ten wykres przetrwa restart aplikacji (wyczyszczony za pomocą funkcji Clear diagnostics)."
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -2839,6 +2842,42 @@
       "urlLabel": "URL kafelków (https, z {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · cache do {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Profil LOS",
+      "startAria": "Rozpocznij profil linii widoczności terenu",
+      "stopAria": "Zatrzymaj profil terenu i wyczyść",
+      "hint": "Kliknij dwa punkty lub węzły na mapie",
+      "ready": "Profil gotowy — w razie potrzeby dostosuj częstotliwość",
+      "frequency": "Taśma (oplot / opaska)",
+      "frequencyAria": "Częstotliwość LoRa dla czyszczenia Fresnela",
+      "title": "Profilu terenu",
+      "chartAria": "Tabela prześwitów terenu i prześwitów Fresnela",
+      "loading": "Wysokość próbkowania…",
+      "needEndpoints": "Wybierz dwa punkty końcowe, aby wykreślić luz.",
+      "clear": "Clear",
+      "obstructed": "zablokowany",
+      "unknown": "Nieznany",
+      "meta": "{{mhz}} MHz · {{km}} km · min. prześwit {{clearance}}",
+      "offlineSource": "offline DEM",
+      "networkSource": "rzędna sieci",
+      "errorUnavailable": "Usługa wysokościowa niedostępna.",
+      "errorOffline": "Offline i brak wysokości w pamięci podręcznej dla tej ścieżki.",
+      "errorFetch": "Nie można pobrać próbki wysokości dla tej ścieżki.",
+      "hgtHeading": "Wysokość offline (DEM)",
+      "hgtHint": "Pobierz kafelki SRTM dla bieżącego widoku, aby profile LOS działały bez sieci.",
+      "hgtDownloadView": "Pobierz wysokość do wyświetlenia",
+      "hgtDownloadAria": "Oszacuj i pobierz kafelki wysokości dla bieżącego widoku mapy",
+      "hgtConfirm": "Kafelki {{count}} (~{{size}}). Pobierz teraz?",
+      "hgtConfirmYesAria": "Potwierdź pobranie kafelka wysokości",
+      "hgtProgress": "Płytki {{completed}} / {{total}} ({{failed}} nie powiodło się)",
+      "hgtCancelAria": "Anuluj pobieranie kafli wysokościowych",
+      "hgtCancelled": "Pobieranie danych wysokościowych anulowane.",
+      "hgtDone": "Pobrano kafelki wysokościowe {{completed}} ({{failed}} nie powiodło się).",
+      "hgtAlreadyCached": "Płytki wysokościowe dla tego widoku są już zapisane w pamięci podręcznej.",
+      "hgtEstimateFailed": "Nie można oszacować pobranej wysokości.",
+      "hgtDownloadFailed": "Pobieranie danych wysokościowych nie powiodło się.",
+      "hgtCacheStats": "Pamięć podręczna wysokości: {{count}} kafli ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3879,7 +3918,13 @@
     "changes_few": "{{count}} zmiany",
     "changes_many": "{{count}} zmian",
     "echoes_few": "{{count}} echa",
-    "echoes_many": "{{count}} ech"
+    "echoes_many": "{{count}} ech",
+    "echoReliability": "Niezawodność echa",
+    "echoReliabilityTooltip": "Serwer proxy sesji z podsłuchanymi sumami pakietów w porównaniu z duplikatami — stawka ACK nie jest typu end-to-end.",
+    "echoReliabilityDetail": "{{duplicates}} odbija się echem w obserwacjach {{total}}",
+    "pathReliability": "Niezawodność ścieżki",
+    "pathReliabilityTooltip": "MeshCore ścieżka sukcesu vs liczba niepowodzeń (wygładzenie Laplace 'a) — nie kompleksowy ACK PDR.",
+    "pathReliabilityDetail": "Zarejestrowane próby ścieżek {{attempts}}"
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -7161,7 +7206,8 @@
     "saveFailed": "Nie można zapisać ustawień dźwięku. Twój poprzedni wybór pozostaje niezmieniony.",
     "previewFailed": "Nie można odtworzyć tego dźwięku. Spróbuj użyć innego pliku lub zresetuj do oryginalnego tonu.",
     "connectionLost": "linia radiowa teletransmisyjna",
-    "batteryLow": "Niski poziom naładowania akumulatora"
+    "batteryLow": "Niski poziom naładowania akumulatora",
+    "diagnosticError": "Błąd diagnostyki"
   },
   "operationalAlerts": {
     "batteryLowTitle": "Niski poziom baterii {{name}}",
@@ -8582,5 +8628,9 @@
       "thunderstormHeavyHail": "Ostatnia burza z intensywnymi opadami graduweather condition",
       "unknown": "Nieznane warunki"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Błąd diagnostyki",
+    "body": "{{description}}"
   }
 }

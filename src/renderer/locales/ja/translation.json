@@ -527,7 +527,9 @@
     "memoryDomNodes": "DOMノード： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "ルームの投稿には同じサイズの制限があるため、ビジーチャンネルが投稿を押し出すことはありません。"
+    "meshcoreRoomPostRetentionHint": "ルームの投稿には同じサイズの制限があるため、ビジーチャンネルが投稿を押し出すことはありません。",
+    "notifyOnDiagnosticErrors": "新しい診断エラーの通知",
+    "notifyOnDiagnosticErrorsHint": "アクティブなプロトコルの新しいエラー重大度診断が表示されたときのデスクトップ通知とサウンド。既存の行は起動時に再生されません。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します",
     "exportJson": "JSON のエクスポート",
     "exportJsonAria": "表示されている診断行をJSONとしてエクスポートする",
-    "meshcoreUnknownNode": "不明なノード"
+    "meshcoreUnknownNode": "不明なノード",
+    "cuHistoryPersistedHint": "サンプルはローカルに保存されるため、このチャートはアプリの再起動後も存続します（ Clear diagnosticsでクリアされます）。"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -2787,6 +2790,42 @@
       "urlLabel": "タイル URL（https、{z} {x} {y}）",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · キャッシュ上限 {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "LOSプロフィール",
+      "startAria": "地形の視線プロファイルを開始する",
+      "stopAria": "地形プロファイルを停止してクリア",
+      "hint": "マップ上の2つのポイントまたはノードをクリックします",
+      "ready": "プロファイルの準備—必要に応じて頻度を調整する",
+      "frequency": "バンド",
+      "frequencyAria": "フレネルクリアランスのLoRa周波数",
+      "title": "地形プロファイル",
+      "chartAria": "地形とフレネルのクリアランスチャート",
+      "loading": "標高をサンプリングしています…",
+      "needEndpoints": "クリアランスをプロットする2つのエンドポイントを選択します。",
+      "clear": "クリア",
+      "obstructed": "閉塞",
+      "unknown": "不明",
+      "meta": "{{mhz}} MHz · {{km}} km ·最小クリアランス{{clearance}}",
+      "offlineSource": "オフラインDEM",
+      "networkSource": "ネットワークエレベーション",
+      "errorUnavailable": "エレベーションサービスは利用できません。",
+      "errorOffline": "このパスはオフラインで、キャッシュされたエレベーションはありません。",
+      "errorFetch": "このパスのエレベーションをサンプリングできませんでした。",
+      "hgtHeading": "オフラインエレベーション（ DEM ）",
+      "hgtHint": "LOSプロファイルがネットワークなしで動作するように、現在のビューのSRTMタイルをダウンロードします。",
+      "hgtDownloadView": "表示するためにエレベーションをダウンロード",
+      "hgtDownloadAria": "現在のマップビューの高度タイルの推定とダウンロード",
+      "hgtConfirm": "{{count}}タイル(~ {{size}})今すぐダウンロードしますか？",
+      "hgtConfirmYesAria": "エレベーションタイルのダウンロードを確認する",
+      "hgtProgress": "{{completed}}/{{total}}タイル（ {{failed}}失敗）",
+      "hgtCancelAria": "エレベーションタイルのダウンロードをキャンセル",
+      "hgtCancelled": "高度のダウンロードがキャンセルされました。",
+      "hgtDone": "{{completed}}エレベーションタイルをダウンロードしました（ {{failed}}に失敗しました）。",
+      "hgtAlreadyCached": "このビューの標高タイルはすでにキャッシュされています。",
+      "hgtEstimateFailed": "エレベーションダウンロードを推定できませんでした。",
+      "hgtDownloadFailed": "高度のダウンロードに失敗しました。",
+      "hgtCacheStats": "高度キャッシュ： {{count}}タイル（ {{size}} ）"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
     "hybridMqttPathAria": "RFおよびMQTTパス",
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
-    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続",
+    "echoReliability": "エコーの信頼性",
+    "echoReliabilityTooltip": "聞こえたパケットの合計と重複からのセッションプロキシ—エンドツーエンドの配信ACKレートではありません。",
+    "echoReliabilityDetail": "{{duplicates}}は{{total}}の観察結果に反響します",
+    "pathReliability": "パスの信頼性",
+    "pathReliabilityTooltip": "MeshCoreパス成功対失敗カウント（ラプラス平滑化） -エンドツーエンドのACK PDRではありません。",
+    "pathReliabilityDetail": "{{attempts}}回のパス試行が記録されました"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -7051,7 +7096,8 @@
     "saveFailed": "サウンド設定を保存できませんでした。以前の選択は変更されていません。",
     "previewFailed": "このサウンドを再生できませんでした。別のファイルを試すか、元のトーンにリセットしてください。",
     "connectionLost": "無線リンクが失われました",
-    "batteryLow": "低バッテリー"
+    "batteryLow": "低バッテリー",
+    "diagnosticError": "診断エラー"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}}バッテリー残量不足",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "雷雨、大雹",
       "unknown": "不明な条件"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "診断エラー",
+    "body": "{{description}}"
   }
 }

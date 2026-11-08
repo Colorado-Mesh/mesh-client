@@ -80,11 +80,11 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 
 ## RF rebroadcast (bridge)
 
-**App → MECP** can bridge MECP reports between a Meshtastic channel and a MeshCore channel. It is **off** by default.
+**App → MECP** can bridge MECP reports between Meshtastic channels, MeshCore channels, Reticulum LXMF peers, and RRC hub rooms. It is **off** by default.
 
-- Each rule has endpoint **A** and endpoint **B** (channel indices 0–7). Reports go **A → B** by default; turn on **Bidirectional** to also send **B → A**.
+- Each rule has endpoint **A** and endpoint **B**. Reports go **A → B** by default; turn on **Bidirectional** to also send **B → A**.
 - Only reports heard over RF are bridged (not MQTT-only), and never your own reports, history, or drills. A loop guard prevents ping-ponging the same report.
-- After each bridged report, a short plain-text notice follows: `MECP from <sender> via <Meshtastic|MeshCore> (<channel name>)`.
+- After each bridged report, a short plain-text notice follows: `MECP from <sender> via <protocol> (<channel or room name>)`.
 
 ## Reports in ATAK
 

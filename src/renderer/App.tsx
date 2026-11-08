@@ -185,6 +185,7 @@ import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
+import { useDiagnosticSeverityAlerts } from './hooks/useDiagnosticSeverityAlerts';
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
@@ -1837,6 +1838,10 @@ function AppContent() {
     nodes: nodesForUi,
     capabilities,
     links: operationalLinks,
+    settings: operationalAlertSettings,
+  });
+  useDiagnosticSeverityAlerts({
+    protocol,
     settings: operationalAlertSettings,
   });
 

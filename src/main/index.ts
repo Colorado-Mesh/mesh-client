@@ -163,6 +163,7 @@ import { isValidHttpHostname } from './httpHostValidation';
 import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
+import { registerElevationIpcHandlers } from './ipc/elevation-handlers';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
@@ -2478,6 +2479,11 @@ function createWindow() {
       }),
     );
     registerWeatherIpcHandlers({ getAppVersion: () => app.getVersion() });
+    registerElevationIpcHandlers({
+      getAppVersion: () => app.getVersion(),
+      userDataPath: app.getPath('userData'),
+      getMainWindow: () => mainWindow,
+    });
   }
 }
 

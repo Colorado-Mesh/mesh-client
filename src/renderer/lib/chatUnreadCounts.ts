@@ -394,6 +394,7 @@ const NOTIFICATION_TYPE_PRIORITY: Record<ChatNotificationType, number> = {
   // Operational alerts are not message-driven
   connectionLost: -1,
   batteryLow: -1,
+  diagnosticError: -1,
 };
 
 export function resolveChatNotificationType(

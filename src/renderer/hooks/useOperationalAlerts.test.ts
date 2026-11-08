@@ -30,6 +30,7 @@ const defaults: OperationalAlertSettings = {
   nodeSilenceAlertMinutes: null,
   nodeBatteryLowThreshold: 10,
   notifyOnLinkDown: true,
+  notifyOnDiagnosticErrors: false,
   mecpStandingAlertEnabled: false,
   mecpRepeatAlertMinutes: null,
 };

@@ -50,6 +50,7 @@ import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapLayerStore } from '../stores/mapLayerStore';
+import { useMapToolStore } from '../stores/mapToolStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -339,6 +340,20 @@ const MapMarker = memo(
         zIndexOffset={isSelf ? 1000 : 0}
         eventHandlers={{
           click: () => {
+            const tools = useMapToolStore.getState();
+            if (tools.profileActive && node.latitude != null && node.longitude != null) {
+              tools.addProfileEndpoint({
+                lat: node.latitude,
+                lon: node.longitude,
+                nodeId: node.node_id,
+                groundAltitudeM:
+                  typeof node.altitude === 'number' && Number.isFinite(node.altitude)
+                    ? node.altitude
+                    : undefined,
+                antennaHeightM: 2,
+              });
+              return;
+            }
             onNodeClick?.(node.node_id);
           },
         }}

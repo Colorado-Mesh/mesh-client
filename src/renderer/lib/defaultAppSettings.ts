@@ -111,6 +111,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   nodeBatteryLowThreshold: 10,
   /** Alert when an RF link drops unexpectedly (not manual, not mid-reconnect). */
   notifyOnLinkDown: true,
+  /** Desktop + sound when a new error-severity diagnostic row appears (default off). */
+  notifyOnDiagnosticErrors: false,
   /**
    * Incident Command station mode: standing banner + window attention for unseen MAYDAY/URGENT
    * (default off; the one-shot siren/toast fires regardless).

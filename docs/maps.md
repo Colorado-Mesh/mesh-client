@@ -34,7 +34,7 @@ Under **Overlays** you can toggle:
 
 Overlays are vector layers drawn on top of the basemap. If nodes have latitude/longitude from RF, MQTT, SQLite, or your session, markers and trails can still render when the basemap is blank or only partly cached.
 
-Use **Measure** to click a multi-point distance line on the map (`km` / `mi` total). **Show my location** recenters on your resolved position when one is available.
+Use **Measure** to click a multi-point distance line on the map (`km` / `mi` total). Use **LOS profile** to pick two endpoints (map clicks or node markers) and plot a terrain cross-section with first Fresnel-zone clearance for 915 / 868 / 433 MHz. Elevation samples come from a cached Open-Meteo lookup, or from offline SRTM tiles if you downloaded them under **Layers → Offline maps → Offline elevation (DEM)**. **Show my location** recenters on your resolved position when one is available.
 
 ---
 

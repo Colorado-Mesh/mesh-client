@@ -296,6 +296,27 @@ describe('diagnosticsStore analysis timers', () => {
     expect(samples!.length).toBe(1);
     expect(samples![0].cu).toBe(18.5);
   });
+
+  it('persists cuHistory to localStorage and clears it with clearDiagnostics', () => {
+    vi.useFakeTimers();
+    const CU_KEY = 'mesh-client:cuHistorySnapshot';
+    localStorage.removeItem(CU_KEY);
+    const store = useDiagnosticsStore.getState();
+    store.processNodeUpdate({ ...sampleNode(9), channel_utilization: 22 }, null);
+    vi.advanceTimersByTime(600);
+    const raw = localStorage.getItem(CU_KEY);
+    expect(raw).toBeTruthy();
+    const parsed = JSON.parse(raw!) as {
+      v: number;
+      entries: [number, { t: number; cu: number }[]][];
+    };
+    expect(parsed.v).toBe(1);
+    expect(parsed.entries.some(([id]) => id === 9)).toBe(true);
+    store.clearDiagnostics();
+    expect(localStorage.getItem(CU_KEY)).toBeNull();
+    expect(useDiagnosticsStore.getState().cuHistory.size).toBe(0);
+    vi.useRealTimers();
+  });
 });
 
 describe('diagnosticsStore reference position gates distance checks', () => {

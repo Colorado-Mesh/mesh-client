@@ -128,6 +128,7 @@ export function MeasureControl() {
   const [active, setActive] = useState(false);
   const [points, setPoints] = useState<LatLon[]>([]);
   const setMeasureActive = useMapToolStore((s) => s.setMeasureActive);
+  const setProfileActive = useMapToolStore((s) => s.setProfileActive);
 
   useEffect(() => {
     const el = controlRef.current;
@@ -141,10 +142,11 @@ export function MeasureControl() {
 
   useEffect(() => {
     setMeasureActive(active);
+    if (active) setProfileActive(false);
     return () => {
       setMeasureActive(false);
     };
-  }, [active, setMeasureActive]);
+  }, [active, setMeasureActive, setProfileActive]);
 
   useEffect(() => {
     if (!active) return;

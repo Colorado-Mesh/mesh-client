@@ -215,6 +215,7 @@ interface AppSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  notifyOnDiagnosticErrors: boolean;
   mecpStandingAlertEnabled: boolean;
   mecpRepeatAlertMinutes: number | null;
   hiddenProtocols: MeshProtocol[];
@@ -2395,6 +2396,28 @@ export default function AppPanel({
               {t('appPanel.notifyOnLinkDown')}
             </label>
           </div>
+          <div
+            data-setting-anchor="app.notifications.diagnosticErrors"
+            className="flex items-center gap-3"
+          >
+            <input
+              type="checkbox"
+              id="notifyOnDiagnosticErrors"
+              checked={settings.notifyOnDiagnosticErrors}
+              onChange={(e) => {
+                updateSetting('notifyOnDiagnosticErrors', e.target.checked);
+              }}
+              aria-label={t('appPanel.notifyOnDiagnosticErrors')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label
+              htmlFor="notifyOnDiagnosticErrors"
+              className="text-ink-300 cursor-pointer text-sm"
+            >
+              {t('appPanel.notifyOnDiagnosticErrors')}
+            </label>
+          </div>
+          <p className="text-muted text-xs">{t('appPanel.notifyOnDiagnosticErrorsHint')}</p>
         </div>
         {hasRrcPanel && (
           <div data-setting-anchor="app.notifications.rrcUnreadAll" className="space-y-1">

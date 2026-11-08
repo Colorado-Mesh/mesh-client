@@ -543,7 +543,9 @@
     "memoryDomNodes": "Узлы DOM: {{count}}",
     "memoryHistoryHeap": "куча {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Публикации в комнатах имеют свой предел того же размера, поэтому занятые каналы никогда не вытесняют их."
+    "meshcoreRoomPostRetentionHint": "Публикации в комнатах имеют свой предел того же размера, поэтому занятые каналы никогда не вытесняют их.",
+    "notifyOnDiagnosticErrors": "Уведомлять о новых диагностических ошибках",
+    "notifyOnDiagnosticErrorsHint": "Уведомление на рабочем столе и звук при появлении новой диагностики серьезности ошибок для активного протокола. Существующие строки не воспроизводятся при запуске."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -2308,7 +2310,8 @@
     "warningCount_many": "{{count}} предупреждений",
     "exportJson": "Экспортировать в JSON",
     "exportJsonAria": "Экспортировать видимые строки диагностики как JSON",
-    "meshcoreUnknownNode": "Неизвестный узел"
+    "meshcoreUnknownNode": "Неизвестный узел",
+    "cuHistoryPersistedHint": "Образцы сохраняются локально, поэтому эта диаграмма выживает после перезапуска приложения (очищается с помощью Clear diagnostics (Очистить диагностику))."
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -2839,6 +2842,42 @@
       "urlLabel": "URL тайлов (https, с {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · кэш до {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Профиль LOS",
+      "startAria": "Профиль прямой видимости стартовой местности",
+      "stopAria": "Остановите профиль местности и очистите",
+      "hint": "Нажмите на две точки или узлы на карте",
+      "ready": "Профиль готов — при необходимости отрегулируйте частоту",
+      "frequency": "Диапазон",
+      "frequencyAria": "LoRa частота для зазора Френеля",
+      "title": "A. Рельеф местности",
+      "chartAria": "Схема рельефа и габаритов по Френелю",
+      "loading": "Высотная отметка выборки...",
+      "needEndpoints": "Выберите две конечные точки для зазора на графике.",
+      "clear": "Сбросить",
+      "obstructed": "С обструкцией",
+      "unknown": "Неизвестно",
+      "meta": "{{mhz}} МГц · {{km}} км · мин зазор {{clearance}}",
+      "offlineSource": "offline DEM",
+      "networkSource": "высота сети",
+      "errorUnavailable": "Служба высот недоступна.",
+      "errorOffline": "Автономный режим и нет кэшированного возвышения для этого пути.",
+      "errorFetch": "Не удалось определить высоту для этого пути.",
+      "hgtHeading": "Автономная отметка (DEM)",
+      "hgtHint": "Загрузите плитки SRTM для текущего представления, чтобы профили LOS работали без сети.",
+      "hgtDownloadView": "Загрузить высоту для просмотра",
+      "hgtDownloadAria": "Оцените и загрузите плитки высоты для текущего вида карты",
+      "hgtConfirm": "{{count}} плитки (~{{size}}). Загрузить сейчас?",
+      "hgtConfirmYesAria": "Подтвердить загрузку плитки рельефа",
+      "hgtProgress": "{{completed}} / {{total}} плитки (сбой {{failed}})",
+      "hgtCancelAria": "Отменить загрузку плитки рельефа",
+      "hgtCancelled": "Загрузка высоты отменена.",
+      "hgtDone": "Загружены {{completed}} плитки высоты ({{failed}} не удалось).",
+      "hgtAlreadyCached": "Плитки высоты для этого вида уже кэшированы.",
+      "hgtEstimateFailed": "Не удалось оценить загрузку высоты.",
+      "hgtDownloadFailed": "Не удалось загрузить высоту.",
+      "hgtCacheStats": "Кэш высоты: {{count}} плитки ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3879,7 +3918,13 @@
     "changes_few": "{{count}} изменения",
     "changes_many": "{{count}} изменений",
     "echoes_few": "{{count}} эхо",
-    "echoes_many": "{{count}} эхо"
+    "echoes_many": "{{count}} эхо",
+    "echoReliability": "Надежность эха",
+    "echoReliabilityTooltip": "Прокси сеанса из подслушанных итоговых пакетов против дубликатов — не скорость сквозной доставки ACK.",
+    "echoReliabilityDetail": "{{duplicates}} эхосигналы в {{total}} наблюдениях",
+    "pathReliability": "Надежность пути",
+    "pathReliabilityTooltip": "MeshCore path success vs failure counts (Laplace-smoothed) — not end-to-end ACK PDR.",
+    "pathReliabilityDetail": "{{attempts}} попыток пути зарегистрировано"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -7161,7 +7206,8 @@
     "saveFailed": "Не удалось сохранить настройки звука. Ваш предыдущий выбор не изменился.",
     "previewFailed": "Не удалось воспроизвести этот звук. Попробуйте другой файл или вернитесь к исходному тону.",
     "connectionLost": "Радиосвязь потеряна",
-    "batteryLow": "Батарея разряжена"
+    "batteryLow": "Батарея разряжена",
+    "diagnosticError": "Ошибка диагностики"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} разряд батареи",
@@ -8582,5 +8628,9 @@
       "thunderstormHeavyHail": "weather condition",
       "unknown": "Неизвестные условия"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Ошибка диагностики",
+    "body": "{{description}}"
   }
 }
