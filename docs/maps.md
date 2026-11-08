@@ -138,6 +138,22 @@ Full behaviour: [Reticulum — Map / RMAP](reticulum.md).
 
 ---
 
+## Internet weather
+
+Optional **Layers → Internet weather** overlays (default off) fetch live data over HTTPS when you enable them:
+
+| Layer                          | Coverage                                                     | Notes                                                                                               |
+| ------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Point forecast (click the map) | Global                                                       | Open-Meteo current + hourly + 7-day                                                                 |
+| Temperature / wind fields      | Global                                                       | Open-Meteo grid samples for the viewport                                                            |
+| Radar                          | Global (RainViewer); higher detail in CONUS (NEXRAD via IEM) | RainViewer is regional (native zoom ≤ 7). Coverage gaps are normal over oceans and some land areas. |
+
+Data is memory-cached for the session only (no weather disk cache). The map area you are viewing is sent to Open-Meteo and RainViewer (and IEM/NWS for US radar). Attribution appears on the map when layers are active.
+
+Developer reference: [Internet weather](development/internet-weather.md).
+
+---
+
 ## Troubleshooting
 
 - [Map tab without internet (offline / no WAN)](troubleshooting.md#map-tab-without-internet-offline--no-wan)

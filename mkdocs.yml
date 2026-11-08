@@ -168,6 +168,7 @@ nav:
           - MECP: development/mecp.md
           - TAK gateway: development/tak.md
           - Offline maps: development/offline-maps.md
+          - Internet weather: development/internet-weather.md
           - Live packet map: development/live-packet-map.md
           - Settings search: development/settings-search.md
   - Project:
