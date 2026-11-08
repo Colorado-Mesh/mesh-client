@@ -11,9 +11,17 @@ describe('meshcoreColdStoreHydration', () => {
     resetMeshcoreColdStoreHydratedForTests();
   });
 
-  it('starts false and flips after mark', () => {
+  it('starts false and flips after mark for the same identity', () => {
+    expect(hasMeshcoreColdStoreHydrated('id-mc')).toBe(false);
+    markMeshcoreColdStoreHydrated('id-mc');
+    expect(hasMeshcoreColdStoreHydrated('id-mc')).toBe(true);
+  });
+
+  it('does not match a different or empty identity', () => {
+    markMeshcoreColdStoreHydrated('id-mc');
+    expect(hasMeshcoreColdStoreHydrated('id-other')).toBe(false);
+    expect(hasMeshcoreColdStoreHydrated(null)).toBe(false);
+    expect(hasMeshcoreColdStoreHydrated('')).toBe(false);
     expect(hasMeshcoreColdStoreHydrated()).toBe(false);
-    markMeshcoreColdStoreHydrated();
-    expect(hasMeshcoreColdStoreHydrated()).toBe(true);
   });
 });

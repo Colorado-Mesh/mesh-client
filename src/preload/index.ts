@@ -461,8 +461,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       rx_hops?: number | null;
       room_server_id?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
-    getReticulumIdentityHydration: (identityId: string, messageLimit?: number) =>
-      ipcRenderer.invoke('db:getReticulumIdentityHydration', identityId, messageLimit),
     getReticulumMessages: (identityId: string, limit?: number) =>
       ipcRenderer.invoke('db:getReticulumMessages', identityId, limit),
     searchReticulumMessages: (identityId: string, query: string, limit?: number) =>

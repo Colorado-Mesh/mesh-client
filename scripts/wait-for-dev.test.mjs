@@ -104,3 +104,13 @@ it('requires the native AI runtime chunk before launching Electron', () => {
     }),
   ).toBe(false);
 });
+
+it('requires the identity hydration chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.identityHydration).toContain('identity-hydration.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('identity-hydration.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});

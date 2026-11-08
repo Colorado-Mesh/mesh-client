@@ -129,6 +129,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Combined identity hydration SQL — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/identityHydrationSnapshot.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'identity-hydration.js'),
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

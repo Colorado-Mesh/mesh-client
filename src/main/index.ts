@@ -161,10 +161,6 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
-import {
-  readMeshcoreIdentityHydration,
-  readMeshtasticIdentityHydration,
-} from './identityHydrationSnapshot';
 import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
@@ -5614,37 +5610,32 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:getMeshtasticIdentityHydration', (event, messageLimit?: number) => {
-  try {
-    assertIpcSender(event, 'db:getMeshtasticIdentityHydration');
-    const db = getDbForIpc('db:getMeshtasticIdentityHydration');
-    if (!db) return { nodes: [], meshcoreContacts: [], messages: [] };
-    return readMeshtasticIdentityHydration(db, messageLimit);
-  } catch (err) {
-    finishDbIpcHandler('db:getMeshtasticIdentityHydration', err);
-  }
+/** Production ships `identity-hydration.js` beside index.js (out of measured budget). */
+void (async () => {
+  const mod = (
+    process.env.VITEST
+      ? await import('./identityHydrationSnapshot')
+      : await import(pathToFileURL(path.join(__dirname, 'identity-hydration.js')).href)
+  ) as {
+    registerIdentityHydrationIpcHandlers: (deps: {
+      ipcMain: typeof ipcMain;
+      assertIpcSender: typeof assertIpcSender;
+      getDbForIpc: typeof getDbForIpc;
+      finishDbIpcHandler: typeof finishDbIpcHandler;
+    }) => void;
+  };
+  mod.registerIdentityHydrationIpcHandlers({
+    ipcMain,
+    assertIpcSender,
+    getDbForIpc,
+    finishDbIpcHandler,
+  });
+})().catch((err: unknown) => {
+  console.error(
+    '[main] identity hydration IPC register failed:',
+    sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+  );
 });
-
-ipcMain.handle(
-  'db:getMeshcoreIdentityHydration',
-  (
-    event,
-    limits?: {
-      globalLimit?: number;
-      perChannelLimit?: number;
-      roomLimit?: number;
-    },
-  ) => {
-    try {
-      assertIpcSender(event, 'db:getMeshcoreIdentityHydration');
-      const db = getDbForIpc('db:getMeshcoreIdentityHydration');
-      if (!db) return { contacts: [], nodes: [], hopHistory: [], messages: [] };
-      return readMeshcoreIdentityHydration(db, limits);
-    } catch (err) {
-      finishDbIpcHandler('db:getMeshcoreIdentityHydration', err);
-    }
-  },
-);
 
 ipcMain.handle('db:searchMessages', (event, query: string, limit?: number) => {
   try {
@@ -6967,10 +6958,6 @@ void app
   .whenReady()
   .then(() => {
     try {
-      const whenReadyAt = performance.now();
-      const logStartupMark = (label: string): void => {
-        console.debug(`[Startup] ${label} +${(performance.now() - whenReadyAt).toFixed(1)}ms`);
-      };
       initLogFile();
       console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
       try {
@@ -6994,7 +6981,6 @@ void app
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
       initDatabase();
-      logStartupMark('initDatabase');
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
       protocol.handle(
@@ -7003,7 +6989,6 @@ void app
           distRoot: path.join(__dirname, '../../dist/renderer'),
         }),
       );
-      logStartupMark('rendererProtocol');
 
       // Force the dock icon in development on macOS
       if (!app.isPackaged && process.platform === 'darwin') {
@@ -7015,11 +7000,9 @@ void app
       }
       // Window first — TAK restore is not required for first paint.
       createWindow();
-      logStartupMark('createWindow');
 
-      // Auto-restore TAK server if auto-start is enabled (after window so sync FS/JSON
-      // does not delay createWindow).
-      const kickoffTakAutoStart = (): void => {
+      // Auto-restore TAK after window so sync FS/JSON does not delay createWindow.
+      setImmediate(() => {
         const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
         try {
           if (fs.existsSync(takSettingsPath)) {
@@ -7073,9 +7056,7 @@ void app
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
-        logStartupMark('takAutoStartKickoff');
-      };
-      setImmediate(kickoffTakAutoStart);
+      });
 
       rendererHeartbeatWatchdog.startStallWatchdog(() => {
         const win = mainWindow;

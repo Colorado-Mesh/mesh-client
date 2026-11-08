@@ -35,6 +35,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/ai/local/modelCatalogData.ts --bundle --platform=node --outfile=dist-electron/main/ai-local-models.js --format=cjs --watch';
   const nativeAiRuntimeBuild =
     'esbuild src/main/ai/nativeRuntime.ts --bundle --platform=node --outfile=dist-electron/main/ai-native-runtime.js --format=cjs --watch';
+  const identityHydrationBuild =
+    'esbuild src/main/identityHydrationSnapshot.ts --bundle --platform=node --outfile=dist-electron/main/identity-hydration.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -43,7 +45,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -51,6 +53,7 @@ export function buildDevConcurrentlyArgs() {
     followUpPromptBuild,
     localModelsBuild,
     nativeAiRuntimeBuild,
+    identityHydrationBuild,
     'vite',
     electronLaunch,
   ];

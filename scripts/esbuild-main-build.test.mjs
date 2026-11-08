@@ -15,12 +15,13 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * (HGT offset reader + clearance/bulge math follow-ups).
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
  * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
- * Metal ensure+spawn as `ai-native-runtime.js` (not in index.js). Thin install-path checks
- * stay in index.js for sync status. Keep HF catalog / prompt / native runtime in siblings.
+ * Metal ensure+spawn as `ai-native-runtime.js`; combined identity hydration SQL as
+ * `identity-hydration.js` (not in index.js). Thin install-path checks stay in index.js for
+ * sync status. Keep HF catalog / prompt / native runtime / identity hydration in siblings.
  * Fair MeshCore chat hydration SQL (`selectMeshcoreMessagesForHydration`) adds a small
  * window-function query so quiet group channels are not crowded out of the newest-N load.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 800 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 797 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
@@ -108,6 +109,9 @@ describe('esbuild-main-build', () => {
       const nativeRuntimeBytes = fs.readFileSync(path.join(tempDir, 'ai-native-runtime.js'));
       expect(nativeRuntimeBytes.length).toBeGreaterThan(1_000);
       expect(nativeRuntimeBytes.toString('utf8')).toContain('ensureMlxHelper');
+      const identityHydrationBytes = fs.readFileSync(path.join(tempDir, 'identity-hydration.js'));
+      expect(identityHydrationBytes.length).toBeGreaterThan(500);
+      expect(identityHydrationBytes.toString('utf8')).toContain('readMeshtasticIdentityHydration');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');

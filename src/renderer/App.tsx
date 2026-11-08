@@ -1184,7 +1184,7 @@ function AppContent() {
     const shouldSkipProtocol = (p: MeshProtocol): boolean => {
       if (hydratedProtocolsRef.current.has(p)) return true;
       // MeshCore mount reload is authoritative for cold identity-store hydrate.
-      if (p === 'meshcore' && hasMeshcoreColdStoreHydrated()) {
+      if (p === 'meshcore' && hasMeshcoreColdStoreHydrated(identityByProtocol.meshcore)) {
         hydratedProtocolsRef.current.add(p);
         return true;
       }
@@ -1196,8 +1196,14 @@ function AppContent() {
       const id = identityByProtocol[p];
       if (!id) return false;
       hydratedProtocolsRef.current.add(p);
-      await refreshByProtocol[p]();
-      return true;
+      try {
+        await refreshByProtocol[p]();
+        return true;
+      } catch (e: unknown) {
+        hydratedProtocolsRef.current.delete(p);
+        console.warn(`[App] startup hydrate ${p} failed ` + errLikeToLogString(e));
+        return false;
+      }
     };
 
     const scheduleIdle = (run: () => void): void => {
@@ -1217,7 +1223,8 @@ function AppContent() {
       const others = REGISTERED_MESH_PROTOCOLS.filter((p) => p !== protocol);
       const didActive = await hydrateOne(protocol);
       if (cancelled) return;
-      if (didActive || hydratedProtocolsRef.current.has(protocol)) {
+      // Only count a hydrate performed by this effect — not a prior skip/ref hit.
+      if (didActive) {
         markLaunchMilestone('activeHydrateDone');
       }
       scheduleIdle(() => {

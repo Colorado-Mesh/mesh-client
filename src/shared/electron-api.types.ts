@@ -675,14 +675,6 @@ export interface ElectronAPI {
       senderName: string,
     ) => Promise<void>;
     getReticulumMessages: (identityId: string, limit?: number) => Promise<unknown[]>;
-    /**
-     * One-shot Reticulum cold hydrate: destinations + messages for one identity.
-     * Prefer over separate getReticulumDestinations / getReticulumMessages round-trips.
-     */
-    getReticulumIdentityHydration: (
-      identityId: string,
-      messageLimit?: number,
-    ) => Promise<{ destinations: unknown[]; messages: unknown[] }>;
     searchReticulumMessages: (
       identityId: string,
       query: string,

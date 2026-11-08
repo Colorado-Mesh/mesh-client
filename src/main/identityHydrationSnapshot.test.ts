@@ -6,7 +6,6 @@ import { runSchemaUpgrade } from './db-schema-sync';
 import {
   readMeshcoreIdentityHydration,
   readMeshtasticIdentityHydration,
-  readReticulumIdentityHydration,
 } from './identityHydrationSnapshot';
 
 describe('identityHydrationSnapshot', () => {
@@ -60,21 +59,5 @@ describe('identityHydrationSnapshot', () => {
     expect(snap.contacts).toHaveLength(1);
     expect(snap.hopHistory).toHaveLength(1);
     expect(snap.messages.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('reads Reticulum destinations + messages in one snapshot', () => {
-    const d = openDb();
-    const hash = 'a'.repeat(32);
-    d.prepareOnce(
-      `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited)
-       VALUES (?, 'Peer', 1, 0)`,
-    ).run(hash);
-    d.prepareOnce(
-      `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp)
-       VALUES ('id-1', ?, 'Peer', 'hi', 10)`,
-    ).run(hash);
-    const snap = readReticulumIdentityHydration(d, 'id-1', 50);
-    expect(snap.destinations).toHaveLength(1);
-    expect(snap.messages).toHaveLength(1);
   });
 });

@@ -885,15 +885,13 @@ describe('hydrateIdentityStoresFromDb', () => {
 
   it('skips Reticulum destination rows with an unusable hash and keeps the valid ones', async () => {
     const validHash = 'a'.repeat(32);
-    vi.spyOn(window.electronAPI.db, 'getReticulumIdentityHydration').mockResolvedValue({
-      destinations: [
-        { destination_hash: validHash, display_name: 'Peer', last_heard: 1000 },
-        { destination_hash: null },
-        { destination_hash: 'not-a-hash' },
-        { destination_hash: 42 as unknown as string },
-      ],
-      messages: [],
-    });
+    vi.spyOn(window.electronAPI.db, 'getReticulumDestinations').mockResolvedValue([
+      { destination_hash: validHash, display_name: 'Peer', last_heard: 1000 },
+      { destination_hash: null },
+      { destination_hash: 'not-a-hash' },
+      { destination_hash: 42 as unknown as string },
+    ]);
+    vi.spyOn(window.electronAPI.db, 'getReticulumMessages').mockResolvedValue([]);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await hydrateIdentityStoresFromDb('reticulum', ID_RT);
@@ -906,10 +904,10 @@ describe('hydrateIdentityStoresFromDb', () => {
 
   it('normalizes uppercase Reticulum destination hashes', async () => {
     const upper = 'B'.repeat(32);
-    vi.spyOn(window.electronAPI.db, 'getReticulumIdentityHydration').mockResolvedValue({
-      destinations: [{ destination_hash: upper }],
-      messages: [],
-    });
+    vi.spyOn(window.electronAPI.db, 'getReticulumDestinations').mockResolvedValue([
+      { destination_hash: upper },
+    ]);
+    vi.spyOn(window.electronAPI.db, 'getReticulumMessages').mockResolvedValue([]);
 
     await hydrateIdentityStoresFromDb('reticulum', ID_RT);
 

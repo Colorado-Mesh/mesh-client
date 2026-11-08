@@ -1352,9 +1352,9 @@ export function useMeshcoreRuntime() {
           upsertMessageRecordsForIdentity(storeId, meshcoreHydratedMessageRecords(mapped));
         }
       }
-      if (opts?.hydrateMessages) {
-        // App post-prune MeshCore refresh skips when mount already wrote identity stores.
-        markMeshcoreColdStoreHydrated();
+      if (opts?.hydrateMessages && storeId) {
+        // App post-prune MeshCore refresh skips only for this identity bucket.
+        markMeshcoreColdStoreHydrated(storeId);
       }
     },
     [],

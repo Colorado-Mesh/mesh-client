@@ -202,7 +202,6 @@ export function createElectronAPIMock(): ElectronAPI {
         messages: [],
       }),
       listMeshcoreDmPeers: vi.fn().mockResolvedValue([]),
-      getReticulumIdentityHydration: vi.fn().mockResolvedValue({ destinations: [], messages: [] }),
       getReticulumMessages: vi.fn().mockResolvedValue([]),
       searchReticulumMessages: vi.fn().mockResolvedValue([]),
       deleteReticulumMessage: vi.fn().mockResolvedValue({ changes: 1 }),

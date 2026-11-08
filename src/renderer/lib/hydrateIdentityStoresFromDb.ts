@@ -123,6 +123,7 @@ export interface MessageClearRefreshOptions {
   clearedAll?: boolean;
 }
 
+/** Apply Meshtastic node rows (+ MeshCore hop overlays) into the identity node store. */
 function applyMeshtasticNodesFromRows(
   identityId: IdentityId,
   savedNodes: Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>,
@@ -137,6 +138,7 @@ function applyMeshtasticNodesFromRows(
   }
 }
 
+/** Apply Meshtastic SavedMessage rows into the identity message store (orphan-send dedupe). */
 function applyMeshtasticMessagesFromRows(
   identityId: IdentityId,
   msgs: Awaited<ReturnType<typeof window.electronAPI.db.getMessages>>,
@@ -207,6 +209,7 @@ export function mergeMeshcoreSavedHopRowsForHydration(
   return Array.from(byId.values());
 }
 
+/** Build hop rows for MeshCore node map from nodes-table + hop-history snapshot parts. */
 export function meshcoreSavedHopRowsFromHydrationParts(
   nodesTableRows: Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>,
   hopHistoryRows: readonly { node_id: number; hops: number | null }[],
@@ -227,6 +230,7 @@ export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSa
   return meshcoreSavedHopRowsFromHydrationParts(nodesTableRows, hopHistoryRows);
 }
 
+/** Fetch MeshCore contacts, hops, and fair message window in one IPC round-trip. */
 export async function loadMeshcoreIdentityHydrationSnapshot(): Promise<{
   contacts: MeshcoreContactDbRow[];
   savedNodes: MeshcoreSavedNodeHopRow[];
@@ -244,6 +248,7 @@ export async function loadMeshcoreIdentityHydrationSnapshot(): Promise<{
   };
 }
 
+/** Hydrate MeshCore node map from the combined identity snapshot (contacts + hops + msgs). */
 export async function hydrateMeshcoreNodesFromDb(
   identityId: IdentityId,
   nodesMode: 'upsert' | 'replace' = 'upsert',
@@ -300,6 +305,7 @@ export function replaceNodesMapInIdentityStore(
   );
 }
 
+/** Apply MeshCore DB message rows (with room repairs) into the identity message store. */
 function applyMeshcoreMessagesFromSnapshot(
   identityId: IdentityId,
   dbMsgs: MeshcoreMessageDbRow[],
@@ -346,6 +352,7 @@ type IdentityHydratorFn = (
   isCurrent: () => boolean,
 ) => Promise<void>;
 
+/** Meshtastic identity hydrator: batched snapshot when both slices load, else single-path. */
 async function hydrateMeshtasticIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -375,6 +382,7 @@ async function hydrateMeshtasticIdentity(
   }
 }
 
+/** MeshCore identity hydrator: one snapshot covers nodes and/or messages. */
 async function hydrateMeshcoreIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -404,6 +412,7 @@ async function hydrateMeshcoreIdentity(
   }
 }
 
+/** Map Reticulum destination rows into node records (skips invalid hashes). */
 async function applyReticulumDestinationRows(
   identityId: IdentityId,
   rows: {
@@ -440,6 +449,7 @@ async function applyReticulumDestinationRows(
   upsertNodeRecordsForIdentity(identityId, records);
 }
 
+/** Reticulum identity hydrator: destinations + messages (parallel existing IPCs). */
 function hydrateReticulumIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -448,68 +458,47 @@ function hydrateReticulumIdentity(
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   return (async () => {
-    if (loadNodes && loadMessages) {
-      try {
-        const snap = await window.electronAPI.db.getReticulumIdentityHydration(identityId, 500);
-        await applyReticulumDestinationRows(
-          identityId,
-          snap.destinations as {
-            destination_hash: string;
-            display_name?: string | null;
-            last_heard?: number | null;
-            favorited?: number | null;
-          }[],
-          isCurrent,
-        );
-        if (!isCurrent()) return;
-        replaceMessageRecordsForIdentity(
-          identityId,
-          (
-            snap.messages as {
+    const tasks: Promise<void>[] = [];
+    if (loadNodes) {
+      tasks.push(
+        (async () => {
+          try {
+            const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
+              destination_hash: string;
+              display_name?: string | null;
+              last_heard?: number | null;
+              favorited?: number | null;
+            }[];
+            await applyReticulumDestinationRows(identityId, rows, isCurrent);
+          } catch (e) {
+            console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
+          }
+        })(),
+      );
+    }
+    if (loadMessages) {
+      tasks.push(
+        (async () => {
+          try {
+            const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
               sender_id: string;
               sender_name?: string;
               payload: string;
               timestamp: number;
               to_hash?: string;
-            }[]
-          ).map((row) => reticulumDbRowToMessageRecord(row)),
-        );
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] batch ' + errLikeToLogString(e));
-      }
-      return;
+            }[];
+            if (!isCurrent()) return;
+            replaceMessageRecordsForIdentity(
+              identityId,
+              rows.map((row) => reticulumDbRowToMessageRecord(row)),
+            );
+          } catch (e) {
+            console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
+          }
+        })(),
+      );
     }
-    if (loadNodes) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
-          destination_hash: string;
-          display_name?: string | null;
-          last_heard?: number | null;
-          favorited?: number | null;
-        }[];
-        await applyReticulumDestinationRows(identityId, rows, isCurrent);
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
-      }
-    }
-    if (loadMessages) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
-          sender_id: string;
-          sender_name?: string;
-          payload: string;
-          timestamp: number;
-          to_hash?: string;
-        }[];
-        if (!isCurrent()) return;
-        replaceMessageRecordsForIdentity(
-          identityId,
-          rows.map((row) => reticulumDbRowToMessageRecord(row)),
-        );
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
-      }
-    }
+    await Promise.all(tasks);
   })();
 }
 

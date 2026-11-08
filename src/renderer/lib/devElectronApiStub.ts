@@ -140,7 +140,6 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         messages: [],
       }),
       listMeshcoreDmPeers: async () => [],
-      getReticulumIdentityHydration: async () => ({ destinations: [], messages: [] }),
       getReticulumMessages: async () => [],
       clearReticulumMessages: async () => ({ changes: 0 }),
       clearReticulumContactDestinations: async () => ({ changes: 0 }),

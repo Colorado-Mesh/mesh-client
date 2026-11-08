@@ -30,6 +30,7 @@ function ipcHandlerBody(channel: string, span = 400): string {
     TAK_IPC_SOURCE,
     GPS_IPC_SOURCE,
     readFileSync(join(__dirname, 'ipc/ai-handlers.ts'), 'utf8'),
+    readFileSync(join(__dirname, 'identityHydrationSnapshot.ts'), 'utf8'),
   ]) {
     const markers = [
       `ipcMain.handle('${channel}'`,
