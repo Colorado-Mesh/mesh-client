@@ -3112,6 +3112,11 @@
 <td>Same, gated by <code>operationalAlerts.ts</code></td>
 </tr>
 <tr>
+<td>Diagnostics error (<code>diagnosticError</code>)</td>
+<td>Rising triple (alert-style)</td>
+<td>Opt-in via App → ops alerts (<code>useDiagnosticSeverityAlerts</code>)</td>
+</tr>
+<tr>
 <td>RRC room messages, mentions and whispers</td>
 <td>Reuses channel/reply/DM categories</td>
 <td><code>rrcInactiveNotifications.ts</code></td>
@@ -3183,7 +3188,7 @@
 <p>Sources: <a href="https://www.electronjs.org/docs/latest/api/notification">Electron Notification</a>, <a href="https://www.electronjs.org/docs/latest/api/dialog">Electron Dialog</a>, <a href="https://learn.microsoft.com/en-us/uwp/schemas/tiles/toastschema/element-audio">Windows toast audio</a>, <a href="https://specifications.freedesktop.org/notification/latest-single/">Desktop Notifications</a>.</p>
 <p>Keep a single Web Audio owner for chat/MECP. Adding a second native sound path would risk two sounds per event and different behavior when the app is focused. This change adds flexibility there first; watched-node/update OS notifications and the voice-call state machine remain separate follow-up work.</p>
 <h2 id="controls">Controls<a class="headerlink" href="#controls" title="Permanent link">&para;</a></h2>
-<p><strong>App → Notifications → Notification tones</strong> provides an independent selection for channel messages, DMs, replies/mentions, each of the four MECP severities, and the operational alerts (radio link lost, node battery low). DM settings also apply to game notifications and RRC whispers; RRC mentions use the reply setting.</p>
+<p><strong>App → Notifications → Notification tones</strong> provides an independent selection for channel messages, DMs, replies/mentions, each of the four MECP severities, and the operational alerts (radio link lost, node battery low, diagnostics error). DM settings also apply to game notifications and RRC whispers; RRC mentions use the reply setting.</p>
 <p>Each row offers the original sound, four additional presets, <strong>Choose file</strong>, <strong>Preview/Stop</strong>, volume, and <strong>Reset</strong>. Existing users retain their original sounds until they choose another. Preview is an explicit playback action even when notifications are muted. MAYDAY and URGENT retain mute bypass and a 10% minimum volume; this cannot override a muted output device or guarantee that a custom recording is audible.</p>
 <p>The native file chooser starts in the installed sound directory when it exists: <code>/System/Library/Sounds</code> on macOS, <code>%WINDIR%/Media</code> on Windows, <code>/usr/share/sounds</code> on Linux. Linux portal versions below 4 may ignore the starting directory. Users can navigate to any accessible audio file. This imports a copy; it neither changes OS sound settings nor tracks later sound-theme changes.</p>
 <p>Prefer WAV, Ogg, FLAC, or MP3 for portable custom tones. The Linux chooser offers these formats; it omits AAC and M4A because decoding support varies between Linux Chromium builds. Windows and macOS still offer AAC/M4A, subject to import validation.</p>
@@ -3220,7 +3225,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 28, 2026 15:59:15 UTC">September 28, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 20:19:41 UTC">November 8, 2026</span>
   </span>
 
     

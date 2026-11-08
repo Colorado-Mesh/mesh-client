@@ -3224,12 +3224,13 @@
 <p>If ever revisited, it needs at least: a dedicated ≥10s <code>ALERT_APP</code> pacer covering compose, outbox drain, ACK/beacon, and rebroadcast; a send result that re-queues to the emergency outbox on timeout; and a classifier limited to severity 0/1 that excludes R/B control codes and drills.</p>
 <h2 id="rf-rebroadcast-default-off">RF rebroadcast (default off)<a class="headerlink" href="#rf-rebroadcast-default-off" title="Permanent link">&para;</a></h2>
 <ul>
-<li>App → MECP section: rules <code>{ enabled, bidirectional, endpointA, endpointB }</code> (Meshtastic/MeshCore channel indices 0–7)</li>
+<li>App → MECP section: rules <code>{ enabled, bidirectional, endpointA, endpointB }</code> (Meshtastic/MeshCore channel indices 0–7, or Reticulum LXMF peer / RRC hub+room)</li>
 <li>One-way <strong>A→B</strong> by default; <strong>Bidirectional</strong> toggle enables B→A</li>
 <li>Trigger: new inbound MECP with <code>receivedVia</code> <code>rf</code>/<code>both</code> (not mqtt-only); skip own/history/drill</li>
+<li><strong>Reticulum sources:</strong> LXMF DMs via <code>messageStore</code> + <code>useMecpAlertWatcher</code>; RRC room <code>msg</code> lines via <code>handleRrcMecpInbound</code> (<code>rrcMecpInbound.ts</code>) because RRC chat lives in <code>rrcSessionStore</code></li>
 <li>Loop guard: payload+dest fingerprint TTL</li>
-<li>After each successful bridge send: short follow-up notice <code>MECP from &lt;sender&gt; via &lt;Meshtastic|MeshCore&gt; (&lt;channel name&gt;)</code> (not a wire MECP; channel <strong>name</strong>, not index)</li>
-<li>Implementation: <code>mecpRebroadcast.ts</code> + <code>sendMecpRebroadcast.ts</code></li>
+<li>After each successful bridge send: short follow-up notice <code>MECP from &lt;sender&gt; via &lt;Meshtastic|MeshCore|Reticulum&gt; (&lt;channel or room name&gt;)</code> (not a wire MECP)</li>
+<li>Implementation: <code>mecpRebroadcast.ts</code> + <code>sendMecpRebroadcast.ts</code> + <code>rrcMecpInbound.ts</code></li>
 </ul>
 <h2 id="incident-command">Incident Command<a class="headerlink" href="#incident-command" title="Permanent link">&para;</a></h2>
 <p>Inbound MECP feeds the always-visible <strong>Incident</strong> tab (SQLite-backed <code>incidentStore</code> with a preserved localStorage recovery cache, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See <a href="../emcomm/">emcomm.md</a>.</p>
@@ -3254,7 +3255,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 1, 2026 16:11:05 UTC">November 1, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 20:19:41 UTC">November 8, 2026</span>
   </span>
 
     

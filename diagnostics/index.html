@@ -4455,6 +4455,7 @@
 <p><strong>Where diagnostics appear:</strong></p>
 <ul>
 <li><strong>DiagnosticsPanel</strong> (Monitor &gt; Diagnostics): network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart</li>
+<li><strong>Optional severity alerts:</strong> App → ops alerts → <strong>Notify on new diagnostics errors</strong> (<code>notifyOnDiagnosticErrors</code>, default off) fires a desktop notification + <code>diagnosticError</code> sound for new error-severity rows on the active protocol (<code>useDiagnosticSeverityAlerts</code>)</li>
 <li><strong>NodeDetailModal</strong>: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle</li>
 <li><strong>NodeListPanel</strong>: inline anomaly badges, redundancy <code>+N</code> echo count, MQTT-only node dimming, Node Health Score badge, JSON export</li>
 <li><strong>MapPanel</strong>: channel utilization halos, routing anomaly aura circles</li>
@@ -5411,7 +5412,8 @@
 <hr />
 <h4 id="channel-utilization-spike">Channel Utilization Spike<a class="headerlink" href="#channel-utilization-spike" title="Permanent link">&para;</a></h4>
 <p><strong>Trigger:</strong> Current <code>channel_utilization &gt; 2×</code> 30-minute rolling average, with gates: ≥ 12 samples, ≥ 30-minute span, rolling average ≥ 1%. 15-minute cooldown per node before re-firing.</p>
-<p><strong>Mechanism:</strong> The detector maintains a rolling 24-hour history of <code>channel_utilization</code> samples in <code>diagnosticsStore.cuHistory</code> (entries from LocalStats / device-metrics telemetry and NodeInfo updates via <code>processNodeUpdate</code>). <code>computeCuStats24h</code> computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (<code>cuSpikeLastFired</code> map in <code>RFDiagnosticEngine</code>) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by <code>clearDiagnostics()</code>.</p>
+<p><strong>Mechanism:</strong> The detector maintains a rolling 24-hour history of <code>channel_utilization</code> samples in <code>diagnosticsStore.cuHistory</code> (entries from LocalStats / device-metrics telemetry and NodeInfo updates via <code>processNodeUpdate</code>). Samples are <strong>persisted</strong> to <code>localStorage</code> (<code>mesh-client:cuHistorySnapshot</code>, debounced) so the 24h chart and spike baseline survive app restarts; <code>clearDiagnostics()</code> wipes the snapshot. Disable with <code>localStorage</code> key <code>mesh-client:cuHistoryPersistEnabled=0</code>. <code>computeCuStats24h</code> computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (<code>cuSpikeLastFired</code> map in <code>RFDiagnosticEngine</code>) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by <code>clearDiagnostics()</code>.</p>
+<p><strong>Reliability proxies (not ACK PDR):</strong> Node detail shows Meshtastic <strong>echo reliability</strong> (<code>1 − duplicates/total</code> from session <code>packetStats</code>, ≥10 samples) and MeshCore <strong>path reliability</strong> (Laplace-smoothed success/failure from <code>pathHistoryStore</code>). Labels avoid claiming end-to-end delivery ratio.</p>
 <p><strong>Fields:</strong> Current <code>channel_utilization</code> vs. stored per-node <code>CuSample[]</code> history in diagnosticsStore.</p>
 <p><strong>Common sources:</strong> Sudden network event (new repeater powered on, MQTT downlink storm, firmware retransmission loop); external interference source that just came online; a scheduled transmitter on a recurring duty cycle.</p>
 <p><strong>Mitigation:</strong> Determine whether the spike is sustained or transient. If sustained, treat as mesh congestion or external interference. If it correlates with a time pattern, a scheduled transmitter may be nearby.</p>
@@ -5609,7 +5611,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 20:19:41 UTC">November 8, 2026</span>
   </span>
 
     
