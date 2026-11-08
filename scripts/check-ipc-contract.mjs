@@ -25,6 +25,8 @@ const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'index.ts'),
   path.join(ROOT, 'src', 'main', 'updater.ts'),
   path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
+  // Sibling-loaded identity hydration IPC (built as identity-hydration.js).
+  path.join(ROOT, 'src', 'main', 'identityHydrationSnapshot.ts'),
   ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
 ];
 

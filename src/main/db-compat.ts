@@ -181,6 +181,7 @@ export class NodeSqliteDB {
       'busy_timeout',
       'user_version',
       'foreign_keys',
+      'mmap_size',
     ]);
     const eqIdx = str.indexOf('=');
     if (eqIdx !== -1) {

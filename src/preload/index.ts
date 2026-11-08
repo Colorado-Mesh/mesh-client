@@ -311,6 +311,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getMessages: (channel?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMessages', channel, limit),
+    getMeshtasticIdentityHydration: (messageLimit?: number) =>
+      ipcRenderer.invoke('db:getMeshtasticIdentityHydration', messageLimit),
     listMeshtasticDmPeers: (ownNodeId: number, limit?: number) =>
       ipcRenderer.invoke('db:listMeshtasticDmPeers', ownNodeId, limit),
 
@@ -427,6 +429,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       perChannelLimit?: number;
       roomLimit?: number;
     }) => ipcRenderer.invoke('db:getMeshcoreMessagesForHydration', limits),
+    getMeshcoreIdentityHydration: (limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    }) => ipcRenderer.invoke('db:getMeshcoreIdentityHydration', limits),
     listMeshcoreDmPeers: (ownNodeId: number, limit?: number) =>
       ipcRenderer.invoke('db:listMeshcoreDmPeers', ownNodeId, limit),
     searchMessages: (query: string, limit?: number) =>

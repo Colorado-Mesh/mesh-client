@@ -685,6 +685,12 @@ vi.mock('../preload', () => ({
         getMeshcoreContacts: vi.fn().mockResolvedValue([]),
         getMeshcoreMessages: vi.fn().mockResolvedValue([]),
         getMeshcoreMessagesForHydration: vi.fn().mockResolvedValue([]),
+        getMeshcoreIdentityHydration: vi.fn().mockResolvedValue({
+          contacts: [],
+          nodes: [],
+          hopHistory: [],
+          messages: [],
+        }),
         saveMeshcoreMessage: vi.fn(),
         saveMeshcoreContact: vi.fn(),
         clearMeshcoreContacts: vi.fn(),

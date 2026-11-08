@@ -287,7 +287,7 @@ async function connectConfiguredRuntime() {
   const { result } = renderHook(() => useMeshcoreRuntime());
 
   await waitFor(() => {
-    expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+    expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
   });
 
   await act(async () => {
@@ -334,7 +334,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
   });
 
   it('sends a synthesized [relayPrefix, destPrefix] path for a 1-hop target with a known 0-hop repeater', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
+    const contacts = [
       makeRepeaterContactRow({
         nodeId: RELAY_NODE_ID,
         pubKeyHex: RELAY_PUBKEY_HEX,
@@ -347,7 +347,13 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
         hopsAway: 1,
         advName: 'DEN-LYONS-RBTMT-RC-0700',
       }),
-    ]);
+    ];
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts,
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
     getContactsMock.mockResolvedValue([
       makeRadioContact(RELAY_PUBKEY, 'FNL-LONGM-NV0N-RE-0647'),
       makeRadioContact(REMOTE_PUBKEY, 'DEN-LYONS-RBTMT-RC-0700'),
@@ -380,14 +386,19 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
   });
 
   it('fast-fails pingNoRoute when no 0-hop repeater relay is known for 1-hop', async () => {
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
-      makeRepeaterContactRow({
-        nodeId: REMOTE_NODE_ID,
-        pubKeyHex: REMOTE_PUBKEY_HEX,
-        hopsAway: 1,
-        advName: 'DEN-LYONS-RBTMT-RC-0700',
-      }),
-    ]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        makeRepeaterContactRow({
+          nodeId: REMOTE_NODE_ID,
+          pubKeyHex: REMOTE_PUBKEY_HEX,
+          hopsAway: 1,
+          advName: 'DEN-LYONS-RBTMT-RC-0700',
+        }),
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
     getContactsMock.mockResolvedValue([makeRadioContact(REMOTE_PUBKEY, 'DEN-LYONS-RBTMT-RC-0700')]);
 
     const result = await connectConfiguredRuntime();

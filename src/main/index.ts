@@ -5610,6 +5610,33 @@ ipcMain.handle(
   },
 );
 
+/** Production ships `identity-hydration.js` beside index.js (out of measured budget). */
+void (async () => {
+  const mod = (
+    process.env.VITEST
+      ? await import('./identityHydrationSnapshot')
+      : await import(pathToFileURL(path.join(__dirname, 'identity-hydration.js')).href)
+  ) as {
+    registerIdentityHydrationIpcHandlers: (deps: {
+      ipcMain: typeof ipcMain;
+      assertIpcSender: typeof assertIpcSender;
+      getDbForIpc: typeof getDbForIpc;
+      finishDbIpcHandler: typeof finishDbIpcHandler;
+    }) => void;
+  };
+  mod.registerIdentityHydrationIpcHandlers({
+    ipcMain,
+    assertIpcSender,
+    getDbForIpc,
+    finishDbIpcHandler,
+  });
+})().catch((err: unknown) => {
+  console.error(
+    '[main] identity hydration IPC register failed:',
+    sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+  );
+});
+
 ipcMain.handle('db:searchMessages', (event, query: string, limit?: number) => {
   try {
     assertIpcSender(event, 'db:searchMessages');
@@ -6963,61 +6990,6 @@ void app
         }),
       );
 
-      // Auto-restore TAK server if auto-start is enabled
-      const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
-      try {
-        if (fs.existsSync(takSettingsPath)) {
-          const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
-          // Backfill autoStart for settings files saved before the field was added.
-          if (
-            raw != null &&
-            typeof raw === 'object' &&
-            typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
-          ) {
-            (raw as Record<string, unknown>).autoStart = false;
-          }
-          const saved = raw;
-          validateTakSettings(saved);
-          if (saved.autoStart) {
-            void ensureTakServerManager()
-              .then((m) => m.start(saved))
-              .catch((e: unknown) => {
-                console.error(
-                  '[TAK] Auto-start failed:',
-                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-                );
-              });
-          }
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[TAK] Settings restore failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-
-      // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified or
-      // unencrypted relay is only started by hand, so a hand-edited settings file cannot make it
-      // connect at launch.
-      try {
-        const remoteSettings = loadTakRemoteSettings();
-        if (remoteSettings?.autoConnect && canAutoConnectTakRemote(remoteSettings)) {
-          void ensureTakServerManager()
-            .then((m) => m.startRemote(remoteSettings))
-            .catch((e: unknown) => {
-              console.error(
-                '[TAK] Remote relay auto-connect failed:',
-                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-              );
-            });
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[TAK] Remote relay settings restore failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-
       // Force the dock icon in development on macOS
       if (!app.isPackaged && process.platform === 'darwin') {
         const iconPath = path.join(
@@ -7026,7 +6998,65 @@ void app
         );
         app.dock?.setIcon(iconPath);
       }
+      // Window first — TAK restore is not required for first paint.
       createWindow();
+
+      // Auto-restore TAK after window so sync FS/JSON does not delay createWindow.
+      setImmediate(() => {
+        const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
+        try {
+          if (fs.existsSync(takSettingsPath)) {
+            const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+            // Backfill autoStart for settings files saved before the field was added.
+            if (
+              raw != null &&
+              typeof raw === 'object' &&
+              typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
+            ) {
+              (raw as Record<string, unknown>).autoStart = false;
+            }
+            const saved = raw;
+            validateTakSettings(saved);
+            if (saved.autoStart) {
+              void ensureTakServerManager()
+                .then((m) => m.start(saved))
+                .catch((e: unknown) => {
+                  console.error(
+                    '[TAK] Auto-start failed:',
+                    sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                  );
+                });
+            }
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[TAK] Settings restore failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+
+        // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified or
+        // unencrypted relay is only started by hand, so a hand-edited settings file cannot make it
+        // connect at launch.
+        try {
+          const remoteSettings = loadTakRemoteSettings();
+          if (remoteSettings?.autoConnect && canAutoConnectTakRemote(remoteSettings)) {
+            void ensureTakServerManager()
+              .then((m) => m.startRemote(remoteSettings))
+              .catch((e: unknown) => {
+                console.error(
+                  '[TAK] Remote relay auto-connect failed:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
+              });
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[TAK] Remote relay settings restore failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+      });
 
       rendererHeartbeatWatchdog.startStallWatchdog(() => {
         const win = mainWindow;

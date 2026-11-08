@@ -332,9 +332,13 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue(
-      messagesFromDb,
-    );
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [contactRow],
+      nodes: [],
+      hopHistory: [],
+      messages: messagesFromDb,
+    });
+    // Connect-time pubkey backfill still reads contacts via the dedicated IPC.
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([contactRow]);
   }
 
@@ -399,7 +403,7 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(window.electronAPI.db.getMeshcoreMessagesForHydration).toHaveBeenCalled();
+      expect(window.electronAPI.db.getMeshcoreIdentityHydration).toHaveBeenCalled();
     });
 
     await act(async () => {

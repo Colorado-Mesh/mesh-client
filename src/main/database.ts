@@ -131,6 +131,8 @@ export function initDatabase(): void {
     db.pragma('synchronous = NORMAL');
     db.pragma('busy_timeout = 5000');
     db.pragma('foreign_keys = ON');
+    // Larger mmap helps cold hydrate reads; keep modest for constrained hosts.
+    db.pragma('mmap_size = 268435456');
 
     const setup = db.transaction(() => {
       const cur = db!.pragma('user_version', { simple: true }) as number;

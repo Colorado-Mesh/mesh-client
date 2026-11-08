@@ -22,36 +22,39 @@ describe('useProtocolDbRefresh', () => {
   });
 
   it('refreshAllFromDb loads Meshtastic store slice', async () => {
-    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([
-      {
-        node_id: 9,
-        long_name: 'Node9',
-        short_name: 'N9',
-        hw_model: 'Heltec',
-        battery: 50,
-        snr: 0,
-        rssi: -90,
-        last_heard: 1,
-        latitude: null,
-        longitude: null,
-        role: null,
-        hops_away: null,
-        via_mqtt: null,
-        voltage: null,
-        channel_utilization: null,
-        air_util_tx: null,
-        altitude: null,
-        favorited: 0,
-        source: 'rf',
-        num_packets_rx_bad: null,
-        num_rx_dupe: null,
-        num_packets_rx: null,
-        num_packets_tx: null,
-        hops: null,
-        path: null,
-      },
-    ]);
-    vi.spyOn(window.electronAPI.db, 'getMessages').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshtasticIdentityHydration').mockResolvedValue({
+      nodes: [
+        {
+          node_id: 9,
+          long_name: 'Node9',
+          short_name: 'N9',
+          hw_model: 'Heltec',
+          battery: 50,
+          snr: 0,
+          rssi: -90,
+          last_heard: 1,
+          latitude: null,
+          longitude: null,
+          role: null,
+          hops_away: null,
+          via_mqtt: null,
+          voltage: null,
+          channel_utilization: null,
+          air_util_tx: null,
+          altitude: null,
+          favorited: 0,
+          source: 'rf',
+          num_packets_rx_bad: null,
+          num_rx_dupe: null,
+          num_packets_rx: null,
+          num_packets_tx: null,
+          hops: null,
+          path: null,
+        },
+      ],
+      meshcoreContacts: [],
+      messages: [],
+    });
 
     const { result } = renderHook(() => useProtocolDbRefresh('meshtastic', ID));
     await result.current.refreshAllFromDb();
@@ -80,23 +83,26 @@ describe('useProtocolDbRefresh', () => {
   });
 
   it('refreshMessagesFromDb loads MeshCore messages only', async () => {
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
-    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessagesForHydration').mockResolvedValue([
-      {
-        id: 1,
-        sender_id: 0x11,
-        sender_name: 'X',
-        payload: 'test',
-        channel_idx: 0,
-        timestamp: 100,
-        status: 'acked',
-        packet_id: null,
-        emoji: null,
-        reply_id: null,
-        to_node: null,
-      },
-    ]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreIdentityHydration').mockResolvedValue({
+      contacts: [],
+      nodes: [],
+      hopHistory: [],
+      messages: [
+        {
+          id: 1,
+          sender_id: 0x11,
+          sender_name: 'X',
+          payload: 'test',
+          channel_idx: 0,
+          timestamp: 100,
+          status: 'acked',
+          packet_id: null,
+          emoji: null,
+          reply_id: null,
+          to_node: null,
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useProtocolDbRefresh('meshcore', ID));
     await result.current.refreshMessagesFromDb();

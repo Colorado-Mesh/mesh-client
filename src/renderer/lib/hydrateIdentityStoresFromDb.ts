@@ -123,6 +123,45 @@ export interface MessageClearRefreshOptions {
   clearedAll?: boolean;
 }
 
+/** Apply Meshtastic node rows (+ MeshCore hop overlays) into the identity node store. */
+function applyMeshtasticNodesFromRows(
+  identityId: IdentityId,
+  savedNodes: Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>,
+  meshcoreContacts: { node_id: number; hops_away: number | null }[],
+  nodesMode: 'upsert' | 'replace',
+): void {
+  const nodeMap = buildMeshtasticNodeMapFromDbRows(savedNodes, meshcoreContacts);
+  if (nodesMode === 'replace') {
+    replaceNodesMapInIdentityStore(identityId, nodeMap);
+  } else {
+    syncNodesMapToIdentityStore(identityId, nodeMap);
+  }
+}
+
+/** Apply Meshtastic SavedMessage rows into the identity message store (orphan-send dedupe). */
+function applyMeshtasticMessagesFromRows(
+  identityId: IdentityId,
+  msgs: Awaited<ReturnType<typeof window.electronAPI.db.getMessages>>,
+  messagesMode: 'upsert' | 'replace',
+): void {
+  const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
+  const reversed = sanitized.toReversed();
+  const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
+  const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
+  if (messagesMode === 'replace') {
+    replaceMessageRecordsForIdentity(identityId, records);
+  } else {
+    upsertMessageRecordsForIdentity(identityId, records);
+  }
+  for (const msg of trimmed) {
+    if (msg.sender_id <= 0) continue;
+    ensureMeshtasticChatSenderInNodeStore(identityId, msg.sender_id, {
+      lastHeardAt: msg.timestamp,
+      source: msg.receivedVia === 'mqtt' ? 'mqtt' : 'rf',
+    });
+  }
+}
+
 export async function hydrateMeshtasticNodesFromDb(
   identityId: IdentityId,
   nodesMode: 'upsert' | 'replace' = 'upsert',
@@ -144,22 +183,7 @@ export async function hydrateMeshtasticMessagesFromDb(
 ): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
   if (isCurrent && !isCurrent()) return;
-  const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
-  const reversed = sanitized.toReversed();
-  const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
-  const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
-  if (messagesMode === 'replace') {
-    replaceMessageRecordsForIdentity(identityId, records);
-  } else {
-    upsertMessageRecordsForIdentity(identityId, records);
-  }
-  for (const msg of trimmed) {
-    if (msg.sender_id <= 0) continue;
-    ensureMeshtasticChatSenderInNodeStore(identityId, msg.sender_id, {
-      lastHeardAt: msg.timestamp,
-      source: msg.receivedVia === 'mqtt' ? 'mqtt' : 'rf',
-    });
-  }
+  applyMeshtasticMessagesFromRows(identityId, msgs, messagesMode);
 }
 
 /** Merge nodes-table hop stubs with meshcore_hop_history for hydration backfill. */
@@ -185,11 +209,11 @@ export function mergeMeshcoreSavedHopRowsForHydration(
   return Array.from(byId.values());
 }
 
-export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSavedNodeHopRow[]> {
-  const [nodesTableRows, hopHistoryRows] = await Promise.all([
-    window.electronAPI.db.getNodes(),
-    window.electronAPI.db.getAllMeshcoreHopHistory(),
-  ]);
+/** Build hop rows for MeshCore node map from nodes-table + hop-history snapshot parts. */
+export function meshcoreSavedHopRowsFromHydrationParts(
+  nodesTableRows: Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>,
+  hopHistoryRows: readonly { node_id: number; hops: number | null }[],
+): MeshcoreSavedNodeHopRow[] {
   const hopRows: MeshcoreSavedNodeHopRow[] = nodesTableRows.map((row) => ({
     node_id: row.node_id,
     hops_away: row.hops_away ?? null,
@@ -198,18 +222,41 @@ export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSa
   return mergeMeshcoreSavedHopRowsForHydration(hopRows, hopHistoryRows);
 }
 
+export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSavedNodeHopRow[]> {
+  const [nodesTableRows, hopHistoryRows] = await Promise.all([
+    window.electronAPI.db.getNodes(),
+    window.electronAPI.db.getAllMeshcoreHopHistory(),
+  ]);
+  return meshcoreSavedHopRowsFromHydrationParts(nodesTableRows, hopHistoryRows);
+}
+
+/** Fetch MeshCore contacts, hops, and fair message window in one IPC round-trip. */
+export async function loadMeshcoreIdentityHydrationSnapshot(): Promise<{
+  contacts: MeshcoreContactDbRow[];
+  savedNodes: MeshcoreSavedNodeHopRow[];
+  messages: MeshcoreMessageDbRow[];
+}> {
+  const snap = await window.electronAPI.db.getMeshcoreIdentityHydration({
+    globalLimit: MESHCORE_DB_MESSAGE_LOAD_LIMIT,
+    perChannelLimit: MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
+    roomLimit: MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+  });
+  return {
+    contacts: snap.contacts as MeshcoreContactDbRow[],
+    savedNodes: meshcoreSavedHopRowsFromHydrationParts(snap.nodes, snap.hopHistory),
+    messages: snap.messages as MeshcoreMessageDbRow[],
+  };
+}
+
+/** Hydrate MeshCore node map from the combined identity snapshot (contacts + hops + msgs). */
 export async function hydrateMeshcoreNodesFromDb(
   identityId: IdentityId,
   nodesMode: 'upsert' | 'replace' = 'upsert',
   isCurrent?: () => boolean,
 ): Promise<void> {
-  const [rows, savedNodes] = await Promise.all([
-    window.electronAPI.db.getMeshcoreContacts(),
-    loadMeshcoreSavedHopRowsForHydration(),
-  ]);
-  const dbMsgs = await loadMeshcoreMessagesForHydration();
-  const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
-  const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
+  const snap = await loadMeshcoreIdentityHydrationSnapshot();
+  const mapped = mapMeshcoreDbRowsToChatMessages(snap.messages);
+  const nodeMap = buildMeshcoreNodeMapFromDb(snap.contacts, snap.savedNodes, mapped);
   if (isCurrent && !isCurrent()) return;
   if (nodesMode === 'replace') {
     replaceNodesMapInIdentityStore(identityId, nodeMap);
@@ -258,24 +305,20 @@ export function replaceNodesMapInIdentityStore(
   );
 }
 
-export async function hydrateMeshcoreMessagesFromDb(
+/** Apply MeshCore DB message rows (with room repairs) into the identity message store. */
+function applyMeshcoreMessagesFromSnapshot(
   identityId: IdentityId,
-  messagesMode: 'upsert' | 'replace' = 'upsert',
-  isCurrent?: () => boolean,
-): Promise<void> {
-  const [dbMsgs, contactRows] = await Promise.all([
-    loadMeshcoreMessagesForHydration(),
-    window.electronAPI.db.getMeshcoreContacts(),
-  ]);
-  if (isCurrent && !isCurrent()) return;
-  const rows = dbMsgs;
-  const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows as MeshcoreContactDbRow[]);
+  dbMsgs: MeshcoreMessageDbRow[],
+  contactRows: MeshcoreContactDbRow[],
+  messagesMode: 'upsert' | 'replace',
+): void {
+  const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows);
   const mapped = repairMeshcoreHydratedMessages(
-    mapMeshcoreDbRowsToChatMessages(rows),
+    mapMeshcoreDbRowsToChatMessages(dbMsgs),
     roomServerIds,
     loadPersistedMeshcoreSelfNodeId(),
   );
-  void Promise.resolve(persistMeshcoreMessageSenderRepairs(rows, mapped)).catch((e: unknown) => {
+  void Promise.resolve(persistMeshcoreMessageSenderRepairs(dbMsgs, mapped)).catch((e: unknown) => {
     console.warn(
       '[hydrateMeshcoreMessagesFromDb] sender repair persist failed ' + errLikeToLogString(e),
     );
@@ -293,12 +336,23 @@ export async function hydrateMeshcoreMessagesFromDb(
   }
 }
 
+export async function hydrateMeshcoreMessagesFromDb(
+  identityId: IdentityId,
+  messagesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
+): Promise<void> {
+  const snap = await loadMeshcoreIdentityHydrationSnapshot();
+  if (isCurrent && !isCurrent()) return;
+  applyMeshcoreMessagesFromSnapshot(identityId, snap.messages, snap.contacts, messagesMode);
+}
+
 type IdentityHydratorFn = (
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
   isCurrent: () => boolean,
 ) => Promise<void>;
 
+/** Meshtastic identity hydrator: batched snapshot when both slices load, else single-path. */
 async function hydrateMeshtasticIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -309,10 +363,18 @@ async function hydrateMeshtasticIdentity(
   const messagesMode = opts.messagesMode ?? 'upsert';
   const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
-    await Promise.all([
-      hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent),
-      hydrateMeshtasticMessagesFromDb(identityId, messagesMode, isCurrent),
-    ]);
+    const snap = await window.electronAPI.db.getMeshtasticIdentityHydration(
+      getMeshtasticMessageLoadLimit(),
+    );
+    if (!isCurrent()) return;
+    applyMeshtasticNodesFromRows(
+      identityId,
+      snap.nodes,
+      snap.meshcoreContacts as { node_id: number; hops_away: number | null }[],
+      nodesMode,
+    );
+    if (!isCurrent()) return;
+    applyMeshtasticMessagesFromRows(identityId, snap.messages, messagesMode);
   } else if (loadNodes) {
     await hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
@@ -320,6 +382,7 @@ async function hydrateMeshtasticIdentity(
   }
 }
 
+/** MeshCore identity hydrator: one snapshot covers nodes and/or messages. */
 async function hydrateMeshcoreIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -329,18 +392,64 @@ async function hydrateMeshcoreIdentity(
   const loadMessages = opts.messages !== false;
   const messagesMode = opts.messagesMode ?? 'upsert';
   const nodesMode = opts.nodesMode ?? 'upsert';
-  if (loadNodes && loadMessages) {
-    await Promise.all([
-      hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent),
-      hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent),
-    ]);
-  } else if (loadNodes) {
-    await hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent);
-  } else if (loadMessages) {
-    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent);
+  if (loadNodes || loadMessages) {
+    const snap = await loadMeshcoreIdentityHydrationSnapshot();
+    if (!isCurrent()) return;
+    if (loadNodes) {
+      const mapped = mapMeshcoreDbRowsToChatMessages(snap.messages);
+      const nodeMap = buildMeshcoreNodeMapFromDb(snap.contacts, snap.savedNodes, mapped);
+      if (!isCurrent()) return;
+      if (nodesMode === 'replace') {
+        replaceNodesMapInIdentityStore(identityId, nodeMap);
+      } else {
+        syncNodesMapToIdentityStore(identityId, nodeMap);
+      }
+    }
+    if (loadMessages) {
+      if (!isCurrent()) return;
+      applyMeshcoreMessagesFromSnapshot(identityId, snap.messages, snap.contacts, messagesMode);
+    }
   }
 }
 
+/** Map Reticulum destination rows into node records (skips invalid hashes). */
+async function applyReticulumDestinationRows(
+  identityId: IdentityId,
+  rows: {
+    destination_hash: string;
+    display_name?: string | null;
+    last_heard?: number | null;
+    favorited?: number | null;
+  }[],
+  isCurrent: () => boolean,
+): Promise<void> {
+  if (!isCurrent()) return;
+  const { reticulumHashToNodeId, registerReticulumDestinationHash } =
+    await import('./reticulum/destHash');
+  const records: NodeRecord[] = [];
+  for (const row of rows) {
+    // A row without a canonical hash cannot be keyed or displayed; skipping it
+    // keeps one bad SQLite row from failing the whole hydration pass.
+    const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
+    if (!destinationHash) {
+      console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
+      continue;
+    }
+    const nodeId = reticulumHashToNodeId(destinationHash);
+    registerReticulumDestinationHash(nodeId, destinationHash);
+    records.push({
+      nodeId,
+      longName: row.display_name ?? destinationHash.slice(0, 16),
+      shortName: row.display_name?.slice(0, 4) ?? 'RT',
+      lastHeardAt: row.last_heard ?? undefined,
+      reticulumDestinationHash: destinationHash,
+    });
+  }
+  if (!isCurrent()) return;
+  upsertNodeRecordsForIdentity(identityId, records);
+}
+
+/** Reticulum identity hydrator: destinations + messages (parallel existing IPCs). */
 function hydrateReticulumIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
@@ -349,60 +458,47 @@ function hydrateReticulumIdentity(
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   return (async () => {
+    const tasks: Promise<void>[] = [];
     if (loadNodes) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
-          destination_hash: string;
-          display_name?: string | null;
-          last_heard?: number | null;
-          favorited?: number | null;
-        }[];
-        if (!isCurrent()) return;
-        const { reticulumHashToNodeId, registerReticulumDestinationHash } =
-          await import('./reticulum/destHash');
-        const records: NodeRecord[] = [];
-        for (const row of rows) {
-          // A row without a canonical hash cannot be keyed or displayed; skipping it
-          // keeps one bad SQLite row from failing the whole hydration pass.
-          const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
-          if (!destinationHash) {
-            console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
-            continue;
+      tasks.push(
+        (async () => {
+          try {
+            const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
+              destination_hash: string;
+              display_name?: string | null;
+              last_heard?: number | null;
+              favorited?: number | null;
+            }[];
+            await applyReticulumDestinationRows(identityId, rows, isCurrent);
+          } catch (e) {
+            console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
           }
-          const nodeId = reticulumHashToNodeId(destinationHash);
-          registerReticulumDestinationHash(nodeId, destinationHash);
-          records.push({
-            nodeId,
-            longName: row.display_name ?? destinationHash.slice(0, 16),
-            shortName: row.display_name?.slice(0, 4) ?? 'RT',
-            lastHeardAt: row.last_heard ?? undefined,
-            reticulumDestinationHash: destinationHash,
-          });
-        }
-        if (!isCurrent()) return;
-        upsertNodeRecordsForIdentity(identityId, records);
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
-      }
+        })(),
+      );
     }
     if (loadMessages) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
-          sender_id: string;
-          sender_name?: string;
-          payload: string;
-          timestamp: number;
-          to_hash?: string;
-        }[];
-        if (!isCurrent()) return;
-        replaceMessageRecordsForIdentity(
-          identityId,
-          rows.map((row) => reticulumDbRowToMessageRecord(row)),
-        );
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
-      }
+      tasks.push(
+        (async () => {
+          try {
+            const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
+              sender_id: string;
+              sender_name?: string;
+              payload: string;
+              timestamp: number;
+              to_hash?: string;
+            }[];
+            if (!isCurrent()) return;
+            replaceMessageRecordsForIdentity(
+              identityId,
+              rows.map((row) => reticulumDbRowToMessageRecord(row)),
+            );
+          } catch (e) {
+            console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
+          }
+        })(),
+      );
     }
+    await Promise.all(tasks);
   })();
 }
 

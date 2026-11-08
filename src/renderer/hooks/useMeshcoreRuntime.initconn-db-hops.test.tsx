@@ -221,26 +221,29 @@ describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
   beforeEach(() => {
     capturedConn = null;
     resetIdentityStores();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
-      {
-        node_id: REMOTE_NODE_ID,
-        public_key: REMOTE_PUBKEY_HEX,
-        adv_name: 'RemoteInit',
-        contact_type: 2,
-        last_advert: 1_700_000_000,
-        adv_lat: null,
-        adv_lon: null,
-        last_snr: 0,
-        last_rssi: 0,
-        favorited: 0,
-        nickname: null,
-        hops_away: 4,
-        on_radio: 0,
-        last_synced_from_radio: null,
-      },
-    ] as never[]);
-    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        {
+          node_id: REMOTE_NODE_ID,
+          public_key: REMOTE_PUBKEY_HEX,
+          adv_name: 'RemoteInit',
+          contact_type: 2,
+          last_advert: 1_700_000_000,
+          adv_lat: null,
+          adv_lon: null,
+          last_snr: 0,
+          last_rssi: 0,
+          favorited: 0,
+          nickname: null,
+          hops_away: 4,
+          on_radio: 0,
+          last_synced_from_radio: null,
+        },
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',
       publicKey: SELF_PUBKEY,
@@ -328,8 +331,13 @@ describe('useMeshcoreRuntime buildNodesFromContacts merges nodes-table hops when
   beforeEach(() => {
     capturedConn = null;
     resetIdentityStores();
-    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [],
+      nodes: [{ node_id: REMOTE_NODE_ID, hops: 7, hops_away: null }] as never[],
+      hopHistory: [],
+      messages: [],
+    });
+    // Connect-time rebuild still loads hop rows via getNodes.
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
       { node_id: REMOTE_NODE_ID, hops: 7, hops_away: null },
     ] as never[]);
@@ -352,7 +360,7 @@ describe('useMeshcoreRuntime buildNodesFromContacts merges nodes-table hops when
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await waitFor(() => {
-      expect(vi.mocked(window.electronAPI.db.getMeshcoreContacts)).toHaveBeenCalled();
+      expect(vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration)).toHaveBeenCalled();
     });
 
     await act(async () => {

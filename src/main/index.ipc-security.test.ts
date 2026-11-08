@@ -30,6 +30,7 @@ function ipcHandlerBody(channel: string, span = 400): string {
     TAK_IPC_SOURCE,
     GPS_IPC_SOURCE,
     readFileSync(join(__dirname, 'ipc/ai-handlers.ts'), 'utf8'),
+    readFileSync(join(__dirname, 'identityHydrationSnapshot.ts'), 'utf8'),
   ]) {
     const markers = [
       `ipcMain.handle('${channel}'`,
@@ -642,6 +643,8 @@ describe('privileged IPC sender validation (source contract)', () => {
     'db:getNodeNote',
     'db:getMeshcoreMessages',
     'db:getMeshcoreMessagesForHydration',
+    'db:getMeshtasticIdentityHydration',
+    'db:getMeshcoreIdentityHydration',
     'db:listMeshtasticDmPeers',
     'db:listMeshcoreDmPeers',
     'db:searchMessages',
@@ -949,6 +952,8 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     'db:getNodeNote',
     'db:getMeshcoreMessages',
     'db:getMeshcoreMessagesForHydration',
+    'db:getMeshtasticIdentityHydration',
+    'db:getMeshcoreIdentityHydration',
     'db:listMeshtasticDmPeers',
     'db:listMeshcoreDmPeers',
     'db:searchMessages',

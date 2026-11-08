@@ -168,6 +168,16 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const identityHydrationPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/identityHydrationSnapshot.ts'),
+            [
+              'export function readMeshtasticIdentityHydration() {',
+              `  return '${identityHydrationPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

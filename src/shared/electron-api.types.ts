@@ -470,6 +470,15 @@ export interface ElectronAPI {
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
+    /**
+     * One-shot Meshtastic cold hydrate: nodes + MeshCore contact hops + messages.
+     * Prefer over separate getNodes / getMeshcoreContacts / getMessages round-trips.
+     */
+    getMeshtasticIdentityHydration: (messageLimit?: number) => Promise<{
+      nodes: SavedNode[];
+      meshcoreContacts: unknown[];
+      messages: SavedMessage[];
+    }>;
     /** Distinct Meshtastic DM peers for History (survives message hydrate cap). */
     listMeshtasticDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
 
@@ -635,6 +644,26 @@ export interface ElectronAPI {
       perChannelLimit?: number;
       roomLimit?: number;
     }) => Promise<unknown[]>;
+    /**
+     * One-shot MeshCore cold hydrate: contacts + nodes + hop history + fair message window.
+     * Prefer over separate getMeshcoreContacts / getNodes / hop / messages round-trips.
+     */
+    getMeshcoreIdentityHydration: (limits?: {
+      globalLimit?: number;
+      perChannelLimit?: number;
+      roomLimit?: number;
+    }) => Promise<{
+      contacts: unknown[];
+      nodes: SavedNode[];
+      hopHistory: {
+        node_id: number;
+        timestamp: number;
+        hops: number | null;
+        snr: number | null;
+        rssi: number | null;
+      }[];
+      messages: unknown[];
+    }>;
     /** Distinct MeshCore DM peers (`channel_idx = -1`) for History. */
     listMeshcoreDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
