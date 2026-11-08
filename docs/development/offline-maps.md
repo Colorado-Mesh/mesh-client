@@ -14,6 +14,14 @@ Developer reference for wilderness / no-WAN basemap caching. Human QA: [troubles
 | Basemap allowlist + remote URLs | `src/shared/offlineMaps/basemapRegistry.ts`                        |
 | Layers UI                       | `src/renderer/components/map/OfflineMapsSection.tsx`               |
 | Leaflet URL templates           | `src/renderer/lib/mapBasemapUtils.ts` → `MESH_TILES_URL_TEMPLATES` |
+| Elevation / LOS profile         | `src/main/elevation/` + `src/main/ipc/elevation-handlers.ts`       |
+| Elevation cache (samples + HGT) | `userData/elevation-cache/`                                        |
+
+## Terrain elevation (LOS profile)
+
+- **Online samples:** `elevation:sampleProfile` batches Open-Meteo `/v1/elevation` (same allowlisted host as weather) and caches rounded lat/lon points in `elevation-cache/samples.json`.
+- **Offline DEM:** Layers → Offline maps → **Offline elevation (DEM)** downloads Mapzen/AWS skadi SRTM1 `.hgt.gz` tiles for the current viewport into `elevation-cache/hgt/`. Profiles prefer HGT, then sample cache, then network.
+- **UI:** `TerrainProfileControl` / `TerrainProfileOverlay` on `MeshMapShell` (all protocols). Fresnel math lives in `src/shared/elevation/profileMath.ts`.
 
 ## Behavior invariants
 

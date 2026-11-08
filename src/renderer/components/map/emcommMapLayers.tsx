@@ -125,9 +125,10 @@ export function MeasureControl() {
   const map = useMap();
   const { t } = useTranslation();
   const controlRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
   const [points, setPoints] = useState<LatLon[]>([]);
+  const active = useMapToolStore((s) => s.measureActive);
   const setMeasureActive = useMapToolStore((s) => s.setMeasureActive);
+  const setProfileActive = useMapToolStore((s) => s.setProfileActive);
 
   useEffect(() => {
     const el = controlRef.current;
@@ -140,11 +141,10 @@ export function MeasureControl() {
   }, []);
 
   useEffect(() => {
-    setMeasureActive(active);
     return () => {
       setMeasureActive(false);
     };
-  }, [active, setMeasureActive]);
+  }, [setMeasureActive]);
 
   useEffect(() => {
     if (!active) return;
@@ -174,7 +174,9 @@ export function MeasureControl() {
             className={MAP_CONTROL_CLASS}
             onClick={(e) => {
               e.stopPropagation();
-              setActive((a) => !a);
+              const next = !active;
+              if (next) setProfileActive(false);
+              setMeasureActive(next);
               setPoints([]);
             }}
           >

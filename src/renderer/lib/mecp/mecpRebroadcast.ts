@@ -9,8 +9,8 @@ export interface MecpLoraEndpoint {
  * Reticulum has no numbered channels. An endpoint is either an RRC hub room (`kind: 'rrc'`) or an
  * LXMF peer (`kind: 'lxmf'`, direct message to `destinationHash`). As a rule's *source* an LXMF
  * endpoint matches inbound traffic from that peer (`'*'` = any peer); as a *destination* it must
- * be a concrete 32-hex hash. RRC endpoints are destination-only today (inbound RRC rooms are not
- * fed through the MECP watcher).
+ * be a concrete 32-hex hash. RRC endpoints match inbound hub+room candidates (no wildcard rooms)
+ * and remain valid destinations for `rrc.send`.
  */
 export interface MecpReticulumRrcEndpoint {
   protocol: 'reticulum';
@@ -144,6 +144,10 @@ export interface MecpRebroadcastCandidate {
   sourceChannelName?: string;
   /** Reticulum LXMF sender destination hash (lowercase hex); matches `lxmf` source endpoints. */
   reticulumSenderHash?: string;
+  /** Reticulum RRC hub destination hash (lowercase hex); matches `rrc` source endpoints. */
+  rrcHubDestHash?: string;
+  /** Reticulum RRC room name; matched case-insensitively against `rrc` source endpoints. */
+  rrcRoom?: string;
 }
 
 export interface MecpRebroadcastSendTarget {
@@ -206,11 +210,17 @@ function endpointMatchesCandidate(
 ): boolean {
   if (endpoint.protocol !== candidate.protocol) return false;
   if (endpoint.protocol === 'reticulum') {
-    // RRC rooms are destination-only; an inbound LXMF message matches by sender.
-    if (endpoint.kind !== 'lxmf') return false;
+    if (endpoint.kind === 'lxmf') {
+      return (
+        endpoint.destinationHash === MECP_REBROADCAST_ANY_PEER ||
+        endpoint.destinationHash === candidate.reticulumSenderHash?.toLowerCase()
+      );
+    }
+    // RRC source: require hub + room on the candidate (no wildcard rooms).
+    if (!candidate.rrcHubDestHash || !candidate.rrcRoom) return false;
     return (
-      endpoint.destinationHash === MECP_REBROADCAST_ANY_PEER ||
-      endpoint.destinationHash === candidate.reticulumSenderHash?.toLowerCase()
+      endpoint.hubDestHash === candidate.rrcHubDestHash.toLowerCase() &&
+      endpoint.room.toLowerCase() === candidate.rrcRoom.toLowerCase()
     );
   }
   return endpoint.channelIndex === candidate.channelIndex;

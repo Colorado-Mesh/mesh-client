@@ -25,6 +25,7 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
 } from '@/renderer/lib/ingest/reticulumIngest';
+import { handleRrcMecpInbound } from '@/renderer/lib/mecp/rrcMecpInbound';
 import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
@@ -1392,9 +1393,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
             return;
           }
 
+          const messageId = typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`;
           session.addMessage(
             {
-              id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
+              id: messageId,
               room,
               kind,
               body: p.body,
@@ -1417,6 +1419,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
               hubDestHash,
             },
           );
+          // MECP in RRC rooms is not on messageStore — bridge into incidents / rebroadcast.
+          // Prefer resolved session hub (view.hub) when the event omits hub_dest_hash.
+          const mecpHub =
+            typeof view.hub === 'string' && view.hub.length >= 8
+              ? view.hub
+              : typeof hubDestHash === 'string' && hubDestHash.length >= 8
+                ? hubDestHash
+                : null;
+          if (kind === 'msg' && !isDirect && mecpHub) {
+            void handleRrcMecpInbound({
+              messageId,
+              body: p.body,
+              room,
+              hubDestHash: mecpHub,
+              senderHash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
+              nickname: typeof p.nickname === 'string' ? p.nickname : null,
+              localIdentityHash: session.localIdentityHash,
+              timestampMs: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+            }).catch((err: unknown) => {
+              console.warn('[useReticulumRuntime] RRC MECP inbound failed', err);
+            });
+          }
         }
       }
       if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {

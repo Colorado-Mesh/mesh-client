@@ -804,6 +804,21 @@ export function createElectronAPIMock(): ElectronAPI {
       }),
       clearMemoryCache: vi.fn().mockResolvedValue({ ok: true }),
     },
+    elevation: {
+      sampleProfile: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: 'offline', message: 'offline' },
+      }),
+      estimateHgt: vi.fn().mockResolvedValue({
+        ok: true,
+        data: { tileNames: [], missingTileNames: [], missingBytes: 0 },
+      }),
+      downloadHgt: vi.fn().mockResolvedValue({ ok: true, data: { completed: 0, failed: 0 } }),
+      cancelHgtDownload: vi.fn().mockResolvedValue({ ok: true }),
+      cacheStats: vi.fn().mockResolvedValue({ sampleEntries: 0, hgtTiles: 0, hgtBytes: 0 }),
+      clearCache: vi.fn().mockResolvedValue({ ok: true }),
+      onHgtProgress: vi.fn().mockReturnValue(() => {}),
+    },
     gps: {
       exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
     },

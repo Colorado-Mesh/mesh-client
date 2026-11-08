@@ -27,7 +27,7 @@
     },
     "destructive": {
       "safeNames": [
-        "^Reset (Channel messages|Direct messages|Replies and mentions|MECP (ROUTINE|SAFETY|URGENT|MAYDAY)|Radio link lost|Node battery low)$"
+        "^Reset (Channel messages|Direct messages|Replies and mentions|MECP (ROUTINE|SAFETY|URGENT|MAYDAY)|Radio link lost|Node battery low|Diagnostics error)$"
       ]
     },
     "blockMedia": false

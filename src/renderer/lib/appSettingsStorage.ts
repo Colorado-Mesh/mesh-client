@@ -225,6 +225,8 @@ export interface OperationalAlertSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  /** Desktop + sound for new error-severity diagnostic rows (default off). */
+  notifyOnDiagnosticErrors: boolean;
   /** Standing banner + window attention for unseen MAYDAY/URGENT (Incident Command station). */
   mecpStandingAlertEnabled: boolean;
   /** Repeat interval for unseen MAYDAY/URGENT alerts; null = off. Requires the standing alert. */
@@ -239,6 +241,7 @@ export function getOperationalAlertSettings(): OperationalAlertSettings {
     nodeSilenceAlertMinutes?: unknown;
     nodeBatteryLowThreshold?: unknown;
     notifyOnLinkDown?: unknown;
+    notifyOnDiagnosticErrors?: unknown;
     mecpRepeatAlertMinutes?: unknown;
     mecpStandingAlertEnabled?: unknown;
   }>(getAppSettingsRaw(), 'getOperationalAlertSettings');
@@ -269,6 +272,10 @@ export function getOperationalAlertSettings(): OperationalAlertSettings {
       typeof parsed?.notifyOnLinkDown === 'boolean'
         ? parsed.notifyOnLinkDown
         : DEFAULT_APP_SETTINGS_SHARED.notifyOnLinkDown,
+    notifyOnDiagnosticErrors:
+      typeof parsed?.notifyOnDiagnosticErrors === 'boolean'
+        ? parsed.notifyOnDiagnosticErrors
+        : DEFAULT_APP_SETTINGS_SHARED.notifyOnDiagnosticErrors,
   };
 }
 

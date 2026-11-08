@@ -5,6 +5,7 @@ This document is the authoritative reference for every diagnostic output in Mesh
 **Where diagnostics appear:**
 
 - **DiagnosticsPanel** (Monitor > Diagnostics): network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart
+- **Optional severity alerts:** App → ops alerts → **Notify on new diagnostics errors** (`notifyOnDiagnosticErrors`, default off) fires a desktop notification + `diagnosticError` sound for new error-severity rows on the active protocol (`useDiagnosticSeverityAlerts`)
 - **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
@@ -585,7 +586,9 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 **Trigger:** Current `channel_utilization > 2×` 30-minute rolling average, with gates: ≥ 12 samples, ≥ 30-minute span, rolling average ≥ 1%. 15-minute cooldown per node before re-firing.
 
-**Mechanism:** The detector maintains a rolling 24-hour history of `channel_utilization` samples in `diagnosticsStore.cuHistory` (entries from LocalStats / device-metrics telemetry and NodeInfo updates via `processNodeUpdate`). `computeCuStats24h` computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (`cuSpikeLastFired` map in `RFDiagnosticEngine`) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by `clearDiagnostics()`.
+**Mechanism:** The detector maintains a rolling 24-hour history of `channel_utilization` samples in `diagnosticsStore.cuHistory` (entries from LocalStats / device-metrics telemetry and NodeInfo updates via `processNodeUpdate`). Samples are **persisted** to `localStorage` (`mesh-client:cuHistorySnapshot`, debounced) so the 24h chart and spike baseline survive app restarts; `clearDiagnostics()` wipes the snapshot. Disable with `localStorage` key `mesh-client:cuHistoryPersistEnabled=0`. `computeCuStats24h` computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (`cuSpikeLastFired` map in `RFDiagnosticEngine`) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by `clearDiagnostics()`.
+
+**Reliability proxies (not ACK PDR):** Node detail shows Meshtastic **echo reliability** (`1 − duplicates/total` from session `packetStats`, ≥10 samples) and MeshCore **path reliability** (Laplace-smoothed success/failure from `pathHistoryStore`). Labels avoid claiming end-to-end delivery ratio.
 
 **Fields:** Current `channel_utilization` vs. stored per-node `CuSample[]` history in diagnosticsStore.
 

@@ -445,6 +445,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['disconnect', 'alert'],
   },
   {
+    id: 'app.notifications.diagnosticErrors',
+    slot: 'App',
+    labelKey: 'appPanel.notifyOnDiagnosticErrors',
+    sectionKey: 'appPanel.opsAlertsHeading',
+    keywords: ['diagnostics', 'error', 'alert', 'hop', 'RF'],
+  },
+  {
     id: 'app.notifications.rrcUnreadAll',
     slot: 'App',
     labelKey: 'appPanel.rrcUnreadAllRoomMessages',

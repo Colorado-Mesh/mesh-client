@@ -527,7 +527,9 @@
     "memoryDomNodes": "DOM节点： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "房间帖子有相同大小的限制，因此繁忙的频道永远不会将其推出。"
+    "meshcoreRoomPostRetentionHint": "房间帖子有相同大小的限制，因此繁忙的频道永远不会将其推出。",
+    "notifyOnDiagnosticErrors": "通知新的诊断错误",
+    "notifyOnDiagnosticErrorsHint": "当活动方案出现新的错误严重性诊断时，桌面通知和声音。现有行不会在启动时重播。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外",
     "exportJson": "导出JSON",
     "exportJsonAria": "将可见诊断行导出为JSON",
-    "meshcoreUnknownNode": "未知节点"
+    "meshcoreUnknownNode": "未知节点",
+    "cuHistoryPersistedHint": "样本保存在本地，因此此图表在应用程序重新启动后仍然存在（通过清除诊断清除）。"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -2787,6 +2790,42 @@
       "urlLabel": "瓦片 URL（https，含 {z} {x} {y}）",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · 缓存上限 {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "洛杉矶个人资料",
+      "startAria": "启动地形视线轮廓",
+      "stopAria": "停止地形剖面并清除",
+      "hint": "点击地图上的两个点或节点",
+      "ready": "配置文件准备就绪—根据需要调整频率",
+      "frequency": "锯带",
+      "frequencyAria": "菲涅耳间隙的LoRa频率",
+      "title": "A. 地形特征",
+      "chartAria": "地形和菲涅尔间隙图",
+      "loading": "采样高程…",
+      "needEndpoints": "选择两个终点来绘制间隙。",
+      "clear": "清空",
+      "obstructed": "阻碍",
+      "unknown": "未知",
+      "meta": "{{mhz}} MHz · {{km}} km ·最小间隙{{clearance}}",
+      "offlineSource": "离线DEM",
+      "networkSource": "网络海拔",
+      "errorUnavailable": "高程服务不可用。",
+      "errorOffline": "此路径离线且没有缓存海拔。",
+      "errorFetch": "无法对此路径的海拔高度进行采样。",
+      "hgtHeading": "离线海拔（ DEM ）",
+      "hgtHint": "下载当前视图的SRTM图块，以便LOS配置文件在没有网络的情况下工作。",
+      "hgtDownloadView": "下载海拔以供查看",
+      "hgtDownloadAria": "估计并下载当前地图视图的高度图块",
+      "hgtConfirm": "{{count}}瓷砖(~ {{size}})。立即下载？",
+      "hgtConfirmYesAria": "确认立面图块下载",
+      "hgtProgress": "{{completed}}/{{total}}平铺（ {{failed}}失败）",
+      "hgtCancelAria": "取消海拔图块下载",
+      "hgtCancelled": "高程下载已取消。",
+      "hgtDone": "已下载{{completed}}高程图块（ {{failed}}失败）。",
+      "hgtAlreadyCached": "此视图的高程图块已缓存。",
+      "hgtEstimateFailed": "无法估计海拔高度下载。",
+      "hgtDownloadFailed": "海拔高度下载失败。",
+      "hgtCacheStats": "高程缓存： {{count}}平铺({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "通过射频接收；某些数据包使用MQTT中继路径",
     "hybridMqttPathAria": "射频和MQTT路径",
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
-    "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
+    "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
+    "echoReliability": "回波可靠性",
+    "echoReliabilityTooltip": "来自无意中听到的数据包总计的会话代理与重复数据—而不是端到端传递ACK率。",
+    "echoReliabilityDetail": "{{duplicates}}在{{total}}观察中回声",
+    "pathReliability": "路径可靠性",
+    "pathReliabilityTooltip": "MeshCore路径成功与失败计数（拉普拉斯平滑） —而不是端到端ACK PDR。",
+    "pathReliabilityDetail": "记录了{{attempts}}次路径尝试"
   },
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",
@@ -7051,7 +7096,8 @@
     "saveFailed": "无法保存声音设置。您之前的选择保持不变。",
     "previewFailed": "无法播放此声音。尝试其他文件或重置为原始音调。",
     "connectionLost": "无线电链路",
-    "batteryLow": "电池电量低"
+    "batteryLow": "电池电量低",
+    "diagnosticError": "诊断错误"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}}电池电量低",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "最近有雷暴夹大冰雹weather condition",
       "unknown": "未知条件"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "诊断错误",
+    "body": "{{description}}"
   }
 }

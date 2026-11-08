@@ -30,6 +30,7 @@ const EVENT_LABELS = {
   mecpSiren: 'notificationSounds.mecpSiren',
   connectionLost: 'notificationSounds.connectionLost',
   batteryLow: 'notificationSounds.batteryLow',
+  diagnosticError: 'notificationSounds.diagnosticError',
 } as const;
 const PRESET_LABELS = {
   default: 'notificationSounds.default',

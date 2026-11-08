@@ -79,12 +79,13 @@ If ever revisited, it needs at least: a dedicated ≥10s `ALERT_APP` pacer cover
 
 ## RF rebroadcast (default off)
 
-- App → MECP section: rules `{ enabled, bidirectional, endpointA, endpointB }` (Meshtastic/MeshCore channel indices 0–7)
+- App → MECP section: rules `{ enabled, bidirectional, endpointA, endpointB }` (Meshtastic/MeshCore channel indices 0–7, or Reticulum LXMF peer / RRC hub+room)
 - One-way **A→B** by default; **Bidirectional** toggle enables B→A
 - Trigger: new inbound MECP with `receivedVia` `rf`/`both` (not mqtt-only); skip own/history/drill
+- **Reticulum sources:** LXMF DMs via `messageStore` + `useMecpAlertWatcher`; RRC room `msg` lines via `handleRrcMecpInbound` (`rrcMecpInbound.ts`) because RRC chat lives in `rrcSessionStore`
 - Loop guard: payload+dest fingerprint TTL
-- After each successful bridge send: short follow-up notice `MECP from <sender> via <Meshtastic|MeshCore> (<channel name>)` (not a wire MECP; channel **name**, not index)
-- Implementation: `mecpRebroadcast.ts` + `sendMecpRebroadcast.ts`
+- After each successful bridge send: short follow-up notice `MECP from <sender> via <Meshtastic|MeshCore|Reticulum> (<channel or room name>)` (not a wire MECP)
+- Implementation: `mecpRebroadcast.ts` + `sendMecpRebroadcast.ts` + `rrcMecpInbound.ts`
 
 ## Incident Command
 

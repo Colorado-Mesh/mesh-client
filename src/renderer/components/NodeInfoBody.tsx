@@ -27,6 +27,7 @@ import {
   summarizeMeshCongestionAttribution,
   summarizeRfDuplicateOriginators,
 } from '../lib/diagnostics/meshCongestionAttribution';
+import { meshcorePathReliabilityProxy, meshtasticEchoLossProxy } from '../lib/diagnostics/pdrProxy';
 import { getRecommendedAction } from '../lib/diagnostics/RemediationEngine';
 import {
   diagnoseConnectedNode,
@@ -52,6 +53,7 @@ import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../li
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { EnvironmentSparklines } from './map/EnvironmentSparklines';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
@@ -226,6 +228,37 @@ export default function NodeInfoBody({
     (s) => s.hopHistory.get(node.node_id) ?? EMPTY_HOP_HISTORY,
   );
   const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy.get(node.node_id));
+  const meshcorePathRecords = usePathHistoryStore((s) => s.records.get(node.node_id));
+  const reliabilityProxy = useMemo(() => {
+    if (protocol === 'meshcore') {
+      if (!meshcorePathRecords?.length) return null;
+      let success = 0;
+      let failure = 0;
+      for (const r of meshcorePathRecords) {
+        success += r.successCount;
+        failure += r.failureCount;
+      }
+      const proxy = meshcorePathReliabilityProxy({
+        successCount: success,
+        failureCount: failure,
+      });
+      return proxy
+        ? {
+            kind: 'meshcore' as const,
+            pct: Math.round(proxy.reliability * 100),
+            attempts: proxy.attempts,
+          }
+        : null;
+    }
+    const echo = meshtasticEchoLossProxy(nodePacketStats ?? null);
+    if (echo?.reliability == null) return null;
+    return {
+      kind: 'meshtastic' as const,
+      pct: Math.round(echo.reliability * 100),
+      total: echo.total,
+      duplicates: echo.duplicates,
+    };
+  }, [protocol, meshcorePathRecords, nodePacketStats]);
   const meshcoreHopHistory = useDiagnosticsStore((s) => s.meshcoreHopHistory.get(node.node_id));
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
@@ -652,6 +685,46 @@ export default function NodeInfoBody({
               </div>
             );
           })()}
+
+        {reliabilityProxy ? (
+          <div
+            className="border-ink-700/50 mt-2 border-t pt-2"
+            title={
+              reliabilityProxy.kind === 'meshcore'
+                ? t('nodeInfoBody.pathReliabilityTooltip')
+                : t('nodeInfoBody.echoReliabilityTooltip')
+            }
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xs text-muted">
+                {reliabilityProxy.kind === 'meshcore'
+                  ? t('nodeInfoBody.pathReliability')
+                  : t('nodeInfoBody.echoReliability')}
+              </span>
+              <span
+                className={`text-xs font-medium ${
+                  reliabilityProxy.pct >= 67
+                    ? 'text-lime-400'
+                    : reliabilityProxy.pct >= 33
+                      ? 'text-orange-400'
+                      : 'text-muted'
+                }`}
+              >
+                {reliabilityProxy.pct}%
+              </span>
+            </div>
+            <p className="text-2xs text-muted mt-0.5">
+              {reliabilityProxy.kind === 'meshcore'
+                ? t('nodeInfoBody.pathReliabilityDetail', {
+                    attempts: reliabilityProxy.attempts,
+                  })
+                : t('nodeInfoBody.echoReliabilityDetail', {
+                    duplicates: reliabilityProxy.duplicates,
+                    total: reliabilityProxy.total,
+                  })}
+            </p>
+          </div>
+        ) : null}
 
         {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
         {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (

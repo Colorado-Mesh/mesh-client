@@ -527,7 +527,9 @@
     "memoryDomNodes": "Nós DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Os posts da sala têm seu próprio limite do mesmo tamanho, então os canais ocupados nunca os empurram para fora."
+    "meshcoreRoomPostRetentionHint": "Os posts da sala têm seu próprio limite do mesmo tamanho, então os canais ocupados nunca os empurram para fora.",
+    "notifyOnDiagnosticErrors": "Notificar sobre novos erros de diagnóstico",
+    "notifyOnDiagnosticErrorsHint": "Notificação na área de trabalho e som quando um novo diagnóstico de gravidade de erro aparece para o protocolo ativo. As linhas existentes não são reproduzidas no lançamento."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Nós somente MQTT cinza e excluí-los dos diagnósticos",
     "exportJson": "Exportar como JSON",
     "exportJsonAria": "Exportar linhas de diagnóstico visíveis como JSON",
-    "meshcoreUnknownNode": "Nó desconhecido"
+    "meshcoreUnknownNode": "Nó desconhecido",
+    "cuHistoryPersistedHint": "As amostras são salvas localmente para que este gráfico sobreviva às reinicializações do aplicativo (desmarcado com Clear diagnostics)."
   },
   "diagnosticsPing": {
     "title": "Ping contínuo",
@@ -2787,6 +2790,42 @@
       "urlLabel": "URL de tiles (https, com {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · cache limitado a {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "Perfil LOS",
+      "startAria": "Iniciar perfil de linha de visão do terreno",
+      "stopAria": "Pare o perfil do terreno e limpe",
+      "hint": "Clique em dois pontos ou nós no mapa",
+      "ready": "Perfil pronto — ajuste a frequência, se necessário",
+      "frequency": "Banda",
+      "frequencyAria": "LoRa frequência para liberação de Fresnel",
+      "title": "Perfil do terreno",
+      "chartAria": "Gráfico de folga do terreno e Fresnel",
+      "loading": "Amostragem de elevação...",
+      "needEndpoints": "Selecione dois pontos de extremidade para plotar a folga.",
+      "clear": "Limpar",
+      "obstructed": "Obstruído",
+      "unknown": "Desconhecida",
+      "meta": "{{mhz}} MHz · {{km}} km · distância mínima {{clearance}}",
+      "offlineSource": "dEM OFFLINE",
+      "networkSource": "elevação da rede",
+      "errorUnavailable": "Serviço de elevação indisponível.",
+      "errorOffline": "Offline e sem elevação em cache para este caminho.",
+      "errorFetch": "Não foi possível amostrar a elevação para este caminho.",
+      "hgtHeading": "Elevação offline (DEM)",
+      "hgtHint": "Baixe os blocos SRTM para a visualização atual para que os perfis LOS funcionem sem uma rede.",
+      "hgtDownloadView": "Baixar elevação para visualização",
+      "hgtDownloadAria": "Estimar e baixar blocos de elevação para a visualização atual do mapa",
+      "hgtConfirm": "{{count}} peças (~{{size}}). Baixar agora?",
+      "hgtConfirmYesAria": "Confirmar o download do bloco de elevação",
+      "hgtProgress": "{{completed}} / {{total}} peças ({{failed}} falhou)",
+      "hgtCancelAria": "Cancelar o download do bloco de elevação",
+      "hgtCancelled": "Download de elevação cancelado.",
+      "hgtDone": "Transferiu blocos de elevação {{completed}} ({{failed}} falhou).",
+      "hgtAlreadyCached": "As peças de elevação para esta visualização já estão armazenadas em cache.",
+      "hgtEstimateFailed": "Não foi possível estimar o download da elevação.",
+      "hgtDownloadFailed": "Falha no download da elevação.",
+      "hgtCacheStats": "Cache de elevação: {{count}} tiles ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "Recebido via RF; alguns pacotes usam um caminho de retransmissão MQTT",
     "hybridMqttPathAria": "Caminho de RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado via RF e MQTT",
-    "connectedViaRfAndMqttAria": "Conectado via RF e MQTT"
+    "connectedViaRfAndMqttAria": "Conectado via RF e MQTT",
+    "echoReliability": "Confiabilidade do eco",
+    "echoReliabilityTooltip": "Session proxy from overheard packet totals vs duplicates — not end-to-end delivery ACK rate.",
+    "echoReliabilityDetail": "{{duplicates}} ecoa nas observações {{total}}",
+    "pathReliability": "Confiabilidade do caminho",
+    "pathReliabilityTooltip": "MeshCore sucesso do caminho vs contagens de falhas (suavizadas por Laplace) — não ACK PDR de ponta a ponta.",
+    "pathReliabilityDetail": "{{attempts}} tentativas de caminho gravadas"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "Não foi possível salvar as configurações de som. Sua seleção anterior permanece inalterada.",
     "previewFailed": "Não foi possível reproduzir este som. Tente outro arquivo ou redefina para o tom original.",
     "connectionLost": "LINK DE RÁDIO",
-    "batteryLow": "Bateria fraca."
+    "batteryLow": "Bateria fraca.",
+    "diagnosticError": "Erro de diagnóstico"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} bateria fraca",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Trovoada com granizo pesado",
       "unknown": "Condições desconhecidas"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Erro de diagnóstico",
+    "body": "{{description}}"
   }
 }

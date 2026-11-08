@@ -535,7 +535,9 @@
     "memoryDomNodes": "DOM uzly: {{count}}",
     "memoryHistoryHeap": "halda {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Příspěvky v místnosti mají svůj vlastní limit stejné velikosti, takže je zaneprázdněné kanály nikdy nevytlačují ven."
+    "meshcoreRoomPostRetentionHint": "Příspěvky v místnosti mají svůj vlastní limit stejné velikosti, takže je zaneprázdněné kanály nikdy nevytlačují ven.",
+    "notifyOnDiagnosticErrors": "Upozornit na nové diagnostické chyby",
+    "notifyOnDiagnosticErrorsHint": "Oznámení na ploše a zvuk, když se objeví nová diagnostika chyby a závažnosti pro aktivní protokol. Stávající řádky se při spuštění nepřehrávají."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -2285,7 +2287,8 @@
     "warningCount_few": "{{count}} varování",
     "exportJson": "Exportovat JSON",
     "exportJsonAria": "Exportovat viditelné diagnostické řádky jako JSON",
-    "meshcoreUnknownNode": "Neznámý uzel"
+    "meshcoreUnknownNode": "Neznámý uzel",
+    "cuHistoryPersistedHint": "Vzorky jsou uloženy lokálně, takže tento graf přežije restart aplikace (vymazáno s Vymazat diagnostiku)."
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -2816,6 +2819,42 @@
       "urlLabel": "URL dlaždice (https, s {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · cache max. {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "LOS PROFIL",
+      "startAria": "Zahájit profil čáry pohledu do terénu",
+      "stopAria": "Zastavte profil terénu a vyčistěte",
+      "hint": "Klikněte na dva body nebo uzly na mapě",
+      "ready": "Profil připraven — v případě potřeby upravte frekvenci",
+      "frequency": "Banda",
+      "frequencyAria": "LoRa frekvence pro Fresnelovu vůli",
+      "title": "Profil terénu",
+      "chartAria": "Diagram terénní a Fresnelovy vůle",
+      "loading": "Vzorkování nadmořské výšky...",
+      "needEndpoints": "Vyberte dva koncové body pro vykreslení vůle.",
+      "clear": "Vymazat",
+      "obstructed": "Ucpaný",
+      "unknown": "Neznámo",
+      "meta": "{{mhz}} MHz · {{km}} km · min clearance {{clearance}}",
+      "offlineSource": "offline DEM",
+      "networkSource": "nadmořská výška sítě",
+      "errorUnavailable": "Nadmořská výška není k dispozici.",
+      "errorOffline": "Offline a žádná výška v mezipaměti pro tuto cestu.",
+      "errorFetch": "Nelze odebrat vzorek výšky pro tuto cestu.",
+      "hgtHeading": "Offline elevace (DEM)",
+      "hgtHint": "Stáhněte si dlaždice SRTM pro aktuální zobrazení, aby profily LOS fungovaly bez sítě.",
+      "hgtDownloadView": "Stáhnout výšku pro zobrazení",
+      "hgtDownloadAria": "Odhadnout a stáhnout výškové dlaždice pro aktuální zobrazení mapy",
+      "hgtConfirm": "{{count}} dlaždice (~{{size}}). Stáhnout?",
+      "hgtConfirmYesAria": "Potvrďte stažení dlaždice nadmořské výšky",
+      "hgtProgress": "{{completed}} / {{total}} dlaždice ({{failed}} selhalo)",
+      "hgtCancelAria": "Zrušit stahování dlaždic nadmořské výšky",
+      "hgtCancelled": "Stahování nadmořské výšky bylo zrušeno.",
+      "hgtDone": "Stažené dlaždice {{completed}} ({{failed}} selhalo).",
+      "hgtAlreadyCached": "Výškové dlaždice pro toto zobrazení jsou již uloženy v mezipaměti.",
+      "hgtEstimateFailed": "Nelze odhadnout stahování nadmořské výšky.",
+      "hgtDownloadFailed": "Stahování výšky se nezdařilo.",
+      "hgtCacheStats": "Vyrovnávací mezipaměť: {{count}} dlaždice ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3850,7 +3889,13 @@
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
     "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT",
     "changes_few": "{{count}} změny",
-    "echoes_few": "{{count}} ozvěny"
+    "echoes_few": "{{count}} ozvěny",
+    "echoReliability": "Spolehlivost ozvěny",
+    "echoReliabilityTooltip": "Relace proxy z vyslechnutých součtů paketů vs duplikáty — ne end-to-end doručení ACK sazba.",
+    "echoReliabilityDetail": "{{duplicates}} ozvěny při {{total}} pozorování",
+    "pathReliability": "Spolehlivost trasy",
+    "pathReliabilityTooltip": "MeshCore úspěšnost cesty vs. počty selhání (Laplaceova-vyhlazená) — ne end-to-end ACK PDR.",
+    "pathReliabilityDetail": "{{attempts}} zaznamenané pokusy o cestu"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -7114,7 +7159,8 @@
     "saveFailed": "Nelze uložit nastavení zvuku. Váš předchozí výběr se nezměnil.",
     "previewFailed": "Tento zvuk nelze přehrát. Zkuste jiný soubor nebo obnovte původní tón.",
     "connectionLost": "Ztráta rádiového spojení",
-    "batteryLow": "Slabá baterie"
+    "batteryLow": "Slabá baterie",
+    "diagnosticError": "Chyba diagnostiky"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} vybitá baterie",
@@ -8523,5 +8569,9 @@
       "thunderstormHeavyHail": "Bouřka s těžkým krupobitím",
       "unknown": "Neznámé podmínky"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Chyba diagnostiky",
+    "body": "{{description}}"
   }
 }

@@ -284,7 +284,8 @@ async function processNewMessages(
     inFlight.delete(key);
     seen.add(key);
 
-    // Meshtastic, MeshCore and Reticulum (LXMF) can all be rebroadcast sources.
+    // Meshtastic, MeshCore and Reticulum LXMF can be rebroadcast sources here.
+    // RRC room MECP is handled separately via handleRrcMecpInbound.
     if (!blocked) {
       void executeMecpRebroadcast(
         {

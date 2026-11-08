@@ -64,6 +64,8 @@ vi.mock('./emcommMapLayers', () => ({
   MeasureControl: () => null,
   MgrsGridLayer: () => <div data-testid="mgrs-layer" />,
 }));
+vi.mock('./TerrainProfileControl', () => ({ TerrainProfileControl: () => null }));
+vi.mock('./TerrainProfileOverlay', () => ({ TerrainProfileOverlay: () => null }));
 
 function renderShell(overrides: Partial<MeshMapShellProps> = {}) {
   const props: MeshMapShellProps = {

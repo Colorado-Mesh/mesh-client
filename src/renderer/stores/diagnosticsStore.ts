@@ -256,6 +256,7 @@ export function computeCuStats24h(samples: CuSample[]): {
 
 const DIAGNOSTIC_ROWS_STORAGE_KEY = 'mesh-client:diagnosticRowsSnapshot';
 const FOREIGN_LORA_STORAGE_KEY = 'mesh-client:foreignLoraDetectionsSnapshot';
+const CU_HISTORY_STORAGE_KEY = 'mesh-client:cuHistorySnapshot';
 
 interface ForeignLoraSnapshot {
   v: 1;
@@ -344,6 +345,97 @@ function clearPersistedForeignLoraSnapshot(): void {
     // catch-no-log-ok localStorage unavailable
   }
 }
+
+interface CuHistorySnapshot {
+  v: 1;
+  savedAt: number;
+  entries: [number, CuSample[]][];
+}
+
+function isValidCuSample(o: unknown): o is CuSample {
+  if (!o || typeof o !== 'object') return false;
+  const s = o as CuSample;
+  return (
+    typeof s.t === 'number' &&
+    Number.isFinite(s.t) &&
+    typeof s.cu === 'number' &&
+    Number.isFinite(s.cu)
+  );
+}
+
+function loadCuHistoryPersistEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem('mesh-client:cuHistoryPersistEnabled');
+    if (raw === '0') return false;
+    if (raw === '1') return true;
+  } catch {
+    // catch-no-log-ok
+  }
+  return true;
+}
+
+function loadCuHistorySnapshot(): Map<number, CuSample[]> {
+  if (!loadCuHistoryPersistEnabled()) return new Map();
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(CU_HISTORY_STORAGE_KEY);
+  } catch {
+    // catch-no-log-ok localStorage unavailable during module init
+    return new Map();
+  }
+  const parsed = parseStoredJson<CuHistorySnapshot>(raw, 'diagnosticsStore loadCuHistorySnapshot');
+  if (parsed?.v !== 1 || !Array.isArray(parsed.entries)) return new Map();
+  const now = Date.now();
+  const cutoff = now - TWENTY_FOUR_HOURS;
+  const out = new Map<number, CuSample[]>();
+  for (const [nodeId, samples] of parsed.entries) {
+    if (typeof nodeId !== 'number' || !Array.isArray(samples)) continue;
+    const pruned = samples.filter(isValidCuSample).filter((s) => s.t > cutoff);
+    if (pruned.length > 0) out.set(nodeId, pruned);
+  }
+  return out;
+}
+
+let cuHistoryPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePersistCuHistory(getMap: () => Map<number, CuSample[]>): void {
+  if (!loadCuHistoryPersistEnabled()) return;
+  if (cuHistoryPersistTimer) clearTimeout(cuHistoryPersistTimer);
+  cuHistoryPersistTimer = setTimeout(() => {
+    cuHistoryPersistTimer = null;
+    const map = getMap();
+    const now = Date.now();
+    const cutoff = now - TWENTY_FOUR_HOURS;
+    const entries: CuHistorySnapshot['entries'] = [];
+    for (const [nodeId, samples] of map) {
+      const pruned = samples.filter((s) => s.t > cutoff);
+      if (pruned.length > 0) entries.push([nodeId, pruned]);
+    }
+    try {
+      if (entries.length === 0) {
+        localStorage.removeItem(CU_HISTORY_STORAGE_KEY);
+        return;
+      }
+      const payload: CuHistorySnapshot = { v: 1, savedAt: now, entries };
+      localStorage.setItem(CU_HISTORY_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('[diagnosticsStore] persist cuHistory failed ' + errLikeToLogString(e));
+    }
+  }, 500);
+}
+
+function clearPersistedCuHistorySnapshot(): void {
+  if (cuHistoryPersistTimer) {
+    clearTimeout(cuHistoryPersistTimer);
+    cuHistoryPersistTimer = null;
+  }
+  try {
+    localStorage.removeItem(CU_HISTORY_STORAGE_KEY);
+  } catch {
+    // catch-no-log-ok localStorage unavailable
+  }
+}
+
 const PERSIST_DEBOUNCE_MS = 2500;
 const LOCAL_STATS_BASELINE_RESET_MS = 60 * 60 * 1000;
 
@@ -741,12 +833,13 @@ function saveMqttIgnoredNodes(nodes: Set<number>): void {
 migrateLegacyAutoTracerouteKeysOnce();
 const initialSnapshot = loadDiagnosticRowsSnapshot();
 const initialForeignLora = loadForeignLoraSnapshot();
+const initialCuHistory = loadCuHistorySnapshot();
 
 export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   diagnosticRows: initialSnapshot?.rows ?? [],
   diagnosticRowsRestoredAt: initialSnapshot ? initialSnapshot.savedAt : null,
   hopHistory: new Map(),
-  cuHistory: new Map(),
+  cuHistory: initialCuHistory,
   packetStats: new Map(),
   noiseRateStats: new Map(),
   packetCache: new Map(),
@@ -958,6 +1051,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         [node.node_id],
       );
     });
+    if (node.channel_utilization != null) {
+      schedulePersistCuHistory(() => get().cuHistory);
+    }
 
     // Buffer this node for debounced analysis
     diagnosticsDebounce.pendingAnalyses.set(node.node_id, { node, homeNode });
@@ -1659,6 +1755,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     meshcoreRateCounter.reset();
     resetCuSpikeCooldown();
     clearPersistedDiagnosticRowsSnapshot();
+    clearPersistedCuHistorySnapshot();
     if (!preserveForeignLora) {
       clearPersistedForeignLoraSnapshot();
     }

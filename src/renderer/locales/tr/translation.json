@@ -527,7 +527,9 @@
     "memoryDomNodes": "DOM düğümleri: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
     "memoryHistoryDelta": "Δ {{value}}",
-    "meshcoreRoomPostRetentionHint": "Oda gönderilerinin aynı boyutta kendi sınırları vardır, bu nedenle meşgul kanallar onları asla dışarı itmez."
+    "meshcoreRoomPostRetentionHint": "Oda gönderilerinin aynı boyutta kendi sınırları vardır, bu nedenle meşgul kanallar onları asla dışarı itmez.",
+    "notifyOnDiagnosticErrors": "Yeni tanılama hatalarını bildir",
+    "notifyOnDiagnosticErrorsHint": "Etkin protokol için yeni bir hata şiddeti teşhisi göründüğünde masaüstü bildirimi ve sesi. Mevcut satırlar başlatmada tekrar oynatılmaz."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -2256,7 +2258,8 @@
     "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut",
     "exportJson": "JSON olarak dışa aktar",
     "exportJsonAria": "Görünür tanılama satırlarını JSON olarak dışa aktar",
-    "meshcoreUnknownNode": "Bilinmeyen düğüm"
+    "meshcoreUnknownNode": "Bilinmeyen düğüm",
+    "cuHistoryPersistedHint": "Örnekler yerel olarak kaydedilir, böylece bu grafik uygulamanın yeniden başlatılmasından sonra da geçerliliğini korur (Clear diagnostics ile temizlenir)."
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -2787,6 +2790,42 @@
       "urlLabel": "Döşeme URL (https, {z} {x} {y})",
       "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
       "xyzMeta": "XYZ · {{host}} · önbellek üst sınırı {{cap}}"
+    },
+    "terrainProfile": {
+      "button": "LOS PROFİLİ",
+      "startAria": "Arazi görüş hattı profilini başlat",
+      "stopAria": "Arazi profilini durdur ve temizle",
+      "hint": "Haritada iki noktaya veya düğüme tıklayın",
+      "ready": "Profil hazır — gerekirse frekansı ayarlayın",
+      "frequency": "Band",
+      "frequencyAria": "LoRa Fresnel klirensi için frekans",
+      "title": "Arazi profili",
+      "chartAria": "Arazi ve Fresnel açıklık grafiği",
+      "loading": "Numune alma kotu…",
+      "needEndpoints": "Boşluğu çizmek için iki uç nokta seçin.",
+      "clear": "Temizle",
+      "obstructed": "Engellenmiş",
+      "unknown": "Bilinmiyor",
+      "meta": "{{mhz}} MHz · {{km}} km · minimum izin {{clearance}}",
+      "offlineSource": "çevrimdışı DEM",
+      "networkSource": "şebeke yüksekliği",
+      "errorUnavailable": "Yükseltme hizmeti mevcut değil.",
+      "errorOffline": "Çevrimdışı ve bu yol için önbelleğe alınmış yükseklik yok.",
+      "errorFetch": "Bu yol için örnek yükseklik alınamadı.",
+      "hgtHeading": "Çevrimdışı yükseklik (DEM)",
+      "hgtHint": "LOS profillerinin ağ olmadan çalışması için mevcut görünüm için SRTM kutucuklarını indirin.",
+      "hgtDownloadView": "Görüntüleme için indirme yüksekliği",
+      "hgtDownloadAria": "Mevcut harita görünümü için yükseklik döşemelerini tahmin edin ve indirin",
+      "hgtConfirm": "{{count}} döşemeler (~{{size}}). Şimdi indirilsin mi?",
+      "hgtConfirmYesAria": "Yükseklik kutucuğu indirmeyi onayla",
+      "hgtProgress": "{{completed}} / {{total}} döşemeler ({{failed}} başarısız oldu)",
+      "hgtCancelAria": "Yükseklik kutucuğu indirmeyi iptal et",
+      "hgtCancelled": "Yükseklik indirme iptal edildi.",
+      "hgtDone": "{{completed}} yükseklik döşemeleri indirildi ({{failed}} başarısız oldu).",
+      "hgtAlreadyCached": "Bu görünüm için yükseklik döşemeleri zaten önbelleğe alınmış.",
+      "hgtEstimateFailed": "Yükseklik indirmesi tahmin edilemedi.",
+      "hgtDownloadFailed": "Yükseklik indirilemedi.",
+      "hgtCacheStats": "Yükseklik önbelleği: {{count}} karo ({{size}})"
     }
   },
   "meshCongestion": {
@@ -3815,7 +3854,13 @@
     "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
     "hybridMqttPathAria": "RF ve MQTT yolu",
     "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
-    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
+    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır",
+    "echoReliability": "Yankı güvenilirliği",
+    "echoReliabilityTooltip": "Kulak misafiri olunan paket toplamlarından yinelenenlere karşı oturum proxy'si — uçtan uca teslimat ACK oranı değil.",
+    "echoReliabilityDetail": "{{duplicates}}, {{total}} gözlemlerindeki yankılar",
+    "pathReliability": "Yol güvenilirliği",
+    "pathReliabilityTooltip": "MeshCore yol başarısı ve başarısızlık sayıları (Laplace - smoothhed) — uçtan uca ACK PDR değil.",
+    "pathReliabilityDetail": "{{attempts}} yol denemeleri kaydedildi"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -7051,7 +7096,8 @@
     "saveFailed": "Ses ayarları kaydedilemedi. Önceki seçiminiz değişmedi.",
     "previewFailed": "Bu ses çalınamadı. Başka bir dosya deneyin veya orijinal tona sıfırlayın.",
     "connectionLost": "Radyo bağlantısı kayboldu",
-    "batteryLow": "Batarya zayif"
+    "batteryLow": "Batarya zayif",
+    "diagnosticError": "Tanılama hatası"
   },
   "operationalAlerts": {
     "batteryLowTitle": "{{name}} pil zayıf",
@@ -8440,5 +8486,9 @@
       "thunderstormHeavyHail": "Yakın zamanda Şiddetli Dolu ile Gök Gürültülü Fırtınaweather condition",
       "unknown": "Bilinmeyen durumlar"
     }
+  },
+  "diagnosticAlerts": {
+    "title": "Tanılama hatası",
+    "body": "{{description}}"
   }
 }
