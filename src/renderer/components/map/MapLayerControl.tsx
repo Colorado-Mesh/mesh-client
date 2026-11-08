@@ -6,6 +6,7 @@ import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
 import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
+import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 
 import { SELECT_BOX_SM_CLASS } from '../ui/formClasses';
 import { MAP_CONTROL_CLASS, MAP_OVERLAY_PANEL_CLASS } from './mapControlClasses';
@@ -67,8 +68,8 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
   const setWeatherEnabled = useInternetWeatherStore((s) => s.setEnabled);
   const radarProvider = useInternetWeatherStore((s) => s.radarProvider);
   const setRadarProvider = useInternetWeatherStore((s) => s.setRadarProvider);
-  const tempUnit = useInternetWeatherStore((s) => s.tempUnit);
-  const setTempUnit = useInternetWeatherStore((s) => s.setTempUnit);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const setUseFahrenheit = useTemperatureUnitStore((s) => s.setUseFahrenheit);
   const windUnit = useInternetWeatherStore((s) => s.windUnit);
   const setWindUnit = useInternetWeatherStore((s) => s.setWindUnit);
   const precipUnit = useInternetWeatherStore((s) => s.precipUnit);
@@ -164,10 +165,10 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
                     <select
                       aria-label={t('internetWeather.unitsTemp')}
                       className={`${SELECT_BOX_SM_CLASS} w-full`}
-                      value={tempUnit}
+                      value={useFahrenheit ? 'f' : 'c'}
                       onChange={(e) => {
                         if (e.target.value === 'c' || e.target.value === 'f') {
-                          setTempUnit(e.target.value);
+                          setUseFahrenheit(e.target.value === 'f');
                         }
                       }}
                     >

@@ -8466,7 +8466,7 @@
     "loading": "Načítání prognózy...",
     "loadFailed": "Údaje o počasí nejsou k dispozici.",
     "noRadar": "Nejsou k dispozici žádné radarové rámy.",
-    "unitsTemp": "Jednotka teploty",
+    "unitsTemp": "Temperature unit",
     "unitsWind": "Větrná jednotka",
     "unitsPrecip": "Srážková jednotka",
     "unitC": "Celsius (°C)",

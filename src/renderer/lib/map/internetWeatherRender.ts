@@ -9,7 +9,6 @@ export function idwTemperature(
   let den = 0;
   const latScale = 111_320;
   const lonScale = 111_320 * Math.cos((lat * Math.PI) / 180);
-  let considered = 0;
   for (const p of points) {
     const dx = (lon - p.lon) * lonScale;
     const dy = (lat - p.lat) * latScale;
@@ -18,8 +17,6 @@ export function idwTemperature(
     const w = 1 / d ** 2;
     num += w * p.value;
     den += w;
-    considered += 1;
-    if (considered >= 16) break;
   }
   return den > 0 ? num / den : null;
 }

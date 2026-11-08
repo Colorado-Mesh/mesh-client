@@ -145,6 +145,7 @@ describe('ensureMlxHelper', () => {
     expect(findMlxSwiftCheckout(root)).toBe(path.join(root, '.build', 'checkouts', 'mlx-swift'));
   });
 
+  // Copies a large metallib from the local mlx-swift checkout; keep headroom for slow disks.
   it('packageMlxCmlxMetallibBundle writes default.metallib beside the binary', () => {
     if (process.platform !== 'darwin') return;
     const packageRoot = path.resolve(import.meta.dirname, '../../../../native/ai/mlx');
@@ -159,7 +160,7 @@ describe('ensureMlxHelper', () => {
       ),
     ).toBe(true);
     expect(isMlxHelperInstallComplete(binary)).toBe(true);
-  });
+  }, 30_000);
 
   it('returns xcodeNotFound when Applications has no Xcode', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));

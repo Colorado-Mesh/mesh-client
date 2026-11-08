@@ -133,7 +133,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   mapWeatherRadarProvider: 'auto' as 'auto' | 'rainviewer' | 'iem-nexrad',
   mapWeatherRadarOpacity: 0.65,
   mapWeatherRadarCoverage: false,
-  mapWeatherTempUnit: 'c' as 'c' | 'f',
   mapWeatherWindUnit: 'kmh' as 'kmh' | 'mph' | 'ms' | 'kn',
   mapWeatherPrecipUnit: 'mm' as 'mm' | 'in',
 };

@@ -7,6 +7,10 @@ import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { isMapChromeClick } from '@/renderer/lib/map/isMapChromeClick';
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapToolStore } from '@/renderer/stores/mapToolStore';
+import {
+  useTemperatureUnitStore,
+  weatherTempUnitFromStore,
+} from '@/renderer/stores/temperatureUnitStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import { type WeatherPointForecast, WMO_WEATHER_CODES } from '@/shared/weather/types';
 import {
@@ -26,13 +30,43 @@ type LoadState =
 export function WeatherPopup(): React.JSX.Element | null {
   const { t } = useTranslation();
   const enabled = useInternetWeatherStore((s) => s.enabled);
-  const tempUnit = useInternetWeatherStore((s) => s.tempUnit);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const tempUnit = weatherTempUnitFromStore(useFahrenheit);
   const windUnit = useInternetWeatherStore((s) => s.windUnit);
   const precipUnit = useInternetWeatherStore((s) => s.precipUnit);
   const measureActive = useMapToolStore((s) => s.measureActive);
   const use24h = useTimeFormatStore((s) => s.use24HourTime);
   const [state, setState] = useState<LoadState>({ status: 'idle' });
   const draggedRef = useRef(false);
+  const requestIdRef = useRef(0);
+
+  const requestForecast = useCallback((lat: number, lon: number) => {
+    const requestId = ++requestIdRef.current;
+    setState({ status: 'loading', lat, lon });
+    const api = window.electronAPI?.weather;
+    if (!api) {
+      if (requestId !== requestIdRef.current) return;
+      setState({ status: 'error', lat, lon });
+      return;
+    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (requestId !== requestIdRef.current) return;
+      setState({ status: 'error', lat, lon, offline: true });
+      return;
+    }
+    void api
+      .pointForecast({ lat, lon })
+      .then((res) => {
+        if (requestId !== requestIdRef.current) return;
+        if (res.ok) setState({ status: 'ready', lat, lon, forecast: res.data });
+        else setState({ status: 'error', lat, lon, offline: res.error.code === 'offline' });
+      })
+      .catch((err: unknown) => {
+        console.warn('[WeatherPopup] ' + errLikeToLogString(err));
+        if (requestId !== requestIdRef.current) return;
+        setState({ status: 'error', lat, lon });
+      });
+  }, []);
 
   useMapEvents({
     dragstart: () => {
@@ -47,30 +81,12 @@ export function WeatherPopup(): React.JSX.Element | null {
       if (!enabled || measureActive || draggedRef.current) return;
       if (isMapChromeClick(e.originalEvent)) return;
       const { lat, lng: lon } = e.latlng;
-      setState({ status: 'loading', lat, lon });
-      const api = window.electronAPI?.weather;
-      if (!api) {
-        setState({ status: 'error', lat, lon });
-        return;
-      }
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        setState({ status: 'error', lat, lon, offline: true });
-        return;
-      }
-      void api
-        .pointForecast({ lat, lon })
-        .then((res) => {
-          if (res.ok) setState({ status: 'ready', lat, lon, forecast: res.data });
-          else setState({ status: 'error', lat, lon, offline: res.error.code === 'offline' });
-        })
-        .catch((err: unknown) => {
-          console.warn('[WeatherPopup] ' + errLikeToLogString(err));
-          setState({ status: 'error', lat, lon });
-        });
+      requestForecast(lat, lon);
     },
   });
 
   const close = useCallback(() => {
+    requestIdRef.current += 1;
     setState({ status: 'idle' });
   }, []);
 
@@ -110,19 +126,7 @@ export function WeatherPopup(): React.JSX.Element | null {
               className="text-bright-green underline"
               aria-label={t('internetWeather.retry')}
               onClick={() => {
-                setState({ status: 'loading', lat: state.lat, lon: state.lon });
-                void window.electronAPI.weather
-                  .pointForecast({ lat: state.lat, lon: state.lon })
-                  .then((res) => {
-                    if (res.ok)
-                      setState({
-                        status: 'ready',
-                        lat: state.lat,
-                        lon: state.lon,
-                        forecast: res.data,
-                      });
-                    else setState({ status: 'error', lat: state.lat, lon: state.lon });
-                  });
+                requestForecast(state.lat, state.lon);
               }}
             >
               {t('internetWeather.retry')}

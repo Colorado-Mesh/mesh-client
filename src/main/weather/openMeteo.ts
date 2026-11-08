@@ -72,13 +72,47 @@ function parseHourly(raw: unknown): WeatherHourlyPoint[] {
   return out;
 }
 
-function parseDaily(raw: unknown): WeatherDailyPoint[] {
+/** Convert unixtime + forecast timezone offset into a local calendar date (YYYY-MM-DD). */
+function localDateIsoFromUnix(unixSec: number, utcOffsetSeconds: number): string {
+  const shifted = new Date((unixSec + utcOffsetSeconds) * 1000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Convert unixtime + offset into a local ISO date-time without zone (YYYY-MM-DDTHH:mm). */
+function localDateTimeIsoFromUnix(unixSec: number, utcOffsetSeconds: number): string {
+  const shifted = new Date((unixSec + utcOffsetSeconds) * 1000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  const hh = String(shifted.getUTCHours()).padStart(2, '0');
+  const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+}
+
+function parseDailyDateIso(value: unknown, utcOffsetSeconds: number): string | null {
+  if (typeof value === 'string') return value.slice(0, 10);
+  const unix = num(value);
+  if (unix == null) return null;
+  return localDateIsoFromUnix(unix, utcOffsetSeconds);
+}
+
+function parseDailyClockIso(value: unknown, utcOffsetSeconds: number): string | null {
+  if (typeof value === 'string') return value;
+  const unix = num(value);
+  if (unix == null) return null;
+  return localDateTimeIsoFromUnix(unix, utcOffsetSeconds);
+}
+
+function parseDaily(raw: unknown, utcOffsetSeconds: number): WeatherDailyPoint[] {
   if (raw == null || typeof raw !== 'object') return [];
   const d = raw as Record<string, unknown>;
   const times = Array.isArray(d.time) ? d.time : [];
   const out: WeatherDailyPoint[] = [];
   for (let i = 0; i < times.length; i++) {
-    const dateIso = typeof times[i] === 'string' ? (times[i] as string) : null;
+    const dateIso = parseDailyDateIso(times[i], utcOffsetSeconds);
     if (!dateIso) continue;
     out.push({
       dateIso,
@@ -91,14 +125,11 @@ function parseDaily(raw: unknown): WeatherDailyPoint[] {
       windSpeedMaxMs: num(Array.isArray(d.wind_speed_10m_max) ? d.wind_speed_10m_max[i] : null),
       windGustMaxMs: num(Array.isArray(d.wind_gusts_10m_max) ? d.wind_gusts_10m_max[i] : null),
       weatherCode: num(Array.isArray(d.weather_code) ? d.weather_code[i] : null),
-      sunriseIso:
-        typeof (Array.isArray(d.sunrise) ? d.sunrise[i] : null) === 'string'
-          ? (d.sunrise as string[])[i]
-          : null,
-      sunsetIso:
-        typeof (Array.isArray(d.sunset) ? d.sunset[i] : null) === 'string'
-          ? (d.sunset as string[])[i]
-          : null,
+      sunriseIso: parseDailyClockIso(
+        Array.isArray(d.sunrise) ? d.sunrise[i] : null,
+        utcOffsetSeconds,
+      ),
+      sunsetIso: parseDailyClockIso(Array.isArray(d.sunset) ? d.sunset[i] : null, utcOffsetSeconds),
     });
   }
   return out;
@@ -108,17 +139,18 @@ function parseForecastObject(
   raw: Record<string, unknown>,
   fetchedAtMs: number,
 ): WeatherPointForecast {
+  const utcOffsetSeconds = num(raw.utc_offset_seconds) ?? 0;
   return {
     provider: 'open-meteo',
     latitude: num(raw.latitude) ?? 0,
     longitude: num(raw.longitude) ?? 0,
     elevationM: num(raw.elevation),
     timezone: typeof raw.timezone === 'string' ? raw.timezone : 'GMT',
-    utcOffsetSeconds: num(raw.utc_offset_seconds) ?? 0,
+    utcOffsetSeconds,
     fetchedAtMs,
     current: parseCurrent(raw.current),
     hourly: parseHourly(raw.hourly),
-    daily: parseDaily(raw.daily),
+    daily: parseDaily(raw.daily, utcOffsetSeconds),
   };
 }
 
@@ -186,9 +218,20 @@ function parseGridPoint(raw: Record<string, unknown>, fallback: GridCell): Weath
 export async function fetchGrid(
   cells: readonly GridCell[],
   deps: OpenMeteoDeps,
-): Promise<{ points: WeatherGridPoint[]; fetchedAtMs: number; partial: boolean } | null> {
+): Promise<{
+  points: WeatherGridPoint[];
+  /** Parallel to `points` — the requested cell used for cache keys (not provider-snapped coords). */
+  requestCells: GridCell[];
+  fetchedAtMs: number;
+  partial: boolean;
+} | null> {
   if (cells.length === 0) {
-    return { points: [], fetchedAtMs: deps.now?.() ?? Date.now(), partial: false };
+    return {
+      points: [],
+      requestCells: [],
+      fetchedAtMs: deps.now?.() ?? Date.now(),
+      partial: false,
+    };
   }
   const params = new URLSearchParams({
     latitude: cells.map((c) => c.lat.toFixed(2)).join(','),
@@ -228,15 +271,18 @@ export async function fetchGrid(
     if (id != null) byId.set(id, item);
   }
   const points: WeatherGridPoint[] = [];
+  const requestCells: GridCell[] = [];
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];
     const raw = byId.get(i) ?? list[i];
     if (!raw) continue;
     points.push(parseGridPoint(raw, cell));
+    requestCells.push(cell);
   }
   const now = deps.now?.() ?? Date.now();
   return {
     points,
+    requestCells,
     fetchedAtMs: now,
     partial: points.length < cells.length,
   };

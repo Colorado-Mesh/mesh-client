@@ -141,6 +141,7 @@ import {
   incidentTabBadgeCount,
   useIncidentStore,
 } from '@/renderer/stores/incidentStore';
+import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import {
   meshtasticDeviceRoleFromConfigSlice,
@@ -773,16 +774,8 @@ function AppContent() {
     setFirmwareCheckState(r);
   }, []);
   const [telemetryNoticeDismissed, setTelemetryNoticeDismissed] = useState(false);
-  const [useFahrenheit, setUseFahrenheit] = useState(
-    () => localStorage.getItem('mesh-client:useFahrenheit') === 'true',
-  );
-  const toggleFahrenheit = useCallback(() => {
-    setUseFahrenheit((prev) => {
-      const next = !prev;
-      localStorage.setItem('mesh-client:useFahrenheit', String(next));
-      return next;
-    });
-  }, []);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const toggleFahrenheit = useTemperatureUnitStore((s) => s.toggleUseFahrenheit);
 
   const MESHCORE_CONTACTS_SHOW_KEYS_KEY = 'mesh-client:meshcoreContactsShowPublicKeys';
   const MESHCORE_CONTACTS_SHOW_REFRESH_KEY = 'mesh-client:meshcoreContactsShowRefreshControl';

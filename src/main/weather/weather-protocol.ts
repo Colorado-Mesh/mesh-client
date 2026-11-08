@@ -114,15 +114,21 @@ function emptyResponse(status: number): Response {
   });
 }
 
+/** Shared tile fetch outcome — callers each build a fresh Response (body is single-use). */
+export type WeatherTileInflightResult = { ok: true; body: Buffer } | { ok: false; status: number };
+
 export interface WeatherProtocolState {
   tileCache: TtlCache<string, Buffer>;
   tileLimiter: RateLimiter;
   rainViewerCircuit: ProviderCircuit;
   iemCircuit: ProviderCircuit;
   manifestCache: TtlCache<string, RainViewerManifest>;
-  inflight: Map<string, Promise<Response>>;
+  inflight: Map<string, Promise<WeatherTileInflightResult>>;
   lastFailLogMs: Map<string, number>;
 }
+
+/** ~16 RainViewer frames × ~25 visible tiles for one initial playback pass. */
+const TILE_RATE_LIMIT_PER_MINUTE = 16 * 25;
 
 export function createWeatherProtocolState(): WeatherProtocolState {
   return {
@@ -131,7 +137,7 @@ export function createWeatherProtocolState(): WeatherProtocolState {
       ttlMs: 30 * MS_PER_MINUTE,
       maxBytes: 96 * 1024 * 1024,
     }),
-    tileLimiter: new RateLimiter(240, MS_PER_MINUTE),
+    tileLimiter: new RateLimiter(TILE_RATE_LIMIT_PER_MINUTE, MS_PER_MINUTE),
     rainViewerCircuit: new ProviderCircuit('rainviewer'),
     iemCircuit: new ProviderCircuit('iem-nexrad'),
     manifestCache: new TtlCache({ maxEntries: 1, ttlMs: 5 * MS_PER_MINUTE }),
@@ -168,12 +174,12 @@ export function createWeatherProtocolHandler(
 
     if (!state.tileLimiter.tryAcquire(deps.now?.())) return emptyResponse(429);
 
-    return withInflightDedup(state.inflight, cacheKey, async () => {
+    const shared = await withInflightDedup(state.inflight, cacheKey, async () => {
       try {
         const upstream = await resolveUpstream(parsed, deps, state);
-        if (!upstream) return emptyResponse(404);
+        if (!upstream) return { ok: false as const, status: 404 };
         const circuit = parsed.provider === 'iem' ? state.iemCircuit : state.rainViewerCircuit;
-        if (!circuit.canAttempt(deps.now?.())) return emptyResponse(503);
+        if (!circuit.canAttempt(deps.now?.())) return { ok: false as const, status: 503 };
 
         const result = await fetchBounded(upstream, {
           timeoutMs: WEATHER_TILE_TIMEOUT_MS,
@@ -185,11 +191,11 @@ export function createWeatherProtocolHandler(
         if (!result) {
           circuit.recordFailure('tile fetch failed', deps.now?.());
           logFailOnce(state, cacheKey, 'tile fetch failed', deps.now?.());
-          return emptyResponse(404);
+          return { ok: false as const, status: 404 };
         }
         circuit.recordSuccess();
         state.tileCache.set(cacheKey, result.body, deps.now?.(), result.body.byteLength);
-        return pngResponse(result.body);
+        return { ok: true as const, body: result.body };
       } catch (err) {
         // catch-no-log-ok rate-limited via logFailOnce
         logFailOnce(
@@ -198,9 +204,10 @@ export function createWeatherProtocolHandler(
           err instanceof Error ? err.message : String(err),
           deps.now?.(),
         );
-        return emptyResponse(404);
+        return { ok: false as const, status: 404 };
       }
     });
+    return shared.ok ? pngResponse(shared.body) : emptyResponse(shared.status);
   };
 }
 

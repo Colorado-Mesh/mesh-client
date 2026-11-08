@@ -170,19 +170,13 @@ export function setInternetWeatherEnabled(enabled: boolean): void {
 }
 
 export function getWeatherUnits(): {
-  temp: 'c' | 'f';
   wind: 'kmh' | 'mph' | 'ms' | 'kn';
   precip: 'mm' | 'in';
 } {
   const parsed = parseStoredJson<{
-    mapWeatherTempUnit?: unknown;
     mapWeatherWindUnit?: unknown;
     mapWeatherPrecipUnit?: unknown;
   }>(getAppSettingsRaw(), 'getWeatherUnits');
-  const temp =
-    parsed?.mapWeatherTempUnit === 'f' || parsed?.mapWeatherTempUnit === 'c'
-      ? parsed.mapWeatherTempUnit
-      : DEFAULT_APP_SETTINGS_SHARED.mapWeatherTempUnit;
   const wind =
     parsed?.mapWeatherWindUnit === 'kmh' ||
     parsed?.mapWeatherWindUnit === 'mph' ||
@@ -194,7 +188,7 @@ export function getWeatherUnits(): {
     parsed?.mapWeatherPrecipUnit === 'mm' || parsed?.mapWeatherPrecipUnit === 'in'
       ? parsed.mapWeatherPrecipUnit
       : DEFAULT_APP_SETTINGS_SHARED.mapWeatherPrecipUnit;
-  return { temp, wind, precip };
+  return { wind, precip };
 }
 
 export function getRadarPreferences(): {

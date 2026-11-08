@@ -8,6 +8,10 @@ import { MAP_MAX_ZOOM, meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
+import {
+  useTemperatureUnitStore,
+  weatherTempUnitFromStore,
+} from '@/renderer/stores/temperatureUnitStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './emcommMapLayers';
@@ -143,7 +147,8 @@ export function MeshMapShell({
   const internetWeatherEnabled = useInternetWeatherStore((s) => s.enabled);
   const radarFrames = useInternetWeatherStore((s) => s.radarFrames);
   const weatherGrid = useInternetWeatherStore((s) => s.grid);
-  const tempUnit = useInternetWeatherStore((s) => s.tempUnit);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const tempUnit = weatherTempUnitFromStore(useFahrenheit);
   const windUnit = useInternetWeatherStore((s) => s.windUnit);
   const basemap = useMapBasemap(basemapId);
 

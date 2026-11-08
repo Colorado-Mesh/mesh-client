@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapToolStore } from '@/renderer/stores/mapToolStore';
+import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 
 import { WeatherPopup } from './WeatherPopup';
 
@@ -39,6 +40,7 @@ describe('WeatherPopup', () => {
     useInternetWeatherStore.getState().clear();
     useInternetWeatherStore.setState({ enabled: true });
     useMapToolStore.setState({ measureActive: false });
+    useTemperatureUnitStore.setState({ useFahrenheit: false });
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       get: () => true,
@@ -108,6 +110,47 @@ describe('WeatherPopup', () => {
     await waitFor(() => {
       expect(screen.getByText(/internetWeather.conditions.clear/)).toBeTruthy();
     });
+    expect(screen.getByText(/20°C/)).toBeTruthy();
+  });
+
+  it('shows Fahrenheit when the App temperature preference is °F', async () => {
+    useTemperatureUnitStore.setState({ useFahrenheit: true });
+    vi.mocked(window.electronAPI.weather.pointForecast).mockResolvedValue({
+      ok: true,
+      data: {
+        provider: 'open-meteo',
+        latitude: 40,
+        longitude: -105,
+        elevationM: null,
+        fetchedAtMs: 1,
+        timezone: 'auto',
+        utcOffsetSeconds: 0,
+        current: {
+          timeMs: 1,
+          temperatureC: 20,
+          apparentTemperatureC: null,
+          relativeHumidityPct: null,
+          precipitationMm: null,
+          weatherCode: 0,
+          cloudCoverPct: null,
+          pressureHpa: null,
+          visibilityM: null,
+          windSpeedMs: null,
+          windGustMs: null,
+          windDirectionDeg: null,
+          isDay: true,
+        },
+        hourly: [],
+        daily: [],
+      },
+    });
+    render(<WeatherPopup />);
+    act(() => {
+      handlers.click?.({ latlng: { lat: 40, lng: -105 } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/68°F/)).toBeTruthy();
+    });
   });
 
   it('shows offline error without calling retry until clicked', () => {
@@ -121,6 +164,114 @@ describe('WeatherPopup', () => {
     });
     expect(window.electronAPI.weather.pointForecast).not.toHaveBeenCalled();
     expect(screen.getByText('internetWeather.offline')).toBeTruthy();
+  });
+
+  it('ignores a stale forecast after a newer click', async () => {
+    let resolveFirst!: (value: unknown) => void;
+    const first = new Promise((resolve) => {
+      resolveFirst = resolve;
+    });
+    vi.mocked(window.electronAPI.weather.pointForecast)
+      .mockImplementationOnce(
+        () => first as ReturnType<typeof window.electronAPI.weather.pointForecast>,
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        data: {
+          provider: 'open-meteo',
+          latitude: 41,
+          longitude: -104,
+          elevationM: null,
+          fetchedAtMs: 2,
+          timezone: 'auto',
+          utcOffsetSeconds: 0,
+          current: {
+            timeMs: 2,
+            temperatureC: 30,
+            apparentTemperatureC: null,
+            relativeHumidityPct: null,
+            precipitationMm: null,
+            weatherCode: 0,
+            cloudCoverPct: null,
+            pressureHpa: null,
+            visibilityM: null,
+            windSpeedMs: null,
+            windGustMs: null,
+            windDirectionDeg: null,
+            isDay: true,
+          },
+          hourly: [],
+          daily: [],
+        },
+      });
+    render(<WeatherPopup />);
+    act(() => {
+      handlers.click?.({ latlng: { lat: 40, lng: -105 } });
+    });
+    act(() => {
+      handlers.click?.({ latlng: { lat: 41, lng: -104 } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/30°C/)).toBeTruthy();
+    });
+    act(() => {
+      resolveFirst({
+        ok: true,
+        data: {
+          provider: 'open-meteo',
+          latitude: 40,
+          longitude: -105,
+          elevationM: null,
+          fetchedAtMs: 1,
+          timezone: 'auto',
+          utcOffsetSeconds: 0,
+          current: {
+            timeMs: 1,
+            temperatureC: 10,
+            apparentTemperatureC: null,
+            relativeHumidityPct: null,
+            precipitationMm: null,
+            weatherCode: 3,
+            cloudCoverPct: null,
+            pressureHpa: null,
+            visibilityM: null,
+            windSpeedMs: null,
+            windGustMs: null,
+            windDirectionDeg: null,
+            isDay: true,
+          },
+          hourly: [],
+          daily: [],
+        },
+      });
+    });
+    expect(screen.getByText(/30°C/)).toBeTruthy();
+    expect(screen.queryByText(/10°C/)).toBeNull();
+  });
+
+  it('retry maps offline errors and catches rejections', async () => {
+    vi.mocked(window.electronAPI.weather.pointForecast)
+      .mockResolvedValueOnce({
+        ok: false,
+        error: { code: 'provider_error', message: 'fail' },
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        error: { code: 'offline', message: 'offline' },
+      });
+    render(<WeatherPopup />);
+    act(() => {
+      handlers.click?.({ latlng: { lat: 40, lng: -105 } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('internetWeather.loadFailed')).toBeTruthy();
+    });
+    act(() => {
+      screen.getByRole('button', { name: 'internetWeather.retry' }).click();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('internetWeather.offline')).toBeTruthy();
+    });
   });
 
   it('has no axe violations when ready', async () => {

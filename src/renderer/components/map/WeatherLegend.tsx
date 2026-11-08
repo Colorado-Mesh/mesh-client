@@ -2,6 +2,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
+import {
+  useTemperatureUnitStore,
+  weatherTempUnitFromStore,
+} from '@/renderer/stores/temperatureUnitStore';
 import { tempUnitLabel } from '@/shared/weather/units';
 
 import { MAP_OVERLAY_PANEL_CLASS } from './mapControlClasses';
@@ -9,7 +13,8 @@ import { MAP_OVERLAY_PANEL_CLASS } from './mapControlClasses';
 export function WeatherLegend(): React.JSX.Element | null {
   const { t } = useTranslation();
   const enabled = useInternetWeatherStore((s) => s.enabled);
-  const tempUnit = useInternetWeatherStore((s) => s.tempUnit);
+  const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
+  const tempUnit = weatherTempUnitFromStore(useFahrenheit);
   const showTemp = useMapLayerStore((s) => s.showWeatherTemperature);
   const showWind = useMapLayerStore((s) => s.showWeatherWind);
   const showRadar = useMapLayerStore((s) => s.showRadar);

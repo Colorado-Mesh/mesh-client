@@ -161,8 +161,11 @@ export function createWeatherService(
           if (points.length === 0) return fail('provider_error', 'provider_error');
         } else {
           openMeteoCircuit.recordSuccess();
-          for (const p of fetched.points) {
-            gridPointCache.set(weatherPointCacheKey(p.latitude, p.longitude), p, now());
+          for (let i = 0; i < fetched.points.length; i++) {
+            const p = fetched.points[i];
+            const cell = fetched.requestCells[i];
+            if (!cell) continue;
+            gridPointCache.set(weatherPointCacheKey(cell.lat, cell.lon), p, now());
             points.push(p);
           }
         }

@@ -6,7 +6,6 @@ import type {
   WeatherErrorCode,
   WeatherGrid,
   WeatherPrecipUnit,
-  WeatherTempUnit,
   WeatherWindUnit,
 } from '@/shared/weather/types';
 
@@ -25,7 +24,6 @@ interface InternetWeatherState {
   radarProvider: 'auto' | RadarProviderId;
   radarOpacity: number;
   showCoverage: boolean;
-  tempUnit: WeatherTempUnit;
   windUnit: WeatherWindUnit;
   precipUnit: WeatherPrecipUnit;
   radarFrames: RadarFrames | null;
@@ -41,7 +39,6 @@ interface InternetWeatherState {
   setRadarProvider: (provider: 'auto' | RadarProviderId) => void;
   setRadarOpacity: (opacity: number) => void;
   setShowCoverage: (show: boolean) => void;
-  setTempUnit: (unit: WeatherTempUnit) => void;
   setWindUnit: (unit: WeatherWindUnit) => void;
   setPrecipUnit: (unit: WeatherPrecipUnit) => void;
   setRadarFrames: (frames: RadarFrames | null) => void;
@@ -63,7 +60,6 @@ export const useInternetWeatherStore = create<InternetWeatherState>((set, get) =
   radarProvider: prefs.provider,
   radarOpacity: prefs.opacity,
   showCoverage: prefs.showCoverage,
-  tempUnit: units.temp,
   windUnit: units.wind,
   precipUnit: units.precip,
   radarFrames: null,
@@ -92,10 +88,6 @@ export const useInternetWeatherStore = create<InternetWeatherState>((set, get) =
   setShowCoverage: (showCoverage) => {
     mergeAppSetting('mapWeatherRadarCoverage', showCoverage, 'internetWeather setShowCoverage');
     set({ showCoverage });
-  },
-  setTempUnit: (tempUnit) => {
-    mergeAppSetting('mapWeatherTempUnit', tempUnit, 'internetWeather setTempUnit');
-    set({ tempUnit });
   },
   setWindUnit: (windUnit) => {
     mergeAppSetting('mapWeatherWindUnit', windUnit, 'internetWeather setWindUnit');

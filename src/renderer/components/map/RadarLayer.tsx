@@ -20,20 +20,6 @@ export function RadarLayer({ frames }: { frames: RadarFrames }): React.JSX.Eleme
   }, [url]);
 
   useEffect(() => {
-    if (!url) return;
-    for (let i = frameIndex - 2; i <= frameIndex + 2; i++) {
-      const f = frames.frames[i];
-      if (!f) continue;
-      const sample = f.tileUrlTemplate
-        .replace('{z}', String(Math.min(frames.maxNativeZoom, map.getZoom())))
-        .replace('{x}', '0')
-        .replace('{y}', '0');
-      const img = new Image();
-      img.src = sample;
-    }
-  }, [frameIndex, frames, map, url]);
-
-  useEffect(() => {
     if (!frames.attribution) return;
     map.attributionControl?.addAttribution(frames.attribution);
     return () => {

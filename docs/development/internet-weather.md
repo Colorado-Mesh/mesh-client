@@ -28,6 +28,13 @@ Place geocoding for mesh weather-bot posts remains a sibling feature (`geocoding
 | Renderer layers / popup         | `src/renderer/components/map/Weather*.tsx`, `RadarLayer.tsx`, `TemperatureLayer.tsx`, `WindLayer.tsx` |
 | Hook                            | `src/renderer/hooks/useInternetWeather.ts`                                                            |
 
+## Units
+
+- Temperature follows App °C/°F (`mesh-client:useFahrenheit` / `temperatureUnitStore`), shared by Telemetry and Layers → Internet weather. Values persist across restarts; device config hydrate must not overwrite them.
+- Changing Meshtastic Radio → Display Units (Imperial/Metric) in the UI also updates App °F/°C and map wind/precip (mph/in or kmh/mm) as a convenience — only on that user action, not when the display slice reloads on connect.
+- Module → Display in Fahrenheit updates the App preference only on user toggle (not on module config hydrate).
+- Wind and precipitation persist in app settings (`mapWeatherWindUnit` / `mapWeatherPrecipUnit`).
+
 ## Security
 
 - Fixed host allowlist; redirects re-validated; `assertIpcSender` on every handler.

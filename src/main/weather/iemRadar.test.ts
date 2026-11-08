@@ -9,10 +9,14 @@ describe('iemRadar', () => {
     expect(frames.frames).toHaveLength(12);
     expect(frames.provider).toBe('iem-nexrad');
     expect(frames.maxNativeZoom).toBe(10);
-    expect(frames.frames[0]?.id).toBe('0');
-    expect(frames.frames[1]?.id).toBe('5');
+    const oldest = frames.frames[0];
+    const newest = frames.frames[frames.frames.length - 1];
+    expect(oldest?.id).toBe('55');
+    expect(frames.frames[1]?.id).toBe('50');
+    expect(newest?.id).toBe('0');
+    expect(oldest?.timeMs).toBeLessThan(newest?.timeMs ?? Number.POSITIVE_INFINITY);
     const bucket = radarBucketMs(now);
-    expect(frames.frames[0]?.tileUrlTemplate).toContain(`t=${bucket}`);
+    expect(newest?.tileUrlTemplate).toContain(`t=${bucket}`);
   });
 
   it('bucket math snaps to 5 minutes', () => {

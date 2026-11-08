@@ -35,7 +35,8 @@ const pointPayload = {
     wind_gusts_10m: [4, 5],
   },
   daily: {
-    time: ['2026-11-08'],
+    // Local midnight / sunrise / sunset for America/Los_Angeles (utc_offset_seconds -28800)
+    time: [Date.parse('2026-11-08T08:00:00Z') / 1000],
     temperature_2m_max: [11.2],
     temperature_2m_min: [5.1],
     precipitation_sum: [1.2],
@@ -43,8 +44,8 @@ const pointPayload = {
     wind_speed_10m_max: [6],
     wind_gusts_10m_max: [10],
     weather_code: [61],
-    sunrise: ['2026-11-08T07:01'],
-    sunset: ['2026-11-08T16:40'],
+    sunrise: [Date.parse('2026-11-08T15:01:00Z') / 1000],
+    sunset: [Date.parse('2026-11-09T00:40:00Z') / 1000],
   },
 };
 
@@ -64,6 +65,8 @@ describe('openMeteo', () => {
     expect(forecast!.current?.temperatureC).toBe(8.4);
     expect(forecast!.hourly).toHaveLength(2);
     expect(forecast!.daily[0]?.dateIso).toBe('2026-11-08');
+    expect(forecast!.daily[0]?.sunriseIso).toBe('2026-11-08T07:01');
+    expect(forecast!.daily[0]?.sunsetIso).toBe('2026-11-08T16:40');
     expect(forecast!.hourly[0]?.timeMs).toBe(1_700_000_000_000);
   });
 

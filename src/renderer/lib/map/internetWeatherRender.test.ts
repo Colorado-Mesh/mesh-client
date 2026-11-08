@@ -29,6 +29,18 @@ describe('idwTemperature', () => {
     expect(v!).toBeGreaterThan(8);
     expect(v!).toBeLessThan(12);
   });
+
+  it('includes points beyond the first 16 in input order', () => {
+    const farNoise = Array.from({ length: 16 }, (_, i) => ({
+      lat: 30 + i * 0.01,
+      lon: -120,
+      value: 100,
+    }));
+    const near = { lat: 40.01, lon: -105, value: 5 };
+    const v = idwTemperature(40, -105, [...farNoise, near]);
+    expect(v).not.toBeNull();
+    expect(v!).toBeLessThan(20);
+  });
 });
 
 describe('windFromDirectionToArrowRad', () => {

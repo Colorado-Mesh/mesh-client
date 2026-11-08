@@ -15,7 +15,9 @@ export function radarBucketMs(nowMs: number): number {
 
 export function iemFrames(nowMs: number): RadarFrames {
   const bucket = radarBucketMs(nowMs);
-  const frames: RadarFrame[] = LAGS.map((lag) => ({
+  // Oldest first / newest last — matches renderer playback (index 0 → length-1).
+  const ascendingLags = [...LAGS].reverse();
+  const frames: RadarFrame[] = ascendingLags.map((lag) => ({
     provider: 'iem-nexrad' as const,
     id: String(lag),
     timeMs: bucket - lag * MS_PER_MINUTE,
