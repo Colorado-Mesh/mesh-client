@@ -7620,7 +7620,11 @@
       "keepOnTop": "Her zaman üstte",
       "return": "Ana pencereye dön",
       "unavailable": "Canlı trafik pencerelerini Mesh Client'taki Harita panelinden açın."
-    }
+    },
+    "waitingQuiet": "Yakın zamanda paket gözlemi yok",
+    "waitingHintQuiet": "Canlı trafik, yerel gözlemlerin son dakikasını gösterir. Eski paketler Monitor Sniffer'da → kalır.",
+    "retentionHint": "Yerel canlı trafik gözlemleri bir dakika tutar. Eski yakalamalar Monitör Koklayıcısında → kalır.",
+    "emptyFeedQuiet": "Son dakikada gözlem yok. Eski paketler Monitor Sniffer'da → kalır."
   },
   "meshcoreCompanionCli": {
     "summary": "Refakatçi cihaz ayarları",

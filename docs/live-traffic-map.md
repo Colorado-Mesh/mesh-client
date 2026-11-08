@@ -72,6 +72,7 @@ Changing the source or explicitly disconnecting ends the regional session. Closi
 
 ## If the map looks empty
 
+- Local live traffic only keeps observations for **one minute**. Older packets stay in **Monitor → Sniffer**; an empty Live traffic view with Sniffer history usually means the mesh has been quiet, not that the radio is disconnected.
 - Check that the selected source is receiving packets. Local mode needs observations arriving at your client; a regional source must show a live connection.
 - Switch **Map area** to **All traffic** and clear packet-type or transport-code filters. For a regional source, check its server region selection too.
 - Click **Fit traffic**. Your nodes or observers may be outside the current view, and a node far from all the others is left out of the first view.

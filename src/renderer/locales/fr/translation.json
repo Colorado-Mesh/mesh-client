@@ -7620,7 +7620,11 @@
       "keepOnTop": "Garder au premier plan",
       "return": "Revenir à la fenêtre principale",
       "unavailable": "Ouvrez les fenêtres de trafic en temps réel depuis le panneau Carte de Mesh Client."
-    }
+    },
+    "waitingQuiet": "Aucune observation récente sur les paquets",
+    "waitingHintQuiet": "La circulation en direct montre la dernière minute des observations locales. Les paquets plus anciens restent dans Monitor → Sniffer.",
+    "retentionHint": "Le trafic local en direct conserve les observations pendant une minute. Les anciennes captures restent dans Monitor → Sniffer.",
+    "emptyFeedQuiet": "Aucune observation à la dernière minute. Les paquets plus anciens restent dans Monitor → Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Paramètres de l'appareil compagnon",

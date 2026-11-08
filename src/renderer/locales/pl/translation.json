@@ -7746,7 +7746,11 @@
       "keepOnTop": "Zawsze na wierzchu",
       "return": "Wróć do okna głównego",
       "unavailable": "Okna ruchu na żywo otwórz z panelu Mapa w Mesh Client."
-    }
+    },
+    "waitingQuiet": "Brak ostatnich obserwacji pakietów",
+    "waitingHintQuiet": "Ruch na żywo pokazuje ostatnią minutę lokalnych obserwacji. Starsze pakiety pozostają w Monitor → Sniffer.",
+    "retentionHint": "Lokalny ruch na żywo przechowuje obserwacje przez jedną minutę. Starsze przechwyty pozostają w Monitor → Sniffer.",
+    "emptyFeedQuiet": "Brak obserwacji w ostatniej chwili. Starsze pakiety pozostają w Monitor → Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Ustawienia urządzenia towarzyszącego",

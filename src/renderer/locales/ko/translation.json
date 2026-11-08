@@ -7620,7 +7620,11 @@
       "keepOnTop": "항상 위에 표시",
       "return": "기본 창으로 돌아가기",
       "unavailable": "Mesh Client의 지도 패널에서 실시간 트래픽 창을 여세요."
-    }
+    },
+    "waitingQuiet": "최근 패킷 관찰 없음",
+    "waitingHintQuiet": "실시간 트래픽은 현지 관찰의 마지막 순간을 보여줍니다. 이전 패킷은 모니터 스니퍼에 남아 → 있습니다.",
+    "retentionHint": "현지 실시간 트래픽은 1분 동안 관찰을 유지합니다. 이전 캡처는 모니터 스니퍼에 남아 → 있습니다.",
+    "emptyFeedQuiet": "마지막 순간에 관찰이 없습니다. 이전 패킷은 모니터 스니퍼에 남아 → 있습니다."
   },
   "meshcoreCompanionCli": {
     "summary": "도우미 장치 설정",

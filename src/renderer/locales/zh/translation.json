@@ -7620,7 +7620,11 @@
       "keepOnTop": "保持置顶",
       "return": "返回主窗口",
       "unavailable": "请从 Mesh Client 的“地图”面板打开实时流量窗口。"
-    }
+    },
+    "waitingQuiet": "没有最近的数据包观察",
+    "waitingHintQuiet": "实时交通显示当地观测的最后一分钟。较旧的数据包保留在监视器→嗅探器中。",
+    "retentionHint": "本地实时交通保持观察一分钟。较早的捕获保留在监视器→嗅探器中。",
+    "emptyFeedQuiet": "在最后一分钟没有观察到任何东西。较旧的数据包保留在监视器→嗅探器中。"
   },
   "meshcoreCompanionCli": {
     "summary": "配套设备设置",

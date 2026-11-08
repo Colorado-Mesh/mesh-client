@@ -7620,7 +7620,11 @@
       "keepOnTop": "Mantener encima",
       "return": "Volver a la ventana principal",
       "unavailable": "Abre las ventanas de tráfico en directo desde el panel Mapa de Mesh Client."
-    }
+    },
+    "waitingQuiet": "No se han observado paquetes recientes",
+    "waitingHintQuiet": "El tráfico en vivo muestra el último minuto de las observaciones locales. Los paquetes más antiguos permanecen en Monitor → Sniffer.",
+    "retentionHint": "El tráfico local en vivo mantiene las observaciones durante un minuto. Las capturas más antiguas permanecen en Monitor → Sniffer.",
+    "emptyFeedQuiet": "No hay comentarios en el último minuto. Los paquetes más antiguos permanecen en Monitor → Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Configuración del dispositivo complementario",

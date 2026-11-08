@@ -7620,7 +7620,11 @@
       "keepOnTop": "Selalu di atas",
       "return": "Kembali ke jendela utama",
       "unavailable": "Buka jendela lalu lintas langsung dari panel Peta di Mesh Client."
-    }
+    },
+    "waitingQuiet": "Tidak ada pengamatan paket terbaru",
+    "waitingHintQuiet": "Lalu lintas langsung menunjukkan menit terakhir pengamatan lokal. Paket yang lebih tua tetap berada di Monitor → Sniffer.",
+    "retentionHint": "Lalu lintas langsung lokal menyimpan pengamatan selama satu menit. Tangkapan yang lebih lama tetap berada di Monitor → Sniffer.",
+    "emptyFeedQuiet": "Tidak ada pengamatan di menit terakhir. Paket yang lebih tua tetap berada di Monitor → Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Pengaturan perangkat pendamping",

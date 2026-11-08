@@ -7620,7 +7620,11 @@
       "keepOnTop": "常に手前に表示",
       "return": "メインウィンドウに戻す",
       "unavailable": "ライブトラフィックのウィンドウは Mesh Client の地図パネルから開いてください。"
-    }
+    },
+    "waitingQuiet": "最近のパケットの観測はありません",
+    "waitingHintQuiet": "ライブトラフィックは、地元の観察の直前を示しています。古いパケットはMonitor → Snifferに残ります。",
+    "retentionHint": "ローカルのライブトラフィックは、1分間観測を保持します。古いキャプチャはモニタースニッファーに→残ります。",
+    "emptyFeedQuiet": "直前の観察はありません。古いパケットはMonitor → Snifferに残ります。"
   },
   "meshcoreCompanionCli": {
     "summary": "コンパニオンデバイスの設定",

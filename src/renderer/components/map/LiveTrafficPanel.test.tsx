@@ -416,6 +416,7 @@ describe('LiveTrafficPanel', () => {
       );
       expect(screen.queryByRole('switch')).toBeNull();
       expect(screen.getByText('liveTraffic.waiting')).toBeInTheDocument();
+      expect(screen.getByText('liveTraffic.waitingHint')).toBeInTheDocument();
       expect(latestCanvas().events).toHaveLength(0);
       await act(() => vi.advanceTimersByTime(2 * MS_PER_MINUTE));
       fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.pause' }));
@@ -423,9 +424,33 @@ describe('LiveTrafficPanel', () => {
       fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.resume' }));
       expect(latestCanvas().events).toHaveLength(0);
       expect(screen.getByText('liveTraffic.waiting')).toBeInTheDocument();
+      expect(screen.getByText('liveTraffic.waitingHint')).toBeInTheDocument();
       expect(vi.getTimerCount()).toBe(0);
       unmount();
       expect(vi.getTimerCount()).toBe(0);
+    },
+  );
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'explains the one-minute window for %s when only aged local packets remain',
+    async (protocol) => {
+      const agedTs = Date.now() - 2 * MS_PER_MINUTE;
+      await renderPanel(
+        <LiveTrafficPanel
+          nodes={nodes}
+          myNodeNum={1}
+          meshcorePackets={protocol === 'meshcore' ? [meshcorePacket(agedTs)] : undefined}
+          meshtasticPackets={protocol === 'meshtastic' ? [packet(agedTs)] : undefined}
+        />,
+      );
+      expect(latestCanvas().events).toHaveLength(0);
+      expect(screen.getByText('liveTraffic.waitingQuiet')).toBeInTheDocument();
+      expect(screen.getByText('liveTraffic.waitingHintQuiet')).toBeInTheDocument();
+      expect(screen.queryByText('liveTraffic.waitingHint')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.toggleFeed' }));
+      expect(screen.getByText('liveTraffic.emptyFeedQuiet')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.aboutMap' }));
+      expect(screen.getByText('liveTraffic.retentionHint')).toBeInTheDocument();
     },
   );
 

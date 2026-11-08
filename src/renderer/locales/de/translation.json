@@ -7620,7 +7620,11 @@
       "keepOnTop": "Immer im Vordergrund",
       "return": "Zurück ins Hauptfenster",
       "unavailable": "Öffne Live-Verkehrsfenster über den Bereich Karte in Mesh Client."
-    }
+    },
+    "waitingQuiet": "Keine aktuellen Paketbeobachtungen",
+    "waitingHintQuiet": "Live-Traffic zeigt die letzte Minute der lokalen Beobachtungen. Ältere Pakete bleiben im → Monitor-Sniffer.",
+    "retentionHint": "Der lokale Live-Verkehr speichert Beobachtungen für eine Minute. Ältere Captures verbleiben im → Monitor-Sniffer.",
+    "emptyFeedQuiet": "Keine Beobachtungen in letzter Minute. Ältere Pakete bleiben im → Monitor-Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Companion-Geräteeinstellungen",

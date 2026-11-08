@@ -7695,7 +7695,11 @@
       "keepOnTop": "Vždy navrchu",
       "return": "Vrátit do hlavního okna",
       "unavailable": "Okna živého provozu otevřete z panelu Mapa v aplikaci Mesh Client."
-    }
+    },
+    "waitingQuiet": "Žádná nedávná pozorování paketů",
+    "waitingHintQuiet": "Živý provoz ukazuje poslední minutu místních pozorování. Starší pakety zůstávají v nástroji Monitor → Sniffer.",
+    "retentionHint": "Místní živý provoz udržuje pozorování po dobu jedné minuty. Starší snímky zůstávají v nástroji Monitor → Sniffer.",
+    "emptyFeedQuiet": "Žádné připomínky na poslední chvíli. Starší pakety zůstávají v nástroji Monitor → Sniffer."
   },
   "meshcoreCompanionCli": {
     "summary": "Nastavení doprovodného zařízení",
