@@ -893,7 +893,7 @@ fn is_oversized_legacy_inventory_error(err: &dyn std::fmt::Display) -> bool {
         .contains("legacy inventory exceeds safe path/count bound")
 }
 
-/// Move an oversized pre-1.4 PN directory aside and recreate an empty path so live
+/// Move an oversized pre-1.4 PN directory aside and leave the path absent so live
 /// RNS/RRC can attach. Never deletes; trusted recovery can still import from quarantine.
 fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, String> {
     let parent = storage_dir
@@ -948,12 +948,9 @@ fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, Stri
             quarantine.display()
         )
     })?;
-    std::fs::create_dir_all(storage_dir).map_err(|e| {
-        format!(
-            "failed to recreate empty PN store at {}: {e}",
-            storage_dir.display()
-        )
-    })?;
+    // Leave `storage_dir` absent. rsLXMF `open_locked_store` treats any existing
+    // path (even an empty directory) as a legacy store and returns MigrationRequired;
+    // a missing path is what initializes a fresh empty v2 store.
     Ok(quarantine)
 }
 
@@ -2113,7 +2110,7 @@ mod tests {
     }
 
     #[test]
-    fn quarantine_oversized_legacy_store_moves_aside_and_recreates_empty() {
+    fn quarantine_oversized_legacy_store_moves_aside_and_leaves_path_absent() {
         let dir = std::env::temp_dir().join(format!(
             "mesh-prop-oversized-q-{}-{}",
             std::process::id(),
@@ -2133,8 +2130,8 @@ mod tests {
         let quarantine = quarantine_oversized_legacy_store(&store).expect("quarantine");
         assert!(quarantine.is_dir());
         assert!(quarantine.join("blob").is_file());
-        assert!(store.is_dir());
-        assert!(!store.join("blob").exists());
+        // Path must be absent so open_locked_store can init empty v2 (not MigrationRequired).
+        assert!(!store.exists());
         assert!(!lock.exists());
         assert!(
             quarantine
