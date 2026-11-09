@@ -3367,20 +3367,38 @@ function AppContent() {
       reticulumHash?: string | null;
       text: string;
     }): boolean => {
+      if (!selectByProtocol(chatSendAvailableByProtocol, args.protocol)) {
+        console.warn('[App] team roster send unavailable for protocol', args.protocol);
+        return false;
+      }
       let destination = args.destination;
       if (args.protocol === 'reticulum' && args.reticulumHash) {
         try {
           destination = openReticulumDmFromHash(args.reticulumHash);
         } catch (err) {
-          console.warn('[App] team roster Reticulum DM failed', err);
+          console.warn(
+            '[App] team roster Reticulum DM failed ' +
+              (err instanceof Error ? err.message : String(err)),
+          );
           return false;
         }
       }
-      const send = selectByProtocol(autoResendSendByProtocol, args.protocol);
-      const storeId = send(args.text, 0, destination);
-      return storeId != null;
+      try {
+        const send = selectByProtocol(autoResendSendByProtocol, args.protocol);
+        const storeId = send(args.text, 0, destination);
+        if (storeId == null) {
+          console.warn('[App] team roster send returned no store id', args.protocol, destination);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.warn(
+          '[App] team roster send threw ' + (err instanceof Error ? err.message : String(err)),
+        );
+        return false;
+      }
     },
-    [autoResendSendByProtocol],
+    [autoResendSendByProtocol, chatSendAvailableByProtocol],
   );
 
   useEffect(() => {

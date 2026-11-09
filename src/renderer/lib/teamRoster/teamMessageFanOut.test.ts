@@ -176,4 +176,70 @@ describe('fanOutTeamMessage', () => {
       'send_failed',
     ]);
   });
+
+  it('falls back to another roster link when last-active send fails', () => {
+    const sendDm = vi
+      .fn()
+      .mockImplementation((args: { protocol: string }) => args.protocol === 'meshtastic');
+    const presenceByUnit = new Map<number, MemberPresenceSnapshot>([
+      [
+        1,
+        {
+          unitId: 1,
+          aggregateStatus: 'online',
+          lastActive: {
+            link: {
+              protocol: 'reticulum',
+              durableKey: 'aa'.repeat(16),
+              onRoster: true,
+            },
+            peerNodeId: 99,
+            lastHeardMs: 200,
+            status: 'online',
+            displayName: 'RNS',
+          },
+          links: [
+            {
+              link: {
+                protocol: 'reticulum',
+                durableKey: 'aa'.repeat(16),
+                onRoster: true,
+              },
+              peerNodeId: 99,
+              lastHeardMs: 200,
+              status: 'online',
+              displayName: 'RNS',
+            },
+            {
+              link: { protocol: 'meshtastic', durableKey: '42', nodeId: 42, onRoster: true },
+              peerNodeId: 42,
+              lastHeardMs: 50,
+              status: 'stale',
+              displayName: 'MT',
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const result = fanOutTeamMessage({
+      recipients: [member({ unitId: 1, callsign: 'Ops' })],
+      presenceByUnit,
+      text: 'fallback',
+      sendDm,
+    });
+
+    expect(result.sent).toBe(1);
+    expect(result.skipped).toBe(0);
+    expect(sendDm).toHaveBeenCalledTimes(2);
+    expect(sendDm).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ protocol: 'reticulum', destination: 99 }),
+    );
+    expect(sendDm).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ protocol: 'meshtastic', destination: 42, text: 'fallback' }),
+    );
+    expect(result.results[0]?.protocol).toBe('meshtastic');
+  });
 });
