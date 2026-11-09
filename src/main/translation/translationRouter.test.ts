@@ -156,5 +156,13 @@ describe('translation router', () => {
       ok: false,
       reason: 'uncertain',
     });
+    worker.run.mockResolvedValueOnce({
+      id: 1,
+      text: '',
+      detection: { language: 'es', confidence: 0.4 },
+    });
+    expect(
+      await router.translate({ text: 'Buenas tardes a todos', target: 'en', mode: 'manual' }),
+    ).toEqual({ ok: false, reason: 'uncertain' });
   });
 });
