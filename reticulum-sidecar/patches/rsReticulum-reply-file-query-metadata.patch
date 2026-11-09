@@ -1,9 +1,9 @@
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
-index cfdb018..fc525ab 100644
+index 46d4f1d..ab95136 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
-@@ -599,7 +599,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_link_packet_channel(&mut self
- pub fn rns_runtime::link_manager::LinkManager::set_link_packet_proof_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkPacketProof>)
+@@ -697,7 +697,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_link_packet_proof_channel(&mu
+ pub fn rns_runtime::link_manager::LinkManager::set_ordinary_packet_proof_strategy(&mut self, rns_identity::destination::ProofStrategy) -> core::result::Result<(), rns_runtime::link_manager::LinkPacketConfigurationError>
  pub fn rns_runtime::link_manager::LinkManager::set_outbound_resource_proof_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkResourceProof>)
  pub fn rns_runtime::link_manager::LinkManager::set_request_handler<F>(&mut self, F) where F: core::ops::function::Fn([u8; 16], [u8; 16], alloc::vec::Vec<u8>) -> core::option::Option<alloc::vec::Vec<u8>> + core::marker::Send + 'static
 -pub fn rns_runtime::link_manager::LinkManager::set_request_handler_ex<F>(&mut self, F) where F: core::ops::function::Fn([u8; 16], [u8; 16], alloc::vec::Vec<u8>) -> rns_runtime::link_manager::RequestOutcome + core::marker::Send + 'static
@@ -11,11 +11,29 @@ index cfdb018..fc525ab 100644
  pub fn rns_runtime::link_manager::LinkManager::set_resource_accept_handler<F>(&mut self, F) where F: core::ops::function::Fn([u8; 16], &rns_protocol::resource_adv::ResourceAdvertisement) -> bool + core::marker::Send + 'static
  pub fn rns_runtime::link_manager::LinkManager::set_resource_completed_channel(&mut self, tokio::sync::mpsc::bounded::Sender<(alloc::vec::Vec<u8>, [u8; 16])>)
  pub fn rns_runtime::link_manager::LinkManager::set_resource_completion_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::ResourceCompletion>)
+diff --git a/crates/rns-runtime/src/deferred_request.rs b/crates/rns-runtime/src/deferred_request.rs
+index b437764..4c5e6c5 100644
+--- a/crates/rns-runtime/src/deferred_request.rs
++++ b/crates/rns-runtime/src/deferred_request.rs
+@@ -105,6 +105,13 @@ impl DeferredRequestResponder {
+                 .capacity()
+                 .checked_add(data.capacity())
+                 .and_then(|n| n.checked_add(metadata.as_ref().map_or(0, Vec::capacity))),
++            RequestOutcome::ReplyFile {
++                data,
++                metadata,
++                ..
++            } => data
++                .capacity()
++                .checked_add(metadata.as_ref().map_or(0, Vec::capacity)),
+             RequestOutcome::Drop => Some(0),
+         };
+         if capacity.is_none_or(|n| n > self.state.limit) {
 diff --git a/crates/rns-runtime/src/lib.rs b/crates/rns-runtime/src/lib.rs
-index a67c07a..47ffadb 100644
+index d2cd1b5..55b8a66 100644
 --- a/crates/rns-runtime/src/lib.rs
 +++ b/crates/rns-runtime/src/lib.rs
-@@ -39,7 +39,9 @@ pub mod prelude {
+@@ -40,7 +40,9 @@ pub mod prelude {
          RegisteredDestination, ResourceAcceptPolicy,
      };
      pub use crate::lifecycle::ShutdownSignal;
@@ -27,10 +45,10 @@ index a67c07a..47ffadb 100644
          LinkSession, LinkSessionChannelError, LinkSessionChannelHandle, LinkSessionCloseReason,
          LinkSessionError, LinkSessionEvent, LinkSessionHandle, LinkSessionResourceError,
 diff --git a/crates/rns-runtime/src/link_client.rs b/crates/rns-runtime/src/link_client.rs
-index 4f48bc8..fce828f 100644
+index 9759bd1..690f95b 100644
 --- a/crates/rns-runtime/src/link_client.rs
 +++ b/crates/rns-runtime/src/link_client.rs
-@@ -45,6 +45,17 @@ pub enum LinkClientError {
+@@ -48,6 +48,17 @@ pub enum LinkClientError {
      UnexpectedResponse(String),
  }
  
@@ -48,25 +66,28 @@ index 4f48bc8..fce828f 100644
  #[derive(Clone)]
  pub struct LinkClient {
      transport_tx: mpsc::Sender<TransportMessage>,
-@@ -66,7 +77,7 @@ impl LinkClient {
+@@ -70,8 +81,9 @@ impl LinkClient {
      }
  
-     /// Open a Link to `app_name` on `remote_transport_hash`, send one
--    /// request, return the response.
-+    /// request, return the response (and optional Resource metadata).
-     pub async fn query(
-         &self,
-         remote_transport_hash: [u8; 16],
-@@ -75,7 +86,7 @@ impl LinkClient {
+     /// Open a Link to `app_name` on the supplied identity hash, identify the local
+-    /// identity, send one request and return its response bytes. For the current
+-    /// remote-management service, this is the remote transport identity hash.
++    /// identity, send one request and return its response bytes (and optional
++    /// Resource metadata). For the current remote-management service, this is
++    /// the remote transport identity hash.
+     ///
+     /// `overall_timeout` supplies remaining budgets for discovery, Link proof and
+     /// response waits. Registration, endpoint binding, sends and teardown can
+@@ -85,7 +97,7 @@ impl LinkClient {
          payload: Vec<u8>,
          hops: u8,
          overall_timeout: Duration,
 -    ) -> Result<Vec<u8>, LinkClientError> {
 +    ) -> Result<LinkQueryResponse, LinkClientError> {
          let started = Instant::now();
-         let deadline = started + overall_timeout;
- 
-@@ -280,7 +291,7 @@ async fn wait_for_response(
+         let deadline = started
+             .checked_add(overall_timeout)
+@@ -302,7 +314,7 @@ async fn wait_for_response(
      link_id: [u8; 16],
      request_id: [u8; 16],
      deadline: Duration,
@@ -75,7 +96,7 @@ index 4f48bc8..fce828f 100644
      let fut = async {
          let mut inbound_resources: HashMap<[u8; 32], InboundTransfer> = HashMap::new();
  
-@@ -318,7 +329,10 @@ async fn wait_for_response(
+@@ -345,7 +357,10 @@ async fn wait_for_response(
                              match link.handle_response(body) {
                                  Ok((id, response_data)) => {
                                      if id == request_id {
@@ -87,7 +108,7 @@ index 4f48bc8..fce828f 100644
                                      }
                                  }
                                  Err(e) => {
-@@ -432,7 +446,7 @@ async fn wait_for_response(
+@@ -459,7 +474,7 @@ async fn wait_for_response(
                              }
  
                              if let Some(rh) = completed_rh {
@@ -96,7 +117,7 @@ index 4f48bc8..fce828f 100644
                                      let transfer =
                                          inbound_resources.get_mut(&rh).ok_or_else(|| {
                                              LinkClientError::UnexpectedResponse(
-@@ -451,19 +465,32 @@ async fn wait_for_response(
+@@ -478,19 +493,32 @@ async fn wait_for_response(
                                              },
                                          )
                                      };
@@ -136,19 +157,19 @@ index 4f48bc8..fce828f 100644
                                      }
                                      Err(e) => {
 diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
-index 095dac6..672150f 100644
+index e4eb8cb..e5d858f 100644
 --- a/crates/rns-runtime/src/link_manager.rs
 +++ b/crates/rns-runtime/src/link_manager.rs
-@@ -485,6 +485,8 @@ impl std::fmt::Debug for LinkManagerAccountingEvent {
- /// Result of an extended request handler. `Reply` is the ordinary response;
- /// `ReplyWithResource` sends an inline ack followed by a resource transfer
- /// (rncp --fetch). Python: `RNS.Resource(..., target_link=link)`.
+@@ -516,6 +516,8 @@ impl std::fmt::Debug for LinkManagerAccountingEvent {
+ /// stages the acknowledgment and a separate ordinary Resource, as used by rncp
+ /// fetch. Neither staging
+ /// operation confirms delivery; arrival order is not guaranteed.
 +/// `ReplyFile` sends a **response** Resource with raw file bytes and optional
 +/// msgpack metadata (NomadNet `/file/...`: `{"name": <path bytes>}`).
  #[derive(Debug, Clone)]
  pub enum RequestOutcome {
      Reply(Vec<u8>),
-@@ -495,10 +497,32 @@ pub enum RequestOutcome {
+@@ -527,11 +529,33 @@ pub enum RequestOutcome {
          metadata: Option<Vec<u8>>,
          auto_compress: bool,
      },
@@ -162,7 +183,8 @@ index 095dac6..672150f 100644
 +        metadata: Option<Vec<u8>>,
 +        auto_compress: bool,
 +    },
-     /// Silently drop; caller sees a timeout. Useful for ACL denies.
+     /// Send no response. A waiting requester can time out; no explicit denial
+     /// is sent.
      Drop,
  }
  
@@ -178,10 +200,10 @@ index 095dac6..672150f 100644
 +    buf
 +}
 +
- /// Python-compatible context supplied to a per-path Destination request handler.
- #[derive(Clone)]
- pub struct DestinationRequest {
-@@ -514,7 +538,10 @@ pub type DestinationRequestHandler =
+ /// Context for a per-path Destination request handler. `remote_identity`
+ /// comes from verified LinkIdentify, when present; the registered `AllowPolicy`
+ /// is applied separately. `requested_at` is the sender's timestamp, not a
+@@ -550,7 +574,10 @@ pub type DestinationRequestHandler =
      Box<dyn Fn(DestinationRequest) -> RequestOutcome + Send + 'static>;
  
  type RequestHandler = Box<dyn Fn([u8; 16], [u8; 16], Vec<u8>) -> Option<Vec<u8>> + Send>;
@@ -193,7 +215,7 @@ index 095dac6..672150f 100644
  type LinkIdentityGate = Box<dyn Fn([u8; 16], [u8; 16]) -> bool + Send>;
  type ResourceAcceptHandler = Box<dyn Fn([u8; 16], &ResourceAdvertisement) -> bool + Send>;
  
-@@ -4909,7 +4936,7 @@ impl LinkManager {
+@@ -5487,7 +5514,7 @@ impl LinkManager {
                  RequestOutcome::Drop
              }
          } else if let Some(ref handler) = self.request_handler_ex {
@@ -202,10 +224,10 @@ index 095dac6..672150f 100644
          } else if let Some(ref handler) = self.request_handler {
              match handler(link_id, path_hash, data) {
                  Some(response) => RequestOutcome::Reply(response),
-@@ -4919,15 +4946,20 @@ impl LinkManager {
-             RequestOutcome::Drop
-         };
- 
+@@ -5517,15 +5544,20 @@ impl LinkManager {
+         lease: Option<Arc<crate::deferred_request::RequestLease>>,
+     ) -> bool {
+         let mut sent = false;
 -        let (response, fetch_spec) = match outcome {
 -            RequestOutcome::Reply(response) => (Some(response), None),
 +        let (response, fetch_spec, file_spec) = match outcome {
@@ -227,7 +249,7 @@ index 095dac6..672150f 100644
          };
  
          if let Some(response) = response {
-@@ -5002,7 +5034,7 @@ impl LinkManager {
+@@ -5609,7 +5641,7 @@ impl LinkManager {
                      );
                  }
              }
@@ -236,46 +258,51 @@ index 095dac6..672150f 100644
              tracing::debug!(
                  link_id = hex::encode(link_id),
                  request_id = hex::encode(request_id),
-@@ -5011,6 +5043,35 @@ impl LinkManager {
+@@ -5618,6 +5650,40 @@ impl LinkManager {
              );
          }
  
 +        if let Some((data, metadata, auto_compress)) = file_spec {
-+            if self
-+                .start_resource_transfer_inner(
-+                    &link_id,
-+                    ResourceTransferStart {
-+                        data,
-+                        metadata,
-+                        auto_compress,
-+                        request_id: Some(request_id.to_vec()),
-+                        is_response: true,
-+                        allow_handshake: true,
-+                    },
-+                )
-+                .is_none()
-+            {
-+                tracing::warn!(
-+                    link_id = hex::encode(link_id),
-+                    request_id = hex::encode(request_id),
-+                    "link request file response Resource could not be started"
-+                );
-+            } else {
++            if let Some(resource_id) = self.start_resource_transfer_inner(
++                &link_id,
++                ResourceTransferStart {
++                    data,
++                    metadata,
++                    auto_compress,
++                    request_id: Some(request_id.to_vec()),
++                    is_response: true,
++                    allow_handshake: true,
++                },
++            ) {
++                if let Some(lease) = &lease {
++                    self.deferred_resource_leases.push(DeferredResourceLease {
++                        link_id,
++                        resource_id,
++                        _lease: lease.clone(),
++                    });
++                }
 +                tracing::debug!(
 +                    link_id = hex::encode(link_id),
 +                    request_id = hex::encode(request_id),
 +                    "link request handled — file response Resource started"
 +                );
++            } else {
++                tracing::warn!(
++                    link_id = hex::encode(link_id),
++                    request_id = hex::encode(request_id),
++                    "link request file response Resource could not be started"
++                );
++                sent = false;
 +            }
 +        }
 +
-         if let Some((data, metadata, auto_compress)) = fetch_spec
-             && self
-                 .start_resource_transfer_inner(
-@@ -5042,9 +5103,12 @@ impl LinkManager {
- 
-     /// Handler that may schedule a follow-up resource transfer (rncp --fetch).
-     /// Takes precedence over [`Self::set_request_handler`].
+         if let Some((data, metadata, auto_compress)) = fetch_spec {
+             if let Some(resource_id) = self.start_resource_transfer_inner(
+                 &link_id,
+@@ -5720,9 +5786,12 @@ impl LinkManager {
+     /// schedule a follow-up Resource. A registered per-path handler takes
+     /// precedence; otherwise this overrides [`Self::set_request_handler`].
+     /// The fallback must perform its own authorization and return promptly.
 +    ///
 +    /// The fourth argument is the authenticated remote identity when the peer
 +    /// identified on the Link (needed for NomadNet `.allowed` ACLs).
@@ -286,7 +313,7 @@ index 095dac6..672150f 100644
      {
          self.request_handler_ex = Some(Box::new(handler));
      }
-@@ -7471,6 +7535,137 @@ mod tests {
+@@ -8488,6 +8557,137 @@ mod tests {
          assert_eq!(response_data, b"ready");
      }
  
@@ -425,10 +452,10 @@ index 095dac6..672150f 100644
      fn test_destination_link_acceptance_gating() {
          let (tx, _transport_rx) = mpsc::channel(64);
 diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
-index 79b65e9..10e7ad2 100644
+index ec3641c..3946e64 100644
 --- a/crates/rns-runtime/src/reticulum.rs
 +++ b/crates/rns-runtime/src/reticulum.rs
-@@ -6294,7 +6294,9 @@ async fn start_blackhole_subscriber(handle: ReticulumHandle) {
+@@ -6965,7 +6965,9 @@ async fn start_blackhole_subscriber(handle: ReticulumHandle) {
                  {
                      Ok(payload) => {
                          match handle
@@ -440,10 +467,10 @@ index 79b65e9..10e7ad2 100644
                          {
                              Some(TransportQueryResponse::IntResult(applied)) => {
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index 5c40bef..e9378cb 100644
+index 3ac43f5..832da5e 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
-@@ -279,7 +279,7 @@ pub async fn spawn_rncp_listener(
+@@ -316,7 +316,7 @@ pub async fn spawn_rncp_listener(
          let link_identities = link_mgr.link_identities_handle();
          let fetch_events = events_tx.clone();
          let fetch_path_hash = truncated_hash(FETCH_PATH_NAME.as_bytes());
@@ -452,7 +479,7 @@ index 5c40bef..e9378cb 100644
              if path_hash != fetch_path_hash {
                  return RequestOutcome::Drop;
              }
-@@ -683,13 +683,7 @@ pub async fn rncp_send_file(request: RncpSendRequest<'_>) -> Result<RncpOutcome,
+@@ -736,13 +736,7 @@ pub async fn rncp_send_file(request: RncpSendRequest<'_>) -> Result<RncpOutcome,
  }
  
  fn pack_metadata(file_name: &str) -> Vec<u8> {
@@ -468,10 +495,10 @@ index 5c40bef..e9378cb 100644
  
  struct OutboundDrive<'a> {
 diff --git a/crates/rns-tools/src/commands/rnpath.rs b/crates/rns-tools/src/commands/rnpath.rs
-index 6d9911a..97aacf9 100644
+index 31347ad..0cf4ca4 100644
 --- a/crates/rns-tools/src/commands/rnpath.rs
 +++ b/crates/rns-tools/src/commands/rnpath.rs
-@@ -951,7 +951,7 @@ async fn run_remote_blackhole_list(args: Args) -> ExitCode {
+@@ -956,7 +956,7 @@ async fn run_remote_blackhole_list(args: Args) -> ExitCode {
          )
          .await
      {
@@ -480,7 +507,7 @@ index 6d9911a..97aacf9 100644
          Err(e) => {
              eprintln!(
                  "rnpath-rs: remote blackhole query failed: {}",
-@@ -1183,7 +1183,7 @@ async fn run_remote(args: Args) -> ExitCode {
+@@ -1188,7 +1188,7 @@ async fn run_remote(args: Args) -> ExitCode {
          )
          .await
      {
@@ -490,10 +517,10 @@ index 6d9911a..97aacf9 100644
              eprintln!("rnpath-rs: remote query failed: {}", remote_err(&e));
              shutdown.trigger();
 diff --git a/crates/rns-tools/src/commands/rnstatus.rs b/crates/rns-tools/src/commands/rnstatus.rs
-index 28345b4..0d079c8 100644
+index 94059a5..94571ef 100644
 --- a/crates/rns-tools/src/commands/rnstatus.rs
 +++ b/crates/rns-tools/src/commands/rnstatus.rs
-@@ -1006,7 +1006,7 @@ impl RemoteSession {
+@@ -1086,7 +1086,7 @@ impl RemoteSession {
              )
              .await
          {

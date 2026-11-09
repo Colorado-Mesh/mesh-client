@@ -37,8 +37,16 @@ mod pn_hosting_policy;
 mod pn_inbound;
 mod propagation_mode;
 #[cfg(feature = "rns-stack")]
-#[allow(dead_code)] // Vendored Ratspeak vault surface; .rsi uses encrypt/decrypt helpers.
-#[allow(clippy::struct_field_names)] // Upstream VaultParams keeps m_cost/t_cost/p_cost names.
+// Vendored Ratspeak vault — keep upstream shape; do not "fix" clippy locally.
+#[allow(
+    dead_code, // .rsi uses encrypt/decrypt helpers from the vendored surface.
+    clippy::struct_field_names, // VaultParams keeps m_cost/t_cost/p_cost names.
+    clippy::unnecessary_wraps,
+    clippy::unused_self,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::redundant_closure_for_method_calls
+)]
 #[path = "../../vendor/ratspeak_vault.rs"]
 mod ratspeak_vault;
 pub mod rf_profiles;
@@ -61,6 +69,8 @@ mod live;
 mod live_tasks;
 #[cfg(feature = "rns-stack")]
 mod lxmf_attachments;
+#[cfg(feature = "rns-stack")]
+mod lxmf_compose;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]

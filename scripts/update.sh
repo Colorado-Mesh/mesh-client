@@ -610,9 +610,9 @@ process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
 # stub-kind: games-parity → warn only when a published release is newer than reviewed-ref.
 # (voice/games stubs cleared after lxst-telephony / lrgp-rs integration; empty stub = informational.)
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
-  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.0'
+  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.1'
   'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.37'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.42'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851'
   # Identity vault is refreshed from the latest ratspeak/Ratspeak release by
   # scripts/sync-ratspeak-releases.mjs during `pnpm run update` — no file: watch.

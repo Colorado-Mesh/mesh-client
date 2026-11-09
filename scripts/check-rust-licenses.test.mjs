@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CARGO_METADATA_ARGS,
+  classifyLicenseFileBody,
   collectRustPackages,
   evaluateRustPackages,
   formatRustLicenseCheckReport,
+  resolveLicenseFile,
   runCargoMetadata,
   runRustLicenseCheck,
 } from './check-rust-licenses.mjs';
@@ -29,6 +31,23 @@ function sink() {
   };
 }
 
+describe('classifyLicenseFileBody', () => {
+  it('recognizes Reticulum License and LXST Ratspeak grant headers', () => {
+    expect(classifyLicenseFileBody('Reticulum License\n\nDerived from…')).toBe(
+      'LicenseRef-Reticulum',
+    );
+    expect(
+      classifyLicenseFileBody(
+        'LXST Copyright 2026 Mark Qvist.\n\nused under license for Ratspeak, for non-commercial use only.\n',
+      ),
+    ).toBe('LicenseRef-LXST-Ratspeak');
+    expect(classifyLicenseFileBody('GNU AFFERO GENERAL PUBLIC LICENSE\nVersion 3')).toBe(
+      'AGPL-3.0-or-later',
+    );
+    expect(classifyLicenseFileBody('Mysterious proprietary terms')).toBe('');
+  });
+});
+
 describe('collectRustPackages', () => {
   it('maps cargo metadata packages', () => {
     expect(
@@ -41,6 +60,24 @@ describe('collectRustPackages', () => {
         manifestPath: '/x/rns-wire/Cargo.toml',
       },
     ]);
+  });
+
+  it('resolves empty SPDX license via license-file under the manifest', () => {
+    const packages = collectRustPackages({
+      packages: [
+        {
+          name: 'rns-crypto',
+          version: '1.4.0',
+          license: null,
+          license_file: '../../LICENSE',
+          manifest_path: `${process.cwd()}/.rsstack/rsReticulum/crates/rns-crypto/Cargo.toml`,
+        },
+      ],
+    });
+    expect(packages[0].license).toBe('LicenseRef-Reticulum');
+    expect(resolveLicenseFile(packages[0].manifestPath, '../../LICENSE')).toBe(
+      'LicenseRef-Reticulum',
+    );
   });
 
   it('throws on missing or malformed input', () => {

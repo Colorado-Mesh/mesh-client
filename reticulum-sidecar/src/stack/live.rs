@@ -16,7 +16,7 @@ use lxmf_core::constants::{
     AM_OPUS_OGG, DeliveryMethod, FIELD_ICON_APPEARANCE, FIELD_REACTION, REACTION_CONTENT,
     REACTION_TO,
 };
-use lxmf_core::message::LxMessage;
+use lxmf_core::message::{LxMessage, LxMessageDraft};
 
 /// Upstream LXMF 1.0.0 reply-to (`LXMF.py`); not yet named in rsLXMF constants.
 const FIELD_REPLY_TO: u8 = 0x30;
@@ -55,6 +55,7 @@ use super::local_rnode_primary;
 use super::lxmf_attachments::{
     OutboundMedia, decode_outbound_attachments, sanitize_attachment_file_name,
 };
+use super::lxmf_compose;
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
@@ -513,12 +514,16 @@ impl LiveBridge {
         let games_session_cb = games_session.clone();
         let reception_cb = reception.clone();
         router.register_delivery_callback(move |msg| {
-            let radio_reception = reception_cb.take(msg.hash);
+            let radio_reception = reception_cb.take(Some(msg.message_id()));
             if !msg.incoming {
                 return;
             }
-            let sender_hex = hex::encode(msg.source_hash);
-            if games_session_cb.handle_inbound_lxmf(&msg.fields, &sender_hex, &msg.content) {
+            let sender_hex = hex::encode(msg.source_hash());
+            if games_session_cb.handle_inbound_lxmf(
+                &lxmf_compose::standard_fields_map(msg),
+                &sender_hex,
+                &msg.content_text(),
+            ) {
                 return;
             }
             // Match path-table iface name to local config (same as outbound) so
@@ -565,17 +570,11 @@ impl LiveBridge {
                 .get("message_hash")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
-            let transient_id_hex = msg
-                .transient_id
-                .as_ref()
-                .map(hex::encode)
-                .unwrap_or_default();
             if msg.method == DeliveryMethod::Propagated {
                 let from_prefix = sender_hex.get(..12).unwrap_or(&sender_hex);
                 tracing::debug!(
                     target: "propagation-retrieve",
                     message_hash = %message_hash,
-                    transient_id = %transient_id_hex,
                     from_prefix = %from_prefix,
                     "inbound LXMF delivered via propagation"
                 );
@@ -4101,14 +4100,14 @@ impl LiveBridge {
         reply_quote: Option<&str>,
         media: &OutboundMedia,
     ) -> Result<(LxMessage, String), String> {
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::new_draft(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
             title,
             content,
             method,
-        );
-        apply_reply_fields(&mut msg, reply_to, reply_quote);
+        )?;
+        apply_reply_fields(&mut msg, reply_to, reply_quote)?;
         if let Some(bytes) = media.audio.as_deref() {
             if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
                 return Err(format!(
@@ -4137,13 +4136,7 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf sign: {e:?}"))?;
-        let hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
-        Ok((msg, hash_hex))
+        lxmf_compose::sign_finalize(msg, &signing_key)
     }
 
     /// Like [`prepare_signed_outbound_lxmf`](Self::prepare_signed_outbound_lxmf), but
@@ -4157,13 +4150,13 @@ impl LiveBridge {
         method: DeliveryMethod,
         fields: &HashMap<u8, Vec<u8>>,
     ) -> Result<(LxMessage, String), String> {
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::new_draft(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
             title,
             content,
             method,
-        );
+        )?;
         for (&field_id, bytes) in fields {
             // LRGP packs native MessagePack field values (0xFB string / 0xFD map).
             // `set_field` would wrap those in BIN and break Python/Ratspeak peers.
@@ -4174,13 +4167,7 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf sign: {e:?}"))?;
-        let hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
-        Ok((msg, hash_hex))
+        lxmf_compose::sign_finalize(msg, &signing_key)
     }
 
     /// Resolve a Direct-vs-Propagated delivery method for an LRGP action, mirroring
@@ -5833,7 +5820,7 @@ impl LiveBridge {
             }
         };
 
-        let sender_hex = hex::encode(message.source_hash);
+        let sender_hex = hex::encode(message.source_hash());
         let inbound_sender_name = self
             .display_name_cache
             .lock()
@@ -6000,8 +5987,8 @@ pub(super) fn lxmf_payload_from_message(
     direction: &str,
     inbound_sender_name: Option<&str>,
 ) -> serde_json::Value {
-    let sender_hex = hex::encode(msg.source_hash);
-    let to_hex = hex::encode(msg.destination_hash);
+    let sender_hex = hex::encode(msg.source_hash());
+    let to_hex = hex::encode(msg.destination_hash());
     let is_outbound = direction == "outbound";
     let sender_hash = if is_outbound {
         self_lxmf_hash
@@ -6017,16 +6004,12 @@ pub(super) fn lxmf_payload_from_message(
             .map(str::to_string)
             .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string())
     };
-    let message_hash = msg
-        .hash
-        .map(hex::encode)
-        .or_else(|| msg.message_id.map(hex::encode))
-        .unwrap_or_default();
-    let ts_ms = (msg.timestamp * 1000.0) as i64;
+    let message_hash = hex::encode(msg.message_id());
+    let ts_ms = (msg.timestamp() * 1000.0) as i64;
     let mut payload = serde_json::json!({
         "sender_hash": sender_hash,
         "sender_name": sender_name,
-        "text": msg.content,
+        "text": msg.content_text(),
         "timestamp": ts_ms,
         "to_hash": to_hex,
         "direction": direction,
@@ -6138,27 +6121,35 @@ fn truncate_reply_quote(quote: &str) -> Option<String> {
 }
 
 /// Stamp reply fields before `sign()` so they are covered by the message hash.
-fn apply_reply_fields(msg: &mut LxMessage, reply_to: Option<[u8; 32]>, reply_quote: Option<&str>) {
+fn apply_reply_fields(
+    msg: &mut LxMessageDraft,
+    reply_to: Option<[u8; 32]>,
+    reply_quote: Option<&str>,
+) -> Result<(), String> {
     let Some(parent_id) = reply_to else {
-        return;
+        return Ok(());
     };
-    msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+    msg.set_field(FIELD_REPLY_TO, parent_id.to_vec())
+        .map_err(|e| format!("lxmf set_field reply_to: {e:?}"))?;
     if let Some(quote) = reply_quote.and_then(truncate_reply_quote) {
-        msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
+        msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec())
+            .map_err(|e| format!("lxmf set_field reply_quote: {e:?}"))?;
     }
+    Ok(())
 }
 
 /// Decode LXMF 1.0 `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31).
 fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
-    let raw = msg.get_field(FIELD_REPLY_TO)?;
+    let raw = lxmf_compose::message_field_bytes(msg, FIELD_REPLY_TO)?;
     if raw.len() != 32 {
         return None;
     }
     let reply_to_hash = hex::encode(raw);
-    let reply_preview_text = msg.get_field(FIELD_REPLY_QUOTE).and_then(|bytes| {
-        let s = std::str::from_utf8(bytes).ok()?;
-        truncate_reply_quote(s)
-    });
+    let reply_preview_text =
+        lxmf_compose::message_field_bytes(msg, FIELD_REPLY_QUOTE).and_then(|bytes| {
+            let s = std::str::from_utf8(bytes).ok()?;
+            truncate_reply_quote(s)
+        });
     Some(LxmfReplyFields {
         reply_to_hash,
         reply_preview_text,
@@ -6230,8 +6221,8 @@ fn reaction_content_text(value: &rmpv::Value) -> Option<String> {
 /// field (not a msgpack map, missing/invalid `REACTION_TO`, wrong types) returns
 /// `None` so the message ingests as normal text/reply.
 fn reaction_fields_from_message(msg: &LxMessage) -> Option<LxmfReactionFields> {
-    let raw = msg.get_field(FIELD_REACTION)?;
-    let mut cursor = Cursor::new(raw.as_slice());
+    let raw = lxmf_compose::message_field_bytes(msg, FIELD_REACTION)?;
+    let mut cursor = Cursor::new(raw);
     let value = rmpv::decode::read_value(&mut cursor).ok()?;
     // A conformant FIELD_REACTION is exactly one msgpack map. Trailing bytes after the map mean
     // the field is malformed, so fail open (ingest as normal text/reply) rather than trust it.
@@ -6296,8 +6287,8 @@ fn rgb_triplet_from_msgpack(value: &rmpv::Value) -> Option<[u8; 3]> {
 }
 
 fn icon_appearance_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
-    let field = msg.get_field(FIELD_ICON_APPEARANCE)?;
-    let value = rmpv::decode::read_value(&mut Cursor::new(field.as_slice())).ok()?;
+    let field = lxmf_compose::message_field_bytes(msg, FIELD_ICON_APPEARANCE)?;
+    let value = rmpv::decode::read_value(&mut Cursor::new(field)).ok()?;
     let arr = value.as_array()?;
     let icon_name = arr.first()?.as_str()?.to_string();
     if icon_name.trim().is_empty() {
@@ -8646,7 +8637,6 @@ mod nomad_private_first_failover_tests {
 mod icon_appearance_tests {
     use super::*;
     use lxmf_core::constants::FIELD_ICON_APPEARANCE;
-    use lxmf_core::message::LxMessage;
 
     #[test]
     fn icon_appearance_json_from_message_parses_msgpack_field() {
@@ -8661,8 +8651,16 @@ mod icon_appearance_tests {
         )
         .expect("encode icon appearance");
 
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
-        msg.set_field(FIELD_ICON_APPEARANCE, buf);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hello",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_ICON_APPEARANCE, buf)
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = icon_appearance_json_from_message(&msg).expect("icon json");
         assert_eq!(json["icon_name"], "hiking");
         assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
@@ -8680,8 +8678,10 @@ mod audio_field_tests {
     #[test]
     fn audio_json_from_message_round_trips_opus_ogg() {
         let ogg = b"OggS\0fake-opus-bytes";
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = audio_json_from_message(&msg).expect("audio json");
         assert_eq!(json["mode"], AM_OPUS_OGG);
         assert_eq!(json["size_bytes"], ogg.len());
@@ -8693,13 +8693,20 @@ mod audio_field_tests {
 
     #[test]
     fn audio_json_from_message_malformed_fail_open() {
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Direct,
+        );
         // Intentionally malformed: array of 3 elements instead of [mode, bytes].
         msg.set_msgpack_field(
             lxmf_core::constants::FIELD_AUDIO,
             vec![0x93, AM_OPUS_OGG, 0xc4, 0x00, 0xc0],
         )
         .expect("set malformed");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(audio_json_from_message(&msg).is_none());
         let payload = lxmf_payload_from_message(
             &msg,
@@ -8717,8 +8724,10 @@ mod audio_field_tests {
     #[test]
     fn lxmf_payload_sets_voice_marker_when_text_empty() {
         let ogg = b"OggS\0memo";
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let payload = lxmf_payload_from_message(
             &msg,
             "aa".repeat(16).as_str(),
@@ -8765,7 +8774,7 @@ mod audio_field_tests {
         use rns_identity::identity::Identity;
         let identity = Identity::new();
         let signing = identity.get_signing_key().expect("signing key");
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             identity.hash,
             "",
@@ -8774,7 +8783,7 @@ mod audio_field_tests {
         );
         msg.set_file_attachments_field(&[("a.png", b"\x89PNG-one".as_slice()), ("b.txt", b"two")])
             .expect("set files");
-        msg.sign(&signing).expect("sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &signing);
         let packed = msg.pack().expect("pack");
         let inbound = LxMessage::unpack(&packed).expect("unpack");
         let json = attachment_json_from_message(&inbound).expect("attachment json");
@@ -8790,24 +8799,30 @@ mod audio_field_tests {
 
     #[test]
     fn inbound_attachment_json_sanitizes_hostile_file_names() {
-        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_file_attachments_field(&[("../../x[1]:evil.exe", b"MZ".as_slice())])
             .expect("set");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = attachment_json_from_message(&msg).expect("json");
         assert_eq!(json["file_name"], "x_1__evil.exe");
     }
 
     #[test]
     fn inbound_image_json_sanitizes_hostile_format_extension() {
-        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_image_field("../evil.exe!!!!", b"\x89PNG".as_slice())
             .expect("set image");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = attachment_json_from_message(&msg).expect("json");
         assert_eq!(json["file_name"], "image.evilexe");
-        let mut empty = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut empty =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         empty
             .set_image_field("!!!", b"\x89PNG".as_slice())
             .expect("set image");
+        let empty = lxmf_compose::test_support::finalize_default(empty);
         let empty_json = attachment_json_from_message(&empty).expect("json");
         assert_eq!(empty_json["file_name"], "image.bin");
     }
@@ -8817,13 +8832,25 @@ mod audio_field_tests {
         use rns_identity::identity::Identity;
         let identity = Identity::new();
         let signing = identity.get_signing_key().expect("signing key");
-        let mut without = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
-        without.sign(&signing).expect("sign");
-        let mut with = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
+        let without = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            identity.hash,
+            "",
+            "x",
+            DeliveryMethod::Direct,
+        );
+        let without = lxmf_compose::test_support::finalize(without, &signing);
+        let mut with = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            identity.hash,
+            "",
+            "x",
+            DeliveryMethod::Direct,
+        );
         with.set_file_attachments_field(&[("a.txt", b"hi".as_slice())])
             .expect("set");
-        with.sign(&signing).expect("sign");
-        assert_ne!(without.hash, with.hash);
+        let with = lxmf_compose::test_support::finalize(with, &signing);
+        assert_ne!(without.message_id(), with.message_id());
     }
 
     #[test]
@@ -8833,16 +8860,27 @@ mod audio_field_tests {
         let signing = identity.get_signing_key().expect("signing key");
         let source = identity.hash;
 
-        let mut without =
-            LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
-        without.sign(&signing).expect("sign");
-        let hash_without = without.hash.expect("hash");
+        let without = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            source,
+            "",
+            "[voice:0]",
+            DeliveryMethod::Direct,
+        );
+        let without = lxmf_compose::test_support::finalize(without, &signing);
+        let hash_without = without.message_id();
 
-        let mut with = LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        let mut with = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            source,
+            "",
+            "[voice:0]",
+            DeliveryMethod::Direct,
+        );
         with.set_audio_field(AM_OPUS_OGG, b"OggS\0x")
             .expect("set audio");
-        with.sign(&signing).expect("sign");
-        let hash_with = with.hash.expect("hash");
+        let with = lxmf_compose::test_support::finalize(with, &signing);
+        let hash_with = with.message_id();
         assert_ne!(hash_without, hash_with);
     }
 }
@@ -8850,7 +8888,6 @@ mod audio_field_tests {
 #[cfg(test)]
 mod reply_field_tests {
     use super::*;
-    use lxmf_core::message::LxMessage;
 
     #[test]
     fn parse_hash32_requires_exact_64_hex() {
@@ -8869,15 +8906,18 @@ mod reply_field_tests {
     #[test]
     fn reply_fields_round_trip_on_lxmf_message() {
         let parent_id = [0x11u8; 32];
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
             "reply body",
             DeliveryMethod::Direct,
         );
-        msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
-        msg.set_field(FIELD_REPLY_QUOTE, b"original snippet".to_vec());
+        msg.set_field(FIELD_REPLY_TO, parent_id.to_vec())
+            .expect("set field");
+        msg.set_field(FIELD_REPLY_QUOTE, b"original snippet".to_vec())
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let fields = reply_fields_from_message(&msg).expect("reply fields");
         assert_eq!(fields.reply_to_hash, hex::encode(parent_id));
@@ -8902,8 +8942,16 @@ mod reply_field_tests {
 
     #[test]
     fn reply_fields_omit_invalid_length_reply_to() {
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REPLY_TO, vec![0u8; 16]);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, vec![0u8; 16])
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reply_fields_from_message(&msg).is_none());
     }
 
@@ -8911,8 +8959,15 @@ mod reply_field_tests {
     fn apply_reply_fields_caps_quote_length() {
         let parent_id = [0x22u8; 32];
         let long = "x".repeat(REPLY_QUOTE_MAX_CHARS + 40);
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "reply", DeliveryMethod::Direct);
-        apply_reply_fields(&mut msg, Some(parent_id), Some(&long));
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "reply",
+            DeliveryMethod::Direct,
+        );
+        apply_reply_fields(&mut msg, Some(parent_id), Some(&long)).expect("reply fields");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let fields = reply_fields_from_message(&msg).expect("reply fields");
         assert_eq!(
             fields
@@ -8925,13 +8980,14 @@ mod reply_field_tests {
 
     #[test]
     fn lxmf_payload_sets_paper_delivery_method_and_received_via() {
-        let msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
             "paper body",
             DeliveryMethod::Paper,
         );
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let payload = lxmf_payload_from_message(
             &msg,
             "aabbccddeeff00112233445566778899",
@@ -8956,9 +9012,16 @@ mod reply_field_tests {
     #[test]
     fn encode_reaction_field_round_trips_target_and_emoji() {
         let target = [0x11u8; 32];
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "👍", DeliveryMethod::Direct);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "👍",
+            DeliveryMethod::Direct,
+        );
         msg.set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "👍"))
             .expect("set reaction field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
@@ -8981,7 +9044,14 @@ mod reply_field_tests {
 
     #[test]
     fn reaction_missing_field_leaves_payload_untouched() {
-        let msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
+        let msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hello",
+            DeliveryMethod::Direct,
+        );
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         let payload = lxmf_payload_from_message(
@@ -9010,9 +9080,11 @@ mod reply_field_tests {
                 rmpv::Value::String("🎉".into()),
             ),
         ]);
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_msgpack_field(FIELD_REACTION, map)
             .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, target_hex.to_ascii_lowercase());
@@ -9037,7 +9109,7 @@ mod reply_field_tests {
         let mut buf = Vec::new();
         rmpv::encode::write_value(&mut buf, &rmpv::Value::String("garbage".into()))
             .expect("encode garbage");
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
@@ -9046,6 +9118,7 @@ mod reply_field_tests {
         );
         msg.set_msgpack_field(FIELD_REACTION, buf)
             .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         // Map present but REACTION_TO has a bad length → treated as absent.
@@ -9053,7 +9126,7 @@ mod reply_field_tests {
             rmpv::Value::Integer(rmpv::Integer::from(REACTION_TO)),
             rmpv::Value::Binary(vec![0u8; 16]),
         )]);
-        let mut msg2 = LxMessage::new(
+        let mut msg2 = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
@@ -9062,6 +9135,7 @@ mod reply_field_tests {
         );
         msg2.set_msgpack_field(FIELD_REACTION, bad_len)
             .expect("set field");
+        let msg2 = lxmf_compose::test_support::finalize_default(msg2);
         assert!(reaction_fields_from_message(&msg2).is_none());
 
         let payload = lxmf_payload_from_message(
@@ -9081,14 +9155,23 @@ mod reply_field_tests {
     fn reaction_wins_over_reply_when_both_present() {
         let reaction_target = [0x22u8; 32];
         let reply_parent = [0x33u8; 32];
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "😀", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REPLY_TO, reply_parent.to_vec());
-        msg.set_field(FIELD_REPLY_QUOTE, b"quoted".to_vec());
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "😀",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, reply_parent.to_vec())
+            .expect("set field");
+        msg.set_field(FIELD_REPLY_QUOTE, b"quoted".to_vec())
+            .expect("set field");
         msg.set_msgpack_field(
             FIELD_REACTION,
             encode_reaction_field(&reaction_target, "😀"),
         )
         .expect("set reaction field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let payload = lxmf_payload_from_message(
             &msg,
@@ -9114,15 +9197,29 @@ mod reply_field_tests {
         buf.push(0x00); // trailing byte after the complete msgpack map
         // Use the raw field setter: set_msgpack_field itself rejects trailing bytes, but a hostile
         // or buggy peer can still place raw bytes in the field, which decode must reject.
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REACTION, buf);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "🔥",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REACTION, buf).expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         // Sanity: the same map without trailing bytes still decodes.
-        let mut ok_msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        let mut ok_msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "🔥",
+            DeliveryMethod::Direct,
+        );
         ok_msg
             .set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "🔥"))
             .expect("set field");
+        let ok_msg = lxmf_compose::test_support::finalize_default(ok_msg);
         let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
     }

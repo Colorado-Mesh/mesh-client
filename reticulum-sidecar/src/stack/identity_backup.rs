@@ -329,6 +329,15 @@ mod tests {
     };
     use crate::stack::persistence::PersistedState;
     use std::fs;
+    use std::sync::{Mutex, OnceLock};
+
+    /// Serialize vault KDF tests against the vendored process-wide JOB_ACTIVE guard.
+    fn vault_test_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
 
     fn temp_dirs() -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf) {
         let root = tempfile::tempdir().unwrap();
@@ -345,6 +354,7 @@ mod tests {
 
     #[test]
     fn rsi_export_import_round_trip() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, mnemonic) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -399,6 +409,7 @@ mod tests {
 
     #[test]
     fn rsi_wrong_pin_fails() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -419,6 +430,7 @@ mod tests {
 
     #[test]
     fn rsi_missing_pin_fails() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -532,6 +544,7 @@ mod tests {
 
     #[test]
     fn uppercase_identity_hash_imports() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -562,6 +575,7 @@ mod tests {
 
     #[test]
     fn rejects_excessive_argon2_costs() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();

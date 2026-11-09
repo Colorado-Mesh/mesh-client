@@ -21,4 +21,6 @@ bash "${REPO_ROOT}/scripts/check-rsnomad.sh"
 cd "${SIDECAR_DIR}"
 cargo fmt --check
 cargo clippy --all-targets --features "${RNS_FEATURES}" -- -D warnings
-cargo test --features "${RNS_FEATURES}"
+# Ratspeak vault uses a process-wide non-queueing JOB_ACTIVE guard; parallel
+# identity encrypt/decrypt tests otherwise flake with Busy.
+cargo test --features "${RNS_FEATURES}" -- --test-threads=1

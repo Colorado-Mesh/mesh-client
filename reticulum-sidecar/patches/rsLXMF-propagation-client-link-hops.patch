@@ -1,8 +1,8 @@
 diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
-index 0000000..1111111 100644
+index 82e7de9..16f9bc6 100644
 --- a/crates/lxmf-core/src/propagation_client.rs
 +++ b/crates/lxmf-core/src/propagation_client.rs
-@@ -341,14 +341,21 @@
+@@ -588,7 +588,9 @@ impl PropagationClient {
      }
  
      pub fn start_download(&mut self) -> bool {
@@ -12,21 +12,22 @@ index 0000000..1111111 100644
 +        self.start_download_with_limit(None, 1)
      }
  
-     /// Start a propagation download, limiting newly requested messages.
-     /// `None` and zero mirror Python's `PR_ALL_MESSAGES`.
-+    /// `link_hops` scales Link establishment timeout (`ESTABLISHMENT_TIMEOUT_PER_HOP` × hops).
-     /// Drain previously received messages before restarting, including after a
-     /// failed purge or cancellation. A refused start never discards results.
+     /// Start a propagation download, limiting newly requested messages across
+@@ -598,7 +600,12 @@ impl PropagationClient {
+     /// Move live downloads into the durable adapter before restarting. Failure
+     /// or cancellation drops the client-owned queue and revokes its tokens;
+     /// already moved payload/worker owners retain their memory leases.
 -    pub fn start_download_with_limit(&mut self, max_messages: Option<usize>) -> bool {
++    /// `link_hops` scales Link establishment timeout (`ESTABLISHMENT_TIMEOUT_PER_HOP` × hops).
 +    pub fn start_download_with_limit(
 +        &mut self,
 +        max_messages: Option<usize>,
 +        link_hops: u8,
 +    ) -> bool {
-         if !self.received_messages.is_empty() {
-             return false;
-         }
-@@ -376,7 +383,8 @@
+         self.prune_suppression();
+         if !self.received_messages.is_empty()
+             || self.suppression_persist_failed
+@@ -633,7 +640,8 @@ impl PropagationClient {
          }
          self.last_establish_error = None;
  
@@ -36,11 +37,11 @@ index 0000000..1111111 100644
          let link_id = link.link_id;
  
          if !self.queue_transport(TransportMessage::RegisterDestination {
-@@ -1662,7 +1670,18 @@
+@@ -2118,7 +2126,18 @@ impl PropagationClient {
                  );
-                 self.status.state = PropagationClientState::Failed;
+                 self.fail();
              }
--            Some(LinkAction::Closed(_)) => self.status.state = PropagationClientState::Failed,
+-            Some(LinkAction::Closed(_)) => self.fail(),
 +            Some(LinkAction::Closed(reason)) => {
 +                if self.status.state == PropagationClientState::LinkEstablishing
 +                    && self.last_establish_error.is_none()
@@ -51,7 +52,7 @@ index 0000000..1111111 100644
 +                    // this as a client-local NoLinkProof.
 +                    self.last_establish_error = Some("LinkEstablishTimeout");
 +                }
-+                self.status.state = PropagationClientState::Failed;
++                self.fail();
 +            }
              Some(LinkAction::None) | None => {}
          }

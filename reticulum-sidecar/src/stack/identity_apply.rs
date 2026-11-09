@@ -329,17 +329,22 @@ mod tests {
         assert_eq!(key.len(), 64);
         fs::write(&path, &key).unwrap();
 
-        let upstream_err = match Identity::from_file(&path) {
-            Ok(_) => panic!("expected upstream msgpack false-positive for fixture key"),
-            Err(e) => e.to_string(),
-        };
-        assert!(
-            upstream_err.contains("expected 64") || upstream_err.contains("invalid private key"),
-            "expected upstream msgpack false-positive, got: {upstream_err}"
-        );
+        // rsReticulum 1.4 `Identity::from_file` no longer mis-parses this key as msgpack; older
+        // pins failed with "expected 64, got 2". Accept either: success must match the raw key.
+        let expected = Identity::from_private_key(&key).unwrap();
+        match Identity::from_file(&path) {
+            Ok(upstream) => assert_eq!(upstream.hash, expected.hash),
+            Err(e) => {
+                let upstream_err = e.to_string();
+                assert!(
+                    upstream_err.contains("expected 64")
+                        || upstream_err.contains("invalid private key"),
+                    "expected upstream msgpack false-positive, got: {upstream_err}"
+                );
+            }
+        }
 
         let loaded = load_identity_from_path(&path).expect("raw-64 loader must accept key");
-        let expected = Identity::from_private_key(&key).unwrap();
         assert_eq!(loaded.hash, expected.hash);
     }
 

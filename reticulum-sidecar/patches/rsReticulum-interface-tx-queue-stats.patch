@@ -1,127 +1,114 @@
-diff --git a/crates/rns-runtime/src/remote_management.rs b/crates/rns-runtime/src/remote_management.rs
-index ea0b8ba..e3b0479 100644
---- a/crates/rns-runtime/src/remote_management.rs
-+++ b/crates/rns-runtime/src/remote_management.rs
-@@ -551,6 +551,8 @@ mod tests {
-                                 announce_cap: 0.02,
-                                 ifac_size: 0,
-                                 tx_drops: 0,
-+                                tx_queue_used: 0,
-+                                tx_queue_max: 0,
-                             }];
-                             TransportQueryResponse::InterfaceStats(stats)
-                         }
 diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
-index e83762b..03bc46d 100644
+index dc36d9c..59ac547 100644
 --- a/crates/rns-runtime/src/reticulum.rs
 +++ b/crates/rns-runtime/src/reticulum.rs
-@@ -2090,6 +2090,8 @@ fn rpc_response_to_transport_response(
-                     announce_cap: entry.announce_cap,
-                     ifac_size: entry.ifac_size,
-                     tx_drops: entry.tx_drops,
+@@ -2274,6 +2274,8 @@ fn rpc_response_to_transport_response(
+                     ifac_violations: entry.ifac_violations,
+                     packet_filter_hits: entry.packet_filter_hits,
+                     parent_id: None,
 +                    tx_queue_used: entry.tx_queue_used,
 +                    tx_queue_max: entry.tx_queue_max,
                  })
                  .collect();
              TransportQueryResponse::InterfaceStats(entries)
-@@ -10318,6 +10320,8 @@ loglevel = 7
+@@ -11779,6 +11781,8 @@ loglevel = 7
              announce_cap: 0.02,
              ifac_size: 0,
              tx_drops: 0,
 +            tx_queue_used: 0,
 +            tx_queue_max: 0,
+             ..Default::default()
          };
          let mut second = first.clone();
-         second.id = 2;
-@@ -10463,6 +10467,8 @@ loglevel = 7
+@@ -11925,6 +11929,8 @@ loglevel = 7
              announce_cap: 0.02,
              ifac_size: 0,
              tx_drops: 0,
 +            tx_queue_used: 0,
 +            tx_queue_max: 0,
+             ..Default::default()
          };
          let mut missing_mtu_interface = master_interface.clone();
-         missing_mtu_interface.id = 82;
 diff --git a/crates/rns-runtime/src/rpc.rs b/crates/rns-runtime/src/rpc.rs
-index c8bf0e4..e333fca 100644
+index 1d51bca..d8c9842 100644
 --- a/crates/rns-runtime/src/rpc.rs
 +++ b/crates/rns-runtime/src/rpc.rs
-@@ -179,6 +179,10 @@ pub struct InterfaceStatEntry {
-     pub announce_cap: f64,
-     pub ifac_size: usize,
-     pub tx_drops: u64,
+@@ -211,6 +211,10 @@ pub struct InterfaceStatEntry {
+     /// interface (Python `autoconnect_source`).
+     #[serde(default)]
+     pub autoconnect_source: Option<String>,
 +    #[serde(default)]
 +    pub tx_queue_used: u64,
 +    #[serde(default)]
 +    pub tx_queue_max: u64,
  }
  
- #[derive(Debug, Clone, Serialize, Deserialize)]
-@@ -566,6 +570,8 @@ fn response_to_py_value(resp: &RpcResponse) -> PyValue {
-                                 .unwrap_or(PyValue::None),
-                         ),
-                         ("tx_drops", PyValue::Int(i128::from(e.tx_drops))),
-+                        ("tx_queue_used", PyValue::Int(i128::from(e.tx_queue_used))),
-+                        ("tx_queue_max", PyValue::Int(i128::from(e.tx_queue_max))),
-                     ];
-                     if let Some(blocked_ips) = e.blocked_ips {
-                         fields.push(("blocked_ips", PyValue::Int(i128::from(blocked_ips))));
-@@ -859,6 +865,8 @@ fn parse_interface_stats(value: &PyValue) -> Result<Vec<InterfaceStatEntry>, Rpc
-                     .map(|v| v as usize)
+ /// What a transport instance adds to its interface stats
+@@ -815,6 +819,8 @@ fn interface_stat_value(e: &InterfaceStatEntry) -> PyValue {
+         ("txstalled", PyValue::Bool(false)),
+         ("txbuffered", int(0)),
+         ("tx_drops", int(e.tx_drops)),
++        ("tx_queue_used", int(e.tx_queue_used)),
++        ("tx_queue_max", int(e.tx_queue_max)),
+         ("gravity", int(0)),
+         ("announces_to_internal", PyValue::None),
+         ("protocol_violations", int(e.protocol_violations)),
+@@ -1065,6 +1071,8 @@ fn parse_interface_stats(value: &PyValue) -> Result<Vec<InterfaceStatEntry>, Rpc
                      .unwrap_or(0),
-                 tx_drops: dict_get(m, "tx_drops").and_then(py_u64).unwrap_or(0),
+                 parent_interface_name: dict_get(m, "parent_interface_name").and_then(py_string),
+                 autoconnect_source: dict_get(m, "autoconnect_source").and_then(py_string),
 +                tx_queue_used: dict_get(m, "tx_queue_used").and_then(py_u64).unwrap_or(0),
 +                tx_queue_max: dict_get(m, "tx_queue_max").and_then(py_u64).unwrap_or(0),
              })
          })
          .collect()
-@@ -1786,6 +1794,8 @@ mod tests {
-             announce_cap: 0.02,
-             ifac_size: 0,
+@@ -2113,6 +2121,8 @@ mod tests {
+             ifac_size: None,
+             ifac_netname: None,
              tx_drops: 1,
 +            tx_queue_used: 0,
 +            tx_queue_max: 0,
+             ..Default::default()
          }
      }
- 
 diff --git a/crates/rns-runtime/src/rpc_server.rs b/crates/rns-runtime/src/rpc_server.rs
-index f7d945e..efa9a8f 100644
+index cf37d35..a4ea85e 100644
 --- a/crates/rns-runtime/src/rpc_server.rs
 +++ b/crates/rns-runtime/src/rpc_server.rs
-@@ -404,6 +404,8 @@ async fn process_rpc_request(
-                             announce_cap: e.announce_cap,
-                             ifac_size: e.ifac_size,
-                             tx_drops: e.tx_drops,
-+                            tx_queue_used: e.tx_queue_used,
-+                            tx_queue_max: e.tx_queue_max,
-                         })
-                         .collect();
-                     RpcResponse::InterfaceStats(rpc_entries)
+@@ -140,6 +140,8 @@ pub(crate) fn stat_entries(
+                 protocol_violations: e.protocol_violations,
+                 ifac_violations: e.ifac_violations,
+                 packet_filter_hits: e.packet_filter_hits,
++                tx_queue_used: e.tx_queue_used,
++                tx_queue_max: e.tx_queue_max,
+             }
+         })
+         .collect()
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index 2ec775d..1d900a0 100644
+index 8a05b7f..ce01391 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -120,6 +120,8 @@ impl TransportActor {
-                             announce_cap: entry.announce_cap,
-                             ifac_size: entry.ifac_size,
-                             tx_drops: entry.tx_drops.load(std::sync::atomic::Ordering::Relaxed),
+@@ -129,6 +129,8 @@ impl TransportActor {
+                             ifac_violations: entry.ifac_violations,
+                             packet_filter_hits: entry.packet_filter_hits,
+                             parent_id: entry.parent_id,
 +                            tx_queue_used: (entry.tx.max_capacity() - entry.tx.capacity()) as u64,
 +                            tx_queue_max: entry.tx.max_capacity() as u64,
                          }
                      })
                      .collect();
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 8d810ae..fff523f 100644
+index 755d5e3..864cc54 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -1025,6 +1025,10 @@ pub struct InterfaceStatRpcEntry {
-     pub announce_cap: f64,
-     pub ifac_size: usize,
-     pub tx_drops: u64,
+@@ -1227,6 +1227,10 @@ pub struct InterfaceStatRpcEntry {
+     pub packet_filter_hits: u64,
+     /// The listener that accepted this interface.
+     pub parent_id: Option<InterfaceId>,
 +    /// Host outbound TX mpsc fill (`max_capacity - capacity`).
 +    pub tx_queue_used: u64,
 +    /// Host outbound TX mpsc `max_capacity`.
 +    pub tx_queue_max: u64,
  }
  
- #[derive(Debug, Clone)]
+ /// Announce-rate state: rate is announces per second; timestamps, `last` and

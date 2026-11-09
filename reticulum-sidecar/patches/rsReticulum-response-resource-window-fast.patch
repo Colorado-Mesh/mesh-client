@@ -1,8 +1,8 @@
 diff --git a/crates/rns-protocol/src/resource.rs b/crates/rns-protocol/src/resource.rs
-index e5695f0..f1aff45 100644
+index 0ddd16b..6a61e64 100644
 --- a/crates/rns-protocol/src/resource.rs
 +++ b/crates/rns-protocol/src/resource.rs
-@@ -228,6 +228,21 @@ impl WindowState {
+@@ -227,6 +227,21 @@ impl WindowState {
          }
      }
  
@@ -21,10 +21,10 @@ index e5695f0..f1aff45 100644
 +        self.very_slow_rate_rounds = 0;
 +    }
 +
-     /// Shrink the window after a timeout. Both the instantaneous `window`
-     /// and the ceiling `window_max` contract, and the flexibility band
-     /// between them is kept within `WINDOW_FLEXIBILITY - 1`.
-@@ -2639,6 +2654,16 @@ mod tests {
+     /// Shrink the window and ceiling toward their minimum after a timeout.
+     /// If the ceiling remains more than `WINDOW_FLEXIBILITY - 1` above the
+     /// window, lower it once more; one call need not close a larger gap.
+@@ -2773,6 +2788,16 @@ mod tests {
          assert_eq!(ws.window, initial);
      }
  
@@ -42,10 +42,10 @@ index e5695f0..f1aff45 100644
      fn test_progress() {
          let inbound = InboundResource::new(
 diff --git a/crates/rns-runtime/src/link_session.rs b/crates/rns-runtime/src/link_session.rs
-index 51f3763..5570f8f 100644
+index 9af0f69..c806c7c 100644
 --- a/crates/rns-runtime/src/link_session.rs
 +++ b/crates/rns-runtime/src/link_session.rs
-@@ -2249,7 +2249,7 @@ fn inbound_transfer_from_advertisement(
+@@ -2355,7 +2355,7 @@ fn inbound_transfer_from_advertisement(
      if advertisement.total_segments > 1 && advertisement.segment_index > 1 {
          flags.has_metadata = false;
      }
@@ -54,7 +54,7 @@ index 51f3763..5570f8f 100644
          advertisement.num_parts,
          advertisement.transfer_size,
          advertisement.data_size,
-@@ -2259,7 +2259,13 @@ fn inbound_transfer_from_advertisement(
+@@ -2365,7 +2365,13 @@ fn inbound_transfer_from_advertisement(
          advertisement.get_map_hashes(),
          rtt,
      )

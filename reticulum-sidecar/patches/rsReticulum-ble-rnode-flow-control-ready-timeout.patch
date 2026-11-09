@@ -1,7 +1,8 @@
 diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
+index f30545e..8eaaf22 100644
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -83,6 +83,11 @@
+@@ -87,6 +87,11 @@ const MAX_RECONNECT_TRIES: Option<usize> = None;
  const SCAN_TIMEOUT: u64 = 3;
  /// Bounds disable-while-offline teardown latency to ~1s.
  const RUNNING_POLL: Duration = Duration::from_secs(1);
@@ -13,7 +14,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
  /// No CoreBluetooth or GATT operation may hold the generation owner forever.
  const BLE_OPERATION_TIMEOUT: Duration = Duration::from_secs(10);
  /// Upstream Android RNode BLE applies each RF control independently.
-@@ -3470,6 +3475,7 @@
+@@ -3570,6 +3575,7 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
              let mut last_rssi: Option<f32> = None;
              let mut last_snr: Option<f32> = None;
              let mut transport_closed = false;
@@ -21,7 +22,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
  
              enum GenerationEvent {
                  Notification(Option<ValueNotification>),
-@@ -3643,9 +3649,29 @@
+@@ -3743,9 +3749,29 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
                  } else {
                      false
                  };
@@ -54,7 +55,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
                      let pending = pending_outbound
                          .as_ref()
                          .expect("pending BLE outbound checked above");
-@@ -3669,6 +3695,7 @@
+@@ -3769,6 +3795,7 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
                                  first_tx = Some(tokio::time::Instant::now());
                              }
                              pending_outbound = None;
@@ -62,7 +63,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
                              drop(pending_background.take());
                          }
                          Err(error) => {
-@@ -4260,6 +4287,7 @@
+@@ -4441,6 +4468,7 @@ pub async fn spawn_ble_rnode_interface_native_with_driver_and_options(
              let mut buf = [0u8; 4096];
              let mut transport_closed = false;
              let mut bridge_acknowledged = 0u64;
@@ -70,7 +71,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
  
              // Complete frames after the exact Ready boundary are projected
              // before any outbound payload can be selected.
-@@ -4469,9 +4497,25 @@
+@@ -4650,9 +4678,25 @@ pub async fn spawn_ble_rnode_interface_native_with_driver_and_options(
                  let should_write = pending_outbound
                      .as_ref()
                      .is_some_and(|pending| pending.expected_ack.is_none());
@@ -99,7 +100,7 @@ diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/bl
                      let pending = pending_outbound
                          .as_ref()
                          .expect("native pending outbound checked above");
-@@ -4493,6 +4537,7 @@
+@@ -4674,6 +4718,7 @@ pub async fn spawn_ble_rnode_interface_native_with_driver_and_options(
                          .as_mut()
                          .expect("native pending outbound checked above")
                          .sent_at = Some(tokio::time::Instant::now());

@@ -1,6 +1,8 @@
+diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
+index 8eaaf22..282d937 100644
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -158,6 +158,108 @@ static RNODE_RUNNING: std::sync::OnceLock<
+@@ -167,6 +167,108 @@ static RNODE_RUNNING: std::sync::OnceLock<
      std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>>,
  > = std::sync::OnceLock::new();
  
@@ -109,7 +111,7 @@
  fn running_map()
  -> &'static std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>> {
      RNODE_RUNNING.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
-@@ -1467,6 +1569,11 @@ pub async fn scan_ble_devices(timeout_secs: u64) -> Result<Vec<BleDevice>, Strin
+@@ -1479,6 +1581,11 @@ pub async fn scan_ble_devices(timeout_secs: u64) -> Result<Vec<BleDevice>, Strin
              #[cfg(not(target_os = "linux"))]
              let bonded = false;
  
@@ -121,7 +123,7 @@
              devices.push(BleDevice {
                  name,
                  address,
-@@ -1511,6 +1618,7 @@ async fn resolve_ble_target(
+@@ -1523,6 +1630,7 @@ async fn resolve_ble_target(
          for p in &peripherals {
              if let Ok(Some(props)) = bounded_ble_operation("properties", p.properties()).await {
                  if props.services.contains(&NUS_SERVICE_UUID) {
@@ -129,7 +131,7 @@
                      return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
                  }
                  // A populated list without NUS means a different device;
-@@ -1519,6 +1627,7 @@ async fn resolve_ble_target(
+@@ -1531,6 +1639,7 @@ async fn resolve_ble_target(
                      && let Some(ref name) = props.local_name
                      && name.starts_with("RNode ")
                  {
@@ -137,7 +139,7 @@
                      return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
                  }
              }
-@@ -1534,6 +1643,7 @@ async fn resolve_ble_target(
+@@ -1546,6 +1655,7 @@ async fn resolve_ble_target(
          let addr = p.id().to_string();
          if addr.eq_ignore_ascii_case(target) {
              ble_diag(format!("[ble] resolve matched by address: {addr}"));
@@ -145,7 +147,7 @@
              return Ok((p.clone(), BleTargetResolutionClass::PrimaryId));
          }
      }
-@@ -1566,6 +1676,7 @@ async fn resolve_ble_target(
+@@ -1578,6 +1688,7 @@ async fn resolve_ble_target(
              } else {
                  ble_diag("[ble] resolve matched by generation-stable advertised name");
              }
@@ -153,7 +155,7 @@
              return Ok((p.clone(), resolution_class));
          }
      }
-@@ -5331,6 +5442,29 @@ mod tests {
+@@ -5573,6 +5684,29 @@ mod tests {
  
      // ── Device type tests ──
  

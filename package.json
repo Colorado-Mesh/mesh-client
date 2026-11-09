@@ -191,7 +191,7 @@
     "@meshtastic/transport-web-serial": "npm:@jsr/meshtastic__transport-web-serial@^0.2.5",
     "@michaelhart/meshcore-decoder": "^0.3.0",
     "@playwright/test": "^1.65.0",
-    "@tailwindcss/vite": "^4.3.4",
+    "@tailwindcss/vite": "^4.3.5",
     "@tanstack/react-virtual": "^3.14.26",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -236,13 +236,13 @@
     "react-leaflet": "^5.0.0",
     "recharts": "^3.10.1",
     "sort-package-json": "^3.7.1",
-    "tailwindcss": "^4.3.4",
+    "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.6",
     "vitest": "^4.1.12",
     "vitest-axe": "^1.0.0-pre.5",
-    "zustand": "^5.0.16"
+    "zustand": "^5.1.0"
   },
   "packageManager": "pnpm@12.17.0+sha512.b8d223ebec04b580a89ed206daa71d1bccb6a1ee1d52efa95cc3b0db75271561df8f0d8e2c43add39c5ec08018af7a8a95108e7090f95a29f88727b7a40fd53d",
   "engines": {

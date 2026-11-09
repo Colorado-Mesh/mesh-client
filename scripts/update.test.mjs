@@ -110,10 +110,10 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).not.toContain('RATSPEAK_STACK_PR_ENTRIES:');
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.0');
+    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.1');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.37',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.42',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
     expect(result.stdout).toContain('file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851');
@@ -543,9 +543,9 @@ exit 0
     return {
       releases: {
         'ratspeak/rsLXST': {
-          tag_name: 'v0.3.0',
-          published_at: '2026-10-12T22:34:34Z',
-          body: 'rsLXST v0.3.0',
+          tag_name: 'v0.3.1',
+          published_at: '2026-11-08T12:00:00Z',
+          body: 'rsLXST v0.3.1',
         },
         'ratspeak/lrgp-rs': {
           tag_name: 'v0.4.1',
@@ -553,9 +553,9 @@ exit 0
           body: 'lrgp-rs v0.4.1',
         },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.0.37',
-          published_at: '2026-11-02T07:21:26Z',
-          body: 'Bluetooth RNode pairing/reconnect polish and Linux package fixes.',
+          tag_name: 'v1.0.42',
+          published_at: '2026-11-08T12:00:00Z',
+          body: 'Ratspeak v1.0.42.',
         },
       },
       commits: {
@@ -616,7 +616,7 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.0.37');
+    expect(result.stdout).toContain('v1.0.42');
     expect(result.stdout).toContain('reviewed; current');
     expect(result.stdout).toContain('js/lxmface.js @ d1af21c4f4d1 (reviewed; current)');
     expect(result.stdout).toContain('v0.4.1');
@@ -646,7 +646,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.0.37');
+    expect(result.stdout).toContain('v1.0.42');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');

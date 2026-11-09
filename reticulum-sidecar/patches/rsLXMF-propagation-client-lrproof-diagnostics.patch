@@ -1,8 +1,8 @@
 diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
-index fefb49e..31894d0 100644
+index d034fb4..82e7de9 100644
 --- a/crates/lxmf-core/src/propagation_client.rs
 +++ b/crates/lxmf-core/src/propagation_client.rs
-@@ -145,6 +145,8 @@ pub struct PropagationClient {
+@@ -269,6 +269,8 @@ pub struct PropagationClient {
      started_at: Option<Instant>,
      timeout: Duration,
      identified: bool,
@@ -11,7 +11,7 @@ index fefb49e..31894d0 100644
  }
  
  impl PropagationClient {
-@@ -187,9 +189,15 @@ impl PropagationClient {
+@@ -334,9 +336,15 @@ impl PropagationClient {
              started_at: None,
              timeout: Duration::from_secs(120),
              identified: false,
@@ -27,15 +27,15 @@ index fefb49e..31894d0 100644
      pub fn set_propagation_node(&mut self, dest_hash: [u8; 16]) {
          self.outbound_propagation_node = Some(dest_hash);
      }
-@@ -264,6 +272,7 @@ impl PropagationClient {
-         self.status = PropagationTransferStatus::default();
+@@ -576,6 +584,7 @@ impl PropagationClient {
+         self.pending_wants.clear();
+         self.unread_bytes = 0;
          self.identified = false;
-         self.started_at = None;
 +        self.last_establish_error = None;
      }
  
      pub fn start_download(&mut self) -> bool {
-@@ -295,6 +304,7 @@ impl PropagationClient {
+@@ -622,6 +631,7 @@ impl PropagationClient {
          if !self.pending_transport.is_empty() {
              return false;
          }
@@ -43,7 +43,7 @@ index fefb49e..31894d0 100644
  
          let (link, request_data) = Link::new_initiator(node_hash, 1);
          let link_id = link.link_id;
-@@ -638,20 +648,44 @@ impl PropagationClient {
+@@ -1056,21 +1066,45 @@ impl PropagationClient {
                                  continue;
                              }
                              let node_hex = self.outbound_propagation_node.map(|h| hex_encode(&h));
@@ -55,11 +55,12 @@ index fefb49e..31894d0 100644
 -                                        .expect("known_identities values are [u8; 64]; slice [32..64] is always 32 bytes");
 -                                if let Ok(verify_key) = Ed25519PublicKey::from_bytes(&ed25519_bytes)
 -                                {
--                                    self.handle_link_proof(
+-                                    self.handle_link_proof_with_owner(
 -                                        data,
 -                                        &verify_key,
 -                                        &ed25519_bytes,
 -                                        interface_id,
+-                                        interface_owner,
 +                            if let Some(node_hex) = node_hex {
 +                                if let Some(pub_key) = known_identities.get(&node_hex) {
 +                                    let ed25519_bytes: [u8; 32] = match pub_key[32..64].try_into() {
@@ -77,11 +78,12 @@ index fefb49e..31894d0 100644
 +                                    if let Ok(verify_key) =
 +                                        Ed25519PublicKey::from_bytes(&ed25519_bytes)
 +                                    {
-+                                        self.handle_link_proof(
++                                        self.handle_link_proof_with_owner(
 +                                            data,
 +                                            &verify_key,
 +                                            &ed25519_bytes,
 +                                            interface_id,
++                                            interface_owner,
 +                                        );
 +                                    } else {
 +                                        tracing::warn!(
@@ -101,7 +103,7 @@ index fefb49e..31894d0 100644
                                  }
                              }
                          }
-@@ -725,9 +759,14 @@ impl PropagationClient {
+@@ -1161,9 +1195,14 @@ impl PropagationClient {
              None => return,
          };
  

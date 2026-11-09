@@ -1,8 +1,8 @@
 diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
-index 1ffb1dc..b3b2707 100644
+index e37ab00..21627ff 100644
 --- a/crates/rns-transport/src/actor/inbound.rs
 +++ b/crates/rns-transport/src/actor/inbound.rs
-@@ -397,24 +397,51 @@ impl TransportActor {
+@@ -596,24 +596,51 @@ impl TransportActor {
              .unwrap_or_default();
          let suppressed =
              self.is_path_interface_suppressed(header.destination_hash, interface_id, now_f64());
@@ -71,7 +71,7 @@ index 1ffb1dc..b3b2707 100644
  
          if should_add {
              // Announce-table update MUST precede path-table update — the dedup
-@@ -456,26 +483,6 @@ impl TransportActor {
+@@ -655,26 +682,6 @@ impl TransportActor {
                      .insert(header.destination_hash, announce_entry);
              }
  
@@ -98,7 +98,7 @@ index 1ffb1dc..b3b2707 100644
              let tunnel_path = crate::tunnel::TunnelPath {
                  timestamp: entry.timestamp,
                  next_hop: entry.next_hop,
-@@ -484,7 +491,12 @@ impl TransportActor {
+@@ -683,7 +690,12 @@ impl TransportActor {
                  random_blobs: entry.random_blobs.iter().copied().collect(),
                  packet_hash: entry.packet_hash,
              };
@@ -112,7 +112,7 @@ index 1ffb1dc..b3b2707 100644
              if let Some(tunnel) = self.tunnel_table.get_mut_by_interface(interface_id) {
                  tunnel
                      .tunnel_paths
-@@ -520,13 +532,24 @@ impl TransportActor {
+@@ -718,13 +730,24 @@ impl TransportActor {
                  "path learned from announce"
              );
          } else {
@@ -142,7 +142,7 @@ index 1ffb1dc..b3b2707 100644
              return;
          }
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index 360db4a..f4abbc1 100644
+index ec939a3..345f27b 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
 @@ -20,6 +20,7 @@ use crate::messages::{
@@ -153,9 +153,9 @@ index 360db4a..f4abbc1 100644
  use crate::rate_limit::RateTable;
  use crate::reverse_table::ReverseTable;
  use crate::traffic::TrafficCounter;
-@@ -148,6 +149,11 @@ pub struct TransportActor {
-     /// Used when a Direct LinkRequest timed out on one route, so the next
-     /// path request can discover alternates instead of instantly reusing it.
+@@ -163,6 +164,11 @@ pub struct TransportActor {
+     /// Unix-seconds deadline. Suppression does not remove an existing path or
+     /// guarantee discovery of an alternative.
      pub path_interface_suppressions: HashMap<([u8; 16], InterfaceId), f64>,
 +    /// Global medium preference for the active path slot.
 +    pub path_medium_preference: PathMediumPreference,
@@ -164,8 +164,8 @@ index 360db4a..f4abbc1 100644
 +    pub peer_medium_pins: HashMap<[u8; 16], PathMedium>,
      last_discovery_pr_tx: f64,
      /// External interface waiting for a path response from a local shared client.
-     /// Python calls this `pending_local_path_requests`.
-@@ -399,6 +405,8 @@ impl TransportActor {
+     pub pending_local_path_requests: HashMap<[u8; 16], InterfaceId>,
+@@ -439,6 +445,8 @@ impl TransportActor {
              pending_discovery_prs: VecDeque::new(),
              pending_path_request_admissions: VecDeque::new(),
              path_interface_suppressions: HashMap::new(),
@@ -174,7 +174,7 @@ index 360db4a..f4abbc1 100644
              last_discovery_pr_tx: 0.0,
              pending_local_path_requests: HashMap::new(),
              path_states: HashMap::new(),
-@@ -1496,15 +1504,92 @@ impl TransportActor {
+@@ -1684,15 +1692,92 @@ impl TransportActor {
          let until = now_f64() + duration;
          self.path_interface_suppressions
              .insert((dest, interface_id), until);
@@ -267,7 +267,7 @@ index 360db4a..f4abbc1 100644
      fn is_path_interface_suppressed(
          &mut self,
          dest: [u8; 16],
-@@ -2025,12 +2110,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
+@@ -2287,12 +2372,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
          .unwrap_or(false)
  }
  
@@ -280,7 +280,7 @@ index 360db4a..f4abbc1 100644
  fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      let (header, data_offset) = rns_wire::header::PacketHeader::unpack(raw).ok()?;
      if header.flags.packet_type != rns_wire::flags::PacketType::Announce || data_offset >= raw.len()
-@@ -2045,10 +2124,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
+@@ -2307,10 +2386,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      Some(announce_timebase(&announce.random_hash))
  }
  
@@ -291,7 +291,7 @@ index 360db4a..f4abbc1 100644
  /// Random jitter in `[0, PATHFINDER_RW)` for announce rebroadcast timing.
  /// The jitter avoids synchronized retransmits when many nodes learn the
  /// same announce in the same tick.
-@@ -2355,6 +2430,14 @@ mod tests {
+@@ -2646,6 +2721,14 @@ mod tests {
          (entry, rx)
      }
  
@@ -306,7 +306,7 @@ index 360db4a..f4abbc1 100644
      fn make_test_interface_with_capacity(
          name: &str,
          capacity: usize,
-@@ -5594,6 +5677,9 @@ mod tests {
+@@ -6023,6 +6106,9 @@ mod tests {
          assert!(actor.state_dirty);
      }
  
@@ -316,7 +316,7 @@ index 360db4a..f4abbc1 100644
      #[test]
      fn test_replayed_announce_random_blob_does_not_replace_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -5606,9 +5692,9 @@ mod tests {
+@@ -6035,9 +6121,9 @@ mod tests {
          let identity = rns_identity::identity::Identity::new();
          let blob = random_blob(0xA1, 100);
          let (raw_first, dest_hash) =
@@ -328,7 +328,7 @@ index 360db4a..f4abbc1 100644
          let (htx, mut hrx) = mpsc::channel(8);
          actor.announce_handlers.push(AnnounceHandlerRegistration {
              id: crate::messages::AnnounceHandlerId(0),
-@@ -5627,7 +5713,7 @@ mod tests {
+@@ -6056,7 +6142,7 @@ mod tests {
              q: None,
          });
          let first_event = hrx.try_recv().expect("fresh announce should dispatch");
@@ -337,7 +337,7 @@ index 360db4a..f4abbc1 100644
  
          actor.on_inbound(InboundPacket {
              raw: raw_replay,
-@@ -5638,13 +5724,19 @@ mod tests {
+@@ -6067,13 +6153,19 @@ mod tests {
          });
  
          let path = actor.path_table.get(&dest_hash).unwrap();
@@ -359,7 +359,7 @@ index 360db4a..f4abbc1 100644
              "replayed announces must not refresh recent announce state"
          );
          assert!(
-@@ -5662,6 +5754,334 @@ mod tests {
+@@ -6091,6 +6183,334 @@ mod tests {
          );
      }
  
@@ -694,7 +694,7 @@ index 360db4a..f4abbc1 100644
      #[test]
      fn test_newer_equal_or_higher_hop_announce_replaces_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -8684,6 +9104,7 @@ mod tests {
+@@ -9151,6 +9571,7 @@ mod tests {
                  expires: now - 1.0,
                  random_blobs: Default::default(),
                  interface_id: 7,
@@ -703,10 +703,10 @@ index 360db4a..f4abbc1 100644
              },
          );
 diff --git a/crates/rns-transport/src/actor/outbound.rs b/crates/rns-transport/src/actor/outbound.rs
-index 267f184..3cafdec 100644
+index 8856317..c2b11de 100644
 --- a/crates/rns-transport/src/actor/outbound.rs
 +++ b/crates/rns-transport/src/actor/outbound.rs
-@@ -873,6 +873,12 @@ impl TransportActor {
+@@ -981,6 +981,12 @@ impl TransportActor {
                      expires: tunnel_path.expires,
                      random_blobs: tunnel_path.random_blobs.iter().copied().collect(),
                      interface_id,
@@ -720,10 +720,10 @@ index 267f184..3cafdec 100644
                  };
                  self.path_table.insert(*dest_hash, entry);
 diff --git a/crates/rns-transport/src/actor/persistence.rs b/crates/rns-transport/src/actor/persistence.rs
-index 7327d22..dc92509 100644
+index f7b8bb7..894b2fe 100644
 --- a/crates/rns-transport/src/actor/persistence.rs
 +++ b/crates/rns-transport/src/actor/persistence.rs
-@@ -1064,6 +1064,14 @@ impl TransportActor {
+@@ -1077,6 +1077,14 @@ impl TransportActor {
      /// just-registered interface. Bound to `RegisterInterface` so each entry
      /// rebinds to whatever `interface_id` the runtime allocated this boot.
      pub(super) fn drain_pending_for_interface(&mut self, id: InterfaceId, name: &str) {
@@ -738,7 +738,7 @@ index 7327d22..dc92509 100644
          if !self.pending_path_entries.is_empty() {
              let mut promoted = 0usize;
              self.pending_path_entries.retain(|pe| {
-@@ -1107,6 +1115,7 @@ impl TransportActor {
+@@ -1120,6 +1128,7 @@ impl TransportActor {
                          })
                          .collect(),
                      interface_id: id,
@@ -746,7 +746,7 @@ index 7327d22..dc92509 100644
                      packet_hash: pe.packet_hash.as_ref().and_then(|h| {
                          if h.len() == 32 {
                              let mut arr = [0u8; 32];
-@@ -1319,6 +1328,7 @@ mod announce_sweep_actor_tests {
+@@ -1246,6 +1255,7 @@ mod announce_sweep_actor_tests {
                  expires: crate::now_f64() + 600.0,
                  random_blobs: std::collections::VecDeque::new(),
                  interface_id: 7,
@@ -754,7 +754,7 @@ index 7327d22..dc92509 100644
                  packet_hash: Some(path_hash),
              },
          );
-@@ -1474,6 +1484,7 @@ mod async_save_tests {
+@@ -1384,6 +1394,7 @@ mod async_save_tests {
                  expires: crate::now_f64() + 600.0,
                  random_blobs: std::collections::VecDeque::new(),
                  interface_id: 7,
@@ -762,7 +762,7 @@ index 7327d22..dc92509 100644
                  packet_hash: Some([0x33; 32]),
              },
          );
-@@ -1590,6 +1601,7 @@ mod async_save_tests {
+@@ -1500,6 +1511,7 @@ mod async_save_tests {
                      expires: crate::now_f64() + 600.0,
                      random_blobs: std::collections::VecDeque::new(),
                      interface_id: 7,
@@ -771,10 +771,10 @@ index 7327d22..dc92509 100644
                  },
              );
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index be4f325..beaa224 100644
+index 759fe9c..8a05b7f 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -262,6 +262,41 @@ impl TransportActor {
+@@ -271,6 +271,41 @@ impl TransportActor {
                      self.suppress_path_interface(dest, interface_id, duration)
                  }))
              }
@@ -817,26 +817,327 @@ index be4f325..beaa224 100644
                  for entry in self.interfaces.values_mut() {
                      entry.announce_queue.clear();
 diff --git a/crates/rns-transport/src/constants.rs b/crates/rns-transport/src/constants.rs
-index 1747689..a6d48a1 100644
+index 4d29675..a6d48a1 100644
 --- a/crates/rns-transport/src/constants.rs
 +++ b/crates/rns-transport/src/constants.rs
-@@ -52,6 +52,12 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
+@@ -1,6 +1,5 @@
+-/// Exclusive upper bound for the on-wire hop count. Inbound packets of every
+-/// packet type are rejected when their raw hop count is at least 128, before
+-/// the receiving hop adjustment.
++/// Maximum hop count. Announces and forwarded packets exceeding this are
++/// dropped at the inbound boundary. Mirrors Python `Transport.PATHFINDER_M`.
+ pub const PATHFINDER_M: u8 = 128;
+ 
+ /// Number of retransmit retries for announces.
+@@ -9,7 +8,7 @@ pub const PATHFINDER_R: u8 = 1;
+ /// Grace period (seconds) before announce retry.
+ pub const PATHFINDER_G: f64 = 5.0;
+ 
+-/// Announce rebroadcast jitter window, in seconds.
++/// Random window for announce rebroadcast jitter.
+ pub const PATHFINDER_RW: f64 = 0.5;
+ 
+ /// Default path expiry (7 days, in seconds).
+@@ -21,14 +20,13 @@ pub const AP_PATH_TIME: u64 = 86_400;
+ /// Roaming path expiry (6 hours).
+ pub const ROAMING_PATH_TIME: u64 = 21_600;
+ 
+-/// Default path lifetime, in seconds (7 days), except for interface modes
+-/// with shorter lifetimes. Announce metadata cleanup also uses this value:
+-/// steady-state cleanup allows 1.25 times this duration for used, pathless
+-/// entries, while loading applies the base duration to stale, unretained entries.
++/// Default destination timeout (7 days). Matches Python
++/// `Transport.DESTINATION_TIMEOUT`. Drives both `path_table` and
++/// `recent_announces` eviction.
+ pub const DESTINATION_TIMEOUT: u64 = 604_800;
+ 
+-/// Transport link-table timeout for validated links, in seconds (15 minutes).
+-/// This is transport bookkeeping, not an application-level Link keepalive deadline.
++/// Transport link-table timeout for validated links (15 min).
++/// Equals `Link::STALE_TIME (720s) * 1.25`.
+ pub const LINK_TIMEOUT: f64 = 900.0;
+ 
+ /// Maximum packets retained for one locally-owned established Link while its
+@@ -39,8 +37,7 @@ pub const LINK_ENDPOINT_EGRESS_QUEUE_CAPACITY: usize = 256;
+ /// Reverse table entry timeout (8 minutes).
+ pub const REVERSE_TIMEOUT: u64 = 480;
+ 
+-/// Receipt-count ceiling applied during periodic maintenance. Registration can
+-/// temporarily exceed it; maintenance culls the oldest receipts.
++/// Maximum packet receipts tracked.
+ pub const MAX_RECEIPTS: usize = 1024;
+ 
+ /// Rate timestamps per destination.
+@@ -55,8 +52,13 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
  /// Max local rebroadcasts before stopping.
  pub const LOCAL_REBROADCASTS_MAX: u32 = 2;
  
+-/// Base timeout for recursive path discovery, in seconds. A discovered
+-/// slow-media return budget can extend the actual admission deadline.
 +/// Ranked path slots retained per destination: one active route plus
 +/// `MAX_PATH_SLOTS - 1` backups. Backups let a probe/link failure reroute
 +/// without waiting for a fresh announce, and are bounded so a destination
 +/// heard on many interfaces cannot grow the table without limit.
 +pub const MAX_PATH_SLOTS: usize = 3;
 +
- /// Path request timeout (seconds).
++/// Path request timeout (seconds).
  pub const PATH_REQUEST_TIMEOUT: f64 = 15.0;
  
-@@ -279,6 +285,72 @@ pub enum PathState {
+ /// Duplicate inbound path request tag retention (seconds).
+@@ -65,8 +67,7 @@ pub const PATH_REQUEST_GATE_TIMEOUT: f64 = 120.0;
+ /// Maximum queued automatic discovery path requests after failed link setup.
+ pub const MAX_QUEUED_DISCOVERY_PRS: usize = 32;
+ 
+-/// Minimum spacing in seconds between dequeuing automatic discovery requests.
+-/// One dequeued request can be offered to several eligible interfaces.
++/// Minimum spacing between queued discovery path-request transmissions.
+ pub const DISCOVERY_PR_TX_THROTTLE: f64 = 0.5;
+ 
+ /// Grace before path response (seconds).
+@@ -75,100 +76,107 @@ pub const PATH_REQUEST_GRACE: f64 = 0.4;
+ /// Extra grace for roaming interfaces (seconds).
+ pub const PATH_REQUEST_RG: f64 = 1.5;
+ 
+-/// Minimum interval in seconds used to suppress repeated automatic path
+-/// requests. Explicit caller requests have their own admission rules.
++/// Minimum interval between path requests (seconds).
+ pub const PATH_REQUEST_MI: f64 = 20.0;
+ 
+-/// Default two-generation duplicate-packet hash capacity used by normal
+-/// insertion. Restoring saved generations does not enforce this bound.
++/// Maximum packet hashes retained across both generations.
++///
++/// Python retains roughly one million hashes. Rust deliberately retains up
++/// to two million for a longer bounded replay window; see RNS-D0056.
+ pub const HASHLIST_MAXSIZE: usize = 2_000_000;
+ 
+ /// Job loop period (250ms).
+ pub const JOB_INTERVAL_MS: u64 = 250;
+ 
+-/// Maintenance tick period in background mode, in milliseconds (2 seconds),
+-/// when the `mobile-throttle` feature is enabled. Message channels remain
+-/// serviced; this constant does not impose a packet-processing rate.
++/// Job loop period in background mode (2s). Inbound packet processing is
++/// unaffected — it runs on the channel branch at full speed.
+ pub const JOB_INTERVAL_BG_MS: u64 = 2000;
+ 
+-/// Minimum interval in seconds between dirty routing-state save requests.
+-/// Periodic saves cover paths, announce metadata, blackholes and tunnels, but
+-/// exclude the packet hash list. Saves can run on a blocking worker; requesting
+-/// one is not confirmation of completion or durability. Shutdown and observed
+-/// foreground-to-background transitions also request saves. Only the background
+-/// tick cadence change is gated by `mobile-throttle`.
++/// Cadence at which `on_tick` flushes routing-state files (path_table,
++/// announce_cache, blackhole, tunnel_table) when dirty. Hashlist is excluded
++/// (multi-MB on busy hubs); it saves on shutdown + foreground→background.
++/// Matches Python `Reticulum.GRACIOUS_PERSIST_INTERVAL` (5 min). On a live
++/// announce feed the dirty bit is effectively always set, so this interval
++/// IS the flush rate — at 10s the full-state clone+serialize+fsync cycle
++/// dominated daemon RSS via allocator churn. Abrupt-exit safety comes from
++/// the falling-edge save and `on_shutdown`, not from this cadence.
+ pub const STATE_SAVE_INTERVAL_SECS: f64 = 300.0;
+ 
+-/// Age in seconds after which never-used, pathless, unretained destinations
+-/// are eligible for announce-metadata cleanup.
++/// Python `Transport.UNUSED_DESTINATION_LINGER`: never-used destinations
++/// without a path are dropped from the announce cache after this idle time.
+ pub const UNUSED_DESTINATION_LINGER: f64 = 360.0;
+ 
+-/// Discovery path-request tag count ceiling applied during maintenance, in
+-/// addition to time-based expiry. It is not an insertion-time hard bound.
++/// Python `Transport.max_pr_tags`: hard count cap on the discovery
++/// path-request tag gate, on top of the time-based retain.
+ pub const MAX_DISCOVERY_PR_TAGS: usize = 32_000;
+ 
+-/// Traffic-rate sampling interval, in seconds. Despite the name, transport
+-/// link-table culling uses `TABLES_CULL_INTERVAL`.
++/// Link table check interval.
+ pub const LINKS_CHECK_INTERVAL: f64 = 1.0;
+ 
+-/// Receipt timeout and count-limit check interval, in seconds.
++/// Receipt timeout check interval.
+ pub const RECEIPTS_CHECK_INTERVAL: f64 = 1.0;
+ 
+-/// Announce rebroadcast check interval, in seconds.
++/// Announce rebroadcast check interval.
+ pub const ANNOUNCES_CHECK_INTERVAL: f64 = 1.0;
+ 
+-/// Exported pending-path-request interval, in seconds. The current transport
+-/// actor does not use this constant to schedule cleanup.
++/// Pending path request cleanup interval.
+ pub const PENDING_PRS_CHECK_INTERVAL: f64 = 30.0;
+ 
+-/// In-memory hash rotation and announce-metadata cleanup interval, in seconds
+-/// (5 minutes), after the interface-startup grace period has completed.
++/// Cache cleanup interval (5 minutes).
+ pub const CACHE_CLEAN_INTERVAL: f64 = 300.0;
+ 
+-/// On-disk announce cache sweep interval, in seconds (15 minutes). Scheduling
+-/// does not require the interface-startup grace period; it requires storage,
+-/// non-client ownership and no sweep already in flight.
++/// On-disk announce cache sweep cadence — Python's 15-minute
++/// `clean_announce_cache` interval. Independent of the RAM-cache clean
++/// gate: Python's jobs thread cleans regardless of interface presence, so a
++/// node that boots with no interfaces still collects backlog.
+ pub const ANNOUNCE_CACHE_SWEEP_INTERVAL: f64 = 900.0;
+ 
+-/// Minimum age in seconds before an unreferenced announce-cache file is
+-/// eligible for removal. This grace reduces races with a keep-set snapshot;
+-/// it is not a transaction between cache writers and the sweep.
++/// Never delete announce-cache files younger than this. The keep-set is
++/// snapshotted on the actor while the cache writer keeps running on the
++/// blocking pool, so a fresh announce can exist on disk before its path
++/// entry does. Python accepts that race; we close it.
+ pub const ANNOUNCE_CACHE_SWEEP_GRACE_SECS: u64 = 300;
+ 
+-/// Routing-table and link-table culling interval, in seconds.
++/// Table culling interval.
+ pub const TABLES_CULL_INTERVAL: f64 = 5.0;
+ 
+-/// Exported interface-job interval, in seconds. The current transport actor
+-/// does not use this constant to schedule interface work.
++/// Interface job processing interval.
+ pub const INTERFACE_JOBS_INTERVAL: f64 = 5.0;
+ 
+-/// Exported management-announce interval, in seconds (2 hours). The current
+-/// transport actor does not schedule management announces from this constant.
++/// Management announce interval (2 hours).
+ pub const MGMT_ANNOUNCE_INTERVAL: f64 = 7200.0;
+ 
+-/// Blackhole expiry check interval, in seconds.
++/// Blackhole expiry check interval.
+ pub const BLACKHOLE_CHECK_INTERVAL: f64 = 60.0;
+ 
+-/// Default announce bandwidth fraction of the declared interface bitrate
+-/// (0.02 means 2%). Supply a fraction, not a percentage, to transport APIs.
++/// Announce bandwidth cap as a fraction of interface bitrate (2%).
++///
++/// The Python reference stores `ANNOUNCE_CAP = 2` and divides by 100 at use
++/// sites; we store the fraction directly. UIs may show the percentage.
+ pub const ANNOUNCE_CAP: f64 = 0.02;
+ 
+ /// Maximum ingress-limited announces to hold per interface.
++/// Matches Python `Interface.MAX_HELD_ANNOUNCES = 256`.
+ pub const MAX_HELD_ANNOUNCES: usize = 256;
+ 
+ /// Held announce release interval (seconds).
++/// Matches Python 1.2.5 `Interface.IC_HELD_RELEASE_INTERVAL = 5`.
+ pub const IC_HELD_RELEASE_INTERVAL: f64 = 5.0;
+ 
+ /// Incoming announce frequency window samples.
++/// Matches Python 1.2.5 `Interface.IA_FREQ_SAMPLES = 48`.
+ pub const IA_FREQ_SAMPLES: usize = 48;
+ 
+ /// Outgoing announce frequency window samples.
++/// Matches Python 1.2.5 `Interface.OA_FREQ_SAMPLES = 48`.
+ pub const OA_FREQ_SAMPLES: usize = 48;
+ 
+ /// Incoming path-request frequency window samples.
++/// Matches Python 1.2.5 `Interface.IP_FREQ_SAMPLES = 48`.
+ pub const IP_FREQ_SAMPLES: usize = 48;
+ 
+ /// Outgoing path-request frequency window samples.
++/// Matches Python 1.2.5 `Interface.OP_FREQ_SAMPLES = 48`.
+ pub const OP_FREQ_SAMPLES: usize = 48;
+ 
+ /// Minimum non-zero announce frequency represented by the decay window.
+@@ -184,18 +192,23 @@ pub const AR_FREQ_DECAY: f64 = 1.0 / AR_MINFREQ_HZ;
+ pub const PR_FREQ_DECAY: f64 = 1.0 / PR_MINFREQ_HZ;
+ 
+ /// Minimum samples required before frequency is considered defined.
++/// Matches Python 1.2.5 `Interface.IC_DEQUE_MIN_SAMPLE = 2`.
+ pub const IC_DEQUE_MIN_SAMPLE: usize = 2;
+ 
+ /// Minimum samples required for burst state clearing / egress PR limiting.
++/// Matches Python 1.2.5 `Interface.IC_BURST_MIN_SAMPLES = 6`.
+ pub const IC_BURST_MIN_SAMPLES: usize = 6;
+ 
+ /// Duration interface is treated as "new" (seconds).
++/// Matches Python `Interface.IC_NEW_TIME = 2*60*60`.
+ pub const IC_NEW_TIME: f64 = 7200.0;
+ 
+ /// Burst threshold for new interfaces (announces/sec).
++/// Matches Python 1.2.5 `Interface.IC_BURST_FREQ_NEW = 3`.
+ pub const IC_BURST_FREQ_NEW: f64 = 3.0;
+ 
+ /// Burst threshold for established interfaces (announces/sec).
++/// Matches Python 1.2.5 `Interface.IC_BURST_FREQ = 10`.
+ pub const IC_BURST_FREQ: f64 = 10.0;
+ 
+ /// Path-request burst threshold for new interfaces (requests/sec).
+@@ -205,9 +218,11 @@ pub const IC_PR_BURST_FREQ_NEW: f64 = 3.0;
+ pub const IC_PR_BURST_FREQ: f64 = 8.0;
+ 
+ /// Burst detection active duration (seconds).
++/// Matches Python 1.2.5 `Interface.IC_BURST_HOLD = 15`.
+ pub const IC_BURST_HOLD: f64 = 15.0;
+ 
+ /// Burst penalty delay (seconds).
++/// Matches Python 1.2.5 `Interface.IC_BURST_PENALTY = 15`.
+ pub const IC_BURST_PENALTY: f64 = 15.0;
+ 
+ /// Optional outgoing path-request limiter threshold (requests/sec).
+@@ -217,26 +232,29 @@ pub const EC_PR_FREQ: f64 = 5.0;
+ pub const EGRESS_CONTROL: bool = false;
+ 
+ /// Tunnel timeout (8 hours, in seconds).
++/// Matches Python 1.1.6 `Transport.TUNNEL_TIMEOUT = 60*60*8`.
+ pub const TUNNEL_TIMEOUT: u64 = 28_800;
+ 
+ /// Tunnel path timeout (8 hours, in seconds).
++/// Matches Python 1.1.6 `Transport.TUNNEL_PATH_TIMEOUT = 60*60*8`.
+ pub const TUNNEL_PATH_TIMEOUT: u64 = 28_800;
+ 
+-/// Exported announce-queue interval, in seconds. The current actor processes
+-/// interface announce queues on its maintenance tick instead.
++/// Announce queue processing interval (seconds).
+ pub const ANNOUNCE_QUEUE_INTERVAL: f64 = 1.0;
+ 
+-/// Maximum number of packet-metric cache entries retained by the actor.
++/// Local client cache max size.
+ pub const LOCAL_CLIENT_CACHE_MAXSIZE: usize = 512;
+ 
+ /// Maximum lifetime for queued announces (24 hours, in seconds).
++/// Matches Python `Reticulum.QUEUED_ANNOUNCE_LIFE = 60*60*24`.
+ pub const QUEUED_ANNOUNCE_LIFE: f64 = 86_400.0;
+ 
+ /// Maximum number of queued announces per interface.
++/// Matches Python `Reticulum.MAX_QUEUED_ANNOUNCES = 16384`.
+ pub const MAX_QUEUED_ANNOUNCES: usize = 16_384;
+ 
+-/// Grace period in seconds after the first interface registration before
+-/// startup-gated in-memory cache cleanup becomes eligible.
++/// Startup grace period (seconds) before cache cleaning runs.
++/// Allows interfaces to come online before pruning stale cache entries.
+ pub const STARTUP_GRACE_PERIOD: f64 = 3.0;
+ 
+ /// Wire transport mode carried in the packet header.
+@@ -249,8 +267,7 @@ pub enum TransportMode {
+     Tunnel = 0x03,
+ }
+ 
+-/// Exported reachability labels. The current transport actor does not
+-/// maintain a value of this enum for each destination.
++/// Reachability state recorded for a destination.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ #[repr(u8)]
+ pub enum Reachability {
+@@ -259,8 +276,7 @@ pub enum Reachability {
+     Transport = 0x02,
+ }
+ 
+-/// Locally recorded path response state. A stored value alone does not
+-/// establish present reachability or authenticate a peer.
++/// Liveness state for a known path.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ #[repr(u8)]
+ pub enum PathState {
+@@ -269,8 +285,73 @@ pub enum PathState {
      Responsive = 0x02,
  }
  
+-/// Local interface policy used for announce forwarding and path discovery.
+-/// These modes are not a reachability signal transmitted to upstream peers.
 +/// Transport medium a path was learned over.
 +///
 +/// Coarser than [`InterfaceMode`] on purpose: routing preference is only ever
@@ -903,19 +1204,72 @@ index 1747689..a6d48a1 100644
 +    }
 +}
 +
- /// Configured operating mode for an interface.
++/// Configured operating mode for an interface.
  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
  pub enum InterfaceMode {
+     Full,
+@@ -279,23 +360,20 @@ pub enum InterfaceMode {
+     AccessPoint,
+     Roaming,
+     Boundary,
+-    /// Internal-interface policy: default path expiry and eligibility for
+-    /// unknown-path discovery. Interface role separately identifies IPC peers.
++    /// Python 1.3.8 `MODE_INTERNAL` (Interface.py:51) — local/shared-instance
++    /// interfaces. Default path expiry (`path_expiry` wildcard arm) and a
++    /// discovery mode (`mode_discovers_unknown_paths`), like upstream.
+     Internal,
+ }
+ 
+-/// Configured traffic-direction flags. These flags do not open an interface
+-/// or establish that its driver is online.
++/// Which directions an interface carries traffic in.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub struct InterfaceDirection {
+-    /// Whether inbound traffic is enabled.
+     pub inbound: bool,
+-    /// Whether outbound traffic is enabled.
+     pub outbound: bool,
+ }
+ 
+ impl InterfaceDirection {
+-    /// Enable both direction flags.
+     pub fn bidirectional() -> Self {
+         Self {
+             inbound: true,
+@@ -303,7 +381,6 @@ impl InterfaceDirection {
+         }
+     }
+ 
+-    /// Enable inbound traffic and disable outbound traffic.
+     pub fn inbound_only() -> Self {
+         Self {
+             inbound: true,
+@@ -311,7 +388,6 @@ impl InterfaceDirection {
+         }
+     }
+ 
+-    /// Enable outbound traffic and disable inbound traffic.
+     pub fn outbound_only() -> Self {
+         Self {
+             inbound: false,
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index a96aae4..8d810ae 100644
+index 3b61fd1..755d5e3 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -809,6 +809,23 @@ pub enum TransportQuery {
+@@ -842,7 +842,6 @@ pub enum TransportMessage {
          dest: [u8; 16],
-         duration: f64,
+         reply: tokio::sync::oneshot::Sender<bool>,
      },
-+    /// Set the global medium preference for the active path slot and re-rank
-+    /// known destinations. Response: `IntResult(destinations_rerouted)`.
+-    /// Optional wire packet tap for debug/sniffer consumers.
+     SetPacketTap {
+         tap_tx: tokio::sync::broadcast::Sender<PacketTapEvent>,
+     },
+@@ -909,6 +908,23 @@ pub enum TransportQuery {
+     /// Read metadata, counters and optional synchronous driver inspection.
+     /// Missing counters report zero; absent online state reports true. Rate fields
+     /// are currently zero placeholders, not measured throughput.
++    /// Set global path-medium preference and rerank known destinations.
++    /// Response: `IntResult(destinations_rerouted)`.
 +    SetPathMediumPreference {
 +        preference: crate::constants::PathMediumPreference,
 +    },
@@ -931,10 +1285,10 @@ index a96aae4..8d810ae 100644
 +    GetPathSlots {
 +        dest: [u8; 16],
 +    },
-     DropAnnounceQueues,
-     GetBlackholedIdentities,
-     BlackholeIdentity {
-@@ -917,6 +934,7 @@ pub enum TransportQuery {
+     GetInterfaceStats,
+     GetRateTable,
+     GetLinkCount,
+@@ -1101,6 +1117,7 @@ pub enum TransportQuery {
  #[derive(Debug)]
  pub enum TransportQueryResponse {
      PathTable(Vec<PathTableRpcEntry>),
@@ -942,7 +1296,7 @@ index a96aae4..8d810ae 100644
      InterfaceStats(Vec<InterfaceStatRpcEntry>),
      RateTable(Vec<RateTableRpcEntry>),
      Announces(Vec<AnnounceRpcEntry>),
-@@ -950,6 +968,32 @@ pub struct PathTableRpcEntry {
+@@ -1136,6 +1153,32 @@ pub struct PathTableRpcEntry {
      pub interface_role: InterfaceRole,
  }
  
@@ -972,33 +1326,51 @@ index a96aae4..8d810ae 100644
 +    pub expired: bool,
 +}
 +
- #[derive(Debug, Clone)]
- pub struct InterfaceStatRpcEntry {
-     pub id: InterfaceId,
+ /// Interface metadata and sampled counters. Driver counters use independent
+ /// atomic reads, so this is not a coherent instant across all fields. Missing
+ /// counters become zero and missing online state becomes true; current
 diff --git a/crates/rns-transport/src/path_table.rs b/crates/rns-transport/src/path_table.rs
-index e051675..23a7728 100644
+index dd34172..23a7728 100644
 --- a/crates/rns-transport/src/path_table.rs
 +++ b/crates/rns-transport/src/path_table.rs
-@@ -8,6 +8,8 @@ use crate::constants::{
+@@ -8,24 +8,27 @@ use crate::constants::{
  use crate::messages::InterfaceId;
  use rns_wire::types::DestHash;
  
+-/// Stored route metadata for a destination. Fields are caller-writable; this
+-/// record alone does not establish a live interface or reachable peer.
 +pub use crate::constants::{MAX_PATH_SLOTS, PathMedium, PathMediumPreference};
 +
- /// One known path to a destination.
++/// One known path to a destination.
  #[derive(Debug, Clone)]
  pub struct PathEntry {
-@@ -22,6 +24,9 @@ pub struct PathEntry {
-     /// anti-replay memory on long-lived paths.
+-    /// Learn or last-touch time (Unix seconds).
++    /// Learn time (Unix seconds).
+     pub timestamp: f64,
+     /// Next-hop transport id; `None` for a directly-connected neighbour.
+     pub next_hop: Option<[u8; 16]>,
+     pub hops: u8,
+-    /// Expiry (Unix seconds). `new` derives it from the supplied interface mode.
++    /// Expiry (Unix seconds), derived from interface mode at insert time.
+     pub expires: f64,
+-    /// Recent announce-random blobs. Normal `add_random_blob` use from an empty
+-    /// deque retains at most `MAX_RANDOM_BLOBS`; direct field mutation can
+-    /// exceed that size. The helper does not authenticate or deduplicate blobs.
++    /// Recent announce-random blobs, capped at `MAX_RANDOM_BLOBS` to bound
++    /// anti-replay memory on long-lived paths.
      pub random_blobs: VecDeque<[u8; 10]>,
      pub interface_id: InterfaceId,
+-    /// Hash used to locate a cached announce packet. The record does not own
+-    /// its bytes, and a corresponding cache file may be unavailable.
 +    /// Medium of the interface this path was learned on, captured at insert so
 +    /// ranking never has to reach back into the interface table.
 +    pub medium: PathMedium,
-     /// Hash of the cached announce packet — used to satisfy CacheRequest
-     /// without holding the full packet bytes.
++    /// Hash of the cached announce packet — used to satisfy CacheRequest
++    /// without holding the full packet bytes.
      pub packet_hash: Option<[u8; 32]>,
-@@ -44,6 +49,7 @@ impl PathEntry {
+ }
+ 
+@@ -46,6 +49,7 @@ impl PathEntry {
              expires,
              random_blobs: VecDeque::new(),
              interface_id,
@@ -1006,12 +1378,39 @@ index e051675..23a7728 100644
              packet_hash: None,
          }
      }
-@@ -86,22 +92,78 @@ impl PathEntry {
+@@ -65,10 +69,9 @@ impl PathEntry {
+         now_f64() > self.expires
+     }
+ 
+-    /// Set the timestamp to now and preserve a positive prior lifetime
+-    /// (`expires - timestamp`), or use the seven-day default otherwise.
+-    /// This can renew an expired entry and performs no network liveness check;
+-    /// the caller decides whether activity justifies renewal.
++    /// Mark an actively used route as live. Reticulum's Python path cull is
++    /// timestamp based; Rust stores an explicit expiry, so both clocks must
++    /// move together when traffic proves the route is still useful.
+     pub fn touch(&mut self) {
+         let now = now_f64();
+         let lifetime = if self.expires > self.timestamp {
+@@ -80,38 +83,107 @@ impl PathEntry {
+         self.expires = now + lifetime;
+     }
+ 
+-    /// Return at most the last `PERSIST_RANDOM_BLOBS` entries, preserving their
+-    /// deque order, for a bounded persistence snapshot. Older blobs are omitted.
++    /// Most recent blobs to persist — older entries can be regenerated from
++    /// the wire on replay, so we cap the snapshot at `PERSIST_RANDOM_BLOBS`
++    /// to keep the on-disk table small.
+     pub fn blobs_for_persist(&self) -> Vec<[u8; 10]> {
+         let start = self.random_blobs.len().saturating_sub(PERSIST_RANDOM_BLOBS);
+         self.random_blobs.iter().skip(start).copied().collect()
      }
  }
  
--/// Destination-hash → path mapping plus a parallel liveness state map so we
--/// can probe unresponsive paths without rewriting the entries.
+-/// Destination-keyed routes and separately stored path-state labels. Ordinary
+-/// lookup/iteration includes expired entries; `get_live`/`iter_live` checks
+-/// expiry only, not interface health or reachability. State labels are supplied
+-/// by callers and can exist without a route. This table does not probe peers.
 +/// A path candidate carried by an inbound announce, before it becomes a
 +/// [`PathEntry`]. Ranking is a pure read over this so callers can order their
 +/// own bookkeeping (announce table, rebroadcast dedup) before mutating.
@@ -1073,6 +1472,9 @@ index e051675..23a7728 100644
          }
      }
  
+-    /// Insert or replace a route without validating its fields, and remove the
+-    /// old state label so `get_state` returns `Unknown`. Mutation through
+-    /// `get_mut` does not perform this reset.
 +    /// Set the global medium preference used by promotions that have no
 +    /// per-destination pin available. Callers that own pins should follow this
 +    /// with a `rerank` pass over known destinations.
@@ -1084,13 +1486,17 @@ index e051675..23a7728 100644
 +        self.preference
 +    }
 +
-     /// Insert or replace a path entry. The parallel liveness state is
-     /// cleared so a fresh/replacement entry never inherits a stale
-     /// `Responsive`/`Unresponsive` reading from its predecessor. `get_state`
-@@ -113,9 +175,15 @@ impl PathTable {
-     /// sites (announce install, PathResponse install, tunnel path restore, disk
-     /// load), so the invariant is enforced here: state is never older than the
-     /// entry it describes.
++    /// Insert or replace a path entry. The parallel liveness state is
++    /// cleared so a fresh/replacement entry never inherits a stale
++    /// `Responsive`/`Unresponsive` reading from its predecessor. `get_state`
++    /// reads a missing entry as `Unknown`, so clearing is equivalent to
++    /// writing `Unknown` but avoids holding an entry we'd only overwrite.
++    ///
++    /// Python Reticulum 1.1.8 (`8c082b2`) fixes the same bug by clearing state
++    /// at the inbound insert sites. The Rust transport has additional insert
++    /// sites (announce install, PathResponse install, tunnel path restore, disk
++    /// load), so the invariant is enforced here: state is never older than the
++    /// entry it describes.
 +    ///
 +    /// Backup slots for the same route are dropped so the alternate ring never
 +    /// shadows the freshly installed active path; alternates on other
@@ -1103,7 +1509,17 @@ index e051675..23a7728 100644
          self.entries.insert(hash, entry);
      }
  
-@@ -145,29 +213,39 @@ impl PathTable {
+@@ -132,8 +204,7 @@ impl PathTable {
+     }
+ 
+     /// A path exists and has not yet expired. Callers should prefer this
+-    /// over `get().is_some()` to exclude expired entries. This does not confirm
+-    /// that the recorded interface or remote destination is currently reachable.
++    /// over `get().is_some()` so stale entries are not treated as routable.
+     pub fn has_path(&self, dest_hash: &[u8; 16]) -> bool {
+         self.get_live(dest_hash).is_some()
+     }
+@@ -142,31 +213,39 @@ impl PathTable {
          self.get_live(dest_hash).map(|e| e.hops)
      }
  
@@ -1114,8 +1530,8 @@ index e051675..23a7728 100644
          self.entries.remove(dest_hash)
      }
  
--    /// Drop every path whose interface id matches — used when an interface
--    /// goes down so we don't keep routing through a dead transport.
+-    /// Remove every route whose interface ID matches. Associated state labels
+-    /// remain until separately removed, replaced or cleaned by a full cull.
 +    /// Drop every slot whose interface id matches — used when an interface goes
 +    /// down so we don't keep routing through a dead transport. Destinations
 +    /// whose active path is dropped promote their best live alternate, so a
@@ -1129,6 +1545,7 @@ index e051675..23a7728 100644
 +        self.drop_active_where(|entry| entry.interface_id == interface_id)
      }
  
+-    /// Remove routes through this next hop, leaving their state labels intact.
      pub fn drop_all_via_next_hop(&mut self, next_hop: &[u8; 16]) -> usize {
 -        let before = self.entries.len();
 -        self.entries.retain(|_, e| e.next_hop != Some(*next_hop));
@@ -1138,11 +1555,13 @@ index e051675..23a7728 100644
 +        self.drop_active_where(|entry| entry.next_hop == Some(next_hop))
      }
  
--    /// Force-expire a path and cull immediately. Useful when the caller
--    /// already knows the path is bad (e.g. a link proof failed) and
+-    /// Set a present route's expiry to zero, then run a full expired-route cull
+-    /// across the table. Return whether the target entry existed before the
+-    /// operation. The cull uses the current wall clock and can remove other
+-    /// expired entries too.
 +    /// Force-drop a destination's route and cull immediately. Useful when the
 +    /// caller already knows the path is bad (e.g. a link proof failed) and
-     /// shouldn't wait for the periodic cull cycle.
++    /// shouldn't wait for the periodic cull cycle.
 +    ///
 +    /// Backups are dropped too: callers use this to make a destination
 +    /// *unrouted* (path rediscovery, `DropPath` RPC), so silently promoting an
@@ -1153,11 +1572,13 @@ index e051675..23a7728 100644
          if let Some(entry) = self.entries.get_mut(dest_hash) {
              entry.expires = 0.0;
              self.cull_expired();
-@@ -189,17 +267,17 @@ impl PathTable {
+@@ -187,19 +266,18 @@ impl PathTable {
+             .unwrap_or(PathState::Unknown)
      }
  
-     /// Full cull pass. Prefer `cull_expired_batch` on the hot path to bound
--    /// per-tick work.
+-    /// Scan all routes, remove expired entries and remove every state label
+-    /// without a remaining route. Return the number of routes removed.
++    /// Full cull pass. Prefer `cull_expired_batch` on the hot path to bound
 +    /// per-tick work. Expired alternates are dropped first so a destination
 +    /// whose active path expired can only promote a still-live alternate.
 +    /// Returns the number of expired active paths removed.
@@ -1171,8 +1592,10 @@ index e051675..23a7728 100644
 +        self.drop_active_where(|entry| entry.is_expired())
      }
  
-     /// Batched cull — removes at most `limit` expired entries so the actor
--    /// cannot stall on a very large path table.
+-    /// Remove at most `limit` expired routes and their state labels. The limit
+-    /// bounds removals, not scanning time: finding those entries can examine
+-    /// the entire table. Unrelated orphan state labels are not cleaned here.
++    /// Batched cull — removes at most `limit` expired entries so the actor
 +    /// cannot stall on a very large path table. Alternates are only inspected
 +    /// for the destinations in this batch, keeping per-tick work bounded.
      pub fn cull_expired_batch(&mut self, limit: usize) -> usize {

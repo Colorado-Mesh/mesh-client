@@ -44,6 +44,42 @@ export const CARGO_METADATA_ARGS = Object.freeze([
  */
 
 /**
+ * Map a cargo `license-file` body to an allowlisted SPDX/LicenseRef id.
+ * Ratspeak 1.4 crates dropped SPDX `license =` in favor of `license-file`.
+ *
+ * @param {string} body
+ * @returns {string} empty when unrecognized
+ */
+export function classifyLicenseFileBody(body) {
+  const text = String(body || '');
+  if (text.startsWith('Reticulum License')) return 'LicenseRef-Reticulum';
+  if (text.includes('LXST Copyright') && /non-commercial use only/i.test(text)) {
+    return 'LicenseRef-LXST-Ratspeak';
+  }
+  if (/GNU AFFERO GENERAL PUBLIC LICENSE/i.test(text)) return 'AGPL-3.0-or-later';
+  return '';
+}
+
+/**
+ * @param {string} manifestPath
+ * @param {string} licenseFileRel
+ * @param {{ readFileSync?: typeof fs.readFileSync, existsSync?: typeof fs.existsSync }} [io]
+ * @returns {string}
+ */
+export function resolveLicenseFile(manifestPath, licenseFileRel, io = {}) {
+  const readFileSync = io.readFileSync ?? fs.readFileSync;
+  const existsSync = io.existsSync ?? fs.existsSync;
+  if (!manifestPath || !licenseFileRel) return '';
+  const abs = path.resolve(path.dirname(manifestPath), licenseFileRel);
+  if (!existsSync(abs)) return '';
+  try {
+    return classifyLicenseFileBody(readFileSync(abs, 'utf8'));
+  } catch {
+    return '';
+  }
+}
+
+/**
  * @param {{ spawn?: typeof spawnSync }} [io]
  * @returns {boolean}
  */
@@ -103,11 +139,16 @@ export function collectRustPackages(metadata) {
       throw new Error('check:rust-licenses: expected package object in cargo metadata');
     }
     const rec = /** @type {Record<string, unknown>} */ (entry);
+    const manifestPath = typeof rec.manifest_path === 'string' ? rec.manifest_path : '';
+    let license = typeof rec.license === 'string' ? rec.license.trim() : '';
+    if (!license && typeof rec.license_file === 'string' && rec.license_file.trim()) {
+      license = resolveLicenseFile(manifestPath, rec.license_file.trim());
+    }
     return {
       name: typeof rec.name === 'string' ? rec.name : '(unknown)',
       version: typeof rec.version === 'string' ? rec.version : '',
-      license: typeof rec.license === 'string' ? rec.license.trim() : '',
-      manifestPath: typeof rec.manifest_path === 'string' ? rec.manifest_path : '',
+      license,
+      manifestPath,
     };
   });
 }

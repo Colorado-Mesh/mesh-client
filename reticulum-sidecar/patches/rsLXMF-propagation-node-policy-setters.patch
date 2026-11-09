@@ -1,8 +1,8 @@
 diff --git a/crates/lxmf-core/src/propagation_node.rs b/crates/lxmf-core/src/propagation_node.rs
-index d3d58da..6f9dd33 100644
+index 9588cd7..e8293b2 100644
 --- a/crates/lxmf-core/src/propagation_node.rs
 +++ b/crates/lxmf-core/src/propagation_node.rs
-@@ -307,6 +307,18 @@ impl PropagationNode {
+@@ -706,6 +706,18 @@ impl PropagationNode {
          self.config.min_stamp_cost = cost;
      }
  
@@ -19,5 +19,5 @@ index d3d58da..6f9dd33 100644
 +    }
 +
      pub fn offer_generation(&self) -> u64 {
-         self.offer_generation
-     }
+         self.offer_generation.saturating_add(
+             self.retired

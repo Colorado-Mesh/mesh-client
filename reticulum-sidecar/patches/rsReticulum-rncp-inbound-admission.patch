@@ -1,7 +1,8 @@
 diff --git a/api/snapshots/rns-interface.txt b/api/snapshots/rns-interface.txt
+index 2d8e21f..e17435c 100644
 --- a/api/snapshots/rns-interface.txt
 +++ b/api/snapshots/rns-interface.txt
-@@ -412,6 +412,9 @@
+@@ -414,6 +414,9 @@ pub const rns_interface::ble_rnode::NUS_RX_CHAR_UUID: uuid::Uuid
  pub const rns_interface::ble_rnode::NUS_SERVICE_UUID: uuid::Uuid
  pub const rns_interface::ble_rnode::NUS_TX_CHAR_UUID: uuid::Uuid
  pub async fn rns_interface::ble_rnode::ble_adapter_present() -> core::result::Result<bool, alloc::string::String>
@@ -12,9 +13,10 @@ diff --git a/api/snapshots/rns-interface.txt b/api/snapshots/rns-interface.txt
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface_native(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, u16) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
 diff --git a/api/snapshots/rns-protocol.txt b/api/snapshots/rns-protocol.txt
+index 56739da..c24397f 100644
 --- a/api/snapshots/rns-protocol.txt
 +++ b/api/snapshots/rns-protocol.txt
-@@ -427,6 +427,7 @@
+@@ -432,6 +432,7 @@ pub rns_protocol::resource::WindowState::window_min: usize
  impl rns_protocol::resource::WindowState
  pub fn rns_protocol::resource::WindowState::grow(&mut self, usize)
  pub fn rns_protocol::resource::WindowState::new() -> Self
@@ -23,9 +25,10 @@ diff --git a/api/snapshots/rns-protocol.txt b/api/snapshots/rns-protocol.txt
  impl core::default::Default for rns_protocol::resource::WindowState
  pub fn rns_protocol::resource::WindowState::default() -> Self
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
+index ab95136..d53c881 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
-@@ -403,7 +403,10 @@
+@@ -460,7 +460,10 @@ pub rns_runtime::link_client::LinkClientError::UnexpectedResponse(alloc::string:
  pub struct rns_runtime::link_client::LinkClient
  impl rns_runtime::link_client::LinkClient
  pub fn rns_runtime::link_client::LinkClient::new(tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, rns_identity::identity::Identity) -> Self
@@ -37,7 +40,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub mod rns_runtime::link_manager
  pub enum rns_runtime::link_manager::ChannelSendError
  pub rns_runtime::link_manager::ChannelSendError::Channel(rns_protocol::channel::ChannelError)
-@@ -526,6 +529,10 @@
+@@ -604,6 +607,10 @@ pub rns_runtime::link_manager::LinkSendError::TransportUnavailable
  pub enum rns_runtime::link_manager::RequestOutcome
  pub rns_runtime::link_manager::RequestOutcome::Drop
  pub rns_runtime::link_manager::RequestOutcome::Reply(alloc::vec::Vec<u8>)
@@ -48,15 +51,15 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource::ack: alloc::vec::Vec<u8>
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource::auto_compress: bool
-@@ -589,6 +596,7 @@
- pub fn rns_runtime::link_manager::LinkManager::set_announce_handler<F>(&mut self, F) where F: core::ops::function::FnMut() + core::marker::Send + 'static
+@@ -686,6 +693,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_announce_handler<F>(&mut self
  pub fn rns_runtime::link_manager::LinkManager::set_channel_message_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkChannelMessage>)
  pub fn rns_runtime::link_manager::LinkManager::set_destination_delivery_proof_channel(&mut self, tokio::sync::mpsc::unbounded::UnboundedSender<rns_runtime::link_manager::DestinationDeliveryProof>)
+ pub fn rns_runtime::link_manager::LinkManager::set_inbound_link_packet_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::InboundLinkPacket>) -> core::result::Result<(), rns_runtime::link_manager::LinkPacketConfigurationError>
 +pub fn rns_runtime::link_manager::LinkManager::set_inbound_payload_limits(&mut self, usize, usize)
  pub fn rns_runtime::link_manager::LinkManager::set_inbound_raw_channel(&mut self, tokio::sync::mpsc::bounded::Sender<alloc::vec::Vec<u8>>)
  pub fn rns_runtime::link_manager::LinkManager::set_link_closed_channel(&mut self, tokio::sync::mpsc::bounded::Sender<[u8; 16]>)
  pub fn rns_runtime::link_manager::LinkManager::set_link_endpoint_dispatch_handle(&mut self, rns_transport::link_endpoint_dispatch::LinkEndpointDispatchHandle)
-@@ -634,6 +642,7 @@
+@@ -740,6 +748,7 @@ pub rns_runtime::link_manager::ResourceCompletion::data: alloc::vec::Vec<u8>
  pub rns_runtime::link_manager::ResourceCompletion::link_id: [u8; 16]
  pub rns_runtime::link_manager::ResourceCompletion::metadata: core::option::Option<alloc::vec::Vec<u8>>
  pub rns_runtime::link_manager::ResourceCompletion::resource_hash: [u8; 32]
@@ -64,7 +67,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub fn rns_runtime::link_manager::register_destination(&tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, [u8; 16], &str) -> tokio::sync::mpsc::bounded::Receiver<rns_transport::link_messages::DestinationEvent>
  pub type rns_runtime::link_manager::DestinationRequestHandler = alloc::boxed::Box<(dyn core::ops::function::Fn(rns_runtime::link_manager::DestinationRequest) -> rns_runtime::link_manager::RequestOutcome + core::marker::Send + 'static)>
  pub mod rns_runtime::link_session
-@@ -1001,6 +1010,10 @@
+@@ -1113,6 +1122,10 @@ pub rns_runtime::prelude::ReceiptError::TransportClosed
  pub enum rns_runtime::prelude::RequestOutcome
  pub rns_runtime::prelude::RequestOutcome::Drop
  pub rns_runtime::prelude::RequestOutcome::Reply(alloc::vec::Vec<u8>)
@@ -75,7 +78,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource::ack: alloc::vec::Vec<u8>
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource::auto_compress: bool
-@@ -1272,6 +1285,7 @@
+@@ -1384,6 +1397,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
  pub async fn rns_runtime::reticulum::ReticulumHandle::query_transport(&self, rns_transport::messages::TransportQuery) -> core::option::Option<rns_transport::messages::TransportQueryResponse>
  pub async fn rns_runtime::reticulum::ReticulumHandle::recall(&self, [u8; 16]) -> core::result::Result<core::option::Option<rns_runtime::reticulum::RecalledDestination>, rns_runtime::reticulum::ControlError>
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
@@ -83,7 +86,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_ratcheted_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions, rns_runtime::destination_runtime::DestinationRatchetOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
  pub fn rns_runtime::reticulum::ReticulumHandle::remote_management_enabled(&self) -> bool
  pub async fn rns_runtime::reticulum::ReticulumHandle::request_path(&self, [u8; 16], rns_transport::messages::PathRequestOptions) -> core::result::Result<(), rns_runtime::reticulum::ControlError>
-@@ -1315,6 +1329,7 @@
+@@ -1427,6 +1441,7 @@ impl<T> rns_runtime::resource_source::ResourceSource for T where T: alloc::io::r
  pub async fn rns_runtime::prelude::init(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
  pub async fn rns_runtime::prelude::init_with_options(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>, rns_runtime::reticulum::InitOptions) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
  pub async fn rns_runtime::prelude::init_with_options_and_rnode_startup_options(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>, rns_runtime::reticulum::InitOptions, rns_interface::rnode::RNodeStartupOptions) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
@@ -91,7 +94,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub async fn rns_runtime::prelude::resolve_destination_on_transport(&tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, [u8; 16], rns_runtime::destination_resolver::DestinationResolveOptions) -> core::result::Result<rns_transport::messages::RecalledDestinationRpcEntry, rns_runtime::destination_resolver::DestinationResolveError>
  pub type rns_runtime::prelude::PacketReceiptStatus = rns_transport::messages::ReceiptUpdate
  pub mod rns_runtime::probe
-@@ -1645,6 +1660,7 @@
+@@ -1711,6 +1726,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
  pub async fn rns_runtime::reticulum::ReticulumHandle::query_transport(&self, rns_transport::messages::TransportQuery) -> core::option::Option<rns_transport::messages::TransportQueryResponse>
  pub async fn rns_runtime::reticulum::ReticulumHandle::recall(&self, [u8; 16]) -> core::result::Result<core::option::Option<rns_runtime::reticulum::RecalledDestination>, rns_runtime::reticulum::ControlError>
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
@@ -99,7 +102,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_ratcheted_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions, rns_runtime::destination_runtime::DestinationRatchetOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
  pub fn rns_runtime::reticulum::ReticulumHandle::remote_management_enabled(&self) -> bool
  pub async fn rns_runtime::reticulum::ReticulumHandle::request_path(&self, [u8; 16], rns_transport::messages::PathRequestOptions) -> core::result::Result<(), rns_runtime::reticulum::ControlError>
-@@ -1734,6 +1750,15 @@
+@@ -1802,6 +1818,15 @@ pub async fn rns_runtime::reticulum::teardown_interface(&rns_runtime::reticulum:
  pub async fn rns_runtime::reticulum::teardown_rnode_interface(&rns_runtime::reticulum::ReticulumHandle, u64)
  pub type rns_runtime::reticulum::PacketReceiptStatus = rns_transport::messages::ReceiptUpdate
  pub mod rns_runtime::rncp
@@ -115,7 +118,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub enum rns_runtime::rncp::RncpError
  pub rns_runtime::rncp::RncpError::Denied
  pub rns_runtime::rncp::RncpError::HandshakeFailed(alloc::string::String)
-@@ -1748,6 +1773,11 @@
+@@ -1817,6 +1842,11 @@ pub rns_runtime::rncp::RncpError::ResourceFailed(alloc::string::String)
  pub rns_runtime::rncp::RncpError::Timeout(&'static str)
  pub rns_runtime::rncp::RncpError::TransportUnavailable
  pub enum rns_runtime::rncp::RncpEvent
@@ -127,7 +130,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub rns_runtime::rncp::RncpEvent::Completed
  pub rns_runtime::rncp::RncpEvent::Completed::bytes: usize
  pub rns_runtime::rncp::RncpEvent::Completed::file_name: alloc::string::String
-@@ -1762,6 +1792,14 @@
+@@ -1831,6 +1861,14 @@ pub rns_runtime::rncp::RncpEvent::FetchServing::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpEvent::FetchServing::link_id: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::LinkEstablished
  pub rns_runtime::rncp::RncpEvent::LinkEstablished::link_id: [u8; 16]
@@ -142,7 +145,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub rns_runtime::rncp::RncpEvent::SenderDenied
  pub rns_runtime::rncp::RncpEvent::SenderDenied::identity_hash: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::SenderDenied::link_id: [u8; 16]
-@@ -1772,6 +1810,12 @@
+@@ -1841,6 +1879,12 @@ pub rns_runtime::rncp::RncpEvent::WriteFailed
  pub rns_runtime::rncp::RncpEvent::WriteFailed::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpEvent::WriteFailed::link_id: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::WriteFailed::reason: alloc::string::String
@@ -155,7 +158,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub struct rns_runtime::rncp::RncpFetchOutcome
  pub rns_runtime::rncp::RncpFetchOutcome::bytes: usize
  pub rns_runtime::rncp::RncpFetchOutcome::duration: core::time::Duration
-@@ -1785,18 +1829,29 @@
+@@ -1854,18 +1898,29 @@ pub rns_runtime::rncp::RncpFetchRequest::overall_timeout: core::time::Duration
  pub rns_runtime::rncp::RncpFetchRequest::overwrite: bool
  pub rns_runtime::rncp::RncpFetchRequest::path_wait: core::time::Duration
  pub rns_runtime::rncp::RncpFetchRequest::progress_tx: core::option::Option<tokio::sync::mpsc::bounded::Sender<f32>>
@@ -185,7 +188,7 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub rns_runtime::rncp::RncpListenerConfig::save_dir: std::path::PathBuf
  impl core::default::Default for rns_runtime::rncp::RncpListenerConfig
  pub fn rns_runtime::rncp::RncpListenerConfig::default() -> Self
-@@ -1810,6 +1865,9 @@
+@@ -1879,6 +1934,9 @@ pub rns_runtime::rncp::RncpOutcome::bytes: usize
  pub rns_runtime::rncp::RncpOutcome::duration: core::time::Duration
  pub rns_runtime::rncp::RncpOutcome::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpOutcome::link_rtt: core::time::Duration
@@ -195,9 +198,9 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub struct rns_runtime::rncp::RncpSendRequest<'a>
  pub rns_runtime::rncp::RncpSendRequest::auto_compress: bool
  pub rns_runtime::rncp::RncpSendRequest::data: alloc::vec::Vec<u8>
-@@ -1984,6 +2042,8 @@
- pub rns_runtime::rpc::InterfaceStatEntry::rx_rate: u64
+@@ -2066,6 +2124,8 @@ pub rns_runtime::rpc::InterfaceStatEntry::rx_rate: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_bytes: u64
+ pub rns_runtime::rpc::InterfaceStatEntry::tx_dropped_bytes: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_drops: u64
 +pub rns_runtime::rpc::InterfaceStatEntry::tx_queue_max: u64
 +pub rns_runtime::rpc::InterfaceStatEntry::tx_queue_used: u64
@@ -205,9 +208,10 @@ diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
  pub struct rns_runtime::rpc::PathTableEntry
  pub rns_runtime::rpc::PathTableEntry::expires: f64
 diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
+index c12b28d..35f6eba 100644
 --- a/api/snapshots/rns-transport.txt
 +++ b/api/snapshots/rns-transport.txt
-@@ -48,10 +48,12 @@
+@@ -48,10 +48,12 @@ pub rns_transport::actor::TransportActor::packet_hashlist: rns_transport::hashli
  pub rns_transport::actor::TransportActor::packet_metrics: std::collections::hash::map::HashMap<[u8; 32], rns_transport::link_messages::PacketMetrics>
  pub rns_transport::actor::TransportActor::packet_metrics_order: alloc::collections::vec_deque::VecDeque<[u8; 32]>
  pub rns_transport::actor::TransportActor::path_interface_suppressions: std::collections::hash::map::HashMap<([u8; 16], rns_transport::messages::InterfaceId), f64>
@@ -220,7 +224,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::actor::TransportActor::pending_discovery_prs: alloc::collections::vec_deque::VecDeque<rns_transport::actor::PendingDiscoveryPathRequest>
  pub rns_transport::actor::TransportActor::pending_local_path_requests: std::collections::hash::map::HashMap<[u8; 16], rns_transport::messages::InterfaceId>
  pub rns_transport::actor::TransportActor::pending_path_entries: alloc::vec::Vec<rns_transport::persistence::PersistedPathEntry>
-@@ -195,6 +197,19 @@
+@@ -194,6 +196,19 @@ pub rns_transport::constants::InterfaceMode::Gateway
  pub rns_transport::constants::InterfaceMode::Internal
  pub rns_transport::constants::InterfaceMode::PointToPoint
  pub rns_transport::constants::InterfaceMode::Roaming
@@ -240,7 +244,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  #[repr(u8)] pub enum rns_transport::constants::PathState
  pub rns_transport::constants::PathState::Responsive = 2
  pub rns_transport::constants::PathState::Unknown = 0
-@@ -252,6 +267,7 @@
+@@ -251,6 +266,7 @@ pub const rns_transport::constants::LOCAL_CLIENT_CACHE_MAXSIZE: usize
  pub const rns_transport::constants::LOCAL_REBROADCASTS_MAX: u32
  pub const rns_transport::constants::MAX_DISCOVERY_PR_TAGS: usize
  pub const rns_transport::constants::MAX_HELD_ANNOUNCES: usize
@@ -248,7 +252,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub const rns_transport::constants::MAX_QUEUED_ANNOUNCES: usize
  pub const rns_transport::constants::MAX_QUEUED_DISCOVERY_PRS: usize
  pub const rns_transport::constants::MAX_RANDOM_BLOBS: usize
-@@ -949,6 +965,9 @@
+@@ -1064,6 +1080,9 @@ pub enum rns_transport::messages::OutboundDispatchResult
  pub rns_transport::messages::OutboundDispatchResult::NoInterface
  pub rns_transport::messages::OutboundDispatchResult::ReceiptCollision
  pub rns_transport::messages::OutboundDispatchResult::Sent
@@ -258,7 +262,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub enum rns_transport::messages::ReceiptUpdate
  pub rns_transport::messages::ReceiptUpdate::Culled
  pub rns_transport::messages::ReceiptUpdate::Delivered
-@@ -1052,6 +1071,8 @@
+@@ -1179,6 +1198,8 @@ pub rns_transport::messages::TransportMessage::SendPacket::request: rns_transpor
  pub rns_transport::messages::TransportMessage::SendPacket::result_tx: tokio::sync::oneshot::Sender<rns_transport::messages::OutboundDispatchResult>
  pub rns_transport::messages::TransportMessage::SetBlackholeSources
  pub rns_transport::messages::TransportMessage::SetBlackholeSources::sources: alloc::vec::Vec<[u8; 16]>
@@ -267,7 +271,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::messages::TransportMessage::SetReceiptTimeout
  pub rns_transport::messages::TransportMessage::SetReceiptTimeout::result_tx: tokio::sync::oneshot::Sender<bool>
  pub rns_transport::messages::TransportMessage::SetReceiptTimeout::timeout: core::time::Duration
-@@ -1120,6 +1141,8 @@
+@@ -1247,6 +1268,8 @@ pub rns_transport::messages::TransportQuery::GetPacketRssi
  pub rns_transport::messages::TransportQuery::GetPacketRssi::packet_hash: [u8; 32]
  pub rns_transport::messages::TransportQuery::GetPacketSnr
  pub rns_transport::messages::TransportQuery::GetPacketSnr::packet_hash: [u8; 32]
@@ -276,7 +280,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::messages::TransportQuery::GetPathState
  pub rns_transport::messages::TransportQuery::GetPathState::dest: [u8; 16]
  pub rns_transport::messages::TransportQuery::GetPathTable
-@@ -1152,9 +1175,14 @@
+@@ -1279,9 +1302,14 @@ pub rns_transport::messages::TransportQuery::RetainDestination
  pub rns_transport::messages::TransportQuery::RetainDestination::dest: [u8; 16]
  pub rns_transport::messages::TransportQuery::RetainIdentity
  pub rns_transport::messages::TransportQuery::RetainIdentity::identity_hash: [u8; 16]
@@ -291,7 +295,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::messages::TransportQuery::SuppressCurrentPathInterface
  pub rns_transport::messages::TransportQuery::SuppressCurrentPathInterface::dest: [u8; 16]
  pub rns_transport::messages::TransportQuery::SuppressCurrentPathInterface::duration: f64
-@@ -1180,6 +1208,7 @@
+@@ -1307,6 +1335,7 @@ pub rns_transport::messages::TransportQueryResponse::HashResult(core::option::Op
  pub rns_transport::messages::TransportQueryResponse::IntResult(i64)
  pub rns_transport::messages::TransportQueryResponse::InterfaceStats(alloc::vec::Vec<rns_transport::messages::InterfaceStatRpcEntry>)
  pub rns_transport::messages::TransportQueryResponse::Ok
@@ -299,16 +303,16 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::messages::TransportQueryResponse::PathStateResult(rns_transport::constants::PathState)
  pub rns_transport::messages::TransportQueryResponse::PathTable(alloc::vec::Vec<rns_transport::messages::PathTableRpcEntry>)
  pub rns_transport::messages::TransportQueryResponse::RateTable(alloc::vec::Vec<rns_transport::messages::RateTableRpcEntry>)
-@@ -1297,6 +1326,8 @@
- pub rns_transport::messages::InterfaceStatRpcEntry::rx_rate: u64
+@@ -1472,6 +1501,8 @@ pub rns_transport::messages::InterfaceStatRpcEntry::rx_rate: u64
  pub rns_transport::messages::InterfaceStatRpcEntry::tx_bytes: u64
+ pub rns_transport::messages::InterfaceStatRpcEntry::tx_dropped_bytes: u64
  pub rns_transport::messages::InterfaceStatRpcEntry::tx_drops: u64
 +pub rns_transport::messages::InterfaceStatRpcEntry::tx_queue_max: u64
 +pub rns_transport::messages::InterfaceStatRpcEntry::tx_queue_used: u64
  pub rns_transport::messages::InterfaceStatRpcEntry::tx_rate: u64
- pub struct rns_transport::messages::LinkEndpointBinding
- pub rns_transport::messages::LinkEndpointBinding::interface_id: rns_transport::messages::InterfaceId
-@@ -1309,10 +1340,40 @@
+ pub struct rns_transport::messages::InterfaceTransportSender
+ impl rns_transport::interface_ownership::InterfaceTransportSender
+@@ -1500,10 +1531,40 @@ pub rns_transport::messages::LinkEndpointLifecycleEvent::reason: rns_transport::
  pub struct rns_transport::messages::OutboundRequest
  pub rns_transport::messages::OutboundRequest::destination_hash: [u8; 16]
  pub rns_transport::messages::OutboundRequest::raw: bytes::bytes::Bytes
@@ -349,7 +353,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub struct rns_transport::messages::PathTableRpcEntry
  pub rns_transport::messages::PathTableRpcEntry::expires: f64
  pub rns_transport::messages::PathTableRpcEntry::hash: [u8; 16]
-@@ -1401,10 +1462,36 @@
+@@ -1592,10 +1653,36 @@ pub rns_transport::path_recovery::PathRecoveryOutcome::has_path: bool
  pub rns_transport::path_recovery::PathRecoveryOutcome::path_dropped: bool
  pub rns_transport::path_recovery::PathRecoveryOutcome::request_scheduled: bool
  pub mod rns_transport::path_table
@@ -386,7 +390,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub rns_transport::path_table::PathEntry::next_hop: core::option::Option<[u8; 16]>
  pub rns_transport::path_table::PathEntry::packet_hash: core::option::Option<[u8; 32]>
  pub rns_transport::path_table::PathEntry::random_blobs: alloc::collections::vec_deque::VecDeque<[u8; 10]>
-@@ -1418,6 +1505,7 @@
+@@ -1609,6 +1696,7 @@ pub fn rns_transport::path_table::PathEntry::new(core::option::Option<[u8; 16]>,
  pub fn rns_transport::path_table::PathEntry::touch(&mut self)
  pub struct rns_transport::path_table::PathTable
  impl rns_transport::path_table::PathTable
@@ -394,7 +398,7 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub fn rns_transport::path_table::PathTable::cull_dead_interfaces(&mut self, &std::collections::hash::set::HashSet<rns_transport::messages::InterfaceId>) -> usize
  pub fn rns_transport::path_table::PathTable::cull_expired(&mut self) -> usize
  pub fn rns_transport::path_table::PathTable::cull_expired_batch(&mut self, usize) -> usize
-@@ -1437,10 +1525,22 @@
+@@ -1628,10 +1716,22 @@ pub fn rns_transport::path_table::PathTable::iter(&self) -> impl core::iter::tra
  pub fn rns_transport::path_table::PathTable::iter_live(&self) -> impl core::iter::traits::iterator::Iterator<Item = (&rns_wire::types::DestHash, &rns_transport::path_table::PathEntry)>
  pub fn rns_transport::path_table::PathTable::len(&self) -> usize
  pub fn rns_transport::path_table::PathTable::new() -> Self
@@ -418,16 +422,17 @@ diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
  pub enum rns_transport::persistence::PersistenceError
  pub rns_transport::persistence::PersistenceError::Deserialize(alloc::string::String)
 diff --git a/api/stability.json b/api/stability.json
+index 23cebfb..17b4f8f 100644
 --- a/api/stability.json
 +++ b/api/stability.json
 @@ -51,8 +51,8 @@
        "tier": "provisional",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-transport.txt",
--      "itemCount": 1702,
--      "sha256": "30f20b408ac255e1f005e25e79e4999d813ebc6b4f1a501bf573de58db0e25ab"
-+      "itemCount": 1802,
-+      "sha256": "830ed776a66333782f1931bfa8687f5a51e8943c464e2e80cdb572dd41602a52"
+-      "itemCount": 1947,
+-      "sha256": "79cd60b1cde9c92e97f58ded693d3754b53311ec16f161ffa5b90775ec3c4a45"
++      "itemCount": 2047,
++      "sha256": "37d1ec98eba4e3a81cb6d883291e173872c323c9eb28c54bd64d2ecaf14d249b"
      },
      {
        "name": "rns-link",
@@ -435,10 +440,10 @@ diff --git a/api/stability.json b/api/stability.json
        "tier": "candidate-stable",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-protocol.txt",
--      "itemCount": 624,
--      "sha256": "9fd1968c43d3a80b5da65416f43a805e3bfd3420c91acc8ad63a7a3ca58b359c"
-+      "itemCount": 625,
-+      "sha256": "e5da4ff470ee4fee04e9317f14bb4bd08afeea877d8bb36529acfa8ef46401b8"
+-      "itemCount": 638,
+-      "sha256": "f90d8a7a284b50df43e3c9936f7b3a3a9c4104f4e31cc9ef1c60b833239b7ec6"
++      "itemCount": 639,
++      "sha256": "9caadcfe51cb07766f7809f4e7b99590c223480122cc6ab9179bf7cb7fb3f7c6"
      },
      {
        "name": "rns-interface",
@@ -446,10 +451,10 @@ diff --git a/api/stability.json b/api/stability.json
        "tier": "candidate-stable",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-interface.txt",
--      "itemCount": 1406,
--      "sha256": "b097f01fc5eac53ed0ce5b6150c47c12f69fb63072ac31789a3995167123af3a"
-+      "itemCount": 1409,
-+      "sha256": "ce64d35a1c5a6147f5a458b912aee9140296290a07896e2ceb065d3eff13d3c2"
+-      "itemCount": 1440,
+-      "sha256": "2954226f79c76dd7f3e743d5a36e6895ef5e21dcd16b4fd5544be2932953e7a8"
++      "itemCount": 1443,
++      "sha256": "accaae280c72e7c4cd175bc160d3705065d30eff4c03643657c6cf101e12a635"
      },
      {
        "name": "rns-runtime",
@@ -457,17 +462,18 @@ diff --git a/api/stability.json b/api/stability.json
        "tier": "provisional",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-runtime.txt",
--      "itemCount": 2063,
--      "sha256": "ca162e9ddb542f0daf5817ac26d32be80346d36bdadd70673bf2cdc2535e4e29"
-+      "itemCount": 2123,
-+      "sha256": "489e3eea3777457ab1a892e7cd0c13d20e83418876b234d62262d2158f363491"
+-      "itemCount": 2145,
+-      "sha256": "a4496892f8c4f6aeb9f840179e1a967b576679056045dd4511d5fe064f32544c"
++      "itemCount": 2205,
++      "sha256": "b15d2bec2f01d22ad13875f3b00f1c8f29110048b45a400cbd363e2b9980f980"
      },
      {
        "name": "rns-tools",
 diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
+index 73a0ec3..377b063 100644
 --- a/crates/rns-runtime/src/link_manager.rs
 +++ b/crates/rns-runtime/src/link_manager.rs
-@@ -562,6 +562,29 @@
+@@ -621,6 +621,29 @@ struct ResourceTransferStart {
      allow_handshake: bool,
  }
  
@@ -494,10 +500,10 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
 +        .is_some_and(|actual| actual <= declared_bytes && (!complete || actual == declared_bytes))
 +}
 +
- pub struct LinkManager {
-     endpoint_dispatch: Option<rns_transport::link_endpoint_dispatch::LinkEndpointDispatchHandle>,
-     endpoint_dispatch_tokens:
-@@ -617,6 +640,8 @@
+ /// Owns responder Links for one destination. Configure admission policies and
+ /// receivers before `run` or `run_with_commands`; callbacks execute on this
+ /// manager task. Ordinary Resources default to `AcceptAll`, independently of
+@@ -690,6 +713,8 @@ pub struct LinkManager {
      resource_strategy: ResourceStrategy,
      /// Application decision hook used only when the strategy is AcceptApp.
      resource_accept_handler: Option<ResourceAcceptHandler>,
@@ -505,8 +511,8 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
 +    inbound_payload_limits: Option<(usize, usize)>,
      /// Fires when a link reaches the active state.
      link_established_tx: Option<mpsc::Sender<[u8; 16]>>,
-     /// Fires on LinkIdentify before a resource ADV can race it.
-@@ -716,6 +741,7 @@
+     /// Best-effort notification on the first verified LinkIdentify.
+@@ -803,6 +828,7 @@ impl LinkManager {
              resource_completion_tx: None,
              resource_strategy: ResourceStrategy::AcceptAll,
              resource_accept_handler: None,
@@ -514,7 +520,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
              link_established_tx: None,
              link_identified_tx: None,
              link_identity_gate: None,
-@@ -794,6 +820,7 @@
+@@ -897,6 +923,7 @@ impl LinkManager {
              resource_completion_tx: None,
              resource_strategy: ResourceStrategy::AcceptAll,
              resource_accept_handler: None,
@@ -522,7 +528,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
              link_established_tx: None,
              link_identified_tx: None,
              link_identity_gate: None,
-@@ -2670,6 +2697,26 @@
+@@ -3227,6 +3254,26 @@ impl LinkManager {
                              let is_response = adv.flags.is_response && adv.request_id.is_some();
                              let ordinary_resource = !is_request && !is_response;
  
@@ -549,7 +555,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
                              // Structural and logical continuity checks run before
                              // application admission. Once an application accepts a
                              // first segment, every later removal is paired with one
-@@ -2899,7 +2946,7 @@
+@@ -3456,7 +3503,7 @@ impl LinkManager {
                              // Python's AcceptApp policy is consulted for every
                              // ordinary segment advertisement. A rejected follow-up
                              // concludes the already-started logical transfer.
@@ -558,7 +564,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
                                  match self.resource_strategy {
                                      ResourceStrategy::AcceptAll => {}
                                      ResourceStrategy::AcceptNone => unreachable!(
-@@ -3148,6 +3195,73 @@
+@@ -3705,6 +3752,73 @@ impl LinkManager {
                              let resource_id = Self::inbound_resource_identity(active, &rh).0;
                              match completion {
                                  Some(Ok((assembled_data, proof))) => {
@@ -632,7 +638,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
                                      // PROOF+RESOURCE_PRF = plaintext, PacketType::Proof
                                      // (Packet.py:195-197). Each split segment still needs its
                                      // own proof or the sender retries.
-@@ -5230,6 +5344,13 @@
+@@ -5975,6 +6089,13 @@ impl LinkManager {
          self.resource_accept_handler = Some(Box::new(handler));
      }
  
@@ -646,7 +652,7 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
      pub fn clear_resource_accept_handler(&mut self) {
          self.resource_accept_handler = None;
      }
-@@ -11029,6 +11150,186 @@
+@@ -12689,6 +12810,186 @@ mod tests {
          );
      }
  
@@ -834,11 +840,12 @@ diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/lin
      fn one_segment_split_uses_original_hash_for_completion_and_terminal() {
          let (sender_link, receiver_link) = handshaken_link_pair();
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
+index 8b286b1..0d7fe7c 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
-@@ -1,8 +1,9 @@
- //! Wire-compatible with Python `RNS.Utilities.rncp`. Supports `-l` (listen),
- //! send (default), and `-F` / `-f` (fetch serve / client).
+@@ -3,8 +3,9 @@
+ //! for its current authorization and shutdown limits; a Resource proof alone
+ //! does not establish that the receiving application saved a file.
  
 +use std::collections::{HashMap, HashSet};
  use std::path::{Path, PathBuf};
@@ -847,7 +854,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  use std::time::{Duration, Instant};
  
  use bytes::Bytes;
-@@ -18,6 +19,7 @@
+@@ -20,6 +21,7 @@ use rns_link::link::{CloseReason, Link};
  use rns_protocol::resource::{
      MAX_EFFICIENT_SIZE, MultiSegmentOutbound, OutboundResource, OutboundTransfer, TransferAction,
  };
@@ -855,7 +862,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  use rns_transport::link_messages::DestinationEvent;
  use rns_transport::messages::{
      AnnounceRpcEntry, InterfaceId, LinkEndpointLifecycleEvent, LinkEndpointRole, OutboundRequest,
-@@ -25,7 +27,11 @@
+@@ -27,7 +29,11 @@ use rns_transport::messages::{
  };
  use tokio::sync::oneshot;
  
@@ -866,9 +873,9 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 +};
 +use rns_link::link::ResourceStrategy;
  
- /// Python `REQ_FETCH_NOT_ALLOWED` sentinel (rncp.py:70).
+ /// Fetch-denial response byte (`0xF0`).
  pub const REQ_FETCH_NOT_ALLOWED: u8 = 0xF0;
-@@ -40,6 +46,7 @@
+@@ -42,6 +48,7 @@ pub const DEFAULT_RNCP_APP_NAME: &str = "rncp.receive";
  /// teardown cannot race that callback and turn a proven Resource into
  /// `FAILED` on a loaded peer.
  const RNCP_POST_PROOF_SETTLE: Duration = Duration::from_millis(250);
@@ -876,7 +883,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  
  async fn send_endpoint_packet(
      transport_tx: &mpsc::Sender<TransportMessage>,
-@@ -123,6 +130,21 @@
+@@ -128,6 +135,21 @@ pub enum RncpEvent {
          saved_path: PathBuf,
          bytes: usize,
      },
@@ -898,7 +905,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      WriteFailed {
          link_id: [u8; 16],
          file_name: String,
-@@ -139,6 +161,51 @@
+@@ -144,6 +166,51 @@ pub enum RncpEvent {
      },
  }
  
@@ -950,9 +957,9 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  /// Resolves a fetch path under the jail root (Python rncp.py:177-183).
  /// Absolute paths replace the jail prefix; relatives join onto it; canonical
  /// result must stay inside `jail_canonical`.
-@@ -232,6 +299,9 @@
+@@ -250,6 +317,9 @@ pub struct RncpListenerConfig {
      pub fetch_jail: Option<PathBuf>,
-     /// Python default on; `--no-compress` disables.
+     /// Try compression when serving fetched files; enabled by default.
      pub fetch_auto_compress: bool,
 +    pub receive_mode: RncpReceiveMode,
 +    pub inbound_limits: Option<RncpInboundLimits>,
@@ -960,7 +967,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  }
  
  impl Default for RncpListenerConfig {
-@@ -246,10 +316,208 @@
+@@ -264,10 +334,208 @@ impl Default for RncpListenerConfig {
              allow_fetch: false,
              fetch_jail: None,
              fetch_auto_compress: true,
@@ -1169,7 +1176,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  pub struct RncpListenerHandle {
      pub destination_hash: [u8; 16],
      task: tokio::task::JoinHandle<()>,
-@@ -265,11 +533,25 @@
+@@ -286,6 +554,15 @@ impl RncpListenerHandle {
      }
  }
  
@@ -1182,8 +1189,10 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 +    link_mgr.set_resource_strategy(ResourceStrategy::AcceptApp);
 +}
 +
- pub async fn spawn_rncp_listener(
-     transport_tx: mpsc::Sender<TransportMessage>,
+ /// Register a file receiver and spawn its background tasks. This function
+ /// does not announce the destination; the caller owns reachability/publication.
+ /// Drain `events_tx` to avoid blocking completion processing. Fetch reads are
+@@ -307,6 +584,11 @@ pub async fn spawn_rncp_listener(
      cfg: RncpListenerConfig,
      events_tx: mpsc::Sender<RncpEvent>,
  ) -> Result<RncpListenerHandle, RncpError> {
@@ -1195,7 +1204,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      let signing_key = cfg
          .identity
          .get_signing_key()
-@@ -302,12 +584,17 @@
+@@ -339,12 +621,17 @@ pub async fn spawn_rncp_listener(
          Some(signing_key),
      );
  
@@ -1215,7 +1224,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  
      if !cfg.allow_fetch && !cfg.allow_all {
          let allowed_push: std::collections::HashSet<[u8; 16]> =
-@@ -323,56 +610,130 @@
+@@ -360,56 +647,130 @@ pub async fn spawn_rncp_listener(
          let allowed_fetch: Arc<std::collections::HashSet<[u8; 16]>> =
              Arc::new(cfg.allowed.iter().copied().collect());
          let allow_all_fetch = cfg.allow_all;
@@ -1382,7 +1391,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                  }
              }
          });
-@@ -384,6 +745,7 @@
+@@ -421,6 +782,7 @@ pub async fn spawn_rncp_listener(
      let allowed: std::collections::HashSet<[u8; 16]> = cfg.allowed.iter().copied().collect();
      let overwrite = cfg.overwrite;
      let allow_fetch_outer = cfg.allow_fetch;
@@ -1390,7 +1399,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      let events_tx_cb = events_tx.clone();
      let link_control_tx_cb = link_control_tx.clone();
  
-@@ -420,15 +782,102 @@
+@@ -457,15 +819,102 @@ pub async fn spawn_rncp_listener(
                          }
                      }
                  }
@@ -1495,7 +1504,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                      match save_payload(&save_dir, &file_name, &evt.data, overwrite).await {
                          Ok(path) => {
                              let _ = events_tx_cb
-@@ -450,6 +899,11 @@
+@@ -487,6 +936,11 @@ pub async fn spawn_rncp_listener(
                                  .await;
                          }
                      }
@@ -1507,7 +1516,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                  }
              }
          }
-@@ -1125,6 +1579,174 @@
+@@ -1190,6 +1644,174 @@ pub struct RncpFetchRequest<'a> {
      pub overall_timeout: Duration,
      pub path_wait: Duration,
      pub progress_tx: Option<mpsc::Sender<f32>>,
@@ -1681,8 +1690,8 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 +    }
  }
  
- /// Fetches a remote file via `rncp --fetch`. Wire flow:
-@@ -1145,6 +1767,7 @@
+ /// Fetch a file over a Link, identify the local identity, and request
+@@ -1218,6 +1840,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
          overall_timeout,
          path_wait,
          progress_tx,
@@ -1690,7 +1699,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      } = request;
  
      let started = Instant::now();
-@@ -1233,6 +1856,7 @@
+@@ -1312,6 +1935,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
  
      let link_rtt = link.rtt.unwrap_or(Duration::from_millis(500));
      let mut ack_seen = false;
@@ -1698,7 +1707,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      let mut transfers: std::collections::HashMap<[u8; 32], InboundTransfer> =
          std::collections::HashMap::new();
      let mut split_resources: std::collections::HashMap<[u8; 32], MultiSegmentInbound> =
-@@ -1240,7 +1864,7 @@
+@@ -1319,7 +1943,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
      let mut segment_routes: std::collections::HashMap<[u8; 32], ([u8; 32], usize)> =
          std::collections::HashMap::new();
  
@@ -1707,8 +1716,8 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
          if Instant::now() >= deadline {
              break Err(RncpError::Timeout("fetch"));
          }
-@@ -1271,6 +1895,11 @@
-         if interface_id != attached_interface {
+@@ -1353,6 +1977,11 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+         if interface_id != attached_interface || event_owner != interface_owner {
              continue;
          }
 +        if receive_budget.is_some() && raw.len() > link.mtu as usize {
@@ -1719,7 +1728,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
          let (header, off) = match rns_wire::header::PacketHeader::unpack(&raw) {
              Ok(h) => h,
              Err(_) => continue,
-@@ -1308,6 +1937,18 @@
+@@ -1390,6 +2019,18 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                  else {
                      continue;
                  };
@@ -1738,7 +1747,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                  if adv.total_segments > 1 {
                      if adv.total_segments > MAX_SEGMENTS
                          || adv.segment_index == 0
-@@ -1317,16 +1958,6 @@
+@@ -1399,16 +2040,6 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                              "invalid split-resource advertisement".into(),
                          ));
                      }
@@ -1755,7 +1764,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                  }
                  let map_hashes = adv.get_map_hashes();
                  let mut transfer_flags = adv.flags;
-@@ -1348,6 +1979,23 @@
+@@ -1430,6 +2061,23 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                  ) else {
                      continue;
                  };
@@ -1779,7 +1788,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                  if let TransferAction::SendRequest(req_data) = t.request_next()
                      && let Ok(encrypted) = link.encrypt(&req_data)
                  {
-@@ -1364,6 +2012,13 @@
+@@ -1446,6 +2094,13 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                  let mut resource_action_to_send = None;
                  let mut completed_rh = None;
                  for (rh, t) in &mut transfers {
@@ -1793,7 +1802,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                      let action = t.receive_part(body.to_vec());
                      if let Some(ref tx) = progress_tx {
                          let _ = tx.try_send(t.resource.progress() as f32);
-@@ -1428,6 +2083,13 @@
+@@ -1510,6 +2165,13 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                              ));
                          }
                      };
@@ -1807,7 +1816,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
                      let prf_raw = build_resource_proof_packet(link_id, &proof);
                      // The received file is not locally concluded until its
                      // Resource proof has been admitted on the exact Link
-@@ -1435,6 +2097,9 @@
+@@ -1517,6 +2179,9 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
                      // the receiver publish success that the sender can never
                      // observe.
                      send_endpoint_packet(&transport_tx, link_id, prf_raw).await?;
@@ -1817,7 +1826,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
  
                      transfers.remove(&rh);
  
-@@ -1535,6 +2200,11 @@
+@@ -1617,6 +2282,11 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
  
      let (file_name, payload) = result?;
      let bytes = payload.len();
@@ -1829,7 +1838,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      let saved_path = save_payload(save_dir, &file_name, &payload, overwrite)
          .await
          .map_err(RncpError::Io)?;
-@@ -1560,6 +2230,174 @@
+@@ -1642,6 +2312,174 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
  mod tests {
      use super::*;
  
@@ -2004,7 +2013,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      #[cfg(target_os = "linux")]
      fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
          use std::os::fd::AsRawFd;
-@@ -1575,6 +2413,425 @@
+@@ -1657,6 +2495,425 @@ mod tests {
          PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
      }
  
@@ -2430,7 +2439,7 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
      #[test]
      fn metadata_roundtrip() {
          let packed = pack_metadata("hello.txt");
-@@ -1667,32 +2924,4 @@
+@@ -1749,32 +3006,4 @@ mod tests {
      fn successful_rncp_send_retains_python_receiver_settlement_window() {
          assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
      }
@@ -2464,9 +2473,10 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 -    }
  }
 diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/commands/rncp.rs
+index ae12375..e35797b 100644
 --- a/crates/rns-tools/src/commands/rncp.rs
 +++ b/crates/rns-tools/src/commands/rncp.rs
-@@ -37,8 +37,8 @@
+@@ -39,8 +39,8 @@ use rns_runtime::lifecycle::{ShutdownSignal, install_signal_handlers};
  use rns_runtime::platform::StoragePaths;
  use rns_runtime::rncp::{
      DEFAULT_RNCP_APP_NAME, RncpError, RncpEvent, RncpFetchOutcome, RncpFetchRequest,
@@ -2477,7 +2487,7 @@ diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/comman
  };
  
  const DEFAULT_TIMEOUT_SECS: f64 = 15.0;
-@@ -313,6 +313,7 @@
+@@ -317,6 +317,7 @@ async fn run_fetch(args: Args) -> ! {
      });
  
      let result = rncp_fetch_file(RncpFetchRequest {
@@ -2485,7 +2495,7 @@ diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/comman
          transport_tx: handle.transport_tx.clone(),
          identity,
          dest_hash,
-@@ -634,6 +635,9 @@
+@@ -640,6 +641,9 @@ async fn run_listen(args: Args) -> ! {
          allow_fetch: args.allow_fetch,
          fetch_jail,
          fetch_auto_compress: !args.no_compress,
@@ -2495,7 +2505,7 @@ diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/comman
      };
      let listener = match spawn_rncp_listener(handle.transport_tx.clone(), cfg, event_tx).await {
          Ok(h) => h,
-@@ -688,6 +692,13 @@
+@@ -694,6 +698,13 @@ async fn run_listen(args: Args) -> ! {
                              saved_path.display()
                          );
                      }
