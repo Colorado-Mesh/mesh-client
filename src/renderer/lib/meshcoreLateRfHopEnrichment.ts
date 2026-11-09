@@ -4,7 +4,15 @@
  * When companion events 7/8 ingest before raw RF RX (136), or companion pathLen is
  * missing/wrong, patch the matching chat row from a successful RF parse. RF on-air
  * path length is authoritative when it disagrees with a stored hop count.
+ *
+ * The radio logs every reception (event 136) before it drops duplicates, and its message event
+ * carries the first reception's path (MeshCore `Dispatcher::checkRecv`, `Mesh::onRecvPacket`).
+ * So only a packet's first reception may change a row, and a channel packet only changes the
+ * row it decrypts to: the next message's RX log usually arrives while the previous message is
+ * still the newest row.
  */
+import { decodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
+
 import {
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   messageToDbRow,
@@ -12,7 +20,9 @@ import {
 import { getConnection } from '../stores/connectionStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { errLikeToLogString } from './errLikeToLogString';
+import { normalizeMeshcoreIncomingText } from './meshcoreChannelText';
 import { MESHCORE_CHAT_CORRELATE_WINDOW_MS } from './meshcoreRawPacketCorrelate';
+import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 import { effectiveMessageTimestampMs } from './nodeStatus';
 import { messageRecordToChatMessage } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId } from './types';
@@ -23,6 +33,10 @@ export const MESHCORE_HOP_CORRECTED_UI_TTL_MS = 2000;
 export interface MeshcoreLateHopCandidate {
   storeId: string;
   sender_id: number;
+  sender_name?: string;
+  payload?: string;
+  /** Raw wire line (`Name: text`) for live rows; not persisted. */
+  meshcoreDedupeKey?: string;
   channel: number;
   timestamp: number;
   rxHops?: number;
@@ -30,6 +44,16 @@ export interface MeshcoreLateHopCandidate {
   roomServerId?: number;
   rxPacketFingerprintHex?: string;
   status?: ChatMessage['status'];
+}
+
+/** A GRP_TXT packet's decrypted content, used to find the one chat row it belongs to. */
+export interface MeshcoreLateHopGroupText {
+  channel: number;
+  timestampSec: number;
+  /** Sanitized wire line, as stored in a live row's `meshcoreDedupeKey`. */
+  rawText: string;
+  senderName?: string;
+  payload: string;
 }
 
 export interface MeshcoreLateRfHopEnrichmentInput {
@@ -41,6 +65,10 @@ export interface MeshcoreLateRfHopEnrichmentInput {
   now?: number;
   myNodeNum?: number;
   windowMs?: number;
+  /** GRP_TXT: decrypted content. Without it a channel packet changes no row. */
+  groupText?: MeshcoreLateHopGroupText | null;
+  /** Path-invariant payload id; a packet already seen on this connection changes no row. */
+  payloadIdHex?: string | null;
 }
 
 export interface MeshcoreLateRfHopEnrichmentResult {
@@ -123,6 +151,70 @@ export function resetMeshcoreHopCorrectedMarksForTests(): void {
   notifyHopCorrectedListeners();
 }
 
+/** Bound on remembered packet ids; repeats of one packet arrive within seconds. */
+const MAX_SEEN_PACKET_KEYS = 512;
+const seenPacketKeys: string[] = [];
+const seenPacketKeySet = new Set<string>();
+
+/** Records a packet's first reception on this connection; false when it was already seen. */
+function markMeshcoreLateHopPacketSeen(identityId: IdentityId, payloadIdHex: string): boolean {
+  const key = `${identityId}|${payloadIdHex.toUpperCase()}`;
+  if (seenPacketKeySet.has(key)) return false;
+  seenPacketKeySet.add(key);
+  seenPacketKeys.push(key);
+  while (seenPacketKeys.length > MAX_SEEN_PACKET_KEYS) {
+    const old = seenPacketKeys.shift();
+    if (old != null) seenPacketKeySet.delete(old);
+  }
+  return true;
+}
+
+/** Test helper: forgets which packets were already seen. */
+export function resetMeshcoreLateHopSeenPacketsForTests(): void {
+  seenPacketKeys.length = 0;
+  seenPacketKeySet.clear();
+}
+
+/** Decrypt a GRP_TXT inner payload with the first configured channel key that opens it. */
+export function decodeMeshcoreLateHopGroupText(
+  innerPayload: Uint8Array,
+  secretsByIndex: ReadonlyMap<number, Uint8Array>,
+): MeshcoreLateHopGroupText | null {
+  for (const [channel, secret] of secretsByIndex) {
+    const decoded = decodeMeshcoreGroupText(secret, innerPayload);
+    if (!decoded) continue;
+    const rawText = sanitizeMeshcoreChatWireText(decoded.text);
+    const normalized = normalizeMeshcoreIncomingText(rawText);
+    return {
+      channel,
+      timestampSec: decoded.timestampSec,
+      rawText,
+      ...(normalized.senderName != null ? { senderName: normalized.senderName } : {}),
+      payload: normalized.payload,
+    };
+  }
+  return null;
+}
+
+/** Same channel, sender second and text as the stored row. */
+function groupTextMatchesCandidate(
+  c: MeshcoreLateHopCandidate,
+  text: MeshcoreLateHopGroupText,
+  now: number,
+  windowMs: number,
+): boolean {
+  if (c.channel !== text.channel) return false;
+  const sameText =
+    (c.meshcoreDedupeKey != null && c.meshcoreDedupeKey === text.rawText) ||
+    (c.sender_name === text.senderName && c.payload === text.payload);
+  if (!sameText) return false;
+  if (Math.floor(c.timestamp / 1000) === text.timestampSec) return true;
+  // Rows store receive time when the sender's clock is missing or ahead.
+  const wireMs = text.timestampSec * 1000;
+  if (effectiveMessageTimestampMs(wireMs, now) === wireMs) return false;
+  return Math.abs(now - c.timestamp) <= windowMs;
+}
+
 export function shouldApplyMeshcoreRfHopEnrichment(
   existingRxHops: number | undefined,
   rfHopCount: number,
@@ -152,7 +244,8 @@ function normalizeFingerprint(hex: string | null | undefined): string | null {
 
 /**
  * Pick the chat row that late event 136 should enrich.
- * Prefer fingerprint match; else most recent matching channel/DM in the correlate window.
+ * Prefer fingerprint match. A channel packet then needs a row with its decrypted content; a DM
+ * (which cannot be decrypted here) takes its sender's most recent DM in the correlate window.
  */
 export function findMeshcoreLateRfHopEnrichmentTarget(
   candidates: readonly MeshcoreLateHopCandidate[],
@@ -178,33 +271,43 @@ export function findMeshcoreLateRfHopEnrichmentTarget(
     }
   }
 
-  const kindOk =
-    input.payloadTypeString === 'GRP_TXT' ? isBroadcastChannelCandidate : isDmCandidate;
+  const eligible = (c: MeshcoreLateHopCandidate): boolean => {
+    if (myNodeNum !== 0 && c.sender_id === myNodeNum) return false;
+    if (c.status === 'sending') return false;
+    const via = c.receivedVia;
+    return via == null || via === 'rf' || via === 'both' || via === 'mqtt';
+  };
+
+  if (input.payloadTypeString === 'GRP_TXT') {
+    // Time proximity alone gave the previous message the next packet's count.
+    const text = input.groupText;
+    if (!text) return undefined;
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      const c = candidates[i];
+      if (!isBroadcastChannelCandidate(c) || !eligible(c)) continue;
+      if (!groupTextMatchesCandidate(c, text, now, windowMs)) continue;
+      if (!applicable(c)) continue;
+      return c;
+    }
+    return undefined;
+  }
+
+  // Same rule as ingest correlation (meshcoreRawPacketCorrelate): never another sender's row.
+  const fromNodeId = input.fromNodeId;
+  if (fromNodeId == null || fromNodeId === 0) return undefined;
 
   let best: MeshcoreLateHopCandidate | undefined;
   let bestTs = -Infinity;
-  let bestFromMatch = false;
 
   for (let i = candidates.length - 1; i >= 0; i--) {
     const c = candidates[i];
-    if (!kindOk(c)) continue;
-    if (myNodeNum !== 0 && c.sender_id === myNodeNum) continue;
-    if (c.status === 'sending') continue;
-    const via = c.receivedVia;
-    if (via != null && via !== 'rf' && via !== 'both' && via !== 'mqtt') continue;
+    if (!isDmCandidate(c) || !eligible(c) || c.sender_id !== fromNodeId) continue;
     const tsMs = effectiveMessageTimestampMs(c.timestamp, now);
     if (Math.abs(now - tsMs) > windowMs) continue;
     if (!applicable(c)) continue;
-
-    const fromMatch =
-      input.payloadTypeString === 'TXT_MSG' &&
-      input.fromNodeId != null &&
-      c.sender_id === input.fromNodeId;
-
-    if (!best || (fromMatch && !bestFromMatch) || (fromMatch === bestFromMatch && tsMs > bestTs)) {
+    if (tsMs > bestTs) {
       best = c;
       bestTs = tsMs;
-      bestFromMatch = fromMatch;
     }
   }
 
@@ -219,6 +322,9 @@ function listLateHopCandidates(identityId: IdentityId): MeshcoreLateHopCandidate
     out.push({
       storeId,
       sender_id: msg.sender_id,
+      sender_name: msg.sender_name,
+      payload: msg.payload,
+      ...(msg.meshcoreDedupeKey != null ? { meshcoreDedupeKey: msg.meshcoreDedupeKey } : {}),
       channel: msg.channel,
       timestamp: msg.timestamp,
       ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
@@ -243,6 +349,10 @@ export function applyMeshcoreLateRfHopEnrichment(
 ): MeshcoreLateRfHopEnrichmentResult | null {
   if (!identityId) return null;
   if (!input.parseOk || !Number.isFinite(input.hopCount)) return null;
+  // Repeats over other paths follow the first reception, which the radio's message already used.
+  if (input.payloadIdHex && !markMeshcoreLateHopPacketSeen(identityId, input.payloadIdHex)) {
+    return null;
+  }
 
   const candidates = listLateHopCandidates(identityId);
   const target = findMeshcoreLateRfHopEnrichmentTarget(candidates, input);
