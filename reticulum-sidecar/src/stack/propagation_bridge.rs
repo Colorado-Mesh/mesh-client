@@ -545,14 +545,18 @@ impl PropagationBridge {
         if let Ok(mut slot) = self.last_establish_error.lock() {
             *slot = None;
         }
-        if let Ok(mut acc) = self.client_download_acc.lock() {
-            *acc = ClientDownloadAccum::default();
-        }
         let Ok(mut client) = self.client.lock() else {
             return false;
         };
         client.set_propagation_node(pn_hash);
-        client.start_download_with_limit(None, link_hops.max(1))
+        let started = client.start_download_with_limit(None, link_hops.max(1));
+        // Only clear the accumulator after a successful start so a refused
+        // start cannot drop mail already admitted (have-id persisted) but not
+        // yet handed to the delivery callback.
+        if started && let Ok(mut acc) = self.client_download_acc.lock() {
+            *acc = ClientDownloadAccum::default();
+        }
+        started
     }
 
     /// Map client `/get` state to UI progress (user Sync is `/get`-primary).
@@ -588,9 +592,12 @@ impl PropagationBridge {
         )
     }
 
-    /// Cancel any in-flight client download (best-effort). The next
-    /// [`Self::start_client_download`] re-arms from Idle.
-    pub fn cancel_client_download(&self) {
+    /// Cancel any in-flight client download (best-effort). Returns any mail
+    /// already admitted this run (have-id persisted) so the caller can deliver
+    /// it before discarding the transfer — those messages will not be offered
+    /// again on a later `/get`. The next [`Self::start_client_download`]
+    /// re-arms from Idle.
+    pub fn cancel_client_download(&self) -> Vec<LxMessage> {
         if let Ok(mut client) = self.client.lock() {
             // Must abort mid-transfer states too — acknowledge_transfer only
             // clears Complete/Failed, which left cancelled Sync stuck in
@@ -598,9 +605,10 @@ impl PropagationBridge {
             // PROPAGATION_RETRIEVE_BUSY (UI then falsely said "no PNs").
             client.abort_transfer();
         }
-        if let Ok(mut acc) = self.client_download_acc.lock() {
-            *acc = ClientDownloadAccum::default();
-        }
+        self.client_download_acc
+            .lock()
+            .map(|mut acc| std::mem::take(&mut *acc).messages)
+            .unwrap_or_default()
     }
 
     /// Drive the client download one step: drain inbound events, advance the
@@ -627,7 +635,7 @@ impl PropagationBridge {
         let downloaded = client.take_downloaded_messages();
         if !downloaded.is_empty() {
             let count = downloaded.len();
-            let admitted = self.admit_downloaded(downloaded);
+            let admitted = self.admit_downloaded(&mut client, downloaded);
             if let Ok(mut acc) = self.client_download_acc.lock() {
                 acc.downloaded += count;
                 acc.messages.extend(admitted);
@@ -700,10 +708,18 @@ impl PropagationBridge {
 
     /// Decode each downloaded blob and resolve its admission token. Only successfully decoded
     /// mail is committed as a have-id (undecodable blobs are rejected with a typed reason).
-    fn admit_downloaded(&self, downloaded: Vec<DownloadedPropagationMessage>) -> Vec<LxMessage> {
+    /// On accept, seed the live [`PropagationClient`] have-set immediately so an
+    /// endpoint termination before `client.tick()` cannot leave an accepted token
+    /// untracked for a later `/get`.
+    fn admit_downloaded(
+        &self,
+        client: &mut PropagationClient,
+        downloaded: Vec<DownloadedPropagationMessage>,
+    ) -> Vec<LxMessage> {
         let mut admitted = Vec::new();
         for item in downloaded {
             let scope = item.scope();
+            let transient_id = scope.transient_id;
             let (data, token) = item.into_parts();
             let outcome = match decode_downloaded_propagated_blob_checked(&self.identity, &data) {
                 Ok(msg) => {
@@ -724,6 +740,8 @@ impl PropagationBridge {
                         record,
                     }) {
                         Ok(receipt) => {
+                            // Live client must learn the have-id before tick/endpoint teardown.
+                            client.add_local_message(transient_id);
                             admitted.push(msg);
                             DownloadAdmissionOutcome::Accepted(receipt)
                         }
@@ -2018,6 +2036,23 @@ mod tests {
         assert!(
             bridge.contains("abort_transfer"),
             "cancel_client_download must abort mid-transfer (not only Complete/Failed)"
+        );
+        // Admission must seed the live client before tick so endpoint teardown
+        // cannot leave an Accepted token untracked for a later /get.
+        assert!(
+            bridge.contains("fn admit_downloaded(")
+                && bridge.contains("client.add_local_message(transient_id)"),
+            "admit_downloaded must call add_local_message on Accepted before tick"
+        );
+        assert!(
+            bridge.contains("-> Vec<LxMessage>")
+                && bridge.contains("std::mem::take(&mut *acc).messages"),
+            "cancel_client_download must return already-admitted mail for delivery"
+        );
+        assert!(
+            bridge.contains("let started = client.start_download_with_limit")
+                && bridge.contains("if started && let Ok(mut acc)"),
+            "start_client_download must reset the accumulator only after a successful start"
         );
     }
 

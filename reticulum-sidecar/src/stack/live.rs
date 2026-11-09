@@ -5176,17 +5176,25 @@ impl LiveBridge {
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
         // Hold lifecycle so emitter check+effect cannot race this generation bump.
-        let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
-        self.sync_run_id.fetch_add(1, Ordering::SeqCst);
-        if let Ok(slot) = self.sync_cancel.lock() {
-            slot.store(true, Ordering::SeqCst);
-        }
-        self.propagation.cancel_sync();
-        self.propagation.cancel_client_download();
-        self.propagation.clear_pending_post_peer_get();
-        if let Ok(mut driver) = self.outbound.lock() {
-            driver.clear_propagation_identity_pins();
-            driver.set_propagation_sync_target(None);
+        // Drop the std MutexGuard before awaiting the router (axum Handler requires Send).
+        let pending = {
+            let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
+            self.sync_run_id.fetch_add(1, Ordering::SeqCst);
+            if let Ok(slot) = self.sync_cancel.lock() {
+                slot.store(true, Ordering::SeqCst);
+            }
+            self.propagation.cancel_sync();
+            let pending = self.propagation.cancel_client_download();
+            self.propagation.clear_pending_post_peer_get();
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
+            }
+            pending
+        };
+        if !pending.is_empty() {
+            let router = self.router.lock().await;
+            deliver_client_download_messages(&router, &pending);
         }
     }
 
@@ -7430,11 +7438,28 @@ fn resolve_propagation_link_hops(iface: Option<&str>, path_hops: u8) -> (u8, &'s
     (link_hops, egress, proof_budget_secs)
 }
 
+/// Deliver LXMF already admitted by a client `/get` (have-id persisted) so cancel /
+/// failover cannot drop mail that will not be re-offered.
+fn deliver_client_download_messages(
+    router: &LxmRouter,
+    messages: &[lxmf_core::message::LxMessage],
+) {
+    if messages.is_empty() {
+        return;
+    }
+    if let Some(ref cb) = router.delivery_callback {
+        for msg in messages {
+            cb(msg);
+        }
+    }
+}
+
 /// After establish failure, suppress dead iface/via and retry client `/get` on another hub.
 #[allow(clippy::too_many_arguments)] // mirrors Nomad path failover state threaded through driver loop
 async fn propagation_download_attempt_failover(
     live: Option<&Arc<LiveBridge>>,
     bridge: &PropagationBridge,
+    router: &Arc<tokio::sync::Mutex<LxmRouter>>,
     pn_hash: [u8; 16],
     pn_hex: &str,
     failover_round: &mut u8,
@@ -7450,7 +7475,11 @@ async fn propagation_download_attempt_failover(
     if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
         return false;
     }
-    bridge.cancel_client_download();
+    let pending = bridge.cancel_client_download();
+    if !pending.is_empty() {
+        let router = router.lock().await;
+        deliver_client_download_messages(&router, &pending);
+    }
     *failover_round = failover_round.saturating_add(1);
     record_path_failover_attempt(
         tried_interfaces,
@@ -7683,9 +7712,11 @@ fn spawn_client_download_driver_task(
                     break 'attempt;
                 }
                 if cancel.load(Ordering::SeqCst) {
-                    run_guarded(&|| {
-                        bridge.cancel_client_download();
-                    });
+                    let pending = bridge.cancel_client_download();
+                    if !pending.is_empty() {
+                        let router = router.lock().await;
+                        deliver_client_download_messages(&router, &pending);
+                    }
                     break 'attempt;
                 }
                 let progress = bridge.client_download_progress();
@@ -7705,6 +7736,7 @@ fn spawn_client_download_driver_task(
                     if propagation_download_attempt_failover(
                         live.as_ref(),
                         &bridge,
+                        &router,
                         pn_hash,
                         &pn_hex,
                         &mut failover_round,
@@ -7745,6 +7777,7 @@ fn spawn_client_download_driver_task(
                     if propagation_download_attempt_failover(
                         live.as_ref(),
                         &bridge,
+                        &router,
                         pn_hash,
                         &pn_hex,
                         &mut failover_round,
@@ -7805,6 +7838,7 @@ fn spawn_client_download_driver_task(
                             && propagation_download_attempt_failover(
                                 live.as_ref(),
                                 &bridge,
+                                &router,
                                 pn_hash,
                                 &pn_hex,
                                 &mut failover_round,
@@ -7834,8 +7868,12 @@ fn spawn_client_download_driver_task(
                             failover_round,
                             &tried_interfaces,
                         );
+                        let pending = bridge.cancel_client_download();
+                        if !pending.is_empty() {
+                            let router = router.lock().await;
+                            deliver_client_download_messages(&router, &pending);
+                        }
                         run_guarded(&|| {
-                            bridge.cancel_client_download();
                             emit_progress(false, 0.0, Some(&message));
                         });
                         break 'attempt;
