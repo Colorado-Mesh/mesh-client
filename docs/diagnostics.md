@@ -457,6 +457,7 @@ Open **Monitor → Sniffer** (UI label for the raw packet log panel; all three p
 
 - Live (or polled) raw frames for the active protocol with pause/clear controls.
 - Typical fields: time, type/port, peer or path summary, transport badges where applicable, expandable hex.
+- **MeshCore sender:** adverts and anonymous requests carry the sender's key. DMs (TXT_MSG), requests, responses and path returns carry only 1-byte destination and source hashes, so their sender is named only when the packet is addressed to your radio and exactly one contact's key starts with the source byte. DMs between other nodes, bytes shared by several contacts, and echoes of your own packets stay blank.
 - Buffer caps: Meshtastic and MeshCore keep up to **2,500** entries per protocol (`MAX_RAW_PACKET_LOG_ENTRIES`); the Reticulum renderer store keeps **500** (`RETICULUM_PACKET_RING_CAPACITY`) and trims older entries.
 - **Privacy:** payloads may include message text or other user content — treat exports and screenshots carefully.
 - Prefer **Diagnostics** for actionable routing findings; prefer **Sniffer** when you need wire-level confirmation of what the radio or sidecar saw.
