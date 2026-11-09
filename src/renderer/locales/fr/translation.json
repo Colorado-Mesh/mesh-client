@@ -988,7 +988,26 @@
     "sendLater": "Envoyer plus tard",
     "sendMenuButton": "Envoyer des notifications par courriel",
     "saveAttachmentAria": "Enregistrer la pièce jointe {{name}}",
-    "revealAttachmentAria": "Afficher la pièce jointe {{name}} dans le dossier"
+    "revealAttachmentAria": "Afficher la pièce jointe {{name}} dans le dossier",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, détails de l'itinéraire",
+      "receivedDirect": "Reçu directement de {{name}}, sans relais",
+      "reachedYouInHops_one": "Arrivé en {{count}} saut",
+      "reachedYouInHops_other": "Arrivé en {{count}} sauts",
+      "from": "De {{name}}",
+      "toYou": "Jusqu’à vous",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} ou un autre répéteur ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, répéteur inconnu",
+      "lastRelayNamed": "Dernier relais : {{name}}",
+      "lastRelayGuess": "Dernier relais : {{name}} ou un autre nœud (ID se termine par {{hash}})",
+      "lastRelayUnknown": "Dernier relais : un nœud dont l'ID se termine par {{hash}}, pas dans votre liste de nœuds",
+      "lastRelayOnly": "La radio ne signale que le dernier relais, pas l'itinéraire complet.",
+      "relayNotReported": "La radio n'a pas signalé quel nœud a relayé ce message.",
+      "unavailableDirectOrRoom": "Les itinéraires sont affichés pour les messages de canal uniquement.",
+      "unavailableNotCaptured": "Itinéraire non disponible : les itinéraires sont conservés uniquement pour les messages récents de cette session.",
+      "notRecorded": "Les paquets sur ce réseau enregistrent combien de relais ils ont passés, pas lesquels."
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

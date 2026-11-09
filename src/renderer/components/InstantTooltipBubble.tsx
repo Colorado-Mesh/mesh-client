@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 
 import {
   clampCenteredTooltipLeft,
+  fitInstantTooltipVertically,
   type InstantTooltipPosition,
 } from '@/renderer/lib/instantTooltipPosition';
 import { Z_INSTANT_TOOLTIP } from '@/renderer/lib/modalZIndex';
@@ -25,12 +26,17 @@ export function InstantTooltipBubble({
   const ref = useRef<HTMLSpanElement>(null);
 
   // The bubble is as wide as its text, up to max-w-64, so a centred one is kept on screen only
-  // after it has been measured. This runs before paint.
+  // after it has been measured. A tall one that does not fit on its side flips to the other.
+  // This runs before paint.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || pos.placement === 'right') return;
     el.style.left = `${clampCenteredTooltipLeft(pos.left, el.offsetWidth, window.innerWidth)}px`;
-    el.style.transform = pos.placement === 'above' ? 'translateY(-100%)' : 'none';
+    const fit = fitInstantTooltipVertically(pos, el.offsetHeight, window.innerHeight);
+    const placement = fit?.placement ?? pos.placement;
+    if (fit) el.style.top = `${fit.top}px`;
+    el.dataset.placement = placement;
+    el.style.transform = placement === 'above' ? 'translateY(-100%)' : 'none';
   }, [text, pos]);
 
   return (

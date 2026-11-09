@@ -988,7 +988,26 @@
     "sendLater": "後で送信する",
     "sendMenuButton": "送信設定",
     "saveAttachmentAria": "添付ファイル {{name}} を保存",
-    "revealAttachmentAria": "フォルダー内の添付ファイル {{name}} を表示"
+    "revealAttachmentAria": "フォルダー内の添付ファイル {{name}} を表示",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}、ルートの詳細",
+      "receivedDirect": "{{name}}から直接受信、リレーなし",
+      "reachedYouInHops_one": "{{count}} ホップで届きました",
+      "reachedYouInHops_other": "{{count}} ホップで届きました",
+      "from": "送信元: {{name}}",
+      "toYou": "受信: あなた",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}}または別のリピーター（ {{hash}} ）",
+      "hopUnknown": "{{index}}. {{hash}}、不明なリピーター",
+      "lastRelayNamed": "最後のリレー： {{name}}",
+      "lastRelayGuess": "最後のリレー： {{name}}または別のノード（ IDは{{hash}}で終わる）",
+      "lastRelayUnknown": "最後のリレー：ノードリストではなく、IDが{{hash}}で終わるノード",
+      "lastRelayOnly": "無線は最後の中継のみを報告し、完全なルートは報告しません。",
+      "relayNotReported": "無線は、どのノードがこのメッセージを中継したかを報告しませんでした。",
+      "unavailableDirectOrRoom": "ルートはチャンネルメッセージに対してのみ表示されます。",
+      "unavailableNotCaptured": "ルートは利用できません：ルートは、このセッションからの最近のメッセージに対してのみ保持されます。",
+      "notRecorded": "このネットワーク上のパケットは、どのリレーを通過させたかではなく、どのリレーを通過させたかを記録します。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

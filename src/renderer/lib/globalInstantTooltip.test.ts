@@ -2,7 +2,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { findInstantTooltipHost, instantTooltipSide } from './globalInstantTooltip';
-import { clampCenteredTooltipLeft, computeInstantTooltipPosition } from './instantTooltipPosition';
+import {
+  clampCenteredTooltipLeft,
+  computeInstantTooltipPosition,
+  fitInstantTooltipVertically,
+} from './instantTooltipPosition';
 
 function rectAt(left: number, top: number, size = 16): DOMRect {
   return {
@@ -21,13 +25,49 @@ function rectAt(left: number, top: number, size = 16): DOMRect {
 describe('instantTooltipPosition', () => {
   it('centres above the trigger', () => {
     const pos = computeInstantTooltipPosition(rectAt(1000, 200));
-    expect(pos).toEqual({ top: 192, left: 1008, placement: 'above' });
+    // flipTop is the below position, used when a tall bubble does not fit above.
+    expect(pos).toEqual({ top: 192, left: 1008, placement: 'above', flipTop: 220 });
   });
 
   it('flips below when the trigger is near the top', () => {
     const pos = computeInstantTooltipPosition(rectAt(200, 20));
     expect(pos.top).toBe(40);
     expect(pos.placement).toBe('below');
+    expect(pos.flipTop).toBe(12);
+  });
+
+  it('keeps a measured bubble on its side when it fits', () => {
+    const pos = { top: 400, left: 300, placement: 'above' as const, flipTop: 430 };
+    expect(fitInstantTooltipVertically(pos, 200, 852)).toEqual({ top: 400, placement: 'above' });
+  });
+
+  it('opens a tall bubble below a trigger near the top instead of off screen', () => {
+    // A 13-line route above a pill at y=218 would start 124px above the window.
+    const pos = { top: 210, left: 377, placement: 'above' as const, flipTop: 238 };
+    expect(fitInstantTooltipVertically(pos, 334, 852)).toEqual({ top: 238, placement: 'below' });
+  });
+
+  it('opens a tall bubble above a trigger near the bottom', () => {
+    const pos = { top: 700, left: 377, placement: 'below' as const, flipTop: 672 };
+    expect(fitInstantTooltipVertically(pos, 300, 852)).toEqual({ top: 672, placement: 'above' });
+  });
+
+  it('keeps the side with more room when neither side fits', () => {
+    const pos = { top: 300, left: 377, placement: 'above' as const, flipTop: 330 };
+    expect(fitInstantTooltipVertically(pos, 700, 852)).toEqual({ top: 330, placement: 'below' });
+    expect(fitInstantTooltipVertically({ ...pos, top: 520, flipTop: 550 }, 700, 852)).toEqual({
+      top: 520,
+      placement: 'above',
+    });
+  });
+
+  it('leaves side and unflippable bubbles alone', () => {
+    expect(fitInstantTooltipVertically({ top: 1, left: 1, placement: 'right' }, 900, 852)).toBe(
+      null,
+    );
+    expect(fitInstantTooltipVertically({ top: 1, left: 1, placement: 'above' }, 900, 852)).toBe(
+      null,
+    );
   });
 
   it('opens beside the trigger for the right side, centred on it vertically', () => {

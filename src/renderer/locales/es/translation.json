@@ -988,7 +988,26 @@
     "sendLater": "Enviar más tarde",
     "sendMenuButton": "Opciones de envío",
     "saveAttachmentAria": "Guardar archivo adjunto {{name}}",
-    "revealAttachmentAria": "Mostrar archivo adjunto {{name}} en la carpeta"
+    "revealAttachmentAria": "Mostrar archivo adjunto {{name}} en la carpeta",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, detalles de la ruta",
+      "receivedDirect": "Recibido directamente de {{name}}, sin retransmisiones",
+      "reachedYouInHops_one": "Te llegó en {{count}} salto",
+      "reachedYouInHops_other": "Te llegó en {{count}} saltos",
+      "from": "De {{name}}",
+      "toYou": "A ti",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} u otro repetidor ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, repetidor desconocido",
+      "lastRelayNamed": "Último relevo: {{name}}",
+      "lastRelayGuess": "Último relé: {{name}} u otro nodo (el ID termina en {{hash}})",
+      "lastRelayUnknown": "Último relé: un nodo cuyo ID termina en {{hash}}, no está en tu lista de nodos",
+      "lastRelayOnly": "La radio informa solo del último relevo, no de la ruta completa.",
+      "relayNotReported": "La radio no informó qué nodo transmitió este mensaje.",
+      "unavailableDirectOrRoom": "Las rutas se muestran solo para mensajes de canal.",
+      "unavailableNotCaptured": "Ruta no disponible: las rutas se mantienen solo para mensajes recientes de esta sesión.",
+      "notRecorded": "Los paquetes en esta red registran cuántos relés pasaron, no cuáles."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
