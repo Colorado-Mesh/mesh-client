@@ -8747,6 +8747,8 @@
     "removeDeviceFromRosterAria": "Usuń {{name}} ze składu drużyny",
     "rosterDeviceBadge": "{{count}} na liście",
     "rosterDeviceStatus": "{{count}} urządzenia wybrane w składzie zespołu. Zarządzaj wyborem na karcie Skład zespołu.",
-    "rosterSelectAfterCreate": "Po zapisaniu wybierz, które połączone urządzenia należą do składu zespołu biorącego udział w wydarzeniu."
+    "rosterSelectAfterCreate": "Po zapisaniu wybierz, które połączone urządzenia należą do składu zespołu biorącego udział w wydarzeniu.",
+    "unlinkAria": "Odłącz urządzenie {{protocol}} {{name}}",
+    "unitIdTaken": "Identyfikator jednostki {{unitId}} jest już przypisany do innego kontaktu."
   }
 }

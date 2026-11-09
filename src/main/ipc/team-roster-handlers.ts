@@ -66,26 +66,34 @@ function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
     db.prepare('PRAGMA table_info(team_member_links)').all() as { name: string }[]
   ).some((c) => c.name === 'on_roster');
 
-  db.execScript(`
-    CREATE TABLE team_member_links_new (
-      unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
-      protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
-      durable_key TEXT NOT NULL,
-      node_id INTEGER,
-      long_name TEXT,
-      identity_id TEXT,
-      on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
-      PRIMARY KEY (unit_id, protocol, durable_key),
-      UNIQUE (protocol, durable_key)
-    );
-    INSERT OR IGNORE INTO team_member_links_new
-      (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
-      SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id,
-        ${hasLinkRoster ? 'on_roster' : '0'}
-      FROM team_member_links;
-    DROP TABLE team_member_links;
-    ALTER TABLE team_member_links_new RENAME TO team_member_links;
-  `);
+  const onRosterSelect = hasLinkRoster ? 'l.on_roster' : 'COALESCE(m.on_roster, 0)';
+  const fromClause = hasLinkRoster
+    ? 'FROM team_member_links l'
+    : 'FROM team_member_links l LEFT JOIN team_members m ON m.unit_id = l.unit_id';
+
+  db.transaction(() => {
+    db.execScript(`
+      DROP TABLE IF EXISTS team_member_links_new;
+      CREATE TABLE team_member_links_new (
+        unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
+        protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
+        durable_key TEXT NOT NULL,
+        node_id INTEGER,
+        long_name TEXT,
+        identity_id TEXT,
+        on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
+        PRIMARY KEY (unit_id, protocol, durable_key),
+        UNIQUE (protocol, durable_key)
+      );
+      INSERT OR IGNORE INTO team_member_links_new
+        (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
+        SELECT l.unit_id, l.protocol, l.durable_key, l.node_id, l.long_name, l.identity_id,
+          ${onRosterSelect}
+        ${fromClause};
+      DROP TABLE team_member_links;
+      ALTER TABLE team_member_links_new RENAME TO team_member_links;
+    `);
+  })();
 }
 
 /**

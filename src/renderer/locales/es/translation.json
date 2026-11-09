@@ -8605,6 +8605,8 @@
     "removeDeviceFromRosterAria": "Eliminar {{name}} de la lista del equipo",
     "rosterDeviceBadge": "{{count}} en la lista",
     "rosterDeviceStatus": "{{count}} dispositivo(s) seleccionados en la lista del equipo. Administre la selección desde la pestaña Lista del equipo.",
-    "rosterSelectAfterCreate": "Después de guardar, seleccione qué dispositivos vinculados pertenecen a la lista del equipo para el evento."
+    "rosterSelectAfterCreate": "Después de guardar, seleccione qué dispositivos vinculados pertenecen a la lista del equipo para el evento.",
+    "unlinkAria": "Desvincular {{protocol}} dispositivo {{name}}",
+    "unitIdTaken": "La unidad ID {{unitId}} ya está asignada a otro contacto."
   }
 }

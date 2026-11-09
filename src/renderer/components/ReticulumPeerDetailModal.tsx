@@ -302,7 +302,7 @@ export default function ReticulumPeerDetailModal({
   };
 
   useEffect(() => {
-    if (variant === 'pane') return;
+    if (variant === 'pane' || suggestTeamCandidate != null) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -310,7 +310,7 @@ export default function ReticulumPeerDetailModal({
     return () => {
       document.removeEventListener('keydown', handleKey);
     };
-  }, [onClose, variant]);
+  }, [onClose, variant, suggestTeamCandidate]);
 
   const displayLabel = peer
     ? resolveReticulumPeerLabel(peer, peer.display_name ?? peer.custom_display_name)

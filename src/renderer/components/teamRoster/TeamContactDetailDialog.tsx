@@ -1,8 +1,9 @@
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import type { ChatNotificationTarget } from '@/renderer/lib/chatDesktopNotifications';
 import {
   buildContactMessageTimeline,
@@ -51,6 +52,8 @@ export function TeamContactDetailDialog({
 }: TeamContactDetailDialogProps) {
   const { t } = useTranslation();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { suppressRestoreFocus } = useModalFocusTrap(panelRef, onClose);
   const timeline = useMemo(
     () => buildContactMessageTimeline(presence.links, messagesByProtocol),
     [presence.links, messagesByProtocol],
@@ -73,6 +76,7 @@ export function TeamContactDetailDialog({
     const peer = dmPeerFromPresence(selected);
     const hash = reticulumHashFromLink(selected.link);
     if (peer == null && !hash) return;
+    suppressRestoreFocus();
     onOpenChat({
       kind: 'chat',
       protocol: selected.link.protocol,
@@ -99,6 +103,7 @@ export function TeamContactDetailDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -180,6 +185,7 @@ export function TeamContactDetailDialog({
                       aria-label={t('teamRoster.openMessageInChat')}
                       onClick={() => {
                         if (item.isDirectMessage && item.dmPeer != null) {
+                          suppressRestoreFocus();
                           onOpenChat({
                             kind: 'chat',
                             protocol: item.protocol,
@@ -187,6 +193,7 @@ export function TeamContactDetailDialog({
                             channel: null,
                           });
                         } else if (item.channel != null) {
+                          suppressRestoreFocus();
                           onOpenChat({
                             kind: 'chat',
                             protocol: item.protocol,
@@ -194,6 +201,7 @@ export function TeamContactDetailDialog({
                             channel: item.channel,
                           });
                         } else if (item.reticulumPeerHash) {
+                          suppressRestoreFocus();
                           onOpenChat({
                             kind: 'chat',
                             protocol: item.protocol,

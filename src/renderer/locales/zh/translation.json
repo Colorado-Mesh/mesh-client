@@ -8605,6 +8605,8 @@
     "removeDeviceFromRosterAria": "从团队名册中删除 {{name}}",
     "rosterDeviceBadge": "名册上的 {{count}}",
     "rosterDeviceStatus": "在团队名册上选择 {{count}} 设备。从“团队名册”选项卡管理选择。",
-    "rosterSelectAfterCreate": "保存后，选择哪些链接设备属于该事件的团队名单。"
+    "rosterSelectAfterCreate": "保存后，选择哪些链接设备属于该事件的团队名单。",
+    "unlinkAria": "断开连接{{protocol}}设备{{name}}",
+    "unitIdTaken": "单元ID {{unitId}}已分配给另一个联系人。"
   }
 }

@@ -8605,6 +8605,8 @@
     "removeDeviceFromRosterAria": "{{name}} takım kadrosundan kaldır",
     "rosterDeviceBadge": "{{count}} listede",
     "rosterDeviceStatus": "Takım Kadrosunda {{count}} cihaz seçildi. Takım Kadrosu sekmesinden seçimi yönetin.",
-    "rosterSelectAfterCreate": "Kaydettikten sonra, etkinlik için Ekip Kadrosuna hangi bağlı cihazların ait olacağını seçin."
+    "rosterSelectAfterCreate": "Kaydettikten sonra, etkinlik için Ekip Kadrosuna hangi bağlı cihazların ait olacağını seçin.",
+    "unlinkAria": "Bağlantıyı kaldır {{protocol}} cihaz {{name}}",
+    "unitIdTaken": "{{unitId}} birim kimliği zaten başka bir kişiye atanmış."
   }
 }

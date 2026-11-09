@@ -50,6 +50,37 @@ describe('contactMessageHistory', () => {
     });
     expect(timeline.map((t) => t.message.payload)).toEqual(['hi rns', 'hi lora']);
     expect(timeline[0]?.protocol).toBe('reticulum');
+    expect(timeline[0]?.reticulumPeerHash).toBe('aa'.repeat(16));
+    expect(timeline[0]?.dmPeer).toBe(99);
+  });
+
+  it('does not use unmatched reticulum sender hash for Jump to Chat', () => {
+    const snaps: LinkPresenceSnapshot[] = [
+      {
+        link: { protocol: 'reticulum', durableKey: 'bb'.repeat(16), onRoster: false },
+        peerNodeId: 7,
+        lastHeardMs: 1,
+        status: 'online',
+        displayName: null,
+      },
+    ];
+    const timeline = buildContactMessageTimeline(snaps, {
+      meshtastic: [],
+      meshcore: [],
+      reticulum: [
+        msg({
+          sender_id: 1,
+          to: 7,
+          payload: 'to peer',
+          timestamp: 10,
+          reticulum_sender_hash: 'cc'.repeat(16),
+          reticulum_destination_hash: 'bb'.repeat(16),
+        }),
+      ],
+    });
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0]?.reticulumPeerHash).toBe('bb'.repeat(16));
+    expect(timeline[0]?.dmPeer).toBe(7);
   });
 
   it('ignores reaction-only rows', () => {

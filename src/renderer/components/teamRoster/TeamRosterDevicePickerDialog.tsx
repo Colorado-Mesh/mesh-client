@@ -1,7 +1,8 @@
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buttonClassName } from '@/renderer/components/ui/Button';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
 
 import { TEAM_PROTOCOL_LABEL_KEYS } from './TeamProtocolBadges';
@@ -34,6 +35,8 @@ export function TeamRosterDevicePickerDialog({
 }: TeamRosterDevicePickerDialogProps) {
   const { t } = useTranslation();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalFocusTrap(panelRef, onClose);
   const candidates = useMemo(() => {
     const links = onlyOffRoster ? member.links.filter((l) => !l.onRoster) : member.links;
     return links;
@@ -66,6 +69,8 @@ export function TeamRosterDevicePickerDialog({
     try {
       await onConfirm(picked);
       onClose();
+    } catch {
+      // catch-no-log-ok Caller toasts; keep dialog open for retry
     } finally {
       setBusy(false);
     }
@@ -74,6 +79,7 @@ export function TeamRosterDevicePickerDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

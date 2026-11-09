@@ -6984,7 +6984,7 @@ void app
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
       // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
-      {
+      try {
         const mod = (
           process.env.VITEST
             ? await import('./ipc/team-roster-handlers')
@@ -6997,6 +6997,11 @@ void app
           }) => void;
         };
         mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+      } catch (err: unknown) {
+        console.error(
+          '[main] team-roster IPC registration failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
       }
       protocol.handle(
         RENDERER_SCHEME,

@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
@@ -37,6 +38,8 @@ export function SuggestToTeamContactModal({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const pendingCreateUnitIdRef = useRef<number | null>(null);
   const members = useTeamRosterStore((s) => s.members);
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
   const setLink = useTeamRosterStore((s) => s.setLink);
@@ -65,15 +68,11 @@ export function SuggestToTeamContactModal({
     );
   }, [members, query]);
 
+  useModalFocusTrap(panelRef, onClose);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
+    pendingCreateUnitIdRef.current = null;
+  }, [candidate.protocol, candidate.durableKey]);
 
   const linkToUnit = async (unitId: number) => {
     setBusy(true);
@@ -86,6 +85,7 @@ export function SuggestToTeamContactModal({
         longName: candidate.longName ?? null,
         identityId: candidate.identityId ?? null,
       });
+      pendingCreateUnitIdRef.current = null;
       onClose();
     } catch (err: unknown) {
       console.warn('[SuggestToTeamContact] link failed ' + errLikeToLogString(err));
@@ -103,15 +103,19 @@ export function SuggestToTeamContactModal({
     }
     setBusy(true);
     try {
-      const unitId = await allocateUnitId();
-      const hasSelf = members.some((m) => m.isSelf);
-      await upsertMember({
-        unitId,
-        callsign: trimmed,
-        role: role.trim() || null,
-        isSelf: preferSelf && !hasSelf,
-        onRoster: false,
-      });
+      let unitId = pendingCreateUnitIdRef.current;
+      if (unitId == null) {
+        unitId = await allocateUnitId();
+        const hasSelf = members.some((m) => m.isSelf);
+        await upsertMember({
+          unitId,
+          callsign: trimmed,
+          role: role.trim() || null,
+          isSelf: preferSelf && !hasSelf,
+          onRoster: false,
+        });
+        pendingCreateUnitIdRef.current = unitId;
+      }
       await setLink({
         unitId,
         protocol: candidate.protocol,
@@ -120,6 +124,7 @@ export function SuggestToTeamContactModal({
         longName: candidate.longName ?? null,
         identityId: candidate.identityId ?? null,
       });
+      pendingCreateUnitIdRef.current = null;
       onClose();
     } catch (err: unknown) {
       console.warn('[SuggestToTeamContact] create failed ' + errLikeToLogString(err));
@@ -132,6 +137,7 @@ export function SuggestToTeamContactModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

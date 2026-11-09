@@ -43,7 +43,6 @@ import {
   RETICULUM_PATH_SETTLE_MS,
 } from '@/renderer/lib/reticulum/reticulumPathMedium';
 import {
-  cheapReticulumPeerLabel,
   filterPreparedReticulumPeerRows,
   type PreparedReticulumPeerRow,
   prepareReticulumPeerRows,
@@ -491,13 +490,9 @@ export default function ReticulumPeerListPanel({
         selectedGroupId,
         groupMemberIds,
       );
-      // Peers tab: cheap labels when browsing; full Nomad/contact overlays while searching
-      // so display names like "NV0N" match even when the path-table name is a hash alias.
-      const searching = debouncedSearchQuery.trim().length > 0;
-      const labelFor =
-        activeTab === 'peers' && !searching
-          ? (peer: ReticulumPeer) => cheapReticulumPeerLabel(peer)
-          : resolvePeerLabel;
+      // Always use the resolved display label for prepare/sort so name order matches what
+      // the user sees (contact / Nomad overlays) and does not reshuffle when search toggles.
+      const labelFor = resolvePeerLabel;
       const prepared = prepareReticulumPeerRows(sourceRows, labelFor);
       const filtered = filterPreparedReticulumPeerRows(prepared, debouncedSearchQuery);
       const sorted = sortPreparedReticulumPeerRows(filtered, sortKey, sortDir);

@@ -438,9 +438,9 @@ export default function NodeDetailModal({
     };
   }, [node?.node_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close on Escape (modal only)
+  // Close on Escape (modal only). Skip while suggest overlay owns Escape.
   useEffect(() => {
-    if (variant === 'pane') return;
+    if (variant === 'pane' || suggestTeam != null) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -448,7 +448,7 @@ export default function NodeDetailModal({
     return () => {
       document.removeEventListener('keydown', handleKey);
     };
-  }, [onClose, variant]);
+  }, [onClose, variant, suggestTeam]);
 
   // Reset all state when node changes
   useEffect(() => {
@@ -2597,9 +2597,9 @@ export default function NodeDetailModal({
         >
           {detailContent}
         </div>
+        {suggestTeamContactModal}
       </div>
       {RemoteAuthModal}
-      {suggestTeamContactModal}
     </>
   );
 }

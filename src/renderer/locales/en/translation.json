@@ -7139,7 +7139,9 @@
     "removeDeviceFromRosterAria": "Remove {{name}} from Team Roster",
     "rosterDeviceBadge": "{{count}} on roster",
     "rosterDeviceStatus": "{{count}} device(s) selected on Team Roster. Use Manage devices on the Contact Card or Team Roster tab to change the set.",
-    "rosterSelectAfterCreate": "After you save, select which linked devices belong on Team Roster for the event."
+    "rosterSelectAfterCreate": "After you save, select which linked devices belong on Team Roster for the event.",
+    "unlinkAria": "Unlink {{protocol}} device {{name}}",
+    "unitIdTaken": "Unit ID {{unitId}} is already assigned to another contact."
   },
   "takContacts": {
     "affiliationFriend": "Friendly",

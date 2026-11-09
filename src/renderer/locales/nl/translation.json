@@ -8605,6 +8605,8 @@
     "removeDeviceFromRosterAria": "Verwijder {{name}} uit teamrooster",
     "rosterDeviceBadge": "{{count}} op rooster",
     "rosterDeviceStatus": "{{count}} apparaat(en) geselecteerd in teamrooster. Beheer de selectie via het tabblad Teamrooster.",
-    "rosterSelectAfterCreate": "Nadat je hebt opgeslagen, selecteer je welke gekoppelde apparaten in het teamrooster voor het evenement horen."
+    "rosterSelectAfterCreate": "Nadat je hebt opgeslagen, selecteer je welke gekoppelde apparaten in het teamrooster voor het evenement horen.",
+    "unlinkAria": "Ontkoppel {{protocol}} device {{name}}",
+    "unitIdTaken": "Unit-ID {{unitId}} is al toegewezen aan een andere contactpersoon."
   }
 }

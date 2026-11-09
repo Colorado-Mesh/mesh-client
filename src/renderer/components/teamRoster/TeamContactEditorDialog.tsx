@@ -1,9 +1,10 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
@@ -21,7 +22,12 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
   const { addToast } = useToast();
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
   const allocateUnitId = useTeamRosterStore((s) => s.allocateUnitId);
+  const members = useTeamRosterStore((s) => s.members);
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { suppressRestoreFocus } = useModalFocusTrap(panelRef, () => {
+    onClose();
+  });
 
   const [unitId, setUnitId] = useState(String(member?.unitId ?? ''));
   const [callsign, setCallsign] = useState(member?.callsign ?? '');
@@ -48,16 +54,6 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
     };
   }, [isCreate, allocateUnitId, addToast, t]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
   const handleSave = async () => {
     const parsedUnit = Number.parseInt(unitId, 10);
     if (
@@ -66,6 +62,10 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
       parsedUnit > TEAM_UNIT_ID_MAX
     ) {
       addToast(t('teamRoster.saveFailed'), 'error');
+      return;
+    }
+    if (isCreate && members.some((m) => m.unitId === parsedUnit)) {
+      addToast(t('teamRoster.unitIdTaken', { unitId: parsedUnit }), 'error');
       return;
     }
     const trimmed = callsign.trim();
@@ -81,6 +81,7 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
         role: role.trim() || null,
         isSelf,
       });
+      if (isCreate) suppressRestoreFocus();
       onClose(isCreate ? parsedUnit : null);
     } catch (err: unknown) {
       console.warn('[TeamContactEditor] save failed ' + errLikeToLogString(err));
@@ -93,6 +94,7 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

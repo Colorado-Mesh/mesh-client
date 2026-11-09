@@ -189,6 +189,11 @@ export default function TeamRosterPanel({
     });
   };
 
+  const selectedRecipientCount = useMemo(
+    () => rosterMembers.reduce((n, m) => n + (selectedUnitIds.has(m.unitId) ? 1 : 0), 0),
+    [rosterMembers, selectedUnitIds],
+  );
+
   const selectAllRoster = () => {
     setSelectedUnitIds(new Set(rosterMembers.map((m) => m.unitId)));
   };
@@ -477,10 +482,10 @@ export default function TeamRosterPanel({
                 <button
                   type="button"
                   className={buttonClassName('primary', 'md')}
-                  disabled={fanOutBusy || !teamDraft.trim() || selectedUnitIds.size === 0}
+                  disabled={fanOutBusy || !teamDraft.trim() || selectedRecipientCount === 0}
                   onClick={handleTeamSend}
                 >
-                  {t('teamRoster.teamSend', { count: selectedUnitIds.size })}
+                  {t('teamRoster.teamSend', { count: selectedRecipientCount })}
                 </button>
               </div>
             </section>

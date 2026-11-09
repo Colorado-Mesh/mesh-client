@@ -275,8 +275,9 @@ export default function TeamContactsPanel({
                         <button
                           type="button"
                           className={buttonClassName('secondary', 'sm')}
-                          aria-label={t('teamRoster.unlink', {
+                          aria-label={t('teamRoster.unlinkAria', {
                             protocol: t(TEAM_PROTOCOL_LABEL_KEYS[link.protocol]),
+                            name: link.longName?.trim() || link.durableKey,
                           })}
                           onClick={() => {
                             void handleUnlink(member.unitId, link.protocol, link.durableKey);

@@ -103,12 +103,12 @@ export function buildContactMessageTimeline(
       if (filter.protocol === 'reticulum') {
         const sender = msg.reticulum_sender_hash?.toLowerCase() ?? null;
         const dest = msg.reticulum_destination_hash?.toLowerCase() ?? null;
+        // Prefer a filter-matched peer hash for Jump to Chat; never fall back to an
+        // unmatched sender/dest hash (can be the local identity).
         reticulumPeerHash =
           (sender && filter.reticulumHashes.has(sender) ? sender : null) ??
-          (dest && filter.reticulumHashes.has(dest) ? dest : null) ??
-          sender ??
-          dest;
-        dmPeer = msg.sender_id;
+          (dest && filter.reticulumHashes.has(dest) ? dest : null);
+        dmPeer = filter.nodeIds.has(msg.sender_id >>> 0) ? msg.sender_id : (msg.to ?? null);
       } else if (direct) {
         dmPeer = filter.nodeIds.has(msg.sender_id >>> 0) ? msg.sender_id : (msg.to ?? null);
       } else {
