@@ -33,6 +33,12 @@ export interface ChatRfHopLabelProps {
   describeRoute?: (msg: ChatMessage) => ChatMessageRouteView | undefined;
 }
 
+/**
+ * Close function of the pill whose bubble is open. One bubble at a time: the pointer can rest on
+ * one pill while keyboard focus moves to another.
+ */
+let closeOpenHopTooltip: (() => void) | null = null;
+
 /** Class/title for the hop pill when a late RF correction mark is active. */
 export function chatRfHopLabelPresentation(
   corrected: boolean,
@@ -83,6 +89,10 @@ export function ChatRfHopLabel({
   );
   const ref = useRef<HTMLButtonElement>(null);
   const bubbleId = useId();
+  // Stable per pill so the module-level open-bubble slot can tell pills apart.
+  const [closeThisTooltip] = useState(() => () => {
+    setTooltip(null);
+  });
   const hopsText = t('nodeDetailModal.hopLabel', { count: rxHops });
 
   const show = () => {
@@ -105,9 +115,12 @@ export function ChatRfHopLabel({
       view,
       refined,
     });
+    if (closeOpenHopTooltip !== closeThisTooltip) closeOpenHopTooltip?.();
+    closeOpenHopTooltip = closeThisTooltip;
     setTooltip({ text, pos: computeInstantTooltipPosition(rect) });
   };
   const hide = () => {
+    if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
     setTooltip(null);
   };
 
@@ -116,13 +129,21 @@ export function ChatRfHopLabel({
   useEffect(() => {
     if (!open) return;
     const onScroll = () => {
-      setTooltip(null);
+      if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
+      closeThisTooltip();
     };
     window.addEventListener('scroll', onScroll, true);
     return () => {
       window.removeEventListener('scroll', onScroll, true);
     };
-  }, [open]);
+  }, [open, closeThisTooltip]);
+  // A virtualized row can unmount while its bubble is open.
+  useEffect(
+    () => () => {
+      if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
+    },
+    [closeThisTooltip],
+  );
 
   return (
     <>

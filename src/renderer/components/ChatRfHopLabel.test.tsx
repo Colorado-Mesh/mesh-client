@@ -130,6 +130,36 @@ describe('ChatRfHopLabel', () => {
     expect(screen.queryByRole('tooltip')).toBeNull();
   });
 
+  it('keeps one bubble open when the pointer and keyboard focus are on different pills', () => {
+    const { container } = render(
+      <>
+        <ChatRfHopLabel
+          rxHops={2}
+          msg={message('ch:0:a:x')}
+          senderName="Alpha"
+          routeDetail="none"
+        />
+        <ChatRfHopLabel
+          rxHops={3}
+          msg={message('ch:0:b:x')}
+          senderName="Bravo"
+          routeDetail="none"
+        />
+      </>,
+    );
+    const [first, second] = Array.from(container.querySelectorAll('button'));
+    fireEvent.mouseEnter(first);
+    expect(screen.getAllByRole('tooltip')).toHaveLength(1);
+    fireEvent.focus(second);
+    const open = screen.getAllByRole('tooltip');
+    expect(open).toHaveLength(1);
+    expect(open[0].textContent).toContain('Reached you in 3 hops');
+    expect(first).not.toHaveAttribute('aria-describedby');
+    // Leaving the first pill afterwards must not close the second pill's bubble.
+    fireEvent.mouseLeave(first);
+    expect(screen.getAllByRole('tooltip')).toHaveLength(1);
+  });
+
   it('hides the bubble when the chat scrolls under it', () => {
     const { pill } = renderLabel();
     fireEvent.mouseEnter(pill);
