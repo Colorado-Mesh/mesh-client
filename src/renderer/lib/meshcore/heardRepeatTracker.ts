@@ -57,6 +57,11 @@ export function setMeshcoreHeardRepeatChannelSecrets(
   }
 }
 
+/** Configured channel keys by radio channel index (also read by the late hop correction). */
+export function getMeshcoreChannelSecretsByIndex(): ReadonlyMap<number, Uint8Array> {
+  return channelSecretsByIndex;
+}
+
 export function clearMeshcoreHeardRepeatChannelSecrets(): void {
   channelSecretsByIndex.clear();
 }

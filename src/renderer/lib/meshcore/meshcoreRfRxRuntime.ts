@@ -11,6 +11,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import {
   meshCorePathInvariantPayloadId,
+  meshCorePathInvariantPayloadIdHex,
   parseMeshCoreRfPacket,
 } from '../../../shared/meshcoreRfPacketParse';
 import { meshCorePayloadTypeNibble } from '../../../shared/meshcoreRfPath';
@@ -24,7 +25,10 @@ import {
   meshtasticSenderIdForRawLogFallback,
   type PacketClass,
 } from '../foreignLoraDetection';
-import { applyMeshcoreLateRfHopEnrichment } from '../meshcoreLateRfHopEnrichment';
+import {
+  applyMeshcoreLateRfHopEnrichment,
+  decodeMeshcoreLateHopGroupText,
+} from '../meshcoreLateRfHopEnrichment';
 import { buildMeshcorePathResolutionFromNodes } from '../meshcorePathChainDisplay';
 import {
   meshcoreIsDatagramPayloadType,
@@ -49,6 +53,7 @@ import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
 import {
+  getMeshcoreChannelSecretsByIndex,
   hasOpenHeardRepeatWindow,
   recordMeshcoreRfRx,
   resolveMeshcoreHeardRepeaterFromNode,
@@ -846,11 +851,15 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
     pushMeshcoreRfRawPacketLog(deps, rxEntry);
     applyMeshcoreHeardRepeatFromRfRx(ctx, effectiveFromNodeId, rawU8, snr, rssi, now, cachedDeps);
 
+    const lateHopIdentityId = deps.meshcoreIdentityIdRef.current;
     if (
+      lateHopIdentityId &&
       ctx.parseOk &&
+      ctx.parsed.ok &&
       (ctx.payloadTypeString === 'TXT_MSG' || ctx.payloadTypeString === 'GRP_TXT')
     ) {
-      applyMeshcoreLateRfHopEnrichment(deps.meshcoreIdentityIdRef.current, {
+      const { payloadTypeNibble, innerPayload } = ctx.parsed;
+      applyMeshcoreLateRfHopEnrichment(lateHopIdentityId, {
         payloadTypeString: ctx.payloadTypeString,
         hopCount: ctx.hopCount,
         fromNodeId: effectiveFromNodeId,
@@ -858,6 +867,15 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
         parseOk: true,
         now,
         myNodeNum: deps.myNodeNumRef.current,
+        payloadIdHex: meshCorePathInvariantPayloadIdHex(payloadTypeNibble, innerPayload),
+        ...(ctx.payloadTypeString === 'GRP_TXT'
+          ? {
+              groupText: decodeMeshcoreLateHopGroupText(
+                innerPayload,
+                getMeshcoreChannelSecretsByIndex(),
+              ),
+            }
+          : {}),
       });
     }
 
