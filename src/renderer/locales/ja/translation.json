@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "{{count}} デバイスがチーム名簿で選択されました。 [チーム名簿] タブから選択を管理します。",
     "rosterSelectAfterCreate": "保存した後、イベントのチーム名簿にどのリンクされたデバイスが属するかを選択します。",
     "unlinkAria": "{{protocol}}デバイス{{name}}のリンクを解除",
-    "unitIdTaken": "ユニットID {{unitId}}はすでに別の連絡先に割り当てられています。"
+    "unitIdTaken": "ユニットID {{unitId}}はすでに別の連絡先に割り当てられています。",
+    "teamMessagePrefix": "チームメッセージ：",
+    "teamComposeCount": "{{count}}/{{max}}"
   }
 }

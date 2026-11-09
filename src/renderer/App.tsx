@@ -733,7 +733,11 @@ function AppContent() {
       ) ?? {};
     return Boolean(s.alwaysShowMessageActions);
   });
-  const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
+  /** Peer id + protocol so a cross-protocol jump cannot open the wrong ChatPanel's DM tab. */
+  const [pendingDmTarget, setPendingDmTarget] = useState<{
+    protocol: MeshProtocol;
+    peer: number;
+  } | null>(null);
   const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
   const [pendingMessageFocus, setPendingMessageFocus] = useState<PendingMessageFocus | null>(null);
   const [globalMessageSearchOpen, setGlobalMessageSearchOpen] = useState(false);
@@ -3336,7 +3340,7 @@ function AppContent() {
       if (target.kind === 'rrc') {
         focusRrcNotificationTarget(target, useRrcSessionStore.getState());
       } else if (target.dmPeer != null) {
-        setPendingDmTarget(target.dmPeer);
+        setPendingDmTarget({ protocol: target.protocol, peer: target.dmPeer });
       } else if (target.channel != null) {
         setPendingChannelTarget(target.channel);
       }
@@ -4188,10 +4192,17 @@ function AppContent() {
     protocolDisconnect,
   ]);
 
-  const handleMessageNode = useCallback((nodeNum: number) => {
-    setPendingDmTarget(nodeNum);
-    setActiveTab(1); // Switch to Chat tab
-  }, []);
+  const handleMessageNode = useCallback(
+    (nodeNum: number) => {
+      const messageProtocol =
+        detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+          ? detailModalProtocol
+          : protocol;
+      setPendingDmTarget({ protocol: messageProtocol, peer: nodeNum });
+      setActiveTab(1); // Switch to Chat tab
+    },
+    [detailModalProtocol, protocol],
+  );
 
   const handleDeleteNode = useCallback(
     async (nodeNum: number) => {
@@ -4986,7 +4997,9 @@ function AppContent() {
                               }
                               connectionType={activeConnectionView.state.connectionType}
                               nodes={chatNodesForPanel}
-                              initialDmTarget={pendingDmTarget}
+                              initialDmTarget={
+                                pendingDmTarget?.protocol === protocol ? pendingDmTarget.peer : null
+                              }
                               onDmTargetConsumed={handleDmTargetConsumed}
                               initialChannelTarget={pendingChannelTarget}
                               onChannelTargetConsumed={handleChannelTargetConsumed}

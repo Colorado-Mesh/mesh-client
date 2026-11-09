@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "{{count}} dispositivo(s) seleccionados en la lista del equipo. Administre la selección desde la pestaña Lista del equipo.",
     "rosterSelectAfterCreate": "Después de guardar, seleccione qué dispositivos vinculados pertenecen a la lista del equipo para el evento.",
     "unlinkAria": "Desvincular {{protocol}} dispositivo {{name}}",
-    "unitIdTaken": "La unidad ID {{unitId}} ya está asignada a otro contacto."
+    "unitIdTaken": "La unidad ID {{unitId}} ya está asignada a otro contacto.",
+    "teamMessagePrefix": "Mensaje del equipo:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }

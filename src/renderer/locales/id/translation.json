@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "{{count}} perangkat dipilih pada Daftar Tim. Kelola pilihan dari tab Daftar Nama Tim.",
     "rosterSelectAfterCreate": "Setelah Anda menyimpan, pilih perangkat tertaut mana yang termasuk dalam Daftar Tim untuk acara tersebut.",
     "unlinkAria": "Putuskan Tautan {{protocol}} Device {{name}}",
-    "unitIdTaken": "ID Unit {{unitId}} sudah ditetapkan ke kontak lain."
+    "unitIdTaken": "ID Unit {{unitId}} sudah ditetapkan ke kontak lain.",
+    "teamMessagePrefix": "Pesan Tim:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }

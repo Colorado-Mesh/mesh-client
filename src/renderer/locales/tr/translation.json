@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "Takım Kadrosunda {{count}} cihaz seçildi. Takım Kadrosu sekmesinden seçimi yönetin.",
     "rosterSelectAfterCreate": "Kaydettikten sonra, etkinlik için Ekip Kadrosuna hangi bağlı cihazların ait olacağını seçin.",
     "unlinkAria": "Bağlantıyı kaldır {{protocol}} cihaz {{name}}",
-    "unitIdTaken": "{{unitId}} birim kimliği zaten başka bir kişiye atanmış."
+    "unitIdTaken": "{{unitId}} birim kimliği zaten başka bir kişiye atanmış.",
+    "teamMessagePrefix": "Ekip Mesajı:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }

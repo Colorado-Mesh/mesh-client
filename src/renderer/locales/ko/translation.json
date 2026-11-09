@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "팀 명단에서 {{count}} 장치가 선택되었습니다. 팀 명단 탭에서 선택을 관리합니다.",
     "rosterSelectAfterCreate": "저장한 후 이벤트에 대한 팀 명단에 속하는 연결된 장치를 선택하세요.",
     "unlinkAria": "{{protocol}} DEVICE {{name}} 연결 해제",
-    "unitIdTaken": "유닛 ID {{unitId}} 은 (는) 이미 다른 연락처에 할당되어 있습니다."
+    "unitIdTaken": "유닛 ID {{unitId}} 은 (는) 이미 다른 연락처에 할당되어 있습니다.",
+    "teamMessagePrefix": "팀 메시지:",
+    "teamComposeCount": "{{count}}/{{max}}"
   }
 }

@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "在团队名册上选择 {{count}} 设备。从“团队名册”选项卡管理选择。",
     "rosterSelectAfterCreate": "保存后，选择哪些链接设备属于该事件的团队名单。",
     "unlinkAria": "断开连接{{protocol}}设备{{name}}",
-    "unitIdTaken": "单元ID {{unitId}}已分配给另一个联系人。"
+    "unitIdTaken": "单元ID {{unitId}}已分配给另一个联系人。",
+    "teamMessagePrefix": "团队消息：",
+    "teamComposeCount": "{{count}}/{{max}}"
   }
 }

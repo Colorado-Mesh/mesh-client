@@ -13,6 +13,32 @@ import {
 import { ToastProvider } from '../Toast';
 import TeamRosterPanel from './TeamRosterPanel';
 
+vi.mock('@/renderer/lib/teamRoster/useTeamRosterLiveData', () => ({
+  useTeamRosterLiveData: () => ({
+    nodesByProtocol: {
+      meshtastic: new Map([
+        [
+          77,
+          {
+            node_id: 77,
+            long_name: 'Golf Radio',
+            short_name: 'GLF',
+            hw_model: '',
+            snr: 0,
+            battery: 0,
+            last_heard: Date.now(),
+            latitude: null,
+            longitude: null,
+          },
+        ],
+      ]),
+      meshcore: new Map(),
+      reticulum: new Map(),
+    },
+    reticulumByHash: new Map(),
+  }),
+}));
+
 function renderPanel(ui?: ReactElement) {
   return render(<ToastProvider>{ui ?? <TeamRosterPanel />}</ToastProvider>);
 }
@@ -63,7 +89,8 @@ describe('TeamRosterPanel', () => {
   it('fans out a team message to selected recipients', async () => {
     const user = userEvent.setup();
     const onSendDm = vi.fn().mockReturnValue(true);
-    renderPanel(<TeamRosterPanel onSendDm={onSendDm} />);
+    const onOpenChat = vi.fn();
+    renderPanel(<TeamRosterPanel onSendDm={onSendDm} onOpenChat={onOpenChat} />);
     await user.click(screen.getByRole('checkbox', { name: /select golf/i }));
     await user.type(screen.getByLabelText(/team message body/i), 'All stations check');
     await user.click(screen.getByRole('button', { name: /send to 1/i }));
@@ -71,9 +98,10 @@ describe('TeamRosterPanel', () => {
       expect.objectContaining({
         protocol: 'meshtastic',
         destination: 77,
-        text: 'All stations check',
+        text: 'Team Message: All stations check',
       }),
     );
+    expect(onOpenChat).not.toHaveBeenCalled();
   });
 
   it('requires selecting devices when adding a contact card to the roster', async () => {

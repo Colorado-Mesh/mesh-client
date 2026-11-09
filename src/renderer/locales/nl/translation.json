@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "{{count}} apparaat(en) geselecteerd in teamrooster. Beheer de selectie via het tabblad Teamrooster.",
     "rosterSelectAfterCreate": "Nadat je hebt opgeslagen, selecteer je welke gekoppelde apparaten in het teamrooster voor het evenement horen.",
     "unlinkAria": "Ontkoppel {{protocol}} device {{name}}",
-    "unitIdTaken": "Unit-ID {{unitId}} is al toegewezen aan een andere contactpersoon."
+    "unitIdTaken": "Unit-ID {{unitId}} is al toegewezen aan een andere contactpersoon.",
+    "teamMessagePrefix": "Teambericht:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }

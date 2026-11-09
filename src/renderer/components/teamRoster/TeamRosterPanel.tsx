@@ -5,8 +5,14 @@ import { useToast } from '@/renderer/components/Toast';
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
 import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
+import {
+  countMessageWireBytes,
+  getMeshcoreDmPayloadLimit,
+} from '@/renderer/lib/chatComposerLimits';
 import type { ChatNotificationTarget } from '@/renderer/lib/chatDesktopNotifications';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MessagesByProtocol } from '@/renderer/lib/teamRoster/contactMessageHistory';
 import {
   type MemberPresenceSnapshot,
@@ -14,8 +20,10 @@ import {
 } from '@/renderer/lib/teamRoster/contactPresence';
 import { fanOutTeamMessage } from '@/renderer/lib/teamRoster/teamMessageFanOut';
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
+import { useConnectionStore } from '@/renderer/stores/connectionStore';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
+import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
 import { rosterLinksOf } from '@/shared/teamRosterTypes';
 
@@ -59,6 +67,19 @@ export default function TeamRosterPanel({
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
   const setLinkRoster = useTeamRosterStore((s) => s.setLinkRoster);
   const { nodesByProtocol, reticulumByHash } = useTeamRosterLiveData();
+  const connections = useConnectionStore((s) => s.connections);
+  const selfNodeIdsByProtocol = useMemo(() => {
+    const map = new Map<MeshProtocol, ReadonlySet<number>>();
+    for (const protocol of REGISTERED_MESH_PROTOCOLS) {
+      const identityId =
+        getIdentityIdForProtocol(protocol) ?? getOfflineIdentityIdForProtocol(protocol);
+      const myNodeNum = connections[identityId]?.myNodeNum ?? 0;
+      const ids = new Set<number>();
+      if (myNodeNum > 0) ids.add(myNodeNum >>> 0);
+      map.set(protocol, ids);
+    }
+    return map;
+  }, [connections]);
   const rosterMembers = useMemo(() => members.filter((m) => m.onRoster), [members]);
   const offRosterMembers = useMemo(() => members.filter((m) => !m.onRoster), [members]);
   const presenceByUnit = useMemo(() => {
@@ -221,15 +242,22 @@ export default function TeamRosterPanel({
     });
   };
 
+  const teamMessagePrefix = t('teamRoster.teamMessagePrefix');
+  const teamComposeMaxChars = useMemo(() => {
+    const prefixBytes = countMessageWireBytes(teamMessagePrefix);
+    return Math.max(1, getMeshcoreDmPayloadLimit() - prefixBytes);
+  }, [teamMessagePrefix]);
+
   const handleTeamSend = () => {
     if (!onSendDm) return;
-    const text = teamDraft.trim();
-    if (!text) return;
+    const body = teamDraft.trim();
+    if (!body) return;
     const recipients = rosterMembers.filter((m) => selectedUnitIds.has(m.unitId));
     if (recipients.length === 0) {
       addToast(t('teamRoster.teamSendNoRecipients'), 'error');
       return;
     }
+    const text = `${teamMessagePrefix}${body}`;
     setFanOutBusy(true);
     try {
       const { sent, skipped } = fanOutTeamMessage({
@@ -237,6 +265,7 @@ export default function TeamRosterPanel({
         presenceByUnit,
         text,
         sendDm: onSendDm,
+        selfNodeIdsByProtocol,
       });
       addToast(t('teamRoster.teamSendResult', { sent, skipped }), sent > 0 ? 'success' : 'error');
       if (sent > 0) setTeamDraft('');
@@ -481,13 +510,20 @@ export default function TeamRosterPanel({
               <textarea
                 className={`${INPUT_CLASS} min-h-[5rem]`}
                 value={teamDraft}
+                maxLength={teamComposeMaxChars}
                 onChange={(e) => {
-                  setTeamDraft(e.target.value);
+                  setTeamDraft(e.target.value.slice(0, teamComposeMaxChars));
                 }}
                 aria-label={t('teamRoster.teamComposeAria')}
                 placeholder={t('teamRoster.teamComposePlaceholder')}
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ink-400 text-label" aria-live="polite">
+                  {t('teamRoster.teamComposeCount', {
+                    count: teamDraft.length,
+                    max: teamComposeMaxChars,
+                  })}
+                </span>
                 <button
                   type="button"
                   className={buttonClassName('primary', 'md')}

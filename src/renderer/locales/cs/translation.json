@@ -8690,6 +8690,8 @@
     "rosterDeviceStatus": "{{count}} zařízení vybraných na soupisce týmu. Spravujte výběr na kartě Soupiska týmu.",
     "rosterSelectAfterCreate": "Po uložení vyberte, která propojená zařízení patří na soupisku týmu pro danou událost.",
     "unlinkAria": "Odpojit {{protocol}} zařízení {{name}}",
-    "unitIdTaken": "ID jednotky {{unitId}} je již přiřazeno jinému kontaktu."
+    "unitIdTaken": "ID jednotky {{unitId}} je již přiřazeno jinému kontaktu.",
+    "teamMessagePrefix": "Zpráva týmu:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }

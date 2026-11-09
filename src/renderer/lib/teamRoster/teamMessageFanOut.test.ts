@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { TeamMember } from '@/shared/teamRosterTypes';
 
 import type { MemberPresenceSnapshot } from './contactPresence';
-import { fanOutTeamMessage } from './teamMessageFanOut';
+import { activePresenceFanOutLinks, fanOutTeamMessage } from './teamMessageFanOut';
 
 function member(
   partial: Partial<TeamMember> & Pick<TeamMember, 'unitId' | 'callsign'>,
@@ -19,7 +19,7 @@ function member(
 }
 
 describe('fanOutTeamMessage', () => {
-  it('sends on each recipient last-active protocol', () => {
+  it('sends to every online/stale roster device for each recipient', () => {
     const sendDm = vi.fn().mockReturnValue(true);
     const presenceByUnit = new Map<number, MemberPresenceSnapshot>([
       [
@@ -28,7 +28,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 1,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
+            link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: true },
             peerNodeId: 10,
             lastHeardMs: 100,
             status: 'online',
@@ -36,11 +36,32 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
+              link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: true },
               peerNodeId: 10,
               lastHeardMs: 100,
               status: 'online',
               displayName: 'A',
+            },
+            {
+              link: { protocol: 'meshcore', durableKey: '20', nodeId: 20, onRoster: true },
+              peerNodeId: 20,
+              lastHeardMs: 90,
+              status: 'online',
+              displayName: 'A-mc',
+            },
+            {
+              link: { protocol: 'reticulum', durableKey: 'aa'.repeat(16), onRoster: true },
+              peerNodeId: 30,
+              lastHeardMs: 80,
+              status: 'stale',
+              displayName: 'A-rns',
+            },
+            {
+              link: { protocol: 'meshtastic', durableKey: '11', nodeId: 11, onRoster: true },
+              peerNodeId: 11,
+              lastHeardMs: 1,
+              status: 'offline',
+              displayName: 'A-old',
             },
           ],
         },
@@ -51,16 +72,16 @@ describe('fanOutTeamMessage', () => {
           unitId: 2,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshcore', durableKey: '20', nodeId: 20, onRoster: false },
-            peerNodeId: 20,
+            link: { protocol: 'meshcore', durableKey: '40', nodeId: 40, onRoster: true },
+            peerNodeId: 40,
             lastHeardMs: 200,
             status: 'online',
             displayName: 'B',
           },
           links: [
             {
-              link: { protocol: 'meshcore', durableKey: '20', nodeId: 20, onRoster: false },
-              peerNodeId: 20,
+              link: { protocol: 'meshcore', durableKey: '40', nodeId: 40, onRoster: true },
+              peerNodeId: 40,
               lastHeardMs: 200,
               status: 'online',
               displayName: 'B',
@@ -80,25 +101,26 @@ describe('fanOutTeamMessage', () => {
       sendDm,
     });
 
-    expect(result.sent).toBe(2);
+    expect(result.sent).toBe(4);
     expect(result.skipped).toBe(0);
-    expect(sendDm).toHaveBeenCalledTimes(2);
-    expect(sendDm).toHaveBeenNthCalledWith(1, {
-      protocol: 'meshtastic',
-      destination: 10,
-      reticulumHash: null,
-      text: 'Parade check',
-    });
-    expect(sendDm).toHaveBeenNthCalledWith(2, {
-      protocol: 'meshcore',
-      destination: 20,
-      reticulumHash: null,
-      text: 'Parade check',
-    });
+    expect(sendDm).toHaveBeenCalledTimes(4);
+    expect(sendDm).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'meshtastic', destination: 10, text: 'Parade check' }),
+    );
+    expect(sendDm).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'meshcore', destination: 20, text: 'Parade check' }),
+    );
+    expect(sendDm).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'reticulum', destination: 30, text: 'Parade check' }),
+    );
+    expect(sendDm).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'meshcore', destination: 40, text: 'Parade check' }),
+    );
+    expect(sendDm).not.toHaveBeenCalledWith(expect.objectContaining({ destination: 11 }));
   });
 
-  it('skips when no link or destination and when send fails', () => {
-    const sendDm = vi.fn().mockReturnValueOnce(false);
+  it('skips when no link or online destination and when all sends fail', () => {
+    const sendDm = vi.fn().mockReturnValue(false);
     const presenceByUnit = new Map<number, MemberPresenceSnapshot>([
       [
         1,
@@ -115,7 +137,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 2,
           aggregateStatus: 'stale',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: 'x', onRoster: false },
+            link: { protocol: 'meshtastic', durableKey: 'x', onRoster: true },
             peerNodeId: null,
             lastHeardMs: 1,
             status: 'stale',
@@ -123,7 +145,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: 'x', onRoster: false },
+              link: { protocol: 'meshtastic', durableKey: 'x', onRoster: true },
               peerNodeId: null,
               lastHeardMs: 1,
               status: 'stale',
@@ -138,7 +160,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 3,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: false },
+            link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: true },
             peerNodeId: 30,
             lastHeardMs: 50,
             status: 'online',
@@ -146,7 +168,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: false },
+              link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: true },
               peerNodeId: 30,
               lastHeardMs: 50,
               status: 'online',
@@ -177,10 +199,13 @@ describe('fanOutTeamMessage', () => {
     ]);
   });
 
-  it('falls back to another roster link when last-active send fails', () => {
-    const sendDm = vi
-      .fn()
-      .mockImplementation((args: { protocol: string }) => args.protocol === 'meshtastic');
+  it('skips local-node destinations but still sends other online devices', () => {
+    const sendDm = vi.fn().mockReturnValue(true);
+    const selfNodeIdsByProtocol = new Map([
+      ['meshtastic' as const, new Set([10])],
+      ['meshcore' as const, new Set<number>()],
+      ['reticulum' as const, new Set<number>()],
+    ]);
     const presenceByUnit = new Map<number, MemberPresenceSnapshot>([
       [
         1,
@@ -188,34 +213,26 @@ describe('fanOutTeamMessage', () => {
           unitId: 1,
           aggregateStatus: 'online',
           lastActive: {
-            link: {
-              protocol: 'reticulum',
-              durableKey: 'aa'.repeat(16),
-              onRoster: true,
-            },
-            peerNodeId: 99,
+            link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: true },
+            peerNodeId: 10,
             lastHeardMs: 200,
             status: 'online',
-            displayName: 'RNS',
+            displayName: 'SelfRadio',
           },
           links: [
             {
-              link: {
-                protocol: 'reticulum',
-                durableKey: 'aa'.repeat(16),
-                onRoster: true,
-              },
-              peerNodeId: 99,
+              link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: true },
+              peerNodeId: 10,
               lastHeardMs: 200,
               status: 'online',
-              displayName: 'RNS',
+              displayName: 'SelfRadio',
             },
             {
-              link: { protocol: 'meshtastic', durableKey: '42', nodeId: 42, onRoster: true },
-              peerNodeId: 42,
+              link: { protocol: 'meshtastic', durableKey: '77', nodeId: 77, onRoster: true },
+              peerNodeId: 77,
               lastHeardMs: 50,
-              status: 'stale',
-              displayName: 'MT',
+              status: 'online',
+              displayName: 'Peer',
             },
           ],
         },
@@ -223,23 +240,32 @@ describe('fanOutTeamMessage', () => {
     ]);
 
     const result = fanOutTeamMessage({
-      recipients: [member({ unitId: 1, callsign: 'Ops' })],
+      recipients: [member({ unitId: 1, callsign: 'LinkedLocal' })],
       presenceByUnit,
-      text: 'fallback',
+      text: 'no self dm',
       sendDm,
+      selfNodeIdsByProtocol,
     });
 
     expect(result.sent).toBe(1);
-    expect(result.skipped).toBe(0);
-    expect(sendDm).toHaveBeenCalledTimes(2);
-    expect(sendDm).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ protocol: 'reticulum', destination: 99 }),
+    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendDm).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'meshtastic', destination: 77, text: 'no self dm' }),
     );
-    expect(sendDm).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ protocol: 'meshtastic', destination: 42, text: 'fallback' }),
-    );
-    expect(result.results[0]?.protocol).toBe('meshtastic');
+    expect(activePresenceFanOutLinks(presenceByUnit.get(1), selfNodeIdsByProtocol)).toHaveLength(1);
+  });
+
+  it('skips isSelf roster members without calling send', () => {
+    const sendDm = vi.fn().mockReturnValue(true);
+    const result = fanOutTeamMessage({
+      recipients: [member({ unitId: 1, callsign: 'Me', isSelf: true })],
+      presenceByUnit: new Map(),
+      text: 'hello',
+      sendDm,
+    });
+    expect(result.sent).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.results[0]?.skipReason).toBe('no_destination');
+    expect(sendDm).not.toHaveBeenCalled();
   });
 });

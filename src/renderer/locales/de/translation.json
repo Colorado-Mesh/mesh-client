@@ -8607,6 +8607,8 @@
     "rosterDeviceStatus": "{{count}} Geräte im Team Roster ausgewählt. Verwalten Sie die Auswahl auf der Registerkarte „Teamliste“.",
     "rosterSelectAfterCreate": "Wählen Sie nach dem Speichern aus, welche verknüpften Geräte zur Teamliste für die Veranstaltung gehören.",
     "unlinkAria": "Verknüpfung von {{protocol}} Gerät {{name}} aufheben",
-    "unitIdTaken": "Die Einheiten-ID {{unitId}} ist bereits einem anderen Kontakt zugewiesen."
+    "unitIdTaken": "Die Einheiten-ID {{unitId}} ist bereits einem anderen Kontakt zugewiesen.",
+    "teamMessagePrefix": "Teamnachricht:",
+    "teamComposeCount": "{{count}} / {{max}}"
   }
 }
