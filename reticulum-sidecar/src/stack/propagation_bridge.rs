@@ -885,9 +885,81 @@ fn adopt_legacy_client_have_ids(storage_dir: &Path, new_path: &Path) {
     }
 }
 
+/// rsLXMF offline migrator refuses inventories above this size (see
+/// `propagation_store_v2/migration.rs` `MAX_INVENTORY`). Matching that message lets us
+/// recover without patching the upstream crate.
+fn is_oversized_legacy_inventory_error(err: &dyn std::fmt::Display) -> bool {
+    err.to_string()
+        .contains("legacy inventory exceeds safe path/count bound")
+}
+
+/// Move an oversized pre-1.4 PN directory aside and leave the path absent so live
+/// RNS/RRC can attach. Never deletes; trusted recovery can still import from quarantine.
+fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, String> {
+    let parent = storage_dir
+        .parent()
+        .ok_or_else(|| "propagation store path has no parent".to_string())?;
+    let base = storage_dir
+        .file_name()
+        .ok_or_else(|| "propagation store path has no file name".to_string())?;
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let quarantine = parent.join(format!(
+        "{}.oversized-legacy-{stamp}",
+        base.to_string_lossy()
+    ));
+    if quarantine.exists() {
+        return Err(format!(
+            "oversized legacy quarantine already exists at {}",
+            quarantine.display()
+        ));
+    }
+    // Best-effort: park partial migration siblings with the quarantine so a fresh
+    // open does not trip on a stale journal/lock.
+    for suffix in [".store-lock", ".migration", ".v2", ".legacy-quarantine"] {
+        let mut name = base.to_os_string();
+        name.push(suffix);
+        let sibling = storage_dir.with_file_name(&name);
+        if !sibling.exists() {
+            continue;
+        }
+        let mut qname = quarantine
+            .file_name()
+            .map(std::ffi::OsStr::to_os_string)
+            .unwrap_or_else(|| base.to_os_string());
+        qname.push(suffix);
+        let qsibling = quarantine.with_file_name(qname);
+        if let Err(e) = std::fs::rename(&sibling, &qsibling) {
+            tracing::warn!(
+                target: "propagation-retrieve",
+                error = %e,
+                from = %sibling.display(),
+                to = %qsibling.display(),
+                "failed to park migration sibling beside oversized quarantine"
+            );
+        }
+    }
+    std::fs::rename(storage_dir, &quarantine).map_err(|e| {
+        format!(
+            "failed to quarantine oversized legacy PN store {} → {}: {e}",
+            storage_dir.display(),
+            quarantine.display()
+        )
+    })?;
+    // Leave `storage_dir` absent. rsLXMF `open_locked_store` treats any existing
+    // path (even an empty directory) as a legacy store and returns MigrationRequired;
+    // a missing path is what initializes a fresh empty v2 store.
+    Ok(quarantine)
+}
+
 /// Open the durable v2 relay store. A legacy (pre-1.4) directory needs the explicit offline
 /// migration; this process is the only relay writer for `storage_dir` (hosting is in-process),
 /// so run it here and retry. The legacy files are quarantined beside the store, never deleted.
+///
+/// Oversized legacy inventories (rsLXMF `MAX_INVENTORY`) cannot migrate automatically — we
+/// quarantine them and open an empty v2 store so live attach (and RRC) is not bricked.
 fn open_propagation_node(
     node_config: PropagationNodeConfig,
     local_dest_hash: [u8; 16],
@@ -908,14 +980,31 @@ fn open_propagation_node(
             let guard =
                 lxmf_core::propagation_store_v2::begin_offline_migration(&storage_dir, true)
                     .map_err(|e| format!("propagation store migration: {e}"))?;
-            let report = lxmf_core::propagation_store_v2::migrate_store_offline(&guard)
-                .map_err(|e| format!("propagation store migration: {e}"))?;
+            let migrated = lxmf_core::propagation_store_v2::migrate_store_offline(&guard);
+            // Release the OS lock before any rename of the store directory.
             drop(guard);
-            tracing::info!(
-                target: "propagation-retrieve",
-                store = %report.store.display(),
-                "propagation store migrated (legacy files preserved in quarantine)"
-            );
+            match migrated {
+                Ok(report) => {
+                    tracing::info!(
+                        target: "propagation-retrieve",
+                        store = %report.store.display(),
+                        "propagation store migrated (legacy files preserved in quarantine)"
+                    );
+                }
+                Err(mig_err) if is_oversized_legacy_inventory_error(&mig_err) => {
+                    let quarantine = quarantine_oversized_legacy_store(&storage_dir)?;
+                    tracing::warn!(
+                        target: "propagation-retrieve",
+                        path = %storage_dir.display(),
+                        quarantine = %quarantine.display(),
+                        "oversized legacy PN store exceeds rsLXMF migration inventory bound; \
+                         quarantined and starting empty v2 store so live RNS/RRC can attach"
+                    );
+                }
+                Err(mig_err) => {
+                    return Err(format!("propagation store migration: {mig_err}"));
+                }
+            }
             PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
                 .map_err(|e| format!("propagation storage init: {e}"))
         }
@@ -2018,6 +2107,53 @@ mod tests {
         assert_eq!(reseeded.len(), 2);
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn quarantine_oversized_legacy_store_moves_aside_and_leaves_path_absent() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-oversized-q-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let store = dir.join("propagation");
+        std::fs::create_dir_all(&store).expect("store");
+        std::fs::write(store.join("blob"), b"legacy").expect("blob");
+        let lock = dir.join("propagation.store-lock");
+        std::fs::write(&lock, b"lock").expect("lock");
+
+        let quarantine = quarantine_oversized_legacy_store(&store).expect("quarantine");
+        assert!(quarantine.is_dir());
+        assert!(quarantine.join("blob").is_file());
+        // Path must be absent so open_locked_store can init empty v2 (not MigrationRequired).
+        assert!(!store.exists());
+        assert!(!lock.exists());
+        assert!(
+            quarantine
+                .with_file_name(format!(
+                    "{}.store-lock",
+                    quarantine.file_name().unwrap().to_string_lossy()
+                ))
+                .is_file()
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn source_oversized_legacy_pn_store_does_not_brick_live_attach() {
+        let bridge = include_str!("propagation_bridge.rs");
+        assert!(
+            bridge.contains("is_oversized_legacy_inventory_error")
+                && bridge.contains("quarantine_oversized_legacy_store")
+                && bridge.contains("starting empty v2 store so live RNS/RRC can attach"),
+            "oversized legacy PN migration must quarantine and continue so RRC can attach"
+        );
     }
 
     #[test]
