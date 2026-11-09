@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "允许自动连接到非 Python 或未经验证的堆栈（例如 rsRNS）宣布的 Backbone 接口",
       "autoconnectUnverifiedHint": "默认关闭。当与 rsRNS 或其他非 Python Backbone 进行对等互连时启用，该 Backbone 宣布不宣传经过验证的 Python Reticulum 实现。",
       "interfaceStatsTitle": "实时界面计数器",
-      "interfaceStatsLine": "TX 子站 {{txDropped}} B · 协议 {{protocol}} · IFAC {{ifac}} · 过滤器 {{filter}}"
+      "interfaceStatsLine": "TX 子站 {{txDropped}} B · 协议 {{protocol}} · IFAC {{ifac}} · 过滤器 {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "已保存。重新启动 Reticulum 堆栈以使未经验证的自动连接生效。"
     },
     "reticulumConfigImport": {
       "title": "导入 Reticulum config",

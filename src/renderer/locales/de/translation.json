@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Automatische Verbindung zu Backbone-Schnittstellen zulassen, die von Nicht-Python- oder nicht verifizierten Stacks wie rsRNS angekündigt werden",
       "autoconnectUnverifiedHint": "Standardmäßig deaktiviert. Aktivieren Sie diese Option beim Peering mit rsRNS oder anderen Nicht-Python-Backbone-Ankündigungen, die keine verifizierte Python-Reticulum-Implementierung ankündigen.",
       "interfaceStatsTitle": "Live-Schnittstellenzähler",
-      "interfaceStatsLine": "TX-Drop {{txDropped}} B · Protokoll {{protocol}} · IFAC {{ifac}} · Filter {{filter}}"
+      "interfaceStatsLine": "TX-Drop {{txDropped}} B · Protokoll {{protocol}} · IFAC {{ifac}} · Filter {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Gespeichert. Starten Sie den Reticulum-Stack neu, damit die nicht überprüfte automatische Verbindung wirksam wird."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",

@@ -22,4 +22,13 @@ describe('chessCapturedFromFen', () => {
     expect(snap.blackCaptured.pieces).toEqual([]);
     expect(snap.advantage).toBe(1);
   });
+
+  it('does not treat a promoted queen with no captures as captured material', () => {
+    // White a-pawn promoted to queen on a8; black's rook stepped to a6 — no captures.
+    const promoted = 'Qnbqkbnr/pppppppp/r7/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1';
+    const snap = chessCapturedFromFen(promoted);
+    expect(snap.whiteCaptured.pieces).toEqual([]);
+    expect(snap.blackCaptured.pieces).toEqual([]);
+    expect(snap.advantage).toBe(0);
+  });
 });

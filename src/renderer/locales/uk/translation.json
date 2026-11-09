@@ -3556,7 +3556,8 @@
       "autoconnectUnverifiedAria": "Дозволити автоматичне підключення до інтерфейсів магістралі, оголошених не Python або неперевіреними стеками, такими як rsRNS",
       "autoconnectUnverifiedHint": "За замовчуванням вимкнено. Увімкніть під час однорангового зв'язку з rsRNS або іншими сповіщеннями магістралі, відмінними від Python, які не рекламують перевірену реалізацію Python Reticulum.",
       "interfaceStatsTitle": "Лічильники живого інтерфейсу",
-      "interfaceStatsLine": "TX падіння {{txDropped}} B · протокол {{protocol}} · IFAC {{ifac}} · фільтр {{filter}}"
+      "interfaceStatsLine": "TX падіння {{txDropped}} B · протокол {{protocol}} · IFAC {{ifac}} · фільтр {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Збережено. Перезапустіть стек Reticulum, щоб неперевірене автопідключення почало діяти."
     },
     "reticulumConfigImport": {
       "title": "Імпорт конфігурації Reticulum",

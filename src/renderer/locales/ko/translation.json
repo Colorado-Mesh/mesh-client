@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Python이 아니거나 rsRNS와 같은 확인되지 않은 스택에서 발표한 백본 인터페이스에 대한 자동 연결을 허용합니다.",
       "autoconnectUnverifiedHint": "기본적으로 꺼져 있습니다. rsRNS 또는 기타 Python이 아닌 백본과 피어링할 때 활성화하면 확인된 Python Reticulum 구현을 광고하지 않는다고 알립니다.",
       "interfaceStatsTitle": "라이브 인터페이스 카운터",
-      "interfaceStatsLine": "TX 드롭 {{txDropped}} B · 프로토콜 {{protocol}} · IFAC {{ifac}} · 필터 {{filter}}"
+      "interfaceStatsLine": "TX 드롭 {{txDropped}} B · 프로토콜 {{protocol}} · IFAC {{ifac}} · 필터 {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "저장되었습니다. 확인되지 않은 자동 연결을 적용하려면 Reticulum 스택을 다시 시작하세요."
     },
     "reticulumConfigImport": {
       "title": "Reticulum config 가져오기",

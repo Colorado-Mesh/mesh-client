@@ -40,6 +40,27 @@ export function sanitizeReplacesMessageHash(raw: unknown): string | null {
   return null;
 }
 
+/** Max persisted `attachments_json` length (whole JSON document; never mid-string slice). */
+export const RETICULUM_ATTACHMENTS_JSON_MAX_CHARS = 16_384;
+
+/**
+ * Persist multi-file attachment metadata only when it is non-empty, valid JSON, and
+ * within {@link RETICULUM_ATTACHMENTS_JSON_MAX_CHARS}. Truncating mid-string would
+ * leave invalid JSON in SQLite.
+ */
+export function sanitizeAttachmentsJsonForDb(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > RETICULUM_ATTACHMENTS_JSON_MAX_CHARS) return null;
+  try {
+    JSON.parse(trimmed);
+  } catch {
+    // catch-no-log-ok: invalid attachments_json is rejected as null for DB write
+    return null;
+  }
+  return trimmed;
+}
+
 interface ParsedRemoteAddressUpsert {
   id: string;
   label: string;
@@ -178,10 +199,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const attachmentPath = sanitizeReticulumAttachmentPathForDb(
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
-      const attachmentsJson =
-        typeof m.attachments_json === 'string' && m.attachments_json.trim().length > 0
-          ? m.attachments_json.slice(0, 16_384)
-          : null;
+      const attachmentsJson = sanitizeAttachmentsJsonForDb(m.attachments_json);
       const audioMode =
         m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
           ? Math.trunc(Number(m.audio_mode))

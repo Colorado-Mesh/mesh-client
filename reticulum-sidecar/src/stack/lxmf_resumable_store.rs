@@ -92,6 +92,21 @@ impl LxmfResumableStore {
         Ok(())
     }
 
+    /// Delete only when the stored method still matches (this attempt still owns the row).
+    pub fn delete_if_method(&self, message_hash: &str, method: &str) -> Result<bool, String> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "lxmf_resumable poisoned".to_string())?;
+        let n = conn
+            .execute(
+                "DELETE FROM lxmf_resumable WHERE message_hash = ?1 AND method = ?2",
+                params![message_hash, method],
+            )
+            .map_err(|e| format!("lxmf_resumable delete_if_method: {e}"))?;
+        Ok(n > 0)
+    }
+
     pub fn list_all(&self) -> Result<Vec<ResumableRow>, String> {
         let conn = self
             .conn
@@ -201,6 +216,24 @@ mod tests {
         let rows = store.list_all().unwrap();
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].message_hash, "a");
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn delete_if_method_preserves_other_ownership() {
+        let path = temp_path("owned");
+        let store = LxmfResumableStore::open(&path).unwrap();
+        store.upsert("abcd", "direct", b"v1").unwrap();
+        store.upsert("abcd", "propagated", b"v2").unwrap();
+        assert!(!store.delete_if_method("abcd", "direct").unwrap());
+        let row = store
+            .get("abcd")
+            .unwrap()
+            .expect("still owned by propagated");
+        assert_eq!(row.method, "propagated");
+        assert_eq!(row.bytes, b"v2");
+        assert!(store.delete_if_method("abcd", "propagated").unwrap());
+        assert!(store.get("abcd").unwrap().is_none());
         let _ = std::fs::remove_file(&path);
     }
 }

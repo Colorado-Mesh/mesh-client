@@ -3556,7 +3556,8 @@
       "autoconnectUnverifiedAria": "Разрешить автоматическое подключение к интерфейсам Backbone, объявленным не-Python или непроверенными стеками, такими как rsRNS.",
       "autoconnectUnverifiedHint": "По умолчанию выключено. Включите, когда пиринг с помощью rsRNS или другой магистрали, отличной от Python, объявляет, что не рекламируется проверенная реализация Python Reticulum.",
       "interfaceStatsTitle": "Счетчики живого интерфейса",
-      "interfaceStatsLine": "TX drop {{txDropped}} B · протокол {{protocol}} · IFAC {{ifac}} · фильтр {{filter}}"
+      "interfaceStatsLine": "TX drop {{txDropped}} B · протокол {{protocol}} · IFAC {{ifac}} · фильтр {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Сохранено. Перезапустите стек Reticulum, чтобы непроверенное автоматическое подключение вступило в силу."
     },
     "reticulumConfigImport": {
       "title": "Импортировать конфигурацию Reticulum",

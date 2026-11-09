@@ -4048,6 +4048,7 @@
       "autoconnectUnverified": "Autoconnect unverified implementations",
       "autoconnectUnverifiedAria": "Allow auto-connect to Backbone interfaces announced by non-Python or unverified stacks such as rsRNS",
       "autoconnectUnverifiedHint": "Off by default. Enable when peering with rsRNS or other non-Python Backbone announces that do not advertise a verified Python Reticulum implementation.",
+      "autoconnectUnverifiedRestartRequired": "Saved. Restart the Reticulum stack for unverified autoconnect to take effect.",
       "interfaceStatsTitle": "Live interface counters",
       "interfaceStatsLine": "TX drop {{txDropped}} B · protocol {{protocol}} · IFAC {{ifac}} · filter {{filter}}",
       "requiredDiscoveryValue": "Minimum discovery stamp",

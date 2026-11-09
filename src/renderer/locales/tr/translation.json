@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Python dışı veya rsRNS gibi doğrulanmamış yığınlar tarafından duyurulan Omurga arayüzlerine otomatik bağlanmaya izin ver",
       "autoconnectUnverifiedHint": "Varsayılan olarak kapalıdır. Doğrulanmış bir Python Reticulum uygulamasının reklamını yapmayan rsRNS veya Python olmayan diğer Backbone duyurularıyla eşleme yaparken etkinleştirin.",
       "interfaceStatsTitle": "Canlı arayüz sayaçları",
-      "interfaceStatsLine": "TX düşüşü {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtre {{filter}}"
+      "interfaceStatsLine": "TX düşüşü {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtre {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Kaydedildi. Doğrulanmamış otomatik bağlantının etkili olması için Reticulum yığınını yeniden başlatın."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",

@@ -189,9 +189,9 @@ export function ReticulumAttachmentLine({
 
   return (
     <div className="flex flex-col gap-1">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <ReticulumAttachmentItem
-          key={`${item.path}:${item.fileName}`}
+          key={`${index}:${item.path}:${item.fileName}`}
           fileName={item.fileName}
           mimeType={item.mimeType}
           attachmentPath={item.path || attachmentPath}

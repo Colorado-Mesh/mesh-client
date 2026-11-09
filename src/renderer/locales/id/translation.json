@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Izinkan koneksi otomatis ke antarmuka Backbone yang diumumkan oleh tumpukan non-Python atau belum terverifikasi seperti rsRNS",
       "autoconnectUnverifiedHint": "Mati secara default. Aktifkan ketika melakukan peering dengan rsRNS atau Backbone non-Python lainnya mengumumkan bahwa tidak mengiklankan implementasi Python Reticulum yang terverifikasi.",
       "interfaceStatsTitle": "Penghitung antarmuka langsung",
-      "interfaceStatsLine": "Penurunan TX {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filter {{filter}}"
+      "interfaceStatsLine": "Penurunan TX {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filter {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Disimpan. Mulai ulang tumpukan Reticulum agar sambungan otomatis yang belum terverifikasi dapat diterapkan."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",

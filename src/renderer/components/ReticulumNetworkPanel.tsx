@@ -712,10 +712,10 @@ export function ReticulumNetworkPanel({
       if (baseline.slow_rf_announce_filter !== stackSettings.slow_rf_announce_filter) {
         patch.slow_rf_announce_filter = stackSettings.slow_rf_announce_filter;
       }
-      if (
+      const unverifiedChanged =
         baseline.autoconnect_unverified_implementations !==
-        stackSettings.autoconnect_unverified_implementations
-      ) {
+        stackSettings.autoconnect_unverified_implementations;
+      if (unverifiedChanged) {
         patch.autoconnect_unverified_implementations =
           stackSettings.autoconnect_unverified_implementations;
       }
@@ -728,6 +728,13 @@ export function ReticulumNetworkPanel({
         return;
       }
       await refreshStackSettings();
+      // INI-only today — no live TransportQuery — so call out a restart when this toggles.
+      if (unverifiedChanged) {
+        addToast(
+          t('networkPanel.reticulumStackSettings.autoconnectUnverifiedRestartRequired'),
+          'info',
+        );
+      }
     } catch (e) {
       // catch-no-log-ok: stack settings save failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));

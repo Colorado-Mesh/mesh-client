@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Sta automatisch verbinden toe met Backbone-interfaces aangekondigd door niet-Python of niet-geverifieerde stacks zoals rsRNS",
       "autoconnectUnverifiedHint": "Standaard uitgeschakeld. Inschakelen bij peering met rsRNS of andere niet-Python Backbone-aankondigingen die geen geverifieerde Python Reticulum-implementatie adverteren.",
       "interfaceStatsTitle": "Live-interfacetellers",
-      "interfaceStatsLine": "TX-daling {{txDropped}} B · protocol {{protocol}} · IFAC {{ifac}} · filter {{filter}}"
+      "interfaceStatsLine": "TX-daling {{txDropped}} B · protocol {{protocol}} · IFAC {{ifac}} · filter {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Opgeslagen. Start de stapel Reticulum opnieuw op, zodat niet-geverifieerde automatische verbinding van kracht wordt."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",

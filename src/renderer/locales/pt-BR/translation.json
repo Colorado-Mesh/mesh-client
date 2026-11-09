@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "Permitir conexão automática a interfaces Backbone anunciadas por pilhas não-Python ou não verificadas, como rsRNS",
       "autoconnectUnverifiedHint": "Desativado por padrão. Habilite ao peering com rsRNS ou outros anúncios de Backbone não Python que não anunciam uma implementação Python Reticulum verificada.",
       "interfaceStatsTitle": "Contadores de interface ao vivo",
-      "interfaceStatsLine": "Queda TX {{txDropped}} B · protocolo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}"
+      "interfaceStatsLine": "Queda TX {{txDropped}} B · protocolo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Salvo. Reinicie a pilha Reticulum para que a conexão automática não verificada tenha efeito."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",

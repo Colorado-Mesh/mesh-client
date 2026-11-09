@@ -55,12 +55,23 @@ function countRemaining(fenPlacement: string, white: boolean): Record<string, nu
 }
 
 function missingAsCaptured(remaining: Record<string, number>): ChessCapturedTray {
+  // Excess non-pawn pieces over the starting set are promotions (from pawns).
+  // Subtract that total from missing pawns so a promote-with-no-captures position
+  // does not look like a captured pawn (Ratspeak games_tab.js FEN-diff parity).
+  let promotionTotal = 0;
+  for (const kind of TRAY_ORDER) {
+    if (kind === 'p') continue;
+    const start = STARTING_COUNTS[kind] ?? 0;
+    const have = remaining[kind] ?? 0;
+    promotionTotal += Math.max(0, have - start);
+  }
   const pieces: { kind: ChessPieceKind; count: number }[] = [];
   let material = 0;
   for (const kind of TRAY_ORDER) {
     const start = STARTING_COUNTS[kind] ?? 0;
     const have = remaining[kind] ?? 0;
-    const missing = Math.max(0, start - have);
+    const missing =
+      kind === 'p' ? Math.max(0, start - have - promotionTotal) : Math.max(0, start - have);
     if (missing > 0) {
       pieces.push({ kind, count: missing });
       material += missing * materialValue(kind);

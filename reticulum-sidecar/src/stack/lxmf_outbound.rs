@@ -277,6 +277,27 @@ impl LxmfOutboundDriver {
         }
     }
 
+    /// Clear a resumable row only when it still matches `method_label` (this attempt).
+    /// A later cascade/retry may have overwritten the row with a different method —
+    /// leave that newer ownership alone.
+    fn clear_resumable_owned(&self, hash: &[u8; 32], method_label: &str) {
+        if let Some(store) = &self.resumable_store {
+            let hex_hash = hex::encode(hash);
+            match store.delete_if_method(&hex_hash, method_label) {
+                Ok(true | false) => {}
+                Err(e) => {
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        message_hash = %hex_hash,
+                        method = %method_label,
+                        error = %e,
+                        "failed to clear owned resumable outbound row"
+                    );
+                }
+            }
+        }
+    }
+
     /// Forward inbound LXMF that arrives on outbound-initiated reusable Direct links.
     ///
     /// Without this, peers Ack on the backchannel (LinkProof) but the plaintext is
@@ -384,6 +405,9 @@ impl LxmfOutboundDriver {
         self.pn_deposit_defer_counts.remove(hash);
         self.direct_path_failovers.remove(hash);
         self.pending_pn_targets.remove(hash);
+        self.pending_pn_deposits.remove(hash);
+        // Drop durable resume bytes so a cancelled send cannot be restored after restart.
+        self.clear_resumable(hash);
         cancelled
     }
 
@@ -1320,7 +1344,7 @@ impl LxmfOutboundDriver {
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
-            self.clear_resumable(&hash);
+            self.clear_resumable_owned(&hash, method);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,
@@ -1367,7 +1391,7 @@ impl LxmfOutboundDriver {
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
-            self.clear_resumable(&hash);
+            self.clear_resumable_owned(&hash, method);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,

@@ -370,6 +370,8 @@ export const reticulumRadioSurface: SettingsSearchSurface = {
     'networkPanel.reticulumStackSettings.discoverySourcesInvalid': 'validation error',
     'networkPanel.reticulumStackSettings.save': 'save button for the indexed stack settings',
     'networkPanel.reticulumStackSettings.saveFailed': 'result toast, not a control',
+    'networkPanel.reticulumStackSettings.autoconnectUnverifiedRestartRequired':
+      'result toast after saving the indexed unverified autoconnect toggle',
     'reticulumSetup.open': 'navigation link to the setup guide, not a setting',
     'reticulumSetup.tabUnavailable': 'navigation error toast',
     'connectionPanel.reticulumPropagation.enable': 'per-node toggle in the propagation list',

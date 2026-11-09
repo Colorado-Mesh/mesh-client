@@ -143,11 +143,16 @@ pub(crate) fn live_interface_tx_queue_fields(
 /// Forward LXMF 1.4 destination retains so identity outlives the path (lxmd parity).
 async fn apply_destination_retains(handle: &reticulum::ReticulumHandle, retains: Vec<[u8; 16]>) {
     for dest in retains {
-        if handle
-            .query_control(TransportQuery::RetainDestination { dest })
-            .await
-            .is_none()
+        let retained = match tokio::time::timeout(
+            TRANSPORT_QUERY_TIMEOUT,
+            handle.query_control(TransportQuery::RetainDestination { dest }),
+        )
+        .await
         {
+            Ok(Some(_)) => true,
+            Ok(None) | Err(_) => false,
+        };
+        if !retained {
             tracing::debug!(
                 dest = %hex::encode(dest),
                 "Reticulum did not retain a delivered destination"
@@ -4238,7 +4243,11 @@ impl LiveBridge {
         method: DeliveryMethod,
     ) -> Result<(LxMessage, String), String> {
         let signed = lxmf_compose::sign_draft(draft, signing_key)?;
-        if let Some(store) = &self.resumable_store {
+        // Paper messages are operator-exported offline artifacts — do not resume them
+        // across sidecar restarts (they are not in-flight RF/PN deliveries).
+        if method != DeliveryMethod::Paper
+            && let Some(store) = &self.resumable_store
+        {
             let hash_hex = hex::encode(signed.message_id());
             let method_label = Self::delivery_method_label(method);
             if let Err(e) = store.upsert(&hash_hex, method_label, signed.to_resumable().as_bytes())
@@ -4272,6 +4281,14 @@ impl LiveBridge {
         let pubkey = self.identity.get_public_key();
         let mut router = self.router.lock().await;
         for row in rows {
+            if row.method == "paper" {
+                tracing::debug!(
+                    message_hash = %row.message_hash,
+                    "dropping paper resumable outbound on restore"
+                );
+                let _ = store.delete(&row.message_hash);
+                continue;
+            }
             let stored = match lxmf_core::message::ResumableLxMessage::from_bytes(row.bytes.clone())
             {
                 Ok(s) => s,

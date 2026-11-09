@@ -214,7 +214,8 @@ export async function sendReticulumAttachments(
   } catch (e) {
     console.warn('[sendReticulumAttachments] local cache failed:', errLikeToLogString(e));
   }
-  if (cached.length === 0) return fail('cache_failed');
+  // Partial cache would send a subset over LXMF while the bubble showed fewer files.
+  if (cached.length !== items.length) return fail('cache_failed');
   const attachmentPath = cached[0].path;
 
   const marker = `[file:${sanitizeMarkerPart(first.fileName)}:${first.mimeType}]`;

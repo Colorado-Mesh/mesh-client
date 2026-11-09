@@ -3500,7 +3500,8 @@
       "autoconnectUnverifiedAria": "非 Python または rsRNS などの未検証のスタックによってアナウンスされたバックボーン インターフェイスへの自動接続を許可します。",
       "autoconnectUnverifiedHint": "デフォルトではオフです。 rsRNS または検証済みの Python Reticulum 実装をアドバタイズしない他の非 Python バックボーン アナウンスとピアリングする場合に有効にします。",
       "interfaceStatsTitle": "ライブインターフェースカウンター",
-      "interfaceStatsLine": "TX ドロップ {{txDropped}} B · プロトコル {{protocol}} · IFAC {{ifac}} · フィルター {{filter}}"
+      "interfaceStatsLine": "TX ドロップ {{txDropped}} B · プロトコル {{protocol}} · IFAC {{ifac}} · フィルター {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "保存されました。未検証の自動接続を有効にするには、Reticulum スタックを再起動します。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",
