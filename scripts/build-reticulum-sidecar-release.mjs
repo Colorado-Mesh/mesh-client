@@ -47,8 +47,11 @@ function run(cmd, args, extraEnv = {}) {
 }
 
 function runSidecarTests() {
-  console.debug(`[build-reticulum-sidecar-release] cargo test --features ${SIDECAR_FEATURES}`);
-  run('cargo', ['test', '--features', SIDECAR_FEATURES]);
+  console.debug(
+    `[build-reticulum-sidecar-release] cargo test --features ${SIDECAR_FEATURES} -- --test-threads=1`,
+  );
+  // Serial threads: Ratspeak vault / identity Argon2 use a process-global lock (Busy otherwise).
+  run('cargo', ['test', '--features', SIDECAR_FEATURES, '--', '--test-threads=1']);
 }
 
 function cloneRatspeakStack() {

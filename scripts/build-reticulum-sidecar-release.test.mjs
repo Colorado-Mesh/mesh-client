@@ -145,7 +145,7 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
     const result = build(root, ['--platform', platform]);
     expect(result.status, result.stderr).toBe(0);
     expect(calls(root)).toEqual([
-      ['test', '--features', 'rns-stack,rns-ble,rns-rnode-tcp'],
+      ['test', '--features', 'rns-stack,rns-ble,rns-rnode-tcp', '--', '--test-threads=1'],
       ...PLATFORM_TARGETS[platform].map(({ cargoTarget }) => [
         'build',
         '--release',

@@ -1,4 +1,8 @@
 // @vitest-environment node
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -63,21 +67,32 @@ describe('collectRustPackages', () => {
   });
 
   it('resolves empty SPDX license via license-file under the manifest', () => {
-    const packages = collectRustPackages({
-      packages: [
-        {
-          name: 'rns-crypto',
-          version: '1.4.0',
-          license: null,
-          license_file: '../../LICENSE',
-          manifest_path: `${process.cwd()}/.rsstack/rsReticulum/crates/rns-crypto/Cargo.toml`,
-        },
-      ],
-    });
-    expect(packages[0].license).toBe('LicenseRef-Reticulum');
-    expect(resolveLicenseFile(packages[0].manifestPath, '../../LICENSE')).toBe(
-      'LicenseRef-Reticulum',
-    );
+    // Fixture tree — do not depend on a live `.rsstack` checkout (absent in Vitest CI).
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-rust-license-'));
+    try {
+      const crateDir = path.join(root, 'crates', 'rns-crypto');
+      fs.mkdirSync(crateDir, { recursive: true });
+      fs.writeFileSync(path.join(root, 'LICENSE'), 'Reticulum License\n\nDerived from…\n');
+      const manifestPath = path.join(crateDir, 'Cargo.toml');
+      fs.writeFileSync(manifestPath, '[package]\nname = "rns-crypto"\n');
+      const packages = collectRustPackages({
+        packages: [
+          {
+            name: 'rns-crypto',
+            version: '1.4.0',
+            license: null,
+            license_file: '../../LICENSE',
+            manifest_path: manifestPath,
+          },
+        ],
+      });
+      expect(packages[0].license).toBe('LicenseRef-Reticulum');
+      expect(resolveLicenseFile(packages[0].manifestPath, '../../LICENSE')).toBe(
+        'LicenseRef-Reticulum',
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('throws on missing or malformed input', () => {
