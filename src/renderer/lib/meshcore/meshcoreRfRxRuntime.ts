@@ -862,7 +862,6 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
       applyMeshcoreLateRfHopEnrichment(lateHopIdentityId, {
         payloadTypeString: ctx.payloadTypeString,
         hopCount: ctx.hopCount,
-        fromNodeId: effectiveFromNodeId,
         messageFingerprintHex: ctx.messageFingerprintHex,
         parseOk: true,
         now,

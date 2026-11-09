@@ -9,7 +9,8 @@
  * carries the first reception's path (MeshCore `Dispatcher::checkRecv`, `Mesh::onRecvPacket`).
  * So only a packet's first reception may change a row, and a channel packet only changes the
  * row it decrypts to: the next message's RX log usually arrives while the previous message is
- * still the newest row.
+ * still the newest row. A DM packet cannot be decrypted, so it changes a row only through a
+ * stored packet fingerprint, never by sender and time.
  */
 import { decodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 
@@ -59,7 +60,6 @@ export interface MeshcoreLateHopGroupText {
 export interface MeshcoreLateRfHopEnrichmentInput {
   payloadTypeString: 'TXT_MSG' | 'GRP_TXT';
   hopCount: number;
-  fromNodeId: number | null;
   messageFingerprintHex: string | null;
   parseOk: boolean;
   now?: number;
@@ -231,10 +231,6 @@ function isBroadcastChannelCandidate(c: MeshcoreLateHopCandidate): boolean {
   return c.channel >= 0 && c.roomServerId == null && c.channel !== MESHCORE_ROOM_MESSAGE_CHANNEL;
 }
 
-function isDmCandidate(c: MeshcoreLateHopCandidate): boolean {
-  return c.channel === -1 && c.roomServerId == null;
-}
-
 function normalizeFingerprint(hex: string | null | undefined): string | null {
   if (typeof hex !== 'string') return null;
   const t = hex.trim();
@@ -278,40 +274,25 @@ export function findMeshcoreLateRfHopEnrichmentTarget(
     return via == null || via === 'rf' || via === 'both' || via === 'mqtt';
   };
 
-  if (input.payloadTypeString === 'GRP_TXT') {
-    // Time proximity alone gave the previous message the next packet's count.
-    const text = input.groupText;
-    if (!text) return undefined;
-    for (let i = candidates.length - 1; i >= 0; i--) {
-      const c = candidates[i];
-      if (!isBroadcastChannelCandidate(c) || !eligible(c)) continue;
-      if (!groupTextMatchesCandidate(c, text, now, windowMs)) continue;
-      if (!applicable(c)) continue;
-      return c;
-    }
+  if (input.payloadTypeString !== 'GRP_TXT') {
+    // A DM cannot be decrypted here, and the radio logs it before it delivers the message, so the
+    // sender's newest stored DM is an earlier message (or the one this packet retries). A DM's own
+    // event carries this reception's path; one stored without a count took its preceding log at
+    // ingest (`resolveMeshcoreIngestRxHops`).
     return undefined;
   }
 
-  // Same rule as ingest correlation (meshcoreRawPacketCorrelate): never another sender's row.
-  const fromNodeId = input.fromNodeId;
-  if (fromNodeId == null || fromNodeId === 0) return undefined;
-
-  let best: MeshcoreLateHopCandidate | undefined;
-  let bestTs = -Infinity;
-
+  // Time proximity alone gave the previous message the next packet's count.
+  const text = input.groupText;
+  if (!text) return undefined;
   for (let i = candidates.length - 1; i >= 0; i--) {
     const c = candidates[i];
-    if (!isDmCandidate(c) || !eligible(c) || c.sender_id !== fromNodeId) continue;
-    const tsMs = effectiveMessageTimestampMs(c.timestamp, now);
-    if (Math.abs(now - tsMs) > windowMs) continue;
+    if (!isBroadcastChannelCandidate(c) || !eligible(c)) continue;
+    if (!groupTextMatchesCandidate(c, text, now, windowMs)) continue;
     if (!applicable(c)) continue;
-    if (tsMs > bestTs) {
-      best = c;
-      bestTs = tsMs;
-    }
+    return c;
   }
-
-  return best;
+  return undefined;
 }
 
 function listLateHopCandidates(identityId: IdentityId): MeshcoreLateHopCandidate[] {
