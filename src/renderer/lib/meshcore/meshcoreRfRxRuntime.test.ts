@@ -677,3 +677,77 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
     ]);
   });
 });
+
+describe('handleMeshcoreRfRx DM-type packets (1-byte source hash)', () => {
+  const selfKey = new Uint8Array(32).fill(0x5a);
+  selfKey[0] = 0xab;
+  const alexKey = new Uint8Array(32).fill(0x5a);
+  alexKey.set([0xa1, 0x00, 0x51, 0x52], 0);
+  const alexId = pubkeyToNodeId(alexKey);
+  const alexPrefix = Array.from(alexKey.subarray(0, 6), (b) =>
+    b.toString(16).padStart(2, '0'),
+  ).join('');
+
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {} });
+    useDiagnosticsStore.setState({ noiseRateStats: new Map() });
+    vi.restoreAllMocks();
+  });
+
+  /** TXT_MSG from AlexT1000 to this radio: dest 0xAB (our key), src 0xA1, MAC, ciphertext. */
+  function txtMsgToUs(route: 'FLOOD' | 'DIRECT', path: number[]): Uint8Array {
+    return Uint8Array.from([
+      (2 << 2) | (route === 'FLOOD' ? 1 : 2),
+      path.length,
+      ...path,
+      0xab,
+      0xa1,
+      0x3c,
+      0x7e,
+      ...Array.from({ length: 16 }, (_, i) => (i * 29 + 7) & 0xff),
+    ]);
+  }
+
+  /** Hops away starts unknown: the merge keeps the shortest count seen and never lowers it to 0. */
+  function setup() {
+    const alex = makeNode(alexId, { long_name: 'AlexT1000', last_heard: 100 });
+    upsertNodeRecord(ID, meshNodeToNodeRecord(alex));
+    return makeDeps({
+      myNodeNumRef: ref(pubkeyToNodeId(selfKey)),
+      readNodes: () => new Map([[alexId, alex]]),
+      pubKeyPrefixMapRef: ref(new Map([[alexPrefix, alexId]])),
+      selfInfoRef: ref({ name: 'Me', publicKey: selfKey } as MeshCoreSelfInfo),
+    });
+  }
+
+  it('names the contact on a flood DM to us and takes its hops away from the path', () => {
+    const { deps, rawPackets } = setup();
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('FLOOD', [0xf8, 0xd4, 0x3a]) },
+      deps,
+    );
+
+    expect(rawPackets[0]).toMatchObject({ payloadTypeString: 'TXT_MSG', fromNodeId: alexId });
+    expect(useNodeStore.getState().nodes[ID][alexId]).toMatchObject({ hopsAway: 3 });
+  });
+
+  it('names the contact on a direct DM but leaves hops away alone', () => {
+    const { deps, rawPackets } = setup();
+
+    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('DIRECT', []) }, deps);
+
+    expect(rawPackets[0]).toMatchObject({ fromNodeId: alexId });
+    expect(useNodeStore.getState().nodes[ID][alexId].hopsAway).toBeUndefined();
+  });
+
+  it('does not count flood DMs toward the Discovery flood rate', () => {
+    const { deps } = setup();
+
+    for (let i = 0; i < 5; i++) {
+      handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('FLOOD', [0x3a]) }, deps);
+    }
+
+    expect(useDiagnosticsStore.getState().noiseRateStats.get(alexId)).toBeUndefined();
+  });
+});

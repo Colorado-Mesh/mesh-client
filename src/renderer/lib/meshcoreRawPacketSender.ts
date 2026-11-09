@@ -9,7 +9,7 @@ import {
   meshCorePayloadTypeStringFromByte0,
   meshCoreRouteTypeStringFromByte0,
 } from '../../shared/meshcoreRfPath';
-import { pubkeyToNodeId } from './meshcoreUtils';
+import { meshcoreIsSyntheticPlaceholderPubKeyPrefixHex, pubkeyToNodeId } from './meshcoreUtils';
 import {
   MESHCORE_ADVERT_PUBKEY_BYTE_LEN,
   MESHCORE_PAYLOAD_TYPE_ADVERT,
@@ -18,6 +18,41 @@ import type { MeshNode } from './types';
 
 function pubkeyPrefixHex6(key: Uint8Array): string {
   return Array.from(key.subarray(0, 6), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * MeshCore REQ, RESPONSE, TXT_MSG and PATH payloads start with the destination and source hashes,
+ * the first byte of each public key (`PATH_HASH_SIZE` 1 in `Mesh::createDatagram`), then a MAC.
+ */
+const MESHCORE_DATAGRAM_PAYLOAD_TYPES: ReadonlySet<number> = new Set([0x00, 0x01, 0x02, 0x08]);
+
+export function meshcoreIsDatagramPayloadType(payloadTypeNibble: number): boolean {
+  return MESHCORE_DATAGRAM_PAYLOAD_TYPES.has(payloadTypeNibble);
+}
+
+/**
+ * Sender of a datagram addressed to this radio: the one contact whose key starts with the source
+ * hash. The radio only accepts these from its contacts, while a datagram for another node can come
+ * from anyone, so those give null, as do ties, our own byte (our echo) and placeholder keys.
+ * The prefix scan runs only for packets addressed to us.
+ */
+function meshcoreResolveDatagramSender(
+  destHash: number,
+  srcHash: number,
+  pubKeyPrefixMap: ReadonlyMap<string, number>,
+  selfPublicKey: Uint8Array | null | undefined,
+): number | null {
+  if (selfPublicKey?.length !== 32) return null;
+  if (destHash !== selfPublicKey[0] || srcHash === selfPublicKey[0]) return null;
+  const wantHex = srcHash.toString(16).padStart(2, '0');
+  let found: number | null = null;
+  for (const [prefixHex, nodeId] of pubKeyPrefixMap) {
+    if (nodeId === 0 || !prefixHex.toLowerCase().startsWith(wantHex)) continue;
+    if (meshcoreIsSyntheticPlaceholderPubKeyPrefixHex(prefixHex)) continue;
+    if (found != null && found !== nodeId) return null;
+    found = nodeId;
+  }
+  return found;
 }
 
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -133,10 +168,14 @@ export function meshcoreRfResolvePathSender(
   );
 }
 
-/** Resolve sender node id from a full in-house RF parse (preferred for raw log). */
+/**
+ * Resolve sender node id from a full in-house RF parse (preferred for raw log).
+ * `selfPublicKey` is needed for REQ / RESPONSE / TXT_MSG / PATH, which carry 1-byte hashes.
+ */
 export function meshcoreRawPacketResolveFromParsed(
   parsed: MeshCoreRfParseOk,
   pubKeyPrefixMap: Map<string, number>,
+  selfPublicKey?: Uint8Array | null,
 ): number | null {
   const inner = parsed.innerPayload;
   if (
@@ -161,6 +200,9 @@ export function meshcoreRawPacketResolveFromParsed(
       const mapped = pubKeyPrefixMap.get(pubkeyPrefixHex6(key)) ?? 0;
       if (mapped !== 0) return mapped;
     }
+  } else if (meshcoreIsDatagramPayloadType(parsed.payloadTypeNibble)) {
+    if (inner.length < 2) return null;
+    return meshcoreResolveDatagramSender(inner[0], inner[1], pubKeyPrefixMap, selfPublicKey);
   } else if (
     parsed.payloadTypeNibble !== MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE &&
     inner.length >= 6
@@ -179,6 +221,7 @@ export function meshcoreRawPacketResolveFromParsed(
 export function meshcoreRawPacketLogFromBytesFallback(
   raw: Uint8Array,
   pubKeyPrefixMap: Map<string, number>,
+  selfPublicKey?: Uint8Array | null,
 ): {
   routeTypeString: string;
   payloadTypeString: string;
@@ -218,6 +261,15 @@ export function meshcoreRawPacketLogFromBytesFallback(
           const mapped = pubKeyPrefixMap.get(prefix) ?? 0;
           if (mapped !== 0) fromNodeId = mapped;
         }
+      }
+    } else if (meshcoreIsDatagramPayloadType(payloadNibble)) {
+      if (raw.length >= pathEndOffset + 2) {
+        fromNodeId = meshcoreResolveDatagramSender(
+          raw[pathEndOffset],
+          raw[pathEndOffset + 1],
+          pubKeyPrefixMap,
+          selfPublicKey,
+        );
       }
     } else if (
       payloadNibble !== MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE &&

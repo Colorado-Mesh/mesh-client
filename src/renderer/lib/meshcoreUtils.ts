@@ -269,6 +269,11 @@ export function meshcoreIsSyntheticPlaceholderPubKeyHex(hex: string): boolean {
   return h.length === 64 && h.startsWith(SYNTH_PLACEHOLDER_PUBKEY_MARKER_HEX);
 }
 
+/** Same test for a key-prefix hex (`pubKeyPrefixHex`, 6 bytes) as kept in the prefix map. */
+export function meshcoreIsSyntheticPlaceholderPubKeyPrefixHex(prefixHex: string): boolean {
+  return prefixHex.toLowerCase().startsWith(SYNTH_PLACEHOLDER_PUBKEY_MARKER_HEX);
+}
+
 export function minimalMeshcoreChatNode(
   nodeId: number,
   displayName: string,
