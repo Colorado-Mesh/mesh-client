@@ -1,8 +1,8 @@
 diff --git a/crates/lxmf-core/src/link_delivery.rs b/crates/lxmf-core/src/link_delivery.rs
-index 778c30a..b684d72 100644
+index 2b3ea3e..ef3c74d 100644
 --- a/crates/lxmf-core/src/link_delivery.rs
 +++ b/crates/lxmf-core/src/link_delivery.rs
-@@ -2303,6 +2303,16 @@ impl LinkDeliveryManager {
+@@ -4844,6 +4844,16 @@ impl LinkDeliveryManager {
              || self.backchannel_links.contains_key(dest_hash)
      }
  

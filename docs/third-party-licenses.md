@@ -57,7 +57,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @jsr/meshtastic__transport-web-serial | n/a             | ^0.2.5          | 0.2.5             | n/a                                                                                  |
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.65.0         | 1.65.0            | git+https://github.com/microsoft/playwright.git                                      |
-| @tailwindcss/vite                     | MIT             | ^4.3.4          | 4.3.4             | https://github.com/tailwindlabs/tailwindcss.git                                      |
+| @tailwindcss/vite                     | MIT             | ^4.3.5          | 4.3.5             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
@@ -102,13 +102,13 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet                         | Hippocratic-2.1 | ^5.0.0          | 5.0.0             | git+https://github.com/PaulLeCam/react-leaflet.git                                   |
 | recharts                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/recharts/recharts.git                                         |
 | sort-package-json                     | MIT             | ^3.7.1          | 3.7.1             | git+ssh://git@github.com/keithamus/sort-package-json.git                             |
-| tailwindcss                           | MIT             | ^4.3.4          | 4.3.4             | https://github.com/tailwindlabs/tailwindcss.git                                      |
+| tailwindcss                           | MIT             | ^4.3.5          | 4.3.5             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |
 | typescript-eslint                     | MIT             | ^8.72.1         | 8.72.1            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | vite                                  | MIT             | ^8.3.6          | 8.3.6             | git+https://github.com/vitejs/vite.git                                               |
 | vitest                                | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | vitest-axe                            | MIT             | ^1.0.0-pre.5    | 1.0.0-pre.5       | git+https://github.com/chaance/vitest-axe.git                                        |
-| zustand                               | MIT             | ^5.0.16         | 5.0.16            | git+https://github.com/pmndrs/zustand.git                                            |
+| zustand                               | MIT             | ^5.1.0          | 5.1.0             | git+https://github.com/pmndrs/zustand.git                                            |
 
 ## Rust sidecar dependencies
 
@@ -119,8 +119,8 @@ Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | MIT OR Apache-2.0                                   | 197    |
 | MIT                                                 | 75     |
 | Apache-2.0 OR MIT                                   | 29     |
-| AGPL-3.0-or-later                                   | 15     |
 | MIT/Apache-2.0                                      | 12     |
+| LicenseRef-Reticulum                                | 10     |
 | BSD-3-Clause                                        | 7      |
 | Apache-2.0                                          | 5      |
 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 5      |
@@ -128,7 +128,9 @@ Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | MIT OR Apache-2.0 OR Zlib                           | 5      |
 | Unlicense OR MIT                                    | 5      |
 | CC0-1.0                                             | 4      |
+| LicenseRef-LXST-Ratspeak                            | 3      |
 | Zlib OR Apache-2.0 OR MIT                           | 3      |
+| AGPL-3.0-or-later                                   | 2      |
 | BSD-2-Clause OR Apache-2.0 OR MIT                   | 2      |
 | BSD-3-Clause OR Apache-2.0                          | 2      |
 | ISC                                                 | 2      |
@@ -157,18 +159,18 @@ Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | Crate          | Version | License                                | Source                                                 |
 | -------------- | ------- | -------------------------------------- | ------------------------------------------------------ |
 | lrgp           | 0.4.1   | MIT                                    | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)         |
-| lxmf-core      | 1.3.0   | AGPL-3.0-or-later                      | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
-| lxst-codec2    | 0.3.0   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-core      | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-rns       | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-telephony | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxmf-core      | 1.4.0   | LicenseRef-Reticulum                   | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
+| lxst-codec2    | 0.3.1   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-core      | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-rns       | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-telephony | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | nomad-core     | 0.1.0   | AGPL-3.0-or-later                      | [rsNomad](https://github.com/ratspeak/rsNomad)         |
-| rns-crypto     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-identity   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-interface  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-link       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-protocol   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-ratkey     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-runtime    | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-transport  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-wire       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-crypto     | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-identity   | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-interface  | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-link       | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-protocol   | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-ratkey     | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-runtime    | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-transport  | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-wire       | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |

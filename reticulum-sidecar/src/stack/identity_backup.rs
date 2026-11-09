@@ -200,6 +200,20 @@ fn validate_vault_kdf_costs(vault: &ratspeak_vault::EncryptedVault) -> Result<()
     Ok(())
 }
 
+/// Map vault decrypt failures for backup restore. Preserve Busy / UnsupportedCost;
+/// Auth and InvalidFormat become the incorrect-PIN-or-corrupt message.
+fn map_vault_decrypt_error(err: ratspeak_vault::VaultError) -> String {
+    match err {
+        ratspeak_vault::VaultError::Busy | ratspeak_vault::VaultError::UnsupportedCost => {
+            err.to_string()
+        }
+        ratspeak_vault::VaultError::Auth | ratspeak_vault::VaultError::InvalidFormat(_) => {
+            "Incorrect backup PIN or corrupt identity backup".into()
+        }
+        other => other.to_string(),
+    }
+}
+
 fn parse_v2_backup(backup: serde_json::Value, passphrase: &str) -> Result<ParsedBackup, String> {
     let pin = validate_backup_pin(passphrase)?;
     let parsed: EncryptedIdentityBackupV2 = serde_json::from_value(backup)
@@ -209,11 +223,10 @@ fn parse_v2_backup(backup: serde_json::Value, passphrase: &str) -> Result<Parsed
     }
     validate_vault_kdf_costs(&parsed.vault)?;
     // Decrypt key first (one Argon2). Only re-derive when a sealed mnemonic is present.
-    let key = ratspeak_vault::decrypt_key(pin, &parsed.vault)
-        .map_err(|_| "Incorrect backup PIN or corrupt identity backup".to_string())?;
+    let key = ratspeak_vault::decrypt_key(pin, &parsed.vault).map_err(map_vault_decrypt_error)?;
     let mnemonic = if parsed.vault.mnemonic_token.is_some() {
         ratspeak_vault::decrypt_mnemonic(pin, &parsed.vault)
-            .map_err(|_| "Incorrect backup PIN or corrupt identity backup".to_string())?
+            .map_err(map_vault_decrypt_error)?
             .map(|m| m.as_str().to_string())
     } else {
         None
@@ -329,6 +342,15 @@ mod tests {
     };
     use crate::stack::persistence::PersistedState;
     use std::fs;
+    use std::sync::{Mutex, OnceLock};
+
+    /// Serialize vault KDF tests against the vendored process-wide JOB_ACTIVE guard.
+    fn vault_test_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
 
     fn temp_dirs() -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf) {
         let root = tempfile::tempdir().unwrap();
@@ -345,6 +367,7 @@ mod tests {
 
     #[test]
     fn rsi_export_import_round_trip() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, mnemonic) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -399,6 +422,7 @@ mod tests {
 
     #[test]
     fn rsi_wrong_pin_fails() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -419,6 +443,7 @@ mod tests {
 
     #[test]
     fn rsi_missing_pin_fails() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -433,6 +458,25 @@ mod tests {
         let err = validate_backup_pin(&"x".repeat(MAX_BACKUP_PIN_LEN + 1)).unwrap_err();
         assert!(err.contains(&MAX_BACKUP_PIN_LEN.to_string()));
         assert!(err.to_lowercase().contains("at most"));
+    }
+
+    #[test]
+    fn vault_decrypt_errors_preserve_busy_and_cost() {
+        assert!(map_vault_decrypt_error(ratspeak_vault::VaultError::Busy).contains("in progress"));
+        assert!(
+            map_vault_decrypt_error(ratspeak_vault::VaultError::UnsupportedCost)
+                .contains("unsupported")
+        );
+        assert_eq!(
+            map_vault_decrypt_error(ratspeak_vault::VaultError::Auth),
+            "Incorrect backup PIN or corrupt identity backup"
+        );
+        assert_eq!(
+            map_vault_decrypt_error(ratspeak_vault::VaultError::InvalidFormat(
+                "truncated".into()
+            )),
+            "Incorrect backup PIN or corrupt identity backup"
+        );
     }
 
     #[test]
@@ -532,6 +576,7 @@ mod tests {
 
     #[test]
     fn uppercase_identity_hash_imports() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();
@@ -562,6 +607,7 @@ mod tests {
 
     #[test]
     fn rejects_excessive_argon2_costs() {
+        let _vault = vault_test_lock();
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
         let mut state = PersistedState::default_empty();

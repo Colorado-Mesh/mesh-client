@@ -1,8 +1,8 @@
 diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
-index 249837a..b69308d 100644
+index 2582b90..f30545e 100644
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -479,6 +479,14 @@ fn is_pairing_transition_error(error: &InterfaceError) -> bool {
+@@ -499,6 +499,14 @@ fn is_pairing_transition_error(error: &InterfaceError) -> bool {
      )
  }
  
@@ -17,7 +17,7 @@ index 249837a..b69308d 100644
  /// The GATT operation that establishes authenticated access before normal NUS
  /// traffic begins.
  ///
-@@ -1665,6 +1673,7 @@ async fn connect_rnode(
+@@ -1749,6 +1757,7 @@ async fn connect_rnode(
      generation_stable_name: &mut Option<String>,
      running: &AtomicBool,
      generation_id: BleGenerationId,
@@ -25,7 +25,7 @@ index 249837a..b69308d 100644
  ) -> Result<BleRNodeConnection, InterfaceError> {
      ble_diag(format!("[ble] connect_rnode start uri={ble_uri}"));
      let alternate_name = if cfg!(any(target_os = "ios", target_os = "macos")) {
-@@ -1889,7 +1898,11 @@ async fn connect_rnode(
+@@ -1970,7 +1979,11 @@ async fn connect_rnode(
              tx_char.properties.contains(CharPropFlags::NOTIFY),
          ));
  
@@ -38,7 +38,7 @@ index 249837a..b69308d 100644
              desktop_trigger_pairing(
                  &peripheral,
                  &tx_char,
-@@ -1907,7 +1920,9 @@ async fn connect_rnode(
+@@ -1988,7 +2001,9 @@ async fn connect_rnode(
      // encrypted read path. Once bonded, this subscription completes normally
      // and is not repeated within the accepted generation.
      #[cfg(any(target_os = "ios", target_os = "macos"))]
@@ -49,7 +49,7 @@ index 249837a..b69308d 100644
          BleOperationStage::PairingSubscribe
      } else {
          BleOperationStage::Subscribe
-@@ -1917,7 +1932,7 @@ async fn connect_rnode(
+@@ -1998,7 +2013,7 @@ async fn connect_rnode(
  
      ble_diag("[ble] subscribe TX start");
      trace_ble_lifecycle(generation_id, "subscribe", "started", None, None);
@@ -58,7 +58,7 @@ index 249837a..b69308d 100644
          subscribe_stage,
          peripheral.subscribe(&tx_char),
          &mut adapter_events,
-@@ -1925,9 +1940,81 @@ async fn connect_rnode(
+@@ -2006,9 +2021,81 @@ async fn connect_rnode(
          |event| matches!(event, CentralEvent::DeviceDisconnected(id) if id == &target_id),
      )
      .await
@@ -143,7 +143,7 @@ index 249837a..b69308d 100644
  
      let write_mtu = ble_write_chunk_size();
      tracing::info!(write_mtu, "BLE RNode write chunk size");
-@@ -2707,6 +2794,9 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
+@@ -2800,6 +2887,9 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
          let mut tries: usize = 0;
          let mut backoff = RECONNECT_WAIT;
          let mut initial_attempt = true;
@@ -153,7 +153,7 @@ index 249837a..b69308d 100644
          let mut generation_counter = BleGenerationId::default();
          // CoreBluetooth can replace/evict the peripheral handle during the
          // intentional nRF post-bond disconnect. Preserve the first verified
-@@ -2769,11 +2859,28 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
+@@ -2868,11 +2958,28 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
                  &mut generation_stable_target_name,
                  &running_task,
                  generation_id,
@@ -183,7 +183,7 @@ index 249837a..b69308d 100644
                      let pairing_transition = is_pairing_transition_error(&e);
                      let retry_wait = if pairing_transition {
                          PAIRING_TRANSITION_RETRY_WAIT
-@@ -7052,6 +7159,7 @@ mod tests {
+@@ -7748,6 +7855,7 @@ mod tests {
              &mut generation_stable_name,
              &running,
              BleGenerationId::default().next(),
@@ -191,7 +191,7 @@ index 249837a..b69308d 100644
          )
          .await
          .expect("No RNode found. Pair an RNode first.");
-@@ -7076,6 +7184,17 @@ mod tests {
+@@ -7773,6 +7881,17 @@ mod tests {
          handle.online.store(false, Ordering::SeqCst);
      }
  

@@ -552,7 +552,7 @@ mod tests {
                 ..Default::default()
             },
             [0xAA; 16],
-            dir.path().to_path_buf(),
+            dir.path().join("store"),
         )
         .expect("node");
 

@@ -1,8 +1,8 @@
 diff --git a/crates/nomad-core/src/node.rs b/crates/nomad-core/src/node.rs
-index b96f449..180cc55 100644
+index 2351dd3..da37a08 100644
 --- a/crates/nomad-core/src/node.rs
 +++ b/crates/nomad-core/src/node.rs
-@@ -272,7 +272,7 @@ pub struct NomadNode {
+@@ -316,7 +316,7 @@ pub struct NomadNode {
      shared: Arc<SharedState>,
      transport_tx: mpsc::Sender<TransportMessage>,
      identity: Identity,
@@ -11,7 +11,7 @@ index b96f449..180cc55 100644
      _announce_task: Option<JoinHandle<()>>,
  }
  
-@@ -383,7 +383,7 @@ impl NomadNode {
+@@ -434,7 +434,7 @@ impl NomadNode {
              shared,
              transport_tx,
              identity,
@@ -20,7 +20,7 @@ index b96f449..180cc55 100644
              _announce_task: announce_task,
          };
          if config.announce_at_start {
-@@ -482,15 +482,25 @@ impl NomadNode {
+@@ -533,16 +533,26 @@ impl NomadNode {
          .map_err(|_| NomadError::message("announce send timed out"))?
      }
  
@@ -42,6 +42,7 @@ index b96f449..180cc55 100644
  }
  
  impl Drop for NomadNode {
+     /// Stops the background tasks when the node is dropped.
      fn drop(&mut self) {
 -        self._link_task.abort();
 +        if let Some(task) = self._link_task.take() {
@@ -51,9 +52,10 @@ index b96f449..180cc55 100644
              task.abort();
          }
 diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
+index b813460..37998a9 100644
 --- a/crates/nomad-core/src/paths.rs
 +++ b/crates/nomad-core/src/paths.rs
-@@ -149,12 +149,15 @@ pub fn validate_content_relative_path(rel: &str) -> Result<(), NomadError> {
+@@ -151,12 +151,15 @@ pub fn validate_content_relative_path(rel: &str) -> Result<(), NomadError> {
  /// Resolve `rel` under `root`, rejecting escapes and symlink components.
  pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError> {
      validate_content_relative_path(rel)?;
@@ -71,7 +73,7 @@ diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
          root.canonicalize().map_err(NomadError::Io)?
      } else {
          root.to_path_buf()
-@@ -173,6 +176,9 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
+@@ -175,6 +178,9 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
      }
  
      if cur.exists() {
@@ -81,7 +83,7 @@ diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
          let canon = cur.canonicalize().map_err(NomadError::Io)?;
          if !canon.starts_with(&root_canon) {
              return Err(NomadError::PathTraversal);
-@@ -182,6 +188,9 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
+@@ -184,6 +190,9 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
      if let Some(parent) = cur.parent() {
          if parent.exists() {
              reject_if_symlink(parent)?;
@@ -91,7 +93,7 @@ diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
              let parent_canon = parent.canonicalize().map_err(NomadError::Io)?;
              if !parent_canon.starts_with(&root_canon) {
                  return Err(NomadError::PathTraversal);
-@@ -191,6 +200,25 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
+@@ -193,6 +202,25 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
      Ok(cur)
  }
  
@@ -117,7 +119,7 @@ diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
  /// Reject `path` when it is a symlink (does not follow the link).
  pub(crate) fn reject_if_symlink(path: &Path) -> Result<(), NomadError> {
      let meta = fs::symlink_metadata(path).map_err(NomadError::Io)?;
-@@ -221,6 +249,19 @@ mod tests {
+@@ -225,6 +253,19 @@ mod tests {
      use super::*;
      use tempfile::tempdir;
  
@@ -134,13 +136,13 @@ diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
 +        PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
 +    }
 +
+     /// Page routes are normalized.
      #[test]
      fn page_route_normalization() {
-         assert_eq!(normalize_page_route("index.mu").unwrap(), "/page/index.mu");
-@@ -382,6 +423,29 @@ mod tests {
-         ));
+@@ -398,6 +439,29 @@ mod tests {
      }
  
+     /// A root that does not exist yet keeps the logical path.
 +    #[cfg(any(target_os = "linux", target_os = "macos"))]
 +    #[test]
 +    fn content_store_sink_keeps_pinned_root_after_path_replacement() {

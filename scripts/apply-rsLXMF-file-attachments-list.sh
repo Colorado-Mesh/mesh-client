@@ -11,6 +11,8 @@ source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsLXMF-file-attachments-list.patch"
 LXMF_DIR="${RS_LXMF_DIR:-${REPO_ROOT}/.rsstack/rsLXMF}"
 MESSAGE_RS="${LXMF_DIR}/crates/lxmf-core/src/message.rs"
+# 1.4 puts compose setters on LxMessageDraft (message/draft.rs).
+DRAFT_RS="${LXMF_DIR}/crates/lxmf-core/src/message/draft.rs"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "error: rsLXMF not found at ${LXMF_DIR}" >&2
@@ -25,8 +27,12 @@ fi
 
 overlay_already_present() {
   [[ -f "${MESSAGE_RS}" ]] || return 1
-  grep -qE 'fn set_file_attachments_field\(' "${MESSAGE_RS}" \
-    && grep -qE 'fn file_attachments\(' "${MESSAGE_RS}"
+  grep -qE 'fn file_attachments\(' "${MESSAGE_RS}" || return 1
+  # Setter lives on LxMessage (pre-1.4) or LxMessageDraft (1.4+).
+  if [[ -f "${DRAFT_RS}" ]] && grep -qE 'fn set_file_attachments_field\(' "${DRAFT_RS}"; then
+    return 0
+  fi
+  grep -qE 'fn set_file_attachments_field\(' "${MESSAGE_RS}"
 }
 
 if overlay_already_present; then

@@ -197,6 +197,7 @@ export function ReticulumNetworkPanel({
     interface_discovery_sources: '',
     network_identity: '',
     slow_rf_announce_filter: true,
+    autoconnect_unverified_implementations: false,
   });
   /** Last GET snapshot — save only sends keys that differ so concurrent patches are preserved. */
   const stackSettingsBaselineRef = useRef<typeof stackSettings | null>(null);
@@ -224,6 +225,7 @@ export function ReticulumNetworkPanel({
         interface_discovery_sources: body.interface_discovery_sources,
         network_identity: body.network_identity,
         slow_rf_announce_filter: body.slow_rf_announce_filter,
+        autoconnect_unverified_implementations: body.autoconnect_unverified_implementations,
       };
       setStackSettings(next);
       stackSettingsBaselineRef.current = next;
@@ -710,6 +712,13 @@ export function ReticulumNetworkPanel({
       if (baseline.slow_rf_announce_filter !== stackSettings.slow_rf_announce_filter) {
         patch.slow_rf_announce_filter = stackSettings.slow_rf_announce_filter;
       }
+      const unverifiedChanged =
+        baseline.autoconnect_unverified_implementations !==
+        stackSettings.autoconnect_unverified_implementations;
+      if (unverifiedChanged) {
+        patch.autoconnect_unverified_implementations =
+          stackSettings.autoconnect_unverified_implementations;
+      }
       if (Object.keys(patch).length === 0) {
         return;
       }
@@ -719,6 +728,13 @@ export function ReticulumNetworkPanel({
         return;
       }
       await refreshStackSettings();
+      // INI-only today — no live TransportQuery — so call out a restart when this toggles.
+      if (unverifiedChanged) {
+        addToast(
+          t('networkPanel.reticulumStackSettings.autoconnectUnverifiedRestartRequired'),
+          'info',
+        );
+      }
     } catch (e) {
       // catch-no-log-ok: stack settings save failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
@@ -873,6 +889,32 @@ export function ReticulumNetworkPanel({
               />
               <span className="text-label text-muted mt-1 block">
                 {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
+              </span>
+            </label>
+            <label
+              data-setting-anchor="radio.reticulumStack.autoconnectUnverified"
+              className="text-ink-400 mt-2 flex items-start gap-2 text-xs"
+            >
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={stackSettings.autoconnect_unverified_implementations}
+                disabled={!sidecarApiReady}
+                onChange={(e) => {
+                  setStackSettings((s) => ({
+                    ...s,
+                    autoconnect_unverified_implementations: e.target.checked,
+                  }));
+                }}
+                aria-label={t('networkPanel.reticulumStackSettings.autoconnectUnverifiedAria')}
+              />
+              <span>
+                <span className="block font-medium">
+                  {t('networkPanel.reticulumStackSettings.autoconnectUnverified')}
+                </span>
+                <span className="text-label text-muted mt-1 block">
+                  {t('networkPanel.reticulumStackSettings.autoconnectUnverifiedHint')}
+                </span>
               </span>
             </label>
             <label

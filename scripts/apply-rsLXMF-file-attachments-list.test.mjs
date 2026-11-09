@@ -187,11 +187,17 @@ describe('apply-rsLXMF-file-attachments-list.sh', () => {
         [
           'crates/lxmf-core/src/message.rs',
           `impl LxMessage {
-    pub fn set_file_attachments_field(&mut self, attachments: &[(&str, &[u8])]) -> Result<(), MessageError> {
-        Ok(())
-    }
     pub fn file_attachments(&self) -> Result<Vec<(String, &[u8])>, MessageError> {
         Ok(Vec::new())
+    }
+}
+`,
+        ],
+        [
+          'crates/lxmf-core/src/message/draft.rs',
+          `impl LxMessageDraft {
+    pub fn set_file_attachments_field(&mut self, attachments: &[(&str, &[u8])]) -> Result<(), MessageError> {
+        Ok(())
     }
 }
 `,
@@ -206,12 +212,14 @@ describe('apply-rsLXMF-file-attachments-list.sh', () => {
   it('applies on a clean checkout matching the overlay context', () => {
     const files = materializePatchFiles(readFileSync(PATCH_FILE, 'utf8'), 'old');
     expect(files.has('crates/lxmf-core/src/message.rs')).toBe(true);
+    expect(files.has('crates/lxmf-core/src/message/draft.rs')).toBe(true);
     const lxmf = makeFakeRsLxmfFromFiles(files);
     const result = runApply(lxmf);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/applied .*rsLXMF-file-attachments-list\.patch/);
     const messageRs = readFileSync(path.join(lxmf, 'crates/lxmf-core/src/message.rs'), 'utf8');
-    expect(messageRs).toContain('fn set_file_attachments_field(');
+    const draftRs = readFileSync(path.join(lxmf, 'crates/lxmf-core/src/message/draft.rs'), 'utf8');
     expect(messageRs).toContain('fn file_attachments(');
+    expect(draftRs).toContain('fn set_file_attachments_field(');
   });
 });

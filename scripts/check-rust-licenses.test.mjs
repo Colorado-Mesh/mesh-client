@@ -1,11 +1,17 @@
 // @vitest-environment node
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   CARGO_METADATA_ARGS,
+  classifyLicenseFileBody,
   collectRustPackages,
   evaluateRustPackages,
   formatRustLicenseCheckReport,
+  resolveLicenseFile,
   runCargoMetadata,
   runRustLicenseCheck,
 } from './check-rust-licenses.mjs';
@@ -29,6 +35,71 @@ function sink() {
   };
 }
 
+/** Minimal complete Reticulum License body (structural fallback; not a digest pin). */
+const RETICULUM_LICENSE_FIXTURE = `Reticulum License
+
+Derived from the reference implementation at
+https://github.com/markqvist/Reticulum
+
+Copyright (c) 2016-2026 Mark Qvist, unless otherwise noted
+
+Additions and modifications Copyright (c) 2026 Ratspeak LLC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+- The Software shall not be used in any kind of system which includes amongst
+  its functions the ability to purposefully do harm to human beings.
+
+- The Software shall not be used, directly or indirectly, in the creation of
+  an artificial intelligence, machine learning or language model training
+  dataset, including but not limited to any use that contributes to the
+  training or development of such a model or algorithm.
+
+- The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
+
+const LXST_LICENSE_FIXTURE = `LXST Copyright 2026 Mark Qvist.
+
+This implementation of LXST is derived from the LXST reference implementation,
+and used under license for Ratspeak, for non-commercial use only.
+No derivatives or use outside Ratspeak is permitted.
+
+For commercial licensing inquiries, contact license@unsigned.io
+`;
+
+describe('classifyLicenseFileBody', () => {
+  it('accepts complete Reticulum / LXST texts and rejects header-only near-misses', () => {
+    expect(classifyLicenseFileBody(RETICULUM_LICENSE_FIXTURE)).toBe('LicenseRef-Reticulum');
+    expect(classifyLicenseFileBody(LXST_LICENSE_FIXTURE)).toBe('LicenseRef-LXST-Ratspeak');
+    // Header / quoted-title fragments must not become allowlisted identifiers.
+    expect(classifyLicenseFileBody('Reticulum License\n\nDerived from…')).toBe('');
+    expect(
+      classifyLicenseFileBody(
+        'LXST Copyright 2026 Mark Qvist.\n\nused under license for Ratspeak, for non-commercial use only.\n',
+      ),
+    ).toBe('');
+    expect(classifyLicenseFileBody('GNU AFFERO GENERAL PUBLIC LICENSE\nVersion 3')).toBe('');
+    expect(
+      classifyLicenseFileBody('"GNU AFFERO GENERAL PUBLIC LICENSE" appears in this README only'),
+    ).toBe('');
+    expect(classifyLicenseFileBody('Mysterious proprietary terms')).toBe('');
+  });
+});
+
 describe('collectRustPackages', () => {
   it('maps cargo metadata packages', () => {
     expect(
@@ -41,6 +112,35 @@ describe('collectRustPackages', () => {
         manifestPath: '/x/rns-wire/Cargo.toml',
       },
     ]);
+  });
+
+  it('resolves empty SPDX license via license-file under the manifest', () => {
+    // Fixture tree — do not depend on a live `.rsstack` checkout (absent in Vitest CI).
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-rust-license-'));
+    try {
+      const crateDir = path.join(root, 'crates', 'rns-crypto');
+      fs.mkdirSync(crateDir, { recursive: true });
+      fs.writeFileSync(path.join(root, 'LICENSE'), RETICULUM_LICENSE_FIXTURE);
+      const manifestPath = path.join(crateDir, 'Cargo.toml');
+      fs.writeFileSync(manifestPath, '[package]\nname = "rns-crypto"\n');
+      const packages = collectRustPackages({
+        packages: [
+          {
+            name: 'rns-crypto',
+            version: '1.4.0',
+            license: null,
+            license_file: '../../LICENSE',
+            manifest_path: manifestPath,
+          },
+        ],
+      });
+      expect(packages[0].license).toBe('LicenseRef-Reticulum');
+      expect(resolveLicenseFile(packages[0].manifestPath, '../../LICENSE')).toBe(
+        'LicenseRef-Reticulum',
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('throws on missing or malformed input', () => {

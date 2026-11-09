@@ -1005,7 +1005,9 @@
       "transfersAria": "Odesílané přílohy"
     },
     "sendLater": "Odeslat později...",
-    "sendMenuButton": "Možnosti odeslání"
+    "sendMenuButton": "Možnosti odeslání",
+    "saveAttachmentAria": "Uložit přílohu {{name}}",
+    "revealAttachmentAria": "Zobrazit přílohu {{name}} ve složce"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -3524,7 +3526,13 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "Volitelné. Vyžadováno k dešifrování šifrovaných oznámení o objevení (a k šifrování při publikování pomocí Discovery_Encrypt).",
       "slowRfAnnounceFilter": "Hlášení limitů na pomalých RF rozhraních (nestandardní)",
-      "slowRfAnnounceFilterHint": "Ve výchozím nastavení zapnuto. Zastaví nevyžádaná internetová oznámení před opětovným vysíláním přes odkazy s nízkou šířkou pásma RNode, kde se nikdy nevyčerpají. Místní a RF naučené destinace stále oznamují a internetové destinace stále reagují na žádosti o trasy na vyžádání. Vypnout pro chování oznamování zásob Reticulum."
+      "slowRfAnnounceFilterHint": "Ve výchozím nastavení zapnuto. Zastaví nevyžádaná internetová oznámení před opětovným vysíláním přes odkazy s nízkou šířkou pásma RNode, kde se nikdy nevyčerpají. Místní a RF naučené destinace stále oznamují a internetové destinace stále reagují na žádosti o trasy na vyžádání. Vypnout pro chování oznamování zásob Reticulum.",
+      "autoconnectUnverified": "Automatické připojení neověřených implementací",
+      "autoconnectUnverifiedAria": "Povolit automatické připojení k rozhraním páteře oznámeným zásobníky, které nejsou v Pythonu nebo neověřenými zásobníky, jako je rsRNS",
+      "autoconnectUnverifiedHint": "Ve výchozím nastavení vypnuto. Povolit, když partnerský vztah s rsRNS nebo jinou páteřní sítí mimo Python oznámí, že neinzeruje ověřenou implementaci Pythonu Reticulum.",
+      "interfaceStatsTitle": "Počítadla živého rozhraní",
+      "interfaceStatsLine": "TX drop {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtr {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "Uloženo. Restartujte zásobník Reticulum, aby se projevilo neověřené automatické připojení."
     },
     "reticulumConfigImport": {
       "title": "Import konfigurace Reticulum",
@@ -6918,7 +6926,10 @@
         "r": "Povýšit na věž",
         "b": "Povýšit na biskupa",
         "n": "Povýšit na rytíře"
-      }
+      },
+      "opponentCaptured": "Soupeř zajat",
+      "youCaptured": "Ty jsi zajal",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Zadejte platný 32místný partnerský cílový hash.",
@@ -6941,7 +6952,9 @@
       "failed": "Je třeba to zkusit znovu"
     },
     "drawOfferWaitingBanner": "Nabídka remízy odeslána. Čeká se na soupeře…",
-    "idleExpiryNotice": "Hry vyprší po nečinnosti a poté je lze pouze smazat. Nezodpovězené výzvy: 24 hodin (všechny hry). Aktivní hry: piškvorky po 24 hodinách, šachy a čtyři v řadě po 7 dnech."
+    "idleExpiryNotice": "Hry vyprší po nečinnosti a poté je lze pouze smazat. Nezodpovězené výzvy: 24 hodin (všechny hry). Aktivní hry: piškvorky po 24 hodinách, šachy a čtyři v řadě po 7 dnech.",
+    "backToList": "Zpět ke hrám",
+    "backToListAria": "Zpět na seznam herních relací"
   },
   "reticulumSetup": {
     "title": "Vaše první připojení",

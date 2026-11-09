@@ -1,10 +1,13 @@
 import type { MessageRecord } from '@/renderer/stores/messageStore';
+import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachment';
 
 import { normalizeReticulumNodeId, reticulumHashToNodeId } from './destHash';
 
 export interface ReticulumIngestMergeContext {
   selfLxmfHash?: string | null;
   attachmentPath?: string | null;
+  /** Multi-file LXMF attachments (includes the first at attachmentPath). */
+  attachments?: ReticulumCachedAttachment[] | null;
   /** When the attachment is an audio file, stamp kind/mode on the record. */
   attachmentKind?: 'image' | 'audio';
   /** LXMF FIELD_AUDIO mode from the wire (16 = AM_OPUS_OGG). */
@@ -41,6 +44,7 @@ export function mergeReticulumIngestRecord(
   if (!existing) {
     if (ctx.attachmentPath) {
       record.reticulumAttachmentPath = ctx.attachmentPath;
+      if (ctx.attachments?.length) record.reticulumAttachments = ctx.attachments;
       if (ctx.attachmentKind) record.reticulumAttachmentKind = ctx.attachmentKind;
       if (ctx.audioMode != null) record.reticulumAudioMode = ctx.audioMode;
     }
@@ -87,10 +91,12 @@ export function mergeReticulumIngestRecord(
 
   if (ctx.attachmentPath) {
     merged.reticulumAttachmentPath = ctx.attachmentPath;
+    if (ctx.attachments?.length) merged.reticulumAttachments = ctx.attachments;
     if (ctx.attachmentKind) merged.reticulumAttachmentKind = ctx.attachmentKind;
     if (ctx.audioMode != null) merged.reticulumAudioMode = ctx.audioMode;
   } else if (existing.reticulumAttachmentPath) {
     merged.reticulumAttachmentPath = existing.reticulumAttachmentPath;
+    merged.reticulumAttachments = existing.reticulumAttachments;
     merged.reticulumAttachmentKind = existing.reticulumAttachmentKind;
     merged.reticulumAudioMode = existing.reticulumAudioMode;
     merged.reticulumAudioDurationSec = existing.reticulumAudioDurationSec;

@@ -41,6 +41,8 @@ import { getReticulumAttachmentsDir } from '../reticulum-attachment-path';
 import {
   BLOCKED_CONTACTS_IMPORT_MAX,
   registerReticulumDbIpcHandlers,
+  RETICULUM_ATTACHMENTS_JSON_MAX_CHARS,
+  sanitizeAttachmentsJsonForDb,
 } from './reticulum-db-handlers';
 
 type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown;
@@ -49,6 +51,23 @@ const getDbForIpcMock = vi.mocked(getDbForIpc);
 
 afterAll(() => {
   rmSync(testUserDataDir, { recursive: true, force: true });
+});
+
+describe('sanitizeAttachmentsJsonForDb', () => {
+  it('keeps non-empty valid JSON within the size limit', () => {
+    expect(sanitizeAttachmentsJsonForDb('[{"path":"/a"}]')).toBe('[{"path":"/a"}]');
+    expect(sanitizeAttachmentsJsonForDb('  []  ')).toBe('[]');
+  });
+
+  it('rejects empty, invalid, or oversized JSON without truncating', () => {
+    expect(sanitizeAttachmentsJsonForDb('')).toBeNull();
+    expect(sanitizeAttachmentsJsonForDb('   ')).toBeNull();
+    expect(sanitizeAttachmentsJsonForDb('{"path":')).toBeNull();
+    expect(sanitizeAttachmentsJsonForDb(null)).toBeNull();
+    const oversized = `[${'"x",'.repeat(RETICULUM_ATTACHMENTS_JSON_MAX_CHARS)}]`;
+    expect(oversized.length).toBeGreaterThan(RETICULUM_ATTACHMENTS_JSON_MAX_CHARS);
+    expect(sanitizeAttachmentsJsonForDb(oversized)).toBeNull();
+  });
 });
 
 describe('reticulum-db-handlers validation', () => {

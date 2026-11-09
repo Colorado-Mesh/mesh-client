@@ -1,8 +1,8 @@
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index e9378cb6..30b97b21 100644
+index 832da5e..8b286b1 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
-@@ -149,6 +149,9 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+@@ -154,6 +154,9 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
      }
      match jail {
          Some(jail_dir) => {
@@ -12,7 +12,7 @@ index e9378cb6..30b97b21 100644
              let jail_canonical =
                  std::fs::canonicalize(jail_dir).map_err(|e| format!("jail canonicalize: {e}"))?;
              // canonicalize resolves symlinks (macOS `/var` → `/private/var`)
-@@ -170,6 +173,50 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+@@ -175,6 +178,50 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
      }
  }
  
@@ -60,10 +60,10 @@ index e9378cb6..30b97b21 100644
 +    Ok(resolved)
 +}
 +
- pub struct RncpListenerConfig {
-     pub identity: Identity,
-     pub app_name: String,
-@@ -1513,6 +1560,21 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+ /// Listener policy and file locations. Defaults generate a fresh identity,
+ /// use `rncp.receive` and the current directory, disable fetch and overwrite,
+ /// and leave the allow-list empty. Supply a persistent identity when the
+@@ -1595,6 +1642,21 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
  mod tests {
      use super::*;
  
@@ -85,7 +85,7 @@ index e9378cb6..30b97b21 100644
      #[test]
      fn metadata_roundtrip() {
          let packed = pack_metadata("hello.txt");
-@@ -1605,4 +1667,32 @@ mod tests {
+@@ -1687,4 +1749,32 @@ mod tests {
      fn successful_rncp_send_retains_python_receiver_settlement_window() {
          assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
      }

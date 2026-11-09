@@ -1,8 +1,8 @@
 diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
-index 7c89551..b798539 100644
+index d1dea3a..2582b90 100644
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -74,6 +74,10 @@ const RECONNECT_WAIT: u64 = 1;
+@@ -78,6 +78,10 @@ const RECONNECT_WAIT: u64 = 1;
  /// Fast early recovery, then indefinite low-duty retries. A two-minute cap made
  /// a reachable radio appear dead long after returning to range.
  const RECONNECT_WAIT_MAX: u64 = 30;
@@ -13,7 +13,7 @@ index 7c89551..b798539 100644
  /// `None` retries forever; teardown goes via `stop_ble_rnode_interface`.
  const MAX_RECONNECT_TRIES: Option<usize> = None;
  const SCAN_TIMEOUT: u64 = 3;
-@@ -2804,7 +2808,11 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
+@@ -2870,7 +2874,11 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
                  Ok(c) => c,
                  Err(e) => {
                      let pairing_transition = is_pairing_transition_error(&e);
@@ -26,7 +26,7 @@ index 7c89551..b798539 100644
                      snapshot_publisher.connection_attempt_failed();
                      tracing::warn!(name = %log_name, error = %e, "BLE RNode connect failed");
                      ble_diag(format!(
-@@ -7276,6 +7284,17 @@ mod tests {
+@@ -7764,6 +7772,17 @@ mod tests {
          tokio::time::sleep(Duration::from_secs(2)).await;
          handle.online.store(false, Ordering::SeqCst);
      }

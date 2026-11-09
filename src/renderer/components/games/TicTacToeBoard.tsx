@@ -59,7 +59,7 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
         </div>
       )}
       <div
-        className="grid grid-cols-3 gap-1"
+        className="grid w-full max-w-[min(100%,18rem)] grid-cols-3 gap-1"
         role="group"
         aria-label={t('gamesPanel.ttt.boardAria')}
       >
@@ -70,7 +70,7 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
             <button
               key={index}
               type="button"
-              className="border-ink-600 bg-ink-800/80 text-ink-100 enabled:hover:bg-ink-700 flex h-14 w-14 items-center justify-center rounded border text-2xl font-semibold disabled:cursor-default disabled:opacity-70"
+              className="border-ink-600 bg-ink-800/80 text-ink-100 enabled:hover:bg-ink-700 flex aspect-square w-full items-center justify-center rounded border text-[clamp(1.25rem,6vw,1.5rem)] font-semibold disabled:cursor-default disabled:opacity-70"
               aria-label={
                 isEmpty
                   ? t('gamesPanel.ttt.cellEmptyAria', { index: index + 1 })

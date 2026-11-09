@@ -18,6 +18,7 @@
  *
  * Usage: pnpm run check:rust-licenses [-- --require-cargo]
  */
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -42,6 +43,87 @@ export const CARGO_METADATA_ARGS = Object.freeze([
  * @typedef {{ license: string, name: string, versions: string[] }} RustLicenseViolation
  * @typedef {{ counts: Map<string, number>, packages: RustPackage[], violations: RustLicenseViolation[] }} RustLicenseEvaluation
  */
+
+/**
+ * Reviewed `license-file` bodies (sha256 of exact UTF-8 text) from the pinned
+ * Ratspeak stack. Prefer digest match so a header-only near-miss cannot pass.
+ * Bump digests when `pnpm run update` advances pins and the LICENSE text changes.
+ */
+export const APPROVED_LICENSE_FILE_DIGESTS = Object.freeze({
+  // .rsstack/rsReticulum/LICENSE (1.4.0)
+  fdd4e715eca4170cee9cc96c45b4d45bad6e56c8a264cd2753b8e010a2d9386d: 'LicenseRef-Reticulum',
+  // .rsstack/rsLXMF/LICENSE (1.4.0) — same grant, LXMF upstream URL
+  '0bf73a7f75b4c3a2e759fbb5ee90fb88e5a6f5bca20dd0e308c84b37ff85b9c9': 'LicenseRef-Reticulum',
+  // .rsstack/rsLXST/LICENSE (0.3.1)
+  c593187a2c5294de0c9ac229f2c6f5b1aa9d4a771c974bbbd82824c4c1e98276: 'LicenseRef-LXST-Ratspeak',
+  // .rsstack/rsNomad/LICENSE (AGPL-3.0 full text)
+  '0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0': 'AGPL-3.0-or-later',
+});
+
+/**
+ * Map a cargo `license-file` body to an allowlisted SPDX/LicenseRef id.
+ * Ratspeak 1.4 crates dropped SPDX `license =` in favor of `license-file`.
+ * Header phrases alone are not enough — require a reviewed digest or the
+ * complete structural markers of an approved text.
+ *
+ * @param {string} body
+ * @returns {string} empty when unrecognized
+ */
+export function classifyLicenseFileBody(body) {
+  const text = String(body || '');
+  if (!text) return '';
+  const digest = createHash('sha256').update(text, 'utf8').digest('hex');
+  const approved = APPROVED_LICENSE_FILE_DIGESTS[digest];
+  if (approved) return approved;
+
+  // Structural fallbacks for complete texts not yet pinned by digest (e.g. local
+  // fixtures). Header-only / truncated bodies must still return ''.
+  if (
+    text.startsWith('Reticulum License') &&
+    text.includes('Permission is hereby granted, free of charge') &&
+    text.includes('purposefully do harm to human beings') &&
+    text.includes('THE SOFTWARE IS PROVIDED "AS IS"') &&
+    text.length >= 800
+  ) {
+    return 'LicenseRef-Reticulum';
+  }
+  if (
+    text.includes('LXST Copyright') &&
+    /non-commercial use only/i.test(text) &&
+    /No derivatives or use outside Ratspeak is permitted/i.test(text) &&
+    text.length >= 200
+  ) {
+    return 'LicenseRef-LXST-Ratspeak';
+  }
+  if (
+    /^\s*GNU AFFERO GENERAL PUBLIC LICENSE/m.test(text) &&
+    /Version 3,\s*19 November 2007/.test(text) &&
+    text.includes('END OF TERMS AND CONDITIONS') &&
+    text.length >= 10_000
+  ) {
+    return 'AGPL-3.0-or-later';
+  }
+  return '';
+}
+
+/**
+ * @param {string} manifestPath
+ * @param {string} licenseFileRel
+ * @param {{ readFileSync?: typeof fs.readFileSync, existsSync?: typeof fs.existsSync }} [io]
+ * @returns {string}
+ */
+export function resolveLicenseFile(manifestPath, licenseFileRel, io = {}) {
+  const readFileSync = io.readFileSync ?? fs.readFileSync;
+  const existsSync = io.existsSync ?? fs.existsSync;
+  if (!manifestPath || !licenseFileRel) return '';
+  const abs = path.resolve(path.dirname(manifestPath), licenseFileRel);
+  if (!existsSync(abs)) return '';
+  try {
+    return classifyLicenseFileBody(readFileSync(abs, 'utf8'));
+  } catch {
+    return '';
+  }
+}
 
 /**
  * @param {{ spawn?: typeof spawnSync }} [io]
@@ -103,11 +185,16 @@ export function collectRustPackages(metadata) {
       throw new Error('check:rust-licenses: expected package object in cargo metadata');
     }
     const rec = /** @type {Record<string, unknown>} */ (entry);
+    const manifestPath = typeof rec.manifest_path === 'string' ? rec.manifest_path : '';
+    let license = typeof rec.license === 'string' ? rec.license.trim() : '';
+    if (!license && typeof rec.license_file === 'string' && rec.license_file.trim()) {
+      license = resolveLicenseFile(manifestPath, rec.license_file.trim());
+    }
     return {
       name: typeof rec.name === 'string' ? rec.name : '(unknown)',
       version: typeof rec.version === 'string' ? rec.version : '',
-      license: typeof rec.license === 'string' ? rec.license.trim() : '',
-      manifestPath: typeof rec.manifest_path === 'string' ? rec.manifest_path : '',
+      license,
+      manifestPath,
     };
   });
 }

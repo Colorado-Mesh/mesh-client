@@ -1,8 +1,8 @@
 diff --git a/crates/rns-interface/src/auto.rs b/crates/rns-interface/src/auto.rs
-index acbf303..d40ce2a 100644
+index 1de31f5..33c5fd6 100644
 --- a/crates/rns-interface/src/auto.rs
 +++ b/crates/rns-interface/src/auto.rs
-@@ -35,7 +35,7 @@ pub const MULTI_IF_DEQUE_TTL: f64 = 0.75;
+@@ -38,7 +38,7 @@ pub const MULTI_IF_DEQUE_TTL: f64 = 0.75;
  // Per-platform ignores: loopback, Apple AWDL, cellular RIL, VPN tunnels.
  
  #[cfg(target_os = "macos")]
@@ -11,7 +11,7 @@ index acbf303..d40ce2a 100644
  
  #[cfg(target_os = "linux")]
  const IGNORED_IFACES: &[&str] = &["lo"];
-@@ -568,12 +568,33 @@ pub fn list_network_interfaces() -> Result<Vec<NetworkInterfaceInfo>, String> {
+@@ -573,12 +573,33 @@ pub fn list_network_interfaces() -> Result<Vec<NetworkInterfaceInfo>, String> {
      Ok(by_name.into_values().collect())
  }
  
@@ -46,7 +46,7 @@ index acbf303..d40ce2a 100644
          return false;
      }
      if ignored_devices.iter().any(|n| n == iface_name) {
-@@ -587,6 +608,33 @@ fn iface_passes_filters(
+@@ -592,6 +613,33 @@ fn iface_passes_filters(
      true
  }
  
@@ -80,7 +80,7 @@ index acbf303..d40ce2a 100644
  /// Enumerate link-local IPv6 addresses, applying device/ignore filters.
  /// Drops addresses with unresolvable scope id — `scope_id = 0` silently
  /// routes via the default NIC, which is wrong on multi-homed hosts.
-@@ -1125,6 +1173,7 @@ pub async fn spawn_auto_interface(
+@@ -1150,6 +1198,7 @@ pub async fn spawn_auto_interface(
      tokio::spawn(async move {
          let mut interval =
              tokio::time::interval(std::time::Duration::from_secs_f64(BEACON_INTERVAL));
@@ -88,7 +88,7 @@ index acbf303..d40ce2a 100644
          #[cfg(feature = "mobile-throttle")]
          let mut was_foreground = true;
          #[cfg(not(feature = "mobile-throttle"))]
-@@ -1151,40 +1200,94 @@ pub async fn spawn_auto_interface(
+@@ -1176,40 +1225,94 @@ pub async fn spawn_auto_interface(
              }
              // Snapshot adopted set; jobs task may have replaced it on link flap.
              let snapshot = { beacon_link_locals.lock().await.clone() };
@@ -210,7 +210,7 @@ index acbf303..d40ce2a 100644
                  }
              }
          }
-@@ -2036,4 +2139,26 @@ mod tests {
+@@ -2102,4 +2205,26 @@ mod tests {
          let expected = BEACON_INTERVAL * 3.25;
          assert!((REVERSE_PEERING_INTERVAL - expected).abs() < 0.001);
      }

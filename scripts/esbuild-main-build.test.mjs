@@ -20,8 +20,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * sync status. Keep HF catalog / prompt / native runtime / identity hydration in siblings.
  * Fair MeshCore chat hydration SQL (`selectMeshcoreMessagesForHydration`) adds a small
  * window-function query so quiet group channels are not crowded out of the newest-N load.
+ * Ratspeak 1.4 enablement (`attachments_json` on reticulum messages + IPC coalesce) nudged
+ * the minified main past 797 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 797 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 798 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

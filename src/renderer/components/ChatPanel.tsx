@@ -4754,6 +4754,7 @@ function ChatPanel({
                                 <ReticulumAttachmentLine
                                   payload={msg.payload}
                                   attachmentPath={msg.reticulumAttachmentPath}
+                                  attachments={msg.reticulumAttachments}
                                 />
                               ) : (
                                 <ChatPayloadText

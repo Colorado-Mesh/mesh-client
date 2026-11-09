@@ -144,7 +144,8 @@ jobs:
           cache-workspace-crates: false
       - name: Test sidecar (rns-stack)
         working-directory: reticulum-sidecar
-        run: cargo test --features rns-stack,rns-ble,rns-rnode-tcp
+        # Serial threads: Ratspeak vault / identity Argon2 use a process-global lock (Busy otherwise).
+        run: cargo test --features rns-stack,rns-ble,rns-rnode-tcp -- --test-threads=1
       - name: Build sidecar (rns-stack)
         working-directory: reticulum-sidecar
         run: cargo build --release --target ${{ matrix.target }} --features rns-stack,rns-ble,rns-rnode-tcp

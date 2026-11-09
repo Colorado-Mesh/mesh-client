@@ -208,6 +208,7 @@ pub const DEFAULT_ANNOUNCE_INTERVAL_SEC: u32 = 3600;
 pub const DEFAULT_INSTANCE_NAME: &str = "mesh-client";
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[allow(clippy::struct_excessive_bools)] // mirrors reticulum config.ini toggles
 pub struct StackSettings {
     pub enable_transport: bool,
     pub share_instance: bool,
@@ -231,6 +232,10 @@ pub struct StackSettings {
     /// Local + RF-learned destinations and on-demand path responses still pass.
     #[serde(default = "default_slow_rf_announce_filter")]
     pub slow_rf_announce_filter: bool,
+    /// Opt-in: auto-connect discovered Backbone interfaces from non-Python / unverified
+    /// implementations (rsRNS). Default off — matches Python Reticulum 1.5 / rsReticulum 1.4.
+    #[serde(default)]
+    pub autoconnect_unverified_implementations: bool,
 }
 
 fn default_slow_rf_announce_filter() -> bool {
@@ -250,6 +255,7 @@ impl Default for StackSettings {
             network_identity: String::new(),
             // Non-standard policy must default on even for struct-literal users.
             slow_rf_announce_filter: true,
+            autoconnect_unverified_implementations: false,
         }
     }
 }
@@ -270,6 +276,7 @@ pub struct StackSettingsPatch {
     pub interface_discovery_sources: Option<String>,
     pub network_identity: Option<String>,
     pub slow_rf_announce_filter: Option<bool>,
+    pub autoconnect_unverified_implementations: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -355,6 +362,9 @@ pub fn apply_stack_settings_patch(
     if let Some(v) = patch.slow_rf_announce_filter {
         settings.slow_rf_announce_filter = v;
     }
+    if let Some(v) = patch.autoconnect_unverified_implementations {
+        settings.autoconnect_unverified_implementations = v;
+    }
     set_stack_settings(config_dir, &settings)?;
     Ok(settings)
 }
@@ -386,6 +396,10 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
     parsed.reticulum.set(
         "slow_rf_announce_filter",
         &bool_to_ini(settings.slow_rf_announce_filter),
+    );
+    parsed.reticulum.set(
+        "autoconnect_unverified_implementations",
+        &bool_to_ini(settings.autoconnect_unverified_implementations),
     );
     // Prefer the Python/manual key; drop the legacy alias so one source of truth remains.
     if parsed
@@ -549,6 +563,10 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .reticulum
             .get_bool("slow_rf_announce_filter")
             .unwrap_or(true),
+        autoconnect_unverified_implementations: parsed
+            .reticulum
+            .get_bool("autoconnect_unverified_implementations")
+            .unwrap_or(false),
     }
 }
 
@@ -724,6 +742,10 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         bootstrap_only: block.get_bool("bootstrap_only"),
         tx_queue_used: None,
         tx_queue_max: None,
+        protocol_violations: None,
+        ifac_violations: None,
+        packet_filter_hits: None,
+        tx_dropped_bytes: None,
         host_rssi: None,
         extra_config: {
             let mut extras = HashMap::new();
@@ -1355,6 +1377,10 @@ pub fn add_interface_to_config(
         bootstrap_only: req.bootstrap_only,
         tx_queue_used: None,
         tx_queue_max: None,
+        protocol_violations: None,
+        ifac_violations: None,
+        packet_filter_hits: None,
+        tx_dropped_bytes: None,
         host_rssi: None,
         extra_config: req.extra_config.clone(),
     };
@@ -3585,6 +3611,10 @@ target_port = 4242
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: {
                 let mut m = HashMap::new();
@@ -3689,6 +3719,7 @@ loglevel = 4
                 interface_discovery_sources: "521c87a83afb8f29e4455e77930b973b".into(),
                 network_identity: "/tmp/mesh-net.id".into(),
                 slow_rf_announce_filter: true,
+                autoconnect_unverified_implementations: false,
             },
         )
         .unwrap();
@@ -3773,6 +3804,7 @@ loglevel = 4
             &dir,
             &StackSettingsPatch {
                 slow_rf_announce_filter: Some(false),
+                autoconnect_unverified_implementations: None,
                 ..StackSettingsPatch::default()
             },
         )
@@ -4472,6 +4504,10 @@ ignore_config_warnings = Yes
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: HashMap::new(),
         };
@@ -4771,6 +4807,10 @@ longitude = -105.0
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: HashMap::new(),
         };
@@ -4819,6 +4859,10 @@ longitude = -105.0
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: HashMap::new(),
         };

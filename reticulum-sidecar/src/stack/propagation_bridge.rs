@@ -6,10 +6,14 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Instant;
 
+use lxmf_core::admission::{
+    AdmissionError, AdmissionRecord, DownloadAdmissionOutcome, DownloadedPropagationMessage,
+    DurableAdmissionBackend, DurableAdmissionReceipt, DurableDisposition, SuppressionReason,
+};
 use lxmf_core::message::LxMessage;
 use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::propagation_client::{PropagationClient, PropagationClientState};
-use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
+use lxmf_core::propagation_node::{GetRequestAction, PropagationNode, PropagationNodeConfig};
 use lxmf_core::propagation_sync::{
     PeerSyncTerminalResult, PeerSyncTerminalState, PropagationSyncTask, SyncTaskState,
 };
@@ -20,7 +24,10 @@ use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::{Notify, mpsc};
 
-use super::propagation_download::{ClientDownloadPoll, decode_downloaded_propagated_blob};
+use super::propagation_download::{
+    ClientDownloadPoll, decode_downloaded_propagated_blob,
+    decode_downloaded_propagated_blob_checked, propagation_transient_id,
+};
 
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
 type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
@@ -35,6 +42,36 @@ const CLIENT_HAVE_ID_CAP: usize = 8192;
 /// On-disk filename under the propagation storage dir for client have-ids.
 const CLIENT_RETRIEVED_IDS_FILE: &str = "client_retrieved_transient_ids.json";
 
+/// Per-run accumulation of admitted client-download mail (see `PropagationBridge::poll_client_download`).
+#[derive(Default)]
+struct ClientDownloadAccum {
+    messages: Vec<LxMessage>,
+    listed: usize,
+    downloaded: usize,
+}
+
+/// Durable backend for a client-download admission: persists the transient id into the sidecar's
+/// have-id file before the receipt (and therefore remote purge authority) is issued. The decoded
+/// message is handed to Chat by the sidecar delivery callback; the renderer owns its own SQLite
+/// persistence, so this file is the sidecar-side durable effect.
+struct HaveIdAdmission<'a> {
+    lock: &'a Mutex<()>,
+    path: &'a Path,
+    record: AdmissionRecord,
+}
+
+impl DurableAdmissionBackend for HaveIdAdmission<'_> {
+    fn commit(self) -> Result<AdmissionRecord, AdmissionError> {
+        if merge_persist_client_have_ids(self.lock, self.path, &[self.record.scope.transient_id]) {
+            Ok(self.record)
+        } else {
+            Err(AdmissionError::NotCommitted(
+                "client have-id persist failed".into(),
+            ))
+        }
+    }
+}
+
 pub struct PropagationBridge {
     local_dest_hash: [u8; 16],
     local_node: Arc<Mutex<PropagationNode>>,
@@ -48,6 +85,9 @@ pub struct PropagationBridge {
     client_have_path: PathBuf,
     /// Serializes load→merge→atomic write for [`Self::client_have_path`].
     client_have_lock: Mutex<()>,
+    /// Decoded mail accumulated across admission cycles of one client `/get` run (LXMF 1.4
+    /// downloads can span several chunk/purge cycles); drained on the terminal poll.
+    client_download_acc: Mutex<ClientDownloadAccum>,
     /// Local identity clone used to decrypt downloaded propagated blobs.
     identity: Identity,
     local_serving: AtomicBool,
@@ -85,8 +125,16 @@ impl PropagationBridge {
         identity: &Identity,
         policy: &super::pn_hosting_policy::PnHostingPolicy,
     ) -> Result<Self, String> {
-        std::fs::create_dir_all(&storage_dir).map_err(|e| e.to_string())?;
-        let client_have_path = storage_dir.join(CLIENT_RETRIEVED_IDS_FILE);
+        // LXMF 1.4 relay store v2: `storage_dir` is the *legacy/base* path owned by the node. A
+        // new store initializes only when that path is truly absent, so create the parent only.
+        // The client have-ids file therefore lives beside (not inside) the node's store path.
+        let store_parent = storage_dir
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from("."));
+        std::fs::create_dir_all(&store_parent).map_err(|e| e.to_string())?;
+        let client_have_path = store_parent.join(CLIENT_RETRIEVED_IDS_FILE);
+        adopt_legacy_client_have_ids(&storage_dir, &client_have_path);
         let node_config = PropagationNodeConfig {
             max_storage: policy.message_storage_limit_bytes(),
             max_message_age: lxmf_core::constants::MESSAGE_EXPIRY,
@@ -97,10 +145,11 @@ impl PropagationBridge {
         };
         // Defer messagestore scan — large local PN stores can take many seconds and must
         // not gate TCP/LXMF/RRC live attach. New writes still go to `storage_dir`.
-        let local_node = Arc::new(Mutex::new(
-            PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
-                .map_err(|e| format!("propagation storage init: {e}"))?,
-        ));
+        let local_node = Arc::new(Mutex::new(open_propagation_node(
+            node_config,
+            local_dest_hash,
+            storage_dir,
+        )?));
         let mut sync_task =
             PropagationSyncTask::with_shared_node(transport_tx.clone(), local_node.clone());
         let signing_key = identity
@@ -134,6 +183,7 @@ impl PropagationBridge {
             client: Mutex::new(client),
             client_have_path,
             client_have_lock: Mutex::new(()),
+            client_download_acc: Mutex::new(ClientDownloadAccum::default()),
             identity: identity.clone(),
             local_serving: AtomicBool::new(false),
             cached_local_stats: Mutex::new((0, 0)),
@@ -499,7 +549,14 @@ impl PropagationBridge {
             return false;
         };
         client.set_propagation_node(pn_hash);
-        client.start_download_with_limit(None, link_hops.max(1))
+        let started = client.start_download_with_limit(None, link_hops.max(1));
+        // Only clear the accumulator after a successful start so a refused
+        // start cannot drop mail already admitted (have-id persisted) but not
+        // yet handed to the delivery callback.
+        if started && let Ok(mut acc) = self.client_download_acc.lock() {
+            *acc = ClientDownloadAccum::default();
+        }
+        started
     }
 
     /// Map client `/get` state to UI progress (user Sync is `/get`-primary).
@@ -514,8 +571,10 @@ impl PropagationBridge {
             PropagationClientState::ListRequested => 40.0,
             PropagationClientState::GetRequested => 55.0,
             PropagationClientState::Receiving => 70.0,
+            // LXMF 1.4: downloaded mail waits for local admission before purge.
+            PropagationClientState::AwaitingAdmission => 80.0,
             PropagationClientState::PurgeRequested => 90.0,
-            PropagationClientState::Complete => 100.0,
+            PropagationClientState::Complete | PropagationClientState::Partial => 100.0,
         }
     }
 
@@ -528,13 +587,17 @@ impl PropagationBridge {
             client.state(),
             PropagationClientState::Idle
                 | PropagationClientState::Complete
+                | PropagationClientState::Partial
                 | PropagationClientState::Failed
         )
     }
 
-    /// Cancel any in-flight client download (best-effort). The next
-    /// [`Self::start_client_download`] re-arms from Idle.
-    pub fn cancel_client_download(&self) {
+    /// Cancel any in-flight client download (best-effort). Returns any mail
+    /// already admitted this run (have-id persisted) so the caller can deliver
+    /// it before discarding the transfer — those messages will not be offered
+    /// again on a later `/get`. The next [`Self::start_client_download`]
+    /// re-arms from Idle.
+    pub fn cancel_client_download(&self) -> Vec<LxMessage> {
         if let Ok(mut client) = self.client.lock() {
             // Must abort mid-transfer states too — acknowledge_transfer only
             // clears Complete/Failed, which left cancelled Sync stuck in
@@ -542,6 +605,10 @@ impl PropagationBridge {
             // PROPAGATION_RETRIEVE_BUSY (UI then falsely said "no PNs").
             client.abort_transfer();
         }
+        self.client_download_acc
+            .lock()
+            .map(|mut acc| std::mem::take(&mut *acc).messages)
+            .unwrap_or_default()
     }
 
     /// Drive the client download one step: drain inbound events, advance the
@@ -563,6 +630,17 @@ impl PropagationBridge {
         {
             *slot = Some(err);
         }
+        // LXMF 1.4: payloads arrive with single-use admission tokens. Decode, durably record the
+        // transient id, then resolve each token so the client may purge only what we accepted.
+        let downloaded = client.take_downloaded_messages();
+        if !downloaded.is_empty() {
+            let count = downloaded.len();
+            let admitted = self.admit_downloaded(&mut client, downloaded);
+            if let Ok(mut acc) = self.client_download_acc.lock() {
+                acc.downloaded += count;
+                acc.messages.extend(admitted);
+            }
+        }
         client.tick();
         // LinkEstablishTimeout is stamped inside tick() on Closed(Timeout); copy
         // again so a same-poll Failed terminal still surfaces the sticky reason.
@@ -571,44 +649,125 @@ impl PropagationBridge {
         {
             *slot = Some(err);
         }
+        // Suppression-ledger changes (rejected/undecodable items) pause new wants until
+        // checkpointed. The ledger lives for the bridge lifetime (in-memory), so acknowledge the
+        // current revision to resume; rejected items are retried per the ledger's backoff only
+        // within this process.
+        if matches!(client.state(), PropagationClientState::AwaitingAdmission)
+            && client.received_count() == 0
+            && (client.suppression_persistence_pending()
+                || client.admission_status().admission_paused)
+        {
+            let _ = client.take_suppression_updates();
+            let revision = client.suppression_revision();
+            client.acknowledge_suppression_persistence(revision);
+        }
+        if let Ok(mut acc) = self.client_download_acc.lock() {
+            acc.listed = acc.listed.max(client.available_messages().len());
+        }
         match client.state() {
             PropagationClientState::Idle => ClientDownloadPoll::Idle,
-            PropagationClientState::Failed => ClientDownloadPoll::Failed,
-            PropagationClientState::Complete => {
-                let listed = client.available_messages().len();
-                let downloaded = client.received_count();
-                let blobs = client.take_received_messages();
-                // Decode first (parity with drain_local_inbox): only successfully
-                // decoded mail becomes a have-id. Undecodable blobs are not persisted
-                // as haves so a later `/get` can retry them.
-                let messages = blobs
-                    .iter()
-                    .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
-                    .collect::<Vec<_>>();
-                let tids: Vec<PropagationTransientId> =
-                    messages.iter().filter_map(|msg| msg.transient_id).collect();
-                for tid in &tids {
-                    client.add_local_message(*tid);
+            PropagationClientState::Failed => {
+                // A failure after some mail was already accepted (token resolved + have-id
+                // persisted) must still deliver that mail: it will not be re-downloaded.
+                let had_mail = self
+                    .client_download_acc
+                    .lock()
+                    .map(|acc| !acc.messages.is_empty())
+                    .unwrap_or(false);
+                if had_mail {
+                    self.finish_client_download(&mut client)
+                } else {
+                    ClientDownloadPoll::Failed
                 }
-                // Consume the terminal snapshot → Idle so the next
-                // start_client_download can proceed without a cancel first.
-                let _ = client.acknowledge_transfer();
-                drop(client);
-                if !tids.is_empty() {
-                    merge_persist_client_have_ids(
-                        &self.client_have_lock,
-                        &self.client_have_path,
-                        &tids,
-                    );
-                }
-                ClientDownloadPoll::Complete {
-                    messages,
-                    listed,
-                    downloaded,
-                }
+            }
+            // Partial = at least one item lacked durable local acceptance this cycle; accepted
+            // items were still purged and are delivered like a Complete run.
+            PropagationClientState::Complete | PropagationClientState::Partial => {
+                self.finish_client_download(&mut client)
             }
             _ => ClientDownloadPoll::InProgress,
         }
+    }
+
+    /// Consume the terminal snapshot → Idle (so the next `start_client_download` can proceed
+    /// without a cancel first) and hand back the accumulated decoded mail.
+    fn finish_client_download(&self, client: &mut PropagationClient) -> ClientDownloadPoll {
+        let acc = self
+            .client_download_acc
+            .lock()
+            .map(|mut acc| std::mem::take(&mut *acc))
+            .unwrap_or_default();
+        let _ = client.acknowledge_transfer();
+        ClientDownloadPoll::Complete {
+            messages: acc.messages,
+            listed: acc.listed,
+            downloaded: acc.downloaded,
+        }
+    }
+
+    /// Decode each downloaded blob and resolve its admission token. Only successfully decoded
+    /// mail is committed as a have-id (undecodable blobs are rejected with a typed reason).
+    /// On accept, seed the live [`PropagationClient`] have-set immediately so an
+    /// endpoint termination before `client.tick()` cannot leave an accepted token
+    /// untracked for a later `/get`.
+    fn admit_downloaded(
+        &self,
+        client: &mut PropagationClient,
+        downloaded: Vec<DownloadedPropagationMessage>,
+    ) -> Vec<LxMessage> {
+        let mut admitted = Vec::new();
+        for item in downloaded {
+            let scope = item.scope();
+            let transient_id = scope.transient_id;
+            let (data, token) = item.into_parts();
+            let outcome = match decode_downloaded_propagated_blob_checked(&self.identity, &data) {
+                Ok(msg) => {
+                    let record = AdmissionRecord {
+                        scope,
+                        message_id: msg.message_id(),
+                        received_wire_hash: rns_crypto::sha::full_hash(&data),
+                        stored_message_wire_hash: None,
+                        disposition: DurableDisposition::Committed,
+                        committed_at: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0),
+                    };
+                    match DurableAdmissionReceipt::commit(HaveIdAdmission {
+                        lock: &self.client_have_lock,
+                        path: &self.client_have_path,
+                        record,
+                    }) {
+                        Ok(receipt) => {
+                            // Live client must learn the have-id before tick/endpoint teardown.
+                            client.add_local_message(transient_id);
+                            admitted.push(msg);
+                            DownloadAdmissionOutcome::Accepted(receipt)
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                target: "propagation-retrieve",
+                                error = %e,
+                                "client download admission commit failed"
+                            );
+                            DownloadAdmissionOutcome::Rejected(
+                                SuppressionReason::StorageUnavailable,
+                            )
+                        }
+                    }
+                }
+                Err(reason) => DownloadAdmissionOutcome::Rejected(reason),
+            };
+            if let Err(e) = token.resolve(outcome) {
+                tracing::debug!(
+                    target: "propagation-retrieve",
+                    error = %e,
+                    "client download admission token not applied"
+                );
+            }
+        }
+        admitted
     }
 
     /// Drain our own store-and-forward mail out of the **local** PN store into
@@ -625,44 +784,46 @@ impl PropagationBridge {
         let our_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&self.identity.hash));
 
-        // Hold the node lock only for the list + serve reads, then release it
-        // before per-message decryption/decode (CPU work off the shared lock).
-        let (blobs, listed) = {
-            let Ok(mut node) = self.local_node.lock() else {
-                return (Vec::new(), 0);
-            };
-
-            // Phase 1: list our available transient IDs.
-            let list_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Nil]));
-            let tids = Self::decode_binary_array(
-                &node
-                    .handle_get_request(&list_req, &our_delivery)
-                    .into_response(),
-            );
-            if tids.is_empty() {
-                return (Vec::new(), 0);
-            }
-
-            // Phase 2: fetch every listed message (server strips the stamp).
-            let wants: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
-            let get_req = Self::encode_value(&Value::Array(vec![
-                Value::Array(wants),
-                Value::Array(Vec::new()),
-            ]));
-            let blobs = Self::decode_binary_array(
-                &node
-                    .handle_get_request(&get_req, &our_delivery)
-                    .into_response(),
-            );
-            (blobs, tids.len())
+        // LXMF 1.4: `handle_get_request` only *plans* (listing answers inline; wants/haves/purge
+        // return a deferred file-work plan). Plan under the node lock, then resolve the plan
+        // (blocking file I/O: durable retirements + verified reads) with the lock released.
+        let plan_get = |request: &[u8]| -> Option<GetRequestAction> {
+            let mut node = self.local_node.lock().ok()?;
+            Some(node.handle_get_request(request, &our_delivery))
         };
 
-        // Decode without holding the node lock.
-        let messages = blobs
+        // Phase 1: list our available transient IDs.
+        let list_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Nil]));
+        let Some(list_action) = plan_get(&list_req) else {
+            return (Vec::new(), 0);
+        };
+        let tids = Self::decode_binary_array(&list_action.into_response());
+        if tids.is_empty() {
+            return (Vec::new(), 0);
+        }
+
+        // Phase 2: fetch every listed message (server strips the stamp).
+        let wants: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
+        let get_req = Self::encode_value(&Value::Array(vec![
+            Value::Array(wants),
+            Value::Array(Vec::new()),
+        ]));
+        let Some(get_action) = plan_get(&get_req) else {
+            return (Vec::new(), 0);
+        };
+        let blobs = Self::decode_binary_array(&get_action.into_response());
+        let listed = tids.len();
+
+        // Decode without holding the node lock. Keep each message paired with its transient id
+        // (SHA-256 over the stamp-stripped blob, as the sender's `PropagationEnvelope` computed).
+        let decoded = blobs
             .iter()
-            .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
+            .filter_map(|blob| {
+                decode_downloaded_propagated_blob(&self.identity, blob)
+                    .map(|msg| (msg, propagation_transient_id(blob)))
+            })
             .collect::<Vec<_>>();
-        let skipped = blobs.len().saturating_sub(messages.len());
+        let skipped = blobs.len().saturating_sub(decoded.len());
         if skipped > 0 {
             tracing::warn!(
                 target: "propagation-retrieve",
@@ -673,22 +834,18 @@ impl PropagationBridge {
         }
 
         // Phase 3: purge only what we successfully decoded, keyed by the exact
-        // transient id `compute_propagation_transient_id` stamped on each
-        // message. Undecodable blobs stay in the store for a later retry.
-        let purge_ids: Vec<Value> = messages
-            .iter()
-            .filter_map(|msg| msg.transient_id.map(|tid| Value::Binary(tid.to_vec())))
-            .collect();
+        // transient id of each blob. Undecodable blobs stay in the store for a later retry.
+        let tids: Vec<PropagationTransientId> = decoded.iter().map(|(_, tid)| *tid).collect();
+        let purge_ids: Vec<Value> = tids.iter().map(|tid| Value::Binary(tid.to_vec())).collect();
         if !purge_ids.is_empty() {
-            if let Ok(mut node) = self.local_node.lock() {
-                let purge_req =
-                    Self::encode_value(&Value::Array(vec![Value::Nil, Value::Array(purge_ids)]));
-                let _ = node.handle_get_request(&purge_req, &our_delivery);
+            let purge_req =
+                Self::encode_value(&Value::Array(vec![Value::Nil, Value::Array(purge_ids)]));
+            if let Some(purge_action) = plan_get(&purge_req) {
+                // Resolving the plan performs the durable retirement; it must not be dropped.
+                let _ = purge_action.into_response();
             }
             // Mirror remote `/get` have tracking so later remote Sync does not
             // re-pull the same mail from peered PNs that still hold copies.
-            let tids: Vec<PropagationTransientId> =
-                messages.iter().filter_map(|msg| msg.transient_id).collect();
             if let Ok(mut client) = self.client.lock() {
                 for tid in &tids {
                     client.add_local_message(*tid);
@@ -696,6 +853,7 @@ impl PropagationBridge {
             }
             merge_persist_client_have_ids(&self.client_have_lock, &self.client_have_path, &tids);
         }
+        let messages = decoded.into_iter().map(|(msg, _)| msg).collect::<Vec<_>>();
 
         (messages, listed)
     }
@@ -706,6 +864,62 @@ impl PropagationBridge {
         // Writing into a Vec is infallible.
         let _ = rmpv::encode::write_value(&mut buf, value);
         buf
+    }
+}
+
+/// Copy a pre-1.4 have-ids file out of the legacy node directory (which relay-store migration
+/// quarantines) to its new sibling location. Best-effort; never overwrites an existing file.
+fn adopt_legacy_client_have_ids(storage_dir: &Path, new_path: &Path) {
+    let legacy_file = storage_dir.join(CLIENT_RETRIEVED_IDS_FILE);
+    if new_path.exists() || !legacy_file.is_file() {
+        return;
+    }
+    if let Err(e) = std::fs::copy(&legacy_file, new_path) {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            error = %e,
+            from = %legacy_file.display(),
+            to = %new_path.display(),
+            "failed to adopt legacy client /get have-ids"
+        );
+    }
+}
+
+/// Open the durable v2 relay store. A legacy (pre-1.4) directory needs the explicit offline
+/// migration; this process is the only relay writer for `storage_dir` (hosting is in-process),
+/// so run it here and retry. The legacy files are quarantined beside the store, never deleted.
+fn open_propagation_node(
+    node_config: PropagationNodeConfig,
+    local_dest_hash: [u8; 16],
+    storage_dir: PathBuf,
+) -> Result<PropagationNode, String> {
+    match PropagationNode::with_storage_unloaded(
+        node_config.clone(),
+        local_dest_hash,
+        storage_dir.clone(),
+    ) {
+        Ok(node) => Ok(node),
+        Err(e) if lxmf_core::propagation_store_v2::is_migration_required(&e) => {
+            tracing::warn!(
+                target: "propagation-retrieve",
+                path = %storage_dir.display(),
+                "legacy propagation store found — running offline relay-store migration"
+            );
+            let guard =
+                lxmf_core::propagation_store_v2::begin_offline_migration(&storage_dir, true)
+                    .map_err(|e| format!("propagation store migration: {e}"))?;
+            let report = lxmf_core::propagation_store_v2::migrate_store_offline(&guard)
+                .map_err(|e| format!("propagation store migration: {e}"))?;
+            drop(guard);
+            tracing::info!(
+                target: "propagation-retrieve",
+                store = %report.store.display(),
+                "propagation store migrated (legacy files preserved in quarantine)"
+            );
+            PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
+                .map_err(|e| format!("propagation storage init: {e}"))
+        }
+        Err(e) => Err(format!("propagation storage init: {e}")),
     }
 }
 
@@ -752,13 +966,14 @@ fn load_client_have_ids(path: &Path) -> Vec<PropagationTransientId> {
 }
 
 /// Merge newly retrieved transient IDs into the on-disk have set (capped).
+/// Returns `true` only when the merged set is durably written (or there was nothing to write).
 fn merge_persist_client_have_ids(
     lock: &Mutex<()>,
     path: &Path,
     new_ids: &[PropagationTransientId],
-) {
+) -> bool {
     if new_ids.is_empty() {
-        return;
+        return true;
     }
     let Ok(_guard) = lock.lock() else {
         tracing::warn!(
@@ -766,7 +981,7 @@ fn merge_persist_client_have_ids(
             path = %path.display(),
             "client have-ids persist lock poisoned — skipping merge"
         );
-        return;
+        return false;
     };
     let mut ordered: Vec<PropagationTransientId> = load_client_have_ids(path);
     let mut seen: HashSet<PropagationTransientId> = ordered.iter().copied().collect();
@@ -793,7 +1008,7 @@ fn merge_persist_client_have_ids(
             path = %tmp.display(),
             "failed to write client /get have-ids temp file"
         );
-        return;
+        return false;
     }
     if let Err(e) = std::fs::rename(&tmp, path) {
         tracing::warn!(
@@ -803,7 +1018,9 @@ fn merge_persist_client_have_ids(
             "failed to atomically replace client /get have-ids"
         );
         let _ = std::fs::remove_file(&tmp);
+        return false;
     }
+    true
 }
 
 impl PropagationBridge {
@@ -1046,6 +1263,7 @@ fn persist_router_peer(
 
 #[cfg(test)]
 mod tests {
+    use super::super::propagation_download::zero_cost_policy;
     use super::*;
     use std::time::Duration;
 
@@ -1065,9 +1283,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &recipient,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
 
@@ -1081,13 +1299,15 @@ mod tests {
         {
             let mut node = bridge.local_node.lock().expect("node lock");
             // stamp_value high enough to clear any policy min_stamp_cost.
-            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+            assert!(
+                super::super::propagation_download::deposit_client_blob_for_test(&mut node, &blob)
+            );
         }
 
         let (messages, listed) = bridge.drain_local_inbox();
         assert_eq!(listed, 1, "one message listed for our delivery hash");
         assert_eq!(messages.len(), 1, "one message decoded");
-        assert_eq!(messages[0].content, "loopback mail");
+        assert_eq!(messages[0].content_text(), "loopback mail");
         assert!(messages[0].incoming, "delivered mail is inbound");
         assert_eq!(messages[0].method, DeliveryMethod::Propagated);
 
@@ -1106,14 +1326,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
         assert!(!bridge.take_inbox_drain_request());
         bridge.request_inbox_drain();
         bridge.request_inbox_drain();
@@ -1130,14 +1345,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xcd; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xcd; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let sender = Identity::new();
         let blob = super::super::propagation_download::build_client_download_blob(
@@ -1147,7 +1357,9 @@ mod tests {
         );
         {
             let mut node = bridge.local_node.lock().expect("node lock");
-            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+            assert!(
+                super::super::propagation_download::deposit_client_blob_for_test(&mut node, &blob)
+            );
         }
         // Serve completion path calls this after accepted > 0.
         bridge.request_inbox_drain();
@@ -1156,7 +1368,7 @@ mod tests {
         let (messages, listed) = bridge.drain_local_inbox();
         assert_eq!(listed, 1);
         assert_eq!(messages.len(), 1);
-        assert_eq!(messages[0].content, "peer ingress mail");
+        assert_eq!(messages[0].content_text(), "peer ingress mail");
 
         let (again, listed_again) = bridge.drain_local_inbox();
         assert!(again.is_empty());
@@ -1173,14 +1385,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xce; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xce; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let sender = Identity::new();
         let other = Identity::new();
@@ -1191,7 +1398,9 @@ mod tests {
         );
         {
             let mut node = bridge.local_node.lock().expect("node lock");
-            assert!(node.accept_stamped_propagated_blob(&blob, &[0x5A; 32], u8::MAX));
+            assert!(
+                super::super::propagation_download::deposit_client_blob_for_test(&mut node, &blob)
+            );
             assert_eq!(node.message_count(), 1);
         }
         bridge.request_inbox_drain();
@@ -1230,7 +1439,7 @@ mod tests {
                 ..Default::default()
             },
             hash_a,
-            dir_a,
+            dir_a.join("store"),
         )
         .expect("node a");
         let mut node_b = PropagationNode::with_storage(
@@ -1239,7 +1448,7 @@ mod tests {
                 ..Default::default()
             },
             hash_b,
-            dir_b,
+            dir_b.join("store"),
         )
         .expect("node b");
 
@@ -1248,8 +1457,9 @@ mod tests {
             &recipient,
             "pn to pn handoff",
         );
-        let stamp = [0x11u8; 32];
-        assert!(node_a.accept_stamped_propagated_blob(&blob, &stamp, u8::MAX));
+        assert!(
+            super::super::propagation_download::deposit_client_blob_for_test(&mut node_a, &blob)
+        );
 
         let offer = node_a.prepare_sync_offer(hash_b);
         assert!(
@@ -1278,7 +1488,7 @@ mod tests {
             hash_b,
             base.join("bridge-b"),
             &recipient,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge b");
 
@@ -1287,16 +1497,18 @@ mod tests {
             let lxmf_data = &stored[..stored.len() - 32];
             let mut stamp_data = [0u8; 32];
             stamp_data.copy_from_slice(&stored[stored.len() - 32..]);
-            assert!(node_b.accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX));
+            assert!(super::super::propagation_download::accept_stamped_for_test(
+                &mut node_b,
+                lxmf_data,
+                &stamp_data
+            ));
             node_a.mark_peer_handled(&hash_b, tid);
             // Chat path uses the same stamped accept + drain_local_inbox seam.
-            assert!(
-                bridge_b
-                    .local_node
-                    .lock()
-                    .expect("lock")
-                    .accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX)
-            );
+            assert!(super::super::propagation_download::accept_stamped_for_test(
+                &mut bridge_b.local_node.lock().expect("lock"),
+                lxmf_data,
+                &stamp_data
+            ));
         }
         node_a.complete_sync(&hash_b);
         assert_eq!(node_b.message_count(), 1);
@@ -1304,7 +1516,7 @@ mod tests {
         let (messages, listed) = bridge_b.drain_local_inbox();
         assert_eq!(listed, 1);
         assert_eq!(messages.len(), 1);
-        assert_eq!(messages[0].content, "pn to pn handoff");
+        assert_eq!(messages[0].content_text(), "pn to pn handoff");
 
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -1317,14 +1529,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xdf; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xdf; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
         let peer = [0xeeu8; 16];
         bridge.queue_post_peer_get(peer);
         assert_eq!(bridge.take_pending_post_peer_get(), Some(peer));
@@ -1345,14 +1552,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let sender = Identity::new();
         let other_recipient = Identity::new();
@@ -1363,7 +1565,9 @@ mod tests {
         );
         {
             let mut node = bridge.local_node.lock().expect("node lock");
-            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+            assert!(
+                super::super::propagation_download::deposit_client_blob_for_test(&mut node, &blob)
+            );
         }
 
         let (messages, listed) = bridge.drain_local_inbox();
@@ -1392,9 +1596,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         let active = AtomicU64::new(1);
@@ -1423,9 +1627,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         bridge.cancel_sync();
@@ -1452,9 +1656,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         bridge.force_peak_progress_for_test(25.0);
@@ -1487,9 +1691,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         bridge.stamp_terminal_failure_from_peak(10.0);
@@ -1513,9 +1717,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         assert_eq!(
@@ -1547,9 +1751,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.path().to_path_buf(),
+            dir.path().join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         assert_eq!(
@@ -1579,9 +1783,9 @@ mod tests {
         let bridge = PropagationBridge::new(
             tx,
             [0xab; 16],
-            dir.clone(),
+            dir.join("store"),
             &identity,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+            &zero_cost_policy(),
         )
         .expect("bridge");
         if let Ok(mut slot) = bridge.last_establish_error.lock() {
@@ -1604,14 +1808,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let peer_hash = [0x11u8; 16];
         let mut router = LxmRouter::new(RouterConfig::default());
@@ -1673,14 +1872,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let peer_hash = [0x22u8; 16];
         let mut router = LxmRouter::new(RouterConfig::default());
@@ -1734,14 +1928,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         let peer_hash = [0x33u8; 16];
         let mut router = LxmRouter::new(RouterConfig::default());
@@ -1774,14 +1963,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
         let pn = [0x44u8; 16];
         // First start may or may not enter a non-Idle state without a live Link —
         // cancel must still leave the client restartable.
@@ -1824,14 +2008,9 @@ mod tests {
 
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
         // Seeded have-ids must survive into the live client (verified via
         // re-persist of an empty merge still retaining disk contents + path).
         assert_eq!(bridge.client_have_path, path);
@@ -1858,6 +2037,23 @@ mod tests {
             bridge.contains("abort_transfer"),
             "cancel_client_download must abort mid-transfer (not only Complete/Failed)"
         );
+        // Admission must seed the live client before tick so endpoint teardown
+        // cannot leave an Accepted token untracked for a later /get.
+        assert!(
+            bridge.contains("fn admit_downloaded(")
+                && bridge.contains("client.add_local_message(transient_id)"),
+            "admit_downloaded must call add_local_message on Accepted before tick"
+        );
+        assert!(
+            bridge.contains("-> Vec<LxMessage>")
+                && bridge.contains("std::mem::take(&mut *acc).messages"),
+            "cancel_client_download must return already-admitted mail for delivery"
+        );
+        assert!(
+            bridge.contains("let started = client.start_download_with_limit")
+                && bridge.contains("if started && let Ok(mut acc)"),
+            "start_client_download must reset the accumulator only after a successful start"
+        );
     }
 
     #[test]
@@ -1874,14 +2070,9 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let us = Identity::new();
-        let bridge = PropagationBridge::new(
-            tx,
-            [0xab; 16],
-            dir.clone(),
-            &us,
-            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
-        )
-        .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.join("store"), &us, &zero_cost_policy())
+                .expect("bridge");
 
         // Prime cache while uncontended.
         assert_eq!(bridge.local_stats(), (0, 0));

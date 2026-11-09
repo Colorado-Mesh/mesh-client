@@ -739,6 +739,9 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
         LinkSessionError::TooManyPendingRequests => {
             RrcLinkError::SendNotAccepted("too_many_pending")
         }
+        // LXMF/RNS 1.4: the request could not be dispatched on the link (same class as a
+        // rejected send, not a handshake or crypto failure).
+        LinkSessionError::RequestDispatch(_) => RrcLinkError::SendNotAccepted("request_dispatch"),
     }
 }
 

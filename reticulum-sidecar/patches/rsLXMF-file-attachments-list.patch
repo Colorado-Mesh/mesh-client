@@ -1,71 +1,42 @@
 diff --git a/README.md b/README.md
-index c708d18..f549b5c 100644
+index 69a4402..7a3e20b 100644
 --- a/README.md
 +++ b/README.md
-@@ -312,10 +312,18 @@ signature         64 bytes
- payload           MessagePack([timestamp, title, content, fields, optional_stamp])
- ```
+@@ -329,6 +329,14 @@ values. Standard fields have defined schemas. The 1.4 library preserves signed
+ and unsigned integer IDs beyond the CLI’s 0–255 range and rejects duplicate
+ outer IDs. Encoding a structured field as a binary blob changes its meaning.
  
--`title` and `content` are bytes on the wire. `fields` is a `map<u8, bytes>` for
-+`title` and `content` are bytes on the wire. `fields` is a `map<u8, value>` for
- application-defined data such as tickets, attachments, location data, or
- application envelopes.
- 
-+Native media fields (use typed setters — do not `set_field` raw bins for these):
++Native media fields (use the typed `LxMessageDraft` setters — do not `set_field` raw bins for these):
 +
 +| Field | Wire shape | API |
 +| --- | --- | --- |
 +| `FIELD_IMAGE` (`0x06`) | `[format, bytes]` | `set_image_field` / `image_attachment` |
-+| `FIELD_FILE_ATTACHMENTS` (`0x05`) | `[[name, bytes], …]` | `set_file_attachments_field` / `file_attachments` (single-file helper: `set_file_attachment_field`) |
++| `FIELD_FILE_ATTACHMENTS` (`0x05`) | `[[name, bytes], …]` | `set_file_attachments_field` / `file_attachments` (single-file helpers: `set_file_attachment_field` / `first_file_attachment`) |
 +| `FIELD_AUDIO` (`0x07`) | `[mode, bytes]` | `set_audio_field` / `audio_field` |
 +
- Library callers requesting a reply ticket set `include_ticket`, call
- `LxmRouter::prepare_outbound`, and then sign the message. The router rejects a
- requested ticket that would require changing an already-signed message.
+ In the 1.4 API, construct `LxMessageDraft` and set `include_ticket` before
+ calling `LxmRouter::prepare_outbound`. Persist the returned ticket intent before
+ signing; a pending intent blocks signing. Signing consumes the draft, and
 diff --git a/crates/lxmf-core/src/message.rs b/crates/lxmf-core/src/message.rs
-index efbe123..b914362 100644
+index 1e8c8ec..19729cb 100644
 --- a/crates/lxmf-core/src/message.rs
 +++ b/crates/lxmf-core/src/message.rs
-@@ -316,11 +316,19 @@ impl LxMessage {
-         file_name: &str,
-         file_bytes: &[u8],
-     ) -> Result<(), MessageError> {
--        let encoded = rmp_serde::to_vec(&FileAttachmentsFieldRef {
--            file_name,
--            bytes: file_bytes,
--        })
--        .map_err(|error| MessageError::PackFailed(error.to_string()))?;
-+        self.set_file_attachments_field(&[(file_name, file_bytes)])
-+    }
-+
-+    /// Encode and install native LXMF file attachments (`[[name, bytes], ...]`).
-+    ///
-+    /// Matches Python NomadNet / LXMF multi-file attachment lists. Replaces any
-+    /// previous `FIELD_FILE_ATTACHMENTS` value.
-+    pub fn set_file_attachments_field(
-+        &mut self,
-+        attachments: &[(&str, &[u8])],
-+    ) -> Result<(), MessageError> {
-+        let encoded = rmp_serde::to_vec(&FileAttachmentsListRef { attachments })
-+            .map_err(|error| MessageError::PackFailed(error.to_string()))?;
-         self.fields.insert(FIELD_FILE_ATTACHMENTS, encoded);
-         self.msgpack_field_ids.insert(FIELD_FILE_ATTACHMENTS);
-         Ok(())
-@@ -333,22 +341,30 @@ impl LxMessage {
-     /// Decode the first native LXMF file attachment while borrowing its bytes
-     /// from this message. Only the small filename is allocated.
+@@ -498,21 +498,32 @@ impl LxMessage {
+     /// from this message. The filename is copied into a string; it has no
+     /// separate length limit beyond the enclosing message's decode limits.
      pub fn first_file_attachment(&self) -> Result<Option<(String, &[u8])>, MessageError> {
 +        Ok(self.file_attachments()?.into_iter().next())
 +    }
 +
-+    /// Decode all native LXMF file attachments, borrowing each payload from
-+    /// this message. Filenames are allocated; bytes are not.
++    /// Decode all native LXMF file attachments (`[[name, bytes], ...]`),
++    /// borrowing each payload from this message. Filenames are allocated;
++    /// bytes are not.
 +    pub fn file_attachments(&self) -> Result<Vec<(String, &[u8])>, MessageError> {
-         let Some(field) = self.fields.get(&FIELD_FILE_ATTACHMENTS) else {
+         let Some(field) = self.fields().get(FIELD_FILE_ATTACHMENTS) else {
 -            return Ok(None);
 +            return Ok(Vec::new());
          };
-         let mut input = field.as_slice();
+         let mut input = field.encoded();
 -        if read_msgpack_array_len(&mut input)? == 0 {
 -            return Ok(None);
 -        }
@@ -74,7 +45,8 @@ index efbe123..b914362 100644
 -                "file attachment entry requires name and data".to_string(),
 -            ));
 +        let count = read_msgpack_array_len(&mut input)? as usize;
-+        let mut out = Vec::with_capacity(count);
++        // Each entry needs at least one byte; never trust a forged length for capacity.
++        let mut out = Vec::with_capacity(count.min(input.len()));
 +        for _ in 0..count {
 +            if read_msgpack_array_len(&mut input)? < 2 {
 +                return Err(MessageError::UnpackFailed(
@@ -82,19 +54,18 @@ index efbe123..b914362 100644
 +                ));
 +            }
 +            let file_name =
-+                String::from_utf8_lossy(read_msgpack_string_or_binary(&mut input)?).into_owned();
++                bounded_lossy_text(read_msgpack_string_or_binary(&mut input)?).into_owned();
 +            let data = read_msgpack_binary(&mut input)?;
 +            out.push((file_name, data));
          }
--        let file_name =
--            String::from_utf8_lossy(read_msgpack_string_or_binary(&mut input)?).into_owned();
+-        let file_name = bounded_lossy_text(read_msgpack_string_or_binary(&mut input)?).into_owned();
 -        let data = read_msgpack_binary(&mut input)?;
 -        Ok(Some((file_name, data)))
 +        Ok(out)
      }
  
      /// Decode the native LXMF image field while borrowing its image bytes
-@@ -1742,12 +1758,11 @@ impl serde::Serialize for AudioFieldRef<'_> {
+@@ -1364,12 +1375,11 @@ impl serde::Serialize for AudioFieldRef<'_> {
      }
  }
  
@@ -110,7 +81,7 @@ index efbe123..b914362 100644
      fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
          use serde::ser::{SerializeSeq, SerializeTuple};
  
-@@ -1765,11 +1780,13 @@ impl serde::Serialize for FileAttachmentsFieldRef<'_> {
+@@ -1387,11 +1397,10 @@ impl serde::Serialize for FileAttachmentsFieldRef<'_> {
              }
          }
  
@@ -121,61 +92,87 @@ index efbe123..b914362 100644
 -        })?;
 +        let mut attachments = serializer.serialize_seq(Some(self.attachments.len()))?;
 +        for (file_name, bytes) in self.attachments {
-+            attachments.serialize_element(&AttachmentRef {
-+                file_name,
-+                bytes,
-+            })?;
++            attachments.serialize_element(&AttachmentRef { file_name, bytes })?;
 +        }
          attachments.end()
      }
  }
-@@ -2451,6 +2468,49 @@ mod tests {
-         assert!(msg.msgpack_field_ids.contains(&FIELD_FILE_ATTACHMENTS));
+diff --git a/crates/lxmf-core/src/message/draft.rs b/crates/lxmf-core/src/message/draft.rs
+index 8a2efdb..be2a87b 100644
+--- a/crates/lxmf-core/src/message/draft.rs
++++ b/crates/lxmf-core/src/message/draft.rs
+@@ -227,14 +227,28 @@ impl LxMessageDraft {
+         let encoded = rmp_serde::to_vec(&AudioFieldRef { mode, bytes }).map_err(packed)?;
+         self.set_msgpack_field(FIELD_AUDIO, encoded)
      }
- 
-+    #[test]
-+    fn typed_multi_file_attachments_round_trip() {
-+        let a = b"one";
-+        let b = b"two";
-+        let expected_value = rmpv::Value::Array(vec![
-+            rmpv::Value::Array(vec![
-+                rmpv::Value::String("a.txt".into()),
-+                rmpv::Value::Binary(a.to_vec()),
-+            ]),
-+            rmpv::Value::Array(vec![
-+                rmpv::Value::String("b.bin".into()),
-+                rmpv::Value::Binary(b.to_vec()),
-+            ]),
-+        ]);
-+        let mut expected = Vec::new();
-+        rmpv::encode::write_value(&mut expected, &expected_value).unwrap();
-+
-+        let mut msg = LxMessage::new([0; 16], [0; 16], "", "", DeliveryMethod::Direct);
-+        msg.set_file_attachments_field(&[("a.txt", a.as_slice()), ("b.bin", b.as_slice())])
-+            .unwrap();
-+        assert_eq!(msg.get_field(FIELD_FILE_ATTACHMENTS), Some(&expected));
-+
-+        let listed = msg.file_attachments().unwrap();
-+        assert_eq!(listed.len(), 2);
-+        assert_eq!(listed[0].0, "a.txt");
-+        assert_eq!(listed[0].1, a);
-+        assert_eq!(listed[1].0, "b.bin");
-+        assert_eq!(listed[1].1, b);
-+        assert_eq!(
-+            msg.first_file_attachment().unwrap().unwrap().0,
-+            "a.txt"
-+        );
-+
-+        let key = rns_crypto::ed25519::Ed25519PrivateKey::generate();
-+        msg.sign(&key).unwrap();
-+        let packed = msg.pack().unwrap();
-+        let inbound = LxMessage::unpack(&packed).unwrap();
-+        let inbound_files = inbound.file_attachments().unwrap();
-+        assert_eq!(inbound_files.len(), 2);
-+        assert_eq!(inbound_files[1].0, "b.bin");
-+        assert_eq!(inbound_files[1].1, b);
++    /// Single-file helper; equivalent to a one-entry
++    /// [`set_file_attachments_field`](Self::set_file_attachments_field).
+     pub fn set_file_attachment_field(
+         &mut self,
+         file_name: &str,
+         bytes: &[u8],
+     ) -> Result<(), MessageError> {
+-        self.limits.check_wire(bytes.len())?;
+-        let encoded =
+-            rmp_serde::to_vec(&FileAttachmentsFieldRef { file_name, bytes }).map_err(packed)?;
++        self.set_file_attachments_field(&[(file_name, bytes)])
 +    }
-+
-     #[test]
-     fn native_attachment_decoders_borrow_large_payload_bytes() {
-         let file_bytes = vec![0x5a; 2 * 1024 * 1024];
++    /// Encode and install native LXMF file attachments (`[[name, bytes], ...]`).
++    ///
++    /// Matches Python NomadNet / LXMF multi-file attachment lists. Replaces any
++    /// previous `FIELD_FILE_ATTACHMENTS` value.
++    pub fn set_file_attachments_field(
++        &mut self,
++        attachments: &[(&str, &[u8])],
++    ) -> Result<(), MessageError> {
++        let total = attachments
++            .iter()
++            .fold(0usize, |sum, (_, bytes)| sum.saturating_add(bytes.len()));
++        self.limits.check_wire(total)?;
++        let encoded = rmp_serde::to_vec(&FileAttachmentsListRef { attachments }).map_err(packed)?;
+         self.set_msgpack_field(FIELD_FILE_ATTACHMENTS, encoded)
+     }
+     /// Exact unsigned payload, for diagnostics; it is not a transmittable message.
+diff --git a/crates/lxmf-core/src/message/tests.rs b/crates/lxmf-core/src/message/tests.rs
+index b116adc..d74368b 100644
+--- a/crates/lxmf-core/src/message/tests.rs
++++ b/crates/lxmf-core/src/message/tests.rs
+@@ -441,6 +441,38 @@ fn native_attachments_borrow_exact_image_and_clone() {
+     );
+ }
+ #[test]
++fn typed_multi_file_attachments_round_trip() {
++    let a = b"one";
++    let b = b"two";
++    let expected_value = rmpv::Value::Array(vec![
++        rmpv::Value::Array(vec![
++            rmpv::Value::String("a.txt".into()),
++            rmpv::Value::Binary(a.to_vec()),
++        ]),
++        rmpv::Value::Array(vec![
++            rmpv::Value::String("b.bin".into()),
++            rmpv::Value::Binary(b.to_vec()),
++        ]),
++    ]);
++    let mut expected = Vec::new();
++    rmpv::encode::write_value(&mut expected, &expected_value).unwrap();
++    let mut d = draft();
++    d.set_file_attachments_field(&[("a.txt", a.as_slice()), ("b.bin", b.as_slice())])
++        .unwrap();
++    let m = freeze(d);
++    let field = m.fields().get(FIELD_FILE_ATTACHMENTS).unwrap();
++    assert_eq!(field.encoded(), expected.as_slice());
++    let listed = m.file_attachments().unwrap();
++    assert_eq!(listed.len(), 2);
++    assert_eq!(listed[0], ("a.txt".to_string(), a.as_slice()));
++    assert_eq!(listed[1], ("b.bin".to_string(), b.as_slice()));
++    assert_eq!(m.first_file_attachment().unwrap().unwrap().0, "a.txt");
++    let inbound = LxMessage::unpack(&m.pack().unwrap()).unwrap();
++    let inbound_files = inbound.file_attachments().unwrap();
++    assert_eq!(inbound_files.len(), 2);
++    assert_eq!(inbound_files[1], ("b.bin".to_string(), b.as_slice()));
++}
++#[test]
+ fn native_audio_shape_and_optional_failure() {
+     for malformed in [
+         vec![0xc0],

@@ -293,6 +293,7 @@ fn opus_tags_packet() -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stack::lxmf_compose;
 
     #[test]
     fn mux_opus_ogg_writes_head_and_magic() {
@@ -416,7 +417,6 @@ mod tests {
         use base64::Engine as _;
         use lxmf_core::constants::AM_OPUS_OGG;
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
 
         let mgr = VoiceMemoManager::new();
         let start = mgr.start().expect("start");
@@ -433,7 +433,7 @@ mod tests {
             .decode(stop["ogg_base64"].as_str().expect("b64"))
             .expect("decode");
 
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
@@ -441,6 +441,7 @@ mod tests {
             DeliveryMethod::Direct,
         );
         msg.set_audio_field(AM_OPUS_OGG, &ogg).expect("set");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let audio = msg.audio_field().expect("field").expect("some");
         assert_eq!(audio.mode, AM_OPUS_OGG);
         assert_eq!(audio.bytes, ogg.as_slice());

@@ -558,7 +558,9 @@ describe('full-stack sidecar cache', () => {
 
   it('always tests and rebuilds before uploading, including on a cache hit', () => {
     const testIndex = job.steps.findIndex((step) =>
-      step.run?.startsWith('cargo test --features rns-stack,rns-ble,rns-rnode-tcp'),
+      step.run?.startsWith(
+        'cargo test --features rns-stack,rns-ble,rns-rnode-tcp -- --test-threads=1',
+      ),
     );
     const buildIndex = job.steps.findIndex((step) =>
       step.run?.startsWith('cargo build --release --target'),
@@ -604,9 +606,11 @@ describe('Windows ARM64 sidecar builds', () => {
       .split('\n      - ')
       .find((step) => step.startsWith('name: Test sidecar'));
     expect(testStep).toBeDefined();
-    expect(testStep.split('\n').map((line) => line.trim())).toContain(
-      `run: cargo test${variant.features}`,
-    );
+    const expectedTestRun =
+      variant.features === ''
+        ? 'run: cargo test'
+        : `run: cargo test${variant.features} -- --test-threads=1`;
+    expect(testStep.split('\n').map((line) => line.trim())).toContain(expectedTestRun);
     expect(testStep).not.toMatch(/\bif:|cargo build/);
     expect(native).not.toMatch(/continue-on-error:/);
 

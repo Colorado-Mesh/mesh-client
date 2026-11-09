@@ -986,7 +986,9 @@
       "transfersAria": "送信中の添付"
     },
     "sendLater": "後で送信する",
-    "sendMenuButton": "送信設定"
+    "sendMenuButton": "送信設定",
+    "saveAttachmentAria": "添付ファイル {{name}} を保存",
+    "revealAttachmentAria": "フォルダー内の添付ファイル {{name}} を表示"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -3493,7 +3495,13 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。",
       "slowRfAnnounceFilter": "低速RFインターフェースでのリミットアナウンス（非標準）",
-      "slowRfAnnounceFilterHint": "デフォルトでオンになっています。要求されていないインターネットアナウンスが低帯域幅のRNodeリンクで再放送されるのを停止します。これらのリンクは消耗することはありません。ローカルおよびRF学習の宛先は引き続きアナウンスされ、インターネットの宛先は引き続きオンデマンドでパスリクエストに応答します。在庫Reticulumの動作を通知する場合はオフにします。"
+      "slowRfAnnounceFilterHint": "デフォルトでオンになっています。要求されていないインターネットアナウンスが低帯域幅のRNodeリンクで再放送されるのを停止します。これらのリンクは消耗することはありません。ローカルおよびRF学習の宛先は引き続きアナウンスされ、インターネットの宛先は引き続きオンデマンドでパスリクエストに応答します。在庫Reticulumの動作を通知する場合はオフにします。",
+      "autoconnectUnverified": "自動接続の未検証の実装",
+      "autoconnectUnverifiedAria": "非 Python または rsRNS などの未検証のスタックによってアナウンスされたバックボーン インターフェイスへの自動接続を許可します。",
+      "autoconnectUnverifiedHint": "デフォルトではオフです。 rsRNS または検証済みの Python Reticulum 実装をアドバタイズしない他の非 Python バックボーン アナウンスとピアリングする場合に有効にします。",
+      "interfaceStatsTitle": "ライブインターフェースカウンター",
+      "interfaceStatsLine": "TX ドロップ {{txDropped}} B · プロトコル {{protocol}} · IFAC {{ifac}} · フィルター {{filter}}",
+      "autoconnectUnverifiedRestartRequired": "保存されました。未検証の自動接続を有効にするには、Reticulum スタックを再起動します。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",
@@ -6857,7 +6865,10 @@
         "r": "ルークに昇格",
         "b": "ビショップに昇格",
         "n": "騎士に昇格"
-      }
+      },
+      "opponentCaptured": "相手を捕らえた",
+      "youCaptured": "あなたは捕らえました",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "有効な32文字のピア宛先ハッシュを入力します。",
@@ -6880,7 +6891,9 @@
       "failed": "再試行が必要です"
     },
     "drawOfferWaitingBanner": "引き分けを提案しました。相手の応答を待っています…",
-    "idleExpiryNotice": "ゲームは無操作で期限切れになり、その後は削除のみできます。未応答の挑戦: 24時間（全ゲーム）。進行中: 三目並べは24時間、チェスと四目並べは7日。"
+    "idleExpiryNotice": "ゲームは無操作で期限切れになり、その後は削除のみできます。未応答の挑戦: 24時間（全ゲーム）。進行中: 三目並べは24時間、チェスと四目並べは7日。",
+    "backToList": "ゲームに戻る",
+    "backToListAria": "ゲームセッションリストに戻る"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · はじめに",

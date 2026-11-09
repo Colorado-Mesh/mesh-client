@@ -40,6 +40,27 @@ export function sanitizeReplacesMessageHash(raw: unknown): string | null {
   return null;
 }
 
+/** Max persisted `attachments_json` length (whole JSON document; never mid-string slice). */
+export const RETICULUM_ATTACHMENTS_JSON_MAX_CHARS = 16_384;
+
+/**
+ * Persist multi-file attachment metadata only when it is non-empty, valid JSON, and
+ * within {@link RETICULUM_ATTACHMENTS_JSON_MAX_CHARS}. Truncating mid-string would
+ * leave invalid JSON in SQLite.
+ */
+export function sanitizeAttachmentsJsonForDb(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > RETICULUM_ATTACHMENTS_JSON_MAX_CHARS) return null;
+  try {
+    JSON.parse(trimmed);
+  } catch {
+    // catch-no-log-ok: invalid attachments_json is rejected as null for DB write
+    return null;
+  }
+  return trimmed;
+}
+
 interface ParsedRemoteAddressUpsert {
   id: string;
   label: string;
@@ -178,6 +199,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const attachmentPath = sanitizeReticulumAttachmentPathForDb(
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
+      const attachmentsJson = sanitizeAttachmentsJsonForDb(m.attachments_json);
       const audioMode =
         m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
           ? Math.trunc(Number(m.audio_mode))
@@ -224,6 +246,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
                    sender_name = COALESCE(?, sender_name),
                    delivery_method = COALESCE(?, delivery_method),
                    attachment_path = COALESCE(?, attachment_path),
+                   attachments_json = COALESCE(?, attachments_json),
                    audio_mode = COALESCE(?, audio_mode),
                    audio_duration_sec = COALESCE(?, audio_duration_sec)
                WHERE id = ?`,
@@ -234,6 +257,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               senderName,
               deliveryMethod,
               attachmentPath,
+              attachmentsJson,
               audioMode,
               audioDurationSec,
               existing.id,
@@ -243,8 +267,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         }
 
         db.prepareOnce(
-          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method, audio_mode, audio_duration_sec)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, attachments_json, delivery_method, audio_mode, audio_duration_sec)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           identityId,
           senderId,
@@ -259,6 +283,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           deliveryAttempts,
           nextDeliveryAttemptAt,
           attachmentPath,
+          attachmentsJson,
           deliveryMethod,
           audioMode,
           audioDurationSec,

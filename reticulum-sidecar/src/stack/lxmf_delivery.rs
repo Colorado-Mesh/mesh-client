@@ -242,7 +242,10 @@ pub fn spawn_lxmf_inbound_receiver(
         LXMF_APP,
         identity.get_signing_key(),
     );
-    link_mgr.set_link_packet_channel(link_packet_tx);
+    // RNS 1.4: fails only when the manager is in ProveApp mode (not configured here).
+    if let Err(e) = link_mgr.set_link_packet_channel(link_packet_tx) {
+        tracing::warn!(error = %e, "LXMF delivery: legacy link packet channel unavailable");
+    }
     link_mgr.set_resource_completed_channel(resource_tx);
     link_mgr.set_inbound_raw_channel(inbound_raw_tx);
 
@@ -400,8 +403,8 @@ pub(crate) fn decrypt_opportunistic_payload(
 
 async fn deliver_unpacked_lxmf(router: &Arc<TokioMutex<LxmRouter>>, msg: &LxMessage, via: &str) {
     tracing::debug!(
-        from = %hex::encode(msg.source_hash),
-        len = msg.content.len(),
+        from = %hex::encode(msg.source_hash()),
+        len = msg.content_bytes().len(),
         via,
         "inbound LXMF message"
     );
@@ -458,13 +461,14 @@ async fn handle_opportunistic_raw_packet(
     };
     let router = router.lock().await;
     if let Some(ref cb) = router.delivery_callback {
-        reception.with_message(msg.hash, raw, || cb(&msg));
+        reception.with_message(Some(msg.message_id()), raw, || cb(&msg));
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stack::lxmf_compose;
     use lxmf_core::constants::DeliveryMethod;
     use lxmf_core::router::RouterConfig;
     use rns_identity::destination::Destination;
@@ -507,7 +511,7 @@ mod tests {
         let router = Arc::new(TokioMutex::new(LxmRouter::new(RouterConfig::default())));
         let seen_cb = seen.clone();
         router.lock().await.register_delivery_callback(move |msg| {
-            *seen_cb.lock().expect("callback mutex") = Some(msg.content.clone());
+            *seen_cb.lock().expect("callback mutex") = Some(msg.content_text().into_owned());
         });
         router
     }
@@ -559,20 +563,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             sender_lxmf,
             "",
             "hello from sideband",
             DeliveryMethod::Opportunistic,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let packed = msg.pack().unwrap();
         // Python opportunistic delivery encrypts the LXM body *without* leading dest hash.
         assert!(packed.len() > 16 && packed[..16] == lxmf_hash);
@@ -585,9 +589,9 @@ mod tests {
 
         let unpack_data = prepend_lxmf_dest_hash(lxmf_hash, &plaintext);
         let recovered = LxMessage::unpack(&unpack_data).expect("unpack");
-        assert_eq!(recovered.content, "hello from sideband");
-        assert_eq!(recovered.source_hash, sender_lxmf);
-        assert_eq!(recovered.destination_hash, lxmf_hash);
+        assert_eq!(recovered.content_text(), "hello from sideband");
+        assert_eq!(recovered.source_hash(), sender_lxmf);
+        assert_eq!(recovered.destination_hash(), lxmf_hash);
     }
 
     #[test]
@@ -617,20 +621,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             sender_lxmf,
             "",
             "hello from sideband",
             DeliveryMethod::Opportunistic,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let raw = build_opportunistic_raw(&recipient, lxmf_hash, &msg.pack().unwrap());
 
         let reception = Arc::new(LxmfReception::default());
@@ -653,8 +657,8 @@ mod tests {
         let router = Arc::new(TokioMutex::new(LxmRouter::new(RouterConfig::default())));
         router.lock().await.register_delivery_callback(move |msg| {
             *seen_cb.lock().unwrap() = Some((
-                msg.content.clone(),
-                serde_json::to_value(reception_cb.take(msg.hash)).unwrap(),
+                msg.content_text().into_owned(),
+                serde_json::to_value(reception_cb.take(Some(msg.message_id()))).unwrap(),
             ));
         });
         handle_opportunistic_raw_packet(&router, &recipient, lxmf_hash, &raw, &reception).await;
@@ -672,20 +676,20 @@ mod tests {
         let identity = Identity::new();
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             lxmf_hash,
             "",
             "loopback self-send",
             DeliveryMethod::Opportunistic,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             identity
                 .get_signing_key()
                 .as_ref()
                 .expect("identity signing key"),
-        )
-        .unwrap();
+        );
         let raw = build_opportunistic_raw(&identity, lxmf_hash, &msg.pack().unwrap());
 
         let seen = Arc::new(Mutex::new(None::<String>));
@@ -711,20 +715,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             sender_lxmf,
             "",
             "link delivered",
             DeliveryMethod::Direct,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let packed = msg.pack().unwrap();
         let stripped = &packed[16..];
 
@@ -786,7 +790,7 @@ mod tests {
             seen_cb
                 .lock()
                 .expect("callback mutex")
-                .push(msg.content.clone());
+                .push(msg.content_text().into_owned());
         });
 
         let tasks = LiveTasks::default();
@@ -794,15 +798,20 @@ mod tests {
         let link_id = [0xBC; 16];
 
         for content in ["backchannel reply 1", "backchannel reply 2"] {
-            let mut msg =
-                LxMessage::new(lxmf_hash, sender_lxmf, "", content, DeliveryMethod::Direct);
-            msg.sign(
+            let msg = lxmf_compose::test_support::draft(
+                lxmf_hash,
+                sender_lxmf,
+                "",
+                content,
+                DeliveryMethod::Direct,
+            );
+            let msg = lxmf_compose::test_support::finalize(
+                msg,
                 sender
                     .get_signing_key()
                     .as_ref()
                     .expect("sender signing key"),
-            )
-            .unwrap();
+            );
             let packed = msg.pack().unwrap();
             let stripped = packed[16..].to_vec();
             backchannel_tx
@@ -840,20 +849,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             sender_lxmf,
             "",
             "first reply after direct",
             DeliveryMethod::Direct,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let stripped = msg.pack().unwrap()[16..].to_vec();
 
         let seen = Arc::new(Mutex::new(None::<String>));
@@ -873,20 +882,20 @@ mod tests {
         let identity = Identity::new();
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             lxmf_hash,
             "",
             "loopback self-send",
             DeliveryMethod::Opportunistic,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             identity
                 .get_signing_key()
                 .as_ref()
                 .expect("identity signing key"),
-        )
-        .unwrap();
+        );
         let packed = msg.pack().unwrap();
         assert!(packed.len() > 16 && packed[..16] == lxmf_hash);
         let stripped = &packed[16..];
@@ -908,9 +917,9 @@ mod tests {
 
         let unpack_data = prepend_lxmf_dest_hash(lxmf_hash, stripped);
         let recovered = LxMessage::unpack(&unpack_data).expect("always-prepend unpack");
-        assert_eq!(recovered.content, "loopback self-send");
-        assert_eq!(recovered.source_hash, lxmf_hash);
-        assert_eq!(recovered.destination_hash, lxmf_hash);
+        assert_eq!(recovered.content_text(), "loopback self-send");
+        assert_eq!(recovered.source_hash(), lxmf_hash);
+        assert_eq!(recovered.destination_hash(), lxmf_hash);
     }
 
     #[tokio::test]
@@ -995,20 +1004,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             lxmf_hash,
             sender_lxmf,
             "",
             "paper hello",
             DeliveryMethod::Paper,
         );
-        msg.sign(
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
 
         let uri = msg
             .to_paper_uri(|plaintext| {
@@ -1026,9 +1035,9 @@ mod tests {
                 .map_err(|_| MessageError::PackFailed("decrypt".into()))
         })
         .expect("from_paper_uri");
-        assert_eq!(recovered.content, "paper hello");
+        assert_eq!(recovered.content_text(), "paper hello");
         assert_eq!(recovered.method, DeliveryMethod::Paper);
-        assert_eq!(recovered.destination_hash, lxmf_hash);
+        assert_eq!(recovered.destination_hash(), lxmf_hash);
     }
 
     #[test]
@@ -1041,14 +1050,20 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
 
-        let mut msg = LxMessage::new(lxmf_hash, sender_lxmf, "", "secret", DeliveryMethod::Paper);
-        msg.sign(
+        let msg = lxmf_compose::test_support::draft(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            "secret",
+            DeliveryMethod::Paper,
+        );
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let uri = msg
             .to_paper_uri(|plaintext| {
                 recipient
@@ -1076,14 +1091,20 @@ mod tests {
         let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
         // Large enough that dest‖ciphertext exceeds PAPER_MDU after identity encryption.
         let big = "x".repeat(PAPER_MDU);
-        let mut msg = LxMessage::new(lxmf_hash, sender_lxmf, "", &big, DeliveryMethod::Paper);
-        msg.sign(
+        let msg = lxmf_compose::test_support::draft(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            &big,
+            DeliveryMethod::Paper,
+        );
+        let msg = lxmf_compose::test_support::finalize(
+            msg,
             sender
                 .get_signing_key()
                 .as_ref()
                 .expect("sender signing key"),
-        )
-        .unwrap();
+        );
         let err = msg.to_paper_uri(|plaintext| {
             recipient
                 .encrypt(plaintext, None)

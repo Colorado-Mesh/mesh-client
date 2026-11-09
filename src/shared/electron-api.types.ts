@@ -704,6 +704,8 @@ export interface ElectronAPI {
       delivery_attempts?: number | null;
       next_delivery_attempt_at?: number | null;
       attachment_path?: string | null;
+      /** JSON array of `{ path, fileName, mimeType }` for multi-file LXMF attachments. */
+      attachments_json?: string | null;
       audio_mode?: number | null;
       audio_duration_sec?: number | null;
     }) => Promise<void>;

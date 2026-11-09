@@ -16,7 +16,7 @@ use lxmf_core::constants::{
     AM_OPUS_OGG, DeliveryMethod, FIELD_ICON_APPEARANCE, FIELD_REACTION, REACTION_CONTENT,
     REACTION_TO,
 };
-use lxmf_core::message::LxMessage;
+use lxmf_core::message::{LxMessage, LxMessageDraft};
 
 /// Upstream LXMF 1.0.0 reply-to (`LXMF.py`); not yet named in rsLXMF constants.
 const FIELD_REPLY_TO: u8 = 0x30;
@@ -55,11 +55,13 @@ use super::local_rnode_primary;
 use super::lxmf_attachments::{
     OutboundMedia, decode_outbound_attachments, sanitize_attachment_file_name,
 };
+use super::lxmf_compose;
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
 };
 use super::lxmf_reception::{LxmfReception, refresh_ble_peer_reception_interfaces};
+use super::lxmf_resumable_store::LxmfResumableStore;
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
 use super::nomad_link_errors::{
     NomadLinkSessionKind, map_nomad_link_session_kind, nomad_link_session_kind_from_timeout_what,
@@ -135,6 +137,27 @@ pub(crate) fn live_interface_tx_queue_fields(
         (None, None)
     } else {
         (Some(tx_queue_used), Some(tx_queue_max))
+    }
+}
+
+/// Forward LXMF 1.4 destination retains so identity outlives the path (lxmd parity).
+async fn apply_destination_retains(handle: &reticulum::ReticulumHandle, retains: Vec<[u8; 16]>) {
+    for dest in retains {
+        let retained = match tokio::time::timeout(
+            TRANSPORT_QUERY_TIMEOUT,
+            handle.query_control(TransportQuery::RetainDestination { dest }),
+        )
+        .await
+        {
+            Ok(Some(_)) => true,
+            Ok(None) | Err(_) => false,
+        };
+        if !retained {
+            tracing::debug!(
+                dest = %hex::encode(dest),
+                "Reticulum did not retain a delivered destination"
+            );
+        }
     }
 }
 
@@ -229,6 +252,8 @@ pub struct LiveBridge {
     rncp_transfer: Arc<RncpTransferManager>,
     voice_session: Arc<VoiceSessionManager>,
     games_session: Arc<GamesSessionManager>,
+    /// Signed-but-not-yet-terminal LXMF outbound (`ResumableLxMessage` bytes).
+    resumable_store: Option<Arc<LxmfResumableStore>>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -513,12 +538,16 @@ impl LiveBridge {
         let games_session_cb = games_session.clone();
         let reception_cb = reception.clone();
         router.register_delivery_callback(move |msg| {
-            let radio_reception = reception_cb.take(msg.hash);
+            let radio_reception = reception_cb.take(Some(msg.message_id()));
             if !msg.incoming {
                 return;
             }
-            let sender_hex = hex::encode(msg.source_hash);
-            if games_session_cb.handle_inbound_lxmf(&msg.fields, &sender_hex, &msg.content) {
+            let sender_hex = hex::encode(msg.source_hash());
+            if games_session_cb.handle_inbound_lxmf(
+                &lxmf_compose::standard_fields_map(msg),
+                &sender_hex,
+                &msg.content_text(),
+            ) {
                 return;
             }
             // Match path-table iface name to local config (same as outbound) so
@@ -565,17 +594,11 @@ impl LiveBridge {
                 .get("message_hash")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
-            let transient_id_hex = msg
-                .transient_id
-                .as_ref()
-                .map(hex::encode)
-                .unwrap_or_default();
             if msg.method == DeliveryMethod::Propagated {
                 let from_prefix = sender_hex.get(..12).unwrap_or(&sender_hex);
                 tracing::debug!(
                     target: "propagation-retrieve",
                     message_hash = %message_hash,
-                    transient_id = %transient_id_hex,
                     from_prefix = %from_prefix,
                     "inbound LXMF delivered via propagation"
                 );
@@ -625,6 +648,14 @@ impl LiveBridge {
         // Outbound Direct reusable links ACK peer replies via LinkProof even when the
         // plaintext is not forwarded — wire set_inbound_packet_sender so backchannel
         // DATA reaches the same unpack path as peer-initiated lxmf.delivery links.
+        let resumable_store = match LxmfResumableStore::open(storage_dir.join("lxmf_resumable.db"))
+        {
+            Ok(store) => Some(Arc::new(store)),
+            Err(e) => {
+                tracing::error!(error = %e, "failed to open lxmf_resumable.db; crash resume disabled");
+                None
+            }
+        };
         let mut outbound_driver =
             LxmfOutboundDriver::new(handle.transport_tx.clone(), &identity, &lxmf_hash_hex);
         outbound_driver.set_inbound_packet_sender(spawn_lxmf_outbound_backchannel(
@@ -635,6 +666,9 @@ impl LiveBridge {
         outbound_driver.set_propagation_max_message_size(
             pn_hosting_policy.propagation_limit_kb.saturating_mul(1024),
         );
+        if let Some(ref store) = resumable_store {
+            outbound_driver.set_resumable_store(Arc::clone(store));
+        }
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {
@@ -701,6 +735,7 @@ impl LiveBridge {
                 event_tx.clone(),
             )),
             games_session,
+            resumable_store,
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
@@ -729,6 +764,7 @@ impl LiveBridge {
             }
         };
 
+        bridge.restore_resumable_outbound().await;
         bridge.spawn_maintenance(event_tx);
         bridge.spawn_background(super::discovery_persistence::run(
             inner.clone(),
@@ -3308,6 +3344,10 @@ impl LiveBridge {
                                     bootstrap_only: None,
                                     tx_queue_used,
                                     tx_queue_max,
+                                    protocol_violations: if s.online { Some(s.protocol_violations) } else { None },
+                                    ifac_violations: if s.online { Some(s.ifac_violations) } else { None },
+                                    packet_filter_hits: if s.online { Some(s.packet_filter_hits) } else { None },
+                                    tx_dropped_bytes: if s.online { Some(s.tx_dropped_bytes) } else { None },
                                     host_rssi: None,
                                     extra_config: std::collections::HashMap::new(),
                                 }
@@ -3484,6 +3524,7 @@ impl LiveBridge {
                 };
                 let need_inbox_drain = propagation.take_inbox_drain_request();
                 let mut start_silent_get: Option<([u8; 16], &'static str)> = None;
+                let mut pending_destination_retains: Vec<[u8; 16]> = Vec::new();
                 {
                     let mut router = router.lock().await;
                     if let Ok(mut driver) = outbound.lock() {
@@ -3491,6 +3532,8 @@ impl LiveBridge {
                             driver.update_path_table(entries);
                         }
                         driver.process_tick(&mut router, &event_tx);
+                        pending_destination_retains =
+                            lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router);
                         let known_identities = driver.known_identities_for_propagation();
                         let terminal = propagation.tick(&known_identities, &mut router);
                         if let Some((ok, peer_hash)) = terminal {
@@ -3558,6 +3601,9 @@ impl LiveBridge {
                             );
                         }
                     }
+                }
+                if !pending_destination_retains.is_empty() {
+                    apply_destination_retains(&handle, pending_destination_retains).await;
                 }
                 // Peer Resource accept → drain our lxmf.delivery mail into Chat.
                 if need_inbox_drain && propagation.is_local_serving() {
@@ -4101,14 +4147,14 @@ impl LiveBridge {
         reply_quote: Option<&str>,
         media: &OutboundMedia,
     ) -> Result<(LxMessage, String), String> {
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::new_draft(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
             title,
             content,
             method,
-        );
-        apply_reply_fields(&mut msg, reply_to, reply_quote);
+        )?;
+        apply_reply_fields(&mut msg, reply_to, reply_quote)?;
         if let Some(bytes) = media.audio.as_deref() {
             if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
                 return Err(format!(
@@ -4137,13 +4183,7 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf sign: {e:?}"))?;
-        let hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
-        Ok((msg, hash_hex))
+        self.sign_persist_finalize(msg, &signing_key, method)
     }
 
     /// Like [`prepare_signed_outbound_lxmf`](Self::prepare_signed_outbound_lxmf), but
@@ -4157,13 +4197,13 @@ impl LiveBridge {
         method: DeliveryMethod,
         fields: &HashMap<u8, Vec<u8>>,
     ) -> Result<(LxMessage, String), String> {
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::new_draft(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
             title,
             content,
             method,
-        );
+        )?;
         for (&field_id, bytes) in fields {
             // LRGP packs native MessagePack field values (0xFB string / 0xFD map).
             // `set_field` would wrap those in BIN and break Python/Ratspeak peers.
@@ -4174,13 +4214,132 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf sign: {e:?}"))?;
-        let hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
-        Ok((msg, hash_hex))
+        self.sign_persist_finalize(msg, &signing_key, method)
+    }
+
+    fn delivery_method_label(method: DeliveryMethod) -> &'static str {
+        match method {
+            DeliveryMethod::Direct => "direct",
+            DeliveryMethod::Propagated => "propagated",
+            DeliveryMethod::Opportunistic => "opportunistic",
+            DeliveryMethod::Paper => "paper",
+        }
+    }
+
+    fn parse_delivery_method_label(label: &str) -> DeliveryMethod {
+        match label {
+            "propagated" => DeliveryMethod::Propagated,
+            "opportunistic" => DeliveryMethod::Opportunistic,
+            "paper" => DeliveryMethod::Paper,
+            _ => DeliveryMethod::Direct,
+        }
+    }
+
+    /// Sign, persist `ResumableLxMessage` for crash resume, then finalize for `try_send`.
+    fn sign_persist_finalize(
+        &self,
+        draft: lxmf_core::message::LxMessageDraft,
+        signing_key: &rns_crypto::ed25519::Ed25519PrivateKey,
+        method: DeliveryMethod,
+    ) -> Result<(LxMessage, String), String> {
+        let signed = lxmf_compose::sign_draft(draft, signing_key)?;
+        // Paper messages are operator-exported offline artifacts — do not resume them
+        // across sidecar restarts (they are not in-flight RF/PN deliveries).
+        if method != DeliveryMethod::Paper
+            && let Some(store) = &self.resumable_store
+        {
+            let hash_hex = hex::encode(signed.message_id());
+            let method_label = Self::delivery_method_label(method);
+            if let Err(e) = store.upsert(&hash_hex, method_label, signed.to_resumable().as_bytes())
+            {
+                tracing::warn!(
+                    target: "lxmf-outbound",
+                    message_hash = %hash_hex,
+                    error = %e,
+                    "failed to persist resumable signed outbound"
+                );
+            }
+        }
+        lxmf_compose::finalize_signed(signed)
+    }
+
+    /// Re-queue signed outbound that survived a sidecar restart (LXMF 1.4).
+    async fn restore_resumable_outbound(&self) {
+        let Some(store) = &self.resumable_store else {
+            return;
+        };
+        let rows = match store.list_all() {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to list resumable outbound");
+                return;
+            }
+        };
+        if rows.is_empty() {
+            return;
+        }
+        let pubkey = self.identity.get_public_key();
+        let mut router = self.router.lock().await;
+        for row in rows {
+            if row.method == "paper" {
+                tracing::debug!(
+                    message_hash = %row.message_hash,
+                    "dropping paper resumable outbound on restore"
+                );
+                let _ = store.delete(&row.message_hash);
+                continue;
+            }
+            let stored = match lxmf_core::message::ResumableLxMessage::from_bytes(row.bytes.clone())
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "dropping corrupt resumable outbound"
+                    );
+                    let _ = store.delete(&row.message_hash);
+                    continue;
+                }
+            };
+            let method = Self::parse_delivery_method_label(&row.method);
+            let signed = match router.restore_signed(&stored, &pubkey, method) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "restore_signed failed; dropping resumable row"
+                    );
+                    let _ = store.delete(&row.message_hash);
+                    continue;
+                }
+            };
+            match router.submit_signed(signed) {
+                Ok(()) => {
+                    tracing::info!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        "restored resumable signed outbound"
+                    );
+                }
+                Err(lxmf_core::message::MessageError::AlreadyQueued) => {
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        "resumable outbound already queued"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "submit_signed after restore failed"
+                    );
+                }
+            }
+        }
     }
 
     /// Resolve a Direct-vs-Propagated delivery method for an LRGP action, mirroring
@@ -4275,16 +4434,21 @@ impl LiveBridge {
             }
         };
 
-        let send_result = {
+        let (send_result, game_retains) = {
             let mut router = self.router.lock().await;
             let res = router.try_send(msg);
+            let mut retains = Vec::new();
             if res.is_ok()
                 && let Ok(mut driver) = self.outbound.lock()
             {
                 driver.process_tick(&mut router, &self.event_tx);
+                retains = lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router);
             }
-            res
+            (res, retains)
         };
+        if !game_retains.is_empty() {
+            apply_destination_retains(&self.handle, game_retains).await;
+        }
         if let Err(e) = send_result {
             self.games_session
                 .rollback_action(action, Some("send_failed"));
@@ -4330,14 +4494,20 @@ impl LiveBridge {
             &resend.fields,
         )?;
 
-        {
+        let resend_retains = {
             let mut router = self.router.lock().await;
             router
                 .try_send(msg)
                 .map_err(|e| format!("lxmf game resend: {e:?}"))?;
             if let Ok(mut driver) = self.outbound.lock() {
                 driver.process_tick(&mut router, &self.event_tx);
+                lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router)
+            } else {
+                Vec::new()
             }
+        };
+        if !resend_retains.is_empty() {
+            apply_destination_retains(&self.handle, resend_retains).await;
         }
 
         self.games_session
@@ -5023,17 +5193,25 @@ impl LiveBridge {
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
         // Hold lifecycle so emitter check+effect cannot race this generation bump.
-        let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
-        self.sync_run_id.fetch_add(1, Ordering::SeqCst);
-        if let Ok(slot) = self.sync_cancel.lock() {
-            slot.store(true, Ordering::SeqCst);
-        }
-        self.propagation.cancel_sync();
-        self.propagation.cancel_client_download();
-        self.propagation.clear_pending_post_peer_get();
-        if let Ok(mut driver) = self.outbound.lock() {
-            driver.clear_propagation_identity_pins();
-            driver.set_propagation_sync_target(None);
+        // Drop the std MutexGuard before awaiting the router (axum Handler requires Send).
+        let pending = {
+            let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
+            self.sync_run_id.fetch_add(1, Ordering::SeqCst);
+            if let Ok(slot) = self.sync_cancel.lock() {
+                slot.store(true, Ordering::SeqCst);
+            }
+            self.propagation.cancel_sync();
+            let pending = self.propagation.cancel_client_download();
+            self.propagation.clear_pending_post_peer_get();
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
+            }
+            pending
+        };
+        if !pending.is_empty() {
+            let router = self.router.lock().await;
+            deliver_client_download_messages(&router, &pending);
         }
     }
 
@@ -5120,6 +5298,26 @@ impl LiveBridge {
                     bootstrap_only: None,
                     tx_queue_used,
                     tx_queue_max,
+                    protocol_violations: if s.online {
+                        Some(s.protocol_violations)
+                    } else {
+                        None
+                    },
+                    ifac_violations: if s.online {
+                        Some(s.ifac_violations)
+                    } else {
+                        None
+                    },
+                    packet_filter_hits: if s.online {
+                        Some(s.packet_filter_hits)
+                    } else {
+                        None
+                    },
+                    tx_dropped_bytes: if s.online {
+                        Some(s.tx_dropped_bytes)
+                    } else {
+                        None
+                    },
                     host_rssi: None,
                     extra_config: std::collections::HashMap::new(),
                 }
@@ -5592,8 +5790,15 @@ impl LiveBridge {
             obj.insert("attachment".into(), attachment);
         }
 
-        if let Ok(mut driver) = self.outbound.lock() {
+        let send_retains = if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
+            lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router)
+        } else {
+            Vec::new()
+        };
+        drop(router);
+        if !send_retains.is_empty() {
+            apply_destination_retains(&self.handle, send_retains).await;
         }
 
         self.schedule_egress_tap_upgrade(
@@ -5833,7 +6038,7 @@ impl LiveBridge {
             }
         };
 
-        let sender_hex = hex::encode(message.source_hash);
+        let sender_hex = hex::encode(message.source_hash());
         let inbound_sender_name = self
             .display_name_cache
             .lock()
@@ -6000,8 +6205,8 @@ pub(super) fn lxmf_payload_from_message(
     direction: &str,
     inbound_sender_name: Option<&str>,
 ) -> serde_json::Value {
-    let sender_hex = hex::encode(msg.source_hash);
-    let to_hex = hex::encode(msg.destination_hash);
+    let sender_hex = hex::encode(msg.source_hash());
+    let to_hex = hex::encode(msg.destination_hash());
     let is_outbound = direction == "outbound";
     let sender_hash = if is_outbound {
         self_lxmf_hash
@@ -6017,16 +6222,12 @@ pub(super) fn lxmf_payload_from_message(
             .map(str::to_string)
             .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string())
     };
-    let message_hash = msg
-        .hash
-        .map(hex::encode)
-        .or_else(|| msg.message_id.map(hex::encode))
-        .unwrap_or_default();
-    let ts_ms = (msg.timestamp * 1000.0) as i64;
+    let message_hash = hex::encode(msg.message_id());
+    let ts_ms = (msg.timestamp() * 1000.0) as i64;
     let mut payload = serde_json::json!({
         "sender_hash": sender_hash,
         "sender_name": sender_name,
-        "text": msg.content,
+        "text": msg.content_text(),
         "timestamp": ts_ms,
         "to_hash": to_hex,
         "direction": direction,
@@ -6138,27 +6339,35 @@ fn truncate_reply_quote(quote: &str) -> Option<String> {
 }
 
 /// Stamp reply fields before `sign()` so they are covered by the message hash.
-fn apply_reply_fields(msg: &mut LxMessage, reply_to: Option<[u8; 32]>, reply_quote: Option<&str>) {
+fn apply_reply_fields(
+    msg: &mut LxMessageDraft,
+    reply_to: Option<[u8; 32]>,
+    reply_quote: Option<&str>,
+) -> Result<(), String> {
     let Some(parent_id) = reply_to else {
-        return;
+        return Ok(());
     };
-    msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+    msg.set_field(FIELD_REPLY_TO, parent_id.to_vec())
+        .map_err(|e| format!("lxmf set_field reply_to: {e:?}"))?;
     if let Some(quote) = reply_quote.and_then(truncate_reply_quote) {
-        msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
+        msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec())
+            .map_err(|e| format!("lxmf set_field reply_quote: {e:?}"))?;
     }
+    Ok(())
 }
 
 /// Decode LXMF 1.0 `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31).
 fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
-    let raw = msg.get_field(FIELD_REPLY_TO)?;
+    let raw = lxmf_compose::message_field_bytes(msg, FIELD_REPLY_TO)?;
     if raw.len() != 32 {
         return None;
     }
     let reply_to_hash = hex::encode(raw);
-    let reply_preview_text = msg.get_field(FIELD_REPLY_QUOTE).and_then(|bytes| {
-        let s = std::str::from_utf8(bytes).ok()?;
-        truncate_reply_quote(s)
-    });
+    let reply_preview_text =
+        lxmf_compose::message_field_bytes(msg, FIELD_REPLY_QUOTE).and_then(|bytes| {
+            let s = std::str::from_utf8(bytes).ok()?;
+            truncate_reply_quote(s)
+        });
     Some(LxmfReplyFields {
         reply_to_hash,
         reply_preview_text,
@@ -6230,8 +6439,8 @@ fn reaction_content_text(value: &rmpv::Value) -> Option<String> {
 /// field (not a msgpack map, missing/invalid `REACTION_TO`, wrong types) returns
 /// `None` so the message ingests as normal text/reply.
 fn reaction_fields_from_message(msg: &LxMessage) -> Option<LxmfReactionFields> {
-    let raw = msg.get_field(FIELD_REACTION)?;
-    let mut cursor = Cursor::new(raw.as_slice());
+    let raw = lxmf_compose::message_field_bytes(msg, FIELD_REACTION)?;
+    let mut cursor = Cursor::new(raw);
     let value = rmpv::decode::read_value(&mut cursor).ok()?;
     // A conformant FIELD_REACTION is exactly one msgpack map. Trailing bytes after the map mean
     // the field is malformed, so fail open (ingest as normal text/reply) rather than trust it.
@@ -6296,8 +6505,8 @@ fn rgb_triplet_from_msgpack(value: &rmpv::Value) -> Option<[u8; 3]> {
 }
 
 fn icon_appearance_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
-    let field = msg.get_field(FIELD_ICON_APPEARANCE)?;
-    let value = rmpv::decode::read_value(&mut Cursor::new(field.as_slice())).ok()?;
+    let field = lxmf_compose::message_field_bytes(msg, FIELD_ICON_APPEARANCE)?;
+    let value = rmpv::decode::read_value(&mut Cursor::new(field)).ok()?;
     let arr = value.as_array()?;
     let icon_name = arr.first()?.as_str()?.to_string();
     if icon_name.trim().is_empty() {
@@ -7246,11 +7455,28 @@ fn resolve_propagation_link_hops(iface: Option<&str>, path_hops: u8) -> (u8, &'s
     (link_hops, egress, proof_budget_secs)
 }
 
+/// Deliver LXMF already admitted by a client `/get` (have-id persisted) so cancel /
+/// failover cannot drop mail that will not be re-offered.
+fn deliver_client_download_messages(
+    router: &LxmRouter,
+    messages: &[lxmf_core::message::LxMessage],
+) {
+    if messages.is_empty() {
+        return;
+    }
+    if let Some(ref cb) = router.delivery_callback {
+        for msg in messages {
+            cb(msg);
+        }
+    }
+}
+
 /// After establish failure, suppress dead iface/via and retry client `/get` on another hub.
 #[allow(clippy::too_many_arguments)] // mirrors Nomad path failover state threaded through driver loop
 async fn propagation_download_attempt_failover(
     live: Option<&Arc<LiveBridge>>,
     bridge: &PropagationBridge,
+    router: &Arc<tokio::sync::Mutex<LxmRouter>>,
     pn_hash: [u8; 16],
     pn_hex: &str,
     failover_round: &mut u8,
@@ -7266,7 +7492,11 @@ async fn propagation_download_attempt_failover(
     if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
         return false;
     }
-    bridge.cancel_client_download();
+    let pending = bridge.cancel_client_download();
+    if !pending.is_empty() {
+        let router = router.lock().await;
+        deliver_client_download_messages(&router, &pending);
+    }
     *failover_round = failover_round.saturating_add(1);
     record_path_failover_attempt(
         tried_interfaces,
@@ -7499,9 +7729,11 @@ fn spawn_client_download_driver_task(
                     break 'attempt;
                 }
                 if cancel.load(Ordering::SeqCst) {
-                    run_guarded(&|| {
-                        bridge.cancel_client_download();
-                    });
+                    let pending = bridge.cancel_client_download();
+                    if !pending.is_empty() {
+                        let router = router.lock().await;
+                        deliver_client_download_messages(&router, &pending);
+                    }
                     break 'attempt;
                 }
                 let progress = bridge.client_download_progress();
@@ -7521,6 +7753,7 @@ fn spawn_client_download_driver_task(
                     if propagation_download_attempt_failover(
                         live.as_ref(),
                         &bridge,
+                        &router,
                         pn_hash,
                         &pn_hex,
                         &mut failover_round,
@@ -7561,6 +7794,7 @@ fn spawn_client_download_driver_task(
                     if propagation_download_attempt_failover(
                         live.as_ref(),
                         &bridge,
+                        &router,
                         pn_hash,
                         &pn_hex,
                         &mut failover_round,
@@ -7621,6 +7855,7 @@ fn spawn_client_download_driver_task(
                             && propagation_download_attempt_failover(
                                 live.as_ref(),
                                 &bridge,
+                                &router,
                                 pn_hash,
                                 &pn_hex,
                                 &mut failover_round,
@@ -7650,8 +7885,12 @@ fn spawn_client_download_driver_task(
                             failover_round,
                             &tried_interfaces,
                         );
+                        let pending = bridge.cancel_client_download();
+                        if !pending.is_empty() {
+                            let router = router.lock().await;
+                            deliver_client_download_messages(&router, &pending);
+                        }
                         run_guarded(&|| {
-                            bridge.cancel_client_download();
                             emit_progress(false, 0.0, Some(&message));
                         });
                         break 'attempt;
@@ -8599,6 +8838,10 @@ mod nomad_private_first_failover_tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: std::collections::HashMap::default(),
         }
@@ -8646,7 +8889,6 @@ mod nomad_private_first_failover_tests {
 mod icon_appearance_tests {
     use super::*;
     use lxmf_core::constants::FIELD_ICON_APPEARANCE;
-    use lxmf_core::message::LxMessage;
 
     #[test]
     fn icon_appearance_json_from_message_parses_msgpack_field() {
@@ -8661,8 +8903,16 @@ mod icon_appearance_tests {
         )
         .expect("encode icon appearance");
 
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
-        msg.set_field(FIELD_ICON_APPEARANCE, buf);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hello",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_ICON_APPEARANCE, buf)
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = icon_appearance_json_from_message(&msg).expect("icon json");
         assert_eq!(json["icon_name"], "hiking");
         assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
@@ -8680,8 +8930,10 @@ mod audio_field_tests {
     #[test]
     fn audio_json_from_message_round_trips_opus_ogg() {
         let ogg = b"OggS\0fake-opus-bytes";
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = audio_json_from_message(&msg).expect("audio json");
         assert_eq!(json["mode"], AM_OPUS_OGG);
         assert_eq!(json["size_bytes"], ogg.len());
@@ -8693,13 +8945,20 @@ mod audio_field_tests {
 
     #[test]
     fn audio_json_from_message_malformed_fail_open() {
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Direct,
+        );
         // Intentionally malformed: array of 3 elements instead of [mode, bytes].
         msg.set_msgpack_field(
             lxmf_core::constants::FIELD_AUDIO,
             vec![0x93, AM_OPUS_OGG, 0xc4, 0x00, 0xc0],
         )
         .expect("set malformed");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(audio_json_from_message(&msg).is_none());
         let payload = lxmf_payload_from_message(
             &msg,
@@ -8717,8 +8976,10 @@ mod audio_field_tests {
     #[test]
     fn lxmf_payload_sets_voice_marker_when_text_empty() {
         let ogg = b"OggS\0memo";
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let payload = lxmf_payload_from_message(
             &msg,
             "aa".repeat(16).as_str(),
@@ -8765,7 +9026,7 @@ mod audio_field_tests {
         use rns_identity::identity::Identity;
         let identity = Identity::new();
         let signing = identity.get_signing_key().expect("signing key");
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             identity.hash,
             "",
@@ -8774,7 +9035,7 @@ mod audio_field_tests {
         );
         msg.set_file_attachments_field(&[("a.png", b"\x89PNG-one".as_slice()), ("b.txt", b"two")])
             .expect("set files");
-        msg.sign(&signing).expect("sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &signing);
         let packed = msg.pack().expect("pack");
         let inbound = LxMessage::unpack(&packed).expect("unpack");
         let json = attachment_json_from_message(&inbound).expect("attachment json");
@@ -8790,24 +9051,30 @@ mod audio_field_tests {
 
     #[test]
     fn inbound_attachment_json_sanitizes_hostile_file_names() {
-        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_file_attachments_field(&[("../../x[1]:evil.exe", b"MZ".as_slice())])
             .expect("set");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = attachment_json_from_message(&msg).expect("json");
         assert_eq!(json["file_name"], "x_1__evil.exe");
     }
 
     #[test]
     fn inbound_image_json_sanitizes_hostile_format_extension() {
-        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_image_field("../evil.exe!!!!", b"\x89PNG".as_slice())
             .expect("set image");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let json = attachment_json_from_message(&msg).expect("json");
         assert_eq!(json["file_name"], "image.evilexe");
-        let mut empty = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        let mut empty =
+            lxmf_compose::test_support::draft([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
         empty
             .set_image_field("!!!", b"\x89PNG".as_slice())
             .expect("set image");
+        let empty = lxmf_compose::test_support::finalize_default(empty);
         let empty_json = attachment_json_from_message(&empty).expect("json");
         assert_eq!(empty_json["file_name"], "image.bin");
     }
@@ -8817,13 +9084,25 @@ mod audio_field_tests {
         use rns_identity::identity::Identity;
         let identity = Identity::new();
         let signing = identity.get_signing_key().expect("signing key");
-        let mut without = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
-        without.sign(&signing).expect("sign");
-        let mut with = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
+        let without = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            identity.hash,
+            "",
+            "x",
+            DeliveryMethod::Direct,
+        );
+        let without = lxmf_compose::test_support::finalize(without, &signing);
+        let mut with = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            identity.hash,
+            "",
+            "x",
+            DeliveryMethod::Direct,
+        );
         with.set_file_attachments_field(&[("a.txt", b"hi".as_slice())])
             .expect("set");
-        with.sign(&signing).expect("sign");
-        assert_ne!(without.hash, with.hash);
+        let with = lxmf_compose::test_support::finalize(with, &signing);
+        assert_ne!(without.message_id(), with.message_id());
     }
 
     #[test]
@@ -8833,16 +9112,27 @@ mod audio_field_tests {
         let signing = identity.get_signing_key().expect("signing key");
         let source = identity.hash;
 
-        let mut without =
-            LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
-        without.sign(&signing).expect("sign");
-        let hash_without = without.hash.expect("hash");
+        let without = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            source,
+            "",
+            "[voice:0]",
+            DeliveryMethod::Direct,
+        );
+        let without = lxmf_compose::test_support::finalize(without, &signing);
+        let hash_without = without.message_id();
 
-        let mut with = LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        let mut with = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            source,
+            "",
+            "[voice:0]",
+            DeliveryMethod::Direct,
+        );
         with.set_audio_field(AM_OPUS_OGG, b"OggS\0x")
             .expect("set audio");
-        with.sign(&signing).expect("sign");
-        let hash_with = with.hash.expect("hash");
+        let with = lxmf_compose::test_support::finalize(with, &signing);
+        let hash_with = with.message_id();
         assert_ne!(hash_without, hash_with);
     }
 }
@@ -8850,7 +9140,6 @@ mod audio_field_tests {
 #[cfg(test)]
 mod reply_field_tests {
     use super::*;
-    use lxmf_core::message::LxMessage;
 
     #[test]
     fn parse_hash32_requires_exact_64_hex() {
@@ -8869,15 +9158,18 @@ mod reply_field_tests {
     #[test]
     fn reply_fields_round_trip_on_lxmf_message() {
         let parent_id = [0x11u8; 32];
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
             "reply body",
             DeliveryMethod::Direct,
         );
-        msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
-        msg.set_field(FIELD_REPLY_QUOTE, b"original snippet".to_vec());
+        msg.set_field(FIELD_REPLY_TO, parent_id.to_vec())
+            .expect("set field");
+        msg.set_field(FIELD_REPLY_QUOTE, b"original snippet".to_vec())
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let fields = reply_fields_from_message(&msg).expect("reply fields");
         assert_eq!(fields.reply_to_hash, hex::encode(parent_id));
@@ -8902,8 +9194,16 @@ mod reply_field_tests {
 
     #[test]
     fn reply_fields_omit_invalid_length_reply_to() {
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REPLY_TO, vec![0u8; 16]);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, vec![0u8; 16])
+            .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reply_fields_from_message(&msg).is_none());
     }
 
@@ -8911,8 +9211,15 @@ mod reply_field_tests {
     fn apply_reply_fields_caps_quote_length() {
         let parent_id = [0x22u8; 32];
         let long = "x".repeat(REPLY_QUOTE_MAX_CHARS + 40);
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "reply", DeliveryMethod::Direct);
-        apply_reply_fields(&mut msg, Some(parent_id), Some(&long));
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "reply",
+            DeliveryMethod::Direct,
+        );
+        apply_reply_fields(&mut msg, Some(parent_id), Some(&long)).expect("reply fields");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let fields = reply_fields_from_message(&msg).expect("reply fields");
         assert_eq!(
             fields
@@ -8925,13 +9232,14 @@ mod reply_field_tests {
 
     #[test]
     fn lxmf_payload_sets_paper_delivery_method_and_received_via() {
-        let msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
             "paper body",
             DeliveryMethod::Paper,
         );
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         let payload = lxmf_payload_from_message(
             &msg,
             "aabbccddeeff00112233445566778899",
@@ -8956,9 +9264,16 @@ mod reply_field_tests {
     #[test]
     fn encode_reaction_field_round_trips_target_and_emoji() {
         let target = [0x11u8; 32];
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "👍", DeliveryMethod::Direct);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "👍",
+            DeliveryMethod::Direct,
+        );
         msg.set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "👍"))
             .expect("set reaction field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
@@ -8981,7 +9296,14 @@ mod reply_field_tests {
 
     #[test]
     fn reaction_missing_field_leaves_payload_untouched() {
-        let msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
+        let msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hello",
+            DeliveryMethod::Direct,
+        );
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         let payload = lxmf_payload_from_message(
@@ -9010,9 +9332,11 @@ mod reply_field_tests {
                 rmpv::Value::String("🎉".into()),
             ),
         ]);
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        let mut msg =
+            lxmf_compose::test_support::draft([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
         msg.set_msgpack_field(FIELD_REACTION, map)
             .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, target_hex.to_ascii_lowercase());
@@ -9037,7 +9361,7 @@ mod reply_field_tests {
         let mut buf = Vec::new();
         rmpv::encode::write_value(&mut buf, &rmpv::Value::String("garbage".into()))
             .expect("encode garbage");
-        let mut msg = LxMessage::new(
+        let mut msg = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
@@ -9046,6 +9370,7 @@ mod reply_field_tests {
         );
         msg.set_msgpack_field(FIELD_REACTION, buf)
             .expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         // Map present but REACTION_TO has a bad length → treated as absent.
@@ -9053,7 +9378,7 @@ mod reply_field_tests {
             rmpv::Value::Integer(rmpv::Integer::from(REACTION_TO)),
             rmpv::Value::Binary(vec![0u8; 16]),
         )]);
-        let mut msg2 = LxMessage::new(
+        let mut msg2 = lxmf_compose::test_support::draft(
             [0u8; 16],
             [1u8; 16],
             "",
@@ -9062,6 +9387,7 @@ mod reply_field_tests {
         );
         msg2.set_msgpack_field(FIELD_REACTION, bad_len)
             .expect("set field");
+        let msg2 = lxmf_compose::test_support::finalize_default(msg2);
         assert!(reaction_fields_from_message(&msg2).is_none());
 
         let payload = lxmf_payload_from_message(
@@ -9081,14 +9407,23 @@ mod reply_field_tests {
     fn reaction_wins_over_reply_when_both_present() {
         let reaction_target = [0x22u8; 32];
         let reply_parent = [0x33u8; 32];
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "😀", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REPLY_TO, reply_parent.to_vec());
-        msg.set_field(FIELD_REPLY_QUOTE, b"quoted".to_vec());
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "😀",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, reply_parent.to_vec())
+            .expect("set field");
+        msg.set_field(FIELD_REPLY_QUOTE, b"quoted".to_vec())
+            .expect("set field");
         msg.set_msgpack_field(
             FIELD_REACTION,
             encode_reaction_field(&reaction_target, "😀"),
         )
         .expect("set reaction field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
 
         let payload = lxmf_payload_from_message(
             &msg,
@@ -9114,15 +9449,29 @@ mod reply_field_tests {
         buf.push(0x00); // trailing byte after the complete msgpack map
         // Use the raw field setter: set_msgpack_field itself rejects trailing bytes, but a hostile
         // or buggy peer can still place raw bytes in the field, which decode must reject.
-        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
-        msg.set_field(FIELD_REACTION, buf);
+        let mut msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "🔥",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REACTION, buf).expect("set field");
+        let msg = lxmf_compose::test_support::finalize_default(msg);
         assert!(reaction_fields_from_message(&msg).is_none());
 
         // Sanity: the same map without trailing bytes still decodes.
-        let mut ok_msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        let mut ok_msg = lxmf_compose::test_support::draft(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "🔥",
+            DeliveryMethod::Direct,
+        );
         ok_msg
             .set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "🔥"))
             .expect("set field");
+        let ok_msg = lxmf_compose::test_support::finalize_default(ok_msg);
         let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
     }

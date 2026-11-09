@@ -61,6 +61,10 @@ export const ALLOWED_LICENSE_IDS = Object.freeze([
   'GPL-3.0-or-later',
   // Ratspeak stack sidecar crates (rsReticulum/rsLXMF/rsLXST/rsNomad).
   'AGPL-3.0-or-later',
+  // rsReticulum/rsLXMF 1.4+ declare license-file → Reticulum License (custom MIT-like).
+  'LicenseRef-Reticulum',
+  // rsLXST 0.3.1+ license-file → Ratspeak non-commercial LXST grant.
+  'LicenseRef-LXST-Ratspeak',
   // lxst-codec2 (Codec2): `LGPL-2.1-only AND MIT AND BSD-3-Clause`.
   'LGPL-2.1-only',
   // SPDX id declared by the `bzip2` crate.

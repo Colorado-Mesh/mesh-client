@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  chessCapturedFromFen,
+  type ChessCapturedTray,
+} from '@/renderer/lib/reticulum/chessCaptured';
+import {
   gamesMetaBool,
   gamesMetaStr,
   gamesMetaStrArray,
@@ -88,9 +92,14 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   const [promoBase, setPromoBase] = useState<string | null>(null);
 
   const board = useMemo(() => parseFenBoard(fen), [fen]);
+  const material = useMemo(() => chessCapturedFromFen(fen), [fen]);
   const isActive = session.status === 'active';
   const isMyTurn = isActive && turn === session.identity_id;
   const flipped = myColor === 'b';
+  // Opponent tray above the board; own tray below (Ratspeak layout).
+  const opponentTray = flipped ? material.whiteCaptured : material.blackCaptured;
+  const myTray = flipped ? material.blackCaptured : material.whiteCaptured;
+  const myAdvantage = flipped ? -material.advantage : material.advantage;
 
   useEffect(() => {
     if (!promoBase) return;
@@ -165,43 +174,52 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   }
 
   return (
-    <div className="relative flex flex-col items-center gap-3">
+    <div className="relative flex w-full max-w-[min(100%,28rem)] flex-col items-center gap-3">
       <div className="text-ink-100 text-sm">{statusText}</div>
+      <CapturedTrayRow
+        tray={opponentTray}
+        showAdvantage={myAdvantage < 0}
+        advantageAbs={Math.abs(myAdvantage)}
+        whitePieces={!flipped}
+        label={t('gamesPanel.chess.opponentCaptured')}
+      />
       <div
-        className="border-ink-600 relative grid grid-cols-8 border"
+        className="border-ink-600 relative aspect-square w-full max-w-[min(100%,24rem)] border"
         role="group"
         aria-label={t('gamesPanel.chess.boardAria')}
       >
-        {displayRows.map((row, rowIdx) =>
-          (flipped ? [...row].reverse() : row).map((piece, colIdx) => {
-            const actualRankIdx = flipped ? 7 - rowIdx : rowIdx;
-            const actualFileIdx = flipped ? 7 - colIdx : colIdx;
-            const square = squareName(actualRankIdx, actualFileIdx);
-            const dark = (actualRankIdx + actualFileIdx) % 2 === 1;
-            const isSelected = selected === square;
-            return (
-              <button
-                key={square}
-                type="button"
-                className={`flex h-10 w-10 items-center justify-center text-xl ${
-                  dark ? 'bg-ink-700' : 'bg-ink-600'
-                } ${isSelected ? 'ring-2 ring-cyan-400' : ''} enabled:hover:brightness-125 disabled:cursor-default`}
-                aria-label={t('gamesPanel.chess.squareAria', {
-                  square,
-                  piece: piece
-                    ? t(`gamesPanel.chess.pieceNames.${piece}`, { defaultValue: piece })
-                    : t('gamesPanel.chess.emptySquare'),
-                })}
-                disabled={disabled || !isMyTurn || !!promoBase}
-                onClick={() => {
-                  handleSquareClick(rowIdx, colIdx);
-                }}
-              >
-                {piece ? (PIECE_GLYPHS[piece] ?? piece) : ''}
-              </button>
-            );
-          }),
-        )}
+        <div className="grid h-full w-full grid-cols-8">
+          {displayRows.map((row, rowIdx) =>
+            (flipped ? [...row].reverse() : row).map((piece, colIdx) => {
+              const actualRankIdx = flipped ? 7 - rowIdx : rowIdx;
+              const actualFileIdx = flipped ? 7 - colIdx : colIdx;
+              const square = squareName(actualRankIdx, actualFileIdx);
+              const dark = (actualRankIdx + actualFileIdx) % 2 === 1;
+              const isSelected = selected === square;
+              return (
+                <button
+                  key={square}
+                  type="button"
+                  className={`flex aspect-square items-center justify-center text-[clamp(0.875rem,4vw,1.25rem)] ${
+                    dark ? 'bg-ink-700' : 'bg-ink-600'
+                  } ${isSelected ? 'ring-2 ring-cyan-400' : ''} enabled:hover:brightness-125 disabled:cursor-default`}
+                  aria-label={t('gamesPanel.chess.squareAria', {
+                    square,
+                    piece: piece
+                      ? t(`gamesPanel.chess.pieceNames.${piece}`, { defaultValue: piece })
+                      : t('gamesPanel.chess.emptySquare'),
+                  })}
+                  disabled={disabled || !isMyTurn || !!promoBase}
+                  onClick={() => {
+                    handleSquareClick(rowIdx, colIdx);
+                  }}
+                >
+                  {piece ? (PIECE_GLYPHS[piece] ?? piece) : ''}
+                </button>
+              );
+            }),
+          )}
+        </div>
         {promoBase && (
           <div
             className="absolute inset-0 z-10 flex items-center justify-center"
@@ -241,6 +259,13 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
           </div>
         )}
       </div>
+      <CapturedTrayRow
+        tray={myTray}
+        showAdvantage={myAdvantage > 0}
+        advantageAbs={Math.abs(myAdvantage)}
+        whitePieces={flipped}
+        label={t('gamesPanel.chess.youCaptured')}
+      />
       {isActive && legalMoves.length > 0 && !promoBase && (
         <div className="flex max-w-sm flex-wrap justify-center gap-1">
           {legalMoves.map((move) => (
@@ -275,4 +300,48 @@ function pieceAt(board: string[][], square: string): string {
   if (file < 0 || !Number.isFinite(rank)) return '';
   const rankIdx = 8 - rank;
   return board[rankIdx]?.[file] ?? '';
+}
+
+function CapturedTrayRow({
+  tray,
+  showAdvantage,
+  advantageAbs,
+  whitePieces,
+  label,
+}: Readonly<{
+  tray: ChessCapturedTray;
+  showAdvantage: boolean;
+  advantageAbs: number;
+  whitePieces: boolean;
+  label: string;
+}>) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className="border-ink-700/60 bg-ink-900/40 flex min-h-8 w-full flex-wrap items-center gap-2 rounded border px-2 py-1"
+      aria-label={label}
+    >
+      <span className="text-muted text-2xs shrink-0">{label}</span>
+      <div className="flex flex-wrap items-center gap-1">
+        {tray.pieces.length === 0 ? (
+          <span className="text-muted text-2xs">—</span>
+        ) : (
+          tray.pieces.map(({ kind, count }) => {
+            const glyphKey = whitePieces ? kind.toUpperCase() : kind;
+            return (
+              <span key={kind} className="text-ink-200 text-sm tabular-nums">
+                {PIECE_GLYPHS[glyphKey] ?? kind}
+                {count > 1 ? <span className="text-muted text-2xs">×{count}</span> : null}
+              </span>
+            );
+          })
+        )}
+      </div>
+      {showAdvantage && advantageAbs > 0 ? (
+        <span className="bg-ink-800 text-bright-green text-2xs ml-auto rounded px-1.5 py-0.5 font-medium">
+          {t('gamesPanel.chess.materialAdvantage', { value: advantageAbs })}
+        </span>
+      ) : null}
+    </div>
+  );
 }

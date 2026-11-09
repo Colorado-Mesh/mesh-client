@@ -12,6 +12,7 @@ use lxmf_core::link_delivery::{
 };
 use lxmf_core::message::LxMessage;
 use lxmf_core::propagation_node::PropagationNode;
+use lxmf_core::propagation_send::{AdvertisedNodePolicy, PreparedNode, PropagationEnvelope};
 use lxmf_core::router::{
     DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState, DirectRouteSnapshot,
     LxmRouter, OutboundAction, SendError, plan_direct_delivery,
@@ -134,6 +135,10 @@ const PN_CASCADE_TRIED_MAX: usize = 256;
 /// busy preferred PN cannot storm-defer the same deposit forever.
 const PN_DEPOSIT_DEFER_ADVANCE_AFTER: u32 = 8;
 
+/// `PropagationEnvelope::pack_for` transfer ceiling (kB) when the caller enforces the PN's
+/// `propagation_max_message_size` itself (distinct terminal error). Effectively unbounded.
+const PN_ENVELOPE_UNBOUNDED_TRANSFER_LIMIT_KB: f64 = 1.0e12;
+
 /// Correlatable ids for an in-flight Propagated deposit (`pn_hash`, optional `transient_id`).
 type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
 /// Validated PN stamp entry: (transient_id, lxmf_data, stamp_u8, stamp_data).
@@ -205,6 +210,8 @@ pub struct LxmfOutboundDriver {
     local_prop_node: Option<Arc<Mutex<PropagationNode>>>,
     /// Effective PN deposit size limit (from `propagation_limit_kb`).
     propagation_max_message_size: usize,
+    /// Optional durable store for signed outbound resume across restarts.
+    resumable_store: Option<std::sync::Arc<crate::stack::lxmf_resumable_store::LxmfResumableStore>>,
 }
 
 impl LxmfOutboundDriver {
@@ -243,9 +250,52 @@ impl LxmfOutboundDriver {
             local_prop_node: None,
             propagation_max_message_size:
                 crate::stack::pn_hosting_policy::DEFAULT_PROPAGATION_LIMIT_KB.saturating_mul(1024),
+            resumable_store: None,
         };
         driver.register_identity_key(self_lxmf_hash, identity.get_public_key());
         driver
+    }
+
+    pub fn set_resumable_store(
+        &mut self,
+        store: std::sync::Arc<crate::stack::lxmf_resumable_store::LxmfResumableStore>,
+    ) {
+        self.resumable_store = Some(store);
+    }
+
+    fn clear_resumable(&self, hash: &[u8; 32]) {
+        if let Some(store) = &self.resumable_store {
+            let hex_hash = hex::encode(hash);
+            if let Err(e) = store.delete(&hex_hash) {
+                tracing::debug!(
+                    target: "lxmf-outbound",
+                    message_hash = %hex_hash,
+                    error = %e,
+                    "failed to clear resumable outbound row"
+                );
+            }
+        }
+    }
+
+    /// Clear a resumable row only when it still matches `method_label` (this attempt).
+    /// A later cascade/retry may have overwritten the row with a different method —
+    /// leave that newer ownership alone.
+    fn clear_resumable_owned(&self, hash: &[u8; 32], method_label: &str) {
+        if let Some(store) = &self.resumable_store {
+            let hex_hash = hex::encode(hash);
+            match store.delete_if_method(&hex_hash, method_label) {
+                Ok(true | false) => {}
+                Err(e) => {
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        message_hash = %hex_hash,
+                        method = %method_label,
+                        error = %e,
+                        "failed to clear owned resumable outbound row"
+                    );
+                }
+            }
+        }
     }
 
     /// Forward inbound LXMF that arrives on outbound-initiated reusable Direct links.
@@ -355,6 +405,9 @@ impl LxmfOutboundDriver {
         self.pn_deposit_defer_counts.remove(hash);
         self.direct_path_failovers.remove(hash);
         self.pending_pn_targets.remove(hash);
+        self.pending_pn_deposits.remove(hash);
+        // Drop durable resume bytes so a cancelled send cannot be restored after restart.
+        self.clear_resumable(hash);
         cancelled
     }
 
@@ -540,7 +593,7 @@ impl LxmfOutboundDriver {
         let direct_inputs: HashMap<[u8; 16], DirectDeliveryPlanInput> = router
             .pending_outbound
             .iter()
-            .map(|message| message.destination_hash)
+            .map(LxMessage::destination_hash)
             .collect::<HashSet<_>>()
             .into_iter()
             .map(|dest| {
@@ -563,7 +616,7 @@ impl LxmfOutboundDriver {
         self.ensure_router_pn_for_dispatch(router);
         let mut actions = router.process_outbound_with_direct(|message, _now| {
             direct_inputs
-                .get(&message.destination_hash)
+                .get(&message.destination_hash())
                 .cloned()
                 .unwrap_or(DirectDeliveryPlanInput {
                     identity_known: false,
@@ -585,6 +638,12 @@ impl LxmfOutboundDriver {
         for result in results {
             self.handle_delivery_result(router, event_tx, result);
         }
+    }
+
+    /// Destinations whose deliveries completed since the last drain (LXMF 1.4).
+    /// Callers must forward each hash as `TransportQuery::RetainDestination`.
+    pub fn take_destination_retains(router: &mut LxmRouter) -> Vec<[u8; 16]> {
+        router.take_destination_retains()
     }
 
     fn execute_actions(
@@ -620,7 +679,7 @@ impl LxmfOutboundDriver {
                 }
                 OutboundAction::Failed(msg) | OutboundAction::Expired(msg) => {
                     tracing::warn!(
-                        dest = %hex::encode(msg.destination_hash),
+                        dest = %hex::encode(msg.destination_hash()),
                         "LXMF outbound message failed or expired"
                     );
                     self.fail_outbound_message(router, event_tx, msg);
@@ -637,17 +696,15 @@ impl LxmfOutboundDriver {
         prop_hash: [u8; 16],
     ) {
         let prop_hex = hex::encode(prop_hash);
-        let is_local_cascade = message
-            .hash
-            .or(message.message_id)
-            .is_some_and(|h| self.pn_cascade_local.contains(&h));
+        let is_local_cascade = self.pn_cascade_local.contains(&message.message_id());
         // In-process local PN deposit does not need the PN Link — skip busy deferral.
         let local_in_process = is_local_cascade && self.local_prop_node.is_some();
         // Avoid racing a second LinkRequest to the same PN (sync or another deposit).
         let sync_blocks = self.propagation_sync_target == Some(prop_hash);
         let pending_blocks = self.link_delivery.has_pending_to(&prop_hash);
         if !local_in_process && should_defer_propagated_for_pn_link(sync_blocks, pending_blocks) {
-            if let Some(msg_hash) = message.hash.or(message.message_id) {
+            {
+                let msg_hash = message.message_id();
                 let defer_count = self
                     .pn_deposit_defer_counts
                     .entry(msg_hash)
@@ -657,7 +714,7 @@ impl LxmfOutboundDriver {
                     tracing::warn!(
                         target: "lxmf-outbound",
                         prop = %prop_hex,
-                        dest = %hex::encode(message.destination_hash),
+                        dest = %hex::encode(message.destination_hash()),
                         msg = %hex::encode(msg_hash),
                         defer_count = *defer_count,
                         sync_blocks,
@@ -680,13 +737,14 @@ impl LxmfOutboundDriver {
             tracing::debug!(
                 target: "lxmf-outbound",
                 prop = %prop_hex,
-                dest = %hex::encode(message.destination_hash),
+                dest = %hex::encode(message.destination_hash()),
                 sync_blocks,
                 pending_blocks,
                 attempts = message.delivery_attempts,
                 "DeliverPropagated: deferring — PN link busy"
             );
-            if let Some(hash) = message.hash.or(message.message_id) {
+            {
+                let hash = message.message_id();
                 self.pending_pn_targets.insert(hash, prop_hash);
                 let method = self.cascade_wire_delivery_method(hash);
                 emit_outbound_status_with_via(
@@ -701,7 +759,8 @@ impl LxmfOutboundDriver {
             self.enqueue_or_fail(router, event_tx, message);
             return;
         }
-        if let Some(hash) = message.hash.or(message.message_id) {
+        {
+            let hash = message.message_id();
             self.pn_deposit_defer_counts.remove(&hash);
             self.pending_pn_targets.insert(hash, prop_hash);
         }
@@ -714,10 +773,11 @@ impl LxmfOutboundDriver {
                 tracing::warn!(
                     target: "lxmf-outbound",
                     prop = %prop_hex,
-                    dest = %hex::encode(message.destination_hash),
+                    dest = %hex::encode(message.destination_hash()),
                     "DeliverPropagated: local-prop identity unknown — advancing PN cascade"
                 );
-                if let Some(hash) = message.hash.or(message.message_id) {
+                {
+                    let hash = message.message_id();
                     self.mark_pn_tried(hash, prop_hash);
                 }
                 match self.try_advance_pn_cascade(router, event_tx, message) {
@@ -730,7 +790,7 @@ impl LxmfOutboundDriver {
             } else {
                 tracing::debug!(
                     prop = %prop_hex,
-                    dest = %hex::encode(message.destination_hash),
+                    dest = %hex::encode(message.destination_hash()),
                     "DeliverPropagated: PN identity unknown — requesting path"
                 );
                 self.request_path_gated(
@@ -769,7 +829,8 @@ impl LxmfOutboundDriver {
                         prop = %prop_hex,
                         "DeliverPropagated: local-prop node busy — deferring in-process deposit"
                     );
-                    if let Some(hash) = message.hash.or(message.message_id) {
+                    {
+                        let hash = message.message_id();
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
                     self.enqueue_or_fail(router, event_tx, message);
@@ -781,7 +842,8 @@ impl LxmfOutboundDriver {
                         prop = %prop_hex,
                         "DeliverPropagated: local-prop node mutex poisoned — advancing PN cascade"
                     );
-                    if let Some(hash) = message.hash.or(message.message_id) {
+                    {
+                        let hash = message.message_id();
                         self.mark_pn_tried(hash, prop_hash);
                     }
                     match self.try_advance_pn_cascade(router, event_tx, message) {
@@ -796,13 +858,16 @@ impl LxmfOutboundDriver {
         } else {
             router.get_stamp_cost(&prop_hash).unwrap_or(0)
         };
-        let Some(packed) = self.pack_for_propagation(&mut message, prop_hash, target_cost) else {
+        let Some((packed, transient_id)) =
+            self.pack_for_propagation(&message, prop_hash, target_cost)
+        else {
             tracing::warn!(
                 prop = %prop_hex,
-                dest = %hex::encode(message.destination_hash),
+                dest = %hex::encode(message.destination_hash()),
                 "DeliverPropagated: pack_for_propagation failed — advancing PN cascade"
             );
-            if let Some(hash) = message.hash.or(message.message_id) {
+            {
+                let hash = message.message_id();
                 self.mark_pn_tried(hash, prop_hash);
             }
             match self.try_advance_pn_cascade(router, event_tx, message) {
@@ -820,7 +885,7 @@ impl LxmfOutboundDriver {
             tracing::warn!(
                 target: "lxmf-outbound",
                 prop = %prop_hex,
-                dest = %hex::encode(message.destination_hash),
+                dest = %hex::encode(message.destination_hash()),
                 size_bytes = packed.len(),
                 limit_bytes = limit,
                 "DeliverPropagated: message too large for propagation — terminal (no cascade)"
@@ -835,12 +900,11 @@ impl LxmfOutboundDriver {
             return;
         }
         let hops = route_hops_for(&self.route_hops, prop_hash);
-        let message_hash_hex = message.hash.as_ref().map(hex::encode);
-        let transient_id_hex = message.transient_id.as_ref().map(hex::encode);
-        if let Some(hash) = message.hash {
-            self.pending_pn_deposits
-                .insert(hash, (prop_hash, message.transient_id));
-        }
+        let message_hash = message.message_id();
+        let message_hash_hex = Some(hex::encode(message_hash));
+        let transient_id_hex = Some(hex::encode(transient_id));
+        self.pending_pn_deposits
+            .insert(message_hash, (prop_hash, Some(transient_id)));
         // Local-prop cascade: deposit in-process (full hosted PN store) — never self-Link.
         // Do not count a delivery attempt here: Busy must requeue without burning budget.
         if is_local_cascade && self.local_prop_node.is_some() {
@@ -860,7 +924,8 @@ impl LxmfOutboundDriver {
                         prop = %prop_hex,
                         "local-prop in-process deposit busy — deferring (no self-Link)"
                     );
-                    if let Some(hash) = message.hash.or(message.message_id) {
+                    {
+                        let hash = message.message_id();
                         self.pending_pn_deposits.remove(&hash);
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
@@ -873,7 +938,8 @@ impl LxmfOutboundDriver {
                         pn_hash = %prop_hex,
                         "local-prop in-process deposit failed — advancing PN cascade (no self-Link)"
                     );
-                    if let Some(hash) = message.hash.or(message.message_id) {
+                    {
+                        let hash = message.message_id();
                         self.pending_pn_deposits.remove(&hash);
                         self.mark_pn_tried(hash, prop_hash);
                     }
@@ -896,7 +962,8 @@ impl LxmfOutboundDriver {
                 max_attempts = MAX_DELIVERY_ATTEMPTS,
                 "propagated delivery attempt budget reached — advancing PN cascade"
             );
-            if let Some(hash) = message.hash.or(message.message_id) {
+            {
+                let hash = message.message_id();
                 self.pending_pn_deposits.remove(&hash);
                 self.mark_pn_tried(hash, prop_hash);
             }
@@ -913,7 +980,7 @@ impl LxmfOutboundDriver {
             message_hash = message_hash_hex.as_deref().unwrap_or(""),
             transient_id = transient_id_hex.as_deref().unwrap_or(""),
             pn_hash = %prop_hex,
-            dest = %hex::encode(message.destination_hash),
+            dest = %hex::encode(message.destination_hash()),
             hops,
             packed_len = packed.len(),
             attempts,
@@ -923,9 +990,7 @@ impl LxmfOutboundDriver {
             .link_delivery
             .start_packed_delivery(message, prop_hash, hops, packed, false)
         {
-            if let Some(hash) = err.message.hash {
-                self.pending_pn_deposits.remove(&hash);
-            }
+            self.pending_pn_deposits.remove(&err.message.message_id());
             let reason = err.error.to_string();
             tracing::warn!(
                 prop = %prop_hex,
@@ -957,15 +1022,7 @@ impl LxmfOutboundDriver {
             );
             return InProcessDepositOutcome::Failed;
         };
-        let Some(hash) = message.hash.or(message.message_id) else {
-            // Without a hash we cannot emit Completes — advance cascade (never self-Link).
-            tracing::warn!(
-                target: "propagation-deposit",
-                pn_hash = %prop_hex,
-                "local-prop in-process deposit missing message hash"
-            );
-            return InProcessDepositOutcome::Failed;
-        };
+        let hash = message.message_id();
         // Read admit floor without holding the lock across PoW validation.
         let min_cost = match try_lock_local_prop_node(&node) {
             Ok(guard) => guard.min_stamp_cost(),
@@ -1022,8 +1079,13 @@ impl LxmfOutboundDriver {
             );
             return InProcessDepositOutcome::Failed;
         }
+        // Keep the envelope tid recorded before the in-process deposit when the PN reports none.
+        let prior_tid = self
+            .pending_pn_deposits
+            .get(&hash)
+            .and_then(|(_, tid)| *tid);
         self.pending_pn_deposits
-            .insert(hash, (prop_hash, last_tid.or(message.transient_id)));
+            .insert(hash, (prop_hash, last_tid.or(prior_tid)));
         self.handle_delivery_result(
             router,
             event_tx,
@@ -1045,7 +1107,7 @@ impl LxmfOutboundDriver {
         prop_hash: [u8; 16],
         reason: &str,
     ) {
-        let msg_hash = message.hash.or(message.message_id);
+        let msg_hash = Some(message.message_id());
         if let Some(hash) = msg_hash {
             self.mark_pn_tried(hash, prop_hash);
             self.pending_pn_deposits.remove(&hash);
@@ -1266,23 +1328,23 @@ impl LxmfOutboundDriver {
         mut message: LxMessage,
     ) {
         message.mark_failed();
-        let method = message
-            .hash
-            .or(message.message_id)
+        let method = Some(message.message_id())
             .map(|h| self.cascade_wire_delivery_method(h))
             .unwrap_or_else(|| delivery_method_label(message.method));
         tracing::warn!(
             target: "lxmf-outbound",
-            dest = %hex::encode(message.destination_hash),
+            dest = %hex::encode(message.destination_hash()),
             method,
             attempts = message.delivery_attempts,
             "LXMF outbound delivery failed"
         );
-        if let Some(hash) = message.hash.or(message.message_id) {
+        {
+            let hash = message.message_id();
             let attempts = message.delivery_attempts;
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
+            self.clear_resumable_owned(&hash, method);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,
@@ -1312,30 +1374,30 @@ impl LxmfOutboundDriver {
         size_bytes: usize,
     ) {
         message.mark_failed();
-        let method = message
-            .hash
-            .or(message.message_id)
+        let method = Some(message.message_id())
             .map(|h| self.cascade_wire_delivery_method(h))
             .unwrap_or("propagated");
         tracing::warn!(
             target: "lxmf-outbound",
-            dest = %hex::encode(message.destination_hash),
+            dest = %hex::encode(message.destination_hash()),
             method,
             limit_bytes,
             size_bytes,
             "LXMF outbound failed: message_too_large_for_propagation"
         );
-        if let Some(hash) = message.hash.or(message.message_id) {
+        {
+            let hash = message.message_id();
             let attempts = message.delivery_attempts;
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
+            self.clear_resumable_owned(&hash, method);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,
                 Some(serde_json::Value::String(hex::encode(hash))),
                 Some(serde_json::Value::String(hex::encode(
-                    message.destination_hash,
+                    message.destination_hash(),
                 ))),
                 "failed",
                 Some(method),
@@ -1414,7 +1476,7 @@ impl LxmfOutboundDriver {
     fn apply_pending_pn_targets(&self, actions: &mut [OutboundAction]) {
         for action in actions.iter_mut() {
             if let OutboundAction::DeliverPropagated { message, prop_hash } = action
-                && let Some(hash) = message.hash.or(message.message_id)
+                && let Some(hash) = Some(message.message_id())
                 && let Some(target) = self.pending_pn_targets.get(&hash)
             {
                 *prop_hash = *target;
@@ -1430,9 +1492,7 @@ impl LxmfOutboundDriver {
         event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
     ) -> Result<(), Box<LxMessage>> {
-        let Some(msg_hash) = message.hash.or(message.message_id) else {
-            return Err(Box::new(message));
-        };
+        let msg_hash = message.message_id();
         // Direct may enter cascade; Propagated advances to the next PN after a deposit fail.
         if message.method != DeliveryMethod::Direct && message.method != DeliveryMethod::Propagated
         {
@@ -1447,7 +1507,7 @@ impl LxmfOutboundDriver {
         if !cascade_has_capacity(&ordered, &tried) {
             tracing::warn!(
                 target: "lxmf-outbound",
-                dest = %hex::encode(message.destination_hash),
+                dest = %hex::encode(message.destination_hash()),
                 msg = %hex::encode(msg_hash),
                 tried = tried.len(),
                 candidates = ordered.len(),
@@ -1462,7 +1522,7 @@ impl LxmfOutboundDriver {
         let method_label = pick.delivery_method_label().unwrap_or("propagated");
         router
             .pending_outbound
-            .retain(|m| m.hash != Some(msg_hash) && m.message_id != Some(msg_hash));
+            .retain(|m| m.message_id() != msg_hash);
         self.mark_pn_tried(msg_hash, pn_hash);
         self.direct_path_failovers.remove(&msg_hash);
         self.pn_deposit_defer_counts.remove(&msg_hash);
@@ -1478,7 +1538,7 @@ impl LxmfOutboundDriver {
         message.next_delivery_attempt = 0.0;
         tracing::info!(
             target: "lxmf-outbound",
-            dest = %hex::encode(message.destination_hash),
+            dest = %hex::encode(message.destination_hash()),
             msg = %hex::encode(msg_hash),
             pn = %hex::encode(pn_hash),
             cascade_step = method_label,
@@ -1498,25 +1558,49 @@ impl LxmfOutboundDriver {
         Ok(())
     }
 
+    /// Build the propagation wrapper for `message` via a [`PropagationEnvelope`] (LXMF 1.4).
+    /// Returns the packed wrapper and the envelope's exact transient id. The message itself is
+    /// immutable; nothing is stored back onto it.
     fn pack_for_propagation(
         &self,
-        message: &mut LxMessage,
+        message: &LxMessage,
         prop_hash: [u8; 16],
         target_cost: u8,
-    ) -> Option<Vec<u8>> {
-        let dest_hex = hex::encode(message.destination_hash);
+    ) -> Option<(Vec<u8>, [u8; 32])> {
+        let dest_hex = hex::encode(message.destination_hash());
+        // Bind the envelope to the recipient key it was encrypted for.
+        let encryption_binding = rns_crypto::sha::full_hash(&self.public_key_for(&dest_hex)?);
         // lxmd parity: stamp against the *propagation node* cost, not the DM peer.
-        let (packed, _, stamp_value) = message
-            .pack_propagated_encrypted_with_stamp(
-                |plaintext| {
-                    self.encrypt_for_destination(&dest_hex, plaintext)
-                        .ok_or_else(|| {
-                            lxmf_core::message::MessageError::PackFailed(format!(
-                                "no identity key for destination {dest_hex}"
-                            ))
-                        })
+        let mut envelope = PropagationEnvelope::new(
+            message.clone(),
+            encryption_binding,
+            target_cost,
+            |plaintext| {
+                self.encrypt_for_destination(&dest_hex, plaintext)
+                    .ok_or_else(|| {
+                        lxmf_core::message::MessageError::PackFailed(format!(
+                            "no identity key for destination {dest_hex}"
+                        ))
+                    })
+            },
+        )
+        .ok()?;
+        let stamp_value = envelope.stamp_value();
+        let transient_id = envelope.transient_id();
+        // The PN transfer limit is enforced by the caller's preflight
+        // (`propagation_max_message_size`), which emits a distinct terminal error; the envelope
+        // still enforces the Resource ceiling.
+        let packed = envelope
+            .pack_for(
+                PreparedNode {
+                    node: prop_hash,
+                    policy: AdvertisedNodePolicy {
+                        stamp_cost: target_cost,
+                        transfer_limit_kb: PN_ENVELOPE_UNBOUNDED_TRANSFER_LIMIT_KB,
+                        recorded_at: now_f64(),
+                    },
                 },
-                target_cost,
+                now_f64(),
             )
             .ok()?;
         tracing::debug!(
@@ -1527,7 +1611,7 @@ impl LxmfOutboundDriver {
             packed_len = packed.len(),
             "prepared propagation wrapper"
         );
-        Some(packed)
+        Some((packed, transient_id))
     }
 
     /// Encrypt plaintext to a known peer destination identity (Direct/PN/paper).
@@ -1562,6 +1646,7 @@ impl LxmfOutboundDriver {
                     };
                     self.clear_pn_cascade_state(hash);
                     self.direct_path_failovers.remove(&hash);
+                    self.clear_resumable(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
                     if let Some((pn_hash, transient_id)) = pending_deposit {
                         // cascade_step disambiguates which island the deposit landed on:
@@ -1606,7 +1691,7 @@ impl LxmfOutboundDriver {
             DeliveryResult::Rejected {
                 message, reason, ..
             } => {
-                let msg_hash = message.hash.or(message.message_id);
+                let msg_hash = Some(message.message_id());
                 let rejected_pn = msg_hash.and_then(|h| {
                     self.pending_pn_deposits
                         .remove(&h)
@@ -1615,7 +1700,7 @@ impl LxmfOutboundDriver {
                 });
                 tracing::warn!(
                     target: "lxmf-outbound",
-                    dest = %hex::encode(message.destination_hash),
+                    dest = %hex::encode(message.destination_hash()),
                     method = %delivery_method_label(message.method),
                     reason = %reason,
                     "LXMF delivery Rejected"
@@ -1637,12 +1722,10 @@ impl LxmfOutboundDriver {
                 dest_hash,
                 ..
             } => {
-                if let Some(hash) = message.hash {
-                    self.pending_pn_deposits.remove(&hash);
-                }
+                self.pending_pn_deposits.remove(&message.message_id());
                 tracing::warn!(
                     target: "lxmf-outbound",
-                    dest = %hex::encode(message.destination_hash),
+                    dest = %hex::encode(message.destination_hash()),
                     link_dest = %hex::encode(dest_hash),
                     method = %delivery_method_label(message.method),
                     reason = %reason,
@@ -1685,9 +1768,7 @@ impl LxmfOutboundDriver {
         dest_hash: [u8; 16],
         reason: &str,
     ) -> Result<(), Box<LxMessage>> {
-        let Some(msg_hash) = message.hash.or(message.message_id) else {
-            return Err(Box::new(message));
-        };
+        let msg_hash = message.message_id();
         let iface = self.path_interfaces.get(&dest_hash).cloned();
         let via = self.path_vias.get(&dest_hash).cloned();
         let failover = {
@@ -1786,9 +1867,9 @@ impl LxmfOutboundDriver {
         message.last_delivery_attempt = now;
         message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
         let _ = try_queue_path_request(&self.transport_tx, prop_hash, false, reason);
-        let msg_hash = message.hash.or(message.message_id);
+        let msg_hash = Some(message.message_id());
         tracing::warn!(
-            dest = %hex::encode(message.destination_hash),
+            dest = %hex::encode(message.destination_hash()),
             prop = %hex::encode(prop_hash),
             msg = %msg_hash.map(hex::encode).unwrap_or_else(|| "none".into()),
             attempts = message.delivery_attempts,
@@ -2210,6 +2291,7 @@ fn now_f64() -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stack::lxmf_compose;
 
     fn dest(byte: u8) -> [u8; 16] {
         [byte; 16]
@@ -2260,7 +2342,7 @@ mod tests {
     #[test]
     fn enqueue_router_missing_propagation_node_keeps_message_and_fails_outbound() {
         use lxmf_core::constants::{DeliveryMethod, MessageState};
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig, SendError};
         use tokio::sync::broadcast;
 
@@ -2268,7 +2350,15 @@ mod tests {
         let (tx, _rx) = mpsc::channel(8);
         let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xab);
-        let msg_hash = [0x42u8; 32];
+        let msg = lxmf_compose::test_support::finalize_default(lxmf_compose::test_support::draft(
+            dest_hash,
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Propagated,
+        ));
+        // LXMF 1.4: the message id is derived from the signed bytes and cannot be assigned.
+        let msg_hash = msg.message_id();
         let pn_hash = dest(0x11);
         driver
             .pn_cascade_tried
@@ -2279,14 +2369,11 @@ mod tests {
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, mut event_rx) = broadcast::channel(8);
 
-        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Propagated);
-        msg.hash = Some(msg_hash);
-
         let typed = enqueue_router(&mut router, msg.clone());
         let Err(SendError::MissingOutboundPropagationNode(failed)) = typed else {
             panic!("expected MissingOutboundPropagationNode, got {typed:?}");
         };
-        assert_eq!(failed.hash, Some(msg_hash));
+        assert_eq!(failed.message_id(), msg_hash);
         assert_eq!(failed.state, MessageState::Failed);
         assert!(router.pending_outbound.is_empty());
 
@@ -2304,63 +2391,38 @@ mod tests {
         assert!(saw_failed, "missing PN must emit outbound failed status");
     }
 
+    /// LXMF 1.4: reply-ticket preparation moved to `LxmRouter::prepare_outbound(&mut draft)` before
+    /// signing, so `try_send` of a finalized message no longer reports
+    /// `TicketPreparation::AlreadySigned`; the signed message is queued as-is.
     #[test]
-    fn enqueue_router_ticket_preparation_keeps_message_and_fails_outbound() {
+    fn enqueue_router_queues_finalized_message_even_when_draft_requested_ticket() {
         use lxmf_core::constants::{DeliveryMethod, MessageState};
-        use lxmf_core::message::LxMessage;
-        use lxmf_core::router::{LxmRouter, RouterConfig, SendError, TicketPreparationError};
+        use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
         let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xcd);
-        let mut msg = LxMessage::new(
+        let mut draft = lxmf_compose::test_support::draft(
             dest_hash,
             [1u8; 16],
             "ticket",
             "late",
             DeliveryMethod::Direct,
         );
-        msg.include_ticket = true;
-        msg.sign(&identity.get_signing_key().expect("sk"))
-            .expect("sign");
-        let msg_hash = msg.hash.expect("hash after sign");
-        driver
-            .pn_cascade_tried
-            .insert(msg_hash, HashSet::from([dest(0x22)]));
-        driver.pending_pn_targets.insert(msg_hash, dest(0x22));
+        draft.include_ticket = true;
+        let msg =
+            lxmf_compose::test_support::finalize(draft, &identity.get_signing_key().expect("sk"));
+        let msg_hash = msg.message_id();
 
         let mut router = LxmRouter::new(RouterConfig::default());
-        let (event_tx, mut event_rx) = broadcast::channel(8);
+        let (event_tx, _event_rx) = broadcast::channel(8);
 
-        let typed = enqueue_router(&mut router, msg.clone());
-        match typed {
-            Err(SendError::TicketPreparation {
-                message,
-                source: TicketPreparationError::AlreadySigned,
-            }) => {
-                assert_eq!(message.hash, Some(msg_hash));
-                assert_eq!(message.state, MessageState::Failed);
-            }
-            other => panic!("expected TicketPreparation::AlreadySigned, got {other:?}"),
-        }
-        assert!(router.pending_outbound.is_empty());
-
-        assert!(!driver.enqueue_or_fail(&mut router, &event_tx, msg));
-        assert!(!driver.pn_cascade_tried.contains_key(&msg_hash));
-        assert!(!driver.pending_pn_targets.contains_key(&msg_hash));
-
-        let mut saw_failed = false;
-        while let Ok(frame) = event_rx.try_recv() {
-            if frame.contains("\"status\":\"failed\"") && frame.contains(&hex::encode(msg_hash)) {
-                saw_failed = true;
-            }
-        }
-        assert!(
-            saw_failed,
-            "ticket preparation failure must emit outbound failed status"
-        );
+        assert!(driver.enqueue_or_fail(&mut router, &event_tx, msg));
+        assert_eq!(router.pending_outbound.len(), 1);
+        assert_eq!(router.pending_outbound[0].message_id(), msg_hash);
+        assert_eq!(router.pending_outbound[0].state, MessageState::Outbound);
     }
 
     #[test]
@@ -2541,7 +2603,7 @@ mod tests {
     fn requeue_direct_after_path_failover_exhausts_then_clears_state() {
         use crate::stack::path_failover::MAX_VIA_FAILOVERS;
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -2549,7 +2611,12 @@ mod tests {
         let (tx, mut rx) = mpsc::channel(32);
         let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xcd);
-        let msg_hash = [0x42u8; 32];
+        let msg_hash = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "hi",
+            lxmf_core::constants::DeliveryMethod::Direct,
+        )
+        .message_id();
         driver.update_path_table(&[PathTableRoute {
             hash: dest_hash,
             hops: 4,
@@ -2561,11 +2628,8 @@ mod tests {
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, _event_rx) = broadcast::channel(8);
 
-        let make_msg = || {
-            let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
-            msg.hash = Some(msg_hash);
-            msg
-        };
+        let make_msg =
+            || lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Direct);
 
         for round in 1..=MAX_VIA_FAILOVERS {
             // Drain queued control messages so the channel stays open.
@@ -2670,6 +2734,10 @@ mod tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: std::collections::HashMap::default(),
         }
@@ -2678,7 +2746,7 @@ mod tests {
     #[test]
     fn auto_failure_sets_degraded_and_queues_extra_request_path() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -2697,7 +2765,6 @@ mod tests {
             iface_row("Ratspeak 2", "tcp", true, "up", Some("2.ratspeak.org")),
         ]);
         let dest_hash = dest(0xef);
-        let msg_hash = [0x43u8; 32];
         driver.update_path_table(&[PathTableRoute {
             hash: dest_hash,
             hops: 1,
@@ -2708,8 +2775,8 @@ mod tests {
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, _event_rx) = broadcast::channel(8);
-        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
-        msg.hash = Some(msg_hash);
+        let msg =
+            lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Direct);
 
         let result = driver.requeue_direct_after_path_failover(
             &mut router,
@@ -2956,7 +3023,7 @@ mod tests {
     #[test]
     fn try_advance_pn_cascade_orders_preferred_remote_local_then_exhausts() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -2967,7 +3034,12 @@ mod tests {
         let next_remote = [0x22u8; 16];
         let local = [0x99u8; 16];
         let dest_hash = dest(0xcd);
-        let msg_hash = [0x42u8; 32];
+        let msg_hash = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "hi",
+            lxmf_core::constants::DeliveryMethod::Direct,
+        )
+        .message_id();
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, _event_rx) = broadcast::channel(8);
@@ -2999,11 +3071,8 @@ mod tests {
             },
         ]);
 
-        let make_direct = || {
-            let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
-            msg.hash = Some(msg_hash);
-            msg
-        };
+        let make_direct =
+            || lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Direct);
 
         assert!(
             driver
@@ -3090,7 +3159,7 @@ mod tests {
         // the same PN while other cascade candidates remain.
         use lxmf_core::constants::DeliveryMethod;
         use lxmf_core::link_delivery::DeliveryResult;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -3107,7 +3176,12 @@ mod tests {
             .and_then(|b| <[u8; 16]>::try_from(b.as_slice()).ok())
             .unwrap_or([0xde; 16]);
         let dest_hash = dest(0xcd);
-        let msg_hash = [0x42u8; 32];
+        let msg_hash = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "hi",
+            lxmf_core::constants::DeliveryMethod::Direct,
+        )
+        .message_id();
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, mut event_rx) = broadcast::channel(16);
@@ -3132,8 +3206,8 @@ mod tests {
         ]);
 
         // Enter cascade on Prefer (marks Prefer tried).
-        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
-        msg.hash = Some(msg_hash);
+        let msg =
+            lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Direct);
         assert!(
             driver
                 .try_advance_pn_cascade(&mut router, &event_tx, msg)
@@ -3141,8 +3215,8 @@ mod tests {
         );
         assert_eq!(driver.pending_pn_targets.get(&msg_hash), Some(&prefer));
 
-        let mut failed = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Propagated);
-        failed.hash = Some(msg_hash);
+        let mut failed =
+            lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Propagated);
         failed.delivery_attempts = 1;
         driver.handle_delivery_result(
             &mut router,
@@ -3281,7 +3355,7 @@ mod tests {
     fn on_propagated_link_timeout_exhausts_to_failed_without_local_prop() {
         use lxmf_core::constants::DeliveryMethod;
         use lxmf_core::link_delivery::DeliveryResult;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -3290,7 +3364,12 @@ mod tests {
         let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let prefer = [0x9fu8; 16];
         let dest_hash = dest(0xcd);
-        let msg_hash = [0x43u8; 32];
+        let msg_hash = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "hi",
+            lxmf_core::constants::DeliveryMethod::Direct,
+        )
+        .message_id();
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, mut event_rx) = broadcast::channel(16);
@@ -3304,8 +3383,8 @@ mod tests {
             id: "pn-only".into(),
         }]);
 
-        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
-        msg.hash = Some(msg_hash);
+        let msg =
+            lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Direct);
         assert!(
             driver
                 .try_advance_pn_cascade(&mut router, &event_tx, msg)
@@ -3313,8 +3392,8 @@ mod tests {
         );
 
         // Exhaust retry budget so last-candidate requeue is skipped → terminal failed.
-        let mut failed = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Propagated);
-        failed.hash = Some(msg_hash);
+        let mut failed =
+            lxmf_compose::test_support::fixed_message(dest_hash, "hi", DeliveryMethod::Propagated);
         failed.delivery_attempts = MAX_DELIVERY_ATTEMPTS + 1;
         driver.handle_delivery_result(
             &mut router,
@@ -3343,7 +3422,7 @@ mod tests {
     #[test]
     fn deposit_defers_then_advances_when_sync_owns_pn_link() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use tokio::sync::broadcast;
 
@@ -3353,7 +3432,12 @@ mod tests {
         let prefer = [0x9fu8; 16];
         let next = [0xdeu8; 16];
         let dest_hash = dest(0xcd);
-        let msg_hash = [0x44u8; 32];
+        let msg_hash = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "busy",
+            lxmf_core::constants::DeliveryMethod::Direct,
+        )
+        .message_id();
         let dest_pub = Identity::new().get_public_key();
         driver.register_identity_key(&hex::encode(dest_hash), dest_pub);
         driver.register_identity_key(&hex::encode(prefer), Identity::new().get_public_key());
@@ -3382,10 +3466,11 @@ mod tests {
         ]);
         driver.set_propagation_sync_target(Some(prefer));
 
-        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "busy", DeliveryMethod::Propagated);
-        // Do not sign — this test only exercises sync-busy deferral (no pack).
-        msg.hash = Some(msg_hash);
-        msg.message_id = Some(msg_hash);
+        let msg = lxmf_compose::test_support::fixed_message(
+            dest_hash,
+            "busy",
+            DeliveryMethod::Propagated,
+        );
         driver.mark_pn_tried(msg_hash, prefer);
         driver.pending_pn_targets.insert(msg_hash, prefer);
 
@@ -3404,7 +3489,7 @@ mod tests {
     #[test]
     fn local_prop_outbound_deposit_round_trip_stored_locally_then_drain() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use rns_identity::destination::Destination;
         use tokio::sync::broadcast;
@@ -3457,16 +3542,15 @@ mod tests {
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, mut event_rx) = broadcast::channel(16);
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             recipient_delivery,
             sender_delivery,
             "",
             "outbound local-prop round-trip",
             DeliveryMethod::Direct,
         );
-        msg.sign(&sender.get_signing_key().expect("sk"))
-            .expect("sign");
-        let msg_hash = msg.hash.expect("hash after sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &sender.get_signing_key().expect("sk"));
+        let msg_hash = msg.message_id();
 
         assert!(
             driver
@@ -3497,7 +3581,7 @@ mod tests {
         let (messages, listed) = bridge.drain_local_inbox();
         assert_eq!(listed, 1);
         assert_eq!(messages.len(), 1);
-        assert_eq!(messages[0].content, "outbound local-prop round-trip");
+        assert_eq!(messages[0].content_text(), "outbound local-prop round-trip");
         assert_eq!(messages[0].method, DeliveryMethod::Propagated);
 
         let (again, listed_again) = bridge.drain_local_inbox();
@@ -3511,7 +3595,7 @@ mod tests {
     #[test]
     fn local_prop_in_process_busy_does_not_consume_delivery_attempt() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use rns_identity::destination::Destination;
         use tokio::sync::broadcast;
@@ -3564,16 +3648,15 @@ mod tests {
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, mut event_rx) = broadcast::channel(16);
 
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             recipient_delivery,
             sender_delivery,
             "",
             "busy lock must not burn attempts",
             DeliveryMethod::Direct,
         );
-        msg.sign(&sender.get_signing_key().expect("sk"))
-            .expect("sign");
-        let msg_hash = msg.hash.expect("hash after sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &sender.get_signing_key().expect("sk"));
+        let msg_hash = msg.message_id();
         assert!(
             driver
                 .try_advance_pn_cascade(&mut router, &event_tx, msg)
@@ -3592,7 +3675,7 @@ mod tests {
         driver.process_tick(&mut router, &event_tx);
         assert_eq!(router.pending_outbound.len(), 1);
         assert_eq!(router.pending_outbound[0].delivery_attempts, 0);
-        assert_eq!(router.pending_outbound[0].hash, Some(msg_hash));
+        assert_eq!(router.pending_outbound[0].message_id(), msg_hash);
         drop(held);
 
         router.pending_outbound[0].next_delivery_attempt = 0.0;
@@ -3616,7 +3699,7 @@ mod tests {
     #[test]
     fn local_prop_deposit_appears_in_peer_sync_offer_inventory() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use rns_identity::destination::Destination;
         use tokio::sync::broadcast;
@@ -3669,15 +3752,14 @@ mod tests {
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, _event_rx) = broadcast::channel(8);
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             recipient_delivery,
             sender_delivery,
             "",
             "pn-to-pn inventory",
             DeliveryMethod::Direct,
         );
-        msg.sign(&sender.get_signing_key().expect("sk"))
-            .expect("sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &sender.get_signing_key().expect("sk"));
         assert!(
             driver
                 .try_advance_pn_cascade(&mut router, &event_tx, msg)
@@ -3732,7 +3814,7 @@ mod tests {
     #[test]
     fn local_prop_deposit_for_other_recipient_stays_in_offer_not_drained() {
         use lxmf_core::constants::DeliveryMethod;
-        use lxmf_core::message::LxMessage;
+
         use lxmf_core::router::{LxmRouter, RouterConfig};
         use rns_identity::destination::Destination;
         use tokio::sync::broadcast;
@@ -3779,15 +3861,14 @@ mod tests {
 
         let mut router = LxmRouter::new(RouterConfig::default());
         let (event_tx, _event_rx) = broadcast::channel(8);
-        let mut msg = LxMessage::new(
+        let msg = lxmf_compose::test_support::draft(
             other_delivery,
             sender_delivery,
             "",
             "reprop inventory",
             DeliveryMethod::Direct,
         );
-        msg.sign(&sender.get_signing_key().expect("sk"))
-            .expect("sign");
+        let msg = lxmf_compose::test_support::finalize(msg, &sender.get_signing_key().expect("sk"));
         assert!(
             driver
                 .try_advance_pn_cascade(&mut router, &event_tx, msg)

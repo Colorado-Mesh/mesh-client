@@ -64,7 +64,13 @@ export interface ReticulumLxmfPayload {
   sent_via?: string;
   delivery_status?: string;
   delivery_method?: string;
-  attachment?: { file_name?: string; mime_type?: string; data_base64?: string };
+  attachment?: {
+    file_name?: string;
+    mime_type?: string;
+    data_base64?: string;
+    /** Multi-file FIELD_FILE_ATTACHMENTS (includes first as top-level fields). */
+    attachments?: { file_name?: string; mime_type?: string; data_base64?: string }[];
+  };
   /** LXMF FIELD_AUDIO voice memo (mode AM_OPUS_OGG = 16). */
   audio?: { mode: number; data_base64: string; size_bytes?: number };
   icon_appearance?: ReticulumIconAppearanceWire | null;
@@ -239,6 +245,7 @@ export async function persistReticulumMessageToDb(
   p: ReticulumLxmfPayload,
   attachmentPath?: string | null,
   replacesMessageHash?: string | null,
+  attachmentsJson?: string | null,
 ): Promise<void> {
   if (!p.text || !p.sender_hash) return;
   const timestamp = p.timestamp ?? Date.now();
@@ -257,6 +264,7 @@ export async function persistReticulumMessageToDb(
       delivery_status: resolvePersistedDeliveryStatus(p),
       delivery_method: parseReticulumDeliveryMethod(p.delivery_method) ?? null,
       attachment_path: attachmentPath ?? null,
+      ...(attachmentsJson ? { attachments_json: attachmentsJson } : {}),
       ...(p.audio?.mode != null ? { audio_mode: p.audio.mode } : {}),
     });
   } catch (e) {
@@ -376,7 +384,13 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   void persistReticulumIconFromPayload(p);
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
-  void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath, ctx.replacesMessageHash);
+  void persistReticulumMessageToDb(
+    identityId,
+    p,
+    ctx.attachmentPath,
+    ctx.replacesMessageHash,
+    ctx.attachments?.length ? JSON.stringify(ctx.attachments) : null,
+  );
   // History stamp only — Contacts require explicit Save as contact.
   void persistReticulumHistoryFromPayload(p, identityId);
   return true;
@@ -438,6 +452,9 @@ export function persistReticulumOutboundRecord(
         ? { delivery_attempts: Math.trunc(record.reticulumDeliveryAttempts) }
         : {}),
       attachment_path: record.reticulumAttachmentPath ?? null,
+      ...(record.reticulumAttachments?.length
+        ? { attachments_json: JSON.stringify(record.reticulumAttachments) }
+        : {}),
       ...(record.reticulumAudioMode != null ? { audio_mode: record.reticulumAudioMode } : {}),
       ...(record.reticulumAudioDurationSec != null
         ? { audio_duration_sec: record.reticulumAudioDurationSec }
