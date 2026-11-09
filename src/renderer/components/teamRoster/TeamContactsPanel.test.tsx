@@ -41,10 +41,19 @@ beforeEach(() => {
 });
 
 describe('TeamContactsPanel', () => {
-  it('lists contact cards', () => {
+  it('lists contact cards with presence affordance', () => {
     renderPanel();
     expect(screen.getByText(/#1 Alpha/)).toBeInTheDocument();
     expect(screen.getByText('IC')).toBeInTheDocument();
+    expect(screen.getByLabelText(/offline|online|stale/i)).toBeInTheDocument();
+  });
+
+  it('opens the contact detail hub', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: /open contact card for alpha/i }));
+    expect(screen.getByRole('dialog', { name: /#1 Alpha/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^message history$/i })).toBeInTheDocument();
   });
 
   it('opens the create dialog', async () => {

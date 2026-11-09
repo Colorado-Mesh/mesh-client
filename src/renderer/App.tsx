@@ -3360,6 +3360,29 @@ function AppContent() {
     openChatFromNotificationRef.current(target);
   }, []);
 
+  const handleTeamRosterSendDm = useCallback(
+    (args: {
+      protocol: MeshProtocol;
+      destination: number;
+      reticulumHash?: string | null;
+      text: string;
+    }): boolean => {
+      let destination = args.destination;
+      if (args.protocol === 'reticulum' && args.reticulumHash) {
+        try {
+          destination = openReticulumDmFromHash(args.reticulumHash);
+        } catch (err) {
+          console.warn('[App] team roster Reticulum DM failed', err);
+          return false;
+        }
+      }
+      const send = selectByProtocol(autoResendSendByProtocol, args.protocol);
+      const storeId = send(args.text, 0, destination);
+      return storeId != null;
+    },
+    [autoResendSendByProtocol],
+  );
+
   useEffect(() => {
     const onOpen = () => {
       handleOpenRrcHubTab();
@@ -6147,7 +6170,11 @@ function AppContent() {
                         {activePanelIndex === TEAM_CONTACTS_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <TeamContactsPanel />
+                              <TeamContactsPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -6162,7 +6189,11 @@ function AppContent() {
                         {activePanelIndex === TEAM_ROSTER_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <TeamRosterPanel />
+                              <TeamRosterPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

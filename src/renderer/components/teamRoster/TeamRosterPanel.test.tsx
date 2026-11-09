@@ -52,12 +52,49 @@ beforeEach(() => {
 });
 
 describe('TeamRosterPanel', () => {
-  it('renders only members opted into the roster', () => {
+  it('renders only members opted into the roster with ops columns', () => {
     renderPanel();
     expect(screen.getByRole('columnheader', { name: /unit id/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /presence/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /last active/i })).toBeInTheDocument();
     expect(screen.getByText('Golf')).toBeInTheDocument();
     expect(screen.getByText('MEDIC')).toBeInTheDocument();
     expect(screen.queryByText('Hidden')).not.toBeInTheDocument();
+  });
+
+  it('fans out a team message to selected recipients', async () => {
+    const user = userEvent.setup();
+    const onSendDm = vi.fn().mockReturnValue(true);
+    useTeamRosterStore.setState({
+      members: [
+        {
+          unitId: 7,
+          callsign: 'Golf',
+          role: 'MEDIC',
+          color: '#FF0000',
+          isSelf: false,
+          onRoster: true,
+          createdAt: 1,
+          updatedAt: 1,
+          links: [{ protocol: 'meshtastic', durableKey: '77', nodeId: 77 }],
+        },
+      ],
+    });
+    render(
+      <ToastProvider>
+        <TeamRosterPanel onSendDm={onSendDm} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /select golf/i }));
+    await user.type(screen.getByLabelText(/team message body/i), 'All stations check');
+    await user.click(screen.getByRole('button', { name: /send to 1/i }));
+    expect(onSendDm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        protocol: 'meshtastic',
+        destination: 77,
+        text: 'All stations check',
+      }),
+    );
   });
 
   it('can add an existing contact card from the roster panel', async () => {
