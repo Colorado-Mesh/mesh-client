@@ -76,6 +76,8 @@ mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod lxmf_reception;
 #[cfg(feature = "rns-stack")]
+mod lxmf_resumable_store;
+#[cfg(feature = "rns-stack")]
 mod nomad_page_acl;
 #[cfg(feature = "rns-stack")]
 mod nomad_server;

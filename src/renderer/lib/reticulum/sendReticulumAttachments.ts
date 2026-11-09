@@ -197,20 +197,25 @@ export async function sendReticulumAttachments(
   const first = items[0];
   const sizeBytes = items.reduce((n, i) => n + i.bytes.length, 0);
 
-  // Cache the first item locally (inbound-parity bubble + Save / Show in folder).
-  let attachmentPath: string | null = null;
+  // Cache every item locally (inbound-parity bubble + Save / Show in folder).
+  const cached: { path: string; fileName: string; mimeType: string }[] = [];
   try {
-    const res = await window.electronAPI.chat.saveReticulumAttachment({
-      fileName: first.fileName,
-      mimeType: first.mimeType,
-      dataBase64: bytesToBase64(first.bytes),
-      promptSave: false,
-    });
-    attachmentPath = res.success && res.path ? res.path : null;
+    for (const item of items) {
+      const res = await window.electronAPI.chat.saveReticulumAttachment({
+        fileName: item.fileName,
+        mimeType: item.mimeType,
+        dataBase64: bytesToBase64(item.bytes),
+        promptSave: false,
+      });
+      if (res.success && res.path) {
+        cached.push({ path: res.path, fileName: item.fileName, mimeType: item.mimeType });
+      }
+    }
   } catch (e) {
     console.warn('[sendReticulumAttachments] local cache failed:', errLikeToLogString(e));
   }
-  if (!attachmentPath) return fail('cache_failed');
+  if (cached.length === 0) return fail('cache_failed');
+  const attachmentPath = cached[0].path;
 
   const marker = `[file:${sanitizeMarkerPart(first.fileName)}:${first.mimeType}]`;
   const pendingId = `reticulum-pending-file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -230,6 +235,7 @@ export async function sendReticulumAttachments(
     receivedVia,
     reticulumAttachmentKind: 'image',
     reticulumAttachmentPath: attachmentPath,
+    reticulumAttachments: cached,
   };
   addMessage(identityId, record);
   if (senderHash) {
@@ -287,6 +293,7 @@ export async function sendReticulumAttachments(
       selfLxmfHash: senderHash ?? undefined,
       replacesMessageHash,
       attachmentPath,
+      attachments: cached,
       attachmentKind: 'image',
     });
     const bucket = useMessageStore.getState().messages[identityId];
@@ -298,6 +305,7 @@ export async function sendReticulumAttachments(
           {
             ...finalRow,
             reticulumAttachmentPath: attachmentPath,
+            reticulumAttachments: cached,
             reticulumAttachmentKind: 'image',
           },
           senderHash,

@@ -178,6 +178,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const attachmentPath = sanitizeReticulumAttachmentPathForDb(
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
+      const attachmentsJson =
+        typeof m.attachments_json === 'string' && m.attachments_json.trim().length > 0
+          ? m.attachments_json.slice(0, 16_384)
+          : null;
       const audioMode =
         m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
           ? Math.trunc(Number(m.audio_mode))
@@ -224,6 +228,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
                    sender_name = COALESCE(?, sender_name),
                    delivery_method = COALESCE(?, delivery_method),
                    attachment_path = COALESCE(?, attachment_path),
+                   attachments_json = COALESCE(?, attachments_json),
                    audio_mode = COALESCE(?, audio_mode),
                    audio_duration_sec = COALESCE(?, audio_duration_sec)
                WHERE id = ?`,
@@ -234,6 +239,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               senderName,
               deliveryMethod,
               attachmentPath,
+              attachmentsJson,
               audioMode,
               audioDurationSec,
               existing.id,
@@ -243,8 +249,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         }
 
         db.prepareOnce(
-          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method, audio_mode, audio_duration_sec)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, attachments_json, delivery_method, audio_mode, audio_duration_sec)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           identityId,
           senderId,
@@ -259,6 +265,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           deliveryAttempts,
           nextDeliveryAttemptAt,
           attachmentPath,
+          attachmentsJson,
           deliveryMethod,
           audioMode,
           audioDurationSec,

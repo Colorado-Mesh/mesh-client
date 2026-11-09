@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-11-02 (Ratspeak v1.0.37 — Bluetooth RNode pairing/reconnect polish + Linux package/tray fixes; **no Games API / wire delta** vs v1.0.34. Intermediate: v1.0.35 mobile fullscreen boards + chess captured-tray readability; v1.0.36 markdown/spoilers/message delete — none of those change LRGP commands. Ratspeak `games.rs` now takes an LRGP admission transaction lease around session writes (client-internal). Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test. Optional polish gap: mesh-client Chess still lacks Ratspeak’s captured-piece trays / material advantage). Prior: 2026-10-23 (Ratspeak v1.0.34 — voice / Codec2 / Bluetooth discovery; no Games API delta).
+**Last review:** 2026-11-08 (Ratspeak v1.0.42 — no Games API / wire delta vs v1.0.37. mesh-client now ships chess captured-piece trays + material advantage (local FEN-diff) and mobile full-screen session chrome (hide list while a board is open). Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test on a TCP hub). Prior: 2026-11-02 (v1.0.37).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
@@ -32,7 +32,8 @@ Status: `done` | `partial` | `wontfix` | `todo`
 | Session list filters                | GamesPanel filters                      | done   |                                                                                                               |
 | Unread badge                        | session unread + Games tab badge        | done   | tab and rail red pill via `gamesUnread`                                                                       |
 | TTT board                           | `TicTacToeBoard`                        | done   |                                                                                                               |
-| Chess board                         | `ChessBoard`                            | done   |                                                                                                               |
+| Chess board                         | `ChessBoard`                            | done   | Captured trays + material pill (FEN-diff); fluid board width                                                  |
+| Mobile fullscreen session           | GamesPanel list/detail swap on `md`     | done   | Hide session list while a board is open; back control on small viewports                                      |
 | Challenge from contacts             | Peers / Chat DM Challenge               | done   |                                                                                                               |
 | Draw / resign                       | session actions                         | done   |                                                                                                               |
 | Delivery state / resend             | session `delivery_state` + Resend       | done   | LXMF outbound bridge; chips; Resend on `failed`                                                               |
@@ -62,4 +63,4 @@ None for the delivery / envelope / optimistic / Chess promotion+claim track. Env
 
 Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still **unverified on a live mesh** — run the manual gold test against Ratspeak before marking them `done`. The board follows `lrgp-rs` `SPEC.md` appendix C: 42 cells row-major (`row * 7 + column`), markers `A` (challenger, first) / `B`, local outgoing payload exactly `{ c }` with the sidecar deriving `n`, landing row/cell, and terminal claims.
 
-Optional UI polish (Ratspeak v1.0.35+): chess captured-piece trays with material advantage (FEN-diff local render in `games_tab.js`), and tighter mobile board fit / full-screen session chrome — neither is required for wire interop.
+Manual gold test still required before flipping Four in a Row wire-interop rows to `done`: two clients on a TCP hub — challenge → accept → play → resign/draw (mesh-client ↔ mesh-client and mesh-client ↔ Ratspeak).

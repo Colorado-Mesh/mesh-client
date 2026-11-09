@@ -986,7 +986,9 @@
       "transfersAria": "Anhänge werden gesendet"
     },
     "sendLater": "Später senden",
-    "sendMenuButton": "Sendeoptionen"
+    "sendMenuButton": "Sendeoptionen",
+    "saveAttachmentAria": "Anhang speichern {{name}}",
+    "revealAttachmentAria": "Anhang {{name}} im Ordner anzeigen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln).",
       "slowRfAnnounceFilter": "Limit-Ankündigungen auf langsamen HF-Schnittstellen (nicht standardmäßig)",
-      "slowRfAnnounceFilterHint": "Standardmäßig aktiviert. Hält unerwünschte Internet-Ankündigungen davon ab, über Links mit geringer Bandbreite RNode erneut gesendet zu werden, wo sie niemals ablaufen können. Lokale und RF-gelernte Ziele kündigen sich immer noch an, und Internetziele beantworten auf Anfrage immer noch Pfadanfragen. Deaktivieren für Lagerbestand Reticulum Ankündigungsverhalten."
+      "slowRfAnnounceFilterHint": "Standardmäßig aktiviert. Hält unerwünschte Internet-Ankündigungen davon ab, über Links mit geringer Bandbreite RNode erneut gesendet zu werden, wo sie niemals ablaufen können. Lokale und RF-gelernte Ziele kündigen sich immer noch an, und Internetziele beantworten auf Anfrage immer noch Pfadanfragen. Deaktivieren für Lagerbestand Reticulum Ankündigungsverhalten.",
+      "autoconnectUnverified": "Nicht verifizierte Implementierungen automatisch verbinden",
+      "autoconnectUnverifiedAria": "Automatische Verbindung zu Backbone-Schnittstellen zulassen, die von Nicht-Python- oder nicht verifizierten Stacks wie rsRNS angekündigt werden",
+      "autoconnectUnverifiedHint": "Standardmäßig deaktiviert. Aktivieren Sie diese Option beim Peering mit rsRNS oder anderen Nicht-Python-Backbone-Ankündigungen, die keine verifizierte Python-Reticulum-Implementierung ankündigen.",
+      "interfaceStatsTitle": "Live-Schnittstellenzähler",
+      "interfaceStatsLine": "TX-Drop {{txDropped}} B · Protokoll {{protocol}} · IFAC {{ifac}} · Filter {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",
@@ -6857,7 +6864,10 @@
         "r": "Zum Turm befördern",
         "b": "Zum Bischof befördern",
         "n": "Zum Ritter befördern"
-      }
+      },
+      "opponentCaptured": "Gegner gefangen genommen",
+      "youCaptured": "Du hast gefangen genommen",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Geben Sie einen gültigen 32-stelligen Peer-Ziel-Hash ein.",
@@ -6880,7 +6890,9 @@
       "failed": "Erneuter Versuch erforderlich"
     },
     "drawOfferWaitingBanner": "Remis-Angebot gesendet. Warten auf den Gegner…",
-    "idleExpiryNotice": "Spiele laufen bei Inaktivität ab und können danach nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Spiele: Tic-Tac-Toe nach 24 Stunden, Schach und Vier gewinnt nach 7 Tagen."
+    "idleExpiryNotice": "Spiele laufen bei Inaktivität ab und können danach nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Spiele: Tic-Tac-Toe nach 24 Stunden, Schach und Vier gewinnt nach 7 Tagen.",
+    "backToList": "Zurück zu den Spielen",
+    "backToListAria": "Zurück zur Spielsitzungsliste"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · EINSTIEG",

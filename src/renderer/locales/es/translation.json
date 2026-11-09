@@ -986,7 +986,9 @@
       "transfersAria": "Adjuntos en envío"
     },
     "sendLater": "Enviar más tarde",
-    "sendMenuButton": "Opciones de envío"
+    "sendMenuButton": "Opciones de envío",
+    "saveAttachmentAria": "Guardar archivo adjunto {{name}}",
+    "revealAttachmentAria": "Mostrar archivo adjunto {{name}} en la carpeta"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "Opcional. Requerido para desencriptar anuncios de descubrimiento encriptados (y para encriptar al publicar con discovery_encrypt).",
       "slowRfAnnounceFilter": "Anuncios de límite en interfaces de RF lentas (no estándar)",
-      "slowRfAnnounceFilterHint": "Activado de forma predeterminada. Evita que los anuncios de Internet no solicitados se retransmitan a través de enlaces RNode de bajo ancho de banda, donde nunca pueden agotarse. Los destinos locales y aprendidos por RF aún se anuncian, y los destinos de Internet aún responden a las solicitudes de ruta a pedido. Desactivar para stock Reticulum anunciar comportamiento."
+      "slowRfAnnounceFilterHint": "Activado de forma predeterminada. Evita que los anuncios de Internet no solicitados se retransmitan a través de enlaces RNode de bajo ancho de banda, donde nunca pueden agotarse. Los destinos locales y aprendidos por RF aún se anuncian, y los destinos de Internet aún responden a las solicitudes de ruta a pedido. Desactivar para stock Reticulum anunciar comportamiento.",
+      "autoconnectUnverified": "Autoconectar implementaciones no verificadas",
+      "autoconnectUnverifiedAria": "Permitir la conexión automática a interfaces Backbone anunciadas por pilas que no son de Python o no verificadas, como rsRNS",
+      "autoconnectUnverifiedHint": "Desactivado de forma predeterminada. Habilítelo al emparejar con rsRNS u otros anuncios de Backbone que no sean de Python que no anuncien una implementación verificada de Python Reticulum.",
+      "interfaceStatsTitle": "Contadores de interfaz en vivo",
+      "interfaceStatsLine": "Caída TX {{txDropped}} B · protocolo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",
@@ -6857,7 +6864,10 @@
         "r": "Ascender a torre",
         "b": "Ascender a obispo",
         "n": "Ascender a caballero"
-      }
+      },
+      "opponentCaptured": "Oponente capturado",
+      "youCaptured": "capturaste",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Introduzca un hash de destino de 32 caracteres válido.",
@@ -6880,7 +6890,9 @@
       "failed": "Se necesita volver a intentarlo"
     },
     "drawOfferWaitingBanner": "Oferta de tablas enviada. Esperando al oponente…",
-    "idleExpiryNotice": "Las partidas caducan por inactividad y luego solo se pueden eliminar. Desafíos sin respuesta: 24 horas (todos los juegos). Partidas activas: tres en raya a las 24 horas, ajedrez y cuatro en raya a los 7 días."
+    "idleExpiryNotice": "Las partidas caducan por inactividad y luego solo se pueden eliminar. Desafíos sin respuesta: 24 horas (todos los juegos). Partidas activas: tres en raya a las 24 horas, ajedrez y cuatro en raya a los 7 días.",
+    "backToList": "volver a los juegos",
+    "backToListAria": "Volver a la lista de sesiones de juego"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · CÓMO EMPEZAR",

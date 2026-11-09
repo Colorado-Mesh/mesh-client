@@ -92,6 +92,18 @@ pub struct InterfaceRow {
     /// Host outbound TX mpsc capacity from live stats.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx_queue_max: Option<u64>,
+    /// Live `GetInterfaceStats` protocol violation counter (None when offline).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protocol_violations: Option<u64>,
+    /// Live IFAC violation counter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ifac_violations: Option<u64>,
+    /// Live packet-filter hit counter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub packet_filter_hits: Option<u64>,
+    /// Live TX dropped bytes counter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx_dropped_bytes: Option<u64>,
     /// Host↔BLE RNode link RSSI (dBm) from advertisement / resolve cache.
     /// Only set for online `ble://` RNode rows; not LoRa air SNR/RSSI.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -488,6 +500,10 @@ mod tx_queue_serde_tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: HashMap::default(),
         }

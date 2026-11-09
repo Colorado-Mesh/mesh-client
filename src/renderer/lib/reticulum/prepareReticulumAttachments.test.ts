@@ -34,12 +34,6 @@ describe('prepareReticulumFileAttachments', () => {
       ok: false,
       error: 'attachment_empty',
     });
-    expect(await prepareReticulumFileAttachments([file('a.txt', 'a'), file('b.txt', 'b')])).toEqual(
-      {
-        ok: false,
-        error: 'attachment_count_exceeded',
-      },
-    );
     const many = Array.from({ length: RETICULUM_ATTACHMENT_MAX_FILES + 1 }, (_, i) =>
       file(`f${i}.txt`, 'x'),
     );
@@ -47,6 +41,23 @@ describe('prepareReticulumFileAttachments', () => {
       ok: false,
       error: 'attachment_count_exceeded',
     });
+  });
+
+  it('accepts multiple files up to the max count', async () => {
+    const two = await prepareReticulumFileAttachments([file('a.txt', 'a'), file('b.txt', 'b')]);
+    expect(two.ok).toBe(true);
+    if (!two.ok || two.prepared.kind !== 'files') throw new Error('expected files');
+    expect(two.prepared.files).toHaveLength(2);
+    const maxSet = Array.from({ length: RETICULUM_ATTACHMENT_MAX_FILES }, (_, i) =>
+      file(`f${i}.txt`, 'x'),
+    );
+    const maxRes = await prepareReticulumFileAttachments(maxSet);
+    expect(maxRes.ok).toBe(true);
+    if (!maxRes.ok || maxRes.prepared.kind !== 'files') throw new Error('expected files');
+    expect(maxRes.prepared.files).toHaveLength(RETICULUM_ATTACHMENT_MAX_FILES);
+  });
+
+  it('rejects oversize sets without reading', async () => {
     const big = file('big.bin', new Uint8Array(RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES + 1));
     expect(await prepareReticulumFileAttachments([big])).toEqual({
       ok: false,

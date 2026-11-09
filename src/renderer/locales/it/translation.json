@@ -986,7 +986,9 @@
       "transfersAria": "Allegati in invio"
     },
     "sendLater": "Invia in un secondo momento",
-    "sendMenuButton": "Opzioni di invio"
+    "sendMenuButton": "Opzioni di invio",
+    "saveAttachmentAria": "Salva allegato {{name}}",
+    "revealAttachmentAria": "Mostra l'allegato {{name}} nella cartella"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identità/my_network",
       "networkIdentityHint": "Facoltativo. Obbligatorio per decrittografare annunci di discovery crittografati (e per crittografare durante la pubblicazione con discovery_encrypt).",
       "slowRfAnnounceFilter": "Annunci limite su interfacce RF lente (non standard)",
-      "slowRfAnnounceFilterHint": "Attivato per impostazione predefinita. Impedisce che annunci Internet non richiesti vengano ritrasmessi tramite link RNode a bassa larghezza di banda, dove non possono mai essere scaricati. Le destinazioni locali e quelle acquisite tramite RF continuano ad essere annunciate e le destinazioni Internet continuano a rispondere alle richieste di percorsi su richiesta. Disattiva per il comportamento di annuncio Reticulum dello stock."
+      "slowRfAnnounceFilterHint": "Attivato per impostazione predefinita. Impedisce che annunci Internet non richiesti vengano ritrasmessi tramite link RNode a bassa larghezza di banda, dove non possono mai essere scaricati. Le destinazioni locali e quelle acquisite tramite RF continuano ad essere annunciate e le destinazioni Internet continuano a rispondere alle richieste di percorsi su richiesta. Disattiva per il comportamento di annuncio Reticulum dello stock.",
+      "autoconnectUnverified": "Implementazioni di connessione automatica non verificate",
+      "autoconnectUnverifiedAria": "Consenti la connessione automatica alle interfacce Backbone annunciate da stack non Python o non verificati come rsRNS",
+      "autoconnectUnverifiedHint": "Disattivato per impostazione predefinita. Abilita quando si esegue il peering con rsRNS o altri annunci backbone non Python che non pubblicizzano un'implementazione Reticulum Python verificata.",
+      "interfaceStatsTitle": "Contatori dell'interfaccia live",
+      "interfaceStatsLine": "Derivazione TX {{txDropped}} B · protocollo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Importa configurazione Reticulum",
@@ -6857,7 +6864,10 @@
         "r": "Promuovi a torre",
         "b": "Promuovi a vescovo",
         "n": "Promuovi a cavaliere"
-      }
+      },
+      "opponentCaptured": "Avversario catturato",
+      "youCaptured": "Hai catturato",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Inserisci un hash di destinazione peer di 32 caratteri valido.",
@@ -6880,7 +6890,9 @@
       "failed": "Nuovo tentativo necessario"
     },
     "drawOfferWaitingBanner": "Offerta di patta inviata. In attesa dell’avversario…",
-    "idleExpiryNotice": "Le partite scadono per inattività e poi possono solo essere eliminate. Sfide senza risposta: 24 ore (tutti i giochi). Partite attive: tris dopo 24 ore, scacchi e forza 4 dopo 7 giorni."
+    "idleExpiryNotice": "Le partite scadono per inattività e poi possono solo essere eliminate. Sfide senza risposta: 24 ore (tutti i giochi). Partite attive: tris dopo 24 ore, scacchi e forza 4 dopo 7 giorni.",
+    "backToList": "Torniamo ai giochi",
+    "backToListAria": "Torna all'elenco delle sessioni di gioco"
   },
   "reticulumSetup": {
     "open": "Apri la guida alla configurazione",

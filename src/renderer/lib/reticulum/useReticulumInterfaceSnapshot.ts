@@ -84,6 +84,10 @@ export interface ReticulumInterfaceRow {
   tx_queue_used?: number | null;
   /** Host outbound TX mpsc capacity from live sidecar stats. */
   tx_queue_max?: number | null;
+  protocol_violations?: number | null;
+  ifac_violations?: number | null;
+  packet_filter_hits?: number | null;
+  tx_dropped_bytes?: number | null;
   /**
    * Host↔BLE RNode link RSSI (dBm) from sidecar connect/scan cache.
    * Prefer this over live advertisement scans once the interface is up.

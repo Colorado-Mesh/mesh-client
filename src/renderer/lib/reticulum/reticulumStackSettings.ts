@@ -15,6 +15,8 @@ export interface ReticulumStackSettingsPayload {
   network_identity: string;
   /** Non-standard mesh-client policy; true when the sidecar omits the key. */
   slow_rf_announce_filter: boolean;
+  /** Opt-in auto-connect for non-Python / unverified Backbone announces (rsRNS). */
+  autoconnect_unverified_implementations: boolean;
 }
 
 /** Coerce announce interval from stack settings JSON; preserves explicit `0`. */
@@ -79,6 +81,7 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     // Default on: older sidecars omit the key entirely.
     slow_rf_announce_filter:
       obj.slow_rf_announce_filter === undefined ? true : Boolean(obj.slow_rf_announce_filter),
+    autoconnect_unverified_implementations: Boolean(obj.autoconnect_unverified_implementations),
   };
 }
 
@@ -107,6 +110,9 @@ export async function patchReticulumStackSettings(
   if (patch.network_identity !== undefined) body.network_identity = patch.network_identity;
   if (patch.slow_rf_announce_filter !== undefined) {
     body.slow_rf_announce_filter = patch.slow_rf_announce_filter;
+  }
+  if (patch.autoconnect_unverified_implementations !== undefined) {
+    body.autoconnect_unverified_implementations = patch.autoconnect_unverified_implementations;
   }
   return (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', body)) as {
     ok?: boolean;

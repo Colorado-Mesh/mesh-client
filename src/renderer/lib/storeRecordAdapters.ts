@@ -4,6 +4,7 @@ import {
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
+import { parseReticulumCachedAttachmentsJson } from '@/shared/reticulumCachedAttachment';
 import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTransport';
 
@@ -144,6 +145,9 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
       : {}),
     ...(record.reticulumAttachmentPath
       ? { reticulumAttachmentPath: record.reticulumAttachmentPath }
+      : {}),
+    ...(record.reticulumAttachments?.length
+      ? { reticulumAttachments: record.reticulumAttachments }
       : {}),
     ...(record.reticulumAttachmentKind
       ? { reticulumAttachmentKind: record.reticulumAttachmentKind }
@@ -466,6 +470,7 @@ export function reticulumDbRowToMessageRecord(row: {
   delivery_status?: string | null;
   delivery_method?: string | null;
   attachment_path?: string | null;
+  attachments_json?: string | null;
   audio_mode?: number | null;
   audio_duration_sec?: number | null;
 }): MessageRecord {
@@ -506,6 +511,22 @@ export function reticulumDbRowToMessageRecord(row: {
     ...(receivedVia ? { receivedVia } : {}),
     ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
+    ...(() => {
+      const attachments = parseReticulumCachedAttachmentsJson(row.attachments_json);
+      if (attachments.length > 0) return { reticulumAttachments: attachments };
+      if (row.attachment_path) {
+        return {
+          reticulumAttachments: [
+            {
+              path: row.attachment_path,
+              fileName: row.attachment_path.split(/[/\\]/).pop() || 'attachment',
+              mimeType: 'application/octet-stream',
+            },
+          ],
+        };
+      }
+      return {};
+    })(),
     ...(row.attachment_path &&
     (row.audio_mode != null ||
       row.attachment_path.toLowerCase().endsWith('.ogg') ||

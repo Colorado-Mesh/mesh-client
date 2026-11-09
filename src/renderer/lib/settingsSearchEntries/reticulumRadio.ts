@@ -62,6 +62,14 @@ const reticulumRadioEntries: readonly SettingSearchEntry[] = [
     visible: hasNetworkPanel,
   },
   {
+    id: 'radio.reticulumStack.autoconnectUnverified',
+    slot: 'Radio',
+    labelKey: 'networkPanel.reticulumStackSettings.autoconnectUnverified',
+    sectionKey: STACK,
+    keywords: ['rsrns', 'unverified', 'backbone', 'auto connect', 'implementation'],
+    visible: hasNetworkPanel,
+  },
+  {
     id: 'radio.reticulumStack.requiredDiscoveryValue',
     slot: 'Radio',
     labelKey: 'networkPanel.reticulumStackSettings.requiredDiscoveryValue',

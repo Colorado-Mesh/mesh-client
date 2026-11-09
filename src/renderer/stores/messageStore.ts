@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
+import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachment';
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
@@ -69,8 +70,10 @@ export interface MessageRecord {
   reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   /** Sidecar outbound delivery_attempts (for triage dumps; optional). */
   reticulumDeliveryAttempts?: number;
-  /** Saved attachment path on disk (local saves). */
+  /** Saved attachment path on disk (local saves); first of {@link reticulumAttachments}. */
   reticulumAttachmentPath?: string;
+  /** All cached LXMF file attachments for this row (multi-file FIELD_FILE_ATTACHMENTS). */
+  reticulumAttachments?: ReticulumCachedAttachment[];
   /** Kind of inbound attachment saved at reticulumAttachmentPath. */
   reticulumAttachmentKind?: 'image' | 'audio';
   /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
@@ -158,6 +161,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumDeliveryMethod',
   'reticulumDeliveryAttempts',
   'reticulumAttachmentPath',
+  'reticulumAttachments',
   'reticulumAttachmentKind',
   'reticulumAudioMode',
   'reticulumAudioDurationSec',
@@ -167,8 +171,17 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
-  // MessageRecord fields are primitives (string/number/boolean/undefined); strict === is sufficient.
+  // Most MessageRecord fields are primitives; reticulumAttachments is a small object array.
   for (const key of MESSAGE_RECORD_KEYS) {
+    if (key === 'reticulumAttachments') {
+      if (
+        JSON.stringify(a.reticulumAttachments ?? null) !==
+        JSON.stringify(b.reticulumAttachments ?? null)
+      ) {
+        return false;
+      }
+      continue;
+    }
     if (a[key] !== b[key]) return false;
   }
   return true;
@@ -582,6 +595,9 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
               reticulumAttachmentKind:
                 existing.reticulumAttachmentKind ?? target.reticulumAttachmentKind,
             }
+          : {}),
+        ...(existing.reticulumAttachments?.length && !target.reticulumAttachments?.length
+          ? { reticulumAttachments: existing.reticulumAttachments }
           : {}),
         ...(existing.reticulumAudioMode != null && target.reticulumAudioMode == null
           ? { reticulumAudioMode: existing.reticulumAudioMode }

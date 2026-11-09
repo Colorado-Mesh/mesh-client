@@ -1020,7 +1020,9 @@
       "transfersAria": "Wysyłane załączniki"
     },
     "sendLater": "Wyślij później",
-    "sendMenuButton": "OPCJE WYSYŁANIA"
+    "sendMenuButton": "OPCJE WYSYŁANIA",
+    "saveAttachmentAria": "Zapisz załącznik {{name}}",
+    "revealAttachmentAria": "Pokaż załącznik {{name}} w folderze"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -3549,7 +3551,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/przechowywanie/tożsamości/my_network",
       "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt).",
       "slowRfAnnounceFilter": "Ogłoszenia limitu na powolnych interfejsach RF (niestandardowe)",
-      "slowRfAnnounceFilterHint": "Domyślnie włączone. Zapobiega ponownemu rozsyłaniu niechcianych komunikatów internetowych przez łącza o niskiej przepustowości RNode, w których nigdy nie mogą się wyczerpać. Lokalne i RF-learned destynacje nadal ogłaszają, a destynacje internetowe nadal odpowiadają na prośby o trasy na żądanie. Wyłącz dla zachowania ogłaszania zapasów Reticulum."
+      "slowRfAnnounceFilterHint": "Domyślnie włączone. Zapobiega ponownemu rozsyłaniu niechcianych komunikatów internetowych przez łącza o niskiej przepustowości RNode, w których nigdy nie mogą się wyczerpać. Lokalne i RF-learned destynacje nadal ogłaszają, a destynacje internetowe nadal odpowiadają na prośby o trasy na żądanie. Wyłącz dla zachowania ogłaszania zapasów Reticulum.",
+      "autoconnectUnverified": "Automatycznie łącz niezweryfikowane implementacje",
+      "autoconnectUnverifiedAria": "Zezwalaj na automatyczne łączenie się z interfejsami Backbone ogłaszanymi przez inne niż Python lub niezweryfikowane stosy, takie jak rsRNS",
+      "autoconnectUnverifiedHint": "Domyślnie wyłączone. Włącz w przypadku komunikacji równorzędnej z rsRNS lub innym systemem szkieletowym innym niż Python, który ogłasza, że ​​nie reklamuje zweryfikowanej implementacji języka Python Reticulum.",
+      "interfaceStatsTitle": "Liczniki interfejsu na żywo",
+      "interfaceStatsLine": "Spadek TX {{txDropped}} B · protokół {{protocol}} · IFAC {{ifac}} · filtr {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",
@@ -6963,7 +6970,10 @@
         "r": "Awansuj na wieżę",
         "b": "Awansuj na biskupa",
         "n": "Awansuj na rycerza"
-      }
+      },
+      "opponentCaptured": "Przeciwnik schwytany",
+      "youCaptured": "Schwytałeś",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Wprowadź prawidłowy 32-znakowy hasz celu równorzędnego.",
@@ -6986,7 +6996,9 @@
       "failed": "Wymagana ponowna próba"
     },
     "drawOfferWaitingBanner": "Oferta remisu wysłana. Oczekiwanie na przeciwnika…",
-    "idleExpiryNotice": "Gry wygasają po bezczynności i wtedy można je tylko usunąć. Bez odpowiedzi: 24 godziny (wszystkie gry). Aktywne gry: kółko i krzyżyk po 24 godzinach, szachy i czwórki po 7 dniach."
+    "idleExpiryNotice": "Gry wygasają po bezczynności i wtedy można je tylko usunąć. Bez odpowiedzi: 24 godziny (wszystkie gry). Aktywne gry: kółko i krzyżyk po 24 godzinach, szachy i czwórki po 7 dniach.",
+    "backToList": "Powrót do gier",
+    "backToListAria": "Powrót do listy sesji gry"
   },
   "reticulumSetup": {
     "intro": "Pierwszy raz korzystasz z Reticulum? Skonfiguruj połączenie, znajdź kontakty i poznaj dostępne karty.",

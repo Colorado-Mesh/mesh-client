@@ -7,11 +7,14 @@ import {
   isReticulumImageAttachment,
   parseReticulumAttachmentPayload,
 } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
+import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachment';
 
 export interface ReticulumAttachmentLineProps {
   payload: string;
-  /** Jailed on-disk path from inbound LXMF cache, when available. */
+  /** Jailed on-disk path from inbound LXMF cache, when available (first file). */
   attachmentPath?: string;
+  /** Multi-file LXMF attachments; when set, each entry is rendered. */
+  attachments?: ReticulumCachedAttachment[];
 }
 
 function reticulumAttachmentLabel(
@@ -35,21 +38,23 @@ function dataUrlToBase64(dataUrl: string): string | null {
   return b64.length > 0 ? b64 : null;
 }
 
-/** Read-only label (and inline image when cached) for historic LXMF `[file:name:mime]` payloads. */
-export function ReticulumAttachmentLine({
-  payload,
+function ReticulumAttachmentItem({
+  fileName,
+  mimeType,
   attachmentPath,
-}: Readonly<ReticulumAttachmentLineProps>) {
+}: Readonly<{
+  fileName: string;
+  mimeType: string;
+  attachmentPath?: string;
+}>) {
   const { t } = useTranslation();
-  const parsed = parseReticulumAttachmentPayload(payload);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
   const [fetchedFor, setFetchedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const mimeType = parsed?.mimeType;
   const canRenderImage =
-    Boolean(attachmentPath) && Boolean(mimeType) && isReticulumImageAttachment(mimeType!);
+    Boolean(attachmentPath) && Boolean(mimeType) && isReticulumImageAttachment(mimeType);
   const fetchKey =
     canRenderImage && attachmentPath && mimeType ? `${attachmentPath}\0${mimeType}` : null;
 
@@ -76,10 +81,7 @@ export function ReticulumAttachmentLine({
     };
   }, [attachmentPath, fetchKey, mimeType]);
 
-  if (!parsed) return null;
-
-  const label = reticulumAttachmentLabel(t, parsed.fileName, parsed.mimeType);
-
+  const label = reticulumAttachmentLabel(t, fileName, mimeType);
   const showImage =
     fetchKey != null && fetchedFor === fetchKey && Boolean(imageDataUrl) && !imageFailed;
 
@@ -92,7 +94,7 @@ export function ReticulumAttachmentLine({
       if (!dataBase64) {
         const res = await window.electronAPI.chat.readReticulumAttachmentAsDataUrl({
           filePath: attachmentPath,
-          mimeType: parsed.mimeType,
+          mimeType,
         });
         dataBase64 = res.dataUrl ? dataUrlToBase64(res.dataUrl) : null;
       }
@@ -102,7 +104,7 @@ export function ReticulumAttachmentLine({
       }
       if (!dataBase64) return;
       await window.electronAPI.chat.saveReticulumAttachment({
-        fileName: parsed.fileName,
+        fileName,
         dataBase64,
         promptSave: true,
       });
@@ -127,7 +129,7 @@ export function ReticulumAttachmentLine({
       {showImage && imageDataUrl ? (
         <ChatInlineImage
           src={imageDataUrl}
-          alt={t('chatPayload.reticulumAttachmentImage', { name: parsed.fileName })}
+          alt={t('chatPayload.reticulumAttachmentImage', { name: fileName })}
           onError={() => {
             setImageFailed(true);
           }}
@@ -140,23 +142,61 @@ export function ReticulumAttachmentLine({
             type="button"
             className="text-sky-400 underline-offset-2 hover:underline disabled:opacity-50"
             disabled={busy}
+            aria-label={t('chatPanel.saveAttachmentAria', { name: fileName })}
             onClick={() => {
               void onSave();
             }}
           >
-            {t('chatPanel.saveAttachment', { defaultValue: 'Save…' })}
+            {t('chatPanel.saveAttachment')}
           </button>
           <button
             type="button"
             className="text-sky-400 underline-offset-2 hover:underline"
+            aria-label={t('chatPanel.revealAttachmentAria', { name: fileName })}
             onClick={() => {
               void onReveal();
             }}
           >
-            {t('chatPanel.revealAttachment', { defaultValue: 'Show in folder' })}
+            {t('chatPanel.revealAttachment')}
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** Read-only label (and inline image when cached) for historic LXMF `[file:name:mime]` payloads. */
+export function ReticulumAttachmentLine({
+  payload,
+  attachmentPath,
+  attachments,
+}: Readonly<ReticulumAttachmentLineProps>) {
+  const parsed = parseReticulumAttachmentPayload(payload);
+  const items: ReticulumCachedAttachment[] =
+    attachments && attachments.length > 0
+      ? attachments
+      : parsed
+        ? [
+            {
+              path: attachmentPath ?? '',
+              fileName: parsed.fileName,
+              mimeType: parsed.mimeType,
+            },
+          ]
+        : [];
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-1">
+      {items.map((item) => (
+        <ReticulumAttachmentItem
+          key={`${item.path}:${item.fileName}`}
+          fileName={item.fileName}
+          mimeType={item.mimeType}
+          attachmentPath={item.path || attachmentPath}
+        />
+      ))}
     </div>
   );
 }

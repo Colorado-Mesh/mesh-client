@@ -986,7 +986,9 @@
       "transfersAria": "전송 중인 첨부"
     },
     "sendLater": "나중에 보냄( l)",
-    "sendMenuButton": "옵션 보내기"
+    "sendMenuButton": "옵션 보내기",
+    "saveAttachmentAria": "첨부파일 저장 {{name}}",
+    "revealAttachmentAria": "폴더에 첨부파일 {{name}} 표시"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "선택 사항. 암호화된 검색 알림을 해독하고 discovery_encrypt로 게시할 때 암호화해야 합니다.",
       "slowRfAnnounceFilter": "제한은 느린 RF 인터페이스에 대해 발표합니다 (비표준)",
-      "slowRfAnnounceFilterHint": "기본적으로 켜짐. 요청하지 않은 인터넷이 절대 끊기지 않는 저대역폭 RNode 링크를 통해 재방송되는 것을 중지합니다. 지역 및 RF 학습 목적지는 여전히 발표되고 있으며, 인터넷 목적지는 여전히 온디맨드 경로 요청에 응답합니다. 재고 Reticulum 에 대한 알림 동작을 끄세요."
+      "slowRfAnnounceFilterHint": "기본적으로 켜짐. 요청하지 않은 인터넷이 절대 끊기지 않는 저대역폭 RNode 링크를 통해 재방송되는 것을 중지합니다. 지역 및 RF 학습 목적지는 여전히 발표되고 있으며, 인터넷 목적지는 여전히 온디맨드 경로 요청에 응답합니다. 재고 Reticulum 에 대한 알림 동작을 끄세요.",
+      "autoconnectUnverified": "확인되지 않은 구현 자동 연결",
+      "autoconnectUnverifiedAria": "Python이 아니거나 rsRNS와 같은 확인되지 않은 스택에서 발표한 백본 인터페이스에 대한 자동 연결을 허용합니다.",
+      "autoconnectUnverifiedHint": "기본적으로 꺼져 있습니다. rsRNS 또는 기타 Python이 아닌 백본과 피어링할 때 활성화하면 확인된 Python Reticulum 구현을 광고하지 않는다고 알립니다.",
+      "interfaceStatsTitle": "라이브 인터페이스 카운터",
+      "interfaceStatsLine": "TX 드롭 {{txDropped}} B · 프로토콜 {{protocol}} · IFAC {{ifac}} · 필터 {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Reticulum config 가져오기",
@@ -6857,7 +6864,10 @@
         "r": "룩으로 승급",
         "b": "비숍으로 승급",
         "n": "기사로 승급하기"
-      }
+      },
+      "opponentCaptured": "상대방이 체포되었습니다.",
+      "youCaptured": "당신은 캡처",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "유효한 32자 피어 대상 해시를 입력하십시오.",
@@ -6880,7 +6890,9 @@
       "failed": "다시 시도 필요"
     },
     "drawOfferWaitingBanner": "무승부 제안을 보냈습니다. 상대를 기다리는 중…",
-    "idleExpiryNotice": "게임은 비활성 후 만료되며 그 다음에는 삭제만 할 수 있습니다. 미응답 도전: 24시간(모든 게임). 진행 중: 틱택토는 24시간, 체스와 사목은 7일."
+    "idleExpiryNotice": "게임은 비활성 후 만료되며 그 다음에는 삭제만 할 수 있습니다. 미응답 도전: 24시간(모든 게임). 진행 중: 틱택토는 24시간, 체스와 사목은 7일.",
+    "backToList": "게임으로 돌아가기",
+    "backToListAria": "게임 세션 목록으로 돌아가기"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · 시작하기",

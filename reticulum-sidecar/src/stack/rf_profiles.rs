@@ -217,6 +217,10 @@ mod tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         };

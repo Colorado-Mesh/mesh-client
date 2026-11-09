@@ -58,7 +58,7 @@ import {
   getHotReticulumPeerInterface,
   recordReticulumPeerInterfaceSamplesFromPeersUpdated,
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
-import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import { cacheReticulumInboundAttachments } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
@@ -695,10 +695,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (!identityId) return;
       void (async () => {
         let attachmentPath: string | null = null;
+        let attachments: Awaited<ReturnType<typeof cacheReticulumInboundAttachments>> | null = null;
         let attachmentKind: 'image' | 'audio' | undefined;
         let audioMode: number | null = null;
-        if (p.attachment?.data_base64 && p.direction !== 'outbound') {
-          attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
+        if (
+          p.direction !== 'outbound' &&
+          (p.attachment?.data_base64 ||
+            (Array.isArray(p.attachment?.attachments) && p.attachment.attachments.length > 0))
+        ) {
+          attachments = await cacheReticulumInboundAttachments(p.attachment);
+          attachmentPath = attachments[0]?.path ?? null;
           if (attachmentPath) attachmentKind = 'image';
         } else if (p.audio?.data_base64) {
           // Cache inbound always. For outbound echoes, fill a path when the optimistic
@@ -725,6 +731,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
+          ...(attachments?.length ? { attachments } : {}),
           ...(attachmentKind ? { attachmentKind } : {}),
           ...(audioMode != null ? { audioMode } : {}),
         });

@@ -61,6 +61,7 @@ use super::lxmf_delivery::{
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
 };
 use super::lxmf_reception::{LxmfReception, refresh_ble_peer_reception_interfaces};
+use super::lxmf_resumable_store::LxmfResumableStore;
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
 use super::nomad_link_errors::{
     NomadLinkSessionKind, map_nomad_link_session_kind, nomad_link_session_kind_from_timeout_what,
@@ -136,6 +137,22 @@ pub(crate) fn live_interface_tx_queue_fields(
         (None, None)
     } else {
         (Some(tx_queue_used), Some(tx_queue_max))
+    }
+}
+
+/// Forward LXMF 1.4 destination retains so identity outlives the path (lxmd parity).
+async fn apply_destination_retains(handle: &reticulum::ReticulumHandle, retains: Vec<[u8; 16]>) {
+    for dest in retains {
+        if handle
+            .query_control(TransportQuery::RetainDestination { dest })
+            .await
+            .is_none()
+        {
+            tracing::debug!(
+                dest = %hex::encode(dest),
+                "Reticulum did not retain a delivered destination"
+            );
+        }
     }
 }
 
@@ -230,6 +247,8 @@ pub struct LiveBridge {
     rncp_transfer: Arc<RncpTransferManager>,
     voice_session: Arc<VoiceSessionManager>,
     games_session: Arc<GamesSessionManager>,
+    /// Signed-but-not-yet-terminal LXMF outbound (`ResumableLxMessage` bytes).
+    resumable_store: Option<Arc<LxmfResumableStore>>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -624,6 +643,14 @@ impl LiveBridge {
         // Outbound Direct reusable links ACK peer replies via LinkProof even when the
         // plaintext is not forwarded — wire set_inbound_packet_sender so backchannel
         // DATA reaches the same unpack path as peer-initiated lxmf.delivery links.
+        let resumable_store = match LxmfResumableStore::open(storage_dir.join("lxmf_resumable.db"))
+        {
+            Ok(store) => Some(Arc::new(store)),
+            Err(e) => {
+                tracing::error!(error = %e, "failed to open lxmf_resumable.db; crash resume disabled");
+                None
+            }
+        };
         let mut outbound_driver =
             LxmfOutboundDriver::new(handle.transport_tx.clone(), &identity, &lxmf_hash_hex);
         outbound_driver.set_inbound_packet_sender(spawn_lxmf_outbound_backchannel(
@@ -634,6 +661,9 @@ impl LiveBridge {
         outbound_driver.set_propagation_max_message_size(
             pn_hosting_policy.propagation_limit_kb.saturating_mul(1024),
         );
+        if let Some(ref store) = resumable_store {
+            outbound_driver.set_resumable_store(Arc::clone(store));
+        }
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {
@@ -700,6 +730,7 @@ impl LiveBridge {
                 event_tx.clone(),
             )),
             games_session,
+            resumable_store,
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
@@ -728,6 +759,7 @@ impl LiveBridge {
             }
         };
 
+        bridge.restore_resumable_outbound().await;
         bridge.spawn_maintenance(event_tx);
         bridge.spawn_background(super::discovery_persistence::run(
             inner.clone(),
@@ -3307,6 +3339,10 @@ impl LiveBridge {
                                     bootstrap_only: None,
                                     tx_queue_used,
                                     tx_queue_max,
+                                    protocol_violations: if s.online { Some(s.protocol_violations) } else { None },
+                                    ifac_violations: if s.online { Some(s.ifac_violations) } else { None },
+                                    packet_filter_hits: if s.online { Some(s.packet_filter_hits) } else { None },
+                                    tx_dropped_bytes: if s.online { Some(s.tx_dropped_bytes) } else { None },
                                     host_rssi: None,
                                     extra_config: std::collections::HashMap::new(),
                                 }
@@ -3483,6 +3519,7 @@ impl LiveBridge {
                 };
                 let need_inbox_drain = propagation.take_inbox_drain_request();
                 let mut start_silent_get: Option<([u8; 16], &'static str)> = None;
+                let mut pending_destination_retains: Vec<[u8; 16]> = Vec::new();
                 {
                     let mut router = router.lock().await;
                     if let Ok(mut driver) = outbound.lock() {
@@ -3490,6 +3527,8 @@ impl LiveBridge {
                             driver.update_path_table(entries);
                         }
                         driver.process_tick(&mut router, &event_tx);
+                        pending_destination_retains =
+                            lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router);
                         let known_identities = driver.known_identities_for_propagation();
                         let terminal = propagation.tick(&known_identities, &mut router);
                         if let Some((ok, peer_hash)) = terminal {
@@ -3557,6 +3596,9 @@ impl LiveBridge {
                             );
                         }
                     }
+                }
+                if !pending_destination_retains.is_empty() {
+                    apply_destination_retains(&handle, pending_destination_retains).await;
                 }
                 // Peer Resource accept → drain our lxmf.delivery mail into Chat.
                 if need_inbox_drain && propagation.is_local_serving() {
@@ -4136,7 +4178,7 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        lxmf_compose::sign_finalize(msg, &signing_key)
+        self.sign_persist_finalize(msg, &signing_key, method)
     }
 
     /// Like [`prepare_signed_outbound_lxmf`](Self::prepare_signed_outbound_lxmf), but
@@ -4167,7 +4209,120 @@ impl LiveBridge {
             .identity
             .get_signing_key()
             .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
-        lxmf_compose::sign_finalize(msg, &signing_key)
+        self.sign_persist_finalize(msg, &signing_key, method)
+    }
+
+    fn delivery_method_label(method: DeliveryMethod) -> &'static str {
+        match method {
+            DeliveryMethod::Direct => "direct",
+            DeliveryMethod::Propagated => "propagated",
+            DeliveryMethod::Opportunistic => "opportunistic",
+            DeliveryMethod::Paper => "paper",
+        }
+    }
+
+    fn parse_delivery_method_label(label: &str) -> DeliveryMethod {
+        match label {
+            "propagated" => DeliveryMethod::Propagated,
+            "opportunistic" => DeliveryMethod::Opportunistic,
+            "paper" => DeliveryMethod::Paper,
+            _ => DeliveryMethod::Direct,
+        }
+    }
+
+    /// Sign, persist `ResumableLxMessage` for crash resume, then finalize for `try_send`.
+    fn sign_persist_finalize(
+        &self,
+        draft: lxmf_core::message::LxMessageDraft,
+        signing_key: &rns_crypto::ed25519::Ed25519PrivateKey,
+        method: DeliveryMethod,
+    ) -> Result<(LxMessage, String), String> {
+        let signed = lxmf_compose::sign_draft(draft, signing_key)?;
+        if let Some(store) = &self.resumable_store {
+            let hash_hex = hex::encode(signed.message_id());
+            let method_label = Self::delivery_method_label(method);
+            if let Err(e) = store.upsert(&hash_hex, method_label, signed.to_resumable().as_bytes())
+            {
+                tracing::warn!(
+                    target: "lxmf-outbound",
+                    message_hash = %hash_hex,
+                    error = %e,
+                    "failed to persist resumable signed outbound"
+                );
+            }
+        }
+        lxmf_compose::finalize_signed(signed)
+    }
+
+    /// Re-queue signed outbound that survived a sidecar restart (LXMF 1.4).
+    async fn restore_resumable_outbound(&self) {
+        let Some(store) = &self.resumable_store else {
+            return;
+        };
+        let rows = match store.list_all() {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to list resumable outbound");
+                return;
+            }
+        };
+        if rows.is_empty() {
+            return;
+        }
+        let pubkey = self.identity.get_public_key();
+        let mut router = self.router.lock().await;
+        for row in rows {
+            let stored = match lxmf_core::message::ResumableLxMessage::from_bytes(row.bytes.clone())
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "dropping corrupt resumable outbound"
+                    );
+                    let _ = store.delete(&row.message_hash);
+                    continue;
+                }
+            };
+            let method = Self::parse_delivery_method_label(&row.method);
+            let signed = match router.restore_signed(&stored, &pubkey, method) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "restore_signed failed; dropping resumable row"
+                    );
+                    let _ = store.delete(&row.message_hash);
+                    continue;
+                }
+            };
+            match router.submit_signed(signed) {
+                Ok(()) => {
+                    tracing::info!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        "restored resumable signed outbound"
+                    );
+                }
+                Err(lxmf_core::message::MessageError::AlreadyQueued) => {
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        "resumable outbound already queued"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "lxmf-outbound",
+                        message_hash = %row.message_hash,
+                        error = ?e,
+                        "submit_signed after restore failed"
+                    );
+                }
+            }
+        }
     }
 
     /// Resolve a Direct-vs-Propagated delivery method for an LRGP action, mirroring
@@ -4262,16 +4417,21 @@ impl LiveBridge {
             }
         };
 
-        let send_result = {
+        let (send_result, game_retains) = {
             let mut router = self.router.lock().await;
             let res = router.try_send(msg);
+            let mut retains = Vec::new();
             if res.is_ok()
                 && let Ok(mut driver) = self.outbound.lock()
             {
                 driver.process_tick(&mut router, &self.event_tx);
+                retains = lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router);
             }
-            res
+            (res, retains)
         };
+        if !game_retains.is_empty() {
+            apply_destination_retains(&self.handle, game_retains).await;
+        }
         if let Err(e) = send_result {
             self.games_session
                 .rollback_action(action, Some("send_failed"));
@@ -4317,14 +4477,20 @@ impl LiveBridge {
             &resend.fields,
         )?;
 
-        {
+        let resend_retains = {
             let mut router = self.router.lock().await;
             router
                 .try_send(msg)
                 .map_err(|e| format!("lxmf game resend: {e:?}"))?;
             if let Ok(mut driver) = self.outbound.lock() {
                 driver.process_tick(&mut router, &self.event_tx);
+                lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router)
+            } else {
+                Vec::new()
             }
+        };
+        if !resend_retains.is_empty() {
+            apply_destination_retains(&self.handle, resend_retains).await;
         }
 
         self.games_session
@@ -5107,6 +5273,26 @@ impl LiveBridge {
                     bootstrap_only: None,
                     tx_queue_used,
                     tx_queue_max,
+                    protocol_violations: if s.online {
+                        Some(s.protocol_violations)
+                    } else {
+                        None
+                    },
+                    ifac_violations: if s.online {
+                        Some(s.ifac_violations)
+                    } else {
+                        None
+                    },
+                    packet_filter_hits: if s.online {
+                        Some(s.packet_filter_hits)
+                    } else {
+                        None
+                    },
+                    tx_dropped_bytes: if s.online {
+                        Some(s.tx_dropped_bytes)
+                    } else {
+                        None
+                    },
                     host_rssi: None,
                     extra_config: std::collections::HashMap::new(),
                 }
@@ -5579,8 +5765,15 @@ impl LiveBridge {
             obj.insert("attachment".into(), attachment);
         }
 
-        if let Ok(mut driver) = self.outbound.lock() {
+        let send_retains = if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
+            lxmf_outbound::LxmfOutboundDriver::take_destination_retains(&mut router)
+        } else {
+            Vec::new()
+        };
+        drop(router);
+        if !send_retains.is_empty() {
+            apply_destination_retains(&self.handle, send_retains).await;
         }
 
         self.schedule_egress_tap_upgrade(
@@ -8590,6 +8783,10 @@ mod nomad_private_first_failover_tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: std::collections::HashMap::default(),
         }

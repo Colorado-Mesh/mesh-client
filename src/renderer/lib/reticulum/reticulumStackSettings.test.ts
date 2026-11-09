@@ -55,6 +55,16 @@ describe('parseReticulumStackSettingsPayload', () => {
     ).toBe(true);
   });
 
+  it('defaults autoconnect_unverified_implementations off and preserves true', () => {
+    expect(parseReticulumStackSettingsPayload({}).autoconnect_unverified_implementations).toBe(
+      false,
+    );
+    expect(
+      parseReticulumStackSettingsPayload({ autoconnect_unverified_implementations: true })
+        .autoconnect_unverified_implementations,
+    ).toBe(true);
+  });
+
   it('parses discovery consume fields', () => {
     const parsed = parseReticulumStackSettingsPayload({
       enable_transport: true,

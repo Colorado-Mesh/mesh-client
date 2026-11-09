@@ -986,7 +986,9 @@
       "transfersAria": "Lampiran sedang dikirim"
     },
     "sendLater": "Kirim nanti",
-    "sendMenuButton": "Kirim opsi"
+    "sendMenuButton": "Kirim opsi",
+    "saveAttachmentAria": "Simpan lampiran {{name}}",
+    "revealAttachmentAria": "Tampilkan lampiran {{name}} di folder"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identity/my_network",
       "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt).",
       "slowRfAnnounceFilter": "Batasi pengumuman pada antarmuka RF yang lambat (non - standar)",
-      "slowRfAnnounceFilterHint": "Secara default. Menghentikan internet yang tidak diminta mengumumkan agar tidak disiarkan ulang melalui tautan RNode bandwidth rendah, yang tidak akan pernah bisa dikeringkan. Destinasi lokal dan RF masih mengumumkan, dan destinasi internet masih menjawab permintaan jalur sesuai permintaan. Nonaktifkan untuk perilaku pengumuman stok Reticulum."
+      "slowRfAnnounceFilterHint": "Secara default. Menghentikan internet yang tidak diminta mengumumkan agar tidak disiarkan ulang melalui tautan RNode bandwidth rendah, yang tidak akan pernah bisa dikeringkan. Destinasi lokal dan RF masih mengumumkan, dan destinasi internet masih menjawab permintaan jalur sesuai permintaan. Nonaktifkan untuk perilaku pengumuman stok Reticulum.",
+      "autoconnectUnverified": "Sambungkan otomatis implementasi yang belum terverifikasi",
+      "autoconnectUnverifiedAria": "Izinkan koneksi otomatis ke antarmuka Backbone yang diumumkan oleh tumpukan non-Python atau belum terverifikasi seperti rsRNS",
+      "autoconnectUnverifiedHint": "Mati secara default. Aktifkan ketika melakukan peering dengan rsRNS atau Backbone non-Python lainnya mengumumkan bahwa tidak mengiklankan implementasi Python Reticulum yang terverifikasi.",
+      "interfaceStatsTitle": "Penghitung antarmuka langsung",
+      "interfaceStatsLine": "Penurunan TX {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filter {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",
@@ -6857,7 +6864,10 @@
         "r": "Promosikan ke benteng",
         "b": "Promosikan menjadi uskup",
         "n": "Promosikan menjadi ksatria"
-      }
+      },
+      "opponentCaptured": "Lawan ditangkap",
+      "youCaptured": "Anda menangkap",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Masukkan hash tujuan rekan 32 karakter yang valid.",
@@ -6880,7 +6890,9 @@
       "failed": "Coba lagi yang diperlukan"
     },
     "drawOfferWaitingBanner": "Tawaran seri terkirim. Menunggu lawan…",
-    "idleExpiryNotice": "Permainan kedaluwarsa setelah tidak aktif dan kemudian hanya dapat dihapus. Tantangan tanpa jawaban: 24 jam (semua permainan). Permainan aktif: tic-tac-toe setelah 24 jam, catur dan empat-sebaris setelah 7 hari."
+    "idleExpiryNotice": "Permainan kedaluwarsa setelah tidak aktif dan kemudian hanya dapat dihapus. Tantangan tanpa jawaban: 24 jam (semua permainan). Permainan aktif: tic-tac-toe setelah 24 jam, catur dan empat-sebaris setelah 7 hari.",
+    "backToList": "Kembali ke permainan",
+    "backToListAria": "Kembali ke daftar sesi permainan"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · MEMULAI",

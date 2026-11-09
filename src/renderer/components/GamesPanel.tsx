@@ -246,9 +246,15 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
     return null;
   }
 
+  const detailOpen = Boolean(selectedSession);
+
   return (
     <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
-      <aside className="bg-deep-black border-ink-800 flex w-72 shrink-0 flex-col border-r">
+      <aside
+        className={`bg-deep-black border-ink-800 flex w-full shrink-0 flex-col border-r md:w-72 ${
+          detailOpen ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div className="border-ink-800 border-b p-3">
           <h2 className="text-ink-100 text-sm font-semibold">{t('gamesPanel.title')}</h2>
           <SegmentedControl
@@ -355,11 +361,27 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           </p>
         </div>
       </aside>
-      <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">
+      <main
+        className={`min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-4 md:p-6 ${
+          detailOpen ? 'flex' : 'hidden md:flex'
+        }`}
+      >
         {!selectedSession ? (
           <div className="text-ink-400 text-sm">{t('gamesPanel.selectSessionPrompt')}</div>
         ) : (
           <>
+            <div className="flex w-full max-w-[min(100%,28rem)] items-center gap-2 md:hidden">
+              <button
+                type="button"
+                className="text-xs text-sky-400 underline-offset-2 hover:underline"
+                aria-label={t('gamesPanel.backToListAria')}
+                onClick={() => {
+                  selectSession(null);
+                }}
+              >
+                {t('gamesPanel.backToList')}
+              </button>
+            </div>
             <div className="text-ink-400 text-xs">
               {t('gamesPanel.opponentLabel', { peer: sessionPeerLabel(selectedSession) })}
             </div>
@@ -374,7 +396,10 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 />
               ) : null;
             })()}
-            <div ref={boardWrapRef} className="flex flex-col items-center">
+            <div
+              ref={boardWrapRef}
+              className="flex w-full max-w-[min(100%,28rem)] flex-col items-center"
+            >
               {selectedSession.app_id === 'chess' ? (
                 <ChessBoard
                   session={selectedSession}

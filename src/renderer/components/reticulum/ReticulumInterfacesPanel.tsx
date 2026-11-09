@@ -2883,6 +2883,22 @@ function InterfacesSection({
                                 </span>
                               ) : null}
                             </span>
+                            {iface.protocol_violations != null ||
+                            iface.ifac_violations != null ||
+                            iface.packet_filter_hits != null ||
+                            iface.tx_dropped_bytes != null ? (
+                              <span
+                                className="text-muted text-2xs mt-0.5 block"
+                                title={t('networkPanel.reticulumStackSettings.interfaceStatsTitle')}
+                              >
+                                {t('networkPanel.reticulumStackSettings.interfaceStatsLine', {
+                                  txDropped: iface.tx_dropped_bytes ?? 0,
+                                  protocol: iface.protocol_violations ?? 0,
+                                  ifac: iface.ifac_violations ?? 0,
+                                  filter: iface.packet_filter_hits ?? 0,
+                                })}
+                              </span>
+                            ) : null}
                             {rowReason ? (
                               <span className="mt-0.5 block text-xs text-red-300/90">
                                 {rowReason}

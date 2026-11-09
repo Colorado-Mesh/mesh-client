@@ -986,7 +986,9 @@
       "transfersAria": "Bijlagen worden verzonden"
     },
     "sendLater": "Later verzenden",
-    "sendMenuButton": "Verstuur Opties"
+    "sendMenuButton": "Verstuur Opties",
+    "saveAttachmentAria": "Bijlage opslaan {{name}}",
+    "revealAttachmentAria": "Toon bijlage {{name}} in map"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/opslag/identiteiten/mijn_netwerk",
       "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt).",
       "slowRfAnnounceFilter": "Limietaankondigingen op langzame RF-interfaces (niet-standaard)",
-      "slowRfAnnounceFilterHint": "Standaard ingeschakeld. Voorkomt dat ongevraagde internetaankondigingen opnieuw worden uitgezonden via RNode -links met een lage bandbreedte, waar ze nooit kunnen uitlekken. Lokale en RF-geleerde bestemmingen worden nog steeds aangekondigd en internetbestemmingen beantwoorden nog steeds padaanvragen op aanvraag. Schakel uit voor voorraad Reticulum om gedrag aan te kondigen."
+      "slowRfAnnounceFilterHint": "Standaard ingeschakeld. Voorkomt dat ongevraagde internetaankondigingen opnieuw worden uitgezonden via RNode -links met een lage bandbreedte, waar ze nooit kunnen uitlekken. Lokale en RF-geleerde bestemmingen worden nog steeds aangekondigd en internetbestemmingen beantwoorden nog steeds padaanvragen op aanvraag. Schakel uit voor voorraad Reticulum om gedrag aan te kondigen.",
+      "autoconnectUnverified": "Niet-geverifieerde implementaties automatisch verbinden",
+      "autoconnectUnverifiedAria": "Sta automatisch verbinden toe met Backbone-interfaces aangekondigd door niet-Python of niet-geverifieerde stacks zoals rsRNS",
+      "autoconnectUnverifiedHint": "Standaard uitgeschakeld. Inschakelen bij peering met rsRNS of andere niet-Python Backbone-aankondigingen die geen geverifieerde Python Reticulum-implementatie adverteren.",
+      "interfaceStatsTitle": "Live-interfacetellers",
+      "interfaceStatsLine": "TX-daling {{txDropped}} B · protocol {{protocol}} · IFAC {{ifac}} · filter {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",
@@ -6857,7 +6864,10 @@
         "r": "Promoveer tot toren",
         "b": "Promoveer tot bisschop",
         "n": "Promoveer tot ridder"
-      }
+      },
+      "opponentCaptured": "Tegenstander gevangen genomen",
+      "youCaptured": "Jij hebt vastgelegd",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Voer een geldige peer-bestemmingshash van 32 tekens in.",
@@ -6880,7 +6890,9 @@
       "failed": "Opnieuw proberen nodig"
     },
     "drawOfferWaitingBanner": "Remise-aanbod verzonden. Wachten op tegenstander…",
-    "idleExpiryNotice": "Games verlopen bij inactiviteit en kunnen daarna alleen nog worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle games). Actieve games: tic-tac-toe na 24 uur, schaken en vier-op-een-rij na 7 dagen."
+    "idleExpiryNotice": "Games verlopen bij inactiviteit en kunnen daarna alleen nog worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle games). Actieve games: tic-tac-toe na 24 uur, schaken en vier-op-een-rij na 7 dagen.",
+    "backToList": "Terug naar spelletjes",
+    "backToListAria": "Terug naar de lijst met spelsessies"
   },
   "reticulumSetup": {
     "title": "Je eerste verbinding",

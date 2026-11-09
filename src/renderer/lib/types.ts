@@ -4,6 +4,7 @@ import {
   REGISTERED_MESH_PROTOCOLS,
 } from '@/shared/meshProtocol';
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
+import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachment';
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
@@ -390,8 +391,10 @@ export interface ChatMessage {
   reticulum_message_hash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulum_reply_to_hash?: string;
-  /** Local path when a Reticulum attachment was saved to disk. */
+  /** Local path when a Reticulum attachment was saved to disk; first of multi-file set. */
   reticulumAttachmentPath?: string;
+  /** All cached LXMF file attachments for this row. */
+  reticulumAttachments?: ReticulumCachedAttachment[];
   /** Kind of attachment saved at reticulumAttachmentPath. */
   reticulumAttachmentKind?: 'image' | 'audio';
   /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */

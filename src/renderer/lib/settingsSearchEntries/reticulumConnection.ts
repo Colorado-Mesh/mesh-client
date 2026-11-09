@@ -161,6 +161,10 @@ export const reticulumConnectionSurface: SettingsSearchSurface = {
     'connectionPanel.linkQuality': 'per-row link quality readout',
     'connectionPanel.linkQualityMs': 'per-row link quality readout',
     'connectionPanel.linkQualityUnavailable': 'per-row link quality readout',
+    'networkPanel.reticulumStackSettings.interfaceStatsTitle':
+      'per-row live interface stats tooltip, not a control',
+    'networkPanel.reticulumStackSettings.interfaceStatsLine':
+      'per-row live interface stats readout, not a control',
     'connectionPanel.reticulumRmap.syncSuccess': 'result toast, not a control',
     'diagnosticsPanel.reticulum.action.disable_share_instance': 'per-row audit fix button label',
     'reticulumRmapDiscovery.gpsMissingWarning': 'warning toast for the per-row RMAP toggle',

@@ -547,6 +547,8 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     delivery_attempts: 'INTEGER DEFAULT 0',
     next_delivery_attempt_at: 'INTEGER',
     attachment_path: 'TEXT',
+    /** JSON array of `{ path, fileName, mimeType }` for multi-file LXMF attachments. */
+    attachments_json: 'TEXT',
     audio_mode: 'INTEGER',
     audio_duration_sec: 'REAL',
   },

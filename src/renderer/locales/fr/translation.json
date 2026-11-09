@@ -986,7 +986,9 @@
       "transfersAria": "Pièces jointes en cours d’envoi"
     },
     "sendLater": "Envoyer plus tard",
-    "sendMenuButton": "Envoyer des notifications par courriel"
+    "sendMenuButton": "Envoyer des notifications par courriel",
+    "saveAttachmentAria": "Enregistrer la pièce jointe {{name}}",
+    "revealAttachmentAria": "Afficher la pièce jointe {{name}} dans le dossier"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/stockage/identités/mon_réseau",
       "networkIdentityHint": "Facultatif. Obligatoire pour déchiffrer les annonces de découverte chiffrées (et pour chiffrer lors de la publication avec discovery_encrypt).",
       "slowRfAnnounceFilter": "Annonce de limite sur les interfaces RF lentes (non standard)",
-      "slowRfAnnounceFilterHint": "Activé par défaut. Empêche les annonces Internet non sollicitées d'être rediffusées sur des liens RNode à faible bande passante, où elles ne peuvent jamais s'écouler. Les destinations locales et RF-learned annoncent toujours, et les destinations Internet répondent toujours aux demandes de chemin à la demande. Désactiver pour le stock Reticulum annoncer le comportement."
+      "slowRfAnnounceFilterHint": "Activé par défaut. Empêche les annonces Internet non sollicitées d'être rediffusées sur des liens RNode à faible bande passante, où elles ne peuvent jamais s'écouler. Les destinations locales et RF-learned annoncent toujours, et les destinations Internet répondent toujours aux demandes de chemin à la demande. Désactiver pour le stock Reticulum annoncer le comportement.",
+      "autoconnectUnverified": "Implémentations non vérifiées de connexion automatique",
+      "autoconnectUnverifiedAria": "Autoriser la connexion automatique aux interfaces Backbone annoncées par des piles non Python ou non vérifiées telles que rsRNS",
+      "autoconnectUnverifiedHint": "Désactivé par défaut. Activer lors du peering avec rsRNS ou d'autres annonces non-Python Backbone qui n'annoncent pas une implémentation Python Reticulum vérifiée.",
+      "interfaceStatsTitle": "Compteurs d'interface en direct",
+      "interfaceStatsLine": "Chute TX {{txDropped}} B · protocole {{protocol}} · IFAC {{ifac}} · filtre {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",
@@ -6857,7 +6864,10 @@
         "r": "Promouvoir en tour",
         "b": "Promouvoir évêque",
         "n": "Promouvoir au rang de chevalier"
-      }
+      },
+      "opponentCaptured": "Adversaire capturé",
+      "youCaptured": "Vous avez capturé",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Entrez un hachage de destination homologue valide de 32 caractères.",
@@ -6880,7 +6890,9 @@
       "failed": "Réessayer nécessaire"
     },
     "drawOfferWaitingBanner": "Proposition de nulle envoyée. En attente de l’adversaire…",
-    "idleExpiryNotice": "Les parties expirent après inactivité et ne peuvent alors qu'être supprimées. Défis sans réponse : 24 heures (tous les jeux). Parties actives : morpion après 24 heures, échecs et puissance 4 après 7 jours."
+    "idleExpiryNotice": "Les parties expirent après inactivité et ne peuvent alors qu'être supprimées. Défis sans réponse : 24 heures (tous les jeux). Parties actives : morpion après 24 heures, échecs et puissance 4 après 7 jours.",
+    "backToList": "Retour aux jeux",
+    "backToListAria": "Retour à la liste des sessions de jeu"
   },
   "reticulumSetup": {
     "open": "Ouvrir le guide de configuration",

@@ -3,7 +3,7 @@
 //! before signing so they are covered by the message hash.
 
 use lxmf_core::constants::DeliveryMethod;
-use lxmf_core::message::{FieldValueRef, LxMessage, LxMessageDraft};
+use lxmf_core::message::{FieldValueRef, LxMessage, LxMessageDraft, SignedLxMessage};
 use rns_crypto::ed25519::Ed25519PrivateKey;
 use std::collections::BTreeMap;
 
@@ -19,20 +19,33 @@ pub(super) fn new_draft(
         .map_err(|e| format!("lxmf draft: {e:?}"))
 }
 
-/// Sign a draft and finalize it without a recipient stamp (the router stamps on send when needed).
-/// Returns the immutable message and its lowercase hex message id.
-pub(super) fn sign_finalize(
+/// Sign a draft (no finalize). Caller may persist [`SignedLxMessage::to_resumable`] then finalize.
+pub(super) fn sign_draft(
     draft: LxMessageDraft,
     signing_key: &Ed25519PrivateKey,
-) -> Result<(LxMessage, String), String> {
-    let signed = draft
+) -> Result<SignedLxMessage, String> {
+    draft
         .sign(signing_key)
-        .map_err(|e| format!("lxmf sign: {e:?}"))?;
+        .map_err(|e| format!("lxmf sign: {e:?}"))
+}
+
+/// Finalize a signed message without a recipient stamp (the router stamps on send when needed).
+pub(super) fn finalize_signed(signed: SignedLxMessage) -> Result<(LxMessage, String), String> {
     let message = signed
         .finalize(None)
         .map_err(|e| format!("lxmf finalize: {e:?}"))?;
     let hash_hex = hex::encode(message.message_id());
     Ok((message, hash_hex))
+}
+
+/// Sign a draft and finalize it without a recipient stamp (the router stamps on send when needed).
+/// Returns the immutable message and its lowercase hex message id.
+#[cfg_attr(not(test), allow(dead_code))] // retained for tests / simple callers
+pub(super) fn sign_finalize(
+    draft: LxMessageDraft,
+    signing_key: &Ed25519PrivateKey,
+) -> Result<(LxMessage, String), String> {
+    finalize_signed(sign_draft(draft, signing_key)?)
 }
 
 /// Raw payload bytes of an LXMF field: the binary payload for binary values, otherwise the exact

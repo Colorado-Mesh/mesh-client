@@ -986,7 +986,9 @@
       "transfersAria": "Gönderilen ekler"
     },
     "sendLater": "Sonra Gönder",
-    "sendMenuButton": "Gönderme seçenekleri"
+    "sendMenuButton": "Gönderme seçenekleri",
+    "saveAttachmentAria": "Eki kaydet {{name}}",
+    "revealAttachmentAria": "{{name}} ekini klasörde göster"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -3493,7 +3495,12 @@
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
       "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir.",
       "slowRfAnnounceFilter": "Yavaş RF arayüzlerinde limit anonsları (standart dışı)",
-      "slowRfAnnounceFilterHint": "Varsayılan olarak açıktır. İstenmeyen internet duyurularının, asla boşalamayacakları düşük bant genişliği RNode bağlantıları üzerinden yeniden yayınlanmasını durdurur. Yerel ve RF tarafından öğrenilen destinasyonlar hala duyuruluyor ve internet destinasyonları hala talep üzerine yol taleplerini yanıtlıyor. Hisse senedi Reticulum anons davranışı için kapatın."
+      "slowRfAnnounceFilterHint": "Varsayılan olarak açıktır. İstenmeyen internet duyurularının, asla boşalamayacakları düşük bant genişliği RNode bağlantıları üzerinden yeniden yayınlanmasını durdurur. Yerel ve RF tarafından öğrenilen destinasyonlar hala duyuruluyor ve internet destinasyonları hala talep üzerine yol taleplerini yanıtlıyor. Hisse senedi Reticulum anons davranışı için kapatın.",
+      "autoconnectUnverified": "Doğrulanmamış uygulamaları otomatik olarak bağlayın",
+      "autoconnectUnverifiedAria": "Python dışı veya rsRNS gibi doğrulanmamış yığınlar tarafından duyurulan Omurga arayüzlerine otomatik bağlanmaya izin ver",
+      "autoconnectUnverifiedHint": "Varsayılan olarak kapalıdır. Doğrulanmış bir Python Reticulum uygulamasının reklamını yapmayan rsRNS veya Python olmayan diğer Backbone duyurularıyla eşleme yaparken etkinleştirin.",
+      "interfaceStatsTitle": "Canlı arayüz sayaçları",
+      "interfaceStatsLine": "TX düşüşü {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtre {{filter}}"
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",
@@ -6857,7 +6864,10 @@
         "r": "Kaleye terfi ettir",
         "b": "Piskoposluğa terfi ettir",
         "n": "Şövalyeliğe terfi ettir"
-      }
+      },
+      "opponentCaptured": "Rakip yakalandı",
+      "youCaptured": "Yakalandın",
+      "materialAdvantage": "+{{value}}"
     },
     "errors": {
       "invalidPeerHash": "Geçerli bir 32 karakterlik eş hedef karması girin.",
@@ -6880,7 +6890,9 @@
       "failed": "Yeniden deneme gerekli"
     },
     "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…",
-    "idleExpiryNotice": "Oyunlar hareketsizlikten sonra sona erer ve o zaman yalnızca silinebilir. Yanıtsız meydan okumalar: 24 saat (tüm oyunlar). Aktif oyunlar: tic-tac-toe 24 saat, satranç ve dörtlü 7 gün."
+    "idleExpiryNotice": "Oyunlar hareketsizlikten sonra sona erer ve o zaman yalnızca silinebilir. Yanıtsız meydan okumalar: 24 saat (tüm oyunlar). Aktif oyunlar: tic-tac-toe 24 saat, satranç ve dörtlü 7 gün.",
+    "backToList": "Oyunlara geri dön",
+    "backToListAria": "Oyun oturumu listesine geri dön"
   },
   "reticulumSetup": {
     "eyebrow": "RETICULUM · BAŞLARKEN",

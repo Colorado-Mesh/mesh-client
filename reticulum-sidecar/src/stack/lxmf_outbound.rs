@@ -210,6 +210,8 @@ pub struct LxmfOutboundDriver {
     local_prop_node: Option<Arc<Mutex<PropagationNode>>>,
     /// Effective PN deposit size limit (from `propagation_limit_kb`).
     propagation_max_message_size: usize,
+    /// Optional durable store for signed outbound resume across restarts.
+    resumable_store: Option<std::sync::Arc<crate::stack::lxmf_resumable_store::LxmfResumableStore>>,
 }
 
 impl LxmfOutboundDriver {
@@ -248,9 +250,31 @@ impl LxmfOutboundDriver {
             local_prop_node: None,
             propagation_max_message_size:
                 crate::stack::pn_hosting_policy::DEFAULT_PROPAGATION_LIMIT_KB.saturating_mul(1024),
+            resumable_store: None,
         };
         driver.register_identity_key(self_lxmf_hash, identity.get_public_key());
         driver
+    }
+
+    pub fn set_resumable_store(
+        &mut self,
+        store: std::sync::Arc<crate::stack::lxmf_resumable_store::LxmfResumableStore>,
+    ) {
+        self.resumable_store = Some(store);
+    }
+
+    fn clear_resumable(&self, hash: &[u8; 32]) {
+        if let Some(store) = &self.resumable_store {
+            let hex_hash = hex::encode(hash);
+            if let Err(e) = store.delete(&hex_hash) {
+                tracing::debug!(
+                    target: "lxmf-outbound",
+                    message_hash = %hex_hash,
+                    error = %e,
+                    "failed to clear resumable outbound row"
+                );
+            }
+        }
     }
 
     /// Forward inbound LXMF that arrives on outbound-initiated reusable Direct links.
@@ -590,6 +614,12 @@ impl LxmfOutboundDriver {
         for result in results {
             self.handle_delivery_result(router, event_tx, result);
         }
+    }
+
+    /// Destinations whose deliveries completed since the last drain (LXMF 1.4).
+    /// Callers must forward each hash as `TransportQuery::RetainDestination`.
+    pub fn take_destination_retains(router: &mut LxmRouter) -> Vec<[u8; 16]> {
+        router.take_destination_retains()
     }
 
     fn execute_actions(
@@ -1290,6 +1320,7 @@ impl LxmfOutboundDriver {
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
+            self.clear_resumable(&hash);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,
@@ -1336,6 +1367,7 @@ impl LxmfOutboundDriver {
             self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
+            self.clear_resumable(&hash);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_detailed_with_attempts(
                 event_tx,
@@ -1590,6 +1622,7 @@ impl LxmfOutboundDriver {
                     };
                     self.clear_pn_cascade_state(hash);
                     self.direct_path_failovers.remove(&hash);
+                    self.clear_resumable(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
                     if let Some((pn_hash, transient_id)) = pending_deposit {
                         // cascade_step disambiguates which island the deposit landed on:
@@ -2677,6 +2710,10 @@ mod tests {
             bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            protocol_violations: None,
+            ifac_violations: None,
+            packet_filter_hits: None,
+            tx_dropped_bytes: None,
             host_rssi: None,
             extra_config: std::collections::HashMap::default(),
         }
