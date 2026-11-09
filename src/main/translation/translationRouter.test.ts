@@ -156,5 +156,48 @@ describe('translation router', () => {
       ok: false,
       reason: 'uncertain',
     });
+    worker.run.mockResolvedValueOnce({
+      id: 1,
+      text: '',
+      detection: { language: 'es', confidence: 0.4 },
+    });
+    expect(
+      await router.translate({ text: 'Buenas tardes a todos', target: 'en', mode: 'manual' }),
+    ).toEqual({ ok: false, reason: 'uncertain' });
+  });
+  it('rejects three-letter text and detects four-letter text for offline translate', async () => {
+    const { router, worker } = setup();
+    expect(await router.detect('Hey')).toBeNull();
+    expect(await router.translate({ text: 'Hey', target: 'en', mode: 'manual' })).toEqual({
+      ok: false,
+      reason: 'uncertain',
+    });
+    expect(worker.run).not.toHaveBeenCalled();
+
+    worker.run.mockResolvedValueOnce({
+      id: 1,
+      text: '',
+      detection: { language: 'es', confidence: 0.95 },
+    });
+    expect(await router.detect('Hola')).toEqual({ language: 'es', confidence: 0.95 });
+
+    worker.run
+      .mockResolvedValueOnce({
+        id: 2,
+        text: '',
+        detection: { language: 'es', confidence: 0.95 },
+      })
+      .mockResolvedValueOnce({
+        id: 3,
+        text: 'Hello',
+        detection: { language: 'es', confidence: 0.95 },
+      });
+    expect(await router.translate({ text: 'Hola', target: 'en', mode: 'manual' })).toEqual({
+      ok: true,
+      text: 'Hello',
+      detectedLang: 'es',
+      provider: 'offline',
+    });
+    expect(worker.run).toHaveBeenCalledTimes(3);
   });
 });

@@ -1,4 +1,4 @@
-import { TRANSLATION_MIN_LETTERS } from '@/shared/translation-types';
+import { TRANSLATION_AUTO_MIN_LETTERS } from '@/shared/translation-types';
 import {
   normalizeTranslationLanguage,
   TRANSLATION_LANGUAGES,
@@ -28,7 +28,7 @@ export function neededTranslationPacks(target: string, readLanguages: readonly s
 export function skipMessageTranslation(text: string): boolean {
   const trimmed = text.trim();
   return (
-    (trimmed.match(/\p{L}/gu)?.length ?? 0) < TRANSLATION_MIN_LETTERS ||
+    (trimmed.match(/\p{L}/gu)?.length ?? 0) < TRANSLATION_AUTO_MIN_LETTERS ||
     trimmed.split(/\s+/).every((word) => /^https?:\/\/\S+$/i.test(word)) ||
     /^(?:MECP|mecp:|geo:|\[voice:|\[file:|\[location:|r:[a-f0-9]+:|g:|\{"|\[\{)/i.test(trimmed) ||
     /(?:\bforecast\b|\d\s*°\s*[FC]\b|\bHi\s*-?\d+\s*\/\s*Lo\s*-?\d+)/i.test(trimmed) ||

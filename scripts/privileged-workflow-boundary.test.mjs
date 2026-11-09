@@ -156,10 +156,11 @@ describe('privileged workflow boundaries', () => {
     );
   });
 
-  it('labels PRs from the trusted base ref only', () => {
+  it('labels same-repo PRs from the trusted base ref only', () => {
     const workflow = loadWorkflow('labeler');
     const source = read('.github/workflows/labeler.yaml');
-    expect(workflow.on.pull_request_target.types).toEqual([
+    expect(workflow.on.pull_request_target).toBeUndefined();
+    expect(workflow.on.pull_request.types).toEqual([
       'opened',
       'edited',
       'reopened',
@@ -170,6 +171,9 @@ describe('privileged workflow boundaries', () => {
       contents: 'read',
       'pull-requests': 'write',
     });
+    expect(workflow.jobs.label.if).toBe(
+      'github.event.pull_request.head.repo.full_name == github.repository',
+    );
     const checkout = workflow.jobs.label.steps.find((step) =>
       step.uses?.startsWith('actions/checkout@'),
     );
@@ -177,7 +181,6 @@ describe('privileged workflow boundaries', () => {
       ref: '${{ github.event.pull_request.base.sha }}',
       'persist-credentials': false,
     });
-    expect(source).not.toContain('github.event.pull_request.head');
     expect(source).not.toContain('pull_request.head.sha');
   });
 

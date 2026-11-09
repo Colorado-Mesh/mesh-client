@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 
 import type { TranslationDetection } from '../../shared/translation-types';
-import { normalizeTranslationLanguage } from '../../shared/translationLanguages';
+import { LID_TOP_K, normalizeLidText, resolveLidDetection } from './resolveLidDetection';
 import loadBergamot from './vendor/bergamot';
 import loadFastText from './vendor/fasttext';
 import type {
@@ -176,13 +176,13 @@ export class BergamotWorkerRuntime {
         module.FS.unlink('lid.ftz');
       }
     }
-    const guesses = this.detector.predict(job.text.replace(/[\r\n]/g, ' '), 1, 0);
+    const guesses = this.detector.predict(normalizeLidText(job.text), LID_TOP_K, 0);
     try {
-      const guess = guesses.get(0);
-      return {
-        language: normalizeTranslationLanguage(guess[1].replace(/^__label__/, '')),
-        confidence: guess[0],
-      };
+      const ranked: [number, string][] = [];
+      for (let index = 0; index < guesses.size(); index += 1) ranked.push(guesses.get(index));
+      const detection = resolveLidDetection(ranked);
+      if (!detection) throw new Error('Language detector returned no supported label');
+      return detection;
     } finally {
       guesses.delete();
     }

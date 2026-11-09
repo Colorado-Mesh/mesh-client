@@ -1,7 +1,10 @@
 import type { TranslationLanguage } from './translationLanguages';
 
 export const TRANSLATION_MAX_TEXT_LENGTH = 8_192;
-export const TRANSLATION_MIN_LETTERS = 12;
+/** Minimum letter count for manual detect / translate (covers short greetings like "Hola"). */
+export const TRANSLATION_MIN_LETTERS = 4;
+/** Stricter floor for background auto-translate so short noise is skipped. */
+export const TRANSLATION_AUTO_MIN_LETTERS = 12;
 export const TRANSLATION_DETECTION_CONFIDENCE = 0.7;
 
 export interface TranslationDetection {

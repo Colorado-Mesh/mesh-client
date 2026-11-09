@@ -29,6 +29,13 @@ describe('translation message rules', () => {
     expect(readsTranslationLanguage('pt', ['pt-BR'])).toBe(true);
     expect(readsTranslationLanguage('fr', ['en'])).toBe(false);
   });
+  it('keeps the stricter auto-translate letter floor for short greetings', () => {
+    // Manual detect allows 4+ letters; auto-translate still requires 12.
+    expect(skipMessageTranslation('Hola')).toBe(true);
+    expect(skipMessageTranslation('Gracias')).toBe(true);
+    expect(skipMessageTranslation('Buenos días')).toBe(true);
+    expect(skipMessageTranslation('Buenas tardes')).toBe(false);
+  });
   it('keys the in-memory cache by content, target and provider', async () => {
     const key = await translationCacheKey('private message', 'en', 'offline');
     expect(key).toBe(await translationCacheKey('private message', 'en', 'offline'));

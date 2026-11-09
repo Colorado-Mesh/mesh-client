@@ -76,20 +76,25 @@ const native = vi.hoisted(() => {
     VectorResponseOptions: Vector,
   };
   const unlink = vi.fn();
+  const predictCalls: unknown[][] = [];
   class Detector extends Handle {
     constructor() {
       super('detector');
     }
     loadModel = vi.fn();
-    predict = vi.fn(() => {
+    predict = vi.fn((text: string, count: number, threshold: number) => {
+      predictCalls.push([text, count, threshold]);
       const guesses = new Vector<[number, string]>();
-      guesses.push_back([0.99, '__label__fr']);
+      guesses.push_back([0.55, '__label__eo']);
+      guesses.push_back([0.4, '__label__fr']);
+      guesses.push_back([0.05, '__label__es']);
       return guesses;
     });
   }
   return {
     handles,
     modelArguments,
+    predictCalls,
     engine,
     fasttext: { FS: { writeFile: vi.fn(), unlink }, FastText: Detector },
   };
@@ -107,6 +112,7 @@ describe('native translation resource lifetime', () => {
   beforeEach(async () => {
     native.handles.length = 0;
     native.modelArguments.length = 0;
+    native.predictCalls.length = 0;
     vi.clearAllMocks();
     directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mesh-worker-runtime-'));
     await fs.writeFile(path.join(directory, 'data'), 'fixture');
@@ -127,9 +133,10 @@ describe('native translation resource lifetime', () => {
       vocabs: [file],
     });
     const runtime = new BergamotWorkerRuntime();
-    expect(await runtime.run({ id: 1, text: 'Bonjour', engine })).toMatchObject({
-      detection: { language: 'fr', confidence: 0.99 },
+    expect(await runtime.run({ id: 1, text: 'Bonjour\nTout', engine })).toMatchObject({
+      detection: { language: 'fr', confidence: 0.85 },
     });
+    expect(native.predictCalls).toEqual([['bonjour tout', 5, 0]]);
     expect(native.fasttext.FS.unlink).toHaveBeenCalledWith('lid.ftz');
     await runtime.run({ id: 2, text: 'Bonjour', engine, models: [model('fr-en'), model('en-de')] });
     await runtime.run({ id: 3, text: 'Encore', engine, models: [model('fr-en'), model('en-de')] });
