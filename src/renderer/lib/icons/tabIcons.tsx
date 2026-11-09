@@ -56,6 +56,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Globe {...p} />;
     case 'Nodes':
     case 'Contacts':
+    case 'TeamContacts':
+    case 'TeamRoster':
       return <Users {...p} />;
     case 'Radio':
       return <Settings {...p} />;

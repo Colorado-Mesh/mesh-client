@@ -133,6 +133,73 @@ export function createElectronAPIMock(): ElectronAPI {
       clearScheduledBroadcasts: vi.fn().mockResolvedValue(undefined),
       claimScheduledBroadcastDue: vi.fn().mockResolvedValue({ claimed: true }),
       setScheduledBroadcastResult: vi.fn().mockResolvedValue(undefined),
+      listTeamMembers: vi.fn().mockResolvedValue([]),
+      allocateTeamUnitId: vi.fn().mockResolvedValue(1),
+      upsertTeamMember: vi
+        .fn()
+        .mockImplementation(
+          (input: {
+            unitId: number;
+            callsign: string;
+            role?: string | null;
+            color?: string | null;
+            isSelf?: boolean;
+          }) =>
+            Promise.resolve({
+              unitId: input.unitId,
+              callsign: input.callsign,
+              role: input.role ?? null,
+              color: input.color ?? null,
+              isSelf: input.isSelf ?? false,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              links: [],
+            }),
+        ),
+      deleteTeamMember: vi.fn().mockResolvedValue(undefined),
+      setTeamMemberLink: vi
+        .fn()
+        .mockImplementation(
+          (input: {
+            unitId: number;
+            protocol: string;
+            durableKey: string;
+            nodeId?: number | null;
+            longName?: string | null;
+            identityId?: string | null;
+          }) =>
+            Promise.resolve({
+              unitId: input.unitId,
+              callsign: 'mock',
+              role: null,
+              color: null,
+              isSelf: false,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              links: [
+                {
+                  protocol: input.protocol,
+                  durableKey: input.durableKey,
+                  nodeId: input.nodeId ?? null,
+                  longName: input.longName ?? null,
+                  identityId: input.identityId ?? null,
+                },
+              ],
+            }),
+        ),
+      removeTeamMemberLink: vi.fn().mockImplementation((unitId: number) =>
+        Promise.resolve({
+          unitId,
+          callsign: 'mock',
+          role: null,
+          color: null,
+          isSelf: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          links: [],
+        }),
+      ),
+      clearTeamMembers: vi.fn().mockResolvedValue(undefined),
       saveMessage: vi.fn().mockResolvedValue(undefined),
       getMessages: vi.fn().mockResolvedValue([]),
       getMeshtasticIdentityHydration: vi.fn().mockResolvedValue({

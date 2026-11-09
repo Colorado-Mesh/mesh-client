@@ -114,7 +114,13 @@ describe('esbuild-main-build', () => {
       const identityHydrationBytes = fs.readFileSync(path.join(tempDir, 'identity-hydration.js'));
       expect(identityHydrationBytes.length).toBeGreaterThan(500);
       expect(identityHydrationBytes.toString('utf8')).toContain('readMeshtasticIdentityHydration');
+      const teamRosterBytes = fs.readFileSync(path.join(tempDir, 'team-roster-handlers.js'));
+      expect(teamRosterBytes.length).toBeGreaterThan(500);
+      expect(teamRosterBytes.toString('utf8')).toContain('registerTeamRosterIpcHandlers');
       const indexSource = fs.readFileSync(outfile, 'utf8');
+      // Team roster DDL lives in the sibling chunk, not measured index.js.
+      expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');
+      expect(teamRosterBytes.toString('utf8')).toContain('CREATE TABLE IF NOT EXISTS team_members');
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');
       expect(indexSource).not.toContain('discoverXcodeDeveloperDir');

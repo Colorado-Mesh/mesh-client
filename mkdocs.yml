@@ -156,6 +156,7 @@ nav:
           - BLE and serial: development/ble-serial.md
           - Chat: development/chat.md
           - Scheduled Broadcasts: development/scheduled-broadcasts.md
+          - Team Contacts / Team Roster: development/team-roster.md
           - AI summaries: development/ai-summarization.md
           - Connection panel: development/connection-panel.md
           - Meshtastic: development/meshtastic.md

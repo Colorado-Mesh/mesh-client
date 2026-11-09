@@ -118,6 +118,7 @@ import type {
   TAKSettings,
   TakStyleSettings,
 } from './tak-types';
+import type { TeamMember, TeamMemberInput, TeamMemberLinkInput } from './teamRosterTypes';
 import type { TranslationAPI } from './translation-types';
 import type {
   VoiceAudioRequest,
@@ -449,6 +450,13 @@ export interface ElectronAPI {
       lastAttemptAt: number,
       lastResult: ScheduledBroadcastLastResult,
     ) => Promise<void>;
+    listTeamMembers: () => Promise<TeamMember[]>;
+    allocateTeamUnitId: () => Promise<number>;
+    upsertTeamMember: (input: TeamMemberInput) => Promise<TeamMember>;
+    deleteTeamMember: (unitId: number) => Promise<void>;
+    setTeamMemberLink: (input: TeamMemberLinkInput) => Promise<TeamMember>;
+    removeTeamMemberLink: (unitId: number, protocol: MeshProtocol) => Promise<TeamMember>;
+    clearTeamMembers: () => Promise<void>;
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

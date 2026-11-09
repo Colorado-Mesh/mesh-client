@@ -13,6 +13,7 @@ import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
+import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
@@ -94,6 +95,8 @@ import MeshcoreTelemetryPushSection from './MeshcoreTelemetryPushSection';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
+import { SuggestToTeamContactModalLazy } from './teamRoster/SuggestToTeamContactModalLazy';
+import { useToast } from './Toast';
 import { Button, buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, NOTICE_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
@@ -291,8 +294,10 @@ export default function NodeDetailModal({
   meshcoreTelemetryPush,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
+  const [suggestTeamCandidate, setSuggestTeamCandidate] = useState<TeamLinkCandidate | null>(null);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
   const [repeaterSecretsEpoch, setRepeaterSecretsEpoch] = useState(0);
@@ -1059,8 +1064,53 @@ export default function NodeDetailModal({
             : t('nodeDetailModal.removeFromRadio')}
         </button>
       )}
+      {(protocol === 'meshtastic' || protocol === 'meshcore') && (
+        <button
+          type="button"
+          onClick={() => {
+            const loraProtocol = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
+            const pubkeyHex =
+              contactPubkey ??
+              node.public_key_hex ??
+              (storeContactPublicKey ? meshcorePublicKeyToHex(storeContactPublicKey) : null);
+            void import('@/renderer/lib/teamRoster/durableKey')
+              .then(({ teamLinkFromLoraNode }) => {
+                const candidate = teamLinkFromLoraNode({
+                  protocol: loraProtocol,
+                  nodeId: node.node_id,
+                  longName: node.long_name,
+                  shortName: node.short_name,
+                  publicKeyHex: pubkeyHex,
+                  identityId: getIdentityIdForProtocol(loraProtocol),
+                });
+                if (!candidate) {
+                  addToast(t('teamRoster.linkFailed'), 'error');
+                  return;
+                }
+                setSuggestTeamCandidate(candidate);
+              })
+              .catch((e: unknown) => {
+                console.warn('[NodeDetailModal] team link helper failed ' + errLikeToLogString(e));
+                addToast(t('teamRoster.linkFailed'), 'error');
+              });
+          }}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+          aria-label={t('teamRoster.suggestButton')}
+        >
+          {t('teamRoster.suggestButton')}
+        </button>
+      )}
     </div>
   );
+  const suggestTeamContactModal =
+    suggestTeamCandidate != null ? (
+      <SuggestToTeamContactModalLazy
+        candidate={suggestTeamCandidate}
+        onClose={() => {
+          setSuggestTeamCandidate(null);
+        }}
+      />
+    ) : null;
   const detailContent = (
     <>
       {/* Header */}
@@ -2508,6 +2558,7 @@ export default function NodeDetailModal({
           {detailContent}
         </aside>
         {RemoteAuthModal}
+        {suggestTeamContactModal}
       </>
     );
   }
@@ -2534,6 +2585,7 @@ export default function NodeDetailModal({
         </div>
       </div>
       {RemoteAuthModal}
+      {suggestTeamContactModal}
     </>
   );
 }

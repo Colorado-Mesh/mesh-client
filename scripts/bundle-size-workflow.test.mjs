@@ -178,6 +178,19 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          fs.mkdirSync(path.join(fixture, 'src/main/ipc'), { recursive: true });
+          const teamRosterPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/team-roster-handlers.ts'),
+            [
+              'export function registerTeamRosterIpcHandlers() {',
+              // Keep the measured-index exclusion assertion happy (DDL lives here, not index.js).
+              `  return 'CREATE TABLE IF NOT EXISTS team_members ${teamRosterPad}';`,
+              '}',
+              'export function ensureTeamRosterTables() {}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

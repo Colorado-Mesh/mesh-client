@@ -34,6 +34,7 @@ import {
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
@@ -49,6 +50,7 @@ import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFi
 import { ConfirmModal } from './ConfirmModal';
 import QrCodeImage from './QrCodeImage';
 import { type ReticulumProfileIconName, ReticulumProfileIconSlot } from './ReticulumProfileIcon';
+import { SuggestToTeamContactModalLazy } from './teamRoster/SuggestToTeamContactModalLazy';
 import { useToast } from './Toast';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
@@ -68,6 +70,7 @@ export default function ReticulumPeerDetailModal({
 }: ReticulumPeerDetailModalProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
+  const [suggestTeamCandidate, setSuggestTeamCandidate] = useState<TeamLinkCandidate | null>(null);
   const peer = useReticulumPeer(peerHash);
   const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
@@ -837,6 +840,38 @@ export default function ReticulumPeerDetailModal({
             {t('peerDetailModal.removeContact')}
           </button>
         )}
+        <button
+          type="button"
+          disabled={busy}
+          className="border-ink-500 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
+          aria-label={t('teamRoster.suggestButton')}
+          onClick={() => {
+            const hash = canonicalizeReticulumDestinationHash(peerHash) ?? peerHash;
+            const displayName = peer ? resolveReticulumPeerLabel(peer) : null;
+            void import('@/renderer/lib/teamRoster/durableKey')
+              .then(({ teamLinkFromReticulumPeer }) => {
+                const candidate = teamLinkFromReticulumPeer({
+                  destinationHash: hash,
+                  displayName,
+                  nodeId: reticulumHashToNodeId(hash),
+                  identityId,
+                });
+                if (!candidate) {
+                  addToast(t('teamRoster.linkFailed'), 'error');
+                  return;
+                }
+                setSuggestTeamCandidate(candidate);
+              })
+              .catch((e: unknown) => {
+                console.warn(
+                  '[ReticulumPeerDetailModal] team link helper failed ' + errLikeToLogString(e),
+                );
+                addToast(t('teamRoster.linkFailed'), 'error');
+              });
+          }}
+        >
+          {t('teamRoster.suggestButton')}
+        </button>
         {identityId ? (
           isBlocked ? (
             <button
@@ -885,6 +920,16 @@ export default function ReticulumPeerDetailModal({
     />
   ) : null;
 
+  const suggestTeamContactModal =
+    suggestTeamCandidate != null ? (
+      <SuggestToTeamContactModalLazy
+        candidate={suggestTeamCandidate}
+        onClose={() => {
+          setSuggestTeamCandidate(null);
+        }}
+      />
+    ) : null;
+
   if (variant === 'pane') {
     return (
       <>
@@ -895,6 +940,7 @@ export default function ReticulumPeerDetailModal({
           {detailBody}
         </aside>
         {removeConfirm}
+        {suggestTeamContactModal}
       </>
     );
   }
@@ -919,6 +965,7 @@ export default function ReticulumPeerDetailModal({
         {detailBody}
       </div>
       {removeConfirm}
+      {suggestTeamContactModal}
     </div>
   );
 }

@@ -109,6 +109,7 @@ import type {
   TAKSettings,
   TakStyleSettings,
 } from '../shared/tak-types';
+import type { TeamMemberInput, TeamMemberLinkInput } from '../shared/teamRosterTypes';
 import type {
   LibreTranslationConfig,
   TranslationProgress,
@@ -300,6 +301,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       lastAttemptAt: number,
       lastResult: ScheduledBroadcastLastResult,
     ) => ipcRenderer.invoke('db:setScheduledBroadcastResult', slot, lastAttemptAt, lastResult),
+    listTeamMembers: () => ipcRenderer.invoke('db:listTeamMembers'),
+    allocateTeamUnitId: () => ipcRenderer.invoke('db:allocateTeamUnitId'),
+    upsertTeamMember: (input: TeamMemberInput) => ipcRenderer.invoke('db:upsertTeamMember', input),
+    deleteTeamMember: (unitId: number) => ipcRenderer.invoke('db:deleteTeamMember', unitId),
+    setTeamMemberLink: (input: TeamMemberLinkInput) =>
+      ipcRenderer.invoke('db:setTeamMemberLink', input),
+    removeTeamMemberLink: (unitId: number, protocol: MeshProtocol) =>
+      ipcRenderer.invoke('db:removeTeamMemberLink', unitId, protocol),
+    clearTeamMembers: () => ipcRenderer.invoke('db:clearTeamMembers'),
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

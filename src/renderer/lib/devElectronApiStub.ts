@@ -3,6 +3,7 @@ import { parseLegacyIncidentStorage } from '@/shared/incidentStorage';
 import type { IncidentSnapshot } from '@/shared/incidentTypes';
 import type { ScheduledBroadcastInput } from '@/shared/scheduledBroadcastTypes';
 import type { TakStyleSettings } from '@/shared/tak-types';
+import type { TeamMemberInput, TeamMemberLinkInput } from '@/shared/teamRosterTypes';
 
 /* eslint-disable @typescript-eslint/require-await -- no-op async IPC stubs for browser dev */
 const noop = (): void => {};
@@ -79,6 +80,48 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       clearScheduledBroadcasts: noopAsync,
       claimScheduledBroadcastDue: async () => ({ claimed: true }),
       setScheduledBroadcastResult: noopAsync,
+      listTeamMembers: async () => [],
+      allocateTeamUnitId: async () => 1,
+      upsertTeamMember: async (input: TeamMemberInput) => ({
+        unitId: input.unitId,
+        callsign: input.callsign,
+        role: input.role ?? null,
+        color: input.color ?? null,
+        isSelf: input.isSelf ?? false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        links: [],
+      }),
+      deleteTeamMember: noopAsync,
+      setTeamMemberLink: async (input: TeamMemberLinkInput) => ({
+        unitId: input.unitId,
+        callsign: 'stub',
+        role: null,
+        color: null,
+        isSelf: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        links: [
+          {
+            protocol: input.protocol,
+            durableKey: input.durableKey,
+            nodeId: input.nodeId ?? null,
+            longName: input.longName ?? null,
+            identityId: input.identityId ?? null,
+          },
+        ],
+      }),
+      removeTeamMemberLink: async (unitId: number) => ({
+        unitId,
+        callsign: 'stub',
+        role: null,
+        color: null,
+        isSelf: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        links: [],
+      }),
+      clearTeamMembers: noopAsync,
       saveMessage: noopAsync,
       getMessages: async () => [],
       getMeshtasticIdentityHydration: async () => ({

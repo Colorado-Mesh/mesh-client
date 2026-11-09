@@ -262,6 +262,8 @@ import {
   ScheduledBroadcastsPanel,
   SecurityPanel,
   TakServerPanel,
+  TeamContactsPanel,
+  TeamRosterPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
 import { announce } from './lib/a11yAnnouncer';
@@ -297,6 +299,8 @@ import {
   SNIFFER_PANEL_INDEX,
   STATS_PANEL_INDEX,
   TAK_PANEL_INDEX,
+  TEAM_CONTACTS_PANEL_INDEX,
+  TEAM_ROSTER_PANEL_INDEX,
   TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
@@ -6129,6 +6133,36 @@ function AppContent() {
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <ScheduledBroadcastsPanel />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${TEAM_CONTACTS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TEAM_CONTACTS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== TEAM_CONTACTS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === TEAM_CONTACTS_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <TeamContactsPanel />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${TEAM_ROSTER_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TEAM_ROSTER_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== TEAM_ROSTER_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === TEAM_ROSTER_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <TeamRosterPanel />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

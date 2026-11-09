@@ -52,6 +52,8 @@ async function prepareRendererStorage(): Promise<void> {
     hydrateDurableRendererSettings(),
     hydrateIncidentStore(),
     hydrateScheduledBroadcastsStore(),
+    // Own chunk: keep team roster store out of the entry graph until hydrate runs.
+    import('./stores/teamRosterStore').then((m) => m.hydrateTeamRosterStore()),
   ]);
 }
 
