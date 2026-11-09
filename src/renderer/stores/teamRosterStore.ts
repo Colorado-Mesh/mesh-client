@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 
 import type { MeshProtocol } from '@/shared/meshProtocol';
-import type { TeamMember, TeamMemberInput, TeamMemberLinkInput } from '@/shared/teamRosterTypes';
+import type {
+  TeamMember,
+  TeamMemberInput,
+  TeamMemberLinkInput,
+  TeamMemberLinkRosterInput,
+} from '@/shared/teamRosterTypes';
 
 interface TeamRosterState {
   hydrated: boolean;
@@ -10,6 +15,7 @@ interface TeamRosterState {
   upsertMember: (input: TeamMemberInput) => Promise<TeamMember>;
   deleteMember: (unitId: number) => Promise<void>;
   setLink: (input: TeamMemberLinkInput) => Promise<TeamMember>;
+  setLinkRoster: (input: TeamMemberLinkRosterInput) => Promise<TeamMember>;
   removeLink: (unitId: number, protocol: MeshProtocol, durableKey: string) => Promise<TeamMember>;
   allocateUnitId: () => Promise<number>;
   clearAll: () => Promise<void>;
@@ -91,6 +97,17 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       return member;
     } catch (error) {
       console.warn('[teamRoster] setLink failed:', error);
+      throw error;
+    }
+  },
+
+  setLinkRoster: async (input) => {
+    try {
+      const member = await window.electronAPI.db.setTeamMemberLinkRoster(input);
+      set((s) => ({ members: replaceMember(s.members, member) }));
+      return member;
+    } catch (error) {
+      console.warn('[teamRoster] setLinkRoster failed:', error);
       throw error;
     }
   },

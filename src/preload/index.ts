@@ -109,7 +109,11 @@ import type {
   TAKSettings,
   TakStyleSettings,
 } from '../shared/tak-types';
-import type { TeamMemberInput, TeamMemberLinkInput } from '../shared/teamRosterTypes';
+import type {
+  TeamMemberInput,
+  TeamMemberLinkInput,
+  TeamMemberLinkRosterInput,
+} from '../shared/teamRosterTypes';
 import type {
   LibreTranslationConfig,
   TranslationProgress,
@@ -307,6 +311,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteTeamMember: (unitId: number) => ipcRenderer.invoke('db:deleteTeamMember', unitId),
     setTeamMemberLink: (input: TeamMemberLinkInput) =>
       ipcRenderer.invoke('db:setTeamMemberLink', input),
+    setTeamMemberLinkRoster: (input: TeamMemberLinkRosterInput) =>
+      ipcRenderer.invoke('db:setTeamMemberLinkRoster', input),
     removeTeamMemberLink: (unitId: number, protocol: MeshProtocol, durableKey: string) =>
       ipcRenderer.invoke('db:removeTeamMemberLink', unitId, protocol, durableKey),
     clearTeamMembers: () => ipcRenderer.invoke('db:clearTeamMembers'),

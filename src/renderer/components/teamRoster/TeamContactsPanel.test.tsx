@@ -34,7 +34,9 @@ beforeEach(() => {
         onRoster: false,
         createdAt: 1,
         updatedAt: 1,
-        links: [{ protocol: 'meshtastic', durableKey: '10', nodeId: 10, longName: 'A' }],
+        links: [
+          { protocol: 'meshtastic', durableKey: '10', nodeId: 10, longName: 'A', onRoster: false },
+        ],
       },
     ],
   });

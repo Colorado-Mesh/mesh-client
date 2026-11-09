@@ -121,15 +121,39 @@ function betterStatus(a: NodeStatus, b: NodeStatus): NodeStatus {
   return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
 }
 
+export interface ResolveMemberPresenceOpts {
+  /** When true, only links with `onRoster` contribute (Team Roster views / fan-out). */
+  rosterLinksOnly?: boolean;
+}
+
 /** Aggregate presence for a contact card / roster member. */
 export function resolveMemberPresence(
   member: TeamMember,
   nodesByProtocol: NodesByProtocol,
   reticulumByHash: ReticulumHeardByHash,
-  nowMs = Date.now(),
+  nowMs?: number,
+  opts?: ResolveMemberPresenceOpts,
+): MemberPresenceSnapshot;
+export function resolveMemberPresence(
+  member: TeamMember,
+  nodesByProtocol: NodesByProtocol,
+  reticulumByHash: ReticulumHeardByHash,
+  opts: ResolveMemberPresenceOpts,
+): MemberPresenceSnapshot;
+export function resolveMemberPresence(
+  member: TeamMember,
+  nodesByProtocol: NodesByProtocol,
+  reticulumByHash: ReticulumHeardByHash,
+  nowMsOrOpts?: number | ResolveMemberPresenceOpts,
+  opts?: ResolveMemberPresenceOpts,
 ): MemberPresenceSnapshot {
-  const links = member.links.map((link) =>
-    resolveLinkPresence(link, nodesByProtocol, reticulumByHash, nowMs),
+  const resolvedOpts = typeof nowMsOrOpts === 'object' ? nowMsOrOpts : opts;
+  const at = typeof nowMsOrOpts === 'number' ? nowMsOrOpts : Date.now();
+  const source = resolvedOpts?.rosterLinksOnly
+    ? member.links.filter((l) => l.onRoster)
+    : member.links;
+  const links = source.map((link) =>
+    resolveLinkPresence(link, nodesByProtocol, reticulumByHash, at),
   );
   let aggregateStatus: NodeStatus = 'offline';
   let lastActive: LinkPresenceSnapshot | null = null;

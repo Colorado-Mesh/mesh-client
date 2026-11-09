@@ -24,12 +24,11 @@ beforeEach(() => {
         unitId: 1,
         callsign: 'Alpha',
         role: 'IC',
-
         isSelf: false,
         onRoster: false,
         createdAt: 1,
         updatedAt: 1,
-        links: [{ protocol: 'meshtastic', durableKey: '1', nodeId: 1 }],
+        links: [{ protocol: 'meshtastic', durableKey: '1', nodeId: 1, onRoster: false }],
       },
     ],
   });
@@ -42,14 +41,13 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 1,
       callsign: 'Alpha',
       role: 'IC',
-
       isSelf: false,
       onRoster: false,
       createdAt: 1,
       updatedAt: 2,
       links: [
-        { protocol: 'meshtastic', durableKey: '1', nodeId: 1 },
-        { protocol: 'meshtastic', durableKey: '42', nodeId: 42 },
+        { protocol: 'meshtastic', durableKey: '1', nodeId: 1, onRoster: false },
+        { protocol: 'meshtastic', durableKey: '42', nodeId: 42, onRoster: false },
       ],
     });
     useTeamRosterStore.setState({ setLink });
@@ -82,7 +80,6 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-
       isSelf: true,
       onRoster: false,
       createdAt: 1,
@@ -93,12 +90,11 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-
       isSelf: true,
       onRoster: false,
       createdAt: 1,
       updatedAt: 2,
-      links: [{ protocol: 'reticulum', durableKey: 'ab'.repeat(16) }],
+      links: [{ protocol: 'reticulum', durableKey: 'ab'.repeat(16), onRoster: false }],
     });
     useTeamRosterStore.setState({ allocateUnitId, upsertMember, setLink, members: [] });
     const onClose = vi.fn();
@@ -128,7 +124,6 @@ describe('SuggestToTeamContactModal', () => {
         unitId: 9,
         callsign: 'New',
         isSelf: true,
-        onRoster: false,
       }),
     );
     expect(setLink).toHaveBeenCalled();
@@ -142,12 +137,11 @@ describe('SuggestToTeamContactModal', () => {
           unitId: 3,
           callsign: 'Charlie',
           role: null,
-
           isSelf: false,
           onRoster: false,
           createdAt: 1,
           updatedAt: 1,
-          links: [{ protocol: 'meshtastic', durableKey: '99', nodeId: 99 }],
+          links: [{ protocol: 'meshtastic', durableKey: '99', nodeId: 99, onRoster: false }],
         },
       ],
     });

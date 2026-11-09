@@ -28,7 +28,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 1,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10 },
+            link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
             peerNodeId: 10,
             lastHeardMs: 100,
             status: 'online',
@@ -36,7 +36,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10 },
+              link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
               peerNodeId: 10,
               lastHeardMs: 100,
               status: 'online',
@@ -51,7 +51,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 2,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshcore', durableKey: '20', nodeId: 20 },
+            link: { protocol: 'meshcore', durableKey: '20', nodeId: 20, onRoster: false },
             peerNodeId: 20,
             lastHeardMs: 200,
             status: 'online',
@@ -59,7 +59,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshcore', durableKey: '20', nodeId: 20 },
+              link: { protocol: 'meshcore', durableKey: '20', nodeId: 20, onRoster: false },
               peerNodeId: 20,
               lastHeardMs: 200,
               status: 'online',
@@ -115,7 +115,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 2,
           aggregateStatus: 'stale',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: 'x' },
+            link: { protocol: 'meshtastic', durableKey: 'x', onRoster: false },
             peerNodeId: null,
             lastHeardMs: 1,
             status: 'stale',
@@ -123,7 +123,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: 'x' },
+              link: { protocol: 'meshtastic', durableKey: 'x', onRoster: false },
               peerNodeId: null,
               lastHeardMs: 1,
               status: 'stale',
@@ -138,7 +138,7 @@ describe('fanOutTeamMessage', () => {
           unitId: 3,
           aggregateStatus: 'online',
           lastActive: {
-            link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30 },
+            link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: false },
             peerNodeId: 30,
             lastHeardMs: 50,
             status: 'online',
@@ -146,7 +146,7 @@ describe('fanOutTeamMessage', () => {
           },
           links: [
             {
-              link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30 },
+              link: { protocol: 'meshtastic', durableKey: '30', nodeId: 30, onRoster: false },
               peerNodeId: 30,
               lastHeardMs: 50,
               status: 'online',

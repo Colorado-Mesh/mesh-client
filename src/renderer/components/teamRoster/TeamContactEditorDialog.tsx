@@ -7,21 +7,16 @@ import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import { TEAM_UNIT_ID_MAX, TEAM_UNIT_ID_MIN } from '@/shared/teamRosterTypes';
+import { rosterLinksOf, TEAM_UNIT_ID_MAX, TEAM_UNIT_ID_MIN } from '@/shared/teamRosterTypes';
 
 interface TeamContactEditorDialogProps {
   /** Null = create mode. */
   member: TeamMember | null;
-  onClose: () => void;
-  /** Create-mode default for the Team Roster checkbox. */
-  defaultOnRoster?: boolean;
+  /** Optional created unit id when create-mode save succeeds. */
+  onClose: (createdUnitId?: number | null) => void;
 }
 
-export function TeamContactEditorDialog({
-  member,
-  onClose,
-  defaultOnRoster = false,
-}: TeamContactEditorDialogProps) {
+export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDialogProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
@@ -32,9 +27,9 @@ export function TeamContactEditorDialog({
   const [callsign, setCallsign] = useState(member?.callsign ?? '');
   const [role, setRole] = useState(member?.role ?? '');
   const [isSelf, setIsSelf] = useState(member?.isSelf ?? false);
-  const [onRoster, setOnRoster] = useState(member?.onRoster ?? defaultOnRoster);
   const [busy, setBusy] = useState(false);
   const isCreate = member == null;
+  const rosterDeviceCount = member ? rosterLinksOf(member).length : 0;
 
   useEffect(() => {
     if (!isCreate) return;
@@ -85,9 +80,8 @@ export function TeamContactEditorDialog({
         callsign: trimmed,
         role: role.trim() || null,
         isSelf,
-        onRoster,
       });
-      onClose();
+      onClose(isCreate ? parsedUnit : null);
     } catch (err: unknown) {
       console.warn('[TeamContactEditor] save failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
@@ -161,25 +155,22 @@ export function TeamContactEditorDialog({
             />
             <span className="text-ink-200 text-label">{t('teamRoster.isSelf')}</span>
           </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={onRoster}
-              disabled={busy}
-              onChange={(e) => {
-                setOnRoster(e.target.checked);
-              }}
-              aria-label={t('teamRoster.onRosterAria')}
-            />
-            <span className="text-ink-200 text-label">{t('teamRoster.onRoster')}</span>
-          </label>
+          {!isCreate ? (
+            <p className="text-ink-400 text-label">
+              {t('teamRoster.rosterDeviceStatus', { count: rosterDeviceCount })}
+            </p>
+          ) : (
+            <p className="text-ink-400 text-label">{t('teamRoster.rosterSelectAfterCreate')}</p>
+          )}
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             className={buttonClassName('secondary', 'md')}
             disabled={busy}
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+            }}
           >
             {t('teamRoster.cancel')}
           </button>

@@ -12,12 +12,14 @@ import { resolveMemberPresence } from '@/renderer/lib/teamRoster/contactPresence
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
-import type { TeamMember } from '@/shared/teamRosterTypes';
+import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
+import { rosterLinksOf } from '@/shared/teamRosterTypes';
 
 import { TeamContactDetailDialog } from './TeamContactDetailDialog';
 import { TeamContactEditorDialog } from './TeamContactEditorDialog';
 import { TeamPresenceDot } from './TeamPresenceDot';
 import { TEAM_PROTOCOL_LABEL_KEYS, TeamProtocolBadges } from './TeamProtocolBadges';
+import { TeamRosterDevicePickerDialog } from './TeamRosterDevicePickerDialog';
 
 const EMPTY_MESSAGES: MessagesByProtocol = {
   meshtastic: [],
@@ -49,9 +51,11 @@ export default function TeamContactsPanel({
   const deleteMember = useTeamRosterStore((s) => s.deleteMember);
   const removeLink = useTeamRosterStore((s) => s.removeLink);
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
+  const setLinkRoster = useTeamRosterStore((s) => s.setLinkRoster);
   const { nodesByProtocol, reticulumByHash } = useTeamRosterLiveData();
   const [editing, setEditing] = useState<TeamMember | null | undefined>(undefined);
   const [detailUnitId, setDetailUnitId] = useState<number | null>(null);
+  const [rosterPickerMember, setRosterPickerMember] = useState<TeamMember | null>(null);
 
   const presenceByUnit = useMemo(() => {
     const map = new Map<number, ReturnType<typeof resolveMemberPresence>>();
@@ -83,17 +87,37 @@ export default function TeamContactsPanel({
     }
   };
 
-  const handleToggleRoster = async (member: TeamMember) => {
+  const handleRemoveFromRoster = async (member: TeamMember) => {
     try {
       await upsertMember({
         unitId: member.unitId,
         callsign: member.callsign,
         isSelf: member.isSelf,
-        onRoster: !member.onRoster,
+        onRoster: false,
       });
     } catch (err: unknown) {
-      console.warn('[TeamContacts] roster toggle failed ' + errLikeToLogString(err));
+      console.warn('[TeamContacts] roster clear failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
+    }
+  };
+
+  const handleSyncRosterDevices = async (member: TeamMember, selected: TeamMemberLink[]) => {
+    const selectedKeys = new Set(selected.map((l) => `${l.protocol}:${l.durableKey}`));
+    try {
+      for (const link of member.links) {
+        const want = selectedKeys.has(`${link.protocol}:${link.durableKey}`);
+        if (link.onRoster === want) continue;
+        await setLinkRoster({
+          unitId: member.unitId,
+          protocol: link.protocol,
+          durableKey: link.durableKey,
+          onRoster: want,
+        });
+      }
+    } catch (err: unknown) {
+      console.warn('[TeamContacts] roster devices failed ' + errLikeToLogString(err));
+      addToast(t('teamRoster.saveFailed'), 'error');
+      throw err;
     }
   };
 
@@ -127,6 +151,7 @@ export default function TeamContactsPanel({
         <ul className="flex flex-col gap-2">
           {members.map((member) => {
             const presence = presenceByUnit.get(member.unitId);
+            const rosterCount = rosterLinksOf(member).length;
             return (
               <li
                 key={member.unitId}
@@ -151,9 +176,9 @@ export default function TeamContactsPanel({
                           {t('teamRoster.selfBadge')}
                         </span>
                       ) : null}
-                      {member.onRoster ? (
+                      {rosterCount > 0 ? (
                         <span className="rounded-badge bg-ink-700 text-ink-100 text-2xs px-1.5 py-0.5">
-                          {t('teamRoster.rosterBadge')}
+                          {t('teamRoster.rosterDeviceBadge', { count: rosterCount })}
                         </span>
                       ) : null}
                       {presence?.lastActive ? (
@@ -167,22 +192,49 @@ export default function TeamContactsPanel({
                     ) : null}
                   </button>
                   <div className="flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      className={buttonClassName('secondary', 'sm')}
-                      aria-label={
-                        member.onRoster
-                          ? t('teamRoster.removeFromRosterAria')
-                          : t('teamRoster.addToRosterAria')
-                      }
-                      onClick={() => {
-                        void handleToggleRoster(member);
-                      }}
-                    >
-                      {member.onRoster
-                        ? t('teamRoster.removeFromRoster')
-                        : t('teamRoster.addToRoster')}
-                    </button>
+                    {rosterCount > 0 ? (
+                      <>
+                        <button
+                          type="button"
+                          className={buttonClassName('secondary', 'sm')}
+                          aria-label={t('teamRoster.manageDevices')}
+                          onClick={() => {
+                            if (member.links.length === 0) {
+                              addToast(t('teamRoster.devicePickerNeedLinks'), 'error');
+                              return;
+                            }
+                            setRosterPickerMember(member);
+                          }}
+                        >
+                          {t('teamRoster.manageDevices')}
+                        </button>
+                        <button
+                          type="button"
+                          className={buttonClassName('secondary', 'sm')}
+                          aria-label={t('teamRoster.removeFromRosterAria')}
+                          onClick={() => {
+                            void handleRemoveFromRoster(member);
+                          }}
+                        >
+                          {t('teamRoster.removeFromRoster')}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className={buttonClassName('secondary', 'sm')}
+                        aria-label={t('teamRoster.addToRosterAria')}
+                        onClick={() => {
+                          if (member.links.length === 0) {
+                            addToast(t('teamRoster.devicePickerNeedLinks'), 'error');
+                            return;
+                          }
+                          setRosterPickerMember(member);
+                        }}
+                      >
+                        {t('teamRoster.addToRoster')}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={buttonClassName('secondary', 'sm')}
@@ -250,6 +302,25 @@ export default function TeamContactsPanel({
           member={editing}
           onClose={() => {
             setEditing(undefined);
+          }}
+        />
+      ) : null}
+
+      {rosterPickerMember ? (
+        <TeamRosterDevicePickerDialog
+          member={rosterPickerMember}
+          preselectRostered={rosterLinksOf(rosterPickerMember).length > 0}
+          title={
+            rosterLinksOf(rosterPickerMember).length > 0
+              ? t('teamRoster.manageDevicesTitle')
+              : t('teamRoster.selectDevicesTitle')
+          }
+          confirmLabel={t('teamRoster.confirmDevices')}
+          onClose={() => {
+            setRosterPickerMember(null);
+          }}
+          onConfirm={async (selected) => {
+            await handleSyncRosterDevices(rosterPickerMember, selected);
           }}
         />
       ) : null}

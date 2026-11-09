@@ -19,8 +19,8 @@ const member: TeamMember = {
   createdAt: 1,
   updatedAt: 1,
   links: [
-    { protocol: 'meshtastic', durableKey: '10', nodeId: 10, longName: 'C-MT' },
-    { protocol: 'meshcore', durableKey: '20', nodeId: 20, longName: 'C-MC' },
+    { protocol: 'meshtastic', durableKey: '10', nodeId: 10, longName: 'C-MT', onRoster: false },
+    { protocol: 'meshcore', durableKey: '20', nodeId: 20, longName: 'C-MC', onRoster: true },
   ],
 };
 

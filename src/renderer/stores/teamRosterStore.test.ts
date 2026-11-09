@@ -121,7 +121,7 @@ describe('teamRosterStore', () => {
         onRoster: false,
         createdAt: 1,
         updatedAt: 2,
-        links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9 }],
+        links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9, onRoster: false }],
       }),
     });
     await hydrateTeamRosterStore();
@@ -157,7 +157,7 @@ describe('teamRosterStore', () => {
           onRoster: false,
           createdAt: 1,
           updatedAt: 1,
-          links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9 }],
+          links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9, onRoster: false }],
         },
       ]),
       removeTeamMemberLink,

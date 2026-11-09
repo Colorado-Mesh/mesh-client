@@ -18,6 +18,8 @@ export interface TeamMemberLink {
   longName?: string | null;
   /** Identity the link was created from (display refresh only). */
   identityId?: string | null;
+  /** When true, this device is selected for the Team Roster event set. */
+  onRoster: boolean;
 }
 
 export interface TeamMember {
@@ -25,7 +27,10 @@ export interface TeamMember {
   callsign: string;
   role?: string | null;
   isSelf: boolean;
-  /** Opt-in: when true, member appears on the Team Roster tab. */
+  /**
+   * Derived mirror: true iff any linked device has `onRoster`.
+   * Roster UI filters on this; device selection is per-link.
+   */
   onRoster: boolean;
   createdAt: number;
   updatedAt: number;
@@ -38,6 +43,11 @@ export interface TeamMemberInput {
   callsign: string;
   role?: string | null;
   isSelf?: boolean;
+  /**
+   * When `false`, clears every link’s roster flag (remove person from roster).
+   * When `true`, does not auto-select all devices — set link `onRoster` separately.
+   * Member `onRoster` is always re-synced from links after write.
+   */
   onRoster?: boolean;
 }
 
@@ -48,6 +58,15 @@ export interface TeamMemberLinkInput {
   nodeId?: number | null;
   longName?: string | null;
   identityId?: string | null;
+  /** Optional; defaults to false on insert, preserved on update when omitted. */
+  onRoster?: boolean;
+}
+
+export interface TeamMemberLinkRosterInput {
+  unitId: number;
+  protocol: MeshProtocol;
+  durableKey: string;
+  onRoster: boolean;
 }
 
 const MESHCORE_PUBKEY_RE = /^[0-9a-fA-F]{64}$/;
@@ -60,6 +79,11 @@ export function isValidTeamUnitId(value: unknown): value is number {
     (value as number) >= TEAM_UNIT_ID_MIN &&
     (value as number) <= TEAM_UNIT_ID_MAX
   );
+}
+
+/** Links selected for the Team Roster event set. */
+export function rosterLinksOf(member: TeamMember): TeamMemberLink[] {
+  return member.links.filter((l) => l.onRoster);
 }
 
 /** Normalize and validate a durable link key for the given protocol. */

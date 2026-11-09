@@ -167,13 +167,14 @@ export function createElectronAPIMock(): ElectronAPI {
             nodeId?: number | null;
             longName?: string | null;
             identityId?: string | null;
+            onRoster?: boolean;
           }) =>
             Promise.resolve({
               unitId: input.unitId,
               callsign: 'mock',
               role: null,
               isSelf: false,
-              onRoster: false,
+              onRoster: input.onRoster === true,
               createdAt: Date.now(),
               updatedAt: Date.now(),
               links: [
@@ -183,6 +184,31 @@ export function createElectronAPIMock(): ElectronAPI {
                   nodeId: input.nodeId ?? null,
                   longName: input.longName ?? null,
                   identityId: input.identityId ?? null,
+                  onRoster: input.onRoster === true,
+                },
+              ],
+            }),
+        ),
+      setTeamMemberLinkRoster: vi
+        .fn()
+        .mockImplementation(
+          (input: { unitId: number; protocol: string; durableKey: string; onRoster: boolean }) =>
+            Promise.resolve({
+              unitId: input.unitId,
+              callsign: 'mock',
+              role: null,
+              isSelf: false,
+              onRoster: input.onRoster,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              links: [
+                {
+                  protocol: input.protocol,
+                  durableKey: input.durableKey,
+                  nodeId: null,
+                  longName: null,
+                  identityId: null,
+                  onRoster: input.onRoster,
                 },
               ],
             }),

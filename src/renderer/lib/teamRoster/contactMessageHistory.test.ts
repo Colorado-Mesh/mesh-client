@@ -19,14 +19,14 @@ describe('contactMessageHistory', () => {
   it('merges multi-protocol DMs for linked peers', () => {
     const snaps: LinkPresenceSnapshot[] = [
       {
-        link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10 },
+        link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
         peerNodeId: 10,
         lastHeardMs: 1,
         status: 'online',
         displayName: 'A',
       },
       {
-        link: { protocol: 'reticulum', durableKey: 'aa'.repeat(16) },
+        link: { protocol: 'reticulum', durableKey: 'aa'.repeat(16), onRoster: false },
         peerNodeId: 99,
         lastHeardMs: 2,
         status: 'online',
@@ -55,7 +55,7 @@ describe('contactMessageHistory', () => {
   it('ignores reaction-only rows', () => {
     const snaps: LinkPresenceSnapshot[] = [
       {
-        link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10 },
+        link: { protocol: 'meshtastic', durableKey: '10', nodeId: 10, onRoster: false },
         peerNodeId: 10,
         lastHeardMs: 1,
         status: 'online',

@@ -18,6 +18,7 @@ import {
   type TeamMemberInput,
   type TeamMemberLink,
   type TeamMemberLinkInput,
+  type TeamMemberLinkRosterInput,
 } from '../../shared/teamRosterTypes';
 import type { NodeSqliteDB } from '../db-compat';
 
@@ -34,6 +35,7 @@ const LINKS_CREATE_SQL = `CREATE TABLE IF NOT EXISTS team_member_links (
       node_id INTEGER,
       long_name TEXT,
       identity_id TEXT,
+      on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
       PRIMARY KEY (unit_id, protocol, durable_key),
       UNIQUE (protocol, durable_key)
     )`;
@@ -60,6 +62,10 @@ function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
   if (!row?.sql) return;
   if (row.sql.includes('PRIMARY KEY (unit_id, protocol, durable_key)')) return;
 
+  const hasLinkRoster = (
+    db.prepare('PRAGMA table_info(team_member_links)').all() as { name: string }[]
+  ).some((c) => c.name === 'on_roster');
+
   db.execScript(`
     CREATE TABLE team_member_links_new (
       unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
@@ -68,15 +74,34 @@ function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
       node_id INTEGER,
       long_name TEXT,
       identity_id TEXT,
+      on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
       PRIMARY KEY (unit_id, protocol, durable_key),
       UNIQUE (protocol, durable_key)
     );
     INSERT OR IGNORE INTO team_member_links_new
-      (unit_id, protocol, durable_key, node_id, long_name, identity_id)
-      SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id
+      (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
+      SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id,
+        ${hasLinkRoster ? 'on_roster' : '0'}
       FROM team_member_links;
     DROP TABLE team_member_links;
     ALTER TABLE team_member_links_new RENAME TO team_member_links;
+  `);
+}
+
+/**
+ * Per-device roster selection. Backfill: members already on the roster get every
+ * existing link marked on_roster so prior whole-card behavior is preserved.
+ */
+function migrateLinkOnRosterColumn(db: NodeSqliteDB): void {
+  const cols = db.prepare('PRAGMA table_info(team_member_links)').all() as { name: string }[];
+  if (cols.some((c) => c.name === 'on_roster')) return;
+  db.execScript(
+    'ALTER TABLE team_member_links ADD COLUMN on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1))',
+  );
+  db.execScript(`
+    UPDATE team_member_links
+    SET on_roster = 1
+    WHERE unit_id IN (SELECT unit_id FROM team_members WHERE on_roster = 1)
   `);
 }
 
@@ -97,6 +122,7 @@ export function ensureTeamRosterTables(db: NodeSqliteDB): void {
   migrateOnRosterColumn(db);
   migrateDropColorColumn(db);
   migrateTeamMemberLinksPk(db);
+  migrateLinkOnRosterColumn(db);
 }
 
 interface MemberDbRow {
@@ -116,6 +142,7 @@ interface LinkDbRow {
   node_id: number | null;
   long_name: string | null;
   identity_id: string | null;
+  on_roster: number;
 }
 
 function fail(msg: string): never {
@@ -154,6 +181,7 @@ function linkFromDb(row: LinkDbRow): TeamMemberLink | null {
     nodeId: row.node_id,
     longName: row.long_name,
     identityId: row.identity_id,
+    onRoster: row.on_roster === 1,
   };
 }
 
@@ -170,6 +198,18 @@ function memberFromDb(row: MemberDbRow, links: TeamMemberLink[]): TeamMember {
   };
 }
 
+/** Keep member.on_roster in sync with any link.on_roster. */
+function syncMemberOnRosterFromLinks(db: NodeSqliteDB, unitId: number, now = Date.now()): void {
+  const any = db
+    .prepare('SELECT 1 AS ok FROM team_member_links WHERE unit_id = ? AND on_roster = 1 LIMIT 1')
+    .get(unitId) as { ok: number } | undefined;
+  db.prepareOnce('UPDATE team_members SET on_roster = ?, updated_at = ? WHERE unit_id = ?').run(
+    any ? 1 : 0,
+    now,
+    unitId,
+  );
+}
+
 function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, TeamMemberLink[]> {
   const byUnit = new Map<number, TeamMemberLink[]>();
   for (const id of unitIds) byUnit.set(id, []);
@@ -177,7 +217,7 @@ function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, Tea
   const placeholders = unitIds.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id
+      `SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster
        FROM team_member_links WHERE unit_id IN (${placeholders})
        ORDER BY protocol ASC, durable_key ASC`,
     )
@@ -243,7 +283,6 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
     .get(unitId) as MemberDbRow | undefined;
 
   const isSelf = input.isSelf === true;
-  const onRoster = input.onRoster === true;
   const now = Date.now();
 
   db.transaction(() => {
@@ -255,18 +294,23 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
     if (existing) {
       const nextRole = role === undefined ? existing.role : role;
       const nextSelf = input.isSelf === undefined ? existing.is_self : isSelf ? 1 : 0;
-      const nextRoster = input.onRoster === undefined ? existing.on_roster : onRoster ? 1 : 0;
+      // Preserve current mirror until we sync from links below (unless clearing roster).
+      const nextRoster = existing.on_roster;
       db.prepareOnce(
         `UPDATE team_members
          SET callsign = ?, role = ?, is_self = ?, on_roster = ?, updated_at = ?
          WHERE unit_id = ?`,
       ).run(callsign, nextRole, nextSelf, nextRoster, now, unitId);
+      if (input.onRoster === false) {
+        db.prepareOnce('UPDATE team_member_links SET on_roster = 0 WHERE unit_id = ?').run(unitId);
+      }
     } else {
       db.prepareOnce(
         `INSERT INTO team_members (unit_id, callsign, role, is_self, on_roster, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      ).run(unitId, callsign, role ?? null, isSelf ? 1 : 0, onRoster ? 1 : 0, now, now);
+         VALUES (?, ?, ?, ?, 0, ?, ?)`,
+      ).run(unitId, callsign, role ?? null, isSelf ? 1 : 0, now, now);
     }
+    syncMemberOnRosterFromLinks(db, unitId, now);
   })();
 
   const member = readMember(db, unitId);
@@ -293,6 +337,7 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
     if (!Number.isInteger(input.nodeId) || input.nodeId < 0) fail('nodeId');
     nodeId = input.nodeId;
   }
+  const onRoster = input.onRoster === undefined ? null : input.onRoster ? 1 : 0;
 
   const member = readMember(db, unitId);
   if (!member) fail('unitId not found');
@@ -300,15 +345,29 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
   const now = Date.now();
   try {
     db.transaction(() => {
-      db.prepareOnce(
-        `INSERT INTO team_member_links (unit_id, protocol, durable_key, node_id, long_name, identity_id)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(unit_id, protocol, durable_key) DO UPDATE SET
-           node_id = excluded.node_id,
-           long_name = excluded.long_name,
-           identity_id = excluded.identity_id`,
-      ).run(unitId, protocol, durableKey, nodeId, longName, identityId);
-      db.prepareOnce('UPDATE team_members SET updated_at = ? WHERE unit_id = ?').run(now, unitId);
+      if (onRoster == null) {
+        db.prepareOnce(
+          `INSERT INTO team_member_links
+             (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
+           VALUES (?, ?, ?, ?, ?, ?, 0)
+           ON CONFLICT(unit_id, protocol, durable_key) DO UPDATE SET
+             node_id = excluded.node_id,
+             long_name = excluded.long_name,
+             identity_id = excluded.identity_id`,
+        ).run(unitId, protocol, durableKey, nodeId, longName, identityId);
+      } else {
+        db.prepareOnce(
+          `INSERT INTO team_member_links
+             (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(unit_id, protocol, durable_key) DO UPDATE SET
+             node_id = excluded.node_id,
+             long_name = excluded.long_name,
+             identity_id = excluded.identity_id,
+             on_roster = excluded.on_roster`,
+        ).run(unitId, protocol, durableKey, nodeId, longName, identityId, onRoster);
+      }
+      syncMemberOnRosterFromLinks(db, unitId, now);
     })();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -320,6 +379,32 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
 
   const updated = readMember(db, unitId);
   if (!updated) fail('setLink failed');
+  return updated;
+}
+
+function setLinkRoster(db: NodeSqliteDB, input: TeamMemberLinkRosterInput): TeamMember {
+  const unitId = assertUnitId(input.unitId);
+  const protocol = assertTeamProtocol(input.protocol);
+  if (typeof input.durableKey !== 'string') fail('durableKey');
+  const durableKey = normalizeTeamDurableKey(protocol, input.durableKey);
+  if (!durableKey) fail('durableKey');
+  if (typeof input.onRoster !== 'boolean') fail('onRoster');
+  if (!readMember(db, unitId)) fail('unitId not found');
+
+  const now = Date.now();
+  db.transaction(() => {
+    const result = db
+      .prepareOnce(
+        `UPDATE team_member_links SET on_roster = ?
+         WHERE unit_id = ? AND protocol = ? AND durable_key = ?`,
+      )
+      .run(input.onRoster ? 1 : 0, unitId, protocol, durableKey);
+    if (Number(result.changes) === 0) fail('link not found');
+    syncMemberOnRosterFromLinks(db, unitId, now);
+  })();
+
+  const updated = readMember(db, unitId);
+  if (!updated) fail('setLinkRoster failed');
   return updated;
 }
 
@@ -340,7 +425,7 @@ function removeLink(
     db.prepareOnce(
       'DELETE FROM team_member_links WHERE unit_id = ? AND protocol = ? AND durable_key = ?',
     ).run(unitId, protocol, durableKey);
-    db.prepareOnce('UPDATE team_members SET updated_at = ? WHERE unit_id = ?').run(now, unitId);
+    syncMemberOnRosterFromLinks(db, unitId, now);
   })();
   const updated = readMember(db, unitId);
   if (!updated) fail('removeLink failed');
@@ -380,6 +465,12 @@ export function registerTeamRosterIpcHandlers(deps: TeamRosterIpcDeps): void {
     return setLink(getDatabase(), raw as TeamMemberLinkInput);
   });
 
+  ipcMain.handle('db:setTeamMemberLinkRoster', (event, raw: unknown) => {
+    assertIpcSender(event, 'db:setTeamMemberLinkRoster');
+    if (!raw || typeof raw !== 'object') fail('input');
+    return setLinkRoster(getDatabase(), raw as TeamMemberLinkRosterInput);
+  });
+
   ipcMain.handle(
     'db:removeTeamMemberLink',
     (event, unitIdRaw: unknown, protocolRaw: unknown, durableKeyRaw: unknown) => {
@@ -404,6 +495,7 @@ export const teamRosterHandlerTestUtils = {
   allocateUnitId,
   upsertMember,
   setLink,
+  setLinkRoster,
   removeLink,
   assertUnitId,
   normalizeTeamDurableKey,

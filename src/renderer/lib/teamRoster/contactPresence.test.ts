@@ -23,7 +23,7 @@ describe('contactPresence', () => {
   it('marks a recently heard meshtastic link online', () => {
     const now = Date.now();
     const snap = resolveLinkPresence(
-      { protocol: 'meshtastic', durableKey: '42', nodeId: 42, longName: 'Alpha' },
+      { protocol: 'meshtastic', durableKey: '42', nodeId: 42, longName: 'Alpha', onRoster: false },
       {
         meshtastic: new Map([
           [42, node({ node_id: 42, last_heard: now - 60_000, long_name: 'Alpha' })],
@@ -41,7 +41,7 @@ describe('contactPresence', () => {
     const now = Date.now();
     const pubkey = 'ab'.repeat(32);
     const snap = resolveLinkPresence(
-      { protocol: 'meshcore', durableKey: pubkey },
+      { protocol: 'meshcore', durableKey: pubkey, onRoster: false },
       {
         meshcore: new Map([
           [
@@ -67,8 +67,8 @@ describe('contactPresence', () => {
       createdAt: 1,
       updatedAt: 1,
       links: [
-        { protocol: 'meshtastic', durableKey: '1', nodeId: 1 },
-        { protocol: 'reticulum', durableKey: 'cd'.repeat(16) },
+        { protocol: 'meshtastic', durableKey: '1', nodeId: 1, onRoster: false },
+        { protocol: 'reticulum', durableKey: 'cd'.repeat(16), onRoster: false },
       ],
     };
     const presence = resolveMemberPresence(
@@ -82,6 +82,38 @@ describe('contactPresence', () => {
       now,
     );
     expect(presence.aggregateStatus).toBe('online');
+    expect(presence.lastActive?.link.protocol).toBe('reticulum');
+  });
+
+  it('rosterLinksOnly ignores non-roster devices for aggregate and last-active', () => {
+    const now = Date.now();
+    const member: TeamMember = {
+      unitId: 2,
+      callsign: 'Ops',
+      isSelf: false,
+      onRoster: true,
+      createdAt: 1,
+      updatedAt: 1,
+      links: [
+        { protocol: 'meshtastic', durableKey: '1', nodeId: 1, onRoster: false },
+        {
+          protocol: 'reticulum',
+          durableKey: 'cd'.repeat(16),
+          onRoster: true,
+        },
+      ],
+    };
+    const presence = resolveMemberPresence(
+      member,
+      {
+        meshtastic: new Map([[1, node({ node_id: 1, last_heard: now - 1000 })]]),
+      },
+      new Map([['cd'.repeat(16), { lastHeardMs: now - 30_000, displayName: 'Peer' }]]),
+      now,
+      { rosterLinksOnly: true },
+    );
+    expect(presence.links).toHaveLength(1);
+    expect(presence.links[0]?.link.protocol).toBe('reticulum');
     expect(presence.lastActive?.link.protocol).toBe('reticulum');
   });
 });

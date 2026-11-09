@@ -24,6 +24,7 @@ const CHANNELS = [
   'db:upsertTeamMember',
   'db:deleteTeamMember',
   'db:setTeamMemberLink',
+  'db:setTeamMemberLinkRoster',
   'db:removeTeamMemberLink',
   'db:clearTeamMembers',
 ] as const;
@@ -84,14 +85,14 @@ describe('team roster IPC boundary', () => {
     expect(listed[0].unitId).toBe(1);
   });
 
-  it('persists onRoster when set', () => {
+  it('does not put a member on roster without selecting a device link', () => {
     handlers.get('db:upsertTeamMember')!(event, {
       unitId: 1,
       callsign: 'A',
       onRoster: true,
     });
     const listed = handlers.get('db:listTeamMembers')!(event) as { onRoster: boolean }[];
-    expect(listed[0].onRoster).toBe(true);
+    expect(listed[0].onRoster).toBe(false);
   });
 
   it('drops legacy color column on ensure', () => {
@@ -122,17 +123,74 @@ describe('team roster IPC boundary', () => {
     expect(listed[0]?.callsign).toBe('Painted');
   });
 
-  it('toggles onRoster without requiring other fields', () => {
+  it('sets link onRoster and mirrors member onRoster; clearing last link clears member', () => {
     handlers.get('db:upsertTeamMember')!(event, {
       unitId: 1,
       callsign: 'A',
     });
-    const updated = handlers.get('db:upsertTeamMember')!(event, {
+    handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
-      callsign: 'A',
+      protocol: 'meshtastic',
+      durableKey: '42',
+    });
+    const on = handlers.get('db:setTeamMemberLinkRoster')!(event, {
+      unitId: 1,
+      protocol: 'meshtastic',
+      durableKey: '42',
       onRoster: true,
-    }) as { onRoster: boolean };
-    expect(updated).toMatchObject({ onRoster: true });
+    }) as { onRoster: boolean; links: { onRoster: boolean }[] };
+    expect(on.onRoster).toBe(true);
+    expect(on.links[0]?.onRoster).toBe(true);
+
+    const off = handlers.get('db:setTeamMemberLinkRoster')!(event, {
+      unitId: 1,
+      protocol: 'meshtastic',
+      durableKey: '42',
+      onRoster: false,
+    }) as { onRoster: boolean; links: { onRoster: boolean }[] };
+    expect(off.onRoster).toBe(false);
+    expect(off.links[0]?.onRoster).toBe(false);
+  });
+
+  it('migrates member on_roster to all existing links', () => {
+    db.close();
+    db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    db.execScript(`
+      CREATE TABLE team_members (
+        unit_id INTEGER PRIMARY KEY CHECK (unit_id BETWEEN 1 AND 65535),
+        callsign TEXT NOT NULL,
+        role TEXT,
+        is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
+        on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE team_member_links (
+        unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
+        protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
+        durable_key TEXT NOT NULL,
+        node_id INTEGER,
+        long_name TEXT,
+        identity_id TEXT,
+        PRIMARY KEY (unit_id, protocol, durable_key),
+        UNIQUE (protocol, durable_key)
+      );
+      INSERT INTO team_members (unit_id, callsign, is_self, on_roster, created_at, updated_at)
+        VALUES (1, 'Legacy', 0, 1, 1, 1);
+      INSERT INTO team_member_links (unit_id, protocol, durable_key)
+        VALUES (1, 'meshtastic', '7'), (1, 'meshcore', '8');
+    `);
+    getDatabase.mockReturnValue(db);
+    handlers.clear();
+    registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+
+    const listed = handlers.get('db:listTeamMembers')!(event) as {
+      onRoster: boolean;
+      links: { durableKey: string; onRoster: boolean }[];
+    }[];
+    expect(listed[0].onRoster).toBe(true);
+    expect(listed[0].links.every((l) => l.onRoster)).toBe(true);
   });
 
   it('enforces a single isSelf member', () => {

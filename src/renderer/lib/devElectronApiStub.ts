@@ -3,7 +3,11 @@ import { parseLegacyIncidentStorage } from '@/shared/incidentStorage';
 import type { IncidentSnapshot } from '@/shared/incidentTypes';
 import type { ScheduledBroadcastInput } from '@/shared/scheduledBroadcastTypes';
 import type { TakStyleSettings } from '@/shared/tak-types';
-import type { TeamMemberInput, TeamMemberLinkInput } from '@/shared/teamRosterTypes';
+import type {
+  TeamMemberInput,
+  TeamMemberLinkInput,
+  TeamMemberLinkRosterInput,
+} from '@/shared/teamRosterTypes';
 
 /* eslint-disable @typescript-eslint/require-await -- no-op async IPC stubs for browser dev */
 const noop = (): void => {};
@@ -98,7 +102,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         callsign: 'stub',
         role: null,
         isSelf: false,
-        onRoster: false,
+        onRoster: input.onRoster === true,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         links: [
@@ -108,6 +112,26 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
             nodeId: input.nodeId ?? null,
             longName: input.longName ?? null,
             identityId: input.identityId ?? null,
+            onRoster: input.onRoster === true,
+          },
+        ],
+      }),
+      setTeamMemberLinkRoster: async (input: TeamMemberLinkRosterInput) => ({
+        unitId: input.unitId,
+        callsign: 'stub',
+        role: null,
+        isSelf: false,
+        onRoster: input.onRoster,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        links: [
+          {
+            protocol: input.protocol,
+            durableKey: input.durableKey,
+            nodeId: null,
+            longName: null,
+            identityId: null,
+            onRoster: input.onRoster,
           },
         ],
       }),
