@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { build } from 'vite';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const ROOT = join(__dirname, '../..');
 const VITE_CONFIG = readFileSync(join(ROOT, 'vite.config.mts'), 'utf-8');
@@ -25,7 +25,15 @@ describe('vite build config', () => {
   });
 
   it('emits index.html, migration.html, and live-map.html into dist/renderer', async () => {
-    await build({ configFile: join(ROOT, 'vite.config.mts'), logLevel: 'error' });
+    // Build what ships, so the App chunk budget (appChunkBudgetPlugin) measures the real bundle.
+    // Vite keeps an existing NODE_ENV and bakes it into process.env.NODE_ENV; under Vitest that
+    // is "test", which keeps development-only code in the bundle.
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      await build({ configFile: join(ROOT, 'vite.config.mts'), logLevel: 'error' });
+    } finally {
+      vi.unstubAllEnvs();
+    }
     const out = join(ROOT, 'dist/renderer');
     expect(existsSync(join(out, 'index.html'))).toBe(true);
     expect(existsSync(join(out, 'migration.html'))).toBe(true);
