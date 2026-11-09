@@ -29,7 +29,7 @@ beforeEach(() => {
         unitId: 7,
         callsign: 'Golf',
         role: 'MEDIC',
-        color: '#FF0000',
+
         isSelf: false,
         onRoster: true,
         createdAt: 1,
@@ -40,7 +40,7 @@ beforeEach(() => {
         unitId: 8,
         callsign: 'Hidden',
         role: 'OP',
-        color: null,
+
         isSelf: false,
         onRoster: false,
         createdAt: 1,
@@ -71,7 +71,7 @@ describe('TeamRosterPanel', () => {
           unitId: 7,
           callsign: 'Golf',
           role: 'MEDIC',
-          color: '#FF0000',
+
           isSelf: false,
           onRoster: true,
           createdAt: 1,
@@ -103,7 +103,7 @@ describe('TeamRosterPanel', () => {
       unitId: 8,
       callsign: 'Hidden',
       role: 'OP',
-      color: null,
+
       isSelf: false,
       onRoster: true,
       createdAt: 1,

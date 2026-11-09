@@ -29,7 +29,7 @@ beforeEach(() => {
         unitId: 1,
         callsign: 'Alpha',
         role: 'IC',
-        color: '#38BDF8',
+
         isSelf: true,
         onRoster: false,
         createdAt: 1,

@@ -8,7 +8,6 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import { TEAM_DEFAULT_COLOR } from '@/shared/teamRosterTypes';
 
 type SuggestMode = 'existing' | 'create';
 
@@ -110,7 +109,6 @@ export function SuggestToTeamContactModal({
         unitId,
         callsign: trimmed,
         role: role.trim() || null,
-        color: TEAM_DEFAULT_COLOR,
         isSelf: preferSelf && !hasSelf,
         onRoster: false,
       });

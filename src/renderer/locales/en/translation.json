@@ -7056,7 +7056,6 @@
     "unitId": "Unit ID",
     "callsign": "Callsign",
     "role": "Role",
-    "color": "Color",
     "isSelf": "This is me",
     "onRoster": "On Team Roster",
     "onRosterAria": "Show on Team Roster",
@@ -7085,7 +7084,6 @@
     "unitIdAria": "Unit ID",
     "callsignAria": "Callsign",
     "roleAria": "Role",
-    "colorAria": "Accent color",
     "isSelfAria": "Mark as self",
     "selectContactAria": "Select contact card",
     "protocolMeshtastic": "Meshtastic",
@@ -7125,7 +7123,6 @@
     "teamSendNoRecipients": "Select at least one roster member.",
     "teamSendResult": "Sent {{sent}}, skipped {{skipped}}."
   },
-
   "takContacts": {
     "affiliationFriend": "Friendly",
     "affiliationHostile": "Hostile",

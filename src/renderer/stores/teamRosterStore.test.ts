@@ -32,7 +32,7 @@ describe('teamRosterStore', () => {
         unitId: 2,
         callsign: 'Bravo',
         role: null,
-        color: null,
+
         isSelf: false,
         onRoster: false,
         createdAt: 1,
@@ -43,7 +43,7 @@ describe('teamRosterStore', () => {
         unitId: 1,
         callsign: 'Alpha',
         role: 'IC',
-        color: null,
+
         isSelf: true,
         onRoster: true,
         createdAt: 1,
@@ -66,7 +66,7 @@ describe('teamRosterStore', () => {
           unitId: 1,
           callsign: 'A',
           role: null,
-          color: null,
+
           isSelf: true,
           onRoster: false,
           createdAt: 1,
@@ -78,7 +78,7 @@ describe('teamRosterStore', () => {
         unitId: 2,
         callsign: 'B',
         role: null,
-        color: null,
+
         isSelf: true,
         onRoster: false,
         createdAt: 2,
@@ -104,7 +104,7 @@ describe('teamRosterStore', () => {
           unitId: 1,
           callsign: 'A',
           role: null,
-          color: null,
+
           isSelf: false,
           onRoster: false,
           createdAt: 1,
@@ -116,7 +116,7 @@ describe('teamRosterStore', () => {
         unitId: 1,
         callsign: 'A',
         role: null,
-        color: null,
+
         isSelf: false,
         onRoster: false,
         createdAt: 1,
@@ -139,7 +139,7 @@ describe('teamRosterStore', () => {
       unitId: 1,
       callsign: 'A',
       role: null,
-      color: null,
+
       isSelf: false,
       onRoster: false,
       createdAt: 1,
@@ -152,7 +152,7 @@ describe('teamRosterStore', () => {
           unitId: 1,
           callsign: 'A',
           role: null,
-          color: null,
+
           isSelf: false,
           onRoster: false,
           createdAt: 1,
@@ -174,7 +174,7 @@ describe('teamRosterStore', () => {
           unitId: 1,
           callsign: 'A',
           role: null,
-          color: null,
+
           isSelf: false,
           onRoster: false,
           createdAt: 1,

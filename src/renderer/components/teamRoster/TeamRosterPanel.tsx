@@ -16,7 +16,6 @@ import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLi
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import { normalizeTeamColor } from '@/shared/teamRosterTypes';
 
 import { TeamContactDetailDialog } from './TeamContactDetailDialog';
 import { TeamContactEditorDialog } from './TeamContactEditorDialog';
@@ -232,7 +231,6 @@ export default function TeamRosterPanel({
               </thead>
               <tbody>
                 {rosterMembers.map((member) => {
-                  const swatch = normalizeTeamColor(member.color);
                   const presence = presenceByUnit.get(member.unitId);
                   return (
                     <tr
@@ -273,13 +271,6 @@ export default function TeamRosterPanel({
                             setDetailUnitId(member.unitId);
                           }}
                         >
-                          {swatch ? (
-                            <span
-                              className="rounded-badge border-ink-600 inline-block h-3 w-3 shrink-0 border"
-                              style={{ backgroundColor: swatch }}
-                              aria-hidden
-                            />
-                          ) : null}
                           {member.callsign}
                         </button>
                       </td>

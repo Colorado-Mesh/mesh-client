@@ -7,14 +7,8 @@ export const TEAM_UNIT_ID_MIN = 1;
 export const TEAM_UNIT_ID_MAX = 65535;
 export const TEAM_CALLSIGN_MAX = 64;
 export const TEAM_ROLE_MAX = 32;
-export const TEAM_COLOR_MAX = 32;
 export const TEAM_LONG_NAME_MAX = 128;
 export const TEAM_DURABLE_KEY_MAX = 128;
-
-/** Default accent when creating a contact card (matches theme brandGreen). */
-export const TEAM_DEFAULT_COLOR = '#38BDF8';
-
-const TEAM_COLOR_HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
 export interface TeamMemberLink {
   protocol: MeshProtocol;
@@ -30,7 +24,6 @@ export interface TeamMember {
   unitId: number;
   callsign: string;
   role?: string | null;
-  color?: string | null;
   isSelf: boolean;
   /** Opt-in: when true, member appears on the Team Roster tab. */
   onRoster: boolean;
@@ -44,7 +37,6 @@ export interface TeamMemberInput {
   unitId: number;
   callsign: string;
   role?: string | null;
-  color?: string | null;
   isSelf?: boolean;
   onRoster?: boolean;
 }
@@ -68,17 +60,6 @@ export function isValidTeamUnitId(value: unknown): value is number {
     (value as number) >= TEAM_UNIT_ID_MIN &&
     (value as number) <= TEAM_UNIT_ID_MAX
   );
-}
-
-/** Normalize `#RRGGBB` accent colors; empty/invalid → null. */
-export function normalizeTeamColor(raw: string | null | undefined): string | null {
-  if (raw == null) return null;
-  if (typeof raw !== 'string') return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed.length > TEAM_COLOR_MAX) return null;
-  if (!TEAM_COLOR_HEX_RE.test(trimmed)) return null;
-  return trimmed.toUpperCase();
 }
 
 /** Normalize and validate a durable link key for the given protocol. */

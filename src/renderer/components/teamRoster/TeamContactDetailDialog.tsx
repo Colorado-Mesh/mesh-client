@@ -13,7 +13,6 @@ import {
 import type { MemberPresenceSnapshot } from '@/renderer/lib/teamRoster/contactPresence';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import { normalizeTeamColor } from '@/shared/teamRosterTypes';
 
 import { TeamPresenceDot } from './TeamPresenceDot';
 import { TEAM_PROTOCOL_LABEL_KEYS } from './TeamProtocolBadges';
@@ -52,7 +51,6 @@ export function TeamContactDetailDialog({
 }: TeamContactDetailDialogProps) {
   const { t } = useTranslation();
   const titleId = useId();
-  const swatch = normalizeTeamColor(member.color);
   const timeline = useMemo(
     () => buildContactMessageTimeline(presence.links, messagesByProtocol),
     [presence.links, messagesByProtocol],
@@ -113,13 +111,6 @@ export function TeamContactDetailDialog({
               className="text-ink-100 flex flex-wrap items-center gap-2 text-base font-semibold"
             >
               <TeamPresenceDot status={presence.aggregateStatus} />
-              {swatch ? (
-                <span
-                  className="rounded-badge border-ink-600 inline-block h-3 w-3 shrink-0 border"
-                  style={{ backgroundColor: swatch }}
-                  aria-hidden
-                />
-              ) : null}
               <span>
                 #{member.unitId} {member.callsign}
               </span>

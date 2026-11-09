@@ -5,10 +5,10 @@ check-in / Unit-ID packet addressing over RF is deferred (Phase 1C).
 
 ## Product rules
 
-- **Contact Cards** (Network, slot `TeamContacts`) = **person hub**: callsign, role, color,
-  self flag, **On Team Roster**, linked protocols, **aggregate / per-link presence**, unified
-  in-memory message timeline, Jump to Chat, and Message (protocol/link picker defaults to
-  **last-active** link). Unlink individual nodes from the list or manage links in the editor.
+- **Contact Cards** (Network, slot `TeamContacts`) = **person hub**: callsign, role, self flag,
+  **On Team Roster**, linked protocols, **aggregate / per-link presence**, unified in-memory
+  message timeline, Jump to Chat, and Message (protocol/link picker defaults to **last-active**
+  link). Unlink individual nodes from the list or manage links in the editor.
 - **Team Roster** (Network) = curated **volunteer / event ops** subset (`onRoster`). Columns:
   presence, Unit ID, callsign, role (spot/assignment), last-active protocol, actions. Creating a
   card does **not** put it on the roster unless created via **Create on roster** / toggled on.

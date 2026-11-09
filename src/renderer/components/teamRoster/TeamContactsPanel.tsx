@@ -13,7 +13,6 @@ import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLi
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import { normalizeTeamColor } from '@/shared/teamRosterTypes';
 
 import { TeamContactDetailDialog } from './TeamContactDetailDialog';
 import { TeamContactEditorDialog } from './TeamContactEditorDialog';
@@ -127,7 +126,6 @@ export default function TeamContactsPanel({
       ) : (
         <ul className="flex flex-col gap-2">
           {members.map((member) => {
-            const swatch = normalizeTeamColor(member.color);
             const presence = presenceByUnit.get(member.unitId);
             return (
               <li
@@ -145,13 +143,6 @@ export default function TeamContactsPanel({
                   >
                     <div className="text-ink-100 flex flex-wrap items-center gap-2 font-medium">
                       {presence ? <TeamPresenceDot status={presence.aggregateStatus} /> : null}
-                      {swatch ? (
-                        <span
-                          className="rounded-badge border-ink-600 inline-block h-3 w-3 shrink-0 border"
-                          style={{ backgroundColor: swatch }}
-                          aria-hidden
-                        />
-                      ) : null}
                       <span>
                         #{member.unitId} {member.callsign}
                       </span>

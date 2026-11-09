@@ -7,12 +7,7 @@ import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
-import {
-  normalizeTeamColor,
-  TEAM_DEFAULT_COLOR,
-  TEAM_UNIT_ID_MAX,
-  TEAM_UNIT_ID_MIN,
-} from '@/shared/teamRosterTypes';
+import { TEAM_UNIT_ID_MAX, TEAM_UNIT_ID_MIN } from '@/shared/teamRosterTypes';
 
 interface TeamContactEditorDialogProps {
   /** Null = create mode. */
@@ -36,7 +31,6 @@ export function TeamContactEditorDialog({
   const [unitId, setUnitId] = useState(String(member?.unitId ?? ''));
   const [callsign, setCallsign] = useState(member?.callsign ?? '');
   const [role, setRole] = useState(member?.role ?? '');
-  const [color, setColor] = useState(normalizeTeamColor(member?.color) ?? TEAM_DEFAULT_COLOR);
   const [isSelf, setIsSelf] = useState(member?.isSelf ?? false);
   const [onRoster, setOnRoster] = useState(member?.onRoster ?? defaultOnRoster);
   const [busy, setBusy] = useState(false);
@@ -84,18 +78,12 @@ export function TeamContactEditorDialog({
       addToast(t('teamRoster.saveFailed'), 'error');
       return;
     }
-    const normalizedColor = normalizeTeamColor(color);
-    if (!normalizedColor) {
-      addToast(t('teamRoster.saveFailed'), 'error');
-      return;
-    }
     setBusy(true);
     try {
       await upsertMember({
         unitId: parsedUnit,
         callsign: trimmed,
         role: role.trim() || null,
-        color: normalizedColor,
         isSelf,
         onRoster,
       });
@@ -159,19 +147,6 @@ export function TeamContactEditorDialog({
               }}
               aria-label={t('teamRoster.roleAria')}
               className={INPUT_CLASS}
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-ink-300 text-label">{t('teamRoster.color')}</span>
-            <input
-              type="color"
-              value={color.toLowerCase()}
-              disabled={busy}
-              onChange={(e) => {
-                setColor(e.target.value.toUpperCase());
-              }}
-              aria-label={t('teamRoster.colorAria')}
-              className="rounded-control border-ink-600 h-9 w-14 border"
             />
           </label>
           <label className="flex items-center gap-2">

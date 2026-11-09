@@ -8,7 +8,6 @@ import { isMeshProtocol, type MeshProtocol } from '../../shared/meshProtocol';
 import {
   assertTeamProtocol,
   isValidTeamUnitId,
-  normalizeTeamColor,
   normalizeTeamDurableKey,
   TEAM_CALLSIGN_MAX,
   TEAM_LONG_NAME_MAX,
@@ -47,6 +46,13 @@ function migrateOnRosterColumn(db: NodeSqliteDB): void {
   );
 }
 
+/** Decorative accent was unused outside tiny swatches — drop the column. */
+function migrateDropColorColumn(db: NodeSqliteDB): void {
+  const cols = db.prepare('PRAGMA table_info(team_members)').all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'color')) return;
+  db.execScript('ALTER TABLE team_members DROP COLUMN color');
+}
+
 function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'team_member_links'`)
@@ -81,7 +87,6 @@ export function ensureTeamRosterTables(db: NodeSqliteDB): void {
       unit_id INTEGER PRIMARY KEY CHECK (unit_id BETWEEN 1 AND 65535),
       callsign TEXT NOT NULL,
       role TEXT,
-      color TEXT,
       is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
       on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
       created_at INTEGER NOT NULL,
@@ -90,6 +95,7 @@ export function ensureTeamRosterTables(db: NodeSqliteDB): void {
     ${LINKS_CREATE_SQL};
   `);
   migrateOnRosterColumn(db);
+  migrateDropColorColumn(db);
   migrateTeamMemberLinksPk(db);
 }
 
@@ -97,7 +103,6 @@ interface MemberDbRow {
   unit_id: number;
   callsign: string;
   role: string | null;
-  color: string | null;
   is_self: number;
   on_roster: number;
   created_at: number;
@@ -157,7 +162,6 @@ function memberFromDb(row: MemberDbRow, links: TeamMemberLink[]): TeamMember {
     unitId: row.unit_id,
     callsign: row.callsign,
     role: row.role,
-    color: row.color,
     isSelf: row.is_self === 1,
     onRoster: row.on_roster === 1,
     createdAt: row.created_at,
@@ -190,7 +194,7 @@ function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, Tea
 function listMembers(db: NodeSqliteDB): TeamMember[] {
   const rows = db
     .prepare(
-      `SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at
+      `SELECT unit_id, callsign, role, is_self, on_roster, created_at, updated_at
        FROM team_members ORDER BY unit_id ASC`,
     )
     .all() as MemberDbRow[];
@@ -204,7 +208,7 @@ function listMembers(db: NodeSqliteDB): TeamMember[] {
 function readMember(db: NodeSqliteDB, unitId: number): TeamMember | null {
   const row = db
     .prepare(
-      `SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at
+      `SELECT unit_id, callsign, role, is_self, on_roster, created_at, updated_at
        FROM team_members WHERE unit_id = ?`,
     )
     .get(unitId) as MemberDbRow | undefined;
@@ -234,24 +238,10 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
       : clampOptionalString(input.role, TEAM_ROLE_MAX, 'role', true);
   const existing = db
     .prepare(
-      'SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at FROM team_members WHERE unit_id = ?',
+      'SELECT unit_id, callsign, role, is_self, on_roster, created_at, updated_at FROM team_members WHERE unit_id = ?',
     )
     .get(unitId) as MemberDbRow | undefined;
 
-  // Never throw on color — invalid/legacy values become null (create) or keep existing (update).
-  let color: string | null | undefined;
-  if (input.color === undefined) {
-    color = undefined;
-  } else if (input.color == null || (typeof input.color === 'string' && !input.color.trim())) {
-    color = null;
-  } else {
-    const normalized = normalizeTeamColor(typeof input.color === 'string' ? input.color : null);
-    if (normalized == null) {
-      color = existing ? undefined : null;
-    } else {
-      color = normalized;
-    }
-  }
   const isSelf = input.isSelf === true;
   const onRoster = input.onRoster === true;
   const now = Date.now();
@@ -264,28 +254,18 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
     }
     if (existing) {
       const nextRole = role === undefined ? existing.role : role;
-      const nextColor = color === undefined ? existing.color : color;
       const nextSelf = input.isSelf === undefined ? existing.is_self : isSelf ? 1 : 0;
       const nextRoster = input.onRoster === undefined ? existing.on_roster : onRoster ? 1 : 0;
       db.prepareOnce(
         `UPDATE team_members
-         SET callsign = ?, role = ?, color = ?, is_self = ?, on_roster = ?, updated_at = ?
+         SET callsign = ?, role = ?, is_self = ?, on_roster = ?, updated_at = ?
          WHERE unit_id = ?`,
-      ).run(callsign, nextRole, nextColor, nextSelf, nextRoster, now, unitId);
+      ).run(callsign, nextRole, nextSelf, nextRoster, now, unitId);
     } else {
       db.prepareOnce(
-        `INSERT INTO team_members (unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        unitId,
-        callsign,
-        role ?? null,
-        color ?? null,
-        isSelf ? 1 : 0,
-        onRoster ? 1 : 0,
-        now,
-        now,
-      );
+        `INSERT INTO team_members (unit_id, callsign, role, is_self, on_roster, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(unitId, callsign, role ?? null, isSelf ? 1 : 0, onRoster ? 1 : 0, now, now);
     }
   })();
 

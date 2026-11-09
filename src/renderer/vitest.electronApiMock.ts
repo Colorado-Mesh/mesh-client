@@ -142,7 +142,6 @@ export function createElectronAPIMock(): ElectronAPI {
             unitId: number;
             callsign: string;
             role?: string | null;
-            color?: string | null;
             isSelf?: boolean;
             onRoster?: boolean;
           }) =>
@@ -150,7 +149,6 @@ export function createElectronAPIMock(): ElectronAPI {
               unitId: input.unitId,
               callsign: input.callsign,
               role: input.role ?? null,
-              color: input.color ?? null,
               isSelf: input.isSelf ?? false,
               onRoster: input.onRoster ?? false,
               createdAt: Date.now(),
@@ -174,7 +172,6 @@ export function createElectronAPIMock(): ElectronAPI {
               unitId: input.unitId,
               callsign: 'mock',
               role: null,
-              color: null,
               isSelf: false,
               onRoster: false,
               createdAt: Date.now(),
@@ -195,7 +192,6 @@ export function createElectronAPIMock(): ElectronAPI {
           unitId,
           callsign: 'mock',
           role: null,
-          color: null,
           isSelf: false,
           onRoster: false,
           createdAt: Date.now(),

@@ -13,7 +13,7 @@ const member: TeamMember = {
   unitId: 3,
   callsign: 'Charlie',
   role: 'GATE',
-  color: '#38BDF8',
+
   isSelf: false,
   onRoster: true,
   createdAt: 1,

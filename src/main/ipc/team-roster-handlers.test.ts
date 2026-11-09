@@ -67,15 +67,13 @@ describe('team roster IPC boundary', () => {
       unitId: 1,
       callsign: 'Alpha',
       role: 'IC',
-      color: '#38BDF8',
       isSelf: true,
-    }) as { unitId: number; callsign: string; isSelf: boolean; onRoster: boolean; color: string };
+    }) as { unitId: number; callsign: string; isSelf: boolean; onRoster: boolean };
     expect(created).toMatchObject({
       unitId: 1,
       callsign: 'Alpha',
       isSelf: true,
       onRoster: false,
-      color: '#38BDF8',
     });
 
     const allocated = handlers.get('db:allocateTeamUnitId')!(event) as number;
@@ -96,43 +94,45 @@ describe('team roster IPC boundary', () => {
     expect(listed[0].onRoster).toBe(true);
   });
 
-  it('coerces invalid create colors to null and preserves legacy color on update', () => {
-    const created = handlers.get('db:upsertTeamMember')!(event, {
-      unitId: 1,
-      callsign: 'A',
-      color: 'not-a-color',
-    }) as { color: string | null };
-    expect(created.color).toBeNull();
+  it('drops legacy color column on ensure', () => {
+    db.close();
+    db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    db.execScript(`
+      CREATE TABLE team_members (
+        unit_id INTEGER PRIMARY KEY CHECK (unit_id BETWEEN 1 AND 65535),
+        callsign TEXT NOT NULL,
+        role TEXT,
+        color TEXT,
+        is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
+        on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      INSERT INTO team_members (unit_id, callsign, color, is_self, on_roster, created_at, updated_at)
+        VALUES (1, 'Painted', '#FF0000', 0, 0, 1, 1);
+    `);
+    getDatabase.mockReturnValue(db);
+    handlers.clear();
+    registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
 
-    handlers.get('db:upsertTeamMember')!(event, {
-      unitId: 2,
-      callsign: 'B',
-      color: '#AABBCC',
-    });
-    // Simulate a legacy free-text color already in the row, then toggle roster with a bad color payload.
-    db.prepareOnce('UPDATE team_members SET color = ? WHERE unit_id = ?').run('red', 2);
-    const updated = handlers.get('db:upsertTeamMember')!(event, {
-      unitId: 2,
-      callsign: 'B',
-      color: 'still-bad',
-      onRoster: true,
-    }) as { color: string | null; onRoster: boolean };
-    expect(updated.onRoster).toBe(true);
-    expect(updated.color).toBe('red');
+    const cols = db.prepare('PRAGMA table_info(team_members)').all() as { name: string }[];
+    expect(cols.some((c) => c.name === 'color')).toBe(false);
+    const listed = handlers.get('db:listTeamMembers')!(event) as { callsign: string }[];
+    expect(listed[0]?.callsign).toBe('Painted');
   });
 
-  it('toggles onRoster without re-sending color', () => {
+  it('toggles onRoster without requiring other fields', () => {
     handlers.get('db:upsertTeamMember')!(event, {
       unitId: 1,
       callsign: 'A',
-      color: '#112233',
     });
     const updated = handlers.get('db:upsertTeamMember')!(event, {
       unitId: 1,
       callsign: 'A',
       onRoster: true,
-    }) as { color: string | null; onRoster: boolean };
-    expect(updated).toMatchObject({ onRoster: true, color: '#112233' });
+    }) as { onRoster: boolean };
+    expect(updated).toMatchObject({ onRoster: true });
   });
 
   it('enforces a single isSelf member', () => {
@@ -278,7 +278,6 @@ describe('team roster IPC boundary', () => {
         unit_id INTEGER PRIMARY KEY CHECK (unit_id BETWEEN 1 AND 65535),
         callsign TEXT NOT NULL,
         role TEXT,
-        color TEXT,
         is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL

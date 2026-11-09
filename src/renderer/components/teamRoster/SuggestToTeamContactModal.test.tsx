@@ -24,7 +24,7 @@ beforeEach(() => {
         unitId: 1,
         callsign: 'Alpha',
         role: 'IC',
-        color: null,
+
         isSelf: false,
         onRoster: false,
         createdAt: 1,
@@ -42,7 +42,7 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 1,
       callsign: 'Alpha',
       role: 'IC',
-      color: null,
+
       isSelf: false,
       onRoster: false,
       createdAt: 1,
@@ -82,7 +82,7 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-      color: '#38BDF8',
+
       isSelf: true,
       onRoster: false,
       createdAt: 1,
@@ -93,7 +93,7 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-      color: '#38BDF8',
+
       isSelf: true,
       onRoster: false,
       createdAt: 1,
@@ -142,7 +142,7 @@ describe('SuggestToTeamContactModal', () => {
           unitId: 3,
           callsign: 'Charlie',
           role: null,
-          color: null,
+
           isSelf: false,
           onRoster: false,
           createdAt: 1,
