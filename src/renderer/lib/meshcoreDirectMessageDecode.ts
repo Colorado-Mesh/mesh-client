@@ -129,10 +129,12 @@ export function decodeMeshcoreDirectMessageEvents(
     {
       type: 'text_message',
       payload: {
+        // A DM id carries the wire text, as a channel id does, so two different DMs from one
+        // contact in the same second stay two rows; a repeat delivery of the same DM keeps its id.
         id:
           roomServerId != null
             ? meshcoreRoomMessageId(roomServerId, raw.senderTimestamp, authorIdForId)
-            : `${senderId}:${raw.senderTimestamp}`,
+            : `${senderId}:${raw.senderTimestamp}:${raw.text}`,
         from: senderId,
         to: 0,
         payload: raw.text,
