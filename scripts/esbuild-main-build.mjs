@@ -140,6 +140,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Team roster IPC — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/team-roster-handlers.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'team-roster-handlers.js'),
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

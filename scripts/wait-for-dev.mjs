@@ -20,6 +20,7 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   localModels: path.join(projectRoot, 'dist-electron/main/ai-local-models.js'),
   nativeAiRuntime: path.join(projectRoot, 'dist-electron/main/ai-native-runtime.js'),
   identityHydration: path.join(projectRoot, 'dist-electron/main/identity-hydration.js'),
+  teamRoster: path.join(projectRoot, 'dist-electron/main/team-roster-handlers.js'),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */

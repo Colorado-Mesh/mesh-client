@@ -114,3 +114,13 @@ it('requires the identity hydration chunk before launching Electron', () => {
     }),
   ).toBe(false);
 });
+
+it('requires the team roster chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.teamRoster).toContain('team-roster-handlers.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('team-roster-handlers.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});

@@ -33,6 +33,8 @@ const LABELS: Record<string, string> = {
   'tabs.sniffer': 'Sniffer',
   'tabs.rf': 'RF',
   'tabs.graph': 'Graph',
+  'tabs.teamcontacts': 'Contact Cards',
+  'tabs.teamroster': 'Team Roster',
 };
 const labelT = ((key: string) => LABELS[key] ?? key) as TFunction;
 const mappings = computeTabMappings(labelT, 'meshcore', MESHCORE_CAPABILITIES);
@@ -135,15 +137,18 @@ describe('PanelLauncher', () => {
     );
   });
 
-  it('lists all 19 MeshCore panels grouped by section', () => {
+  it('lists all 21 MeshCore panels grouped by section', () => {
     renderLauncher();
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
-    expect(within(dialog).getByText('19 panels')).toBeInTheDocument();
+    expect(within(dialog).getByText('21 panels')).toBeInTheDocument();
     for (const group of ['Chat', 'Network', 'Monitor', 'Device', 'Other']) {
       expect(within(dialog).getByRole('region', { name: group })).toBeInTheDocument();
     }
     const chat = within(dialog).getByRole('region', { name: 'Chat' });
     expect(within(chat).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
+    const network = within(dialog).getByRole('region', { name: 'Network' });
+    expect(within(network).getByRole('button', { name: 'Contact Cards' })).toBeInTheDocument();
+    expect(within(network).getByRole('button', { name: 'Team Roster' })).toBeInTheDocument();
     const other = within(dialog).getByRole('region', { name: 'Other' });
     expect(within(other).getByRole('button', { name: 'Map' })).toBeInTheDocument();
     expect(within(other).getByRole('button', { name: 'Incident' })).toBeInTheDocument();
@@ -436,17 +441,22 @@ describe('PanelLauncher', () => {
     it('walks from panel rows into settings rows with the arrow keys and back', async () => {
       const user = userEvent.setup();
       renderWithSettings();
-      // "contacts" matches the Contacts panel row and both settings.
+      // "contacts" matches Contacts + Contact Cards panels and both settings.
       await user.type(searchInput(), 'contacts');
-      const panelRow = screen.getByRole('button', { name: 'Contacts' });
+      const contactsRow = screen.getByRole('button', { name: 'Contacts' });
+      const contactCardsRow = screen.getByRole('button', { name: 'Contact Cards' });
       const firstSetting = screen.getByRole('button', {
         name: 'Auto-offload when full, Contact management',
       });
+      // Search starts on Contacts (index 0); ArrowDown steps to Contact Cards, then settings.
       fireEvent.keyDown(searchInput(), { key: 'ArrowDown' });
-      expect(document.activeElement).not.toBe(panelRow);
+      expect(contactCardsRow).toHaveFocus();
+      fireEvent.keyDown(contactCardsRow, { key: 'ArrowDown' });
       expect(firstSetting).toHaveFocus();
       fireEvent.keyDown(firstSetting, { key: 'ArrowUp' });
-      expect(panelRow).toHaveFocus();
+      expect(contactCardsRow).toHaveFocus();
+      fireEvent.keyDown(contactCardsRow, { key: 'ArrowUp' });
+      expect(contactsRow).toHaveFocus();
     });
 
     it('sends typing on a settings row back to the search field', async () => {

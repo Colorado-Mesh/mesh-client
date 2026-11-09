@@ -27,6 +27,8 @@ export const SNIFFER_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Sniffer');
 export const RF_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RF');
 export const GRAPH_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Graph');
 export const SCHEDULED_BROADCASTS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('ScheduledBroadcasts');
+export const TEAM_CONTACTS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('TeamContacts');
+export const TEAM_ROSTER_PANEL_INDEX = TAB_SLOT_IDS.indexOf('TeamRoster');
 
 type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
 
@@ -56,6 +58,8 @@ export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)
   { or: ['hasNeighborInfo', 'nodeListTabUsesContactsLabel'] }, // Graph
   'hasReticulumTopologyPanel', // Topology
   undefined, // ScheduledBroadcasts
+  undefined, // TeamContacts
+  undefined, // TeamRoster
 ];
 
 function tabVisible(

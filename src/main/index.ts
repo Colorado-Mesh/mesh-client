@@ -6956,7 +6956,7 @@ app.on('child-process-gone', (_event, details) => {
 
 void app
   .whenReady()
-  .then(() => {
+  .then(async () => {
     try {
       initLogFile();
       console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
@@ -6983,6 +6983,26 @@ void app
       initDatabase();
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
+      // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
+      try {
+        const mod = (
+          process.env.VITEST
+            ? await import('./ipc/team-roster-handlers')
+            : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers.js')).href)
+        ) as {
+          registerTeamRosterIpcHandlers: (deps: {
+            ipcMain: typeof ipcMain;
+            assertIpcSender: typeof assertIpcSender;
+            getDatabase: typeof getDatabase;
+          }) => void;
+        };
+        mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+      } catch (err: unknown) {
+        console.error(
+          '[main] team-roster IPC registration failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
       protocol.handle(
         RENDERER_SCHEME,
         createRendererOriginProtocolHandler({

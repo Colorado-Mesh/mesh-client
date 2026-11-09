@@ -15,6 +15,8 @@ export const IncidentPanel = lazy(() => import('./components/incident/IncidentPa
 export const ScheduledBroadcastsPanel = lazy(
   () => import('./components/scheduledBroadcasts/ScheduledBroadcastsPanel'),
 );
+export const TeamContactsPanel = lazy(() => import('./components/teamRoster/TeamContactsPanel'));
+export const TeamRosterPanel = lazy(() => import('./components/teamRoster/TeamRosterPanel'));
 export const RrcPanel = lazy(() => import('./components/RrcPanel'));
 export const ReticulumRemotePanel = lazy(() => import('./components/ReticulumRemotePanel'));
 export const ReticulumPeerListPanel = lazy(() => import('./components/ReticulumPeerListPanel'));

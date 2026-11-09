@@ -3295,6 +3295,8 @@ export default function AppPanel({
                     'false',
                   );
                   await useScheduledBroadcastsStore.getState().clearAll();
+                  const { useTeamRosterStore } = await import('../stores/teamRosterStore');
+                  await useTeamRosterStore.getState().clearAll();
                   await window.electronAPI.clearSessionData();
                 },
               });

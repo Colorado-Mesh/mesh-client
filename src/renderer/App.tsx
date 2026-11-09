@@ -262,6 +262,8 @@ import {
   ScheduledBroadcastsPanel,
   SecurityPanel,
   TakServerPanel,
+  TeamContactsPanel,
+  TeamRosterPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
 import { announce } from './lib/a11yAnnouncer';
@@ -297,6 +299,8 @@ import {
   SNIFFER_PANEL_INDEX,
   STATS_PANEL_INDEX,
   TAK_PANEL_INDEX,
+  TEAM_CONTACTS_PANEL_INDEX,
+  TEAM_ROSTER_PANEL_INDEX,
   TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
@@ -729,7 +733,11 @@ function AppContent() {
       ) ?? {};
     return Boolean(s.alwaysShowMessageActions);
   });
-  const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
+  /** Peer id + protocol so a cross-protocol jump cannot open the wrong ChatPanel's DM tab. */
+  const [pendingDmTarget, setPendingDmTarget] = useState<{
+    protocol: MeshProtocol;
+    peer: number;
+  } | null>(null);
   const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
   const [pendingMessageFocus, setPendingMessageFocus] = useState<PendingMessageFocus | null>(null);
   const [globalMessageSearchOpen, setGlobalMessageSearchOpen] = useState(false);
@@ -3332,7 +3340,7 @@ function AppContent() {
       if (target.kind === 'rrc') {
         focusRrcNotificationTarget(target, useRrcSessionStore.getState());
       } else if (target.dmPeer != null) {
-        setPendingDmTarget(target.dmPeer);
+        setPendingDmTarget({ protocol: target.protocol, peer: target.dmPeer });
       } else if (target.channel != null) {
         setPendingChannelTarget(target.channel);
       }
@@ -3355,6 +3363,47 @@ function AppContent() {
   const onChatNotificationClick = useCallback((target: ChatNotificationTarget) => {
     openChatFromNotificationRef.current(target);
   }, []);
+
+  const handleTeamRosterSendDm = useCallback(
+    (args: {
+      protocol: MeshProtocol;
+      destination: number;
+      reticulumHash?: string | null;
+      text: string;
+    }): boolean => {
+      if (!selectByProtocol(chatSendAvailableByProtocol, args.protocol)) {
+        console.warn('[App] team roster send unavailable for protocol', args.protocol);
+        return false;
+      }
+      let destination = args.destination;
+      if (args.protocol === 'reticulum' && args.reticulumHash) {
+        try {
+          destination = openReticulumDmFromHash(args.reticulumHash);
+        } catch (err) {
+          console.warn(
+            '[App] team roster Reticulum DM failed ' +
+              (err instanceof Error ? err.message : String(err)),
+          );
+          return false;
+        }
+      }
+      try {
+        const send = selectByProtocol(autoResendSendByProtocol, args.protocol);
+        const storeId = send(args.text, 0, destination);
+        if (storeId == null) {
+          console.warn('[App] team roster send returned no store id', args.protocol, destination);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.warn(
+          '[App] team roster send threw ' + (err instanceof Error ? err.message : String(err)),
+        );
+        return false;
+      }
+    },
+    [autoResendSendByProtocol, chatSendAvailableByProtocol],
+  );
 
   useEffect(() => {
     const onOpen = () => {
@@ -4143,10 +4192,17 @@ function AppContent() {
     protocolDisconnect,
   ]);
 
-  const handleMessageNode = useCallback((nodeNum: number) => {
-    setPendingDmTarget(nodeNum);
-    setActiveTab(1); // Switch to Chat tab
-  }, []);
+  const handleMessageNode = useCallback(
+    (nodeNum: number) => {
+      const messageProtocol =
+        detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+          ? detailModalProtocol
+          : protocol;
+      setPendingDmTarget({ protocol: messageProtocol, peer: nodeNum });
+      setActiveTab(1); // Switch to Chat tab
+    },
+    [detailModalProtocol, protocol],
+  );
 
   const handleDeleteNode = useCallback(
     async (nodeNum: number) => {
@@ -4941,7 +4997,9 @@ function AppContent() {
                               }
                               connectionType={activeConnectionView.state.connectionType}
                               nodes={chatNodesForPanel}
-                              initialDmTarget={pendingDmTarget}
+                              initialDmTarget={
+                                pendingDmTarget?.protocol === protocol ? pendingDmTarget.peer : null
+                              }
                               onDmTargetConsumed={handleDmTargetConsumed}
                               initialChannelTarget={pendingChannelTarget}
                               onChannelTargetConsumed={handleChannelTargetConsumed}
@@ -6129,6 +6187,44 @@ function AppContent() {
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <ScheduledBroadcastsPanel />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${TEAM_CONTACTS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TEAM_CONTACTS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== TEAM_CONTACTS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === TEAM_CONTACTS_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <TeamContactsPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${TEAM_ROSTER_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TEAM_ROSTER_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== TEAM_ROSTER_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === TEAM_ROSTER_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <TeamRosterPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

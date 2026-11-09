@@ -13,6 +13,7 @@ import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
+import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
@@ -94,6 +95,8 @@ import MeshcoreTelemetryPushSection from './MeshcoreTelemetryPushSection';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
+import { SuggestToTeamContactModalLazy } from './teamRoster/SuggestToTeamContactModalLazy';
+import { useToast } from './Toast';
 import { Button, buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, NOTICE_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
@@ -291,8 +294,13 @@ export default function NodeDetailModal({
   meshcoreTelemetryPush,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
+  const [suggestTeam, setSuggestTeam] = useState<{
+    candidate: TeamLinkCandidate;
+    preferSelf: boolean;
+  } | null>(null);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
   const [repeaterSecretsEpoch, setRepeaterSecretsEpoch] = useState(0);
@@ -430,9 +438,9 @@ export default function NodeDetailModal({
     };
   }, [node?.node_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close on Escape (modal only)
+  // Close on Escape (modal only). Skip while suggest overlay owns Escape.
   useEffect(() => {
-    if (variant === 'pane') return;
+    if (variant === 'pane' || suggestTeam != null) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -440,7 +448,7 @@ export default function NodeDetailModal({
     return () => {
       document.removeEventListener('keydown', handleKey);
     };
-  }, [onClose, variant]);
+  }, [onClose, variant, suggestTeam]);
 
   // Reset all state when node changes
   useEffect(() => {
@@ -1061,6 +1069,60 @@ export default function NodeDetailModal({
       )}
     </div>
   );
+  // Contact Cards linking stays available for the local radio node (RF actions above do not).
+  const teamSuggestRow =
+    protocol === 'meshtastic' || protocol === 'meshcore' ? (
+      <div
+        className={`border-ink-800 flex flex-wrap items-center gap-2 px-5 py-3 ${
+          variant === 'pane' ? 'border-b' : actionsRow ? '' : 'border-t'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            const loraProtocol = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
+            const pubkeyHex =
+              contactPubkey ??
+              node.public_key_hex ??
+              (storeContactPublicKey ? meshcorePublicKeyToHex(storeContactPublicKey) : null);
+            void import('@/renderer/lib/teamRoster/durableKey')
+              .then(({ teamLinkFromLoraNode }) => {
+                const candidate = teamLinkFromLoraNode({
+                  protocol: loraProtocol,
+                  nodeId: node.node_id,
+                  longName: node.long_name,
+                  shortName: node.short_name,
+                  publicKeyHex: pubkeyHex,
+                  identityId: getIdentityIdForProtocol(loraProtocol),
+                });
+                if (!candidate) {
+                  addToast(t('teamRoster.linkFailed'), 'error');
+                  return;
+                }
+                setSuggestTeam({ candidate, preferSelf: isOurNode });
+              })
+              .catch((e: unknown) => {
+                console.warn('[NodeDetailModal] team link helper failed ' + errLikeToLogString(e));
+                addToast(t('teamRoster.linkFailed'), 'error');
+              });
+          }}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+          aria-label={t('teamRoster.suggestButton')}
+        >
+          {t('teamRoster.suggestButton')}
+        </button>
+      </div>
+    ) : null;
+  const suggestTeamContactModal =
+    suggestTeam != null ? (
+      <SuggestToTeamContactModalLazy
+        candidate={suggestTeam.candidate}
+        preferSelf={suggestTeam.preferSelf}
+        onClose={() => {
+          setSuggestTeam(null);
+        }}
+      />
+    ) : null;
   const detailContent = (
     <>
       {/* Header */}
@@ -1265,6 +1327,7 @@ export default function NodeDetailModal({
 
       {/* Pane: actions right under the header, where Message and Trace are expected (Option B). */}
       {variant === 'pane' && actionsRow}
+      {variant === 'pane' && teamSuggestRow}
 
       {/* Body + footer actions — single scroll region so remote admin and controls stay reachable */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -2389,6 +2452,7 @@ export default function NodeDetailModal({
 
         {/* Footer actions (modal). The pane shows them under the header instead (Option B). */}
         {variant !== 'pane' && actionsRow}
+        {variant !== 'pane' && teamSuggestRow}
 
         {/* MQTT Ignore toggle */}
         <div className="border-ink-800 shrink-0 border-t px-5 py-3">
@@ -2508,6 +2572,7 @@ export default function NodeDetailModal({
           {detailContent}
         </aside>
         {RemoteAuthModal}
+        {suggestTeamContactModal}
       </>
     );
   }
@@ -2532,6 +2597,7 @@ export default function NodeDetailModal({
         >
           {detailContent}
         </div>
+        {suggestTeamContactModal}
       </div>
       {RemoteAuthModal}
     </>
