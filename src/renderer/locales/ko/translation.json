@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "생성 및 연결",
     "suggestNoContacts": "일치하는 연락처가 없습니다.",
     "suggestAlreadyLinked": "이 노드는 이미 {{callsign}}(Unit {{unitId}})에 연결되어 있습니다.",
-    "suggestProtocolTaken": "{{callsign}}에는 이미 {{protocol}} 링크가 있습니다. 다른 연락처를 선택하거나 먼저 연결을 해제하세요.",
     "suggestButton": "팀 연락처에 추가",
     "unitIdAria": "유닛 ID",
     "callsignAria": "콜사인",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "팀 연락처를 삭제할 수 없습니다.",
     "linkFailed": "노드를 팀 연락처에 연결할 수 없습니다.",
     "unlinkFailed": "프로토콜을 연결 해제할 수 없습니다.",
-    "allocateFailed": "장치 ID를 할당할 수 없습니다."
+    "allocateFailed": "장치 ID를 할당할 수 없습니다.",
+    "onRoster": "팀 명단에",
+    "onRosterAria": "팀 명단에 표시",
+    "rosterBadge": "명단",
+    "addToRoster": "명단에 추가",
+    "removeFromRoster": "명단에서 제거",
+    "addToRosterAria": "팀 명단에 추가",
+    "removeFromRosterAria": "팀 명단에서 제거",
+    "addExistingToRoster": "연락처 카드에서 추가",
+    "createOnRoster": "명단에 생성",
+    "noCardsOffRoster": "모든 연락처 카드는 이미 목록에 있습니다.",
+    "rosterActions": "명단 작업"
   }
 }

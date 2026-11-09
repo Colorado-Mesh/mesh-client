@@ -29,8 +29,9 @@ beforeEach(() => {
         unitId: 1,
         callsign: 'Alpha',
         role: 'IC',
-        color: null,
+        color: '#38BDF8',
         isSelf: true,
+        onRoster: false,
         createdAt: 1,
         updatedAt: 1,
         links: [{ protocol: 'meshtastic', durableKey: '10', nodeId: 10, longName: 'A' }],
@@ -40,7 +41,7 @@ beforeEach(() => {
 });
 
 describe('TeamContactsPanel', () => {
-  it('lists team contacts', () => {
+  it('lists contact cards', () => {
     renderPanel();
     expect(screen.getByText(/#1 Alpha/)).toBeInTheDocument();
     expect(screen.getByText('IC')).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe('TeamContactsPanel', () => {
   it('opens the create dialog', async () => {
     const user = userEvent.setup();
     renderPanel();
-    await user.click(screen.getByRole('button', { name: /add contact/i }));
+    await user.click(screen.getByRole('button', { name: /add contact card/i }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

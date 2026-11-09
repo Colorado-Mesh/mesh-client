@@ -307,8 +307,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteTeamMember: (unitId: number) => ipcRenderer.invoke('db:deleteTeamMember', unitId),
     setTeamMemberLink: (input: TeamMemberLinkInput) =>
       ipcRenderer.invoke('db:setTeamMemberLink', input),
-    removeTeamMemberLink: (unitId: number, protocol: MeshProtocol) =>
-      ipcRenderer.invoke('db:removeTeamMemberLink', unitId, protocol),
+    removeTeamMemberLink: (unitId: number, protocol: MeshProtocol, durableKey: string) =>
+      ipcRenderer.invoke('db:removeTeamMemberLink', unitId, protocol, durableKey),
     clearTeamMembers: () => ipcRenderer.invoke('db:clearTeamMembers'),
     saveMessage: (message: {
       sender_id: number;

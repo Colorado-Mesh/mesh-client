@@ -297,7 +297,10 @@ export default function NodeDetailModal({
   const { addToast } = useToast();
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
-  const [suggestTeamCandidate, setSuggestTeamCandidate] = useState<TeamLinkCandidate | null>(null);
+  const [suggestTeam, setSuggestTeam] = useState<{
+    candidate: TeamLinkCandidate;
+    preferSelf: boolean;
+  } | null>(null);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
   const [repeaterSecretsEpoch, setRepeaterSecretsEpoch] = useState(0);
@@ -1064,7 +1067,16 @@ export default function NodeDetailModal({
             : t('nodeDetailModal.removeFromRadio')}
         </button>
       )}
-      {(protocol === 'meshtastic' || protocol === 'meshcore') && (
+    </div>
+  );
+  // Contact Cards linking stays available for the local radio node (RF actions above do not).
+  const teamSuggestRow =
+    protocol === 'meshtastic' || protocol === 'meshcore' ? (
+      <div
+        className={`border-ink-800 flex flex-wrap items-center gap-2 px-5 py-3 ${
+          variant === 'pane' ? 'border-b' : actionsRow ? '' : 'border-t'
+        }`}
+      >
         <button
           type="button"
           onClick={() => {
@@ -1087,7 +1099,7 @@ export default function NodeDetailModal({
                   addToast(t('teamRoster.linkFailed'), 'error');
                   return;
                 }
-                setSuggestTeamCandidate(candidate);
+                setSuggestTeam({ candidate, preferSelf: isOurNode });
               })
               .catch((e: unknown) => {
                 console.warn('[NodeDetailModal] team link helper failed ' + errLikeToLogString(e));
@@ -1099,15 +1111,15 @@ export default function NodeDetailModal({
         >
           {t('teamRoster.suggestButton')}
         </button>
-      )}
-    </div>
-  );
+      </div>
+    ) : null;
   const suggestTeamContactModal =
-    suggestTeamCandidate != null ? (
+    suggestTeam != null ? (
       <SuggestToTeamContactModalLazy
-        candidate={suggestTeamCandidate}
+        candidate={suggestTeam.candidate}
+        preferSelf={suggestTeam.preferSelf}
         onClose={() => {
-          setSuggestTeamCandidate(null);
+          setSuggestTeam(null);
         }}
       />
     ) : null;
@@ -1315,6 +1327,7 @@ export default function NodeDetailModal({
 
       {/* Pane: actions right under the header, where Message and Trace are expected (Option B). */}
       {variant === 'pane' && actionsRow}
+      {variant === 'pane' && teamSuggestRow}
 
       {/* Body + footer actions — single scroll region so remote admin and controls stay reachable */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -2439,6 +2452,7 @@ export default function NodeDetailModal({
 
         {/* Footer actions (modal). The pane shows them under the header instead (Option B). */}
         {variant !== 'pane' && actionsRow}
+        {variant !== 'pane' && teamSuggestRow}
 
         {/* MQTT Ignore toggle */}
         <div className="border-ink-800 shrink-0 border-t px-5 py-3">

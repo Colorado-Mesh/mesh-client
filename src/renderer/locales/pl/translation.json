@@ -8678,7 +8678,6 @@
     "suggestCreateSubmit": "Utwórz i połącz",
     "suggestNoContacts": "Żadne kontakty nie pasują.",
     "suggestAlreadyLinked": "Ten węzeł jest już połączony z {{callsign}} (jednostka {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} ma już link {{protocol}}. Wybierz inny kontakt lub najpierw odłącz.",
     "suggestButton": "Dodaj do kontaktu zespołu",
     "unitIdAria": "Identyfikator jednostki",
     "callsignAria": "Znak wywoławczy",
@@ -8693,6 +8692,17 @@
     "deleteFailed": "Nie można usunąć kontaktu zespołu.",
     "linkFailed": "Nie można połączyć węzła z kontaktem zespołu.",
     "unlinkFailed": "Nie można odłączyć protokołu.",
-    "allocateFailed": "Nie można przydzielić identyfikatora jednostki."
+    "allocateFailed": "Nie można przydzielić identyfikatora jednostki.",
+    "onRoster": "W składzie drużyny",
+    "onRosterAria": "Pokaż w składzie drużyny",
+    "rosterBadge": "Lista",
+    "addToRoster": "Dodaj do listy",
+    "removeFromRoster": "Usuń z listy",
+    "addToRosterAria": "Dodaj do składu drużyny",
+    "removeFromRosterAria": "Usuń ze składu drużyny",
+    "addExistingToRoster": "Dodaj z kart kontaktowych",
+    "createOnRoster": "Utwórz na liście",
+    "noCardsOffRoster": "Każda karta kontaktowa jest już na liście.",
+    "rosterActions": "Działania spisowe"
   }
 }

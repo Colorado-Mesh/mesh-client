@@ -34,6 +34,7 @@ describe('teamRosterStore', () => {
         role: null,
         color: null,
         isSelf: false,
+        onRoster: false,
         createdAt: 1,
         updatedAt: 1,
         links: [],
@@ -44,6 +45,7 @@ describe('teamRosterStore', () => {
         role: 'IC',
         color: null,
         isSelf: true,
+        onRoster: true,
         createdAt: 1,
         updatedAt: 1,
         links: [],
@@ -66,6 +68,7 @@ describe('teamRosterStore', () => {
           role: null,
           color: null,
           isSelf: true,
+          onRoster: false,
           createdAt: 1,
           updatedAt: 1,
           links: [],
@@ -77,6 +80,7 @@ describe('teamRosterStore', () => {
         role: null,
         color: null,
         isSelf: true,
+        onRoster: false,
         createdAt: 2,
         updatedAt: 2,
         links: [],
@@ -102,6 +106,7 @@ describe('teamRosterStore', () => {
           role: null,
           color: null,
           isSelf: false,
+          onRoster: false,
           createdAt: 1,
           updatedAt: 1,
           links: [],
@@ -113,6 +118,7 @@ describe('teamRosterStore', () => {
         role: null,
         color: null,
         isSelf: false,
+        onRoster: false,
         createdAt: 1,
         updatedAt: 2,
         links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9 }],
@@ -128,6 +134,39 @@ describe('teamRosterStore', () => {
     expect(useTeamRosterStore.getState().members[0].links).toHaveLength(1);
   });
 
+  it('removeLink passes durableKey to IPC', async () => {
+    const removeTeamMemberLink = vi.fn().mockResolvedValue({
+      unitId: 1,
+      callsign: 'A',
+      role: null,
+      color: null,
+      isSelf: false,
+      onRoster: false,
+      createdAt: 1,
+      updatedAt: 2,
+      links: [],
+    });
+    mockDb({
+      listTeamMembers: vi.fn().mockResolvedValue([
+        {
+          unitId: 1,
+          callsign: 'A',
+          role: null,
+          color: null,
+          isSelf: false,
+          onRoster: false,
+          createdAt: 1,
+          updatedAt: 1,
+          links: [{ protocol: 'meshtastic', durableKey: '9', nodeId: 9 }],
+        },
+      ]),
+      removeTeamMemberLink,
+    });
+    await hydrateTeamRosterStore();
+    await useTeamRosterStore.getState().removeLink(1, 'meshtastic', '9');
+    expect(removeTeamMemberLink).toHaveBeenCalledWith(1, 'meshtastic', '9');
+  });
+
   it('clearAll empties members', async () => {
     mockDb({
       listTeamMembers: vi.fn().mockResolvedValue([
@@ -137,6 +176,7 @@ describe('teamRosterStore', () => {
           role: null,
           color: null,
           isSelf: false,
+          onRoster: false,
           createdAt: 1,
           updatedAt: 1,
           links: [],

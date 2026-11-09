@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Créer et lier",
     "suggestNoContacts": "Aucun contact ne correspond.",
     "suggestAlreadyLinked": "Ce nœud est déjà lié à {{callsign}} (Unité {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} possède déjà un lien {{protocol}}. Choisissez un autre contact ou dissociez-le d'abord.",
     "suggestButton": "Ajouter à l'équipe",
     "unitIdAria": "ID de l'unité",
     "callsignAria": "Indicatif",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Impossible de supprimer le contact de l'équipe.",
     "linkFailed": "Impossible de lier le nœud au contact de l'équipe.",
     "unlinkFailed": "Impossible de dissocier le protocole.",
-    "allocateFailed": "Impossible d'attribuer un ID d'unité."
+    "allocateFailed": "Impossible d'attribuer un ID d'unité.",
+    "onRoster": "Sur la liste de l'équipe",
+    "onRosterAria": "Afficher sur la liste de l'équipe",
+    "rosterBadge": "Liste",
+    "addToRoster": "Ajouter à la liste",
+    "removeFromRoster": "Supprimer de la liste",
+    "addToRosterAria": "Ajouter à la liste de l'équipe",
+    "removeFromRosterAria": "Supprimer de la liste de l'équipe",
+    "addExistingToRoster": "Ajouter à partir des fiches de contact",
+    "createOnRoster": "Créer sur la liste",
+    "noCardsOffRoster": "Chaque fiche de contact est déjà sur la liste.",
+    "rosterActions": "Actions sur la liste"
   }
 }

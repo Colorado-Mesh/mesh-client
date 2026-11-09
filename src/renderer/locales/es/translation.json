@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Crear y vincular",
     "suggestNoContacts": "Ningún contacto coincide.",
     "suggestAlreadyLinked": "Este nodo ya está vinculado a {{callsign}} (Unidad {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} ya tiene un enlace {{protocol}}. Elige otro contacto o desvincúlalo primero.",
     "suggestButton": "Agregar al contacto del equipo",
     "unitIdAria": "ID de unidad",
     "callsignAria": "indicativo de llamada",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "No se pudo eliminar el contacto del equipo.",
     "linkFailed": "No se pudo vincular el nodo al contacto del equipo.",
     "unlinkFailed": "No se pudo desvincular el protocolo.",
-    "allocateFailed": "No se pudo asignar una ID de unidad."
+    "allocateFailed": "No se pudo asignar una ID de unidad.",
+    "onRoster": "En la lista del equipo",
+    "onRosterAria": "Mostrar en la lista del equipo",
+    "rosterBadge": "Lista",
+    "addToRoster": "Agregar a la lista",
+    "removeFromRoster": "Eliminar de la lista",
+    "addToRosterAria": "Agregar a la lista del equipo",
+    "removeFromRosterAria": "Eliminar de la lista del equipo",
+    "addExistingToRoster": "Agregar desde tarjetas de contacto",
+    "createOnRoster": "Crear en lista",
+    "noCardsOffRoster": "Todas las tarjetas de contacto ya están en la lista.",
+    "rosterActions": "Acciones de lista"
   }
 }

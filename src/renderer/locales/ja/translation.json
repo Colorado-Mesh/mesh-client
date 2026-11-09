@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "作成してリンクする",
     "suggestNoContacts": "一致する連絡先がありません。",
     "suggestAlreadyLinked": "このノードはすでに {{callsign}} (ユニット {{unitId}}) にリンクされています。",
-    "suggestProtocolTaken": "{{callsign}} にはすでに {{protocol}} リンクがあります。別の連絡先を選択するか、最初にリンクを解除してください。",
     "suggestButton": "チームの連絡先に追加",
     "unitIdAria": "ユニットID",
     "callsignAria": "コールサイン",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "チームの連絡先を削除できませんでした。",
     "linkFailed": "ノードをチーム連絡先にリンクできませんでした。",
     "unlinkFailed": "プロトコルのリンクを解除できませんでした。",
-    "allocateFailed": "ユニットIDを割り当てられませんでした。"
+    "allocateFailed": "ユニットIDを割り当てられませんでした。",
+    "onRoster": "チーム名簿について",
+    "onRosterAria": "チーム名簿に表示",
+    "rosterBadge": "名簿",
+    "addToRoster": "名簿に追加",
+    "removeFromRoster": "名簿から削除",
+    "addToRosterAria": "チーム名簿に追加",
+    "removeFromRosterAria": "チーム名簿から削除",
+    "addExistingToRoster": "連絡先カードから追加",
+    "createOnRoster": "名簿に作成",
+    "noCardsOffRoster": "すべての連絡先カードはすでに名簿に登録されています。",
+    "rosterActions": "名簿のアクション"
   }
 }

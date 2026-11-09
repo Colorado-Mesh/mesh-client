@@ -1,5 +1,5 @@
 /**
- * Team Contacts / Team Roster IPC.
+ * Contact Cards / Team Roster IPC.
  * Production ships this as sibling `team-roster-handlers.js` so it stays out of measured index.js.
  */
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
@@ -8,9 +8,9 @@ import { isMeshProtocol, type MeshProtocol } from '../../shared/meshProtocol';
 import {
   assertTeamProtocol,
   isValidTeamUnitId,
+  normalizeTeamColor,
   normalizeTeamDurableKey,
   TEAM_CALLSIGN_MAX,
-  TEAM_COLOR_MAX,
   TEAM_LONG_NAME_MAX,
   TEAM_ROLE_MAX,
   TEAM_UNIT_ID_MAX,
@@ -28,6 +28,52 @@ export interface TeamRosterIpcDeps {
   getDatabase: () => NodeSqliteDB;
 }
 
+const LINKS_CREATE_SQL = `CREATE TABLE IF NOT EXISTS team_member_links (
+      unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
+      protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
+      durable_key TEXT NOT NULL,
+      node_id INTEGER,
+      long_name TEXT,
+      identity_id TEXT,
+      PRIMARY KEY (unit_id, protocol, durable_key),
+      UNIQUE (protocol, durable_key)
+    )`;
+
+function migrateOnRosterColumn(db: NodeSqliteDB): void {
+  const cols = db.prepare('PRAGMA table_info(team_members)').all() as { name: string }[];
+  if (cols.some((c) => c.name === 'on_roster')) return;
+  db.execScript(
+    'ALTER TABLE team_members ADD COLUMN on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1))',
+  );
+}
+
+function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
+  const row = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'team_member_links'`)
+    .get() as { sql: string } | undefined;
+  if (!row?.sql) return;
+  if (row.sql.includes('PRIMARY KEY (unit_id, protocol, durable_key)')) return;
+
+  db.execScript(`
+    CREATE TABLE team_member_links_new (
+      unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
+      protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
+      durable_key TEXT NOT NULL,
+      node_id INTEGER,
+      long_name TEXT,
+      identity_id TEXT,
+      PRIMARY KEY (unit_id, protocol, durable_key),
+      UNIQUE (protocol, durable_key)
+    );
+    INSERT OR IGNORE INTO team_member_links_new
+      (unit_id, protocol, durable_key, node_id, long_name, identity_id)
+      SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id
+      FROM team_member_links;
+    DROP TABLE team_member_links;
+    ALTER TABLE team_member_links_new RENAME TO team_member_links;
+  `);
+}
+
 /** Idempotent DDL kept out of measured main `index.js` (sibling bundle). */
 export function ensureTeamRosterTables(db: NodeSqliteDB): void {
   db.execScript(`
@@ -37,20 +83,14 @@ export function ensureTeamRosterTables(db: NodeSqliteDB): void {
       role TEXT,
       color TEXT,
       is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
+      on_roster INTEGER NOT NULL DEFAULT 0 CHECK (on_roster IN (0, 1)),
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS team_member_links (
-      unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
-      protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
-      durable_key TEXT NOT NULL,
-      node_id INTEGER,
-      long_name TEXT,
-      identity_id TEXT,
-      PRIMARY KEY (unit_id, protocol),
-      UNIQUE (protocol, durable_key)
-    );
+    ${LINKS_CREATE_SQL};
   `);
+  migrateOnRosterColumn(db);
+  migrateTeamMemberLinksPk(db);
 }
 
 interface MemberDbRow {
@@ -59,6 +99,7 @@ interface MemberDbRow {
   role: string | null;
   color: string | null;
   is_self: number;
+  on_roster: number;
   created_at: number;
   updated_at: number;
 }
@@ -118,6 +159,7 @@ function memberFromDb(row: MemberDbRow, links: TeamMemberLink[]): TeamMember {
     role: row.role,
     color: row.color,
     isSelf: row.is_self === 1,
+    onRoster: row.on_roster === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     links,
@@ -133,7 +175,7 @@ function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, Tea
     .prepare(
       `SELECT unit_id, protocol, durable_key, node_id, long_name, identity_id
        FROM team_member_links WHERE unit_id IN (${placeholders})
-       ORDER BY protocol ASC`,
+       ORDER BY protocol ASC, durable_key ASC`,
     )
     .all(...unitIds) as LinkDbRow[];
   for (const row of rows) {
@@ -148,7 +190,7 @@ function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, Tea
 function listMembers(db: NodeSqliteDB): TeamMember[] {
   const rows = db
     .prepare(
-      `SELECT unit_id, callsign, role, color, is_self, created_at, updated_at
+      `SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at
        FROM team_members ORDER BY unit_id ASC`,
     )
     .all() as MemberDbRow[];
@@ -162,7 +204,7 @@ function listMembers(db: NodeSqliteDB): TeamMember[] {
 function readMember(db: NodeSqliteDB, unitId: number): TeamMember | null {
   const row = db
     .prepare(
-      `SELECT unit_id, callsign, role, color, is_self, created_at, updated_at
+      `SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at
        FROM team_members WHERE unit_id = ?`,
     )
     .get(unitId) as MemberDbRow | undefined;
@@ -190,18 +232,29 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
     input.role === undefined
       ? undefined
       : clampOptionalString(input.role, TEAM_ROLE_MAX, 'role', true);
-  const color =
-    input.color === undefined
-      ? undefined
-      : clampOptionalString(input.color, TEAM_COLOR_MAX, 'color', true);
-  const isSelf = input.isSelf === true;
-  const now = Date.now();
-
   const existing = db
     .prepare(
-      'SELECT unit_id, callsign, role, color, is_self, created_at, updated_at FROM team_members WHERE unit_id = ?',
+      'SELECT unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at FROM team_members WHERE unit_id = ?',
     )
     .get(unitId) as MemberDbRow | undefined;
+
+  // Never throw on color — invalid/legacy values become null (create) or keep existing (update).
+  let color: string | null | undefined;
+  if (input.color === undefined) {
+    color = undefined;
+  } else if (input.color == null || (typeof input.color === 'string' && !input.color.trim())) {
+    color = null;
+  } else {
+    const normalized = normalizeTeamColor(typeof input.color === 'string' ? input.color : null);
+    if (normalized == null) {
+      color = existing ? undefined : null;
+    } else {
+      color = normalized;
+    }
+  }
+  const isSelf = input.isSelf === true;
+  const onRoster = input.onRoster === true;
+  const now = Date.now();
 
   db.transaction(() => {
     if (isSelf) {
@@ -213,16 +266,26 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
       const nextRole = role === undefined ? existing.role : role;
       const nextColor = color === undefined ? existing.color : color;
       const nextSelf = input.isSelf === undefined ? existing.is_self : isSelf ? 1 : 0;
+      const nextRoster = input.onRoster === undefined ? existing.on_roster : onRoster ? 1 : 0;
       db.prepareOnce(
         `UPDATE team_members
-         SET callsign = ?, role = ?, color = ?, is_self = ?, updated_at = ?
+         SET callsign = ?, role = ?, color = ?, is_self = ?, on_roster = ?, updated_at = ?
          WHERE unit_id = ?`,
-      ).run(callsign, nextRole, nextColor, nextSelf, now, unitId);
+      ).run(callsign, nextRole, nextColor, nextSelf, nextRoster, now, unitId);
     } else {
       db.prepareOnce(
-        `INSERT INTO team_members (unit_id, callsign, role, color, is_self, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      ).run(unitId, callsign, role ?? null, color ?? null, isSelf ? 1 : 0, now, now);
+        `INSERT INTO team_members (unit_id, callsign, role, color, is_self, on_roster, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        unitId,
+        callsign,
+        role ?? null,
+        color ?? null,
+        isSelf ? 1 : 0,
+        onRoster ? 1 : 0,
+        now,
+        now,
+      );
     }
   })();
 
@@ -260,8 +323,7 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
       db.prepareOnce(
         `INSERT INTO team_member_links (unit_id, protocol, durable_key, node_id, long_name, identity_id)
          VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(unit_id, protocol) DO UPDATE SET
-           durable_key = excluded.durable_key,
+         ON CONFLICT(unit_id, protocol, durable_key) DO UPDATE SET
            node_id = excluded.node_id,
            long_name = excluded.long_name,
            identity_id = excluded.identity_id`,
@@ -281,16 +343,23 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
   return updated;
 }
 
-function removeLink(db: NodeSqliteDB, unitIdRaw: unknown, protocolRaw: unknown): TeamMember {
+function removeLink(
+  db: NodeSqliteDB,
+  unitIdRaw: unknown,
+  protocolRaw: unknown,
+  durableKeyRaw: unknown,
+): TeamMember {
   const unitId = assertUnitId(unitIdRaw);
   const protocol = assertTeamProtocol(protocolRaw);
+  if (typeof durableKeyRaw !== 'string') fail('durableKey');
+  const durableKey = normalizeTeamDurableKey(protocol, durableKeyRaw);
+  if (!durableKey) fail('durableKey');
   if (!readMember(db, unitId)) fail('unitId not found');
   const now = Date.now();
   db.transaction(() => {
-    db.prepareOnce('DELETE FROM team_member_links WHERE unit_id = ? AND protocol = ?').run(
-      unitId,
-      protocol,
-    );
+    db.prepareOnce(
+      'DELETE FROM team_member_links WHERE unit_id = ? AND protocol = ? AND durable_key = ?',
+    ).run(unitId, protocol, durableKey);
     db.prepareOnce('UPDATE team_members SET updated_at = ? WHERE unit_id = ?').run(now, unitId);
   })();
   const updated = readMember(db, unitId);
@@ -331,10 +400,13 @@ export function registerTeamRosterIpcHandlers(deps: TeamRosterIpcDeps): void {
     return setLink(getDatabase(), raw as TeamMemberLinkInput);
   });
 
-  ipcMain.handle('db:removeTeamMemberLink', (event, unitIdRaw: unknown, protocolRaw: unknown) => {
-    assertIpcSender(event, 'db:removeTeamMemberLink');
-    return removeLink(getDatabase(), unitIdRaw, protocolRaw);
-  });
+  ipcMain.handle(
+    'db:removeTeamMemberLink',
+    (event, unitIdRaw: unknown, protocolRaw: unknown, durableKeyRaw: unknown) => {
+      assertIpcSender(event, 'db:removeTeamMemberLink');
+      return removeLink(getDatabase(), unitIdRaw, protocolRaw, durableKeyRaw);
+    },
+  );
 
   ipcMain.handle('db:clearTeamMembers', (event) => {
     assertIpcSender(event, 'db:clearTeamMembers');
@@ -355,6 +427,7 @@ export const teamRosterHandlerTestUtils = {
   removeLink,
   assertUnitId,
   normalizeTeamDurableKey,
+  ensureTeamRosterTables,
 };
 
 export type { MeshProtocol };

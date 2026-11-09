@@ -455,7 +455,11 @@ export interface ElectronAPI {
     upsertTeamMember: (input: TeamMemberInput) => Promise<TeamMember>;
     deleteTeamMember: (unitId: number) => Promise<void>;
     setTeamMemberLink: (input: TeamMemberLinkInput) => Promise<TeamMember>;
-    removeTeamMemberLink: (unitId: number, protocol: MeshProtocol) => Promise<TeamMember>;
+    removeTeamMemberLink: (
+      unitId: number,
+      protocol: MeshProtocol,
+      durableKey: string,
+    ) => Promise<TeamMember>;
     clearTeamMembers: () => Promise<void>;
     saveMessage: (message: {
       sender_id: number;

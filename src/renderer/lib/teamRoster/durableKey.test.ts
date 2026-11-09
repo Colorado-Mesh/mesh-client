@@ -19,14 +19,26 @@ describe('team roster durable keys', () => {
     });
   });
 
-  it('requires a 64-hex meshcore pubkey', () => {
+  it('prefers meshcore pubkey and falls back to node id without a key', () => {
     expect(
       teamLinkFromLoraNode({
         protocol: 'meshcore',
         nodeId: 1,
         publicKeyHex: 'ab',
       }),
-    ).toBeNull();
+    ).toEqual({
+      protocol: 'meshcore',
+      durableKey: '1',
+      nodeId: 1,
+      longName: null,
+      identityId: null,
+    });
+    expect(
+      teamLinkFromLoraNode({
+        protocol: 'meshcore',
+        nodeId: 99,
+      })?.durableKey,
+    ).toBe('99');
     expect(
       teamLinkFromLoraNode({
         protocol: 'meshcore',

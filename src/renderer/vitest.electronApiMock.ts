@@ -144,6 +144,7 @@ export function createElectronAPIMock(): ElectronAPI {
             role?: string | null;
             color?: string | null;
             isSelf?: boolean;
+            onRoster?: boolean;
           }) =>
             Promise.resolve({
               unitId: input.unitId,
@@ -151,6 +152,7 @@ export function createElectronAPIMock(): ElectronAPI {
               role: input.role ?? null,
               color: input.color ?? null,
               isSelf: input.isSelf ?? false,
+              onRoster: input.onRoster ?? false,
               createdAt: Date.now(),
               updatedAt: Date.now(),
               links: [],
@@ -174,6 +176,7 @@ export function createElectronAPIMock(): ElectronAPI {
               role: null,
               color: null,
               isSelf: false,
+              onRoster: false,
               createdAt: Date.now(),
               updatedAt: Date.now(),
               links: [
@@ -194,6 +197,7 @@ export function createElectronAPIMock(): ElectronAPI {
           role: null,
           color: null,
           isSelf: false,
+          onRoster: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
           links: [],

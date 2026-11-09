@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Oluşturun ve bağlayın",
     "suggestNoContacts": "Hiçbir kişi eşleşmiyor.",
     "suggestAlreadyLinked": "Bu düğüm zaten {{callsign}} (Birim {{unitId}}) ile bağlantılı.",
-    "suggestProtocolTaken": "{{callsign}} zaten bir {{protocol}} bağlantısına sahip. Başka bir kişi seçin veya önce bağlantıyı kaldırın.",
     "suggestButton": "Ekip Kişisine Ekle",
     "unitIdAria": "Birim Kimliği",
     "callsignAria": "Çağrı işareti",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Ekip kişisi silinemedi.",
     "linkFailed": "Düğüm ekip iletişimine bağlanamadı.",
     "unlinkFailed": "Protokolün bağlantısı kaldırılamadı.",
-    "allocateFailed": "Birim Kimliği tahsis edilemedi."
+    "allocateFailed": "Birim Kimliği tahsis edilemedi.",
+    "onRoster": "Takım Kadrosu Hakkında",
+    "onRosterAria": "Takım Kadrosunda Göster",
+    "rosterBadge": "Kadro",
+    "addToRoster": "Listeye ekle",
+    "removeFromRoster": "Listeden kaldır",
+    "addToRosterAria": "Takım Kadrosuna Ekle",
+    "removeFromRosterAria": "Takım Kadrosundan Çıkar",
+    "addExistingToRoster": "Kişi Kartlarından Ekle",
+    "createOnRoster": "Listede oluştur",
+    "noCardsOffRoster": "Her kişi kartı zaten listede.",
+    "rosterActions": "Kadro eylemleri"
   }
 }

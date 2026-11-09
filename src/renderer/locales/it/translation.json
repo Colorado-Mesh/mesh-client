@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Crea e collega",
     "suggestNoContacts": "Nessun contatto corrisponde.",
     "suggestAlreadyLinked": "Questo nodo è già collegato a {{callsign}} (Unità {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} ha già un collegamento {{protocol}}. Scegli un altro contatto o scollegalo prima.",
     "suggestButton": "Aggiungi al contatto del team",
     "unitIdAria": "Identificativo dell'unità",
     "callsignAria": "Nominativo",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Impossibile eliminare il contatto del team.",
     "linkFailed": "Impossibile collegare il nodo al contatto del team.",
     "unlinkFailed": "Impossibile scollegare il protocollo.",
-    "allocateFailed": "Impossibile assegnare un ID unità."
+    "allocateFailed": "Impossibile assegnare un ID unità.",
+    "onRoster": "Nel roster della squadra",
+    "onRosterAria": "Mostra nel roster della squadra",
+    "rosterBadge": "Elenco",
+    "addToRoster": "Aggiungi all'elenco",
+    "removeFromRoster": "Rimuovi dal roster",
+    "addToRosterAria": "Aggiungi all'elenco della squadra",
+    "removeFromRosterAria": "Rimuovi dal roster della squadra",
+    "addExistingToRoster": "Aggiungi da schede contatto",
+    "createOnRoster": "Crea nel roster",
+    "noCardsOffRoster": "Ogni scheda di contatto è già presente nell'elenco.",
+    "rosterActions": "Azioni del registro"
   }
 }

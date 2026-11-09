@@ -8678,7 +8678,6 @@
     "suggestCreateSubmit": "Создать и связать",
     "suggestNoContacts": "Ни один контакт не совпадает.",
     "suggestAlreadyLinked": "Этот узел уже связан с {{callsign}} (модуль {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} уже имеет ссылку {{protocol}}. Выберите другой контакт или сначала отмените связь.",
     "suggestButton": "Добавить в контакт команды",
     "unitIdAria": "Идентификатор объекта",
     "callsignAria": "Позывной",
@@ -8693,6 +8692,17 @@
     "deleteFailed": "Не удалось удалить контакт команды.",
     "linkFailed": "Не удалось связать узел с контактом команды.",
     "unlinkFailed": "Не удалось отключить протокол.",
-    "allocateFailed": "Не удалось присвоить идентификатор объекта."
+    "allocateFailed": "Не удалось присвоить идентификатор объекта.",
+    "onRoster": "В составе команды",
+    "onRosterAria": "Показать в составе команды",
+    "rosterBadge": "Состав",
+    "addToRoster": "Добавить в список",
+    "removeFromRoster": "Удалить из реестра",
+    "addToRosterAria": "Добавить в состав команды",
+    "removeFromRosterAria": "Удалить из состава команды",
+    "addExistingToRoster": "Добавить из карточек контактов",
+    "createOnRoster": "Создать в списке",
+    "noCardsOffRoster": "Каждая карточка контакта уже есть в списке.",
+    "rosterActions": "Действия реестра"
   }
 }

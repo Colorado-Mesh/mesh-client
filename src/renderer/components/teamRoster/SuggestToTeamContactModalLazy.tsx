@@ -12,13 +12,15 @@ const SuggestToTeamContactModal = lazy(() =>
 export function SuggestToTeamContactModalLazy({
   candidate,
   onClose,
+  preferSelf = false,
 }: {
   candidate: TeamLinkCandidate;
   onClose: () => void;
+  preferSelf?: boolean;
 }) {
   return (
     <Suspense fallback={null}>
-      <SuggestToTeamContactModal candidate={candidate} onClose={onClose} />
+      <SuggestToTeamContactModal candidate={candidate} onClose={onClose} preferSelf={preferSelf} />
     </Suspense>
   );
 }

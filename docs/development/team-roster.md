@@ -1,24 +1,30 @@
-# Team Contacts & Team Roster
+# Contact Cards & Team Roster
 
 App-global cross-protocol person cards keyed by Unit ID (1–65535). Linking layer only —
 check-in / Unit-ID packet addressing is deferred.
 
 ## Product rules
 
-- **Team Contacts** (Network): create/edit callsign, role, color, self flag; unlink protocols.
-- **Team Roster** (Network): same store, read-focused list by Unit ID.
-- **Suggest to Team Contact** from LoRa node detail and Reticulum peer detail.
-- At most **one link per protocol** per Unit ID; a durable node key belongs to at most one member.
+- **Contact Cards** (Network, slot `TeamContacts`): create/edit callsign, role, color, self
+  flag, and **On Team Roster**; unlink individual nodes.
+- **Team Roster** (Network): opt-in subset of Contact Cards (`onRoster`). Creating a card does
+  **not** put it on the roster unless created via **Create on roster** / toggled on. The roster
+  panel can add existing cards or create a new card already on the roster.
+- **Add to Contact Card** from LoRa node detail (including your connected node) and Reticulum
+  peer detail.
+- A card may hold **multiple links per protocol**; a durable node key still belongs to at most
+  one card.
 - At most **one** `isSelf` member (cleared on upsert in SQLite).
-- Distinct from MeshCore radio contacts, Reticulum `is_contact`, favorites, Contact Groups, and RRC room rosters.
+- Distinct from MeshCore radio contacts, Reticulum `is_contact`, favorites, Contact Groups, and
+  RRC room rosters.
 
 ## Durable keys
 
-| Protocol   | `durable_key`                       |
-| ---------- | ----------------------------------- |
-| Meshtastic | Decimal node number string          |
-| MeshCore   | 64-hex pubkey (lowercase)           |
-| Reticulum  | 32-hex destination hash (lowercase) |
+| Protocol   | `durable_key`                                                            |
+| ---------- | ------------------------------------------------------------------------ |
+| Meshtastic | Decimal node number string                                               |
+| MeshCore   | 64-hex pubkey (lowercase) when known; otherwise decimal node id (no key) |
+| Reticulum  | 32-hex destination hash (lowercase)                                      |
 
 Do not use Reticulum’s synthetic uint32 alone as the durable identity.
 

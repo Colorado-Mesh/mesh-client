@@ -491,9 +491,11 @@ export default function ReticulumPeerListPanel({
         selectedGroupId,
         groupMemberIds,
       );
-      // Peers tab: cheap labels for the full prepare; overlay resolution for visible rows.
+      // Peers tab: cheap labels when browsing; full Nomad/contact overlays while searching
+      // so display names like "NV0N" match even when the path-table name is a hash alias.
+      const searching = debouncedSearchQuery.trim().length > 0;
       const labelFor =
-        activeTab === 'peers'
+        activeTab === 'peers' && !searching
           ? (peer: ReticulumPeer) => cheapReticulumPeerLabel(peer)
           : resolvePeerLabel;
       const prepared = prepareReticulumPeerRows(sourceRows, labelFor);

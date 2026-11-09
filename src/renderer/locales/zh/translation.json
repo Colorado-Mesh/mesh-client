@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "创建并链接",
     "suggestNoContacts": "没有匹配的联系人。",
     "suggestAlreadyLinked": "该节点已链接到 {{callsign}}（单元 {{unitId}}）。",
-    "suggestProtocolTaken": "{{callsign}} 已经有 {{protocol}} 链接。选择其他联系人或先取消链接。",
     "suggestButton": "添加到团队联系人",
     "unitIdAria": "单位编号",
     "callsignAria": "呼号",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "无法删除团队联系人。",
     "linkFailed": "无法将节点链接到团队联系人。",
     "unlinkFailed": "无法取消协议链接。",
-    "allocateFailed": "无法分配单元 ID。"
+    "allocateFailed": "无法分配单元 ID。",
+    "onRoster": "在球队名单上",
+    "onRosterAria": "显示在团队名单上",
+    "rosterBadge": "名册",
+    "addToRoster": "添加到名册",
+    "removeFromRoster": "从名册中删除",
+    "addToRosterAria": "添加到团队名单",
+    "removeFromRosterAria": "从团队名册中删除",
+    "addExistingToRoster": "从名片添加",
+    "createOnRoster": "在名册上创建",
+    "noCardsOffRoster": "每张联系卡都已在名册上。",
+    "rosterActions": "名册行动"
   }
 }

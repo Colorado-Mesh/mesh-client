@@ -1,4 +1,4 @@
-/** App-global team contacts / roster (SQLite `team_members` + `team_member_links`). */
+/** App-global contact cards / team roster (SQLite `team_members` + `team_member_links`). */
 
 import type { MeshProtocol } from './meshProtocol';
 import { isMeshProtocol } from './meshProtocol';
@@ -10,6 +10,11 @@ export const TEAM_ROLE_MAX = 32;
 export const TEAM_COLOR_MAX = 32;
 export const TEAM_LONG_NAME_MAX = 128;
 export const TEAM_DURABLE_KEY_MAX = 128;
+
+/** Default accent when creating a contact card (matches theme brandGreen). */
+export const TEAM_DEFAULT_COLOR = '#38BDF8';
+
+const TEAM_COLOR_HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
 export interface TeamMemberLink {
   protocol: MeshProtocol;
@@ -27,6 +32,8 @@ export interface TeamMember {
   role?: string | null;
   color?: string | null;
   isSelf: boolean;
+  /** Opt-in: when true, member appears on the Team Roster tab. */
+  onRoster: boolean;
   createdAt: number;
   updatedAt: number;
   links: TeamMemberLink[];
@@ -39,6 +46,7 @@ export interface TeamMemberInput {
   role?: string | null;
   color?: string | null;
   isSelf?: boolean;
+  onRoster?: boolean;
 }
 
 export interface TeamMemberLinkInput {
@@ -62,6 +70,17 @@ export function isValidTeamUnitId(value: unknown): value is number {
   );
 }
 
+/** Normalize `#RRGGBB` accent colors; empty/invalid → null. */
+export function normalizeTeamColor(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > TEAM_COLOR_MAX) return null;
+  if (!TEAM_COLOR_HEX_RE.test(trimmed)) return null;
+  return trimmed.toUpperCase();
+}
+
 /** Normalize and validate a durable link key for the given protocol. */
 export function normalizeTeamDurableKey(protocol: MeshProtocol, raw: string): string | null {
   const trimmed = raw.trim();
@@ -73,8 +92,11 @@ export function normalizeTeamDurableKey(protocol: MeshProtocol, raw: string): st
     return trimmed;
   }
   if (protocol === 'meshcore') {
-    if (!MESHCORE_PUBKEY_RE.test(trimmed)) return null;
-    return trimmed.toLowerCase();
+    // Prefer 64-hex pubkey when known; otherwise allow decimal node id (heard without key).
+    if (MESHCORE_PUBKEY_RE.test(trimmed)) return trimmed.toLowerCase();
+    if (!MESHTASTIC_NODE_RE.test(trimmed)) return null;
+    if (trimmed.length > 1 && trimmed.startsWith('0')) return null;
+    return trimmed;
   }
   // reticulum
   if (!RETICULUM_HASH_RE.test(trimmed)) return null;

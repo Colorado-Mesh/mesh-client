@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Buat dan tautkan",
     "suggestNoContacts": "Tidak ada kontak yang cocok.",
     "suggestAlreadyLinked": "Node ini sudah terhubung ke {{callsign}} (Unit {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} sudah memiliki tautan {{protocol}}. Pilih kontak lain atau putuskan tautan terlebih dahulu.",
     "suggestButton": "Tambahkan ke Kontak Tim",
     "unitIdAria": "ID Satuan",
     "callsignAria": "tanda panggilan",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Tidak dapat menghapus kontak tim.",
     "linkFailed": "Tidak dapat menautkan simpul ke kontak tim.",
     "unlinkFailed": "Tidak dapat membatalkan tautan protokol.",
-    "allocateFailed": "Tidak dapat mengalokasikan ID Unit."
+    "allocateFailed": "Tidak dapat mengalokasikan ID Unit.",
+    "onRoster": "Di Daftar Tim",
+    "onRosterAria": "Tampilkan di Daftar Tim",
+    "rosterBadge": "Daftar",
+    "addToRoster": "Tambahkan ke daftar",
+    "removeFromRoster": "Hapus dari daftar",
+    "addToRosterAria": "Tambahkan ke Daftar Tim",
+    "removeFromRosterAria": "Hapus dari Daftar Tim",
+    "addExistingToRoster": "Tambahkan dari Kartu Kontak",
+    "createOnRoster": "Buat di daftar",
+    "noCardsOffRoster": "Setiap kartu kontak sudah ada dalam daftar.",
+    "rosterActions": "Tindakan daftar"
   }
 }

@@ -10,7 +10,7 @@ interface TeamRosterState {
   upsertMember: (input: TeamMemberInput) => Promise<TeamMember>;
   deleteMember: (unitId: number) => Promise<void>;
   setLink: (input: TeamMemberLinkInput) => Promise<TeamMember>;
-  removeLink: (unitId: number, protocol: MeshProtocol) => Promise<TeamMember>;
+  removeLink: (unitId: number, protocol: MeshProtocol, durableKey: string) => Promise<TeamMember>;
   allocateUnitId: () => Promise<number>;
   clearAll: () => Promise<void>;
 }
@@ -95,9 +95,9 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
     }
   },
 
-  removeLink: async (unitId, protocol) => {
+  removeLink: async (unitId, protocol, durableKey) => {
     try {
-      const member = await window.electronAPI.db.removeTeamMemberLink(unitId, protocol);
+      const member = await window.electronAPI.db.removeTeamMemberLink(unitId, protocol, durableKey);
       set((s) => ({ members: replaceMember(s.members, member) }));
       return member;
     } catch (error) {
@@ -126,7 +126,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
   },
 }));
 
-/** Await before mounting Team Contacts / Team Roster panels. Safe to call repeatedly. */
+/** Await before mounting Contact Cards / Team Roster panels. Safe to call repeatedly. */
 export function hydrateTeamRosterStore(): Promise<void> {
   return useTeamRosterStore.getState().hydrate();
 }

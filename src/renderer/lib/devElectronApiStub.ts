@@ -88,6 +88,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         role: input.role ?? null,
         color: input.color ?? null,
         isSelf: input.isSelf ?? false,
+        onRoster: input.onRoster ?? false,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         links: [],
@@ -99,6 +100,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         role: null,
         color: null,
         isSelf: false,
+        onRoster: false,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         links: [
@@ -117,6 +119,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         role: null,
         color: null,
         isSelf: false,
+        onRoster: false,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         links: [],

@@ -8678,7 +8678,6 @@
     "suggestCreateSubmit": "Створити та зв'язати",
     "suggestNoContacts": "Немає відповідних контактів.",
     "suggestAlreadyLinked": "Цей вузол уже пов'язано з {{callsign}} (блок {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} вже має посилання {{protocol}}. Виберіть інший контакт або спочатку від'єднайте.",
     "suggestButton": "Додати до контакту команди",
     "unitIdAria": "ID підрозділу",
     "callsignAria": "Позивний",
@@ -8693,6 +8692,17 @@
     "deleteFailed": "Не вдалося видалити контакт команди.",
     "linkFailed": "Не вдалося зв'язати вузол із контактом команди.",
     "unlinkFailed": "Не вдалося від'єднати протокол.",
-    "allocateFailed": "Не вдалося призначити ідентифікатор пристрою."
+    "allocateFailed": "Не вдалося призначити ідентифікатор пристрою.",
+    "onRoster": "У складі команди",
+    "onRosterAria": "Показати в складі команди",
+    "rosterBadge": "Реєстр",
+    "addToRoster": "Додати до списку",
+    "removeFromRoster": "Видалити зі списку",
+    "addToRosterAria": "Додати до списку команди",
+    "removeFromRosterAria": "Вилучити зі списку команди",
+    "addExistingToRoster": "Додати з карток контактів",
+    "createOnRoster": "Створити в списку",
+    "noCardsOffRoster": "Кожна контактна картка вже є в списку.",
+    "rosterActions": "Реєстр дій"
   }
 }

@@ -26,16 +26,17 @@ beforeEach(() => {
         role: 'IC',
         color: null,
         isSelf: false,
+        onRoster: false,
         createdAt: 1,
         updatedAt: 1,
-        links: [],
+        links: [{ protocol: 'meshtastic', durableKey: '1', nodeId: 1 }],
       },
     ],
   });
 });
 
 describe('SuggestToTeamContactModal', () => {
-  it('links to an existing contact', async () => {
+  it('links a second same-protocol node to an existing card', async () => {
     const user = userEvent.setup();
     const setLink = vi.fn().mockResolvedValue({
       unitId: 1,
@@ -43,9 +44,13 @@ describe('SuggestToTeamContactModal', () => {
       role: 'IC',
       color: null,
       isSelf: false,
+      onRoster: false,
       createdAt: 1,
       updatedAt: 2,
-      links: [{ protocol: 'meshtastic', durableKey: '42', nodeId: 42 }],
+      links: [
+        { protocol: 'meshtastic', durableKey: '1', nodeId: 1 },
+        { protocol: 'meshtastic', durableKey: '42', nodeId: 42 },
+      ],
     });
     useTeamRosterStore.setState({ setLink });
     const onClose = vi.fn();
@@ -63,22 +68,23 @@ describe('SuggestToTeamContactModal', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /#1 Alpha/i }));
-    await user.click(screen.getByRole('button', { name: /add to contact/i }));
+    await user.click(screen.getByRole('button', { name: /add to card/i }));
     expect(setLink).toHaveBeenCalledWith(
       expect.objectContaining({ unitId: 1, durableKey: '42', protocol: 'meshtastic' }),
     );
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('creates a new contact and links', async () => {
+  it('creates a new card with isSelf when preferSelf and no self exists', async () => {
     const user = userEvent.setup();
     const allocateUnitId = vi.fn().mockResolvedValue(9);
     const upsertMember = vi.fn().mockResolvedValue({
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-      color: null,
-      isSelf: false,
+      color: '#38BDF8',
+      isSelf: true,
+      onRoster: false,
       createdAt: 1,
       updatedAt: 1,
       links: [],
@@ -87,8 +93,9 @@ describe('SuggestToTeamContactModal', () => {
       unitId: 9,
       callsign: 'New',
       role: 'OP',
-      color: null,
-      isSelf: false,
+      color: '#38BDF8',
+      isSelf: true,
+      onRoster: false,
       createdAt: 1,
       updatedAt: 2,
       links: [{ protocol: 'reticulum', durableKey: 'ab'.repeat(16) }],
@@ -103,11 +110,12 @@ describe('SuggestToTeamContactModal', () => {
           durableKey: 'ab'.repeat(16),
           longName: 'New Peer',
         }}
+        preferSelf
         onClose={onClose}
       />,
     );
 
-    expect(screen.getByRole('tab', { name: /create new contact/i })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: /create new card/i })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -116,7 +124,12 @@ describe('SuggestToTeamContactModal', () => {
     await user.click(screen.getByRole('button', { name: /create and link/i }));
     expect(allocateUnitId).toHaveBeenCalled();
     expect(upsertMember).toHaveBeenCalledWith(
-      expect.objectContaining({ unitId: 9, callsign: 'New' }),
+      expect.objectContaining({
+        unitId: 9,
+        callsign: 'New',
+        isSelf: true,
+        onRoster: false,
+      }),
     );
     expect(setLink).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
@@ -131,6 +144,7 @@ describe('SuggestToTeamContactModal', () => {
           role: null,
           color: null,
           isSelf: false,
+          onRoster: false,
           createdAt: 1,
           updatedAt: 1,
           links: [{ protocol: 'meshtastic', durableKey: '99', nodeId: 99 }],

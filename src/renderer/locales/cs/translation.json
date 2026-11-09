@@ -8619,7 +8619,6 @@
     "suggestCreateSubmit": "Vytvořit a propojit",
     "suggestNoContacts": "Žádné kontakty se neshodují.",
     "suggestAlreadyLinked": "Tento uzel je již propojen s {{callsign}} (jednotka {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} již má odkaz {{protocol}}. Vyberte jiný kontakt nebo nejprve zrušte propojení.",
     "suggestButton": "Přidat do kontaktu týmu",
     "unitIdAria": "ID jednotky",
     "callsignAria": "Volací znak",
@@ -8634,6 +8633,17 @@
     "deleteFailed": "Kontakt týmu se nepodařilo smazat.",
     "linkFailed": "Nelze propojit uzel s kontaktem týmu.",
     "unlinkFailed": "Protokol se nepodařilo odpojit.",
-    "allocateFailed": "Nepodařilo se přidělit ID jednotky."
+    "allocateFailed": "Nepodařilo se přidělit ID jednotky.",
+    "onRoster": "Na soupisce týmu",
+    "onRosterAria": "Zobrazit na soupisce týmu",
+    "rosterBadge": "Seznam",
+    "addToRoster": "Přidat do seznamu",
+    "removeFromRoster": "Odebrat ze seznamu",
+    "addToRosterAria": "Přidat na soupisku týmu",
+    "removeFromRosterAria": "Odebrat ze soupisky týmu",
+    "addExistingToRoster": "Přidat z karet kontaktů",
+    "createOnRoster": "Vytvořit na soupisce",
+    "noCardsOffRoster": "Každá kontaktní karta je již na seznamu.",
+    "rosterActions": "Akce na soupisce"
   }
 }

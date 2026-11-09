@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Erstellen und verlinken",
     "suggestNoContacts": "Es stimmen keine Kontakte überein.",
     "suggestAlreadyLinked": "Dieser Knoten ist bereits mit {{callsign}} (Einheit {{unitId}}) verknüpft.",
-    "suggestProtocolTaken": "{{callsign}} hat bereits einen {{protocol}}-Link. Wählen Sie zuerst einen anderen Kontakt oder heben Sie die Verknüpfung auf.",
     "suggestButton": "Zum Teamkontakt hinzufügen",
     "unitIdAria": "Einheiten-ID",
     "callsignAria": "Rufzeichen",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Der Teamkontakt konnte nicht gelöscht werden.",
     "linkFailed": "Der Knoten konnte nicht mit dem Teamkontakt verknüpft werden.",
     "unlinkFailed": "Die Verknüpfung des Protokolls konnte nicht aufgehoben werden.",
-    "allocateFailed": "Es konnte keine Einheiten-ID zugewiesen werden."
+    "allocateFailed": "Es konnte keine Einheiten-ID zugewiesen werden.",
+    "onRoster": "Auf der Teamliste",
+    "onRosterAria": "Auf der Teamliste anzeigen",
+    "rosterBadge": "Dienstplan",
+    "addToRoster": "Zur Liste hinzufügen",
+    "removeFromRoster": "Aus der Liste entfernen",
+    "addToRosterAria": "Zur Teamliste hinzufügen",
+    "removeFromRosterAria": "Aus der Teamliste entfernen",
+    "addExistingToRoster": "Aus Kontaktkarten hinzufügen",
+    "createOnRoster": "Auf Dienstplan erstellen",
+    "noCardsOffRoster": "Jede Kontaktkarte ist bereits im Dienstplan.",
+    "rosterActions": "Dienstplanaktionen"
   }
 }

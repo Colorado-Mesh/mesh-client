@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Criar e vincular",
     "suggestNoContacts": "Nenhum contato corresponde.",
     "suggestAlreadyLinked": "Este nó já está vinculado a {{callsign}} (Unidade {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} já possui um link {{protocol}}. Escolha outro contato ou desvincule primeiro.",
     "suggestButton": "Adicionar ao contato da equipe",
     "unitIdAria": "ID da unidade",
     "callsignAria": "Indicativo",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Não foi possível excluir o contato da equipe.",
     "linkFailed": "Não foi possível vincular o nó ao contato da equipe.",
     "unlinkFailed": "Não foi possível desvincular o protocolo.",
-    "allocateFailed": "Não foi possível alocar um ID de unidade."
+    "allocateFailed": "Não foi possível alocar um ID de unidade.",
+    "onRoster": "Na lista da equipe",
+    "onRosterAria": "Mostrar na escalação da equipe",
+    "rosterBadge": "Lista",
+    "addToRoster": "Adicionar à lista",
+    "removeFromRoster": "Remover da lista",
+    "addToRosterAria": "Adicionar à lista da equipe",
+    "removeFromRosterAria": "Remover da escalação da equipe",
+    "addExistingToRoster": "Adicionar de cartões de contato",
+    "createOnRoster": "Criar na lista",
+    "noCardsOffRoster": "Cada cartão de contato já está na lista.",
+    "rosterActions": "Ações de lista"
   }
 }

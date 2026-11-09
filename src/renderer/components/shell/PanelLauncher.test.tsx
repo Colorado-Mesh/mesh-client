@@ -33,7 +33,7 @@ const LABELS: Record<string, string> = {
   'tabs.sniffer': 'Sniffer',
   'tabs.rf': 'RF',
   'tabs.graph': 'Graph',
-  'tabs.teamcontacts': 'Team Contacts',
+  'tabs.teamcontacts': 'Contact Cards',
   'tabs.teamroster': 'Team Roster',
 };
 const labelT = ((key: string) => LABELS[key] ?? key) as TFunction;
@@ -147,7 +147,7 @@ describe('PanelLauncher', () => {
     const chat = within(dialog).getByRole('region', { name: 'Chat' });
     expect(within(chat).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
     const network = within(dialog).getByRole('region', { name: 'Network' });
-    expect(within(network).getByRole('button', { name: 'Team Contacts' })).toBeInTheDocument();
+    expect(within(network).getByRole('button', { name: 'Contact Cards' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Team Roster' })).toBeInTheDocument();
     const other = within(dialog).getByRole('region', { name: 'Other' });
     expect(within(other).getByRole('button', { name: 'Map' })).toBeInTheDocument();
@@ -441,21 +441,21 @@ describe('PanelLauncher', () => {
     it('walks from panel rows into settings rows with the arrow keys and back', async () => {
       const user = userEvent.setup();
       renderWithSettings();
-      // "contacts" matches Contacts + Team Contacts panels and both settings.
+      // "contacts" matches Contacts + Contact Cards panels and both settings.
       await user.type(searchInput(), 'contacts');
       const contactsRow = screen.getByRole('button', { name: 'Contacts' });
-      const teamContactsRow = screen.getByRole('button', { name: 'Team Contacts' });
+      const contactCardsRow = screen.getByRole('button', { name: 'Contact Cards' });
       const firstSetting = screen.getByRole('button', {
         name: 'Auto-offload when full, Contact management',
       });
-      // Search starts on Contacts (index 0); ArrowDown steps to Team Contacts, then settings.
+      // Search starts on Contacts (index 0); ArrowDown steps to Contact Cards, then settings.
       fireEvent.keyDown(searchInput(), { key: 'ArrowDown' });
-      expect(teamContactsRow).toHaveFocus();
-      fireEvent.keyDown(teamContactsRow, { key: 'ArrowDown' });
+      expect(contactCardsRow).toHaveFocus();
+      fireEvent.keyDown(contactCardsRow, { key: 'ArrowDown' });
       expect(firstSetting).toHaveFocus();
       fireEvent.keyDown(firstSetting, { key: 'ArrowUp' });
-      expect(teamContactsRow).toHaveFocus();
-      fireEvent.keyDown(teamContactsRow, { key: 'ArrowUp' });
+      expect(contactCardsRow).toHaveFocus();
+      fireEvent.keyDown(contactCardsRow, { key: 'ArrowUp' });
       expect(contactsRow).toHaveFocus();
     });
 

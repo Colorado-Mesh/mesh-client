@@ -8,12 +8,15 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { TeamLinkCandidate } from '@/renderer/lib/teamRoster/durableKey';
 import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
+import { TEAM_DEFAULT_COLOR } from '@/shared/teamRosterTypes';
 
 type SuggestMode = 'existing' | 'create';
 
 export interface SuggestToTeamContactModalProps {
   candidate: TeamLinkCandidate;
   onClose: () => void;
+  /** When true (local radio node), new cards default isSelf if none exists yet. */
+  preferSelf?: boolean;
 }
 
 function findOwnerOfDurableKey(
@@ -26,8 +29,12 @@ function findOwnerOfDurableKey(
   );
 }
 
-/** Modal: link a node/peer to an existing team contact or create a new one. */
-export function SuggestToTeamContactModal({ candidate, onClose }: SuggestToTeamContactModalProps) {
+/** Modal: link a node/peer to an existing contact card or create a new one. */
+export function SuggestToTeamContactModal({
+  candidate,
+  onClose,
+  preferSelf = false,
+}: SuggestToTeamContactModalProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const titleId = useId();
@@ -70,17 +77,6 @@ export function SuggestToTeamContactModal({ candidate, onClose }: SuggestToTeamC
   }, [onClose]);
 
   const linkToUnit = async (unitId: number) => {
-    const target = members.find((m) => m.unitId === unitId);
-    if (target?.links.some((l) => l.protocol === candidate.protocol)) {
-      addToast(
-        t('teamRoster.suggestProtocolTaken', {
-          callsign: target.callsign,
-          protocol: candidate.protocol,
-        }),
-        'error',
-      );
-      return;
-    }
     setBusy(true);
     try {
       await setLink({
@@ -109,11 +105,14 @@ export function SuggestToTeamContactModal({ candidate, onClose }: SuggestToTeamC
     setBusy(true);
     try {
       const unitId = await allocateUnitId();
+      const hasSelf = members.some((m) => m.isSelf);
       await upsertMember({
         unitId,
         callsign: trimmed,
         role: role.trim() || null,
-        isSelf: false,
+        color: TEAM_DEFAULT_COLOR,
+        isSelf: preferSelf && !hasSelf,
+        onRoster: false,
       });
       await setLink({
         unitId,

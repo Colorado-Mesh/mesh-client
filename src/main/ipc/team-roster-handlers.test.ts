@@ -62,14 +62,21 @@ describe('team roster IPC boundary', () => {
     ).toThrow(/unitId/);
   });
 
-  it('creates, lists, and allocates unit ids', () => {
+  it('creates, lists, and allocates unit ids with onRoster default false', () => {
     const created = handlers.get('db:upsertTeamMember')!(event, {
       unitId: 1,
       callsign: 'Alpha',
       role: 'IC',
+      color: '#38BDF8',
       isSelf: true,
-    }) as { unitId: number; callsign: string; isSelf: boolean };
-    expect(created).toMatchObject({ unitId: 1, callsign: 'Alpha', isSelf: true });
+    }) as { unitId: number; callsign: string; isSelf: boolean; onRoster: boolean; color: string };
+    expect(created).toMatchObject({
+      unitId: 1,
+      callsign: 'Alpha',
+      isSelf: true,
+      onRoster: false,
+      color: '#38BDF8',
+    });
 
     const allocated = handlers.get('db:allocateTeamUnitId')!(event) as number;
     expect(allocated).toBe(2);
@@ -77,6 +84,55 @@ describe('team roster IPC boundary', () => {
     const listed = handlers.get('db:listTeamMembers')!(event) as { unitId: number }[];
     expect(listed).toHaveLength(1);
     expect(listed[0].unitId).toBe(1);
+  });
+
+  it('persists onRoster when set', () => {
+    handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 1,
+      callsign: 'A',
+      onRoster: true,
+    });
+    const listed = handlers.get('db:listTeamMembers')!(event) as { onRoster: boolean }[];
+    expect(listed[0].onRoster).toBe(true);
+  });
+
+  it('coerces invalid create colors to null and preserves legacy color on update', () => {
+    const created = handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 1,
+      callsign: 'A',
+      color: 'not-a-color',
+    }) as { color: string | null };
+    expect(created.color).toBeNull();
+
+    handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 2,
+      callsign: 'B',
+      color: '#AABBCC',
+    });
+    // Simulate a legacy free-text color already in the row, then toggle roster with a bad color payload.
+    db.prepareOnce('UPDATE team_members SET color = ? WHERE unit_id = ?').run('red', 2);
+    const updated = handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 2,
+      callsign: 'B',
+      color: 'still-bad',
+      onRoster: true,
+    }) as { color: string | null; onRoster: boolean };
+    expect(updated.onRoster).toBe(true);
+    expect(updated.color).toBe('red');
+  });
+
+  it('toggles onRoster without re-sending color', () => {
+    handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 1,
+      callsign: 'A',
+      color: '#112233',
+    });
+    const updated = handlers.get('db:upsertTeamMember')!(event, {
+      unitId: 1,
+      callsign: 'A',
+      onRoster: true,
+    }) as { color: string | null; onRoster: boolean };
+    expect(updated).toMatchObject({ onRoster: true, color: '#112233' });
   });
 
   it('enforces a single isSelf member', () => {
@@ -98,20 +154,26 @@ describe('team roster IPC boundary', () => {
     expect(listed.find((m) => m.unitId === 2)?.isSelf).toBe(true);
   });
 
-  it('links one node per protocol and rejects durableKey reuse', () => {
+  it('allows multiple links on the same protocol and rejects durableKey reuse', () => {
     handlers.get('db:upsertTeamMember')!(event, { unitId: 1, callsign: 'A' });
     handlers.get('db:upsertTeamMember')!(event, { unitId: 2, callsign: 'B' });
 
-    const linked = handlers.get('db:setTeamMemberLink')!(event, {
+    handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
       protocol: 'meshtastic',
       durableKey: '12345',
       nodeId: 12345,
       longName: 'Node A',
+    });
+    const linked = handlers.get('db:setTeamMemberLink')!(event, {
+      unitId: 1,
+      protocol: 'meshtastic',
+      durableKey: '67890',
+      nodeId: 67890,
+      longName: 'Node A2',
     }) as { links: { protocol: string; durableKey: string }[] };
-    expect(linked.links).toEqual([
-      expect.objectContaining({ protocol: 'meshtastic', durableKey: '12345' }),
-    ]);
+    expect(linked.links).toHaveLength(2);
+    expect(linked.links.map((l) => l.durableKey).sort()).toEqual(['12345', '67890']);
 
     expect(() =>
       handlers.get('db:setTeamMemberLink')!(event, {
@@ -123,25 +185,32 @@ describe('team roster IPC boundary', () => {
     ).toThrow(/durableKey already linked/);
   });
 
-  it('replaces the link for the same protocol on a member', () => {
+  it('updates metadata for an existing durable key without replacing siblings', () => {
     handlers.get('db:upsertTeamMember')!(event, { unitId: 1, callsign: 'A' });
     handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
       protocol: 'reticulum',
       durableKey: 'a'.repeat(32),
     });
-    const updated = handlers.get('db:setTeamMemberLink')!(event, {
+    handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
       protocol: 'reticulum',
       durableKey: 'b'.repeat(32),
       longName: 'Peer B',
+    });
+    const updated = handlers.get('db:setTeamMemberLink')!(event, {
+      unitId: 1,
+      protocol: 'reticulum',
+      durableKey: 'b'.repeat(32),
+      longName: 'Peer B renamed',
     }) as { links: { durableKey: string; longName: string | null }[] };
-    expect(updated.links).toHaveLength(1);
-    expect(updated.links[0].durableKey).toBe('b'.repeat(32));
-    expect(updated.links[0].longName).toBe('Peer B');
+    expect(updated.links).toHaveLength(2);
+    expect(updated.links.find((l) => l.durableKey === 'b'.repeat(32))?.longName).toBe(
+      'Peer B renamed',
+    );
   });
 
-  it('removes links and deletes members with cascade', () => {
+  it('removes a single link by durable key and deletes members with cascade', () => {
     handlers.get('db:upsertTeamMember')!(event, { unitId: 1, callsign: 'A' });
     handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
@@ -149,16 +218,19 @@ describe('team roster IPC boundary', () => {
       durableKey: 'ab'.repeat(32),
       nodeId: 9,
     });
-    const unlinked = handlers.get('db:removeTeamMemberLink')!(event, 1, 'meshcore') as {
-      links: unknown[];
-    };
-    expect(unlinked.links).toEqual([]);
-
     handlers.get('db:setTeamMemberLink')!(event, {
       unitId: 1,
       protocol: 'meshcore',
       durableKey: 'cd'.repeat(32),
     });
+    const unlinked = handlers.get('db:removeTeamMemberLink')!(
+      event,
+      1,
+      'meshcore',
+      'ab'.repeat(32),
+    ) as { links: { durableKey: string }[] };
+    expect(unlinked.links).toEqual([expect.objectContaining({ durableKey: 'cd'.repeat(32) })]);
+
     handlers.get('db:deleteTeamMember')!(event, 1);
     expect(handlers.get('db:listTeamMembers')!(event)).toEqual([]);
     const linkCount = (
@@ -178,7 +250,7 @@ describe('team roster IPC boundary', () => {
     expect(handlers.get('db:listTeamMembers')!(event)).toEqual([]);
   });
 
-  it('rejects invalid meshcore durable keys', () => {
+  it('rejects invalid meshcore durable keys but accepts node-id fallback', () => {
     handlers.get('db:upsertTeamMember')!(event, { unitId: 1, callsign: 'A' });
     expect(() =>
       handlers.get('db:setTeamMemberLink')!(event, {
@@ -187,5 +259,62 @@ describe('team roster IPC boundary', () => {
         durableKey: 'short',
       }),
     ).toThrow(/durableKey/);
+
+    const linked = handlers.get('db:setTeamMemberLink')!(event, {
+      unitId: 1,
+      protocol: 'meshcore',
+      durableKey: '4242',
+      nodeId: 4242,
+    }) as { links: { durableKey: string }[] };
+    expect(linked.links[0]?.durableKey).toBe('4242');
+  });
+
+  it('migrates legacy one-link-per-protocol PK and adds on_roster', () => {
+    db.close();
+    db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    db.execScript(`
+      CREATE TABLE team_members (
+        unit_id INTEGER PRIMARY KEY CHECK (unit_id BETWEEN 1 AND 65535),
+        callsign TEXT NOT NULL,
+        role TEXT,
+        color TEXT,
+        is_self INTEGER NOT NULL DEFAULT 0 CHECK (is_self IN (0, 1)),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE team_member_links (
+        unit_id INTEGER NOT NULL REFERENCES team_members(unit_id) ON DELETE CASCADE,
+        protocol TEXT NOT NULL CHECK (protocol IN ('meshtastic','meshcore','reticulum')),
+        durable_key TEXT NOT NULL,
+        node_id INTEGER,
+        long_name TEXT,
+        identity_id TEXT,
+        PRIMARY KEY (unit_id, protocol),
+        UNIQUE (protocol, durable_key)
+      );
+      INSERT INTO team_members (unit_id, callsign, is_self, created_at, updated_at)
+        VALUES (1, 'Legacy', 0, 1, 1);
+      INSERT INTO team_member_links (unit_id, protocol, durable_key)
+        VALUES (1, 'meshtastic', '42');
+    `);
+    getDatabase.mockReturnValue(db);
+    handlers.clear();
+    registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+
+    const listed = handlers.get('db:listTeamMembers')!(event) as {
+      onRoster: boolean;
+      links: unknown[];
+    }[];
+    expect(listed[0].onRoster).toBe(false);
+    expect(listed[0].links).toHaveLength(1);
+
+    handlers.get('db:setTeamMemberLink')!(event, {
+      unitId: 1,
+      protocol: 'meshtastic',
+      durableKey: '99',
+    });
+    const after = handlers.get('db:listTeamMembers')!(event) as { links: unknown[] }[];
+    expect(after[0].links).toHaveLength(2);
   });
 });

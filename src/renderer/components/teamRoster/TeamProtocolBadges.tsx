@@ -23,7 +23,7 @@ export function TeamProtocolBadges({ links }: { links: TeamMemberLink[] }) {
   return (
     <ul className="flex flex-wrap gap-1" aria-label={t('teamRoster.linkedProtocols')}>
       {links.map((link) => (
-        <li key={link.protocol}>
+        <li key={`${link.protocol}:${link.durableKey}`}>
           <span
             className={`rounded-badge text-2xs inline-flex px-1.5 py-0.5 font-medium ${PROTOCOL_BADGE_CLASS[link.protocol]}`}
             title={link.longName ?? link.durableKey}

@@ -8536,7 +8536,6 @@
     "suggestCreateSubmit": "Maken en koppelen",
     "suggestNoContacts": "Er komen geen contacten overeen.",
     "suggestAlreadyLinked": "Dit knooppunt is al gekoppeld aan {{callsign}} (eenheid {{unitId}}).",
-    "suggestProtocolTaken": "{{callsign}} heeft al een {{protocol}}-link. Kies een ander contact of ontkoppel eerst.",
     "suggestButton": "Toevoegen aan teamcontact",
     "unitIdAria": "Eenheids-ID",
     "callsignAria": "Roepnaam",
@@ -8551,6 +8550,17 @@
     "deleteFailed": "Kan teamcontact niet verwijderen.",
     "linkFailed": "Kan knooppunt niet koppelen aan teamcontact.",
     "unlinkFailed": "Kan het protocol niet ontkoppelen.",
-    "allocateFailed": "Kan geen eenheids-ID toewijzen."
+    "allocateFailed": "Kan geen eenheids-ID toewijzen.",
+    "onRoster": "Op teamrooster",
+    "onRosterAria": "Toon op teamrooster",
+    "rosterBadge": "Rooster",
+    "addToRoster": "Toevoegen aan rooster",
+    "removeFromRoster": "Verwijderen uit het rooster",
+    "addToRosterAria": "Toevoegen aan teamrooster",
+    "removeFromRosterAria": "Verwijderen uit teamlijst",
+    "addExistingToRoster": "Toevoegen vanuit contactkaarten",
+    "createOnRoster": "Maken op rooster",
+    "noCardsOffRoster": "Elke contactkaart staat al op het rooster.",
+    "rosterActions": "Rooster acties"
   }
 }
