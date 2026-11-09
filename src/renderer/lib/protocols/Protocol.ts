@@ -441,6 +441,8 @@ export interface RawPacketEntry {
   hopLimit?: number;
   hopStart?: number;
   portnum?: number;
+  /** Meshtastic `relay_node`: low byte of the last relaying node's number; absent when 0. */
+  relayNode?: number;
 }
 
 // --- Outbound send options ---

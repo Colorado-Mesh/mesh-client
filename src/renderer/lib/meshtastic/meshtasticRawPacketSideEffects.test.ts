@@ -10,6 +10,7 @@ import {
 import { packetRouter } from '../drivers/PacketRouter';
 import { syncNodesMapToIdentityStore } from '../hydrateIdentityStoresFromDb';
 import { getIdentityNode } from '../identityStoreReads';
+import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
 import type { MeshNode } from '../types';
 import {
@@ -102,6 +103,36 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
       PEER,
       expect.objectContaining({ transport: 'rf', snr: 7.5, rssi: -90 }),
     );
+    detach();
+  });
+
+  it('keeps packet id and relay byte on sniffer entries for the chat route lookup', () => {
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    const base = {
+      ts: Date.now(),
+      snr: 7.5,
+      rssi: -90,
+      raw: new Uint8Array([0xde, 0xad]),
+      fromNodeId: PEER,
+      portLabel: 'TEXT_MESSAGE_APP',
+      viaMqtt: false,
+      hopsAway: 2,
+    };
+    packetRouter.dispatch(
+      { type: 'raw_packet', payload: { ...base, packetId: 12345, relayNode: 0x3a } },
+      IDENTITY,
+    );
+    packetRouter.dispatch({ type: 'raw_packet', payload: base }, IDENTITY);
+    const updaters = vi.mocked(deps.setRawPackets).mock.calls.map(([update]) => update);
+    const entries = updaters.reduce<MeshtasticRawPacketEntry[]>(
+      (prev, update) => (typeof update === 'function' ? update(prev) : update),
+      [],
+    );
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toMatchObject({ fromNodeId: PEER, packetId: 12345, relayNode: 0x3a });
+    expect(entries[1]).not.toHaveProperty('packetId');
+    expect(entries[1]).not.toHaveProperty('relayNode');
     detach();
   });
 

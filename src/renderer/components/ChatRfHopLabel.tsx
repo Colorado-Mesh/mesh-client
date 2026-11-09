@@ -1,23 +1,43 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import {
+  type ChatMessageRouteView,
+  formatChatMessageRouteTooltip,
+} from '@/renderer/lib/chatMessageRouteView';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useReduceMotion } from '@/renderer/lib/icons/iconMotionContext';
+import {
+  computeInstantTooltipPosition,
+  type InstantTooltipPosition,
+} from '@/renderer/lib/instantTooltipPosition';
 import {
   isMeshcoreHopCorrected,
   meshcoreChatHopUiKey,
   subscribeMeshcoreHopCorrected,
 } from '@/renderer/lib/meshcoreLateRfHopEnrichment';
+import type { MessageRouteDetail } from '@/renderer/lib/radio/BaseRadioProvider';
+import type { ChatMessage } from '@/renderer/lib/types';
+
+import { InstantTooltipBubble } from './InstantTooltipBubble';
 
 export interface ChatRfHopLabelProps {
   rxHops: number;
-  msg: {
-    storeId?: string;
-    id?: number;
-    sender_id: number;
-    timestamp: number;
-    channel: number;
-  };
+  msg: ChatMessage;
+  /** Sender as shown in the bubble header (route tooltip "From" line). */
+  senderName: string;
+  /** What this protocol's packets record about relays (`ProtocolCapabilities`). */
+  routeDetail: MessageRouteDetail;
+  /** Capture lookup + name resolution; called on hover/focus only, never per render. */
+  describeRoute?: (msg: ChatMessage) => ChatMessageRouteView | undefined;
 }
+
+/**
+ * Close function of the pill whose bubble is open. One bubble at a time: the pointer can rest on
+ * one pill while keyboard focus moves to another.
+ */
+let closeOpenHopTooltip: (() => void) | null = null;
 
 /** Class/title for the hop pill when a late RF correction mark is active. */
 export function chatRfHopLabelPresentation(
@@ -43,8 +63,18 @@ export function chatRfHopLabelPresentation(
   };
 }
 
-/** Incoming RF hop count; briefly accents when late event 136 corrected a stored value. */
-export function ChatRfHopLabel({ rxHops, msg }: ChatRfHopLabelProps) {
+/**
+ * Incoming RF hop count. Hover, focus or tap shows how the message arrived (MeshCore relay
+ * path, Meshtastic last relay, or why no route is known). Briefly accents when late event 136
+ * corrected a stored value.
+ */
+export function ChatRfHopLabel({
+  rxHops,
+  msg,
+  senderName,
+  routeDetail,
+  describeRoute,
+}: ChatRfHopLabelProps) {
   const { t } = useTranslation();
   const reduceMotion = useReduceMotion();
   const uiKey = meshcoreChatHopUiKey(msg);
@@ -54,13 +84,96 @@ export function ChatRfHopLabel({ rxHops, msg }: ChatRfHopLabelProps) {
     () => false,
   );
   const { className, refined } = chatRfHopLabelPresentation(corrected, reduceMotion);
-  const title = refined
-    ? t('chatPanel.hopCountRefinedFromRf')
-    : t('nodeDetailModal.hopsFromRoutingTitle');
+  const [tooltip, setTooltip] = useState<{ text: string; pos: InstantTooltipPosition } | null>(
+    null,
+  );
+  const ref = useRef<HTMLButtonElement>(null);
+  const bubbleId = useId();
+  // Stable per pill so the module-level open-bubble slot can tell pills apart.
+  const [closeThisTooltip] = useState(() => () => {
+    setTooltip(null);
+  });
+  const hopsText = t('nodeDetailModal.hopLabel', { count: rxHops });
+
+  const show = () => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    let view: ChatMessageRouteView | undefined;
+    // Looked up even at 0 hops: an exactly matched capture outranks the stored count.
+    if (describeRoute) {
+      try {
+        view = describeRoute(msg);
+      } catch (e) {
+        // The tooltip still explains the hop count; the route line falls back to "not available".
+        console.warn('[ChatRfHopLabel] route lookup failed ' + errLikeToLogString(e));
+      }
+    }
+    const text = formatChatMessageRouteTooltip(t, {
+      hops: rxHops,
+      senderName,
+      routeDetail,
+      view,
+      refined,
+    });
+    if (closeOpenHopTooltip !== closeThisTooltip) closeOpenHopTooltip?.();
+    closeOpenHopTooltip = closeThisTooltip;
+    setTooltip({ text, pos: computeInstantTooltipPosition(rect) });
+  };
+  const hide = () => {
+    if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
+    setTooltip(null);
+  };
+
+  const open = tooltip != null;
+  // A fixed bubble would detach from the pill when the chat list scrolls under it.
+  useEffect(() => {
+    if (!open) return;
+    const onScroll = () => {
+      if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
+      closeThisTooltip();
+    };
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [open, closeThisTooltip]);
+  // A virtualized row can unmount while its bubble is open.
+  useEffect(
+    () => () => {
+      if (closeOpenHopTooltip === closeThisTooltip) closeOpenHopTooltip = null;
+    },
+    [closeThisTooltip],
+  );
 
   return (
-    <span className={className} title={title} aria-label={title}>
-      {t('nodeDetailModal.hopLabel', { count: rxHops })}
-    </span>
+    <>
+      <button
+        ref={ref}
+        type="button"
+        data-instant-tooltip-managed=""
+        className={`${className} rounded-badge focus-visible:outline-brand-green cursor-help focus-visible:outline-2 focus-visible:outline-offset-2`}
+        aria-label={t('chatPanel.messageRoute.pillAriaLabel', { hops: hopsText })}
+        aria-describedby={open ? bubbleId : undefined}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        // Touch WebViews do not focus a tapped button; tapping shows the route instead.
+        onClick={show}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            e.stopPropagation();
+            hide();
+          }
+        }}
+      >
+        {hopsText}
+      </button>
+      {tooltip &&
+        createPortal(
+          <InstantTooltipBubble id={bubbleId} text={tooltip.text} pos={tooltip.pos} />,
+          document.body,
+        )}
+    </>
   );
 }

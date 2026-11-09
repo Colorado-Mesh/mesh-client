@@ -58,6 +58,10 @@ export interface MeshtasticRawPacketEntry {
   isLocal?: boolean;
   /** RF hop count (hopStart − hopLimit); undefined for MQTT or undecodable packets. */
   hopsAway?: number;
+  /** MeshPacket id; with `fromNodeId` it finds a chat message's capture. */
+  packetId?: number;
+  /** Low byte of the last relaying node's number (`relay_node`); absent when not reported. */
+  relayNode?: number;
 }
 
 /** Reticulum RNS wire frame from sidecar packet tap. */

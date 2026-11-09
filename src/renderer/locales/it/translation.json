@@ -988,7 +988,26 @@
     "sendLater": "Invia in un secondo momento",
     "sendMenuButton": "Opzioni di invio",
     "saveAttachmentAria": "Salva allegato {{name}}",
-    "revealAttachmentAria": "Mostra l'allegato {{name}} nella cartella"
+    "revealAttachmentAria": "Mostra l'allegato {{name}} nella cartella",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, dettagli del percorso",
+      "receivedDirect": "Ricevuto direttamente da {{name}}, nessun relè",
+      "reachedYouInHops_one": "Arrivato in {{count}} salto",
+      "reachedYouInHops_other": "Arrivato in {{count}} salti",
+      "from": "Da {{name}}",
+      "toYou": "A te",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} o un altro ripetitore ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, ripetitore sconosciuto",
+      "lastRelayNamed": "Ultimo relè: {{name}}",
+      "lastRelayGuess": "Ultimo relè: {{name}} o un altro nodo (ID termina con {{hash}})",
+      "lastRelayUnknown": "Ultimo relè: un nodo il cui ID termina con {{hash}}, non nell'elenco dei nodi",
+      "lastRelayOnly": "La radio segnala solo l'ultimo relè, non il percorso completo.",
+      "relayNotReported": "La radio non ha segnalato quale nodo ha inoltrato questo messaggio.",
+      "unavailableDirectOrRoom": "Gli instradamenti vengono mostrati solo per i messaggi del canale.",
+      "unavailableNotCaptured": "Percorso non disponibile: i percorsi vengono conservati solo per i messaggi recenti di questa sessione.",
+      "notRecorded": "I pacchetti su questa rete registrano quanti relè hanno superato, non quali."
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

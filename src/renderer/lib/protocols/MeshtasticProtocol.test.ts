@@ -65,6 +65,42 @@ describe('MeshtasticProtocol.subscribe', () => {
     teardown();
   });
 
+  it('keeps the relay_node low byte on raw packets and drops an unreported relay', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    // Raw capture serializes the packet, so it must be a real MeshPacket message.
+    const text = (id: number, relayNode: number) =>
+      create(Mesh.MeshPacketSchema, {
+        payloadVariant: {
+          case: 'decoded',
+          value: create(Mesh.DataSchema, {
+            portnum: Portnums.PortNum.TEXT_MESSAGE_APP,
+            payload: new TextEncoder().encode('ping'),
+          }),
+        },
+        from: 0xabcd,
+        to: 0xffffffff,
+        id,
+        hopStart: 3,
+        hopLimit: 1,
+        relayNode,
+      });
+    emit('onMeshPacket', text(77, 0x13a));
+    emit('onMeshPacket', text(78, 0));
+    const raw = events.flatMap((e) => (e.type === 'raw_packet' ? [e.payload] : []));
+    expect(raw).toHaveLength(2);
+    expect(raw[0]).toMatchObject({
+      packetId: 77,
+      fromNodeId: 0xabcd,
+      hopsAway: 2,
+      relayNode: 0x3a,
+    });
+    expect(raw[1].packetId).toBe(78);
+    expect(raw[1]).not.toHaveProperty('relayNode');
+    teardown();
+  });
+
   it('emits text_message for decoded ALERT_APP port (MECP / critical alerts)', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];

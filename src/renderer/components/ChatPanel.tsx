@@ -72,6 +72,8 @@ import {
   getComposerPayloadLimit,
   getComposerWireOverhead,
 } from '@/renderer/lib/chatComposerLimits';
+import type { ChatMessageRouteLookup } from '@/renderer/lib/chatMessageRoute';
+import { buildChatMessageRouteView } from '@/renderer/lib/chatMessageRouteView';
 import {
   clearFloodScopeOverride,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -766,6 +768,8 @@ export interface ChatPanelProps {
   messages: ChatMessage[];
   /** Resolve extra per-message RF measurements from local packet captures, on demand. */
   getReceptionStats?: (message: ChatMessage) => MessageReceptionStats | undefined;
+  /** Find the relay route of a received message in local packet captures, on hover. */
+  getMessageRoute?: (message: ChatMessage) => ChatMessageRouteLookup | undefined;
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
@@ -879,6 +883,7 @@ export interface ChatPanelProps {
 function ChatPanel({
   messages,
   getReceptionStats,
+  getMessageRoute,
   messagesForUnread,
   channels,
   meshcoreChannelSources,
@@ -2151,6 +2156,16 @@ function ChatPanel({
   );
 
   const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
+  // Hop pill tooltip: capture lookup and name resolution run on hover/focus only.
+  const describeMessageRoute = useCallback(
+    (message: ChatMessage) => {
+      const lookup = getMessageRoute?.(message);
+      return lookup
+        ? buildChatMessageRouteView(lookup, nodes, { myNodeNum, senderId: message.sender_id })
+        : undefined;
+    },
+    [getMessageRoute, nodes, myNodeNum],
+  );
   const sendSignalReport = async (message: ChatMessage): Promise<void> => {
     if (
       signalReportSendingRef.current ||
@@ -4359,7 +4374,13 @@ function ChatPanel({
                   !isOwn && (msg.receivedVia || msg.viaStoreForward || showRfHops) ? (
                     <>
                       {showRfHops && msg.rxHops != null && (
-                        <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
+                        <ChatRfHopLabel
+                          rxHops={msg.rxHops}
+                          msg={msg}
+                          senderName={displaySenderName}
+                          routeDetail={capabilities.messageRouteDetail}
+                          describeRoute={describeMessageRoute}
+                        />
                       )}
                       {msg.viaStoreForward && <StoreForwardBadge />}
                       {msg.receivedVia && (

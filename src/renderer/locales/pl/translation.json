@@ -1022,7 +1022,28 @@
     "sendLater": "Wyślij później",
     "sendMenuButton": "OPCJE WYSYŁANIA",
     "saveAttachmentAria": "Zapisz załącznik {{name}}",
-    "revealAttachmentAria": "Pokaż załącznik {{name}} w folderze"
+    "revealAttachmentAria": "Pokaż załącznik {{name}} w folderze",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, szczegóły trasy",
+      "receivedDirect": "Otrzymano bezpośrednio od {{name}}, brak przekaźników",
+      "reachedYouInHops_one": "Dotarło w {{count}} przeskoku",
+      "reachedYouInHops_other": "Dotarło w {{count}} przeskokach",
+      "from": "Od {{name}}",
+      "toYou": "Do Ciebie",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} lub inny przemiennik ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, nieznany wzmacniacz",
+      "lastRelayNamed": "Ostatni przekaźnik: {{name}}",
+      "lastRelayGuess": "Ostatni przekaźnik: {{name}} lub inny węzeł (identyfikator kończy się na {{hash}})",
+      "lastRelayUnknown": "Ostatni przekaźnik: węzeł, którego identyfikator kończy się na {{hash}}, nie znajduje się na liście węzłów",
+      "lastRelayOnly": "Radio zgłasza tylko ostatni przekaźnik, a nie pełną trasę.",
+      "relayNotReported": "Radio nie zgłosiło, który węzeł przekazał ten komunikat.",
+      "unavailableDirectOrRoom": "Trasy są wyświetlane tylko dla wiadomości na kanale.",
+      "unavailableNotCaptured": "Trasa niedostępna: trasy są zachowywane tylko dla ostatnich wiadomości z tej sesji.",
+      "notRecorded": "Pakiety w tej sieci rejestrują, ile przekaźników minęły, a nie które.",
+      "reachedYouInHops_few": "Dotarło w {{count}} przeskokach",
+      "reachedYouInHops_many": "Dotarło w {{count}} przeskokach"
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

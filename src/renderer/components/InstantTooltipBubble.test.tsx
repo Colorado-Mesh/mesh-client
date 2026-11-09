@@ -38,6 +38,34 @@ describe('InstantTooltipBubble', () => {
     expect(tip.style.transform).toBe('none');
   });
 
+  it('flips a tall bubble below its trigger when it does not fit above', () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300);
+    render(
+      <InstantTooltipBubble
+        text="Reached you in 10 hops"
+        pos={{ top: 100, left: 200, placement: 'above', flipTop: 130 }}
+      />,
+    );
+    const tip = screen.getByRole('tooltip');
+    expect(tip.style.top).toBe('130px');
+    expect(tip.style.transform).toBe('none');
+    expect(tip).toHaveAttribute('data-placement', 'below');
+  });
+
+  it('keeps a bubble that fits above where it was placed', () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(40);
+    render(
+      <InstantTooltipBubble
+        text="hint"
+        pos={{ top: 300, left: 200, placement: 'above', flipTop: 330 }}
+      />,
+    );
+    const tip = screen.getByRole('tooltip');
+    expect(tip.style.top).toBe('300px');
+    expect(tip.style.transform).toBe('translateY(-100%)');
+    expect(tip).toHaveAttribute('data-placement', 'above');
+  });
+
   it('opens beside the trigger for the right side', () => {
     render(
       <InstantTooltipBubble text="MeshCore" pos={{ top: 120, left: 58, placement: 'right' }} />,

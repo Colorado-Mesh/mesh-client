@@ -12,6 +12,8 @@ export interface InstantTooltipPosition {
   /** The trigger's centre for above and below; the bubble's left edge for right. */
   left: number;
   placement: 'above' | 'below' | 'right';
+  /** `top` for the opposite side (above <-> below), used when the bubble does not fit. */
+  flipTop?: number;
 }
 
 /** Fixed-position anchor for the shared instant tooltip bubble. */
@@ -23,11 +25,36 @@ export function computeInstantTooltipPosition(
     return { top: rect.top + rect.height / 2, left: rect.right + SIDE_GAP, placement: 'right' };
   }
   const below = rect.top < 80;
+  const aboveTop = rect.top - 8;
+  const belowTop = rect.bottom + 4;
   return {
-    top: below ? rect.bottom + 4 : rect.top - 8,
+    top: below ? belowTop : aboveTop,
     left: rect.left + rect.width / 2,
     placement: below ? 'below' : 'above',
+    flipTop: below ? aboveTop : belowTop,
   };
+}
+
+/**
+ * Side for a measured bubble: the preferred side when it fits, otherwise the side with more
+ * room (a long multi-line tooltip near the top of the window opens below its trigger).
+ */
+export function fitInstantTooltipVertically(
+  pos: InstantTooltipPosition,
+  height: number,
+  viewportHeight: number,
+): { top: number; placement: 'above' | 'below' } | null {
+  if (pos.placement === 'right' || pos.flipTop == null) return null;
+  const roomAt = (placement: 'above' | 'below', top: number) =>
+    placement === 'above'
+      ? top - INSTANT_TOOLTIP_MARGIN
+      : viewportHeight - INSTANT_TOOLTIP_MARGIN - top;
+  const room = roomAt(pos.placement, pos.top);
+  if (height <= room) return { top: pos.top, placement: pos.placement };
+  const other = pos.placement === 'above' ? 'below' : 'above';
+  return roomAt(other, pos.flipTop) > room
+    ? { top: pos.flipTop, placement: other }
+    : { top: pos.top, placement: pos.placement };
 }
 
 /**

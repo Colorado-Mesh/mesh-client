@@ -1007,7 +1007,28 @@
     "sendLater": "Odeslat později...",
     "sendMenuButton": "Možnosti odeslání",
     "saveAttachmentAria": "Uložit přílohu {{name}}",
-    "revealAttachmentAria": "Zobrazit přílohu {{name}} ve složce"
+    "revealAttachmentAria": "Zobrazit přílohu {{name}} ve složce",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, podrobnosti trasy",
+      "receivedDirect": "Přijato přímo od {{name}}, žádná relé",
+      "reachedYouInHops_one": "Dorazilo k vám přes {{count}} skok",
+      "reachedYouInHops_other": "Dorazilo k vám přes {{count}} skoků",
+      "from": "Od {{name}}",
+      "toYou": "K vám",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} nebo jiný opakovač ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, neznámý opakovač",
+      "lastRelayNamed": "Poslední relé: {{name}}",
+      "lastRelayGuess": "Poslední relé: {{name}} nebo jiný uzel (ID končí na {{hash}})",
+      "lastRelayUnknown": "Poslední relé: uzel, jehož ID končí na {{hash}}, nikoli v seznamu uzlů",
+      "lastRelayOnly": "Rádio hlásí pouze poslední relé, ne celou trasu.",
+      "relayNotReported": "Rádio nehlásilo, který uzel předal tuto zprávu.",
+      "unavailableDirectOrRoom": "Trasy se zobrazují pouze pro zprávy kanálu.",
+      "unavailableNotCaptured": "Trasa není k dispozici: trasy jsou uchovávány pouze pro nedávné zprávy z této relace.",
+      "notRecorded": "Pakety v této síti zaznamenávají, kolik relé prošly, ne které.",
+      "reachedYouInHops_few": "Dorazilo k vám přes {{count}} skoky",
+      "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku"
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

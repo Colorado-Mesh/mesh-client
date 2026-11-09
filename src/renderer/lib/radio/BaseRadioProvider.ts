@@ -2,6 +2,13 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_DAY, MS_PER_HOUR } from '@/shared/timeConstants';
 
 /**
+ * What a received message's packet records about the nodes that relayed it (Chat hop pill
+ * tooltip): every repeater hash (MeshCore flood path), only the last relay's low byte
+ * (Meshtastic `relay_node`), or nothing beyond the hop count (Reticulum).
+ */
+export type MessageRouteDetail = 'floodPath' | 'lastRelay' | 'none';
+
+/**
  * Protocol-agnostic capability descriptor. Each radio protocol adapter exposes
  * one of these so UI and diagnostic engines can branch on features rather than
  * on protocol name strings.
@@ -159,6 +166,8 @@ export interface ProtocolCapabilities {
    * channel floods only report companion accept, so failed-send auto-resend skips them.
    */
   hasChannelDeliveryAck: boolean;
+  /** Relay detail a received message carries, shown when hovering its hop count in Chat. */
+  messageRouteDetail: MessageRouteDetail;
   /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
   hasDiagnosticsPanel: boolean;
   /**
@@ -278,6 +287,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
   hasChannelDeliveryAck: true,
+  messageRouteDetail: 'lastRelay',
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: true,
   hasReticulumInterfaceConfig: false,
@@ -368,6 +378,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: true,
   prefersDeviceDeliveryStatusOverMqtt: true,
   hasChannelDeliveryAck: false,
+  messageRouteDetail: 'floodPath',
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: false,
@@ -457,6 +468,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
   hasChannelDeliveryAck: true,
+  messageRouteDetail: 'none',
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: true,

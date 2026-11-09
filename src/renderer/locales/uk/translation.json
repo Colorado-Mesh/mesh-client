@@ -1022,7 +1022,28 @@
     "sendLater": "Надіслати пізніше",
     "sendMenuButton": "Надіслати варіанти",
     "saveAttachmentAria": "Зберегти вкладення {{name}}",
-    "revealAttachmentAria": "Показати вкладення {{name}} в папці"
+    "revealAttachmentAria": "Показати вкладення {{name}} в папці",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, деталі маршруту",
+      "receivedDirect": "Отримано безпосередньо від {{name}}, без реле",
+      "reachedYouInHops_one": "Дійшло за {{count}} хоп",
+      "reachedYouInHops_other": "Дійшло за {{count}} хопа",
+      "from": "Від {{name}}",
+      "toYou": "До вас",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} або інший повторювач ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, невідомий повторювач",
+      "lastRelayNamed": "Останнє реле: {{name}}",
+      "lastRelayGuess": "Останнє реле: {{name}} або інший вузол (ідентифікатор закінчується на {{hash}})",
+      "lastRelayUnknown": "Останній ретранслятор: вузол, ідентифікатор якого закінчується на {{hash}}, а не у вашому списку вузлів",
+      "lastRelayOnly": "Радіо повідомляє лише останнє реле, а не повний маршрут.",
+      "relayNotReported": "Радіо не повідомило, який вузол передав це повідомлення.",
+      "unavailableDirectOrRoom": "Маршрути відображаються лише для повідомлень каналу.",
+      "unavailableNotCaptured": "Маршрут недоступний: маршрути зберігаються лише для останніх повідомлень з цього сеансу.",
+      "notRecorded": "Пакети в цій мережі записують, скільки ретрансляторів вони пройшли, а не які.",
+      "reachedYouInHops_few": "Дійшло за {{count}} хопи",
+      "reachedYouInHops_many": "Дійшло за {{count}} хопів"
+    }
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -3931,7 +3952,7 @@
     "echoReliabilityTooltip": "Проксі-сервер сеансу з підслуханих пакетів сумарно проти дублікатів — не наскрізна швидкість ACK доставки.",
     "echoReliabilityDetail": "{{duplicates}} відлуння в {{total}} спостереженнях",
     "pathReliability": "Надійність траєкторії",
-    "pathReliabilityTooltip": "MeshCore path success vs failure counts (Laplace-smoothed) — not end-to-end ACK PDR.",
+    "pathReliabilityTooltip": "Успішні та невдалі маршрути MeshCore (зі згладжуванням Лапласа), не наскрізний ACK PDR.",
     "pathReliabilityDetail": "Зафіксовано {{attempts}} спроб шляху"
   },
   "nodeListPanel": {

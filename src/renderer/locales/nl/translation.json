@@ -988,7 +988,26 @@
     "sendLater": "Later verzenden",
     "sendMenuButton": "Verstuur Opties",
     "saveAttachmentAria": "Bijlage opslaan {{name}}",
-    "revealAttachmentAria": "Toon bijlage {{name}} in map"
+    "revealAttachmentAria": "Toon bijlage {{name}} in map",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, routegegevens",
+      "receivedDirect": "Rechtstreeks ontvangen van {{name}}, geen relais",
+      "reachedYouInHops_one": "In {{count}} hop bij je aangekomen",
+      "reachedYouInHops_other": "In {{count}} hops bij je aangekomen",
+      "from": "Van {{name}}",
+      "toYou": "Naar jou",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} of een andere repeater ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, onbekende repeater",
+      "lastRelayNamed": "Laatste relais: {{name}}",
+      "lastRelayGuess": "Laatste relais: {{name}} of een ander knooppunt (ID eindigt op {{hash}})",
+      "lastRelayUnknown": "Laatste relais: een knooppunt waarvan het ID eindigt op {{hash}}, niet in je lijst met knooppunten",
+      "lastRelayOnly": "De radio meldt alleen het laatste relais, niet de volledige route.",
+      "relayNotReported": "De radio heeft niet gemeld welk knooppunt dit bericht heeft doorgegeven.",
+      "unavailableDirectOrRoom": "Routes worden alleen weergegeven voor kanaalberichten.",
+      "unavailableNotCaptured": "Route niet beschikbaar: routes worden alleen bewaard voor recente berichten van deze sessie.",
+      "notRecorded": "Pakketten op dit netwerk registreren hoeveel relais ze hebben doorgegeven, niet welke."
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
