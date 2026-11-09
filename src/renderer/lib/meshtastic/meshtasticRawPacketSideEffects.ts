@@ -60,6 +60,8 @@ function appendRawPacketLog(
         !payload.viaMqtt &&
         payload.portLabel === 'TELEMETRY_APP',
       hopsAway: payload.hopsAway,
+      ...(payload.packetId != null ? { packetId: payload.packetId } : {}),
+      ...(payload.relayNode != null ? { relayNode: payload.relayNode } : {}),
     };
     deps.setRawPackets((prev) => {
       const next = [...prev, entry];

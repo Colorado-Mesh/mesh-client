@@ -305,6 +305,7 @@ import {
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
+import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './lib/chatMessageRoute';
 import { playMessageNotification } from './lib/chatNotifications';
 import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
 import { startCoiMemorySampler } from './lib/coiMemorySampler';
@@ -4951,6 +4952,22 @@ function AppContent() {
                                         meshcoreRuntime.channels,
                                       )
                                   : undefined
+                              }
+                              getMessageRoute={
+                                capabilities.messageRouteDetail === 'floodPath'
+                                  ? (message) =>
+                                      meshcoreChatMessageRoute(
+                                        message,
+                                        meshcoreRuntime.rawPackets,
+                                        meshcoreRuntime.channels,
+                                      )
+                                  : capabilities.messageRouteDetail === 'lastRelay'
+                                    ? (message) =>
+                                        meshtasticChatMessageRoute(
+                                          message,
+                                          meshtasticRuntime.rawPackets,
+                                        )
+                                    : undefined
                               }
                               messagesForUnread={activeUiMessages}
                               channels={chatChannelsForPanel}

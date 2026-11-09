@@ -4106,6 +4106,100 @@ describe('ChatPanel RF hop label', () => {
     );
     expect(await screen.findByText('3 hops')).toBeInTheDocument();
   });
+
+  describe('hop pill route tooltip', () => {
+    const incoming: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Peer',
+      payload: 'hello mesh',
+      channel: 0,
+      timestamp: Date.now(),
+      receivedVia: 'rf',
+      rxHops: 2,
+      packetId: 4242,
+    };
+    const repeater = (nodeId: number, name: string, extra: Partial<MeshNode> = {}): MeshNode => ({
+      node_id: nodeId,
+      long_name: name,
+      short_name: '',
+      hw_model: 'Repeater',
+      snr: 0,
+      battery: 0,
+      last_heard: 1_000,
+      latitude: null,
+      longitude: null,
+      ...extra,
+    });
+
+    it('looks up the MeshCore route on hover and names repeaters from the node list', async () => {
+      const getMessageRoute = vi.fn(() => ({
+        status: 'floodPath' as const,
+        hashes: ['F8F9', 'D4D4'],
+      }));
+      const nodes = new Map([
+        [0x10, repeater(0x10, 'Pikes Peak', { public_key_hex: 'f8f9' + '55'.repeat(30) })],
+      ]);
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol="meshcore"
+            nodes={nodes}
+            messages={[incoming]}
+            getMessageRoute={getMessageRoute}
+          />
+        </ToastProvider>,
+      );
+      const pill = await screen.findByRole('button', { name: '2 hops, route details' });
+      expect(getMessageRoute).not.toHaveBeenCalled();
+      fireEvent.mouseEnter(pill);
+      expect(getMessageRoute).toHaveBeenCalledWith(expect.objectContaining({ packetId: 4242 }));
+      expect(screen.getByRole('tooltip').textContent).toBe(
+        [
+          'Reached you in 2 hops',
+          'From Peer',
+          '1. Pikes Peak (F8F9)',
+          '2. D4D4, unknown repeater',
+          'To you',
+        ].join('\n'),
+      );
+    });
+
+    it('shows the Meshtastic last relay', async () => {
+      const nodes = new Map([[0x1234563a, repeater(0x1234563a, 'Ridge Router', { hops_away: 0 })]]);
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol="meshtastic"
+            nodes={nodes}
+            messages={[incoming]}
+            getMessageRoute={() => ({ status: 'lastRelay', relayByte: 0x3a })}
+          />
+        </ToastProvider>,
+      );
+      fireEvent.mouseEnter(await screen.findByRole('button', { name: '2 hops, route details' }));
+      expect(screen.getByRole('tooltip').textContent).toBe(
+        [
+          'Reached you in 2 hops',
+          'Last relay: Ridge Router',
+          'The radio reports only the last relay, not the full route.',
+        ].join('\n'),
+      );
+    });
+
+    it('says Reticulum records no relays', async () => {
+      render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} protocol="reticulum" messages={[incoming]} />
+        </ToastProvider>,
+      );
+      fireEvent.mouseEnter(await screen.findByRole('button', { name: '2 hops, route details' }));
+      expect(screen.getByRole('tooltip').textContent).toBe(
+        'Reached you in 2 hops\nPackets on this network record how many relays they passed, not which ones.',
+      );
+    });
+  });
 });
 
 // ─── New feature tests ──────────────────────────────────────────────────────

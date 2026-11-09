@@ -988,7 +988,26 @@
     "sendLater": "Später senden",
     "sendMenuButton": "Sendeoptionen",
     "saveAttachmentAria": "Anhang speichern {{name}}",
-    "revealAttachmentAria": "Anhang {{name}} im Ordner anzeigen"
+    "revealAttachmentAria": "Anhang {{name}} im Ordner anzeigen",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, Routendetails",
+      "receivedDirect": "Direkt von {{name}} erhalten, keine Relais",
+      "reachedYouInHops_one": "In {{count}} Hop bei dir angekommen",
+      "reachedYouInHops_other": "In {{count}} Hops bei dir angekommen",
+      "from": "Von {{name}}",
+      "toYou": "An dich",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} oder einen anderen Repeater ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, unbekannter Repeater",
+      "lastRelayNamed": "Letztes Relais: {{name}}",
+      "lastRelayGuess": "Letztes Relais: {{name}} oder ein anderer Knoten (ID endet auf {{hash}})",
+      "lastRelayUnknown": "Letztes Relais: ein Knoten, dessen ID mit {{hash}} endet, nicht in deiner Knotenliste",
+      "lastRelayOnly": "Das Funkgerät meldet nur das letzte Relais, nicht die vollständige Route.",
+      "relayNotReported": "Das Funkgerät hat nicht gemeldet, welcher Knoten diese Nachricht weitergeleitet hat.",
+      "unavailableDirectOrRoom": "Routen werden nur für Kanalnachrichten angezeigt.",
+      "unavailableNotCaptured": "Route nicht verfügbar: Routen werden nur für die letzten Nachrichten aus dieser Sitzung aufbewahrt.",
+      "notRecorded": "Pakete in diesem Netzwerk zeichnen auf, wie viele Relays sie durchlaufen haben, nicht welche."
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

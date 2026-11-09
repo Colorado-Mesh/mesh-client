@@ -988,7 +988,26 @@
     "sendLater": "稍后发送",
     "sendMenuButton": "發送選項",
     "saveAttachmentAria": "保存附件 {{name}}",
-    "revealAttachmentAria": "显示文件夹中的附件 {{name}}"
+    "revealAttachmentAria": "显示文件夹中的附件 {{name}}",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}} ，路线详情",
+      "receivedDirect": "直接收到 {{name}} 的消息，未经中继",
+      "reachedYouInHops_one": "经 {{count}} 跳到达",
+      "reachedYouInHops_other": "经 {{count}} 跳到达",
+      "from": "来自 {{name}}",
+      "toYou": "到你",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}}或其他中继器（ {{hash}} ）",
+      "hopUnknown": "{{index}}. {{hash}} ，未知中继器",
+      "lastRelayNamed": "最后继电器： {{name}}",
+      "lastRelayGuess": "最后一个继电器： {{name}}或其他节点（ ID以{{hash}}结尾）",
+      "lastRelayUnknown": "最后一个中继： ID以{{hash}}结尾的节点，不在您的节点列表中",
+      "lastRelayOnly": "无线电仅报告最后一个中继，而不是完整的路线。",
+      "relayNotReported": "收音机未报告哪个节点中继此消息。",
+      "unavailableDirectOrRoom": "路由仅针对频道消息显示。",
+      "unavailableNotCaptured": "路由不可用：路由仅保留用于来自此会话的最新消息。",
+      "notRecorded": "此网络上的数据包记录它们通过了多少个中继，而不是哪些中继。"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

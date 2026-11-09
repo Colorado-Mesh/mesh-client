@@ -1216,6 +1216,7 @@ export class MeshtasticProtocol implements Protocol {
       hopLimit?: number;
       hopStart?: number;
       viaMqtt?: boolean;
+      relayNode?: number;
       payloadVariant?: { case?: string; value?: { portnum?: number } };
     };
     const from = normalizedNodeNum(mp.from);
@@ -1231,6 +1232,8 @@ export class MeshtasticProtocol implements Protocol {
           ? mp.payloadVariant.value.portnum
           : undefined;
       const hopsAway = meshtasticComputedRfHopsAway(mp);
+      // Only the low byte is defined (protobuf `relay_node`); 0 means not reported.
+      const relayNode = isFiniteNumber(mp.relayNode) ? mp.relayNode & 0xff : 0;
       const payload: RawPacketEntry = {
         ts: Date.now(),
         // `rx_snr` / `rx_rssi` have explicit presence in protobufs 2.8.0: absent means the
@@ -1247,6 +1250,7 @@ export class MeshtasticProtocol implements Protocol {
         hopLimit: mp.hopLimit,
         hopStart: mp.hopStart,
         portnum,
+        ...(relayNode > 0 ? { relayNode } : {}),
       };
       return [{ type: 'raw_packet', payload }];
     } catch {

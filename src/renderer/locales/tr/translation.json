@@ -988,7 +988,26 @@
     "sendLater": "Sonra Gönder",
     "sendMenuButton": "Gönderme seçenekleri",
     "saveAttachmentAria": "Eki kaydet {{name}}",
-    "revealAttachmentAria": "{{name}} ekini klasörde göster"
+    "revealAttachmentAria": "{{name}} ekini klasörde göster",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, güzergâh detayları",
+      "receivedDirect": "Doğrudan {{name}} 'dan alındı, röle yok",
+      "reachedYouInHops_one": "{{count}} atlamada ulaştı",
+      "reachedYouInHops_other": "{{count}} atlamada ulaştı",
+      "from": "Gönderen: {{name}}",
+      "toYou": "Alıcı: siz",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} veya başka bir tekrarlayıcı ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, bilinmeyen tekrarlayıcı",
+      "lastRelayNamed": "Son röle: {{name}}",
+      "lastRelayGuess": "Son röle: {{name}} veya başka bir düğüm (kimlik {{hash}} ile biter)",
+      "lastRelayUnknown": "Son aktarma: kimliği {{hash}} ile biten, düğüm listenizde olmayan bir düğüm",
+      "lastRelayOnly": "Radyo, tüm rotayı değil, yalnızca son röleyi bildirir.",
+      "relayNotReported": "Radyo, bu mesajı hangi düğümün ilettiğini bildirmedi.",
+      "unavailableDirectOrRoom": "Güzergahlar yalnızca kanal mesajları için gösterilir.",
+      "unavailableNotCaptured": "Güzergah mevcut değil: güzergahlar yalnızca bu oturumdan gelen son mesajlar için tutulur.",
+      "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

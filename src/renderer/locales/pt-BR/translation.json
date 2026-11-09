@@ -988,7 +988,26 @@
     "sendLater": "Enviar mais tarde",
     "sendMenuButton": "Formato de envio",
     "saveAttachmentAria": "Salvar anexo {{name}}",
-    "revealAttachmentAria": "Mostrar anexo {{name}} na pasta"
+    "revealAttachmentAria": "Mostrar anexo {{name}} na pasta",
+    "messageRoute": {
+      "pillAriaLabel": "{{hops}}, informações da rota",
+      "receivedDirect": "Recebido diretamente de {{name}}, sem retransmissões",
+      "reachedYouInHops_one": "Chegou em {{count}} salto",
+      "reachedYouInHops_other": "Chegou em {{count}} saltos",
+      "from": "De {{name}}",
+      "toYou": "Para você",
+      "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopGuess": "{{index}}. {{name}} ou outro repetidor ({{hash}})",
+      "hopUnknown": "{{index}}. {{hash}}, repetidor desconhecido",
+      "lastRelayNamed": "Última transmissão: {{name}}",
+      "lastRelayGuess": "Última retransmissão: {{name}} ou outro nó (ID termina em {{hash}})",
+      "lastRelayUnknown": "Última retransmissão: um nó cujo ID termina em {{hash}}, não na sua lista de nós",
+      "lastRelayOnly": "O rádio relata apenas o último relé, não a rota completa.",
+      "relayNotReported": "O rádio não informou qual nó retransmitiu esta mensagem.",
+      "unavailableDirectOrRoom": "As rotas são mostradas apenas para mensagens do canal.",
+      "unavailableNotCaptured": "Rota não disponível: as rotas são mantidas apenas para mensagens recentes desta sessão.",
+      "notRecorded": "Os pacotes nesta rede registram quantos relés eles passaram, não quais."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3864,7 +3883,7 @@
     "connectedViaRfAndMqttTooltip": "Conectado via RF e MQTT",
     "connectedViaRfAndMqttAria": "Conectado via RF e MQTT",
     "echoReliability": "Confiabilidade do eco",
-    "echoReliabilityTooltip": "Session proxy from overheard packet totals vs duplicates — not end-to-end delivery ACK rate.",
+    "echoReliabilityTooltip": "Indicador da sessão a partir do total de pacotes ouvidos versus duplicados, não é a taxa de ACK de entrega ponta a ponta.",
     "echoReliabilityDetail": "{{duplicates}} ecoa nas observações {{total}}",
     "pathReliability": "Confiabilidade do caminho",
     "pathReliabilityTooltip": "MeshCore sucesso do caminho vs contagens de falhas (suavizadas por Laplace) — não ACK PDR de ponta a ponta.",
