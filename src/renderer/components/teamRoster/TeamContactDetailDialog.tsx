@@ -33,6 +33,7 @@ export interface TeamContactDetailDialogProps {
   }) => boolean | undefined;
 }
 
+/** Format a message timestamp for the contact history list. */
 function formatTime(ts: number): string {
   try {
     return new Date(ts).toLocaleString();
@@ -42,6 +43,7 @@ function formatTime(ts: number): string {
   }
 }
 
+/** Contact Card detail: linked devices, unified history, and compose / Jump to Chat. */
 export function TeamContactDetailDialog({
   member,
   presence,

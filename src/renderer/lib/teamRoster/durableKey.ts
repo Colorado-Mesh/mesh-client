@@ -10,6 +10,7 @@ export interface TeamLinkCandidate {
 }
 
 /** Build a link candidate for a Meshtastic / MeshCore node detail row. */
+/** Build a TeamLinkCandidate from a LoRa MeshNode. */
 export function teamLinkFromLoraNode(opts: {
   protocol: 'meshtastic' | 'meshcore';
   nodeId: number;
@@ -42,6 +43,7 @@ export function teamLinkFromLoraNode(opts: {
 }
 
 /** Build a link candidate for a Reticulum peer detail row. */
+/** Build a TeamLinkCandidate from a Reticulum peer. */
 export function teamLinkFromReticulumPeer(opts: {
   destinationHash: string;
   displayName?: string | null;

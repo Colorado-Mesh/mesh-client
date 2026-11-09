@@ -17,6 +17,7 @@ interface TeamContactEditorDialogProps {
   onClose: (createdUnitId?: number | null) => void;
 }
 
+/** Create or edit a Contact Card (callsign, Unit ID, role, self flag). */
 export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDialogProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();

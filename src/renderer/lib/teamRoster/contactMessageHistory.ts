@@ -21,11 +21,13 @@ export interface ContactTimelineItem {
 
 export type MessagesByProtocol = Readonly<Record<MeshProtocol, readonly ChatMessage[]>>;
 
+/** Whether a chat row is a direct message for the given protocol. */
 function isDirect(protocol: MeshProtocol, msg: ChatMessage): boolean {
   if (protocol === 'reticulum') return true;
   return msg.to != null && msg.to !== 0 && msg.to !== LORA_BROADCAST;
 }
 
+/** Stable timeline key for a protocol message row. */
 function messageKey(protocol: MeshProtocol, msg: ChatMessage): string {
   const id = msg.id != null ? String(msg.id) : `${msg.timestamp}-${msg.packetId ?? 'x'}`;
   return `${protocol}:${id}`;
@@ -37,6 +39,7 @@ interface PeerFilter {
   reticulumHashes: Set<string>;
 }
 
+/** Build per-protocol peer match sets from presence snapshots. */
 function buildPeerFilters(snaps: readonly LinkPresenceSnapshot[]): PeerFilter[] {
   const byProtocol = new Map<MeshProtocol, PeerFilter>();
   for (const snap of snaps) {
@@ -61,6 +64,7 @@ function buildPeerFilters(snaps: readonly LinkPresenceSnapshot[]): PeerFilter[] 
   return [...byProtocol.values()];
 }
 
+/** True when a message involves any peer in the filter. */
 function messageTouchesPeer(protocol: MeshProtocol, msg: ChatMessage, filter: PeerFilter): boolean {
   if (protocol === 'reticulum') {
     const sender = msg.reticulum_sender_hash?.toLowerCase();
@@ -131,10 +135,12 @@ export function buildContactMessageTimeline(
 }
 
 /** Resolve a DM peer node id for Jump / Message from a presence snapshot. */
+/** Resolve a DM peer node id from a presence snapshot. */
 export function dmPeerFromPresence(snap: LinkPresenceSnapshot): number | null {
   return snap.peerNodeId;
 }
 
+/** Lowercased Reticulum destination hash from a link, if any. */
 export function reticulumHashFromLink(link: TeamMemberLink): string | null {
   return link.protocol === 'reticulum' ? link.durableKey.toLowerCase() : null;
 }

@@ -40,6 +40,7 @@ const LINKS_CREATE_SQL = `CREATE TABLE IF NOT EXISTS team_member_links (
       UNIQUE (protocol, durable_key)
     )`;
 
+/** Add member on_roster column when upgrading older DBs. */
 function migrateOnRosterColumn(db: NodeSqliteDB): void {
   const cols = db.prepare('PRAGMA table_info(team_members)').all() as { name: string }[];
   if (cols.some((c) => c.name === 'on_roster')) return;
@@ -49,12 +50,14 @@ function migrateOnRosterColumn(db: NodeSqliteDB): void {
 }
 
 /** Decorative accent was unused outside tiny swatches — drop the column. */
+/** Drop unused decorative color column from team_members. */
 function migrateDropColorColumn(db: NodeSqliteDB): void {
   const cols = db.prepare('PRAGMA table_info(team_members)').all() as { name: string }[];
   if (!cols.some((c) => c.name === 'color')) return;
   db.execScript('ALTER TABLE team_members DROP COLUMN color');
 }
 
+/** Rebuild team_member_links with composite PK and on_roster. */
 function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'team_member_links'`)
@@ -85,7 +88,7 @@ function migrateTeamMemberLinksPk(db: NodeSqliteDB): void {
         PRIMARY KEY (unit_id, protocol, durable_key),
         UNIQUE (protocol, durable_key)
       );
-      INSERT OR IGNORE INTO team_member_links_new
+      INSERT INTO team_member_links_new
         (unit_id, protocol, durable_key, node_id, long_name, identity_id, on_roster)
         SELECT l.unit_id, l.protocol, l.durable_key, l.node_id, l.long_name, l.identity_id,
           ${onRosterSelect}
@@ -114,6 +117,7 @@ function migrateLinkOnRosterColumn(db: NodeSqliteDB): void {
 }
 
 /** Idempotent DDL kept out of measured main `index.js` (sibling bundle). */
+/** Create roster tables and run idempotent schema migrations. */
 export function ensureTeamRosterTables(db: NodeSqliteDB): void {
   db.execScript(`
     CREATE TABLE IF NOT EXISTS team_members (
@@ -153,10 +157,12 @@ interface LinkDbRow {
   on_roster: number;
 }
 
+/** Throw a typed Error for invalid IPC/DB inputs. */
 function fail(msg: string): never {
   throw new TypeError(msg);
 }
 
+/** Validate a Unit ID is an integer in the allowed range. */
 function assertUnitId(value: unknown): number {
   if (!isValidTeamUnitId(value)) {
     fail(`unitId must be ${TEAM_UNIT_ID_MIN}–${TEAM_UNIT_ID_MAX}`);
@@ -164,6 +170,7 @@ function assertUnitId(value: unknown): number {
   return value;
 }
 
+/** Trim and length-clamp an optional string field. */
 function clampOptionalString(
   value: unknown,
   max: number,
@@ -181,6 +188,7 @@ function clampOptionalString(
   return trimmed.length === 0 ? null : trimmed;
 }
 
+/** Map a team_member_links row to the shared TeamMemberLink shape. */
 function linkFromDb(row: LinkDbRow): TeamMemberLink | null {
   if (!isMeshProtocol(row.protocol)) return null;
   return {
@@ -193,6 +201,7 @@ function linkFromDb(row: LinkDbRow): TeamMemberLink | null {
   };
 }
 
+/** Map a team_members row plus links to TeamMember. */
 function memberFromDb(row: MemberDbRow, links: TeamMemberLink[]): TeamMember {
   return {
     unitId: row.unit_id,
@@ -207,6 +216,7 @@ function memberFromDb(row: MemberDbRow, links: TeamMemberLink[]): TeamMember {
 }
 
 /** Keep member.on_roster in sync with any link.on_roster. */
+/** Mirror member.on_roster from any link.on_roster flags. */
 function syncMemberOnRosterFromLinks(db: NodeSqliteDB, unitId: number, now = Date.now()): void {
   const any = db
     .prepare('SELECT 1 AS ok FROM team_member_links WHERE unit_id = ? AND on_roster = 1 LIMIT 1')
@@ -218,6 +228,7 @@ function syncMemberOnRosterFromLinks(db: NodeSqliteDB, unitId: number, now = Dat
   );
 }
 
+/** Load links for the given unit ids, grouped by unit. */
 function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, TeamMemberLink[]> {
   const byUnit = new Map<number, TeamMemberLink[]>();
   for (const id of unitIds) byUnit.set(id, []);
@@ -239,6 +250,7 @@ function listLinksForUnits(db: NodeSqliteDB, unitIds: number[]): Map<number, Tea
   return byUnit;
 }
 
+/** List all contact cards with their linked devices. */
 function listMembers(db: NodeSqliteDB): TeamMember[] {
   const rows = db
     .prepare(
@@ -253,6 +265,7 @@ function listMembers(db: NodeSqliteDB): TeamMember[] {
   return rows.map((row) => memberFromDb(row, linksByUnit.get(row.unit_id) ?? []));
 }
 
+/** Read one contact card by unit id, or null if missing. */
 function readMember(db: NodeSqliteDB, unitId: number): TeamMember | null {
   const row = db
     .prepare(
@@ -265,6 +278,7 @@ function readMember(db: NodeSqliteDB, unitId: number): TeamMember | null {
   return memberFromDb(row, links);
 }
 
+/** Allocate the next free Unit ID in the valid range. */
 function allocateUnitId(db: NodeSqliteDB): number {
   const used = new Set(
     (db.prepare('SELECT unit_id FROM team_members').all() as { unit_id: number }[]).map(
@@ -277,6 +291,7 @@ function allocateUnitId(db: NodeSqliteDB): number {
   fail('no free unitId');
 }
 
+/** Insert or update a contact card and resync roster flags. */
 function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
   const unitId = assertUnitId(input.unitId);
   const callsign = clampOptionalString(input.callsign, TEAM_CALLSIGN_MAX, 'callsign', false)!;
@@ -326,6 +341,7 @@ function upsertMember(db: NodeSqliteDB, input: TeamMemberInput): TeamMember {
   return member;
 }
 
+/** Attach or update a protocol device link on a contact card. */
 function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
   const unitId = assertUnitId(input.unitId);
   const protocol = assertTeamProtocol(input.protocol);
@@ -390,6 +406,7 @@ function setLink(db: NodeSqliteDB, input: TeamMemberLinkInput): TeamMember {
   return updated;
 }
 
+/** Toggle a single link on/off the Team Roster event set. */
 function setLinkRoster(db: NodeSqliteDB, input: TeamMemberLinkRosterInput): TeamMember {
   const unitId = assertUnitId(input.unitId);
   const protocol = assertTeamProtocol(input.protocol);
@@ -416,6 +433,7 @@ function setLinkRoster(db: NodeSqliteDB, input: TeamMemberLinkRosterInput): Team
   return updated;
 }
 
+/** Unlink a device from a contact card. */
 function removeLink(
   db: NodeSqliteDB,
   unitIdRaw: unknown,
@@ -441,6 +459,7 @@ function removeLink(
 }
 
 /** Register team-roster IPC (called from main after sibling load). */
+/** Register db:* IPC handlers for Contact Cards / Team Roster. */
 export function registerTeamRosterIpcHandlers(deps: TeamRosterIpcDeps): void {
   const { ipcMain, assertIpcSender, getDatabase } = deps;
   ensureTeamRosterTables(getDatabase());

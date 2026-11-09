@@ -73,6 +73,7 @@ const MESHCORE_PUBKEY_RE = /^[0-9a-fA-F]{64}$/;
 const RETICULUM_HASH_RE = /^[0-9a-fA-F]{32}$/;
 const MESHTASTIC_NODE_RE = /^\d+$/;
 
+/** True when value is an integer Unit ID in range. */
 export function isValidTeamUnitId(value: unknown): value is number {
   return (
     Number.isInteger(value) &&
@@ -82,11 +83,13 @@ export function isValidTeamUnitId(value: unknown): value is number {
 }
 
 /** Links selected for the Team Roster event set. */
+/** Links currently selected for the Team Roster event set. */
 export function rosterLinksOf(member: TeamMember): TeamMemberLink[] {
   return member.links.filter((l) => l.onRoster);
 }
 
 /** Normalize and validate a durable link key for the given protocol. */
+/** Normalize a durable key for storage and equality. */
 export function normalizeTeamDurableKey(protocol: MeshProtocol, raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed || trimmed.length > TEAM_DURABLE_KEY_MAX) return null;
@@ -108,6 +111,7 @@ export function normalizeTeamDurableKey(protocol: MeshProtocol, raw: string): st
   return trimmed.toLowerCase();
 }
 
+/** Narrow unknown input to a supported MeshProtocol. */
 export function assertTeamProtocol(value: unknown): MeshProtocol {
   if (typeof value !== 'string' || !isMeshProtocol(value)) {
     throw new TypeError('protocol must be meshtastic, meshcore, or reticulum');

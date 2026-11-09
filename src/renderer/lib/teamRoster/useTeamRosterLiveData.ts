@@ -11,6 +11,7 @@ import type { NodesByProtocol } from './contactPresence';
 
 type NodeBuckets = Readonly<Record<string, Readonly<Record<string, NodeRecord>>>>;
 
+/** Select the live node Map for a LoRa protocol identity. */
 function nodesMapForProtocol(
   protocol: MeshProtocol,
   nodeBuckets: NodeBuckets,
@@ -40,6 +41,7 @@ function nodesMapForProtocol(
 }
 
 /** Subscribe to node + Reticulum peer stores for Contact Cards / Roster presence. */
+/** Subscribe to live node/peer maps used by roster presence. */
 export function useTeamRosterLiveData(): {
   nodesByProtocol: NodesByProtocol;
   reticulumByHash: ReadonlyMap<string, { lastHeardMs: number; displayName?: string | null }>;

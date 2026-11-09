@@ -1,9 +1,10 @@
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { INPUT_CLASS } from '@/renderer/components/ui/formClasses';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import type { ChatNotificationTarget } from '@/renderer/lib/chatDesktopNotifications';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessagesByProtocol } from '@/renderer/lib/teamRoster/contactMessageHistory';
@@ -90,6 +91,14 @@ export default function TeamRosterPanel({
   const [teamDraft, setTeamDraft] = useState('');
   const [fanOutBusy, setFanOutBusy] = useState(false);
   const cardPickerTitleId = useId();
+  const cardPickerPanelRef = useRef<HTMLDivElement>(null);
+  useModalFocusTrap(
+    cardPickerPanelRef,
+    () => {
+      setCardPickerOpen(false);
+    },
+    { enabled: cardPickerOpen },
+  );
 
   const detailMember = members.find((m) => m.unitId === detailUnitId) ?? null;
   const detailPresence = detailMember ? detailPresenceByUnit.get(detailMember.unitId) : null;
@@ -496,6 +505,7 @@ export default function TeamRosterPanel({
       {cardPickerOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div
+            ref={cardPickerPanelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={cardPickerTitleId}
@@ -586,7 +596,7 @@ export default function TeamRosterPanel({
               .getState()
               .members.find((m) => m.unitId === createdUnitId);
             if (!created || created.links.length === 0) {
-              addToast(t('teamRoster.devicePickerNeedLinks'), 'error');
+              addToast(t('teamRoster.devicePickerNeedLinks'), 'info');
               return;
             }
             setDevicePicker({ mode: 'add', member: created });

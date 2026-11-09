@@ -8,6 +8,7 @@ const DOT_CLASS: Record<NodeStatus, string> = {
   offline: 'bg-ink-500',
 };
 
+/** Colored presence indicator with an accessible status label. */
 export function TeamPresenceDot({
   status,
   className = '',

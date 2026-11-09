@@ -43,6 +43,7 @@ const STATUS_RANK: Record<NodeStatus, number> = {
   offline: 0,
 };
 
+/** Stale/offline thresholds for a protocol radio provider. */
 function thresholdsFor(protocol: MeshProtocol): { stale: number; offline: number } {
   const caps =
     protocol === 'meshcore'
@@ -53,12 +54,14 @@ function thresholdsFor(protocol: MeshProtocol): { stale: number; offline: number
   return { stale: caps.nodeStaleThresholdMs, offline: caps.nodeOfflineThresholdMs };
 }
 
+/** Parse a Meshtastic node id from link fields. */
 function parseMeshtasticNodeId(durableKey: string, nodeId?: number | null): number | null {
   if (nodeId != null && Number.isInteger(nodeId) && nodeId >= 0) return nodeId >>> 0;
   if (/^\d+$/.test(durableKey)) return Number.parseInt(durableKey, 10) >>> 0;
   return null;
 }
 
+/** Resolve a MeshCore node id from link or pubkey map. */
 function resolveMeshcoreNodeId(
   link: TeamMemberLink,
   nodes: ReadonlyMap<number, MeshNode> | undefined,
@@ -78,6 +81,7 @@ function resolveMeshcoreNodeId(
 }
 
 /** Resolve presence for one link from live node/peer maps. */
+/** Compute live presence for one linked device. */
 export function resolveLinkPresence(
   link: TeamMemberLink,
   nodesByProtocol: NodesByProtocol,
@@ -117,6 +121,7 @@ export function resolveLinkPresence(
   return { link, peerNodeId, lastHeardMs, status, displayName };
 }
 
+/** Pick the more-online of two NodeStatus values. */
 function betterStatus(a: NodeStatus, b: NodeStatus): NodeStatus {
   return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
 }

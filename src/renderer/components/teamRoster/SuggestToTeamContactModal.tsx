@@ -19,6 +19,7 @@ export interface SuggestToTeamContactModalProps {
   preferSelf?: boolean;
 }
 
+/** Find the contact card that already owns this protocol durable key, if any. */
 function findOwnerOfDurableKey(
   members: TeamMember[],
   protocol: TeamLinkCandidate['protocol'],

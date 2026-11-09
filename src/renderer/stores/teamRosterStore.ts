@@ -23,6 +23,7 @@ interface TeamRosterState {
 
 let hydration: Promise<void> | null = null;
 
+/** Replace one member in the in-memory roster list by unitId. */
 function replaceMember(members: TeamMember[], member: TeamMember): TeamMember[] {
   const idx = members.findIndex((m) => m.unitId === member.unitId);
   if (idx < 0) {
@@ -144,10 +145,12 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
 }));
 
 /** Await before mounting Contact Cards / Team Roster panels. Safe to call repeatedly. */
+/** Load contact cards from SQLite into the Zustand store. */
 export function hydrateTeamRosterStore(): Promise<void> {
   return useTeamRosterStore.getState().hydrate();
 }
 
+/** Clear roster store state between Vitest cases. */
 export function resetTeamRosterStoreForTests(): void {
   hydration = null;
   useTeamRosterStore.setState({

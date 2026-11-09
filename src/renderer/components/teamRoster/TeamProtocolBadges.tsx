@@ -15,6 +15,7 @@ export const TEAM_PROTOCOL_LABEL_KEYS: Record<MeshProtocol, string> = {
   reticulum: 'teamRoster.protocolReticulum',
 };
 
+/** Compact protocol badges for the devices linked on a Contact Card. */
 export function TeamProtocolBadges({ links }: { links: TeamMemberLink[] }) {
   const { t } = useTranslation();
   if (links.length === 0) {

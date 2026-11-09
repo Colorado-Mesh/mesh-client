@@ -7,6 +7,7 @@ import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
 
 import { TEAM_PROTOCOL_LABEL_KEYS } from './TeamProtocolBadges';
 
+/** Stable identity key for a linked device within a card. */
 function linkKey(link: TeamMemberLink): string {
   return `${link.protocol}:${link.durableKey}`;
 }
