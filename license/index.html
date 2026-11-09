@@ -2854,10 +2854,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bundled-reticulum-sidecar-agpl-30-or-later" class="md-nav__link">
+  <a href="#bundled-reticulum-sidecar" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bundled Reticulum sidecar (AGPL-3.0-or-later)
+        Bundled Reticulum sidecar
       
     </span>
   </a>
@@ -3007,10 +3007,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bundled-reticulum-sidecar-agpl-30-or-later" class="md-nav__link">
+  <a href="#bundled-reticulum-sidecar" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bundled Reticulum sidecar (AGPL-3.0-or-later)
+        Bundled Reticulum sidecar
       
     </span>
   </a>
@@ -3071,8 +3071,9 @@
 <p>The project was previously inconsistent: the Reticulum sidecar (AGPL-3.0-or-later) was deliberately isolated as a separate process to keep AGPL code out of the MIT shell, while <code>@meshtastic/core</code> (GPL-3.0-only) was bundled directly. Relicensing resolves this.</p>
 <h2 id="contributor-consent">Contributor consent<a class="headerlink" href="#contributor-consent" title="Permanent link">&para;</a></h2>
 <p>Contributors with code or creative assets in the repository were notified of the license change. As of 2026-09-02, written consent has been received from all 8 notified contributors (Joey Stanford, cj-vana / M3SHGH0ST, soord, DeFiDude / dude.eth, gnuamua, Letark, and megabear / KD5IHC via the <code>#mesh-client</code> Discord channel; Joe / WB3IHY via <a href="https://github.com/Colorado-Mesh/mesh-client/issues/933">issue #933</a>). Prior contributions were made under MIT, which permits relicensing; consent was requested as a courtesy.</p>
-<h2 id="bundled-reticulum-sidecar-agpl-30-or-later">Bundled Reticulum sidecar (AGPL-3.0-or-later)<a class="headerlink" href="#bundled-reticulum-sidecar-agpl-30-or-later" title="Permanent link">&para;</a></h2>
-<p>Release builds may bundle <code>mesh-client-reticulum</code>, a separate executable built from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar"><code>reticulum-sidecar/</code></a> that links AGPL-licensed Reticulum/LXMF crates. That binary is <strong>AGPL-3.0-or-later</strong>. It runs as a child process only — no AGPL source is compiled into the application layers.</p>
+<h2 id="bundled-reticulum-sidecar">Bundled Reticulum sidecar<a class="headerlink" href="#bundled-reticulum-sidecar" title="Permanent link">&para;</a></h2>
+<p>Release builds may bundle <code>mesh-client-reticulum</code>, a separate executable built from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar"><code>reticulum-sidecar/</code></a> that links the Ratspeak stack path deps. It runs as a child process only — no Ratspeak source is compiled into the application layers.</p>
+<p>License IDs vary by crate/version: Nomad remains <strong>AGPL-3.0-or-later</strong>; rsReticulum/rsLXMF 1.4+ declare <code>license-file</code> pointing at the <strong>Reticulum License</strong> (custom MIT-like terms); rsLXST 0.3.1+ declares a Ratspeak non-commercial LXST grant via <code>license-file</code>. See <code>pnpm run check:rust-licenses</code> and <a href="../third-party-licenses/">third-party-licenses.md</a>.</p>
 <ul>
 <li>Sidecar source: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar"><code>reticulum-sidecar/</code></a> in this repository</li>
 <li>Architecture: <a href="../reticulum/">docs/reticulum.md</a></li>
@@ -3082,7 +3083,7 @@
 <p>If you distribute builds that include the sidecar, comply with AGPL-3.0 source-offer requirements for that component.</p>
 <h2 id="reticulum-license">Reticulum License<a class="headerlink" href="#reticulum-license" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://reticulum.network/">Reticulum reference implementation (RNS)</a> is distributed under the <a href="https://reticulum.network/manual/license.html">Reticulum License</a>. It carries three conditions: the software may not be used in systems that purposefully harm human beings, may not be used in the creation of AI, machine-learning, or language-model training datasets, and its copyright and permission notice must be included in all copies or substantial portions. The Reticulum protocol itself is public domain.</p>
-<p>This repository contains no RNS source code. Reticulum support comes from the bundled sidecar, which runs as a separate process and links <a href="https://github.com/ratspeak/rsReticulum">rsReticulum</a> and <a href="https://github.com/ratspeak/rsLXMF">rsLXMF</a>. Those crates are distributed by their upstream under their own license terms (AGPL-3.0-or-later); see those repositories for their licensing.</p>
+<p>This repository contains no RNS source code. Reticulum support comes from the bundled sidecar, which runs as a separate process and links <a href="https://github.com/ratspeak/rsReticulum">rsReticulum</a> and <a href="https://github.com/ratspeak/rsLXMF">rsLXMF</a>. Those crates are distributed by their upstream under their own license terms (see the sidecar section above); see those repositories for their licensing.</p>
 <p>As a matter of project practice, the mesh-client project does not develop or distribute mesh-client for systems designed to purposefully harm human beings, and does not use Reticulum-licensed code to create AI, machine-learning, or language-model training datasets. This is a statement of how the project operates, not an additional term on the GPL-3.0-or-later application code.</p>
 <p>Attribution for Reticulum, rsReticulum, rsLXMF, and the Ratspeak stack is in <a href="../credits/">docs/credits.md</a>.</p>
 <h2 id="gpl-30-or-later-license-application-code">GPL-3.0-or-later License (application code)<a class="headerlink" href="#gpl-30-or-later-license-application-code" title="Permanent link">&para;</a></h2>
@@ -3781,7 +3782,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 16:46:00 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 9, 2026 02:40:30 UTC">November 9, 2026</span>
   </span>
 
     

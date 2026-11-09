@@ -3052,7 +3052,7 @@
 <li><code>dashboard/static/js/games_tab.js</code></li>
 </ul>
 <p>Update this file when Games PRs land. <code>pnpm run update</code> warns only when a <strong>published</strong> Ratspeak GitHub Release is newer than the <code>reviewed-ref</code> pin on the <code>games-parity</code> entry in <code>scripts/update.sh</code> (bump that pin after review). Tags, <code>main</code>, and RCs without a GitHub Release are ignored.</p>
-<p><strong>Last review:</strong> 2026-11-02 (Ratspeak v1.0.37 — Bluetooth RNode pairing/reconnect polish + Linux package/tray fixes; <strong>no Games API / wire delta</strong> vs v1.0.34. Intermediate: v1.0.35 mobile fullscreen boards + chess captured-tray readability; v1.0.36 markdown/spoilers/message delete — none of those change LRGP commands. Ratspeak <code>games.rs</code> now takes an LRGP admission transaction lease around session writes (client-internal). Four in a Row UI remains <code>done</code>; wire-interop rows still <code>todo</code> until a live gold test. Optional polish gap: mesh-client Chess still lacks Ratspeak’s captured-piece trays / material advantage). Prior: 2026-10-23 (Ratspeak v1.0.34 — voice / Codec2 / Bluetooth discovery; no Games API delta).</p>
+<p><strong>Last review:</strong> 2026-11-08 (Ratspeak v1.0.42 — no Games API / wire delta vs v1.0.37. mesh-client now ships chess captured-piece trays + material advantage (local FEN-diff) and mobile full-screen session chrome (hide list while a board is open). Four in a Row UI remains <code>done</code>; wire-interop rows still <code>todo</code> until a live gold test on a TCP hub). Prior: 2026-11-02 (v1.0.37).</p>
 <p>Status: <code>done</code> | <code>partial</code> | <code>wontfix</code> | <code>todo</code></p>
 <h2 id="commands--api">Commands / API<a class="headerlink" href="#commands--api" title="Permanent link">&para;</a></h2>
 <table>
@@ -3154,7 +3154,13 @@
 <td>Chess board</td>
 <td><code>ChessBoard</code></td>
 <td>done</td>
-<td></td>
+<td>Captured trays + material pill (FEN-diff); fluid board width</td>
+</tr>
+<tr>
+<td>Mobile fullscreen session</td>
+<td>GamesPanel list/detail swap on <code>md</code></td>
+<td>done</td>
+<td>Hide session list while a board is open; back control on small viewports</td>
 </tr>
 <tr>
 <td>Challenge from contacts</td>
@@ -3251,7 +3257,7 @@
 <h2 id="remaining-follow-ups">Remaining follow-ups<a class="headerlink" href="#remaining-follow-ups" title="Permanent link">&para;</a></h2>
 <p>None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion <code>games_outbound.db</code> (not <code>lrgp-rs</code> <code>LrgpStore</code> schema).</p>
 <p>Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still <strong>unverified on a live mesh</strong> — run the manual gold test against Ratspeak before marking them <code>done</code>. The board follows <code>lrgp-rs</code> <code>SPEC.md</code> appendix C: 42 cells row-major (<code>row * 7 + column</code>), markers <code>A</code> (challenger, first) / <code>B</code>, local outgoing payload exactly <code>{ c }</code> with the sidecar deriving <code>n</code>, landing row/cell, and terminal claims.</p>
-<p>Optional UI polish (Ratspeak v1.0.35+): chess captured-piece trays with material advantage (FEN-diff local render in <code>games_tab.js</code>), and tighter mobile board fit / full-screen session chrome — neither is required for wire interop.</p>
+<p>Manual gold test still required before flipping Four in a Row wire-interop rows to <code>done</code>: two clients on a TCP hub — challenge → accept → play → resign/draw (mesh-client ↔ mesh-client and mesh-client ↔ Ratspeak).</p>
 
 
 
@@ -3272,7 +3278,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 3, 2026 02:15:13 UTC">November 3, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 9, 2026 02:40:30 UTC">November 9, 2026</span>
   </span>
 
     
