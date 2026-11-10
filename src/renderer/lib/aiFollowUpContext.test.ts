@@ -181,6 +181,28 @@ describe('selectRelevantMessages', () => {
     expect(selected.some((message) => message.sender === 'Half Live Elecrow')).toBe(false);
   });
 
+  it('fills remaining slots with higher-scoring topic matches before lower ones', () => {
+    const messages = [
+      { at: 1, sender: 'Weak', body: 'routing note only' },
+      { at: 2, sender: 'Strong', body: 'routing collisions on the north ridge path' },
+      { at: 3, sender: 'Mid', body: 'routing collisions tonight' },
+      ...Array.from({ length: 8 }, (_, index) => ({
+        at: 10 + index,
+        sender: `N${index}`,
+        body: `Recent ack filler ${index}.`,
+      })),
+    ];
+    const selected = selectRelevantMessages(
+      'what about routing collisions?',
+      'Conversations:\n- Alice said hello.\n',
+      messages,
+      2,
+    );
+    expect(selected.some((message) => message.sender === 'Strong')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Mid')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Weak')).toBe(false);
+  });
+
   it('does not let topic matches exceed max or displace a paste match', () => {
     const pasted = 'Exact pasted body that must stay selected for grounding.';
     const messages = [

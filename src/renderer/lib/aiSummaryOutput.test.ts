@@ -46,6 +46,11 @@ describe('AI summary output sanitize and dedupe', () => {
     expect(sanitizeAiModelOutput('/no_think')).toBe('');
   });
 
+  it('can preserve leading and trailing whitespace for streaming chunks', () => {
+    expect(sanitizeAiModelOutput('Half Live /no_think', { trim: false })).toBe('Half Live ');
+    expect(sanitizeAiModelOutput('  suggested', { trim: false })).toBe('  suggested');
+  });
+
   it('treats a lone /no_think as empty after finalize', () => {
     expect(finalizeAiSummaryText('  /no_think  ')).toBe('');
   });
@@ -58,6 +63,13 @@ describe('AI summary output sanitize and dedupe', () => {
       'One-offs:',
       '- KE4IQR-1: sent a greeting to Evans.',
     ].join('\n');
+    expect(dedupeAiSummaryOneOffs(text)).toBe(text);
+  });
+
+  it('keeps One-off bullets whose normalized key is empty', () => {
+    const text = ['Conversations:', '- Alice said hello.', '', 'One-offs:', '- ***', '- !!'].join(
+      '\n',
+    );
     expect(dedupeAiSummaryOneOffs(text)).toBe(text);
   });
 

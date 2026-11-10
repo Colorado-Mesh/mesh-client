@@ -164,8 +164,9 @@ export function selectContextLines(
     if (size + line.length + 1 > options.maxChars || promptBytes + bytes > options.maxBytes) {
       if (line.length + 1 > options.maxChars || options.reservedBytes + bytes > options.maxBytes)
         continue;
-      // Primary overflow skips this line and keeps packing; secondary/rest stop.
-      if (priorityFn?.(message)) continue;
+      // Primary/secondary overflow skips this line and keeps packing so a long
+      // topic line cannot block later shorter ones; newest-filler rest stops.
+      if (priorityFn?.(message) || secondaryFn?.(message)) continue;
       break;
     }
     selected.push(message);

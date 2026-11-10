@@ -165,15 +165,27 @@ export function selectRelevantMessages(
     return { message, index, score };
   });
   const newest = messages.slice(-8);
+  const scoreByKey = new Map(
+    scored.map((entry) => [messageKey(entry.message), entry.score] as const),
+  );
   const top = scored
     .sort((a, b) => b.score - a.score || b.index - a.index)
     .slice(0, max)
     .map((entry) => entry.message);
+  const rankedTopic = [...topicMatches].sort((a, b) => {
+    const scoreA = scoreByKey.get(messageKey(a)) ?? 0;
+    const scoreB = scoreByKey.get(messageKey(b)) ?? 0;
+    return scoreB - scoreA || b.at - a.at;
+  });
   const byKey = new Map<string, AiSummaryMessage>();
-  // Paste/focus always; topic/top only fill remaining slots up to max so topic
-  // hits cannot displace higher-priority matches or inflate past the cap.
+  // Paste/focus always; ranked topic then top fill remaining slots up to max.
   for (const message of [...pasteMatches, ...focusMatches]) byKey.set(messageKey(message), message);
-  for (const message of [...topicMatches, ...top]) {
+  for (const message of rankedTopic) {
+    const key = messageKey(message);
+    if (byKey.has(key) || byKey.size >= max) continue;
+    byKey.set(key, message);
+  }
+  for (const message of top) {
     const key = messageKey(message);
     if (byKey.has(key) || byKey.size >= max) continue;
     byKey.set(key, message);

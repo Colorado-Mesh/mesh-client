@@ -14,6 +14,7 @@ import {
   aiSummaryTimeoutMs,
 } from '../../shared/ai-types';
 import { buildAiFollowUpPrompt } from '../../shared/aiFollowUpPrompt';
+import { selectContextLines } from '../../shared/aiSummaryPrompt';
 import { buildRequest, parseDelta } from './adapters';
 import { AiClient } from './aiClient';
 import { AiConfig } from './config';
@@ -577,6 +578,35 @@ describe('AI follow-up prompts', () => {
       AI_ON_DEVICE_MAX_PROMPT_BYTES,
     );
   });
+  it('skips an overflowing secondary-priority line and keeps packing shorter ones', () => {
+    const longTopic = {
+      at: 1,
+      sender: 'Long',
+      body: `topic ${'pad '.repeat(80)}`,
+    };
+    const shortTopic = {
+      at: 2,
+      sender: 'Short',
+      body: 'topic short hit',
+    };
+    const filler = {
+      at: 3,
+      sender: 'Filler',
+      body: 'unrelated newest filler line',
+    };
+    const selected = selectContextLines([longTopic, shortTopic, filler], {
+      digests: false,
+      maxChars: 10_000,
+      maxBytes: 420,
+      reservedBytes: 200,
+      timeZone: 'UTC',
+      priority: () => false,
+      secondaryPriority: (message) => message.body.includes('topic'),
+    });
+    expect(selected.lines.some((line) => line.includes('topic short hit'))).toBe(true);
+    expect(selected.lines.some((line) => line.includes('pad pad'))).toBe(false);
+  });
+
   it('packs 2-byte topic source over newest filler for an unquoted topic ask', () => {
     const halfLiveBody =
       'We should switch routing and usage stats to 2-byte addresses to cut collisions.';

@@ -6,7 +6,11 @@ import {
   runMultiPassSummary,
   shouldUseMultiPass,
 } from '@/renderer/lib/aiMultiPassSummary';
-import { finalizeAiSummaryText, RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
+import {
+  finalizeAiSummaryText,
+  RepetitiveAiOutputError,
+  sanitizeAiModelOutput,
+} from '@/renderer/lib/aiSummaryOutput';
 import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { getAppSettingsRaw, mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
@@ -173,14 +177,18 @@ export function subscribeAiEvents(): void {
       const waiter = remoteWaiters.get(value.requestId);
       if (waiter) {
         remoteWaiters.delete(value.requestId);
-        const finalized = finalizeAiSummaryText(value.text);
+        // Ask / callback-driven streams sanitize only (dedupe is for Catch up).
+        // Catch-up paths without onChunk finalize here; streaming Catch up finalizes in onFinalText.
+        const cleaned = waiter.onChunk
+          ? sanitizeAiModelOutput(value.text)
+          : finalizeAiSummaryText(value.text);
         // Callback-driven streams (onChunk) own UI updates via onFinalText — do not
         // clobber ConversationSummary.text (follow-ups must never overwrite Catch up).
         if (!waiter.silent && !waiter.onChunk && ownerKey) {
           const currentId = useAiSummaryStore.getState().summaries[ownerKey]?.requestId;
           if (currentId)
             patch(ownerKey, currentId, {
-              text: finalized,
+              text: cleaned,
               provider: value.provider,
               model: value.model,
               truncated:
@@ -192,7 +200,7 @@ export function subscribeAiEvents(): void {
         }
         passOwners.delete(value.requestId);
         waiter.resolve({
-          text: finalized,
+          text: cleaned,
           messageCount: value.messageCount,
         });
         return;

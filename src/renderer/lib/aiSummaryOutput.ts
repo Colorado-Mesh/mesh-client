@@ -36,14 +36,18 @@ export function hasRepetitiveAiOutput(text: string): boolean {
   return false;
 }
 
-/** Strip thinking-control echoes that must never appear as user-visible answers. */
-export function sanitizeAiModelOutput(text: string): string {
-  return text
+/**
+ * Strip thinking-control echoes that must never appear as user-visible answers.
+ * Pass `{ trim: false }` while streaming so leading/trailing whitespace between
+ * chunks is preserved; final callers keep the default trim.
+ */
+export function sanitizeAiModelOutput(text: string, options?: { trim?: boolean }): string {
+  const cleaned = text
     .replace(/\/no_think\b/gi, '')
     .replace(/<\/?think>/gi, '')
     .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    .replace(/\n{3,}/g, '\n\n');
+  return options?.trim === false ? cleaned : cleaned.trim();
 }
 
 const SECTION_HEADING = /^(conversations|one-offs)\s*:?\s*$/i;
@@ -159,7 +163,7 @@ export function dedupeAiSummaryOneOffs(text: string): string {
     }
     const key = normalizeAiSummaryBullet(trimmed);
     if (!key) {
-      removed = true;
+      kept.push(line);
       continue;
     }
     const coveredByConversation = conversationKeys.some((other) =>
