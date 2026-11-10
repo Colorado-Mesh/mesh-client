@@ -181,6 +181,28 @@ describe('selectRelevantMessages', () => {
     expect(selected.some((message) => message.sender === 'Half Live Elecrow')).toBe(false);
   });
 
+  it('does not let topic matches exceed max or displace a paste match', () => {
+    const pasted = 'Exact pasted body that must stay selected for grounding.';
+    const messages = [
+      { at: 1, sender: 'Paste', body: pasted },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        at: index + 2,
+        sender: `Topic${index}`,
+        body: `routing collisions note ${index}`,
+      })),
+    ];
+    const selected = selectRelevantMessages(
+      `${pasted} what about routing collisions?`,
+      'Conversations:\n- Alice said hello.\n- Bob mentioned weather.\n',
+      messages,
+      3,
+    );
+    expect(selected.some((message) => message.body === pasted)).toBe(true);
+    // Topic fill is capped at max; newest-8 may still append afterward.
+    const earlyTopic = selected.filter((message) => message.body !== pasted && message.at <= 33);
+    expect(earlyTopic.length).toBeLessThanOrEqual(2);
+  });
+
   it('keeps 2-byte topic messages for an unquoted topic ask among coffee filler', () => {
     const twoByteSummary = [
       'Conversations:',

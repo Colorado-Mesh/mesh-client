@@ -173,13 +173,14 @@ export function subscribeAiEvents(): void {
       const waiter = remoteWaiters.get(value.requestId);
       if (waiter) {
         remoteWaiters.delete(value.requestId);
+        const finalized = finalizeAiSummaryText(value.text);
         // Callback-driven streams (onChunk) own UI updates via onFinalText — do not
         // clobber ConversationSummary.text (follow-ups must never overwrite Catch up).
         if (!waiter.silent && !waiter.onChunk && ownerKey) {
           const currentId = useAiSummaryStore.getState().summaries[ownerKey]?.requestId;
           if (currentId)
             patch(ownerKey, currentId, {
-              text: finalizeAiSummaryText(value.text),
+              text: finalized,
               provider: value.provider,
               model: value.model,
               truncated:
@@ -191,7 +192,7 @@ export function subscribeAiEvents(): void {
         }
         passOwners.delete(value.requestId);
         waiter.resolve({
-          text: finalizeAiSummaryText(value.text),
+          text: finalized,
           messageCount: value.messageCount,
         });
         return;

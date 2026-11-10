@@ -49,6 +49,7 @@ export function sanitizeAiModelOutput(text: string): string {
 const SECTION_HEADING = /^(conversations|one-offs)\s*:?\s*$/i;
 const BULLET_PREFIX = /^(?:[*•-]|\d+[.)])\s+/;
 
+/** Strip a leading markdown/plain bullet marker from a summary line. */
 function stripBulletPrefix(line: string): string {
   return line.replace(BULLET_PREFIX, '').trim();
 }
@@ -66,6 +67,7 @@ export function normalizeAiSummaryBullet(text: string): string {
     .replace(/\s+/g, ' ');
 }
 
+/** True when two normalized bullets are the same fact or one restates the other. */
 function isNearDuplicateBullet(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
@@ -77,12 +79,18 @@ function isNearDuplicateBullet(a: string, b: string): boolean {
   return false;
 }
 
+/**
+ * Split a structured Catch-up into prefix / Conversations / One-offs line arrays,
+ * preserving original line text (including indentation and blanks).
+ */
 function parseStructuredSections(text: string): {
   prefix: string[];
   conversations: string[];
   oneOffs: string[];
   conversationsHeading: string | null;
   oneOffsHeading: string | null;
+  conversationsHeadingRaw: string | null;
+  oneOffsHeadingRaw: string | null;
 } | null {
   const lines = text.split('\n');
   let mode: 'prefix' | 'conversations' | 'oneOffs' = 'prefix';
@@ -91,16 +99,20 @@ function parseStructuredSections(text: string): {
   const oneOffs: string[] = [];
   let conversationsHeading: string | null = null;
   let oneOffsHeading: string | null = null;
+  let conversationsHeadingRaw: string | null = null;
+  let oneOffsHeadingRaw: string | null = null;
   for (const line of lines) {
     const trimmed = line.trim();
     if (SECTION_HEADING.test(trimmed)) {
       if (/^conversations/i.test(trimmed)) {
         mode = 'conversations';
         conversationsHeading = trimmed.endsWith(':') ? trimmed : `${trimmed}:`;
+        conversationsHeadingRaw = line;
         continue;
       }
       mode = 'oneOffs';
       oneOffsHeading = trimmed.endsWith(':') ? trimmed : `${trimmed}:`;
+      oneOffsHeadingRaw = line;
       continue;
     }
     if (mode === 'prefix') prefix.push(line);
@@ -114,12 +126,15 @@ function parseStructuredSections(text: string): {
     oneOffs,
     conversationsHeading,
     oneOffsHeading,
+    conversationsHeadingRaw,
+    oneOffsHeadingRaw,
   };
 }
 
 /**
  * Drop near-duplicate One-offs (and One-offs already covered by Conversations).
- * No-op when the text is not a structured Conversations/One-offs summary.
+ * Preserves original Conversations lines and blank-line structure. Returns the
+ * original text unchanged when no One-off bullet was removed.
  */
 export function dedupeAiSummaryOneOffs(text: string): string {
   const parsed = parseStructuredSections(text);
@@ -131,10 +146,11 @@ export function dedupeAiSummaryOneOffs(text: string): string {
 
   const kept: string[] = [];
   const keptKeys: string[] = [];
+  let removed = false;
   for (const line of parsed.oneOffs) {
     const trimmed = line.trim();
     if (!trimmed) {
-      // Preserve a single blank line between bullets at most via rebuild.
+      kept.push(line);
       continue;
     }
     if (!BULLET_PREFIX.test(trimmed) && !trimmed.startsWith('-')) {
@@ -142,36 +158,44 @@ export function dedupeAiSummaryOneOffs(text: string): string {
       continue;
     }
     const key = normalizeAiSummaryBullet(trimmed);
-    if (!key) continue;
+    if (!key) {
+      removed = true;
+      continue;
+    }
     const coveredByConversation = conversationKeys.some((other) =>
       isNearDuplicateBullet(key, other),
     );
-    if (coveredByConversation) continue;
+    if (coveredByConversation) {
+      removed = true;
+      continue;
+    }
     const coveredByKept = keptKeys.some((other) => isNearDuplicateBullet(key, other));
-    if (coveredByKept) continue;
-    kept.push(trimmed.startsWith('-') || BULLET_PREFIX.test(trimmed) ? trimmed : line);
+    if (coveredByKept) {
+      removed = true;
+      continue;
+    }
+    kept.push(line);
     keptKeys.push(key);
   }
 
+  if (!removed) return text;
+
+  // Drop trailing blank lines from One-offs after removals, keep interior blanks.
+  while (kept.length > 0 && !kept.at(-1)?.trim()) kept.pop();
+
   const out: string[] = [];
-  if (parsed.prefix.some((line) => line.trim())) out.push(...parsed.prefix);
-  if (parsed.conversationsHeading) {
+  if (parsed.prefix.length) out.push(...parsed.prefix);
+  if (parsed.conversationsHeadingRaw) {
     if (out.length && out.at(-1)?.trim()) out.push('');
-    out.push(parsed.conversationsHeading);
-    const conversationBullets = parsed.conversations
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    for (const line of conversationBullets) out.push(line);
+    out.push(parsed.conversationsHeadingRaw);
+    out.push(...parsed.conversations);
   }
-  if (parsed.oneOffsHeading) {
+  if (parsed.oneOffsHeadingRaw) {
     if (out.length && out.at(-1)?.trim()) out.push('');
-    out.push(parsed.oneOffsHeading);
-    for (const line of kept) out.push(line);
+    out.push(parsed.oneOffsHeadingRaw);
+    out.push(...kept);
   }
-  return out
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return out.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
 /** Sanitize model control tokens then dedupe structured One-offs. */

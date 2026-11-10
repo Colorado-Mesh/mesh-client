@@ -50,10 +50,21 @@ describe('AI summary output sanitize and dedupe', () => {
     expect(finalizeAiSummaryText('  /no_think  ')).toBe('');
   });
 
-  it('drops near-duplicate One-offs and speaker restatements', () => {
+  it('returns the original text when no One-off was removed', () => {
     const text = [
       'Conversations:',
-      '- Half Live: suggested changing to 2-byte addresses for routing and usage stats.',
+      '- Half Live: suggested changing to 2-byte addresses.',
+      '',
+      'One-offs:',
+      '- KE4IQR-1: sent a greeting to Evans.',
+    ].join('\n');
+    expect(dedupeAiSummaryOneOffs(text)).toBe(text);
+  });
+
+  it('drops near-duplicate One-offs while preserving Conversations lines', () => {
+    const text = [
+      'Conversations:',
+      '  - Half Live: suggested changing to 2-byte addresses for routing and usage stats.',
       '',
       'One-offs:',
       '- KE4IQR-1: sent a greeting to Evans.',
@@ -64,10 +75,13 @@ describe('AI summary output sanitize and dedupe', () => {
       '- HYPERSPACE PRIM: HYPERSPACE PRIM mentioned receiving a new t114 to help troubleshoot a repeater power issue.',
     ].join('\n');
     const deduped = dedupeAiSummaryOneOffs(text);
-    expect(deduped).toContain('KE4IQR-1: sent a greeting to Evans.');
-    expect(deduped).toContain('KC0SIQ-03: shared their morning coffee routine of catching up.');
     expect(deduped).toContain(
-      'HYPERSPACE PRIM: mentioned receiving a new t114 to help troubleshoot a repeater power issue.',
+      '  - Half Live: suggested changing to 2-byte addresses for routing and usage stats.',
+    );
+    expect(deduped).toContain('- KE4IQR-1: sent a greeting to Evans.');
+    expect(deduped).toContain('- KC0SIQ-03: shared their morning coffee routine of catching up.');
+    expect(deduped).toContain(
+      '- HYPERSPACE PRIM: mentioned receiving a new t114 to help troubleshoot a repeater power issue.',
     );
     expect(deduped).not.toContain('KE4IQR-1: KE4IQR-1 sent a greeting');
     expect(deduped.match(/KE4IQR-1:/g)?.length).toBe(1);

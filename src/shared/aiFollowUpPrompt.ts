@@ -28,6 +28,7 @@ function normalizeWs(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+/** True when the question pastes or closely quotes this message body. */
 function isQuestionPasteMatch(question: string, body: string): boolean {
   const normalizedBody = normalizeWs(body);
   if (normalizedBody.length < 12) return false;
@@ -37,16 +38,20 @@ function isQuestionPasteMatch(question: string, body: string): boolean {
   return normalizedBody.includes(normalizedQuestion) && normalizedQuestion.length >= 12;
 }
 
-function isFollowUpPackPriority(
+/** Highest pack tier: pasted bodies and quoted-bullet focus matches. */
+function isFollowUpPrimaryPackPriority(
   question: string,
   summary: string,
   message: AiSummaryMessage,
 ): boolean {
   return (
-    isQuestionPasteMatch(question, message.body) ||
-    isFollowUpFocusMatch(question, summary, message) ||
-    isFollowUpQuestionTopicMatch(question, message)
+    isQuestionPasteMatch(question, message.body) || isFollowUpFocusMatch(question, summary, message)
   );
+}
+
+/** Secondary pack tier: question-topic hits, after paste/focus and before filler. */
+function isFollowUpTopicPackPriority(question: string, message: AiSummaryMessage): boolean {
+  return isFollowUpQuestionTopicMatch(question, message);
 }
 
 export interface AiFollowUpPromptInput {
@@ -210,7 +215,8 @@ export function buildAiFollowUpPrompt(
     reservedBytes: baseBytes,
     timeZone,
     // Use the untruncated question/summary so focus matching survives framing shrink.
-    priority: (message) => isFollowUpPackPriority(input.question, input.summary, message),
+    priority: (message) => isFollowUpPrimaryPackPriority(input.question, input.summary, message),
+    secondaryPriority: (message) => isFollowUpTopicPackPriority(input.question, message),
   });
   truncated = truncated || selected.truncated || question.length < input.question.length;
   return {

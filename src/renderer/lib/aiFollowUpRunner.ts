@@ -149,7 +149,7 @@ export async function runAskFollowUp(
             .getState()
             .summaries[key]?.followUps?.find((turn) => turn.id === turnId);
           if (!current?.streaming) return;
-          const answer = current.answer + delta;
+          const answer = sanitizeAiModelOutput(current.answer + delta);
           if (answer.length <= AI_MAX_RESPONSE_BYTES)
             deps.patchFollowUp(key, turnId, { answer, phase: undefined });
         },

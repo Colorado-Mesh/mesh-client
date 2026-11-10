@@ -94,6 +94,7 @@ function bulletLines(summary: string): string[] {
     .filter(Boolean);
 }
 
+/** Count question tokens that appear in a summary bullet (hyphen-normalized). */
 function overlapCount(questionTokens: Set<string>, line: string): number {
   const hay = followUpMatchHaystack(stripBulletPrefix(line));
   let hits = 0;

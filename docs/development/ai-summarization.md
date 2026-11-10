@@ -85,9 +85,10 @@ Context retention (renderer session only):
 - On-device engines (`os` / `bundled`): a deterministic relevance selector scores messages with
   question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
   “how?” can still find the subject. Hyphen compounds such as `2-byte` keep a joined token
-  (`2byte`) so topic asks focus the right bullets. Packing prefers paste, quoted-bullet focus,
-  and question-topic hits ahead of newest-first filler, and reserves a larger share of the
-  ~12 KB prompt for transcript lines so a long Catch up summary cannot starve source grounding.
+  (`2byte`) so topic asks focus the right bullets. Packing prefers paste and quoted-bullet
+  focus first, then question-topic hits, then newest-first filler, and reserves a larger share
+  of the ~12 KB prompt for transcript lines so a long Catch up summary cannot starve source
+  grounding.
 - Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.
 - Completed Catch up text strips echoed `/no_think` markers and drops near-duplicate One-offs
   before display; Ask answers apply the same control-token strip and treat empty post-strip
