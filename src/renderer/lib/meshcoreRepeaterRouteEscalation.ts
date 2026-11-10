@@ -13,6 +13,30 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
   cooldownMs?: number;
 }
 
+/** meshcore.js reports the contact `outPathLen` byte raw; firmware OUT_PATH_UNKNOWN is 0xFF. */
+export const MESHCORE_OUT_PATH_UNKNOWN_BYTE = 0xff;
+
+/**
+ * Classify how the companion will send to a contact, from the app's stored hash path and
+ * the last `outPathLen` byte read from the radio contact. A stored path wins because it can
+ * be newer than that cached length (PathUpdated refreshes the path, not the length).
+ *
+ * Firmware floods only when `out_path_len` is OUT_PATH_UNKNOWN (0xFF, or negative when read
+ * signed). A length of 0 is a known zero-hop route and is sent direct, so a stale zero-hop
+ * route needs the flood retry as much as a multi-hop one does.
+ */
+export function meshcoreRepeaterRouteKind(
+  storedPath: Uint8Array | undefined,
+  radioContactPathLen: number | null | undefined,
+): MeshcoreRepeaterRouteKind {
+  if (storedPath && storedPath.length > 0) return 'direct';
+  if (radioContactPathLen == null || !Number.isFinite(radioContactPathLen)) return 'unknown';
+  if (radioContactPathLen < 0 || radioContactPathLen === MESHCORE_OUT_PATH_UNKNOWN_BYTE) {
+    return 'flood';
+  }
+  return 'direct';
+}
+
 const lastEscalationByNode = new Map<number, number>();
 
 export function clearMeshcoreRepeaterRouteEscalationStateForTests(): void {
@@ -78,5 +102,50 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     }
     lastEscalationByNode.set(normalizedId, now());
     return fn({ escalated: true });
+  }
+}
+
+export interface MeshcoreRepeaterLoginFallbackDeps extends MeshcoreRepeaterRouteEscalationDeps {
+  /** True when a password is available to log in with. */
+  canLogin: (nodeId: number) => boolean;
+  /** Send one login and wait for its reply; rejects when it fails. */
+  login: (nodeId: number) => Promise<void>;
+}
+
+/**
+ * Route escalation plus one login when a request goes unanswered.
+ *
+ * Repeater firmware answers Status only for a companion in its access list, and drops
+ * everything else silently. Guest entries are not saved, so a reboot forgets them. The
+ * first attempt stays login-free (a known companion is answered at once); after a timeout
+ * the retry logs in first. Failure point: a login that gets no reply rejects with its own
+ * timeout and the request is not sent again. At most one login per call.
+ */
+export async function withMeshcoreRepeaterLoginFallback<T>(
+  nodeId: number,
+  deps: MeshcoreRepeaterLoginFallbackDeps,
+  fn: (attempt: { escalated: boolean; loggedIn: boolean }) => Promise<T>,
+): Promise<T> {
+  const normalizedId = nodeId >>> 0;
+  // Held in an object so the catch below reads the value the closure wrote.
+  const state = { loggedIn: false };
+  const loginOnce = async (): Promise<void> => {
+    state.loggedIn = true;
+    await deps.login(normalizedId);
+  };
+  try {
+    return await withMeshcoreRepeaterRouteEscalation(normalizedId, deps, async ({ escalated }) => {
+      if (escalated && !state.loggedIn && deps.canLogin(normalizedId)) await loginOnce();
+      return fn({ escalated, loggedIn: state.loggedIn });
+    });
+  } catch (err) {
+    if (state.loggedIn || !isMeshcoreRepeaterTimeoutError(err) || !deps.canLogin(normalizedId)) {
+      throw err;
+    }
+    console.warn(
+      `[meshcoreRepeaterRouteEscalation] timeout node=${normalizedId}; logging in before one more attempt`,
+    );
+    await loginOnce();
+    return fn({ escalated: false, loggedIn: state.loggedIn });
   }
 }

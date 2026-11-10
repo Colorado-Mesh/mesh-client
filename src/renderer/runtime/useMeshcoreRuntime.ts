@@ -327,7 +327,10 @@ import {
   type RepeaterPostRebootStatusScheduler,
 } from '../lib/meshcoreRepeaterPostRebootStatus';
 import {
+  MESHCORE_OUT_PATH_UNKNOWN_BYTE,
   type MeshcoreRepeaterRouteKind,
+  meshcoreRepeaterRouteKind,
+  withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from '../lib/meshcoreRepeaterRouteEscalation';
 import {
@@ -1750,11 +1753,15 @@ export function useMeshcoreRuntime() {
       const buildPubKeys = staged ? new Map<number, Uint8Array>() : pubKeyMapRef.current;
       const buildPrefixes = staged ? new Map<string, number>() : pubKeyPrefixMapRef.current;
       const buildPaths = staged ? new Map<number, Uint8Array>() : outPathMapRef.current;
+      const baselinePathLens = new Map(radioContactPathLenByNodeRef.current);
+      const buildPathLens = staged
+        ? new Map<number, number>()
+        : radioContactPathLenByNodeRef.current;
       const advertNames = new Map<number, string>();
       buildPubKeys.clear();
       buildPrefixes.clear();
       buildPaths.clear();
-      if (!staged) radioContactPathLenByNodeRef.current.clear();
+      buildPathLens.clear();
       const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
@@ -1810,6 +1817,15 @@ export function useMeshcoreRuntime() {
         nextNodes.set(node.node_id, node);
         buildPubKeys.set(node.node_id, contact.publicKey);
         buildPaths.set(node.node_id, slicedPath);
+        // Keep the radio's own path length: 0 (zero-hop direct) and 0xFF/-1 (flood) both have
+        // an empty path, and the repeater route kind needs to tell them apart.
+        if (
+          opts?.contactsFromRadio &&
+          typeof contact.outPathLen === 'number' &&
+          Number.isFinite(contact.outPathLen)
+        ) {
+          buildPathLens.set(node.node_id, contact.outPathLen);
+        }
         const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
         if (!opts?.deferPathHistory && contactPathBytes.length > 0) {
           const pathHash = computePathHash(contactPathBytes);
@@ -1866,7 +1882,8 @@ export function useMeshcoreRuntime() {
         pubKeyMapRef.current = buildPubKeys;
         pubKeyPrefixMapRef.current = buildPrefixes;
         outPathMapRef.current = buildPaths;
-        radioContactPathLenByNodeRef.current.clear();
+        mergeLiveMapChanges(baselinePathLens, radioContactPathLenByNodeRef.current, buildPathLens);
+        radioContactPathLenByNodeRef.current = buildPathLens;
         for (const [id, name] of advertNames) {
           const liveName = rememberedMeshcoreLiveAdvertName(id);
           if (liveName === baselineNames.get(id)) rememberMeshcoreLiveAdvertName(id, name);
@@ -2081,6 +2098,7 @@ export function useMeshcoreRuntime() {
           nodeId,
           outPathMapRef.current,
           meshcorePathUpdatePendingRef.current,
+          () => radioContactPathLenByNodeRef.current,
         );
       }
       // Path updates change hop counts; debounce a full contacts rebuild for updated outPathLen.
@@ -6012,16 +6030,10 @@ export function useMeshcoreRuntime() {
 
   const resolveAdminRouteKindForNode = useCallback((nodeId: number): MeshcoreRepeaterRouteKind => {
     const id = nodeId >>> 0;
-    // Empty companion outPath means flood; missing map entry is unknown (rebuilds may omit
-    // radioContactPathLen). Prefer outPathMap; fall back to last-seen radio path length.
-    if (outPathMapRef.current.has(id)) {
-      const path = outPathMapRef.current.get(id);
-      return path && path.length > 0 ? 'direct' : 'flood';
-    }
-    const pathLen = radioContactPathLenByNodeRef.current.get(id);
-    if (pathLen === 0) return 'flood';
-    if (pathLen != null && pathLen > 0) return 'direct';
-    return 'unknown';
+    return meshcoreRepeaterRouteKind(
+      outPathMapRef.current.get(id),
+      radioContactPathLenByNodeRef.current.get(id),
+    );
   }, []);
 
   const resetContactPathForEscalation = useCallback(
@@ -6040,6 +6052,8 @@ export function useMeshcoreRuntime() {
       try {
         await conn.resetPath(pubKey);
         outPathMapRef.current.delete(nodeId >>> 0);
+        // The radio now floods to this contact; keep the cached length in step.
+        radioContactPathLenByNodeRef.current.set(nodeId >>> 0, MESHCORE_OUT_PATH_UNKNOWN_BYTE);
         return true;
       } catch (e: unknown) {
         console.warn(
@@ -6049,6 +6063,25 @@ export function useMeshcoreRuntime() {
       }
     },
     [ensureNodePubKey, resolveMeshcoreConn],
+  );
+
+  const makeRepeaterLoginOpts = useCallback(
+    (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+      if (!node) return undefined;
+      return {
+        hopsAway: resolveAdminHopsForNode(nodeId),
+        restoreRadioContact: async () => {
+          try {
+            await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
+          } catch (e: unknown) {
+            maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
+            throw e;
+          }
+        },
+      };
+    },
+    [resolveAdminHopsForNode],
   );
 
   const requestRepeaterStatus = useCallback(
@@ -6104,11 +6137,24 @@ export function useMeshcoreRuntime() {
                 `[useMeshcoreRuntime] status proceeding while ping busy node=${nodeId} waitedMs=${settle.waitedMs}`,
               );
             }
-            const raw = await withMeshcoreRepeaterRouteEscalation(
+            const statusHwModel = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model;
+            const raw = await withMeshcoreRepeaterLoginFallback(
               nodeId,
               {
                 resetContactPath: resetContactPathForEscalation,
                 resolveRouteKind: resolveAdminRouteKindForNode,
+                // Rooms keep their own BBS session; only repeater passwords are used here.
+                canLogin: (id) =>
+                  statusHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
+                login: () =>
+                  meshcoreTryRemoteServerLogin(
+                    conn,
+                    nodeId,
+                    pubKey,
+                    statusHwModel,
+                    repeaterRemoteRpcRef.current,
+                    makeRepeaterLoginOpts(conn, nodeId, pubKey),
+                  ),
               },
               async ({ escalated }) => {
                 if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
@@ -6200,6 +6246,7 @@ export function useMeshcoreRuntime() {
     [
       bumpMeshcoreNodeLastHeardFromRpc,
       ensureNodePubKey,
+      makeRepeaterLoginOpts,
       resetContactPathForEscalation,
       resolveAdminHopsForNode,
       resolveAdminRouteKindForNode,
@@ -6236,25 +6283,6 @@ export function useMeshcoreRuntime() {
   }, []);
 
   /** Repeater login options: hop-aware receipt waits and re-add on SendLogin ERR_CODE_NOT_FOUND. */
-  const makeRepeaterLoginOpts = useCallback(
-    (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
-      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
-      if (!node) return undefined;
-      return {
-        hopsAway: resolveAdminHopsForNode(nodeId),
-        restoreRadioContact: async () => {
-          try {
-            await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
-          } catch (e: unknown) {
-            maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
-            throw e;
-          }
-        },
-      };
-    },
-    [resolveAdminHopsForNode],
-  );
-
   /** Decode Cayenne LPP from a telemetry reply or push and update the per-node telemetry stores. */
   const applyMeshcoreTelemetryLpp = useCallback(
     (nodeId: number, lppSensorData: Uint8Array | undefined, source: 'rpc' | 'push') => {
@@ -6611,11 +6639,27 @@ export function useMeshcoreRuntime() {
                 orderBy: 0,
                 pubKeyPrefixLength: neighbourPrefixLen,
               });
-              const responseData = await withMeshcoreRepeaterRouteEscalation(
+              const neighborsHwModel = getIdentityNode(
+                meshcoreIdentityIdRef.current,
+                nodeId,
+              )?.hw_model;
+              const responseData = await withMeshcoreRepeaterLoginFallback(
                 nodeId,
                 {
                   resetContactPath: resetContactPathForEscalation,
                   resolveRouteKind: resolveAdminRouteKindForNode,
+                  // Rooms keep their own BBS session; only repeater passwords are used here.
+                  canLogin: (id) =>
+                    neighborsHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
+                  login: () =>
+                    meshcoreTryRemoteServerLogin(
+                      conn,
+                      nodeId,
+                      pubKey,
+                      neighborsHwModel,
+                      repeaterRemoteRpcRef.current,
+                      makeRepeaterLoginOpts(conn, nodeId, pubKey),
+                    ),
                 },
                 async ({ escalated }) => {
                   if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
@@ -6709,6 +6753,7 @@ export function useMeshcoreRuntime() {
     },
     [
       ensureNodePubKey,
+      makeRepeaterLoginOpts,
       resetContactPathForEscalation,
       resolveAdminHopsForNode,
       resolveAdminRouteKindForNode,

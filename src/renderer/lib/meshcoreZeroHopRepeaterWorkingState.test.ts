@@ -127,9 +127,19 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     for (const body of [statusBody, telemetryBody, neighborsBody]) {
       expect(body).toContain('awaitMeshcoreRepeaterPingSettleForNode');
       expect(body).toContain('MESHCORE_REPEATER_PING_SETTLE_SOFT_MS');
-      expect(body).toContain('withMeshcoreRepeaterRouteEscalation');
       expect(body).toContain('hopsAway');
     }
+    expect(telemetryBody).toContain('withMeshcoreRepeaterRouteEscalation');
+    // Status and Neighbors wrap the same escalation and add one login after a timeout
+    // (2026-11-10, user request): the first attempt stays login-free, the retry logs in when
+    // a password exists.
+    for (const body of [statusBody, neighborsBody]) {
+      expect(body).toContain('withMeshcoreRepeaterLoginFallback');
+      expect(body).not.toContain('withMeshcoreRepeaterRouteEscalation');
+    }
+    expect(ESCALATION_SOURCE).toMatch(
+      /withMeshcoreRepeaterLoginFallback[\s\S]+return await withMeshcoreRepeaterRouteEscalation/,
+    );
     expect(ESCALATION_SOURCE).toContain('resetContactPath');
     expect(ESCALATION_SOURCE).toContain('isMeshcoreRepeaterTimeoutError');
   });
