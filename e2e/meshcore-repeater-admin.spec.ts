@@ -145,3 +145,30 @@ for (const scenario of [
     await expectNoRowError(page, scenario.menuItem);
   });
 }
+
+for (const scenario of [
+  // Plain length 0: a zero-hop route with 1-byte path hashes.
+  { name: '1-byte', contactPathLen: 0, sent: 'pathLen=1 flags=0' },
+  // Packed length 0x40: zero hops with 2-byte path hashes. Sent with flags 0 the two bytes
+  // are read as two 1-byte hops and the trace never completes.
+  { name: '2-byte', contactPathLen: 0x40, sent: 'pathLen=2 flags=1' },
+] as const) {
+  test(`ping reaches a zero-hop repeater stored with ${scenario.name} path hashes`, async () => {
+    test.setTimeout(120_000);
+    const page = await start((fixture) => {
+      fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      fixture.setContactPathLen(scenario.contactPathLen);
+    });
+
+    await page.getByRole('button', { name: 'Ping trace' }).click();
+    const traces = () => radio.events.filter((e) => e.kind === 'trace').map((e) => e.detail);
+    await expect
+      .poll(() => radio.events.some((e) => e.kind === 'reply' && e.detail === 'trace'), {
+        timeout: 60_000,
+        message: `ping was never answered; traces sent: ${traces().join(' | ')}`,
+      })
+      .toBe(true);
+    // One trace, sized so firmware reads it as a single hop to the repeater.
+    expect(traces()).toEqual([scenario.sent]);
+  });
+}

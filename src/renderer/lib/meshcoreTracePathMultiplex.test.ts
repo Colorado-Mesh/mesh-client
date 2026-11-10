@@ -124,6 +124,29 @@ describe('startMeshcoreTracePathMultiplexed success', () => {
     resetMeshcoreTraceResponsesInFlightForTests();
   });
 
+  it('sends the entry-size flags byte when hops are wider than 1 byte', async () => {
+    const conn = createTraceConn();
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    const handle = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0xab, 0xcd]),
+      1000,
+      runSerialized,
+      1,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(conn.sendCommandSendTracePath).not.toHaveBeenCalled();
+    const sentFrames = vi.mocked(conn.sendToRadioFrame).mock.calls as unknown as Uint8Array[][];
+    const frame = sentFrames[0][0];
+    // command 36, tag(4), auth(4), flags, path
+    expect(frame[0]).toBe(36);
+    expect(Array.from(frame.slice(9))).toEqual([1, 0xab, 0xcd]);
+    handle.cancel('test done');
+    await expect(handle.promise).rejects.toThrow();
+  });
+
   it('resolves when TraceData arrives after RESP_SENT', async () => {
     const conn = createTraceConn();
     let capturedTag = 0;

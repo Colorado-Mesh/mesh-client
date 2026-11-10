@@ -361,6 +361,7 @@ import {
   MESHCORE_CLI_PREEMPT_TRACE_REASON,
   meshcoreCanSynthesizeTracePath,
   meshcoreDirectRepeaterRelayPubKeys,
+  meshcoreHashSizeForTraceSeed,
   meshcoreIsUsableTraceStoredPath,
   meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
@@ -466,6 +467,7 @@ import {
   type MeshcoreTraceRoutePrimeMetrics,
   primeMeshcoreTraceRouteWithFallback,
 } from '../lib/meshcoreTraceRoutePrime';
+import { meshcoreTraceWirePath } from '../lib/meshcoreTraceWirePath';
 import {
   coerceMeshcoreExportPrivateKeyResult,
   CONTACT_TYPE_LABELS,
@@ -5845,11 +5847,22 @@ export function useMeshcoreRuntime() {
               (hopsAway ?? 0) === 0 && outPath.length > 0 && outPath.length < 32
                 ? 8_000
                 : MESHCORE_TRACE_TIMEOUT_MS;
+            // Firmware reads trace hops as 1, 2, 4 or 8 bytes by the flags byte; size the
+            // entries to match or a multi-byte hash is read as several 1-byte hops.
+            const traceWireOpts = {
+              hashSizeBytes: meshcoreHashSizeForTraceSeed(
+                radioContactPathLen,
+                companionPathHashMode,
+              ),
+              destPubKey: pubKey,
+            };
+            let traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
             const firstTrace = startMeshcoreTracePathMultiplexed(
               conn,
-              tracePathInUse,
+              traceWire.path,
               firstTraceExtraTimeoutMs,
               repeaterRemoteRpcRef.current,
+              traceWire.flags,
             );
             try {
               result = await withTimeout(
@@ -5879,11 +5892,14 @@ export function useMeshcoreRuntime() {
               );
               if (!directRetryEligible) throw firstTraceError;
               tracePathInUse = new Uint8Array(pubKey);
+              // The full key goes out as one 8-byte entry, the longest firmware matches.
+              traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
               const retryTrace = startMeshcoreTracePathMultiplexed(
                 conn,
-                tracePathInUse,
+                traceWire.path,
                 MESHCORE_TRACE_TIMEOUT_MS,
                 repeaterRemoteRpcRef.current,
+                traceWire.flags,
               );
               try {
                 result = await withTimeout(
@@ -5903,7 +5919,8 @@ export function useMeshcoreRuntime() {
               pubKey,
               result.flags,
             );
-            if (verifiedOutPath.length > 0) {
+            // A reply to shortened 3-byte hashes carries 2-byte hashes; keep the stored path.
+            if (verifiedOutPath.length > 0 && !traceWire.shortenedHops) {
               outPathMapRef.current.set(nodeId, verifiedOutPath);
               const verifiedPathBytes = Array.from(verifiedOutPath);
               usePathHistoryStore

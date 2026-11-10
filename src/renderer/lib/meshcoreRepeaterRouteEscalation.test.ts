@@ -50,6 +50,13 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(meshcoreRepeaterRouteKind(undefined, 2)).toBe('direct');
   });
 
+  it('classifies a 3-byte-hash path length as direct though meshcore.js reads it negative', () => {
+    // Packed length 0x80 is zero hops with 3-byte hashes; readInt8 reports it as -128.
+    expect(meshcoreRepeaterRouteKind(undefined, -128)).toBe('direct');
+    expect(meshcoreRepeaterRouteKind(undefined, 0x80)).toBe('direct');
+    expect(meshcoreRepeaterRouteKind(undefined, -127)).toBe('direct');
+  });
+
   it('reports unknown when neither a path nor a radio length is known', () => {
     expect(meshcoreRepeaterRouteKind(undefined, undefined)).toBe('unknown');
     expect(meshcoreRepeaterRouteKind(new Uint8Array(0), null)).toBe('unknown');

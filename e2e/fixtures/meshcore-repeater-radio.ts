@@ -46,7 +46,12 @@ const FLOOD_EST_TIMEOUT_MS = 4000;
 const DIRECT_EST_TIMEOUT_MS = 1200;
 const REPEATER_REPLY_DELAY_MS = 300;
 
-export async function startMeshcoreRepeaterRadio(selfId = 171) {
+export interface RepeaterRadioOptions {
+  /** Companion path hash mode: 0, 1 or 2 for 1-, 2- or 3-byte path hashes. */
+  pathHashMode?: 0 | 1 | 2;
+}
+
+export async function startMeshcoreRepeaterRadio(selfId = 171, options: RepeaterRadioOptions = {}) {
   const sockets = new Set<Socket>();
   const events: RepeaterRadioEvent[] = [];
   const startedAt = Date.now();
@@ -165,7 +170,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171) {
               text('2026-10-27', 12),
               text('E2E Radio', 40),
               text('1.18.0', 20),
-              Buffer.from([0, 0]),
+              Buffer.from([0, options.pathHashMode ?? 0]), // client_repeat, path hash mode
             ]),
           );
           break;
@@ -288,15 +293,41 @@ export async function startMeshcoreRepeaterRadio(selfId = 171) {
           const auth = command.readUInt32LE(5);
           const flags = command[9];
           const path = command.subarray(10);
-          log({ kind: 'trace', route: 'direct', detail: `pathLen=${path.length}` });
+          // Firmware Mesh::onRecvPacket: a trace entry is 1 << (flags & 3) bytes (1, 2, 4 or
+          // 8), whatever the mesh's path hash mode is.
+          const sizeShift = flags & 0x03;
+          const entrySize = 1 << sizeShift;
+          log({
+            kind: 'trace',
+            route: 'direct',
+            detail: `pathLen=${path.length} flags=${flags}`,
+          });
           if (pingMode === 'reject') {
             send(Buffer.from([1, 2]));
             break;
           }
+          if (path.length === 0 || path.length % entrySize !== 0) {
+            send(Buffer.from([1, 6])); // ERR_CODE_ILLEGAL_ARG
+            break;
+          }
           send(sent('direct', tag));
           if (pingMode === 'silent') break;
+          // The repeater is the only node in range. It forwards when the first entry is a
+          // prefix of its key; the companion sees the trace finish only if that entry was the
+          // last one. Any further entry needs another node, so the trace dies on air.
+          const firstEntryIsRepeater = path
+            .subarray(0, entrySize)
+            .equals(repeaterKey.subarray(0, entrySize));
+          if (!firstEntryIsRepeater || path.length !== entrySize) {
+            log({
+              kind: 'lost',
+              route: 'direct',
+              detail: `trace needs ${path.length >> sizeShift} hops of ${entrySize} byte(s)`,
+            });
+            break;
+          }
           setTimeout(() => {
-            const hops = path.length >> (flags & 0x03);
+            const hops = path.length >> sizeShift;
             log({ kind: 'reply', route: 'direct', detail: 'trace' });
             broadcast(
               Buffer.concat([
