@@ -15,6 +15,9 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(isMeshcoreRepeaterTimeoutError(new Error('timeout'))).toBe(true);
     expect(isMeshcoreRepeaterTimeoutError(new Error('Request timed out'))).toBe(true);
     expect(isMeshcoreRepeaterTimeoutError(new Error('radio rejected'))).toBe(false);
+    expect(
+      isMeshcoreRepeaterTimeoutError(new Error('timeout waiting for sent acknowledgment')),
+    ).toBe(false);
   });
 
   it('resets path and retries once on timeout for a direct route', async () => {

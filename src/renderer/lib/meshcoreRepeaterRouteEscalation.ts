@@ -21,6 +21,8 @@ export function clearMeshcoreRepeaterRouteEscalationStateForTests(): void {
 
 export function isMeshcoreRepeaterTimeoutError(error: unknown): boolean {
   const msg = errLikeToLogString(error).toLowerCase();
+  // SENT-ack failures are local companion/queue stalls — flooding the RF path will not help.
+  if (msg.includes('waiting for sent acknowledgment')) return false;
   return msg.includes('timeout') || msg.includes('timed out');
 }
 

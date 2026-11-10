@@ -78,10 +78,13 @@ function performPrefixPushRequest<T>(
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
     let sentTimeoutId: ReturnType<typeof setTimeout> | undefined;
     const auxHandlers = new Map<number, (response: unknown) => void>();
-    const useReceiptDerived = opts.hopsAway !== undefined;
+    // null hopsAway means "admin path, hop count unknown" — use admin SENT wait but not
+    // receipt-derived reply arm (that needs a numeric hop count or legacy extraTimeoutMs).
+    const hopsAwayProvided = opts.hopsAway !== undefined;
+    const useReceiptDerived = typeof opts.hopsAway === 'number';
     const sentWaitMs =
       opts.sentWaitTimeoutMs ??
-      (useReceiptDerived
+      (hopsAwayProvided
         ? MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS
         : MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
 

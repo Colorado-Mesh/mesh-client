@@ -3,7 +3,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import { isMeshcoreNotFoundError } from './meshcoreRadioErr';
 import { getMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStorage';
-import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
+import {
+  MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS,
+  runMeshcoreRepeaterLogin,
+} from './meshcoreRepeaterLoginRpc';
 import {
   meshcoreLoginErrorIsAuthFailure,
   type MeshcoreRadioConnection,
@@ -104,12 +107,19 @@ export async function meshcoreRepeaterTryLogin(
   if (!password) {
     return { attempted: false, ok: true, fromPersisted: false };
   }
+  const hopsAway = loginOpts?.hopsAway;
+  const legacyExtraTimeoutMs = loginOpts?.extraTimeoutMs ?? extraTimeoutMs;
   return meshcoreRepeaterTryLoginWithPassword(conn, pubKey, password, {
-    ...loginOpts,
+    restoreRadioContact: loginOpts?.restoreRadioContact,
+    retryOnTimeout: loginOpts?.retryOnTimeout,
     fromPersisted,
     runSerialized,
-    hopsAway: loginOpts?.hopsAway,
-    extraTimeoutMs: loginOpts?.extraTimeoutMs ?? extraTimeoutMs,
+    // Prefer receipt-derived hopsAway; only pass legacy grace when hopsAway is omitted.
+    ...(hopsAway !== undefined
+      ? { hopsAway }
+      : legacyExtraTimeoutMs !== undefined
+        ? { extraTimeoutMs: legacyExtraTimeoutMs }
+        : {}),
   });
 }
 
@@ -153,7 +163,10 @@ export async function meshcoreRepeaterTryLoginWithPassword(
   const attempt = async (): Promise<void> => {
     await runMeshcoreRepeaterLogin(conn, pubKey, trimmed, {
       hopsAway: opts?.hopsAway,
-      extraTimeoutMs: opts?.hopsAway === undefined ? (opts?.extraTimeoutMs ?? 10_000) : undefined,
+      extraTimeoutMs:
+        opts?.hopsAway === undefined
+          ? (opts?.extraTimeoutMs ?? MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS)
+          : undefined,
       runSerialized,
       beforeSend: runSerialized ? () => awaitMeshcoreRepeaterAdminRfIdle() : undefined,
     });

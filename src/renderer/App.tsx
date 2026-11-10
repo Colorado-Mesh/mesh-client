@@ -4971,11 +4971,14 @@ function AppContent() {
                           className="h-full w-full min-w-0"
                         >
                           <Suspense fallback={<PanelSkeleton />}>
-                            {REGISTERED_MESH_PROTOCOLS.filter(
-                              (chatProtocol) =>
-                                enabledProtocols.includes(chatProtocol) &&
-                                visitedChatProtocols.has(chatProtocol),
-                            ).map((chatProtocol) => {
+                            {REGISTERED_MESH_PROTOCOLS.filter((chatProtocol) => {
+                              if (!enabledProtocols.includes(chatProtocol)) return false;
+                              if (visitedChatProtocols.has(chatProtocol)) return true;
+                              // First Chat paint before the visit effect: keep the active protocol mounted.
+                              return (
+                                activePanelIndex === CHAT_PANEL_INDEX && chatProtocol === protocol
+                              );
+                            }).map((chatProtocol) => {
                               const chatCapabilities = selectByProtocol(
                                 capabilitiesByProtocol,
                                 chatProtocol,

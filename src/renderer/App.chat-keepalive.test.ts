@@ -24,9 +24,10 @@ describe('App Chat keep-alive (regression)', () => {
   });
 
   it('renders one ChatPanel per visited enabled protocol without key={protocol} remount', () => {
-    expect(SOURCE).toMatch(
-      /REGISTERED_MESH_PROTOCOLS\.filter\(\s*\(chatProtocol\) =>\s*enabledProtocols\.includes\(chatProtocol\)\s*&&\s*visitedChatProtocols\.has\(chatProtocol\)/,
-    );
+    expect(SOURCE).toMatch(/REGISTERED_MESH_PROTOCOLS\.filter\(\(chatProtocol\) => \{/);
+    expect(SOURCE).toMatch(/enabledProtocols\.includes\(chatProtocol\)/);
+    expect(SOURCE).toMatch(/visitedChatProtocols\.has\(chatProtocol\)/);
+    expect(SOURCE).toMatch(/activePanelIndex === CHAT_PANEL_INDEX && chatProtocol === protocol/);
     expect(SOURCE).toContain('key={chatProtocol}');
     const chatBlock = SOURCE.slice(
       SOURCE.indexOf('visitedChatProtocols.size > 0) && ('),

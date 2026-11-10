@@ -42,6 +42,12 @@ export function runMeshcoreRepeaterLogin(
       ? { extraTimeoutMs: extraTimeoutMsOrOpts, runSerialized, beforeSend }
       : {
           ...extraTimeoutMsOrOpts,
+          // Object callers that omit both hopsAway and extraTimeoutMs still need legacy grace.
+          extraTimeoutMs:
+            extraTimeoutMsOrOpts.extraTimeoutMs ??
+            (extraTimeoutMsOrOpts.hopsAway !== undefined
+              ? undefined
+              : MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS),
           runSerialized: extraTimeoutMsOrOpts.runSerialized ?? runSerialized,
           beforeSend: extraTimeoutMsOrOpts.beforeSend ?? beforeSend,
         };

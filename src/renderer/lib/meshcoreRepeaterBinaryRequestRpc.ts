@@ -62,7 +62,7 @@ function performBinaryRequest(
     let settled = false;
     let expectedTag: number | null = null;
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
-    const useReceiptDerived = opts.hopsAway !== undefined;
+    const useReceiptDerived = typeof opts.hopsAway === 'number';
     const sentWaitMs = opts.sentWaitTimeoutMs ?? MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS;
 
     const cleanup = (): void => {
@@ -118,7 +118,13 @@ function performBinaryRequest(
       expectedTag = expectedAckCrc >>> 0;
       const waitMs = useReceiptDerived
         ? meshcoreRepeaterReplyWaitMs({ estTimeoutMs, hopsAway: opts.hopsAway })
-        : estTimeoutMs + (opts.extraTimeoutMs ?? 0);
+        : (() => {
+            const legacy = estTimeoutMs + (opts.extraTimeoutMs ?? 0);
+            // Avoid an immediate timeout when est is 0 and no grace was supplied.
+            return legacy > 0
+              ? legacy
+              : meshcoreRepeaterReplyWaitMs({ estTimeoutMs, hopsAway: opts.hopsAway });
+          })();
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
       }, waitMs);
