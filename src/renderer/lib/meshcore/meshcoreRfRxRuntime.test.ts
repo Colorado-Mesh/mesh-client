@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { resetMeshcoreLateHopSeenPacketsForTests } from '../meshcoreLateRfHopEnrichment';
 import {
   markMeshcoreLocallyDeletedContact,
   resetMeshcoreLocallyDeletedContactsForTests,
@@ -749,5 +751,36 @@ describe('handleMeshcoreRfRx DM-type packets (1-byte source hash)', () => {
     }
 
     expect(useDiagnosticsStore.getState().noiseRateStats.get(alexId)).toBeUndefined();
+  });
+
+  it('leaves the stored DM from the contact alone when the log of the next DM arrives', () => {
+    // MeshCore logs a packet before it delivers the message (Dispatcher::checkRecv), so a log
+    // that arrives now belongs to a DM not stored yet, never to the one already shown.
+    const { deps } = setup();
+    resetMeshcoreLateHopSeenPacketsForTests();
+    const saveMeshcoreMessage = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockImplementation(saveMeshcoreMessage);
+    useMessageStore.setState({ messages: {} });
+    const storedId = `${alexId}:1700000000:first`;
+    upsertMessage(ID, {
+      id: storedId,
+      from: alexId,
+      to: pubkeyToNodeId(selfKey),
+      payload: 'first',
+      channelIndex: -1,
+      timestamp: Date.now(),
+      receivedVia: 'rf',
+      rxHops: 2,
+      hopCount: 2,
+    });
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('FLOOD', [0xf8, 0xd4, 0x3a, 0x11]) },
+      deps,
+    );
+
+    expect(useMessageStore.getState().messages[ID][storedId].rxHops).toBe(2);
+    expect(saveMeshcoreMessage).not.toHaveBeenCalled();
+    useMessageStore.setState({ messages: {} });
   });
 });

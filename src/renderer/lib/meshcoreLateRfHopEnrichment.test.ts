@@ -73,7 +73,6 @@ function grpInput(
   return {
     payloadTypeString: 'GRP_TXT',
     hopCount,
-    fromNodeId: null,
     messageFingerprintHex: null,
     parseOk: true,
     now,
@@ -229,56 +228,42 @@ describe('findMeshcoreLateRfHopEnrichmentTarget', () => {
     }
   });
 
-  it('prefers DM sender matching fromNodeId', () => {
+  it('patches no DM row by sender and time, with or without a count', () => {
+    // The radio logs a DM before it delivers it (MeshCore Dispatcher::checkRecv), so the newest
+    // stored DM from the sender is always an earlier message or the one this packet retries.
+    const candidates = [
+      candidate({ storeId: 'counted', channel: -1, timestamp: now - 100, rxHops: 2 }),
+      candidate({ storeId: 'uncounted', channel: -1, timestamp: now - 200, rxHops: undefined }),
+    ];
+    expect(
+      findMeshcoreLateRfHopEnrichmentTarget(candidates, {
+        payloadTypeString: 'TXT_MSG',
+        hopCount: 4,
+        messageFingerprintHex: null,
+        parseOk: true,
+        now,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('still patches a DM row whose stored packet fingerprint matches', () => {
     const candidates = [
       candidate({
-        storeId: 'other',
+        storeId: 'fingerprinted',
         channel: -1,
-        sender_id: 0x111,
-        timestamp: now - 50,
-        rxHops: undefined,
-      }),
-      candidate({
-        storeId: 'match',
-        channel: -1,
-        sender_id: 0xabc,
-        timestamp: now - 200,
-        rxHops: undefined,
+        timestamp: now - 100,
+        rxHops: 2,
+        rxPacketFingerprintHex: 'AABBCCDD',
       }),
     ];
     const hit = findMeshcoreLateRfHopEnrichmentTarget(candidates, {
       payloadTypeString: 'TXT_MSG',
-      hopCount: 1,
-      fromNodeId: 0xabc,
-      messageFingerprintHex: null,
+      hopCount: 4,
+      messageFingerprintHex: 'aabbccdd',
       parseOk: true,
       now,
     });
-    expect(hit?.storeId).toBe('match');
-  });
-
-  it('patches no DM when the packet sender is unknown or another contact', () => {
-    const candidates = [
-      candidate({
-        storeId: 'alex',
-        channel: -1,
-        sender_id: 0xabc,
-        timestamp: now - 500,
-        rxHops: 1,
-      }),
-    ];
-    for (const fromNodeId of [null, 0, 0x111]) {
-      expect(
-        findMeshcoreLateRfHopEnrichmentTarget(candidates, {
-          payloadTypeString: 'TXT_MSG',
-          hopCount: 3,
-          fromNodeId,
-          messageFingerprintHex: null,
-          parseOk: true,
-          now,
-        }),
-      ).toBeUndefined();
-    }
+    expect(hit?.storeId).toBe('fingerprinted');
   });
 
   it('ignores parseOk false', () => {
@@ -411,7 +396,6 @@ describe('applyMeshcoreLateRfHopEnrichment', () => {
       applyMeshcoreLateRfHopEnrichment(ID, {
         payloadTypeString: 'TXT_MSG',
         hopCount,
-        fromNodeId: 0xabc,
         messageFingerprintHex: null,
         parseOk: true,
         now,
