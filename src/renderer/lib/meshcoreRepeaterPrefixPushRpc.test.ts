@@ -188,6 +188,30 @@ describe('runMeshcoreRepeaterPrefixPushRequest', () => {
     await expect(promise).resolves.toMatchObject({ permissions: 2 });
   });
 
+  it('caps receipt-derived reply wait when replyWaitCapMs is set', async () => {
+    const conn = createMockMeshcoreConn();
+    const pubKey = makePubKey(0x55);
+    const promise = runMeshcoreRepeaterPrefixPushRequest({
+      conn,
+      contactPublicKey: pubKey,
+      hopsAway: 0,
+      replyWaitCapMs: 200,
+      pushEvent: MC_PUSH_STATUS_RESPONSE,
+      logTag: 'testPrefixPushCap',
+      buildFrame: () => new Uint8Array([0]),
+      parseMatchedPush: (response) => response,
+      rejectSentMessage: 'send failed',
+      rejectFailureMessage: 'rpc failed',
+    });
+    await Promise.resolve();
+    conn.emit(MC_RESP_SENT, { estTimeout: 20_000 });
+    await Promise.resolve();
+    vi.advanceTimersByTime(199);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    vi.advanceTimersByTime(2);
+    await expect(promise).rejects.toThrow(/timeout/);
+  });
+
   it('does not arm orphan timeout after serialized send resolves early', async () => {
     const conn = createMockMeshcoreConn();
     const pubKey = makePubKey(0x33);

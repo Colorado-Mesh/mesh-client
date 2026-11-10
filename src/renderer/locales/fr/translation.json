@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Cette commande peut redémarrer, éteindre, effacer ou réinitialiser le nœud : « {{command}} ». Continuez seulement si vous le souhaitez.",
     "cliDangerConfirmAction": "Exécuter la commande",
     "cliAutoPingToast": "Établissement de l'itinéraire avec Ping avant CLI…",
-    "cliAutoPingFailed": "Échec du Ping ; lancez Ping manuellement avant de réessayer la CLI sur les nœuds multi-sauts.",
     "cliCommandTooLong": "La commande CLI est trop longue (max {{max}} caractères).",
     "cliCommandMustBeSingleLine": "La commande CLI doit tenir sur une seule ligne.",
     "currentRouteLabel": "Itinéraire actuel :",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Obtenir la raison du démarrage et de l'arrêt",
     "cliQuickRadio": "Radio:",
     "cliAutoPingWaitingForCli": "Attendre que la commande CLI d'un autre nœud se termine avant Ping…",
-    "cliAutoPingBusy": "La commande CLI d'un autre nœud est toujours en cours d'exécution ; réessayez lorsqu'elle se termine."
+    "cliAutoPingBusy": "La commande CLI d'un autre nœud est toujours en cours d'exécution ; réessayez lorsqu'elle se termine.",
+    "cliAutoPingAdvisory": "Itinéraire non confirmé par Ping ; essayer CLI de toute façon.",
+    "repeaterCliNeedsAdminPassword": "La CLI du répéteur à distance a besoin d'un mot de passe administrateur. Le micrologiciel ignore CLI sans administrateur ACL — utilisez Continuer avec un mot de passe, pas Pas de mot de passe."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

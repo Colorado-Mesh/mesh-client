@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Dit commando kan de repeater opnieuw opstarten, wissen of in de fabriek opnieuw instellen: \"{{command}}\". Ga alleen verder als u van plan bent deze wijziging door te voeren.",
     "cliDangerConfirmAction": "Opdracht uitvoeren",
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
-    "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
     "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
     "cliCommandMustBeSingleLine": "Het CLI-commando moet op één regel staan.",
     "currentRouteLabel": "Huidig ​​traject:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Reden voor opstarten en afsluiten",
     "cliQuickRadio": "Radio",
     "cliAutoPingWaitingForCli": "Wachten tot het CLI-commando van een ander knooppunt is voltooid voordat Ping...",
-    "cliAutoPingBusy": "De CLI-opdracht van een ander knooppunt wordt nog steeds uitgevoerd; probeer het opnieuw wanneer deze is voltooid."
+    "cliAutoPingBusy": "De CLI-opdracht van een ander knooppunt wordt nog steeds uitgevoerd; probeer het opnieuw wanneer deze is voltooid.",
+    "cliAutoPingAdvisory": "Route niet bevestigd door Ping; toch CLI proberen.",
+    "repeaterCliNeedsAdminPassword": "Externe repeater CLI heeft een beheerderswachtwoord nodig. Firmware negeert CLI zonder ACL-beheerder — gebruik Doorgaan met een wachtwoord, niet Geen wachtwoord."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

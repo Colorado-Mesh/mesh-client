@@ -718,6 +718,7 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(RUNTIME_SOURCE).not.toMatch(
       /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
+    expect(RUNTIME_SOURCE).toMatch(/replyWaitCapMs:\s*opts\.timeoutMs/);
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {

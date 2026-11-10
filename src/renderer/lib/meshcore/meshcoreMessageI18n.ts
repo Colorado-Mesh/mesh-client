@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import {
-  MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
+  MESHCORE_REPEATER_PING_SETTLE_SOFT_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
 } from '../timeConstants';
 import type { DiagnosticTextI18n } from '../types';
@@ -136,7 +136,7 @@ export function meshcoreRepeaterAdminRpcErrorBudgetMs(
 ): number {
   const lower = errMsg.toLowerCase();
   if (lower.includes('timeout waiting for ping')) {
-    return MESHCORE_REPEATER_PING_SETTLE_MAX_MS;
+    return MESHCORE_REPEATER_PING_SETTLE_SOFT_MS;
   }
   if (lower.includes('timeout waiting for trace')) {
     return MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS;

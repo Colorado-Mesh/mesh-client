@@ -115,27 +115,27 @@ describe('RepeaterCommandService', () => {
       expect(timeout).toBe(30000);
     });
 
-    it('should cap hop-scaled timeout at 120s', () => {
+    it('should cap hop-scaled timeout at 60s', () => {
       const timeoutWithHops = service.calculateTimeout(
         Array.from({ length: 46 }, () => new Uint8Array(32)),
       );
-      expect(timeoutWithHops).toBe(120_000);
+      expect(timeoutWithHops).toBe(60_000);
     });
 
     it('should include message size in dynamic timeout below cap', () => {
       const smallTimeout = service.calculateTimeout([], 100);
       const largeTimeout = service.calculateTimeout([], 100000);
       expect(smallTimeout).toBe(30100);
-      expect(largeTimeout).toBe(120_000);
+      expect(largeTimeout).toBe(60_000);
     });
   });
 
   describe('calculateRepeaterCliTimeout', () => {
-    it('scales with hop count and caps at 120s', async () => {
+    it('scales with hop count and caps at 60s', async () => {
       const { calculateRepeaterCliTimeout } = await import('./repeaterCommandService');
       expect(calculateRepeaterCliTimeout(0)).toBe(30_000);
       expect(calculateRepeaterCliTimeout(3)).toBe(36_000);
-      expect(calculateRepeaterCliTimeout(50)).toBe(120_000);
+      expect(calculateRepeaterCliTimeout(50)).toBe(60_000);
     });
   });
 
@@ -148,7 +148,7 @@ describe('RepeaterCommandService', () => {
     it('pads timeout and caps at max when drain is busy', async () => {
       const { padRepeaterCliTimeoutForWaitingDrain, REPEATER_CLI_MAX_TIMEOUT_MS } =
         await import('./repeaterCommandService');
-      expect(padRepeaterCliTimeoutForWaitingDrain(30_000, true, 45_000)).toBe(75_000);
+      expect(padRepeaterCliTimeoutForWaitingDrain(30_000, true, 45_000)).toBe(60_000);
       expect(padRepeaterCliTimeoutForWaitingDrain(100_000, true, 45_000)).toBe(
         REPEATER_CLI_MAX_TIMEOUT_MS,
       );
@@ -530,5 +530,50 @@ describe('CliHistoryEntry', () => {
 
     expect(sentEntry.type).toBe('sent');
     expect(receivedEntry.type).toBe('received');
+  });
+});
+
+describe('node-scoped tokens and monotonic CLI timestamps', () => {
+  it('does not cross-resolve the same token across nodes', async () => {
+    const service = createRepeaterCommandService();
+    const a = service.registerPendingCommand('cmd-a', [], {
+      token: '07',
+      senderNodeId: 1,
+    });
+    const b = service.registerPendingCommand('cmd-b', [], {
+      token: '07',
+      senderNodeId: 2,
+    });
+    expect(service.ingestResponse('07|from-1', 1)).toEqual({
+      kind: 'resolved',
+      nodeId: 1,
+      historyText: 'from-1',
+    });
+    await expect(a.promise).resolves.toBe('from-1');
+    expect(service.hasPendingCommand('07', 2)).toBe(true);
+    expect(service.ingestResponse('07|from-2', 2)).toEqual({
+      kind: 'resolved',
+      nodeId: 2,
+      historyText: 'from-2',
+    });
+    await expect(b.promise).resolves.toBe('from-2');
+  });
+
+  it('allocates strictly increasing wire timestamps within the same second', () => {
+    let now = 1_700_000_000;
+    const service = createRepeaterCommandService({ nowSec: () => now });
+    const t1 = service.allocateCliTimestamp(9);
+    const t2 = service.allocateCliTimestamp(9);
+    expect(t1).toBe(1_700_000_000);
+    expect(t2).toBe(1_700_000_001);
+    now = 1_700_000_000;
+    const t3 = service.allocateCliTimestamp(9);
+    expect(t3).toBe(1_700_000_002);
+  });
+
+  it('skips in-flight tokens when generating for a node', () => {
+    const service = createRepeaterCommandService();
+    service.registerPendingCommand('hold', [], { token: '00', senderNodeId: 5 });
+    expect(service.generateToken(5)).not.toBe('00');
   });
 });

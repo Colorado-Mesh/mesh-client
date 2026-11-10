@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Perintah ini dapat memulai ulang, menghapus, atau mengatur ulang repeater: \"{{command}} \". Lanjutkan hanya jika Anda menginginkan perubahan ini.",
     "cliDangerConfirmAction": "Jalankan perintah",
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
-    "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
     "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
     "cliCommandMustBeSingleLine": "Perintah CLI harus satu baris.",
     "currentRouteLabel": "Rute saat ini:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Dapatkan alasan boot dan shutdown",
     "cliQuickRadio": "Radio",
     "cliAutoPingWaitingForCli": "Menunggu perintah CLI node lain selesai sebelum Ping...",
-    "cliAutoPingBusy": "Perintah CLI node lain masih berjalan; coba lagi saat selesai."
+    "cliAutoPingBusy": "Perintah CLI node lain masih berjalan; coba lagi saat selesai.",
+    "cliAutoPingAdvisory": "Rute tidak dikonfirmasi oleh Ping; tetap mencoba CLI.",
+    "repeaterCliNeedsAdminPassword": "Pengulang jarak jauh CLI memerlukan kata sandi admin. Firmware mengabaikan CLI tanpa admin ACL — gunakan Lanjutkan dengan kata sandi, bukan Tanpa kata sandi."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

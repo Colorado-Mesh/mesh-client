@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Questo comando può riavviare, cancellare o ripristinare in fabbrica il ripetitore: \"{{command}}\". Continua solo se intendi apportare questa modifica.",
     "cliDangerConfirmAction": "Esegui comando",
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
-    "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
     "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri).",
     "cliCommandMustBeSingleLine": "Il comando CLI deve essere su una sola riga.",
     "currentRouteLabel": "Itinerario attuale:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Ottieni motivo di avvio e arresto",
     "cliQuickRadio": "Radio:",
     "cliAutoPingWaitingForCli": "In attesa che il comando CLI di un altro nodo finisca prima del ping...",
-    "cliAutoPingBusy": "Il comando CLI di un altro nodo è ancora in esecuzione; riprova al termine."
+    "cliAutoPingBusy": "Il comando CLI di un altro nodo è ancora in esecuzione; riprova al termine.",
+    "cliAutoPingAdvisory": "Percorso non confermato da Ping; provare comunque CLI.",
+    "repeaterCliNeedsAdminPassword": "L'interfaccia CLI del ripetitore remoto richiede una password di amministratore. Il firmware ignora CLI senza amministratore ACL — utilizzare Continua con una password, non Nessuna password."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

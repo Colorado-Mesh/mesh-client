@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Dieser Befehl kann den Knoten neu starten, herunterfahren, löschen oder auf Werkseinstellungen zurücksetzen: „{{command}}“. Nur fortfahren, wenn Sie das beabsichtigen.",
     "cliDangerConfirmAction": "Befehl ausführen",
     "cliAutoPingToast": "Route mit Ping vor CLI wird festgelegt...",
-    "cliAutoPingFailed": "Ping fehlgeschlagen; vor erneutem CLI auf Mehrhop-Knoten Ping manuell ausführen.",
     "cliCommandTooLong": "Der CLI-Befehl ist zu lang (max. {{max}} Zeichen).",
     "cliCommandMustBeSingleLine": "Der CLI-Befehl muss eine einzelne Zeile sein.",
     "currentRouteLabel": "Aktuelle Route:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Grund für das Starten und Herunterfahren abrufen",
     "cliQuickRadio": "Radio:",
     "cliAutoPingWaitingForCli": "Warten, bis der CLI-Befehl eines anderen Knotens beendet ist, bevor Ping...",
-    "cliAutoPingBusy": "Der CLI-Befehl eines anderen Knotens wird noch ausgeführt. Versuchen Sie es erneut, wenn er beendet ist."
+    "cliAutoPingBusy": "Der CLI-Befehl eines anderen Knotens wird noch ausgeführt. Versuchen Sie es erneut, wenn er beendet ist.",
+    "cliAutoPingAdvisory": "Route nicht von Ping bestätigt; CLI trotzdem versuchen.",
+    "repeaterCliNeedsAdminPassword": "Remote Repeater CLI benötigt ein Admin-Passwort. Die Firmware ignoriert die CLI ohne ACL-Administrator — verwenden Sie Weiter mit einem Passwort, nicht Kein Passwort."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

@@ -5402,7 +5402,6 @@
     "cliDangerConfirmMessage": "Tento příkaz může restartovat, vypnout, vymazat nebo továrně resetovat uzel: „{{command}}“. Pokračujte jen pokud to opravdu chcete.",
     "cliDangerConfirmAction": "Spustit příkaz",
     "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
-    "cliAutoPingFailed": "Ping selhal; před dalším CLI na vícehopových uzlech spusťte Ping ručně.",
     "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků).",
     "cliCommandMustBeSingleLine": "Příkaz CLI musí být na jednom řádku.",
     "currentRouteLabel": "Aktuální trasa:",
@@ -5457,7 +5456,9 @@
     "radioCliBootReasonGet": "Získat důvod spuštění a vypnutí",
     "cliQuickRadio": "Rádio režim:",
     "cliAutoPingWaitingForCli": "Čekání na dokončení příkazu CLI jiného uzlu před Ping...",
-    "cliAutoPingBusy": "Příkaz CLI jiného uzlu je stále spuštěn; po dokončení to zkuste znovu."
+    "cliAutoPingBusy": "Příkaz CLI jiného uzlu je stále spuštěn; po dokončení to zkuste znovu.",
+    "cliAutoPingAdvisory": "Trasa nebyla Pingem potvrzena; přesto zkuste CLI.",
+    "repeaterCliNeedsAdminPassword": "Vzdálený opakovač CLI potřebuje heslo správce. Firmware ignoruje CLI bez správce ACL — použijte Pokračovat s heslem, nikoli bez hesla."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

@@ -126,7 +126,10 @@ describe('awaitMeshcoreRepeaterPingSettleForNode (0-hop known-good)', () => {
   });
 
   it('resolves immediately when no ping RPC is active for the node', async () => {
-    await expect(awaitMeshcoreRepeaterPingSettleForNode(42, 100)).resolves.toBeUndefined();
+    await expect(awaitMeshcoreRepeaterPingSettleForNode(42, 100)).resolves.toEqual({
+      waitedMs: expect.any(Number),
+      proceededBusy: false,
+    });
     expect(meshcoreRepeaterTraceActiveForNode(42)).toBe(false);
   });
 
@@ -142,17 +145,42 @@ describe('awaitMeshcoreRepeaterPingSettleForNode (0-hop known-good)', () => {
     await Promise.resolve();
     expect(meshcoreRepeaterTraceActiveForNode(7)).toBe(true);
 
-    let settled = false;
-    const settlePromise = awaitMeshcoreRepeaterPingSettleForNode(7, 1000).then(() => {
-      settled = true;
+    let settledResult: { waitedMs: number; proceededBusy: boolean } | undefined;
+    const settlePromise = awaitMeshcoreRepeaterPingSettleForNode(7, 1000).then((result) => {
+      settledResult = result;
+      return result;
     });
     await new Promise((r) => setTimeout(r, 20));
-    expect(settled).toBe(false);
+    expect(settledResult).toBeUndefined();
 
     releaseTrace();
     await tracePromise;
-    await settlePromise;
-    expect(settled).toBe(true);
+    const result = await settlePromise;
+    expect(result.proceededBusy).toBe(false);
     expect(meshcoreRepeaterTraceActiveForNode(7)).toBe(false);
+  });
+
+  it('proceeds without throwing when the soft settle budget expires', async () => {
+    vi.useFakeTimers();
+    try {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const tracePromise = runMeshcoreRepeaterRpcOnce('trace', 11, async () => {
+        await new Promise(() => {});
+        return 'never';
+      });
+      await Promise.resolve();
+      expect(meshcoreRepeaterTraceActiveForNode(11)).toBe(true);
+
+      const settlePromise = awaitMeshcoreRepeaterPingSettleForNode(11, 200);
+      await vi.advanceTimersByTimeAsync(250);
+      const result = await settlePromise;
+      expect(result.proceededBusy).toBe(true);
+      expect(warn).toHaveBeenCalled();
+      // Keep the forever-pending wrapper from leaking across tests.
+      resetMeshcoreRepeaterRpcInFlightForTests();
+      void tracePromise;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

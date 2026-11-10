@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "이 명령은 리피터를 재부팅, 삭제 또는 공장 초기화할 수 있습니다: \"{{command}}\". 이 변경을 원하는 경우에만 계속하십시오.",
     "cliDangerConfirmAction": "실행 명령",
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
-    "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
     "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
     "cliCommandMustBeSingleLine": "CLI 명령은 한 줄이어야 합니다.",
     "currentRouteLabel": "현재 경로:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "부팅 및 종료 이유 가져오기",
     "cliQuickRadio": "라디오 :",
     "cliAutoPingWaitingForCli": "핑 전에 다른 노드의 CLI 명령이 완료되기를 기다리는 중...",
-    "cliAutoPingBusy": "다른 노드의 CLI 명령이 여전히 실행 중입니다. 완료되면 다시 시도하십시오."
+    "cliAutoPingBusy": "다른 노드의 CLI 명령이 여전히 실행 중입니다. 완료되면 다시 시도하십시오.",
+    "cliAutoPingAdvisory": "경로가 핑에 의해 확인되지 않았습니다. 어쨌든 CLI를 시도하십시오.",
+    "repeaterCliNeedsAdminPassword": "리모트 리피터 CLI에는 관리자 비밀번호가 필요합니다. 펌웨어는 ACL 관리자 없이 CLI를 무시합니다. 암호가 아닌 암호로 계속을 사용하십시오."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

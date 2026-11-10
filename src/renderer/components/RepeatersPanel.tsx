@@ -35,6 +35,7 @@ import {
 } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   forgetAdminPassword,
+  hasResolvableAdminPassword,
   listSavedAdminPasswords,
   type MeshcoreInfraAdminPasswordEntry,
 } from '../lib/meshcoreInfraAdminSecrets';
@@ -838,38 +839,40 @@ export default function RepeatersPanel({
     });
   };
 
-  /** Returns null when CLI may proceed, else the i18n key describing why it cannot. */
-  const ensureCliRoutePrimed = async (nodeId: number): Promise<string | null> => {
-    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return null;
+  /**
+   * Best-effort multi-hop route prime via Ping. Advisory only — CLI still proceeds when ping
+   * fails (firmware may still have a usable path; a hard gate caused false timeouts).
+   */
+  const ensureCliRoutePrimed = async (nodeId: number): Promise<void> => {
+    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return;
     const hops = resolveCliHopsAway?.(nodeId) ?? nodes.get(nodeId)?.hops_away ?? 0;
-    if (hops <= 0) return null;
-    const fail = (key: string): string => {
-      addToast(t(key), 'error');
-      return key;
-    };
-    // Traces fail fast while another node's CLI holds the reply path; wait it out here
-    // (this node's own CLI has not started yet, so there is no deadlock).
+    if (hops <= 0) return;
+    // Traces fail fast while another node's CLI holds the reply path; wait briefly then continue.
     if (meshcoreCliReplyHoldActive()) {
       addToast(t('repeatersPanel.cliAutoPingWaitingForCli'), 'info');
       try {
         await awaitMeshcoreCliReplyHoldClear();
       } catch (e) {
         console.warn('[RepeatersPanel] CLI auto-ping wait failed ' + errLikeToLogString(e));
-        return fail('repeatersPanel.cliAutoPingBusy');
+        addToast(t('repeatersPanel.cliAutoPingAdvisory'), 'info');
+        return;
       }
     }
     addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
     try {
       const pingOk = await onPing(nodeId);
-      if (pingOk === false) return fail('repeatersPanel.cliAutoPingFailed');
-      if (meshcoreTraceResultsRef.current.get(nodeId) != null || pingOk === true) return null;
-      return fail('repeatersPanel.cliAutoPingFailed');
+      if (pingOk === false || meshcoreTraceResultsRef.current.get(nodeId) == null) {
+        addToast(t('repeatersPanel.cliAutoPingAdvisory'), 'info');
+      }
     } catch (e) {
       console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
-      return fail(
-        meshcoreTraceCancelledForCliPreempt(e)
-          ? 'repeatersPanel.cliAutoPingBusy'
-          : 'repeatersPanel.cliAutoPingFailed',
+      addToast(
+        t(
+          meshcoreTraceCancelledForCliPreempt(e)
+            ? 'repeatersPanel.cliAutoPingBusy'
+            : 'repeatersPanel.cliAutoPingAdvisory',
+        ),
+        'info',
       );
     }
   };
@@ -897,8 +900,17 @@ export default function RepeatersPanel({
     if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
     if (!auth.ok) throw new Error(t('infraConfig.authCancelled'));
     if (auth.saved) refreshStoredSecrets();
-    const primeFailureKey = await ensureCliRoutePrimed(nodeId);
-    if (primeFailureKey != null) throw new Error(t(primeFailureKey));
+    // Firmware drops CLI unless the sender is ACL admin — skip / no password must not send.
+    if (opts?.target !== 'companion' && !hasResolvableAdminPassword(nodeId, node?.hw_model)) {
+      throw new Error(
+        t(
+          node?.hw_model === 'Room'
+            ? 'repeatersPanel.roomCliNeedsAdminPassword'
+            : 'repeatersPanel.repeaterCliNeedsAdminPassword',
+        ),
+      );
+    }
+    await ensureCliRoutePrimed(nodeId);
     if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
     return onSendCliCommand(nodeId, normalizeMeshcoreCliCommand(command), opts);
   };

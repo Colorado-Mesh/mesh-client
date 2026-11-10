@@ -5440,7 +5440,6 @@
     "cliDangerConfirmMessage": "To polecenie może zrestartować, usunąć lub zresetować fabrycznie przemiennik: \"{{command}}\". Kontynuuj tylko wtedy, gdy zamierzasz wprowadzić tę zmianę.",
     "cliDangerConfirmAction": "Uruchom polecenie",
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
-    "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
     "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
     "cliCommandMustBeSingleLine": "Polecenie CLI musi być w jednym wierszu.",
     "currentRouteLabel": "Aktualna trasa:",
@@ -5495,7 +5494,9 @@
     "radioCliBootReasonGet": "Powód uruchomienia i wyłączenia",
     "cliQuickRadio": "Sprzęt radiowy",
     "cliAutoPingWaitingForCli": "Oczekiwanie na zakończenie polecenia CLI innego węzła przed wysłaniem polecenia Ping...",
-    "cliAutoPingBusy": "Polecenie CLI innego węzła jest nadal uruchomione; spróbuj ponownie po zakończeniu."
+    "cliAutoPingBusy": "Polecenie CLI innego węzła jest nadal uruchomione; spróbuj ponownie po zakończeniu.",
+    "cliAutoPingAdvisory": "Trasa niepotwierdzona przez Ping; mimo to spróbuj CLI.",
+    "repeaterCliNeedsAdminPassword": "Interfejs CLI zdalnego przemiennika potrzebuje hasła administratora. Oprogramowanie układowe ignoruje CLI bez administratora ACL — użyj Kontynuuj z hasłem, a nie Bez hasła."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

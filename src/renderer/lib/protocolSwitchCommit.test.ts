@@ -15,7 +15,6 @@ import {
 } from './protocolSwitchCommit';
 
 const ALL_ON: ProtocolVisitFlags = {
-  chat: true,
   rooms: true,
   games: true,
   rrc: true,
@@ -26,7 +25,6 @@ const ALL_ON: ProtocolVisitFlags = {
 };
 
 const ALL_OFF: ProtocolVisitFlags = {
-  chat: false,
   rooms: false,
   games: false,
   rrc: false,
@@ -64,7 +62,7 @@ describe('protocol switch commit', () => {
   });
 
   it('keeps existing flags when the protocol does not change, including a cancel', () => {
-    const current: ProtocolVisitFlags = { ...ALL_OFF, chat: true };
+    const current: ProtocolVisitFlags = { ...ALL_OFF, rooms: true };
     expect(visitFlagsForProtocolCommit(current, GAMES_PANEL_INDEX, false, false)).toEqual({
       ...current,
       games: true,
@@ -72,7 +70,8 @@ describe('protocol switch commit', () => {
     expect(visitFlagsForProtocolCommit(current, null, false, false)).toEqual(current);
   });
 
-  it('arms chat when the destination panel is chat', () => {
-    expect(visitFlagsForProtocolCommit(ALL_OFF, CHAT_PANEL_INDEX, true, false).chat).toBe(true);
+  it('does not track chat keep-alive (Chat uses per-protocol visited set in App)', () => {
+    expect(visitFlagsForProtocolCommit(ALL_ON, CHAT_PANEL_INDEX, true, false)).toEqual(ALL_OFF);
+    expect(visitFlagsForProtocolCommit(ALL_OFF, CHAT_PANEL_INDEX, false, false)).toEqual(ALL_OFF);
   });
 });

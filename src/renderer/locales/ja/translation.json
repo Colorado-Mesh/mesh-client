@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "このコマンドは、リピーターを再起動、消去、または工場出荷時にリセットする場合があります：\" {{command}} \"。この変更を意図している場合にのみ続行してください。",
     "cliDangerConfirmAction": "コマンドを実行",
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
-    "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
     "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。",
     "cliCommandMustBeSingleLine": "CLI コマンドは 1 行である必要があります。",
     "currentRouteLabel": "現在のルート:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "起動とシャットダウンの理由を取得する",
     "cliQuickRadio": "通信機",
     "cliAutoPingWaitingForCli": "別のノードのCLIコマンドが終了するのを待ってからPingしています...",
-    "cliAutoPingBusy": "別のノードのCLIコマンドはまだ実行中です。終了したらもう一度やり直してください。"
+    "cliAutoPingBusy": "別のノードのCLIコマンドはまだ実行中です。終了したらもう一度やり直してください。",
+    "cliAutoPingAdvisory": "ルートがPingによって確認されていません。とにかくCLIを試してみてください。",
+    "repeaterCliNeedsAdminPassword": "リモートリピーターCLIには管理者パスワードが必要です。ファームウェアはACL管理なしでCLIを無視します—パスワードなしではなく、パスワードで続行を使用します。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

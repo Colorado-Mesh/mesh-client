@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "此命令可能会重新启动、擦除或出厂重置中继器： “{{command}}”。仅当您打算进行此更改时才继续。",
     "cliDangerConfirmAction": "运行命令",
     "cliAutoPingToast": "在CLI之前使用Ping建立路由…",
-    "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
     "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。",
     "cliCommandMustBeSingleLine": "CLI 命令必须为单行。",
     "currentRouteLabel": "当前路线：",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "获取启动和关闭原因",
     "cliQuickRadio": "广播：",
     "cliAutoPingWaitingForCli": "正在等待另一个节点的CLI命令在Ping之前完成…",
-    "cliAutoPingBusy": "另一个节点的CLI命令仍在运行；完成后重试。"
+    "cliAutoPingBusy": "另一个节点的CLI命令仍在运行；完成后重试。",
+    "cliAutoPingAdvisory": "Ping未确认路由；仍然尝试CLI。",
+    "repeaterCliNeedsAdminPassword": "远程中继器CLI需要管理员密码。固件在没有ACL管理的情况下忽略CLI —使用“使用密码继续” ，而不是“无密码”。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

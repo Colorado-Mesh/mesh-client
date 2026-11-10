@@ -49,9 +49,10 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('setupGenerationAtRequest !== meshcoreSetupGenerationRef.current');
     expect(cliBody).toContain('!opts.isCurrent()');
     const sendSlotStart = cliBody.indexOf('await repeaterRemoteRpcRef.current(async () => {');
-    const sendIdx = cliBody.indexOf('await conn.sendTextMessage', sendSlotStart);
+    const sendIdx = cliBody.indexOf('await conn.sendToRadioFrame(frame)', sendSlotStart);
     expect(sendIdx).toBeGreaterThan(sendSlotStart);
     expect(cliBody.slice(sendSlotStart, sendIdx)).toContain('assertRequestCurrent();');
+    expect(cliBody.slice(sendSlotStart, sendIdx)).toContain('buildSendTxtMsgFrame');
   });
 
   it('releases shared CLI holds only for the connection generation that acquired them', () => {
@@ -103,9 +104,10 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).not.toMatch(/pubKeyMapRef\.current\.get\(nodeId\)/);
   });
 
-  it('awaits ping settle and login with companion queue before CLI send', () => {
+  it('awaits soft ping settle and login with companion queue before CLI send', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     expect(cliBody).toContain('awaitMeshcoreRepeaterPingSettleForNode');
+    expect(cliBody).toContain('MESHCORE_REPEATER_PING_SETTLE_SOFT_MS');
     expect(cliBody).toContain('MESHCORE_CLI_PREEMPT_TRACE_REASON');
     expect(cliBody).toContain('cancelAllPendingMeshcoreTracePaths');
     expect(cliBody).toContain('beginMeshcoreCliReplyHold');
@@ -118,6 +120,9 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('responsePromise');
     expect(cliBody).toContain('meshcoreTryRemoteServerLogin');
     expect(cliBody).toContain('meshcoreRepeaterTryLoginWithPassword');
+    expect(cliBody).toContain('meshcoreRepeaterHasResolvablePassword');
+    expect(cliBody).toContain('withMeshcoreRepeaterRouteEscalation');
+    expect(cliBody).toContain('buildSendTxtMsgFrame');
     expect(cliBody).toContain('meshcoreCancelRoomLogin');
     expect(cliBody).toContain('resolveRoomAdminPassword');
     expect(cliBody).toContain('repeaterRemoteRpcRef.current');

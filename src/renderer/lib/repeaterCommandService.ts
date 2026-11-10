@@ -2,12 +2,15 @@ import { MESHCORE_CLI_REDACTED, redactMeshcoreCliSecretsInText } from '@/shared/
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import { normalizeMeshcoreCliCommand, redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
+import { MESHCORE_REPEATER_REPLY_CAP_MS } from './timeConstants';
 
 export interface PendingCommand {
   command: string;
   token: string;
   /** Monotonic timestamp used only for the remaining reply budget. */
   sentAt: number;
+  /** Unix seconds placed on the wire TXT frame (strictly increasing per node). */
+  wireTimestampSec: number;
   timeoutMs: number;
   resolve: (response: string) => void;
   reject: (error: Error) => void;
@@ -30,6 +33,8 @@ export interface RepeaterCommandServiceOptions {
   baseTimeoutMs?: number;
   perHopTimeoutMs?: number;
   maxTimeoutMs?: number;
+  /** Injectable clock for wire timestamps (tests). */
+  nowSec?: () => number;
 }
 
 /** Result of ingesting one wire CLI reply frame into the command service. */
@@ -46,8 +51,8 @@ interface SettledCliReply {
 /** Floor for direct (0-hop) repeater CLI response wait. */
 export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
 export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
-/** Align multi-hop CLI ceiling with flat admin RPC timeouts. */
-export const REPEATER_CLI_MAX_TIMEOUT_MS = 120_000;
+/** Align multi-hop CLI ceiling with admin receipt-derived reply cap. */
+export const REPEATER_CLI_MAX_TIMEOUT_MS = MESHCORE_REPEATER_REPLY_CAP_MS;
 /** Max repeater CLI command length before send (BLE to-radio payload cap). */
 export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512;
 
@@ -107,8 +112,13 @@ export function padRepeaterCliTimeoutForWaitingDrain(
   return Math.min(maxTimeoutMs, timeoutMs + drainPadMs);
 }
 
+function pendingKey(nodeId: number, token: string): string {
+  return `${nodeId >>> 0}:${token.toUpperCase()}`;
+}
+
 export class RepeaterCommandService {
   private nextToken = 0;
+  /** Pending keyed by `${nodeId}:${token}`. */
   private pendingCommands = new Map<string, PendingCommand>();
   /** Keep sensitive token tombstones until reuse so late replies are also redacted. */
   private sensitiveTokens = new Set<string>();
@@ -117,11 +127,14 @@ export class RepeaterCommandService {
    * just-resolved reply are reported as `duplicate` so CLI history stays single-writer.
    */
   private settled = new Map<string, SettledCliReply>();
+  /** Last wire TXT timestamp (unix seconds) per node — firmware treats equal ts as empty retry. */
+  private lastCliTimestampByNode = new Map<number, number>();
   private timeoutMs: number;
   private maxRetries: number;
   private baseTimeoutMs: number;
   private perHopTimeoutMs: number;
   private maxTimeoutMs: number;
+  private nowSec: () => number;
 
   constructor(options: RepeaterCommandServiceOptions = {}) {
     this.timeoutMs = options.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -129,16 +142,42 @@ export class RepeaterCommandService {
     this.baseTimeoutMs = options.baseTimeoutMs ?? REPEATER_CLI_BASE_TIMEOUT_MS;
     this.perHopTimeoutMs = options.perHopTimeoutMs ?? REPEATER_CLI_PER_HOP_TIMEOUT_MS;
     this.maxTimeoutMs = options.maxTimeoutMs ?? REPEATER_CLI_MAX_TIMEOUT_MS;
+    this.nowSec = options.nowSec ?? (() => Math.floor(Date.now() / 1000));
   }
 
-  generateToken(): string {
-    const token = this.nextToken.toString(16).toUpperCase().padStart(2, '0');
-    this.nextToken = (this.nextToken + 1) % 256;
-    return token;
+  /**
+   * Allocate a strictly increasing unix-second timestamp for a node's next CLI frame.
+   */
+  allocateCliTimestamp(nodeId: number): number {
+    const id = nodeId >>> 0;
+    const wall = this.nowSec();
+    const last = this.lastCliTimestampByNode.get(id) ?? 0;
+    const next = Math.max(wall, last + 1);
+    this.lastCliTimestampByNode.set(id, next);
+    return next;
   }
 
-  formatCommandWithToken(command: string, token?: string): string {
-    const t = token ?? this.generateToken();
+  clearCliTimestamps(): void {
+    this.lastCliTimestampByNode.clear();
+  }
+
+  /**
+   * Fresh 2-hex token for `nodeId`, skipping any token already pending for that node.
+   */
+  generateToken(nodeId = 0): string {
+    const id = nodeId >>> 0;
+    for (let i = 0; i < 256; i++) {
+      const token = this.nextToken.toString(16).toUpperCase().padStart(2, '0');
+      this.nextToken = (this.nextToken + 1) % 256;
+      if (!this.pendingCommands.has(pendingKey(id, token))) {
+        return token;
+      }
+    }
+    return '00';
+  }
+
+  formatCommandWithToken(command: string, token?: string, nodeId = 0): string {
+    const t = token ?? this.generateToken(nodeId);
     return `${t}|${command}`;
   }
 
@@ -158,6 +197,21 @@ export class RepeaterCommandService {
     });
   }
 
+  private lookupPending(token: string, senderNodeId?: number): PendingCommand | undefined {
+    const upper = token.toUpperCase();
+    if (senderNodeId != null && senderNodeId !== 0) {
+      return this.pendingCommands.get(pendingKey(senderNodeId, upper));
+    }
+    // Ambiguous sender: only match when a single pending entry uses this token.
+    let found: PendingCommand | undefined;
+    for (const pending of this.pendingCommands.values()) {
+      if (pending.token !== upper) continue;
+      if (found) return undefined;
+      found = pending;
+    }
+    return found;
+  }
+
   registerPendingCommand(
     command: string,
     path: Uint8Array[],
@@ -166,15 +220,18 @@ export class RepeaterCommandService {
       timeoutMs?: number;
       maxRetries?: number;
       senderNodeId?: number;
+      wireTimestampSec?: number;
     },
-  ): { token: string; promise: Promise<string>; timeoutMs: number } {
-    const token = options?.token ?? this.generateToken();
-    this.settled.delete(token);
-    if (redactMeshcoreCliSecrets(command) !== command) this.sensitiveTokens.add(token);
-    else this.sensitiveTokens.delete(token);
+  ): { token: string; promise: Promise<string>; timeoutMs: number; wireTimestampSec: number } {
+    const senderNodeId = options?.senderNodeId ?? 0;
+    const token = options?.token ?? this.generateToken(senderNodeId);
+    const key = pendingKey(senderNodeId, token);
+    this.settled.delete(key);
+    if (redactMeshcoreCliSecrets(command) !== command) this.sensitiveTokens.add(key);
+    else this.sensitiveTokens.delete(key);
     const timeoutMs = options?.timeoutMs ?? this.calculateTimeout(path, command.length);
     const maxRetries = options?.maxRetries ?? this.maxRetries;
-    const senderNodeId = options?.senderNodeId ?? 0;
+    const wireTimestampSec = options?.wireTimestampSec ?? this.allocateCliTimestamp(senderNodeId);
 
     let resolve!: (response: string) => void;
     let reject!: (error: Error) => void;
@@ -184,7 +241,7 @@ export class RepeaterCommandService {
     });
 
     const timerId = setTimeout(() => {
-      if (this.pendingCommands.delete(token)) {
+      if (this.pendingCommands.delete(key)) {
         reject(new Error(`CLI command timed out after ${timeoutMs}ms`));
       }
     }, timeoutMs);
@@ -193,6 +250,7 @@ export class RepeaterCommandService {
       command,
       token,
       sentAt: performance.now(),
+      wireTimestampSec,
       timeoutMs,
       resolve,
       reject,
@@ -203,8 +261,8 @@ export class RepeaterCommandService {
       timerId,
     };
 
-    this.pendingCommands.set(token, pending);
-    return { token, promise, timeoutMs };
+    this.pendingCommands.set(key, pending);
+    return { token, promise, timeoutMs, wireTimestampSec };
   }
 
   /** True when sender is unknown (0/omit) or matches the expected node. */
@@ -214,14 +272,15 @@ export class RepeaterCommandService {
   }
 
   /** Lengthen an in-flight CLI wait when drain is busy at SENT. */
-  extendPendingTimeout(token: string, newTimeoutMs: number): void {
-    const pending = this.pendingCommands.get(token);
+  extendPendingTimeout(token: string, newTimeoutMs: number, senderNodeId?: number): void {
+    const pending = this.lookupPending(token, senderNodeId);
     if (!pending || newTimeoutMs <= pending.timeoutMs) return;
+    const key = pendingKey(pending.senderNodeId, pending.token);
     clearTimeout(pending.timerId);
     pending.timeoutMs = newTimeoutMs;
     const remaining = Math.max(0, newTimeoutMs - (performance.now() - pending.sentAt));
     pending.timerId = setTimeout(() => {
-      if (this.pendingCommands.delete(token)) {
+      if (this.pendingCommands.delete(key)) {
         pending.reject(new Error(`CLI command timed out after ${newTimeoutMs}ms`));
       }
     }, remaining);
@@ -231,14 +290,15 @@ export class RepeaterCommandService {
    * Restart the CLI reply timer from now (after SENT). Use when companion send was delayed
    * behind getWaitingMessages / other radio work so the pre-send timer would otherwise expire.
    */
-  restartPendingTimeoutFromNow(token: string, timeoutMs: number): void {
-    const pending = this.pendingCommands.get(token);
+  restartPendingTimeoutFromNow(token: string, timeoutMs: number, senderNodeId?: number): void {
+    const pending = this.lookupPending(token, senderNodeId);
     if (!pending) return;
+    const key = pendingKey(pending.senderNodeId, pending.token);
     clearTimeout(pending.timerId);
     pending.sentAt = performance.now();
     pending.timeoutMs = timeoutMs;
     pending.timerId = setTimeout(() => {
-      if (this.pendingCommands.delete(token)) {
+      if (this.pendingCommands.delete(key)) {
         pending.reject(new Error(`CLI command timed out after ${timeoutMs}ms`));
       }
     }, timeoutMs);
@@ -250,14 +310,15 @@ export class RepeaterCommandService {
    */
   ingestResponse(rawResponse: string, senderId?: number): MeshcoreCliIngestResult {
     const { token, body } = this.parseResponseToken(rawResponse);
-    const historyText = this.redactResponseForHistory(rawResponse);
+    const historyText = this.redactResponseForHistory(rawResponse, senderId);
 
     if (token) {
-      const pending = this.pendingCommands.get(token);
+      const pending = this.lookupPending(token, senderId);
       if (pending && this.senderMatches(pending.senderNodeId, senderId)) {
+        const key = pendingKey(pending.senderNodeId, pending.token);
         clearTimeout(pending.timerId);
-        this.pendingCommands.delete(token);
-        this.settled.set(token, { senderNodeId: pending.senderNodeId, body });
+        this.pendingCommands.delete(key);
+        this.settled.set(key, { senderNodeId: pending.senderNodeId, body });
         pending.resolve(body);
         return {
           kind: 'resolved',
@@ -266,9 +327,15 @@ export class RepeaterCommandService {
         };
       }
 
-      const prior = this.settled.get(token);
-      if (prior?.body === body && this.senderMatches(prior.senderNodeId, senderId)) {
-        return { kind: 'duplicate' };
+      const settledKey =
+        senderId != null && senderId !== 0
+          ? pendingKey(senderId, token)
+          : [...this.settled.keys()].find((k) => k.endsWith(`:${token.toUpperCase()}`));
+      if (settledKey) {
+        const prior = this.settled.get(settledKey);
+        if (prior?.body === body && this.senderMatches(prior.senderNodeId, senderId)) {
+          return { kind: 'duplicate' };
+        }
       }
     }
 
@@ -280,21 +347,28 @@ export class RepeaterCommandService {
     return this.ingestResponse(rawResponse, senderId).kind === 'resolved';
   }
 
-  redactResponseForHistory(rawResponse: string): string {
+  redactResponseForHistory(rawResponse: string, senderId?: number): string {
     const { token, body } = this.parseResponseToken(rawResponse);
-    return (token && this.sensitiveTokens.has(token)) || /^password now:/i.test(body.trim())
+    const key =
+      token && senderId != null && senderId !== 0
+        ? pendingKey(senderId, token)
+        : token
+          ? [...this.sensitiveTokens].find((k) => k.endsWith(`:${token}`))
+          : undefined;
+    return (key && this.sensitiveTokens.has(key)) || /^password now:/i.test(body.trim())
       ? MESHCORE_CLI_REDACTED
       : redactMeshcoreCliSecretsInText(body);
   }
 
-  handleError(token: string, error: Error): boolean {
-    const pending = this.pendingCommands.get(token);
+  handleError(token: string, error: Error, senderNodeId?: number): boolean {
+    const pending = this.lookupPending(token, senderNodeId);
     if (!pending) return false;
 
     pending.retryCount++;
+    const key = pendingKey(pending.senderNodeId, pending.token);
     if (pending.retryCount >= pending.maxRetries) {
       clearTimeout(pending.timerId);
-      this.pendingCommands.delete(token);
+      this.pendingCommands.delete(key);
       pending.reject(error);
       return true;
     }
@@ -303,21 +377,22 @@ export class RepeaterCommandService {
   }
 
   /** Reject and remove a pending command without retry (send failed before reply window). */
-  rejectPending(token: string, error: Error): boolean {
-    const pending = this.pendingCommands.get(token);
+  rejectPending(token: string, error: Error, senderNodeId?: number): boolean {
+    const pending = this.lookupPending(token, senderNodeId);
     if (!pending) return false;
+    const key = pendingKey(pending.senderNodeId, pending.token);
     clearTimeout(pending.timerId);
-    this.pendingCommands.delete(token);
+    this.pendingCommands.delete(key);
     pending.reject(error);
     return true;
   }
 
-  getPendingCommand(token: string): PendingCommand | undefined {
-    return this.pendingCommands.get(token);
+  getPendingCommand(token: string, senderNodeId?: number): PendingCommand | undefined {
+    return this.lookupPending(token, senderNodeId);
   }
 
-  hasPendingCommand(token: string): boolean {
-    return this.pendingCommands.has(token);
+  hasPendingCommand(token: string, senderNodeId?: number): boolean {
+    return this.lookupPending(token, senderNodeId) != null;
   }
 
   /** @deprecated Timeouts are now self-managed via internal setTimeout in registerPendingCommand. */
@@ -332,6 +407,7 @@ export class RepeaterCommandService {
     }
     this.pendingCommands.clear();
     this.settled.clear();
+    this.lastCliTimestampByNode.clear();
   }
 }
 

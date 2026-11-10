@@ -51,10 +51,8 @@ describe('meshcoreMessageI18n', () => {
     }
   });
 
-  it('meshcoreRepeaterAdminRpcErrorBudgetMs uses ping-settle budget for ping wait errors', () => {
-    expect(meshcoreRepeaterAdminRpcErrorBudgetMs('timeout waiting for ping', 120_000)).toBe(
-      360_000,
-    );
+  it('meshcoreRepeaterAdminRpcErrorBudgetMs uses soft ping-settle budget for ping wait errors', () => {
+    expect(meshcoreRepeaterAdminRpcErrorBudgetMs('timeout waiting for ping', 60_000)).toBe(10_000);
   });
 
   it('meshcoreRepeaterAdminErrorMessage translates i18n keys', () => {
