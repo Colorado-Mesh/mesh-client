@@ -99,4 +99,46 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     ).rejects.toThrow(/timeout/);
     expect(resetContactPath).toHaveBeenCalledTimes(1);
   });
+
+  it('does not retry when resetContactPath returns false', async () => {
+    const resetContactPath = vi.fn(() => Promise.resolve(false));
+    let calls = 0;
+    await expect(
+      withMeshcoreRepeaterRouteEscalation(
+        11,
+        {
+          resetContactPath,
+          resolveRouteKind: () => 'direct',
+          nowMs: () => 1_000,
+        },
+        () => {
+          calls += 1;
+          return Promise.reject(new Error('timeout'));
+        },
+      ),
+    ).rejects.toThrow(/timeout/);
+    expect(calls).toBe(1);
+    expect(resetContactPath).toHaveBeenCalledTimes(1);
+  });
+
+  it('escalates unknown routes the same as direct', async () => {
+    const resetContactPath = vi.fn(() => Promise.resolve(true));
+    let calls = 0;
+    await expect(
+      withMeshcoreRepeaterRouteEscalation(
+        12,
+        {
+          resetContactPath,
+          resolveRouteKind: () => 'unknown',
+          nowMs: () => 2_000,
+        },
+        ({ escalated }) => {
+          calls += 1;
+          if (!escalated) return Promise.reject(new Error('timeout'));
+          return Promise.resolve('ok');
+        },
+      ),
+    ).resolves.toBe('ok');
+    expect(calls).toBe(2);
+  });
 });

@@ -33,6 +33,11 @@ export interface MeshcoreRepeaterPrefixPushRequestOpts<T> {
    * need a fixed arm). Prefer `hopsAway` in production.
    */
   extraTimeoutMs?: number;
+  /**
+   * Optional hard cap applied after receipt-derived (or legacy) reply arm calculation.
+   * Used for short TCP post-connect self telemetry without changing default admin waits.
+   */
+  replyWaitCapMs?: number;
   /** Override SENT wait (default admin 10s when hopsAway set; else trace 45s). */
   sentWaitTimeoutMs?: number;
   runSerialized?: MeshcoreRepeaterRunSerialized;
@@ -135,9 +140,16 @@ function performPrefixPushRequest<T>(
 
     const armResponseTimeout = (estTimeoutMs: number): void => {
       if (settled) return;
-      const waitMs = useReceiptDerived
+      let waitMs = useReceiptDerived
         ? meshcoreRepeaterReplyWaitMs({ estTimeoutMs, hopsAway: opts.hopsAway })
         : estTimeoutMs + (opts.extraTimeoutMs ?? 0);
+      if (
+        opts.replyWaitCapMs != null &&
+        Number.isFinite(opts.replyWaitCapMs) &&
+        opts.replyWaitCapMs > 0
+      ) {
+        waitMs = Math.min(waitMs, Math.trunc(opts.replyWaitCapMs));
+      }
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
       }, waitMs);

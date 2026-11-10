@@ -58,9 +58,9 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     console.warn(
       `[meshcoreRepeaterRouteEscalation] timeout node=${normalizedId} route=${routeKind}; resetting path for flood retry`,
     );
-    lastEscalationByNode.set(normalizedId, now());
+    let resetOk: boolean;
     try {
-      await deps.resetContactPath(normalizedId);
+      resetOk = await deps.resetContactPath(normalizedId);
     } catch (resetErr) {
       console.warn(
         `[meshcoreRepeaterRouteEscalation] resetContactPath failed node=${normalizedId} ` +
@@ -68,6 +68,13 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       );
       throw firstErr;
     }
+    if (!resetOk) {
+      console.warn(
+        `[meshcoreRepeaterRouteEscalation] resetContactPath returned false node=${normalizedId}; not retrying`,
+      );
+      throw firstErr;
+    }
+    lastEscalationByNode.set(normalizedId, now());
     return fn({ escalated: true });
   }
 }

@@ -11,6 +11,8 @@ export interface MeshcoreRepeaterTelemetryRequestOpts {
   hopsAway?: number | null;
   /** Legacy fixed grace when hopsAway is omitted (tests). */
   extraTimeoutMs?: number;
+  /** Optional hard cap on the receipt-derived reply wait (e.g. short TCP post-connect self telemetry). */
+  replyWaitCapMs?: number;
   runSerialized?: MeshcoreRepeaterRunSerialized;
   beforeSend?: () => Promise<void>;
 }
@@ -39,6 +41,7 @@ export function runMeshcoreRepeaterTelemetryRequest(
     contactPublicKey,
     hopsAway: opts.hopsAway,
     extraTimeoutMs: opts.extraTimeoutMs,
+    replyWaitCapMs: opts.replyWaitCapMs,
     runSerialized: opts.runSerialized,
     beforeSend: opts.beforeSend,
     pushEvent: MC_PUSH_TELEMETRY_RESPONSE,

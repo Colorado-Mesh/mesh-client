@@ -6011,9 +6011,17 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const resolveAdminRouteKindForNode = useCallback((nodeId: number): MeshcoreRepeaterRouteKind => {
-    const path = outPathMapRef.current.get(nodeId >>> 0);
-    if (!path || path.length === 0) return 'flood';
-    return 'direct';
+    const id = nodeId >>> 0;
+    // Empty companion outPath means flood; missing map entry is unknown (rebuilds may omit
+    // radioContactPathLen). Prefer outPathMap; fall back to last-seen radio path length.
+    if (outPathMapRef.current.has(id)) {
+      const path = outPathMapRef.current.get(id);
+      return path && path.length > 0 ? 'direct' : 'flood';
+    }
+    const pathLen = radioContactPathLenByNodeRef.current.get(id);
+    if (pathLen === 0) return 'flood';
+    if (pathLen != null && pathLen > 0) return 'direct';
+    return 'unknown';
   }, []);
 
   const resetContactPathForEscalation = useCallback(
@@ -6413,6 +6421,7 @@ export function useMeshcoreRuntime() {
                 );
                 const raw = await runMeshcoreRepeaterTelemetryRequest(conn, pubKey, {
                   hopsAway,
+                  ...(opts?.timeoutMs != null ? { replyWaitCapMs: opts.timeoutMs } : {}),
                   runSerialized: repeaterRemoteRpcRef.current,
                   beforeSend: () =>
                     awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),

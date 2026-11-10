@@ -739,7 +739,11 @@ function AppContent() {
     protocol: MeshProtocol;
     peer: number;
   } | null>(null);
-  const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
+  /** Channel index + protocol so a cross-protocol jump cannot open the wrong ChatPanel. */
+  const [pendingChannelTarget, setPendingChannelTarget] = useState<{
+    protocol: MeshProtocol;
+    channel: number;
+  } | null>(null);
   const [pendingMessageFocus, setPendingMessageFocus] = useState<PendingMessageFocus | null>(null);
   const [globalMessageSearchOpen, setGlobalMessageSearchOpen] = useState(false);
   const [unifiedInboxOpen, setUnifiedInboxOpen] = useState(false);
@@ -2157,6 +2161,10 @@ function AppContent() {
     () => Array.from(reticulumOwnNodeIdSet),
     [reticulumOwnNodeIdSet],
   );
+  const meshcoreOwnNodeIdsForChat = useMemo(
+    () => Array.from(meshcoreOwnNodeIdSet),
+    [meshcoreOwnNodeIdSet],
+  );
   const headerMyNodeNum = (() => {
     if (protocol !== 'reticulum') return activeConnectionView.state.myNodeNum;
     const fromRuntime =
@@ -2832,31 +2840,34 @@ function AppContent() {
     meshtasticDeviceRoleFromConfigSlice(meshtasticRuntime.meshtasticConfigSlices?.device),
     meshtasticUiNodes.get(meshtasticConnectionView.state.myNodeNum)?.role ?? null,
   );
-  const chatShareLocationByProtocol = useMemo(() => {
-    const meshtasticResolver = canTransmitLocation({
-      protocol: 'meshtastic',
-      meshtasticRole: meshtasticSelfRoleForChat,
-    })
-      ? async () => {
-          const pos = await meshtasticPanelActions.refreshOurPosition();
-          return pos ? { lat: pos.lat, lon: pos.lon } : null;
-        }
-      : undefined;
-    const meshcoreResolver = canTransmitLocation({ protocol: 'meshcore' })
-      ? async () => {
-          const pos = await meshcorePanelActions.refreshOurPosition();
-          return pos ? { lat: pos.lat, lon: pos.lon } : null;
-        }
-      : undefined;
-    const reticulumResolver = canTransmitLocation({ protocol: 'reticulum' })
-      ? async () => {
-          const stored = readStoredStaticGps();
-          const pos = await resolveOurPosition(undefined, undefined, stored?.lat, stored?.lon);
-          return pos ? { lat: pos.lat, lon: pos.lon } : null;
-        }
-      : undefined;
-    return protocolRecord(meshtasticResolver, meshcoreResolver, reticulumResolver);
-  }, [meshtasticPanelActions, meshtasticSelfRoleForChat, meshcorePanelActions]);
+  // Recompute each render so isShareMyLocationEnabled() / role changes apply immediately.
+  const meshtasticChatShareLocation = canTransmitLocation({
+    protocol: 'meshtastic',
+    meshtasticRole: meshtasticSelfRoleForChat,
+  })
+    ? async () => {
+        const pos = await meshtasticPanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      }
+    : undefined;
+  const meshcoreChatShareLocation = canTransmitLocation({ protocol: 'meshcore' })
+    ? async () => {
+        const pos = await meshcorePanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      }
+    : undefined;
+  const reticulumChatShareLocation = canTransmitLocation({ protocol: 'reticulum' })
+    ? async () => {
+        const stored = readStoredStaticGps();
+        const pos = await resolveOurPosition(undefined, undefined, stored?.lat, stored?.lon);
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      }
+    : undefined;
+  const chatShareLocationByProtocol = protocolRecord(
+    meshtasticChatShareLocation,
+    meshcoreChatShareLocation,
+    reticulumChatShareLocation,
+  );
 
   const hasLocalMeshtasticRadio =
     capabilities.hasRemoteAdmin &&
@@ -3367,7 +3378,7 @@ function AppContent() {
       } else if (target.dmPeer != null) {
         setPendingDmTarget({ protocol: target.protocol, peer: target.dmPeer });
       } else if (target.channel != null) {
-        setPendingChannelTarget(target.channel);
+        setPendingChannelTarget({ protocol: target.protocol, channel: target.channel });
       }
     },
     [
@@ -4960,8 +4971,10 @@ function AppContent() {
                           className="h-full w-full min-w-0"
                         >
                           <Suspense fallback={<PanelSkeleton />}>
-                            {REGISTERED_MESH_PROTOCOLS.filter((chatProtocol) =>
-                              visitedChatProtocols.has(chatProtocol),
+                            {REGISTERED_MESH_PROTOCOLS.filter(
+                              (chatProtocol) =>
+                                enabledProtocols.includes(chatProtocol) &&
+                                visitedChatProtocols.has(chatProtocol),
                             ).map((chatProtocol) => {
                               const chatCapabilities = selectByProtocol(
                                 capabilitiesByProtocol,
@@ -5057,7 +5070,7 @@ function AppContent() {
                                         ? reticulumOwnNodeIdsForChat
                                         : chatCapabilities.hasMqttHybrid
                                           ? meshtasticOwnNodeIdsForChat
-                                          : Array.from(meshcoreOwnNodeIdSet)
+                                          : meshcoreOwnNodeIdsForChat
                                     }
                                     onSend={handleSend}
                                     composerDisabled={protocolSwitchPending || !chatActive}
@@ -5083,13 +5096,25 @@ function AppContent() {
                                     onDmTargetConsumed={
                                       chatActive ? handleDmTargetConsumed : undefined
                                     }
-                                    initialChannelTarget={chatActive ? pendingChannelTarget : null}
-                                    onChannelTargetConsumed={
-                                      chatActive ? handleChannelTargetConsumed : undefined
+                                    initialChannelTarget={
+                                      chatActive && pendingChannelTarget?.protocol === chatProtocol
+                                        ? pendingChannelTarget.channel
+                                        : null
                                     }
-                                    initialMessageFocus={chatActive ? pendingMessageFocus : null}
+                                    onChannelTargetConsumed={
+                                      chatActive && pendingChannelTarget?.protocol === chatProtocol
+                                        ? handleChannelTargetConsumed
+                                        : undefined
+                                    }
+                                    initialMessageFocus={
+                                      chatActive && pendingMessageFocus?.protocol === chatProtocol
+                                        ? pendingMessageFocus
+                                        : null
+                                    }
                                     onMessageFocusConsumed={
-                                      chatActive ? handleMessageFocusConsumed : undefined
+                                      chatActive && pendingMessageFocus?.protocol === chatProtocol
+                                        ? handleMessageFocusConsumed
+                                        : undefined
                                     }
                                     onOpenGlobalMessageSearch={openGlobalMessageSearch}
                                     isActive={chatActive}
@@ -6817,7 +6842,7 @@ function AppContent() {
               contacts={tabSlotIds.includes('Nodes') ? launcherContacts : undefined}
               contactsLabel={displayTabLabels[tabSlotIds.indexOf('Nodes')]}
               onOpenChannel={(index) => {
-                setPendingChannelTarget(index);
+                setPendingChannelTarget({ protocol, channel: index });
                 openTabFromLauncher(tabSlotIds.indexOf('Chat'));
               }}
               onOpenContact={(id) => {
