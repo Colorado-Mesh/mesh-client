@@ -1,10 +1,10 @@
 /**
  * KNOWN-GOOD WORKING STATE — MeshCore 0-hop repeater admin (Ping / Status / Neighbors / Telemetry)
  *
- * These tests document the verified working contract from debug session 5bf576.
+ * Updated 2026-11 for receipt-derived timeouts, soft ping settle, and flood escalation.
  * DO NOT change the underlying behavior or these assertions unless the user explicitly
  * requests it. AI assistants must treat failures here as regressions, not invitations
- * to "simplify" timeouts, remove serialization, or reintroduce login gates.
+ * to reintroduce multi-minute settle throws or flat est+120s reply waits.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,8 +18,13 @@ import {
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { extractUseCallbackBody } from './sourceContractTestHelpers';
 import {
-  MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
+  MESHCORE_REPEATER_ADMIN_RF_IDLE_MS,
+  MESHCORE_REPEATER_PING_SETTLE_SOFT_MS,
+  MESHCORE_REPEATER_REPLY_CAP_MS,
+  MESHCORE_REPEATER_REPLY_FLOOR_MS,
+  MESHCORE_REPEATER_REPLY_GRACE_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+  meshcoreRepeaterReplyWaitMs,
   meshcoreRepeaterRpcTimeoutMs,
 } from './timeConstants';
 
@@ -47,19 +52,43 @@ const BINARY_RPC_SOURCE = readFileSync(
 );
 const IN_FLIGHT_SOURCE = readFileSync(join(__dirname, 'meshcoreRepeaterRpcInFlight.ts'), 'utf-8');
 const TRACE_PATH_SOURCE = readFileSync(join(__dirname, 'meshcoreRepeaterTracePath.ts'), 'utf-8');
+const ESCALATION_SOURCE = readFileSync(
+  join(__dirname, 'meshcoreRepeaterRouteEscalation.ts'),
+  'utf-8',
+);
 
 describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
-  it('uses flat 120s timeouts for status, telemetry, and neighbors (not hop-scaled 30s)', () => {
-    expect(MESHCORE_STATUS_TIMEOUT_MS).toBe(120_000);
-    expect(MESHCORE_TELEMETRY_TIMEOUT_MS).toBe(120_000);
-    expect(MESHCORE_NEIGHBORS_TIMEOUT_MS).toBe(120_000);
+  it('uses receipt-derived reply cap (60s) for status, telemetry, and neighbors', () => {
+    expect(MESHCORE_STATUS_TIMEOUT_MS).toBe(MESHCORE_REPEATER_REPLY_CAP_MS);
+    expect(MESHCORE_TELEMETRY_TIMEOUT_MS).toBe(MESHCORE_REPEATER_REPLY_CAP_MS);
+    expect(MESHCORE_NEIGHBORS_TIMEOUT_MS).toBe(MESHCORE_REPEATER_REPLY_CAP_MS);
+    expect(MESHCORE_STATUS_TIMEOUT_MS).toBe(60_000);
     expect(meshcoreRepeaterRpcTimeoutMs(0)).toBe(30_000);
-    expect(MESHCORE_STATUS_TIMEOUT_MS).toBeGreaterThan(meshcoreRepeaterRpcTimeoutMs(0));
   });
 
-  it('ping end-to-end cap is 180s with ping-settle budget of 2× that for admin RPCs', () => {
+  it('reply wait clamps est+grace into [floor, cap]', () => {
+    expect(MESHCORE_REPEATER_REPLY_GRACE_MS).toBe(5_000);
+    expect(MESHCORE_REPEATER_REPLY_FLOOR_MS).toBe(15_000);
+    expect(MESHCORE_REPEATER_REPLY_CAP_MS).toBe(60_000);
+    expect(meshcoreRepeaterReplyWaitMs({ estTimeoutMs: 4_000, hopsAway: 0 })).toBe(15_000);
+    expect(meshcoreRepeaterReplyWaitMs({ estTimeoutMs: 20_000, hopsAway: 3 })).toBe(25_000);
+    expect(meshcoreRepeaterReplyWaitMs({ estTimeoutMs: 0, hopsAway: 0 })).toBe(30_000);
+    expect(meshcoreRepeaterReplyWaitMs({ estTimeoutMs: 0, hopsAway: 13 })).toBe(60_000);
+  });
+
+  it('soft ping settle is 10s and never throws after budget', () => {
+    expect(MESHCORE_REPEATER_PING_SETTLE_SOFT_MS).toBe(10_000);
     expect(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS).toBe(180_000);
-    expect(MESHCORE_REPEATER_PING_SETTLE_MAX_MS).toBe(2 * MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS);
+    expect(TRACE_IDLE_SOURCE).toContain('proceededBusy');
+    expect(TRACE_IDLE_SOURCE).toContain('MESHCORE_REPEATER_PING_SETTLE_SOFT_MS');
+    expect(TRACE_IDLE_SOURCE).not.toMatch(
+      /awaitMeshcoreRepeaterPingSettleForNode[\s\S]{0,400}throw new Error\('timeout waiting for ping'\)/,
+    );
+  });
+
+  it('admin RF idle defaults to 15s soft proceed', () => {
+    expect(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS).toBe(15_000);
+    expect(TRACE_IDLE_SOURCE).toContain('MESHCORE_REPEATER_ADMIN_RF_IDLE_MS');
   });
 
   it('queued send releases companion queue at RESP_SENT (response wait is outside queue)', () => {
@@ -76,6 +105,7 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     expect(BINARY_RPC_SOURCE).toContain('runMeshcoreRepeaterQueuedSend');
     expect(PREFIX_PUSH_SOURCE).toContain('beforeSend');
     expect(BINARY_RPC_SOURCE).toContain('beforeSend');
+    expect(PREFIX_PUSH_SOURCE).toContain('meshcoreRepeaterReplyWaitMs');
   });
 
   it('admin beforeSend waits only for TraceData (traceResponses), not pendingRoutes', () => {
@@ -90,13 +120,18 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     );
   });
 
-  it('runtime awaits same-node ping settle before status, telemetry, and neighbors', () => {
+  it('runtime soft-settles then may flood-escalate status, telemetry, and neighbors', () => {
     const statusBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestRepeaterStatus');
     const telemetryBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestTelemetry');
     const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
-    expect(statusBody).toContain('awaitMeshcoreRepeaterPingSettleForNode');
-    expect(telemetryBody).toContain('awaitMeshcoreRepeaterPingSettleForNode');
-    expect(neighborsBody).toContain('awaitMeshcoreRepeaterPingSettleForNode');
+    for (const body of [statusBody, telemetryBody, neighborsBody]) {
+      expect(body).toContain('awaitMeshcoreRepeaterPingSettleForNode');
+      expect(body).toContain('MESHCORE_REPEATER_PING_SETTLE_SOFT_MS');
+      expect(body).toContain('withMeshcoreRepeaterRouteEscalation');
+      expect(body).toContain('hopsAway');
+    }
+    expect(ESCALATION_SOURCE).toContain('resetContactPath');
+    expect(ESCALATION_SOURCE).toContain('isMeshcoreRepeaterTimeoutError');
   });
 
   it('serializes admin RPCs per repeater node via runMeshcoreRepeaterRpcOnce', () => {

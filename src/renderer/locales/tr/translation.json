@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Bu komut, yineleyiciyi yeniden başlatabilir, silebilir veya fabrika ayarlarına sıfırlayabilir: \"{{command}} \". Yalnızca bu değişikliği niyet ediyorsanız devam edin.",
     "cliDangerConfirmAction": "Komut çalıştır",
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
-    "cliAutoPingFailed": "Ping başarısız oldu; çok atlama tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
     "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter).",
     "cliCommandMustBeSingleLine": "CLI komutu tek satır olmalıdır.",
     "currentRouteLabel": "Mevcut rota:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Önyükleme ve kapatma nedenini öğrenin",
     "cliQuickRadio": "Radyo",
     "cliAutoPingWaitingForCli": "Ping atmadan önce başka bir düğümün CLI komutunun bitmesi bekleniyor…",
-    "cliAutoPingBusy": "Başka bir düğümün CLI komutu hala çalışıyor; bittiğinde tekrar deneyin."
+    "cliAutoPingBusy": "Başka bir düğümün CLI komutu hala çalışıyor; bittiğinde tekrar deneyin.",
+    "cliAutoPingAdvisory": "Güzergâh Ping tarafından onaylanmadı; yine de CLI deneniyor.",
+    "repeaterCliNeedsAdminPassword": "Uzaktan tekrarlayıcı CLI bir yönetici parolasına ihtiyaç duyar. Bellenim, ACL yöneticisi olmadan CLI'yi yok sayar — Parola olmadan değil, bir parola ile devam et seçeneğini kullanın."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

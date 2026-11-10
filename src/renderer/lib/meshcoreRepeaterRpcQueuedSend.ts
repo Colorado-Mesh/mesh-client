@@ -1,4 +1,5 @@
 import {
+  type MeshcoreRadioSentWaitOptions,
   type MeshcoreRepeaterQueuedSendResult,
   waitForMeshcoreRadioSentAck,
 } from './meshcoreRadioSentWait';
@@ -21,11 +22,12 @@ export async function runMeshcoreRepeaterQueuedSend(
   beforeSend?: () => Promise<void>,
   /** Invoked synchronously when RESP_SENT arrives, before the returned promise resolves. */
   onSentAck?: (result: MeshcoreRepeaterQueuedSendResult) => void,
+  sentWaitOpts?: Pick<MeshcoreRadioSentWaitOptions, 'timeoutMs' | 'rejectSentMsg' | 'rejectErrMsg'>,
 ): Promise<MeshcoreRepeaterQueuedSendResult> {
   return runSerialized(async () => {
     if (beforeSend) {
       await beforeSend();
     }
-    return waitForMeshcoreRadioSentAck(conn, sendFrame, { onSentAck });
+    return waitForMeshcoreRadioSentAck(conn, sendFrame, { ...sentWaitOpts, onSentAck });
   });
 }

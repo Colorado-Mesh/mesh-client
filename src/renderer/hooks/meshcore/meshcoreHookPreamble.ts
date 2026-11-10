@@ -53,6 +53,7 @@ import {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   MESHCORE_DM_RF_DEDUP_WINDOW_MS,
+  MESHCORE_REPEATER_REPLY_CAP_MS,
   MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
   MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
 } from '../../lib/timeConstants';
@@ -321,12 +322,16 @@ export const INITIAL_STATE: DeviceState = {
 
 export const MAX_DEVICE_LOGS = 500;
 
-/** Repeater RPCs (tracePath, getStatus, getTelemetry, sendBinaryRequest neighbours). */
-const MESHCORE_REPEATER_RPC_TIMEOUT_MS = 120_000;
+/**
+ * Hard cap for Status / Telemetry / Neighbors reply waits (receipt-derived arm uses the same cap).
+ * Trace/ping keeps a separate longer budget via MESHCORE_TRACE_TIMEOUT_MS.
+ */
+const MESHCORE_REPEATER_RPC_TIMEOUT_MS = MESHCORE_REPEATER_REPLY_CAP_MS;
 export const MESHCORE_STATUS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_TELEMETRY_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_NEIGHBORS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
-export const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
+/** TracePath / ping UI timeout budget (not the admin receipt-derived reply arm). */
+export const MESHCORE_TRACE_TIMEOUT_MS = 120_000;
 /** Neighbors RPC is unlikely to succeed beyond this hop count on USB serial; UI disables the action. */
 export const MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS = 8;
 /** Request page size for GetNeighbours; firmware reply buffers often return fewer rows (~11 at 6-byte prefixes). */

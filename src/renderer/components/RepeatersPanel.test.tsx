@@ -71,6 +71,15 @@ vi.mock('../hooks/useMeshcoreRepeaterRemoteAuth', () => ({
   }),
 }));
 
+vi.mock('../lib/meshcoreInfraAdminSecrets', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('../lib/meshcoreInfraAdminSecrets')>();
+  return {
+    ...actual,
+    hasResolvableAdminPassword: vi.fn(() => true),
+  };
+});
+
 function mockRepeaterNode(id: number): MeshNode {
   return {
     node_id: id,
@@ -838,7 +847,7 @@ describe('RepeatersPanel', () => {
     );
   });
 
-  it('aborts CLI when auto-ping fails on multi-hop repeaters', async () => {
+  it('continues CLI when auto-ping fails on multi-hop repeaters (advisory)', async () => {
     const multiHop = { ...repeater, hops_away: 2 };
     const onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
@@ -857,11 +866,11 @@ describe('RepeatersPanel', () => {
     await waitFor(() => {
       expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
       expect(mockAddToast).toHaveBeenCalledWith(
-        'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
-        'error',
+        'Route not confirmed by Ping; trying CLI anyway.',
+        'info',
       );
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
     });
-    expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 
   it('waits for another CLI reply hold to clear before auto-pinging', async () => {
@@ -903,7 +912,7 @@ describe('RepeatersPanel', () => {
     );
   });
 
-  it('reports a busy CLI instead of asking for manual Ping when the trace is CLI-preempted', async () => {
+  it('continues CLI with a busy advisory when the trace is CLI-preempted', async () => {
     const multiHop = { ...repeater, hops_away: 1 };
     const onPing = vi.fn().mockRejectedValue(new Error(MESHCORE_CLI_PREEMPT_TRACE_REASON));
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
@@ -921,18 +930,14 @@ describe('RepeatersPanel', () => {
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith(
-        "Another node's CLI command is still running; try again when it finishes.",
-        'error',
+        "Another node's CLI command is still running; trying CLI without a fresh Ping.",
+        'info',
       );
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
     });
-    expect(mockAddToast).not.toHaveBeenCalledWith(
-      'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
-      'error',
-    );
-    expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 
-  it('aborts CLI when auto-ping resolves without trace result (pingNoRoute)', async () => {
+  it('continues CLI when auto-ping resolves without trace result (pingNoRoute)', async () => {
     const multiHop = { ...repeater, hops_away: 2 };
     const onPing = vi.fn().mockResolvedValue(false);
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
@@ -951,11 +956,11 @@ describe('RepeatersPanel', () => {
     await waitFor(() => {
       expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
       expect(mockAddToast).toHaveBeenCalledWith(
-        'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
-        'error',
+        'Route not confirmed by Ping; trying CLI anyway.',
+        'info',
       );
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
     });
-    expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 
   it('shows cliMultiHopHint for multi-hop repeaters without a trace this session', async () => {

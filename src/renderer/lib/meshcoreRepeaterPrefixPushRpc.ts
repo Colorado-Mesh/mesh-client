@@ -14,12 +14,27 @@ import {
   type MeshcoreRepeaterRunSerialized,
   runMeshcoreRepeaterQueuedSend,
 } from './meshcoreRepeaterRpcQueuedSend';
-import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
+import {
+  MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS,
+  MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS,
+  meshcoreRepeaterReplyWaitMs,
+} from './timeConstants';
 
 export interface MeshcoreRepeaterPrefixPushRequestOpts<T> {
   conn: MeshcoreRadioConnection;
   contactPublicKey: Uint8Array;
-  extraTimeoutMs: number;
+  /**
+   * Hop count for receipt-derived reply waits. When set (including 0), reply arm uses
+   * {@link meshcoreRepeaterReplyWaitMs}. When omitted, falls back to `est + extraTimeoutMs`.
+   */
+  hopsAway?: number | null;
+  /**
+   * Legacy grace added to `estTimeout` when `hopsAway` is omitted (unit tests / callers that
+   * need a fixed arm). Prefer `hopsAway` in production.
+   */
+  extraTimeoutMs?: number;
+  /** Override SENT wait (default admin 10s when hopsAway set; else trace 45s). */
+  sentWaitTimeoutMs?: number;
   runSerialized?: MeshcoreRepeaterRunSerialized;
   beforeSend?: () => Promise<void>;
   pushEvent: number;
@@ -58,6 +73,12 @@ function performPrefixPushRequest<T>(
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
     let sentTimeoutId: ReturnType<typeof setTimeout> | undefined;
     const auxHandlers = new Map<number, (response: unknown) => void>();
+    const useReceiptDerived = opts.hopsAway !== undefined;
+    const sentWaitMs =
+      opts.sentWaitTimeoutMs ??
+      (useReceiptDerived
+        ? MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS
+        : MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
 
     const cleanup = (): void => {
       if (sentTimeoutId !== undefined) {
@@ -114,9 +135,12 @@ function performPrefixPushRequest<T>(
 
     const armResponseTimeout = (estTimeoutMs: number): void => {
       if (settled) return;
+      const waitMs = useReceiptDerived
+        ? meshcoreRepeaterReplyWaitMs({ estTimeoutMs, hopsAway: opts.hopsAway })
+        : estTimeoutMs + (opts.extraTimeoutMs ?? 0);
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
-      }, estTimeoutMs + opts.extraTimeoutMs);
+      }, waitMs);
     };
 
     const onSent = (response: unknown): void => {
@@ -165,6 +189,8 @@ function performPrefixPushRequest<T>(
         opts.runSerialized,
         () => opts.conn.sendToRadioFrame(opts.buildFrame()),
         opts.beforeSend,
+        undefined,
+        useReceiptDerived || opts.sentWaitTimeoutMs != null ? { timeoutMs: sentWaitMs } : undefined,
       )
         .then(({ estTimeoutMs }) => {
           if (settled) return;
@@ -179,7 +205,7 @@ function performPrefixPushRequest<T>(
     // A missing SENT must release the request slot, even without a supplied send queue.
     sentTimeoutId = setTimeout(() => {
       fail(new Error('timeout waiting for sent acknowledgment'));
-    }, MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
+    }, sentWaitMs);
 
     void opts.conn.sendToRadioFrame(opts.buildFrame()).catch((err: unknown) => {
       fail(err);

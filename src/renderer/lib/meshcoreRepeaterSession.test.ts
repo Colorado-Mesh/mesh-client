@@ -19,7 +19,6 @@ import {
   meshcoreRepeaterTryLoginWithPassword,
   setMeshcoreRepeaterEphemeralPassword,
 } from './meshcoreRepeaterSession';
-import { MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
 
 type MockMeshcoreRepeaterConn = MeshcoreRadioConnection & {
   emit: (event: string | number, payload?: unknown) => void;
@@ -138,17 +137,15 @@ describe('meshcoreRepeaterTryLogin', () => {
         0x77,
         undefined,
         MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS,
+        { retryOnTimeout: false },
       );
-      const failAttempt = async (): Promise<void> => {
-        await Promise.resolve();
-        conn.emit(MC_RESP_SENT, { estTimeout: 100 });
-        conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
-        vi.advanceTimersByTime(100 + MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS);
-        await Promise.resolve();
-      };
-      await failAttempt();
-      await failAttempt();
+      await Promise.resolve();
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+      vi.advanceTimersByTime(100 + MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS);
+      await Promise.resolve();
       const result = await loginPromise;
+      expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
       expect(() => {
         assertMeshcoreRepeaterLoginOk(result);
       }).toThrow(/^timeout$/i);
@@ -280,14 +277,17 @@ describe('meshcoreRepeaterTryLogin', () => {
     }
   });
 
-  it.each([1, 3, null, undefined])(
-    'keeps the default login timeout policy when hopsAway is %s',
+  it.each([0, 1, 3, null, undefined])(
+    'login timeout policy disables blind retry and passes hopsAway=%s',
     (hopsAway) => {
-      expect(meshcoreRepeaterLoginTimeoutPolicy(hopsAway)).toEqual({});
+      expect(meshcoreRepeaterLoginTimeoutPolicy(hopsAway)).toEqual({
+        hopsAway: hopsAway ?? 0,
+        retryOnTimeout: false,
+      });
     },
   );
 
-  it('zero-hop Room CLI ACL login waits only the zero-hop timeout and does not resend', async () => {
+  it('zero-hop Room CLI ACL login uses receipt-derived wait and does not resend', async () => {
     vi.useFakeTimers();
     try {
       const conn = createMockConn();
@@ -301,9 +301,8 @@ describe('meshcoreRepeaterTryLogin', () => {
       });
       await Promise.resolve();
       conn.emit(MC_RESP_SENT, { estTimeout: 100 });
-      await vi.advanceTimersByTimeAsync(
-        100 + MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS - 1,
-      );
+      // Receipt-derived: clamp(est+5s, 15s, 60s) → 15s
+      await vi.advanceTimersByTimeAsync(15_000 - 1);
       expect(settled).toBe(false);
       await vi.advanceTimersByTimeAsync(1);
       const result = await loginPromise;

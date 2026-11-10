@@ -9,6 +9,16 @@ import {
   type MeshcoreRepeaterRunSerialized,
   runMeshcoreRepeaterQueuedSend,
 } from './meshcoreRepeaterRpcQueuedSend';
+import { MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS, meshcoreRepeaterReplyWaitMs } from './timeConstants';
+
+export interface MeshcoreRepeaterBinaryRequestOpts {
+  hopsAway?: number | null;
+  /**
+   * Legacy grace when `hopsAway` is omitted. Prefer `hopsAway` for receipt-derived waits.
+   */
+  extraTimeoutMs?: number;
+  sentWaitTimeoutMs?: number;
+}
 
 /**
  * Resilient binary request: SENT queue releases at acknowledgment; the companion's
@@ -19,16 +29,20 @@ export function runMeshcoreRepeaterBinaryRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   requestCodeAndParams: Uint8Array,
-  extraTimeoutMs: number,
+  extraTimeoutMsOrOpts: number | MeshcoreRepeaterBinaryRequestOpts,
   runSerialized: MeshcoreRepeaterRunSerialized,
   beforeSend?: () => Promise<void>,
 ): Promise<Uint8Array> {
+  const opts: MeshcoreRepeaterBinaryRequestOpts =
+    typeof extraTimeoutMsOrOpts === 'number'
+      ? { extraTimeoutMs: extraTimeoutMsOrOpts }
+      : extraTimeoutMsOrOpts;
   return runMeshcoreCompanionRequest(conn, () =>
     performBinaryRequest(
       conn,
       contactPublicKey,
       requestCodeAndParams,
-      extraTimeoutMs,
+      opts,
       runSerialized,
       beforeSend,
     ),
@@ -40,7 +54,7 @@ function performBinaryRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   requestCodeAndParams: Uint8Array,
-  extraTimeoutMs: number,
+  opts: MeshcoreRepeaterBinaryRequestOpts,
   runSerialized: MeshcoreRepeaterRunSerialized,
   beforeSend?: () => Promise<void>,
 ): Promise<Uint8Array> {
@@ -48,6 +62,8 @@ function performBinaryRequest(
     let settled = false;
     let expectedTag: number | null = null;
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const useReceiptDerived = opts.hopsAway !== undefined;
+    const sentWaitMs = opts.sentWaitTimeoutMs ?? MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS;
 
     const cleanup = (): void => {
       if (responseTimeoutId !== undefined) {
@@ -100,9 +116,12 @@ function performBinaryRequest(
         return;
       }
       expectedTag = expectedAckCrc >>> 0;
+      const waitMs = useReceiptDerived
+        ? meshcoreRepeaterReplyWaitMs({ estTimeoutMs, hopsAway: opts.hopsAway })
+        : estTimeoutMs + (opts.extraTimeoutMs ?? 0);
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
-      }, estTimeoutMs + extraTimeoutMs);
+      }, waitMs);
     };
 
     void runMeshcoreRepeaterQueuedSend(
@@ -113,6 +132,7 @@ function performBinaryRequest(
       ({ estTimeoutMs, expectedAckCrc }) => {
         armResponseWait(estTimeoutMs, expectedAckCrc);
       },
+      { timeoutMs: sentWaitMs },
     ).catch(fail);
   });
 }

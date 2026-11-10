@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Este comando puede reiniciar, apagar, borrar o restaurar de fábrica el nodo: «{{command}}». Continúe solo si pretende ese cambio.",
     "cliDangerConfirmAction": "Ejecutar comando",
     "cliAutoPingToast": "Estableciendo ruta con Ping antes de CLI...",
-    "cliAutoPingFailed": "Ping falló; ejecute Ping manualmente antes de reintentar la CLI en nodos multihop.",
     "cliCommandTooLong": "El comando CLI es demasiado largo (máx. {{max}} caracteres).",
     "cliCommandMustBeSingleLine": "El comando CLI debe ser una sola línea.",
     "currentRouteLabel": "Ruta actual:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Obtener motivo de arranque y apagado",
     "cliQuickRadio": "Radio:",
     "cliAutoPingWaitingForCli": "Esperando que el comando CLI de otro nodo termine antes de hacer ping...",
-    "cliAutoPingBusy": "El comando CLI de otro nodo todavía se está ejecutando; inténtelo de nuevo cuando termine."
+    "cliAutoPingBusy": "El comando CLI de otro nodo todavía se está ejecutando; inténtelo de nuevo cuando termine.",
+    "cliAutoPingAdvisory": "Ruta no confirmada por Ping; probando CLI de todos modos.",
+    "repeaterCliNeedsAdminPassword": "La CLI del repetidor remoto necesita una contraseña de administrador. El firmware ignora la CLI sin el administrador de ACL: use Continuar con una contraseña, no Sin contraseña."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

@@ -5356,7 +5356,6 @@
     "cliDangerConfirmMessage": "Este comando pode reiniciar, apagar ou redefinir de fábrica o repetidor: \"{{command}}\". Continue apenas se pretender esta alteração.",
     "cliDangerConfirmAction": "Executar comando",
     "cliAutoPingToast": "Estabelecendo a rota com o Ping antes da CLI...",
-    "cliAutoPingFailed": "Falha no ping; execute o ping manualmente antes de tentar novamente a CLI em repetidores multi-hop.",
     "cliCommandTooLong": "O comando CLI é muito longo (máx. {{max}} caracteres).",
     "cliCommandMustBeSingleLine": "O comando CLI deve ser uma única linha.",
     "currentRouteLabel": "Rota atual:",
@@ -5411,7 +5410,9 @@
     "radioCliBootReasonGet": "Obter motivo de inicialização e desligamento",
     "cliQuickRadio": "Rádio:",
     "cliAutoPingWaitingForCli": "Aguardando o comando CLI de outro nó terminar antes do Ping...",
-    "cliAutoPingBusy": "O comando CLI de outro nó ainda está em execução; tente novamente quando terminar."
+    "cliAutoPingBusy": "O comando CLI de outro nó ainda está em execução; tente novamente quando terminar.",
+    "cliAutoPingAdvisory": "Rota não confirmada por Ping; tentando CLI de qualquer maneira.",
+    "repeaterCliNeedsAdminPassword": "A CLI do repetidor remoto precisa de uma senha de administrador. O firmware ignora a CLI sem o administrador da ACL — use Continuar com uma senha, não Sem senha."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",

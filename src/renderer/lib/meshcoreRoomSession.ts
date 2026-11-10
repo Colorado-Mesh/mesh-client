@@ -18,7 +18,6 @@ import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, runMeshcoreRoomLogin } from './meshc
 import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
-  MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS,
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
   type MeshcoreCompanionTransport,
@@ -628,14 +627,10 @@ export async function meshcoreTryRemoteServerLogin(
     });
     return;
   }
-  const zeroHop = opts?.hopsAway === 0;
-  const login = await meshcoreRepeaterTryLogin(
-    conn,
-    pubKey,
-    nodeId,
-    runSerialized,
-    zeroHop ? MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS : undefined,
-    { restoreRadioContact: opts?.restoreRadioContact, retryOnTimeout: !zeroHop },
-  );
+  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId, runSerialized, undefined, {
+    restoreRadioContact: opts?.restoreRadioContact,
+    hopsAway: opts?.hopsAway ?? 0,
+    retryOnTimeout: false,
+  });
   assertMeshcoreRepeaterLoginOk(login);
 }

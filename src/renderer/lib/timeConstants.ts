@@ -23,7 +23,15 @@ export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
-/** Max wait for admin RPCs while a same-node ping RPC (incl. 0-hop direct retry) is still running. */
+/**
+ * Soft same-node ping settle before Status/Telemetry/Neighbors/CLI.
+ * If the ping is still active after this budget, admin proceeds (does not throw).
+ */
+export const MESHCORE_REPEATER_PING_SETTLE_SOFT_MS = 10_000;
+/**
+ * Legacy hard ceiling for same-node ping settle (2× ping cap). Prefer
+ * {@link MESHCORE_REPEATER_PING_SETTLE_SOFT_MS}; kept for UI budget copy / i18n.
+ */
 export const MESHCORE_REPEATER_PING_SETTLE_MAX_MS = 2 * MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS;
 /** Delay after a CLI `reboot` before re-querying Status, so the repeater has finished booting. */
 export const MESHCORE_REPEATER_POST_REBOOT_STATUS_DELAY_MS = 30 * MS_PER_SECOND;
@@ -33,6 +41,24 @@ export const MESHCORE_REPEATER_POST_REBOOT_STATUS_DELAY_MS = 30 * MS_PER_SECOND;
  * multiplex must reject so `runSerialized` does not stall and pending tags are cleared.
  */
 export const MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS = 45_000;
+
+/** SENT wait for Status / Telemetry / Neighbors / login / CLI (trace keeps the longer default). */
+export const MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS = 10_000;
+
+/** TraceData idle wait inside admin `beforeSend` (shorter than the full ping end-to-end cap). */
+export const MESHCORE_REPEATER_ADMIN_RF_IDLE_MS = 15_000;
+
+/** Grace added to companion `estTimeout` when arming admin reply waits. */
+export const MESHCORE_REPEATER_REPLY_GRACE_MS = 5_000;
+
+/** Floor for receipt-derived admin reply waits. */
+export const MESHCORE_REPEATER_REPLY_FLOOR_MS = 15_000;
+
+/** Hard cap for receipt-derived admin reply waits (also exported as flat status/telemetry/neighbors timeout). */
+export const MESHCORE_REPEATER_REPLY_CAP_MS = 60_000;
+
+/** Per-node cooldown after a flood route escalation so spam clicks do not flood repeatedly. */
+export const MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS = 30_000;
 
 /** Extra wait after SENT for room server login over RF (multi-hop); meshcore.js adds this to estTimeout. */
 export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
@@ -328,7 +354,7 @@ export const MESHCORE_REPEATER_RPC_TIMEOUT_CAP_MS = 90_000;
 
 /**
  * Timeout for serialized repeater RPCs (status, telemetry, neighbors) scaled by hop count.
- * Trace/ping keeps separate longer caps.
+ * Trace/ping keeps separate longer caps. Used as the no-`est` fallback for reply waits.
  */
 export function meshcoreRepeaterRpcTimeoutMs(hopsAway?: number | null): number {
   const hops =
@@ -336,6 +362,31 @@ export function meshcoreRepeaterRpcTimeoutMs(hopsAway?: number | null): number {
   const scaled =
     MESHCORE_REPEATER_RPC_TIMEOUT_BASE_MS + hops * MESHCORE_REPEATER_RPC_TIMEOUT_PER_HOP_MS;
   return Math.min(MESHCORE_REPEATER_RPC_TIMEOUT_CAP_MS, scaled);
+}
+
+/**
+ * Receipt-derived admin reply wait: `clamp(est + grace, floor, cap)`.
+ * When `est` is missing/0, use hop-scaled {@link meshcoreRepeaterRpcTimeoutMs} then clamp to the cap.
+ */
+export function meshcoreRepeaterReplyWaitMs(opts: {
+  estTimeoutMs?: number | null;
+  hopsAway?: number | null;
+}): number {
+  const est =
+    opts.estTimeoutMs != null && Number.isFinite(opts.estTimeoutMs) && opts.estTimeoutMs > 0
+      ? Math.trunc(opts.estTimeoutMs)
+      : 0;
+  if (est > 0) {
+    return Math.min(
+      MESHCORE_REPEATER_REPLY_CAP_MS,
+      Math.max(MESHCORE_REPEATER_REPLY_FLOOR_MS, est + MESHCORE_REPEATER_REPLY_GRACE_MS),
+    );
+  }
+  const planned = meshcoreRepeaterRpcTimeoutMs(opts.hopsAway);
+  return Math.min(
+    MESHCORE_REPEATER_REPLY_CAP_MS,
+    Math.max(MESHCORE_REPEATER_REPLY_FLOOR_MS, planned),
+  );
 }
 
 /** Brief settle before one-shot Nomad page re-fetch after a transient path/link error. */
