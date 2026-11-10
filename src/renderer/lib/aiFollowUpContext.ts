@@ -4,7 +4,9 @@ import {
   countFollowUpQueryHits,
   FOLLOW_UP_FOCUS_HIT_MIN,
   followUpContentTokens,
+  followUpMatchHaystack,
   followUpQueryTokens,
+  isFollowUpQuestionTopicMatch,
 } from '@/shared/aiFollowUpFocus';
 
 export { extractQuotedSummaryFocus } from '@/shared/aiFollowUpFocus';
@@ -114,8 +116,8 @@ export function selectFollowUpContext(
 
 /**
  * Score messages by question (+ quoted focus or full summary) tokens, always
- * keep paste matches, focus matches, and the newest 8, take the top `max`, then
- * return chronological unique rows.
+ * keep paste matches, focus/topic matches, and the newest 8, take the top `max`,
+ * then return chronological unique rows.
  */
 export function selectRelevantMessages(
   question: string,
@@ -132,14 +134,18 @@ export function selectRelevantMessages(
         (message) => countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN,
       )
     : [];
+  const topicMatches = messages.filter((message) =>
+    isFollowUpQuestionTopicMatch(question, message),
+  );
   if (!queryTokens.size && !pasteMatches.length) return messages;
   const scored = messages.map((message, index) => {
-    const sender = message.sender.toLowerCase();
-    const body = message.body.toLowerCase();
+    const sender = followUpMatchHaystack(message.sender);
+    const body = followUpMatchHaystack(message.body);
     let score = index / Math.max(1, messages.length); // recency tiebreak
     if (isFollowUpPasteMatch(question, message.body)) score += 1000;
     if (focusOnly && countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN)
       score += 500;
+    if (isFollowUpQuestionTopicMatch(question, message)) score += 300;
     for (const token of questionTokens) {
       if (sender.includes(token)) score += 4;
       if (body.includes(token)) score += 2;
@@ -159,13 +165,31 @@ export function selectRelevantMessages(
     return { message, index, score };
   });
   const newest = messages.slice(-8);
+  const scoreByKey = new Map(
+    scored.map((entry) => [messageKey(entry.message), entry.score] as const),
+  );
   const top = scored
     .sort((a, b) => b.score - a.score || b.index - a.index)
     .slice(0, max)
     .map((entry) => entry.message);
+  const rankedTopic = [...topicMatches].sort((a, b) => {
+    const scoreA = scoreByKey.get(messageKey(a)) ?? 0;
+    const scoreB = scoreByKey.get(messageKey(b)) ?? 0;
+    return scoreB - scoreA || b.at - a.at;
+  });
   const byKey = new Map<string, AiSummaryMessage>();
-  // Focus/paste first so callers that take a prefix still keep the asked point.
-  for (const message of [...pasteMatches, ...focusMatches, ...top, ...newest])
-    byKey.set(messageKey(message), message);
+  // Paste/focus always; ranked topic then top fill remaining slots up to max.
+  for (const message of [...pasteMatches, ...focusMatches]) byKey.set(messageKey(message), message);
+  for (const message of rankedTopic) {
+    const key = messageKey(message);
+    if (byKey.has(key) || byKey.size >= max) continue;
+    byKey.set(key, message);
+  }
+  for (const message of top) {
+    const key = messageKey(message);
+    if (byKey.has(key) || byKey.size >= max) continue;
+    byKey.set(key, message);
+  }
+  for (const message of newest) byKey.set(messageKey(message), message);
   return [...byKey.values()].sort((a, b) => a.at - b.at);
 }

@@ -515,6 +515,47 @@ describe('summary multi-pass', () => {
     expect(summary?.followUpContext?.messages?.length).toBeGreaterThan(0);
     expect(summary?.followUpContext?.messages?.at(-1)?.body).toContain('site 199');
   });
+
+  it('marks multi-pass localJob /no_think final output as invalidResponse', async () => {
+    const long = Array.from({ length: 200 }, (_, i) => ({
+      at: i + 1,
+      sender: `N${i}`,
+      body: `update about site ${i} with enough text to fill the on-device budget after the 12 KiB ceiling`,
+    }));
+    useAiSummaryStore.getState().setStatus({
+      ...ready,
+      engine: 'bundled',
+      localEngine: { ready: true, modelId: 'test', downloading: false },
+      mlxHelperAvailable: false,
+      mlxHelperStatus: 'unavailable',
+      mlxHelperReason: null,
+    });
+    vi.mocked(api.summarize).mockImplementation((req) =>
+      Promise.resolve({
+        ok: true,
+        summaryInput: { messageCount: req.messages.length, truncated: false },
+        localJob: {
+          modelUrl: 'mesh-ai://test/model.gguf',
+          system: 'system',
+          user: 'fixture',
+          model: 'test',
+          messageCount: req.messages.length,
+          truncated: false,
+          maxTokens: 250,
+        },
+      }),
+    );
+    vi.spyOn(AiWorkerHost.prototype, 'generate').mockImplementation((_job, _signal, delta) => {
+      delta('/no_think');
+      return Promise.resolve();
+    });
+    await runSummary('chat', { ...request, messages: long }, false, long.length);
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      streaming: false,
+      text: '',
+      error: 'invalidResponse',
+    });
+  });
 });
 
 describe('summary queue', () => {

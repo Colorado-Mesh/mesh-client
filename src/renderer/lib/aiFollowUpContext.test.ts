@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { followUpContentTokens, isFollowUpQuestionTopicMatch } from '@/shared/aiFollowUpFocus';
+
 import {
   extractQuotedSummaryFocus,
   isFollowUpPasteMatch,
@@ -177,5 +179,110 @@ describe('selectRelevantMessages', () => {
     expect(selected.some((message) => message.sender === 'MapWatcher')).toBe(true);
     expect(selected.some((message) => /brandy/i.test(message.body))).toBe(false);
     expect(selected.some((message) => message.sender === 'Half Live Elecrow')).toBe(false);
+  });
+
+  it('fills remaining slots with higher-scoring topic matches before lower ones', () => {
+    const messages = [
+      { at: 1, sender: 'Weak', body: 'routing note only' },
+      { at: 2, sender: 'Strong', body: 'routing collisions on the north ridge path' },
+      { at: 3, sender: 'Mid', body: 'routing collisions tonight' },
+      ...Array.from({ length: 8 }, (_, index) => ({
+        at: 10 + index,
+        sender: `N${index}`,
+        body: `Recent ack filler ${index}.`,
+      })),
+    ];
+    const selected = selectRelevantMessages(
+      'what about routing collisions?',
+      'Conversations:\n- Alice said hello.\n',
+      messages,
+      2,
+    );
+    expect(selected.some((message) => message.sender === 'Strong')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Mid')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Weak')).toBe(false);
+  });
+
+  it('does not let topic matches exceed max or displace a paste match', () => {
+    const pasted = 'Exact pasted body that must stay selected for grounding.';
+    const messages = [
+      { at: 1, sender: 'Paste', body: pasted },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        at: index + 2,
+        sender: `Topic${index}`,
+        body: `routing collisions note ${index}`,
+      })),
+    ];
+    const selected = selectRelevantMessages(
+      `${pasted} what about routing collisions?`,
+      'Conversations:\n- Alice said hello.\n- Bob mentioned weather.\n',
+      messages,
+      3,
+    );
+    expect(selected.some((message) => message.body === pasted)).toBe(true);
+    // Topic fill is capped at max; newest-8 may still append afterward.
+    const earlyTopic = selected.filter((message) => message.body !== pasted && message.at <= 33);
+    expect(earlyTopic.length).toBeLessThanOrEqual(2);
+  });
+
+  it('keeps 2-byte topic messages for an unquoted topic ask among coffee filler', () => {
+    const twoByteSummary = [
+      'Conversations:',
+      '- Half Live: suggested changing to 2-byte addresses for routing and usage stats.',
+      '- Specter 6: asked about the effect of 2-byte addresses on radio/messages.',
+      '- Gadget: explained the benefits of 2-byte addresses, including avoiding collisions between repeaters.',
+      '',
+      'One-offs:',
+      '- KE4IQR-1: sent a greeting to Evans.',
+      '- KC0SIQ-03: shared their morning coffee routine of catching up.',
+    ].join('\n');
+    const topicMessages = [
+      {
+        at: 1,
+        sender: 'Half Live',
+        body: 'We should switch routing to 2-byte addresses.',
+      },
+      {
+        at: 2,
+        sender: 'Specter 6',
+        body: 'How do 2-byte addresses affect radio messages?',
+      },
+      {
+        at: 3,
+        sender: 'Gadget',
+        body: '2-byte addresses avoid collisions between repeaters.',
+      },
+      {
+        at: 4,
+        sender: 'KC0SIQ-03',
+        body: 'Morning coffee and catching up on the mesh.',
+      },
+      ...Array.from({ length: 8 }, (_, index) => ({
+        at: 10 + index,
+        sender: `N${index}`,
+        body: `Recent ack filler ${index}.`,
+      })),
+    ];
+    const question = 'tell me everything about the 2-byte conversation';
+    expect(followUpContentTokens(question)).toEqual(expect.arrayContaining(['byte', '2byte']));
+    expect(extractQuotedSummaryFocus(question, twoByteSummary)).toMatch(/2-byte addresses/i);
+    const selected = selectRelevantMessages(question, twoByteSummary, topicMessages, 4);
+    expect(selected.some((message) => message.sender === 'Half Live')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Specter 6')).toBe(true);
+    expect(selected.some((message) => message.sender === 'Gadget')).toBe(true);
+    expect(
+      isFollowUpQuestionTopicMatch(question, {
+        at: 1,
+        sender: 'Half Live',
+        body: 'We should switch routing to 2-byte addresses.',
+      }),
+    ).toBe(true);
+    expect(
+      isFollowUpQuestionTopicMatch(question, {
+        at: 4,
+        sender: 'KC0SIQ-03',
+        body: 'Morning coffee and catching up on the mesh.',
+      }),
+    ).toBe(false);
   });
 });

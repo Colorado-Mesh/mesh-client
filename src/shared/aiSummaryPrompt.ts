@@ -118,8 +118,8 @@ function messageKey(message: AiSummaryMessage): string {
 
 /**
  * Include transcript/digest lines under char and UTF-8 budgets.
- * Packs optional priority messages first (newest among them), then remaining
- * newest-first, and returns lines in chronological order.
+ * Packs primary priority first (newest among them), then optional secondary
+ * priority, then remaining newest-first, and returns lines in chronological order.
  */
 export function selectContextLines(
   messages: AiSummaryMessage[],
@@ -129,16 +129,25 @@ export function selectContextLines(
     maxBytes: number;
     reservedBytes: number;
     timeZone: string;
-    /** Prefer these messages when packing under a tight budget. */
+    /** Highest pack preference (e.g. paste / quoted-focus). */
     priority?: (message: AiSummaryMessage) => boolean;
+    /** After primary, before newest filler (e.g. question-topic hits). */
+    secondaryPriority?: (message: AiSummaryMessage) => boolean;
   },
 ): { lines: string[]; truncated: boolean; promptBytes: number } {
   const timestamps = options.digests ? null : createTimestampFormatter(options.timeZone);
   const ordered = [...messages].sort((a, b) => a.at - b.at);
   const priorityFn = options.priority;
-  const priority = priorityFn ? ordered.filter((message) => priorityFn(message)) : [];
-  const rest = priorityFn ? ordered.filter((message) => !priorityFn(message)) : ordered;
-  const packOrder = [...priority].reverse().concat([...rest].reverse());
+  const secondaryFn = options.secondaryPriority;
+  const primary = priorityFn ? ordered.filter((message) => priorityFn(message)) : [];
+  const secondary = secondaryFn
+    ? ordered.filter((message) => !priorityFn?.(message) && secondaryFn(message))
+    : [];
+  const rest = ordered.filter((message) => !priorityFn?.(message) && !secondaryFn?.(message));
+  const packOrder = [...primary]
+    .reverse()
+    .concat([...secondary].reverse())
+    .concat([...rest].reverse());
   const selected: AiSummaryMessage[] = [];
   const selectedKeys = new Set<string>();
   let size = 0;
@@ -155,9 +164,10 @@ export function selectContextLines(
     if (size + line.length + 1 > options.maxChars || promptBytes + bytes > options.maxBytes) {
       if (line.length + 1 > options.maxChars || options.reservedBytes + bytes > options.maxBytes)
         continue;
-      // Non-priority overflow stops further rest packing; priority already packed first.
-      if (!priorityFn?.(message)) break;
-      continue;
+      // Primary/secondary overflow skips this line and keeps packing so a long
+      // topic line cannot block later shorter ones; newest-filler rest stops.
+      if (priorityFn?.(message) || secondaryFn?.(message)) continue;
+      break;
     }
     selected.push(message);
     selectedKeys.add(key);

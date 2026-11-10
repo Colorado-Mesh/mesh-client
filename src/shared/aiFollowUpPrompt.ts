@@ -1,6 +1,6 @@
 import type { AiFollowUpContextKind, AiSummaryFollowUpTurn, AiSummaryMessage } from './ai-types';
 import { AI_MAX_FOLLOW_UP_ANSWER_CHARS, AI_MAX_FOLLOW_UP_SUMMARY_CHARS } from './ai-types';
-import { isFollowUpFocusMatch } from './aiFollowUpFocus';
+import { isFollowUpFocusMatch, isFollowUpQuestionTopicMatch } from './aiFollowUpFocus';
 import { selectContextLines, utf8Bytes } from './aiSummaryPrompt';
 
 const FOLLOW_UP_SYSTEM =
@@ -15,13 +15,20 @@ const FOLLOW_UP_SYSTEM =
   'Do not invent details. Keep the answer under about 120 words unless the user asks for more detail. ' +
   'Timestamps are user-local time with UTC offsets, not UTC.';
 
-/** Leave at least this many UTF-8 bytes for transcript/digest lines when messages exist. */
-const FOLLOW_UP_SOURCE_RESERVE_BYTES = 1200;
+/**
+ * Leave at least this many UTF-8 bytes for transcript/digest lines when messages exist.
+ * Large structured summaries must shrink before topic source is starved.
+ */
+const FOLLOW_UP_SOURCE_RESERVE_BYTES = 3500;
+
+/** Cap source reserve so framing still fits on the smallest on-device budget. */
+const FOLLOW_UP_SOURCE_RESERVE_FRACTION = 0.4;
 
 function normalizeWs(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+/** True when the question pastes or closely quotes this message body. */
 function isQuestionPasteMatch(question: string, body: string): boolean {
   const normalizedBody = normalizeWs(body);
   if (normalizedBody.length < 12) return false;
@@ -31,7 +38,8 @@ function isQuestionPasteMatch(question: string, body: string): boolean {
   return normalizedBody.includes(normalizedQuestion) && normalizedQuestion.length >= 12;
 }
 
-function isFollowUpPackPriority(
+/** Highest pack tier: pasted bodies and quoted-bullet focus matches. */
+function isFollowUpPrimaryPackPriority(
   question: string,
   summary: string,
   message: AiSummaryMessage,
@@ -39,6 +47,11 @@ function isFollowUpPackPriority(
   return (
     isQuestionPasteMatch(question, message.body) || isFollowUpFocusMatch(question, summary, message)
   );
+}
+
+/** Secondary pack tier: question-topic hits, after paste/focus and before filler. */
+function isFollowUpTopicPackPriority(question: string, message: AiSummaryMessage): boolean {
+  return isFollowUpQuestionTopicMatch(question, message);
 }
 
 export interface AiFollowUpPromptInput {
@@ -86,7 +99,11 @@ export function buildAiFollowUpPrompt(
   const minFramingBytes = utf8Bytes(system) + 120;
   const sourceReserve =
     hasSource && Number.isFinite(maxBytes)
-      ? Math.min(FOLLOW_UP_SOURCE_RESERVE_BYTES, Math.max(0, maxBytes - minFramingBytes))
+      ? Math.min(
+          FOLLOW_UP_SOURCE_RESERVE_BYTES,
+          Math.floor(maxBytes * FOLLOW_UP_SOURCE_RESERVE_FRACTION),
+          Math.max(0, maxBytes - minFramingBytes),
+        )
       : 0;
   const framingBudget = Number.isFinite(maxBytes)
     ? Math.max(0, maxBytes - sourceReserve)
@@ -198,7 +215,8 @@ export function buildAiFollowUpPrompt(
     reservedBytes: baseBytes,
     timeZone,
     // Use the untruncated question/summary so focus matching survives framing shrink.
-    priority: (message) => isFollowUpPackPriority(input.question, input.summary, message),
+    priority: (message) => isFollowUpPrimaryPackPriority(input.question, input.summary, message),
+    secondaryPriority: (message) => isFollowUpTopicPackPriority(input.question, message),
   });
   truncated = truncated || selected.truncated || question.length < input.question.length;
   return {

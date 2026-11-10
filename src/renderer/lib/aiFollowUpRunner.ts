@@ -1,5 +1,6 @@
 import { selectFollowUpContext } from '@/renderer/lib/aiFollowUpContext';
 import { executePass } from '@/renderer/lib/aiMultiPassSummary';
+import { sanitizeAiModelOutput } from '@/renderer/lib/aiSummaryOutput';
 import type { AiFollowUpTurnState } from '@/renderer/stores/aiSummaryStore';
 import { aiReady, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import type { AiSummaryErrorReason, AiSummaryRequest } from '@/shared/ai-types';
@@ -148,16 +149,17 @@ export async function runAskFollowUp(
             .getState()
             .summaries[key]?.followUps?.find((turn) => turn.id === turnId);
           if (!current?.streaming) return;
-          const answer = current.answer + delta;
+          const answer = sanitizeAiModelOutput(current.answer + delta, { trim: false });
           if (answer.length <= AI_MAX_RESPONSE_BYTES)
             deps.patchFollowUp(key, turnId, { answer, phase: undefined });
         },
         onFinalText: (text) => {
+          const answer = sanitizeAiModelOutput(text);
           deps.patchFollowUp(key, turnId, {
-            answer: text,
+            answer,
             streaming: false,
             phase: undefined,
-            ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
+            ...(!answer.trim() ? { error: 'invalidResponse' as const } : {}),
           });
         },
         waitForSilentRemoteDone: (requestId) => {
