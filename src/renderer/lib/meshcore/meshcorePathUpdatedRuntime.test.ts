@@ -63,10 +63,38 @@ describe('meshcorePathUpdatedRuntime', () => {
       nodeId,
       new Map(),
       new Set<number>([nodeId]),
-      pathLenByNode,
+      () => pathLenByNode,
     );
 
     expect(pathLenByNode.get(nodeId)).toBe(0);
+  });
+
+  it('refreshMeshcoreOutPathAfterPathUpdated writes the length to the map current after the await', async () => {
+    const publicKey = makePubKey(13);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const before = new Map<number, number>([[nodeId, 0xff]]);
+    const after = new Map<number, number>([[nodeId, 0xff]]);
+    let current = before;
+    const conn = {
+      getContacts: vi.fn().mockImplementation(() => {
+        // A staged contacts rebuild publishes a replacement map while the radio is read.
+        current = after;
+        return Promise.resolve([
+          contact({ publicKey, outPathLen: 0, outPath: new Uint8Array(64) }),
+        ]);
+      }),
+    } as unknown as MeshCoreConnection;
+
+    await refreshMeshcoreOutPathAfterPathUpdated(
+      conn,
+      nodeId,
+      new Map(),
+      new Set<number>([nodeId]),
+      () => current,
+    );
+
+    expect(after.get(nodeId)).toBe(0);
+    expect(before.get(nodeId)).toBe(0xff);
   });
 
   it('refreshMeshcoreOutPathAfterPathUpdated stores outPath and clears pending', async () => {

@@ -2098,7 +2098,7 @@ export function useMeshcoreRuntime() {
           nodeId,
           outPathMapRef.current,
           meshcorePathUpdatePendingRef.current,
-          radioContactPathLenByNodeRef.current,
+          () => radioContactPathLenByNodeRef.current,
         );
       }
       // Path updates change hop counts; debounce a full contacts rebuild for updated outPathLen.
