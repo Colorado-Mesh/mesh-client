@@ -56,6 +56,21 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(meshcoreRepeaterRouteKind(undefined, Number.NaN)).toBe('unknown');
   });
 
+  it('runtime keeps radio path lengths across a contacts rebuild', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    // A rebuild used to clear the cache, so a flooding contact read as unknown and a later
+    // timeout reset its path and resent for nothing.
+    expect(source).toMatch(
+      /if \(\s*opts\?\.contactsFromRadio &&[\s\S]{0,160}Number\.isFinite\(contact\.outPathLen\)[\s\S]{0,40}buildPathLens\.set\(node\.node_id, contact\.outPathLen\);/,
+    );
+    // Staged rebuilds publish their lengths without dropping updates made meanwhile.
+    expect(source).toContain(
+      'mergeLiveMapChanges(baselinePathLens, radioContactPathLenByNodeRef.current, buildPathLens);',
+    );
+    expect(source).toContain('radioContactPathLenByNodeRef.current = buildPathLens;');
+    expect(source).not.toContain('radioContactPathLenByNodeRef.current.clear();\n        for (');
+  });
+
   it('detects timeout errors', () => {
     expect(isMeshcoreRepeaterTimeoutError(new Error('timeout'))).toBe(true);
     expect(isMeshcoreRepeaterTimeoutError(new Error('Request timed out'))).toBe(true);

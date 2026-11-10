@@ -10,12 +10,30 @@ import {
 type Radio = Awaited<ReturnType<typeof startMeshcoreRepeaterRadio>>;
 type RequestKind = Extract<RepeaterRadioEvent['kind'], 'status' | 'binary'>;
 
-let launched: LaunchedApp;
+/** The current test's radio; helpers read it. Teardown tracks its own copies below. */
 let radio: Radio;
+let appToClose: LaunchedApp | undefined;
+let radioToClose: Radio | undefined;
 test.afterEach(async () => {
-  if (launched) await teardownApp(launched);
-  if (radio) await radio.close();
+  // Clear first: a later test whose setup throws must not tear these down a second time.
+  const app = appToClose;
+  const fixture = radioToClose;
+  appToClose = undefined;
+  radioToClose = undefined;
+  if (app) await teardownApp(app);
+  if (fixture) await fixture.close();
 });
+
+/** Start the radio in the given state, launch the app and open the Repeaters panel. */
+async function start(configure: (fixture: Radio) => void): Promise<Page> {
+  radio = await startMeshcoreRepeaterRadio();
+  radioToClose = radio;
+  configure(radio);
+  const launched = await launchApp();
+  appToClose = launched;
+  await connect(launched.page, radio.port);
+  return launched.page;
+}
 
 /** One line per radio event, e.g. `status:direct` or `reply:flood:status`. */
 const trace = (events: RepeaterRadioEvent[]) =>
@@ -76,27 +94,25 @@ async function expectNoRowError(page: Page, menuItem: 'Request status' | 'Neighb
 }
 
 test('status on a repeater that knows this companion sends no login and no flood', async () => {
-  radio = await startMeshcoreRepeaterRadio();
-  radio.setRepeaterClient({ admin: true, returnPath: 'good' });
-  launched = await launchApp();
-  await connect(launched.page, radio.port);
+  const page = await start((fixture) => {
+    fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+  });
 
-  expect(await request(launched.page, 'Request status', 'status', 'none')).toEqual([
+  expect(await request(page, 'Request status', 'status', 'none')).toEqual([
     'status:direct',
     'reply:direct:status',
   ]);
-  await expectNoRowError(launched.page, 'Request status');
+  await expectNoRowError(page, 'Request status');
 });
 
 test('status recovers a zero-hop route whose return path went stale', async () => {
   test.setTimeout(120_000);
-  radio = await startMeshcoreRepeaterRadio();
-  radio.setRepeaterClient({ admin: true, returnPath: 'stale' });
-  launched = await launchApp();
-  await connect(launched.page, radio.port);
+  const page = await start((fixture) => {
+    fixture.setRepeaterClient({ admin: true, returnPath: 'stale' });
+  });
 
   // The direct request is heard but its reply is lost; one flood resend repairs the path.
-  expect(await request(launched.page, 'Request status', 'status', 'none')).toEqual([
+  expect(await request(page, 'Request status', 'status', 'none')).toEqual([
     'status:direct',
     'lost:direct',
     'resetPath',
@@ -104,8 +120,8 @@ test('status recovers a zero-hop route whose return path went stale', async () =
     'pathLearned',
     'reply:flood:status',
   ]);
-  await expectNoRowError(launched.page, 'Request status');
-  expect(await request(launched.page, 'Request status', 'status', 'none')).toEqual([
+  await expectNoRowError(page, 'Request status');
+  expect(await request(page, 'Request status', 'status', 'none')).toEqual([
     'status:direct',
     'reply:direct:status',
   ]);
@@ -117,16 +133,15 @@ for (const scenario of [
 ] as const) {
   test(`${scenario.name} logs in once when the repeater does not know this companion`, async () => {
     test.setTimeout(120_000);
-    radio = await startMeshcoreRepeaterRadio();
-    radio.setRepeaterClient(null);
-    launched = await launchApp();
-    await connect(launched.page, radio.port);
+    const page = await start((fixture) => {
+      fixture.setRepeaterClient(null);
+    });
 
-    const events = await request(launched.page, scenario.menuItem, scenario.kind, 'admin');
+    const events = await request(page, scenario.menuItem, scenario.kind, 'admin');
     // First attempt carries no login and is dropped; the flood resend logs in first.
     expect(events.slice(0, 3)).toEqual([`${scenario.kind}:direct`, 'drop', 'resetPath']);
     expect(events.filter((line) => line.startsWith('login'))).toEqual(['login:flood']);
     expect(events.at(-1)).toBe(`reply:direct:${scenario.kind}`);
-    await expectNoRowError(launched.page, scenario.menuItem);
+    await expectNoRowError(page, scenario.menuItem);
   });
 }

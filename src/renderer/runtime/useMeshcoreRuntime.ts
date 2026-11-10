@@ -1753,11 +1753,15 @@ export function useMeshcoreRuntime() {
       const buildPubKeys = staged ? new Map<number, Uint8Array>() : pubKeyMapRef.current;
       const buildPrefixes = staged ? new Map<string, number>() : pubKeyPrefixMapRef.current;
       const buildPaths = staged ? new Map<number, Uint8Array>() : outPathMapRef.current;
+      const baselinePathLens = new Map(radioContactPathLenByNodeRef.current);
+      const buildPathLens = staged
+        ? new Map<number, number>()
+        : radioContactPathLenByNodeRef.current;
       const advertNames = new Map<number, string>();
       buildPubKeys.clear();
       buildPrefixes.clear();
       buildPaths.clear();
-      if (!staged) radioContactPathLenByNodeRef.current.clear();
+      buildPathLens.clear();
       const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
@@ -1813,6 +1817,15 @@ export function useMeshcoreRuntime() {
         nextNodes.set(node.node_id, node);
         buildPubKeys.set(node.node_id, contact.publicKey);
         buildPaths.set(node.node_id, slicedPath);
+        // Keep the radio's own path length: 0 (zero-hop direct) and 0xFF/-1 (flood) both have
+        // an empty path, and the repeater route kind needs to tell them apart.
+        if (
+          opts?.contactsFromRadio &&
+          typeof contact.outPathLen === 'number' &&
+          Number.isFinite(contact.outPathLen)
+        ) {
+          buildPathLens.set(node.node_id, contact.outPathLen);
+        }
         const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
         if (!opts?.deferPathHistory && contactPathBytes.length > 0) {
           const pathHash = computePathHash(contactPathBytes);
@@ -1869,7 +1882,8 @@ export function useMeshcoreRuntime() {
         pubKeyMapRef.current = buildPubKeys;
         pubKeyPrefixMapRef.current = buildPrefixes;
         outPathMapRef.current = buildPaths;
-        radioContactPathLenByNodeRef.current.clear();
+        mergeLiveMapChanges(baselinePathLens, radioContactPathLenByNodeRef.current, buildPathLens);
+        radioContactPathLenByNodeRef.current = buildPathLens;
         for (const [id, name] of advertNames) {
           const liveName = rememberedMeshcoreLiveAdvertName(id);
           if (liveName === baselineNames.get(id)) rememberMeshcoreLiveAdvertName(id, name);
