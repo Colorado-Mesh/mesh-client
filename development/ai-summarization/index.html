@@ -3227,9 +3227,15 @@ persistence.</p>
   present and fall back to digests only when no messages were kept.</li>
 <li>On-device engines (<code>os</code> / <code>bundled</code>): a deterministic relevance selector scores messages with
   question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
-  “how?” can still find the subject, then packs priority matches ahead of newest-first fill under
-  the ~4 KB prompt budget.</li>
+  “how?” can still find the subject. Hyphen compounds such as <code>2-byte</code> keep a joined token
+  (<code>2byte</code>) so topic asks focus the right bullets. Packing prefers paste and quoted-bullet
+  focus first, then question-topic hits, then newest-first filler, and reserves a larger share
+  of the ~12 KB prompt for transcript lines so a long Catch up summary cannot starve source
+  grounding.</li>
 <li>Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.</li>
+<li>Completed Catch up text strips echoed <code>/no_think</code> markers and drops near-duplicate One-offs
+  before display; Ask answers apply the same control-token strip and treat empty post-strip
+  text as an invalid response.</li>
 </ul>
 <p>Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
 on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per
@@ -3408,7 +3414,7 @@ connection tests, native probes and model-download idle limits remain separate.<
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 7, 2026 21:35:53 UTC">November 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 10, 2026 21:06:53 UTC">November 10, 2026</span>
   </span>
 
     
