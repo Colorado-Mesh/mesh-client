@@ -21,8 +21,10 @@ describe('App Peers tab keep-alive (regression)', () => {
   it('clears peersTabVisited on protocol switch', () => {
     // Protocol commits apply the helper's flags. A protocol change starts from
     // CLEARED_VISIT_FLAGS, so peers is false unless the destination has a peers list.
+    // Chat is excluded from those flags (per-protocol visitedChatProtocols).
     expect(SOURCE).toContain('visitFlagsForProtocolCommit');
     expect(SOURCE).toContain('setPeersTabVisited(flags.peers)');
+    expect(SOURCE).not.toContain('setChatTabVisited(flags.chat)');
     expect(COMMIT).toMatch(/peers:\s*false/);
     expect(COMMIT).toContain('protocolChanged ? { ...CLEARED_VISIT_FLAGS }');
   });

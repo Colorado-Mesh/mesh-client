@@ -49,6 +49,7 @@ describe('App protocol-switch tab guard (regression)', () => {
     );
     expect(helper).toContain('if (!isCurrentProtocolSwitch(id)) return;');
     expect(helper).toContain('setProtocol(input.nextProtocol)');
+    expect(helper).not.toContain('setChatTabVisited');
     expect(helper).not.toContain('clearDiagnostics(');
     expect(helper).not.toContain('localStorage.setItem');
     const effectStart = SOURCE.indexOf('const previousCommittedProtocolRef');
@@ -84,7 +85,7 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(reconnect.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
       reconnect.indexOf('reconnectInFlightRef.current = true'),
     );
-    expect(SOURCE).toContain('composerDisabled={protocolSwitchPending}');
+    expect(SOURCE).toContain('composerDisabled={protocolSwitchPending || !chatActive}');
     expect(SOURCE).toContain(
       'protocolSwitchPending\n                                  ? ignoreProtocolSwitchConnect',
     );
