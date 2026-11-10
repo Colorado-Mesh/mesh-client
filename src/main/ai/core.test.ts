@@ -577,6 +577,75 @@ describe('AI follow-up prompts', () => {
       AI_ON_DEVICE_MAX_PROMPT_BYTES,
     );
   });
+  it('packs 2-byte topic source over newest filler for an unquoted topic ask', () => {
+    const halfLiveBody =
+      'We should switch routing and usage stats to 2-byte addresses to cut collisions.';
+    const specterBody = 'What happens to radio messages if we move to 2-byte addresses?';
+    const gadgetBody = '2-byte addresses help avoid collisions between repeaters on the same path.';
+    const summary = [
+      'Conversations:',
+      '- Half Live: suggested changing to 2-byte addresses for routing and usage stats.',
+      '- Specter 6: asked about the effect of 2-byte addresses on radio/messages.',
+      '- Gadget: explained the benefits of 2-byte addresses, including avoiding collisions between repeaters.',
+      '',
+      'One-offs:',
+      '- KE4IQR-1: sent a greeting to Evans.',
+      '- KC0SIQ-03: shared their morning coffee routine of catching up.',
+    ].join('\n');
+    const messages = [
+      {
+        at: Date.parse('2026-11-01T18:00:00Z'),
+        sender: 'Half Live',
+        body: halfLiveBody,
+      },
+      {
+        at: Date.parse('2026-11-01T18:01:00Z'),
+        sender: 'Specter 6',
+        body: specterBody,
+      },
+      {
+        at: Date.parse('2026-11-01T18:02:00Z'),
+        sender: 'Gadget',
+        body: gadgetBody,
+      },
+      {
+        at: Date.parse('2026-11-01T18:03:00Z'),
+        sender: 'KC0SIQ-03',
+        body: 'Morning coffee and catching up on the mesh.',
+      },
+      ...Array.from({ length: 40 }, (_, index) => ({
+        at: Date.parse('2026-11-07T21:00:00Z') + index * 60_000,
+        sender: `N${index}`,
+        body: `Recent ack filler ${index} with enough padding to burn the on-device source budget. ${'pad '.repeat(40)}`,
+      })),
+    ];
+    const prompt = buildAiFollowUpPrompt(
+      {
+        conversationLabel: '#general',
+        protocol: 'meshtastic',
+        surface: 'channel',
+        locale: 'en',
+        summary,
+        question: 'tell me everything about the 2-byte conversation',
+        turns: [],
+        messages,
+        contextKind: 'transcript',
+        maxChars: 9000,
+        maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES,
+      },
+      'UTC',
+    );
+    expect(prompt.fits).toBe(true);
+    expect(prompt.truncated).toBe(true);
+    expect(prompt.included).toBeGreaterThan(0);
+    expect(prompt.included).toBeLessThan(messages.length);
+    expect(prompt.user).toContain(JSON.stringify(halfLiveBody));
+    expect(prompt.user).toContain(JSON.stringify(specterBody));
+    expect(prompt.user).toContain(JSON.stringify(gadgetBody));
+    expect(new TextEncoder().encode(prompt.system + prompt.user).byteLength).toBeLessThanOrEqual(
+      AI_ON_DEVICE_MAX_PROMPT_BYTES,
+    );
+  });
   it('truncates a long question before dropping all source context', () => {
     const prompt = buildAiFollowUpPrompt(
       {

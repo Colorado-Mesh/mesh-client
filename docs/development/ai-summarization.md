@@ -84,9 +84,14 @@ Context retention (renderer session only):
   present and fall back to digests only when no messages were kept.
 - On-device engines (`os` / `bundled`): a deterministic relevance selector scores messages with
   question + summary tokens (and force-includes pasted/quoted bodies) so anaphoric asks like
-  “how?” can still find the subject, then packs priority matches ahead of newest-first fill under
-  the ~4 KB prompt budget.
+  “how?” can still find the subject. Hyphen compounds such as `2-byte` keep a joined token
+  (`2byte`) so topic asks focus the right bullets. Packing prefers paste, quoted-bullet focus,
+  and question-topic hits ahead of newest-first filler, and reserves a larger share of the
+  ~12 KB prompt for transcript lines so a long Catch up summary cannot starve source grounding.
 - Endpoint engines receive the full retained transcript within the usual 64 KB prompt budget.
+- Completed Catch up text strips echoed `/no_think` markers and drops near-duplicate One-offs
+  before display; Ask answers apply the same control-token strip and treat empty post-strip
+  text as an invalid response.
 
 Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / timeout path, and clear
 on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per

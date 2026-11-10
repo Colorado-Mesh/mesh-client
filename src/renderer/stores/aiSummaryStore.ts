@@ -6,7 +6,7 @@ import {
   runMultiPassSummary,
   shouldUseMultiPass,
 } from '@/renderer/lib/aiMultiPassSummary';
-import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
+import { finalizeAiSummaryText, RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
 import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { getAppSettingsRaw, mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
@@ -179,7 +179,7 @@ export function subscribeAiEvents(): void {
           const currentId = useAiSummaryStore.getState().summaries[ownerKey]?.requestId;
           if (currentId)
             patch(ownerKey, currentId, {
-              text: value.text,
+              text: finalizeAiSummaryText(value.text),
               provider: value.provider,
               model: value.model,
               truncated:
@@ -190,14 +190,17 @@ export function subscribeAiEvents(): void {
             });
         }
         passOwners.delete(value.requestId);
-        waiter.resolve({ text: value.text, messageCount: value.messageCount });
+        waiter.resolve({
+          text: finalizeAiSummaryText(value.text),
+          messageCount: value.messageCount,
+        });
         return;
       }
       const key = keyFor(value.requestId);
       if (key && useAiSummaryStore.getState().summaries[key]?.streaming) {
         const currentId = useAiSummaryStore.getState().summaries[key]!.requestId;
         patch(key, currentId, {
-          text: value.text,
+          text: finalizeAiSummaryText(value.text),
           provider: value.provider,
           model: value.model,
           messageCount: value.messageCount,
@@ -600,7 +603,11 @@ export async function runSummary(
               });
           },
           onFinalText: (text) => {
-            patch(key, id, { text, phase: undefined, progress: null });
+            patch(key, id, {
+              text: finalizeAiSummaryText(text),
+              phase: undefined,
+              progress: null,
+            });
           },
           waitForSilentRemoteDone: (requestId) => {
             activePassIds.add(requestId);
@@ -706,11 +713,12 @@ export async function runSummary(
         },
       );
       signal.throwIfAborted();
+      const finalized = finalizeAiSummaryText(text);
       patch(key, id, {
-        text,
+        text: finalized,
         streaming: false,
         followUpContext: followUpContextFromSinglePass(job.truncated),
-        ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
+        ...(!finalized.trim() ? { error: 'invalidResponse' as const } : {}),
       });
     } else {
       passOwners.set(id, key);

@@ -1,6 +1,6 @@
 import type { AiFollowUpContextKind, AiSummaryFollowUpTurn, AiSummaryMessage } from './ai-types';
 import { AI_MAX_FOLLOW_UP_ANSWER_CHARS, AI_MAX_FOLLOW_UP_SUMMARY_CHARS } from './ai-types';
-import { isFollowUpFocusMatch } from './aiFollowUpFocus';
+import { isFollowUpFocusMatch, isFollowUpQuestionTopicMatch } from './aiFollowUpFocus';
 import { selectContextLines, utf8Bytes } from './aiSummaryPrompt';
 
 const FOLLOW_UP_SYSTEM =
@@ -15,8 +15,14 @@ const FOLLOW_UP_SYSTEM =
   'Do not invent details. Keep the answer under about 120 words unless the user asks for more detail. ' +
   'Timestamps are user-local time with UTC offsets, not UTC.';
 
-/** Leave at least this many UTF-8 bytes for transcript/digest lines when messages exist. */
-const FOLLOW_UP_SOURCE_RESERVE_BYTES = 1200;
+/**
+ * Leave at least this many UTF-8 bytes for transcript/digest lines when messages exist.
+ * Large structured summaries must shrink before topic source is starved.
+ */
+const FOLLOW_UP_SOURCE_RESERVE_BYTES = 3500;
+
+/** Cap source reserve so framing still fits on the smallest on-device budget. */
+const FOLLOW_UP_SOURCE_RESERVE_FRACTION = 0.4;
 
 function normalizeWs(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -37,7 +43,9 @@ function isFollowUpPackPriority(
   message: AiSummaryMessage,
 ): boolean {
   return (
-    isQuestionPasteMatch(question, message.body) || isFollowUpFocusMatch(question, summary, message)
+    isQuestionPasteMatch(question, message.body) ||
+    isFollowUpFocusMatch(question, summary, message) ||
+    isFollowUpQuestionTopicMatch(question, message)
   );
 }
 
@@ -86,7 +94,11 @@ export function buildAiFollowUpPrompt(
   const minFramingBytes = utf8Bytes(system) + 120;
   const sourceReserve =
     hasSource && Number.isFinite(maxBytes)
-      ? Math.min(FOLLOW_UP_SOURCE_RESERVE_BYTES, Math.max(0, maxBytes - minFramingBytes))
+      ? Math.min(
+          FOLLOW_UP_SOURCE_RESERVE_BYTES,
+          Math.floor(maxBytes * FOLLOW_UP_SOURCE_RESERVE_FRACTION),
+          Math.max(0, maxBytes - minFramingBytes),
+        )
       : 0;
   const framingBudget = Number.isFinite(maxBytes)
     ? Math.max(0, maxBytes - sourceReserve)

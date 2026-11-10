@@ -38,6 +38,9 @@ const STOPWORDS = new Set([
   'could',
   'would',
   'expand',
+  'everything',
+  'conversation',
+  'conversations',
 ]);
 
 /** Minimum normalized length for treating a summary slice as quoted in the question. */
@@ -46,11 +49,34 @@ const FOCUS_SUBSTRING_MIN = 24;
 /** Minimum overlapping content tokens to treat a message as on-focus. */
 export const FOLLOW_UP_FOCUS_HIT_MIN = 2;
 
+/** Strip hyphens so "2-byte" matches token "2byte". */
+export function followUpMatchHaystack(value: string): string {
+  return value.toLowerCase().replace(/[\u2010-\u2015-]+/g, '');
+}
+
+/**
+ * Content tokens for follow-up relevance.
+ * Keeps length≥3 parts, plus joined hyphen compounds (`2-byte` → `2byte`) so short
+ * numeric prefixes are not dropped while standalone `2` never floods includes().
+ */
 export function followUpContentTokens(value: string): string[] {
-  return value
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((token) => token.length >= 3 && !STOPWORDS.has(token));
+  const lower = value.toLowerCase();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (token: string) => {
+    if (!token || token.length < 3 || STOPWORDS.has(token) || seen.has(token)) return;
+    seen.add(token);
+    out.push(token);
+  };
+  for (const token of lower.split(/[^\p{L}\p{N}]+/u)) add(token);
+  // Hyphen compounds: keep joined form (and length≥3 parts already covered by split).
+  for (const match of lower.matchAll(/(\p{N}+)[-\u2010-\u2015](\p{L}{2,})/gu)) {
+    add(`${match[1]}${match[2]}`);
+  }
+  for (const match of lower.matchAll(/(\p{L}{2,})[-\u2010-\u2015](\p{N}+)/gu)) {
+    add(`${match[1]}${match[2]}`);
+  }
+  return out;
 }
 
 function normalizeWs(value: string): string {
@@ -59,6 +85,27 @@ function normalizeWs(value: string): string {
 
 function stripBulletPrefix(line: string): string {
   return line.replace(/^[*•-]\s+/, '').trim();
+}
+
+function bulletLines(summary: string): string[] {
+  return summary
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function overlapCount(questionTokens: Set<string>, line: string): number {
+  const hay = followUpMatchHaystack(stripBulletPrefix(line));
+  let hits = 0;
+  for (const token of questionTokens) {
+    if (hay.includes(token)) hits += 1;
+  }
+  return hits;
+}
+
+/** True when a token is distinctive enough to focus from a single hit. */
+function isDistinctiveFocusToken(token: string): boolean {
+  return token.length >= 5 || /^\p{N}/u.test(token);
 }
 
 /**
@@ -70,10 +117,7 @@ export function extractQuotedSummaryFocus(question: string, summary: string): st
   const summaryNorm = normalizeWs(summary);
   if (!questionNorm || !summaryNorm) return null;
 
-  const lines = summary
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = bulletLines(summary);
 
   let bestSubstring: string | null = null;
   let bestSubstringLen = 0;
@@ -92,7 +136,7 @@ export function extractQuotedSummaryFocus(question: string, summary: string): st
   if (bestSubstring) return bestSubstring;
 
   const questionTokens = new Set(followUpContentTokens(question));
-  if (questionTokens.size < FOLLOW_UP_FOCUS_HIT_MIN) return null;
+  if (!questionTokens.size) return null;
 
   let bestLine: string | null = null;
   let bestOverlap = 0;
@@ -101,15 +145,33 @@ export function extractQuotedSummaryFocus(question: string, summary: string): st
     if (!stripped) continue;
     const looksLikeBullet = /^[*•-]\s+/.test(line) || stripped.length <= 280;
     if (!looksLikeBullet) continue;
-    const overlap = followUpContentTokens(stripped).filter((token) =>
-      questionTokens.has(token),
-    ).length;
+    const overlap = overlapCount(questionTokens, line);
     if (overlap >= FOLLOW_UP_FOCUS_HIT_MIN && overlap > bestOverlap) {
       bestOverlap = overlap;
       bestLine = stripped;
     }
   }
-  return bestLine;
+  if (bestLine) return bestLine;
+
+  // Single distinctive token that uniquely identifies one bullet (e.g. "2byte").
+  let uniqueLine: string | null = null;
+  let uniqueTokenLen = 0;
+  for (const token of questionTokens) {
+    if (!isDistinctiveFocusToken(token)) continue;
+    const matching = lines.filter((line) => {
+      const stripped = stripBulletPrefix(line);
+      if (!stripped) return false;
+      const looksLikeBullet = /^[*•-]\s+/.test(line) || stripped.length <= 280;
+      if (!looksLikeBullet) return false;
+      return followUpMatchHaystack(stripped).includes(token);
+    });
+    if (matching.length !== 1) continue;
+    const only = matching[0];
+    if (!only || token.length <= uniqueTokenLen) continue;
+    uniqueTokenLen = token.length;
+    uniqueLine = stripBulletPrefix(only);
+  }
+  return uniqueLine;
 }
 
 /** Query tokens for follow-up relevance: question + focus, or question + full summary. */
@@ -136,8 +198,8 @@ export function countFollowUpQueryHits(
   queryTokens: Set<string>,
   message: AiSummaryMessage,
 ): number {
-  const sender = message.sender.toLowerCase();
-  const body = message.body.toLowerCase();
+  const sender = followUpMatchHaystack(message.sender);
+  const body = followUpMatchHaystack(message.body);
   let hits = 0;
   for (const token of queryTokens) {
     if (sender.includes(token) || body.includes(token)) hits += 1;
@@ -158,4 +220,22 @@ export function isFollowUpFocusMatch(
   const { tokens, focusOnly } = followUpQueryTokens(question, summary);
   if (!focusOnly) return false;
   return countFollowUpQueryHits(tokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN;
+}
+
+/**
+ * True when the message overlaps the question's own content tokens strongly enough
+ * to pack ahead of newest filler (without using the full summary token flood).
+ */
+export function isFollowUpQuestionTopicMatch(question: string, message: AiSummaryMessage): boolean {
+  const tokens = new Set(followUpContentTokens(question));
+  if (!tokens.size) return false;
+  const hits = countFollowUpQueryHits(tokens, message);
+  if (hits >= FOLLOW_UP_FOCUS_HIT_MIN) return true;
+  if (hits < 1) return false;
+  const hay = `${followUpMatchHaystack(message.sender)}\0${followUpMatchHaystack(message.body)}`;
+  for (const token of tokens) {
+    if (!hay.includes(token)) continue;
+    if (isDistinctiveFocusToken(token)) return true;
+  }
+  return false;
 }

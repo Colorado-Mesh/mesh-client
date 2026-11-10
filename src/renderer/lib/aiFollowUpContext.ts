@@ -4,7 +4,9 @@ import {
   countFollowUpQueryHits,
   FOLLOW_UP_FOCUS_HIT_MIN,
   followUpContentTokens,
+  followUpMatchHaystack,
   followUpQueryTokens,
+  isFollowUpQuestionTopicMatch,
 } from '@/shared/aiFollowUpFocus';
 
 export { extractQuotedSummaryFocus } from '@/shared/aiFollowUpFocus';
@@ -114,8 +116,8 @@ export function selectFollowUpContext(
 
 /**
  * Score messages by question (+ quoted focus or full summary) tokens, always
- * keep paste matches, focus matches, and the newest 8, take the top `max`, then
- * return chronological unique rows.
+ * keep paste matches, focus/topic matches, and the newest 8, take the top `max`,
+ * then return chronological unique rows.
  */
 export function selectRelevantMessages(
   question: string,
@@ -132,14 +134,18 @@ export function selectRelevantMessages(
         (message) => countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN,
       )
     : [];
+  const topicMatches = messages.filter((message) =>
+    isFollowUpQuestionTopicMatch(question, message),
+  );
   if (!queryTokens.size && !pasteMatches.length) return messages;
   const scored = messages.map((message, index) => {
-    const sender = message.sender.toLowerCase();
-    const body = message.body.toLowerCase();
+    const sender = followUpMatchHaystack(message.sender);
+    const body = followUpMatchHaystack(message.body);
     let score = index / Math.max(1, messages.length); // recency tiebreak
     if (isFollowUpPasteMatch(question, message.body)) score += 1000;
     if (focusOnly && countFollowUpQueryHits(queryTokens, message) >= FOLLOW_UP_FOCUS_HIT_MIN)
       score += 500;
+    if (isFollowUpQuestionTopicMatch(question, message)) score += 300;
     for (const token of questionTokens) {
       if (sender.includes(token)) score += 4;
       if (body.includes(token)) score += 2;
@@ -164,8 +170,8 @@ export function selectRelevantMessages(
     .slice(0, max)
     .map((entry) => entry.message);
   const byKey = new Map<string, AiSummaryMessage>();
-  // Focus/paste first so callers that take a prefix still keep the asked point.
-  for (const message of [...pasteMatches, ...focusMatches, ...top, ...newest])
+  // Focus/paste/topic first so callers that take a prefix still keep the asked point.
+  for (const message of [...pasteMatches, ...focusMatches, ...topicMatches, ...top, ...newest])
     byKey.set(messageKey(message), message);
   return [...byKey.values()].sort((a, b) => a.at - b.at);
 }
