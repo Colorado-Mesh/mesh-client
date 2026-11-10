@@ -27,6 +27,8 @@ export async function refreshMeshcoreOutPathAfterPathUpdated(
   nodeId: number,
   outPathMapRef: Map<number, Uint8Array>,
   pathUpdatePending: Set<number>,
+  /** Last `outPathLen` byte read per contact; a zero-hop route has a length but no path bytes. */
+  radioContactPathLenByNode?: Map<number, number>,
 ): Promise<void> {
   try {
     const contactsRaw = await conn.getContacts();
@@ -34,6 +36,9 @@ export async function refreshMeshcoreOutPathAfterPathUpdated(
     for (const contact of contacts) {
       const cNodeId = pubkeyToNodeId(contact.publicKey);
       if (cNodeId !== nodeId) continue;
+      if (typeof contact.outPathLen === 'number' && Number.isFinite(contact.outPathLen)) {
+        radioContactPathLenByNode?.set(cNodeId, contact.outPathLen);
+      }
       const sliced = meshcoreContactOutPathBytesForTrace(contact);
       if (sliced.length > 0) {
         outPathMapRef.set(cNodeId, sliced);

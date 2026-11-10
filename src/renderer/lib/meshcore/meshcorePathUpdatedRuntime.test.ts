@@ -47,6 +47,28 @@ describe('meshcorePathUpdatedRuntime', () => {
     vi.restoreAllMocks();
   });
 
+  it('refreshMeshcoreOutPathAfterPathUpdated records a learned zero-hop path length', async () => {
+    const publicKey = makePubKey(12);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const conn = {
+      getContacts: vi
+        .fn()
+        .mockResolvedValue([contact({ publicKey, outPathLen: 0, outPath: new Uint8Array(64) })]),
+    } as unknown as MeshCoreConnection;
+    // The radio was flooding (0xFF) until this path update taught it a zero-hop route.
+    const pathLenByNode = new Map<number, number>([[nodeId, 0xff]]);
+
+    await refreshMeshcoreOutPathAfterPathUpdated(
+      conn,
+      nodeId,
+      new Map(),
+      new Set<number>([nodeId]),
+      pathLenByNode,
+    );
+
+    expect(pathLenByNode.get(nodeId)).toBe(0);
+  });
+
   it('refreshMeshcoreOutPathAfterPathUpdated stores outPath and clears pending', async () => {
     const publicKey = makePubKey(10);
     const nodeId = pubkeyToNodeId(publicKey);

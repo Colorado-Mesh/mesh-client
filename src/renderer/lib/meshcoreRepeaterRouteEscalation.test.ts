@@ -3,12 +3,57 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearMeshcoreRepeaterRouteEscalationStateForTests,
   isMeshcoreRepeaterTimeoutError,
+  meshcoreRepeaterRouteKind,
+  withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from './meshcoreRepeaterRouteEscalation';
+import { extractUseCallbackBody, loadRuntimeSource } from './sourceContractTestHelpers';
 
 describe('meshcoreRepeaterRouteEscalation', () => {
   afterEach(() => {
     clearMeshcoreRepeaterRouteEscalationStateForTests();
+  });
+
+  it('classifies a stored hash path as direct', () => {
+    expect(meshcoreRepeaterRouteKind(new Uint8Array([0xab, 0xcd]), 2)).toBe('direct');
+    expect(meshcoreRepeaterRouteKind(new Uint8Array([0xab]), undefined)).toBe('direct');
+  });
+
+  it('runtime marks the cached radio length unknown after a successful path reset', () => {
+    const body = extractUseCallbackBody(
+      loadRuntimeSource('useMeshcoreRuntime.ts'),
+      'resetContactPathForEscalation',
+    );
+    const resetAt = body.indexOf('await conn.resetPath(pubKey)');
+    const cacheAt = body.indexOf(
+      'radioContactPathLenByNodeRef.current.set(nodeId >>> 0, MESHCORE_OUT_PATH_UNKNOWN_BYTE)',
+    );
+    expect(resetAt).toBeGreaterThan(-1);
+    // Without this the node reads as direct again and every later timeout re-floods.
+    expect(cacheAt).toBeGreaterThan(resetAt);
+  });
+
+  it('classifies a radio path length of 0 as direct: firmware sends zero-hop direct', () => {
+    expect(meshcoreRepeaterRouteKind(undefined, 0)).toBe('direct');
+    expect(meshcoreRepeaterRouteKind(new Uint8Array(0), 0)).toBe('direct');
+    // Packed length byte: 0 hops with 2-byte hashes.
+    expect(meshcoreRepeaterRouteKind(undefined, 0x40)).toBe('direct');
+  });
+
+  it('classifies the firmware OUT_PATH_UNKNOWN sentinel as flood', () => {
+    expect(meshcoreRepeaterRouteKind(undefined, 0xff)).toBe('flood');
+    expect(meshcoreRepeaterRouteKind(undefined, -1)).toBe('flood');
+    expect(meshcoreRepeaterRouteKind(new Uint8Array(0), 0xff)).toBe('flood');
+  });
+
+  it('classifies a multi-hop radio path length as direct', () => {
+    expect(meshcoreRepeaterRouteKind(undefined, 2)).toBe('direct');
+  });
+
+  it('reports unknown when neither a path nor a radio length is known', () => {
+    expect(meshcoreRepeaterRouteKind(undefined, undefined)).toBe('unknown');
+    expect(meshcoreRepeaterRouteKind(new Uint8Array(0), null)).toBe('unknown');
+    expect(meshcoreRepeaterRouteKind(undefined, Number.NaN)).toBe('unknown');
   });
 
   it('detects timeout errors', () => {
@@ -143,5 +188,112 @@ describe('meshcoreRepeaterRouteEscalation', () => {
       ),
     ).resolves.toBe('ok');
     expect(calls).toBe(2);
+  });
+});
+
+describe('withMeshcoreRepeaterLoginFallback', () => {
+  afterEach(() => {
+    clearMeshcoreRepeaterRouteEscalationStateForTests();
+  });
+
+  function harness(opts: {
+    route: 'direct' | 'flood';
+    canLogin: boolean;
+    /** Outcome of each request attempt in order; the last entry repeats. */
+    requests: ('ok' | 'timeout' | 'rejected')[];
+    loginFails?: boolean;
+  }) {
+    const order: string[] = [];
+    let attemptIndex = 0;
+    const deps = {
+      resetContactPath: vi.fn(() => {
+        order.push('reset');
+        return Promise.resolve(true);
+      }),
+      resolveRouteKind: () => opts.route,
+      nowMs: () => 1_000,
+      canLogin: () => opts.canLogin,
+      login: vi.fn(() => {
+        order.push('login');
+        return opts.loginFails ? Promise.reject(new Error('timeout')) : Promise.resolve();
+      }),
+    };
+    const request = vi.fn(() => {
+      order.push('request');
+      const outcome = opts.requests[Math.min(attemptIndex, opts.requests.length - 1)];
+      attemptIndex += 1;
+      if (outcome === 'ok') return Promise.resolve('ok');
+      return Promise.reject(new Error(outcome === 'timeout' ? 'timeout' : 'radio rejected'));
+    });
+    return { deps, request, order };
+  }
+
+  it('sends no login when the first request is answered', async () => {
+    const { deps, request, order } = harness({ route: 'direct', canLogin: true, requests: ['ok'] });
+    await expect(withMeshcoreRepeaterLoginFallback(11, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request']);
+  });
+
+  it('logs in on the flood retry of a direct route, after the path reset', async () => {
+    const { deps, request, order } = harness({
+      route: 'direct',
+      canLogin: true,
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(12, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'reset', 'login', 'request']);
+  });
+
+  it('logs in and asks again when an already-flooding route times out', async () => {
+    const { deps, request, order } = harness({
+      route: 'flood',
+      canLogin: true,
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(13, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'login', 'request']);
+  });
+
+  it('does not log in without a password', async () => {
+    const { deps, request, order } = harness({
+      route: 'flood',
+      canLogin: false,
+      requests: ['timeout'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(14, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request']);
+  });
+
+  it('does not log in when the radio rejects the request', async () => {
+    const { deps, request, order } = harness({
+      route: 'direct',
+      canLogin: true,
+      requests: ['rejected'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(15, deps, request)).rejects.toThrow(
+      /radio rejected/,
+    );
+    expect(order).toEqual(['request']);
+  });
+
+  it('logs in at most once per request', async () => {
+    const { deps, request, order } = harness({
+      route: 'direct',
+      canLogin: true,
+      requests: ['timeout', 'timeout'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(16, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request', 'reset', 'login', 'request']);
+  });
+
+  it('reports a failed login and does not ask again', async () => {
+    const { deps, request, order } = harness({
+      route: 'flood',
+      canLogin: true,
+      requests: ['timeout'],
+      loginFails: true,
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(17, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request', 'login']);
   });
 });
