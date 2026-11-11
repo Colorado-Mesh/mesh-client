@@ -109,7 +109,7 @@
     "preinstall": "node scripts/check-package-manager.mjs && pnpm dlx only-allow pnpm",
     "postinstall": "node scripts/rebuild-native.mjs",
     "lint": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --max-warnings 0 --concurrency=4",
-    "lint:fix": "eslint . --fix --max-warnings 0",
+    "lint:fix": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --fix --max-warnings 0 --concurrency=4",
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",

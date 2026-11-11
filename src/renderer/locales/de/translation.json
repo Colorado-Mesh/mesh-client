@@ -8629,6 +8629,10 @@
     "unlinkAria": "Verknüpfung von {{protocol}} Gerät {{name}} aufheben",
     "unitIdTaken": "Die Einheiten-ID {{unitId}} ist bereits einem anderen Kontakt zugewiesen.",
     "teamMessagePrefix": "Teamnachricht:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Die Kontaktkarten konnten nicht aus der Datenbank geladen werden.",
+    "retryLoad": "Erneut versuchen",
+    "retryLoadAria": "Laden der Kontaktkarten erneut versuchen",
+    "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie."
   }
 }

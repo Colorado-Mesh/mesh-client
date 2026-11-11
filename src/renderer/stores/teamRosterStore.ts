@@ -7,9 +7,14 @@ import type {
   TeamMemberLinkInput,
   TeamMemberLinkRosterInput,
 } from '@/shared/teamRosterTypes';
+import { isTeamRosterUnavailableError } from '@/shared/teamRosterUnavailable';
 
 interface TeamRosterState {
   hydrated: boolean;
+  /** True when the last hydrate attempt failed (members may be stale or empty). */
+  hydrateError: boolean;
+  /** Handler bundle missing — IPC rejected with team roster unavailable. */
+  hydrateUnavailable: boolean;
   members: TeamMember[];
   hydrate: () => Promise<void>;
   upsertMember: (input: TeamMemberInput) => Promise<TeamMember>;
@@ -36,6 +41,8 @@ function replaceMember(members: TeamMember[], member: TeamMember): TeamMember[] 
 
 export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
   hydrated: false,
+  hydrateError: false,
+  hydrateUnavailable: false,
   members: [],
 
   hydrate: async () => {
@@ -43,18 +50,25 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
     if (hydration) return hydration;
     const list = window.electronAPI?.db?.listTeamMembers;
     if (!list) {
-      set({ hydrated: true });
+      set({ hydrated: true, hydrateError: false, hydrateUnavailable: false });
       return;
     }
     hydration = (async () => {
+      set({ hydrateError: false, hydrateUnavailable: false });
       try {
         const members = await list();
         set({
           members: [...members].sort((a, b) => a.unitId - b.unitId),
           hydrated: true,
+          hydrateError: false,
+          hydrateUnavailable: false,
         });
       } catch (error) {
         console.warn('[teamRoster] hydrate failed:', error);
+        set({
+          hydrateError: true,
+          hydrateUnavailable: isTeamRosterUnavailableError(error),
+        });
       } finally {
         hydration = null;
       }
@@ -155,6 +169,8 @@ export function resetTeamRosterStoreForTests(): void {
   hydration = null;
   useTeamRosterStore.setState({
     hydrated: false,
+    hydrateError: false,
+    hydrateUnavailable: false,
     members: [],
   });
 }

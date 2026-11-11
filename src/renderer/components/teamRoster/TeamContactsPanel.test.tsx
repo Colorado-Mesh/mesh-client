@@ -43,6 +43,16 @@ beforeEach(() => {
 });
 
 describe('TeamContactsPanel', () => {
+  it('shows retry affordance when hydration failed', () => {
+    resetTeamRosterStoreForTests();
+    useTeamRosterStore.setState({ hydrated: true, hydrateError: true, members: [] });
+    renderPanel();
+    expect(screen.getByText(/could not load contact cards/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /retry loading contact cards/i }),
+    ).toBeInTheDocument();
+  });
+
   it('lists contact cards with presence affordance', () => {
     renderPanel();
     expect(screen.getByText(/#1 Alpha/)).toBeInTheDocument();

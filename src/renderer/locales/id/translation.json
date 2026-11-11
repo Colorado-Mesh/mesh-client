@@ -8629,6 +8629,10 @@
     "unlinkAria": "Putuskan Tautan {{protocol}} Device {{name}}",
     "unitIdTaken": "ID Unit {{unitId}} sudah ditetapkan ke kontak lain.",
     "teamMessagePrefix": "Pesan Tim:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Tidak dapat memuat kartu kontak dari basis data.",
+    "retryLoad": "Coba lagi",
+    "retryLoadAria": "Coba muat ulang kartu kontak",
+    "loadUnavailable": "Kartu Kontak tidak tersedia di build ini. Instal ulang atau perbarui aplikasi."
   }
 }

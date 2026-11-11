@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react-motion';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
@@ -10,7 +10,7 @@ import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import type { MessagesByProtocol } from '@/renderer/lib/teamRoster/contactMessageHistory';
 import { resolveMemberPresence } from '@/renderer/lib/teamRoster/contactPresence';
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
-import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
+import { hydrateTeamRosterStore, useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
 import { rosterLinksOf } from '@/shared/teamRosterTypes';
@@ -48,6 +48,10 @@ export default function TeamContactsPanel({
   const { addToast } = useToast();
   const parentIconTrigger = useParentIconTrigger();
   const members = useTeamRosterStore((s) => s.members);
+  const hydrated = useTeamRosterStore((s) => s.hydrated);
+  const hydrateError = useTeamRosterStore((s) => s.hydrateError);
+  const hydrateUnavailable = useTeamRosterStore((s) => s.hydrateUnavailable);
+  const hydrate = useTeamRosterStore((s) => s.hydrate);
   const deleteMember = useTeamRosterStore((s) => s.deleteMember);
   const removeLink = useTeamRosterStore((s) => s.removeLink);
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
@@ -56,6 +60,10 @@ export default function TeamContactsPanel({
   const [editing, setEditing] = useState<TeamMember | null | undefined>(undefined);
   const [detailUnitId, setDetailUnitId] = useState<number | null>(null);
   const [rosterPickerMember, setRosterPickerMember] = useState<TeamMember | null>(null);
+
+  useEffect(() => {
+    if (!hydrated) void hydrate();
+  }, [hydrated, hydrate]);
 
   const presenceByUnit = useMemo(() => {
     const map = new Map<number, ReturnType<typeof resolveMemberPresence>>();
@@ -117,6 +125,7 @@ export default function TeamContactsPanel({
     } catch (err: unknown) {
       console.warn('[TeamContacts] roster devices failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
+      await hydrateTeamRosterStore();
       throw err;
     }
   };
@@ -145,7 +154,23 @@ export default function TeamContactsPanel({
         </button>
       </div>
 
-      {members.length === 0 ? (
+      {hydrateError ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-ink-400 text-label">
+            {t(hydrateUnavailable ? 'teamRoster.loadUnavailable' : 'teamRoster.loadFailed')}
+          </p>
+          <button
+            type="button"
+            className={buttonClassName('secondary', 'sm')}
+            aria-label={t('teamRoster.retryLoadAria')}
+            onClick={() => {
+              void hydrate();
+            }}
+          >
+            {t('teamRoster.retryLoad')}
+          </button>
+        </div>
+      ) : members.length === 0 ? (
         <p className="text-ink-400 text-label">{t('teamRoster.emptyContacts')}</p>
       ) : (
         <ul className="flex flex-col gap-2">

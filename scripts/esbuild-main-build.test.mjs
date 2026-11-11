@@ -117,6 +117,13 @@ describe('esbuild-main-build', () => {
       const teamRosterBytes = fs.readFileSync(path.join(tempDir, 'team-roster-handlers.js'));
       expect(teamRosterBytes.length).toBeGreaterThan(500);
       expect(teamRosterBytes.toString('utf8')).toContain('registerTeamRosterIpcHandlers');
+      const teamRosterFallbackBytes = fs.readFileSync(
+        path.join(tempDir, 'team-roster-handlers-fallback.js'),
+      );
+      expect(teamRosterFallbackBytes.length).toBeGreaterThan(200);
+      expect(teamRosterFallbackBytes.toString('utf8')).toContain(
+        'registerTeamRosterIpcFallbackHandlers',
+      );
       const indexSource = fs.readFileSync(outfile, 'utf8');
       // Team roster DDL lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');

@@ -8629,6 +8629,10 @@
     "unlinkAria": "Dissocier {{protocol}} Device {{name}}",
     "unitIdTaken": "L'ID d'unité {{unitId}} est déjà attribué à un autre contact.",
     "teamMessagePrefix": "Message de l'équipe :",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Impossible de charger les cartes de contact à partir de la base de données.",
+    "retryLoad": "Réessayez",
+    "retryLoadAria": "Réessayer de charger les cartes de contact",
+    "loadUnavailable": "Les cartes de contact ne sont pas disponibles dans cette version. Réinstallez ou mettez à jour l'application."
   }
 }

@@ -21,10 +21,10 @@ describe('keyBackupBytesToBase64', () => {
 });
 
 describe('keyBackupBase64ToBytes', () => {
-  it('decodes valid base64 to Uint8Array', () => {
-    expect(keyBackupBase64ToBytes('AA==')).toBeInstanceOf(Uint8Array);
-    expect(keyBackupBase64ToBytes('/w==')).toBeInstanceOf(Uint8Array);
-    expect(keyBackupBase64ToBytes('AQI=')).toBeInstanceOf(Uint8Array);
+  it('decodes valid base64 payloads', () => {
+    expect([...keyBackupBase64ToBytes('AA==')]).toEqual([0x00]);
+    expect([...keyBackupBase64ToBytes('/w==')]).toEqual([0xff]);
+    expect([...keyBackupBase64ToBytes('AQI=')]).toEqual([0x01, 0x02]);
   });
 
   it('round-trips common payloads', () => {

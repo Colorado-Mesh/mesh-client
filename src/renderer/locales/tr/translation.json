@@ -8629,6 +8629,10 @@
     "unlinkAria": "Bağlantıyı kaldır {{protocol}} cihaz {{name}}",
     "unitIdTaken": "{{unitId}} birim kimliği zaten başka bir kişiye atanmış.",
     "teamMessagePrefix": "Ekip Mesajı:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Kişi kartları veritabanından yüklenemedi.",
+    "retryLoad": "Tekrar deneyin",
+    "retryLoadAria": "Kişi kartlarını yüklemeyi yeniden deneyin",
+    "loadUnavailable": "Kişi Kartları bu sürümde kullanılamaz. Uygulamayı yeniden yükleyin veya güncelleyin."
   }
 }

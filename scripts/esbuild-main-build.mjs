@@ -151,6 +151,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Team roster IPC failure stubs — sibling chunk loaded only when the primary bundle fails.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/team-roster-handlers-fallback.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'team-roster-handlers-fallback.js'),
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

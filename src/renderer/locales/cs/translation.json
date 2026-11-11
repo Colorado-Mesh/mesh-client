@@ -8714,6 +8714,10 @@
     "unlinkAria": "Odpojit {{protocol}} zařízení {{name}}",
     "unitIdTaken": "ID jednotky {{unitId}} je již přiřazeno jinému kontaktu.",
     "teamMessagePrefix": "Zpráva týmu:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Nelze načíst vizitky kontaktů z databáze.",
+    "retryLoad": "Zkusit znovu",
+    "retryLoadAria": "Zkusit načíst vizitky znovu",
+    "loadUnavailable": "Vizitky nejsou v této verzi k dispozici. Přeinstalujte nebo aktualizujte aplikaci."
   }
 }

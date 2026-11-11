@@ -8629,6 +8629,10 @@
     "unlinkAria": "Ontkoppel {{protocol}} device {{name}}",
     "unitIdTaken": "Unit-ID {{unitId}} is al toegewezen aan een andere contactpersoon.",
     "teamMessagePrefix": "Teambericht:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Kan geen contactkaarten uit de database laden.",
+    "retryLoad": "Opnieuw proberen",
+    "retryLoadAria": "Probeer de contactkaarten opnieuw te laden",
+    "loadUnavailable": "Contactkaarten zijn niet beschikbaar in deze build. Installeer de app opnieuw of werk deze bij."
   }
 }

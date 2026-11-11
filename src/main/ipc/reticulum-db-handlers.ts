@@ -200,6 +200,15 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
       const attachmentsJson = sanitizeAttachmentsJsonForDb(m.attachments_json);
+      if (
+        typeof m.attachments_json === 'string' &&
+        m.attachments_json.trim() &&
+        attachmentsJson === null
+      ) {
+        console.warn(
+          `[reticulum-db] dropped attachments_json on message upsert (len=${m.attachments_json.length}, max=${RETICULUM_ATTACHMENTS_JSON_MAX_CHARS})`,
+        );
+      }
       const audioMode =
         m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
           ? Math.trunc(Number(m.audio_mode))

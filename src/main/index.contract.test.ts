@@ -893,6 +893,8 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('registerScheduledBroadcastIpcHandlers');
     expect(INDEX_SOURCE).toContain('team-roster-handlers.js');
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcHandlers');
+    expect(INDEX_SOURCE).toContain('team-roster-handlers-fallback.js');
+    expect(INDEX_SOURCE).toContain('registerTeamRosterIpcFallbackHandlers');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");

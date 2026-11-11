@@ -138,6 +138,40 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(resetContactPath).not.toHaveBeenCalled();
   });
 
+  it('isolates cooldown per escalation scope', async () => {
+    const resetContactPath = vi.fn(() => Promise.resolve(true));
+    const now = 1_000;
+    await withMeshcoreRepeaterRouteEscalation(
+      10,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        escalationScope: () => 'identity-a',
+        nowMs: () => now,
+        cooldownMs: 30_000,
+      },
+      ({ escalated }) => {
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        return Promise.resolve('first');
+      },
+    );
+    await withMeshcoreRepeaterRouteEscalation(
+      10,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        escalationScope: () => 'identity-b',
+        nowMs: () => now,
+        cooldownMs: 30_000,
+      },
+      ({ escalated }) => {
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        return Promise.resolve('second');
+      },
+    );
+    expect(resetContactPath).toHaveBeenCalledTimes(2);
+  });
+
   it('honors per-node cooldown', async () => {
     const resetContactPath = vi.fn(() => Promise.resolve(true));
     let now = 1_000;

@@ -8629,6 +8629,10 @@
     "unlinkAria": "Scollega {{protocol}} dispositivo {{name}}",
     "unitIdTaken": "L'ID unità {{unitId}} è già assegnato a un altro contatto.",
     "teamMessagePrefix": "Messaggio del team:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Impossibile caricare le schede dei contatti dal database.",
+    "retryLoad": "Riprova",
+    "retryLoadAria": "Riprova a caricare le schede dei contatti",
+    "loadUnavailable": "Le schede di contatto non sono disponibili in questa versione. Reinstalla o aggiorna l'app."
   }
 }

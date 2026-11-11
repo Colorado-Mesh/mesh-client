@@ -9,6 +9,8 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
   resetContactPath: (nodeId: number) => Promise<boolean>;
   /** Current route classification before the failed attempt. */
   resolveRouteKind: (nodeId: number) => MeshcoreRepeaterRouteKind;
+  /** MeshCore identity scope for per-identity cooldown (defaults to global when omitted). */
+  escalationScope?: () => string | null | undefined;
   nowMs?: () => number;
   cooldownMs?: number;
 }
@@ -39,7 +41,20 @@ export function meshcoreRepeaterRouteKind(
   return 'direct';
 }
 
-const lastEscalationByNode = new Map<number, number>();
+const lastEscalationByNode = new Map<string, number>();
+
+function escalationCooldownKey(nodeId: number, scope: string | null | undefined): string {
+  const normalizedId = nodeId >>> 0;
+  const scopeKey = scope?.trim() ?? '';
+  return scopeKey ? `${scopeKey}:${normalizedId}` : String(normalizedId);
+}
+
+export function clearMeshcoreRepeaterRouteEscalationForScope(scope: string): void {
+  const prefix = `${scope.trim()}:`;
+  for (const key of [...lastEscalationByNode.keys()]) {
+    if (key.startsWith(prefix)) lastEscalationByNode.delete(key);
+  }
+}
 
 export function clearMeshcoreRepeaterRouteEscalationStateForTests(): void {
   lastEscalationByNode.clear();
@@ -76,7 +91,8 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     if (routeKind === 'flood') {
       throw firstErr;
     }
-    const last = lastEscalationByNode.get(normalizedId);
+    const cooldownKey = escalationCooldownKey(normalizedId, deps.escalationScope?.() ?? undefined);
+    const last = lastEscalationByNode.get(cooldownKey);
     if (last != null && now() - last < cooldownMs) {
       console.warn(
         `[meshcoreRepeaterRouteEscalation] cooldown active node=${normalizedId}; not flooding`,
@@ -102,7 +118,7 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       );
       throw firstErr;
     }
-    lastEscalationByNode.set(normalizedId, now());
+    lastEscalationByNode.set(cooldownKey, now());
     return fn({ escalated: true });
   }
 }

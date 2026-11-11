@@ -8629,6 +8629,10 @@
     "unlinkAria": "{{protocol}} DEVICE {{name}} 연결 해제",
     "unitIdTaken": "유닛 ID {{unitId}} 은 (는) 이미 다른 연락처에 할당되어 있습니다.",
     "teamMessagePrefix": "팀 메시지:",
-    "teamComposeCount": "{{count}}/{{max}}"
+    "teamComposeCount": "{{count}}/{{max}}",
+    "loadFailed": "데이터베이스에서 연락처 카드를 불러올 수 없습니다.",
+    "retryLoad": "다시 시도",
+    "retryLoadAria": "연락처 카드 로딩 재시도",
+    "loadUnavailable": "이 빌드에서는 연락처 카드를 사용할 수 없습니다. 앱을 다시 설치하거나 업데이트하세요."
   }
 }

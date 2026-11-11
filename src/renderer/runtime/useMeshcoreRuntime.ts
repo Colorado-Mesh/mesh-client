@@ -328,7 +328,9 @@ import {
   type RepeaterPostRebootStatusScheduler,
 } from '../lib/meshcoreRepeaterPostRebootStatus';
 import {
+  clearMeshcoreRepeaterRouteEscalationForScope,
   MESHCORE_OUT_PATH_UNKNOWN_BYTE,
+  type MeshcoreRepeaterRouteEscalationDeps,
   type MeshcoreRepeaterRouteKind,
   meshcoreRepeaterRouteKind,
   withMeshcoreRepeaterLoginFallback,
@@ -2185,6 +2187,7 @@ export function useMeshcoreRuntime() {
       if (coverageIdentity) {
         clearHeardRepeatWindow(coverageIdentity);
         useRelayCoverageStore.getState().clearIdentity(coverageIdentity);
+        clearMeshcoreRepeaterRouteEscalationForScope(coverageIdentity);
       }
       clearMeshcorePubKeyRegistry();
       meshcoreConnEventListenersTeardownRef.current?.();
@@ -6149,6 +6152,27 @@ export function useMeshcoreRuntime() {
     [ensureNodePubKey, resolveMeshcoreConn],
   );
 
+  const meshcoreRepeaterRouteEscalationScope = useCallback(
+    () => meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null,
+    [],
+  );
+
+  const meshcoreRepeaterRouteEscalationSharedDeps = useMemo(
+    (): Pick<
+      MeshcoreRepeaterRouteEscalationDeps,
+      'resetContactPath' | 'resolveRouteKind' | 'escalationScope'
+    > => ({
+      resetContactPath: resetContactPathForEscalation,
+      resolveRouteKind: resolveAdminRouteKindForNode,
+      escalationScope: meshcoreRepeaterRouteEscalationScope,
+    }),
+    [
+      resetContactPathForEscalation,
+      resolveAdminRouteKindForNode,
+      meshcoreRepeaterRouteEscalationScope,
+    ],
+  );
+
   const makeRepeaterLoginOpts = useCallback(
     (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
       const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
@@ -6225,8 +6249,7 @@ export function useMeshcoreRuntime() {
             const raw = await withMeshcoreRepeaterLoginFallback(
               nodeId,
               {
-                resetContactPath: resetContactPathForEscalation,
-                resolveRouteKind: resolveAdminRouteKindForNode,
+                ...meshcoreRepeaterRouteEscalationSharedDeps,
                 // Rooms keep their own BBS session; only repeater passwords are used here.
                 canLogin: (id) =>
                   statusHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
@@ -6331,7 +6354,7 @@ export function useMeshcoreRuntime() {
       bumpMeshcoreNodeLastHeardFromRpc,
       ensureNodePubKey,
       makeRepeaterLoginOpts,
-      resetContactPathForEscalation,
+      meshcoreRepeaterRouteEscalationSharedDeps,
       resolveAdminHopsForNode,
       resolveAdminRouteKindForNode,
       resolveMeshcoreConn,
@@ -6517,10 +6540,7 @@ export function useMeshcoreRuntime() {
             }
             await withMeshcoreRepeaterRouteEscalation(
               nodeId,
-              {
-                resetContactPath: resetContactPathForEscalation,
-                resolveRouteKind: resolveAdminRouteKindForNode,
-              },
+              meshcoreRepeaterRouteEscalationSharedDeps,
               async ({ escalated }) => {
                 if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
                 await meshcoreTryRemoteServerLogin(
@@ -6576,7 +6596,7 @@ export function useMeshcoreRuntime() {
       applyMeshcoreTelemetryLpp,
       ensureNodePubKey,
       makeRepeaterLoginOpts,
-      resetContactPathForEscalation,
+      meshcoreRepeaterRouteEscalationSharedDeps,
       resolveAdminHopsForNode,
       resolveAdminRouteKindForNode,
       resolveMeshcoreConn,
@@ -6596,10 +6616,7 @@ export function useMeshcoreRuntime() {
       await awaitMeshcoreRepeaterPingSettleForNode(nodeId, MESHCORE_REPEATER_PING_SETTLE_SOFT_MS);
       return withMeshcoreRepeaterRouteEscalation(
         nodeId,
-        {
-          resetContactPath: resetContactPathForEscalation,
-          resolveRouteKind: resolveAdminRouteKindForNode,
-        },
+        meshcoreRepeaterRouteEscalationSharedDeps,
         async () => {
           await meshcoreTryRemoteServerLogin(
             conn,
@@ -6623,9 +6640,8 @@ export function useMeshcoreRuntime() {
     [
       ensureNodePubKey,
       makeRepeaterLoginOpts,
-      resetContactPathForEscalation,
+      meshcoreRepeaterRouteEscalationSharedDeps,
       resolveAdminHopsForNode,
-      resolveAdminRouteKindForNode,
       resolveMeshcoreConn,
     ],
   );
@@ -6730,8 +6746,7 @@ export function useMeshcoreRuntime() {
               const responseData = await withMeshcoreRepeaterLoginFallback(
                 nodeId,
                 {
-                  resetContactPath: resetContactPathForEscalation,
-                  resolveRouteKind: resolveAdminRouteKindForNode,
+                  ...meshcoreRepeaterRouteEscalationSharedDeps,
                   // Rooms keep their own BBS session; only repeater passwords are used here.
                   canLogin: (id) =>
                     neighborsHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
@@ -6838,7 +6853,7 @@ export function useMeshcoreRuntime() {
     [
       ensureNodePubKey,
       makeRepeaterLoginOpts,
-      resetContactPathForEscalation,
+      meshcoreRepeaterRouteEscalationSharedDeps,
       resolveAdminHopsForNode,
       resolveAdminRouteKindForNode,
       resolveMeshcoreConn,
@@ -6967,10 +6982,7 @@ export function useMeshcoreRuntime() {
                   }
                   await withMeshcoreRepeaterRouteEscalation(
                     nodeId,
-                    {
-                      resetContactPath: resetContactPathForEscalation,
-                      resolveRouteKind: resolveAdminRouteKindForNode,
-                    },
+                    meshcoreRepeaterRouteEscalationSharedDeps,
                     async () => {
                       const aclLogin = await meshcoreRepeaterTryLoginWithPassword(
                         conn,
@@ -6994,10 +7006,7 @@ export function useMeshcoreRuntime() {
                   }
                   await withMeshcoreRepeaterRouteEscalation(
                     nodeId,
-                    {
-                      resetContactPath: resetContactPathForEscalation,
-                      resolveRouteKind: resolveAdminRouteKindForNode,
-                    },
+                    meshcoreRepeaterRouteEscalationSharedDeps,
                     async () => {
                       await meshcoreTryRemoteServerLogin(
                         conn,
@@ -7195,10 +7204,9 @@ export function useMeshcoreRuntime() {
       bumpMeshcoreNodeLastHeardFromRpc,
       ensureNodePubKey,
       makeRepeaterLoginOpts,
+      meshcoreRepeaterRouteEscalationSharedDeps,
       meshcoreTraceResults,
-      resetContactPathForEscalation,
       resolveAdminHopsForNode,
-      resolveAdminRouteKindForNode,
       resolveMeshcoreConn,
       scheduleRepeaterPostRebootStatus,
     ],

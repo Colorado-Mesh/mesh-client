@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
@@ -21,7 +21,7 @@ import {
 import { fanOutTeamMessage } from '@/renderer/lib/teamRoster/teamMessageFanOut';
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
 import { useConnectionStore } from '@/renderer/stores/connectionStore';
-import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
+import { hydrateTeamRosterStore, useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
@@ -64,6 +64,10 @@ export default function TeamRosterPanel({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const members = useTeamRosterStore((s) => s.members);
+  const hydrated = useTeamRosterStore((s) => s.hydrated);
+  const hydrateError = useTeamRosterStore((s) => s.hydrateError);
+  const hydrateUnavailable = useTeamRosterStore((s) => s.hydrateUnavailable);
+  const hydrate = useTeamRosterStore((s) => s.hydrate);
   const upsertMember = useTeamRosterStore((s) => s.upsertMember);
   const setLinkRoster = useTeamRosterStore((s) => s.setLinkRoster);
   const { nodesByProtocol, reticulumByHash } = useTeamRosterLiveData();
@@ -111,6 +115,10 @@ export default function TeamRosterPanel({
   const [selectedUnitIds, setSelectedUnitIds] = useState<Set<number>>(() => new Set());
   const [teamDraft, setTeamDraft] = useState('');
   const [fanOutBusy, setFanOutBusy] = useState(false);
+  useEffect(() => {
+    if (!hydrated) void hydrate();
+  }, [hydrated, hydrate]);
+
   const cardPickerTitleId = useId();
   const cardPickerPanelRef = useRef<HTMLDivElement>(null);
   useModalFocusTrap(
@@ -156,6 +164,7 @@ export default function TeamRosterPanel({
     } catch (err: unknown) {
       console.warn('[TeamRoster] device select failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
+      await hydrateTeamRosterStore();
       throw err;
     } finally {
       setBusyUnitId(null);
@@ -310,7 +319,23 @@ export default function TeamRosterPanel({
         </div>
       </div>
 
-      {rosterMembers.length === 0 ? (
+      {hydrateError ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-ink-400 text-label">
+            {t(hydrateUnavailable ? 'teamRoster.loadUnavailable' : 'teamRoster.loadFailed')}
+          </p>
+          <button
+            type="button"
+            className={buttonClassName('secondary', 'sm')}
+            aria-label={t('teamRoster.retryLoadAria')}
+            onClick={() => {
+              void hydrate();
+            }}
+          >
+            {t('teamRoster.retryLoad')}
+          </button>
+        </div>
+      ) : rosterMembers.length === 0 ? (
         <p className="text-ink-400 text-label">{t('teamRoster.emptyRoster')}</p>
       ) : (
         <>

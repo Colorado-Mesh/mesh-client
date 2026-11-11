@@ -8629,6 +8629,10 @@
     "unlinkAria": "Desvincular {{protocol}} dispositivo {{name}}",
     "unitIdTaken": "La unidad ID {{unitId}} ya está asignada a otro contacto.",
     "teamMessagePrefix": "Mensaje del equipo:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "No se han podido cargar las tarjetas de contacto de la base de datos.",
+    "retryLoad": "Probar de nuevo",
+    "retryLoadAria": "Volver a intentar cargar las tarjetas de contacto",
+    "loadUnavailable": "Las tarjetas de contacto no están disponibles en esta versión. Vuelve a instalar o actualiza la aplicación."
   }
 }

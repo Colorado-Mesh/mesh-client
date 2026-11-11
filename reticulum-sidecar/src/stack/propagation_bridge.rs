@@ -906,15 +906,24 @@ fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, Stri
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let quarantine = parent.join(format!(
-        "{}.oversized-legacy-{stamp}",
-        base.to_string_lossy()
-    ));
-    if quarantine.exists() {
-        return Err(format!(
-            "oversized legacy quarantine already exists at {}",
-            quarantine.display()
+    let base_name = base.to_string_lossy();
+    let mut quarantine = parent.join(format!("{base_name}.oversized-legacy-{stamp}"));
+    let mut disambiguator = 0u32;
+    while quarantine.exists() {
+        disambiguator += 1;
+        quarantine = parent.join(format!(
+            "{base_name}.oversized-legacy-{stamp}-{disambiguator}"
         ));
+    }
+    if disambiguator > 0 {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            path = %storage_dir.display(),
+            quarantine = %quarantine.display(),
+            skipped = disambiguator,
+            "existing oversized-legacy quarantine siblings found; using a fresh quarantine name — \
+             manual cleanup of old quarantine dirs is optional"
+        );
     }
     // Best-effort: park partial migration siblings with the quarantine so a fresh
     // open does not trip on a stale journal/lock.
@@ -2140,6 +2149,42 @@ mod tests {
                     quarantine.file_name().unwrap().to_string_lossy()
                 ))
                 .is_file()
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn quarantine_oversized_legacy_store_picks_unique_name_when_sibling_exists() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-oversized-q-dup-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let store = dir.join("propagation");
+        std::fs::create_dir_all(&store).expect("store");
+        std::fs::write(store.join("blob"), b"legacy").expect("blob");
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let blocked = dir.join(format!("propagation.oversized-legacy-{stamp}"));
+        std::fs::create_dir_all(&blocked).expect("existing quarantine sibling");
+
+        let quarantine = quarantine_oversized_legacy_store(&store).expect("quarantine");
+        assert!(!store.exists());
+        assert_ne!(blocked, quarantine);
+        assert!(
+            quarantine
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .contains("-1")
         );
 
         let _ = std::fs::remove_dir_all(&dir);
