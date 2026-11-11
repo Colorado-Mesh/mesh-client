@@ -9,7 +9,11 @@ import { touch } from '@/shared/touch';
 
 import type { MeshcoreContactDbRow } from '../lib/meshcore/meshcoreHookTypes';
 import { clearMeshcorePubKeyRegistry } from '../lib/meshcore/meshcorePubKeyRegistry';
-import { pubkeyToNodeId } from '../lib/meshcoreUtils';
+import {
+  meshcoreTraceSimChain,
+  simulateMeshcoreTrace,
+} from '../lib/meshcoreTraceFirmwareSimTestHelpers';
+import { pubkeyToNodeId, resolveMeshcoreRoomLoginHopsAway } from '../lib/meshcoreUtils';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 
@@ -424,5 +428,354 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
       MESHCORE_PING_NO_ROUTE_ERROR_MSG,
     );
     expect(startMeshcoreTracePathMultiplexedMock).not.toHaveBeenCalled();
+  });
+});
+
+/** Keys whose first three bytes all differ, so 1-, 2- and 3-byte hashes are distinct. */
+function makeKey(lead: [number, number, number]): Uint8Array {
+  const key = new Uint8Array(32).fill(0x5a);
+  key.set(lead, 0);
+  return key;
+}
+
+function keyHex(key: Uint8Array): string {
+  return Array.from(key, (x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+const NEAR = { name: 'near', pubKey: makeKey([0x57, 0xa1, 0x11]) };
+const MID = { name: 'mid', pubKey: makeKey([0x21, 0xb2, 0x12]) };
+const FAR = { name: 'far', pubKey: makeKey([0x07, 0xc3, 0x13]) };
+const FAR_NODE_ID = pubkeyToNodeId(FAR.pubKey);
+
+/**
+ * A contact as meshcore.js hands it over: a 64-byte path buffer and the path length byte read
+ * as int8. `staleTail` stands for bytes a longer, older route left behind the current one.
+ */
+function makeRoutedRadioContact(opts: {
+  pubKey: Uint8Array;
+  advName: string;
+  outPathLenByte: number;
+  route: number[];
+  staleTail?: number[];
+}) {
+  const outPath = new Uint8Array(64);
+  outPath.set(opts.route, 0);
+  outPath.set(opts.staleTail ?? [], opts.route.length);
+  return {
+    publicKey: opts.pubKey,
+    advName: opts.advName,
+    type: 2,
+    lastAdvert: 1_700_000_000,
+    advLat: 0,
+    advLon: 0,
+    outPath,
+    outPathLen: opts.outPathLenByte > 127 ? opts.outPathLenByte - 256 : opts.outPathLenByte,
+  };
+}
+
+interface RadioRouteScenario {
+  name: string;
+  relays: { name: string; pubKey: Uint8Array }[];
+  outPathLenByte: number;
+  route: number[];
+  staleTail?: number[];
+  wirePath: number[];
+  wireFlags: number;
+}
+
+const RADIO_ROUTE_SCENARIOS: RadioRouteScenario[] = [
+  {
+    name: 'one relay, 1-byte hashes',
+    relays: [NEAR],
+    outPathLenByte: 0x01,
+    route: [0x57],
+    staleTail: [0xee, 0xdd],
+    wirePath: [0x57, 0x07, 0x57],
+    wireFlags: 0,
+  },
+  {
+    name: 'one relay, 2-byte hashes',
+    relays: [NEAR],
+    outPathLenByte: 0x41,
+    route: [0x57, 0xa1],
+    staleTail: [0xee, 0xdd],
+    wirePath: [0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1],
+    wireFlags: 1,
+  },
+  {
+    name: 'one relay, 3-byte hashes (sent as 2-byte entries)',
+    relays: [NEAR],
+    outPathLenByte: 0x81,
+    route: [0x57, 0xa1, 0x11],
+    staleTail: [0xee, 0xdd],
+    wirePath: [0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1],
+    wireFlags: 1,
+  },
+  {
+    name: 'two relays, 1-byte hashes',
+    relays: [NEAR, MID],
+    outPathLenByte: 0x02,
+    route: [0x57, 0x21],
+    staleTail: [0xee],
+    wirePath: [0x57, 0x21, 0x07, 0x21, 0x57],
+    wireFlags: 0,
+  },
+  {
+    name: 'two relays, 2-byte hashes',
+    relays: [NEAR, MID],
+    outPathLenByte: 0x42,
+    route: [0x57, 0xa1, 0x21, 0xb2],
+    wirePath: [0x57, 0xa1, 0x21, 0xb2, 0x07, 0xc3, 0x21, 0xb2, 0x57, 0xa1],
+    wireFlags: 1,
+  },
+];
+
+describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
+  beforeEach(() => {
+    resetMeshcoreRuntimeElectronMocks();
+    clearMeshcorePubKeyRegistry();
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    getContactsMock.mockReset();
+    startMeshcoreTracePathMultiplexedMock.mockReset();
+    usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
+    getSelfInfoMock.mockResolvedValue({
+      name: 'SelfRadio',
+      publicKey: SELF_PUBKEY,
+      type: 1,
+      txPower: 22,
+      radioFreq: 902_000_000,
+    });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessagesForHydration).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Answer each trace the way a mesh of these nodes would, or never if it cannot return. */
+  function answerTracesLikeFirmware(relays: RadioRouteScenario['relays']) {
+    const mesh = meshcoreTraceSimChain(relays, FAR);
+    startMeshcoreTracePathMultiplexedMock.mockImplementation((...args: unknown[]) => {
+      const path = args[1] as Uint8Array;
+      const flags = (args[4] as number | undefined) ?? 0;
+      const sim = simulateMeshcoreTrace(mesh, path, flags);
+      if (!sim.returned) return Promise.reject(new Error('timeout'));
+      return Promise.resolve({
+        pathLen: path.length >> (flags & 3),
+        pathLenByte: path.length,
+        flags,
+        pathHashes: Array.from(path),
+        pathSnrs: Array.from({ length: sim.snrCount }, () => 20),
+        lastSnr: 6,
+        tag: 7,
+      });
+    });
+  }
+
+  async function pingFar(result: Awaited<ReturnType<typeof connectConfiguredRuntime>>) {
+    let ok = false;
+    await act(async () => {
+      const tracePromise = result.current.traceRoute(FAR_NODE_ID);
+      await vi.advanceTimersByTimeAsync(ONE_HOP_FULL_PRIME_MS);
+      ok = await tracePromise;
+    });
+    return ok;
+  }
+
+  it.each(RADIO_ROUTE_SCENARIOS)(
+    'ping comes back through $name',
+    async ({ relays, outPathLenByte, route, staleTail, wirePath, wireFlags }) => {
+      getContactsMock.mockResolvedValue([
+        makeRoutedRadioContact({
+          pubKey: FAR.pubKey,
+          advName: 'DEN-FAR-RC',
+          outPathLenByte,
+          route,
+          staleTail,
+        }),
+      ]);
+      answerTracesLikeFirmware(relays);
+
+      const result = await connectConfiguredRuntime();
+      expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(relays.length);
+
+      vi.useFakeTimers();
+      const ok = await pingFar(result);
+
+      expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(1);
+      const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
+      expect(Array.from(call?.[1] as Uint8Array)).toEqual(wirePath);
+      expect(call?.[4] ?? 0).toBe(wireFlags);
+      expect(result.current.meshcorePingErrors.get(FAR_NODE_ID)).toBeUndefined();
+      expect(ok).toBe(true);
+      expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(relays.length);
+      const shown = result.current.meshcoreTraceResults.get(FAR_NODE_ID);
+      expect(shown?.pathLen).toBe(relays.length + 1);
+      // The reply covers the round trip; the result keeps the outbound leg: the relays and
+      // the repeater, one SNR per relay, and the SNR the repeater heard the trace at.
+      const entryBytes = 1 << wireFlags;
+      expect(shown?.pathHashes).toEqual(wirePath.slice(0, (relays.length + 1) * entryBytes));
+      expect(shown?.pathSnrs).toHaveLength(relays.length);
+      expect(shown?.lastSnr).toBe(5);
+      // The verified route is saved to path history in its stored shape at every hash size
+      // (1-byte hashes: the relays plus the one trailing byte the app slices with them).
+      const storedRoute =
+        outPathLenByte < 0x40 ? [...route, ...(staleTail ?? []).slice(0, 1)] : route;
+      expect(usePathHistoryStore.getState().records.get(FAR_NODE_ID)?.[0]?.pathBytes).toEqual(
+        storedRoute,
+      );
+    },
+  );
+
+  it('a second ping reuses the route the first one stored', async () => {
+    const scenario = RADIO_ROUTE_SCENARIOS[0];
+    getContactsMock.mockResolvedValue([
+      makeRoutedRadioContact({
+        pubKey: FAR.pubKey,
+        advName: 'DEN-FAR-RC',
+        outPathLenByte: scenario.outPathLenByte,
+        route: scenario.route,
+        staleTail: scenario.staleTail,
+      }),
+    ]);
+    answerTracesLikeFirmware(scenario.relays);
+    const result = await connectConfiguredRuntime();
+
+    vi.useFakeTimers();
+    expect(await pingFar(result)).toBe(true);
+    expect(await pingFar(result)).toBe(true);
+
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(2);
+    const second = startMeshcoreTracePathMultiplexedMock.mock.calls[1];
+    expect(Array.from(second?.[1] as Uint8Array)).toEqual(scenario.wirePath);
+  });
+
+  it('a 1-hop repeater with no radio route is pinged through a zero-hop repeater at 2-byte width', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        makeRepeaterContactRow({
+          nodeId: pubkeyToNodeId(NEAR.pubKey),
+          pubKeyHex: keyHex(NEAR.pubKey),
+          hopsAway: 0,
+          advName: 'DEN-NEAR-RC',
+        }),
+        makeRepeaterContactRow({
+          nodeId: FAR_NODE_ID,
+          pubKeyHex: keyHex(FAR.pubKey),
+          hopsAway: 1,
+          advName: 'DEN-FAR-RC',
+        }),
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
+    // 0x40: zero hops, stored with 2-byte path hashes.
+    getContactsMock.mockResolvedValue([
+      makeRoutedRadioContact({
+        pubKey: NEAR.pubKey,
+        advName: 'DEN-NEAR-RC',
+        outPathLenByte: 0x40,
+        route: [],
+      }),
+      makeRoutedRadioContact({
+        pubKey: FAR.pubKey,
+        advName: 'DEN-FAR-RC',
+        outPathLenByte: 0x40,
+        route: [],
+      }),
+    ]);
+    answerTracesLikeFirmware([NEAR]);
+    const result = await connectConfiguredRuntime();
+    expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(1);
+
+    vi.useFakeTimers();
+    const ok = await pingFar(result);
+
+    const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
+    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1]);
+    expect(call?.[4] ?? 0).toBe(1);
+    expect(ok).toBe(true);
+  });
+
+  it('room login still reads one hop from the route a synthesized 1-byte ping stored', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        makeRepeaterContactRow({
+          nodeId: pubkeyToNodeId(NEAR.pubKey),
+          pubKeyHex: keyHex(NEAR.pubKey),
+          hopsAway: 0,
+          advName: 'DEN-NEAR-RC',
+        }),
+        makeRepeaterContactRow({
+          nodeId: FAR_NODE_ID,
+          pubKeyHex: keyHex(FAR.pubKey),
+          hopsAway: 1,
+          advName: 'DEN-FAR-RC',
+        }),
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
+    getContactsMock.mockResolvedValue([
+      makeRadioContact(NEAR.pubKey, 'DEN-NEAR-RC'),
+      makeRadioContact(FAR.pubKey, 'DEN-FAR-RC'),
+    ]);
+    answerTracesLikeFirmware([NEAR]);
+    const result = await connectConfiguredRuntime();
+
+    vi.useFakeTimers();
+    expect(await pingFar(result)).toBe(true);
+
+    const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
+    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
+    // The verified route goes to path history in the same bytes the shared route map holds.
+    const stored = usePathHistoryStore.getState().records.get(FAR_NODE_ID)?.[0]?.pathBytes ?? [];
+    expect(stored).toEqual([0x57, 0x07]);
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 1 }, Uint8Array.from(stored))).toBe(1);
+  });
+
+  it('a 1-hop repeater with no route and no relay fails with no route at 2-byte width', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
+      contacts: [
+        makeRepeaterContactRow({
+          nodeId: FAR_NODE_ID,
+          pubKeyHex: keyHex(FAR.pubKey),
+          hopsAway: 1,
+          advName: 'DEN-FAR-RC',
+        }),
+      ],
+      nodes: [],
+      hopHistory: [],
+      messages: [],
+    });
+    getContactsMock.mockResolvedValue([
+      makeRoutedRadioContact({
+        pubKey: FAR.pubKey,
+        advName: 'DEN-FAR-RC',
+        outPathLenByte: 0x40,
+        route: [],
+      }),
+    ]);
+    answerTracesLikeFirmware([NEAR]);
+    const result = await connectConfiguredRuntime();
+    expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(1);
+
+    vi.useFakeTimers();
+    const ok = await pingFar(result);
+
+    expect(ok).toBe(false);
+    expect(startMeshcoreTracePathMultiplexedMock).not.toHaveBeenCalled();
+    expect(result.current.meshcorePingErrors.get(FAR_NODE_ID)).toBe(
+      MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+    );
   });
 });

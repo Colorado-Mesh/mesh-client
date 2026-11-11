@@ -465,6 +465,14 @@ describe('meshcoreSliceContactOutPathForTrace', () => {
     expect(meshcoreSliceContactOutPathForTrace(buf, -1)).toEqual(new Uint8Array([10, 20, 30]));
   });
 
+  it('takes whole 3-byte hops when a packed 3-byte length arrives as a negative int8', () => {
+    // 0x81: one hop of 3 bytes; the bytes after it are left over from an older, longer route.
+    const buf = new Uint8Array([0x57, 0xa1, 0x11, 0xee, 0xdd, 0, 0]);
+    expect(meshcoreSliceContactOutPathForTrace(buf, 0x81 - 256)).toEqual(
+      new Uint8Array([0x57, 0xa1, 0x11]),
+    );
+  });
+
   it('returns empty when negative length and buffer all zeros', () => {
     const buf = new Uint8Array([0, 0, 0]);
     expect(meshcoreSliceContactOutPathForTrace(buf, -1).length).toBe(0);
@@ -542,6 +550,15 @@ describe('meshcoreInferHopsFromOutPath', () => {
   it('uses contact outPathLen as hop count (last-byte index semantics)', () => {
     expect(meshcoreInferHopsFromOutPath({ outPathLen: 1 })).toBe(1);
     expect(meshcoreInferHopsFromOutPath({ outPathLen: 3 })).toBe(3);
+  });
+
+  it('reads the hop count out of a packed multi-byte path length', () => {
+    const twoByteHops = new Uint8Array([0x57, 0xa1, 0x21, 0xb2, 0xee]);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 0x41, outPath: twoByteHops })).toBe(1);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 0x42, outPath: twoByteHops })).toBe(2);
+    // 0x81 (one 3-byte hop) arrives from meshcore.js as int8.
+    const threeByteHop = new Uint8Array([0x57, 0xa1, 0x11, 0xee, 0xdd]);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 0x81 - 256, outPath: threeByteHop })).toBe(1);
   });
 
   it('when outPathLen is 0 but buffer still encodes hops, infers from bytes', () => {

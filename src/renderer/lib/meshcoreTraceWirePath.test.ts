@@ -84,6 +84,25 @@ describe('meshcoreTraceWirePath', () => {
   });
 });
 
+describe('meshcoreTraceWirePath round trips', () => {
+  it('keeps a round trip as 1-byte hops even when it matches the start of the destination key', () => {
+    const path = destPubKey.slice(0, 3);
+    expect(meshcoreTraceWirePath(path, { hashSizeBytes: 1, destPubKey, roundTrip: true })).toEqual({
+      path,
+      flags: 0,
+    });
+  });
+
+  it('cuts every 3-byte hash of a round trip to 2 bytes', () => {
+    const path = bytes(0x57, 0xa1, 0x11, 0x07, 0xc3, 0x13, 0x57, 0xa1, 0x11);
+    expect(meshcoreTraceWirePath(path, { hashSizeBytes: 3, destPubKey, roundTrip: true })).toEqual({
+      path: bytes(0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1),
+      flags: 1,
+      shortenedHops: true,
+    });
+  });
+});
+
 describe('buildSendTracePathFrame', () => {
   it('lays out command, tag, auth, flags and path as companion firmware reads them', () => {
     const frame = buildSendTracePathFrame(0x04030201, 0, 1, bytes(0xaa, 0xbb));

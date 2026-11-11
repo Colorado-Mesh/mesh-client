@@ -49,6 +49,23 @@ const REPEATER_REPLY_DELAY_MS = 300;
 export interface RepeaterRadioOptions {
   /** Companion path hash mode: 0, 1 or 2 for 1-, 2- or 3-byte path hashes. */
   pathHashMode?: 0 | 1 | 2;
+  /**
+   * Add a second repeater that is out of the companion's range: it is reached through
+   * `relays` relay repeaters in a chain, and the radio already holds that route as the
+   * contact's out_path with `hashSizeBytes` per relay.
+   */
+  farRepeater?: { relays: 1 | 2; hashSizeBytes: 1 | 2 | 3 };
+}
+
+export const FAR_REPEATER_NAME = 'Far Ridge Repeater';
+/** Bytes an older, longer route left in the far contact's path buffer after the current one. */
+const FAR_ROUTE_STALE_TAIL = [0xee, 0xdd];
+
+/** A 32-byte key whose first three bytes are given, so 1-, 2- and 3-byte hashes differ. */
+function keyWithLead(lead: [number, number, number]): Buffer {
+  const key = Buffer.alloc(32, 0x5a);
+  Buffer.from(lead).copy(key, 0);
+  return key;
 }
 
 export async function startMeshcoreRepeaterRadio(selfId = 171, options: RepeaterRadioOptions = {}) {
@@ -76,6 +93,27 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
   const selfKey = Buffer.alloc(32);
   selfKey.writeUInt32LE(selfId);
   const repeaterKey = Buffer.from(Array.from({ length: 32 }, (_, i) => (0xc3 + i * 7) & 0xff));
+  const far = options.farRepeater;
+  const farKey = keyWithLead([0x07, 0xc3, 0x13]);
+  const relayKeys = [keyWithLead([0x57, 0xa1, 0x11]), keyWithLead([0x21, 0xb2, 0x12])].slice(
+    0,
+    far?.relays ?? 0,
+  );
+  /** Nodes a trace must visit to reach the far repeater and come back to the companion. */
+  const farRoundTrip = [...relayKeys, farKey, ...relayKeys.slice().reverse()];
+  /** The zero-hop repeater also hears the far repeater, so a trace may turn through it. */
+  const farRoundTripViaRepeater = [repeaterKey, farKey, repeaterKey];
+  /** False: the radio has no route to the far repeater (out_path_len 0xFF). */
+  let farRouteKnown = true;
+  /** Firmware packs a contact route as hop count (low 6 bits) and hash size code (high 2). */
+  const farContactPathLen = far ? relayKeys.length | ((far.hashSizeBytes - 1) << 6) : 0;
+  const farContactOutPath = () => {
+    const outPath = Buffer.alloc(64);
+    const size = far?.hashSizeBytes ?? 1;
+    relayKeys.forEach((key, i) => key.copy(outPath, i * size, 0, size));
+    Buffer.from(FAR_ROUTE_STALE_TAIL).copy(outPath, relayKeys.length * size);
+    return outPath;
+  };
   const self = Buffer.concat([
     Buffer.from([5, 1, 22, 22]),
     selfKey,
@@ -178,7 +216,22 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
           const now = Math.floor(Date.now() / 1000);
           const pathLen = Buffer.alloc(1);
           pathLen.writeInt8(contactPathLen);
-          send(Buffer.concat([Buffer.from([2]), u32(1)]));
+          send(Buffer.concat([Buffer.from([2]), u32(far ? 2 : 1)]));
+          if (far) {
+            send(
+              Buffer.concat([
+                Buffer.from([3]),
+                farKey,
+                Buffer.from([2, 0]), // ADV_TYPE_REPEATER, flags
+                Buffer.from([farRouteKnown ? farContactPathLen : 0xff]),
+                farRouteKnown ? farContactOutPath() : Buffer.alloc(64),
+                text(FAR_REPEATER_NAME, 32),
+                u32(now),
+                Buffer.alloc(8),
+                u32(now),
+              ]),
+            );
+          }
           send(
             Buffer.concat([
               Buffer.from([3]),
@@ -247,7 +300,12 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
           deliverReply(
             'status',
             route,
-            Buffer.concat([Buffer.from([0x87, 0]), repeaterKey.subarray(0, 6), statusData()]),
+            Buffer.concat([
+              Buffer.from([0x87, 0]),
+              // The reply names the repeater that was asked (the request carries its key).
+              (far && command.subarray(1, 33).equals(farKey) ? farKey : repeaterKey).subarray(0, 6),
+              statusData(),
+            ]),
           );
           break;
         }
@@ -318,7 +376,19 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
           const firstEntryIsRepeater = path
             .subarray(0, entrySize)
             .equals(repeaterKey.subarray(0, entrySize));
-          if (!firstEntryIsRepeater || path.length !== entrySize) {
+          // The far repeater sits behind a chain of relays. Each node forwards when the next
+          // entry is a prefix of its key, and the companion hears the trace finish only when
+          // the last entry belongs to the relay next to it: out through the relays, the far
+          // repeater, then back through the relays.
+          const entries = path.length >> sizeShift;
+          const visits = (route: Buffer[]) =>
+            entries === route.length &&
+            route.every((key, i) =>
+              path.subarray(i * entrySize, (i + 1) * entrySize).equals(key.subarray(0, entrySize)),
+            );
+          const isFarRoundTrip =
+            far != null && (visits(farRoundTrip) || visits(farRoundTripViaRepeater));
+          if (!isFarRoundTrip && (!firstEntryIsRepeater || path.length !== entrySize)) {
             log({
               kind: 'lost',
               route: 'direct',
@@ -402,6 +472,10 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
       contactPathLen = value;
     },
     getContactPathLen: () => contactPathLen,
+    /** Whether the radio holds a route to the far repeater; false reports it as unknown. */
+    setFarRouteKnown: (value: boolean) => {
+      farRouteKnown = value;
+    },
     /** Repeater access-list entry for this companion; null means it does not know us. */
     setRepeaterClient: (value: Pick<RepeaterClient, 'admin' | 'returnPath'> | null) => {
       client = value ? { ...value, lastTimestamp: 0 } : null;

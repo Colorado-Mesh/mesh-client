@@ -4,6 +4,7 @@ import { isValidLatLon } from '../../shared/geoCoords';
 import { bytesToHex } from '../../shared/hexBytes';
 import {
   meshcorePubkeyPathPrefix,
+  meshcoreRadioContactRoute,
   meshcoreTraceDataHashLayout,
   meshcoreUnpackPathLenByte,
 } from '../../shared/meshcorePathHash';
@@ -560,6 +561,11 @@ export function meshcoreSliceContactOutPathForTrace(
     return outPath.slice(0, outPathLen + 1);
   }
   if (typeof outPathLen === 'number' && Number.isFinite(outPathLen) && outPathLen < 0) {
+    // A 3-byte-hash length (0x80 and up) arrives from meshcore.js as a negative int8: take its
+    // whole hops, not the bytes an older route left behind them. -1 (unset) still trims.
+    const route = meshcoreRadioContactRoute(outPathLen);
+    const byteLen = route ? route.hopCount * route.hashSizeBytes : 0;
+    if (byteLen > 0) return outPath.slice(0, byteLen);
     return meshcoreTrimTrailingZerosOutPath(outPath);
   }
   if (
@@ -599,6 +605,12 @@ export function meshcoreInferHopsFromOutPath(contact: {
   outPath?: Uint8Array;
 }): number | undefined {
   const len = contact.outPathLen;
+  // A packed 2- or 3-byte length carries the hop count itself; the path holds only relay
+  // hashes, so counting its bytes reads one hop too many (or four, for a negative int8).
+  const packedRoute = meshcoreRadioContactRoute(len);
+  if (packedRoute && packedRoute.hashSizeBytes > 1 && packedRoute.hopCount >= 1) {
+    return packedRoute.hopCount;
+  }
   const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
   if (len != null && Number.isFinite(len) && len >= 0 && len <= MESHCORE_OUT_PATH_LEN_MAX) {
     // outPathLen 0 uses slice(0,1) in the trace helper — too short when the buffer still holds a

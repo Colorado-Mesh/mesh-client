@@ -365,6 +365,7 @@ import {
   meshcoreIsUsableTraceStoredPath,
   meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
+  meshcoreTraceOutboundLegOfRoundTrip,
   meshcoreTracePathMinByteLength,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
@@ -5834,7 +5835,7 @@ export function useMeshcoreRuntime() {
               !routePrimeMetrics.path129Received;
             const hasResolvedPath =
               meshcoreIsUsableTraceStoredPath(
-                pathResolved.outboundPath,
+                pathResolved.storedPath,
                 hopsAway,
                 pubKey,
                 synthHashSizeBytes,
@@ -5851,8 +5852,10 @@ export function useMeshcoreRuntime() {
               radioSaysMultiHop,
               hasResolvedPath,
             });
-            if (pathResolved.composed) {
-              outPathMapRef.current.set(nodeId, pathResolved.outboundPath);
+            // The shared route map keeps the stored shape (1-byte hashes: relays plus one
+            // trailing byte) that room login and repeater admin count hops from.
+            if (pathResolved.composed && pathResolved.storedPath) {
+              outPathMapRef.current.set(nodeId, pathResolved.storedPath);
               console.debug(
                 `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (outbound=${pathResolved.outboundPath.length} wire=${outPath.length} autoReturn=${pathResolved.autoReturn ? 1 : 0})`,
               );
@@ -5876,7 +5879,7 @@ export function useMeshcoreRuntime() {
               });
               return false;
             }
-            const attemptPathBytes = Array.from(pathResolved.outboundPath);
+            const attemptPathBytes = Array.from(pathResolved.storedPath ?? []);
             tracePathHash =
               attemptPathBytes.length > 0 ? computePathHash(attemptPathBytes) : undefined;
             let tracePathInUse = outPath;
@@ -5896,8 +5899,12 @@ export function useMeshcoreRuntime() {
                 companionPathHashMode,
               ),
               destPubKey: pubKey,
+              roundTrip: traceAutoReturn,
             };
             let traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
+            console.debug(
+              `[useMeshcoreRuntime] traceRoute wire node=0x${nodeId.toString(16)} flags=${traceWire.flags} path=${Array.from(traceWire.path, (b) => b.toString(16).padStart(2, '0')).join('')}`,
+            );
             const firstTrace = startMeshcoreTracePathMultiplexed(
               conn,
               traceWire.path,
@@ -5954,35 +5961,48 @@ export function useMeshcoreRuntime() {
               }
             }
             const traceHops = meshcoreTracePathLenToHops(result.pathLen, traceAutoReturn);
-            // Prefer contact-style outbound intermediates; auto-return wire paths must not
-            // replace the stored outPath with the round-trip bytes.
+            // An auto-return reply carries the round trip; keep the stored route as it was.
             const verifiedOutPath = traceAutoReturn
-              ? pathResolved.outboundPath
+              ? (pathResolved.storedPath ?? new Uint8Array(0))
               : meshcoreTraceResultToOutPathBytes(
                   result.pathLenByte,
                   result.pathHashes,
                   pubKey,
                   result.flags,
                 );
-            // A reply to shortened 3-byte hashes carries 2-byte hashes; keep the stored path.
-            if (verifiedOutPath.length > 0 && !traceWire.shortenedHops) {
+            // A reply to shortened 3-byte hashes carries 2-byte hashes, which must not replace
+            // the stored path. An auto-return ping saves the stored route itself, so it is
+            // safe at every hash size.
+            if (verifiedOutPath.length > 0 && (traceAutoReturn || !traceWire.shortenedHops)) {
               outPathMapRef.current.set(nodeId, verifiedOutPath);
               const verifiedPathBytes = Array.from(verifiedOutPath);
               usePathHistoryStore
                 .getState()
                 .recordPathUpdated(nodeId, verifiedPathBytes, traceHops, false);
             }
-            const convertedSnrs = (result.pathSnrs ?? []).map(
-              (s) => s * MESHCORE_RPC_SNR_RAW_TO_DB,
-            );
-            const convertedLastSnr = result.lastSnr;
+            const replySnrs = (result.pathSnrs ?? []).map((s) => s * MESHCORE_RPC_SNR_RAW_TO_DB);
+            // An auto-return reply covers the round trip. Keep the outbound leg (relays, then
+            // this node, with the SNR this node heard the trace at) so the path row and the
+            // SNR column describe the route to the node, not the trip back.
+            const outboundLeg = traceAutoReturn
+              ? meshcoreTraceOutboundLegOfRoundTrip({
+                  pathHashes: result.pathHashes ?? [],
+                  pathSnrsDb: replySnrs,
+                  entryBytes: meshcorePathHashSizeFromTraceFlags(result.flags),
+                })
+              : null;
+            const convertedSnrs = outboundLeg ? outboundLeg.pathSnrsDb : replySnrs;
+            const convertedLastSnr = outboundLeg ? outboundLeg.destSnrDb : result.lastSnr;
+            const displayPathHashes = outboundLeg
+              ? outboundLeg.pathHashes
+              : (result.pathHashes ?? []);
             // Store outbound segment count so UI hop math stays pathLen-1 without auto-return.
             const displayPathLen = traceHops + 1;
             setMeshcoreTraceResults((prev) => {
               const next = new Map(prev);
               next.set(nodeId, {
                 pathLen: displayPathLen,
-                pathHashes: result.pathHashes ?? [],
+                pathHashes: displayPathHashes,
                 hashSizeBytes: meshcorePathHashSizeFromTraceFlags(result.flags),
                 pathSnrs: convertedSnrs,
                 lastSnr: convertedLastSnr,
@@ -6026,7 +6046,7 @@ export function useMeshcoreRuntime() {
                     errLikeToLogString(e),
                 );
               });
-            useRepeaterSignalStore.getState().recordSignal(nodeId, result.lastSnr);
+            useRepeaterSignalStore.getState().recordSignal(nodeId, convertedLastSnr);
             bumpMeshcoreNodeLastHeardFromRpc(nodeId);
             if (tracePathHash) {
               usePathHistoryStore.getState().recordOutcome(nodeId, tracePathHash, true);

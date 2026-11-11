@@ -21,6 +21,12 @@ export interface MeshcoreTraceWirePathOpts {
   hashSizeBytes: 1 | 2 | 3;
   /** Public key of the node being traced. */
   destPubKey: Uint8Array;
+  /**
+   * The path is a multi-hop round trip (`[...relays, dest, ...relays reversed]`), so it is
+   * always whole hashes and never a single destination entry, even when its bytes happen to
+   * match the start of the destination key.
+   */
+  roundTrip?: boolean;
 }
 
 function isPrefixOf(prefix: Uint8Array, whole: Uint8Array): boolean {
@@ -46,7 +52,7 @@ export function meshcoreTraceWirePath(
   path: Uint8Array,
   opts: MeshcoreTraceWirePathOpts,
 ): MeshcoreTraceWirePath {
-  if (isPrefixOf(path, opts.destPubKey)) {
+  if (!opts.roundTrip && isPrefixOf(path, opts.destPubKey)) {
     if (path.length >= TRACE_LONGEST_ENTRY_BYTES) {
       return { path: path.slice(0, TRACE_LONGEST_ENTRY_BYTES), flags: 3 };
     }

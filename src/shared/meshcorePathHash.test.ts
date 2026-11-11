@@ -7,6 +7,7 @@ import {
   meshcorePathHashSizeFromMode,
   meshcorePathHashSizeFromTraceFlags,
   meshcorePubkeyPathPrefix,
+  meshcoreRadioContactRoute,
   meshcoreResolvePathSenderFromBytes,
   meshcoreSplitPathHashSegments,
   meshcoreTraceDataHashLayout,
@@ -29,6 +30,24 @@ describe('meshcorePathHash', () => {
       hashSizeBytes: 2,
       packed: 0x45,
     });
+  });
+
+  it('reads a radio contact path length the way firmware packs it', () => {
+    expect(meshcoreRadioContactRoute(0x00)).toEqual({ hopCount: 0, hashSizeBytes: 1 });
+    expect(meshcoreRadioContactRoute(0x02)).toEqual({ hopCount: 2, hashSizeBytes: 1 });
+    expect(meshcoreRadioContactRoute(0x41)).toEqual({ hopCount: 1, hashSizeBytes: 2 });
+    // meshcore.js reads the byte as int8, so 3-byte-hash lengths arrive negative.
+    expect(meshcoreRadioContactRoute(0x81 - 256)).toEqual({ hopCount: 1, hashSizeBytes: 3 });
+    expect(meshcoreRadioContactRoute(0x81)).toEqual({ hopCount: 1, hashSizeBytes: 3 });
+  });
+
+  it('reads 0xFF, the reserved size code and a missing length as no known route', () => {
+    expect(meshcoreRadioContactRoute(-1)).toBeNull();
+    expect(meshcoreRadioContactRoute(0xff)).toBeNull();
+    expect(meshcoreRadioContactRoute(0xc1)).toBeNull();
+    expect(meshcoreRadioContactRoute(null)).toBeNull();
+    expect(meshcoreRadioContactRoute(undefined)).toBeNull();
+    expect(meshcoreRadioContactRoute(Number.NaN)).toBeNull();
   });
 
   it('rejects hop counts above mode limit', () => {
