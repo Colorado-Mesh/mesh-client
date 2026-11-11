@@ -41,11 +41,11 @@ describe('Buttonmash CI', () => {
     expect(workflow).toContain('persist-credentials: false');
     expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(workflow).toContain("node-version: '22.23.2'");
-    expect(workflow).toContain('uses: cj-vana/buttonmash@338e2efae052716adbcebafd0e2583ab3b4cfde8');
+    expect(workflow).toContain('uses: cj-vana/buttonmash@4928771df5625a6cb72207aa5201687e24849184');
     expect(workflow).toContain(
       'uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
     );
-    expect(workflow).toContain("version: '0.4.0'");
+    expect(workflow).toContain("version: '0.5.0'");
     expect(config.seed).toBe('ci');
     expect(config.budget).toMatchObject({
       maxActions: 350,
