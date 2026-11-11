@@ -28,6 +28,7 @@ coverage/
 .eslintcache
 .context-os
 .hermes/
+.ori/
 .rtk
 # Repo-local Ratspeak overlay workspace (clone-ratspeak-stack.sh target)
 .rsstack/
