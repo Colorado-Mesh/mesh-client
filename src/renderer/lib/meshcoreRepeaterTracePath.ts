@@ -245,8 +245,8 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
       opts.pubKey,
       hashSizeBytes,
     ) &&
-    opts.radioContactPathLen != null &&
-    opts.radioContactPathLen >= 0
+    // The radio must know a route: 0xFF / -1 is none, and a 3-byte length arrives negative.
+    meshcoreRadioContactRoute(opts.radioContactPathLen) != null
   ) {
     storedPath = opts.pathFromHistory;
   }

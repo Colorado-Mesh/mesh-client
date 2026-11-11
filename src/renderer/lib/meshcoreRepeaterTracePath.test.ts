@@ -211,6 +211,22 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.outPathSeed).toEqual(historyPath);
   });
 
+  it('1-hop: uses path history when a 3-byte route length arrives as a negative int8', () => {
+    const historyPath = new Uint8Array([0x57, 0xa1, 0x11]);
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: new Uint8Array(pubKey),
+      hopsAway: 1,
+      pubKey,
+      // 0x81 (one hop of 3-byte hashes) as meshcore.js reads it.
+      radioContactPathLen: 0x81 - 256,
+      pathFromHistory: historyPath,
+    });
+    expect(plan.hashSizeBytes).toBe(3);
+    expect(plan.storedPath).toEqual(historyPath);
+    expect(plan.pathTooShort).toBe(false);
+    expect(plan.needsRoutePrime).toBe(false);
+  });
+
   it('1-hop: ignores path history when radio reports no outbound path', () => {
     const historyPath = new Uint8Array([0xaa, 0xbb]);
     const plan = planMeshcoreRepeaterTraceRoute({

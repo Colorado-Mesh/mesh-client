@@ -33,6 +33,7 @@ import {
   meshcoreFirmwareSupportsMultibytePathHash,
   type MeshcorePathHashMode,
   meshcorePathHashSizeFromTraceFlags,
+  meshcoreRadioContactRoute,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
 import { pushAppToast } from '../components/Toast';
@@ -5783,8 +5784,7 @@ export function useMeshcoreRuntime() {
               }
               if (
                 (!routeStoredPath || routeStoredPath.length < minPathBytes) &&
-                radioContactPathLen != null &&
-                radioContactPathLen >= 0
+                meshcoreRadioContactRoute(radioContactPathLen) != null
               ) {
                 try {
                   const selPrime = await usePathHistoryStore
