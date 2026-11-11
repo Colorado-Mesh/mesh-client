@@ -7,6 +7,7 @@ import type { TeamMemberLink } from '@/shared/teamRosterTypes';
 
 import { TeamProtocolBadges } from './TeamProtocolBadges';
 
+/** Build a team-member link with sensible defaults. */
 function link(overrides: Partial<TeamMemberLink>): TeamMemberLink {
   return { protocol: 'meshtastic', durableKey: '1', onRoster: true, ...overrides };
 }

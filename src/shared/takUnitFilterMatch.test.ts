@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { TakFilterSubject, TakUnitFilter } from './tak-types';
 import { matchTakUnitFilter } from './takUnitFilterMatch';
 
+/** Build the node subject a filter is tested against. */
 function subject(overrides: Partial<TakFilterSubject> = {}): TakFilterSubject {
   return { kind: 'companion', protocol: 'meshcore', ...overrides };
 }
 
+/** Build an enabled TAK unit filter with defaults. */
 function filter(overrides: Partial<TakUnitFilter> = {}): TakUnitFilter {
   return {
     enabled: true,

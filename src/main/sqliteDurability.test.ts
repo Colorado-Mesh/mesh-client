@@ -10,6 +10,7 @@ const MODE_NUMBER: Record<string, number> = {
 };
 
 /** Minimal sqlite handle: `pragma('synchronous', { simple: true })` reads, `pragma('synchronous = X')` writes. */
+/** In-memory sqlite handle with a settable `synchronous` pragma. */
 function makeDb(initialMode = 1): {
   db: { pragma: ReturnType<typeof vi.fn> };
   mode: () => number;

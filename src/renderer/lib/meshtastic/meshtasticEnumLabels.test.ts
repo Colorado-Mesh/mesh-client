@@ -8,10 +8,12 @@ import {
 } from './meshtasticEnumLabels';
 
 /** Translator that has no bundled strings, so labels fall back to humanized enum names. */
+/** Translator with no bundled strings, so labels use humanized enum names. */
 const untranslated = (_key: string, options?: Record<string, unknown>): string =>
   typeof options?.defaultValue === 'string' ? options.defaultValue : '';
 
 /** Translator that returns a supplied override for one key. */
+/** Translator that overrides region keys and falls back for the rest. */
 const translated = (key: string, options?: Record<string, unknown>): string =>
   key.includes('regions') ? 'Translated region' : untranslated(key, options);
 

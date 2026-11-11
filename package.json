@@ -108,7 +108,7 @@
     "i18n:prune-unused": "node scripts/prune-i18n-unused.mjs",
     "preinstall": "node scripts/check-package-manager.mjs && pnpm dlx only-allow pnpm",
     "postinstall": "node scripts/rebuild-native.mjs",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --max-warnings 0 --cache --concurrency=4",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "prepare": "git config core.hooksPath .githooks",

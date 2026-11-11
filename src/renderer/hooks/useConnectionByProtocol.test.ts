@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
@@ -13,6 +13,7 @@ import {
 } from '../stores/identityStore';
 import { useConnectionByProtocol } from './useConnectionByProtocol';
 
+/** Build a connected identity record for the given protocol. */
 function identity(id: string, protocol: Protocol, createdAt: number): IdentityRecord {
   return {
     id,
@@ -73,8 +74,9 @@ describe('useConnectionByProtocol', () => {
     setConnection('mt-1', { status: 'connected' });
     const { result } = renderHook(() => useConnectionByProtocol('meshtastic'));
     expect(result.current?.status).toBe('connected');
-    removeConnection('mt-1');
-    const { result: afterRemoval } = renderHook(() => useConnectionByProtocol('meshtastic'));
-    expect(afterRemoval.current).toBeNull();
+    act(() => {
+      removeConnection('mt-1');
+    });
+    expect(result.current).toBeNull();
   });
 });

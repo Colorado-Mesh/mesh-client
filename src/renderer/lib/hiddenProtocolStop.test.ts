@@ -13,6 +13,7 @@ vi.mock('./reticulum/reticulumManualStackStopSuppress', () => ({
   setReticulumManualStackStopSuppress: vi.fn(),
 }));
 
+/** Session stub exposing the explicit-disconnect latch hooks. */
 function fakeSession(): {
   latchExplicitDisconnect: ReturnType<typeof vi.fn>;
   clearExplicitDisconnectLatch: ReturnType<typeof vi.fn>;

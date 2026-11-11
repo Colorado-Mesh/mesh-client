@@ -271,7 +271,7 @@ describe('CI workflow contracts', () => {
     expect(read('scripts/ci-eslint-shard.mjs')).toContain("'eslint.ci.config.mjs'");
     const scripts = JSON.parse(read('package.json')).scripts;
     expect(scripts['format:check']).toContain('**/*.{ts,tsx,js,jsx,json,css,md,sh}');
-    expect(scripts.lint).toBe('eslint . --max-warnings 0');
+    expect(scripts.lint).toContain('--max-warnings 0');
 
     for (const file of ['src/shared/tcpPort.ts', 'src/renderer/App.tsx', 'e2e/startup.spec.ts']) {
       const original = await local.calculateConfigForFile(file);

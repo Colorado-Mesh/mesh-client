@@ -8,6 +8,7 @@ const FILLED_YELLOW = '#facc15';
 const FILLED_RED = '#f87171';
 const UNFILLED = '#364156';
 
+/** Fill colors of the three signal bars, left to right. */
 function barFills(container: HTMLElement): string[] {
   return Array.from(container.querySelectorAll('rect')).map((r) => r.getAttribute('fill') ?? '');
 }
