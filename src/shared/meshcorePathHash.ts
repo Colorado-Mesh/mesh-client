@@ -26,11 +26,14 @@ export function meshcorePathHashModeFromSize(hashSizeBytes: number): MeshcorePat
   return null;
 }
 
-export function meshcorePathHashSizeFromTraceFlags(flags: number): 1 | 2 | 3 {
-  const code = flags & 0x03;
-  if (code === 1) return 2;
-  if (code === 2) return 3;
-  return 1;
+/**
+ * Bytes per hop in a trace path. Firmware (`Mesh::onRecvPacket`, TRACE) uses
+ * `1 << (flags & 3)`, which is not the 1/2/3-byte path hash size.
+ */
+export type MeshcoreTraceEntrySize = 1 | 2 | 4 | 8;
+
+export function meshcorePathHashSizeFromTraceFlags(flags: number): MeshcoreTraceEntrySize {
+  return (1 << (flags & 0x03)) as MeshcoreTraceEntrySize;
 }
 
 export interface MeshcoreUnpackedPathLen {
@@ -78,7 +81,7 @@ export function meshcorePubkeyPathPrefixHex(pubKey: Uint8Array, hashSizeBytes: 1
 /** Split flat path hash bytes into per-hop segments. */
 export function meshcoreSplitPathHashSegments(
   pathBytes: readonly number[] | Uint8Array,
-  hashSizeBytes: 1 | 2 | 3,
+  hashSizeBytes: 1 | 2 | 3 | MeshcoreTraceEntrySize,
 ): Uint8Array[] {
   const bytes =
     pathBytes instanceof Uint8Array ? pathBytes : Uint8Array.from(pathBytes.map((b) => b & 0xff));
@@ -163,12 +166,17 @@ export function meshcoreResolvePathSenderFromBytes(
 export function meshcoreTraceDataHashLayout(
   pathLenByte: number,
   flags: number,
-): { hopCount: number; hashSizeBytes: 1 | 2 | 3; hashByteLength: number; snrByteLength: number } {
+): {
+  hopCount: number;
+  hashSizeBytes: MeshcoreTraceEntrySize;
+  hashByteLength: number;
+  snrByteLength: number;
+} {
   const path_sz = flags & 0x03;
-  const hashSizeBytes = (path_sz + 1) as 1 | 2 | 3;
+  const hashSizeBytes = meshcorePathHashSizeFromTraceFlags(flags);
   const hashByteLength = pathLenByte & 0xff;
   const snrCount = hashByteLength >> path_sz;
-  const hopCount = hashSizeBytes > 0 ? Math.floor(hashByteLength / hashSizeBytes) : hashByteLength;
+  const hopCount = Math.floor(hashByteLength / hashSizeBytes);
   return {
     hopCount,
     hashSizeBytes,

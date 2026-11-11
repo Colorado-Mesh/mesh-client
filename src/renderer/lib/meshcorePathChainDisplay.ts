@@ -2,6 +2,7 @@ import type { NodeHashCandidate } from '../../shared/meshcoreNodeHash';
 import {
   meshcoreResolveNodeFromPathPrefix,
   meshcoreSplitPathHashSegments,
+  type MeshcoreTraceEntrySize,
 } from '../../shared/meshcorePathHash';
 
 export interface MeshcorePathChainSegment {
@@ -20,7 +21,8 @@ export function formatMeshcorePathSegmentHex(segment: Uint8Array): string {
 
 export interface BuildMeshcorePathChainOpts {
   pathBytes: readonly number[];
-  hashSizeBytes: MeshcoreHashSizeBytes;
+  /** Path hashes are 1–3 bytes; trace replies can also carry 4- or 8-byte entries. */
+  hashSizeBytes: MeshcoreHashSizeBytes | MeshcoreTraceEntrySize;
   getNodeLabel: (nodeId: number) => string;
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
   candidates?: readonly NodeHashCandidate[];
@@ -180,7 +182,7 @@ export function meshcoreHopSegmentTooltip(
 export function meshcoreTraceHopDisplayRows(opts: {
   pathHashes: readonly number[];
   pathSnrs: readonly number[];
-  hashSizeBytes: MeshcoreHashSizeBytes;
+  hashSizeBytes: MeshcoreHashSizeBytes | MeshcoreTraceEntrySize;
   destNodeId?: number | null;
   getNodeLabel: (nodeId: number) => string;
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;

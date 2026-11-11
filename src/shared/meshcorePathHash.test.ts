@@ -53,6 +53,32 @@ describe('meshcorePathHash', () => {
     expect(meshcorePathHashSizeFromTraceFlags(1)).toBe(2);
   });
 
+  it('reads trace entry width as 1 << (flags & 3): 1, 2, 4 or 8 bytes', () => {
+    // Firmware Mesh::onRecvPacket; not the 1/2/3-byte path hash sizes.
+    expect([0, 1, 2, 3].map((flags) => meshcorePathHashSizeFromTraceFlags(flags))).toEqual([
+      1, 2, 4, 8,
+    ]);
+    // A full-key ping retry is one 8-byte entry: one hop, one SNR plus the final SNR.
+    expect(meshcoreTraceDataHashLayout(8, 3)).toEqual({
+      hopCount: 1,
+      hashSizeBytes: 8,
+      hashByteLength: 8,
+      snrByteLength: 2,
+    });
+    expect(meshcoreTraceDataHashLayout(8, 2)).toEqual({
+      hopCount: 2,
+      hashSizeBytes: 4,
+      hashByteLength: 8,
+      snrByteLength: 3,
+    });
+  });
+
+  it('splits an 8-byte trace entry as one segment', () => {
+    const segs = meshcoreSplitPathHashSegments([1, 2, 3, 4, 5, 6, 7, 8], 8);
+    expect(segs).toHaveLength(1);
+    expect(Array.from(segs.at(0)!)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
   it('resolves 2-byte path sender from pubkey prefix', () => {
     const pubKey = Uint8Array.from({ length: 32 }, (_, i) => i);
     const nodeId = 42;

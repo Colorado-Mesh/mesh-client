@@ -1,3 +1,4 @@
+import type { MeshcoreTraceEntrySize } from '../../../shared/meshcorePathHash';
 import type { MeshCoreSelfInfoEnriched, MeshCoreSelfInfoWire } from '../meshcoreTelemetryPrivacy';
 
 /** Self info from the radio (normalized after `enrichMeshCoreSelfInfo`). */
@@ -329,8 +330,8 @@ export interface MeshcoreMessageDbRow {
 export interface MeshcoreTraceResultEntry {
   pathLen: number;
   pathHashes: number[];
-  /** Hash size from TraceData flags; needed to split {@link pathHashes} into hop segments. */
-  hashSizeBytes: 1 | 2 | 3;
+  /** Entry size from TraceData flags; needed to split {@link pathHashes} into hop segments. */
+  hashSizeBytes: MeshcoreTraceEntrySize;
   pathSnrs: number[];
   lastSnr: number;
   tag: number;

@@ -13,6 +13,7 @@ import {
   meshcoreTracePrimeFloodWhenForRoomLogin,
   primeMeshcoreTraceRouteWithFallback,
 } from './meshcoreTraceRoutePrime';
+import { meshcoreTraceWirePath } from './meshcoreTraceWirePath';
 import { meshcoreTraceResultToOutPathBytes } from './meshcoreUtils';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -45,6 +46,8 @@ async function traceRouteForRoomLogin(
   if (seed.length === hashSize && seed.every((b) => b === 0) && pubKey[0] !== 0) {
     seed = meshcorePubkeyPathPrefix(pubKey, hashSize);
   }
+  // Size trace entries the way firmware reads them (see meshcoreTraceWirePath).
+  const wire = meshcoreTraceWirePath(seed, { hashSizeBytes: hashSize, destPubKey: pubKey });
   try {
     const traceCapMs = Math.min(
       MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -56,9 +59,10 @@ async function traceRouteForRoomLogin(
       async () => {
         const handle = startMeshcoreTracePathMultiplexed(
           conn as unknown as MeshcoreTracePathConnection,
-          seed,
+          wire.path,
           Math.min(traceTimeoutMs, traceCapMs),
           runSerialized,
+          wire.flags,
         );
         try {
           return await withTimeout(handle.promise, traceCapMs, 'meshcoreRoomLoginTrace');

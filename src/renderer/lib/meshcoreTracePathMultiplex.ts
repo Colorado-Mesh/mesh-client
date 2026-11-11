@@ -2,6 +2,7 @@ import { meshcoreTraceDataHashLayout } from '@/shared/meshcorePathHash';
 
 import { waitForMeshcoreRadioSentAck } from './meshcoreRadioSentWait';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { buildSendTracePathFrame } from './meshcoreTraceWirePath';
 
 /** Trace path RPC surface: radio connection plus meshcore.js sendCommandSendTracePath. */
 export type MeshcoreTracePathConnection = MeshcoreRadioConnection & {
@@ -233,6 +234,8 @@ export function startMeshcoreTracePathMultiplexed(
   path: Uint8Array,
   extraTimeoutMillis: number,
   runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
+  /** Trace entry size flags from {@link meshcoreTraceWirePath}; 0 means 1-byte hops. */
+  flags = 0,
 ): MeshcoreTracePathHandle {
   let cancelFn: ((reason?: string) => void) | undefined;
   const promise = new Promise<MeshcoreTracePathResult>((resolve, reject) => {
@@ -302,7 +305,10 @@ export function startMeshcoreTracePathMultiplexed(
             if (isSettled()) {
               throw new Error('cancelled before SendTracePath');
             }
-            return conn.sendCommandSendTracePath(tag, 0, path);
+            // meshcore.js writes the flags byte as 0, so wider entries go out as a raw frame.
+            return flags === 0
+              ? conn.sendCommandSendTracePath(tag, 0, path)
+              : conn.sendToRadioFrame(buildSendTracePathFrame(tag, 0, flags, path));
           },
           {
             rejectErrMsg: 'radio rejected trace',

@@ -31,7 +31,9 @@ export function meshcoreRepeaterRouteKind(
 ): MeshcoreRepeaterRouteKind {
   if (storedPath && storedPath.length > 0) return 'direct';
   if (radioContactPathLen == null || !Number.isFinite(radioContactPathLen)) return 'unknown';
-  if (radioContactPathLen < 0 || radioContactPathLen === MESHCORE_OUT_PATH_UNKNOWN_BYTE) {
+  // Only 0xFF means unknown. meshcore.js reads the byte signed, so 0xFF arrives as -1 and
+  // packed 3-byte-hash lengths (0x80 and up) arrive as other negatives: those are routes.
+  if (radioContactPathLen === -1 || radioContactPathLen === MESHCORE_OUT_PATH_UNKNOWN_BYTE) {
     return 'flood';
   }
   return 'direct';
