@@ -171,7 +171,17 @@ jobs:
         run: pnpm run check:flatpak-offline-pnpm
 
       - name: Install Flatpak validation tools
-        run: sudo apt-get install -y desktop-file-utils appstream
+        run: |
+          # GitHub-hosted runners intermittently fail to resolve the Ubuntu package
+          # mirrors. Refresh the index and retry before failing the required check.
+          for attempt in 1 2 3; do
+            if sudo apt-get update && sudo apt-get install -y desktop-file-utils appstream; then
+              exit 0
+            fi
+            echo "Flatpak validation tool install failed (attempt ${attempt}/3); retrying" >&2
+            sleep 15
+          done
+          exit 1
 
       - name: Validate desktop file
         run: desktop-file-validate flatpak/org.coloradomesh.MeshClient.desktop

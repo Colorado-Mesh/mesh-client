@@ -189,6 +189,15 @@ describe('CI workflow contracts', () => {
     );
   });
 
+  it('retries the Flatpak tool install when runner mirrors are unreachable', () => {
+    const job = ciWorkflow.split('\n  flatpak:\n')[1].split('\n  policy-scanners:')[0];
+    // GitHub-hosted runners intermittently fail to resolve the Ubuntu mirrors.
+    expect(job).toContain('sudo apt-get update');
+    expect(job).toContain('for attempt in 1 2 3; do');
+    expect(job).toContain('sudo apt-get install -y desktop-file-utils appstream');
+    expect(job).toContain('exit 1');
+  });
+
   it('runs the cheap always-on policy scanners in CI', () => {
     const job = ciWorkflow.split('  policy-scanners:')[1].split('  build:')[0];
     for (const script of [
