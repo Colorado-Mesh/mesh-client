@@ -139,9 +139,9 @@ describe('meshcoreRepeaterRouteEscalation', () => {
   });
 
   it('skips flood retry when identity or connection changed before or after reset', async () => {
-    const resetContactPath = vi.fn(async () => {
+    const resetContactPath = vi.fn(() => {
       stale = true;
-      return true;
+      return Promise.resolve(true);
     });
     let stale = false;
     const connection = { id: 'conn-1' };

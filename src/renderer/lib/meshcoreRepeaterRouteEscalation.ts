@@ -91,8 +91,7 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
   const now = deps.nowMs ?? Date.now;
   const cooldownMs = deps.cooldownMs ?? MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS;
   const requestContext = deps.captureEscalationContext?.();
-  const identityForCooldown =
-    requestContext?.identity ?? deps.escalationScope?.() ?? undefined;
+  const identityForCooldown = requestContext?.identity ?? deps.escalationScope?.() ?? undefined;
 
   const abortIfStale = (): void => {
     if (
