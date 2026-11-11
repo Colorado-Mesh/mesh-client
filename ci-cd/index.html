@@ -3870,7 +3870,7 @@
 <p>Runs on every push, pull request, and merge-queue <code>merge_group</code> for <code>main</code> (and <code>workflow_dispatch</code>). Independent lanes start concurrently; only Flatpak waits for change detection:</p>
 <ul>
 <li><strong>Code quality:</strong> format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint</li>
-<li><strong>ESLint:</strong> full repository lint, split over four parallel shards (<code>ESLint (1/4)</code> to <code>ESLint (4/4)</code>). <code>scripts/ci-eslint-shard.mjs</code> deals every Git-visible file to exactly one shard and runs ESLint on that list with two workers, using <code>eslint.ci.config.mjs</code> to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled on every shard; local lint and the release preflight still run the single <code>pnpm run lint</code> pass. To change the shard count, edit the <code>shard</code> list in <code>ci.yaml</code>.</li>
+<li><strong>ESLint:</strong> full repository lint, split over four parallel shards (<code>ESLint (1/4)</code> to <code>ESLint (4/4)</code>). <code>scripts/ci-eslint-shard.mjs</code> deals every Git-visible file to exactly one shard and runs ESLint on that list with two workers, using <code>eslint.ci.config.mjs</code> to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled on every shard. Local development uses the default ESLint config via <code>pnpm run lint</code> (single process, raised heap). CI runs the sharded <code>eslint.ci.config.mjs</code> pass; release preflight runs <code>pnpm run lint --concurrency 2 --config eslint.ci.config.mjs</code> from <code>scripts/release.sh</code>. To change the shard count, edit the <code>shard</code> list in <code>ci.yaml</code>.</li>
 <li><strong>Typecheck:</strong> <code>pnpm run typecheck</code></li>
 <li><strong>Application build:</strong> <code>pnpm run build</code></li>
 <li><strong>Flatpak checks:</strong> only when Flatpak inputs change; runs <code>check:flatpak</code>, <code>check:flatpak-offline-pnpm</code>, <code>desktop-file-validate</code>, and <code>appstreamcli validate</code></li>
@@ -4461,7 +4461,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 11, 2026 04:40:55 UTC">November 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 11, 2026 19:49:21 UTC">November 11, 2026</span>
   </span>
 
     
