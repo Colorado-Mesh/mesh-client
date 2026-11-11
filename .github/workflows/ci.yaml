@@ -98,16 +98,26 @@ jobs:
         run: yamllint -f github -s .
 
   lint:
-    name: ESLint
+    name: ESLint (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each shard lints its share of the files with the full type-aware rule set.
+        shard: [1, 2, 3, 4]
     steps:
       # actions/checkout v6.1.0
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
-      # Bound worker count because each type-aware worker loads TypeScript programs.
-      - run: pnpm run lint --concurrency 2 --config eslint.ci.config.mjs
+      # Same flags as `pnpm run lint --concurrency 2 --config eslint.ci.config.mjs`
+      # (scripts/release.sh), applied to this shard's files. Worker count stays bounded
+      # because each type-aware worker loads TypeScript programs.
+      - name: Lint shard
+        run: node scripts/ci-eslint-shard.mjs
+        env:
+          ESLINT_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
 
   typecheck:
     name: Typecheck
