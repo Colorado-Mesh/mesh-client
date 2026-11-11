@@ -151,6 +151,9 @@ describe('ci-eslint-shard', () => {
   it('is wired into ci.yaml as a complete matrix behind the required aggregate job', () => {
     const workflow = load(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yaml'), 'utf8'));
     const lint = workflow.jobs.lint;
+    // ESLINT_SHARD takes its total from strategy.job-total, so a second matrix dimension
+    // would raise the total and leave the extra shards unrun.
+    expect(Object.keys(lint.strategy.matrix)).toEqual(['shard']);
     const shards = lint.strategy.matrix.shard;
     expect(shards.length).toBeGreaterThan(1);
     expect(shards.length).toBeLessThanOrEqual(MAX_ESLINT_SHARDS);
