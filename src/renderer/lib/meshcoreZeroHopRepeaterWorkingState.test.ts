@@ -154,9 +154,10 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     expect(neighborsBody).toContain("'neighbors'");
   });
 
-  it('0-hop ping seeds 1-byte path and may direct-retry with full pubkey after cancel settles', () => {
+  it('0-hop ping seeds path-hash-width dest prefix and may direct-retry with full pubkey after cancel settles', () => {
     expect(TRACE_PATH_SOURCE).toContain('meshcoreTraceDirectRetryEligible');
-    expect(TRACE_PATH_SOURCE).toContain('1-byte pubkey prefix');
+    // Path hash mode 1/2/3 — not always a 1-byte seed (explicit user request).
+    expect(TRACE_PATH_SOURCE).toContain('path-hash width (1/2/3)');
     const traceBody = extractUseCallbackBody(RUNTIME_SOURCE, 'traceRoute');
     expect(traceBody).toContain('meshcoreTraceDirectRetryEligible');
     expect(traceBody).toContain("firstTrace.cancel('superseded or timed out')");

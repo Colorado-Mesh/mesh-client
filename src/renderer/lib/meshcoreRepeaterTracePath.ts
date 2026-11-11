@@ -73,14 +73,64 @@ export function meshcoreHashSizeForTraceSeed(
 }
 
 /**
- * Whether cached route bytes are safe to use for trace/ping.
- * Multi-hop must not use the full destination pubkey — only hash-segment paths (≥2 bytes).
- * Zero-hop may use a 1-byte pubkey prefix (direct retry may escalate to full key at send time).
+ * Minimum stored/outPath bytes for hopsAway at the given path-hash size.
+ * Zero-hop: one dest prefix. Multi-hop: contact out_path is intermediates only
+ * (`hops * hashSize`), not including the destination hash.
+ */
+export function meshcoreTracePathMinByteLength(
+  hopsAway: number | null | undefined,
+  hashSizeBytes: 1 | 2 | 3,
+): number {
+  const hops = Math.max(0, hopsAway ?? 0);
+  if (hops === 0) return hashSizeBytes;
+  return hops * hashSizeBytes;
+}
+
+/**
+ * Expand a multi-hop outbound path into a TRACE path that returns to the initiator.
+ *
+ * Firmware completes TRACE when a neighbour of the last matching hop hears the
+ * retransmit (`onTraceRecv`). For a repeater destination that is not RF-adjacent
+ * to us, the path must loop back through the outbound relays (MeshMonitor
+ * `buildTracePathHops` auto-return): `[...out, dest, ...out.reverse()]`.
+ * Zero-hop stays a single dest prefix.
+ */
+export function meshcoreExpandTracePathWithAutoReturn(
+  outboundIntermediates: Uint8Array,
+  destPubKey: Uint8Array,
+  hashSizeBytes: 1 | 2 | 3,
+): Uint8Array {
+  const dest = meshcorePubkeyPathPrefix(destPubKey, hashSizeBytes);
+  if (outboundIntermediates.length === 0) return dest;
+  if (outboundIntermediates.length % hashSizeBytes !== 0) return outboundIntermediates;
+
+  const segs: Uint8Array[] = [];
+  for (let i = 0; i < outboundIntermediates.length; i += hashSizeBytes) {
+    segs.push(outboundIntermediates.subarray(i, i + hashSizeBytes));
+  }
+  const last = segs.at(-1);
+  if (last === undefined) return outboundIntermediates;
+  const endsWithDest = last.length === dest.length && last.every((b, i) => b === dest[i]);
+  const outbound = endsWithDest ? segs : [...segs, dest];
+  const returning = outbound.slice(0, -1).reverse();
+  const full = [...outbound, ...returning];
+  const out = new Uint8Array(full.length * hashSizeBytes);
+  full.forEach((seg, i) => {
+    out.set(seg, i * hashSizeBytes);
+  });
+  return out;
+}
+
+/**
+ * Whether cached route bytes are safe to use for trace/ping at this path-hash size.
+ * Multi-hop must not use the full destination pubkey — only hash-segment paths.
+ * Zero-hop may use a dest pubkey prefix (direct retry may escalate to full key at send time).
  */
 export function meshcoreIsUsableTraceStoredPath(
   path: Uint8Array | undefined,
   hopsAway: number | null | undefined,
   pubKey: Uint8Array,
+  hashSizeBytes: 1 | 2 | 3 = 1,
 ): boolean {
   if (!path || path.length === 0) return false;
   const hops = hopsAway ?? 0;
@@ -88,9 +138,8 @@ export function meshcoreIsUsableTraceStoredPath(
     return hops === 0;
   }
   if (hops >= 1 && path.length === pubKey.length) return false;
-  // Hash-segment count must cover hop count (1-hop → 2 bytes, 3-hop → 4 bytes, …).
-  if (hops >= 1 && path.length < hops + 1) return false;
-  return true;
+  if (path.length % hashSizeBytes !== 0) return false;
+  return path.length >= meshcoreTracePathMinByteLength(hops, hashSizeBytes);
 }
 
 export interface MeshcoreRepeaterTraceRoutePlan {
@@ -100,6 +149,7 @@ export interface MeshcoreRepeaterTraceRoutePlan {
   uiSaysMultiHop: boolean;
   radioSaysMultiHop: boolean;
   outPathSeed: Uint8Array;
+  hashSizeBytes: 1 | 2 | 3;
 }
 
 /** Pure trace/ping path planning for repeater panel (0-hop and multi-hop). */
@@ -112,15 +162,28 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   /** Companion path.hash.mode when contact outPathLen is missing/plain. */
   companionPathHashMode?: MeshcorePathHashMode | null;
 }): MeshcoreRepeaterTraceRoutePlan {
+  const hashSizeBytes = meshcoreHashSizeForTraceSeed(
+    opts.radioContactPathLen,
+    opts.companionPathHashMode,
+  );
+  const minPathBytes = meshcoreTracePathMinByteLength(opts.hopsAway, hashSizeBytes);
+
   let storedPath = opts.storedPath;
-  if (storedPath && !meshcoreIsUsableTraceStoredPath(storedPath, opts.hopsAway, opts.pubKey)) {
+  if (
+    storedPath &&
+    !meshcoreIsUsableTraceStoredPath(storedPath, opts.hopsAway, opts.pubKey, hashSizeBytes)
+  ) {
     storedPath = undefined;
   }
   if (
-    (!storedPath || storedPath.length <= 1) &&
+    (!storedPath || storedPath.length < minPathBytes) &&
     opts.pathFromHistory &&
-    meshcoreIsUsableTraceStoredPath(opts.pathFromHistory, opts.hopsAway, opts.pubKey) &&
-    opts.pathFromHistory.length > 1 &&
+    meshcoreIsUsableTraceStoredPath(
+      opts.pathFromHistory,
+      opts.hopsAway,
+      opts.pubKey,
+      hashSizeBytes,
+    ) &&
     opts.radioContactPathLen != null &&
     opts.radioContactPathLen >= 0
   ) {
@@ -128,20 +191,22 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   }
 
   const hopsAway = opts.hopsAway;
-  const needsRoutePrime =
-    (!storedPath || storedPath.length <= 1) && (hopsAway == null || hopsAway >= 1);
-  const pathTooShort = !storedPath || storedPath.length <= 1;
+  const pathTooShort = !storedPath || storedPath.length < minPathBytes;
+  const needsRoutePrime = pathTooShort && (hopsAway == null || hopsAway >= 1);
   const uiSaysMultiHop = (hopsAway ?? 0) >= 1;
   const radioSaysMultiHop = meshcoreRadioContactPathLenSaysMultiHop(opts.radioContactPathLen);
-  const hashSizeBytes = meshcoreHashSizeForTraceSeed(
-    opts.radioContactPathLen,
-    opts.companionPathHashMode,
-  );
 
-  let outPathSeed =
-    storedPath && storedPath.length > 0
-      ? storedPath
-      : meshcorePubkeyPathPrefix(opts.pubKey, hashSizeBytes);
+  let outPathSeed: Uint8Array;
+  if (storedPath && storedPath.length >= minPathBytes) {
+    outPathSeed = storedPath;
+  } else if ((hopsAway ?? 0) === 0) {
+    // Zero-hop always seeds a dest prefix at the mesh path-hash width (1/2/3).
+    outPathSeed = meshcorePubkeyPathPrefix(opts.pubKey, hashSizeBytes);
+  } else if (storedPath && storedPath.length > 0) {
+    outPathSeed = storedPath;
+  } else {
+    outPathSeed = meshcorePubkeyPathPrefix(opts.pubKey, hashSizeBytes);
+  }
   if (
     outPathSeed.length === hashSizeBytes &&
     outPathSeed.every((b) => b === 0) &&
@@ -157,6 +222,7 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
     uiSaysMultiHop,
     radioSaysMultiHop,
     outPathSeed,
+    hashSizeBytes,
   };
 }
 
@@ -242,38 +308,45 @@ export function meshcoreCanSynthesizeTracePath(opts: {
   relayKeysForSynth: readonly Uint8Array[];
   partialDestPath: Uint8Array | undefined;
   destPubKey: Uint8Array;
+  /** Path hash size from contact packed outPathLen / companion path.hash.mode. */
+  hashSizeBytes?: 1 | 2 | 3;
 }): boolean {
   const hopsForSynth = opts.hopsAway ?? 0;
+  const hashSizeBytes = opts.hashSizeBytes ?? 1;
+  const oneHopByteLen = meshcoreTracePathMinByteLength(1, hashSizeBytes);
   return (
     (hopsForSynth === 1 && opts.relayKeysForSynth.length > 0) ||
     (hopsForSynth === 2 &&
       opts.relayKeysForSynth.length > 0 &&
-      opts.partialDestPath?.length === 2 &&
-      meshcoreIsUsableTraceStoredPath(opts.partialDestPath, 1, opts.destPubKey))
+      opts.partialDestPath?.length === oneHopByteLen &&
+      meshcoreIsUsableTraceStoredPath(opts.partialDestPath, 1, opts.destPubKey, hashSizeBytes))
   );
 }
 
-/** Build 1-byte-hash-mode path [relayPrefix, destPrefix] for a single known direct repeater relay. */
+/**
+ * Build outbound intermediate path `[relayPrefix]` for a single known direct repeater relay.
+ * Prefix width follows path hash mode. Callers expand with
+ * {@link meshcoreExpandTracePathWithAutoReturn} before SendTracePath so TraceData returns.
+ */
 export function meshcoreSynthesizeOneHopTracePath(
   destPubKey: Uint8Array,
   directRelayPubKeys: readonly Uint8Array[],
+  hashSizeBytes: 1 | 2 | 3 = 1,
 ): Uint8Array | undefined {
   for (const relayKey of directRelayPubKeys) {
-    if (relayKey.length === 0 || destPubKey.length === 0) continue;
+    if (relayKey.length < hashSizeBytes || destPubKey.length < hashSizeBytes) continue;
     if (meshcoreStoredPathLooksLikeFullPubKey(relayKey, destPubKey)) continue;
-    const relayByte = relayKey[0] & 0xff;
-    const destByte = destPubKey[0] & 0xff;
-    if (relayByte === destByte && relayKey.length === destPubKey.length) {
-      let sameKey = true;
-      for (let i = 0; i < relayKey.length; i++) {
-        if (relayKey[i] !== destPubKey[i]) {
-          sameKey = false;
-          break;
-        }
+    const relayPrefix = meshcorePubkeyPathPrefix(relayKey, hashSizeBytes);
+    const destPrefix = meshcorePubkeyPathPrefix(destPubKey, hashSizeBytes);
+    let samePrefix = true;
+    for (let i = 0; i < hashSizeBytes; i++) {
+      if (relayPrefix[i] !== destPrefix[i]) {
+        samePrefix = false;
+        break;
       }
-      if (sameKey) continue;
     }
-    return new Uint8Array([relayByte, destByte]);
+    if (samePrefix) continue;
+    return new Uint8Array(relayPrefix);
   }
   return undefined;
 }
@@ -295,10 +368,11 @@ export function meshcoreDirectRepeaterRelayPubKeys(
 }
 
 /**
- * Evidence-backed trace path synthesis for multi-hop targets (no blind pubkey guessing).
- * - hops 1: [relayPrefix, destPrefix] via direct 0-hop repeater
- * - hops 2: prepend a 0-hop relay byte to a known 2-byte path toward dest
+ * Evidence-backed outbound intermediate path for multi-hop targets (no blind pubkey guessing).
+ * - hops 1: [relayPrefix] via direct 0-hop repeater
+ * - hops 2: prepend a 0-hop relay prefix to a known 1-hop intermediate path
  * - hops 3+: only return stored paths with enough segments for the hop count
+ * Callers expand with {@link meshcoreExpandTracePathWithAutoReturn} before SendTracePath.
  */
 export function meshcoreSynthesizeMultiHopTracePath(opts: {
   destPubKey: Uint8Array;
@@ -307,9 +381,12 @@ export function meshcoreSynthesizeMultiHopTracePath(opts: {
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
   excludeNodeId: number;
   pathByNodeId: ReadonlyMap<number, Uint8Array>;
+  /** Path hash size from contact packed outPathLen / companion path.hash.mode. */
+  hashSizeBytes?: 1 | 2 | 3;
 }): Uint8Array | undefined {
   const hops = opts.hopsAway ?? 0;
   if (hops <= 0) return undefined;
+  const hashSizeBytes = opts.hashSizeBytes ?? 1;
 
   const relayKeys = meshcoreDirectRepeaterRelayPubKeys(
     opts.nodes,
@@ -318,36 +395,50 @@ export function meshcoreSynthesizeMultiHopTracePath(opts: {
   );
 
   if (hops === 1) {
-    return meshcoreSynthesizeOneHopTracePath(opts.destPubKey, relayKeys);
+    return meshcoreSynthesizeOneHopTracePath(opts.destPubKey, relayKeys, hashSizeBytes);
   }
 
   const storedToDest = opts.pathByNodeId.get(opts.excludeNodeId);
   if (hops >= 3) {
     if (
       storedToDest &&
-      storedToDest.length > hops &&
-      meshcoreIsUsableTraceStoredPath(storedToDest, hops, opts.destPubKey)
+      meshcoreIsUsableTraceStoredPath(storedToDest, hops, opts.destPubKey, hashSizeBytes)
     ) {
       return storedToDest;
     }
     return undefined;
   }
 
-  // hops === 2: prepend direct relay byte to a known 1-hop (2-byte) path toward dest
+  // hops === 2: prepend direct relay prefix to a known 1-hop intermediate path
+  const oneHopByteLen = meshcoreTracePathMinByteLength(1, hashSizeBytes);
   const oneHopPath =
-    storedToDest?.length === 2 && meshcoreIsUsableTraceStoredPath(storedToDest, 1, opts.destPubKey)
+    storedToDest?.length === oneHopByteLen &&
+    meshcoreIsUsableTraceStoredPath(storedToDest, 1, opts.destPubKey, hashSizeBytes)
       ? storedToDest
       : undefined;
   if (!oneHopPath) return undefined;
 
   for (const relayKey of relayKeys) {
-    const relayByte = relayKey[0] & 0xff;
-    const composed = new Uint8Array([relayByte, oneHopPath[0], oneHopPath[1]]);
-    if (meshcoreIsUsableTraceStoredPath(composed, 2, opts.destPubKey)) {
+    if (relayKey.length < hashSizeBytes) continue;
+    const relayPrefix = meshcorePubkeyPathPrefix(relayKey, hashSizeBytes);
+    const composed = new Uint8Array(hashSizeBytes + oneHopPath.length);
+    composed.set(relayPrefix, 0);
+    composed.set(oneHopPath, hashSizeBytes);
+    if (meshcoreIsUsableTraceStoredPath(composed, 2, opts.destPubKey, hashSizeBytes)) {
       return composed;
     }
   }
   return undefined;
+}
+
+export interface MeshcoreResolvedTraceOutPath {
+  /** Path bytes sent on the wire (auto-return expanded for multi-hop). */
+  outPath: Uint8Array;
+  /** Contact-style outbound intermediates only (no dest / return). */
+  outboundPath: Uint8Array;
+  composed: boolean;
+  /** True when outPath is an auto-return round trip (multi-hop repeater ping). */
+  autoReturn: boolean;
 }
 
 /** Resolve trace outPath seed after planning, priming, and multi-hop synthesis. */
@@ -359,20 +450,42 @@ export function resolveMeshcoreTraceOutPathSeed(opts: {
   nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>;
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
   pathByNodeId: ReadonlyMap<number, Uint8Array>;
-}): { outPath: Uint8Array; composed: boolean } {
+  /** Path hash size from contact packed outPathLen / companion path.hash.mode. */
+  hashSizeBytes?: 1 | 2 | 3;
+}): MeshcoreResolvedTraceOutPath {
+  const hashSizeBytes = opts.hashSizeBytes ?? opts.tracePlan.hashSizeBytes;
+  const hops = opts.hopsAway ?? 0;
+
+  let outbound: Uint8Array;
+  let composed = false;
   if (!opts.tracePlan.pathTooShort) {
-    return { outPath: opts.tracePlan.outPathSeed, composed: false };
+    outbound = opts.tracePlan.outPathSeed;
+  } else {
+    const synthesized = meshcoreSynthesizeMultiHopTracePath({
+      destPubKey: opts.pubKey,
+      hopsAway: opts.hopsAway,
+      nodes: opts.nodes,
+      pubKeyByNodeId: opts.pubKeyByNodeId,
+      excludeNodeId: opts.nodeId,
+      pathByNodeId: opts.pathByNodeId,
+      hashSizeBytes,
+    });
+    if (synthesized) {
+      outbound = synthesized;
+      composed = true;
+    } else {
+      outbound = opts.tracePlan.outPathSeed;
+    }
   }
-  const synthesized = meshcoreSynthesizeMultiHopTracePath({
-    destPubKey: opts.pubKey,
-    hopsAway: opts.hopsAway,
-    nodes: opts.nodes,
-    pubKeyByNodeId: opts.pubKeyByNodeId,
-    excludeNodeId: opts.nodeId,
-    pathByNodeId: opts.pathByNodeId,
-  });
-  if (synthesized) {
-    return { outPath: synthesized, composed: true };
+
+  // Multi-hop repeater/room ping must loop TraceData back through the relays.
+  if (hops >= 1) {
+    return {
+      outPath: meshcoreExpandTracePathWithAutoReturn(outbound, opts.pubKey, hashSizeBytes),
+      outboundPath: outbound,
+      composed,
+      autoReturn: true,
+    };
   }
-  return { outPath: opts.tracePlan.outPathSeed, composed: false };
+  return { outPath: outbound, outboundPath: outbound, composed, autoReturn: false };
 }

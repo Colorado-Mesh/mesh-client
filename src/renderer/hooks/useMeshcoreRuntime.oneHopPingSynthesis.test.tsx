@@ -382,7 +382,10 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     );
     expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalled();
     const tracePathArg = startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[1] as Uint8Array;
-    expect(tracePathArg).toEqual(new Uint8Array([RELAY_PUBKEY[0], REMOTE_PUBKEY[0]]));
+    // Auto-return: relay → dest → relay so TraceData comes back to the companion.
+    expect(tracePathArg).toEqual(
+      new Uint8Array([RELAY_PUBKEY[0], REMOTE_PUBKEY[0], RELAY_PUBKEY[0]]),
+    );
   });
 
   it('fast-fails pingNoRoute when no 0-hop repeater relay is known for 1-hop', async () => {

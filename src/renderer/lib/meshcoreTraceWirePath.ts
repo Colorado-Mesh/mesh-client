@@ -50,8 +50,12 @@ export function meshcoreTraceWirePath(
     if (path.length >= TRACE_LONGEST_ENTRY_BYTES) {
       return { path: path.slice(0, TRACE_LONGEST_ENTRY_BYTES), flags: 3 };
     }
-    if (path.length >= 4) return { path: path.slice(0, 4), flags: 2 };
-    if (path.length >= 2) return { path: path.slice(0, 2), flags: 1 };
+    if (path.length >= 4) {
+      return { path: path.slice(0, 4), flags: 2 };
+    }
+    if (path.length >= 2) {
+      return { path: path.slice(0, 2), flags: 1 };
+    }
     return { path, flags: 0 };
   }
   if (opts.hashSizeBytes === 2 && path.length % 2 === 0) {

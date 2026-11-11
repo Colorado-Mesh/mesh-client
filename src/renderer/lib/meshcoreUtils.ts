@@ -154,10 +154,16 @@ export function meshcoreCompanionRxPathLenToHopCount(pathLen: unknown): number |
 /**
  * `tracePath` reports `pathLen` as segment count along the route (a direct RF link is often 1).
  * UI hop count (repeaters between us and the peer) is one less; clamp at 0.
+ * Auto-return TRACE paths are `[...out, dest, ...out.reverse()]` (odd segment count); hop count
+ * is the outbound intermediate count `(segments - 1) / 2`.
  */
-export function meshcoreTracePathLenToHops(pathLen: number): number {
+export function meshcoreTracePathLenToHops(pathLen: number, autoReturn = false): number {
   if (!Number.isFinite(pathLen)) return 0;
-  return Math.max(0, Math.trunc(pathLen) - 1);
+  const segments = Math.max(0, Math.trunc(pathLen));
+  if (autoReturn) {
+    return Math.max(0, Math.floor((segments - 1) / 2));
+  }
+  return Math.max(0, segments - 1);
 }
 
 /** Build companion `outPath` bytes from a successful `tracePath` / TraceData response. */

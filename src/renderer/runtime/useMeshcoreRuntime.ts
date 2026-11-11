@@ -365,6 +365,7 @@ import {
   meshcoreIsUsableTraceStoredPath,
   meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
+  meshcoreTracePathMinByteLength,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
 } from '../lib/meshcoreRepeaterTracePath';
@@ -5556,11 +5557,11 @@ export function useMeshcoreRuntime() {
       storedPath: Uint8Array | undefined,
       pubKey: Uint8Array,
       hopsAway: number | null | undefined,
+      hashSizeBytes: 1 | 2 | 3 = 1,
     ): Promise<MeshcoreRadioContactPathSnapshot> => {
       if (
         storedPath &&
-        storedPath.length > 1 &&
-        meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey)
+        meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, hashSizeBytes)
       ) {
         return {
           path: storedPath,
@@ -5652,8 +5653,20 @@ export function useMeshcoreRuntime() {
             const isTraceAborted = (): boolean =>
               meshcoreSetupGenerationRef.current !== setupGen || resolveMeshcoreConn() !== conn;
             const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
+            const companionPathHashMode = isMeshcorePathHashMode(pathHashModeRef.current)
+              ? pathHashModeRef.current
+              : null;
+            let radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+            let synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
+              radioContactPathLen,
+              companionPathHashMode,
+            );
+            let minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
             let storedPath = outPathMapRef.current.get(nodeId);
-            if (storedPath && !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey)) {
+            if (
+              storedPath &&
+              !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, synthHashSizeBytes)
+            ) {
               outPathMapRef.current.delete(nodeId);
               storedPath = undefined;
             }
@@ -5662,22 +5675,28 @@ export function useMeshcoreRuntime() {
               storedPath,
               pubKey,
               hopsAway,
+              synthHashSizeBytes,
             );
             storedPath = contactSnap.path ?? storedPath;
-            let radioContactPathLen = contactSnap.radioContactPathLen;
-            if (radioContactPathLen != null && Number.isFinite(radioContactPathLen)) {
+            if (
+              contactSnap.radioContactPathLen != null &&
+              Number.isFinite(contactSnap.radioContactPathLen)
+            ) {
+              radioContactPathLen = contactSnap.radioContactPathLen;
               radioContactPathLenByNodeRef.current.set(nodeId, radioContactPathLen);
             } else {
               radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
             }
-            const companionPathHashMode = isMeshcorePathHashMode(pathHashModeRef.current)
-              ? pathHashModeRef.current
-              : null;
+            synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
+              radioContactPathLen,
+              companionPathHashMode,
+            );
+            minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
             let pathFromHistory: Uint8Array | undefined;
-            if (!storedPath || storedPath.length <= 1) {
+            if (!storedPath || storedPath.length < minPathBytes) {
               try {
                 const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(nodeId);
-                if (sel?.pathBytes?.length !== undefined && sel.pathBytes.length > 1) {
+                if (sel?.pathBytes?.length !== undefined && sel.pathBytes.length >= minPathBytes) {
                   pathFromHistory = new Uint8Array(sel.pathBytes);
                 }
               } catch {
@@ -5693,7 +5712,9 @@ export function useMeshcoreRuntime() {
               companionPathHashMode,
             });
             let routeStoredPath = tracePlan.storedPath;
-            if (routeStoredPath && routeStoredPath.length > 1) {
+            synthHashSizeBytes = tracePlan.hashSizeBytes;
+            minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
+            if (routeStoredPath && routeStoredPath.length >= minPathBytes) {
               outPathMapRef.current.set(nodeId, routeStoredPath);
             }
             const relayKeysForSynth = meshcoreDirectRepeaterRelayPubKeys(
@@ -5707,12 +5728,15 @@ export function useMeshcoreRuntime() {
               relayKeysForSynth,
               partialDestPath,
               destPubKey: pubKey,
+              hashSizeBytes: synthHashSizeBytes,
             });
             const primeStrategy = computeMeshcoreTracePrimeStrategy({
               needsRoutePrime: tracePlan.needsRoutePrime,
               pathTooShort: tracePlan.pathTooShort,
               hopsAway,
-              hasUsableStoredPath: Boolean(routeStoredPath && routeStoredPath.length > 1),
+              hasUsableStoredPath: Boolean(
+                routeStoredPath && routeStoredPath.length >= minPathBytes,
+              ),
               canSynthesizePath,
             });
             let routePrimeRan = false;
@@ -5728,6 +5752,7 @@ export function useMeshcoreRuntime() {
                 existingPath: routeStoredPath,
                 initialStrategy: primeStrategy,
                 isAborted: isTraceAborted,
+                hashSizeBytes: synthHashSizeBytes,
                 floodWhen: (metrics, hops) =>
                   meshcoreTracePrimeFloodWhenForPing(
                     metrics,
@@ -5746,12 +5771,17 @@ export function useMeshcoreRuntime() {
               }
               if (primed.radioContactPathLen != null) {
                 radioContactPathLen = primed.radioContactPathLen;
+                synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
+                  radioContactPathLen,
+                  companionPathHashMode,
+                );
+                minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
               }
               if (primed.path && primed.path.length > 0) {
                 routeStoredPath = primed.path;
               }
               if (
-                (!routeStoredPath || routeStoredPath.length <= 1) &&
+                (!routeStoredPath || routeStoredPath.length < minPathBytes) &&
                 radioContactPathLen != null &&
                 radioContactPathLen >= 0
               ) {
@@ -5759,7 +5789,10 @@ export function useMeshcoreRuntime() {
                   const selPrime = await usePathHistoryStore
                     .getState()
                     .ensureBestPathLoaded(nodeId);
-                  if (selPrime?.pathBytes?.length !== undefined && selPrime.pathBytes.length > 1) {
+                  if (
+                    selPrime?.pathBytes?.length !== undefined &&
+                    selPrime.pathBytes.length >= minPathBytes
+                  ) {
                     const fromHistPrime = new Uint8Array(selPrime.pathBytes);
                     outPathMapRef.current.set(nodeId, fromHistPrime);
                     routeStoredPath = fromHistPrime;
@@ -5779,6 +5812,7 @@ export function useMeshcoreRuntime() {
             });
             const uiSaysMultiHop = tracePlan.uiSaysMultiHop;
             const radioSaysMultiHop = tracePlan.radioSaysMultiHop;
+            synthHashSizeBytes = tracePlan.hashSizeBytes;
             const pathResolved = resolveMeshcoreTraceOutPathSeed({
               tracePlan,
               pubKey,
@@ -5787,10 +5821,11 @@ export function useMeshcoreRuntime() {
               nodes: readMeshcoreNodes(),
               pubKeyByNodeId: pubKeyMapRef.current,
               pathByNodeId: outPathMapRef.current,
+              hashSizeBytes: synthHashSizeBytes,
             });
             const outPath = pathResolved.outPath;
             console.debug(
-              `[useMeshcoreRuntime] traceRoute pathSeed node=0x${nodeId.toString(16)} hops=${String(hopsAway ?? 'n/a')} radioLen=${String(radioContactPathLen)} outPathLen=${outPath.length}`,
+              `[useMeshcoreRuntime] traceRoute pathSeed node=0x${nodeId.toString(16)} hops=${String(hopsAway ?? 'n/a')} radioLen=${String(radioContactPathLen)} outPathLen=${outPath.length} autoReturn=${pathResolved.autoReturn ? 1 : 0}`,
             );
             const floodPrimeExhausted =
               routePrimeRan &&
@@ -5798,7 +5833,12 @@ export function useMeshcoreRuntime() {
               !routePrimeMetrics.usableAfterPrime &&
               !routePrimeMetrics.path129Received;
             const hasResolvedPath =
-              meshcoreIsUsableTraceStoredPath(outPath, hopsAway, pubKey) &&
+              meshcoreIsUsableTraceStoredPath(
+                pathResolved.outboundPath,
+                hopsAway,
+                pubKey,
+                synthHashSizeBytes,
+              ) &&
               (pathResolved.composed ||
                 Boolean(tracePlan.storedPath) ||
                 (routePrimeRan && !floodPrimeExhausted));
@@ -5812,9 +5852,9 @@ export function useMeshcoreRuntime() {
               hasResolvedPath,
             });
             if (pathResolved.composed) {
-              outPathMapRef.current.set(nodeId, outPath);
+              outPathMapRef.current.set(nodeId, pathResolved.outboundPath);
               console.debug(
-                `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (${outPath.length} bytes)`,
+                `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (outbound=${pathResolved.outboundPath.length} wire=${outPath.length} autoReturn=${pathResolved.autoReturn ? 1 : 0})`,
               );
             }
             if (shouldAbortPing) {
@@ -5836,10 +5876,11 @@ export function useMeshcoreRuntime() {
               });
               return false;
             }
-            const attemptPathBytes = Array.from(outPath);
+            const attemptPathBytes = Array.from(pathResolved.outboundPath);
             tracePathHash =
               attemptPathBytes.length > 0 ? computePathHash(attemptPathBytes) : undefined;
             let tracePathInUse = outPath;
+            const traceAutoReturn = pathResolved.autoReturn;
             let result;
             // 0-hop hash-prefix attempts must fail fast so full-pubkey direct retry can run.
             // Multi-hop / full-key attempts keep the flat admin RPC budget.
@@ -5912,13 +5953,17 @@ export function useMeshcoreRuntime() {
                 throw retryErr;
               }
             }
-            const traceHops = meshcoreTracePathLenToHops(result.pathLen);
-            const verifiedOutPath = meshcoreTraceResultToOutPathBytes(
-              result.pathLenByte,
-              result.pathHashes,
-              pubKey,
-              result.flags,
-            );
+            const traceHops = meshcoreTracePathLenToHops(result.pathLen, traceAutoReturn);
+            // Prefer contact-style outbound intermediates; auto-return wire paths must not
+            // replace the stored outPath with the round-trip bytes.
+            const verifiedOutPath = traceAutoReturn
+              ? pathResolved.outboundPath
+              : meshcoreTraceResultToOutPathBytes(
+                  result.pathLenByte,
+                  result.pathHashes,
+                  pubKey,
+                  result.flags,
+                );
             // A reply to shortened 3-byte hashes carries 2-byte hashes; keep the stored path.
             if (verifiedOutPath.length > 0 && !traceWire.shortenedHops) {
               outPathMapRef.current.set(nodeId, verifiedOutPath);
@@ -5931,10 +5976,12 @@ export function useMeshcoreRuntime() {
               (s) => s * MESHCORE_RPC_SNR_RAW_TO_DB,
             );
             const convertedLastSnr = result.lastSnr;
+            // Store outbound segment count so UI hop math stays pathLen-1 without auto-return.
+            const displayPathLen = traceHops + 1;
             setMeshcoreTraceResults((prev) => {
               const next = new Map(prev);
               next.set(nodeId, {
-                pathLen: result.pathLen,
+                pathLen: displayPathLen,
                 pathHashes: result.pathHashes ?? [],
                 hashSizeBytes: meshcorePathHashSizeFromTraceFlags(result.flags),
                 pathSnrs: convertedSnrs,
@@ -5948,7 +5995,7 @@ export function useMeshcoreRuntime() {
               .getState()
               .saveMeshcoreTraceHistory(
                 nodeId,
-                result.pathLen,
+                displayPathLen,
                 convertedSnrs,
                 convertedLastSnr,
                 result.tag,

@@ -526,6 +526,11 @@ describe('meshcoreTracePathLenToHops', () => {
     expect(meshcoreTracePathLenToHops(5)).toBe(4);
   });
 
+  it('maps auto-return segment counts to outbound hop counts', () => {
+    expect(meshcoreTracePathLenToHops(3, true)).toBe(1);
+    expect(meshcoreTracePathLenToHops(5, true)).toBe(2);
+  });
+
   it('clamps non-positive or non-finite values to 0', () => {
     expect(meshcoreTracePathLenToHops(0)).toBe(0);
     expect(meshcoreTracePathLenToHops(-1)).toBe(0);
