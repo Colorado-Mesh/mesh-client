@@ -17,6 +17,8 @@ interface TeamRosterState {
   hydrateUnavailable: boolean;
   members: TeamMember[];
   hydrate: () => Promise<void>;
+  /** Reload members from SQLite even when already hydrated (partial sync recovery). */
+  refreshFromDb: () => Promise<void>;
   upsertMember: (input: TeamMemberInput) => Promise<TeamMember>;
   deleteMember: (unitId: number) => Promise<void>;
   setLink: (input: TeamMemberLinkInput) => Promise<TeamMember>;
@@ -74,6 +76,26 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       }
     })();
     return hydration;
+  },
+
+  refreshFromDb: async () => {
+    const list = window.electronAPI?.db?.listTeamMembers;
+    if (!list) return;
+    try {
+      const members = await list();
+      set({
+        members: [...members].sort((a, b) => a.unitId - b.unitId),
+        hydrated: true,
+        hydrateError: false,
+        hydrateUnavailable: false,
+      });
+    } catch (error) {
+      console.warn('[teamRoster] refreshFromDb failed:', error);
+      set({
+        hydrateError: true,
+        hydrateUnavailable: isTeamRosterUnavailableError(error),
+      });
+    }
   },
 
   upsertMember: async (input) => {
@@ -162,6 +184,11 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
 /** Load contact cards from SQLite into the Zustand store. */
 export function hydrateTeamRosterStore(): Promise<void> {
   return useTeamRosterStore.getState().hydrate();
+}
+
+/** Force a SQLite reload (bypasses the hydrated short-circuit). */
+export function refreshTeamRosterStoreFromDb(): Promise<void> {
+  return useTeamRosterStore.getState().refreshFromDb();
 }
 
 /** Clear roster store state between Vitest cases. */

@@ -39,6 +39,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/identityHydrationSnapshot.ts --bundle --platform=node --outfile=dist-electron/main/identity-hydration.js --format=cjs --watch';
   const teamRosterBuild =
     'esbuild src/main/ipc/team-roster-handlers.ts --bundle --platform=node --outfile=dist-electron/main/team-roster-handlers.js --format=cjs --watch';
+  const teamRosterFallbackBuild =
+    'esbuild src/main/ipc/team-roster-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/team-roster-handlers-fallback.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -47,7 +49,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -57,6 +59,7 @@ export function buildDevConcurrentlyArgs() {
     nativeAiRuntimeBuild,
     identityHydrationBuild,
     teamRosterBuild,
+    teamRosterFallbackBuild,
     'vite',
     electronLaunch,
   ];

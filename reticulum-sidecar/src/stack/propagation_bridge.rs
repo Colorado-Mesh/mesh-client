@@ -893,23 +893,42 @@ fn is_oversized_legacy_inventory_error(err: &dyn std::fmt::Display) -> bool {
         .contains("legacy inventory exceeds safe path/count bound")
 }
 
+const QUARANTINE_MIGRATION_SUFFIXES: [&str; 4] =
+    [".store-lock", ".migration", ".v2", ".legacy-quarantine"];
+
+/// True when the quarantine directory or a parked migration sibling for that name already exists
+/// (follows symlinks; never overwrites a prior journal/lock parked beside an older quarantine).
+fn quarantine_candidate_blocked(quarantine: &Path) -> bool {
+    if std::fs::symlink_metadata(quarantine).is_ok() {
+        return true;
+    }
+    let Some(qbase) = quarantine.file_name() else {
+        return false;
+    };
+    for suffix in QUARANTINE_MIGRATION_SUFFIXES {
+        let mut qname = qbase.to_os_string();
+        qname.push(suffix);
+        let qsibling = quarantine.with_file_name(qname);
+        if std::fs::symlink_metadata(&qsibling).is_ok() {
+            return true;
+        }
+    }
+    false
+}
+
 /// Move an oversized pre-1.4 PN directory aside and leave the path absent so live
 /// RNS/RRC can attach. Never deletes; trusted recovery can still import from quarantine.
-fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, String> {
+fn quarantine_oversized_legacy_store_at(storage_dir: &Path, stamp: u64) -> Result<PathBuf, String> {
     let parent = storage_dir
         .parent()
         .ok_or_else(|| "propagation store path has no parent".to_string())?;
     let base = storage_dir
         .file_name()
         .ok_or_else(|| "propagation store path has no file name".to_string())?;
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
     let base_name = base.to_string_lossy();
     let mut quarantine = parent.join(format!("{base_name}.oversized-legacy-{stamp}"));
     let mut disambiguator = 0u32;
-    while quarantine.exists() {
+    while quarantine_candidate_blocked(&quarantine) {
         disambiguator += 1;
         quarantine = parent.join(format!(
             "{base_name}.oversized-legacy-{stamp}-{disambiguator}"
@@ -927,7 +946,7 @@ fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, Stri
     }
     // Best-effort: park partial migration siblings with the quarantine so a fresh
     // open does not trip on a stale journal/lock.
-    for suffix in [".store-lock", ".migration", ".v2", ".legacy-quarantine"] {
+    for suffix in QUARANTINE_MIGRATION_SUFFIXES {
         let mut name = base.to_os_string();
         name.push(suffix);
         let sibling = storage_dir.with_file_name(&name);
@@ -961,6 +980,14 @@ fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, Stri
     // path (even an empty directory) as a legacy store and returns MigrationRequired;
     // a missing path is what initializes a fresh empty v2 store.
     Ok(quarantine)
+}
+
+fn quarantine_oversized_legacy_store(storage_dir: &Path) -> Result<PathBuf, String> {
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    quarantine_oversized_legacy_store_at(storage_dir, stamp)
 }
 
 /// Open the durable v2 relay store. A legacy (pre-1.4) directory needs the explicit offline
@@ -2156,6 +2183,7 @@ mod tests {
 
     #[test]
     fn quarantine_oversized_legacy_store_picks_unique_name_when_sibling_exists() {
+        const STAMP: u64 = 1_700_000_000;
         let dir = std::env::temp_dir().join(format!(
             "mesh-prop-oversized-q-dup-{}-{}",
             std::process::id(),
@@ -2169,22 +2197,43 @@ mod tests {
         let store = dir.join("propagation");
         std::fs::create_dir_all(&store).expect("store");
         std::fs::write(store.join("blob"), b"legacy").expect("blob");
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        let blocked = dir.join(format!("propagation.oversized-legacy-{stamp}"));
+        let blocked = dir.join(format!("propagation.oversized-legacy-{STAMP}"));
         std::fs::create_dir_all(&blocked).expect("existing quarantine sibling");
+        let expected = dir.join(format!("propagation.oversized-legacy-{STAMP}-1"));
 
-        let quarantine = quarantine_oversized_legacy_store(&store).expect("quarantine");
+        let quarantine = quarantine_oversized_legacy_store_at(&store, STAMP).expect("quarantine");
         assert!(!store.exists());
-        assert_ne!(blocked, quarantine);
-        assert!(
-            quarantine
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .contains("-1")
+        assert_eq!(quarantine, expected);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn quarantine_skips_name_when_migration_sibling_exists_for_candidate() {
+        const STAMP: u64 = 1_700_000_001;
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-oversized-journal-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let store = dir.join("propagation");
+        std::fs::create_dir_all(&store).expect("store");
+        std::fs::write(store.join("blob"), b"legacy").expect("blob");
+        std::fs::write(
+            dir.join(format!("propagation.oversized-legacy-{STAMP}.migration")),
+            b"journal",
+        )
+        .expect("stale journal beside unused quarantine base name");
+
+        let quarantine = quarantine_oversized_legacy_store_at(&store, STAMP).expect("quarantine");
+        assert_eq!(
+            quarantine,
+            dir.join(format!("propagation.oversized-legacy-{STAMP}-1"))
         );
 
         let _ = std::fs::remove_dir_all(&dir);

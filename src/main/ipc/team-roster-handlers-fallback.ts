@@ -20,6 +20,7 @@ export const TEAM_ROSTER_IPC_CHANNELS = [
   'db:clearTeamMembers',
 ] as const;
 
+/** Throws the stable error string surfaced to the renderer store. */
 function teamRosterUnavailable(): never {
   throw new Error(TEAM_ROSTER_UNAVAILABLE_MESSAGE);
 }

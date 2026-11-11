@@ -10,7 +10,10 @@ import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import type { MessagesByProtocol } from '@/renderer/lib/teamRoster/contactMessageHistory';
 import { resolveMemberPresence } from '@/renderer/lib/teamRoster/contactPresence';
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
-import { hydrateTeamRosterStore, useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
+import {
+  refreshTeamRosterStoreFromDb,
+  useTeamRosterStore,
+} from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
 import { rosterLinksOf } from '@/shared/teamRosterTypes';
@@ -125,7 +128,7 @@ export default function TeamContactsPanel({
     } catch (err: unknown) {
       console.warn('[TeamContacts] roster devices failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
-      await hydrateTeamRosterStore();
+      await refreshTeamRosterStoreFromDb();
       throw err;
     }
   };

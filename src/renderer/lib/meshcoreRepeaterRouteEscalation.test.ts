@@ -138,6 +138,36 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(resetContactPath).not.toHaveBeenCalled();
   });
 
+  it('skips flood retry when identity or connection changed before or after reset', async () => {
+    const resetContactPath = vi.fn(async () => {
+      stale = true;
+      return true;
+    });
+    let stale = false;
+    const connection = { id: 'conn-1' };
+    const ctx = { identity: 'identity-a', connection };
+    let calls = 0;
+    await expect(
+      withMeshcoreRepeaterRouteEscalation(
+        42,
+        {
+          resetContactPath,
+          resolveRouteKind: () => 'direct',
+          captureEscalationContext: () => ctx,
+          isEscalationContextCurrent: (c) =>
+            !stale && c.identity === ctx.identity && c.connection === ctx.connection,
+          nowMs: () => 2_000,
+        },
+        () => {
+          calls += 1;
+          return Promise.reject(new Error('timeout'));
+        },
+      ),
+    ).rejects.toThrow(/timeout/);
+    expect(calls).toBe(1);
+    expect(resetContactPath).toHaveBeenCalledTimes(1);
+  });
+
   it('isolates cooldown per escalation scope', async () => {
     const resetContactPath = vi.fn(() => Promise.resolve(true));
     const now = 1_000;

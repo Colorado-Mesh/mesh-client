@@ -14,9 +14,9 @@ check-in / Unit-ID packet addressing over RF is deferred (Phase 1C).
    without choosing at least one device.
 4. On the roster row, **Add device** / **Manage devices** / per-device **Remove** updates the
    event set without unlinking hardware from the Contact Card.
-5. **Team message** fans out DMs to **every online or stale roster device** for each recipient
-   (roster links only). A teammate on multiple event radios gets one DM per reachable device so
-   traffic is not limited to a single “last-active” pick.
+5. **Team message** **attempts** one DM per qualifying online or stale roster device for each
+   recipient (roster links only). Delivery is not guaranteed. A failed send to one device does not
+   block sends to other rostered devices for the same person.
 
 ## Product rules
 

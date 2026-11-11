@@ -21,7 +21,10 @@ import {
 import { fanOutTeamMessage } from '@/renderer/lib/teamRoster/teamMessageFanOut';
 import { useTeamRosterLiveData } from '@/renderer/lib/teamRoster/useTeamRosterLiveData';
 import { useConnectionStore } from '@/renderer/stores/connectionStore';
-import { hydrateTeamRosterStore, useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
+import {
+  refreshTeamRosterStoreFromDb,
+  useTeamRosterStore,
+} from '@/renderer/stores/teamRosterStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 import type { TeamMember, TeamMemberLink } from '@/shared/teamRosterTypes';
@@ -164,7 +167,7 @@ export default function TeamRosterPanel({
     } catch (err: unknown) {
       console.warn('[TeamRoster] device select failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
-      await hydrateTeamRosterStore();
+      await refreshTeamRosterStoreFromDb();
       throw err;
     } finally {
       setBusyUnitId(null);

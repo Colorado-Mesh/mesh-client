@@ -6160,11 +6160,23 @@ export function useMeshcoreRuntime() {
   const meshcoreRepeaterRouteEscalationSharedDeps = useMemo(
     (): Pick<
       MeshcoreRepeaterRouteEscalationDeps,
-      'resetContactPath' | 'resolveRouteKind' | 'escalationScope'
+      | 'resetContactPath'
+      | 'resolveRouteKind'
+      | 'escalationScope'
+      | 'captureEscalationContext'
+      | 'isEscalationContextCurrent'
     > => ({
       resetContactPath: resetContactPathForEscalation,
       resolveRouteKind: resolveAdminRouteKindForNode,
       escalationScope: meshcoreRepeaterRouteEscalationScope,
+      captureEscalationContext: () => ({
+        identity: meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null,
+        connection: connRef.current,
+      }),
+      isEscalationContextCurrent: (ctx) =>
+        ctx.connection === connRef.current &&
+        ctx.identity ===
+          (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null),
     }),
     [
       resetContactPathForEscalation,
