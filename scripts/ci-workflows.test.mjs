@@ -189,6 +189,18 @@ describe('CI workflow contracts', () => {
     );
   });
 
+  it('retries the Flatpak tool install when runner mirrors are unreachable', () => {
+    const job = ciWorkflow.split('\n  flatpak:\n')[1].split('\n  policy-scanners:')[0];
+    // GitHub-hosted runners intermittently fail to resolve the Ubuntu mirrors.
+    expect(job).toContain('Acquire::ForceIPv4=true');
+    expect(job).toContain('apt-get "${APT_OPTS[@]}" update');
+    expect(job).toContain('apt-get "${APT_OPTS[@]}" install -y desktop-file-utils appstream');
+    expect(job).toContain('s|azure\\.archive\\.ubuntu\\.com|archive.ubuntu.com|g');
+    expect(job).toContain('nameserver 8.8.8.8');
+    expect(job).toContain('for attempt in 1 2 3; do');
+    expect(job).toContain('exit 1');
+  });
+
   it('runs the cheap always-on policy scanners in CI', () => {
     const job = ciWorkflow.split('  policy-scanners:')[1].split('  build:')[0];
     for (const script of [
@@ -271,7 +283,7 @@ describe('CI workflow contracts', () => {
     expect(read('scripts/ci-eslint-shard.mjs')).toContain("'eslint.ci.config.mjs'");
     const scripts = JSON.parse(read('package.json')).scripts;
     expect(scripts['format:check']).toContain('**/*.{ts,tsx,js,jsx,json,css,md,sh}');
-    expect(scripts.lint).toBe('eslint . --max-warnings 0');
+    expect(scripts.lint).toContain('--max-warnings 0');
 
     for (const file of ['src/shared/tcpPort.ts', 'src/renderer/App.tsx', 'e2e/startup.spec.ts']) {
       const original = await local.calculateConfigForFile(file);

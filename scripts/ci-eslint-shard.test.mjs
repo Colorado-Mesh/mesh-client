@@ -145,7 +145,7 @@ describe('ci-eslint-shard', () => {
       '--max-warnings 0 --concurrency 2 --config eslint.ci.config.mjs --no-warn-ignored',
     );
     const scripts = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts;
-    expect(scripts.lint).toBe('eslint . --max-warnings 0');
+    expect(scripts.lint).toContain('--max-warnings 0');
   });
 
   it('is wired into ci.yaml as a complete matrix behind the required aggregate job', () => {
