@@ -252,7 +252,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       /const shouldAbortPing = evaluateMeshcorePingRouteAbort\(\{[\s\S]*?floodPrimeExhausted[\s\S]*?pathResolvedComposed: pathResolved\.composed/,
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreRadioContactRoute\(radioContactPathLen\) != null[\s\S]*?ensureBestPathLoaded\(nodeId\)/,
+      /meshcoreRadioContactRoute\(radioContactPathLen\) != null\s*\) \{\s*try \{\s*const selPrime = await usePathHistoryStore\s*\.getState\(\)\s*\.ensureBestPathLoaded\(nodeId\)/,
     );
   });
 
