@@ -48,8 +48,9 @@ function isUsablePrimedPath(
   path: Uint8Array | undefined,
   hopsAway: number | null | undefined,
   pubKey: Uint8Array,
+  hashSizeBytes: 1 | 2 | 3 = 1,
 ): boolean {
-  return path != null && path.length > 1 && meshcoreIsUsableTraceStoredPath(path, hopsAway, pubKey);
+  return path != null && meshcoreIsUsableTraceStoredPath(path, hopsAway, pubKey, hashSizeBytes);
 }
 
 async function refreshPathAfterPrimeRound(
@@ -110,8 +111,10 @@ async function primeMeshcoreTraceRouteInner(opts: {
   maxRounds?: number;
   strategy?: MeshcoreTracePrimeStrategy;
   isAborted?: () => boolean;
+  hashSizeBytes?: 1 | 2 | 3;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
   const strategy = opts.strategy ?? 'passive';
+  const hashSizeBytes = opts.hashSizeBytes ?? 1;
   if (strategy === 'none') {
     return {
       path: opts.existingPath,
@@ -122,7 +125,12 @@ async function primeMeshcoreTraceRouteInner(opts: {
         path129Received: false,
         floodAdvertsSent: 0,
         postPathLen: opts.existingPath?.length ?? 0,
-        usableAfterPrime: isUsablePrimedPath(opts.existingPath, opts.hopsAway, opts.pubKey),
+        usableAfterPrime: isUsablePrimedPath(
+          opts.existingPath,
+          opts.hopsAway,
+          opts.pubKey,
+          hashSizeBytes,
+        ),
       },
     };
   }
@@ -155,7 +163,7 @@ async function primeMeshcoreTraceRouteInner(opts: {
         if (preSnap.path && preSnap.path.length > 0) {
           routeStoredPath = preSnap.path;
         }
-        if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
+        if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey, hashSizeBytes)) {
           break;
         }
       }
@@ -200,7 +208,7 @@ async function primeMeshcoreTraceRouteInner(opts: {
         routeStoredPath = fromMap;
       }
 
-      if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
+      if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey, hashSizeBytes)) {
         break;
       }
 
@@ -212,7 +220,12 @@ async function primeMeshcoreTraceRouteInner(opts: {
     }
   }
 
-  const usableAfterPrime = isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey);
+  const usableAfterPrime = isUsablePrimedPath(
+    routeStoredPath,
+    opts.hopsAway,
+    opts.pubKey,
+    hashSizeBytes,
+  );
   return {
     path: routeStoredPath,
     radioContactPathLen,
@@ -243,6 +256,7 @@ export async function primeMeshcoreTraceRoute(opts: {
   maxRounds?: number;
   strategy?: MeshcoreTracePrimeStrategy;
   isAborted?: () => boolean;
+  hashSizeBytes?: 1 | 2 | 3;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
   const strategy = opts.strategy ?? 'passive';
   if (strategy === 'none') {
@@ -293,6 +307,7 @@ export async function primeMeshcoreTraceRoute(opts: {
           fromMap ?? opts.existingPath,
           opts.hopsAway,
           opts.pubKey,
+          opts.hashSizeBytes ?? 1,
         ),
       },
     };
@@ -313,6 +328,7 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
     hopsAway: number | null | undefined,
   ) => boolean;
   isAborted?: () => boolean;
+  hashSizeBytes?: 1 | 2 | 3;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
   if (opts.isAborted?.()) {
     return { path: opts.existingPath, radioContactPathLen: null };
@@ -326,6 +342,7 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
     existingPath: opts.existingPath,
     strategy: opts.initialStrategy,
     isAborted: opts.isAborted,
+    hashSizeBytes: opts.hashSizeBytes,
   });
   if (opts.isAborted?.()) return primed;
   const runFlood = opts.floodWhen?.(primed.metrics, opts.hopsAway) ?? false;
@@ -339,6 +356,7 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
     existingPath: primed.path ?? opts.existingPath,
     strategy: 'flood',
     isAborted: opts.isAborted,
+    hashSizeBytes: opts.hashSizeBytes,
   });
   return flooded;
 }

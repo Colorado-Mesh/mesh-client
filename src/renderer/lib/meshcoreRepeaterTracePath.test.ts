@@ -5,6 +5,8 @@ import {
   evaluateMeshcorePingRouteAbort,
   MESHCORE_CLI_PREEMPT_TRACE_REASON,
   meshcoreDirectRepeaterRelayPubKeys,
+  meshcoreExpandTracePathWithAutoReturn,
+  meshcoreHashSizeForTraceSeed,
   meshcoreIsUsableTraceStoredPath,
   meshcoreRadioContactPathLenSaysMultiHop,
   meshcoreShouldAbortMultiHopPingNoRoute,
@@ -13,6 +15,9 @@ import {
   meshcoreSynthesizeOneHopTracePath,
   meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
+  meshcoreTraceOutboundFromStoredPath,
+  meshcoreTraceOutboundLegOfRoundTrip,
+  meshcoreTraceStoredPathFromOutbound,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
 } from './meshcoreRepeaterTracePath';
@@ -43,6 +48,11 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0xab]), 0, pubKey)).toBe(true);
   });
 
+  it('requires full hash-size dest prefix for 0-hop under 2-byte mode', () => {
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0xab]), 0, pubKey, 2)).toBe(false);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0xab, 0xcd]), 0, pubKey, 2)).toBe(true);
+  });
+
   it('allows full pubkey only for 0-hop (direct-retry send path)', () => {
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array(pubKey), 0, pubKey)).toBe(true);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array(pubKey), 1, pubKey)).toBe(false);
@@ -53,7 +63,9 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     expect(meshcoreIsUsableTraceStoredPath(oddPath, 1, pubKey)).toBe(false);
   });
 
-  it('rejects path segments shorter than hop count + 1', () => {
+  it('rejects a stored route too short for the hop count (1-byte: hops + 1; wider: hops * size)', () => {
+    // 1-byte hashes: a stored route is its relays plus one trailing byte.
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11]), 1, pubKey)).toBe(false);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22]), 1, pubKey)).toBe(true);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22]), 2, pubKey)).toBe(false);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22, 0x33]), 3, pubKey)).toBe(
@@ -62,6 +74,9 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     expect(
       meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22, 0x33, 0x44]), 3, pubKey),
     ).toBe(true);
+    // 2-byte hashes: a stored route is exactly its relay hashes.
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x12]), 1, pubKey, 2)).toBe(true);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11]), 1, pubKey, 2)).toBe(false);
   });
 });
 
@@ -76,7 +91,8 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
       radioContactPathLen: 0,
     });
     expect(plan.needsRoutePrime).toBe(false);
-    expect(plan.pathTooShort).toBe(true);
+    expect(plan.pathTooShort).toBe(false);
+    expect(plan.hashSizeBytes).toBe(1);
     expect(plan.outPathSeed).toEqual(new Uint8Array([0xab]));
   });
 
@@ -88,7 +104,33 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
       radioContactPathLen: null,
       companionPathHashMode: 1,
     });
+    expect(plan.hashSizeBytes).toBe(2);
     expect(plan.outPathSeed).toEqual(pubKey.subarray(0, 2));
+  });
+
+  it('0-hop: widens a stale 1-byte seed to 2 bytes under 2-byte path hashes', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: new Uint8Array([0xab]),
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: null,
+      companionPathHashMode: 1,
+    });
+    expect(plan.pathTooShort).toBe(true);
+    expect(plan.storedPath).toBeUndefined();
+    expect(plan.outPathSeed).toEqual(pubKey.subarray(0, 2));
+  });
+
+  it('0-hop: companion pathHashMode 3-byte seeds a 3-byte dest prefix', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: null,
+      companionPathHashMode: 2,
+    });
+    expect(plan.hashSizeBytes).toBe(3);
+    expect(plan.outPathSeed).toEqual(pubKey.subarray(0, 3));
   });
 
   it('0-hop: packed contact outPathLen wins over companion pathHashMode', () => {
@@ -140,6 +182,21 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.outPathSeed).toEqual(relayPath);
   });
 
+  it('1-hop: 2-byte path hashes accept a 2-byte relay intermediate without priming', () => {
+    const relayPath = new Uint8Array([0x11, 0x22]);
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: relayPath,
+      hopsAway: 1,
+      pubKey,
+      radioContactPathLen: null,
+      companionPathHashMode: 1,
+    });
+    expect(plan.hashSizeBytes).toBe(2);
+    expect(plan.pathTooShort).toBe(false);
+    expect(plan.needsRoutePrime).toBe(false);
+    expect(plan.storedPath).toEqual(relayPath);
+  });
+
   it('1-hop: prefers path history when map holds invalid full pubkey and radio confirms route', () => {
     const historyPath = new Uint8Array([0xaa, 0xbb]);
     const plan = planMeshcoreRepeaterTraceRoute({
@@ -152,6 +209,22 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.storedPath).toEqual(historyPath);
     expect(plan.needsRoutePrime).toBe(false);
     expect(plan.outPathSeed).toEqual(historyPath);
+  });
+
+  it('1-hop: uses path history when a 3-byte route length arrives as a negative int8', () => {
+    const historyPath = new Uint8Array([0x57, 0xa1, 0x11]);
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: new Uint8Array(pubKey),
+      hopsAway: 1,
+      pubKey,
+      // 0x81 (one hop of 3-byte hashes) as meshcore.js reads it.
+      radioContactPathLen: 0x81 - 256,
+      pathFromHistory: historyPath,
+    });
+    expect(plan.hashSizeBytes).toBe(3);
+    expect(plan.storedPath).toEqual(historyPath);
+    expect(plan.pathTooShort).toBe(false);
+    expect(plan.needsRoutePrime).toBe(false);
   });
 
   it('1-hop: ignores path history when radio reports no outbound path', () => {
@@ -220,12 +293,142 @@ describe('meshcoreShouldAbortMultiHopPingNoRoute', () => {
 });
 
 describe('meshcoreSynthesizeOneHopTracePath', () => {
-  it('builds [relayPrefix, destPrefix] from a direct repeater', () => {
+  it('builds outbound [relayPrefix] from a direct repeater', () => {
     const relay = new Uint8Array(32);
     relay[0] = 0x06;
     const dest = new Uint8Array(32);
     dest[0] = 0x3d;
-    expect(meshcoreSynthesizeOneHopTracePath(dest, [relay])).toEqual(new Uint8Array([0x06, 0x3d]));
+    expect(meshcoreSynthesizeOneHopTracePath(dest, [relay])).toEqual(new Uint8Array([0x06]));
+  });
+
+  it('uses 2-byte relay prefixes when path hash mode is 2-byte', () => {
+    const relay = new Uint8Array(32);
+    relay[0] = 0x57;
+    relay[1] = 0xaa;
+    const dest = new Uint8Array(32);
+    dest[0] = 0x07;
+    dest[1] = 0xbb;
+    expect(meshcoreSynthesizeOneHopTracePath(dest, [relay], 2)).toEqual(
+      new Uint8Array([0x57, 0xaa]),
+    );
+  });
+
+  it('uses 3-byte relay prefixes when path hash mode is 3-byte', () => {
+    const relay = new Uint8Array(32);
+    relay[0] = 0x57;
+    relay[1] = 0xaa;
+    relay[2] = 0x11;
+    const dest = new Uint8Array(32);
+    dest[0] = 0x07;
+    dest[1] = 0xbb;
+    dest[2] = 0x22;
+    expect(meshcoreSynthesizeOneHopTracePath(dest, [relay], 3)).toEqual(
+      new Uint8Array([0x57, 0xaa, 0x11]),
+    );
+  });
+});
+
+describe('stored route shape', () => {
+  const dest = makePubKey(0x07);
+
+  it('drops the trailing byte of a 1-byte stored route and keeps wider routes whole', () => {
+    expect(meshcoreTraceOutboundFromStoredPath(new Uint8Array([0x57, 0xee]), 1)).toEqual(
+      new Uint8Array([0x57]),
+    );
+    expect(meshcoreTraceOutboundFromStoredPath(new Uint8Array([0x57, 0x21, 0xee]), 1)).toEqual(
+      new Uint8Array([0x57, 0x21]),
+    );
+    expect(meshcoreTraceOutboundFromStoredPath(new Uint8Array([0x57, 0xa1]), 2)).toEqual(
+      new Uint8Array([0x57, 0xa1]),
+    );
+    expect(meshcoreTraceOutboundFromStoredPath(new Uint8Array([0x57, 0xa1, 0x11]), 3)).toEqual(
+      new Uint8Array([0x57, 0xa1, 0x11]),
+    );
+  });
+
+  it('stores 1-byte relays with a trailing byte so hop readers count length - 1', () => {
+    const stored = meshcoreTraceStoredPathFromOutbound(new Uint8Array([0x57]), dest, 1);
+    expect(stored).toEqual(new Uint8Array([0x57, 0x07]));
+    expect(meshcoreTraceOutboundFromStoredPath(stored, 1)).toEqual(new Uint8Array([0x57]));
+    expect(meshcoreTraceStoredPathFromOutbound(new Uint8Array([0x57, 0xa1]), dest, 2)).toEqual(
+      new Uint8Array([0x57, 0xa1]),
+    );
+  });
+});
+
+describe('meshcoreTraceOutboundLegOfRoundTrip', () => {
+  it('keeps the relays and the destination with the SNRs heard on the way out', () => {
+    // Two relays at 2-byte entries: r1, r2, dest, r2, r1. SNRs: r1, r2, dest, r2, r1 heard it.
+    expect(
+      meshcoreTraceOutboundLegOfRoundTrip({
+        pathHashes: [0x57, 0xa1, 0x21, 0xb2, 0x07, 0xc3, 0x21, 0xb2, 0x57, 0xa1],
+        pathSnrsDb: [9, 8, 7, 6, 5],
+        entryBytes: 2,
+      }),
+    ).toEqual({
+      pathHashes: [0x57, 0xa1, 0x21, 0xb2, 0x07, 0xc3],
+      pathSnrsDb: [9, 8],
+      destSnrDb: 7,
+    });
+  });
+
+  it('returns null when the reply is not a whole round trip', () => {
+    expect(
+      meshcoreTraceOutboundLegOfRoundTrip({
+        pathHashes: [0x57, 0x07],
+        pathSnrsDb: [9, 8],
+        entryBytes: 1,
+      }),
+    ).toBeNull();
+    expect(
+      meshcoreTraceOutboundLegOfRoundTrip({
+        pathHashes: [0x57, 0x07, 0x57],
+        pathSnrsDb: [9],
+        entryBytes: 1,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('meshcoreHashSizeForTraceSeed', () => {
+  it('reads a routed contact at the size its own length byte packs', () => {
+    // Plain 1: one hop of 1-byte hashes, even on a companion set to 2-byte hashes.
+    expect(meshcoreHashSizeForTraceSeed(1, 1)).toBe(1);
+    expect(meshcoreHashSizeForTraceSeed(0x41, 0)).toBe(2);
+    // 0x81 read by meshcore.js as int8.
+    expect(meshcoreHashSizeForTraceSeed(0x81 - 256, 0)).toBe(3);
+  });
+
+  it('uses the companion mode when the contact has no route or a plain zero-hop one', () => {
+    expect(meshcoreHashSizeForTraceSeed(0, 1)).toBe(2);
+    expect(meshcoreHashSizeForTraceSeed(-1, 2)).toBe(3);
+    expect(meshcoreHashSizeForTraceSeed(null, null)).toBe(1);
+    // A packed zero-hop length still carries its size.
+    expect(meshcoreHashSizeForTraceSeed(0x40, 0)).toBe(2);
+  });
+});
+
+describe('meshcoreExpandTracePathWithAutoReturn', () => {
+  it('adds the destination even when the last relay hash equals the destination prefix', () => {
+    const dest = makePubKey(0x07);
+    expect(meshcoreExpandTracePathWithAutoReturn(new Uint8Array([0x57, 0x07]), dest, 1)).toEqual(
+      new Uint8Array([0x57, 0x07, 0x07, 0x07, 0x57]),
+    );
+  });
+
+  it('expands 1-hop outbound into relay→dest→relay so TraceData returns', () => {
+    const dest = makePubKey(0x07);
+    dest[1] = 0x00;
+    expect(meshcoreExpandTracePathWithAutoReturn(new Uint8Array([0x57, 0x31]), dest, 2)).toEqual(
+      new Uint8Array([0x57, 0x31, 0x07, 0x00, 0x57, 0x31]),
+    );
+  });
+
+  it('keeps zero-hop as a single dest prefix', () => {
+    const dest = makePubKey(0x06);
+    expect(meshcoreExpandTracePathWithAutoReturn(new Uint8Array(0), dest, 2)).toEqual(
+      dest.subarray(0, 2),
+    );
   });
 });
 
@@ -286,7 +489,7 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
 });
 
 describe('meshcoreSynthesizeMultiHopTracePath', () => {
-  it('composes 3-byte path for 2-hop when relay and 2-byte stored path exist', () => {
+  it('composes two relays for 2-hop from a direct relay and a 1-hop stored route', () => {
     const relayKey = new Uint8Array(32);
     relayKey[0] = 0x06;
     const dest = makePubKey(0x3d);
@@ -296,7 +499,8 @@ describe('meshcoreSynthesizeMultiHopTracePath', () => {
       [1, relayKey],
       [destId, dest],
     ]);
-    const pathByNode = new Map([[destId, new Uint8Array([0x11, 0x3d])]]);
+    // Stored 1-byte route: the relay 0x11 plus one trailing byte that is not a hop.
+    const pathByNode = new Map([[destId, new Uint8Array([0x11, 0xee])]]);
     expect(
       meshcoreSynthesizeMultiHopTracePath({
         destPubKey: dest,
@@ -306,7 +510,33 @@ describe('meshcoreSynthesizeMultiHopTracePath', () => {
         excludeNodeId: destId,
         pathByNodeId: pathByNode,
       }),
-    ).toEqual(new Uint8Array([0x06, 0x11, 0x3d]));
+    ).toEqual(new Uint8Array([0x06, 0x11]));
+  });
+
+  it('composes 4-byte intermediate path for 2-hop under 2-byte path hashes', () => {
+    const relayKey = new Uint8Array(32);
+    relayKey[0] = 0x06;
+    relayKey[1] = 0xaa;
+    const dest = makePubKey(0x3d);
+    dest[1] = 0xbb;
+    const destId = 99;
+    const nodes = new Map([[1, { hops_away: 0, hw_model: 'Repeater' }]]);
+    const pubKeys = new Map([
+      [1, relayKey],
+      [destId, dest],
+    ]);
+    const pathByNode = new Map([[destId, new Uint8Array([0x11, 0x12])]]);
+    expect(
+      meshcoreSynthesizeMultiHopTracePath({
+        destPubKey: dest,
+        hopsAway: 2,
+        nodes,
+        pubKeyByNodeId: pubKeys,
+        excludeNodeId: destId,
+        pathByNodeId: pathByNode,
+        hashSizeBytes: 2,
+      }),
+    ).toEqual(new Uint8Array([0x06, 0xaa, 0x11, 0x12]));
   });
 });
 
@@ -337,7 +567,44 @@ describe('resolveMeshcoreTraceOutPathSeed', () => {
       pathByNodeId: new Map(),
     });
     expect(resolved.composed).toBe(true);
-    expect(resolved.outPath).toEqual(new Uint8Array([0x06, 0x3d]));
+    expect(resolved.autoReturn).toBe(true);
+    expect(resolved.outboundPath).toEqual(new Uint8Array([0x06]));
+    expect(resolved.outPath).toEqual(new Uint8Array([0x06, 0x3d, 0x06]));
+  });
+
+  it('synthesizes auto-return 2-byte-hash one-hop path when hashSizeBytes is 2', () => {
+    const relayKey = new Uint8Array(32);
+    relayKey[0] = 0x57;
+    relayKey[1] = 0xaa;
+    const dest = makePubKey(0x07);
+    dest[1] = 0xbb;
+    const destId = 42;
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 1,
+      pubKey: dest,
+      radioContactPathLen: null,
+      companionPathHashMode: 1,
+    });
+    const nodes = new Map([[1, { hops_away: 0, hw_model: 'Repeater' }]]);
+    const pubKeys = new Map([
+      [1, relayKey],
+      [destId, dest],
+    ]);
+    const resolved = resolveMeshcoreTraceOutPathSeed({
+      tracePlan: plan,
+      pubKey: dest,
+      hopsAway: 1,
+      nodeId: destId,
+      nodes,
+      pubKeyByNodeId: pubKeys,
+      pathByNodeId: new Map(),
+      hashSizeBytes: 2,
+    });
+    expect(resolved.composed).toBe(true);
+    expect(resolved.autoReturn).toBe(true);
+    expect(resolved.outboundPath).toEqual(new Uint8Array([0x57, 0xaa]));
+    expect(resolved.outPath).toEqual(new Uint8Array([0x57, 0xaa, 0x07, 0xbb, 0x57, 0xaa]));
   });
 });
 

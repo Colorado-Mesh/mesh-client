@@ -64,6 +64,34 @@ export function meshcorePackPathLenByte(hopCount: number, hashSizeBytes: 1 | 2 |
   return hops | ((hashSizeCode & 0x03) << 6);
 }
 
+export interface MeshcoreRadioContactRoute {
+  /** Relays between the companion and the contact; 0 is a direct (zero-hop) route. */
+  hopCount: number;
+  /** Bytes per relay hash in the contact's `out_path`. */
+  hashSizeBytes: 1 | 2 | 3;
+}
+
+/**
+ * Read a contact's `out_path_len` byte the way firmware packs it (`Packet::getPathHashCount` /
+ * `getPathHashSize`): hop count in the low 6 bits, hash size code in the high 2. Plain values
+ * 0..63 are therefore hop counts with 1-byte hashes.
+ *
+ * meshcore.js reads the byte as int8, so 3-byte lengths (0x80 and up) arrive negative; both
+ * forms are accepted. `null` means no known route: 0xFF (`OUT_PATH_UNKNOWN`, also -1), the
+ * reserved size code 3, or a missing value.
+ */
+export function meshcoreRadioContactRoute(
+  outPathLen: number | null | undefined,
+): MeshcoreRadioContactRoute | null {
+  if (outPathLen == null || !Number.isFinite(outPathLen)) return null;
+  const value = Math.trunc(outPathLen);
+  if (value < -128 || value > 0xff) return null;
+  const byte = value & 0xff;
+  const hashSizeCode = byte >> 6;
+  if (hashSizeCode === 3) return null;
+  return { hopCount: byte & 0x3f, hashSizeBytes: (hashSizeCode + 1) as 1 | 2 | 3 };
+}
+
 /** First N bytes of a 32-byte MeshCore pubkey used as on-air path hash. */
 export function meshcorePubkeyPathPrefix(pubKey: Uint8Array, hashSizeBytes: 1 | 2 | 3): Uint8Array {
   if (pubKey.length < hashSizeBytes) {

@@ -2,8 +2,10 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { launchApp, type LaunchedApp, openPanel, teardownApp } from './electronApp';
 import {
+  FAR_REPEATER_NAME,
   REPEATER_ADMIN_PASSWORD,
   type RepeaterRadioEvent,
+  type RepeaterRadioOptions,
   startMeshcoreRepeaterRadio,
 } from './fixtures/meshcore-repeater-radio';
 
@@ -25,8 +27,11 @@ test.afterEach(async () => {
 });
 
 /** Start the radio in the given state, launch the app and open the Repeaters panel. */
-async function start(configure: (fixture: Radio) => void): Promise<Page> {
-  radio = await startMeshcoreRepeaterRadio();
+async function start(
+  configure: (fixture: Radio) => void,
+  options?: RepeaterRadioOptions,
+): Promise<Page> {
+  radio = await startMeshcoreRepeaterRadio(undefined, options);
   radioToClose = radio;
   configure(radio);
   const launched = await launchApp();
@@ -169,6 +174,37 @@ for (const scenario of [
       })
       .toBe(true);
     // One trace, sized so firmware reads it as a single hop to the repeater.
+    expect(traces()).toEqual([scenario.sent]);
+  });
+}
+
+for (const scenario of [
+  // relay, far, relay as three 1-byte entries; the leftover path buffer byte is not a hop.
+  { name: 'one relay, 1-byte', relays: 1, hashSizeBytes: 1, sent: 'pathLen=3 flags=0' },
+  { name: 'one relay, 2-byte', relays: 1, hashSizeBytes: 2, sent: 'pathLen=6 flags=1' },
+  // 3-byte hashes go out as 2-byte entries: firmware trace entries are 1, 2, 4 or 8 bytes.
+  { name: 'one relay, 3-byte', relays: 1, hashSizeBytes: 3, sent: 'pathLen=6 flags=1' },
+  { name: 'two relays, 2-byte', relays: 2, hashSizeBytes: 2, sent: 'pathLen=10 flags=1' },
+] as const) {
+  test(`ping returns from a repeater behind ${scenario.name} path hashes`, async () => {
+    test.setTimeout(120_000);
+    const page = await start(
+      (fixture) => {
+        fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      },
+      { farRepeater: { relays: scenario.relays, hashSizeBytes: scenario.hashSizeBytes } },
+    );
+
+    const farRow = page.getByRole('row').filter({ hasText: FAR_REPEATER_NAME });
+    await farRow.getByRole('button', { name: 'Ping trace' }).click();
+    const traces = () => radio.events.filter((e) => e.kind === 'trace').map((e) => e.detail);
+    await expect
+      .poll(() => radio.events.some((e) => e.kind === 'reply' && e.detail === 'trace'), {
+        timeout: 60_000,
+        message: `ping was never answered; traces sent: ${traces().join(' | ')}`,
+      })
+      .toBe(true);
+    // One trace: out through the relays, the far repeater, and back through the relays.
     expect(traces()).toEqual([scenario.sent]);
   });
 }
