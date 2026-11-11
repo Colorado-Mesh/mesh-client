@@ -21,5 +21,5 @@ export function publicKeyPrefixHex(publicKey: Uint8Array, chars = 8): string {
 }
 
 export function nodeNumDisplayHex(nodeNum: number): string {
-  return (nodeNum >>> 0).toString(16).toUpperCase();
+  return (nodeNum >>> 0).toString(16).toUpperCase().padStart(8, '0');
 }
