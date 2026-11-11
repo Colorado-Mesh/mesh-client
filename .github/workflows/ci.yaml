@@ -172,10 +172,34 @@ jobs:
 
       - name: Install Flatpak validation tools
         run: |
+          set -euo pipefail
           # GitHub-hosted runners intermittently fail to resolve the Ubuntu package
-          # mirrors. Refresh the index and retry before failing the required check.
+          # mirrors (broken IPv6 routes and slow DNS). Prefer IPv4 and retry.
+          APT_OPTS=(-o Acquire::ForceIPv4=true)
+
+          install_tools() {
+            sudo apt-get "${APT_OPTS[@]}" update
+            sudo apt-get "${APT_OPTS[@]}" install -y desktop-file-utils appstream
+          }
+
+          if install_tools; then
+            exit 0
+          fi
+
+          # Fall back to the official Ubuntu archives and public IPv4 resolvers,
+          # then retry before failing the required check. Swap only the mirror
+          # host so the image's codename and components stay intact.
+          echo "::warning::apt mirror install failed; retrying against archive.ubuntu.com over IPv4" >&2
+          for file in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do
+            if [ -e "${file}" ]; then
+              sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' "${file}"
+            fi
+          done
+          sudo cp /etc/resolv.conf /etc/resolv.conf.runner-backup
+          printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\n' | sudo tee /etc/resolv.conf >/dev/null
+
           for attempt in 1 2 3; do
-            if sudo apt-get update && sudo apt-get install -y desktop-file-utils appstream; then
+            if install_tools; then
               exit 0
             fi
             echo "Flatpak validation tool install failed (attempt ${attempt}/3); retrying" >&2

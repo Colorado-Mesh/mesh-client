@@ -192,9 +192,12 @@ describe('CI workflow contracts', () => {
   it('retries the Flatpak tool install when runner mirrors are unreachable', () => {
     const job = ciWorkflow.split('\n  flatpak:\n')[1].split('\n  policy-scanners:')[0];
     // GitHub-hosted runners intermittently fail to resolve the Ubuntu mirrors.
-    expect(job).toContain('sudo apt-get update');
+    expect(job).toContain('Acquire::ForceIPv4=true');
+    expect(job).toContain('apt-get "${APT_OPTS[@]}" update');
+    expect(job).toContain('apt-get "${APT_OPTS[@]}" install -y desktop-file-utils appstream');
+    expect(job).toContain('s|azure\\.archive\\.ubuntu\\.com|archive.ubuntu.com|g');
+    expect(job).toContain('nameserver 8.8.8.8');
     expect(job).toContain('for attempt in 1 2 3; do');
-    expect(job).toContain('sudo apt-get install -y desktop-file-utils appstream');
     expect(job).toContain('exit 1');
   });
 
