@@ -191,6 +191,14 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/team-roster-handlers-fallback.ts'),
+            [
+              'export const TEAM_ROSTER_IPC_CHANNELS = [];',
+              'export function registerTeamRosterIpcFallbackHandlers() {}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.
