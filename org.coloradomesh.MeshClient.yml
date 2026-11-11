@@ -109,15 +109,15 @@ modules:
         strip-components: 0
         only-arches: [aarch64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v45.0.0/electron-v45.0.0-linux-x64.zip
-        sha256: 22f6a10bd3f7fef987ddbb379d3375ce664ad0c98a9a50f80c89f1718a0c3e3a
+        url: https://github.com/electron/electron/releases/download/v45.3.0/electron-v45.3.0-linux-x64.zip
+        sha256: 4930ece46f988e5874df77e943d98a10655d3da9e268e66ed86c1250bdca089c
         dest: electron-prebuilt
         # Electron zip has root-level `electron` + `locales/` + `resources/`; default strip-components:1 flattens them.
         strip-components: 0
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v45.0.0/electron-v45.0.0-linux-arm64.zip
-        sha256: a80d92b1ad6c111545a12632b8a75cedce614a41866e500810d4050d947f90e9
+        url: https://github.com/electron/electron/releases/download/v45.3.0/electron-v45.3.0-linux-arm64.zip
+        sha256: a79c1e639f4a02d5039eca296144d74c87da3018410e7d86c421efdc2c7df64c
         dest: electron-prebuilt
         strip-components: 0
         only-arches: [aarch64]

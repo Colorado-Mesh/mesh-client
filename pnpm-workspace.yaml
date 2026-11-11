@@ -110,7 +110,7 @@ overrides:
   baseline-browser-mapping: ^2.11.0
   brace-expansion: ^5.0.9
   builder-util-runtime: ^9.7.0
-  electron: ^45.0.0
+  electron: ^45.3.0
   fast-uri: ^3.1.6
   'glob@>=9.0.0 <14.0.2': ^14.0.3
   ip-address: ^10.7.4
@@ -122,6 +122,8 @@ overrides:
   # until markdownlint-cli2@0.24.0 (pins 15.0.3) is adopted.
   markdown-it@15: '>=15.0.3 <16'
   minimatch: ^11.0.3
+  # node-forge: GHSA-6qrw-m8cv-hcxf / GHSA-rhr8-3pm8-cq29 / GHSA-j8rw-jp99-435v et al. — floor >=1.4.3
+  node-forge: ^1.4.3
   postcss: ^8.5.25
   shell-quote: ^1.9.0
   smol-toml: ^1.9.0
