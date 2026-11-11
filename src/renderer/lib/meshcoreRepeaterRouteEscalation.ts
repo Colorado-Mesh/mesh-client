@@ -4,11 +4,23 @@ import { MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS } from './timeConstants'
 
 export type MeshcoreRepeaterRouteKind = 'direct' | 'flood' | 'unknown';
 
+/** Identity + live connection snapshot for one admin/radio request (captured at call start). */
+export interface MeshcoreRepeaterEscalationContext {
+  identity: string | null | undefined;
+  connection: unknown;
+}
+
 export interface MeshcoreRepeaterRouteEscalationDeps {
   /** Clear the companion contact path so the next send floods. */
   resetContactPath: (nodeId: number) => Promise<boolean>;
   /** Current route classification before the failed attempt. */
   resolveRouteKind: (nodeId: number) => MeshcoreRepeaterRouteKind;
+  /** MeshCore identity scope for per-identity cooldown (defaults to global when omitted). */
+  escalationScope?: () => string | null | undefined;
+  /** Snapshot the active identity and connection when the request starts. */
+  captureEscalationContext?: () => MeshcoreRepeaterEscalationContext;
+  /** Returns false when identity or connection changed since {@link captureEscalationContext}. */
+  isEscalationContextCurrent?: (ctx: MeshcoreRepeaterEscalationContext) => boolean;
   nowMs?: () => number;
   cooldownMs?: number;
 }
@@ -39,7 +51,20 @@ export function meshcoreRepeaterRouteKind(
   return 'direct';
 }
 
-const lastEscalationByNode = new Map<number, number>();
+const lastEscalationByNode = new Map<string, number>();
+
+function escalationCooldownKey(nodeId: number, scope: string | null | undefined): string {
+  const normalizedId = nodeId >>> 0;
+  const scopeKey = scope?.trim() ?? '';
+  return scopeKey ? `${scopeKey}:${normalizedId}` : String(normalizedId);
+}
+
+export function clearMeshcoreRepeaterRouteEscalationForScope(scope: string): void {
+  const prefix = `${scope.trim()}:`;
+  for (const key of [...lastEscalationByNode.keys()]) {
+    if (key.startsWith(prefix)) lastEscalationByNode.delete(key);
+  }
+}
 
 export function clearMeshcoreRepeaterRouteEscalationStateForTests(): void {
   lastEscalationByNode.clear();
@@ -65,6 +90,18 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
   const normalizedId = nodeId >>> 0;
   const now = deps.nowMs ?? Date.now;
   const cooldownMs = deps.cooldownMs ?? MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS;
+  const requestContext = deps.captureEscalationContext?.();
+  const identityForCooldown = requestContext?.identity ?? deps.escalationScope?.() ?? undefined;
+
+  const abortIfStale = (): void => {
+    if (
+      requestContext &&
+      deps.isEscalationContextCurrent &&
+      !deps.isEscalationContextCurrent(requestContext)
+    ) {
+      throw new Error('meshcore escalation context stale');
+    }
+  };
 
   try {
     return await fn({ escalated: false });
@@ -72,11 +109,17 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     if (!isMeshcoreRepeaterTimeoutError(firstErr)) {
       throw firstErr;
     }
+    try {
+      abortIfStale();
+    } catch {
+      throw firstErr;
+    }
     const routeKind = deps.resolveRouteKind(normalizedId);
     if (routeKind === 'flood') {
       throw firstErr;
     }
-    const last = lastEscalationByNode.get(normalizedId);
+    const cooldownKey = escalationCooldownKey(normalizedId, identityForCooldown);
+    const last = lastEscalationByNode.get(cooldownKey);
     if (last != null && now() - last < cooldownMs) {
       console.warn(
         `[meshcoreRepeaterRouteEscalation] cooldown active node=${normalizedId}; not flooding`,
@@ -96,13 +139,18 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       );
       throw firstErr;
     }
+    try {
+      abortIfStale();
+    } catch {
+      throw firstErr;
+    }
     if (!resetOk) {
       console.warn(
         `[meshcoreRepeaterRouteEscalation] resetContactPath returned false node=${normalizedId}; not retrying`,
       );
       throw firstErr;
     }
-    lastEscalationByNode.set(normalizedId, now());
+    lastEscalationByNode.set(cooldownKey, now());
     return fn({ escalated: true });
   }
 }

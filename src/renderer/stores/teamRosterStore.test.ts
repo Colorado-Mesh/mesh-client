@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TEAM_ROSTER_UNAVAILABLE_MESSAGE } from '@/shared/teamRosterUnavailable';
+
 import {
   hydrateTeamRosterStore,
+  refreshTeamRosterStoreFromDb,
   resetTeamRosterStoreForTests,
   useTeamRosterStore,
 } from './teamRosterStore';
@@ -26,6 +29,47 @@ function mockDb(partial: Partial<typeof window.electronAPI.db>) {
 }
 
 describe('teamRosterStore', () => {
+  it('sets hydrateError when listTeamMembers fails', async () => {
+    mockDb({
+      listTeamMembers: vi.fn().mockRejectedValue(new Error('db locked')),
+    });
+    await hydrateTeamRosterStore();
+    const { hydrated, hydrateError, hydrateUnavailable, members } = useTeamRosterStore.getState();
+    expect(hydrated).toBe(false);
+    expect(hydrateError).toBe(true);
+    expect(hydrateUnavailable).toBe(false);
+    expect(members).toEqual([]);
+  });
+
+  it('refreshFromDb bypasses hydrated guard and reloads members', async () => {
+    const member = {
+      unitId: 3,
+      callsign: 'Charlie',
+      role: null,
+      isSelf: false,
+      onRoster: true,
+      createdAt: 1,
+      updatedAt: 1,
+      links: [],
+    };
+    const listTeamMembers = vi.fn().mockResolvedValue([member]);
+    mockDb({ listTeamMembers });
+    useTeamRosterStore.setState({ hydrated: true, members: [] });
+    await refreshTeamRosterStoreFromDb();
+    expect(listTeamMembers).toHaveBeenCalled();
+    expect(useTeamRosterStore.getState().members).toEqual([member]);
+  });
+
+  it('flags hydrateUnavailable when IPC reports team roster unavailable', async () => {
+    mockDb({
+      listTeamMembers: vi.fn().mockRejectedValue(new Error(TEAM_ROSTER_UNAVAILABLE_MESSAGE)),
+    });
+    await hydrateTeamRosterStore();
+    const { hydrateError, hydrateUnavailable } = useTeamRosterStore.getState();
+    expect(hydrateError).toBe(true);
+    expect(hydrateUnavailable).toBe(true);
+  });
+
   it('hydrates members from IPC', async () => {
     const listTeamMembers = vi.fn().mockResolvedValue([
       {

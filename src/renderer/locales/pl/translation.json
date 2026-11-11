@@ -8773,6 +8773,10 @@
     "unlinkAria": "Odłącz urządzenie {{protocol}} {{name}}",
     "unitIdTaken": "Identyfikator jednostki {{unitId}} jest już przypisany do innego kontaktu.",
     "teamMessagePrefix": "Wiadomość zespołowa:",
-    "teamComposeCount": "{{count}} / {{max}}"
+    "teamComposeCount": "{{count}} / {{max}}",
+    "loadFailed": "Nie udało się załadować wizytówek z bazy danych.",
+    "retryLoad": "Spróbuj ponownie",
+    "retryLoadAria": "Spróbuj ponownie załadować wizytówki kontaktów",
+    "loadUnavailable": "W tej wersji wizytówki nie są dostępne. Zainstaluj ponownie lub zaktualizuj aplikację."
   }
 }

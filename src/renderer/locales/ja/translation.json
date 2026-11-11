@@ -8629,6 +8629,10 @@
     "unlinkAria": "{{protocol}}デバイス{{name}}のリンクを解除",
     "unitIdTaken": "ユニットID {{unitId}}はすでに別の連絡先に割り当てられています。",
     "teamMessagePrefix": "チームメッセージ：",
-    "teamComposeCount": "{{count}}/{{max}}"
+    "teamComposeCount": "{{count}}/{{max}}",
+    "loadFailed": "データベースから連絡先カードを読み込めませんでした。",
+    "retryLoad": "もう一度お試しください。",
+    "retryLoadAria": "連絡先カードの読み込みを再試行する",
+    "loadUnavailable": "このビルドでは連絡先カードは利用できません。アプリを再インストールするか、アップデートしてください。"
   }
 }

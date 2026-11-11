@@ -138,6 +138,70 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(resetContactPath).not.toHaveBeenCalled();
   });
 
+  it('skips flood retry when identity or connection changed before or after reset', async () => {
+    const resetContactPath = vi.fn(() => {
+      stale = true;
+      return Promise.resolve(true);
+    });
+    let stale = false;
+    const connection = { id: 'conn-1' };
+    const ctx = { identity: 'identity-a', connection };
+    let calls = 0;
+    await expect(
+      withMeshcoreRepeaterRouteEscalation(
+        42,
+        {
+          resetContactPath,
+          resolveRouteKind: () => 'direct',
+          captureEscalationContext: () => ctx,
+          isEscalationContextCurrent: (c) =>
+            !stale && c.identity === ctx.identity && c.connection === ctx.connection,
+          nowMs: () => 2_000,
+        },
+        () => {
+          calls += 1;
+          return Promise.reject(new Error('timeout'));
+        },
+      ),
+    ).rejects.toThrow(/timeout/);
+    expect(calls).toBe(1);
+    expect(resetContactPath).toHaveBeenCalledTimes(1);
+  });
+
+  it('isolates cooldown per escalation scope', async () => {
+    const resetContactPath = vi.fn(() => Promise.resolve(true));
+    const now = 1_000;
+    await withMeshcoreRepeaterRouteEscalation(
+      10,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        escalationScope: () => 'identity-a',
+        nowMs: () => now,
+        cooldownMs: 30_000,
+      },
+      ({ escalated }) => {
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        return Promise.resolve('first');
+      },
+    );
+    await withMeshcoreRepeaterRouteEscalation(
+      10,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        escalationScope: () => 'identity-b',
+        nowMs: () => now,
+        cooldownMs: 30_000,
+      },
+      ({ escalated }) => {
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        return Promise.resolve('second');
+      },
+    );
+    expect(resetContactPath).toHaveBeenCalledTimes(2);
+  });
+
   it('honors per-node cooldown', async () => {
     const resetContactPath = vi.fn(() => Promise.resolve(true));
     let now = 1_000;

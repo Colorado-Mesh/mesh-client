@@ -8629,6 +8629,10 @@
     "unlinkAria": "断开连接{{protocol}}设备{{name}}",
     "unitIdTaken": "单元ID {{unitId}}已分配给另一个联系人。",
     "teamMessagePrefix": "团队消息：",
-    "teamComposeCount": "{{count}}/{{max}}"
+    "teamComposeCount": "{{count}}/{{max}}",
+    "loadFailed": "无法从数据库加载联系人卡片。",
+    "retryLoad": "再试一次",
+    "retryLoadAria": "重试加载联系人卡片",
+    "loadUnavailable": "此版本中不提供联系人卡片。请重新安装或更新应用。"
   }
 }

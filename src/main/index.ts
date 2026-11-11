@@ -7002,6 +7002,19 @@ void app
           '[main] team-roster IPC registration failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
+        const fallbackMod = (
+          process.env.VITEST
+            ? await import('./ipc/team-roster-handlers-fallback')
+            : await import(
+                pathToFileURL(path.join(__dirname, 'team-roster-handlers-fallback.js')).href
+              )
+        ) as {
+          registerTeamRosterIpcFallbackHandlers: (deps: {
+            ipcMain: typeof ipcMain;
+            assertIpcSender: typeof assertIpcSender;
+          }) => void;
+        };
+        fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
       }
       protocol.handle(
         RENDERER_SCHEME,

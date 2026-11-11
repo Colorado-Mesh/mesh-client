@@ -124,3 +124,15 @@ it('requires the team roster chunk before launching Electron', () => {
     }),
   ).toBe(false);
 });
+
+it('requires the team roster fallback chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.teamRosterFallback).toContain(
+    'team-roster-handlers-fallback.js',
+  );
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('team-roster-handlers-fallback.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});
