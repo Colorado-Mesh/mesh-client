@@ -357,13 +357,13 @@ export function applyMeshcoreRfHopsAwayUpdate(
     via_mqtt: false,
   };
 
-  const hopsForPath = mergedHopsAway ?? hopCount;
+  // Path length must match this packet's hop count, not the merged UI hops_away.
   if (
-    hopsForPath >= 1 &&
+    hopCount >= 1 &&
     pathBytes &&
     pathBytes.length > 0 &&
     pathHashSizeBytes != null &&
-    pathBytes.length === hopsForPath * pathHashSizeBytes
+    pathBytes.length === hopCount * pathHashSizeBytes
   ) {
     const outbound = meshcoreOutboundRelaysFromInboundRfPath(pathBytes, pathHashSizeBytes);
     const destPubKey = deps.pubKeyMapRef.current.get(fromNodeId);
@@ -371,7 +371,7 @@ export function applyMeshcoreRfHopsAwayUpdate(
       const stored = meshcoreTraceStoredPathFromOutbound(outbound, destPubKey, pathHashSizeBytes);
       usePathHistoryStore
         .getState()
-        .recordPathUpdated(fromNodeId, Array.from(stored), hopsForPath, false);
+        .recordPathUpdated(fromNodeId, Array.from(stored), hopCount, false);
     }
   }
 

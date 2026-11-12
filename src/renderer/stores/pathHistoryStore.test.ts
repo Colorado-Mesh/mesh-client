@@ -350,6 +350,45 @@ describe('ensureBestPathLoaded', () => {
     const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(42);
     expect(sel?.pathBytes).toEqual([10, 11, 12]);
   });
+
+  it('loadForNode drops all-zero path rows from hydration', async () => {
+    vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([
+      {
+        id: 1,
+        node_id: 42,
+        path_hash: '0000',
+        hop_count: 1,
+        path_bytes: '[0,0]',
+        was_flood_discovery: 0,
+        success_count: 0,
+        failure_count: 0,
+        trip_time_ms: 0,
+        route_weight: 1,
+        last_success_ts: null,
+        created_at: 1,
+        updated_at: 2,
+      },
+      {
+        id: 2,
+        node_id: 42,
+        path_hash: '0a0b',
+        hop_count: 1,
+        path_bytes: '[10,11]',
+        was_flood_discovery: 0,
+        success_count: 1,
+        failure_count: 0,
+        trip_time_ms: 0,
+        route_weight: 1,
+        last_success_ts: null,
+        created_at: 1,
+        updated_at: 3,
+      },
+    ]);
+    await usePathHistoryStore.getState().loadForNode(42);
+    const records = usePathHistoryStore.getState().records.get(42) ?? [];
+    expect(records).toHaveLength(1);
+    expect(records[0]?.pathBytes).toEqual([10, 11]);
+  });
 });
 
 // ---------------------------------------------------------------------------

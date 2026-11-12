@@ -31,5 +31,6 @@ export function meshcoreRoomStatusPingTraceResult(opts: {
     pathSnrs: [opts.lastSnrDb],
     lastSnr: opts.lastSnrDb,
     tag: 0,
+    fromStatusPing: true,
   };
 }

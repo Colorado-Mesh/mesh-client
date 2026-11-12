@@ -37,6 +37,7 @@ describe('meshcoreRoomStatusPingTraceResult', () => {
       pathSnrs: [6.5],
       lastSnr: 6.5,
       tag: 0,
+      fromStatusPing: true,
     });
   });
 

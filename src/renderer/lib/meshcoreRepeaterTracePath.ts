@@ -282,13 +282,19 @@ export function meshcoreIsUsableTraceStoredPath(
   hashSizeBytes: 1 | 2 | 3 = 1,
 ): boolean {
   if (!path || path.length === 0) return false;
+  // All-zero slices are not routes (common leftover when outPathLen is unknown).
+  if (path.every((b) => b === 0)) return false;
   const hops = hopsAway ?? 0;
   if (meshcoreStoredPathLooksLikeFullPubKey(path, pubKey)) {
     return hops === 0;
   }
   if (hops >= 1 && path.length === pubKey.length) return false;
   if (path.length % hashSizeBytes !== 0) return false;
-  return path.length >= meshcoreTracePathMinByteLength(hops, hashSizeBytes);
+  const minBytes = meshcoreTracePathMinByteLength(hops, hashSizeBytes);
+  // Require the exact companion-width shape so a stale 1-byte history cannot satisfy a
+  // 2/3-byte mesh (and the reverse). Radio 0xFF does not encode width — companion mode does.
+  if (hops >= 1) return path.length === minBytes;
+  return path.length >= minBytes;
 }
 
 export interface MeshcoreRepeaterTraceRoutePlan {
@@ -533,6 +539,8 @@ export function meshcoreOutboundRelaysFromInboundRfPath(
 /**
  * Most recent RF packet from {@link nodeId} that carries a whole-hash inbound path, converted
  * to outbound relay hashes for ping/trace. Prefers RF over MQTT and skips empty / unparsed rows.
+ * Always uses the packet's own {@link pathHashSizeBytes} — never regroups hops at the companion
+ * request width (an even-length 1-byte path must not become one 2-byte hop).
  * Accepts any positive whole-hash path length (not only hopsAway × hashSize): advert path packing
  * can disagree with the UI hop count while still naming the neighbour that forwarded to us.
  */
@@ -548,13 +556,16 @@ export function meshcoreBestInboundRfOutboundPath(
   hashSizeBytes: 1 | 2 | 3,
   hopsAway: number | null | undefined,
 ): Uint8Array | undefined {
+  // Companion request width is intentionally unused: regrouping even-length paths at a
+  // different size invents false hops. Callers still pass it for API stability.
+  touch(hashSizeBytes);
   if ((hopsAway ?? 0) < 1) return undefined;
   for (let i = packets.length - 1; i >= 0; i--) {
     const p = packets[i];
     if (p.fromNodeId !== nodeId || !p.parseOk) continue;
     if (p.source === 'mqtt') continue;
     if (p.pathBytes.length === 0) continue;
-    const size = p.pathBytes.length % hashSizeBytes === 0 ? hashSizeBytes : p.pathHashSizeBytes;
+    const size = p.pathHashSizeBytes;
     if (p.pathBytes.length % size !== 0) continue;
     const outbound = meshcoreOutboundRelaysFromInboundRfPath(p.pathBytes, size);
     if (outbound && outbound.length > 0) return outbound;
@@ -606,9 +617,16 @@ export function meshcoreDirectRepeaterRelayPubKeys(
   const candidates: { pk: Uint8Array; lastHeard: number }[] = [];
   for (const [id, node] of nodes) {
     if (id === excludeNodeId) continue;
-    if ((node.hops_away ?? 0) !== 0) continue;
     const hw = node.hw_model;
     if (hw != null && hw !== 'Repeater' && hw !== 'Room') continue;
+    const hops = node.hops_away;
+    // Rooms need an explicit zero-hop; missing hops_away must not recruit them as relays.
+    // Repeaters keep the prior missing→0 fallback (heard-but-unhopped companions).
+    if (hw === 'Room') {
+      if (typeof hops !== 'number' || !Number.isFinite(hops) || hops !== 0) continue;
+    } else if ((hops ?? 0) !== 0) {
+      continue;
+    }
     const pk = pubKeyByNodeId.get(id);
     if (pk && pk.length > 0) {
       candidates.push({ pk, lastHeard: node.last_heard ?? 0 });

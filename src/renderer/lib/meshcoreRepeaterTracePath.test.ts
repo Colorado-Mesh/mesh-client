@@ -84,6 +84,17 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x12]), 1, pubKey, 2)).toBe(true);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11]), 1, pubKey, 2)).toBe(false);
   });
+
+  it('rejects all-zero path bytes at any hop count', () => {
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0]), 0, pubKey)).toBe(false);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0, 0]), 1, pubKey)).toBe(false);
+  });
+
+  it('rejects a longer-than-exact multi-hop path at the companion width', () => {
+    expect(
+      meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x12, 0x21, 0x22]), 1, pubKey, 2),
+    ).toBe(false);
+  });
 });
 
 describe('planMeshcoreRepeaterTraceRoute', () => {
@@ -620,6 +631,22 @@ describe('meshcoreDirectRepeaterRelayPubKeys', () => {
       olderRepeater,
     ]);
   });
+
+  it('excludes Rooms with missing hops_away but keeps Repeaters with missing hops', () => {
+    const roomKey = new Uint8Array(32);
+    roomKey[0] = 0x06;
+    const repeaterKey = new Uint8Array(32);
+    repeaterKey[0] = 0x75;
+    const nodes = new Map([
+      [1, { hops_away: undefined, hw_model: 'Room', last_heard: 200 }],
+      [2, { hops_away: undefined, hw_model: 'Repeater', last_heard: 100 }],
+    ]);
+    const pubKeys = new Map([
+      [1, roomKey],
+      [2, repeaterKey],
+    ]);
+    expect(meshcoreDirectRepeaterRelayPubKeys(nodes, pubKeys, 99)).toEqual([repeaterKey]);
+  });
 });
 
 describe('computeMeshcoreTracePrimeStrategy', () => {
@@ -929,6 +956,26 @@ describe('meshcoreBestInboundRfOutboundPath', () => {
         1,
       ),
     ).toEqual(Uint8Array.of(0x75));
+  });
+
+  it('does not regroup an even-length 1-byte path at a 2-byte companion request width', () => {
+    // Two 1-byte hops must stay two hops — using companion size 2 would invent one false hop.
+    expect(
+      meshcoreBestInboundRfOutboundPath(
+        42,
+        [
+          {
+            source: 'rf',
+            fromNodeId: 42,
+            pathBytes: [0x75, 0x19],
+            pathHashSizeBytes: 1,
+            parseOk: true,
+          },
+        ],
+        2,
+        1,
+      ),
+    ).toEqual(Uint8Array.of(0x19, 0x75));
   });
 });
 

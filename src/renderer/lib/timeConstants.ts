@@ -32,9 +32,13 @@ export const MESHCORE_TRACE_TIMEOUT_MS = 30 * MS_PER_SECOND;
  */
 export const MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS = 8 * MS_PER_SECOND;
 /**
- * MeshCore Ping (`tracePath`) end-to-end cap (queue wait + up to two direct tries + one
- * TraceData wait). Must stay in sync with {@link MESHCORE_TRACE_TIMEOUT_MS} — the error toast
- * shows this value in seconds.
+ * Outer `withTimeout` ceiling for each MeshCore Ping TRACE attempt in `traceRoute`
+ * (direct-first prefix, full-key retry, or planned-route TraceData wait). Stages are not
+ * combined into one wall-clock budget — each attempt arms its own wait — so a late planned
+ * route is not starved by earlier direct tries. Derived as
+ * `2 × direct-first extra + TraceData wait + 10s slack` for toast copy; must stay in sync with
+ * {@link MESHCORE_TRACE_TIMEOUT_MS} / {@link MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS}.
+ * `runMeshcoreRepeaterRpcOnce` does not impose a separate deadline.
  */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS =
   2 * MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS + MESHCORE_TRACE_TIMEOUT_MS + 10 * MS_PER_SECOND;

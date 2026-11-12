@@ -887,6 +887,23 @@ export function useMeshcoreRuntime() {
   const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
   /** Last-seen companion outPathLen per node (packed hash size survives intermittent getContacts misses). */
   const radioContactPathLenByNodeRef = useRef<Map<number, number>>(new Map());
+  /** Filled after route-escalation deps useMemo; Room Ping reads this before that declaration. */
+  const meshcoreRepeaterRouteEscalationSharedDepsRef = useRef<
+    Pick<
+      MeshcoreRepeaterRouteEscalationDeps,
+      | 'resetContactPath'
+      | 'resolveRouteKind'
+      | 'escalationScope'
+      | 'captureEscalationContext'
+      | 'isEscalationContextCurrent'
+    >
+  >({
+    resetContactPath: () => Promise.resolve(false),
+    resolveRouteKind: () => 'unknown',
+    escalationScope: () => null,
+    captureEscalationContext: () => ({ identity: null, connection: null }),
+    isEscalationContextCurrent: () => false,
+  });
   const pathHashModeRef = useRef(state.pathHashMode);
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
@@ -1230,7 +1247,17 @@ export function useMeshcoreRuntime() {
   }, [state.myNodeNum]);
 
   useEffect(() => {
+    const prev = pathHashModeRef.current;
     pathHashModeRef.current = state.pathHashMode;
+    // Radio 0xFF does not encode path-hash width; stale history at the old width must not
+    // seed TRACE after the companion mode changes.
+    if (
+      isMeshcorePathHashMode(prev) &&
+      isMeshcorePathHashMode(state.pathHashMode) &&
+      prev !== state.pathHashMode
+    ) {
+      usePathHistoryStore.getState().clearAll();
+    }
   }, [state.pathHashMode]);
 
   // Start stats polling when configured (after contacts dump — not during initConn).
@@ -1983,6 +2010,8 @@ export function useMeshcoreRuntime() {
 
       for (const [nodeId, tr] of meshcoreTraceResultsRef.current) {
         if (myNodeId > 0 && nodeId === myNodeId) continue;
+        // Room Status-ping synthetics are not TraceData — do not stamp hops_away from them.
+        if (tr.fromStatusPing) continue;
         const existing = nextNodes.get(nodeId);
         if (existing) {
           const traceHops = meshcoreTracePathLenToHops(tr.pathLen);
@@ -5678,6 +5707,7 @@ export function useMeshcoreRuntime() {
             const pingNode = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
             // Room servers do not answer TRACE; Ping uses Status (same as the Status action).
             if (meshcoreShouldPingRoomViaStatus(pingNode?.hw_model)) {
+              const roomPingSetupGen = meshcoreSetupGenerationRef.current;
               const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
                 pathHashModeRef.current,
               );
@@ -5692,12 +5722,31 @@ export function useMeshcoreRuntime() {
                 radioContactPathLen,
                 companionPathHashMode,
               );
-              const raw = await runMeshcoreRepeaterStatusRequest(conn, pubKey, {
-                hopsAway,
-                runSerialized: repeaterRemoteRpcRef.current,
-                beforeSend: () =>
-                  awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
-              });
+              // Same route-escalation as Status (reset + one flood retry on timeout). No Room login.
+              // Shared deps live in a ref so this callback can run before that useMemo is declared.
+              const raw = await withMeshcoreRepeaterLoginFallback(
+                nodeId,
+                {
+                  ...meshcoreRepeaterRouteEscalationSharedDepsRef.current,
+                  canLogin: () => false,
+                  login: async () => {
+                    // Rooms keep BBS sessions; Room Ping never logs in.
+                  },
+                },
+                async () =>
+                  runMeshcoreRepeaterStatusRequest(conn, pubKey, {
+                    hopsAway,
+                    runSerialized: repeaterRemoteRpcRef.current,
+                    beforeSend: () =>
+                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  }),
+              );
+              if (
+                meshcoreSetupGenerationRef.current !== roomPingSetupGen ||
+                resolveMeshcoreConn() !== conn
+              ) {
+                return false;
+              }
               const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
               const status: MeshCoreRepeaterStatus = {
                 battMilliVolts: raw.batt_milli_volts,
@@ -6034,8 +6083,14 @@ export function useMeshcoreRuntime() {
                     .getState()
                     .ensureBestPathLoaded(nodeId);
                   if (
-                    selPrime?.pathBytes?.length !== undefined &&
-                    selPrime.pathBytes.length >= minPathBytes
+                    selPrime?.pathBytes?.length &&
+                    selPrime.pathBytes.some((b) => b !== 0) &&
+                    meshcoreIsUsableTraceStoredPath(
+                      Uint8Array.from(selPrime.pathBytes),
+                      hopsAway,
+                      pubKey,
+                      synthHashSizeBytes,
+                    )
                   ) {
                     const fromHistPrime = new Uint8Array(selPrime.pathBytes);
                     outPathMapRef.current.set(nodeId, fromHistPrime);
@@ -6454,6 +6509,7 @@ export function useMeshcoreRuntime() {
       meshcoreRepeaterRouteEscalationScope,
     ],
   );
+  meshcoreRepeaterRouteEscalationSharedDepsRef.current = meshcoreRepeaterRouteEscalationSharedDeps;
 
   const makeRepeaterLoginOpts = useCallback(
     (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
