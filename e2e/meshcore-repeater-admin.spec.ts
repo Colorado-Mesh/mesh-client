@@ -57,17 +57,12 @@ async function connect(page: Page, port: number) {
   await page.getByRole('button', { name: `More actions for ${radio.repeaterName}` }).waitFor();
 }
 
-/**
- * Choose a row-menu request, answer the admin password dialog if it opens, and wait for the
- * repeater's reply to reach the app. Returns the radio events the request produced.
- */
-async function request(
+/** Choose a row-menu request and answer the admin password dialog if it opens. */
+async function startRequest(
   page: Page,
   menuItem: 'Request status' | 'Neighbors',
-  kind: RequestKind,
   dialogChoice: 'none' | 'admin',
 ) {
-  const before = radio.events.length;
   await page.getByRole('button', { name: `More actions for ${radio.repeaterName}` }).click();
   await page.getByRole('menuitem', { name: menuItem }).click();
   const dialog = page.getByRole('dialog', { name: 'Admin password' });
@@ -83,6 +78,20 @@ async function request(
       await dialog.getByRole('button', { name: 'No password' }).click();
     }
   }
+}
+
+/**
+ * Choose a row-menu request, answer the admin password dialog if it opens, and wait for the
+ * repeater's reply to reach the app. Returns the radio events the request produced.
+ */
+async function request(
+  page: Page,
+  menuItem: 'Request status' | 'Neighbors',
+  kind: RequestKind,
+  dialogChoice: 'none' | 'admin',
+) {
+  const before = radio.events.length;
+  await startRequest(page, menuItem, dialogChoice);
   await expect
     .poll(() => trace(radio.events.slice(before)).some((line) => line.endsWith(`:${kind}`)), {
       timeout: 45_000,
@@ -208,3 +217,98 @@ for (const scenario of [
     expect(traces()).toEqual([scenario.sent]);
   });
 }
+
+/**
+ * Click the zero-hop repeater's Ping and wait for the radio to answer a trace. Returns the
+ * traces sent and the traces that died on air.
+ */
+async function pingRepeater(page: Page) {
+  const before = radio.events.length;
+  await page
+    .getByRole('row')
+    .filter({ hasText: radio.repeaterName })
+    .getByRole('button', { name: 'Ping trace' })
+    .click();
+  const since = () => radio.events.slice(before);
+  const traces = () => since().filter((e) => e.kind === 'trace');
+  await expect
+    .poll(() => since().some((e) => e.kind === 'reply' && e.detail === 'trace'), {
+      timeout: 60_000,
+      message: `ping was never answered; traces sent: ${traces()
+        .map((e) => e.detail)
+        .join(' | ')}`,
+    })
+    .toBe(true);
+  return {
+    sent: traces().map((e) => e.detail),
+    lost: since().filter((e) => e.kind === 'lost' && e.detail?.startsWith('trace')),
+  };
+}
+
+// Firmware keeps an older route's relay hashes in a contact's path buffer after the radio
+// starts reaching it direct; only the length byte says where the route ends. These relays are
+// not in range, so a trace sent through them dies on air.
+for (const scenario of [
+  // One leftover 1-byte hash: the row still shows zero hops.
+  { name: 'one 1-byte relay hash', contactPathLen: 0, leftover: [0x9b], sent: 'pathLen=1 flags=0' },
+  // Two leftover 1-byte hashes: the row reads them as one hop.
+  {
+    name: 'two 1-byte relay hashes',
+    contactPathLen: 0,
+    leftover: [0x9b, 0x4e],
+    sent: 'pathLen=1 flags=0',
+  },
+  // A 2-byte relay hash under a packed zero-hop length (0x40): the row reads it as one hop.
+  {
+    name: 'one 2-byte relay hash',
+    contactPathLen: 0x40,
+    leftover: [0x9b, 0x4e],
+    sent: 'pathLen=2 flags=1',
+  },
+  // The route was reset to unknown (0xFF), as a Status flood resend does, and not relearned.
+  // The ping tries the repeater direct first, as one 8-byte entry only its key matches.
+  {
+    name: 'two 1-byte relay hashes after a route reset',
+    contactPathLen: -1,
+    leftover: [0x9b, 0x4e],
+    sent: 'pathLen=8 flags=3',
+  },
+] as const) {
+  test(`ping reaches a zero-hop repeater whose contact keeps ${scenario.name}`, async () => {
+    test.setTimeout(120_000);
+    const page = await start((fixture) => {
+      fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      fixture.setContactPathLen(scenario.contactPathLen);
+      fixture.setRepeaterLeftoverPath(scenario.leftover);
+    });
+
+    const { sent, lost } = await pingRepeater(page);
+    // One trace straight to the repeater; nothing sent through the old relays.
+    expect(lost).toEqual([]);
+    expect(sent).toEqual([scenario.sent]);
+  });
+}
+
+test('ping reaches a zero-hop repeater after a status request reset its route', async () => {
+  test.setTimeout(180_000);
+  const page = await start((fixture) => {
+    // The repeater does not know this companion, so status is dropped direct and by flood,
+    // and the path is never relearned.
+    fixture.setRepeaterClient(null);
+    fixture.setRepeaterLeftoverPath([0x9b, 0x4e]);
+  });
+
+  const before = radio.events.length;
+  await startRequest(page, 'Request status', 'none');
+  await expect
+    .poll(() => trace(radio.events.slice(before)), {
+      timeout: 60_000,
+      message: 'status never reset the route and flooded',
+    })
+    .toEqual(expect.arrayContaining(['resetPath', 'status:flood']));
+  expect(radio.getContactPathLen()).toBe(-1);
+
+  const { sent, lost } = await pingRepeater(page);
+  expect(lost).toEqual([]);
+  expect(sent).toEqual(['pathLen=8 flags=3']);
+});

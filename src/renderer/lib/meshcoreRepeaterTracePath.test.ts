@@ -17,7 +17,10 @@ import {
   meshcoreTraceDirectRetryEligible,
   meshcoreTraceOutboundFromStoredPath,
   meshcoreTraceOutboundLegOfRoundTrip,
+  meshcoreTracePingHopsAway,
+  meshcoreTracePingTriesDirectFirst,
   meshcoreTraceStoredPathFromOutbound,
+  meshcoreTraceZeroHopStoredPath,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
 } from './meshcoreRepeaterTracePath';
@@ -239,6 +242,149 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.storedPath).toBeUndefined();
     expect(plan.needsRoutePrime).toBe(true);
   });
+});
+
+describe('planMeshcoreRepeaterTraceRoute for a direct contact with leftover path bytes', () => {
+  const pubKey = makePubKey(0xab);
+
+  it.each([
+    { name: 'a direct route', radioContactPathLen: 0 },
+    { name: 'no known route', radioContactPathLen: -1 },
+    { name: 'no cached length', radioContactPathLen: null },
+  ])('0-hop with $name: drops a stored path that is not the dest prefix', (c) => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: new Uint8Array([0x57]),
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: c.radioContactPathLen,
+    });
+    expect(plan.storedPath).toBeUndefined();
+    expect(Array.from(plan.outPathSeed)).toEqual([0xab]);
+    expect(plan.needsRoutePrime).toBe(false);
+  });
+
+  it('0-hop: drops a path-history route that is not the dest prefix', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: 0,
+      pathFromHistory: new Uint8Array([0x57, 0x21]),
+    });
+    expect(plan.storedPath).toBeUndefined();
+    expect(Array.from(plan.outPathSeed)).toEqual([0xab]);
+  });
+
+  it('0-hop: keeps a stored dest prefix', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: new Uint8Array([0xab, 0xcd]),
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: 0x40,
+    });
+    expect(Array.from(plan.storedPath ?? [])).toEqual([0xab, 0xcd]);
+    expect(Array.from(plan.outPathSeed)).toEqual([0xab, 0xcd]);
+  });
+});
+
+describe('meshcoreTracePingHopsAway', () => {
+  it.each([0x00, 0x40, -128])(
+    'reads a direct contact (length %i) with leftover bytes as zero hops',
+    (radioContactPathLen) => {
+      expect(
+        meshcoreTracePingHopsAway({
+          displayedHopsAway: 2,
+          radioContactPathLen,
+          radioPathLeftover: true,
+        }),
+      ).toBe(0);
+    },
+  );
+
+  it('keeps the displayed hops when the radio knows a route or none', () => {
+    for (const radioContactPathLen of [0x02, 0x41, -127, -1, 0xff, null, undefined]) {
+      expect(
+        meshcoreTracePingHopsAway({
+          displayedHopsAway: 2,
+          radioContactPathLen,
+          radioPathLeftover: true,
+        }),
+      ).toBe(2);
+    }
+  });
+
+  it('keeps the displayed hops for a direct contact with no leftover bytes', () => {
+    for (const radioPathLeftover of [false, undefined]) {
+      expect(
+        meshcoreTracePingHopsAway({
+          displayedHopsAway: 1,
+          radioContactPathLen: 0,
+          radioPathLeftover,
+        }),
+      ).toBe(1);
+    }
+  });
+});
+
+describe('meshcoreTracePingTriesDirectFirst', () => {
+  const tries = (
+    hopsAway: number | undefined,
+    radioContactPathLen: number | null | undefined,
+    radioPathLeftover: boolean | undefined,
+  ) => meshcoreTracePingTriesDirectFirst({ hopsAway, radioContactPathLen, radioPathLeftover });
+
+  it.each([
+    { name: '0xFF read as -1', len: -1 },
+    { name: '0xFF', len: 0xff },
+    { name: 'the reserved size code 3', len: 0xc1 },
+  ])('tries direct first: no route ($name), older route bytes, row shows hops', ({ len }) => {
+    expect(tries(1, len, true)).toBe(true);
+    expect(tries(3, len, true)).toBe(true);
+  });
+
+  it('does not for a contact the radio never routed (clean buffer)', () => {
+    expect(tries(1, -1, false)).toBe(false);
+    expect(tries(1, -1, undefined)).toBe(false);
+  });
+
+  it('does not for a node the row shows at zero hops or unknown', () => {
+    expect(tries(0, -1, true)).toBe(false);
+    expect(tries(undefined, -1, true)).toBe(false);
+  });
+
+  it.each([
+    { name: 'a direct route', len: 0 },
+    { name: 'a 1-byte route', len: 2 },
+    { name: 'a 2-byte route', len: 0x41 },
+    { name: 'a 3-byte route read as int8', len: -127 },
+  ])('does not when the radio knows $name', ({ len }) => {
+    expect(tries(1, len, true)).toBe(false);
+  });
+
+  it('does not when the radio length was never read', () => {
+    expect(tries(1, null, true)).toBe(false);
+    expect(tries(1, undefined, true)).toBe(false);
+  });
+});
+
+describe('meshcoreTraceZeroHopStoredPath', () => {
+  const dest = new Uint8Array(32).map((_, i) => 0x07 + i);
+
+  it('keeps a reply entry no longer than the path hash size', () => {
+    expect(Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 1), dest, 1))).toEqual([0x07]);
+    expect(Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 2), dest, 2))).toEqual([
+      0x07, 0x08,
+    ]);
+  });
+
+  it.each([1, 2, 3] as const)(
+    'stores the 8-byte full-key reply as the %i-byte prefix',
+    (hashSizeBytes) => {
+      expect(
+        Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 8), dest, hashSizeBytes)),
+      ).toEqual(Array.from(dest.slice(0, hashSizeBytes)));
+    },
+  );
 });
 
 describe('meshcoreTraceDirectRetryEligible', () => {
