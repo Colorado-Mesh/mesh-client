@@ -6,21 +6,22 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                                                        | Purpose                                                                                    |
-| --------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
-| `bundle-size.yaml`          | All PRs; main push/`merge_group`/manual                        | Independent production main bundle size regression                                         |
-| `codeql.yaml`               | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
-| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
-| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
-| `build.yaml`                | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
-| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
-| `release.yaml`              | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
-| `flatpak.yaml`              | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
-| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
-| `docs.yml`                  | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
-| `third-party-licenses.yaml` | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
+| Workflow                      | Trigger                                                        | Purpose                                                                                    |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `ci.yaml`                     | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
+| `tests.yaml`                  | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
+| `bundle-size.yaml`            | All PRs; main push/`merge_group`/manual                        | Independent production main bundle size regression                                         |
+| `codeql.yaml`                 | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
+| `buttonmash.yaml`             | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
+| `e2e.yaml`                    | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
+| `e2e-meshcore-repeaters.yaml` | Path-filtered PR to `main` + manual `workflow_dispatch`        | MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required     |
+| `build.yaml`                  | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
+| `reticulum-sidecar.yaml`      | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
+| `release.yaml`                | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
+| `flatpak.yaml`                | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
+| `cut-release.yaml`            | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
+| `docs.yml`                    | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
+| `third-party-licenses.yaml`   | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
 
 ---
 
@@ -117,6 +118,15 @@ Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manua
 A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
+
+### MeshCore repeater E2E (`e2e-meshcore-repeaters.yaml`)
+
+Runs `e2e/meshcore-repeater-admin.spec.ts` (repeater Ping, Status, Neighbors and login against the fake MeshCore radio in `e2e/fixtures/meshcore-repeater-radio.ts`) on pull requests to `main` that touch MeshCore ping or repeater code, so a change that breaks pings fails on its own PR instead of in the next daily run.
+
+- **Paths:** `useMeshcoreRuntime.ts`, `src/renderer/lib/meshcore*.ts`, `src/renderer/lib/meshcore/**`, `src/renderer/hooks/meshcore/**`, `RepeatersPanel.tsx`, `src/shared/meshcorePathHash.ts`, the meshcore.js patch, the spec, its fixture, `e2e/electronApp.ts`, `playwright.config.ts` and the workflow. Changes to unit test files alone do not trigger it.
+- **Steps:** Linux only (`ubuntu-24.04`): the shared `setup-node-pnpm` action, the same Electron runtime libraries as the Linux leg of `e2e.yaml`, `pnpm run build`, then the spec under `xvfb-run -a`. Playwright artifacts are uploaded on failure.
+- **Not required:** it skips on other PRs and does not run on `merge_group`, so it must not be added to the ruleset.
+- `scripts/e2e-meshcore-repeaters-workflow.test.mjs` checks that every path pattern matches a file, that the files earlier ping fixes changed are covered, and that the Electron library list matches `e2e.yaml`.
 
 ### Reticulum sidecar (`reticulum-sidecar.yaml`)
 
@@ -381,7 +391,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
 - CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
-- E2E, packaging smoke, Flatpak, release jobs
+- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)`)
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
 
