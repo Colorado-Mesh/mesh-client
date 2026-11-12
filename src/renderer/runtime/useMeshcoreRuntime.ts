@@ -3564,13 +3564,16 @@ export function useMeshcoreRuntime() {
           serialNeedsReselect: false,
         }));
       } else {
-        setState({
+        // Keep pathHashMode so the adopt effect can compare prior vs radio mode and clear
+        // path history only when the companion width actually changes (not on every reconnect).
+        setState((s) => ({
           status: 'connecting',
           myNodeNum: 0,
           connectionType: type === 'tcp' ? 'http' : type,
           connectionLoss: false,
           serialNeedsReselect: false,
-        });
+          ...(isMeshcorePathHashMode(s.pathHashMode) ? { pathHashMode: s.pathHashMode } : {}),
+        }));
       }
       meshcoreDeviceConfiguredRef.current = false;
       if (type === 'ble') bleConnectInProgressRef.current = true;
@@ -5708,112 +5711,142 @@ export function useMeshcoreRuntime() {
             // Room servers do not answer TRACE; Ping uses Status (same as the Status action).
             if (meshcoreShouldPingRoomViaStatus(pingNode?.hw_model)) {
               const roomPingSetupGen = meshcoreSetupGenerationRef.current;
-              const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
-                pathHashModeRef.current,
-              );
-              const routeBytes = outPathMapRef.current.get(nodeId);
-              const radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
-              // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
-              const hopsAway = resolveMeshcoreAdminHopsAway(
-                pingNode,
-                routeBytes ?? new Uint8Array(),
-              );
-              const hashSizeBytes = meshcoreHashSizeForTraceSeed(
-                radioContactPathLen,
-                companionPathHashMode,
-              );
-              // Same route-escalation as Status (reset + one flood retry on timeout). No Room login.
-              // Shared deps live in a ref so this callback can run before that useMemo is declared.
-              const raw = await withMeshcoreRepeaterLoginFallback(
-                nodeId,
-                {
-                  ...meshcoreRepeaterRouteEscalationSharedDepsRef.current,
-                  canLogin: () => false,
-                  login: async () => {
-                    // Rooms keep BBS sessions; Room Ping never logs in.
-                  },
-                },
-                async () =>
-                  runMeshcoreRepeaterStatusRequest(conn, pubKey, {
-                    hopsAway,
-                    runSerialized: repeaterRemoteRpcRef.current,
-                    beforeSend: () =>
-                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
-                  }),
-              );
-              if (
+              const roomPingConn = conn;
+              const roomPingSessionStale = (): boolean =>
                 meshcoreSetupGenerationRef.current !== roomPingSetupGen ||
-                resolveMeshcoreConn() !== conn
-              ) {
+                resolveMeshcoreConn() !== roomPingConn;
+              try {
+                const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+                  pathHashModeRef.current,
+                );
+                const routeBytes = outPathMapRef.current.get(nodeId);
+                const radioContactPathLen =
+                  radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+                // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
+                const hopsAway = resolveMeshcoreAdminHopsAway(
+                  pingNode,
+                  routeBytes ?? new Uint8Array(),
+                );
+                const hashSizeBytes = meshcoreHashSizeForTraceSeed(
+                  radioContactPathLen,
+                  companionPathHashMode,
+                );
+                // Same route-escalation as Status (reset + one flood retry on timeout). No Room login.
+                // Shared deps live in a ref so this callback can run before that useMemo is declared.
+                const raw = await withMeshcoreRepeaterLoginFallback(
+                  nodeId,
+                  {
+                    ...meshcoreRepeaterRouteEscalationSharedDepsRef.current,
+                    canLogin: () => false,
+                    login: async () => {
+                      // Rooms keep BBS sessions; Room Ping never logs in.
+                    },
+                  },
+                  async () =>
+                    runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
+                      hopsAway,
+                      runSerialized: repeaterRemoteRpcRef.current,
+                      beforeSend: () =>
+                        awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    }),
+                );
+                if (roomPingSessionStale()) return false;
+                const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
+                const status: MeshCoreRepeaterStatus = {
+                  battMilliVolts: raw.batt_milli_volts,
+                  noiseFloor: raw.noise_floor,
+                  lastRssi: raw.last_rssi,
+                  lastSnr: lastSnrDb,
+                  nPacketsRecv: raw.n_packets_recv,
+                  nPacketsSent: raw.n_packets_sent,
+                  totalAirTimeSecs: raw.total_air_time_secs,
+                  totalUpTimeSecs: raw.total_up_time_secs,
+                  nSentFlood: raw.n_sent_flood,
+                  nSentDirect: raw.n_sent_direct,
+                  nRecvFlood: raw.n_recv_flood,
+                  nRecvDirect: raw.n_recv_direct,
+                  errEvents: raw.err_events,
+                  nDirectDups: raw.n_direct_dups,
+                  nFloodDups: raw.n_flood_dups,
+                  currTxQueueLen: raw.curr_tx_queue_len,
+                  fetchedAt: Date.now(),
+                };
+                setMeshcoreNodeStatus((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, status);
+                  return next;
+                });
+                const traceEntry = meshcoreRoomStatusPingTraceResult({
+                  destPubKey: pubKey,
+                  pathHashSizeBytes: hashSizeBytes,
+                  lastSnrDb,
+                });
+                setMeshcoreTraceResults((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, traceEntry);
+                  meshcoreTraceResultsRef.current = next;
+                  return next;
+                });
+                setNodes((prev) => {
+                  const cur = prev.get(nodeId);
+                  if (!cur) return prev;
+                  const next = new Map(prev);
+                  next.set(nodeId, {
+                    ...cur,
+                    snr: lastSnrDb,
+                    rssi: raw.last_rssi,
+                    hops_away: hopsAway,
+                  });
+                  return next;
+                });
+                useRepeaterSignalStore.getState().recordSignal(nodeId, lastSnrDb);
+                bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+                if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
+                  void window.electronAPI.db
+                    .updateMeshcoreContactLastRf(nodeId, lastSnrDb, raw.last_rssi)
+                    .catch((e: unknown) => {
+                      console.warn(
+                        '[useMeshcoreRuntime] updateMeshcoreContactLastRf (room ping) error ' +
+                          errLikeToLogString(e),
+                      );
+                    });
+                }
+                clearMeshcorePingNoRouteExpiryTimer(nodeId);
+                setMeshcorePingErrors((prev) => {
+                  const next = new Map(prev);
+                  next.delete(nodeId);
+                  return next;
+                });
+                return true;
+              } catch (roomPingErr: unknown) {
+                // Reconnect/supersede mid-Status: do not clear routes or publish Ping errors.
+                if (roomPingSessionStale()) return false;
+                if (meshcoreTraceCancelledForCliPreempt(roomPingErr)) throw roomPingErr;
+                const rawErr = meshcoreTraceRouteRejectReason(roomPingErr);
+                const errMsg =
+                  rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+                const isTimeout =
+                  errMsg.toLowerCase().includes('timeout') ||
+                  errMsg.toLowerCase().includes('timed out');
+                const friendlyRef: MeshcoreUserMessage = isTimeout
+                  ? {
+                      key: 'meshcore.errors.requestTimedOut',
+                      params: {
+                        seconds: Math.round(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS / 1000),
+                      },
+                    }
+                  : { key: MESHCORE_ERR_REQUEST_FAILED, params: { detail: errMsg } };
+                const friendlyErr = meshcoreStoredUserMessage(friendlyRef);
+                setMeshcorePingErrors((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, friendlyErr);
+                  return next;
+                });
+                console.warn(
+                  '[useMeshcoreRuntime] room ping error ' + errLikeToLogString(roomPingErr),
+                );
                 return false;
               }
-              const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
-              const status: MeshCoreRepeaterStatus = {
-                battMilliVolts: raw.batt_milli_volts,
-                noiseFloor: raw.noise_floor,
-                lastRssi: raw.last_rssi,
-                lastSnr: lastSnrDb,
-                nPacketsRecv: raw.n_packets_recv,
-                nPacketsSent: raw.n_packets_sent,
-                totalAirTimeSecs: raw.total_air_time_secs,
-                totalUpTimeSecs: raw.total_up_time_secs,
-                nSentFlood: raw.n_sent_flood,
-                nSentDirect: raw.n_sent_direct,
-                nRecvFlood: raw.n_recv_flood,
-                nRecvDirect: raw.n_recv_direct,
-                errEvents: raw.err_events,
-                nDirectDups: raw.n_direct_dups,
-                nFloodDups: raw.n_flood_dups,
-                currTxQueueLen: raw.curr_tx_queue_len,
-                fetchedAt: Date.now(),
-              };
-              setMeshcoreNodeStatus((prev) => {
-                const next = new Map(prev);
-                next.set(nodeId, status);
-                return next;
-              });
-              const traceEntry = meshcoreRoomStatusPingTraceResult({
-                destPubKey: pubKey,
-                pathHashSizeBytes: hashSizeBytes,
-                lastSnrDb,
-              });
-              setMeshcoreTraceResults((prev) => {
-                const next = new Map(prev);
-                next.set(nodeId, traceEntry);
-                meshcoreTraceResultsRef.current = next;
-                return next;
-              });
-              setNodes((prev) => {
-                const cur = prev.get(nodeId);
-                if (!cur) return prev;
-                const next = new Map(prev);
-                next.set(nodeId, {
-                  ...cur,
-                  snr: lastSnrDb,
-                  rssi: raw.last_rssi,
-                  hops_away: hopsAway,
-                });
-                return next;
-              });
-              useRepeaterSignalStore.getState().recordSignal(nodeId, lastSnrDb);
-              bumpMeshcoreNodeLastHeardFromRpc(nodeId);
-              if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
-                void window.electronAPI.db
-                  .updateMeshcoreContactLastRf(nodeId, lastSnrDb, raw.last_rssi)
-                  .catch((e: unknown) => {
-                    console.warn(
-                      '[useMeshcoreRuntime] updateMeshcoreContactLastRf (room ping) error ' +
-                        errLikeToLogString(e),
-                    );
-                  });
-              }
-              clearMeshcorePingNoRouteExpiryTimer(nodeId);
-              setMeshcorePingErrors((prev) => {
-                const next = new Map(prev);
-                next.delete(nodeId);
-                return next;
-              });
-              return true;
             }
             const setupGen = meshcoreSetupGenerationRef.current;
             const isTraceAborted = (): boolean =>
