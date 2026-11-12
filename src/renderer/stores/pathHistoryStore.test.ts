@@ -166,6 +166,12 @@ describe('recordPathUpdated', () => {
     expect(records![0].successCount).toBe(0);
   });
 
+  it('ignores all-zero path bytes', () => {
+    usePathHistoryStore.getState().recordPathUpdated(42, [0], 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(42, [0, 0], 1, false);
+    expect(usePathHistoryStore.getState().records.get(42)).toBeUndefined();
+  });
+
   it('deduplicates paths with the same hash', () => {
     usePathHistoryStore.getState().recordPathUpdated(42, [0x01], 1, false);
     usePathHistoryStore.getState().recordPathUpdated(42, [0x01], 2, true, 0.8);
@@ -181,9 +187,9 @@ describe('recordPathUpdated', () => {
 
 describe('LRU eviction', () => {
   it('evicts the oldest contact when records exceed 50', () => {
-    // Fill 50 contacts
+    // Fill 50 contacts (path byte must be non-zero — all-zero paths are ignored)
     for (let i = 0; i < 50; i++) {
-      usePathHistoryStore.getState().recordPathUpdated(i, [i], 1, false);
+      usePathHistoryStore.getState().recordPathUpdated(i, [i + 1], 1, false);
     }
     expect(usePathHistoryStore.getState().records.size).toBe(50);
 
@@ -196,10 +202,10 @@ describe('LRU eviction', () => {
 
   it('touching an existing contact moves it to MRU position', () => {
     for (let i = 0; i < 50; i++) {
-      usePathHistoryStore.getState().recordPathUpdated(i, [i], 1, false);
+      usePathHistoryStore.getState().recordPathUpdated(i, [i + 1], 1, false);
     }
     // Re-touch nodeId 0 so it becomes MRU
-    usePathHistoryStore.getState().recordPathUpdated(0, [0], 2, false);
+    usePathHistoryStore.getState().recordPathUpdated(0, [0xaa], 2, false);
 
     // Adding 51st should evict nodeId 1 (now oldest)
     usePathHistoryStore.getState().recordPathUpdated(100, [0xff], 1, false);
@@ -343,6 +349,45 @@ describe('ensureBestPathLoaded', () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([row]);
     const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(42);
     expect(sel?.pathBytes).toEqual([10, 11, 12]);
+  });
+
+  it('loadForNode drops all-zero path rows from hydration', async () => {
+    vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([
+      {
+        id: 1,
+        node_id: 42,
+        path_hash: '0000',
+        hop_count: 1,
+        path_bytes: '[0,0]',
+        was_flood_discovery: 0,
+        success_count: 0,
+        failure_count: 0,
+        trip_time_ms: 0,
+        route_weight: 1,
+        last_success_ts: null,
+        created_at: 1,
+        updated_at: 2,
+      },
+      {
+        id: 2,
+        node_id: 42,
+        path_hash: '0a0b',
+        hop_count: 1,
+        path_bytes: '[10,11]',
+        was_flood_discovery: 0,
+        success_count: 1,
+        failure_count: 0,
+        trip_time_ms: 0,
+        route_weight: 1,
+        last_success_ts: null,
+        created_at: 1,
+        updated_at: 3,
+      },
+    ]);
+    await usePathHistoryStore.getState().loadForNode(42);
+    const records = usePathHistoryStore.getState().records.get(42) ?? [];
+    expect(records).toHaveLength(1);
+    expect(records[0]?.pathBytes).toEqual([10, 11]);
   });
 });
 

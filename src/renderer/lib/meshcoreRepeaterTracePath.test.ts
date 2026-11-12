@@ -4,10 +4,13 @@ import {
   computeMeshcoreTracePrimeStrategy,
   evaluateMeshcorePingRouteAbort,
   MESHCORE_CLI_PREEMPT_TRACE_REASON,
+  meshcoreBestInboundRfOutboundPath,
+  meshcoreBlindSynthLacksRouteEvidence,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreExpandTracePathWithAutoReturn,
   meshcoreHashSizeForTraceSeed,
   meshcoreIsUsableTraceStoredPath,
+  meshcoreOutboundRelaysFromInboundRfPath,
   meshcoreRadioContactPathLenSaysMultiHop,
   meshcoreShouldAbortMultiHopPingNoRoute,
   meshcoreStoredPathLooksLikeFullPubKey,
@@ -80,6 +83,17 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     // 2-byte hashes: a stored route is exactly its relay hashes.
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x12]), 1, pubKey, 2)).toBe(true);
     expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11]), 1, pubKey, 2)).toBe(false);
+  });
+
+  it('rejects all-zero path bytes at any hop count', () => {
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0]), 0, pubKey)).toBe(false);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0, 0]), 1, pubKey)).toBe(false);
+  });
+
+  it('rejects a longer-than-exact multi-hop path at the companion width', () => {
+    expect(
+      meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x12, 0x21, 0x22]), 1, pubKey, 2),
+    ).toBe(false);
   });
 });
 
@@ -230,7 +244,7 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.needsRoutePrime).toBe(false);
   });
 
-  it('1-hop: ignores path history when radio reports no outbound path', () => {
+  it('1-hop: uses path history when radio reports no outbound path (0xFF)', () => {
     const historyPath = new Uint8Array([0xaa, 0xbb]);
     const plan = planMeshcoreRepeaterTraceRoute({
       storedPath: undefined,
@@ -238,9 +252,11 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
       pubKey,
       radioContactPathLen: -1,
       pathFromHistory: historyPath,
+      companionPathHashMode: 1,
     });
-    expect(plan.storedPath).toBeUndefined();
-    expect(plan.needsRoutePrime).toBe(true);
+    expect(plan.storedPath).toEqual(historyPath);
+    expect(plan.needsRoutePrime).toBe(false);
+    expect(plan.pathTooShort).toBe(false);
   });
 });
 
@@ -313,7 +329,7 @@ describe('meshcoreTracePingHopsAway', () => {
     }
   });
 
-  it('keeps the displayed hops for a direct contact with no leftover bytes', () => {
+  it('reads a direct contact as zero hops even with a clean path buffer', () => {
     for (const radioPathLeftover of [false, undefined]) {
       expect(
         meshcoreTracePingHopsAway({
@@ -321,7 +337,7 @@ describe('meshcoreTracePingHopsAway', () => {
           radioContactPathLen: 0,
           radioPathLeftover,
         }),
-      ).toBe(1);
+      ).toBe(0);
     }
   });
 });
@@ -342,9 +358,9 @@ describe('meshcoreTracePingTriesDirectFirst', () => {
     expect(tries(3, len, true)).toBe(true);
   });
 
-  it('does not for a contact the radio never routed (clean buffer)', () => {
-    expect(tries(1, -1, false)).toBe(false);
-    expect(tries(1, -1, undefined)).toBe(false);
+  it('tries direct first for a contact the radio never routed (clean 0xFF buffer)', () => {
+    expect(tries(1, -1, false)).toBe(true);
+    expect(tries(1, -1, undefined)).toBe(true);
   });
 
   it('does not for a node the row shows at zero hops or unknown', () => {
@@ -593,20 +609,43 @@ describe('meshcoreExpandTracePathWithAutoReturn', () => {
 });
 
 describe('meshcoreDirectRepeaterRelayPubKeys', () => {
-  it('returns pubkeys for 0-hop repeaters only', () => {
-    const relayKey = new Uint8Array(32);
-    relayKey[0] = 0x06;
+  it('returns 0-hop Repeaters and Rooms, newest last_heard first', () => {
+    const olderRepeater = new Uint8Array(32);
+    olderRepeater[0] = 0x75;
+    const newerRoom = new Uint8Array(32);
+    newerRoom[0] = 0x06;
     const nodes = new Map([
-      [1, { hops_away: 0, hw_model: 'Repeater' }],
-      [2, { hops_away: 1, hw_model: 'Repeater' }],
-      [3, { hops_away: 0, hw_model: 'Room' }],
+      [1, { hops_away: 0, hw_model: 'Repeater', last_heard: 100 }],
+      [2, { hops_away: 1, hw_model: 'Repeater', last_heard: 999 }],
+      [3, { hops_away: 0, hw_model: 'Room', last_heard: 200 }],
+      [4, { hops_away: 0, hw_model: 'Companion', last_heard: 300 }],
     ]);
     const pubKeys = new Map([
-      [1, relayKey],
+      [1, olderRepeater],
       [2, new Uint8Array(32)],
-      [3, new Uint8Array(32)],
+      [3, newerRoom],
+      [4, new Uint8Array(32)],
     ]);
-    expect(meshcoreDirectRepeaterRelayPubKeys(nodes, pubKeys, 99)).toEqual([relayKey]);
+    expect(meshcoreDirectRepeaterRelayPubKeys(nodes, pubKeys, 99)).toEqual([
+      newerRoom,
+      olderRepeater,
+    ]);
+  });
+
+  it('excludes Rooms with missing hops_away but keeps Repeaters with missing hops', () => {
+    const roomKey = new Uint8Array(32);
+    roomKey[0] = 0x06;
+    const repeaterKey = new Uint8Array(32);
+    repeaterKey[0] = 0x75;
+    const nodes = new Map([
+      [1, { hops_away: undefined, hw_model: 'Room', last_heard: 200 }],
+      [2, { hops_away: undefined, hw_model: 'Repeater', last_heard: 100 }],
+    ]);
+    const pubKeys = new Map([
+      [1, roomKey],
+      [2, repeaterKey],
+    ]);
+    expect(meshcoreDirectRepeaterRelayPubKeys(nodes, pubKeys, 99)).toEqual([repeaterKey]);
   });
 });
 
@@ -635,7 +674,7 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
     ).toBe('passive');
   });
 
-  it('still passive when synthesis is available but radio path is missing', () => {
+  it('skips priming for 1-hop when synthesis is available', () => {
     expect(
       computeMeshcoreTracePrimeStrategy({
         needsRoutePrime: true,
@@ -644,7 +683,7 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
         hasUsableStoredPath: false,
         canSynthesizePath: true,
       }),
-    ).toBe('passive');
+    ).toBe('none');
   });
 });
 
@@ -768,6 +807,61 @@ describe('resolveMeshcoreTraceOutPathSeed', () => {
   });
 });
 
+describe('meshcoreBlindSynthLacksRouteEvidence', () => {
+  it('is true only for composed paths with radio 0xFF and no leftover/inbound/history/relay', () => {
+    expect(
+      meshcoreBlindSynthLacksRouteEvidence({
+        pathResolvedComposed: true,
+        radioContactPathLen: -1,
+        radioPathLeftover: false,
+        hasInboundRfOutbound: false,
+        hasPathFromHistory: false,
+        hasKnownDirectRelay: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('is false when inbound RF, history, leftover, radio route, or a known direct relay exists', () => {
+    expect(
+      meshcoreBlindSynthLacksRouteEvidence({
+        pathResolvedComposed: true,
+        radioContactPathLen: -1,
+        radioPathLeftover: false,
+        hasInboundRfOutbound: true,
+        hasPathFromHistory: false,
+      }),
+    ).toBe(false);
+    expect(
+      meshcoreBlindSynthLacksRouteEvidence({
+        pathResolvedComposed: true,
+        radioContactPathLen: -1,
+        radioPathLeftover: true,
+        hasInboundRfOutbound: false,
+        hasPathFromHistory: false,
+      }),
+    ).toBe(false);
+    expect(
+      meshcoreBlindSynthLacksRouteEvidence({
+        pathResolvedComposed: true,
+        radioContactPathLen: 0x41,
+        radioPathLeftover: false,
+        hasInboundRfOutbound: false,
+        hasPathFromHistory: false,
+      }),
+    ).toBe(false);
+    expect(
+      meshcoreBlindSynthLacksRouteEvidence({
+        pathResolvedComposed: true,
+        radioContactPathLen: -1,
+        radioPathLeftover: false,
+        hasInboundRfOutbound: false,
+        hasPathFromHistory: false,
+        hasKnownDirectRelay: true,
+      }),
+    ).toBe(false);
+  });
+});
+
 describe('evaluateMeshcorePingRouteAbort', () => {
   it('aborts when flood priming is exhausted without composed path', () => {
     expect(
@@ -795,5 +889,132 @@ describe('evaluateMeshcorePingRouteAbort', () => {
         hasResolvedPath: false,
       }),
     ).toBe(true);
+  });
+});
+
+describe('meshcoreOutboundRelaysFromInboundRfPath', () => {
+  it('reverses 2-byte hop segments for the outbound route', () => {
+    expect(
+      Array.from(meshcoreOutboundRelaysFromInboundRfPath([0x11, 0x22, 0x33, 0x44], 2)!),
+    ).toEqual([0x33, 0x44, 0x11, 0x22]);
+  });
+
+  it('leaves a single 2-byte hop unchanged', () => {
+    expect(Array.from(meshcoreOutboundRelaysFromInboundRfPath([0x75, 0x19], 2)!)).toEqual([
+      0x75, 0x19,
+    ]);
+  });
+});
+
+describe('meshcoreBestInboundRfOutboundPath', () => {
+  it('prefers the latest RF packet with a matching hop-sized path', () => {
+    const outbound = meshcoreBestInboundRfOutboundPath(
+      42,
+      [
+        {
+          source: 'rf',
+          fromNodeId: 42,
+          pathBytes: [0xaa, 0xbb],
+          pathHashSizeBytes: 2,
+          parseOk: true,
+        },
+        {
+          source: 'rf',
+          fromNodeId: 42,
+          pathBytes: [0x75, 0x19],
+          pathHashSizeBytes: 2,
+          parseOk: true,
+        },
+      ],
+      2,
+      1,
+    );
+    expect(Array.from(outbound!)).toEqual([0x75, 0x19]);
+  });
+
+  it('skips MQTT-only rows but accepts a 1-byte RF path when companion is 2-byte', () => {
+    expect(
+      meshcoreBestInboundRfOutboundPath(
+        42,
+        [
+          {
+            source: 'mqtt',
+            fromNodeId: 42,
+            pathBytes: [0x75, 0x19],
+            pathHashSizeBytes: 2,
+            parseOk: true,
+          },
+          {
+            source: 'rf',
+            fromNodeId: 42,
+            pathBytes: [0x75],
+            pathHashSizeBytes: 1,
+            parseOk: true,
+          },
+        ],
+        2,
+        1,
+      ),
+    ).toEqual(Uint8Array.of(0x75));
+  });
+
+  it('does not regroup an even-length 1-byte path at a 2-byte companion request width', () => {
+    // Two 1-byte hops must stay two hops — using companion size 2 would invent one false hop.
+    expect(
+      meshcoreBestInboundRfOutboundPath(
+        42,
+        [
+          {
+            source: 'rf',
+            fromNodeId: 42,
+            pathBytes: [0x75, 0x19],
+            pathHashSizeBytes: 1,
+            parseOk: true,
+          },
+        ],
+        2,
+        1,
+      ),
+    ).toEqual(Uint8Array.of(0x19, 0x75));
+  });
+});
+
+describe('resolveMeshcoreTraceOutPathSeed inbound RF', () => {
+  it('prefers inbound RF outbound over blind zero-hop synthesis', () => {
+    const dest = makePubKey(0xce);
+    const destId = 99;
+    const wrongRelay = makePubKey(0x75);
+    const nodes = new Map([[1, { hops_away: 0, hw_model: 'Repeater' }]]);
+    const pubKeys = new Map([
+      [1, wrongRelay],
+      [destId, dest],
+    ]);
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 1,
+      pubKey: dest,
+      radioContactPathLen: -1,
+      companionPathHashMode: 1,
+    });
+    const resolved = resolveMeshcoreTraceOutPathSeed({
+      tracePlan: plan,
+      pubKey: dest,
+      hopsAway: 1,
+      nodeId: destId,
+      nodes,
+      pubKeyByNodeId: pubKeys,
+      pathByNodeId: new Map(),
+      hashSizeBytes: 2,
+      inboundRfOutbound: new Uint8Array([0x06, 0x47]),
+    });
+    expect(Array.from(resolved.outboundPath)).toEqual([0x06, 0x47]);
+    expect(Array.from(resolved.outPath)).toEqual([
+      0x06,
+      0x47,
+      ...Array.from(dest.subarray(0, 2)),
+      0x06,
+      0x47,
+    ]);
+    expect(resolved.autoReturn).toBe(true);
   });
 });

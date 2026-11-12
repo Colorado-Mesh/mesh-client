@@ -68,20 +68,18 @@ export function meshcoreHashSizeForTraceSeed(
  *
  * The radio sends all 64 path bytes with a contact, and only the length byte says how many of
  * them are the route (firmware replaces the route with `copyPath` and never clears the rest).
- * A length of zero hops (0x00, 0x40, 0x80) means the radio itself sends to this contact direct.
- * When such a contact's buffer still holds bytes an older route left behind, those bytes are
- * not a route and the hop count the app read from them is not one either, so the ping goes
- * direct.
- * Any other case keeps the displayed hop count, including a direct contact with a clean
- * buffer that adverts show at 1+ hops (the ping may then go through a known relay).
+ * A length of zero hops (0x00, 0x40, 0x80) means the radio itself sends to this contact direct —
+ * including a Room six inches away whose UI hop count is still stale from an advert. Prefer the
+ * radio over displayed hops; leftover bytes behind a direct length are not a route either.
  */
 export function meshcoreTracePingHopsAway(opts: {
   displayedHopsAway: number | null | undefined;
   radioContactPathLen: number | null | undefined;
-  /** From a fresh read of the radio contact; see `meshcoreContactHasLeftoverPathBytes`. */
+  /** Kept for call-site parity with leftover detection; radio direct wins regardless. */
   radioPathLeftover: boolean | undefined;
 }): number | null | undefined {
-  if (meshcoreTracePingRadioSaysDirect(opts.radioContactPathLen) && opts.radioPathLeftover) {
+  touch(opts.radioPathLeftover);
+  if (meshcoreTracePingRadioSaysDirect(opts.radioContactPathLen)) {
     return 0;
   }
   return opts.displayedHopsAway;
@@ -98,11 +96,14 @@ export function meshcoreTracePingRadioSaysDirect(
  * Whether a ping tries the node direct before the route it planned.
  *
  * True when the radio's length byte gives no route (0xFF: a Status or Telemetry flood resend
- * resets the route to this and keeps it when no path comes back), the contact's path buffer
- * still holds an older route's bytes, and the app shows the node 1+ hops away. The radio no
- * longer uses those bytes, and the hops may come from them. A node that is in range answers
- * the direct try; one that is not falls back to the planned route. A contact the radio never
- * routed has a clean buffer and is not tried direct.
+ * resets the route to this and keeps it when no path comes back, or the radio never learned
+ * one) and the app shows the node 1+ hops away. Advert / UI hops can mark a neighbour as
+ * multi-hop while the companion still has no outbound route; blind synthesis through an
+ * arbitrary zero-hop repeater then times out. Trying the destination as a hash-sized dest
+ * prefix first (then a full-key entry) recovers in-range nodes; if that is not answered the
+ * planned or synthesized route still runs. Leftover path bytes are not required — a clean
+ * 0xFF buffer is the common case after a route reset that cleared nothing useful, and for
+ * never-routed advert neighbours.
  */
 export function meshcoreTracePingTriesDirectFirst(opts: {
   hopsAway: number | null | undefined;
@@ -110,7 +111,8 @@ export function meshcoreTracePingTriesDirectFirst(opts: {
   /** From a fresh read of the radio contact; see `meshcoreContactHasLeftoverPathBytes`. */
   radioPathLeftover: boolean | undefined;
 }): boolean {
-  if ((opts.hopsAway ?? 0) < 1 || opts.radioPathLeftover !== true) return false;
+  touch(opts.radioPathLeftover);
+  if ((opts.hopsAway ?? 0) < 1) return false;
   return meshcoreTracePingRadioHasNoRoute(opts.radioContactPathLen);
 }
 
@@ -280,13 +282,19 @@ export function meshcoreIsUsableTraceStoredPath(
   hashSizeBytes: 1 | 2 | 3 = 1,
 ): boolean {
   if (!path || path.length === 0) return false;
+  // All-zero slices are not routes (common leftover when outPathLen is unknown).
+  if (path.every((b) => b === 0)) return false;
   const hops = hopsAway ?? 0;
   if (meshcoreStoredPathLooksLikeFullPubKey(path, pubKey)) {
     return hops === 0;
   }
   if (hops >= 1 && path.length === pubKey.length) return false;
   if (path.length % hashSizeBytes !== 0) return false;
-  return path.length >= meshcoreTracePathMinByteLength(hops, hashSizeBytes);
+  const minBytes = meshcoreTracePathMinByteLength(hops, hashSizeBytes);
+  // Require the exact companion-width shape so a stale 1-byte history cannot satisfy a
+  // 2/3-byte mesh (and the reverse). Radio 0xFF does not encode width — companion mode does.
+  if (hops >= 1) return path.length === minBytes;
+  return path.length >= minBytes;
 }
 
 export interface MeshcoreRepeaterTraceRoutePlan {
@@ -325,15 +333,11 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   if (
     (!storedPath || storedPath.length < minPathBytes) &&
     opts.pathFromHistory &&
-    meshcoreIsUsableTraceStoredPath(
-      opts.pathFromHistory,
-      opts.hopsAway,
-      opts.pubKey,
-      hashSizeBytes,
-    ) &&
-    // The radio must know a route: 0xFF / -1 is none, and a 3-byte length arrives negative.
-    meshcoreRadioContactRoute(opts.radioContactPathLen) != null
+    meshcoreIsUsableTraceStoredPath(opts.pathFromHistory, opts.hopsAway, opts.pubKey, hashSizeBytes)
   ) {
+    // Prefer path history even when the radio reports 0xFF / no route: a Status timeout can
+    // clear the companion route while the app still holds a working relay path from RF or a
+    // prior ping. Blind synthesis through an arbitrary zero-hop repeater then times out.
     storedPath = opts.pathFromHistory;
   }
 
@@ -423,6 +427,30 @@ export function meshcoreShouldAbortMultiHopPingNoRoute(
   return uiSaysMultiHop && hops >= 1;
 }
 
+/**
+ * True when a composed multi-hop path is only a guess: radio has no route, no leftover path
+ * bytes, no inbound RF path, no path history, and no known RF-adjacent Repeater/Room to use as
+ * the next hop. A 1-hop synth through {@link meshcoreDirectRepeaterRelayPubKeys} is evidence —
+ * aborting it left Rooms with a UI path (or a hearable 0-hop neighbour) on pingNoRoute while
+ * the same composed path succeeded for repeaters that already had history bytes on disk.
+ */
+export function meshcoreBlindSynthLacksRouteEvidence(opts: {
+  pathResolvedComposed: boolean;
+  radioContactPathLen: number | null | undefined;
+  radioPathLeftover: boolean | undefined;
+  hasInboundRfOutbound: boolean;
+  hasPathFromHistory: boolean;
+  /** Zero-hop Repeater/Room keys available for 1-hop synthesis. */
+  hasKnownDirectRelay?: boolean;
+}): boolean {
+  if (!opts.pathResolvedComposed) return false;
+  if (!meshcoreTracePingRadioHasNoRoute(opts.radioContactPathLen)) return false;
+  if (opts.radioPathLeftover === true) return false;
+  if (opts.hasInboundRfOutbound || opts.hasPathFromHistory) return false;
+  if (opts.hasKnownDirectRelay === true) return false;
+  return true;
+}
+
 /** Whether ping should fast-fail with pingNoRoute after route priming and path resolution. */
 export function evaluateMeshcorePingRouteAbort(opts: {
   floodPrimeExhausted: boolean;
@@ -432,7 +460,10 @@ export function evaluateMeshcorePingRouteAbort(opts: {
   uiSaysMultiHop: boolean;
   radioSaysMultiHop: boolean;
   hasResolvedPath: boolean;
+  /** When true, a composed path is a blind guess and must not be sent. */
+  blindSynthLacksEvidence?: boolean;
 }): boolean {
+  if (opts.blindSynthLacksEvidence) return true;
   if (opts.floodPrimeExhausted && !opts.pathResolvedComposed) return true;
   return meshcoreShouldAbortMultiHopPingNoRoute(
     opts.pathTooShort,
@@ -452,9 +483,12 @@ export function computeMeshcoreTracePrimeStrategy(opts: {
   canSynthesizePath: boolean;
   skipPrime?: boolean;
 }): MeshcoreTracePrimeStrategy {
-  touch(opts.canSynthesizePath);
   if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
   if (opts.hasUsableStoredPath) return 'none';
+  // 1-hop can synthesize through a known direct repeater (or inbound RF path). Priming a
+  // contact the radio already lists as 0xFF burns ~65s and rarely learns a route before the
+  // synthesized (or history) path is tried anyway.
+  if (opts.canSynthesizePath && (opts.hopsAway ?? 0) === 1) return 'none';
   if (opts.hopsAway == null) return 'passive';
   const hops = opts.hopsAway;
   if (hops >= 1) return 'passive';
@@ -480,6 +514,63 @@ export function meshcoreCanSynthesizeTracePath(opts: {
       opts.partialDestPath?.length === oneHopByteLen &&
       meshcoreIsUsableTraceStoredPath(opts.partialDestPath, 1, opts.destPubKey, hashSizeBytes))
   );
+}
+
+/**
+ * Turn the path hashes on a packet heard FROM a node into the outbound relay path back TO it.
+ * On-air path order is sender → … → neighbour that forwarded to us; outbound is the reverse.
+ */
+export function meshcoreOutboundRelaysFromInboundRfPath(
+  pathBytes: Uint8Array | readonly number[],
+  hashSizeBytes: 1 | 2 | 3,
+): Uint8Array | undefined {
+  const bytes =
+    pathBytes instanceof Uint8Array ? pathBytes : Uint8Array.from(pathBytes.map((b) => b & 0xff));
+  if (bytes.length === 0 || bytes.length % hashSizeBytes !== 0) return undefined;
+  const hopCount = bytes.length / hashSizeBytes;
+  const out = new Uint8Array(bytes.length);
+  for (let i = 0; i < hopCount; i++) {
+    const src = (hopCount - 1 - i) * hashSizeBytes;
+    out.set(bytes.subarray(src, src + hashSizeBytes), i * hashSizeBytes);
+  }
+  return out;
+}
+
+/**
+ * Most recent RF packet from {@link nodeId} that carries a whole-hash inbound path, converted
+ * to outbound relay hashes for ping/trace. Prefers RF over MQTT and skips empty / unparsed rows.
+ * Always uses the packet's own {@link pathHashSizeBytes} — never regroups hops at the companion
+ * request width (an even-length 1-byte path must not become one 2-byte hop).
+ * Accepts any positive whole-hash path length (not only hopsAway × hashSize): advert path packing
+ * can disagree with the UI hop count while still naming the neighbour that forwarded to us.
+ */
+export function meshcoreBestInboundRfOutboundPath(
+  nodeId: number,
+  packets: readonly {
+    source?: 'rf' | 'mqtt';
+    fromNodeId: number | null;
+    pathBytes: readonly number[];
+    pathHashSizeBytes: 1 | 2 | 3;
+    parseOk: boolean;
+  }[],
+  hashSizeBytes: 1 | 2 | 3,
+  hopsAway: number | null | undefined,
+): Uint8Array | undefined {
+  // Companion request width is intentionally unused: regrouping even-length paths at a
+  // different size invents false hops. Callers still pass it for API stability.
+  touch(hashSizeBytes);
+  if ((hopsAway ?? 0) < 1) return undefined;
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const p = packets[i];
+    if (p.fromNodeId !== nodeId || !p.parseOk) continue;
+    if (p.source === 'mqtt') continue;
+    if (p.pathBytes.length === 0) continue;
+    const size = p.pathHashSizeBytes;
+    if (p.pathBytes.length % size !== 0) continue;
+    const outbound = meshcoreOutboundRelaysFromInboundRfPath(p.pathBytes, size);
+    if (outbound && outbound.length > 0) return outbound;
+  }
+  return undefined;
 }
 
 /**
@@ -510,20 +601,39 @@ export function meshcoreSynthesizeOneHopTracePath(
   return undefined;
 }
 
+/**
+ * Zero-hop Repeaters and Rooms usable as 1-hop synthesis relays, newest-heard first.
+ * Rooms were excluded before; on many meshes the only RF-adjacent infra node is a Room, and
+ * picking an arbitrary older Repeater for synthesis times out.
+ */
 export function meshcoreDirectRepeaterRelayPubKeys(
-  nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>,
+  nodes: ReadonlyMap<
+    number,
+    { hops_away?: number | null; hw_model?: string | null; last_heard?: number | null }
+  >,
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>,
   excludeNodeId: number,
 ): Uint8Array[] {
-  const keys: Uint8Array[] = [];
+  const candidates: { pk: Uint8Array; lastHeard: number }[] = [];
   for (const [id, node] of nodes) {
     if (id === excludeNodeId) continue;
-    if ((node.hops_away ?? 0) !== 0) continue;
-    if (node.hw_model != null && node.hw_model !== 'Repeater') continue;
+    const hw = node.hw_model;
+    if (hw != null && hw !== 'Repeater' && hw !== 'Room') continue;
+    const hops = node.hops_away;
+    // Rooms need an explicit zero-hop; missing hops_away must not recruit them as relays.
+    // Repeaters keep the prior missing→0 fallback (heard-but-unhopped companions).
+    if (hw === 'Room') {
+      if (typeof hops !== 'number' || !Number.isFinite(hops) || hops !== 0) continue;
+    } else if ((hops ?? 0) !== 0) {
+      continue;
+    }
     const pk = pubKeyByNodeId.get(id);
-    if (pk && pk.length > 0) keys.push(pk);
+    if (pk && pk.length > 0) {
+      candidates.push({ pk, lastHeard: node.last_heard ?? 0 });
+    }
   }
-  return keys;
+  candidates.sort((a, b) => b.lastHeard - a.lastHeard);
+  return candidates.map((c) => c.pk);
 }
 
 /**
@@ -536,7 +646,10 @@ export function meshcoreDirectRepeaterRelayPubKeys(
 export function meshcoreSynthesizeMultiHopTracePath(opts: {
   destPubKey: Uint8Array;
   hopsAway: number | null | undefined;
-  nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>;
+  nodes: ReadonlyMap<
+    number,
+    { hops_away?: number | null; hw_model?: string | null; last_heard?: number | null }
+  >;
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
   excludeNodeId: number;
   pathByNodeId: ReadonlyMap<number, Uint8Array>;
@@ -610,11 +723,19 @@ export function resolveMeshcoreTraceOutPathSeed(opts: {
   pubKey: Uint8Array;
   hopsAway: number | null | undefined;
   nodeId: number;
-  nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>;
+  nodes: ReadonlyMap<
+    number,
+    { hops_away?: number | null; hw_model?: string | null; last_heard?: number | null }
+  >;
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
   pathByNodeId: ReadonlyMap<number, Uint8Array>;
   /** Path hash size from contact packed outPathLen / companion path.hash.mode. */
   hashSizeBytes?: 1 | 2 | 3;
+  /**
+   * Outbound relay hashes derived from a recent RF packet heard from this node
+   * ({@link meshcoreBestInboundRfOutboundPath}). Preferred over blind zero-hop synthesis.
+   */
+  inboundRfOutbound?: Uint8Array;
 }): MeshcoreResolvedTraceOutPath {
   const hashSizeBytes = opts.hashSizeBytes ?? opts.tracePlan.hashSizeBytes;
   const hops = opts.hopsAway ?? 0;
@@ -638,6 +759,14 @@ export function resolveMeshcoreTraceOutPathSeed(opts: {
   if (!opts.tracePlan.pathTooShort && opts.tracePlan.storedPath) {
     storedPath = opts.tracePlan.storedPath;
     outbound = meshcoreTraceOutboundFromStoredPath(storedPath, hashSizeBytes);
+  } else if (
+    opts.inboundRfOutbound &&
+    opts.inboundRfOutbound.length > 0 &&
+    opts.inboundRfOutbound.length % hashSizeBytes === 0
+  ) {
+    outbound = opts.inboundRfOutbound;
+    composed = true;
+    storedPath = meshcoreTraceStoredPathFromOutbound(outbound, opts.pubKey, hashSizeBytes);
   } else {
     outbound = meshcoreSynthesizeMultiHopTracePath({
       destPubKey: opts.pubKey,

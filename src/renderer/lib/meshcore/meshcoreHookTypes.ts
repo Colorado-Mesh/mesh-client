@@ -335,6 +335,11 @@ export interface MeshcoreTraceResultEntry {
   pathSnrs: number[];
   lastSnr: number;
   tag: number;
+  /**
+   * Room Ping uses Status (Rooms do not answer TRACE). Synthetic entries must not overwrite
+   * contact-rebuild `hops_away` the way real TraceData results do.
+   */
+  fromStatusPing?: true;
 }
 
 /** Guard a configuration operation while waiting for auth or companion queue access. */

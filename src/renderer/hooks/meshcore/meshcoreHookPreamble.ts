@@ -330,8 +330,8 @@ const MESHCORE_REPEATER_RPC_TIMEOUT_MS = MESHCORE_REPEATER_REPLY_CAP_MS;
 export const MESHCORE_STATUS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_TELEMETRY_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_NEIGHBORS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
-/** TracePath / ping UI timeout budget (not the admin receipt-derived reply arm). */
-export const MESHCORE_TRACE_TIMEOUT_MS = 120_000;
+/** @deprecated Import from `src/renderer/lib/timeConstants` — re-exported for existing callers. */
+export { MESHCORE_TRACE_TIMEOUT_MS } from '../../lib/timeConstants';
 /** Neighbors RPC is unlikely to succeed beyond this hop count on USB serial; UI disables the action. */
 export const MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS = 8;
 /** Request page size for GetNeighbours; firmware reply buffers often return fewer rows (~11 at 6-byte prefixes). */

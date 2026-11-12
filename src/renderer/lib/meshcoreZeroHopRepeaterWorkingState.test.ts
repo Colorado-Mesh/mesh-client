@@ -78,7 +78,8 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
 
   it('soft ping settle is 10s and never throws after budget', () => {
     expect(MESHCORE_REPEATER_PING_SETTLE_SOFT_MS).toBe(10_000);
-    expect(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS).toBe(180_000);
+    // 2×8s direct-first + 30s TraceData + 10s queue slack (see timeConstants).
+    expect(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS).toBe(56_000);
     expect(TRACE_IDLE_SOURCE).toContain('proceededBusy');
     expect(TRACE_IDLE_SOURCE).toContain('MESHCORE_REPEATER_PING_SETTLE_SOFT_MS');
     expect(TRACE_IDLE_SOURCE).not.toMatch(

@@ -18,6 +18,7 @@ import { meshCorePayloadTypeNibble } from '../../../shared/meshcoreRfPath';
 import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import {
   classifyPayload,
   classifyProximity,
@@ -39,6 +40,10 @@ import {
   meshcoreRfResolvePathSender,
 } from '../meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../meshcoreRawSelfFloodAdvertCoalesce';
+import {
+  meshcoreOutboundRelaysFromInboundRfPath,
+  meshcoreTraceStoredPathFromOutbound,
+} from '../meshcoreRepeaterTracePath';
 import {
   CONTACT_TYPE_LABELS,
   mergeHwModelOnContactUpdate,
@@ -89,7 +94,7 @@ export interface MeshcoreRfRxDeps {
 /** Node lookup + identity refs shared by Meshtastic-sender and hops-away RF updates. */
 type MeshcoreRfRxNodeLookupDeps = Pick<
   MeshcoreRfRxDeps,
-  'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes'
+  'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes' | 'pubKeyMapRef'
 >;
 
 interface MeshcoreRfParseContext {
@@ -331,6 +336,8 @@ export function applyMeshcoreRfHopsAwayUpdate(
   snr: number,
   rssi: number,
   deps: MeshcoreRfRxNodeLookupDeps,
+  pathBytes?: readonly number[],
+  pathHashSizeBytes?: 1 | 2 | 3,
 ): void {
   if (fromNodeId === null || fromNodeId === deps.myNodeNumRef.current) return;
   const existing = deps.readNodes().get(fromNodeId);
@@ -349,6 +356,24 @@ export function applyMeshcoreRfHopsAwayUpdate(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
+
+  // Path length must match this packet's hop count, not the merged UI hops_away.
+  if (
+    hopCount >= 1 &&
+    pathBytes &&
+    pathBytes.length > 0 &&
+    pathHashSizeBytes != null &&
+    pathBytes.length === hopCount * pathHashSizeBytes
+  ) {
+    const outbound = meshcoreOutboundRelaysFromInboundRfPath(pathBytes, pathHashSizeBytes);
+    const destPubKey = deps.pubKeyMapRef.current.get(fromNodeId);
+    if (outbound && destPubKey && destPubKey.length >= pathHashSizeBytes) {
+      const stored = meshcoreTraceStoredPathFromOutbound(outbound, destPubKey, pathHashSizeBytes);
+      usePathHistoryStore
+        .getState()
+        .recordPathUpdated(fromNodeId, Array.from(stored), hopCount, false);
+    }
+  }
 
   const unchanged =
     existing.hops_away === updated.hops_away &&
@@ -842,6 +867,8 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
       snr,
       rssi,
       cachedDeps,
+      ctx.pathBytes,
+      ctx.pathHashSizeBytes,
     );
     applyMeshcoreRfAdvertToStore(ctx, now, snr, rssi, deps);
 

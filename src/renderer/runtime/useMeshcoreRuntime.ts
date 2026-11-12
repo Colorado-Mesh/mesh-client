@@ -33,6 +33,7 @@ import {
   meshcoreFirmwareSupportsMultibytePathHash,
   type MeshcorePathHashMode,
   meshcorePathHashSizeFromTraceFlags,
+  meshcorePubkeyPathPrefix,
   meshcoreRadioContactRoute,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
@@ -305,6 +306,7 @@ import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
 import {
   parsePathHashModeFromDeviceQuery,
+  resolveMeshcoreCompanionPathHashMode,
   setMeshcorePathHashModeOnRadio,
 } from '../lib/meshcorePathHashMode';
 import {
@@ -317,7 +319,10 @@ import {
   type MeshcoreRepeaterRpcPendingMap,
   setRepeaterAdminRpcPending,
 } from '../lib/meshcoreRepeaterAdminPending';
-import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
+import {
+  resolveMeshcoreAdminHopsAway,
+  resolveMeshcorePingHopsAway,
+} from '../lib/meshcoreRepeaterAdminRouting';
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
 import {
   isMeshcoreRepeaterCliDangerCommand,
@@ -362,6 +367,8 @@ import {
   computeMeshcoreTracePrimeStrategy,
   evaluateMeshcorePingRouteAbort,
   MESHCORE_CLI_PREEMPT_TRACE_REASON,
+  meshcoreBestInboundRfOutboundPath,
+  meshcoreBlindSynthLacksRouteEvidence,
   meshcoreCanSynthesizeTracePath,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreHashSizeForTraceSeed,
@@ -370,10 +377,10 @@ import {
   meshcoreTraceDirectRetryEligible,
   meshcoreTraceOutboundLegOfRoundTrip,
   meshcoreTracePathMinByteLength,
-  meshcoreTracePingHopsAway,
   meshcoreTracePingRadioHasNoRoute,
   meshcoreTracePingRadioSaysDirect,
   meshcoreTracePingTriesDirectFirst,
+  meshcoreTraceStoredPathFromOutbound,
   meshcoreTraceZeroHopStoredPath,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
@@ -438,6 +445,10 @@ import {
   meshcoreThrowIfRoomLoginAborted,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
+import {
+  meshcoreRoomStatusPingTraceResult,
+  meshcoreShouldPingRoomViaStatus,
+} from '../lib/meshcoreRoomStatusPing';
 import {
   isMeshcoreRoomSyncSelectable,
   pickMostOverdueRoom,
@@ -876,6 +887,23 @@ export function useMeshcoreRuntime() {
   const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
   /** Last-seen companion outPathLen per node (packed hash size survives intermittent getContacts misses). */
   const radioContactPathLenByNodeRef = useRef<Map<number, number>>(new Map());
+  /** Filled after route-escalation deps useMemo; Room Ping reads this before that declaration. */
+  const meshcoreRepeaterRouteEscalationSharedDepsRef = useRef<
+    Pick<
+      MeshcoreRepeaterRouteEscalationDeps,
+      | 'resetContactPath'
+      | 'resolveRouteKind'
+      | 'escalationScope'
+      | 'captureEscalationContext'
+      | 'isEscalationContextCurrent'
+    >
+  >({
+    resetContactPath: () => Promise.resolve(false),
+    resolveRouteKind: () => 'unknown',
+    escalationScope: () => null,
+    captureEscalationContext: () => ({ identity: null, connection: null }),
+    isEscalationContextCurrent: () => false,
+  });
   const pathHashModeRef = useRef(state.pathHashMode);
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
@@ -1219,7 +1247,17 @@ export function useMeshcoreRuntime() {
   }, [state.myNodeNum]);
 
   useEffect(() => {
+    const prev = pathHashModeRef.current;
     pathHashModeRef.current = state.pathHashMode;
+    // Radio 0xFF does not encode path-hash width; stale history at the old width must not
+    // seed TRACE after the companion mode changes.
+    if (
+      isMeshcorePathHashMode(prev) &&
+      isMeshcorePathHashMode(state.pathHashMode) &&
+      prev !== state.pathHashMode
+    ) {
+      usePathHistoryStore.getState().clearAll();
+    }
   }, [state.pathHashMode]);
 
   // Start stats polling when configured (after contacts dump — not during initConn).
@@ -1972,6 +2010,8 @@ export function useMeshcoreRuntime() {
 
       for (const [nodeId, tr] of meshcoreTraceResultsRef.current) {
         if (myNodeId > 0 && nodeId === myNodeId) continue;
+        // Room Status-ping synthetics are not TraceData — do not stamp hops_away from them.
+        if (tr.fromStatusPing) continue;
         const existing = nextNodes.get(nodeId);
         if (existing) {
           const traceHops = meshcoreTracePathLenToHops(tr.pathLen);
@@ -3524,13 +3564,16 @@ export function useMeshcoreRuntime() {
           serialNeedsReselect: false,
         }));
       } else {
-        setState({
+        // Keep pathHashMode so the adopt effect can compare prior vs radio mode and clear
+        // path history only when the companion width actually changes (not on every reconnect).
+        setState((s) => ({
           status: 'connecting',
           myNodeNum: 0,
           connectionType: type === 'tcp' ? 'http' : type,
           connectionLoss: false,
           serialNeedsReselect: false,
-        });
+          ...(isMeshcorePathHashMode(s.pathHashMode) ? { pathHashMode: s.pathHashMode } : {}),
+        }));
       }
       meshcoreDeviceConfiguredRef.current = false;
       if (type === 'ble') bleConnectInProgressRef.current = true;
@@ -5664,16 +5707,155 @@ export function useMeshcoreRuntime() {
             if (!conn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
+            const pingNode = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+            // Room servers do not answer TRACE; Ping uses Status (same as the Status action).
+            if (meshcoreShouldPingRoomViaStatus(pingNode?.hw_model)) {
+              const roomPingSetupGen = meshcoreSetupGenerationRef.current;
+              const roomPingConn = conn;
+              const roomPingSessionStale = (): boolean =>
+                meshcoreSetupGenerationRef.current !== roomPingSetupGen ||
+                resolveMeshcoreConn() !== roomPingConn;
+              try {
+                const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+                  pathHashModeRef.current,
+                );
+                const routeBytes = outPathMapRef.current.get(nodeId);
+                const radioContactPathLen =
+                  radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+                // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
+                const hopsAway = resolveMeshcoreAdminHopsAway(
+                  pingNode,
+                  routeBytes ?? new Uint8Array(),
+                );
+                const hashSizeBytes = meshcoreHashSizeForTraceSeed(
+                  radioContactPathLen,
+                  companionPathHashMode,
+                );
+                // Same route-escalation as Status (reset + one flood retry on timeout). No Room login.
+                // Shared deps live in a ref so this callback can run before that useMemo is declared.
+                const raw = await withMeshcoreRepeaterLoginFallback(
+                  nodeId,
+                  {
+                    ...meshcoreRepeaterRouteEscalationSharedDepsRef.current,
+                    canLogin: () => false,
+                    login: async () => {
+                      // Rooms keep BBS sessions; Room Ping never logs in.
+                    },
+                  },
+                  async () =>
+                    runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
+                      hopsAway,
+                      runSerialized: repeaterRemoteRpcRef.current,
+                      beforeSend: () =>
+                        awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    }),
+                );
+                if (roomPingSessionStale()) return false;
+                const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
+                const status: MeshCoreRepeaterStatus = {
+                  battMilliVolts: raw.batt_milli_volts,
+                  noiseFloor: raw.noise_floor,
+                  lastRssi: raw.last_rssi,
+                  lastSnr: lastSnrDb,
+                  nPacketsRecv: raw.n_packets_recv,
+                  nPacketsSent: raw.n_packets_sent,
+                  totalAirTimeSecs: raw.total_air_time_secs,
+                  totalUpTimeSecs: raw.total_up_time_secs,
+                  nSentFlood: raw.n_sent_flood,
+                  nSentDirect: raw.n_sent_direct,
+                  nRecvFlood: raw.n_recv_flood,
+                  nRecvDirect: raw.n_recv_direct,
+                  errEvents: raw.err_events,
+                  nDirectDups: raw.n_direct_dups,
+                  nFloodDups: raw.n_flood_dups,
+                  currTxQueueLen: raw.curr_tx_queue_len,
+                  fetchedAt: Date.now(),
+                };
+                setMeshcoreNodeStatus((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, status);
+                  return next;
+                });
+                const traceEntry = meshcoreRoomStatusPingTraceResult({
+                  destPubKey: pubKey,
+                  pathHashSizeBytes: hashSizeBytes,
+                  lastSnrDb,
+                });
+                setMeshcoreTraceResults((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, traceEntry);
+                  meshcoreTraceResultsRef.current = next;
+                  return next;
+                });
+                setNodes((prev) => {
+                  const cur = prev.get(nodeId);
+                  if (!cur) return prev;
+                  const next = new Map(prev);
+                  next.set(nodeId, {
+                    ...cur,
+                    snr: lastSnrDb,
+                    rssi: raw.last_rssi,
+                    hops_away: hopsAway,
+                  });
+                  return next;
+                });
+                useRepeaterSignalStore.getState().recordSignal(nodeId, lastSnrDb);
+                bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+                if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
+                  void window.electronAPI.db
+                    .updateMeshcoreContactLastRf(nodeId, lastSnrDb, raw.last_rssi)
+                    .catch((e: unknown) => {
+                      console.warn(
+                        '[useMeshcoreRuntime] updateMeshcoreContactLastRf (room ping) error ' +
+                          errLikeToLogString(e),
+                      );
+                    });
+                }
+                clearMeshcorePingNoRouteExpiryTimer(nodeId);
+                setMeshcorePingErrors((prev) => {
+                  const next = new Map(prev);
+                  next.delete(nodeId);
+                  return next;
+                });
+                return true;
+              } catch (roomPingErr: unknown) {
+                // Reconnect/supersede mid-Status: do not clear routes or publish Ping errors.
+                if (roomPingSessionStale()) return false;
+                if (meshcoreTraceCancelledForCliPreempt(roomPingErr)) throw roomPingErr;
+                const rawErr = meshcoreTraceRouteRejectReason(roomPingErr);
+                const errMsg =
+                  rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+                const isTimeout =
+                  errMsg.toLowerCase().includes('timeout') ||
+                  errMsg.toLowerCase().includes('timed out');
+                const friendlyRef: MeshcoreUserMessage = isTimeout
+                  ? {
+                      key: 'meshcore.errors.requestTimedOut',
+                      params: {
+                        seconds: Math.round(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS / 1000),
+                      },
+                    }
+                  : { key: MESHCORE_ERR_REQUEST_FAILED, params: { detail: errMsg } };
+                const friendlyErr = meshcoreStoredUserMessage(friendlyRef);
+                setMeshcorePingErrors((prev) => {
+                  const next = new Map(prev);
+                  next.set(nodeId, friendlyErr);
+                  return next;
+                });
+                console.warn(
+                  '[useMeshcoreRuntime] room ping error ' + errLikeToLogString(roomPingErr),
+                );
+                return false;
+              }
+            }
             const setupGen = meshcoreSetupGenerationRef.current;
             const isTraceAborted = (): boolean =>
               meshcoreSetupGenerationRef.current !== setupGen || resolveMeshcoreConn() !== conn;
-            const displayedHopsAway = getIdentityNode(
-              meshcoreIdentityIdRef.current,
-              nodeId,
-            )?.hops_away;
-            const companionPathHashMode = isMeshcorePathHashMode(pathHashModeRef.current)
-              ? pathHashModeRef.current
-              : null;
+            const displayedHopsAway = pingNode?.hops_away;
+            // Same companion mode Rooms/CLI use: runtime adopt, else Radio settings (not 1-byte default).
+            let companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+              pathHashModeRef.current,
+            );
             let radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
             let storedPath = outPathMapRef.current.get(nodeId);
             let hopsAway: number | null | undefined = displayedHopsAway;
@@ -5715,63 +5897,90 @@ export function useMeshcoreRuntime() {
             } else {
               radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
             }
-            // A contact the radio lists as direct, with leftover bytes in its path buffer, is
-            // pinged direct whatever hop count those bytes made the app show.
-            hopsAway = meshcoreTracePingHopsAway({
-              displayedHopsAway,
+            // Contact refresh can race deviceQuery adopt; re-read mode before sizing the wire path.
+            companionPathHashMode = resolveMeshcoreCompanionPathHashMode(pathHashModeRef.current);
+            // Same hop rules as repeater/Room admin + CLI: known empty companion route → 0;
+            // radio-direct outPathLen also forces 0; multi-hop only when route bytes exist.
+            const pingRouteBytes =
+              storedPath ?? (contactSnap.radioContactFound ? new Uint8Array() : undefined);
+            hopsAway = resolveMeshcorePingHopsAway({
+              node: pingNode,
+              routeBytes: pingRouteBytes,
               radioContactPathLen,
               radioPathLeftover: contactSnap.radioPathLeftover,
             });
-            // The radio has no route to this node, its path buffer still holds an older route,
-            // and the app shows hops, which may come from those bytes. Try it direct first, as
-            // one 8-byte entry only its own key matches; if it answers, the ping is zero-hop.
+            synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
+              radioContactPathLen,
+              companionPathHashMode,
+            );
+            minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
+            // Radio 0xFF + displayed hops: try hash-sized dest prefix (then full key) direct
+            // before planning a relay — in-range Rooms/repeaters often have no companion route.
             let directFirst: {
               result: MeshcoreTracePathResult;
               wire: MeshcoreTraceWirePath;
             } | null = null;
-            if (
-              meshcoreTracePingTriesDirectFirst({
-                hopsAway,
+            const tryDirectFirst = meshcoreTracePingTriesDirectFirst({
+              hopsAway,
+              radioContactPathLen,
+              radioPathLeftover: contactSnap.radioPathLeftover,
+            });
+            if (tryDirectFirst) {
+              const directHashSizeBytes = meshcoreHashSizeForTraceSeed(
                 radioContactPathLen,
-                radioPathLeftover: contactSnap.radioPathLeftover,
-              })
-            ) {
-              const directWire = meshcoreTraceWirePath(pubKey, {
-                hashSizeBytes: 1,
-                destPubKey: pubKey,
-              });
-              const directTrace = startMeshcoreTracePathMultiplexed(
-                conn,
-                directWire.path,
-                MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
-                repeaterRemoteRpcRef.current,
-                directWire.flags,
+                companionPathHashMode,
               );
-              try {
-                const directResult = await withTimeout(
-                  directTrace.promise,
-                  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
-                  'meshcoreTracePingDirectFirst',
+              // Prefer the same hash-sized dest prefix zero-hop ping uses, then full-key.
+              // Always size entries from the companion path.hash.mode / contact outPathLen —
+              // never mix in a 1-byte try while the mesh is in 2/3-byte mode.
+              const directAttempts: MeshcoreTraceWirePath[] = [
+                meshcoreTraceWirePath(meshcorePubkeyPathPrefix(pubKey, directHashSizeBytes), {
+                  hashSizeBytes: directHashSizeBytes,
+                  destPubKey: pubKey,
+                }),
+                meshcoreTraceWirePath(pubKey, {
+                  hashSizeBytes: directHashSizeBytes,
+                  destPubKey: pubKey,
+                }),
+              ];
+              for (let attempt = 0; attempt < directAttempts.length; attempt++) {
+                const directWire = directAttempts[attempt];
+                const directTrace = startMeshcoreTracePathMultiplexed(
+                  conn,
+                  directWire.path,
+                  MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
+                  repeaterRemoteRpcRef.current,
+                  directWire.flags,
                 );
-                directFirst = { result: directResult, wire: directWire };
-                hopsAway = 0;
-              } catch (directErr: unknown) {
-                directTrace.cancel('direct try not answered');
                 try {
-                  await directTrace.promise;
-                } catch {
-                  // catch-no-log-ok direct try rejected after cancel; the planned route follows
+                  const directResult = await withTimeout(
+                    directTrace.promise,
+                    MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+                    'meshcoreTracePingDirectFirst',
+                  );
+                  directFirst = { result: directResult, wire: directWire };
+                  hopsAway = 0;
+                  break;
+                } catch (directErr: unknown) {
+                  directTrace.cancel('direct try not answered');
+                  try {
+                    await directTrace.promise;
+                  } catch {
+                    // catch-no-log-ok direct try rejected after cancel; next attempt or planned route
+                  }
+                  if (
+                    meshcoreTraceCancelledForCliPreempt(directErr) ||
+                    meshcoreCliReplyHoldActive()
+                  ) {
+                    throw directErr;
+                  }
+                  if (isTraceAborted()) return false;
+                  if (attempt + 1 >= directAttempts.length) {
+                    console.debug(
+                      `[useMeshcoreRuntime] traceRoute direct try not answered node=0x${nodeId.toString(16)}; using the planned route`,
+                    );
+                  }
                 }
-                if (
-                  meshcoreTraceCancelledForCliPreempt(directErr) ||
-                  meshcoreCliReplyHoldActive()
-                ) {
-                  throw directErr;
-                }
-                if (isTraceAborted()) return false;
-                console.debug(
-                  `[useMeshcoreRuntime] traceRoute direct try not answered node=0x${nodeId.toString(16)}; using the planned route`,
-                );
               }
             }
             synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
@@ -5779,12 +5988,43 @@ export function useMeshcoreRuntime() {
               companionPathHashMode,
             );
             minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
+            // Prefer the reverse of a recent RF path heard FROM this node over guessing a
+            // zero-hop repeater (blind synthesis timed out for minutes on 2-byte meshes).
+            const inboundRfOutbound = meshcoreBestInboundRfOutboundPath(
+              nodeId,
+              rawPacketsRef.current,
+              synthHashSizeBytes,
+              hopsAway,
+            );
+            if (
+              inboundRfOutbound &&
+              (!storedPath ||
+                !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, synthHashSizeBytes))
+            ) {
+              storedPath = meshcoreTraceStoredPathFromOutbound(
+                inboundRfOutbound,
+                pubKey,
+                synthHashSizeBytes,
+              );
+            }
             let pathFromHistory: Uint8Array | undefined;
             if (!storedPath || storedPath.length < minPathBytes) {
               try {
                 const sel = await usePathHistoryStore.getState().ensureBestPathLoaded(nodeId);
-                if (sel?.pathBytes?.length !== undefined && sel.pathBytes.length >= minPathBytes) {
-                  pathFromHistory = new Uint8Array(sel.pathBytes);
+                // Only reuse history that is whole hashes at the companion path.hash.mode
+                // size (1/2/3). A leftover 1-byte or all-zero record must not drive a 2/3-byte
+                // TRACE — that produced bogus wires like 00ceced200ce and timed out.
+                if (
+                  sel?.pathBytes?.length &&
+                  meshcoreIsUsableTraceStoredPath(
+                    Uint8Array.from(sel.pathBytes),
+                    hopsAway,
+                    pubKey,
+                    synthHashSizeBytes,
+                  ) &&
+                  sel.pathBytes.some((b) => b !== 0)
+                ) {
+                  pathFromHistory = Uint8Array.from(sel.pathBytes);
                 }
               } catch {
                 // catch-no-log-ok path history optional
@@ -5876,8 +6116,14 @@ export function useMeshcoreRuntime() {
                     .getState()
                     .ensureBestPathLoaded(nodeId);
                   if (
-                    selPrime?.pathBytes?.length !== undefined &&
-                    selPrime.pathBytes.length >= minPathBytes
+                    selPrime?.pathBytes?.length &&
+                    selPrime.pathBytes.some((b) => b !== 0) &&
+                    meshcoreIsUsableTraceStoredPath(
+                      Uint8Array.from(selPrime.pathBytes),
+                      hopsAway,
+                      pubKey,
+                      synthHashSizeBytes,
+                    )
                   ) {
                     const fromHistPrime = new Uint8Array(selPrime.pathBytes);
                     outPathMapRef.current.set(nodeId, fromHistPrime);
@@ -5908,6 +6154,7 @@ export function useMeshcoreRuntime() {
               pubKeyByNodeId: pubKeyMapRef.current,
               pathByNodeId: outPathMapRef.current,
               hashSizeBytes: synthHashSizeBytes,
+              inboundRfOutbound,
             });
             const outPath = pathResolved.outPath;
             console.debug(
@@ -5928,6 +6175,15 @@ export function useMeshcoreRuntime() {
               (pathResolved.composed ||
                 Boolean(tracePlan.storedPath) ||
                 (routePrimeRan && !floodPrimeExhausted));
+            const hasKnownDirectRelay = relayKeysForSynth.length > 0;
+            const blindSynthLacksEvidence = meshcoreBlindSynthLacksRouteEvidence({
+              pathResolvedComposed: pathResolved.composed,
+              radioContactPathLen,
+              radioPathLeftover: contactSnap.radioPathLeftover,
+              hasInboundRfOutbound: Boolean(inboundRfOutbound),
+              hasPathFromHistory: Boolean(pathFromHistory),
+              hasKnownDirectRelay,
+            });
             const shouldAbortPing = evaluateMeshcorePingRouteAbort({
               floodPrimeExhausted,
               pathResolvedComposed: pathResolved.composed,
@@ -5936,10 +6192,11 @@ export function useMeshcoreRuntime() {
               uiSaysMultiHop,
               radioSaysMultiHop,
               hasResolvedPath,
+              blindSynthLacksEvidence,
             });
             // The shared route map keeps the stored shape (1-byte hashes: relays plus one
             // trailing byte) that room login and repeater admin count hops from.
-            if (pathResolved.composed && pathResolved.storedPath) {
+            if (pathResolved.composed && pathResolved.storedPath && !blindSynthLacksEvidence) {
               outPathMapRef.current.set(nodeId, pathResolved.storedPath);
               console.debug(
                 `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (outbound=${pathResolved.outboundPath.length} wire=${outPath.length} autoReturn=${pathResolved.autoReturn ? 1 : 0})`,
@@ -5952,6 +6209,7 @@ export function useMeshcoreRuntime() {
                     nodeId,
                     hopsAway: hopsAway ?? null,
                     radioContactPathLen,
+                    blindSynthLacksEvidence,
                     pathLen: outPath.length,
                     primeStrategy,
                   }),
@@ -5971,11 +6229,14 @@ export function useMeshcoreRuntime() {
             const traceAutoReturn = pathResolved.autoReturn;
             let result;
             // 0-hop hash-prefix attempts must fail fast so full-pubkey direct retry can run.
-            // Multi-hop / full-key attempts keep the flat admin RPC budget.
+            // Blind synthesized routes (radio still 0xFF) also fail fast — a wrong relay used to
+            // burn the full TraceData budget with no TraceData.
             const firstTraceExtraTimeoutMs =
               (hopsAway ?? 0) === 0 && outPath.length > 0 && outPath.length < 32
                 ? 8_000
-                : MESHCORE_TRACE_TIMEOUT_MS;
+                : pathResolved.composed && meshcoreTracePingRadioHasNoRoute(radioContactPathLen)
+                  ? MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS
+                  : MESHCORE_TRACE_TIMEOUT_MS;
             // Firmware reads trace hops as 1, 2, 4 or 8 bytes by the flags byte; size the
             // entries to match or a multi-byte hash is read as several 1-byte hops.
             const traceWireOpts = {
@@ -6281,6 +6542,7 @@ export function useMeshcoreRuntime() {
       meshcoreRepeaterRouteEscalationScope,
     ],
   );
+  meshcoreRepeaterRouteEscalationSharedDepsRef.current = meshcoreRepeaterRouteEscalationSharedDeps;
 
   const makeRepeaterLoginOpts = useCallback(
     (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {

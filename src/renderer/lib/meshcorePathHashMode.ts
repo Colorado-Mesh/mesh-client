@@ -1,5 +1,9 @@
 import { isMeshcorePathHashMode, type MeshcorePathHashMode } from '@/shared/meshcorePathHash';
 
+import { getAppSettingsRaw } from './appSettingsStorage';
+import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
+import { parseStoredJson } from './parseStoredJson';
+
 /** meshcore-dev/MeshCore companion_radio CMD_SET_PATH_HASH_MODE */
 export const MC_CMD_SET_PATH_HASH_MODE = 61;
 
@@ -81,6 +85,26 @@ export function appPanelSettingsPersistPayload(
   delete rest.translationLibreEnabled;
   delete rest.translationLibreUrl;
   return rest;
+}
+
+/**
+ * Companion path.hash.mode for TRACE/ping seed sizing.
+ * Prefer the live runtime value from deviceQuery; if that is not adopted yet, use the
+ * Radio experimental setting (synced from the radio on connect) so Rooms/Repeaters do not
+ * fall back to 1-byte hashes while the mesh is in 2/3-byte mode.
+ */
+export function resolveMeshcoreCompanionPathHashMode(
+  runtimeMode: unknown,
+): MeshcorePathHashMode | null {
+  if (isMeshcorePathHashMode(runtimeMode)) return runtimeMode;
+  const parsed = parseStoredJson<{ meshcorePathHashMode?: unknown }>(
+    getAppSettingsRaw(),
+    'meshcore companion path hash mode',
+  );
+  const fromSettings = parsed?.meshcorePathHashMode;
+  if (isMeshcorePathHashMode(fromSettings)) return fromSettings;
+  const fallback = DEFAULT_APP_SETTINGS_SHARED.meshcorePathHashMode;
+  return isMeshcorePathHashMode(fallback) ? fallback : null;
 }
 
 /** Parse path_hash_mode from meshcore.js DeviceInfo (v10+ companion protocol). */

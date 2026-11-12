@@ -151,6 +151,11 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
   lruOrder: [],
 
   recordPathUpdated(nodeId, pathBytes, hopCount, wasFloodDiscovery, routeWeight = 1.0) {
+    // All-zero / empty slices are not routes (common when outPathLen is unknown); storing
+    // them makes the UI claim a path that TRACE cannot use at 2/3-byte path.hash.mode.
+    if (pathBytes.length === 0 || pathBytes.every((b) => b === 0)) {
+      return;
+    }
     const pathHash = computePathHash(pathBytes);
     const now = Date.now();
 
@@ -294,7 +299,11 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       const rows = await window.electronAPI.db.getMeshcorePathHistory(nodeId);
       if (!rows || rows.length === 0) return;
 
-      const parsed: PathRecord[] = rows.map((row) => pathHistoryWireRowToRecord(row));
+      // Drop all-zero / empty rows left by older builds so selectBestPath cannot pick them.
+      const parsed: PathRecord[] = rows
+        .map((row) => pathHistoryWireRowToRecord(row))
+        .filter((rec) => rec.pathBytes.length > 0 && rec.pathBytes.some((b) => b !== 0));
+      if (parsed.length === 0) return;
 
       const state = get();
       const newRecords = new Map(state.records);
@@ -325,6 +334,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       const latestTs = new Map<number, number>();
       for (const row of rows) {
         const rec = pathHistoryWireRowToRecord(row);
+        if (rec.pathBytes.length === 0 || rec.pathBytes.every((b) => b === 0)) continue;
         const list = byNode.get(row.node_id) ?? [];
         list.push(rec);
         byNode.set(row.node_id, list);

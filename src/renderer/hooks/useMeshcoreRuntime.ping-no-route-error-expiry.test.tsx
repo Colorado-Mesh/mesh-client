@@ -298,17 +298,12 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
         lastAdvert: 1_700_000_000,
         advLat: 0,
         advLon: 0,
-        outPath: new Uint8Array(),
-        outPathLen: 0,
+        outPath: new Uint8Array(64),
+        // 0xFF as int8: radio has no route (UI still shows multi-hop).
+        outPathLen: -1,
       },
     ]);
-    startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
-      pathLen: 2,
-      pathHashes: [1, 2],
-      pathSnrs: [4, 8],
-      lastSnr: 1.25,
-      tag: 7,
-    });
+    startMeshcoreTracePathMultiplexedMock.mockRejectedValue(new Error('timeout'));
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',

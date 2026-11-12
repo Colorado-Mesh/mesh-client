@@ -267,12 +267,12 @@ for (const scenario of [
     sent: 'pathLen=2 flags=1',
   },
   // The route was reset to unknown (0xFF), as a Status flood resend does, and not relearned.
-  // The ping tries the repeater direct first, as one 8-byte entry only its key matches.
+  // Radio 0xFF: hash-sized dest prefix first (1-byte in this fixture), then full-key if needed.
   {
     name: 'two 1-byte relay hashes after a route reset',
     contactPathLen: -1,
     leftover: [0x9b, 0x4e],
-    sent: 'pathLen=8 flags=3',
+    sent: 'pathLen=1 flags=0',
   },
 ] as const) {
   test(`ping reaches a zero-hop repeater whose contact keeps ${scenario.name}`, async () => {
@@ -302,9 +302,12 @@ test('ping falls back to the route when a far repeater does not answer the direc
   );
 
   const { sent, lost } = await pingRepeater(page, FAR_REPEATER_NAME);
-  // The 8-byte direct try dies on air; the ping then goes out and back through the relay.
-  expect(sent).toEqual(['pathLen=8 flags=3', 'pathLen=3 flags=0']);
-  expect(lost.map((e) => e.detail)).toEqual(['trace needs 1 hops of 8 byte(s)']);
+  // Hash-prefix + full-key direct tries die on air; then out-and-back through the relay.
+  expect(sent).toEqual(['pathLen=1 flags=0', 'pathLen=8 flags=3', 'pathLen=3 flags=0']);
+  expect(lost.map((e) => e.detail)).toEqual([
+    'trace needs 1 hops of 1 byte(s)',
+    'trace needs 1 hops of 8 byte(s)',
+  ]);
 });
 
 test('ping reaches a zero-hop repeater after a status request reset its route', async () => {
@@ -328,5 +331,6 @@ test('ping reaches a zero-hop repeater after a status request reset its route', 
 
   const { sent, lost } = await pingRepeater(page);
   expect(lost).toEqual([]);
-  expect(sent).toEqual(['pathLen=8 flags=3']);
+  // Hash-sized dest prefix (1-byte fixture mode) answers; no full-key escalate needed.
+  expect(sent).toEqual(['pathLen=1 flags=0']);
 });
