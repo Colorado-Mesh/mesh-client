@@ -222,13 +222,10 @@ for (const scenario of [
  * Click the zero-hop repeater's Ping and wait for the radio to answer a trace. Returns the
  * traces sent and the traces that died on air.
  */
-async function pingRepeater(page: Page) {
+async function pingRepeater(page: Page, name: string = radio.repeaterName) {
   const before = radio.events.length;
-  await page
-    .getByRole('row')
-    .filter({ hasText: radio.repeaterName })
-    .getByRole('button', { name: 'Ping trace' })
-    .click();
+  const row = page.getByRole('row').filter({ hasText: name });
+  await row.getByRole('button', { name: 'Ping trace' }).click();
   const since = () => radio.events.slice(before);
   const traces = () => since().filter((e) => e.kind === 'trace');
   await expect
@@ -239,6 +236,10 @@ async function pingRepeater(page: Page) {
         .join(' | ')}`,
     })
     .toBe(true);
+  // The app finished the ping: the row shows the SNR the fixture reports (40 / 4 = 10.0 dB)
+  // and no ping error.
+  await expect(row).toContainText('10.0');
+  await expect(row).not.toContainText(/error|timed out|no route/i);
   return {
     sent: traces().map((e) => e.detail),
     lost: since().filter((e) => e.kind === 'lost' && e.detail?.startsWith('trace')),
@@ -288,6 +289,23 @@ for (const scenario of [
     expect(sent).toEqual([scenario.sent]);
   });
 }
+
+test('ping falls back to the route when a far repeater does not answer the direct try', async () => {
+  test.setTimeout(120_000);
+  const page = await start(
+    (fixture) => {
+      fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      // The radio forgot the far route; its buffer still holds the relay and one older byte.
+      fixture.setFarRouteKnown(false);
+    },
+    { farRepeater: { relays: 1, hashSizeBytes: 1, staleTail: [0xee] } },
+  );
+
+  const { sent, lost } = await pingRepeater(page, FAR_REPEATER_NAME);
+  // The 8-byte direct try dies on air; the ping then goes out and back through the relay.
+  expect(sent).toEqual(['pathLen=8 flags=3', 'pathLen=3 flags=0']);
+  expect(lost.map((e) => e.detail)).toEqual(['trace needs 1 hops of 8 byte(s)']);
+});
 
 test('ping reaches a zero-hop repeater after a status request reset its route', async () => {
   test.setTimeout(180_000);

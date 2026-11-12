@@ -370,10 +370,24 @@ describe('meshcoreTracePingTriesDirectFirst', () => {
 describe('meshcoreTraceZeroHopStoredPath', () => {
   const dest = new Uint8Array(32).map((_, i) => 0x07 + i);
 
-  it('keeps a reply entry no longer than the path hash size', () => {
+  it('keeps a reply that is the destination prefix at the path hash size', () => {
     expect(Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 1), dest, 1))).toEqual([0x07]);
     expect(Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 2), dest, 2))).toEqual([
       0x07, 0x08,
+    ]);
+  });
+
+  // 3-byte hashes go out as one 2-byte entry, so the reply is 2 bytes: stored as is, the next
+  // ping would reject a length that is not a whole 3-byte hash.
+  it('stores a 2-byte reply in 3-byte mode as the full 3-byte prefix', () => {
+    expect(Array.from(meshcoreTraceZeroHopStoredPath(dest.slice(0, 2), dest, 3))).toEqual([
+      0x07, 0x08, 0x09,
+    ]);
+  });
+
+  it('replaces a reply that is not the destination prefix', () => {
+    expect(Array.from(meshcoreTraceZeroHopStoredPath(new Uint8Array([0x9b]), dest, 1))).toEqual([
+      0x07,
     ]);
   });
 

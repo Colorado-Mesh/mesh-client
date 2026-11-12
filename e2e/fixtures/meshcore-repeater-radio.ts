@@ -54,7 +54,12 @@ export interface RepeaterRadioOptions {
    * `relays` relay repeaters in a chain, and the radio already holds that route as the
    * contact's out_path with `hashSizeBytes` per relay.
    */
-  farRepeater?: { relays: 1 | 2; hashSizeBytes: 1 | 2 | 3 };
+  farRepeater?: {
+    relays: 1 | 2;
+    hashSizeBytes: 1 | 2 | 3;
+    /** Bytes an older route left after the relays in the path buffer (default two). */
+    staleTail?: number[];
+  };
 }
 
 export const FAR_REPEATER_NAME = 'Far Ridge Repeater';
@@ -109,7 +114,10 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
   const farRoundTrip = [...relayKeys, farKey, ...relayKeys.slice().reverse()];
   /** The zero-hop repeater also hears the far repeater, so a trace may turn through it. */
   const farRoundTripViaRepeater = [repeaterKey, farKey, repeaterKey];
-  /** False: the radio has no route to the far repeater (out_path_len 0xFF). */
+  /**
+   * False: the radio has no route to the far repeater (out_path_len 0xFF). As after
+   * CMD_RESET_PATH, the path buffer still holds the route it had.
+   */
   let farRouteKnown = true;
   /** Firmware packs a contact route as hop count (low 6 bits) and hash size code (high 2). */
   const farContactPathLen = far ? relayKeys.length | ((far.hashSizeBytes - 1) << 6) : 0;
@@ -117,7 +125,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
     const outPath = Buffer.alloc(64);
     const size = far?.hashSizeBytes ?? 1;
     relayKeys.forEach((key, i) => key.copy(outPath, i * size, 0, size));
-    Buffer.from(FAR_ROUTE_STALE_TAIL).copy(outPath, relayKeys.length * size);
+    Buffer.from(far?.staleTail ?? FAR_ROUTE_STALE_TAIL).copy(outPath, relayKeys.length * size);
     return outPath;
   };
   const self = Buffer.concat([
@@ -230,7 +238,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
                 farKey,
                 Buffer.from([2, 0]), // ADV_TYPE_REPEATER, flags
                 Buffer.from([farRouteKnown ? farContactPathLen : 0xff]),
-                farRouteKnown ? farContactOutPath() : Buffer.alloc(64),
+                farContactOutPath(),
                 text(FAR_REPEATER_NAME, 32),
                 u32(now),
                 Buffer.alloc(8),

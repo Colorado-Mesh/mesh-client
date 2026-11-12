@@ -5988,7 +5988,9 @@ export function useMeshcoreRuntime() {
             };
             let traceWire: MeshcoreTraceWirePath;
             if (directFirst) {
-              // The direct try already answered; send nothing more.
+              // The direct try already answered; send nothing more. Planning since then may have
+              // awaited path history: a reply from before a reconnect belongs to the old session.
+              if (isTraceAborted()) return false;
               result = directFirst.result;
               traceWire = directFirst.wire;
             } else {

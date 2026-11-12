@@ -123,17 +123,23 @@ export function meshcoreTracePingRadioHasNoRoute(
 }
 
 /**
- * Route to keep after a ping the destination answered itself (zero hops, one entry). A longer
- * entry than the path hash size (the 8-byte full-key try) is not a route: room login and
- * repeater admin count hops from the stored bytes and would read it as seven. Keep the
- * destination's own prefix at the path hash size instead.
+ * Route to keep after a ping the destination answered itself (zero hops, one entry): the
+ * destination's own prefix at the path hash size. The reply entry often has another length.
+ * The 8-byte full-key try would be counted as seven hops by room login and repeater admin, which
+ * count hops from the stored bytes. A 3-byte hash goes out as a 2-byte entry, and the next ping
+ * rejects 2 bytes as not a whole 3-byte hash.
  */
 export function meshcoreTraceZeroHopStoredPath(
   replyPath: Uint8Array,
   destPubKey: Uint8Array,
   hashSizeBytes: 1 | 2 | 3,
 ): Uint8Array {
-  if (replyPath.length <= hashSizeBytes) return replyPath;
+  if (
+    replyPath.length === hashSizeBytes &&
+    replyPath.every((byte, index) => byte === destPubKey[index])
+  ) {
+    return replyPath;
+  }
   return meshcorePubkeyPathPrefix(destPubKey, hashSizeBytes);
 }
 

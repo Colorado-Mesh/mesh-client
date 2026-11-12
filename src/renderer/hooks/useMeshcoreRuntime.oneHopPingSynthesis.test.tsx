@@ -792,6 +792,42 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     expect(usePathHistoryStore.getState().records.get(FAR_NODE_ID)?.[0]?.pathBytes).toEqual([0x07]);
   });
 
+  it('drops a direct reply when the radio disconnects before the ping finishes', async () => {
+    // The buffer holds the whole key: no usable stored route, so after the direct try answers
+    // the ping still reads path history, and the app disconnects during that read.
+    getContactsMock.mockResolvedValue([routeResetContact(Array.from(FAR.pubKey))]);
+    answerTracesIn({
+      companion: 'companion',
+      nodes: [{ name: FAR.name, pubKey: FAR.pubKey, forwards: true }],
+      links: [['companion', FAR.name]],
+    });
+    const result = await connectConfiguredRuntime();
+    expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBeGreaterThanOrEqual(1);
+
+    const ensureBestPathLoaded = usePathHistoryStore.getState().ensureBestPathLoaded;
+    let readsDuringPing = 0;
+    usePathHistoryStore.setState({
+      ensureBestPathLoaded: async () => {
+        readsDuringPing += 1;
+        await result.current.disconnect();
+        return null;
+      },
+    });
+    try {
+      vi.useFakeTimers();
+      const ok = await pingFar(result);
+
+      expect(readsDuringPing).toBeGreaterThan(0);
+      expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(1);
+      expect(startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[4]).toBe(3);
+      expect(ok).toBe(false);
+      expect(result.current.meshcoreTraceResults.get(FAR_NODE_ID)).toBeUndefined();
+      expect(usePathHistoryStore.getState().records.get(FAR_NODE_ID)).toBeUndefined();
+    } finally {
+      usePathHistoryStore.setState({ ensureBestPathLoaded });
+    }
+  });
+
   it('a repeater the radio never routed is not tried direct first', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
       contacts: [
