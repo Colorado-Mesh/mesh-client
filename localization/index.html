@@ -3411,7 +3411,8 @@
 <ul>
 <li><strong>Framework:</strong> i18next + react-i18next; static JSON bundles loaded at startup; <code>fallbackLng: 'en'</code>.</li>
 <li><strong>Locale files:</strong> <code>src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json</code> — English is source of truth (<code>pnpm run check:i18n</code> reports key count).</li>
-<li><strong>Locale persistence:</strong> <code>locale</code> key in <code>app_settings</code> SQLite table (canonical) and <code>mesh-client:appSettings</code> localStorage (fast startup read); reconciled in <code>App.tsx</code> on mount.</li>
+<li><strong>Locale persistence:</strong> <code>locale</code> key in <code>app_settings</code> SQLite table (canonical) and <code>mesh-client:appSettings</code> localStorage (fast startup read); restored in <code>main.tsx</code> (<code>finishRendererStorage</code>) and reconciled from SQLite on <code>LanguageSelector</code> mount.</li>
+<li><strong>Validation:</strong> stored/DB locale values are validated against <code>SUPPORTED_LANGUAGES</code>; anything else falls back to English. The app does not auto-detect OS/browser language.</li>
 <li><strong>Reduce motion / 24-hour time:</strong> <code>reduceMotion</code> and <code>use24HourTime</code> share the same <code>app_settings</code> / localStorage bundle (<strong>App → Appearance</strong>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/AppPanel.tsx"><code>AppPanel.tsx</code></a>; <code>timeFormatStore</code>, <code>formatDisplayTime</code>). Behavior is documented in <a href="../accessibility-checklist/">accessibility-checklist.md</a>.</li>
 <li><strong>Unused keys:</strong> <code>scripts/i18n-unused-keys.mjs</code> implements unused-key detection.</li>
 <li><strong>Language selector:</strong> <code>src/renderer/components/LanguageSelector.tsx</code> — globe-icon dropdown in the header; calls <code>i18n.changeLanguage()</code> + <code>mergeAppSetting('locale', ...)</code> + <code>electronAPI.appSettings.set('locale', ...)</code>.</li>
@@ -3436,7 +3437,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 17:12:19 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 12, 2026 16:31:47 UTC">November 12, 2026</span>
   </span>
 
     
