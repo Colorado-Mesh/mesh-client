@@ -21,13 +21,23 @@ export {
 /** Bounded wait for a COI analysis-worker reply before rejecting the pending request. */
 export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
-/** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
-export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
+/**
+ * TracePath / ping TraceData wait after SENT (radio estimate for 1–2 hops is a few seconds).
+ * Kept here with the end-to-end ping cap so UI copy and settle budgets cannot drift.
+ */
+export const MESHCORE_TRACE_TIMEOUT_MS = 30 * MS_PER_SECOND;
 /**
  * Wait past the radio's own estimate for a ping's direct try at a node the radio has no route
  * to, before the ping falls back to its planned route (same budget as a zero-hop first try).
  */
 export const MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS = 8 * MS_PER_SECOND;
+/**
+ * MeshCore Ping (`tracePath`) end-to-end cap (queue wait + up to two direct tries + one
+ * TraceData wait). Must stay in sync with {@link MESHCORE_TRACE_TIMEOUT_MS} — the error toast
+ * shows this value in seconds.
+ */
+export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS =
+  2 * MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS + MESHCORE_TRACE_TIMEOUT_MS + 10 * MS_PER_SECOND;
 /**
  * Soft same-node ping settle before Status/Telemetry/Neighbors/CLI.
  * If the ping is still active after this budget, admin proceeds (does not throw).

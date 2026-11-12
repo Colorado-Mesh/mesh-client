@@ -151,6 +151,11 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
   lruOrder: [],
 
   recordPathUpdated(nodeId, pathBytes, hopCount, wasFloodDiscovery, routeWeight = 1.0) {
+    // All-zero / empty slices are not routes (common when outPathLen is unknown); storing
+    // them makes the UI claim a path that TRACE cannot use at 2/3-byte path.hash.mode.
+    if (pathBytes.length === 0 || pathBytes.every((b) => b === 0)) {
+      return;
+    }
     const pathHash = computePathHash(pathBytes);
     const now = Date.now();
 

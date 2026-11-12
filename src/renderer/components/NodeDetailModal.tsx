@@ -101,7 +101,7 @@ import { Button, buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, NOTICE_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
 
-const TRACE_ROUTE_UI_TIMEOUT_MS = 120_000;
+const TRACE_ROUTE_UI_TIMEOUT_MS = 30_000;
 const POSITION_HISTORY_MAX_ROWS = 100;
 
 interface NodeDetailModalProps {

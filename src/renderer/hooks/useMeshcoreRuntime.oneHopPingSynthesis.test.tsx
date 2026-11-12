@@ -360,8 +360,27 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     });
     getContactsMock.mockResolvedValue([
       makeRadioContact(RELAY_PUBKEY, 'FNL-LONGM-NV0N-RE-0647'),
-      makeRadioContact(REMOTE_PUBKEY, 'DEN-LYONS-RBTMT-RC-0700'),
+      makeRoutedRadioContact({
+        pubKey: REMOTE_PUBKEY,
+        advName: 'DEN-LYONS-RBTMT-RC-0700',
+        outPathLenByte: 0xff,
+        route: [],
+        staleTail: [0x99],
+      }),
     ]);
+    // Direct tries time out; the synthesized relay path answers.
+    startMeshcoreTracePathMultiplexedMock.mockImplementation((_conn, path: Uint8Array) => {
+      if (path.length <= 8 && path.every((b, i) => b === REMOTE_PUBKEY[i])) {
+        return Promise.reject(new Error('timeout'));
+      }
+      return Promise.resolve({
+        pathLen: path.length,
+        pathHashes: Array.from(path),
+        pathSnrs: [4, 8],
+        lastSnr: 1.25,
+        tag: 7,
+      });
+    });
 
     const result = await connectConfiguredRuntime();
 
@@ -385,11 +404,13 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
       MESHCORE_PING_NO_ROUTE_ERROR_MSG,
     );
     expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalled();
-    const tracePathArg = startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[1] as Uint8Array;
+    const expected = new Uint8Array([RELAY_PUBKEY[0], REMOTE_PUBKEY[0], RELAY_PUBKEY[0]]);
+    const routed = startMeshcoreTracePathMultiplexedMock.mock.calls.find((call) => {
+      const path = call[1] as Uint8Array;
+      return path.length === expected.length && path.every((byte, i) => byte === expected[i]);
+    });
     // Auto-return: relay → dest → relay so TraceData comes back to the companion.
-    expect(tracePathArg).toEqual(
-      new Uint8Array([RELAY_PUBKEY[0], REMOTE_PUBKEY[0], RELAY_PUBKEY[0]]),
-    );
+    expect(routed?.[1]).toEqual(expected);
   });
 
   it('fast-fails pingNoRoute when no 0-hop repeater relay is known for 1-hop', async () => {
@@ -406,7 +427,15 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
       hopHistory: [],
       messages: [],
     });
-    getContactsMock.mockResolvedValue([makeRadioContact(REMOTE_PUBKEY, 'DEN-LYONS-RBTMT-RC-0700')]);
+    getContactsMock.mockResolvedValue([
+      makeRoutedRadioContact({
+        pubKey: REMOTE_PUBKEY,
+        advName: 'DEN-LYONS-RBTMT-RC-0700',
+        outPathLenByte: 0xff,
+        route: [],
+      }),
+    ]);
+    startMeshcoreTracePathMultiplexedMock.mockRejectedValue(new Error('timeout'));
 
     const result = await connectConfiguredRuntime();
     expect(result.current.nodes.get(REMOTE_NODE_ID)?.hops_away).toBe(1);
@@ -427,7 +456,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     expect(result.current.meshcorePingErrors.get(REMOTE_NODE_ID)).toBe(
       MESHCORE_PING_NO_ROUTE_ERROR_MSG,
     );
-    expect(startMeshcoreTracePathMultiplexedMock).not.toHaveBeenCalled();
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -783,12 +812,11 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     expect(ok).toBe(true);
     expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(1);
     const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
-    // One 8-byte entry: only this repeater's key matches it.
-    expect(Array.from(call?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 8)));
-    expect(call?.[4]).toBe(3);
+    // Hash-sized dest prefix first (1-byte when companion mode is unset).
+    expect(Array.from(call?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 1)));
+    expect(call?.[4] ?? 0).toBe(0);
     expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(0);
-    // The stored route is the repeater's own 1-byte prefix, not the 8 key bytes the reply
-    // carried, which room login and admin would count as seven hops.
+    // The stored route is the repeater's own 1-byte prefix.
     expect(usePathHistoryStore.getState().records.get(FAR_NODE_ID)?.[0]?.pathBytes).toEqual([0x07]);
   });
 
@@ -819,7 +847,7 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
 
       expect(readsDuringPing).toBeGreaterThan(0);
       expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(1);
-      expect(startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[4]).toBe(3);
+      expect(startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[4] ?? 0).toBe(0);
       expect(ok).toBe(false);
       expect(result.current.meshcoreTraceResults.get(FAR_NODE_ID)).toBeUndefined();
       expect(usePathHistoryStore.getState().records.get(FAR_NODE_ID)).toBeUndefined();
@@ -828,7 +856,7 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     }
   });
 
-  it('a repeater the radio never routed is not tried direct first', async () => {
+  it('a repeater the radio never routed is tried direct first, then through a known 0-hop relay', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
       contacts: [
         makeRepeaterContactRow({
@@ -870,10 +898,15 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     vi.useFakeTimers();
     expect(await pingFar(result)).toBe(true);
 
-    // Straight to the route through the zero-hop repeater; no 8-byte direct try.
-    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(1);
-    const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
-    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
+    // Hash-prefix + full-key miss; a known 0-hop relay is enough evidence to synth.
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(3);
+    const [prefix, fullKey, routed] = startMeshcoreTracePathMultiplexedMock.mock.calls;
+    expect(Array.from(prefix?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 1)));
+    expect(prefix?.[4] ?? 0).toBe(0);
+    expect(Array.from(fullKey?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 8)));
+    expect(fullKey?.[4]).toBe(3);
+    expect(Array.from(routed?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
+    expect(result.current.meshcorePingErrors.get(FAR_NODE_ID)).toBeUndefined();
   });
 
   it('a repeater behind a relay whose route the radio reset still answers through it', async () => {
@@ -889,20 +922,24 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
 
     expect(result.current.meshcorePingErrors.get(FAR_NODE_ID)).toBeUndefined();
     expect(ok).toBe(true);
-    // The direct try is not answered; the ping then goes out and back through the relay.
-    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(2);
-    const [direct, routed] = startMeshcoreTracePathMultiplexedMock.mock.calls;
-    expect(Array.from(direct?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 8)));
-    expect(direct?.[4]).toBe(3);
+    // Prefix + full-key direct tries are not answered; then out-and-back through the relay.
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(3);
+    const [prefix, fullKey, routed] = startMeshcoreTracePathMultiplexedMock.mock.calls;
+    expect(Array.from(prefix?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 1)));
+    expect(prefix?.[4] ?? 0).toBe(0);
+    expect(Array.from(fullKey?.[1] as Uint8Array)).toEqual(Array.from(FAR.pubKey.subarray(0, 8)));
+    expect(fullKey?.[4]).toBe(3);
     expect(Array.from(routed?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
     expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(1);
 
     // A ping teaches the radio no route, so it still has none: the next ping tries direct
     // first again, then goes through the relay.
     expect(await pingFar(result)).toBe(true);
-    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(4);
-    const [, , directAgain, routedAgain] = startMeshcoreTracePathMultiplexedMock.mock.calls;
-    expect(directAgain?.[4]).toBe(3);
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(6);
+    const [, , , prefixAgain, fullKeyAgain, routedAgain] =
+      startMeshcoreTracePathMultiplexedMock.mock.calls;
+    expect(prefixAgain?.[4] ?? 0).toBe(0);
+    expect(fullKeyAgain?.[4]).toBe(3);
     expect(Array.from(routedAgain?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
   });
 
@@ -929,15 +966,9 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     expect(Array.from(second?.[1] as Uint8Array)).toEqual(scenario.wirePath);
   });
 
-  it('a 1-hop repeater with no radio route is pinged through a zero-hop repeater at 2-byte width', async () => {
+  it('a radio-direct contact with stale UI hops is pinged zero-hop at 2-byte width', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
       contacts: [
-        makeRepeaterContactRow({
-          nodeId: pubkeyToNodeId(NEAR.pubKey),
-          pubKeyHex: keyHex(NEAR.pubKey),
-          hopsAway: 0,
-          advName: 'DEN-NEAR-RC',
-        }),
         makeRepeaterContactRow({
           nodeId: FAR_NODE_ID,
           pubKeyHex: keyHex(FAR.pubKey),
@@ -949,14 +980,8 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
       hopHistory: [],
       messages: [],
     });
-    // 0x40: zero hops, stored with 2-byte path hashes.
+    // 0x40: radio says direct with 2-byte path hashes; UI hops are stale from an advert.
     getContactsMock.mockResolvedValue([
-      makeRoutedRadioContact({
-        pubKey: NEAR.pubKey,
-        advName: 'DEN-NEAR-RC',
-        outPathLenByte: 0x40,
-        route: [],
-      }),
       makeRoutedRadioContact({
         pubKey: FAR.pubKey,
         advName: 'DEN-FAR-RC',
@@ -964,7 +989,11 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
         route: [],
       }),
     ]);
-    answerTracesLikeFirmware([NEAR]);
+    answerTracesIn({
+      companion: 'companion',
+      nodes: [{ name: FAR.name, pubKey: FAR.pubKey, forwards: true }],
+      links: [['companion', FAR.name]],
+    });
     const result = await connectConfiguredRuntime();
     expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(1);
 
@@ -972,16 +1001,15 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     const ok = await pingFar(result);
 
     const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
-    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1]);
+    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x07, 0xc3]);
     expect(call?.[4] ?? 0).toBe(1);
     expect(ok).toBe(true);
+    expect(result.current.nodes.get(FAR_NODE_ID)?.hops_away).toBe(0);
 
-    // The route the first ping stored is the app's own, not bytes left in the radio's path
-    // buffer: a second ping still goes through the relay.
     expect(await pingFar(result)).toBe(true);
     expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(2);
     const second = startMeshcoreTracePathMultiplexedMock.mock.calls[1];
-    expect(Array.from(second?.[1] as Uint8Array)).toEqual([0x57, 0xa1, 0x07, 0xc3, 0x57, 0xa1]);
+    expect(Array.from(second?.[1] as Uint8Array)).toEqual([0x07, 0xc3]);
   });
 
   it('room login still reads one hop from the route a synthesized 1-byte ping stored', async () => {
@@ -1005,8 +1033,20 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
       messages: [],
     });
     getContactsMock.mockResolvedValue([
-      makeRadioContact(NEAR.pubKey, 'DEN-NEAR-RC'),
-      makeRadioContact(FAR.pubKey, 'DEN-FAR-RC'),
+      makeRoutedRadioContact({
+        pubKey: NEAR.pubKey,
+        advName: 'DEN-NEAR-RC',
+        outPathLenByte: 0x00,
+        route: [],
+      }),
+      makeRoutedRadioContact({
+        pubKey: FAR.pubKey,
+        advName: 'DEN-FAR-RC',
+        outPathLenByte: 0xff,
+        route: [],
+        // Leftover evidence lets 1-hop synthesis run after direct tries miss (clean 0xFF aborts).
+        staleTail: [0x99],
+      }),
     ]);
     answerTracesLikeFirmware([NEAR]);
     const result = await connectConfiguredRuntime();
@@ -1014,15 +1054,16 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     vi.useFakeTimers();
     expect(await pingFar(result)).toBe(true);
 
-    const call = startMeshcoreTracePathMultiplexedMock.mock.calls[0];
-    expect(Array.from(call?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
+    // Prefix + full-key direct tries miss; then synthesized [relay, dest] round trip.
+    const routed = startMeshcoreTracePathMultiplexedMock.mock.calls[2];
+    expect(Array.from(routed?.[1] as Uint8Array)).toEqual([0x57, 0x07, 0x57]);
     // The verified route goes to path history in the same bytes the shared route map holds.
     const stored = usePathHistoryStore.getState().records.get(FAR_NODE_ID)?.[0]?.pathBytes ?? [];
     expect(stored).toEqual([0x57, 0x07]);
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 1 }, Uint8Array.from(stored))).toBe(1);
   });
 
-  it('a 1-hop repeater with no route and no relay fails with no route at 2-byte width', async () => {
+  it('a 1-hop repeater with no route and no relay fails with no route', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
       contacts: [
         makeRepeaterContactRow({
@@ -1040,7 +1081,7 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
       makeRoutedRadioContact({
         pubKey: FAR.pubKey,
         advName: 'DEN-FAR-RC',
-        outPathLenByte: 0x40,
+        outPathLenByte: 0xff,
         route: [],
       }),
     ]);
@@ -1052,7 +1093,8 @@ describe('useMeshcoreRuntime traceRoute over a route the radio knows', () => {
     const ok = await pingFar(result);
 
     expect(ok).toBe(false);
-    expect(startMeshcoreTracePathMultiplexedMock).not.toHaveBeenCalled();
+    // Hash-prefix + full-key direct tries, then abort without a relay.
+    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalledTimes(2);
     expect(result.current.meshcorePingErrors.get(FAR_NODE_ID)).toBe(
       MESHCORE_PING_NO_ROUTE_ERROR_MSG,
     );

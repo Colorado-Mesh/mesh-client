@@ -34,7 +34,7 @@ export async function awaitMeshcoreTraceRadioIdle(
 /**
  * `beforeSend` hook for queued admin RPCs: wait only for active TraceData responses.
  * Companion queue serialization already prevents overlapping sends; do not wait on
- * pending route registration here (that caused 180s blocks while ping was queued).
+ * pending route registration here (that caused full-ping-cap blocks while ping was queued).
  * Default budget is {@link MESHCORE_REPEATER_ADMIN_RF_IDLE_MS} so admin sends are not
  * held for a full ping end-to-end cap.
  */

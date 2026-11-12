@@ -166,6 +166,12 @@ describe('recordPathUpdated', () => {
     expect(records![0].successCount).toBe(0);
   });
 
+  it('ignores all-zero path bytes', () => {
+    usePathHistoryStore.getState().recordPathUpdated(42, [0], 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(42, [0, 0], 1, false);
+    expect(usePathHistoryStore.getState().records.get(42)).toBeUndefined();
+  });
+
   it('deduplicates paths with the same hash', () => {
     usePathHistoryStore.getState().recordPathUpdated(42, [0x01], 1, false);
     usePathHistoryStore.getState().recordPathUpdated(42, [0x01], 2, true, 0.8);
@@ -181,9 +187,9 @@ describe('recordPathUpdated', () => {
 
 describe('LRU eviction', () => {
   it('evicts the oldest contact when records exceed 50', () => {
-    // Fill 50 contacts
+    // Fill 50 contacts (path byte must be non-zero — all-zero paths are ignored)
     for (let i = 0; i < 50; i++) {
-      usePathHistoryStore.getState().recordPathUpdated(i, [i], 1, false);
+      usePathHistoryStore.getState().recordPathUpdated(i, [i + 1], 1, false);
     }
     expect(usePathHistoryStore.getState().records.size).toBe(50);
 
@@ -196,10 +202,10 @@ describe('LRU eviction', () => {
 
   it('touching an existing contact moves it to MRU position', () => {
     for (let i = 0; i < 50; i++) {
-      usePathHistoryStore.getState().recordPathUpdated(i, [i], 1, false);
+      usePathHistoryStore.getState().recordPathUpdated(i, [i + 1], 1, false);
     }
     // Re-touch nodeId 0 so it becomes MRU
-    usePathHistoryStore.getState().recordPathUpdated(0, [0], 2, false);
+    usePathHistoryStore.getState().recordPathUpdated(0, [0xaa], 2, false);
 
     // Adding 51st should evict nodeId 1 (now oldest)
     usePathHistoryStore.getState().recordPathUpdated(100, [0xff], 1, false);
