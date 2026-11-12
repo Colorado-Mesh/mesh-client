@@ -2873,7 +2873,29 @@
     "waypointEdit": "Waypoint bewerken",
     "traceRouteEmpty": "Er zijn geen hopposities beschikbaar om deze traceroute te tekenen",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Toon traceroute op kaart"
+    "showTraceRouteOnMap": "Toon traceroute op kaart",
+    "vectorOverlays": {
+      "heading": "Geïmporteerde overlays",
+      "hint": "Importeer een lokaal GeoJSON-, KML- of KMZ-bestand (maximaal ongeveer 50 MB). KML-netwerklinks worden niet geladen.",
+      "import": "Overlaybestand importeren",
+      "importing": "Aan het importeren.",
+      "importAria": "Een lokale GeoJSON-, KML- of KMZ-overlay importeren",
+      "opacity": "Dekking {{value}}%",
+      "opacityAria": "Ondoorzichtigheid voor overlay {{name}}",
+      "remove": "Verwijderen",
+      "removeAria": "Overlay {{name}} verwijderen",
+      "errors": {
+        "too_large": "Bestand is te groot (max. ongeveer 50 MB).",
+        "malformed": "Kan dat bestand niet parseren.",
+        "unsafe_xml": "Bestand bevat onveilige XML (DOCTYPE/ENTITY).",
+        "unsafe_zip": "KMZ-archief is ongeldig of onveilig.",
+        "unsupported": "Niet-ondersteunde of aan het netwerk gekoppelde overlay.",
+        "empty": "Geen tekenbare geometrieën gevonden.",
+        "limit": "Te veel geïmporteerde overlays (verwijder er eerst één).",
+        "io": "Kan bestand niet lezen",
+        "not_found": "Overlay niet gevonden."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",

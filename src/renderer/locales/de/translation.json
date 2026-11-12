@@ -2873,7 +2873,29 @@
     "waypointEdit": "WEGPUNKT BEARBEITEN",
     "traceRouteEmpty": "Keine Hop-Positionen verfügbar, um diesen Traceroute zu zeichnen",
     "traceRouteLayer": "Routen-Verfolgung",
-    "showTraceRouteOnMap": "Traceroute auf der Karte anzeigen"
+    "showTraceRouteOnMap": "Traceroute auf der Karte anzeigen",
+    "vectorOverlays": {
+      "heading": "Importierte Overlays",
+      "hint": "Importieren Sie eine lokale GeoJSON-, KML- oder KMZ-Datei (maximal ca. 50 MB). KML-Netzwerklinks werden nicht geladen.",
+      "import": "Overlay importieren …",
+      "importing": "Importieren …",
+      "importAria": "Lokales GeoJSON-, KML- oder KMZ-Overlay importieren",
+      "opacity": "Deckkraft {{value}} %",
+      "opacityAria": "Deckkraft für Overlay {{name}}",
+      "remove": "Entlassen",
+      "removeAria": "Overlay entfernen {{name}}",
+      "errors": {
+        "too_large": "Die Datei ist zu groß (maximal ca. 50 MB).",
+        "malformed": "Diese Datei konnte nicht geparst werden.",
+        "unsafe_xml": "Die Datei enthält unsicheres XML (DOCTYPE/ENTITY).",
+        "unsafe_zip": "Das KMZ-Archiv ist ungültig oder unsicher.",
+        "unsupported": "Nicht unterstütztes oder mit dem Netzwerk verknüpftes Overlay.",
+        "empty": "Keine zeichbaren Geometrien gefunden.",
+        "limit": "Zu viele importierte Overlays (entfernen Sie zuerst eines).",
+        "io": "Datei konnte nicht gelesen werden.",
+        "not_found": "Overlay nicht gefunden."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",

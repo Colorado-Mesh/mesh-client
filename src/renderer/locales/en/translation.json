@@ -3245,7 +3245,29 @@
     "waypointEdit": "Edit waypoint",
     "traceRouteEmpty": "No hop positions available to draw this traceroute",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Show traceroute on map"
+    "showTraceRouteOnMap": "Show traceroute on map",
+    "vectorOverlays": {
+      "heading": "Imported overlays",
+      "hint": "Import a local GeoJSON, KML, or KMZ file (about 50 MB max). Network KML links are not loaded.",
+      "import": "Import overlay…",
+      "importing": "Importing…",
+      "importAria": "Import a local GeoJSON, KML, or KMZ overlay",
+      "opacity": "Opacity {{value}}%",
+      "opacityAria": "Opacity for overlay {{name}}",
+      "remove": "Remove",
+      "removeAria": "Remove overlay {{name}}",
+      "errors": {
+        "too_large": "File is too large (max about 50 MB).",
+        "malformed": "Could not parse that file.",
+        "unsafe_xml": "File contains unsafe XML (DOCTYPE/ENTITY).",
+        "unsafe_zip": "KMZ archive is invalid or unsafe.",
+        "unsupported": "Unsupported or network-linked overlay.",
+        "empty": "No drawable geometries found.",
+        "limit": "Too many imported overlays (remove one first).",
+        "io": "Could not read that file.",
+        "not_found": "Overlay not found."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Why you're seeing duplicate traffic",

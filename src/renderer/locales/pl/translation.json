@@ -2927,7 +2927,29 @@
     "waypointEdit": "Edytuj punkt trasy",
     "traceRouteEmpty": "Brak dostępnych pozycji przeskoków do narysowania tej trasy śledzenia",
     "traceRouteLayer": "Tracerout",
-    "showTraceRouteOnMap": "Pokaż traceroute na mapie"
+    "showTraceRouteOnMap": "Pokaż traceroute na mapie",
+    "vectorOverlays": {
+      "heading": "Zaimportowane nakładki",
+      "hint": "Importuj lokalny plik GeoJSON, KML lub KMZ (maks. około 50 MB). Linki sieciowe KML nie są wczytywane.",
+      "import": "Importuj nakładkę…",
+      "importing": "Importowanie…",
+      "importAria": "Importowanie lokalnej warstwy tematycznej GeoJSON, KML lub KMZ",
+      "opacity": "Krycie {{value}}%",
+      "opacityAria": "Krycie nakładki {{name}}",
+      "remove": "Usuń",
+      "removeAria": "Usuń nakładkę {{name}}",
+      "errors": {
+        "too_large": "Plik jest za duży (maks. około 50 MB).",
+        "malformed": "Nie udało się przeanalizować tego pliku.",
+        "unsafe_xml": "Plik zawiera niebezpieczny kod XML (DOCTYPE/ENTITY).",
+        "unsafe_zip": "Archiwum KMZ jest nieprawidłowe lub niebezpieczne.",
+        "unsupported": "Nieobsługiwana lub połączona z siecią nakładka.",
+        "empty": "Nie znaleziono geometrii nadających się do narysowania.",
+        "limit": "Zbyt wiele zaimportowanych nakładek (najpierw usuń jedną).",
+        "io": "Nie można odczytać pliku",
+        "not_found": "Nie znaleziono nakładki."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",

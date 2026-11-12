@@ -2873,7 +2873,29 @@
     "waypointEdit": "경유지 편집",
     "traceRouteEmpty": "이 추적 경로를 그릴 수 있는 홉 위치가 없습니다.",
     "traceRouteLayer": "경로 추적",
-    "showTraceRouteOnMap": "지도에 추적 경로 표시"
+    "showTraceRouteOnMap": "지도에 추적 경로 표시",
+    "vectorOverlays": {
+      "heading": "가져온 오버레이",
+      "hint": "로컬 GeoJSON, KML 또는 KMZ 파일(최대 약 50MB)을 가져옵니다. 네트워크 KML 링크가 로드되지 않습니다.",
+      "import": "오버레이 가져오기…",
+      "importing": "들여오는 중",
+      "importAria": "로컬 GeoJSON, KML 또는 KMZ 오버레이 가져오기",
+      "opacity": "불투명도 {{value}}%",
+      "opacityAria": "오버레이 불투명도 {{name}}",
+      "remove": "제거",
+      "removeAria": "오버레이 {{name}} 제거",
+      "errors": {
+        "too_large": "파일이 너무 큽니다(최대 약 50MB).",
+        "malformed": "파일을 구문 분석할 수 없습니다",
+        "unsafe_xml": "파일에 안전하지 않은 XML(DOCTYPE/ENTITY)이 포함되어 있습니다.",
+        "unsafe_zip": "KMZ 아카이브가 유효하지 않거나 안전하지 않습니다.",
+        "unsupported": "지원되지 않거나 네트워크에 연결된 오버레이입니다.",
+        "empty": "그릴 수 있는 지오메트리를 찾을 수 없습니다.",
+        "limit": "가져온 오버레이가 너무 많습니다(먼저 하나를 제거하세요).",
+        "io": "해당 파일을 읽을 수 없습니다.",
+        "not_found": "오버레이를 찾을 수 없습니다."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",

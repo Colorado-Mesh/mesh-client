@@ -2904,7 +2904,29 @@
     "waypointEdit": "Upravit trasový bod",
     "traceRouteEmpty": "Pro nakreslení této trasy nejsou k dispozici žádné skokové pozice",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Zobrazit traceroute na mapě"
+    "showTraceRouteOnMap": "Zobrazit traceroute na mapě",
+    "vectorOverlays": {
+      "heading": "Importovaná překrytí",
+      "hint": "Importujte místní soubor GeoJSON, KML nebo KMZ (maximálně asi 50 MB). Odkazy na síťové soubory KML se nenačítají.",
+      "import": "Importovat překryv…",
+      "importing": "Importuji...",
+      "importAria": "Import místního překryvného prvku GeoJSON, KML nebo KMZ",
+      "opacity": "Neprůhlednost {{value}} %",
+      "opacityAria": "Neprůhlednost překrytí {{name}}",
+      "remove": "Odstranit",
+      "removeAria": "Odebrat překryvný prvek {{name}}",
+      "errors": {
+        "too_large": "Soubor je příliš velký (maximálně asi 50 MB).",
+        "malformed": "Tento soubor se nepodařilo zpracovat.",
+        "unsafe_xml": "Soubor obsahuje nebezpečný XML (DOCTYPE/ENTITY).",
+        "unsafe_zip": "Archiv KMZ je neplatný nebo nebezpečný.",
+        "unsupported": "Nepodporované nebo síťově propojené překrytí.",
+        "empty": "Nebyly nalezeny žádné kreslitelné geometrie.",
+        "limit": "Příliš mnoho importovaných překryvných vrstev (nejprve jednu odstraňte).",
+        "io": "Tento soubor se nepodařilo přečíst.",
+        "not_found": "Překryv nebyl nalezen."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",

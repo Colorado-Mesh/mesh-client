@@ -22,8 +22,9 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * window-function query so quiet group channels are not crowded out of the newest-N load.
  * Ratspeak 1.4 enablement (`attachments_json` on reticulum messages + IPC coalesce) nudged
  * the minified main past 797 KiB.
+ * Local KML/KMZ/GeoJSON map overlay import (safe XML subset + KMZ mkdtemp extract) adds ~10 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 798 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

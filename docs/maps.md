@@ -35,6 +35,20 @@ Under **Overlays** you can toggle:
 
 Overlays are vector layers drawn on top of the basemap. If nodes have latitude/longitude from RF, MQTT, SQLite, or your session, markers and trails can still render when the basemap is blank or only partly cached.
 
+### Imported vector overlays (KML / KMZ / GeoJSON)
+
+Under **Imported overlays** you can load a **local** GeoJSON, KML, or KMZ file onto every Map tab (LoRa and Reticulum). Each layer can be toggled, faded with an opacity slider, or removed. Visibility and opacity are remembered with the layer data.
+
+| Cap / rule          | Value                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| Max file size       | about **50 MB**                                                       |
+| Max imported layers | **16**                                                                |
+| Local files only    | OS file dialog in the main process — no network KML / `NetworkLink`   |
+| Safe KML subset     | Point, LineString, Polygon, MultiGeometry; DOCTYPE/ENTITY rejected    |
+| KMZ                 | Zip extract into a unique temp dir (`mesh-kmz-…`); no ground overlays |
+
+v1 does **not** fetch remote KML URLs, apply full KML styling, or draw KMZ ground-overlay imagery.
+
 Use **Measure** to click a multi-point distance line on the map (`km` / `mi` total). Use **LOS profile** to pick two endpoints (map clicks or node markers) and plot a terrain cross-section with first Fresnel-zone clearance for 915 / 868 / 433 MHz. Elevation samples come from a cached Open-Meteo lookup, or from offline SRTM tiles if you downloaded them under **Layers → Offline maps → Offline elevation (DEM)**. **Show my location** recenters on your resolved position when one is available.
 
 ---

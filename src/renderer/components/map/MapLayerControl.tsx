@@ -1,11 +1,13 @@
 import { Layers } from 'lucide-react-motion';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
 import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
 import { useInternetWeatherStore } from '@/renderer/stores/internetWeatherStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
+import { useMapOverlayStore } from '@/renderer/stores/mapOverlayStore';
 import { useTemperatureUnitStore } from '@/renderer/stores/temperatureUnitStore';
 
 import { SELECT_BOX_SM_CLASS } from '../ui/formClasses';
@@ -75,6 +77,36 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
   const precipUnit = useInternetWeatherStore((s) => s.precipUnit);
   const setPrecipUnit = useInternetWeatherStore((s) => s.setPrecipUnit);
   const lastError = useInternetWeatherStore((s) => s.lastError);
+
+  const overlayLayers = useMapOverlayStore((s) => s.layers);
+  const addOverlayLayer = useMapOverlayStore((s) => s.addLayer);
+  const setOverlayVisible = useMapOverlayStore((s) => s.setVisible);
+  const setOverlayOpacity = useMapOverlayStore((s) => s.setOpacity);
+  const removeOverlayLayer = useMapOverlayStore((s) => s.removeLayer);
+  const lastImportError = useMapOverlayStore((s) => s.lastImportError);
+  const setImportError = useMapOverlayStore((s) => s.setImportError);
+  const [importBusy, setImportBusy] = useState(false);
+
+  const importOverlay = async () => {
+    if (importBusy) return;
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const result = await window.electronAPI.mapOverlays.import();
+      if (!result.ok) {
+        if (result.code === 'cancelled') return;
+        setImportError(t(`mapPanel.vectorOverlays.errors.${result.code}`));
+        return;
+      }
+      const added = addOverlayLayer({ name: result.name, geojson: result.geojson });
+      if (!added.ok) setImportError(t('mapPanel.vectorOverlays.errors.limit'));
+    } catch (e: unknown) {
+      console.warn('[MapLayerControl] overlay import failed ' + errLikeToLogString(e));
+      setImportError(t('mapPanel.vectorOverlays.errors.io'));
+    } finally {
+      setImportBusy(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -241,6 +273,72 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
               onChange={setShowMgrsGrid}
             />
           </div>
+
+          <div className="space-y-1.5">
+            <div className="text-2xs text-ink-400 font-medium">
+              {t('mapPanel.vectorOverlays.heading')}
+            </div>
+            <p className="text-muted text-2xs">{t('mapPanel.vectorOverlays.hint')}</p>
+            <button
+              type="button"
+              aria-label={t('mapPanel.vectorOverlays.importAria')}
+              className="border-ink-600 bg-ink-800 text-ink-100 hover:bg-ink-700 rounded-control w-full px-2 py-1 text-xs transition-colors disabled:opacity-50"
+              disabled={importBusy}
+              onClick={() => {
+                void importOverlay();
+              }}
+            >
+              {importBusy
+                ? t('mapPanel.vectorOverlays.importing')
+                : t('mapPanel.vectorOverlays.import')}
+            </button>
+            {lastImportError ? (
+              <p className="text-2xs text-orange-400" role="status">
+                {lastImportError}
+              </p>
+            ) : null}
+            {overlayLayers.map((layer) => (
+              <div key={layer.id} className="border-ink-700/60 space-y-1 border-t pt-1.5">
+                <MapLayerRow
+                  label={layer.name}
+                  checked={layer.visible}
+                  onChange={(enabled) => {
+                    setOverlayVisible(layer.id, enabled);
+                  }}
+                />
+                <label className="text-muted flex flex-col gap-1 text-xs">
+                  <span>
+                    {t('mapPanel.vectorOverlays.opacity', {
+                      value: Math.round(layer.opacity * 100),
+                    })}
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={Math.round(layer.opacity * 100)}
+                    aria-label={t('mapPanel.vectorOverlays.opacityAria', { name: layer.name })}
+                    className="accent-brand-green w-full"
+                    onChange={(e) => {
+                      setOverlayOpacity(layer.id, Number(e.target.value) / 100);
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label={t('mapPanel.vectorOverlays.removeAria', { name: layer.name })}
+                  className="text-2xs text-red-400 hover:text-red-300"
+                  onClick={() => {
+                    removeOverlayLayer(layer.id);
+                  }}
+                >
+                  {t('mapPanel.vectorOverlays.remove')}
+                </button>
+              </div>
+            ))}
+          </div>
+
           <OfflineMapsSection />
         </div>
       ) : null}

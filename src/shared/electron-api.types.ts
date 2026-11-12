@@ -29,6 +29,7 @@ import type {
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
 import type { IncidentSnapshot } from './incidentTypes';
 import type { LiveMapWindowApi } from './liveMapWindow';
+import type { MapOverlayImportResult } from './mapOverlays/types';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { MapSourceId, OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
@@ -1274,6 +1275,12 @@ export interface ElectronAPI {
     fetch: () => Promise<ServiceAnnouncementFetchResult>;
     /** Opens only an https link present in the last validated feed; false otherwise. */
     openUrl: (url: string) => Promise<boolean>;
+  };
+
+  // ─── Local vector map overlays (KML / KMZ / GeoJSON) ─────────────────────────
+  mapOverlays: {
+    /** Opens the OS file dialog in main; the renderer never supplies a path. */
+    import: () => Promise<MapOverlayImportResult>;
   };
 
   // ─── Offline map tile cache ──────────────────────────────────────────────────

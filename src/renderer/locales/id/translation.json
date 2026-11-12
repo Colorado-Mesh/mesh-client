@@ -2873,7 +2873,29 @@
     "waypointEdit": "Sunting waypoint",
     "traceRouteEmpty": "Tidak ada posisi hop untuk menggambar traceroute ini",
     "traceRouteLayer": "Lapisan traceroute",
-    "showTraceRouteOnMap": "Tampilkan traceroute di peta"
+    "showTraceRouteOnMap": "Tampilkan traceroute di peta",
+    "vectorOverlays": {
+      "heading": "Overlay yang diimpor",
+      "hint": "Impor file GeoJSON, KML, atau KMZ lokal (maks. sekitar 50 MB). Tautan KML jaringan tidak dimuat.",
+      "import": "Impor hamparan…",
+      "importing": "Mengimpor…",
+      "importAria": "Impor hamparan GeoJSON, KML, atau KMZ lokal",
+      "opacity": "Opasitas {{value}}%",
+      "opacityAria": "Opasitas untuk hamparan {{name}}",
+      "remove": "Hapus",
+      "removeAria": "Hapus hamparan {{name}}",
+      "errors": {
+        "too_large": "File terlalu besar (maksimal sekitar 50 MB).",
+        "malformed": "Tidak dapat mengurai file tersebut.",
+        "unsafe_xml": "File berisi XML yang tidak aman (DOCTYPE/ENTITY).",
+        "unsafe_zip": "Arsip KMZ tidak valid atau tidak aman.",
+        "unsupported": "Overlay tidak didukung atau terhubung ke jaringan.",
+        "empty": "Tidak ada geometri yang dapat digambar.",
+        "limit": "Terlalu banyak overlay yang diimpor (hapus satu terlebih dahulu).",
+        "io": "Tidak dapat membaca file tersebut.",
+        "not_found": "Overlay tidak ditemukan."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",

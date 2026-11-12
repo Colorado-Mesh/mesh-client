@@ -2873,7 +2873,29 @@
     "waypointEdit": "Modifier le point de passage",
     "traceRouteEmpty": "Aucune position de saut disponible pour tracer ce traceroute",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Afficher le traceroute sur la carte"
+    "showTraceRouteOnMap": "Afficher le traceroute sur la carte",
+    "vectorOverlays": {
+      "heading": "Superpositions importées",
+      "hint": "Importez un fichier GeoJSON, KML ou KMZ local (environ 50 Mo maximum). Les liens KML réseau ne sont pas chargés.",
+      "import": "Importer une superposition…",
+      "importing": "Importation…",
+      "importAria": "Importer une superposition GeoJSON, KML ou KMZ locale",
+      "opacity": "Opacité {{value}} %",
+      "opacityAria": "Opacité de la superposition {{name}}",
+      "remove": "Supprimer",
+      "removeAria": "Supprimer la superposition {{name}}",
+      "errors": {
+        "too_large": "Le fichier est trop volumineux (environ 50 Mo maximum).",
+        "malformed": "Impossible d'analyser le fichier.",
+        "unsafe_xml": "Le fichier contient du code XML non sécurisé (DOCTYPE/ENTITY).",
+        "unsafe_zip": "L’archive KMZ n’est pas valide ou n’est pas sûre.",
+        "unsupported": "Superposition non prise en charge ou liée au réseau.",
+        "empty": "Aucune géométrie traçable trouvée.",
+        "limit": "Trop de superpositions importées (supprimez-en une d’abord).",
+        "io": "Impossible de lire le fichier.",
+        "not_found": "Superposition introuvable."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",

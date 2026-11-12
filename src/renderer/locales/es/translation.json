@@ -2873,7 +2873,29 @@
     "waypointEdit": "Editar punto de ruta",
     "traceRouteEmpty": "No hay posiciones de salto disponibles para trazar este «traceroute»",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Mostrar el traceroute en el mapa"
+    "showTraceRouteOnMap": "Mostrar el traceroute en el mapa",
+    "vectorOverlays": {
+      "heading": "Superposiciones importadas",
+      "hint": "Importa un archivo GeoJSON, KML o KMZ local (de unos 50 MB como máximo). Los enlaces KML de red no se cargan.",
+      "import": "Importar superposición…",
+      "importing": "Importando…",
+      "importAria": "Importar una superposición local GeoJSON, KML o KMZ",
+      "opacity": "Opacidad {{value}} %",
+      "opacityAria": "Opacidad de la superposición {{name}}",
+      "remove": "Eliminar",
+      "removeAria": "Eliminar superposición {{name}}",
+      "errors": {
+        "too_large": "El archivo es demasiado grande (máx. aprox. 50 MB).",
+        "malformed": "No se pudo analizar el archivo:",
+        "unsafe_xml": "El archivo contiene XML no seguro (DOCTYPE/ENTITY).",
+        "unsafe_zip": "El archivo KMZ no es válido o no es seguro.",
+        "unsupported": "Superposición no compatible o vinculada a la red.",
+        "empty": "No se han encontrado geometrías dibujables.",
+        "limit": "Demasiadas superposiciones importadas (elimina una primero).",
+        "io": "No se pudo leer el archivo.",
+        "not_found": "Superposición no encontrada."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",

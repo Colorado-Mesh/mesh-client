@@ -15,6 +15,7 @@ import {
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './emcommMapLayers';
+import { ImportedOverlaysLayer } from './ImportedOverlaysLayer';
 import {
   ensureMapStyles,
   flyMapToBounds,
@@ -212,6 +213,7 @@ export function MeshMapShell({
         {showWeatherForecasts ? (
           <WeatherForecastLayer onSenderClick={onForecastSenderClick} />
         ) : null}
+        <ImportedOverlaysLayer />
         {children}
         {showIncidents ? <IncidentMarkersLayer /> : null}
       </MapContainer>
