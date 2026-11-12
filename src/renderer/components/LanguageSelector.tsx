@@ -10,7 +10,7 @@ import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
-import { SUPPORTED_LANGUAGES } from '../locales/languages';
+import { isSupportedLocale, SUPPORTED_LANGUAGES } from '../locales/languages';
 
 interface MenuPosition {
   top: number;
@@ -45,7 +45,7 @@ export default function LanguageSelector() {
       try {
         const settings = await window.electronAPI.appSettings.getAll();
         const dbLocale = settings.locale;
-        if (dbLocale && dbLocale !== i18n.language) {
+        if (isSupportedLocale(dbLocale) && dbLocale !== i18n.language) {
           const ok = await ensureLocaleLoaded(i18n, dbLocale);
           if (ok) await i18n.changeLanguage(dbLocale);
         }

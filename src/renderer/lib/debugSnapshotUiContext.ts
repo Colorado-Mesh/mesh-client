@@ -17,6 +17,10 @@ export interface DebugSnapshotUiContext {
   frozenMessageCount: number | null;
   liveResolvedMessageCount: number;
   activeProtocol: MeshProtocol;
+  /** Active i18n language (validated selectable code). */
+  appLocale: string;
+  /** False when persisted `locale` exists but is not a selectable app locale. */
+  storedLocaleValid: boolean;
   waitingMessagesSilentDrainActive: boolean;
   waitingMessagesDrainDeferred: boolean;
   meshcoreDrain?: DebugSnapshotMeshcoreDrainContext;
@@ -39,6 +43,8 @@ const defaultUiContext: DebugSnapshotUiContext = {
   frozenMessageCount: null,
   liveResolvedMessageCount: 0,
   activeProtocol: 'meshtastic',
+  appLocale: 'en',
+  storedLocaleValid: true,
   waitingMessagesSilentDrainActive: false,
   waitingMessagesDrainDeferred: false,
   meshcoreDrain: defaultMeshcoreDrainContext,

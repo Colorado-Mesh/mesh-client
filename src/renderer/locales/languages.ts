@@ -19,6 +19,22 @@ export const SUPPORTED_LANGUAGES = [
 
 export type SupportedLocale = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 
+/** True when `value` is one of the selectable app locales. */
+export function isSupportedLocale(value: unknown): value is SupportedLocale {
+  return (
+    typeof value === 'string' && SUPPORTED_LANGUAGES.some((language) => language.code === value)
+  );
+}
+
+/**
+ * Resolve a persisted locale to a selectable app locale.
+ * Unknown, malformed, or region-only tags fall back to English; the app does
+ * not auto-detect OS/browser language.
+ */
+export function resolveAppLocale(value: unknown): SupportedLocale {
+  return isSupportedLocale(value) ? value : 'en';
+}
+
 /**
  * Language bases that use right-to-left script. Kept as plain tags (not
  * SupportedLocale) so RTL document plumbing works before ar/he ship as

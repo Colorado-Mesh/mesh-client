@@ -25,6 +25,7 @@ import {
   installRendererPreferencePersistence,
 } from './lib/rendererPreferences';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
+import { isSupportedLocale } from './locales/languages';
 import { hydrateIncidentStore } from './stores/incidentStore';
 import { hydrateReticulumDismissedContacts } from './stores/reticulumPeerStore';
 import { hydrateScheduledBroadcastsStore } from './stores/scheduledBroadcastsStore';
@@ -65,9 +66,10 @@ async function finishRendererStorage(): Promise<void> {
     getAppSettingsRaw(),
     'restored locale',
   )?.locale;
-  if (typeof locale === 'string' && locale !== i18n.language) {
-    await ensureLocaleLoaded(i18n, locale);
-    await i18n.changeLanguage(locale);
+  if (isSupportedLocale(locale) && locale !== i18n.language) {
+    if (await ensureLocaleLoaded(i18n, locale)) {
+      await i18n.changeLanguage(locale);
+    }
   }
   stopPreferencePersistence ??= installRendererPreferencePersistence();
   initReduceMotionDefaultIfAbsent();

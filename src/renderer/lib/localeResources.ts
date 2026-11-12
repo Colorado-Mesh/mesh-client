@@ -3,7 +3,7 @@ import type { i18n as I18nInstance } from 'i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { SupportedLocale } from '../locales/languages';
-import { SUPPORTED_LANGUAGES } from '../locales/languages';
+import { isSupportedLocale } from '../locales/languages';
 
 const loadedLocales = new Set<string>(['en']);
 
@@ -28,18 +28,18 @@ const localeBundles: Record<
   zh: () => import('../locales/zh/translation.json'),
 };
 
-export function isSupportedLocale(code: string): code is SupportedLocale {
-  return SUPPORTED_LANGUAGES.some((l) => l.code === code);
-}
-
 /**
  * Loads locale JSON into i18next (code-split). English is bundled in i18n init.
- * Failure point: dynamic import or invalid JSON — fallback: log, switch to `en`, return false.
- * @returns false only when a supported non-English bundle failed to load
+ * Failure point: unsupported code or dynamic import failure — fallback: leave the
+ * active language alone (or switch to `en` after a bundle failure), return false.
+ * @returns false when the code is not selectable or a supported bundle failed to load
  */
 export async function ensureLocaleLoaded(i18n: I18nInstance, code: string): Promise<boolean> {
   if (code === 'en' || loadedLocales.has(code)) return true;
-  if (!isSupportedLocale(code)) return true;
+  if (!isSupportedLocale(code)) {
+    console.warn('[i18n] requested locale is not selectable');
+    return false;
+  }
 
   try {
     const load = localeBundles[code as Exclude<SupportedLocale, 'en'>];

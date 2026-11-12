@@ -16,6 +16,7 @@ import { parseStoredJson } from './lib/parseStoredJson';
 import { syncReduceMotionDatasetFromStorage } from './lib/reduceMotionPreference';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
+import { resolveAppLocale } from './locales/languages';
 
 /** Entry for live-map.html, the live traffic pop-out window. */
 async function start(): Promise<void> {
@@ -25,13 +26,14 @@ async function start(): Promise<void> {
   applyThemeColors(loadThemeColors());
   applyFontScale(loadFontScale());
   syncReduceMotionDatasetFromStorage();
-  const locale = parseStoredJson<{ locale?: unknown }>(
+  const storedLocale = parseStoredJson<{ locale?: unknown }>(
     getAppSettingsRaw(),
     'restored locale',
   )?.locale;
-  const language = typeof locale === 'string' ? locale : i18n.language;
-  await ensureLocaleLoaded(i18n, language);
-  if (language !== i18n.language) await i18n.changeLanguage(language);
+  const language = resolveAppLocale(storedLocale);
+  if ((await ensureLocaleLoaded(i18n, language)) && language !== i18n.language) {
+    await i18n.changeLanguage(language);
+  }
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>
       <ErrorBoundary>

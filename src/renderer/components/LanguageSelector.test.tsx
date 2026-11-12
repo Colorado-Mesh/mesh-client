@@ -60,6 +60,22 @@ describe('LanguageSelector', () => {
     expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith('locale', 'de');
   });
 
+  it('ignores an unsupported DB locale', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({ locale: 'ko-KR' });
+    render(<LanguageSelector />);
+    await waitFor(() => {
+      expect(i18n.language).toBe('en');
+    });
+  });
+
+  it('applies a supported DB locale', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({ locale: 'de' });
+    render(<LanguageSelector />);
+    await waitFor(() => {
+      expect(i18n.language).toBe('de');
+    });
+  });
+
   it('stays open when scrolling the language list', async () => {
     const user = userEvent.setup();
     render(<LanguageSelector />);
