@@ -45,4 +45,8 @@ MeshCore firmware **serializes traceroutes** — one active trace cycle per RF l
 - **Repeater CLI clock:** `clock` / `clock sync` are firmware tokens. `clock sync` uses the companion/computer UTC unix timestamp; MeshCore firmware **refuses to set time backwards** (`ERR: clock cannot go backwards`). Do not auto-`clkreboot`; toast `repeatersPanel.cliClockCannotGoBackwards` and leave `clkreboot` behind the danger confirm. Optional companion `syncDeviceTime()` runs before repeater `clock sync`.
 - **Cross-traffic**: Room sync/auto-login defer while `meshcoreCompanionRepeaterRfBusy()`; waiting-messages drain defers during TraceData.
 
+## Noise-floor trend (node detail)
+
+MeshCore node detail (`NodeDetailModal` + `NoiseFloorTrendChart`) keeps a **selected-node** noise-floor trend while that panel is open: samples from Status (remote) or local companion radio stats into `noiseFloorHistoryStore`, with sparkline + min/max/last (`meshcore/noiseFloorHistory.ts`, same scaling as EnvironmentSparklines). Remote Status refreshes on `MESHCORE_NOISE_FLOOR_TREND_POLL_MS` only after the user has loaded repeater stats for that node (`showRepeaterStats`) and only while the document is visible — never a global always-on poll — so airtime and the serialized companion remote-request slot stay protected. Overlapping poll ticks are skipped while a Status request is in flight. Zero dBm is a real reading; an empty series shows a clear empty state.
+
 Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` without explicit user request. See [../meshcore-meshtastic-parity.md](../meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).

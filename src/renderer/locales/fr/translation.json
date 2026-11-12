@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Part des envois de cette radio depuis le démarrage acheminés en Flood. Les messages de canal et les annonces Flood sont toujours en Flood ; un pourcentage élevé est normal pour les compagnons à fort trafic de canal.",
-    "floodSendPercentHintAria": "À propos du pourcentage d'envoi Flood"
+    "floodSendPercentHintAria": "À propos du pourcentage d'envoi Flood",
+    "noiseFloorTrendStatsAria": "Bruit de fond min. {{min}} dBm, max. {{max}} dBm, dernier {{last}} dBm",
+    "noiseFloorTrendHeading": "Tendance du bruit de fond",
+    "noiseFloorTrendEmpty": "Aucun échantillon de bruit de fond pour l’instant. Demandez l’état pour lancer la tendance en temps réel.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Max",
+    "noiseFloorTrendLast": "Dernier",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Collecte d’échantillons pour le graphique sparkline…"
   },
   "nodeInfoBody": {
     "longName": "Nom long",

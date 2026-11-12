@@ -3907,7 +3907,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Podíl odeslání tohoto rádia od startu směrovaných jako Flood. Zprávy kanálu a Flood reklamy jsou vždy Flood, takže vysoké procento je u companionů s hustým kanálovým provozem normální.",
-    "floodSendPercentHintAria": "O procentu odeslání Flood"
+    "floodSendPercentHintAria": "O procentu odeslání Flood",
+    "noiseFloorTrendStatsAria": "Minimální úroveň šumu {{min}} dBm, maximální {{max}} dBm, poslední {{last}} dBm",
+    "noiseFloorTrendHeading": "Trend šumové podlahy",
+    "noiseFloorTrendEmpty": "Zatím nejsou k dispozici žádné vzorky šumové podlahy. Požádejte o stav pro spuštění trendu v reálném čase.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Max.",
+    "noiseFloorTrendLast": "Poslední",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Probíhá shromažďování vzorků pro minigraf…"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

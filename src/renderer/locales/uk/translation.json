@@ -3934,7 +3934,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Частка відправлень цього радіо з моменту завантаження, маршрутизованих як Flood. Повідомлення каналів і Flood-оголошення завжди йдуть Flood, тому високий відсоток нормальний для супутників з активним канальним трафіком.",
-    "floodSendPercentHintAria": "Про відсоток надсилання Flood"
+    "floodSendPercentHintAria": "Про відсоток надсилання Flood",
+    "noiseFloorTrendStatsAria": "Мінімальний рівень шуму {{min}} дБм, максимальний рівень шуму {{max}} дБм, останній рівень шуму {{last}} дБм",
+    "noiseFloorTrendHeading": "Тенденція рівня шуму",
+    "noiseFloorTrendEmpty": "Ще немає зразків рівня шуму. Запитайте статус, щоб запустити графік у реальному часі.",
+    "noiseFloorTrendMin": "Менше",
+    "noiseFloorTrendMax": "Макс.",
+    "noiseFloorTrendLast": "Остання",
+    "noiseFloorTrendValueDbm": "{{value}} дБм",
+    "noiseFloorTrendNeedMoreSamples": "Збір зразків для міні-діаграми…"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",

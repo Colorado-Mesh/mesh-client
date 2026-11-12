@@ -3934,7 +3934,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Доля отправлений этого радио с момента загрузки, маршрутизированных как Flood. Сообщения каналов и Flood-объявления всегда идут Flood, поэтому высокий процент нормален для компаньонов с активным канальным трафиком.",
-    "floodSendPercentHintAria": "О проценте отправки Flood"
+    "floodSendPercentHintAria": "О проценте отправки Flood",
+    "noiseFloorTrendStatsAria": "Минимальный уровень шума {{min}} дБм, максимальный уровень шума {{max}} дБм, последний уровень шума {{last}} дБм",
+    "noiseFloorTrendHeading": "Динамика уровня шума",
+    "noiseFloorTrendEmpty": "Пока нет образцов уровня шума. Запросите статус, чтобы запустить тренд в реальном времени.",
+    "noiseFloorTrendMin": "Мин.",
+    "noiseFloorTrendMax": "Макс.",
+    "noiseFloorTrendLast": "Фамилия",
+    "noiseFloorTrendValueDbm": "{{value}} дБм",
+    "noiseFloorTrendNeedMoreSamples": "Сбор образцов для спарк-линии…"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",

@@ -173,6 +173,8 @@ These findings use packet-stats data from the connected MeshCore companion (`get
 | Elevated Noise Floor    | Radio noise floor > −95 dBm                              | Warning         | Elevated interference from nearby RF sources reducing effective range        |
 | High Companion TX Queue | `meshcore_local_stats.queueLen > 200` (error if `> 250`) | Warning / Error | Companion outbound queue near the 256 cap; traffic may be delayed or dropped |
 
+Node detail can also show a **live noise-floor trend** (min/max/last + sparkline) for the selected MeshCore contact while that panel is open and visible — not a global always-on poll. See [meshcore-repeaters.md](development/meshcore-repeaters.md#noise-floor-trend-node-detail).
+
 ---
 
 ## 4. Foreign LoRa Detection

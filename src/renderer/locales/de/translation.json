@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Anteil der Sendungen dieses Radios seit dem Boot, die per Flood geroutet wurden. Kanalnachrichten und Flood-Adverts sind immer Flood — ein hoher Prozentsatz ist für kanalstarke Begleiter normal.",
-    "floodSendPercentHintAria": "Über den Flood-Sendeanteil"
+    "floodSendPercentHintAria": "Über den Flood-Sendeanteil",
+    "noiseFloorTrendStatsAria": "Rauschpegel min. {{min}} dBm, max. {{max}} dBm, zuletzt {{last}} dBm",
+    "noiseFloorTrendHeading": "Trend des Grundrauschens",
+    "noiseFloorTrendEmpty": "Noch keine Rauschpegel-Proben. Fordern Sie den Status an, um den Live-Trend zu starten.",
+    "noiseFloorTrendMin": "Min.",
+    "noiseFloorTrendMax": "Max.",
+    "noiseFloorTrendLast": "Letzte",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Proben für den Sparkline werden gesammelt …"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

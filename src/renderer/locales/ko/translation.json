@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% 플러드",
     "floodSendPercentHint": "부팅 이후 이 라디오 송신 중 플러드 라우팅된 비율입니다. 채널 메시지와 플러드 광고는 항상 플러드이므로, 채널 트래픽이 많은 컴패니언에서는 높은 비율이 정상입니다.",
-    "floodSendPercentHintAria": "플러드 전송 비율 정보"
+    "floodSendPercentHintAria": "플러드 전송 비율 정보",
+    "noiseFloorTrendStatsAria": "노이즈 플로어 최소 {{min}}dBm, 최대 {{max}}dBm, 마지막 {{last}}dBm",
+    "noiseFloorTrendHeading": "노이즈 플로어 추세",
+    "noiseFloorTrendEmpty": "아직 노이즈 플로어 샘플이 없습니다. 실시간 추세를 시작하려면 상태를 요청하세요.",
+    "noiseFloorTrendMin": "최소",
+    "noiseFloorTrendMax": "최대",
+    "noiseFloorTrendLast": "마지막",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "스파크라인을 위한 샘플 수집 중..."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",

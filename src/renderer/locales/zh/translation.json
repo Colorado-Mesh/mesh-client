@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% 泛洪",
     "floodSendPercentHint": "此无线电自启动以来以泛洪路由发送的占比。频道消息和泛洪广播始终使用泛洪，因此频道流量较重的同伴出现高比例是正常的。",
-    "floodSendPercentHintAria": "关于泛洪发送百分比"
+    "floodSendPercentHintAria": "关于泛洪发送百分比",
+    "noiseFloorTrendStatsAria": "噪声底线最小值 {{min}} dBm，最大值 {{max}} dBm，最后值 {{last}} dBm",
+    "noiseFloorTrendHeading": "噪声底线趋势",
+    "noiseFloorTrendEmpty": "尚无噪声本底样本。请求状态以启动实时趋势。",
+    "noiseFloorTrendMin": "最小",
+    "noiseFloorTrendMax": "max",
+    "noiseFloorTrendLast": "最後一頁",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "正在收集迷你图的样本……"
   },
   "nodeInfoBody": {
     "longName": "长名称",

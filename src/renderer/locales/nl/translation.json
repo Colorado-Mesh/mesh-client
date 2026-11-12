@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Aandeel van de verzendingen van deze radio sinds het opstarten die via Flood zijn gerouteerd. Kanaalberichten en Flood-adverts zijn altijd Flood, dus een hoog percentage is normaal voor kanaalzware companions.",
-    "floodSendPercentHintAria": "Over het Flood-verzendpercentage"
+    "floodSendPercentHintAria": "Over het Flood-verzendpercentage",
+    "noiseFloorTrendStatsAria": "Ruisvloer min. {{min}} dBm, max. {{max}} dBm, laatst {{last}} dBm",
+    "noiseFloorTrendHeading": "Trend van ruisvloer",
+    "noiseFloorTrendEmpty": "Nog geen ruisvloermonsters. Vraag de status op om de live trend te starten.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Max",
+    "noiseFloorTrendLast": "Laatste",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Monsters verzamelen voor de sparkline…"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

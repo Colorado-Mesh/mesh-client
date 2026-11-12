@@ -4463,7 +4463,15 @@
     "keyManuallyVerified": "Key verified",
     "keyManuallyVerifiedHint": "This node's public key was manually confirmed by an operator.",
     "keyBadge": "Key",
-    "closePane": "Close details"
+    "closePane": "Close details",
+    "noiseFloorTrendStatsAria": "Noise floor min {{min}} dBm, max {{max}} dBm, last {{last}} dBm",
+    "noiseFloorTrendHeading": "Noise floor trend",
+    "noiseFloorTrendEmpty": "No noise-floor samples yet. Request Status to start the live trend.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Max",
+    "noiseFloorTrendLast": "Last",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Collecting samples for the sparkline…"
   },
   "nodeInfoBody": {
     "longName": "Long Name",
