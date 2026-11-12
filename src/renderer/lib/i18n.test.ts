@@ -63,6 +63,20 @@ describe('i18n', () => {
     expect(freshI18n.language).toBe('en');
   });
 
+  it('falls back to English for an unsupported stored locale', async () => {
+    vi.resetModules();
+    vi.mocked(getAppSettingsRaw).mockReturnValue(JSON.stringify({ locale: 'ko-KR' }));
+    const { default: freshI18n } = await import('./i18n');
+    expect(freshI18n.language).toBe('en');
+  });
+
+  it('falls back to English for a non-string stored locale', async () => {
+    vi.resetModules();
+    vi.mocked(getAppSettingsRaw).mockReturnValue(JSON.stringify({ locale: 42 }));
+    const { default: freshI18n } = await import('./i18n');
+    expect(freshI18n.language).toBe('en');
+  });
+
   it('supports language switching', async () => {
     const en = i18n.t('common.close');
     await ensureLocaleLoaded(i18n, 'fr');

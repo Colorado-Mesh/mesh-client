@@ -440,6 +440,7 @@ import type {
 } from './lib/types';
 import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
 import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
+import { isSupportedLocale } from './locales/languages';
 import {
   ProtocolRuntimeProvider,
   type RuntimeMap,
@@ -640,7 +641,7 @@ function AppContent() {
     initializeAi();
     return disposeAiSummaries;
   }, []);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   useEffect(() => {
     const onOffer = (ev: Event) => {
@@ -3514,6 +3515,10 @@ function AppContent() {
     const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);
     const rfBusy = getMeshcoreCompanionRepeaterRfBusySnapshot();
     const silentBulk = getMeshcoreSilentBulkDrainSnapshot();
+    const storedLocale = parseStoredJson<{ locale?: unknown }>(
+      getAppSettingsRaw(),
+      'debug snapshot locale',
+    )?.locale;
     setDebugSnapshotUiContext({
       activePanelIndex,
       chatTabVisited: visitedChatProtocols.has(protocol),
@@ -3521,6 +3526,8 @@ function AppContent() {
       frozenMessageCount: null,
       liveResolvedMessageCount,
       activeProtocol: protocol,
+      appLocale: i18n.language,
+      storedLocaleValid: storedLocale === undefined || isSupportedLocale(storedLocale),
       waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
       waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
       meshcoreDrain: {
@@ -3540,6 +3547,7 @@ function AppContent() {
     storeMessageCountByProtocol,
     meshcoreRuntime.waitingMessagesSilentDrainActive,
     meshcoreRuntime.waitingMessagesDrainDeferred,
+    i18n.language,
   ]);
 
   useEffect(() => {

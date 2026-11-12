@@ -25,6 +25,7 @@ import {
   installRendererPreferencePersistence,
 } from './lib/rendererPreferences';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
+import { resolveAppLocale } from './locales/languages';
 import { hydrateIncidentStore } from './stores/incidentStore';
 import { hydrateReticulumDismissedContacts } from './stores/reticulumPeerStore';
 import { hydrateScheduledBroadcastsStore } from './stores/scheduledBroadcastsStore';
@@ -61,13 +62,13 @@ async function finishRendererStorage(): Promise<void> {
   await finalizeRendererPreferences();
   hydrateWeatherFilterPreferences();
   hydrateReticulumDismissedContacts();
-  const locale = parseStoredJson<{ locale?: unknown }>(
-    getAppSettingsRaw(),
-    'restored locale',
-  )?.locale;
-  if (typeof locale === 'string' && locale !== i18n.language) {
-    await ensureLocaleLoaded(i18n, locale);
-    await i18n.changeLanguage(locale);
+  const language = resolveAppLocale(
+    parseStoredJson<{ locale?: unknown }>(getAppSettingsRaw(), 'restored locale')?.locale,
+  );
+  if (language !== i18n.language) {
+    if (await ensureLocaleLoaded(i18n, language)) {
+      await i18n.changeLanguage(language);
+    }
   }
   stopPreferencePersistence ??= installRendererPreferencePersistence();
   initReduceMotionDefaultIfAbsent();
