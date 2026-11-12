@@ -64,6 +64,92 @@ export function meshcoreHashSizeForTraceSeed(
 }
 
 /**
+ * Hop count a ping plans its route from.
+ *
+ * The radio sends all 64 path bytes with a contact, and only the length byte says how many of
+ * them are the route (firmware replaces the route with `copyPath` and never clears the rest).
+ * A length of zero hops (0x00, 0x40, 0x80) means the radio itself sends to this contact direct.
+ * When such a contact's buffer still holds bytes an older route left behind, those bytes are
+ * not a route and the hop count the app read from them is not one either, so the ping goes
+ * direct.
+ * Any other case keeps the displayed hop count, including a direct contact with a clean
+ * buffer that adverts show at 1+ hops (the ping may then go through a known relay).
+ */
+export function meshcoreTracePingHopsAway(opts: {
+  displayedHopsAway: number | null | undefined;
+  radioContactPathLen: number | null | undefined;
+  /** From a fresh read of the radio contact; see `meshcoreContactHasLeftoverPathBytes`. */
+  radioPathLeftover: boolean | undefined;
+}): number | null | undefined {
+  if (meshcoreTracePingRadioSaysDirect(opts.radioContactPathLen) && opts.radioPathLeftover) {
+    return 0;
+  }
+  return opts.displayedHopsAway;
+}
+
+/** Whether the radio's length byte for a contact says it is heard direct (zero hops). */
+export function meshcoreTracePingRadioSaysDirect(
+  radioContactPathLen: number | null | undefined,
+): boolean {
+  return meshcoreRadioContactRoute(radioContactPathLen)?.hopCount === 0;
+}
+
+/**
+ * Whether a ping tries the node direct before the route it planned.
+ *
+ * True when the radio's length byte gives no route (0xFF: a Status or Telemetry flood resend
+ * resets the route to this and keeps it when no path comes back), the contact's path buffer
+ * still holds an older route's bytes, and the app shows the node 1+ hops away. The radio no
+ * longer uses those bytes, and the hops may come from them. A node that is in range answers
+ * the direct try; one that is not falls back to the planned route. A contact the radio never
+ * routed has a clean buffer and is not tried direct.
+ */
+export function meshcoreTracePingTriesDirectFirst(opts: {
+  hopsAway: number | null | undefined;
+  radioContactPathLen: number | null | undefined;
+  /** From a fresh read of the radio contact; see `meshcoreContactHasLeftoverPathBytes`. */
+  radioPathLeftover: boolean | undefined;
+}): boolean {
+  if ((opts.hopsAway ?? 0) < 1 || opts.radioPathLeftover !== true) return false;
+  return meshcoreTracePingRadioHasNoRoute(opts.radioContactPathLen);
+}
+
+/** Whether the radio's length byte for a contact says it has no route (0xFF read either way). */
+export function meshcoreTracePingRadioHasNoRoute(
+  radioContactPathLen: number | null | undefined,
+): boolean {
+  const len = radioContactPathLen;
+  return typeof len === 'number' && Number.isFinite(len) && meshcoreRadioContactRoute(len) == null;
+}
+
+/**
+ * Route to keep after a ping the destination answered itself (zero hops, one entry): the
+ * destination's own prefix at the path hash size. The reply entry often has another length.
+ * The 8-byte full-key try would be counted as seven hops by room login and repeater admin, which
+ * count hops from the stored bytes. A 3-byte hash goes out as a 2-byte entry, and the next ping
+ * rejects 2 bytes as not a whole 3-byte hash.
+ */
+export function meshcoreTraceZeroHopStoredPath(
+  replyPath: Uint8Array,
+  destPubKey: Uint8Array,
+  hashSizeBytes: 1 | 2 | 3,
+): Uint8Array {
+  if (
+    replyPath.length === hashSizeBytes &&
+    replyPath.every((byte, index) => byte === destPubKey[index])
+  ) {
+    return replyPath;
+  }
+  return meshcorePubkeyPathPrefix(destPubKey, hashSizeBytes);
+}
+
+/** Whether `path` is the first bytes of the destination's public key. */
+function meshcorePathIsDestKeyPrefix(path: Uint8Array, destPubKey: Uint8Array): boolean {
+  if (path.length === 0 || path.length > destPubKey.length) return false;
+  return path.every((byte, i) => byte === destPubKey[i]);
+}
+
+/**
  * Minimum bytes of a stored route (the shared path map, path history) for hopsAway.
  * Zero-hop: one dest prefix. Multi-hop at 1-byte hashes: the relays plus one trailing byte
  * (`hops + 1`). Multi-hop at 2- or 3-byte hashes: the relay hashes only (`hops * hashSize`).
@@ -252,10 +338,21 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   }
 
   const hopsAway = opts.hopsAway;
+  const radioSaysMultiHop = meshcoreRadioContactPathLenSaysMultiHop(opts.radioContactPathLen);
+  // A zero-hop trace has one entry: the destination's own key prefix. Anything else stored
+  // for a direct contact is what an older route left in the radio's path buffer, and tracing
+  // it reaches a neighbour (or nobody) instead of the destination.
+  if (
+    hopsAway === 0 &&
+    !radioSaysMultiHop &&
+    storedPath &&
+    !meshcorePathIsDestKeyPrefix(storedPath, opts.pubKey)
+  ) {
+    storedPath = undefined;
+  }
   const pathTooShort = !storedPath || storedPath.length < minPathBytes;
   const needsRoutePrime = pathTooShort && (hopsAway == null || hopsAway >= 1);
   const uiSaysMultiHop = (hopsAway ?? 0) >= 1;
-  const radioSaysMultiHop = meshcoreRadioContactPathLenSaysMultiHop(opts.radioContactPathLen);
 
   let outPathSeed: Uint8Array;
   if (storedPath && storedPath.length >= minPathBytes) {

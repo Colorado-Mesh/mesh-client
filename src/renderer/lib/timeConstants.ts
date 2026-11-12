@@ -24,6 +24,11 @@ export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
 /**
+ * Wait past the radio's own estimate for a ping's direct try at a node the radio has no route
+ * to, before the ping falls back to its planned route (same budget as a zero-hop first try).
+ */
+export const MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS = 8 * MS_PER_SECOND;
+/**
  * Soft same-node ping settle before Status/Telemetry/Neighbors/CLI.
  * If the ping is still active after this budget, admin proceeds (does not throw).
  */

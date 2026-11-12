@@ -370,6 +370,11 @@ import {
   meshcoreTraceDirectRetryEligible,
   meshcoreTraceOutboundLegOfRoundTrip,
   meshcoreTracePathMinByteLength,
+  meshcoreTracePingHopsAway,
+  meshcoreTracePingRadioHasNoRoute,
+  meshcoreTracePingRadioSaysDirect,
+  meshcoreTracePingTriesDirectFirst,
+  meshcoreTraceZeroHopStoredPath,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
 } from '../lib/meshcoreRepeaterTracePath';
@@ -460,6 +465,7 @@ import {
 } from '../lib/meshcoreTelemetryPrivacy';
 import {
   cancelAllPendingMeshcoreTracePaths,
+  type MeshcoreTracePathResult,
   resetMeshcoreTracePathMultiplexOnDisconnect,
   startMeshcoreTracePathMultiplexed,
 } from '../lib/meshcoreTracePathMultiplex';
@@ -472,7 +478,7 @@ import {
   type MeshcoreTraceRoutePrimeMetrics,
   primeMeshcoreTraceRouteWithFallback,
 } from '../lib/meshcoreTraceRoutePrime';
-import { meshcoreTraceWirePath } from '../lib/meshcoreTraceWirePath';
+import { type MeshcoreTraceWirePath, meshcoreTraceWirePath } from '../lib/meshcoreTraceWirePath';
 import {
   coerceMeshcoreExportPrivateKeyResult,
   CONTACT_TYPE_LABELS,
@@ -581,6 +587,7 @@ import {
   MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS,
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_STATS_POLL_MS,
+  MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
@@ -5563,8 +5570,11 @@ export function useMeshcoreRuntime() {
       pubKey: Uint8Array,
       hopsAway: number | null | undefined,
       hashSizeBytes: 1 | 2 | 3 = 1,
+      /** Read the contact from the radio even when the stored path looks usable. */
+      forceRadioRead = false,
     ): Promise<MeshcoreRadioContactPathSnapshot> => {
       if (
+        !forceRadioRead &&
         storedPath &&
         meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, hashSizeBytes)
       ) {
@@ -5657,17 +5667,29 @@ export function useMeshcoreRuntime() {
             const setupGen = meshcoreSetupGenerationRef.current;
             const isTraceAborted = (): boolean =>
               meshcoreSetupGenerationRef.current !== setupGen || resolveMeshcoreConn() !== conn;
-            const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
+            const displayedHopsAway = getIdentityNode(
+              meshcoreIdentityIdRef.current,
+              nodeId,
+            )?.hops_away;
             const companionPathHashMode = isMeshcorePathHashMode(pathHashModeRef.current)
               ? pathHashModeRef.current
               : null;
             let radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+            let storedPath = outPathMapRef.current.get(nodeId);
+            let hopsAway: number | null | undefined = displayedHopsAway;
+            // The radio lists this contact as direct, or has no route to it, but the app shows
+            // hops: read the contact again to see whether those hops came from bytes an older
+            // route left in its path buffer (the stored path alone cannot tell them from a route
+            // a ping built).
+            const recheckDirectContact =
+              (meshcoreTracePingRadioSaysDirect(radioContactPathLen) ||
+                meshcoreTracePingRadioHasNoRoute(radioContactPathLen)) &&
+              (displayedHopsAway ?? 0) >= 1;
             let synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
               radioContactPathLen,
               companionPathHashMode,
             );
             let minPathBytes = meshcoreTracePathMinByteLength(hopsAway, synthHashSizeBytes);
-            let storedPath = outPathMapRef.current.get(nodeId);
             if (
               storedPath &&
               !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, synthHashSizeBytes)
@@ -5681,6 +5703,7 @@ export function useMeshcoreRuntime() {
               pubKey,
               hopsAway,
               synthHashSizeBytes,
+              recheckDirectContact,
             );
             storedPath = contactSnap.path ?? storedPath;
             if (
@@ -5691,6 +5714,65 @@ export function useMeshcoreRuntime() {
               radioContactPathLenByNodeRef.current.set(nodeId, radioContactPathLen);
             } else {
               radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+            }
+            // A contact the radio lists as direct, with leftover bytes in its path buffer, is
+            // pinged direct whatever hop count those bytes made the app show.
+            hopsAway = meshcoreTracePingHopsAway({
+              displayedHopsAway,
+              radioContactPathLen,
+              radioPathLeftover: contactSnap.radioPathLeftover,
+            });
+            // The radio has no route to this node, its path buffer still holds an older route,
+            // and the app shows hops, which may come from those bytes. Try it direct first, as
+            // one 8-byte entry only its own key matches; if it answers, the ping is zero-hop.
+            let directFirst: {
+              result: MeshcoreTracePathResult;
+              wire: MeshcoreTraceWirePath;
+            } | null = null;
+            if (
+              meshcoreTracePingTriesDirectFirst({
+                hopsAway,
+                radioContactPathLen,
+                radioPathLeftover: contactSnap.radioPathLeftover,
+              })
+            ) {
+              const directWire = meshcoreTraceWirePath(pubKey, {
+                hashSizeBytes: 1,
+                destPubKey: pubKey,
+              });
+              const directTrace = startMeshcoreTracePathMultiplexed(
+                conn,
+                directWire.path,
+                MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
+                repeaterRemoteRpcRef.current,
+                directWire.flags,
+              );
+              try {
+                const directResult = await withTimeout(
+                  directTrace.promise,
+                  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+                  'meshcoreTracePingDirectFirst',
+                );
+                directFirst = { result: directResult, wire: directWire };
+                hopsAway = 0;
+              } catch (directErr: unknown) {
+                directTrace.cancel('direct try not answered');
+                try {
+                  await directTrace.promise;
+                } catch {
+                  // catch-no-log-ok direct try rejected after cancel; the planned route follows
+                }
+                if (
+                  meshcoreTraceCancelledForCliPreempt(directErr) ||
+                  meshcoreCliReplyHoldActive()
+                ) {
+                  throw directErr;
+                }
+                if (isTraceAborted()) return false;
+                console.debug(
+                  `[useMeshcoreRuntime] traceRoute direct try not answered node=0x${nodeId.toString(16)}; using the planned route`,
+                );
+              }
             }
             synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
               radioContactPathLen,
@@ -5904,68 +5986,77 @@ export function useMeshcoreRuntime() {
               destPubKey: pubKey,
               roundTrip: traceAutoReturn,
             };
-            let traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
-            console.debug(
-              `[useMeshcoreRuntime] traceRoute wire node=0x${nodeId.toString(16)} flags=${traceWire.flags} path=${Array.from(traceWire.path, (b) => b.toString(16).padStart(2, '0')).join('')}`,
-            );
-            const firstTrace = startMeshcoreTracePathMultiplexed(
-              conn,
-              traceWire.path,
-              firstTraceExtraTimeoutMs,
-              repeaterRemoteRpcRef.current,
-              traceWire.flags,
-            );
-            try {
-              result = await withTimeout(
-                firstTrace.promise,
-                MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
-                'meshcoreTracePing',
-              );
-            } catch (firstTraceError: unknown) {
-              firstTrace.cancel('superseded or timed out');
-              try {
-                await firstTrace.promise;
-              } catch {
-                // catch-no-log-ok first trace rejected after cancel; direct retry may proceed
-              }
-              // CLI preempt / active CLI reply hold clears TraceData so waiting-message drain
-              // can deliver CLI replies. Do not escalate to a full-pubkey retry — that
-              // immediately re-blocks the radio.
-              if (
-                meshcoreTraceCancelledForCliPreempt(firstTraceError) ||
-                meshcoreCliReplyHoldActive()
-              ) {
-                throw firstTraceError;
-              }
-              const directRetryEligible = meshcoreTraceDirectRetryEligible(
-                hopsAway,
-                tracePathInUse.length,
-              );
-              if (!directRetryEligible) throw firstTraceError;
-              tracePathInUse = new Uint8Array(pubKey);
-              // The full key goes out as one 8-byte entry, the longest firmware matches.
+            let traceWire: MeshcoreTraceWirePath;
+            if (directFirst) {
+              // The direct try already answered; send nothing more. Planning since then may have
+              // awaited path history: a reply from before a reconnect belongs to the old session.
+              if (isTraceAborted()) return false;
+              result = directFirst.result;
+              traceWire = directFirst.wire;
+            } else {
               traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
-              const retryTrace = startMeshcoreTracePathMultiplexed(
+              console.debug(
+                `[useMeshcoreRuntime] traceRoute wire node=0x${nodeId.toString(16)} flags=${traceWire.flags} path=${Array.from(traceWire.path, (b) => b.toString(16).padStart(2, '0')).join('')}`,
+              );
+              const firstTrace = startMeshcoreTracePathMultiplexed(
                 conn,
                 traceWire.path,
-                MESHCORE_TRACE_TIMEOUT_MS,
+                firstTraceExtraTimeoutMs,
                 repeaterRemoteRpcRef.current,
                 traceWire.flags,
               );
               try {
                 result = await withTimeout(
-                  retryTrace.promise,
+                  firstTrace.promise,
                   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
-                  'meshcoreTracePingDirectRetry',
+                  'meshcoreTracePing',
                 );
-              } catch (retryErr: unknown) {
-                retryTrace.cancel('direct retry timed out');
-                throw retryErr;
+              } catch (firstTraceError: unknown) {
+                firstTrace.cancel('superseded or timed out');
+                try {
+                  await firstTrace.promise;
+                } catch {
+                  // catch-no-log-ok first trace rejected after cancel; direct retry may proceed
+                }
+                // CLI preempt / active CLI reply hold clears TraceData so waiting-message drain
+                // can deliver CLI replies. Do not escalate to a full-pubkey retry — that
+                // immediately re-blocks the radio.
+                if (
+                  meshcoreTraceCancelledForCliPreempt(firstTraceError) ||
+                  meshcoreCliReplyHoldActive()
+                ) {
+                  throw firstTraceError;
+                }
+                const directRetryEligible = meshcoreTraceDirectRetryEligible(
+                  hopsAway,
+                  tracePathInUse.length,
+                );
+                if (!directRetryEligible) throw firstTraceError;
+                tracePathInUse = new Uint8Array(pubKey);
+                // The full key goes out as one 8-byte entry, the longest firmware matches.
+                traceWire = meshcoreTraceWirePath(tracePathInUse, traceWireOpts);
+                const retryTrace = startMeshcoreTracePathMultiplexed(
+                  conn,
+                  traceWire.path,
+                  MESHCORE_TRACE_TIMEOUT_MS,
+                  repeaterRemoteRpcRef.current,
+                  traceWire.flags,
+                );
+                try {
+                  result = await withTimeout(
+                    retryTrace.promise,
+                    MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+                    'meshcoreTracePingDirectRetry',
+                  );
+                } catch (retryErr: unknown) {
+                  retryTrace.cancel('direct retry timed out');
+                  throw retryErr;
+                }
               }
             }
             const traceHops = meshcoreTracePathLenToHops(result.pathLen, traceAutoReturn);
             // An auto-return reply carries the round trip; keep the stored route as it was.
-            const verifiedOutPath = traceAutoReturn
+            const replyOutPath = traceAutoReturn
               ? (pathResolved.storedPath ?? new Uint8Array(0))
               : meshcoreTraceResultToOutPathBytes(
                   result.pathLenByte,
@@ -5973,6 +6064,12 @@ export function useMeshcoreRuntime() {
                   pubKey,
                   result.flags,
                 );
+            // A zero-hop reply to the 8-byte full-key entry keeps the repeater's own prefix:
+            // room login and admin would count the 8 bytes as seven hops.
+            const verifiedOutPath =
+              !traceAutoReturn && traceHops === 0
+                ? meshcoreTraceZeroHopStoredPath(replyOutPath, pubKey, synthHashSizeBytes)
+                : replyOutPath;
             // A reply to shortened 3-byte hashes carries 2-byte hashes, which must not replace
             // the stored path. An auto-return ping saves the stored route itself, so it is
             // safe at every hash size.

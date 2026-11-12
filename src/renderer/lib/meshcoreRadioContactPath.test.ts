@@ -2,10 +2,50 @@ import { describe, expect, it } from 'vitest';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import {
+  meshcoreContactHasLeftoverPathBytes,
   meshcoreContactOutPathBytesForTrace,
   meshcoreSnapshotContactPathFromContacts,
 } from './meshcoreRadioContactPath';
 import { pubkeyToNodeId } from './meshcoreUtils';
+
+describe('meshcoreContactHasLeftoverPathBytes', () => {
+  function buffer(bytes: number[]): Uint8Array {
+    const outPath = new Uint8Array(64);
+    outPath.set(bytes, 0);
+    return outPath;
+  }
+
+  it.each([
+    { name: 'direct, 1-byte length', outPathLen: 0x00, bytes: [0x57, 0x21] },
+    { name: 'direct, 2-byte length', outPathLen: 0x40, bytes: [0x57, 0xa1] },
+    { name: 'direct, 3-byte length read as int8', outPathLen: -128, bytes: [0x57] },
+    { name: 'one 1-byte hop with a longer route behind it', outPathLen: 0x01, bytes: [0x57, 0xee] },
+    { name: 'one 2-byte hop with a longer route behind it', outPathLen: 0x41, bytes: [1, 2, 3] },
+    // The radio forgot the route (a reset leaves the bytes); it claims none of them.
+    { name: 'no route (0xFF read as -1) over an older route', outPathLen: -1, bytes: [0x57, 0x21] },
+    { name: 'no route (0xFF)', outPathLen: 0xff, bytes: [0x57] },
+  ])('finds bytes past the route: $name', ({ outPathLen, bytes }) => {
+    expect(meshcoreContactHasLeftoverPathBytes({ outPath: buffer(bytes), outPathLen })).toBe(true);
+  });
+
+  it.each([
+    { name: 'direct with a clean buffer', outPathLen: 0x00, bytes: [] },
+    { name: 'one 1-byte hop and nothing after it', outPathLen: 0x01, bytes: [0x57] },
+    { name: 'two 2-byte hops and nothing after them', outPathLen: 0x42, bytes: [1, 2, 3, 4] },
+    { name: 'no route (0xFF read as -1) and a clean buffer', outPathLen: -1, bytes: [] },
+  ])('finds none: $name', ({ outPathLen, bytes }) => {
+    expect(meshcoreContactHasLeftoverPathBytes({ outPath: buffer(bytes), outPathLen })).toBe(false);
+  });
+
+  it('is reported by the contact snapshot', () => {
+    const publicKey = new Uint8Array(32).fill(0x07);
+    const snap = meshcoreSnapshotContactPathFromContacts(pubkeyToNodeId(publicKey), [
+      { publicKey, outPath: buffer([0x57, 0x21]), outPathLen: 0 } as MeshCoreContactRaw,
+    ]);
+    expect(snap.radioPathLeftover).toBe(true);
+    expect(snap.radioContactPathLen).toBe(0);
+  });
+});
 
 describe('meshcoreSnapshotContactPathFromContacts', () => {
   const pubKey = new Uint8Array(32);

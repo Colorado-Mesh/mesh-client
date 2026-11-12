@@ -54,7 +54,12 @@ export interface RepeaterRadioOptions {
    * `relays` relay repeaters in a chain, and the radio already holds that route as the
    * contact's out_path with `hashSizeBytes` per relay.
    */
-  farRepeater?: { relays: 1 | 2; hashSizeBytes: 1 | 2 | 3 };
+  farRepeater?: {
+    relays: 1 | 2;
+    hashSizeBytes: 1 | 2 | 3;
+    /** Bytes an older route left after the relays in the path buffer (default two). */
+    staleTail?: number[];
+  };
 }
 
 export const FAR_REPEATER_NAME = 'Far Ridge Repeater';
@@ -73,6 +78,12 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
   const events: RepeaterRadioEvent[] = [];
   const startedAt = Date.now();
   let contactPathLen = 0;
+  /**
+   * The repeater contact's 64-byte out_path. Firmware replaces a route with `copyPath` and
+   * never clears the bytes after it, and CMD_RESET_PATH only changes the length, so a contact
+   * once reached through relays keeps their hashes here after it is heard direct.
+   */
+  const repeaterOutPath = Buffer.alloc(64);
   let client: RepeaterClient | null = null;
   let pingMode: 'answer' | 'silent' | 'reject' = 'answer';
   let lastCompanionTimestamp = 0;
@@ -103,7 +114,10 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
   const farRoundTrip = [...relayKeys, farKey, ...relayKeys.slice().reverse()];
   /** The zero-hop repeater also hears the far repeater, so a trace may turn through it. */
   const farRoundTripViaRepeater = [repeaterKey, farKey, repeaterKey];
-  /** False: the radio has no route to the far repeater (out_path_len 0xFF). */
+  /**
+   * False: the radio has no route to the far repeater (out_path_len 0xFF). As after
+   * CMD_RESET_PATH, the path buffer still holds the route it had.
+   */
   let farRouteKnown = true;
   /** Firmware packs a contact route as hop count (low 6 bits) and hash size code (high 2). */
   const farContactPathLen = far ? relayKeys.length | ((far.hashSizeBytes - 1) << 6) : 0;
@@ -111,7 +125,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
     const outPath = Buffer.alloc(64);
     const size = far?.hashSizeBytes ?? 1;
     relayKeys.forEach((key, i) => key.copy(outPath, i * size, 0, size));
-    Buffer.from(FAR_ROUTE_STALE_TAIL).copy(outPath, relayKeys.length * size);
+    Buffer.from(far?.staleTail ?? FAR_ROUTE_STALE_TAIL).copy(outPath, relayKeys.length * size);
     return outPath;
   };
   const self = Buffer.concat([
@@ -224,7 +238,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
                 farKey,
                 Buffer.from([2, 0]), // ADV_TYPE_REPEATER, flags
                 Buffer.from([farRouteKnown ? farContactPathLen : 0xff]),
-                farRouteKnown ? farContactOutPath() : Buffer.alloc(64),
+                farContactOutPath(),
                 text(FAR_REPEATER_NAME, 32),
                 u32(now),
                 Buffer.alloc(8),
@@ -238,7 +252,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
               repeaterKey,
               Buffer.from([2, 0]), // ADV_TYPE_REPEATER, flags
               pathLen,
-              Buffer.alloc(64),
+              repeaterOutPath,
               text(REPEATER_NAME, 32),
               u32(now),
               Buffer.alloc(8),
@@ -472,6 +486,14 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
       contactPathLen = value;
     },
     getContactPathLen: () => contactPathLen,
+    /**
+     * Bytes an older route left at the start of the repeater contact's path buffer (relay
+     * hashes of nodes that are not in range). The length byte still decides the route.
+     */
+    setRepeaterLeftoverPath: (bytes: readonly number[]) => {
+      repeaterOutPath.fill(0);
+      Buffer.from(bytes).copy(repeaterOutPath);
+    },
     /** Whether the radio holds a route to the far repeater; false reports it as unknown. */
     setFarRouteKnown: (value: boolean) => {
       farRouteKnown = value;
