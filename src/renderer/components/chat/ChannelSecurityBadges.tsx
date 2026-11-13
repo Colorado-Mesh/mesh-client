@@ -34,9 +34,7 @@ export function ChannelSecurityBadges({ channel, channelName }: ChannelSecurityB
             ? 'bg-green-800 text-white'
             : kind === 'pskAes128'
               ? 'bg-ink-700 text-ink-100'
-              : kind === 'mqttUplink' || kind === 'preciseLocation'
-                ? 'bg-orange-800 text-white'
-                : 'bg-red-700 text-white';
+              : 'bg-orange-800 text-white';
         return (
           <span key={kind} className={`${BADGE_CLASS} ${tone}`} aria-label={label} title={label}>
             {kind === 'pskWeak' ? (

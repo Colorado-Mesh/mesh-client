@@ -43,6 +43,8 @@ describe('ChannelSecurityBadges', () => {
     expect(weak).not.toHaveTextContent('Open');
     expect(weak).not.toHaveTextContent('channelSecurityBadges.pskWeakShort');
     expect(weak.querySelector('svg')).toBeTruthy();
+    expect(weak.className).toContain('bg-orange-800');
+    expect(weak.className).not.toContain('bg-red-700');
     expect(view.getByLabelText('channelSecurityBadges.preciseLocation:LongFast')).toBeTruthy();
     expect(view.getByLabelText('channelSecurityBadges.mqttUplink:LongFast')).toBeTruthy();
   });
