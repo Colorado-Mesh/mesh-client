@@ -2515,7 +2515,6 @@
     "totalEntries": "{{count}} záznamů",
     "errorsShort": "{{count}} chyb",
     "warningsShort": "{{count}} varování",
-    "protocolNote": "Používá aktivní rádiový protokol pro kategorie specifické pro protokol; jednotlivé řádky protokolu nejsou označeny protokolem.",
     "emptyState": "V aktuálním zobrazení protokolu nebyly zjištěny žádné problémy.",
     "recommendationsHeading": "Doporučení",
     "lastMessagePrefix": "Poslední:",
@@ -2527,7 +2526,9 @@
     "copySuccess": "Zpráva zkopírována!",
     "copyFailure": "Nelze zkopírovat zprávu. Zkuste to znovu nebo exportujte protokol.",
     "evidence": "Zobrazit důkazy pro {{category}}",
-    "evidenceShown": "Zobrazeno {{shown}} z {{total}} odpovídajících záznamů, nejnovější jako první."
+    "evidenceShown": "Zobrazeno {{shown}} z {{total}} odpovídajících záznamů, nejnovější jako první.",
+    "ignoredOtherProtocol": "Řádky z jiných rádiových protokolů ({{count}}) byly vyloučeny.",
+    "protocolNote": "Používá aktivní rádiový protokol. Linky vlastněné jiným rádiem jsou vyloučeny; sdílené linky v rámci celé aplikace zůstávají."
   },
   "logAnalyzer": {
     "categories": {

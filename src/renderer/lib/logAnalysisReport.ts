@@ -28,6 +28,9 @@ export function buildLogAnalysisReport(
     t('logAnalyzeModal.totalEntries', { count: result.totalEntries.toLocaleString() }),
     `${t('logAnalyzeModal.errorsShort', { count: result.errorCount })} · ${t('logAnalyzeModal.warningsShort', { count: result.warningCount })}`,
   ];
+  if (result.ignoredOtherProtocol > 0) {
+    lines.push(t('logAnalyzeModal.ignoredOtherProtocol', { count: result.ignoredOtherProtocol }));
+  }
   if (result.totalEntries > 0) {
     lines.push(
       `${new Date(result.oldestTs).toISOString()} – ${new Date(result.newestTs).toISOString()}`,
@@ -44,8 +47,9 @@ export function buildLogAnalysisReport(
       }),
     );
     for (const entry of category.entries.slice(0, LOG_REPORT_SAMPLES_PER_CATEGORY)) {
+      const owner = entry.protocol ? ` [proto=${reportLine(entry.protocol)}]` : '';
       lines.push(
-        `  ${new Date(entry.ts).toISOString()} [${reportLine(entry.level)}] [${reportLine(entry.source)}] ${reportLine(entry.message)}`,
+        `  ${new Date(entry.ts).toISOString()} [${reportLine(entry.level)}] [${reportLine(entry.source)}]${owner} ${reportLine(entry.message)}`,
       );
     }
   }

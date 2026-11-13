@@ -1,13 +1,10 @@
+import type { LogEntry } from '../../shared/electron-api.types';
 import { formatIsoDate } from '../../shared/formatIsoDate';
+import { resolveLogProtocol } from '../../shared/logProtocolScope';
 import { formatDisplayTime } from './formatDisplayTime';
 import type { MeshProtocol } from './types';
 
-export interface LogEntry {
-  ts: number;
-  level: string;
-  source: string;
-  message: string;
-}
+export type { LogEntry };
 
 export type LogSeverity = 'error' | 'warning' | 'info';
 
@@ -47,6 +44,8 @@ export interface AnalysisResult {
   oldestTs: number;
   newestTs: number;
   categories: CategoryFinding[];
+  /** Lines owned by a different protocol than the active tab (excluded from findings). */
+  ignoredOtherProtocol: number;
 }
 
 const LAST_MESSAGE_MAX = 100;
@@ -68,11 +67,9 @@ function truncateLastMessage(message: string): string {
  * Categories are evaluated independently; one log line may match multiple patterns.
  * dedupeRecommendations() merges rows that share the same `recommendationGroup` in the analyze modal.
  *
- * Protocol: `LogEntry` has no protocol field. `analyzeLogs()` receives the **currently active**
- * radio protocol only to include or skip categories with `protocols?: [...]`. Most categories
- * apply regardless of protocol; a subset (e.g. MeshCore TCP, stack-specific SDK rows) is gated.
- * Exported or buffered logs may contain lines from another protocol than the one selected at
- * analysis time.
+ * Protocol: entries owned by another stack are dropped first (`ignoredOtherProtocol`). The active
+ * `protocol` argument still gates which categories with `protocols?: [...]` offer advice.
+ * Shared (unowned) lines remain analyzable from every tab.
  */
 const PATTERN_CATEGORIES: PatternCategory[] = [
   {
@@ -529,11 +526,17 @@ export function dedupeRecommendations(categories: CategoryFinding[]): DedupedRec
 }
 
 /**
- * Summarize log entries into finding categories. `protocol` is the active radio stack in the UI,
- * not per-entry metadata — see the protocol note on `PATTERN_CATEGORIES` above.
+ * Summarize log entries into finding categories. Entries owned by another protocol are
+ * dropped before matching; `protocol` still gates which advice categories apply.
  */
 export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): AnalysisResult {
-  if (entries.length === 0) {
+  const owned = entries.filter((e) => {
+    const owner = e.protocol ?? resolveLogProtocol(e);
+    return owner == null || owner === protocol;
+  });
+  const ignoredOtherProtocol = entries.length - owned.length;
+
+  if (owned.length === 0) {
     return {
       totalEntries: 0,
       errorCount: 0,
@@ -541,13 +544,14 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
       oldestTs: Date.now(),
       newestTs: Date.now(),
       categories: [],
+      ignoredOtherProtocol,
     };
   }
 
-  const errorCount = entries.filter((e) => e.level === 'error').length;
-  const warningCount = entries.filter((e) => e.level === 'warn').length;
+  const errorCount = owned.filter((e) => e.level === 'error').length;
+  const warningCount = owned.filter((e) => e.level === 'warn').length;
 
-  const timestamps = entries.map((e) => e.ts);
+  const timestamps = owned.map((e) => e.ts);
   const oldestTs = Math.min(...timestamps);
   const newestTs = Math.max(...timestamps);
 
@@ -559,7 +563,7 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
       continue;
     }
 
-    const matchingEntries = entries.filter((e) => matchesCategory(e, category));
+    const matchingEntries = owned.filter((e) => matchesCategory(e, category));
     matchingEntries.sort((a, b) => b.ts - a.ts);
     for (const entry of matchingEntries) classified.add(entry);
     if (matchingEntries.length === 0) continue;
@@ -580,7 +584,7 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
   }
   // Unrecognized warnings are evidence to review, not a guessed root cause.
   // Keep the existing cancelled-navigation exclusion out of this fallback too.
-  const unclassified = entries
+  const unclassified = owned
     .filter(
       (entry) =>
         isWarnOrErrorLevel(entry.level) &&
@@ -607,12 +611,13 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
   });
 
   return {
-    totalEntries: entries.length,
+    totalEntries: owned.length,
     errorCount,
     warningCount,
     oldestTs,
     newestTs,
     categories: categoryFindings,
+    ignoredOtherProtocol,
   };
 }
 

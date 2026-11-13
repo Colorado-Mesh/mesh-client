@@ -24,6 +24,7 @@ describe('analyzeLogs', () => {
     expect(result.errorCount).toBe(0);
     expect(result.warningCount).toBe(0);
     expect(result.categories).toHaveLength(0);
+    expect(result.ignoredOtherProtocol).toBe(0);
   });
 
   it('counts errors and warnings separately', () => {
@@ -36,6 +37,20 @@ describe('analyzeLogs', () => {
     expect(result.totalEntries).toBe(3);
     expect(result.errorCount).toBe(1);
     expect(result.warningCount).toBe(1);
+    expect(result.ignoredOtherProtocol).toBe(0);
+  });
+
+  it('excludes other-protocol lines from totals and findings', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[meshtasticTransportLoss] serial link lost', 'warn'),
+      makeEntry('[db] migrate failed', 'error'),
+      { ...makeEntry('[MeshCore MQTT] reconnect', 'warn'), protocol: 'meshcore' },
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.ignoredOtherProtocol).toBe(1);
+    expect(result.totalEntries).toBe(2);
+    expect(result.categories.map((c) => c.id)).not.toContain('mqtt');
+    expect(result.categories.some((c) => c.id === 'transport-loss')).toBe(true);
   });
 
   it('detects BLE connection issues', () => {

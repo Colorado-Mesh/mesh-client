@@ -12,7 +12,14 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import type { LogEntry } from '../../shared/electron-api.types';
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
+import {
+  isAppLogLine,
+  isDeviceLogLine,
+  isOwnedByOther,
+  isProtocolExclusiveAppLogLine,
+} from '../../shared/logProtocolScope';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshProtocol } from '../lib/types';
 import LogAnalyzeModal from './LogAnalyzeModal';
@@ -24,12 +31,7 @@ const PANEL_WIDTH_MIN = 260;
 const PANEL_WIDTH_MAX = 720;
 const PANEL_WIDTH_DEFAULT = 320;
 
-interface LogEntry {
-  ts: number;
-  level: string;
-  source: string;
-  message: string;
-}
+export type { LogEntry };
 
 /** Which console levels to show (all are still captured to file). */
 interface LevelFilters {
@@ -77,125 +79,24 @@ function levelVisible(level: string, f: LevelFilters): boolean {
   return true;
 }
 
-/** Historical Noble BLE tags that are not MeshCore-scoped. */
-function isMeshtasticLegacyBleTag(message: string): boolean {
-  return message.includes('[BLE:') && !message.includes('[BLE:meshcore]');
-}
-
 /** Returns true for log entries that originated from the given protocol's device library or hook. */
 export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
-  if (protocol === 'meshtastic') {
-    return (
-      entry.source === 'sdk' ||
-      entry.source.includes('meshtastic') ||
-      entry.message.includes('[useMeshtasticRuntime]') ||
-      entry.message.includes('[iMeshDevice]') ||
-      entry.message.includes('[TransportSidecarGatt]') ||
-      entry.message.includes('[GATT]') ||
-      entry.message.includes('[GATT:meshtastic]') ||
-      entry.message.includes('[GATT:all]') ||
-      entry.message.includes('[IpcSidecarGattConnection:meshtastic]') ||
-      isMeshtasticLegacyBleTag(entry.message) ||
-      entry.message.includes('[meshtasticSdkRoutingErrorLog]')
-    );
-  }
-  if (protocol === 'meshcore') {
-    return (
-      entry.source.includes('meshcore') ||
-      entry.message.includes('[useMeshcoreRuntime]') ||
-      entry.message.includes('[meshcoreConnSideEffects]') ||
-      entry.message.includes('[MeshCore MQTT]') ||
-      entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[GATT:meshcore]') ||
-      entry.message.includes('[IpcSidecarGattConnection:meshcore]')
-    );
-  }
-  if (protocol === 'reticulum') {
-    return (
-      entry.source.includes('reticulum') ||
-      entry.message.includes('[ReticulumSidecar]') ||
-      entry.message.includes('[ReticulumNetworkPanel]') ||
-      entry.message.includes('[IdentitySlotsSection]') ||
-      entry.message.includes('[useReticulumRuntime]') ||
-      entry.message.includes('[useReticulumSidecarApi]') ||
-      entry.message.includes('[ReticulumIPC]') ||
-      entry.message.includes('[Reticulum]') ||
-      entry.message.includes('[reticulumSidecarReads]') ||
-      entry.message.includes('[IPC] reticulum')
-    );
-  }
-  // No protocol: show all device entries (fallback)
-  return (
-    entry.source === 'sdk' ||
-    entry.source.includes('meshtastic') ||
-    entry.source.includes('meshcore') ||
-    entry.source.includes('reticulum') ||
-    entry.message.includes('[useMeshtasticRuntime]') ||
-    entry.message.includes('[iMeshDevice]') ||
-    entry.message.includes('[useMeshcoreRuntime]') ||
-    entry.message.includes('[meshcoreConnSideEffects]') ||
-    entry.message.includes('[useReticulumRuntime]') ||
-    entry.message.includes('[TransportSidecarGatt]') ||
-    entry.message.includes('[GATT]') ||
-    entry.message.includes('[GATT:') ||
-    entry.message.includes('[MeshCore MQTT]') ||
-    entry.message.includes('[ReticulumSidecar]') ||
-    entry.message.includes('[ReticulumNetworkPanel]') ||
-    entry.message.includes('[IdentitySlotsSection]') ||
-    entry.message.includes('[ReticulumIPC]') ||
-    entry.message.includes('[Reticulum]') ||
-    entry.message.includes('[reticulumSidecarReads]') ||
-    entry.message.includes('[useReticulumSidecarApi]') ||
-    entry.message.includes('[IPC] reticulum') ||
-    entry.message.includes('[BLE:') ||
-    entry.message.includes('[BLE:meshcore]') ||
-    entry.message.includes('[IpcSidecarGattConnection:')
-  );
+  return isDeviceLogLine(entry, protocol);
 }
 
 /** App-panel tags scoped to one protocol tab (not device/SDK traffic). */
 export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProtocol): boolean {
-  const { message } = entry;
-  if (protocol === 'meshtastic') {
-    return (
-      message.includes('[Meshtastic MQTT]') ||
-      message.includes('[MeshtasticRemoteAdmin]') ||
-      message.includes('[Meshtastic]') ||
-      (message.includes('[main] gatt:') && message.includes('session=meshtastic'))
-    );
-  }
-  if (protocol === 'meshcore') {
-    return (
-      message.includes('[MeshCoreTransport]') ||
-      message.includes('[MeshCoreProtocol]') ||
-      message.includes('[meshcoreRoom') ||
-      message.includes('[meshcoreRepeater') ||
-      (message.includes('[main] gatt:') && message.includes('session=meshcore'))
-    );
-  }
-  return false;
+  return isProtocolExclusiveAppLogLine(entry, protocol);
 }
 
 /** True when the line belongs to a protocol other than the active tab. */
 export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProtocol): boolean {
-  for (const p of ['meshtastic', 'meshcore', 'reticulum'] as MeshProtocol[]) {
-    if (p === activeProtocol) continue;
-    if (isDeviceEntry(entry, p)) return true;
-    if (isProtocolExclusiveAppEntry(entry, p)) return true;
-  }
-  return false;
+  return isOwnedByOther(entry, activeProtocol);
 }
 
 /** App log lines for the active protocol tab (or dual/triple fallback when unset). */
 export function isAppLogEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
-  if (protocol) {
-    return !isDeviceEntry(entry, protocol) && !isOwnedByOtherProtocol(entry, protocol);
-  }
-  return (
-    !isDeviceEntry(entry, 'meshtastic') &&
-    !isDeviceEntry(entry, 'meshcore') &&
-    !isDeviceEntry(entry, 'reticulum')
-  );
+  return isAppLogLine(entry, protocol);
 }
 
 function formatEntry(entry: LogEntry): string {

@@ -315,6 +315,11 @@ export interface LogEntry {
   level: string;
   source: string;
   message: string;
+  /**
+   * Owning radio stack. Absent means shared/app-wide (shown in every tab).
+   * Stamped in the main process; persisted as `proto=<value>` in the log file.
+   */
+  protocol?: MeshProtocol;
 }
 
 export interface ChatExportMessage {

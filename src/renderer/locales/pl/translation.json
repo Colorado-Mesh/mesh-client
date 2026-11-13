@@ -2538,7 +2538,6 @@
     "totalEntries": "{{count}} wpisy",
     "errorsShort": "{{count}} błędy",
     "warningsShort": "{{count}} ostrzeżenia",
-    "protocolNote": "Wykorzystuje aktywny protokół radiowy dla kategorii specyficznych dla protokołu; poszczególne linie dziennika nie są oznaczone protokołem.",
     "emptyState": "W bieżącym widoku dziennika nie wykryto żadnych problemów.",
     "recommendationsHeading": "Zalecenia",
     "lastMessagePrefix": "Ostatni:",
@@ -2550,7 +2549,9 @@
     "copySuccess": "Skopiowano raport",
     "copyFailure": "Nie można skopiować raportu. Spróbuj ponownie lub wyeksportuj dziennik.",
     "evidence": "Zobacz dowody dla {{category}}",
-    "evidenceShown": "Pokazuje {{shown}} z {{total}} pasujących wpisów, najpierw najnowsze."
+    "evidenceShown": "Pokazuje {{shown}} z {{total}} pasujących wpisów, najpierw najnowsze.",
+    "ignoredOtherProtocol": "Wykluczono {{count}} linii z innych protokołów radiowych.",
+    "protocolNote": "Używa aktywnego protokołu radiowego. Linie należące do innego radia są wykluczone; linie współdzielone w całej aplikacji pozostają."
   },
   "logAnalyzer": {
     "categories": {

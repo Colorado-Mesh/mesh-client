@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} エントリ",
     "errorsShort": "{{count}} エラー",
     "warningsShort": "{{count}} 警告",
-    "protocolNote": "プロトコル固有のカテゴリにはアクティブ無線プロトコルを使用します。個々のログ行にはプロトコルごとのラベルが付けられていません。",
     "emptyState": "現在のログ ビューでは問題は検出されませんでした。",
     "recommendationsHeading": "推奨事項",
     "lastMessagePrefix": "最後：",
@@ -2496,7 +2495,9 @@
     "copySuccess": "レポートをコピーしました!",
     "copyFailure": "レポートをコピーできませんでした。再度お試しいただくか、ログをエクスポートしてください。",
     "evidence": "{{category}}の証拠を表示",
-    "evidenceShown": "{{shown}}/{{total}}の一致するエントリを表示しています。最新のものが最初です。"
+    "evidenceShown": "{{shown}}/{{total}}の一致するエントリを表示しています。最新のものが最初です。",
+    "ignoredOtherProtocol": "{{count}}他の無線プロトコルの行は除外されました。",
+    "protocolNote": "アクティブな無線プロトコルを使用します。別の無線が所有する回線は除外されます。アプリ全体で共有される回線は残ります。"
   },
   "logAnalyzer": {
     "categories": {

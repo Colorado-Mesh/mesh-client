@@ -24,6 +24,27 @@ beforeEach(() => {
 });
 
 describe('log analysis evidence and report', () => {
+  it('shows ignored other-protocol note only when exclusions exist', () => {
+    const mixed: LogEntry[] = [
+      ...entries,
+      {
+        ts: 2000,
+        level: 'warn',
+        source: 'main',
+        message: '[meshtasticTransportLoss] serial link lost',
+        protocol: 'meshtastic',
+      },
+    ];
+    const { rerender } = render(
+      <LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshcore" />,
+    );
+    expect(screen.queryByText(/lines from other radio protocols were excluded/i)).toBeNull();
+    rerender(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={mixed} protocol="meshcore" />);
+    expect(
+      screen.getByText(en.logAnalyzeModal.ignoredOtherProtocol.replace('{{count}}', '1')),
+    ).toBeInTheDocument();
+  });
+
   it('expands timestamped evidence and shows the specific recommendation', async () => {
     const user = userEvent.setup();
     render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshtastic" />);

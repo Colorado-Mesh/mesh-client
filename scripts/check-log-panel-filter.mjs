@@ -1,21 +1,12 @@
 #!/usr/bin/env node
 /**
- * Contract check: every [TAG] prefix used in a Meshtastic or MeshCore device
- * source file must be registered in isDeviceEntry() in LogPanel.tsx.
+ * Contract check: every [TAG] prefix used in protocol-owned source trees must be
+ * registered in src/shared/logProtocolScope.ts (LOG_TAG_SCOPE).
  *
- * This prevents the "new prefix added to gatt-sidecar-proxy / mqtt-manager /
- * meshcore-mqtt-adapter / useMeshtasticRuntime, but never added to the log filter"
- * regression.
+ * Accept when any registry key is a prefix of the extracted tag (covers dynamic
+ * tags such as [GATT:meshcore] and family prefixes such as [meshcoreRoom).
  *
- * Files checked:
- *   Meshtastic main:  gatt-sidecar-proxy.ts, mqtt-manager.ts
- *   Meshtastic renderer: useMeshtasticRuntime.ts, meshtasticRuntimeWireEffects.ts
- *   MeshCore main:    meshcore-mqtt-adapter.ts
- *   MeshCore renderer: useMeshcoreRuntime.ts, meshcoreConnSideEffects.ts
- *
- * Filter source: src/renderer/components/LogPanel.tsx
- *
- * To suppress a false positive (tag intentionally omitted from filter),
+ * To suppress a false positive (tag intentionally shared / omitted),
  * add // log-filter-ok <reason> on the same line as the console.* call.
  */
 import fs from 'fs';
@@ -25,47 +16,28 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const LOG_PANEL = path.join(ROOT, 'src', 'renderer', 'components', 'LogPanel.tsx');
-
-/**
- * Source files whose [TAG] prefixes must be registered in the Meshtastic
- * or MeshCore branch of isDeviceEntry().
- */
-const DEVICE_FILES = {
-  meshtastic: [
-    path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
-    path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
-    path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshtasticRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'meshtastic', 'meshtasticRuntimeWireEffects.ts'),
-  ],
-  meshcore: [
-    path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
-    path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshcoreRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'hooks', 'meshcore', 'meshcoreConnSideEffects.ts'),
-  ],
-  reticulum: [
-    path.join(ROOT, 'src', 'main', 'reticulum-sidecar-manager.ts'),
-    path.join(ROOT, 'src', 'main', 'reticulum-sidecar-path.ts'),
-    path.join(ROOT, 'src', 'main', 'ipc', 'reticulum-handlers.ts'),
-    path.join(ROOT, 'src', 'renderer', 'runtime', 'useReticulumRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'components', 'ReticulumNetworkPanel.tsx'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumLocalInterfaceLogging.ts'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumBleAdapterLease.ts'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumSidecarReads.ts'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'useReticulumSidecarApi.ts'),
-  ],
-};
+const REGISTRY_PATH = path.join(ROOT, 'src', 'shared', 'logProtocolScope.ts');
 
 const SUPPRESSED = /\/\/\s*log-filter-ok\b/;
 
+/** Extract LOG_TAG_SCOPE keys from the shared registry source. */
+export function extractRegistryKeys(registrySource) {
+  const keys = [];
+  // Keys may be full tags (`[Foo]`), session prefixes (`[GATT:`), or family
+  // prefixes without a trailing colon (`[meshcoreRoom`).
+  const re = /['"](\[[^'"]+)['"]\s*:/g;
+  let m;
+  while ((m = re.exec(registrySource)) !== null) {
+    keys.push(m[1]);
+  }
+  return keys;
+}
+
 /**
  * Extract [TAG] prefixes from console.* calls in a source file.
- * Handles:
- *   console.warn('[TAG] message')         → '[TAG]'
- *   console.error(`[TAG] message`)        → '[TAG]'
- *   console.warn(`[TAG:${var}] message`)  → '[TAG:' (static prefix before template expr)
+ * Handles static `[TAG]` and dynamic `[TAG:` template prefixes.
  */
-function extractTagsFromFile(filePath) {
+export function extractTagsFromFile(filePath) {
   const tags = [];
   if (!fs.existsSync(filePath)) return tags;
 
@@ -87,57 +59,101 @@ function extractTagsFromFile(filePath) {
   return tags;
 }
 
-/**
- * Extract all includes('[TAG]') / includes('[TAG:') calls from
- * the given protocol branch of isDeviceEntry in LogPanel.tsx.
- */
-function extractFilteredTagsForProtocol(logPanelSource, protocol) {
-  const branchStart = logPanelSource.indexOf(`if (protocol === '${protocol}')`);
-  if (branchStart === -1) return new Set();
+function walkTsFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const name of fs.readdirSync(dir)) {
+    if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue;
+    const full = path.join(dir, name);
+    const st = fs.statSync(full);
+    if (st.isDirectory()) {
+      walkTsFiles(full, out);
+    } else if (
+      /\.(ts|tsx)$/.test(name) &&
+      !name.endsWith('.test.ts') &&
+      !name.endsWith('.test.tsx')
+    ) {
+      out.push(full);
+    }
+  }
+  return out;
+}
 
-  // Find the closing brace of the if block by walking bracket depth
-  let depth = 0;
-  let i = branchStart;
-  let inBlock = false;
-  let blockEnd = -1;
-  for (; i < logPanelSource.length; i++) {
-    if (logPanelSource[i] === '{') {
-      depth++;
-      inBlock = true;
-    } else if (logPanelSource[i] === '}') {
-      depth--;
-      if (inBlock && depth === 0) {
-        blockEnd = i;
-        break;
+function collectScanFiles() {
+  const files = new Set();
+
+  for (const rel of [
+    'src/renderer/lib/meshtastic',
+    'src/renderer/lib/meshcore',
+    'src/renderer/lib/reticulum',
+    'src/renderer/hooks/meshcore',
+    'src/main/ipc',
+  ]) {
+    for (const f of walkTsFiles(path.join(ROOT, rel))) files.add(f);
+  }
+
+  for (const rel of [
+    'src/renderer/runtime/useMeshtasticRuntime.ts',
+    'src/renderer/runtime/useMeshcoreRuntime.ts',
+    'src/renderer/runtime/useReticulumRuntime.ts',
+    'src/main/gatt-sidecar-proxy.ts',
+    'src/main/mqtt-manager.ts',
+    'src/main/meshcore-mqtt-adapter.ts',
+    'src/main/reticulum-sidecar-manager.ts',
+    'src/main/reticulum-sidecar-path.ts',
+    'src/renderer/components/ReticulumNetworkPanel.tsx',
+    'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.ts',
+    'src/renderer/hooks/meshcore/meshcoreConnSideEffects.ts',
+  ]) {
+    files.add(path.join(ROOT, rel));
+  }
+
+  // Extra main-process protocol-named modules
+  const mainDir = path.join(ROOT, 'src', 'main');
+  if (fs.existsSync(mainDir)) {
+    for (const name of fs.readdirSync(mainDir)) {
+      if (
+        /mqtt|meshcore|reticulum|meshtastic|gatt/i.test(name) &&
+        /\.ts$/.test(name) &&
+        !name.endsWith('.test.ts')
+      ) {
+        files.add(path.join(mainDir, name));
       }
     }
   }
-  if (blockEnd === -1) return new Set();
 
-  const block = logPanelSource.slice(branchStart, blockEnd + 1);
-  const tags = new Set();
-  const re = /\.includes\(['"](\[[^\]'"]+(?:\])?)['"]\)/g;
-  let m;
-  while ((m = re.exec(block)) !== null) {
-    tags.add(m[1]);
+  return [...files].filter((f) => fs.existsSync(f)).sort();
+}
+
+/** True when any registry key is a prefix of the tag (or equal). */
+export function isTagCoveredByRegistry(tag, registryKeysSortedLongestFirst) {
+  for (const key of registryKeysSortedLongestFirst) {
+    if (tag === key || tag.startsWith(key) || key.startsWith(tag)) {
+      // key.startsWith(tag): dynamic `[GATT:` covers registry `[GATT:meshtastic]`
+      // tag.startsWith(key): `[meshcoreRoomSession]` covered by `[meshcoreRoom`
+      return key;
+    }
   }
-  return tags;
+  return null;
 }
 
 function main() {
-  const logPanelSource = fs.readFileSync(LOG_PANEL, 'utf8');
+  const registrySource = fs.readFileSync(REGISTRY_PATH, 'utf8');
+  const registryKeys = extractRegistryKeys(registrySource);
+  if (registryKeys.length < 40) {
+    console.error(
+      `check-log-panel-filter: expected >40 LOG_TAG_SCOPE keys, found ${registryKeys.length}. Parser broken?`,
+    );
+    process.exit(1);
+  }
 
+  const keysLongestFirst = [...registryKeys].sort((a, b) => b.length - a.length);
   const violations = [];
 
-  for (const [protocol, files] of Object.entries(DEVICE_FILES)) {
-    const filteredTags = extractFilteredTagsForProtocol(logPanelSource, protocol);
-
-    for (const filePath of files) {
-      const entries = extractTagsFromFile(filePath);
-      for (const { tag, file, line } of entries) {
-        if (!filteredTags.has(tag)) {
-          violations.push({ protocol, tag, file, line });
-        }
+  for (const filePath of collectScanFiles()) {
+    for (const { tag, file, line } of extractTagsFromFile(filePath)) {
+      const match = isTagCoveredByRegistry(tag, keysLongestFirst);
+      if (!match) {
+        violations.push({ tag, file, line });
       }
     }
   }
@@ -148,19 +164,24 @@ function main() {
   }
 
   console.error(
-    'check-log-panel-filter: unregistered [TAG] prefixes found in device source files.\n',
+    'check-log-panel-filter: unregistered [TAG] prefixes found in protocol source files.\n',
   );
-  console.error('These tags appear in console.* calls but are missing from isDeviceEntry() in');
-  console.error('LogPanel.tsx. Without registration, these logs leak into the App log panel.\n');
-  for (const { protocol, tag, file, line } of violations) {
-    console.error(`  ${file}:${line}  tag=${tag}  (missing from '${protocol}' branch)`);
+  console.error('These tags appear in console.* calls but are missing from LOG_TAG_SCOPE in');
+  console.error('src/shared/logProtocolScope.ts. Without registration, ownership is shared.\n');
+  for (const { tag, file, line } of violations) {
+    console.error(`  ${file}:${line}  tag=${tag}`);
   }
-  console.error('\nAdd the tag to isDeviceEntry() in src/renderer/components/LogPanel.tsx,');
-  console.error('then add a test for it in LogPanel.filtering.test.ts.');
+  console.error('\nAdd the tag (or a family prefix) to LOG_TAG_SCOPE in');
+  console.error('src/shared/logProtocolScope.ts, then add coverage in logProtocolScope.test.ts.');
   console.error(
-    'To suppress (tag intentionally omitted), add // log-filter-ok <reason> to the call site.',
+    'To suppress (tag intentionally shared), add // log-filter-ok <reason> to the call site.',
   );
   process.exit(1);
 }
 
-main();
+const isDirectRun =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectRun) {
+  main();
+}

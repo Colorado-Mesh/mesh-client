@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} entradas",
     "errorsShort": "{{count}} erros",
     "warningsShort": "{{count}} avisos",
-    "protocolNote": "Usa o protocolo de rádio ativo para categorias específicas de protocolo; linhas de log individuais não são rotuladas por protocolo.",
     "emptyState": "Nenhum problema detectado na visualização de log atual.",
     "recommendationsHeading": "Recomendações",
     "lastMessagePrefix": "Durar:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Relatório copiado",
     "copyFailure": "Não foi possível copiar o relatório. Tente novamente ou exporte o log.",
     "evidence": "Ver evidências para {{category}}",
-    "evidenceShown": "Mostrando {{shown}} de {{total}} entradas correspondentes, as mais recentes primeiro."
+    "evidenceShown": "Mostrando {{shown}} de {{total}} entradas correspondentes, as mais recentes primeiro.",
+    "ignoredOtherProtocol": "{{count}} linhas de outros protocolos de rádio foram excluídas.",
+    "protocolNote": "Usa o protocolo de rádio ativo. As linhas pertencentes a outro rádio são excluídas; as linhas compartilhadas em todo o aplicativo permanecem."
   },
   "logAnalyzer": {
     "categories": {

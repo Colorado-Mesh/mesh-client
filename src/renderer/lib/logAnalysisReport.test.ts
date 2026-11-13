@@ -52,4 +52,28 @@ describe('troubleshooting report', () => {
     expect(report).toContain(en.logAnalyzeModal.emptyState);
     expect(report).not.toContain('[error]');
   });
+
+  it('includes ignored other-protocol count and owner labels', () => {
+    const result = analyzeLogs(
+      [
+        {
+          ts: 1000,
+          level: 'warn',
+          source: 'main',
+          message: '[meshtasticTransportLoss] serial link lost',
+          protocol: 'meshtastic',
+        },
+        {
+          ts: 2000,
+          level: 'error',
+          source: 'main',
+          message: '[db] boom',
+        },
+      ],
+      'meshcore',
+    );
+    const report = buildLogAnalysisReport(result, 'meshcore', i18n.t);
+    expect(report).toContain(en.logAnalyzeModal.ignoredOtherProtocol.replace('{{count}}', '1'));
+    expect(result.ignoredOtherProtocol).toBe(1);
+  });
 });

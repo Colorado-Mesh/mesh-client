@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} Einträge",
     "errorsShort": "{{count}} Fehler",
     "warningsShort": "{{count}} Warnungen",
-    "protocolNote": "Verwendet das aktive Funkprotokoll für protokollspezifische Kategorien; Einzelne Protokollzeilen werden nicht durch das Protokoll gekennzeichnet.",
     "emptyState": "In der aktuellen Protokollansicht wurden keine Probleme erkannt.",
     "recommendationsHeading": "Empfehlungen",
     "lastMessagePrefix": "Zuletzt:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Bericht kopiert!",
     "copyFailure": "Der Bericht konnte nicht kopiert werden. Versuchen Sie es erneut oder exportieren Sie das Protokoll.",
     "evidence": "Beweise für {{category}} anzeigen",
-    "evidenceShown": "{{shown}} von {{total}} passenden Einträgen werden angezeigt, die neueste zuerst."
+    "evidenceShown": "{{shown}} von {{total}} passenden Einträgen werden angezeigt, die neueste zuerst.",
+    "ignoredOtherProtocol": "{{count}} Zeilen aus anderen Funkprotokollen wurden ausgeschlossen.",
+    "protocolNote": "Verwendet das aktive Funkprotokoll. Leitungen, die einer anderen Funkstation gehören, werden ausgeschlossen; appübergreifend gemeinsam genutzte Leitungen bleiben erhalten."
   },
   "logAnalyzer": {
     "categories": {

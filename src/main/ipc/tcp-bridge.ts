@@ -110,6 +110,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
         console.debug(`[IPC] ${connectChannel} connected to`, sanitizeLogMessage(socketHost), p);
         logDeviceConnection(
           `transport=tcp stack=${protocol} host=${sanitizeLogMessage(socketHost)} port=${p}`,
+          protocol,
         );
         resetLiveSessionMeter(protocol);
         if (!settled) {

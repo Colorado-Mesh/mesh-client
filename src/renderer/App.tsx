@@ -1375,12 +1375,17 @@ function AppContent() {
                   : 'log',
         source: d.source,
         message: d.message,
+        protocol: 'meshtastic' as const,
       })),
     [meshtasticRuntime.deviceLogs],
   );
+  const normalizedMeshcoreDeviceLogs = useMemo(
+    () => (meshcoreRuntime.deviceLogs ?? []).map((e) => ({ ...e, protocol: 'meshcore' as const })),
+    [meshcoreRuntime.deviceLogs],
+  );
   const deviceLogsByProtocol = useMemo(
-    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs, []),
-    [normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs],
+    () => protocolRecord(normalizedMeshtasticDeviceLogs, normalizedMeshcoreDeviceLogs, []),
+    [normalizedMeshtasticDeviceLogs, normalizedMeshcoreDeviceLogs],
   );
   const nodesForUi = selectByProtocol(uiNodesByProtocol, protocol);
   const activeUiMessages = selectByProtocol(uiMessagesByProtocol, protocol);

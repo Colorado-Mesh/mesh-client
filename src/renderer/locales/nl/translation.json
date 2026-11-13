@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} vermeldingen",
     "errorsShort": "{{count}} fouten",
     "warningsShort": "{{count}} waarschuwingen",
-    "protocolNote": "Gebruikt het actieve radioprotocol voor protocolspecifieke categorieën; individuele logregels worden niet per protocol gelabeld.",
     "emptyState": "Er zijn geen problemen gedetecteerd in de huidige logweergave.",
     "recommendationsHeading": "Aanbevelingen",
     "lastMessagePrefix": "Laatst:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Rapport gekopieerd",
     "copyFailure": "Kon het rapport niet kopiëren. Probeer het opnieuw of exporteer het logboek.",
     "evidence": "Bekijk bewijsmateriaal voor {{category}}",
-    "evidenceShown": "Toont {{shown}} van {{total}} overeenkomende inzendingen, nieuwste eerst."
+    "evidenceShown": "Toont {{shown}} van {{total}} overeenkomende inzendingen, nieuwste eerst.",
+    "ignoredOtherProtocol": "{{count}} regels van andere radioprotocollen zijn uitgesloten.",
+    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan."
   },
   "logAnalyzer": {
     "categories": {
