@@ -8716,11 +8716,11 @@
     "disableConversation": "在此对话中禁用词语过滤",
     "settingsTitle": "过滤",
     "showFiltered": "显示{{count}}个筛选结果",
-    "hideFiltered": "隐藏已筛选的消息"
+    "hideFiltered": "隐藏已筛选的消息",
+    "toolbar": "词过滤器"
   },
   "channelSecurityBadges": {
     "pskWeak": "{{channel}}上的频道密钥薄弱或公开",
-    "pskWeakShort": "开启",
     "pskAes128": "{{channel}}上的AES-128频道密钥",
     "pskAes128Short": "AES128",
     "pskAes256": "{{channel}}上的AES-256通道密钥",

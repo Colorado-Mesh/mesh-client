@@ -8716,11 +8716,11 @@
     "disableConversation": "Bu konuşmada kelime filtresini kapat",
     "settingsTitle": "Kelime filtresi",
     "showFiltered": "{{count}} filtrelenmişi göster",
-    "hideFiltered": "Filtrelenmiş iletileri gizle"
+    "hideFiltered": "Filtrelenmiş iletileri gizle",
+    "toolbar": "Kelime filtresi"
   },
   "channelSecurityBadges": {
     "pskWeak": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
-    "pskWeakShort": "Açık",
     "pskAes128": "{{channel}} üzerinde AES-128 kanal anahtarı",
     "pskAes128Short": "AES128",
     "pskAes256": "{{channel}} üzerinde AES-256 kanal anahtarı",
