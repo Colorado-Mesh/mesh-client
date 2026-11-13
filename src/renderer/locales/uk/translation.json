@@ -1043,7 +1043,16 @@
       "notRecorded": "Пакети в цій мережі записують, скільки ретрансляторів вони пройшли, а не які.",
       "reachedYouInHops_few": "Дійшло за {{count}} хопи",
       "reachedYouInHops_many": "Дійшло за {{count}} хопів"
-    }
+    },
+    "markUnread": "Позначити як непрочитане",
+    "deleteMessageLocal": "Видалити локально",
+    "deleteMessageConfirm": "Видалити це повідомлення лише з цього пристрою?",
+    "markdownBold": "Жирний",
+    "markdownItalic": "Курсив",
+    "markdownStrike": "Закреслений",
+    "markdownCode": "Вбудований код",
+    "markdownLink": "Посилання",
+    "markdownToolbar": "Форматування"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -2901,7 +2910,24 @@
       "hgtEstimateFailed": "Не вдалося оцінити завантаження висоти.",
       "hgtDownloadFailed": "Не вдалося завантажити висоту.",
       "hgtCacheStats": "Кеш висоти: {{count}} плитки ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Створити waypoint",
+    "waypointEditTitle": "Редагувати waypoint",
+    "waypointNameLabel": "Ім'я",
+    "waypointDescriptionLabel": "Опис",
+    "waypointIconLabel": "Значок",
+    "waypointLockLabel": "Заблокувати для мене",
+    "waypointExpireLabel": "Закінчити через (годин, 0 = без обмеження)",
+    "waypointSave": "Зберегти waypoint",
+    "waypointNameRequired": "Ім'я обов'язкове",
+    "waypointSaveFailed": "Не вдалося зберегти waypoint",
+    "waypointLockedByOther": "Цей waypoint заблоковано іншим вузлом",
+    "waypointCreate": "Створити waypoint тут",
+    "waypointCreateHint": "Створіть waypoint у вашій позиції або клацніть правою кнопкою на карті",
+    "waypointEdit": "Редагувати waypoint",
+    "traceRouteEmpty": "Немає позицій стрибків для малювання traceroute",
+    "traceRouteLayer": "Шар traceroute",
+    "showTraceRouteOnMap": "Показати traceroute на карті"
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -3056,7 +3082,25 @@
     "failed": "Помилка",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Пристрій",
-    "noAckTooltipWifi": "Без Mesh ACK — ваше посилання WiFi/TCP на радіо в порядку. Можливо, повідомлення все ще було надіслано; жоден інший вузол LoRa не підтверджено."
+    "noAckTooltipWifi": "Без Mesh ACK — ваше посилання WiFi/TCP на радіо в порядку. Можливо, повідомлення все ще було надіслано; жоден інший вузол LoRa не підтверджено.",
+    "ackProof": {
+      "proven": "Підтверджено",
+      "provenTooltip": "Доказ доставки перевірено (ACK_PROOF_VALID)",
+      "failed": "Доказ невдалий",
+      "failedTooltip": "Доказ доставки недійсний (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Переслано",
+      "relayedUnprovenTooltip": "Підтверджено без криптографічного доказу доставки",
+      "noKey": "Не перевірено",
+      "noKeyTooltip": "Доказ є, але немає ключа для перевірки",
+      "unknown": "Невідомий доказ",
+      "unknownTooltip": "Нерозпізнаний статус доказу доставки"
+    },
+    "sfpp": {
+      "routing": "Маршрутизація SF++",
+      "routingTooltip": "Маршрутизація ланцюга Store & Forward++ триває",
+      "confirmed": "SF++ підтверджено",
+      "confirmedTooltip": "Доставку ланцюга Store & Forward++ підтверджено"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} надіслано. Пристрій може ненадовго перезавантажитися.",
@@ -8778,5 +8822,26 @@
     "retryLoad": "Повторити спробу",
     "retryLoadAria": "Повторити спробу завантаження карток контактів",
     "loadUnavailable": "Контактні картки недоступні в цій збірці. Перевстановіть або оновіть застосунок."
+  },
+  "wordFilter": {
+    "enabled": "Приховувати повідомлення за фільтром слів",
+    "wordsPlaceholder": "Заблоковані слова (через кому або новий рядок)",
+    "wordsAria": "Список фільтра слів",
+    "disableConversation": "Вимкнути фільтр слів у цій розмові",
+    "settingsTitle": "Фільтр слів",
+    "showFiltered": "Показати {{count}} відфільтрованих",
+    "hideFiltered": "Приховати відфільтровані повідомлення"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Слабкий або відкритий ключ каналу на {{channel}}",
+    "pskWeakShort": "Відкритий",
+    "pskAes128": "Ключ каналу AES-128 на {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Ключ каналу AES-256 на {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Точна локація спільно використовується на {{channel}}",
+    "preciseLocationShort": "Лок",
+    "mqttUplink": "MQTT uplink увімкнено на {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

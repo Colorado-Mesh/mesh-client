@@ -1138,7 +1138,16 @@
       "listLabel": "Direct messages",
       "empty": "No conversations match"
     },
-    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies."
+    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies.",
+    "markUnread": "Mark unread",
+    "deleteMessageLocal": "Delete locally",
+    "deleteMessageConfirm": "Delete this message from this device only?",
+    "markdownBold": "Bold",
+    "markdownItalic": "Italic",
+    "markdownStrike": "Strikethrough",
+    "markdownCode": "Inline code",
+    "markdownLink": "Link",
+    "markdownToolbar": "Formatting"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3219,7 +3228,24 @@
     },
     "waypointDefaultName": "Waypoint",
     "waypointDelete": "Delete Waypoint",
-    "noGpsNodes": "No nodes with GPS positions yet"
+    "noGpsNodes": "No nodes with GPS positions yet",
+    "waypointCreateTitle": "Create waypoint",
+    "waypointEditTitle": "Edit waypoint",
+    "waypointNameLabel": "Name",
+    "waypointDescriptionLabel": "Description",
+    "waypointIconLabel": "Icon",
+    "waypointLockLabel": "Lock to me",
+    "waypointExpireLabel": "Expire after (hours, 0 = none)",
+    "waypointSave": "Save waypoint",
+    "waypointNameRequired": "Name is required",
+    "waypointSaveFailed": "Could not save waypoint",
+    "waypointLockedByOther": "This waypoint is locked by another node",
+    "waypointCreate": "Create waypoint here",
+    "waypointCreateHint": "Create a waypoint at your position, or right-click the map",
+    "waypointEdit": "Edit waypoint",
+    "traceRouteEmpty": "No hop positions available to draw this traceroute",
+    "traceRouteLayer": "Traceroute",
+    "showTraceRouteOnMap": "Show traceroute on map"
   },
   "meshCongestion": {
     "blockTitle": "Why you're seeing duplicate traffic",
@@ -3558,7 +3584,25 @@
     "noAckTooltipWifi": "No mesh ACK — your WiFi/TCP link to the radio is fine. Message may still have been sent; no other LoRa node acknowledged.",
     "failed": "Failed",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Device"
+    "tooltipPrefixDevice": "Device",
+    "ackProof": {
+      "proven": "Proven",
+      "provenTooltip": "Delivery proof verified (ACK_PROOF_VALID)",
+      "failed": "Proof failed",
+      "failedTooltip": "Delivery proof invalid (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Relayed",
+      "relayedUnprovenTooltip": "Acknowledged without cryptographic delivery proof",
+      "noKey": "Unverified",
+      "noKeyTooltip": "Proof present but no key available to verify",
+      "unknown": "Unknown proof",
+      "unknownTooltip": "Unrecognized delivery-proof status"
+    },
+    "sfpp": {
+      "routing": "SF++ routing",
+      "routingTooltip": "Store & Forward++ chain routing in progress",
+      "confirmed": "SF++ confirmed",
+      "confirmedTooltip": "Store & Forward++ chain delivery confirmed"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} sent. Device may briefly reboot.",
@@ -8634,5 +8678,26 @@
       "thunderstormHeavyHail": "Thunderstorm with heavy hail",
       "unknown": "Unknown conditions"
     }
+  },
+  "wordFilter": {
+    "enabled": "Hide messages matching word filter",
+    "wordsPlaceholder": "Blocked words (comma or newline separated)",
+    "wordsAria": "Word filter list",
+    "disableConversation": "Disable word filter in this conversation",
+    "settingsTitle": "Word filter",
+    "showFiltered": "Show {{count}} filtered",
+    "hideFiltered": "Hide filtered messages"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Weak or open channel key on {{channel}}",
+    "pskWeakShort": "Open",
+    "pskAes128": "AES-128 channel key on {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "AES-256 channel key on {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Precise location shared on {{channel}}",
+    "preciseLocationShort": "Loc",
+    "mqttUplink": "MQTT uplink enabled on {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

@@ -1043,7 +1043,16 @@
       "notRecorded": "Пакеты в этой сети записывают, сколько ретрансляторов они прошли, а не какие.",
       "reachedYouInHops_few": "Дошло за {{count}} хопа",
       "reachedYouInHops_many": "Дошло за {{count}} хопов"
-    }
+    },
+    "markUnread": "Отметить как непрочитанное",
+    "deleteMessageLocal": "Удалить локально",
+    "deleteMessageConfirm": "Удалить это сообщение только с этого устройства?",
+    "markdownBold": "Смелый",
+    "markdownItalic": "Курсив",
+    "markdownStrike": "Зачеркивание",
+    "markdownCode": "Встроенный код",
+    "markdownLink": "Связь",
+    "markdownToolbar": "Форматирование"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -2901,7 +2910,24 @@
       "hgtEstimateFailed": "Не удалось оценить загрузку высоты.",
       "hgtDownloadFailed": "Не удалось загрузить высоту.",
       "hgtCacheStats": "Кэш высоты: {{count}} плитки ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Создать путевую точку",
+    "waypointEditTitle": "Редактировать путевую точку",
+    "waypointNameLabel": "Имя",
+    "waypointDescriptionLabel": "Описание",
+    "waypointIconLabel": "Икона",
+    "waypointLockLabel": "Запри меня",
+    "waypointExpireLabel": "Срок действия истекает через (часы, 0 = нет)",
+    "waypointSave": "Сохранить путевую точку",
+    "waypointNameRequired": "Требуется имя",
+    "waypointSaveFailed": "Не удалось сохранить путевую точку",
+    "waypointLockedByOther": "Эта путевая точка заблокирована другим узлом",
+    "waypointCreate": "Создайте путевую точку здесь",
+    "waypointCreateHint": "Создайте путевую точку в своем местоположении или щелкните карту правой кнопкой мыши.",
+    "waypointEdit": "Редактировать путевую точку",
+    "traceRouteEmpty": "Нет доступных позиций перехода для рисования этого трассировочного маршрута.",
+    "traceRouteLayer": "Трассировка",
+    "showTraceRouteOnMap": "Показать трассировку на карте"
   },
   "meshCongestion": {
     "blockTitle": "Почему вы видите дублирующийся трафик",
@@ -3056,7 +3082,25 @@
     "failed": "Не удалось",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Устройство",
-    "noAckTooltipWifi": "Нет Mesh ACK — ваша связь WiFi/TCP с радиостанцией в порядке. Сообщение, возможно, все еще было отправлено; ни один другой узел LoRa не подтвержден."
+    "noAckTooltipWifi": "Нет Mesh ACK — ваша связь WiFi/TCP с радиостанцией в порядке. Сообщение, возможно, все еще было отправлено; ни один другой узел LoRa не подтвержден.",
+    "ackProof": {
+      "proven": "Проверенный",
+      "provenTooltip": "Подтверждение доставки подтверждено (ACK_PROOF_VALID)",
+      "failed": "Доказательство не удалось",
+      "failedTooltip": "Недействительное подтверждение доставки (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Ретранслируемый",
+      "relayedUnprovenTooltip": "Подтверждено без криптографического подтверждения доставки",
+      "noKey": "Непроверенный",
+      "noKeyTooltip": "Доказательства имеются, но нет ключа для проверки.",
+      "unknown": "Неизвестное доказательство",
+      "unknownTooltip": "Нераспознанный статус подтверждения доставки"
+    },
+    "sfpp": {
+      "routing": "SF++ маршрутизация",
+      "routingTooltip": "Выполняется маршрутизация цепочки Store & Forward++",
+      "confirmed": "SF++ подтверждено",
+      "confirmedTooltip": "Поставка в сеть Store & Forward++ подтверждена"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} отправлено. Устройство может ненадолго перезагрузиться.",
@@ -8778,5 +8822,26 @@
     "retryLoad": "Попробовать еще раз",
     "retryLoadAria": "Повторить попытку загрузки контактных карт",
     "loadUnavailable": "Визитные карточки недоступны в этой сборке. Переустановите или обновите приложение."
+  },
+  "wordFilter": {
+    "enabled": "Скрыть сообщения, соответствующие фильтру слов",
+    "wordsPlaceholder": "Заблокированные слова (разделенные запятой или новой строкой)",
+    "wordsAria": "Список фильтров слов",
+    "disableConversation": "Отключить фильтр слов в этом разговоре",
+    "settingsTitle": "Фильтр слов",
+    "showFiltered": "Показать {{count}} отфильтрованным",
+    "hideFiltered": "Скрыть отфильтрованные сообщения"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Слабый или открытый ключ канала на {{channel}}",
+    "pskWeakShort": "Открыть",
+    "pskAes128": "Ключ канала AES-128 на {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Ключ канала AES-256 на {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Точное местоположение опубликовано {{channel}}",
+    "preciseLocationShort": "Лок",
+    "mqttUplink": "Восходящий канал MQTT включен на {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

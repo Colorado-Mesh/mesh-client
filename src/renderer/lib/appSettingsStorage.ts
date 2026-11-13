@@ -127,6 +127,30 @@ export interface WeatherFilterSettings {
 }
 
 /** Chat weather filter: hide weather posts in channels and the optional custom pattern. */
+export interface WordFilterSettings {
+  enabled: boolean;
+  words: string[];
+}
+
+/** Chat word filter: enable flag and blocked word list. */
+export function getWordFilterSettings(): WordFilterSettings {
+  const parsed = parseStoredJson<{
+    wordFilterEnabled?: unknown;
+    wordFilterWords?: unknown;
+  }>(getAppSettingsRaw(), 'getWordFilterSettings');
+  const wordsRaw = parsed?.wordFilterWords;
+  const words = Array.isArray(wordsRaw)
+    ? wordsRaw.filter((w): w is string => typeof w === 'string')
+    : DEFAULT_APP_SETTINGS_SHARED.wordFilterWords;
+  return {
+    enabled:
+      typeof parsed?.wordFilterEnabled === 'boolean'
+        ? parsed.wordFilterEnabled
+        : DEFAULT_APP_SETTINGS_SHARED.wordFilterEnabled,
+    words,
+  };
+}
+
 export function getWeatherFilterSettings(): WeatherFilterSettings {
   const parsed = parseStoredJson<{
     weatherFilterHideInChannels?: unknown;

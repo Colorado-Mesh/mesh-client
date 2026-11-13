@@ -16,6 +16,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import { clearCayenneTelemetry, recordCayennePacket } from '../../stores/cayenneTelemetryStore';
 import { recordKeyVerificationPacket } from '../../stores/keyVerificationStore';
+import { updateMeshtasticDeliveryMeta, useMessageStore } from '../../stores/messageStore';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { toPacketPayloadBytes } from '../packetPayload';
 import type { MeshtasticModulePortEvent } from '../protocols/Protocol';
@@ -32,6 +33,7 @@ import {
   type NodeStatusEntry,
   type PaxCounterPoint,
 } from './meshtasticModuleEvents';
+import { decodeStoreForwardPlusPlus, mergeSfppPhase } from './meshtasticStoreForwardPlusPlus';
 import { decodeRemoteShellFrame } from './remoteShell';
 import { abandonRemoteShellForIdentity, handleRemoteShellFrame } from './remoteShellSession';
 
@@ -227,7 +229,19 @@ function handleModulePort(
     // switch an accurate record of what the app knows about.
     // ALERT_APP is decoded as text_message in MeshtasticProtocol (MECP / critical alerts).
     // PAGING_APP has no published PagingPacket schema yet.
-    case 'storeForwardPlusPlus':
+    case 'storeForwardPlusPlus': {
+      const decoded = decodeStoreForwardPlusPlus(entry.data);
+      if (!decoded) break;
+      const messageId = String(decoded.encapsulatedId);
+      const messages = useMessageStore.getState().messages;
+      if (!Object.hasOwn(messages, identityId)) break;
+      const bucket = messages[identityId];
+      if (!Object.hasOwn(bucket, messageId)) break;
+      updateMeshtasticDeliveryMeta(identityId, messageId, {
+        sfppPhase: mergeSfppPhase(bucket[messageId].sfppPhase, decoded.phase),
+      });
+      break;
+    }
     case 'paging':
     case 'loraWanBridge':
     case 'reticulumTunnel':

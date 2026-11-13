@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "Routes worden alleen weergegeven voor kanaalberichten.",
       "unavailableNotCaptured": "Route niet beschikbaar: routes worden alleen bewaard voor recente berichten van deze sessie.",
       "notRecorded": "Pakketten op dit netwerk registreren hoeveel relais ze hebben doorgegeven, niet welke."
-    }
+    },
+    "markUnread": "Markeer als ongelezen",
+    "deleteMessageLocal": "Lokaal verwijderen",
+    "deleteMessageConfirm": "Dit bericht alleen van dit apparaat verwijderen?",
+    "markdownBold": "Vetgedrukt",
+    "markdownItalic": "Cursief",
+    "markdownStrike": "Doorhalen",
+    "markdownCode": "Inline-code",
+    "markdownLink": "Link",
+    "markdownToolbar": "Opmaak"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "Kan het downloaden van de hoogte niet schatten.",
       "hgtDownloadFailed": "Het downloaden van de hoogte is mislukt.",
       "hgtCacheStats": "Hoogtecache: {{count}} tegels ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Waypoint maken",
+    "waypointEditTitle": "Waypoint bewerken",
+    "waypointNameLabel": "Naam",
+    "waypointDescriptionLabel": "Beschrijving",
+    "waypointIconLabel": "Icon",
+    "waypointLockLabel": "Slot voor mij",
+    "waypointExpireLabel": "Verloopt na (uren, 0 = geen)",
+    "waypointSave": "Waypoint opslaan",
+    "waypointNameRequired": "Naam is vereist",
+    "waypointSaveFailed": "Kan waypoint niet opslaan",
+    "waypointLockedByOther": "Dit waypoint is vergrendeld door een ander knooppunt",
+    "waypointCreate": "Maak hier een waypoint aan",
+    "waypointCreateHint": "Maak een waypoint op uw positie of klik met de rechtermuisknop op de kaart",
+    "waypointEdit": "Waypoint bewerken",
+    "traceRouteEmpty": "Er zijn geen hopposities beschikbaar om deze traceroute te tekenen",
+    "traceRouteLayer": "Traceroute",
+    "showTraceRouteOnMap": "Toon traceroute op kaart"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -3000,7 +3026,25 @@
     "failed": "Mislukt",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Toestel",
-    "noAckTooltipWifi": "Geen mesh ACK — uw WiFi/TCP-link naar de radio is prima. Mogelijk is er nog steeds een bericht verzonden; er is geen ander LoRa-knooppunt bevestigd."
+    "noAckTooltipWifi": "Geen mesh ACK — uw WiFi/TCP-link naar de radio is prima. Mogelijk is er nog steeds een bericht verzonden; er is geen ander LoRa-knooppunt bevestigd.",
+    "ackProof": {
+      "proven": "Bewezen",
+      "provenTooltip": "Leveringsbewijs geverifieerd (ACK_PROOF_VALID)",
+      "failed": "Bewijs mislukt",
+      "failedTooltip": "Leveringsbewijs ongeldig (ACK_PROOF_INVALID)",
+      "relayedUnproven": "doorgegeven",
+      "relayedUnprovenTooltip": "Erkend zonder cryptografisch leveringsbewijs",
+      "noKey": "Niet geverifieerd",
+      "noKeyTooltip": "Bewijs aanwezig maar geen sleutel beschikbaar om te verifiëren",
+      "unknown": "Onbekend bewijs",
+      "unknownTooltip": "Onbekende status van leveringsbewijs"
+    },
+    "sfpp": {
+      "routing": "SF++-routing",
+      "routingTooltip": "Store & Forward++ ketenrouting wordt uitgevoerd",
+      "confirmed": "SF++ bevestigd",
+      "confirmedTooltip": "Store & Forward++ ketenlevering bevestigd"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "Opnieuw proberen",
     "retryLoadAria": "Probeer de contactkaarten opnieuw te laden",
     "loadUnavailable": "Contactkaarten zijn niet beschikbaar in deze build. Installeer de app opnieuw of werk deze bij."
+  },
+  "wordFilter": {
+    "enabled": "Verberg berichten die overeenkomen met het woordfilter",
+    "wordsPlaceholder": "Geblokkeerde woorden (door komma's of nieuwe regels gescheiden)",
+    "wordsAria": "Lijst met woordenfilters",
+    "disableConversation": "Schakel het woordfilter uit in dit gesprek",
+    "settingsTitle": "Woordfilter",
+    "showFiltered": "Toon {{count}} gefilterd",
+    "hideFiltered": "Verberg gefilterde berichten"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Zwakke of open kanaaltoets op {{channel}}",
+    "pskWeakShort": "Open",
+    "pskAes128": "AES-128 kanaaltoets op {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "AES-256 kanaaltoets op {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Precieze locatie gedeeld op {{channel}}",
+    "preciseLocationShort": "Lok",
+    "mqttUplink": "MQTT uplink ingeschakeld op {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

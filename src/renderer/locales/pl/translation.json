@@ -1043,7 +1043,16 @@
       "notRecorded": "Pakiety w tej sieci rejestrują, ile przekaźników minęły, a nie które.",
       "reachedYouInHops_few": "Dotarło w {{count}} przeskokach",
       "reachedYouInHops_many": "Dotarło w {{count}} przeskokach"
-    }
+    },
+    "markUnread": "Oznacz jako nieprzeczytane",
+    "deleteMessageLocal": "Usuń lokalnie",
+    "deleteMessageConfirm": "Usunąć tę wiadomość tylko z tego urządzenia?",
+    "markdownBold": "Pogrubiony",
+    "markdownItalic": "Kursywa",
+    "markdownStrike": "Przekreślenie",
+    "markdownCode": "Kod w tekście",
+    "markdownLink": "Połączyć",
+    "markdownToolbar": "Formatowanie"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2901,7 +2910,24 @@
       "hgtEstimateFailed": "Nie można oszacować pobranej wysokości.",
       "hgtDownloadFailed": "Pobieranie danych wysokościowych nie powiodło się.",
       "hgtCacheStats": "Pamięć podręczna wysokości: {{count}} kafli ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Utwórz punkt orientacyjny",
+    "waypointEditTitle": "Edytuj punkt trasy",
+    "waypointNameLabel": "Nazwa",
+    "waypointDescriptionLabel": "Opis",
+    "waypointIconLabel": "Ikona",
+    "waypointLockLabel": "Zamknij mnie",
+    "waypointExpireLabel": "Wygasa po (godzinach, 0 = brak)",
+    "waypointSave": "Zapisz punkt orientacyjny",
+    "waypointNameRequired": "Imię i nazwisko jest wymagane",
+    "waypointSaveFailed": "Nie można zapisać punktu trasy",
+    "waypointLockedByOther": "Ten punkt orientacyjny jest zablokowany przez inny węzeł",
+    "waypointCreate": "Utwórz tutaj punkt orientacyjny",
+    "waypointCreateHint": "Utwórz punkt orientacyjny w swojej pozycji lub kliknij mapę prawym przyciskiem myszy",
+    "waypointEdit": "Edytuj punkt trasy",
+    "traceRouteEmpty": "Brak dostępnych pozycji przeskoków do narysowania tej trasy śledzenia",
+    "traceRouteLayer": "Tracerout",
+    "showTraceRouteOnMap": "Pokaż traceroute na mapie"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -3056,7 +3082,25 @@
     "failed": "Zakończone niepowodzeniem",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Urządzenie",
-    "noAckTooltipWifi": "Brak ACK siatki — Twoje łącze WiFi/TCP do radia jest w porządku. Wiadomość mogła nadal zostać wysłana; żaden inny węzeł LoRa nie został potwierdzony."
+    "noAckTooltipWifi": "Brak ACK siatki — Twoje łącze WiFi/TCP do radia jest w porządku. Wiadomość mogła nadal zostać wysłana; żaden inny węzeł LoRa nie został potwierdzony.",
+    "ackProof": {
+      "proven": "Udowodniony",
+      "provenTooltip": "Dowód dostawy zweryfikowany (ACK_PROOF_VALID)",
+      "failed": "Dowód nie powiódł się",
+      "failedTooltip": "Dowód dostawy nieprawidłowy (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Przekazany",
+      "relayedUnprovenTooltip": "Potwierdzony bez kryptograficznego dowodu doręczenia",
+      "noKey": "Niesprawdzony",
+      "noKeyTooltip": "Dowód jest obecny, ale brak klucza do weryfikacji",
+      "unknown": "Nieznany dowód",
+      "unknownTooltip": "Nierozpoznany status dowodu dostawy"
+    },
+    "sfpp": {
+      "routing": "Routing SF++",
+      "routingTooltip": "Trwa routing łańcucha Store & Forward++",
+      "confirmed": "SF++ potwierdzone",
+      "confirmedTooltip": "Potwierdzono dostawę sieciową Store & Forward++"
+    }
   },
   "modulePanel": {
     "sectionSent": "Wysłano: {{name}}. Urządzenie może się na chwilę zrestartować.",
@@ -8778,5 +8822,26 @@
     "retryLoad": "Spróbuj ponownie",
     "retryLoadAria": "Spróbuj ponownie załadować wizytówki kontaktów",
     "loadUnavailable": "W tej wersji wizytówki nie są dostępne. Zainstaluj ponownie lub zaktualizuj aplikację."
+  },
+  "wordFilter": {
+    "enabled": "Ukryj wiadomości pasujące do filtra słów",
+    "wordsPlaceholder": "Zablokowane słowa (oddzielone przecinkami lub nową linią)",
+    "wordsAria": "Lista filtrów słów",
+    "disableConversation": "Wyłącz filtr słów w tej rozmowie",
+    "settingsTitle": "Filtr słów",
+    "showFiltered": "Pokaż {{count}} przefiltrowane",
+    "hideFiltered": "Ukryj filtrowane wiadomości"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Słaby lub otwarty klucz kanału na {{channel}}",
+    "pskWeakShort": "Otwarte",
+    "pskAes128": "Klucz kanału AES-128 na {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Klucz kanału AES-256 na {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Dokładna lokalizacja udostępniona na {{channel}}",
+    "preciseLocationShort": "Lok",
+    "mqttUplink": "MQTT łącze wysyłające włączone na {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

@@ -307,6 +307,10 @@ export class MeshtasticProtocol implements Protocol {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           } else if (portnum === PortNum.TRACEROUTE_APP) {
             fireTraceRoute(packet);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+          } else if (portnum === PortNum.ROUTING_APP) {
+            const routingAck = this.decodeRoutingAck(packet);
+            if (routingAck) emit(routingAck);
           } else {
             const label = UNTYPED_MODULE_PORTS.get(portnum as number);
             if (label !== undefined) {
@@ -1205,6 +1209,52 @@ export class MeshtasticProtocol implements Protocol {
       level: record.level ?? 0,
     };
     return [{ type: 'device_log', payload }];
+  }
+
+  private decodeRoutingAck(raw: unknown): DomainEvent | null {
+    const packet = raw as {
+      ackProofStatus?: unknown;
+      payloadVariant?: {
+        case?: string;
+        value?: { requestId?: unknown; payload?: Uint8Array };
+      };
+    };
+    if (packet.payloadVariant?.case !== 'decoded') return null;
+    const value = packet.payloadVariant.value;
+    const requestIdRaw = value?.requestId;
+    const requestId =
+      typeof requestIdRaw === 'number' && Number.isFinite(requestIdRaw)
+        ? requestIdRaw >>> 0
+        : undefined;
+    if (requestId == null || requestId === 0) return null;
+    let isAck = true;
+    try {
+      if (value?.payload) {
+        // Mesh ambient types lag runtime RoutingSchema exports; cast like StatusMessageSchema.
+        const RoutingSchema = (
+          Mesh as unknown as {
+            RoutingSchema: Parameters<typeof fromBinary>[0];
+          }
+        ).RoutingSchema;
+        const routing = fromBinary(RoutingSchema, value.payload) as unknown as {
+          variant: { case?: string; value?: number };
+        };
+        if (routing.variant.case === 'errorReason') {
+          // Routing_Error.NONE === 0
+          isAck = routing.variant.value === 0;
+        }
+      }
+    } catch (err) {
+      console.debug('[MeshtasticProtocol] malformed Routing payload on ACK', err);
+    }
+    const ackProofStatus =
+      typeof packet.ackProofStatus === 'number' && Number.isFinite(packet.ackProofStatus)
+        ? Math.trunc(packet.ackProofStatus)
+        : 0;
+    return {
+      type: 'meshtastic_routing_ack',
+      payload: { requestId, ackProofStatus, isAck },
+    };
   }
 
   private decodeRawPacket(raw: unknown): DomainEvent[] {

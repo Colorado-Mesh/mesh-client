@@ -8,6 +8,11 @@ import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachme
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
+import type {
+  MeshtasticAckProofStatus,
+  MeshtasticSfppPhase,
+} from './meshtastic/meshtasticAckProof';
+
 export type { MeshProtocol };
 export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
 
@@ -452,6 +457,10 @@ export interface ChatMessage {
   rxRadioTransport?: 'rf' | 'ble';
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
+  /** Meshtastic delivery proof from MeshPacket.ackProofStatus. */
+  ackProofStatus?: MeshtasticAckProofStatus;
+  /** Meshtastic Store & Forward++ phase for this packet id. */
+  sfppPhase?: MeshtasticSfppPhase;
   /** MeshCore room server BBS post (not a DM). */
   roomServerId?: number;
   /** Group-channel identity key (`channelIdentityKey.ts`); remaps history to the live radio slot. */

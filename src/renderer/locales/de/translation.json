@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "Routen werden nur für Kanalnachrichten angezeigt.",
       "unavailableNotCaptured": "Route nicht verfügbar: Routen werden nur für die letzten Nachrichten aus dieser Sitzung aufbewahrt.",
       "notRecorded": "Pakete in diesem Netzwerk zeichnen auf, wie viele Relays sie durchlaufen haben, nicht welche."
-    }
+    },
+    "markUnread": "Als ungelesen markieren",
+    "deleteMessageLocal": "Lokal löschen",
+    "deleteMessageConfirm": "Diese Nachricht nur von diesem Gerät löschen?",
+    "markdownBold": "Mutig",
+    "markdownItalic": "Italic",
+    "markdownStrike": "Durchgestrichen",
+    "markdownCode": "Inline-Code",
+    "markdownLink": "Link",
+    "markdownToolbar": "Formatierung"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "Herunterladen der Höhenangabe konnte nicht geschätzt werden.",
       "hgtDownloadFailed": "Herunterladen der Höhe fehlgeschlagen.",
       "hgtCacheStats": "Höhencache: {{count}} Kacheln ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Wegpunkt erstellen",
+    "waypointEditTitle": "WEGPUNKT BEARBEITEN",
+    "waypointNameLabel": "Name",
+    "waypointDescriptionLabel": "Beschreibung",
+    "waypointIconLabel": "Icon",
+    "waypointLockLabel": "An mich binden",
+    "waypointExpireLabel": "Läuft ab nach (Stunden, 0 = keine)",
+    "waypointSave": "Wegpunkt speichern",
+    "waypointNameRequired": "Name ist erforderlich",
+    "waypointSaveFailed": "Wegpunkt konnte nicht gespeichert werden",
+    "waypointLockedByOther": "Dieser Wegpunkt ist durch einen anderen Knoten gesperrt",
+    "waypointCreate": "Hier einen Wegpunkt erstellen",
+    "waypointCreateHint": "Erstellen Sie einen Wegpunkt an Ihrer Position oder klicken Sie mit der rechten Maustaste auf die Karte",
+    "waypointEdit": "WEGPUNKT BEARBEITEN",
+    "traceRouteEmpty": "Keine Hop-Positionen verfügbar, um diesen Traceroute zu zeichnen",
+    "traceRouteLayer": "Routen-Verfolgung",
+    "showTraceRouteOnMap": "Traceroute auf der Karte anzeigen"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -3000,7 +3026,25 @@
     "failed": "Nicht bestanden",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Vorrichtung",
-    "noAckTooltipWifi": "Kein Mesh-ACK — Ihre WiFi/TCP-Verbindung zum Radio ist in Ordnung. Die Nachricht wurde möglicherweise noch gesendet; kein anderer LoRa-Knoten wurde bestätigt."
+    "noAckTooltipWifi": "Kein Mesh-ACK — Ihre WiFi/TCP-Verbindung zum Radio ist in Ordnung. Die Nachricht wurde möglicherweise noch gesendet; kein anderer LoRa-Knoten wurde bestätigt.",
+    "ackProof": {
+      "proven": "Nachgewiesene",
+      "provenTooltip": "Liefernachweis verifiziert (ACK_PROOF_VALID)",
+      "failed": "Korrekturlesen fehlgeschlagen",
+      "failedTooltip": "Liefernachweis ungültig (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Weitergeleitet",
+      "relayedUnprovenTooltip": "Bestätigt ohne kryptografischen Zustellnachweis",
+      "noKey": "Nicht verifiziert",
+      "noKeyTooltip": "Nachweis vorhanden, aber kein Schlüssel zur Verifizierung verfügbar",
+      "unknown": "Unbekannter Nachweis",
+      "unknownTooltip": "Nicht erkannter Status des Liefernachweises"
+    },
+    "sfpp": {
+      "routing": "SF++ Weiterleitung",
+      "routingTooltip": "Store & Forward++-Kettenweiterleitung läuft",
+      "confirmed": "SF++ bestätigt",
+      "confirmedTooltip": "Store & Forward++-Kettenzustellung bestätigt"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} gesendet. Das Gerät kann kurzzeitig neu gestartet werden.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "Erneut versuchen",
     "retryLoadAria": "Laden der Kontaktkarten erneut versuchen",
     "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie."
+  },
+  "wordFilter": {
+    "enabled": "Nachrichten ausblenden, die dem Wortfilter entsprechen",
+    "wordsPlaceholder": "Gesperrte Wörter (durch Komma oder Zeilenumbruch getrennt)",
+    "wordsAria": "Wort-Filter",
+    "disableConversation": "Wortfilter in dieser Konversation deaktivieren",
+    "settingsTitle": "Wort-Filter",
+    "showFiltered": "{{count}} gefiltert anzeigen",
+    "hideFiltered": "Gefilterte Nachrichten ausblenden"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Schwacher oder offener Kanalschlüssel auf {{channel}}",
+    "pskWeakShort": "auf",
+    "pskAes128": "AES-128-Kanalschlüssel auf {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "AES-256-Kanalschlüssel auf {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Genaue Position geteilt am {{channel}}",
+    "preciseLocationShort": "Lok",
+    "mqttUplink": "MQTT-Uplink aktiviert auf {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

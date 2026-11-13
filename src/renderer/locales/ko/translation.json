@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "경로는 채널 메시지에만 표시됩니다.",
       "unavailableNotCaptured": "라우트 사용 불가: 라우트는 이 세션의 최근 메시지에 대해서만 유지됩니다.",
       "notRecorded": "이 네트워크의 패킷은 어떤 릴레이가 아닌 얼마나 많은 릴레이를 통과했는지 기록합니다."
-    }
+    },
+    "markUnread": "읽지 않은 것으로 표시",
+    "deleteMessageLocal": "로컬에서 삭제",
+    "deleteMessageConfirm": "이 메시지를 이 기기에서만 삭제하시겠습니까?",
+    "markdownBold": "용감한",
+    "markdownItalic": "이탤릭체",
+    "markdownStrike": "취소선",
+    "markdownCode": "인라인 코드",
+    "markdownLink": "링크",
+    "markdownToolbar": "서식 지정"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "고도 다운로드를 추정할 수 없습니다.",
       "hgtDownloadFailed": "고도 다운로드에 실패했습니다.",
       "hgtCacheStats": "고도 캐시: {{count}} 타일 ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "웨이포인트 생성",
+    "waypointEditTitle": "경유지 편집",
+    "waypointNameLabel": "이름",
+    "waypointDescriptionLabel": "설명",
+    "waypointIconLabel": "상",
+    "waypointLockLabel": "나에게 고정",
+    "waypointExpireLabel": "다음 이후 만료(시간, 0 = 없음)",
+    "waypointSave": "경유지 저장",
+    "waypointNameRequired": "이름은 필수입니다",
+    "waypointSaveFailed": "경유지를 저장할 수 없습니다.",
+    "waypointLockedByOther": "이 경유지는 다른 노드에 의해 잠겨 있습니다.",
+    "waypointCreate": "여기에 경유지를 생성하세요",
+    "waypointCreateHint": "현재 위치에 웨이포인트를 생성하거나 지도를 마우스 오른쪽 버튼으로 클릭하세요.",
+    "waypointEdit": "경유지 편집",
+    "traceRouteEmpty": "이 추적 경로를 그릴 수 있는 홉 위치가 없습니다.",
+    "traceRouteLayer": "경로 추적",
+    "showTraceRouteOnMap": "지도에 추적 경로 표시"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -3000,7 +3026,25 @@
     "failed": "실패함",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "장치",
-    "noAckTooltipWifi": "메시 ACK 없음 — 라디오에 대한 WiFi/TCP 링크는 괜찮습니다. 메시지가 여전히 전송되었을 수 있습니다. 다른 LoRa 노드가 확인되지 않았습니다."
+    "noAckTooltipWifi": "메시 ACK 없음 — 라디오에 대한 WiFi/TCP 링크는 괜찮습니다. 메시지가 여전히 전송되었을 수 있습니다. 다른 LoRa 노드가 확인되지 않았습니다.",
+    "ackProof": {
+      "proven": "입증된",
+      "provenTooltip": "배송 증명 확인됨(ACK_PROOF_VALID)",
+      "failed": "증명 실패",
+      "failedTooltip": "배달 증명이 잘못되었습니다(ACK_PROOF_INVALID).",
+      "relayedUnproven": "중계됨",
+      "relayedUnprovenTooltip": "암호화된 전달 증명 없이 확인됨",
+      "noKey": "확인되지 않음",
+      "noKeyTooltip": "증거가 있지만 확인할 수 있는 키가 없습니다.",
+      "unknown": "알 수 없는 증거",
+      "unknownTooltip": "알 수 없는 배송 증명 상태"
+    },
+    "sfpp": {
+      "routing": "SF++ 라우팅",
+      "routingTooltip": "Store & Forward++ 체인 라우팅 진행 중",
+      "confirmed": "SF++ 확인됨",
+      "confirmedTooltip": "Store & Forward++ 체인 배송 확인"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} 보냈습니다. 장치가 잠시 재부팅될 수 있습니다.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "다시 시도",
     "retryLoadAria": "연락처 카드 로딩 재시도",
     "loadUnavailable": "이 빌드에서는 연락처 카드를 사용할 수 없습니다. 앱을 다시 설치하거나 업데이트하세요."
+  },
+  "wordFilter": {
+    "enabled": "단어 필터와 일치하는 메시지 숨기기",
+    "wordsPlaceholder": "차단된 단어(쉼표 또는 줄바꿈으로 구분)",
+    "wordsAria": "단어 필터 목록",
+    "disableConversation": "이 대화에서 단어 필터를 비활성화합니다.",
+    "settingsTitle": "단어 필터",
+    "showFiltered": "필터링된 {{count}} 표시",
+    "hideFiltered": "필터링된 메시지 숨기기"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "{{channel}}의 약하거나 열린 채널 키",
+    "pskWeakShort": "열려 있는",
+    "pskAes128": "{{channel}}의 AES-128 채널 키",
+    "pskAes128Short": "AES128",
+    "pskAes256": "{{channel}}의 AES-256 채널 키",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "{{channel}}에서 공유된 정확한 위치",
+    "preciseLocationShort": "위치",
+    "mqttUplink": "MQTT 업링크는 {{channel}}에서 활성화되었습니다.",
+    "mqttUplinkShort": "MQTT"
   }
 }

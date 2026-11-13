@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "Las rutas se muestran solo para mensajes de canal.",
       "unavailableNotCaptured": "Ruta no disponible: las rutas se mantienen solo para mensajes recientes de esta sesión.",
       "notRecorded": "Los paquetes en esta red registran cuántos relés pasaron, no cuáles."
-    }
+    },
+    "markUnread": "Marcar como no leído",
+    "deleteMessageLocal": "Borrar localmente",
+    "deleteMessageConfirm": "¿Eliminar este mensaje solo de este dispositivo?",
+    "markdownBold": "Negrita",
+    "markdownItalic": "Cursiva",
+    "markdownStrike": "Tachado",
+    "markdownCode": "Código en línea",
+    "markdownLink": "Enlaces",
+    "markdownToolbar": "Format"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "No se ha podido estimar la descarga de la cota.",
       "hgtDownloadFailed": "Error al descargar el alzado.",
       "hgtCacheStats": "Caché de alzado: {{count}} mosaicos ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Crear punto de paso",
+    "waypointEditTitle": "Editar punto de paso",
+    "waypointNameLabel": "Nombre",
+    "waypointDescriptionLabel": "Descripción",
+    "waypointIconLabel": "Icono",
+    "waypointLockLabel": "Asignarme a mí",
+    "waypointExpireLabel": "Caduca después de (horas, 0 = nunca)",
+    "waypointSave": "Guardar punto de referencia",
+    "waypointNameRequired": "El nombre es obligatorio",
+    "waypointSaveFailed": "No se ha podido guardar el punto de paso",
+    "waypointLockedByOther": "Este punto de ruta está bloqueado por otro nodo",
+    "waypointCreate": "Crear un punto de paso aquí",
+    "waypointCreateHint": "Crea un punto de ruta en tu posición o haz clic con el botón derecho en el mapa",
+    "waypointEdit": "Editar punto de ruta",
+    "traceRouteEmpty": "No hay posiciones de salto disponibles para trazar este «traceroute»",
+    "traceRouteLayer": "Traceroute",
+    "showTraceRouteOnMap": "Mostrar el traceroute en el mapa"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -3000,7 +3026,25 @@
     "failed": "Error",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Dispositivo",
-    "noAckTooltipWifi": "Sin ACK de malla: su enlace WiFi/TCP a la radio está bien. Es posible que aún se haya enviado el mensaje; no se ha reconocido ningún otro nodo LoRa."
+    "noAckTooltipWifi": "Sin ACK de malla: su enlace WiFi/TCP a la radio está bien. Es posible que aún se haya enviado el mensaje; no se ha reconocido ningún otro nodo LoRa.",
+    "ackProof": {
+      "proven": "Comprovado",
+      "provenTooltip": "Comprobante de entrega verificado (ACK_PROOF_VALID)",
+      "failed": "Error en la verificación",
+      "failedTooltip": "Comprobante de entrega no válido (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Retransmitido",
+      "relayedUnprovenTooltip": "Confirmado sin prueba criptográfica de entrega",
+      "noKey": "Sin verificar",
+      "noKeyTooltip": "Hay una prueba, pero no hay ninguna clave disponible para verificarla",
+      "unknown": "Prueba desconocida",
+      "unknownTooltip": "Estado del comprobante de entrega no reconocido"
+    },
+    "sfpp": {
+      "routing": "Ruta SF++",
+      "routingTooltip": "Enrutamiento en cadena de «almacenar y reenviar»++ en curso",
+      "confirmed": "SF++ confirmado",
+      "confirmedTooltip": "Entrega en cadena de Store & Forward++ confirmada"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. El dispositivo puede reiniciarse brevemente.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "Probar de nuevo",
     "retryLoadAria": "Volver a intentar cargar las tarjetas de contacto",
     "loadUnavailable": "Las tarjetas de contacto no están disponibles en esta versión. Vuelve a instalar o actualiza la aplicación."
+  },
+  "wordFilter": {
+    "enabled": "Ocultar los mensajes que coincidan con el filtro de palabras",
+    "wordsPlaceholder": "Palabras bloqueadas (separadas por comas o saltos de línea)",
+    "wordsAria": "Lista de filtros",
+    "disableConversation": "Desactivar el filtro de palabras en esta conversación",
+    "settingsTitle": "Word Filter",
+    "showFiltered": "Mostrar {{count}} filtrados",
+    "hideFiltered": "Ocultar mensajes filtrados"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Clave de canal débil o abierta en {{channel}}",
+    "pskWeakShort": "Abrir",
+    "pskAes128": "Clave de canal AES-128 en {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Clave de canal AES-256 en {{channel}}",
+    "pskAes256Short": "aes256",
+    "preciseLocation": "Ubicación exacta compartida el {{channel}}",
+    "preciseLocationShort": "Lugar",
+    "mqttUplink": "MQTT enlace ascendente habilitado en {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

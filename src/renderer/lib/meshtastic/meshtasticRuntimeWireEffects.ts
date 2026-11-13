@@ -75,6 +75,7 @@ import type { MeshtasticPostConfigureSilenceTracker } from './meshtasticPostConf
 import { attachMeshtasticRawPacketSideEffects } from './meshtasticRawPacketSideEffects';
 import { MESHTASTIC_REGION_PRESETS_SLICE_KEY } from './meshtasticRegionPresets';
 import { attachMeshtasticRouterSideEffects } from './meshtasticRouterSideEffects';
+import { attachMeshtasticRoutingAckSideEffects } from './meshtasticRoutingAckSideEffects';
 import {
   installMeshtasticSdkRoutingErrorConsoleHook,
   installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
@@ -744,6 +745,7 @@ export function attachMeshtasticRuntimeWireEffects(
         setMeshBeacons,
         setNodeStatuses,
       }),
+      attachMeshtasticRoutingAckSideEffects(identityId),
       attachMeshtasticStoreForwardSideEffects(identityId, {
         touchLastData,
         getNodeName,

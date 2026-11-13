@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
+import { useWordFilterStore } from '@/renderer/stores/wordFilterStore';
 
 import {
   buildProtocolSwitcherUnreadByProtocol,
@@ -631,6 +632,65 @@ describe('hasAudibleBackgroundMessages', () => {
     expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['ch:-1']), ownNodes)).toBe(
       true,
     );
+  });
+});
+
+describe('word filter unread suppression', () => {
+  afterEach(() => {
+    useWordFilterStore.setState({
+      enabled: false,
+      words: [],
+      disabledConversations: new Set(),
+    });
+  });
+
+  it('suppresses matching channel unread and keeps MECP visible', () => {
+    useWordFilterStore.setState({
+      enabled: true,
+      words: ['spam'],
+      disabledConversations: new Set(),
+    });
+    const counts = computeChannelUnreadCounts(
+      [
+        msg({ channel: 0, timestamp: 2000, payload: 'buy SPAM now' }),
+        msg({ channel: 0, timestamp: 2100, payload: 'MECP/0/M01 M07 P05 2pax 48.65,20.13' }),
+        msg({ channel: 0, timestamp: 2200, payload: 'hello' }),
+      ],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(counts.get(0)).toBe(2);
+  });
+
+  it('suppresses matching DM unread with dm:peer conversation key', () => {
+    useWordFilterStore.setState({
+      enabled: true,
+      words: ['spam'],
+      disabledConversations: new Set(),
+    });
+    const dmCounts = computeDmUnreadCounts(
+      [
+        msg({ channel: 0, to: 1, timestamp: 2000, payload: 'this is spam' }),
+        msg({ channel: 0, to: 1, timestamp: 2100, payload: 'hi there' }),
+      ],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(dmCounts.get(2)).toBe(1);
+  });
+
+  it('does not beep for word-filtered channel traffic', () => {
+    useWordFilterStore.setState({
+      enabled: true,
+      words: ['spam'],
+      disabledConversations: new Set(),
+    });
+    const filtered = msg({ channel: 0, timestamp: 2000, payload: 'spam offer' });
+    expect(resolveChatNotificationType(filtered, [filtered], ownNodes, 'meshtastic')).toBeNull();
+    const clean = msg({ channel: 0, timestamp: 2000, payload: 'hello' });
+    expect(resolveChatNotificationType(clean, [clean], ownNodes, 'meshtastic')).toBe('channel');
   });
 });
 

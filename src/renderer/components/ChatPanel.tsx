@@ -261,19 +261,23 @@ import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useBotSendersStore } from '../stores/botSendersStore';
 import { isMecpSenderBlocked, mecpBlockKey } from '../stores/mecpBlockStore';
+import { deleteMessage } from '../stores/messageStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
+import { isHiddenByWordFilter } from '../stores/wordFilterStore';
 import { BotBadge } from './BotBadge';
 import { CatchUpButton } from './chat/CatchUpButton';
+import { ChannelSecurityBadges } from './chat/ChannelSecurityBadges';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
 import { ReticulumAttachControl } from './chat/ReticulumAttachControl';
 import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
+import { WordFilterSettings } from './chat/WordFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
@@ -773,6 +777,11 @@ export interface ChatPanelProps {
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
+  /** Meshtastic channel security inputs keyed by channel index (PSK / location / MQTT). */
+  channelSecurityByIndex?: ReadonlyMap<
+    number,
+    { psk: Uint8Array; uplinkEnabled: boolean; positionPrecision: number }
+  >;
   /** Full MeshCore channel list with PSK metadata for unread filtering (display uses `channels`). */
   meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
   /** MeshCore: save a channel on the connected companion radio. */
@@ -886,6 +895,7 @@ function ChatPanel({
   getMessageRoute,
   messagesForUnread,
   channels,
+  channelSecurityByIndex,
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
@@ -1920,8 +1930,29 @@ function ChatPanel({
     return n;
   }, [channel, dmOnlyChat, regularMessages, weatherConfig]);
 
+  // Word-filter conversation key follows the open channel/DM (not weather/starred watermarks).
+  const wordFilterConversationKey = useMemo(() => {
+    if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
+    return `ch:${channel}`;
+  }, [viewMode, activeDmNode, channel]);
+
+  const [revealWordFiltered, setRevealWordFiltered] = useState(false);
+  useEffect(() => {
+    setRevealWordFiltered(false);
+  }, [wordFilterConversationKey]);
+
+  const wordFilteredHiddenCount = useMemo(() => {
+    let n = 0;
+    for (const m of viewMessages) {
+      if (isHiddenByWordFilter(m, protocol, wordFilterConversationKey)) n += 1;
+    }
+    return n;
+  }, [viewMessages, protocol, wordFilterConversationKey]);
+
   const filteredMessages = useMemo(() => {
-    let msgs = viewMessages;
+    let msgs = revealWordFiltered
+      ? viewMessages
+      : viewMessages.filter((m) => !isHiddenByWordFilter(m, protocol, wordFilterConversationKey));
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       msgs = msgs.filter(
@@ -1932,7 +1963,14 @@ function ChatPanel({
       msgs = msgs.filter((m) => m.sender_id === filterSender);
     }
     return msgs;
-  }, [searchQuery, viewMessages, filterSender]);
+  }, [
+    searchQuery,
+    viewMessages,
+    filterSender,
+    protocol,
+    wordFilterConversationKey,
+    revealWordFiltered,
+  ]);
 
   // Index of first message from another node newer than unreadDividerTimestamp.
   // Returns -1 when: search active, timestamp=0, or no qualifying messages.
@@ -3530,6 +3568,12 @@ function ChatPanel({
                       <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
                         {ch.name}
                       </span>
+                      {channelSecurityByIndex?.get(ch.index) ? (
+                        <ChannelSecurityBadges
+                          channelName={ch.name}
+                          channel={channelSecurityByIndex.get(ch.index)!}
+                        />
+                      ) : null}
                       {conversationPins.pinned.has(`ch:${ch.index}`) && (
                         <Pin
                           aria-hidden
@@ -3720,6 +3764,24 @@ function ChatPanel({
 
             {(viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null)) && (
               <>
+                <ChatToolbarTooltipButton
+                  tooltip={t('chatPanel.markUnread')}
+                  aria-label={t('chatPanel.markUnread')}
+                  onClick={() => {
+                    // Set watermark just before newest inbound so it and newer stay unread.
+                    // Watermark changes alone do not fire notification beeps.
+                    let newestInboundTs = 0;
+                    for (const m of viewMessages) {
+                      if (isOwnNode(m.sender_id)) continue;
+                      if ((m.timestamp ?? 0) > newestInboundTs) newestInboundTs = m.timestamp ?? 0;
+                    }
+                    if (newestInboundTs <= 0) return;
+                    const before = Math.max(0, newestInboundTs - 1);
+                    setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[readKey, before]]));
+                  }}
+                >
+                  <Mail aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                </ChatToolbarTooltipButton>
                 <ChatToolbarTooltipButton
                   tooltip={
                     conversationPins.pinned.has(viewKey)
@@ -3946,6 +4008,24 @@ function ChatPanel({
         </div>
       ) : null}
 
+      <WordFilterSettings conversationKey={wordFilterConversationKey} />
+      {wordFilteredHiddenCount > 0 ? (
+        <div className="mb-2 flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            className="text-muted hover:text-ink-100 text-xs underline"
+            aria-pressed={revealWordFiltered}
+            aria-label={t('wordFilter.showFiltered', { count: wordFilteredHiddenCount })}
+            onClick={() => {
+              setRevealWordFiltered((v) => !v);
+            }}
+          >
+            {revealWordFiltered
+              ? t('wordFilter.hideFiltered')
+              : t('wordFilter.showFiltered', { count: wordFilteredHiddenCount })}
+          </button>
+        </div>
+      ) : null}
       {viewMode === 'weather' ? <WeatherFilterSettings /> : null}
 
       {protocol === 'reticulum' && dmOnlyChat ? (
@@ -4870,6 +4950,8 @@ function ChatPanel({
                                     transport="device"
                                     connectionType={connectionType}
                                     error={msg.error}
+                                    ackProofStatus={msg.ackProofStatus}
+                                    sfppPhase={msg.sfppPhase}
                                   />
                                 ) : msg.mqttStatus ? (
                                   <>
@@ -4880,6 +4962,8 @@ function ChatPanel({
                                         transport="device"
                                         connectionType={connectionType}
                                         error={msg.error}
+                                        ackProofStatus={msg.ackProofStatus}
+                                        sfppPhase={msg.sfppPhase}
                                       />
                                     )}
                                   </>
@@ -4889,6 +4973,8 @@ function ChatPanel({
                                     transport={isMqttOnly ? 'mqtt' : 'device'}
                                     connectionType={connectionType}
                                     error={msg.error}
+                                    ackProofStatus={msg.ackProofStatus}
+                                    sfppPhase={msg.sfppPhase}
                                   />
                                 ) : null}
                                 <RelayCoverageLine
@@ -4939,6 +5025,28 @@ function ChatPanel({
                                 trigger={parentIconTrigger}
                                 size={14}
                               />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!window.confirm(t('chatPanel.deleteMessageConfirm'))) return;
+                                const storeId =
+                                  msg.storeId ??
+                                  (msg.packetId != null
+                                    ? String(msg.packetId)
+                                    : msg.id != null
+                                      ? String(msg.id)
+                                      : null);
+                                if (!identityId || storeId == null) return;
+                                deleteMessage(identityId, storeId);
+                              }}
+                              {...{ [PARENT_HOVER_ATTR]: '' }}
+                              className="message-action text-muted rounded p-1 text-xs"
+                              aria-label={t('chatPanel.deleteMessageLocal')}
+                              title={t('chatPanel.deleteMessageLocal')}
+                            >
+                              {t('chatPanel.deleteMessageLocal')}
                             </button>
                             <MessageTranslateButton
                               messageKey={`${protocol}:${identityId ?? myNodeNum}:${msg.id}`}

@@ -16,7 +16,7 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Circle, Marker, Polyline, Popup, useMap } from 'react-leaflet';
+import { Circle, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { MAPS_DOCS_URL } from '@/shared/docsSite';
@@ -37,7 +37,9 @@ import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import { isMapChromeClick } from '../lib/map/isMapChromeClick';
 import { getMapOverlayColors } from '../lib/mapBasemapUtils';
+import { buildTraceRouteOverlay } from '../lib/mapTraceRouteOverlay';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
@@ -51,6 +53,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapToolStore } from '../stores/mapToolStore';
+import { useMapTraceRouteStore } from '../stores/mapTraceRouteStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -61,10 +64,30 @@ import { MAP_CHIP_CLASS, MAP_CONTROL_CLASS } from './map/mapControlClasses';
 import { MapLayerRow } from './map/MapLayerControl';
 import { MeshMapShell } from './map/MeshMapShell';
 import { TakContactsLayer } from './map/takContactsLayer';
+import { WaypointEditorDialog } from './map/WaypointEditorDialog';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 import { DocsSiteLink } from './ui/DocsSiteLink';
 import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
+
+/** Right-click (context menu) on the map opens create-waypoint at that lat/lon. */
+function MapWaypointCreateHandler({
+  enabled,
+  onCreate,
+}: {
+  enabled: boolean;
+  onCreate: (lat: number, lon: number) => void;
+}) {
+  useMapEvents({
+    contextmenu: (e) => {
+      if (!enabled) return;
+      if (isMapChromeClick(e.originalEvent)) return;
+      e.originalEvent.preventDefault();
+      onCreate(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
@@ -526,6 +549,9 @@ interface Props {
     ch?: number,
   ) => Promise<void>;
   onDeleteWaypoint?: (id: number) => Promise<void>;
+  /** Active traceroute hop node ids (ordered) to draw on the map. */
+  traceRouteNodeIds?: readonly number[];
+  traceRouteHopLabels?: readonly string[];
   onNodeClick?: (nodeId: number) => void;
   /** Opens a node clicked in the live traffic pop-out window. */
   onLiveWindowNodeClick?: (nodeId: number) => void;
@@ -607,7 +633,10 @@ function OverviewMapPanel({
   ourPosition,
   onLocateMe,
   waypoints,
+  onSendWaypoint,
   onDeleteWaypoint,
+  traceRouteNodeIds,
+  traceRouteHopLabels,
   onNodeClick,
   onForecastSenderClick,
   protocol = 'meshtastic',
@@ -615,6 +644,12 @@ function OverviewMapPanel({
   showMapsDocs = true,
 }: Props & { showMapsDocs?: boolean }) {
   const { t } = useTranslation();
+  const [waypointEditor, setWaypointEditor] = useState<{
+    mode: 'create' | 'edit';
+    initial: Partial<MeshWaypoint> & { latitude: number; longitude: number };
+  } | null>(null);
+  const mapTraceRoute = useMapTraceRouteStore((s) => s.route);
+  const clearMapTraceRoute = useMapTraceRouteStore((s) => s.clear);
   const toNodeRenderSignature = useCallback((node: MeshNode): string => {
     return [
       node.node_id,
@@ -1063,159 +1098,282 @@ function OverviewMapPanel({
   );
 
   return (
-    <MeshMapShell
-      ariaLabel={t('mapPanel.networkMap')}
-      frameClassName="h-full min-h-[500px]"
-      initialCenter={initialViewport.center}
-      initialZoom={initialViewport.zoom}
-      defaultCenter={DEFAULT_CENTER}
-      defaultZoom={DEFAULT_ZOOM}
-      fit={{
-        mode: 'firstPoint',
-        points: positions,
-        fallbackPoint: ourFallbackPoint,
-        shouldFitOnMount,
-      }}
-      hasAnyPositions={positions.length > 0 || !!ourPosition}
-      onLocateMe={onLocateMe}
-      onForecastSenderClick={onForecastSenderClick}
-      controlsBefore={
-        <div className={MAP_CHIP_CLASS}>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-            {statusCounts.online}
-          </span>
-          <span className="flex items-center gap-1">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: overlayColors.stale }}
-            />
-            {statusCounts.stale}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="bg-ink-700 inline-block h-2 w-2 rounded-full" />
-            {statusCounts.offline}
-          </span>
-        </div>
-      }
-      controlsAfter={
-        <>
-          {showMapsDocs ? <DocsSiteLink href={MAPS_DOCS_URL} /> : null}
-          <button
-            type="button"
-            onClick={() => void handleExportGpx()}
-            disabled={gpxExporting}
-            aria-label={t('gpxExport.buttonAria')}
-            className={MAP_CONTROL_CLASS}
-          >
-            <Download aria-hidden className="h-3.5 w-3.5" />
-            {t('gpxExport.button')}
-          </button>
-        </>
-      }
-      layerRows={
-        <LoRaMapLayerRows
-          routeWeightsSupported={routeWeightsSupported}
-          showRouteWeights={showRouteWeights}
-          onToggleRouteWeights={setShowRouteWeights}
-          sensorsSupported={hasEnvironmentTelemetry}
-          takSupported={hasTakPanel}
-        />
-      }
-      beforeTiles={<DiagnosticPanes />}
-      overlay={
-        nodesToRender.length === 0 ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
-              {t('mapPanel.noGpsNodes')}
-            </div>
+    <>
+      <MeshMapShell
+        ariaLabel={t('mapPanel.networkMap')}
+        frameClassName="h-full min-h-[500px]"
+        initialCenter={initialViewport.center}
+        initialZoom={initialViewport.zoom}
+        defaultCenter={DEFAULT_CENTER}
+        defaultZoom={DEFAULT_ZOOM}
+        fit={{
+          mode: 'firstPoint',
+          points: positions,
+          fallbackPoint: ourFallbackPoint,
+          shouldFitOnMount,
+        }}
+        hasAnyPositions={positions.length > 0 || !!ourPosition}
+        onLocateMe={onLocateMe}
+        onForecastSenderClick={onForecastSenderClick}
+        controlsBefore={
+          <div className={MAP_CHIP_CLASS}>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+              {statusCounts.online}
+            </span>
+            <span className="flex items-center gap-1">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: overlayColors.stale }}
+              />
+              {statusCounts.stale}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="bg-ink-700 inline-block h-2 w-2 rounded-full" />
+              {statusCounts.offline}
+            </span>
           </div>
-        ) : null
-      }
-    >
-      {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
-        <PathPolyline
-          key={`path-${nodeId}`}
-          nodeId={nodeId}
-          pathPositions={pathPositions}
-          pathOptions={pathOptions}
-          onNodeClick={onNodeClick}
-        />
-      ))}
-      {routeWeightPolylines}
-      {showNodes && (anomalyHalosEnabled || congestionHalosEnabled)
-        ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
-            <NodeHalo
-              key={`halo-${node.node_id}`}
-              node={node}
-              anomaly={anomaly}
-              anomalyHalosEnabled={anomalyHalosEnabled}
-              congestionHalosEnabled={congestionHalosEnabled}
-              haloCenterOffset={haloCenterOffset}
-            />
-          ))
-        : null}
-      {showNodes && (
-        <MarkerClusterGroup
-          showCoverageOnHover={false}
-          chunkedLoading
-          maxClusterRadius={denseMapMarkers ? 80 : 60}
-          disableClusteringAtZoom={denseMapMarkers ? 12 : 9}
-          iconCreateFunction={iconCreateFunction}
-        >
-          {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
-            <MapMarker
-              key={node.node_id}
-              node={node}
-              anomaly={anomaly}
-              nodeRenderSignature={toNodeRenderSignature(node)}
-              homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
-              anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
-              isSelf={node.node_id === myNodeNum}
-              protocol={protocol}
-              onNodeClick={onNodeClick}
-              congestionHalosEnabled={congestionHalosEnabled}
-              isDarkBasemap={basemap.isDark}
-            />
-          ))}
-        </MarkerClusterGroup>
-      )}
-      {showWaypoints &&
-        waypoints &&
-        [...waypoints.values()].map((wp) => (
-          <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
-            <Popup>
-              <div className="space-y-1 p-2">
-                <div className="text-ink-100 text-sm font-medium">
-                  {wp.name || t('mapPanel.waypointDefaultName')}
-                </div>
-                {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
-                <div className="text-muted font-mono text-xs">
-                  {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
-                </div>
-                {onDeleteWaypoint && (
-                  <button
-                    type="button"
-                    onClick={() => onDeleteWaypoint(wp.id)}
-                    className={buttonClassName('danger', 'sm', 'mt-1')}
-                  >
-                    {t('mapPanel.waypointDelete')}
-                  </button>
-                )}
+        }
+        controlsAfter={
+          <>
+            {showMapsDocs ? <DocsSiteLink href={MAPS_DOCS_URL} /> : null}
+            {onSendWaypoint ? (
+              <button
+                type="button"
+                className={MAP_CONTROL_CLASS}
+                aria-label={t('mapPanel.waypointCreate')}
+                title={t('mapPanel.waypointCreateHint')}
+                onClick={() => {
+                  const self = nodes.get(myNodeNum);
+                  setWaypointEditor({
+                    mode: 'create',
+                    initial: {
+                      latitude:
+                        ourPosition?.lat ??
+                        (self?.latitude != null && self.latitude !== 0 ? self.latitude : 0),
+                      longitude:
+                        ourPosition?.lon ??
+                        (self?.longitude != null && self.longitude !== 0 ? self.longitude : 0),
+                      name: '',
+                    },
+                  });
+                }}
+              >
+                {t('mapPanel.waypointCreate')}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleExportGpx()}
+              disabled={gpxExporting}
+              aria-label={t('gpxExport.buttonAria')}
+              className={MAP_CONTROL_CLASS}
+            >
+              <Download aria-hidden className="h-3.5 w-3.5" />
+              {t('gpxExport.button')}
+            </button>
+          </>
+        }
+        layerRows={
+          <LoRaMapLayerRows
+            routeWeightsSupported={routeWeightsSupported}
+            showRouteWeights={showRouteWeights}
+            onToggleRouteWeights={setShowRouteWeights}
+            sensorsSupported={hasEnvironmentTelemetry}
+            takSupported={hasTakPanel}
+          />
+        }
+        beforeTiles={<DiagnosticPanes />}
+        overlay={
+          nodesToRender.length === 0 ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
+                {t('mapPanel.noGpsNodes')}
               </div>
-            </Popup>
-          </Marker>
-        ))}
-      {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
-      {hasEnvironmentTelemetry && showSensors ? (
-        <EnvironmentSensorLayer
-          nodes={nodesWithPosition}
-          protocol={protocol}
-          metric={sensorMetric}
-          useFahrenheit={useFahrenheit}
-          onNodeClick={onNodeClick}
+            </div>
+          ) : null
+        }
+      >
+        <MapWaypointCreateHandler
+          enabled={Boolean(onSendWaypoint)}
+          onCreate={(lat, lon) => {
+            setWaypointEditor({
+              mode: 'create',
+              initial: { latitude: lat, longitude: lon, name: '' },
+            });
+          }}
         />
-      ) : null}
-    </MeshMapShell>
+        {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
+          <PathPolyline
+            key={`path-${nodeId}`}
+            nodeId={nodeId}
+            pathPositions={pathPositions}
+            pathOptions={pathOptions}
+            onNodeClick={onNodeClick}
+          />
+        ))}
+        {routeWeightPolylines}
+        {showNodes && (anomalyHalosEnabled || congestionHalosEnabled)
+          ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
+              <NodeHalo
+                key={`halo-${node.node_id}`}
+                node={node}
+                anomaly={anomaly}
+                anomalyHalosEnabled={anomalyHalosEnabled}
+                congestionHalosEnabled={congestionHalosEnabled}
+                haloCenterOffset={haloCenterOffset}
+              />
+            ))
+          : null}
+        {showNodes && (
+          <MarkerClusterGroup
+            showCoverageOnHover={false}
+            chunkedLoading
+            maxClusterRadius={denseMapMarkers ? 80 : 60}
+            disableClusteringAtZoom={denseMapMarkers ? 12 : 9}
+            iconCreateFunction={iconCreateFunction}
+          >
+            {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
+              <MapMarker
+                key={node.node_id}
+                node={node}
+                anomaly={anomaly}
+                nodeRenderSignature={toNodeRenderSignature(node)}
+                homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
+                anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
+                isSelf={node.node_id === myNodeNum}
+                protocol={protocol}
+                onNodeClick={onNodeClick}
+                congestionHalosEnabled={congestionHalosEnabled}
+                isDarkBasemap={basemap.isDark}
+              />
+            ))}
+          </MarkerClusterGroup>
+        )}
+        {showWaypoints &&
+          waypoints &&
+          [...waypoints.values()].map((wp) => (
+            <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
+              <Popup>
+                <div className="space-y-1 p-2">
+                  <div className="text-ink-100 text-sm font-medium">
+                    {wp.name || t('mapPanel.waypointDefaultName')}
+                  </div>
+                  {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
+                  <div className="text-muted font-mono text-xs">
+                    {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {onSendWaypoint && (
+                      <button
+                        type="button"
+                        aria-label={t('mapPanel.waypointEdit')}
+                        onClick={() => {
+                          setWaypointEditor({
+                            mode: 'edit',
+                            initial: wp,
+                          });
+                        }}
+                        className={buttonClassName('secondary', 'sm', 'mt-1')}
+                      >
+                        {t('mapPanel.waypointEdit')}
+                      </button>
+                    )}
+                    {onDeleteWaypoint && (
+                      <button
+                        type="button"
+                        aria-label={t('mapPanel.waypointDelete')}
+                        onClick={() => {
+                          void onDeleteWaypoint(wp.id);
+                        }}
+                        className={buttonClassName('danger', 'sm', 'mt-1')}
+                      >
+                        {t('mapPanel.waypointDelete')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        {(() => {
+          const routeIds = mapTraceRoute?.nodeIds ?? traceRouteNodeIds;
+          const routeLabels = mapTraceRoute?.labels ?? traceRouteHopLabels;
+          if (!routeIds || routeIds.length === 0) return null;
+          const positions = new Map<number, { lat: number; lon: number }>();
+          for (const node of nodes.values()) {
+            if (node.latitude != null && node.longitude != null) {
+              positions.set(node.node_id, { lat: node.latitude, lon: node.longitude });
+            }
+          }
+          const overlay = buildTraceRouteOverlay({
+            routeNodeIds: routeIds,
+            hopLabels: routeLabels,
+            positions,
+          });
+          if (overlay.emptyBecauseMissingPositions) {
+            return (
+              <div
+                className="bg-ink-900/90 text-muted rounded-control absolute bottom-3 left-3 z-[500] max-w-xs px-2 py-1 text-xs"
+                role="status"
+                aria-label={t('mapPanel.traceRouteLayer')}
+              >
+                {t('mapPanel.traceRouteEmpty')}
+                <button
+                  type="button"
+                  className="text-bright-green ml-2 underline"
+                  onClick={() => {
+                    clearMapTraceRoute();
+                  }}
+                >
+                  {t('common.clear')}
+                </button>
+              </div>
+            );
+          }
+          return (
+            <>
+              {overlay.hasPolyline ? (
+                <Polyline
+                  positions={overlay.hops.map((h) => [h.lat, h.lon] as [number, number])}
+                  pathOptions={{ color: '#38bdf8', weight: 3 }}
+                />
+              ) : null}
+              {overlay.hops.map((hop) => (
+                <Marker key={`tr-${hop.nodeId}`} position={[hop.lat, hop.lon]}>
+                  <Popup>
+                    <div className="text-ink-100 text-sm">{hop.label}</div>
+                  </Popup>
+                </Marker>
+              ))}
+            </>
+          );
+        })()}
+        {waypointEditor && onSendWaypoint ? (
+          <WaypointEditorDialog
+            open
+            mode={waypointEditor.mode}
+            initial={waypointEditor.initial}
+            myNodeNum={myNodeNum}
+            onClose={() => {
+              setWaypointEditor(null);
+            }}
+            onSubmit={async (wp) => {
+              await onSendWaypoint(wp);
+            }}
+          />
+        ) : null}
+        {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
+        {hasEnvironmentTelemetry && showSensors ? (
+          <EnvironmentSensorLayer
+            nodes={nodesWithPosition}
+            protocol={protocol}
+            metric={sensorMetric}
+            useFahrenheit={useFahrenheit}
+            onNodeClick={onNodeClick}
+          />
+        ) : null}
+      </MeshMapShell>
+    </>
   );
 }

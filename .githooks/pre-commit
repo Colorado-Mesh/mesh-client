@@ -65,28 +65,34 @@ skip_manifest_only() {
 # Format and lint only staged files for intentionality and speed.
 # Skip entirely if no files staged (e.g., empty commit).
 if [ -s "$STAGED_LIST" ]; then
-  # Format only staged files
+  # Format staged files in one Prettier process (avoids per-file node SIGKILL under memory pressure).
+  PRETTIER_LIST=$(mktemp)
+  trap 'rm -f "$STAGED_LIST" "$PRETTIER_LIST"' EXIT
   while IFS= read -r f || [ -n "$f" ]; do
     [ -n "$f" ] || continue
     [ -e "$f" ] || continue
-    # LICENSE / binary assets have no Prettier parser; ignore-unknown skips them.
-    pnpm exec prettier --write --ignore-unknown "$f" || fail "prettier --write $f"
+    printf '%s\0' "$f" >> "$PRETTIER_LIST"
   done < "$STAGED_LIST"
+  if [ -s "$PRETTIER_LIST" ]; then
+    # LICENSE / binary assets have no Prettier parser; ignore-unknown skips them.
+    xargs -0 pnpm exec prettier --write --ignore-unknown < "$PRETTIER_LIST" \
+      || fail 'prettier --write (batched)'
+  fi
 
   # Lint only staged .md files
   MARKDOWN_LIST=$(mktemp)
-  trap 'rm -f "$STAGED_LIST" "$MARKDOWN_LIST"' EXIT
+  trap 'rm -f "$STAGED_LIST" "$PRETTIER_LIST" "$MARKDOWN_LIST"' EXIT
   while IFS= read -r f || [ -n "$f" ]; do
     case "$f" in
-      *.md) printf '%s\n' "$f" >> "$MARKDOWN_LIST" ;;
+      *.md)
+        [ -e "$f" ] || continue
+        printf '%s\0' "$f" >> "$MARKDOWN_LIST"
+        ;;
     esac
   done < "$STAGED_LIST"
 
   if [ -s "$MARKDOWN_LIST" ]; then
-    while IFS= read -r f || [ -n "$f" ]; do
-      [ -n "$f" ] || continue
-      pnpm exec markdownlint-cli2 "$f" || fail 'markdownlint-cli2'
-    done < "$MARKDOWN_LIST"
+    xargs -0 pnpm exec markdownlint-cli2 < "$MARKDOWN_LIST" || fail 'markdownlint-cli2'
   fi
 
   if [ "$deps_changed" -eq 1 ]; then

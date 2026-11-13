@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "Güzergahlar yalnızca kanal mesajları için gösterilir.",
       "unavailableNotCaptured": "Güzergah mevcut değil: güzergahlar yalnızca bu oturumdan gelen son mesajlar için tutulur.",
       "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder."
-    }
+    },
+    "markUnread": "Okunmadı olarak işaretle",
+    "deleteMessageLocal": "Yerelde sil",
+    "deleteMessageConfirm": "Bu ileti yalnızca bu cihazdan silinsin mi?",
+    "markdownBold": "Kalın",
+    "markdownItalic": "İtalik",
+    "markdownStrike": "Üstü çizili",
+    "markdownCode": "Satır içi kod",
+    "markdownLink": "Bağlantı",
+    "markdownToolbar": "Biçimlendirme"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "Yükseklik indirmesi tahmin edilemedi.",
       "hgtDownloadFailed": "Yükseklik indirilemedi.",
       "hgtCacheStats": "Yükseklik önbelleği: {{count}} karo ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Yol noktası oluştur",
+    "waypointEditTitle": "Yol noktasını düzenle",
+    "waypointNameLabel": "Ad",
+    "waypointDescriptionLabel": "Açıklama",
+    "waypointIconLabel": "Simge",
+    "waypointLockLabel": "Bana kilitle",
+    "waypointExpireLabel": "Şu kadar saat sonra sona ersin (0 = yok)",
+    "waypointSave": "Yol noktasını kaydet",
+    "waypointNameRequired": "Ad gerekli",
+    "waypointSaveFailed": "Yol noktası kaydedilemedi",
+    "waypointLockedByOther": "Bu yol noktası başka bir düğüm tarafından kilitli",
+    "waypointCreate": "Burada yol noktası oluştur",
+    "waypointCreateHint": "Konumunuzda bir yol noktası oluşturun veya haritaya sağ tıklayın",
+    "waypointEdit": "Yol noktasını düzenle",
+    "traceRouteEmpty": "Bu traceroute çizmek için atlama konumları yok",
+    "traceRouteLayer": "Traceroute katmanı",
+    "showTraceRouteOnMap": "Traceroute’u haritada göster"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -3000,7 +3026,25 @@
     "failed": "Başarısız",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Cihaz",
-    "noAckTooltipWifi": "Ağ ACK'si yok; telsize WiFi/TCP bağlantınız iyi durumda. Mesaj hala gönderilmiş olabilir; başka hiçbir LoRa düğümü onaylanmadı."
+    "noAckTooltipWifi": "Ağ ACK'si yok; telsize WiFi/TCP bağlantınız iyi durumda. Mesaj hala gönderilmiş olabilir; başka hiçbir LoRa düğümü onaylanmadı.",
+    "ackProof": {
+      "proven": "Kanıtlandı",
+      "provenTooltip": "Teslimat kanıtı doğrulandı (ACK_PROOF_VALID)",
+      "failed": "Kanıt başarısız",
+      "failedTooltip": "Teslimat kanıtı geçersiz (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Aktarıldı",
+      "relayedUnprovenTooltip": "Kriptografik teslimat kanıtı olmadan onaylandı",
+      "noKey": "Doğrulanmadı",
+      "noKeyTooltip": "Kanıt var ancak doğrulamak için anahtar yok",
+      "unknown": "Bilinmeyen kanıt",
+      "unknownTooltip": "Tanınmayan teslimat kanıtı durumu"
+    },
+    "sfpp": {
+      "routing": "SF++ yönlendirme",
+      "routingTooltip": "Store & Forward++ zincir yönlendirmesi sürüyor",
+      "confirmed": "SF++ onaylandı",
+      "confirmedTooltip": "Store & Forward++ zincir teslimatı onaylandı"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} gönderildi. Cihaz kısa süreliğine yeniden başlatılabilir.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "Tekrar deneyin",
     "retryLoadAria": "Kişi kartlarını yüklemeyi yeniden deneyin",
     "loadUnavailable": "Kişi Kartları bu sürümde kullanılamaz. Uygulamayı yeniden yükleyin veya güncelleyin."
+  },
+  "wordFilter": {
+    "enabled": "Kelime filtresine uyan iletileri gizle",
+    "wordsPlaceholder": "Engellenen kelimeler (virgül veya satır sonu)",
+    "wordsAria": "Kelime filtresi listesi",
+    "disableConversation": "Bu konuşmada kelime filtresini kapat",
+    "settingsTitle": "Kelime filtresi",
+    "showFiltered": "{{count}} filtrelenmişi göster",
+    "hideFiltered": "Filtrelenmiş iletileri gizle"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
+    "pskWeakShort": "Açık",
+    "pskAes128": "{{channel}} üzerinde AES-128 kanal anahtarı",
+    "pskAes128Short": "AES128",
+    "pskAes256": "{{channel}} üzerinde AES-256 kanal anahtarı",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "{{channel}} üzerinde kesin konum paylaşılıyor",
+    "preciseLocationShort": "Kon",
+    "mqttUplink": "{{channel}} üzerinde MQTT uplink açık",
+    "mqttUplinkShort": "MQTT"
   }
 }
