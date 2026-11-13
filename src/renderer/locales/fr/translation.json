@@ -2893,7 +2893,8 @@
         "empty": "Aucune géométrie traçable trouvée.",
         "limit": "Trop de superpositions importées (supprimez-en une d’abord).",
         "io": "Impossible de lire le fichier.",
-        "not_found": "Superposition introuvable."
+        "not_found": "Superposition introuvable.",
+        "quota": "L’espace de stockage du navigateur est saturé ; supprimez une superposition ou libérez de l’espace disque."
       }
     }
   },

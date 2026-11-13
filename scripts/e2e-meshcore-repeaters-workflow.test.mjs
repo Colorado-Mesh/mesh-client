@@ -73,6 +73,7 @@ describe('MeshCore repeater E2E PR workflow', () => {
     'src/renderer/lib/meshcoreTracePathMultiplex.ts',
     'src/renderer/lib/meshcoreTraceRoutePrime.ts',
     'src/renderer/lib/meshcoreRoomLoginRouteResolve.ts',
+    'src/renderer/lib/meshcoreRoomStatusPing.ts',
     'src/renderer/lib/meshcoreUtils.ts',
     'src/renderer/lib/meshcore/meshcorePathUpdatedRuntime.ts',
     'src/renderer/lib/meshcore/meshcoreHookTypes.ts',

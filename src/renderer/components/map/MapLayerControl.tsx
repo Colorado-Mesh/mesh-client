@@ -99,7 +99,7 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
         return;
       }
       const added = addOverlayLayer({ name: result.name, geojson: result.geojson });
-      if (!added.ok) setImportError(t('mapPanel.vectorOverlays.errors.limit'));
+      if (!added.ok) setImportError(t(`mapPanel.vectorOverlays.errors.${added.code}`));
     } catch (e: unknown) {
       console.warn('[MapLayerControl] overlay import failed ' + errLikeToLogString(e));
       setImportError(t('mapPanel.vectorOverlays.errors.io'));

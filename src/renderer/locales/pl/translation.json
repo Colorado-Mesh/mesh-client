@@ -2947,7 +2947,8 @@
         "empty": "Nie znaleziono geometrii nadających się do narysowania.",
         "limit": "Zbyt wiele zaimportowanych nakładek (najpierw usuń jedną).",
         "io": "Nie można odczytać pliku",
-        "not_found": "Nie znaleziono nakładki."
+        "not_found": "Nie znaleziono nakładki.",
+        "quota": "Pamięć przeglądarki jest zapełniona; usuń nakładkę lub zwolnij miejsce na dysku."
       }
     }
   },

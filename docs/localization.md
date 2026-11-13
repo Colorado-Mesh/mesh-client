@@ -37,6 +37,8 @@ To change the interface language:
 
 The application will immediately update the UI strings. Your language preference is saved to your local settings and will persist across app restarts.
 
+If a stored locale value is no longer a supported language code, the app loads **English** for the session immediately. The invalid value is left in storage until you pick a language again (or clear app data); it is not auto-rewritten on boot.
+
 ---
 
 ## Contributing Translations

@@ -27,7 +27,7 @@ interface MapOverlayState {
     id?: string;
     visible?: boolean;
     opacity?: number;
-  }) => { ok: true; id: string } | { ok: false; code: 'limit' };
+  }) => { ok: true; id: string } | { ok: false; code: 'limit' | 'quota' };
   setVisible: (id: string, visible: boolean) => void;
   setOpacity: (id: string, opacity: number) => void;
   removeLayer: (id: string) => void;
@@ -40,6 +40,14 @@ function newLayerId(): string {
     return crypto.randomUUID();
   }
   return `overlay-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function isRendererStorageQuotaError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'QuotaExceededError') return true;
+  if (err instanceof Error) {
+    return err.name === 'QuotaExceededError' || /quota/i.test(err.message);
+  }
+  return false;
 }
 
 function isFeatureCollection(value: unknown): value is MapOverlayFeatureCollection {
@@ -93,7 +101,24 @@ export const useMapOverlayStore = create<MapOverlayState>()(
           } catch {
             // catch-no-log-ok rollback persist may also fail; preserve original error
           }
+          if (isRendererStorageQuotaError(err)) {
+            return { ok: false, code: 'quota' };
+          }
           throw err;
+        }
+        const raw = localStorage.getItem('mesh-client:mapOverlays');
+        let persistedLayerCount = 0;
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as { state?: { layers?: unknown[] } };
+            persistedLayerCount = parsed.state?.layers?.length ?? 0;
+          } catch {
+            // catch-no-log-ok corrupt persisted overlay payload
+          }
+        }
+        if (persistedLayerCount !== prevLayers.length + 1) {
+          set({ layers: prevLayers, lastImportError: null });
+          return { ok: false, code: 'quota' };
         }
         return { ok: true, id };
       },
@@ -146,7 +171,12 @@ export const useMapOverlayStore = create<MapOverlayState>()(
           }
         },
         setItem: (key, value) => {
-          setRendererStorageItem(key, JSON.stringify(value));
+          try {
+            setRendererStorageItem(key, JSON.stringify(value));
+          } catch (err) {
+            if (isRendererStorageQuotaError(err)) throw err;
+            throw err;
+          }
         },
         removeItem: (key) => {
           removeRendererStorageItem(key);

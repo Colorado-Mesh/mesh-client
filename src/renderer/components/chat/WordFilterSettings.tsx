@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useWordFilterStore } from '../../stores/wordFilterStore';
@@ -14,6 +14,11 @@ export function WordFilterSettings({ conversationKey }: { conversationKey?: stri
   const disabledConversations = useWordFilterStore((s) => s.disabledConversations);
   const setConversationDisabled = useWordFilterStore((s) => s.setConversationDisabled);
   const [draft, setDraft] = useState(words.join(', '));
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset local draft after durable word-filter hydration
+    setDraft(words.join(', '));
+  }, [words]);
 
   const commit = () => {
     setWordsText(draft);

@@ -2893,7 +2893,8 @@
         "empty": "Nessuna geometria disegnabile trovata.",
         "limit": "Troppe sovrapposizioni importate (rimuovine prima una).",
         "io": "Impossibile leggere il file.",
-        "not_found": "Sovrapposizione non trovata."
+        "not_found": "Sovrapposizione non trovata.",
+        "quota": "Lo spazio di archiviazione del browser è pieno; rimuovi una sovrapposizione o libera spazio su disco."
       }
     }
   },

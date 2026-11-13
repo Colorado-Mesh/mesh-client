@@ -2924,7 +2924,8 @@
         "empty": "Nebyly nalezeny žádné kreslitelné geometrie.",
         "limit": "Příliš mnoho importovaných překryvných vrstev (nejprve jednu odstraňte).",
         "io": "Tento soubor se nepodařilo přečíst.",
-        "not_found": "Překryv nebyl nalezen."
+        "not_found": "Překryv nebyl nalezen.",
+        "quota": "Úložiště prohlížeče je plné; odstraňte překryvný prvek nebo uvolněte místo na disku."
       }
     }
   },
