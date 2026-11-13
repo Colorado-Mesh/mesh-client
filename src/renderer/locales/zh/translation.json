@@ -2873,7 +2873,29 @@
     "waypointEdit": "编辑途经点",
     "traceRouteEmpty": "没有可用于绘制此路由跟踪的跃点位置",
     "traceRouteLayer": "跟踪路由",
-    "showTraceRouteOnMap": "在地图上显示路由跟踪"
+    "showTraceRouteOnMap": "在地图上显示路由跟踪",
+    "vectorOverlays": {
+      "heading": "已导入的叠加层",
+      "hint": "导入本地 GeoJSON、KML 或 KMZ 文件（最大约 50 MB）。网络 KML 链接未加载。",
+      "import": "导入叠加层……",
+      "importing": "正在导入…",
+      "importAria": "导入本地 GeoJSON、KML 或 KMZ 叠加层",
+      "opacity": "不透明度 {{value}}%",
+      "opacityAria": "叠加层的不透明度{{name}}",
+      "remove": "移除",
+      "removeAria": "移除叠加层{{name}}",
+      "errors": {
+        "too_large": "文件过大（最大约 50 MB）。",
+        "malformed": "无法解析该文件。",
+        "unsafe_xml": "文件包含不安全的 XML (DOCTYPE/ENTITY)。",
+        "unsafe_zip": "KMZ 存档无效或不安全。",
+        "unsupported": "不支持的叠加层或联网叠加层。",
+        "empty": "未找到可绘制的几何图形。",
+        "limit": "导入的叠加层过多（请先移除一个）。",
+        "io": "无法读取文件。",
+        "not_found": "未找到叠加层。"
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",

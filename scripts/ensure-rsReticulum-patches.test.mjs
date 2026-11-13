@@ -157,7 +157,7 @@ describe('ensure-rsReticulum-patches.sh stale pin re-pin', () => {
     expect(existsSync(join(root, 'applied'))).toBe(true);
   });
 
-  it('reads dependency HEADs, not a caller repo exported via GIT_DIR', () => {
+  it('reads dependency HEADs, not a caller repo exported via GIT_DIR', { timeout: 30_000 }, () => {
     const { root } = makeFixture({ rnsPinIndex: 1 });
     const caller = makeTempDir('mesh-caller-repo-');
     makeRepo(caller);

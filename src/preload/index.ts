@@ -62,6 +62,7 @@ import type {
   LiveMapWindowInit,
   LiveMapWindowState,
 } from '../shared/liveMapWindow';
+import type { MapOverlayImportResult } from '../shared/mapOverlays/types';
 import type {
   NotificationSoundEvent,
   NotificationSoundImport,
@@ -1242,6 +1243,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('serviceAnnouncements:fetch'),
     openUrl: (url: string): Promise<boolean> =>
       ipcRenderer.invoke('serviceAnnouncements:open-url', url),
+  },
+
+  mapOverlays: {
+    import: (): Promise<MapOverlayImportResult> => ipcRenderer.invoke('mapOverlays:import'),
   },
 
   offlineMaps: {

@@ -173,6 +173,7 @@ import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerIncidentIpcHandlers } from './ipc/incident-handlers';
 import { registerLinuxBluetoothIpcHandlers } from './ipc/linux-bluetooth-handlers';
 import { registerLiveMapWindows } from './ipc/live-map-handlers';
+import { registerMapOverlayIpcHandlers } from './ipc/map-overlay-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
@@ -2474,6 +2475,7 @@ function createWindow() {
       () => offlineTileCache,
       () => customMapSources,
     );
+    registerMapOverlayIpcHandlers(() => mainWindow);
     protocol.handle(
       'mesh-weather',
       createWeatherProtocolHandler({

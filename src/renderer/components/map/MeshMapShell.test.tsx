@@ -25,6 +25,7 @@ vi.mock('react-leaflet', () => ({
     <div data-testid="basemap-tiles" data-url={url} className={className} />
   ),
   useMap: () => mapInstance,
+  GeoJSON: () => null,
 }));
 
 vi.mock('./leafletMapControls', () => ({
@@ -66,6 +67,7 @@ vi.mock('./emcommMapLayers', () => ({
 }));
 vi.mock('./TerrainProfileControl', () => ({ TerrainProfileControl: () => null }));
 vi.mock('./TerrainProfileOverlay', () => ({ TerrainProfileOverlay: () => null }));
+vi.mock('./ImportedOverlaysLayer', () => ({ ImportedOverlaysLayer: () => null }));
 
 function renderShell(overrides: Partial<MeshMapShellProps> = {}) {
   const props: MeshMapShellProps = {

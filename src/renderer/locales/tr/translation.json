@@ -2873,7 +2873,29 @@
     "waypointEdit": "Yol noktasını düzenle",
     "traceRouteEmpty": "Bu traceroute çizmek için atlama konumları yok",
     "traceRouteLayer": "Traceroute katmanı",
-    "showTraceRouteOnMap": "Traceroute’u haritada göster"
+    "showTraceRouteOnMap": "Traceroute’u haritada göster",
+    "vectorOverlays": {
+      "heading": "İçe aktarılan bindirmeler",
+      "hint": "Yerel bir GeoJSON, KML veya KMZ dosyasını içe aktarın (maksimum yaklaşık 50 MB). Ağ KML bağlantıları yüklenmiyor.",
+      "import": "Yer paylaşımını içe aktar…",
+      "importing": "Aktarılıyor...",
+      "importAria": "Yerel bir GeoJSON, KML veya KMZ bindirmesi içe aktarın",
+      "opacity": "Opaklık %{{value}}",
+      "opacityAria": "{{name}} bindirmesi için opaklık",
+      "remove": "Kaldır",
+      "removeAria": "{{name}} bindirmesini kaldırın",
+      "errors": {
+        "too_large": "Dosya çok büyük (maksimum yaklaşık 50 MB).",
+        "malformed": "Bu dosya ayrıştırılamadı.",
+        "unsafe_xml": "Dosya güvenli olmayan XML (DOCTYPE/ENTITY) içeriyor.",
+        "unsafe_zip": "KMZ arşivi geçersiz veya güvenli değil.",
+        "unsupported": "Desteklenmeyen veya ağa bağlı bindirme.",
+        "empty": "Çizilebilir geometri bulunamadı.",
+        "limit": "Çok fazla içe aktarılan bindirme var (önce birini kaldırın).",
+        "io": "Dosya Okunamadı",
+        "not_found": "Yer paylaşımı bulunamadı."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",

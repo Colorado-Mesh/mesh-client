@@ -2873,7 +2873,29 @@
     "waypointEdit": "Editar ponto de passagem",
     "traceRouteEmpty": "Não há posições de salto disponíveis para traçar este traceroute",
     "traceRouteLayer": "Traceroute",
-    "showTraceRouteOnMap": "Mostrar traceroute no mapa"
+    "showTraceRouteOnMap": "Mostrar traceroute no mapa",
+    "vectorOverlays": {
+      "heading": "Sobreposições importadas",
+      "hint": "Importe um arquivo GeoJSON, KML ou KMZ local (cerca de 50 MB no máximo). Os links KML da rede não são carregados.",
+      "import": "Importar sobreposição…",
+      "importing": "Importando…",
+      "importAria": "Importar uma sobreposição local GeoJSON, KML ou KMZ",
+      "opacity": "Opacidade {{value}}%",
+      "opacityAria": "Opacidade da sobreposição {{name}}",
+      "remove": "Remover",
+      "removeAria": "Remover sobreposição {{name}}",
+      "errors": {
+        "too_large": "O arquivo é muito grande (máximo de cerca de 50 MB).",
+        "malformed": "Não foi possível analisar esse arquivo.",
+        "unsafe_xml": "O arquivo contém XML não seguro (DOCTYPE/ENTITY).",
+        "unsafe_zip": "O arquivo KMZ é inválido ou não é seguro.",
+        "unsupported": "Overlay não compatível ou vinculado à rede.",
+        "empty": "Nenhuma geometria desenhável encontrada.",
+        "limit": "Muitas sobreposições importadas (remova uma primeiro).",
+        "io": "Não foi possível ler o arquivo.",
+        "not_found": "Overlay não encontrada."
+      }
+    }
   },
   "meshCongestion": {
     "blockTitle": "Por que você está vendo tráfego duplicado",
