@@ -24,7 +24,8 @@ Under **Overlays** you can toggle:
 
 - **Node markers** — heard nodes with coordinates
 - **Movement trails** — recent position history
-- **Waypoints** — Meshtastic waypoints when the protocol provides them
+- **Waypoints** — Meshtastic waypoints when the protocol provides them. Create via the Map control or right-click on the map (`WaypointEditorDialog` → `onSendWaypoint`); edit unlocked owned waypoints from the marker popup.
+- **Traceroute overlay** — Node Detail **Show traceroute on map** stores hop ids in `mapTraceRouteStore` and draws polyline/markers via `buildTraceRouteOverlay` (empty-state when hops lack positions).
 - **Emergency incidents** — open MECP rows with coordinates (all three protocols)
 - **MGRS grid** — search-and-rescue grid (off by default)
 - **Weather forecasts** — parsed forecast circles from marked weather bots
@@ -167,3 +168,8 @@ Developer reference: [Internet weather](development/internet-weather.md).
 - [TAK gateway](tak.md) — TAK units overlay
 - [Chat](chat.md) — sharing location from a conversation
 - [Settings](settings.md) — GPS, map filters, retention of position history
+
+## Waypoints and traceroute overlay
+
+- **Waypoints (Meshtastic):** Map → Create waypoint opens an editor (name ≤ 29, description, icon, lock, expiry). Edit unlocked owned pins; delete-for-everyone still uses `expire: 1` via `onDeleteWaypoint` / `deleteWaypoint`.
+- **Traceroute on map:** Node Detail → Show traceroute on map stores hop ids in `mapTraceRouteStore` and switches to Map. `MapPanel` draws hop markers + polyline via `buildTraceRouteOverlay`; empty state when hop positions are missing.

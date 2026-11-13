@@ -1028,7 +1028,16 @@
       "notRecorded": "Pakety v této síti zaznamenávají, kolik relé prošly, ne které.",
       "reachedYouInHops_few": "Dorazilo k vám přes {{count}} skoky",
       "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku"
-    }
+    },
+    "markUnread": "Označit jako nepřečtené",
+    "deleteMessageLocal": "Smazat lokálně",
+    "deleteMessageConfirm": "Smazat tuto zprávu pouze z tohoto zařízení?",
+    "markdownBold": "Tučné",
+    "markdownItalic": "kurzíva",
+    "markdownStrike": "Přeškrtnutí",
+    "markdownCode": "Vložený kód",
+    "markdownLink": "Odkaz",
+    "markdownToolbar": "Formátování"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2878,7 +2887,24 @@
       "hgtEstimateFailed": "Nelze odhadnout stahování nadmořské výšky.",
       "hgtDownloadFailed": "Stahování výšky se nezdařilo.",
       "hgtCacheStats": "Vyrovnávací mezipaměť: {{count}} dlaždice ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Vytvořte waypoint",
+    "waypointEditTitle": "Upravit trasový bod",
+    "waypointNameLabel": "Jméno",
+    "waypointDescriptionLabel": "Popis",
+    "waypointIconLabel": "Ikona",
+    "waypointLockLabel": "Zamkněte mi",
+    "waypointExpireLabel": "Vyprší po (hodiny, 0 = žádné)",
+    "waypointSave": "Uložit průjezdní bod",
+    "waypointNameRequired": "Jméno je povinné",
+    "waypointSaveFailed": "Trasový bod se nepodařilo uložit",
+    "waypointLockedByOther": "Tento průjezdní bod je uzamčen jiným uzlem",
+    "waypointCreate": "Zde vytvořte waypoint",
+    "waypointCreateHint": "Vytvořte trasový bod ve své pozici nebo klikněte pravým tlačítkem na mapu",
+    "waypointEdit": "Upravit trasový bod",
+    "traceRouteEmpty": "Pro nakreslení této trasy nejsou k dispozici žádné skokové pozice",
+    "traceRouteLayer": "Traceroute",
+    "showTraceRouteOnMap": "Zobrazit traceroute na mapě"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -3032,7 +3058,25 @@
     "failed": "Nezdařilo se",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Zařízení",
-    "noAckTooltipWifi": "No mesh ACK — vaše WiFi/TCP spojení s rádiem je v pořádku. Zpráva mohla být stále odeslána; žádný jiný uzel LoRa nebyl potvrzen."
+    "noAckTooltipWifi": "No mesh ACK — vaše WiFi/TCP spojení s rádiem je v pořádku. Zpráva mohla být stále odeslána; žádný jiný uzel LoRa nebyl potvrzen.",
+    "ackProof": {
+      "proven": "Osvědčený",
+      "provenTooltip": "Doklad o doručení ověřen (ACK_PROOF_VALID)",
+      "failed": "Důkaz se nezdařil",
+      "failedTooltip": "Doklad o doručení je neplatný (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Relé",
+      "relayedUnprovenTooltip": "Potvrzeno bez kryptografického důkazu o doručení",
+      "noKey": "Neověřeno",
+      "noKeyTooltip": "Důkaz je k dispozici, ale není k dispozici klíč k ověření",
+      "unknown": "Neznámý důkaz",
+      "unknownTooltip": "Nerozpoznaný stav potvrzení o doručení"
+    },
+    "sfpp": {
+      "routing": "SF++ směrování",
+      "routingTooltip": "Probíhá řetězové směrování Store & Forward++",
+      "confirmed": "SF++ potvrzeno",
+      "confirmedTooltip": "Doručení řetězce Store & Forward++ potvrzeno"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} odesláno. Zařízení se může krátce restartovat.",
@@ -8719,5 +8763,26 @@
     "retryLoad": "Zkusit znovu",
     "retryLoadAria": "Zkusit načíst vizitky znovu",
     "loadUnavailable": "Vizitky nejsou v této verzi k dispozici. Přeinstalujte nebo aktualizujte aplikaci."
+  },
+  "wordFilter": {
+    "enabled": "Skrýt zprávy odpovídající filtru slov",
+    "wordsPlaceholder": "Blokovaná slova (oddělená čárkou nebo novým řádkem)",
+    "wordsAria": "Seznam filtrů slov",
+    "disableConversation": "Zakázat filtr slov v této konverzaci",
+    "settingsTitle": "Filtr slov",
+    "showFiltered": "Zobrazit {{count}} filtrované",
+    "hideFiltered": "Skrýt filtrované zprávy"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Slabý nebo otevřený klíč kanálu na {{channel}}",
+    "pskWeakShort": "OTEVŘENO",
+    "pskAes128": "Kanálový klíč AES-128 na {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Kanálový klíč AES-256 na {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Přesná poloha sdílená na {{channel}}",
+    "preciseLocationShort": "Loc",
+    "mqttUplink": "Uplink MQTT povolen na {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }

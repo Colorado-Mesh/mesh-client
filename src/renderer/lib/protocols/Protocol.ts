@@ -381,6 +381,15 @@ export interface MeshtasticStoreForwardEvent {
   timestamp: number;
 }
 
+export interface MeshtasticRoutingAckEvent {
+  /** Data.requestId — the outbound MeshPacket id being acknowledged. */
+  requestId: number;
+  /** Raw MeshPacket.ackProofStatus enum (normalized by consumers). */
+  ackProofStatus: number;
+  /** True when Routing.errorReason is NONE (ACK). */
+  isAck: boolean;
+}
+
 export type DomainEvent =
   | { type: 'text_message'; payload: TextMessageEvent }
   | { type: 'node_info'; payload: NodeInfoEvent }
@@ -396,6 +405,7 @@ export type DomainEvent =
   | { type: 'meshtastic_config_slice'; payload: MeshtasticConfigSliceEvent }
   | { type: 'meshtastic_module_port'; payload: MeshtasticModulePortEvent }
   | { type: 'meshtastic_store_forward'; payload: MeshtasticStoreForwardEvent }
+  | { type: 'meshtastic_routing_ack'; payload: MeshtasticRoutingAckEvent }
   | { type: 'queue_status'; payload: QueueStatusEvent }
   | { type: 'device_log'; payload: DeviceLogEvent }
   | { type: 'raw_packet'; payload: RawPacketEntry }

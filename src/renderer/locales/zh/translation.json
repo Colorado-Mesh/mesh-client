@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "路由仅针对频道消息显示。",
       "unavailableNotCaptured": "路由不可用：路由仅保留用于来自此会话的最新消息。",
       "notRecorded": "此网络上的数据包记录它们通过了多少个中继，而不是哪些中继。"
-    }
+    },
+    "markUnread": "标记未读",
+    "deleteMessageLocal": "在本地删除",
+    "deleteMessageConfirm": "是否仅从此设备中删除此消息？",
+    "markdownBold": "加粗",
+    "markdownItalic": "斜体",
+    "markdownStrike": "删除线",
+    "markdownCode": "内嵌代码",
+    "markdownLink": "链接",
+    "markdownToolbar": "格式"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "无法估计海拔高度下载。",
       "hgtDownloadFailed": "海拔高度下载失败。",
       "hgtCacheStats": "高程缓存： {{count}}平铺({{size}})"
-    }
+    },
+    "waypointCreateTitle": "创建途经点",
+    "waypointEditTitle": "编辑途经点",
+    "waypointNameLabel": "Name",
+    "waypointDescriptionLabel": "描述",
+    "waypointIconLabel": "标志",
+    "waypointLockLabel": "锁定给我",
+    "waypointExpireLabel": "到期时间（小时，0 = 无）",
+    "waypointSave": "保存途经点",
+    "waypointNameRequired": "名称是必需项",
+    "waypointSaveFailed": "无法保存途经点",
+    "waypointLockedByOther": "此途经点已被另一个节点锁定",
+    "waypointCreate": "在此处创建途经点",
+    "waypointCreateHint": "在您的位置创建航点，或右键单击地图",
+    "waypointEdit": "编辑途经点",
+    "traceRouteEmpty": "没有可用于绘制此路由跟踪的跃点位置",
+    "traceRouteLayer": "跟踪路由",
+    "showTraceRouteOnMap": "在地图上显示路由跟踪"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -3000,7 +3026,25 @@
     "failed": "失败",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "设备",
-    "noAckTooltipWifi": "无网状确认—您可以使用无线网络/TCP连接到收音机。消息可能仍已发送；未确认其他LoRa节点。"
+    "noAckTooltipWifi": "无网状确认—您可以使用无线网络/TCP连接到收音机。消息可能仍已发送；未确认其他LoRa节点。",
+    "ackProof": {
+      "proven": "久经考验",
+      "provenTooltip": "派送证明已验证 (ACK_PROOF_VALID)",
+      "failed": "校对失败",
+      "failedTooltip": "派送证明无效 (ACK_PROOF_INVALID)",
+      "relayedUnproven": "已中继:",
+      "relayedUnprovenTooltip": "已确认，但无加密交付证明",
+      "noKey": "未验证",
+      "noKeyTooltip": "存在证明，但没有可用于验证的密钥",
+      "unknown": "未知证明文件",
+      "unknownTooltip": "无法识别的派送凭证状态"
+    },
+    "sfpp": {
+      "routing": "SF++ 路由中",
+      "routingTooltip": "Store & Forward++ 链路路由进行中",
+      "confirmed": "SF++ 已确认",
+      "confirmedTooltip": "Store & Forward++ 链路投递已确认"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}}已发送。设备可能会短暂重新启动。",
@@ -8634,5 +8678,26 @@
     "retryLoad": "再试一次",
     "retryLoadAria": "重试加载联系人卡片",
     "loadUnavailable": "此版本中不提供联系人卡片。请重新安装或更新应用。"
+  },
+  "wordFilter": {
+    "enabled": "隐藏与词语筛选条件匹配的消息",
+    "wordsPlaceholder": "屏蔽词（以逗号或换行符分隔）",
+    "wordsAria": "筛选列表",
+    "disableConversation": "在此对话中禁用词语过滤",
+    "settingsTitle": "过滤",
+    "showFiltered": "显示{{count}}个筛选结果",
+    "hideFiltered": "隐藏已筛选的消息"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "{{channel}}上的频道密钥薄弱或公开",
+    "pskWeakShort": "开启",
+    "pskAes128": "{{channel}}上的AES-128频道密钥",
+    "pskAes128Short": "AES128",
+    "pskAes256": "{{channel}}上的AES-256通道密钥",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "已在{{channel}}上共享精确位置",
+    "preciseLocationShort": "坐标地址",
+    "mqttUplink": "MQTT上行链路已在{{channel}}上启用",
+    "mqttUplinkShort": "MQTT"
   }
 }

@@ -100,6 +100,9 @@ export const DYNAMIC_T_PREFIXES = [
   },
   { prefix: 'remoteShell.phase.', leafKeys: true },
   { prefix: 'telemetryPanel.cayenne.kind.', leafKeys: true },
+  { prefix: 'messageStatusBadge.ackProof.', leafKeys: true },
+  { prefix: 'messageStatusBadge.sfpp.', leafKeys: true },
+  { prefix: 'channelSecurityBadges.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

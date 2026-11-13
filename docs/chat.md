@@ -100,6 +100,18 @@ Limits are counted in bytes on the wire, so non-Latin scripts and emoji use more
 
 MeshCore does not split because busy repeaters often drop numbered parts. Multi-part messages from other clients still reassemble when received. Sending several MeshCore messages close together also shows a dismissible warning that repeaters may drop messages sent too fast; it does not block the send.
 
+### Markdown formatting
+
+Composer toolbar wraps the selection (or caret) in a small markdown subset: **bold**, _italic_, ~~strike~~, `code`, and `[link](url)`. Messages render that subset after mention/URL segmentation. Raw HTML stays as text (never injected as DOM). Search highlighting still runs inside markdown text nodes.
+
+### Word filter
+
+Chat can hide messages whose text matches a blocked-word list (case-insensitive substring). MECP / MAYDAY / URGENT lines never filter. Per-conversation disable and **Show N filtered** reveal stay local. Filtered messages do not count toward unread badges or notification beeps.
+
+### Mark unread and delete
+
+Conversation tools include **Mark unread** (sets the read watermark just before the newest inbound message; does not re-notify). Message action bars offer **Delete locally** with a confirm (removes the row from this device’s in-memory store only).
+
 ### Spellcheck, emoji, and extras
 
 - Spellcheck is on. Right-click a misspelled word for replacements.
@@ -278,3 +290,7 @@ Pin, archive, mute, star, search, the unified inbox, macros, and scheduled send 
 - [Localization & Languages](localization.md)
 - [Troubleshooting — Chat, nodes, and notifications](troubleshooting.md#chat-nodes-and-notifications)
 - [Chat panel (developer reference)](development/chat.md)
+
+## Word filter & formatting
+
+Chat can hide messages that match a user word list (Settings / Chat word filter). Emergency MECP lines are never hidden. Composer formatting toolbar inserts a small markdown subset; bubbles render it without allowing HTML.

@@ -6,6 +6,24 @@ const hasWeatherView: SettingSearchEntry['visible'] = (ctx) =>
 
 const chatEntries: readonly SettingSearchEntry[] = [
   {
+    id: 'chat.wordFilter.enabled',
+    slot: 'Chat',
+    labelKey: 'wordFilter.enabled',
+    keywords: ['word', 'filter', 'block', 'hide', 'profanity'],
+  },
+  {
+    id: 'chat.wordFilter.words',
+    slot: 'Chat',
+    labelKey: 'wordFilter.wordsAria',
+    keywords: ['word', 'filter', 'list', 'blocked'],
+  },
+  {
+    id: 'chat.wordFilter.disableConversation',
+    slot: 'Chat',
+    labelKey: 'wordFilter.disableConversation',
+    keywords: ['word', 'filter', 'disable', 'conversation', 'opt-out'],
+  },
+  {
     id: 'chat.weather.hideInChannels',
     slot: 'Chat',
     labelKey: 'weatherFilter.hideInChannels',
@@ -30,10 +48,15 @@ const chatEntries: readonly SettingSearchEntry[] = [
 
 export const chatSurface: SettingsSearchSurface = {
   entries: chatEntries,
-  files: [{ path: 'src/renderer/components/chat/WeatherFilterSettings.tsx', sweepAllKeys: true }],
+  files: [
+    { path: 'src/renderer/components/chat/WeatherFilterSettings.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/chat/WordFilterSettings.tsx', sweepAllKeys: true },
+  ],
   exempt: {
     'weatherFilter.patternPlaceholder': 'placeholder of the indexed pattern field',
     'weatherFilter.patternInvalid': 'inline validation error',
     'weatherFilter.onlinePlaceLookupHint': 'hint for the indexed online lookup toggle',
+    'wordFilter.wordsPlaceholder': 'placeholder of the indexed word list field',
+    'wordFilter.settingsTitle': 'aria-label for the word-filter settings group',
   },
 };

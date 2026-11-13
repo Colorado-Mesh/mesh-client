@@ -12,6 +12,7 @@ import {
   SignalReportChip,
 } from '@/renderer/components/chat/ChatStructuredPayloads';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
+import { parseChatMarkdown, renderChatMarkdownNodes } from '@/renderer/lib/chatMarkdown';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import { parseDroneReport } from '@/renderer/lib/droneReportParse';
 import {
@@ -385,7 +386,11 @@ export function ChatPayloadText({
             )
           ) : (
             <span key={`t-${i}`} className="whitespace-pre-wrap">
-              {highlightCaseInsensitive(seg.text, query)}
+              {renderChatMarkdownNodes(
+                parseChatMarkdown(seg.text),
+                `t-${i}`,
+                query.trim() ? (text) => highlightCaseInsensitive(text, query) : undefined,
+              )}
             </span>
           ),
         )}

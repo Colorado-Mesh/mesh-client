@@ -50,3 +50,31 @@ describe('MessageStatusBadge', () => {
     expect(screen.queryByLabelText(/noAckTooltipWifi/)).toBeNull();
   });
 });
+
+it('shows proven delivery for ACK_PROOF_VALID', async () => {
+  await renderAndAssertAxe(
+    <MessageStatusBadge status="acked" transport="device" ackProofStatus="valid" />,
+  );
+  expect(screen.getByLabelText('messageStatusBadge.ackProof.provenTooltip')).toBeTruthy();
+});
+
+it('shows proof failed for ACK_PROOF_INVALID', async () => {
+  await renderAndAssertAxe(
+    <MessageStatusBadge status="acked" transport="device" ackProofStatus="invalid" />,
+  );
+  expect(screen.getByLabelText('messageStatusBadge.ackProof.failedTooltip')).toBeTruthy();
+});
+
+it('shows relayed/unproven when acked without proof', async () => {
+  await renderAndAssertAxe(
+    <MessageStatusBadge status="acked" transport="device" ackProofStatus="absent" />,
+  );
+  expect(screen.getByLabelText('messageStatusBadge.ackProof.relayedUnprovenTooltip')).toBeTruthy();
+});
+
+it('shows SF++ confirmed phase', async () => {
+  await renderAndAssertAxe(
+    <MessageStatusBadge status="sending" transport="device" sfppPhase="confirmed" />,
+  );
+  expect(screen.getByLabelText('messageStatusBadge.sfpp.confirmedTooltip')).toBeTruthy();
+});

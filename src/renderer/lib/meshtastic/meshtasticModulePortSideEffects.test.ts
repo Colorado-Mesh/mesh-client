@@ -305,7 +305,7 @@ describe('attachMeshtasticModulePortSideEffects', () => {
     expect(decodeNodeStatus(new Uint8Array([0x0a, 0xff]))).toBeNull();
   });
 
-  it.each(['paging', 'storeForwardPlusPlus', 'loraOta', 'groupAlarm'])(
+  it.each(['paging', 'loraOta', 'groupAlarm'])(
     'accepts label-only port %s without side effects',
     (portLabel) => {
       const deps = makeDeps();

@@ -453,6 +453,7 @@ import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
+import { useMapTraceRouteStore } from './stores/mapTraceRouteStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { useNomadPageViewerStore } from './stores/nomadPageViewerStore';
@@ -3112,6 +3113,30 @@ function AppContent() {
     activeRuntime.traceRouteResults,
   ]);
 
+  const handleShowTraceRouteOnMap = useCallback(
+    (nodeId: number) => {
+      const result = asTraceRouteResultsMap(activeRuntime.traceRouteResults).get(nodeId);
+      if (!result) return;
+      const myNum = asNumericNodeId(activeRuntime.selfNodeId, activeConnectionView.state.myNodeNum);
+      const nodeIds = [myNum, ...result.route, result.from];
+      useMapTraceRouteStore
+        .getState()
+        .setRoute(
+          nodeIds,
+          traceRouteHops && traceRouteHops.length > 0 ? traceRouteHops : undefined,
+        );
+      const mapTab = findTabIndexForSlot(activeTabMappings, 'Map');
+      if (mapTab >= 0) setActiveTab(mapTab);
+    },
+    [
+      activeRuntime.traceRouteResults,
+      activeRuntime.selfNodeId,
+      activeConnectionView.state.myNodeNum,
+      activeTabMappings,
+      traceRouteHops,
+    ],
+  );
+
   /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannelsByProtocol = useMemo(
     () =>
@@ -4532,6 +4557,7 @@ function AppContent() {
             : undefined
         }
         traceRouteHops={traceRouteHops}
+        onShowTraceRouteOnMap={handleShowTraceRouteOnMap}
         onDeleteNode={
           detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
             ? handleDeleteNode
@@ -5000,6 +5026,27 @@ function AppContent() {
                                 chatChannelsByProtocol,
                                 chatProtocol,
                               );
+
+                              const meshtasticChannelSecurityByIndex = (() => {
+                                if (chatProtocol !== 'meshtastic') return undefined;
+                                const map = new Map<
+                                  number,
+                                  {
+                                    psk: Uint8Array;
+                                    uplinkEnabled: boolean;
+                                    positionPrecision: number;
+                                  }
+                                >();
+                                for (const cfg of meshtasticRuntime.channelConfigs ?? []) {
+                                  map.set(cfg.index, {
+                                    psk: cfg.psk,
+                                    uplinkEnabled: cfg.uplinkEnabled,
+                                    positionPrecision: cfg.positionPrecision,
+                                  });
+                                }
+                                return map;
+                              })();
+
                               const chatConnectionView = selectByProtocol(
                                 connectionViewByProtocol,
                                 chatProtocol,
@@ -5054,6 +5101,7 @@ function AppContent() {
                                     }
                                     messagesForUnread={chatMessages}
                                     channels={chatChannelsForProtocol}
+                                    channelSecurityByIndex={meshtasticChannelSecurityByIndex}
                                     meshcoreChannelSources={
                                       chatCapabilities.hasCompanionContactManagementConfig
                                         ? meshcoreRuntime.channels

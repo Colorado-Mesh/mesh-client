@@ -599,6 +599,7 @@ vi.mock('./lib/appSettingsStorage', () => ({
   mergeAppSetting: vi.fn(),
   mergeAppSettingsPartial: vi.fn(),
   isShareMyLocationEnabled: vi.fn().mockReturnValue(true),
+  getWordFilterSettings: vi.fn().mockReturnValue({ enabled: false, words: [] }),
   getWeatherFilterSettings: vi.fn().mockReturnValue({ hideInChannels: false, pattern: '' }),
   isWeatherOnlinePlaceLookupEnabled: vi.fn().mockReturnValue(false),
   getOperationalAlertSettings: vi.fn().mockReturnValue({

@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { HelpTooltip } from '@/renderer/components/HelpTooltip';
 import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
+import {
+  ackProofBadgeKey,
+  type MeshtasticAckProofStatus,
+  type MeshtasticSfppPhase,
+} from '@/renderer/lib/meshtastic/meshtasticAckProof';
 
 export interface MessageStatusBadgeProps {
   status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
@@ -11,6 +16,10 @@ export interface MessageStatusBadgeProps {
   error?: string;
   /** Room BBS posts ack on companion SENT, not mesh hop ACK. */
   context?: 'dm' | 'room';
+  /** Meshtastic-only delivery proof from MeshPacket.ackProofStatus. */
+  ackProofStatus?: MeshtasticAckProofStatus;
+  /** Meshtastic-only Store & Forward++ chain phase. */
+  sfppPhase?: MeshtasticSfppPhase;
 }
 
 export function MessageStatusBadge({
@@ -19,9 +28,43 @@ export function MessageStatusBadge({
   connectionType,
   error,
   context = 'dm',
+  ackProofStatus,
+  sfppPhase,
 }: MessageStatusBadgeProps) {
   const { t } = useTranslation();
   const displayError = error ? translateMeshcoreUserMessage(t, error) : undefined;
+  const proofKey = ackProofBadgeKey(ackProofStatus, status);
+  if (proofKey) {
+    const proofLabel = t(`messageStatusBadge.ackProof.${proofKey}`);
+    const proofTooltip = t(`messageStatusBadge.ackProof.${proofKey}Tooltip`);
+    const proofColor =
+      proofKey === 'proven'
+        ? 'text-bright-green'
+        : proofKey === 'failed'
+          ? 'text-red-400'
+          : 'text-muted';
+    const proofIcon = proofKey === 'proven' ? '✓✓' : proofKey === 'failed' ? '✗' : '✓';
+    return (
+      <DeliveryStatusBadgeFrame
+        label={proofLabel}
+        icon={proofIcon}
+        colorClass={proofColor}
+        tooltip={proofTooltip}
+      />
+    );
+  }
+  if (sfppPhase === 'routing' || sfppPhase === 'confirmed') {
+    const sfppLabel = t(`messageStatusBadge.sfpp.${sfppPhase}`);
+    const sfppTooltip = t(`messageStatusBadge.sfpp.${sfppPhase}Tooltip`);
+    return (
+      <DeliveryStatusBadgeFrame
+        label={sfppLabel}
+        icon={sfppPhase === 'confirmed' ? '✓' : '⏳'}
+        colorClass={sfppPhase === 'confirmed' ? 'text-bright-green' : 'text-muted'}
+        tooltip={sfppTooltip}
+      />
+    );
+  }
   if (status === 'queued') {
     return (
       <HelpTooltip text={t('messageStatusBadge.queuedTooltip')}>

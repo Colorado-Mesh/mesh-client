@@ -59,6 +59,7 @@ import {
   splitChatMessage,
 } from '../lib/chatComposerLimits';
 import { formatLocationMessage } from '../lib/chatLocationUtils';
+import { wrapSelectionWithMarkdown } from '../lib/chatMarkdown';
 import {
   clearDraft,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -2108,6 +2109,44 @@ export function ChatComposer({
               )}
             </div>
           )}
+        </div>
+        <div
+          className="mb-1 flex flex-wrap items-center gap-1"
+          role="toolbar"
+          aria-label={t('chatPanel.markdownToolbar')}
+          data-testid="chat-markdown-toolbar"
+        >
+          {(
+            [
+              ['bold', '**', '**', 'chatPanel.markdownBold'],
+              ['italic', '*', '*', 'chatPanel.markdownItalic'],
+              ['strike', '~~', '~~', 'chatPanel.markdownStrike'],
+              ['code', '`', '`', 'chatPanel.markdownCode'],
+              ['link', '[', '](https://)', 'chatPanel.markdownLink'],
+            ] as const
+          ).map(([id, before, after, labelKey]) => (
+            <button
+              key={id}
+              type="button"
+              className="text-muted hover:text-ink-100 rounded px-1.5 py-0.5 text-xs"
+              aria-label={t(labelKey)}
+              title={t(labelKey)}
+              onClick={() => {
+                const el = inputRef.current;
+                if (!el) return;
+                const start = el.selectionStart ?? input.length;
+                const end = el.selectionEnd ?? input.length;
+                const wrapped = wrapSelectionWithMarkdown(input, start, end, before, after);
+                setInput(wrapped.next);
+                requestAnimationFrame(() => {
+                  el.focus();
+                  el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);
+                });
+              }}
+            >
+              {t(labelKey)}
+            </button>
+          ))}
         </div>
         {showMacros && (
           <ChatMacroBar placement="inline" onApply={applyMacro} onEdit={openMacroDialog} />

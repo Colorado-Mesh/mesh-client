@@ -167,6 +167,7 @@ export interface NodeInfoBodyProps {
   node: MeshNode;
   homeNode?: MeshNode | null;
   traceRouteHops?: string[];
+  onShowTraceRouteOnMap?: () => void;
   /** When set, Mesh Congestion can list originators by name/role (RF duplicate-prone traffic). */
   nodes?: Map<number, MeshNode>;
   useFahrenheit?: boolean;
@@ -201,6 +202,7 @@ export default function NodeInfoBody({
   node,
   homeNode,
   traceRouteHops,
+  onShowTraceRouteOnMap,
   nodes,
   useFahrenheit = false,
   protocol = 'meshtastic',
@@ -882,6 +884,18 @@ export default function NodeInfoBody({
       </div>
 
       {/* Trace route result */}
+      {onShowTraceRouteOnMap && traceRouteHops && traceRouteHops.length > 0 && (
+        <button
+          type="button"
+          className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 mb-2 rounded-lg border px-2.5 py-1 text-xs font-medium"
+          aria-label={t('mapPanel.showTraceRouteOnMap')}
+          onClick={() => {
+            onShowTraceRouteOnMap();
+          }}
+        >
+          {t('mapPanel.showTraceRouteOnMap')}
+        </button>
+      )}
       {traceRouteHops && (
         <div className="bg-primary-dark mt-3 rounded-lg p-2">
           <div className="text-ink-400 mb-1 text-xs">{t('nodeInfoBody.routePath')}</div>

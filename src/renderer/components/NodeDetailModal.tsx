@@ -161,6 +161,8 @@ interface NodeDetailModalProps {
   /** GPS position history (tracking path) for mobile nodes */
   positionHistory?: Map<number, { t: number; lat: number; lon: number }[]>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+  /** Show the latest traceroute for this node on the Map tab. */
+  onShowTraceRouteOnMap?: (nodeId: number) => void;
   /** Meshtastic PKC: base64 admin public key saved for this node (one per node). */
   remoteAdminKey?: string;
   /** Persist admin key for remote admin (base64, 32-byte public key). */
@@ -286,6 +288,7 @@ export default function NodeDetailModal({
   meshcoreManufacturerModel,
   positionHistory,
   onShowOnMap,
+  onShowTraceRouteOnMap,
   remoteAdminKey,
   onSaveRemoteAdminKey,
   onConfigureRemotely,
@@ -1336,6 +1339,13 @@ export default function NodeDetailModal({
             node={node}
             homeNode={homeNode}
             traceRouteHops={isOurNode ? undefined : traceRouteHops}
+            onShowTraceRouteOnMap={
+              isOurNode || !onShowTraceRouteOnMap
+                ? undefined
+                : () => {
+                    onShowTraceRouteOnMap(node.node_id);
+                  }
+            }
             nodes={nodes}
             useFahrenheit={useFahrenheit}
             protocol={protocol}

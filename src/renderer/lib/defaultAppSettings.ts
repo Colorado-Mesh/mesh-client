@@ -49,6 +49,10 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   weatherFilterHideInChannels: false,
   /** Extra case-insensitive regex for weather posts (empty = defaults only). */
   weatherFilterPattern: '',
+  /** Hide messages matching the word-filter list (MECP/MAYDAY/URGENT never filtered). */
+  wordFilterEnabled: false,
+  /** Lowercased word list for the chat word filter. */
+  wordFilterWords: [] as string[],
   /** Look up forecast places missing from the offline gazetteer via Open-Meteo (sends the place name). */
   weatherOnlinePlaceLookup: false,
   /** When true, chat/room message action bars (copy/reply/react/etc.) stay visible instead of hover-only. */

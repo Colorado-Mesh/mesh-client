@@ -68,11 +68,21 @@ vi.mock('@/renderer/stores/reticulumPeerStore', async (importOriginal) => {
   };
 });
 
-async function waitForComposer(): Promise<HTMLTextAreaElement> {
-  const boxes = await screen.findAllByRole('textbox');
+function getComposer(): HTMLTextAreaElement {
+  // Prefer the composer textarea; WordFilterSettings also exposes a textbox.
+  const byLabel = screen.queryByRole('textbox', {
+    name: /enter message|message here|write a message/i,
+  });
+  if (byLabel instanceof HTMLTextAreaElement) return byLabel;
+  const boxes = screen.getAllByRole('textbox');
   const textarea = boxes.find((el): el is HTMLTextAreaElement => el.tagName === 'TEXTAREA');
   if (!textarea) throw new Error('Chat composer textarea not found');
   return textarea;
+}
+
+async function waitForComposer(): Promise<HTMLTextAreaElement> {
+  await screen.findAllByRole('textbox');
+  return getComposer();
 }
 
 vi.mock('../lib/chatNotifications', () => ({
@@ -4402,7 +4412,7 @@ describe('ChatPanel — draft persistence', () => {
         <ChatPanel {...baseProps} isConnected onSend={onSend} />
       </ToastProvider>,
     );
-    const textarea = screen.getByRole('textbox');
+    const textarea = getComposer();
     await user.type(textarea, 'keep me');
     view.rerender(
       <ToastProvider>
@@ -4418,8 +4428,8 @@ describe('ChatPanel — draft persistence', () => {
         <ChatPanel {...baseProps} isConnected onSend={onSend} />
       </ToastProvider>,
     );
-    expect(screen.getByRole('textbox')).toHaveValue('keep me');
-    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(getComposer()).toHaveValue('keep me');
+    expect(getComposer()).not.toBeDisabled();
   });
 
   it('preserves unsent input when switching channels', async () => {
@@ -4437,7 +4447,7 @@ describe('ChatPanel — draft persistence', () => {
         />
       </ToastProvider>,
     );
-    const textarea = screen.getByRole('textbox');
+    const textarea = getComposer();
     await user.type(textarea, 'unsent draft');
     expect(textarea).toHaveValue('unsent draft');
 
@@ -4540,7 +4550,7 @@ describe('ChatPanel — @mention autocomplete', () => {
         <ChatPanel {...baseProps} protocol="meshtastic" nodes={new Map([[2, aliceNode]])} />
       </ToastProvider>,
     );
-    const textarea = screen.getByRole('textbox');
+    const textarea = getComposer();
     // fireEvent.change gives us reliable selectionStart control
     fireEvent.change(textarea, { target: { value: '@' } });
     // After @ alone, candidates = all nodes; dropdown should appear
@@ -4555,12 +4565,12 @@ describe('ChatPanel — @mention autocomplete', () => {
         <ChatPanel {...baseProps} protocol="meshtastic" nodes={new Map([[2, aliceNode]])} />
       </ToastProvider>,
     );
-    const textarea = screen.getByRole('textbox');
+    const textarea = getComposer();
     fireEvent.change(textarea, { target: { value: '@Al' } });
     const option = await screen.findByRole('option');
     await user.click(option);
     // Value should contain @[ ... ] mention token (name is short_name for meshtastic)
-    expect((textarea as HTMLTextAreaElement).value).toContain('@[');
+    expect(textarea.value).toContain('@[');
   });
 });
 

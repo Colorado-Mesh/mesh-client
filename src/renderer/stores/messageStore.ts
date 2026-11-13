@@ -10,6 +10,10 @@ import {
   renameHeardRepeatWindowMessageId,
 } from '../lib/meshcore/heardRepeatTracker';
 import { trimMeshcoreMemoryWindow } from '../lib/meshcoreMessageMemoryWindow';
+import type {
+  MeshtasticAckProofStatus,
+  MeshtasticSfppPhase,
+} from '../lib/meshtastic/meshtasticAckProof';
 import { getMeshtasticMessageLoadLimit } from '../lib/meshtasticMessageLoadLimit';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
@@ -82,6 +86,10 @@ export interface MessageRecord {
   reticulumAudioDurationSec?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
+  /** Meshtastic MeshPacket.ackProofStatus for outbound delivery proof badges. */
+  ackProofStatus?: MeshtasticAckProofStatus;
+  /** Meshtastic Store & Forward++ chain phase correlated by encapsulatedId. */
+  sfppPhase?: MeshtasticSfppPhase;
   /** Group-channel identity key (`channelIdentityKey.ts`); null-ish for DMs or legacy rows. */
   channelKey?: string;
   /** Radio (local node number) that recorded this message, when known. */
@@ -166,6 +174,8 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumAudioMode',
   'reticulumAudioDurationSec',
   'viaStoreForward',
+  'ackProofStatus',
+  'sfppPhase',
   'channelKey',
   'radioNodeId',
 ];
@@ -661,6 +671,26 @@ export function updateMessageMqttStatus(
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
     const updated = { ...existing, mqttStatus };
+    if (messageRecordFieldsEqual(existing, updated)) return s;
+    return mergeIdentityMessages(s, identityId, { ...byIdentity, [messageId]: updated });
+  });
+}
+
+export function updateMeshtasticDeliveryMeta(
+  identityId: IdentityId,
+  messageId: string,
+  patch: {
+    ackProofStatus?: MeshtasticAckProofStatus;
+    sfppPhase?: MeshtasticSfppPhase;
+  },
+): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    const existing = byIdentity?.[messageId];
+    if (!existing) return s;
+    const updated: MessageRecord = { ...existing };
+    if (patch.ackProofStatus !== undefined) updated.ackProofStatus = patch.ackProofStatus;
+    if (patch.sfppPhase !== undefined) updated.sfppPhase = patch.sfppPhase;
     if (messageRecordFieldsEqual(existing, updated)) return s;
     return mergeIdentityMessages(s, identityId, { ...byIdentity, [messageId]: updated });
   });

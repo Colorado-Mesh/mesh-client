@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "ルートはチャンネルメッセージに対してのみ表示されます。",
       "unavailableNotCaptured": "ルートは利用できません：ルートは、このセッションからの最近のメッセージに対してのみ保持されます。",
       "notRecorded": "このネットワーク上のパケットは、どのリレーを通過させたかではなく、どのリレーを通過させたかを記録します。"
-    }
+    },
+    "markUnread": "未読としてマークする",
+    "deleteMessageLocal": "ローカルで削除",
+    "deleteMessageConfirm": "このメッセージをこのデバイスからのみ削除しますか?",
+    "markdownBold": "大胆な",
+    "markdownItalic": "イタリック",
+    "markdownStrike": "取り消し線",
+    "markdownCode": "インラインコード",
+    "markdownLink": "リンク",
+    "markdownToolbar": "書式設定"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "エレベーションダウンロードを推定できませんでした。",
       "hgtDownloadFailed": "高度のダウンロードに失敗しました。",
       "hgtCacheStats": "高度キャッシュ： {{count}}タイル（ {{size}} ）"
-    }
+    },
+    "waypointCreateTitle": "ウェイポイントの作成",
+    "waypointEditTitle": "ウェイポイントの編集",
+    "waypointNameLabel": "名前",
+    "waypointDescriptionLabel": "説明",
+    "waypointIconLabel": "アイコン",
+    "waypointLockLabel": "私にロックしてください",
+    "waypointExpireLabel": "(時間、0 = なし) 後に期限切れになります",
+    "waypointSave": "ウェイポイントの保存",
+    "waypointNameRequired": "名前は必須です",
+    "waypointSaveFailed": "ウェイポイントを保存できませんでした",
+    "waypointLockedByOther": "このウェイポイントは別のノードによってロックされています",
+    "waypointCreate": "ここにウェイポイントを作成します",
+    "waypointCreateHint": "現在地にウェイポイントを作成するか、地図を右クリックします",
+    "waypointEdit": "ウェイポイントの編集",
+    "traceRouteEmpty": "このトレースルートを描画できるホップ位置がありません",
+    "traceRouteLayer": "トレースルート",
+    "showTraceRouteOnMap": "地図上にトレースルートを表示"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -3000,7 +3026,25 @@
     "failed": "失敗しました",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "デバイス",
-    "noAckTooltipWifi": "メッシュACKなし—無線へのWi-Fi/TCPリンクは問題ありません。メッセージはまだ送信されている可能性があります。他のLoRaノードは確認応答していません。"
+    "noAckTooltipWifi": "メッシュACKなし—無線へのWi-Fi/TCPリンクは問題ありません。メッセージはまだ送信されている可能性があります。他のLoRaノードは確認応答していません。",
+    "ackProof": {
+      "proven": "実証済み",
+      "provenTooltip": "配達証明が確認されました (ACK_PROOF_VALID)",
+      "failed": "証明に失敗しました",
+      "failedTooltip": "配達証明が無効です (ACK_PROOF_INVALID)",
+      "relayedUnproven": "中継された",
+      "relayedUnprovenTooltip": "暗号化配信証明なしで承認される",
+      "noKey": "未検証",
+      "noKeyTooltip": "証拠は存在しますが、検証できるキーがありません",
+      "unknown": "未知の証拠",
+      "unknownTooltip": "未承認の配達証明ステータス"
+    },
+    "sfpp": {
+      "routing": "SF++ ルーティング",
+      "routingTooltip": "Store & Forward++ チェーン ルーティングが進行中です",
+      "confirmed": "SF++確定",
+      "confirmedTooltip": "ストア＆フォワード++チェーンの配信が確認されました"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} が送信されました。デバイスが短時間再起動する場合があります。",
@@ -8634,5 +8678,26 @@
     "retryLoad": "もう一度お試しください。",
     "retryLoadAria": "連絡先カードの読み込みを再試行する",
     "loadUnavailable": "このビルドでは連絡先カードは利用できません。アプリを再インストールするか、アップデートしてください。"
+  },
+  "wordFilter": {
+    "enabled": "単語フィルターに一致するメッセージを非表示にする",
+    "wordsPlaceholder": "ブロックされた単語 (カンマまたは改行で区切られる)",
+    "wordsAria": "ワードフィルターリスト",
+    "disableConversation": "この会話の単語フィルターを無効にする",
+    "settingsTitle": "ワードフィルター",
+    "showFiltered": "{{count}} をフィルタリングして表示",
+    "hideFiltered": "フィルタリングされたメッセージを非表示にする"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "{{channel}} のチャンネル キーが弱いか開いています",
+    "pskWeakShort": "開ける",
+    "pskAes128": "{{channel}} の AES-128 チャネル キー",
+    "pskAes128Short": "AES128",
+    "pskAes256": "{{channel}} の AES-256 チャネル キー",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "{{channel}} で正確な位置情報が共有されました",
+    "preciseLocationShort": "ロック",
+    "mqttUplink": "MQTT アップリンクが {{channel}} で有効になりました",
+    "mqttUplinkShort": "MQTT"
   }
 }

@@ -1007,7 +1007,16 @@
       "unavailableDirectOrRoom": "Rute ditampilkan hanya untuk pesan saluran.",
       "unavailableNotCaptured": "Rute tidak tersedia: rute hanya disimpan untuk pesan terbaru dari sesi ini.",
       "notRecorded": "Paket di jaringan ini mencatat berapa banyak relay yang mereka lewati, bukan yang mana."
-    }
+    },
+    "markUnread": "Tandai belum dibaca",
+    "deleteMessageLocal": "Hapus di perangkat ini",
+    "deleteMessageConfirm": "Hapus pesan ini hanya dari perangkat ini?",
+    "markdownBold": "Tebal",
+    "markdownItalic": "Miring",
+    "markdownStrike": "Coret",
+    "markdownCode": "Kode sebaris",
+    "markdownLink": "Tautan",
+    "markdownToolbar": "Pemformatan"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2847,7 +2856,24 @@
       "hgtEstimateFailed": "Tidak dapat memperkirakan unduhan ketinggian.",
       "hgtDownloadFailed": "Pengunduhan ketinggian gagal.",
       "hgtCacheStats": "Cache elevasi: {{count}} ubin ({{size}})"
-    }
+    },
+    "waypointCreateTitle": "Buat waypoint",
+    "waypointEditTitle": "Sunting waypoint",
+    "waypointNameLabel": "Nama",
+    "waypointDescriptionLabel": "Deskripsi",
+    "waypointIconLabel": "Ikon",
+    "waypointLockLabel": "Kunci ke saya",
+    "waypointExpireLabel": "Kedaluwarsa setelah (jam, 0 = tidak ada)",
+    "waypointSave": "Simpan waypoint",
+    "waypointNameRequired": "Nama wajib diisi",
+    "waypointSaveFailed": "Tidak dapat menyimpan waypoint",
+    "waypointLockedByOther": "Waypoint ini dikunci oleh node lain",
+    "waypointCreate": "Buat waypoint di sini",
+    "waypointCreateHint": "Buat waypoint di posisi Anda, atau klik kanan pada peta",
+    "waypointEdit": "Sunting waypoint",
+    "traceRouteEmpty": "Tidak ada posisi hop untuk menggambar traceroute ini",
+    "traceRouteLayer": "Lapisan traceroute",
+    "showTraceRouteOnMap": "Tampilkan traceroute di peta"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -3000,7 +3026,25 @@
     "failed": "Gagal",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Perangkat",
-    "noAckTooltipWifi": "Tidak ada ack mesh — tautan WiFi/TCP Anda ke radio baik - baik saja. Pesan mungkin masih telah dikirim; tidak ada simpul LoRa lain yang diakui."
+    "noAckTooltipWifi": "Tidak ada ack mesh — tautan WiFi/TCP Anda ke radio baik - baik saja. Pesan mungkin masih telah dikirim; tidak ada simpul LoRa lain yang diakui.",
+    "ackProof": {
+      "proven": "Terbukti",
+      "provenTooltip": "Bukti pengiriman terverifikasi (ACK_PROOF_VALID)",
+      "failed": "Bukti gagal",
+      "failedTooltip": "Bukti pengiriman tidak valid (ACK_PROOF_INVALID)",
+      "relayedUnproven": "Diteruskan",
+      "relayedUnprovenTooltip": "Diakui tanpa bukti pengiriman kriptografis",
+      "noKey": "Belum diverifikasi",
+      "noKeyTooltip": "Bukti ada tetapi tidak ada kunci untuk memverifikasi",
+      "unknown": "Bukti tidak dikenal",
+      "unknownTooltip": "Status bukti pengiriman tidak dikenali"
+    },
+    "sfpp": {
+      "routing": "Perutean SF++",
+      "routingTooltip": "Perutean rantai Store & Forward++ sedang berlangsung",
+      "confirmed": "SF++ dikonfirmasi",
+      "confirmedTooltip": "Pengiriman rantai Store & Forward++ dikonfirmasi"
+    }
   },
   "modulePanel": {
     "sectionSent": "{{name}} terkirim. Perangkat mungkin akan reboot sebentar.",
@@ -8634,5 +8678,26 @@
     "retryLoad": "Coba lagi",
     "retryLoadAria": "Coba muat ulang kartu kontak",
     "loadUnavailable": "Kartu Kontak tidak tersedia di build ini. Instal ulang atau perbarui aplikasi."
+  },
+  "wordFilter": {
+    "enabled": "Sembunyikan pesan yang cocok dengan filter kata",
+    "wordsPlaceholder": "Kata yang diblokir (dipisah koma atau baris baru)",
+    "wordsAria": "Daftar filter kata",
+    "disableConversation": "Nonaktifkan filter kata di percakapan ini",
+    "settingsTitle": "Filter kata",
+    "showFiltered": "Tampilkan {{count}} yang difilter",
+    "hideFiltered": "Sembunyikan pesan yang difilter"
+  },
+  "channelSecurityBadges": {
+    "pskWeak": "Kunci saluran lemah atau terbuka pada {{channel}}",
+    "pskWeakShort": "Terbuka",
+    "pskAes128": "Kunci saluran AES-128 pada {{channel}}",
+    "pskAes128Short": "AES128",
+    "pskAes256": "Kunci saluran AES-256 pada {{channel}}",
+    "pskAes256Short": "AES256",
+    "preciseLocation": "Lokasi akurat dibagikan pada {{channel}}",
+    "preciseLocationShort": "Lok",
+    "mqttUplink": "Uplink MQTT diaktifkan pada {{channel}}",
+    "mqttUplinkShort": "MQTT"
   }
 }
