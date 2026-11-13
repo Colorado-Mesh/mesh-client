@@ -16,6 +16,8 @@ describe('sfppPhaseForMessageType', () => {
   it('maps chain routing and confirmed provide types', () => {
     expect(sfppPhaseForMessageType(1)).toBe('routing'); // CHAIN_QUERY
     expect(sfppPhaseForMessageType(3)).toBe('routing'); // LINK_REQUEST
+    expect(sfppPhaseForMessageType(5)).toBe('routing'); // LINK_PROVIDE_FIRSTHALF
+    expect(sfppPhaseForMessageType(6)).toBe('routing'); // LINK_PROVIDE_SECONDHALF
     expect(sfppPhaseForMessageType(4)).toBe('confirmed'); // LINK_PROVIDE
     expect(sfppPhaseForMessageType(999)).toBe('unknown');
   });

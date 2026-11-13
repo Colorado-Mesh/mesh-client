@@ -1739,23 +1739,38 @@ function ChatPanel({
     return groupChatReactionsByParentKey(filtered);
   }, [displayMessages, protocol]);
 
+  // Subscribe early so channel/DM unread badges refresh with filter settings.
+  const wordFilterEnabled = useWordFilterStore((s) => s.enabled);
+  const wordFilterWords = useWordFilterStore((s) => s.words);
+  const wordFilterDisabledConversations = useWordFilterStore((s) => s.disabledConversations);
+
   const inferredDmTabs = useMemo(
     () => chatDmPeerMessageCounts(regularMessages, ownNodeIdSet, protocol, chatUnreadDmOptions),
     [chatUnreadDmOptions, ownNodeIdSet, protocol, regularMessages],
   );
 
   /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
-  const dmUnreadCounts = useMemo(
-    () =>
-      computeDmUnreadCounts(
-        unreadSourceMessages,
-        persistedLastRead,
-        ownNodeIdSet,
-        protocol,
-        chatUnreadDmOptions,
-      ),
-    [chatUnreadDmOptions, ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
-  );
+  const dmUnreadCounts = useMemo(() => {
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
+    return computeDmUnreadCounts(
+      unreadSourceMessages,
+      persistedLastRead,
+      ownNodeIdSet,
+      protocol,
+      chatUnreadDmOptions,
+    );
+  }, [
+    chatUnreadDmOptions,
+    ownNodeIdSet,
+    persistedLastRead,
+    protocol,
+    unreadSourceMessages,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
+  ]);
 
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
@@ -1838,6 +1853,9 @@ function ChatPanel({
   const unreadCounts = useMemo(() => {
     touch(weatherHideInChannels);
     touch(weatherConfig);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
     return computeChannelUnreadCounts(
       unreadSourceMessages,
       persistedLastRead,
@@ -1854,6 +1872,9 @@ function ChatPanel({
     unreadSourceMessages,
     weatherConfig,
     weatherHideInChannels,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
   ]);
 
   const unreadMecpSeverity = useMemo(() => {
@@ -1942,11 +1963,6 @@ function ChatPanel({
     }
     return buildWordFilterConversationKey(protocol, { kind: 'channel', channel });
   }, [viewMode, activeDmNode, channel, protocol]);
-
-  // Subscribe so filter memos / announcer recompute when settings or exceptions change.
-  const wordFilterEnabled = useWordFilterStore((s) => s.enabled);
-  const wordFilterWords = useWordFilterStore((s) => s.words);
-  const wordFilterDisabledConversations = useWordFilterStore((s) => s.disabledConversations);
 
   const [revealWordFiltered, setRevealWordFiltered] = useState(false);
   useEffect(() => {
@@ -5085,6 +5101,19 @@ function ChatPanel({
                                       : null);
                                 if (!identityId || storeId == null) return;
                                 deleteMessage(identityId, storeId);
+                                setKeptFocus((prev) => {
+                                  if (prev?.protocol !== protocol) return prev;
+                                  const row = prev.row;
+                                  const rowStoreId =
+                                    row.storeId ??
+                                    (row.packetId != null
+                                      ? String(row.packetId)
+                                      : row.id != null
+                                        ? String(row.id)
+                                        : null);
+                                  if (rowStoreId === storeId) return null;
+                                  return prev;
+                                });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
                               className="message-action text-muted rounded p-1 text-xs"

@@ -29,10 +29,11 @@ export function sfppPhaseForMessageType(type: number): MeshtasticSfppPhase {
     case SFPP_CHAIN_QUERY:
     case SFPP_LINK_REQUEST:
     case SFPP_CANON_ANNOUNCE:
-      return 'routing';
-    case SFPP_LINK_PROVIDE:
     case SFPP_LINK_PROVIDE_FIRSTHALF:
     case SFPP_LINK_PROVIDE_SECONDHALF:
+      // Half-provides are still in progress — keep the routing badge until a complete provide.
+      return 'routing';
+    case SFPP_LINK_PROVIDE:
       return 'confirmed';
     default:
       return 'unknown';

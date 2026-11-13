@@ -22,9 +22,12 @@ export function channelPskStrength(psk: Uint8Array): ChannelPskStrength {
   return 'unknown';
 }
 
-/** True when the channel shares more than coarse/shared location bits. */
+/**
+ * True when the channel shares full-precision location (32 bits).
+ * Coarse values such as 13 bits are intentional approximate sharing — not a precise-location warning.
+ */
 export function channelSharesPreciseLocation(positionPrecision: number): boolean {
-  return Number.isFinite(positionPrecision) && positionPrecision > 0;
+  return Number.isFinite(positionPrecision) && positionPrecision >= 32;
 }
 
 /** Ordered badge kinds for a channel (weakest / riskiest first). */

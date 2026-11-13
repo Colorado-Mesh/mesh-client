@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buttonClassName } from '@/renderer/components/ui/Button';
@@ -80,8 +80,16 @@ function WaypointEditorDialogForm({
   const [expireTouched, setExpireTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   useModalFocusTrap(panelRef, onClose);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const lockedOwned =
     mode === 'edit' &&
@@ -113,12 +121,13 @@ function WaypointEditorDialogForm({
         lockedTo: locked ? myNodeNum : 0,
         expire,
       });
-      onClose();
+      // A pending save from a previous editor instance must not close a newly opened one.
+      if (mountedRef.current) onClose();
     } catch (err) {
       console.warn('[WaypointEditorDialog] submit failed', err);
-      setError(t('mapPanel.waypointSaveFailed'));
+      if (mountedRef.current) setError(t('mapPanel.waypointSaveFailed'));
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
 

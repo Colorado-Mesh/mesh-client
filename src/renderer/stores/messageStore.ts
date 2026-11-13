@@ -689,7 +689,16 @@ export function updateMeshtasticDeliveryMeta(
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
     const updated: MessageRecord = { ...existing };
-    if (patch.ackProofStatus !== undefined) updated.ackProofStatus = patch.ackProofStatus;
+    if (patch.ackProofStatus !== undefined) {
+      // A later absent/unknown must not erase a verified receipt; new valid/invalid/no_key still apply.
+      const prev = existing.ackProofStatus;
+      const next = patch.ackProofStatus;
+      if (prev === 'valid' && (next === 'absent' || next === 'unknown')) {
+        // keep prev
+      } else {
+        updated.ackProofStatus = next;
+      }
+    }
     if (patch.sfppPhase !== undefined) updated.sfppPhase = patch.sfppPhase;
     if (messageRecordFieldsEqual(existing, updated)) return s;
     return mergeIdentityMessages(s, identityId, { ...byIdentity, [messageId]: updated });

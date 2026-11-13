@@ -7,9 +7,16 @@ describe('mapTraceRouteStore', () => {
     useMapTraceRouteStore.setState({ route: null });
   });
 
-  it('sets and clears a traceroute overlay', () => {
-    useMapTraceRouteStore.getState().setRoute([1, 2, 3], ['A', 'B', 'C']);
-    expect(useMapTraceRouteStore.getState().route?.nodeIds).toEqual([1, 2, 3]);
+  it('sets and clears a traceroute overlay with protocol/identity scope', () => {
+    useMapTraceRouteStore
+      .getState()
+      .setRoute([1, 2, 3], ['A', 'B', 'C'], { protocol: 'meshtastic', identityId: 'id-a' });
+    expect(useMapTraceRouteStore.getState().route).toEqual({
+      nodeIds: [1, 2, 3],
+      labels: ['A', 'B', 'C'],
+      protocol: 'meshtastic',
+      identityId: 'id-a',
+    });
     useMapTraceRouteStore.getState().clear();
     expect(useMapTraceRouteStore.getState().route).toBeNull();
   });

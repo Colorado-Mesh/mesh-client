@@ -4051,7 +4051,9 @@ export function useMeshtasticRuntime() {
 
   const sendWaypoint = useCallback(
     async (wp: Omit<MeshWaypoint, 'from' | 'timestamp'>, dest = 0xffffffff, channel = 0) => {
-      if (!deviceRef.current) return;
+      if (!deviceRef.current) {
+        throw new Error('No Meshtastic device connected');
+      }
       const waypoint: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.WaypointSchema, {
         id: wp.id,
         latitudeI: Math.round(wp.latitude * 1e7),

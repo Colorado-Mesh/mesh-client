@@ -36,6 +36,7 @@ import {
 import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import { isMapChromeClick } from '../lib/map/isMapChromeClick';
 import { getMapOverlayColors } from '../lib/mapBasemapUtils';
@@ -47,7 +48,7 @@ import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { routeWeightToColor, routeWeightToStroke } from '../lib/routeWeightUtils';
-import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
+import type { IdentityId, MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -650,6 +651,11 @@ function OverviewMapPanel({
   } | null>(null);
   const mapTraceRoute = useMapTraceRouteStore((s) => s.route);
   const clearMapTraceRoute = useMapTraceRouteStore((s) => s.clear);
+  const mapIdentityId: IdentityId | null = getIdentityIdForProtocol(protocol);
+  const scopedMapTraceRoute =
+    mapTraceRoute?.protocol === protocol && mapTraceRoute.identityId === mapIdentityId
+      ? mapTraceRoute
+      : null;
   const toNodeRenderSignature = useCallback((node: MeshNode): string => {
     return [
       node.node_id,
@@ -1297,8 +1303,8 @@ function OverviewMapPanel({
             </Marker>
           ))}
         {(() => {
-          const routeIds = mapTraceRoute?.nodeIds ?? traceRouteNodeIds;
-          const routeLabels = mapTraceRoute?.labels ?? traceRouteHopLabels;
+          const routeIds = scopedMapTraceRoute?.nodeIds ?? traceRouteNodeIds;
+          const routeLabels = scopedMapTraceRoute?.labels ?? traceRouteHopLabels;
           if (!routeIds || routeIds.length === 0) return null;
           const positions = new Map<number, { lat: number; lon: number }>();
           for (const node of nodes.values()) {
@@ -1333,12 +1339,13 @@ function OverviewMapPanel({
           }
           return (
             <>
-              {overlay.hasPolyline ? (
+              {overlay.segments.map((segment, idx) => (
                 <Polyline
-                  positions={overlay.hops.map((h) => [h.lat, h.lon] as [number, number])}
+                  key={`tr-seg-${idx}`}
+                  positions={segment}
                   pathOptions={{ color: '#38bdf8', weight: 3 }}
                 />
-              ) : null}
+              ))}
               {overlay.hops.map((hop) => (
                 <Marker key={`tr-${hop.nodeId}`} position={[hop.lat, hop.lon]}>
                   <Popup>
@@ -1346,6 +1353,22 @@ function OverviewMapPanel({
                   </Popup>
                 </Marker>
               ))}
+              <div
+                className="bg-ink-900/90 text-muted rounded-control absolute bottom-3 left-3 z-[500] max-w-xs px-2 py-1 text-xs"
+                role="status"
+                aria-label={t('mapPanel.traceRouteLayer')}
+              >
+                {t('mapPanel.traceRouteLayer')}
+                <button
+                  type="button"
+                  className="text-bright-green ml-2 underline"
+                  onClick={() => {
+                    clearMapTraceRoute();
+                  }}
+                >
+                  {t('common.clear')}
+                </button>
+              </div>
             </>
           );
         })()}
