@@ -23,23 +23,26 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
   const format = mapOverlayFormatFromName(base);
   if (!format) return { ok: false, code: 'unsupported' };
 
-  let stat;
+  // Open once and fstat+read from the same handle to avoid TOCTOU between stat and read.
+  let fh;
   try {
-    stat = await fs.stat(filePath);
+    fh = await fs.open(filePath, 'r');
   } catch (e: unknown) {
     console.warn(
-      '[map-overlays] stat failed ' +
+      '[map-overlays] open failed ' +
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { ok: false, code: 'io' };
   }
-  if (!stat.isFile()) return { ok: false, code: 'malformed' };
-  if (stat.size > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
 
   try {
+    const stat = await fh.stat();
+    if (!stat.isFile()) return { ok: false, code: 'malformed' };
+    if (stat.size > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
+
     const fallbackName = mapOverlayDisplayName(base);
     if (format === 'kmz') {
-      const bytes = await fs.readFile(filePath);
+      const bytes = await fh.readFile();
       if (bytes.byteLength > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
       const kmlText = await extractKmlTextFromKmz(bytes);
       const geojson = parseMapOverlayText(kmlText, 'kml');
@@ -51,7 +54,7 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
       };
     }
 
-    const text = await fs.readFile(filePath, 'utf8');
+    const text = await fh.readFile('utf8');
     if (Buffer.byteLength(text, 'utf8') > MAP_OVERLAY_MAX_BYTES) {
       return { ok: false, code: 'too_large' };
     }
@@ -75,5 +78,9 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { ok: false, code: 'io' };
+  } finally {
+    await fh.close().catch(() => {
+      // catch-no-log-ok close after successful/failed import
+    });
   }
 }
