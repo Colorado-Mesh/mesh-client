@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Bagian pengiriman radio ini sejak boot yang di-route Flood. Pesan saluran dan iklan Flood selalu Flood, jadi persentase tinggi normal untuk companion dengan banyak lalu lintas saluran.",
-    "floodSendPercentHintAria": "Tentang persentase pengiriman Flood"
+    "floodSendPercentHintAria": "Tentang persentase pengiriman Flood",
+    "noiseFloorTrendStatsAria": "Noise floor min {{min}} dBm, maks {{max}} dBm, terakhir {{last}} dBm",
+    "noiseFloorTrendHeading": "Tren noise floor",
+    "noiseFloorTrendEmpty": "Belum ada sampel noise-floor. Minta Status untuk memulai tren langsung.",
+    "noiseFloorTrendMin": "Mnt",
+    "noiseFloorTrendMax": "Maks",
+    "noiseFloorTrendLast": "Belakang",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Mengumpulkan sampel untuk sparkline…"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

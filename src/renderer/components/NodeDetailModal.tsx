@@ -25,6 +25,7 @@ import { touch } from '@/shared/touch';
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
 import type { MeshcoreTelemetryPushActions } from '../hooks/meshcore/useMeshcoreTelemetryPush';
+import { useMeshcoreNoiseFloorTrend } from '../hooks/useMeshcoreNoiseFloorTrend';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
@@ -93,6 +94,7 @@ import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordCont
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import MeshcoreTelemetryPushSection from './MeshcoreTelemetryPushSection';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
+import { NoiseFloorTrendChart } from './NoiseFloorTrendChart';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
 import { SuggestToTeamContactModalLazy } from './teamRoster/SuggestToTeamContactModalLazy';
@@ -531,6 +533,7 @@ export default function NodeDetailModal({
     nodeOfflineThresholdMs,
     protocol: activeProtocol,
     hasKeyVerification,
+    hasRepeaterStatus,
   } = useRadioProvider(protocol ?? 'meshtastic');
   const meshtasticIdentityId =
     protocol === 'meshtastic' ? getIdentityIdForProtocol('meshtastic') : null;
@@ -649,6 +652,25 @@ export default function NodeDetailModal({
       clearTimeout(timer);
     };
   }, [traceRoutePending, t]);
+
+  const noiseFloorTrendNodeId = node?.node_id;
+  const noiseFloorTrendIsOurNode =
+    noiseFloorTrendNodeId != null && noiseFloorTrendNodeId === homeNode?.node_id;
+  const noiseFloorTrendReading = noiseFloorTrendIsOurNode
+    ? meshcoreLocalStats?.noiseFloor
+    : meshcoreRepeaterStatus?.noiseFloor;
+  useMeshcoreNoiseFloorTrend({
+    enabled: isMeshcoreProtocol && noiseFloorTrendNodeId != null,
+    nodeId: noiseFloorTrendNodeId,
+    noiseFloor: noiseFloorTrendReading,
+    pollRemote:
+      isMeshcoreProtocol &&
+      !noiseFloorTrendIsOurNode &&
+      showRepeaterStats &&
+      hasRepeaterStatus &&
+      typeof onRequestRepeaterStatus === 'function',
+    onRequestRepeaterStatus,
+  });
 
   if (!node) return null;
 
@@ -1851,6 +1873,7 @@ export default function NodeDetailModal({
                   {meshcoreRepeaterStatus.nDirectDups} / {meshcoreRepeaterStatus.nFloodDups}
                 </div>
               </div>
+              <NoiseFloorTrendChart nodeId={node.node_id} />
             </div>
           )}
 
@@ -1914,6 +1937,7 @@ export default function NodeDetailModal({
                   {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
                 </div>
               </div>
+              <NoiseFloorTrendChart nodeId={node.node_id} />
 
               <h4 className="text-ink-300 text-xs font-semibold">
                 {t('nodeDetailModal.packetsLocalHeading')}

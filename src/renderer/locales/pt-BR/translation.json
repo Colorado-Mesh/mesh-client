@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Parte dos envios deste rádio desde a inicialização que foram roteados por Flood. Mensagens de canal e anúncios Flood sempre usam Flood, então uma porcentagem alta é normal para companions com muito tráfego de canal.",
-    "floodSendPercentHintAria": "Sobre a porcentagem de envio Flood"
+    "floodSendPercentHintAria": "Sobre a porcentagem de envio Flood",
+    "noiseFloorTrendStatsAria": "Nível de ruído mín. {{min}} dBm, máx. {{max}} dBm, último {{last}} dBm",
+    "noiseFloorTrendHeading": "Tendência do ruído de fundo",
+    "noiseFloorTrendEmpty": "Ainda não há amostras de ruído de fundo. Solicite o status para iniciar a tendência em tempo real.",
+    "noiseFloorTrendMin": "Min.",
+    "noiseFloorTrendMax": "Máximo",
+    "noiseFloorTrendLast": "Último",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Coletando amostras para o minigráfico…"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

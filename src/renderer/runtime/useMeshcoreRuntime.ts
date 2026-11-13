@@ -629,6 +629,7 @@ import {
   removeNode,
   useNodeStore,
 } from '../stores/nodeStore';
+import { useNoiseFloorHistoryStore } from '../stores/noiseFloorHistoryStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 
@@ -5800,6 +5801,9 @@ export function useMeshcoreRuntime() {
                   return next;
                 });
                 useRepeaterSignalStore.getState().recordSignal(nodeId, lastSnrDb);
+                useNoiseFloorHistoryStore
+                  .getState()
+                  .recordSample(nodeId, status.noiseFloor, status.fetchedAt);
                 bumpMeshcoreNodeLastHeardFromRpc(nodeId);
                 if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
                   void window.electronAPI.db
@@ -6678,6 +6682,9 @@ export function useMeshcoreRuntime() {
               return next;
             });
             useRepeaterSignalStore.getState().recordSignal(nodeId, status.lastSnr);
+            useNoiseFloorHistoryStore
+              .getState()
+              .recordSample(nodeId, status.noiseFloor, status.fetchedAt);
             bumpMeshcoreNodeLastHeardFromRpc(nodeId);
             if (Number.isFinite(lastSnrDb) && Number.isFinite(raw.last_rssi)) {
               void window.electronAPI.db

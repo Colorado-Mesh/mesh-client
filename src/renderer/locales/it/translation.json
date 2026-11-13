@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Quota degli invii di questa radio dall'avvio instradati in Flood. I messaggi di canale e gli annunci Flood sono sempre Flood, quindi una percentuale alta è normale per companion con molto traffico di canale.",
-    "floodSendPercentHintAria": "Informazioni sulla percentuale di invio Flood"
+    "floodSendPercentHintAria": "Informazioni sulla percentuale di invio Flood",
+    "noiseFloorTrendStatsAria": "Rumore di fondo min {{min}} dBm, max {{max}} dBm, ultimo {{last}} dBm",
+    "noiseFloorTrendHeading": "Tendenza del rumore di fondo",
+    "noiseFloorTrendEmpty": "Ancora nessun campione di rumore di fondo. Richiedere lo stato per avviare il trend in tempo reale.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Max",
+    "noiseFloorTrendLast": "Ultimo",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Raccolta di campioni per il grafico sparkline..."
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",

@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% フラッド",
     "floodSendPercentHint": "起動以降、この無線の送信のうちフラッドルーティングされた割合。チャンネルメッセージとフラッド広告は常にフラッドのため、チャンネル利用が多いコンパニオンでは高い割合が普通です。",
-    "floodSendPercentHintAria": "フラッド送信率について"
+    "floodSendPercentHintAria": "フラッド送信率について",
+    "noiseFloorTrendStatsAria": "ノイズフロア最小{{min}} dBm、最大{{max}} dBm、最終{{last}} dBm",
+    "noiseFloorTrendHeading": "ノイズフロアの傾向",
+    "noiseFloorTrendEmpty": "まだノイズフロアのサンプルがありません。ライブトレンドを開始するには、ステータスをリクエストしてください。",
+    "noiseFloorTrendMin": "最小",
+    "noiseFloorTrendMax": "最大",
+    "noiseFloorTrendLast": "姓",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "スパークラインのサンプルを収集しています…"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

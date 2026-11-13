@@ -3872,7 +3872,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Bu radyonun açılışından beri Flood olarak yönlendirilen gönderimlerinin payı. Kanal mesajları ve Flood reklamları her zaman Flood olduğundan, kanal trafiği yoğun companion’lar için yüksek yüzde normaldir.",
-    "floodSendPercentHintAria": "Flood gönderme yüzdesi hakkında"
+    "floodSendPercentHintAria": "Flood gönderme yüzdesi hakkında",
+    "noiseFloorTrendStatsAria": "Gürültü tabanı min. {{min}} dBm, maks. {{max}} dBm, son {{last}} dBm",
+    "noiseFloorTrendHeading": "Gürültü tabanı eğilimi",
+    "noiseFloorTrendEmpty": "Henüz gürültü tabanı örneği yok. Canlı trendi başlatmak için Durum talep edin.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Maks",
+    "noiseFloorTrendLast": "Son",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Mini grafik için örnekler toplanıyor…"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",

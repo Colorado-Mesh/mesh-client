@@ -3934,7 +3934,15 @@
     },
     "floodSendPercentValue": "{{percent}}% Flood",
     "floodSendPercentHint": "Udział wysyłek tej radia od uruchomienia routowanych przez Flood. Wiadomości kanałowe i reklamy Flood zawsze używają Flood, więc wysoki odsetek jest normalny przy intensywnym ruchu kanałowym.",
-    "floodSendPercentHintAria": "O procencie wysyłki Flood"
+    "floodSendPercentHintAria": "O procencie wysyłki Flood",
+    "noiseFloorTrendStatsAria": "Poziom szumu min. {{min}} dBm, maks. {{max}} dBm, ostatni {{last}} dBm",
+    "noiseFloorTrendHeading": "Trend poziomu szumów",
+    "noiseFloorTrendEmpty": "Brak próbek poziomu szumów. Poproś o status, aby rozpocząć trend na żywo.",
+    "noiseFloorTrendMin": "Min",
+    "noiseFloorTrendMax": "Maks.",
+    "noiseFloorTrendLast": "Ostatni",
+    "noiseFloorTrendValueDbm": "{{value}} dBm",
+    "noiseFloorTrendNeedMoreSamples": "Pobieranie próbek do wykresu przebiegu…"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

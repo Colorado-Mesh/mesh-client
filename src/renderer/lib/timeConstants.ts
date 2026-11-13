@@ -238,6 +238,12 @@ export const MESHCORE_ROOM_SYNC_TICK_MS = 60_000;
 /** Periodic poll for local radio stats while connected (useMeshcoreRuntime). */
 export const MESHCORE_STATS_POLL_MS = 30_000;
 
+/**
+ * Remote Status refresh for MeshCore noise-floor trend while a node detail panel is open
+ * and visible (not a global always-on poll).
+ */
+export const MESHCORE_NOISE_FLOOR_TREND_POLL_MS = 60_000;
+
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 /** Chat screen-reader announcements: at most one per window; bursts collapse to a count. */
