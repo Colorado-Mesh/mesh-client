@@ -314,7 +314,6 @@ import {
   type MeshcoreRadioContactPathSnapshot,
   meshcoreSnapshotContactPathFromContacts,
 } from '../lib/meshcoreRadioContactPath';
-import { isMeshcoreNotFoundError } from '../lib/meshcoreRadioErr';
 import { waitForMeshcoreRadioSentAck } from '../lib/meshcoreRadioSentWait';
 import {
   type MeshcoreRepeaterRpcPendingMap,
@@ -449,6 +448,7 @@ import {
 import {
   meshcoreRoomStatusPingTraceResult,
   meshcoreShouldPingRoomViaStatus,
+  runMeshcoreRoomStatusWithNotFoundRestore,
 } from '../lib/meshcoreRoomStatusPing';
 import {
   isMeshcoreRoomSyncSelectable,
@@ -5723,8 +5723,9 @@ export function useMeshcoreRuntime() {
              *      meshcoreIsUsableTraceStoredPath, or radio 0xFF / direct-first TRACE planning here —
              *      Status is pubkey-framed; those steps are for TRACE wire seeds only.
              *   3) Route-escalation on timeout (flood retry); canLogin always false (no Room BBS login).
-             *   4) On companion ERR_NOT_FOUND (contact evicted but still in UI): addMeshcoreNodeContactToRadio
-             *      once, mark path unknown, retry Status — same restore as Room CLI login.
+             *   4) On companion ERR_NOT_FOUND (contact evicted but still in UI):
+             *      runMeshcoreRoomStatusWithNotFoundRestore → addMeshcoreNodeContactToRadio once,
+             *      abort if roomPingSessionStale during restore, else mark path unknown and retry Status.
              *   5) Success → meshcoreRoomStatusPingTraceResult (fromStatusPing) for panel SNR/path UI.
              * Contract: useMeshcoreRuntime.room-ping.contract.test.ts. See meshcoreRoomStatusPing.ts
              * and docs/development/meshcore-repeaters.md (Room Ping via Status).
@@ -5770,31 +5771,30 @@ export function useMeshcoreRuntime() {
                       // Rooms keep BBS sessions; Room Ping never logs in.
                     },
                   },
-                  async () => {
-                    try {
-                      return await sendRoomStatusPing();
-                    } catch (statusErr: unknown) {
-                      // Companion Status looks up the contact table; Rooms can be evicted while
-                      // still visible in the UI (same restore path as Room CLI login).
-                      if (!isMeshcoreNotFoundError(statusErr) || !pingNode) {
-                        throw statusErr;
-                      }
-                      console.warn(
-                        '[useMeshcoreRuntime] room ping: contact missing from radio; re-adding',
-                      );
-                      await addMeshcoreNodeContactToRadio(
-                        roomPingConn,
-                        pubKey,
-                        pingNode,
-                        repeaterRemoteRpcRef.current,
-                      );
-                      radioContactPathLenByNodeRef.current.set(
-                        nodeId >>> 0,
-                        MESHCORE_OUT_PATH_UNKNOWN_BYTE,
-                      );
-                      return await sendRoomStatusPing();
-                    }
-                  },
+                  async () =>
+                    runMeshcoreRoomStatusWithNotFoundRestore({
+                      send: sendRoomStatusPing,
+                      restoreContact: pingNode
+                        ? async () => {
+                            console.warn(
+                              '[useMeshcoreRuntime] room ping: contact missing from radio; re-adding',
+                            );
+                            await addMeshcoreNodeContactToRadio(
+                              roomPingConn,
+                              pubKey,
+                              pingNode,
+                              repeaterRemoteRpcRef.current,
+                            );
+                          }
+                        : undefined,
+                      isSessionStale: roomPingSessionStale,
+                      afterRestore: () => {
+                        radioContactPathLenByNodeRef.current.set(
+                          nodeId >>> 0,
+                          MESHCORE_OUT_PATH_UNKNOWN_BYTE,
+                        );
+                      },
+                    }),
                 );
                 if (roomPingSessionStale()) return false;
                 const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;

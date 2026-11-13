@@ -38,13 +38,14 @@ describe('useMeshcoreRuntime room ping hops', () => {
     expect(body).not.toContain('meshcoreIsUsableTraceStoredPath');
   });
 
-  it('restores an evicted Room contact on Status NOT_FOUND then retries', () => {
+  it('wires NOT_FOUND restore through runMeshcoreRoomStatusWithNotFoundRestore', () => {
     const body = sliceBetween(
       'const sendRoomStatusPing',
       'if (roomPingSessionStale()) return false;',
     );
-    expect(body).toContain('isMeshcoreNotFoundError');
+    expect(body).toContain('runMeshcoreRoomStatusWithNotFoundRestore');
     expect(body).toContain('addMeshcoreNodeContactToRadio');
-    expect(body).toContain('return await sendRoomStatusPing()');
+    expect(body).toContain('isSessionStale: roomPingSessionStale');
+    expect(body).toContain('afterRestore');
   });
 });

@@ -1,6 +1,7 @@
 import type { MeshcoreTraceEntrySize } from '@/shared/meshcorePathHash';
 
 import type { MeshcoreTraceResultEntry } from './meshcore/meshcoreHookTypes';
+import { isMeshcoreNotFoundError } from './meshcoreRadioErr';
 
 /**
  * Room Ping gate — see KNOWN-GOOD block in `useMeshcoreRuntime` `traceRoute`.
@@ -13,6 +14,33 @@ import type { MeshcoreTraceResultEntry } from './meshcore/meshcoreHookTypes';
  */
 export function meshcoreShouldPingRoomViaStatus(hwModel: string | null | undefined): boolean {
   return hwModel === 'Room';
+}
+
+/**
+ * Status once; on companion ERR_NOT_FOUND restore the contact, abort if the ping session
+ * went stale during restore, otherwise retry Status once. Unrelated errors rethrow as-is.
+ */
+export async function runMeshcoreRoomStatusWithNotFoundRestore<T>(opts: {
+  send: () => Promise<T>;
+  /** When omitted, NOT_FOUND is rethrown without restore (no UI node to re-add). */
+  restoreContact?: () => Promise<void>;
+  isSessionStale: () => boolean;
+  /** Runs only after a successful restore and a live session (e.g. mark path unknown). */
+  afterRestore?: () => void;
+}): Promise<T> {
+  try {
+    return await opts.send();
+  } catch (statusErr: unknown) {
+    if (!isMeshcoreNotFoundError(statusErr) || !opts.restoreContact) {
+      throw statusErr;
+    }
+    await opts.restoreContact();
+    if (opts.isSessionStale()) {
+      throw statusErr;
+    }
+    opts.afterRestore?.();
+    return await opts.send();
+  }
 }
 
 /**
