@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} voci",
     "errorsShort": "{{count}} errori",
     "warningsShort": "{{count}} avvisi",
-    "protocolNote": "Utilizza il protocollo radio attivo per categorie specifiche del protocollo; le singole righe di registro non sono etichettate in base al protocollo.",
     "emptyState": "Nessun problema rilevato nella visualizzazione registro corrente.",
     "recommendationsHeading": "Raccomandazioni",
     "lastMessagePrefix": "Scorso:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Report copiato",
     "copyFailure": "Impossibile copiare il report. Riprova o esporta il registro.",
     "evidence": "Visualizza le prove per {{category}}",
-    "evidenceShown": "Mostrando {{shown}} di {{total}} voci corrispondenti, prima le più recenti."
+    "evidenceShown": "Mostrando {{shown}} di {{total}} voci corrispondenti, prima le più recenti.",
+    "ignoredOtherProtocol": "{{count}} righe provenienti da altri protocolli radio sono state escluse.",
+    "protocolNote": "Utilizza il protocollo radio attivo. Le linee di proprietà di un'altra radio sono escluse; le linee condivise a livello di app rimangono."
   },
   "logAnalyzer": {
     "categories": {

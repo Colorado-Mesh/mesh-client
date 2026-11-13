@@ -347,7 +347,6 @@ describe('current production log messages', () => {
 
   it.each([
     '[main] bleCoexistence:acquireScan failed: busy',
-    '[Reticulum] bleCoexistence acquireScan failed: Error: held',
     '[IPC] mqtt:getCachedNodes failed: database locked',
     '[useProtocolRfAutoConnect] meshtastic BLE auto-connect cancelled after coexistence wait',
     '[useProtocolRfAutoConnect] meshcore BLE auto-connect skipped — same peripheral as Meshtastic (aa:bb)',
@@ -362,6 +361,18 @@ describe('current production log messages', () => {
     expect(result.categories.find((finding) => finding.id === 'offline-maps')).toBeUndefined();
   });
 
+  it('keeps Reticulum bleCoexistence noise unclassified on the Reticulum tab (excluded elsewhere)', () => {
+    const warning = entry('[Reticulum] bleCoexistence acquireScan failed: Error: held');
+    const onMeshtastic = analyzeLogs([warning], 'meshtastic');
+    expect(onMeshtastic.ignoredOtherProtocol).toBe(1);
+    expect(onMeshtastic.categories).toEqual([]);
+    const onReticulum = analyzeLogs([warning], 'reticulum');
+    expect(onReticulum.categories.map((finding) => finding.id)).toEqual(['unclassified']);
+    expect(
+      onReticulum.categories.find((finding) => finding.id === 'ble-connection'),
+    ).toBeUndefined();
+  });
+
   it('does not suggest LoRa channel keys for Reticulum decryption failures', () => {
     const result = analyzeLogs(
       [entry('[ReticulumSidecar] WARN opportunistic LXMF decrypt failed')],
@@ -370,18 +381,35 @@ describe('current production log messages', () => {
     expect(result.categories.map((finding) => finding.id)).toEqual(['reticulum-delivery']);
   });
 
-  it('gates stack-specific guidance', () => {
-    expect(
-      analyzeLogs([entry('[ReticulumIPC] start failed: unavailable')], 'meshcore').categories.map(
-        (finding) => finding.id,
-      ),
-    ).toEqual(['unclassified']);
-    expect(
-      analyzeLogs(
-        [entry('[IPC] meshtastic:tcp-connect error: refused')],
-        'reticulum',
-      ).categories.map((finding) => finding.id),
-    ).toEqual(['unclassified']);
+  it('excludes other-protocol lines instead of dumping them into unclassified', () => {
+    const reticulumOnMeshcore = analyzeLogs(
+      [entry('[ReticulumIPC] start failed: unavailable')],
+      'meshcore',
+    );
+    expect(reticulumOnMeshcore.categories).toEqual([]);
+    expect(reticulumOnMeshcore.ignoredOtherProtocol).toBe(1);
+    expect(reticulumOnMeshcore.totalEntries).toBe(0);
+
+    const meshtasticOnReticulum = analyzeLogs(
+      [entry('[IPC] meshtastic:tcp-connect error: refused')],
+      'reticulum',
+    );
+    expect(meshtasticOnReticulum.categories).toEqual([]);
+    expect(meshtasticOnReticulum.ignoredOtherProtocol).toBe(1);
+
+    const transportOnMeshcore = analyzeLogs(
+      [entry('[meshtasticTransportLoss] serial link lost (disconnect event)')],
+      'meshcore',
+    );
+    expect(transportOnMeshcore.categories.map((f) => f.id)).not.toContain('transport-loss');
+    expect(transportOnMeshcore.ignoredOtherProtocol).toBe(1);
+
+    const sharedDb = analyzeLogs(
+      [entry('[dbPersistRetry] degraded persistence: failed after retries')],
+      'meshcore',
+    );
+    expect(sharedDb.ignoredOtherProtocol).toBe(0);
+    expect(sharedDb.categories.some((f) => f.id === 'database-persistence')).toBe(true);
   });
 });
 
@@ -422,5 +450,14 @@ describe('finding evidence', () => {
       analyzeLogs([entry('[main] Failed to load: -3 ERR_ABORTED', 'error')], 'meshtastic')
         .categories,
     ).toEqual([]);
+  });
+
+  it.each([
+    'Electron Security Warning (experimentalFeatures) This renderer process has "experimentalFeatures" enabled. This warning will not show up once the app is packaged.',
+    'Electron Security Warning (enableBlinkFeatures) This renderer process has additional "enableBlinkFeatures" enabled. This warning will not show up once the app is packaged.',
+    'Error received for packet 445325495: NO_RESPONSE',
+    'Packet 577169153 of type packet timed out',
+  ])('excludes known benign noise from findings: %s', (message) => {
+    expect(analyzeLogs([entry(message)], 'meshtastic').categories).toEqual([]);
   });
 });

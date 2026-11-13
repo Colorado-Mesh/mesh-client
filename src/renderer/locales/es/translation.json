@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} entradas",
     "errorsShort": "{{count}} errores",
     "warningsShort": "{{count}} advertencias",
-    "protocolNote": "Utiliza el protocolo de radio activo para categorías específicas del protocolo; Las líneas de registro individuales no están etiquetadas por protocolo.",
     "emptyState": "No se detectaron problemas en la vista de registro actual.",
     "recommendationsHeading": "Recomendaciones",
     "lastMessagePrefix": "Último:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Informe copiado",
     "copyFailure": "No se ha podido copiar el informe. Inténtalo de nuevo o exporta el registro.",
     "evidence": "Ver pruebas de {{category}}",
-    "evidenceShown": "Mostrando {{shown}} de {{total}} entradas coincidentes, la más reciente primero."
+    "evidenceShown": "Mostrando {{shown}} de {{total}} entradas coincidentes, la más reciente primero.",
+    "ignoredOtherProtocol": "{{count}} líneas de otros protocolos de radio se excluyeron.",
+    "protocolNote": "Utiliza el protocolo de radio activo. Se excluyen las líneas que pertenecen a otra radio; se mantienen las líneas compartidas en toda la aplicación."
   },
   "logAnalyzer": {
     "categories": {

@@ -58,7 +58,7 @@ describe('log-service source contracts', () => {
   it('broadcastLine wraps webContents.send in try/catch', () => {
     const broadcastIdx = LOG_SERVICE_SOURCE.indexOf('function broadcastLine(');
     expect(broadcastIdx).toBeGreaterThan(-1);
-    const body = LOG_SERVICE_SOURCE.slice(broadcastIdx, broadcastIdx + 400);
+    const body = LOG_SERVICE_SOURCE.slice(broadcastIdx, broadcastIdx + 800);
     expect(body).toContain('try {');
     expect(body).toContain('.send(');
     expect(body).toContain('catch (e)');
@@ -66,7 +66,7 @@ describe('log-service source contracts', () => {
 
   it('broadcastLine checks isDestroyed before sending', () => {
     const broadcastIdx = LOG_SERVICE_SOURCE.indexOf('function broadcastLine(');
-    const body = LOG_SERVICE_SOURCE.slice(broadcastIdx, broadcastIdx + 400);
+    const body = LOG_SERVICE_SOURCE.slice(broadcastIdx, broadcastIdx + 800);
     expect(body).toContain('isDestroyed()');
   });
 
@@ -194,6 +194,42 @@ describe('getRecentLines', () => {
     const last = entries[entries.length - 1];
     expect(last.level).toBe('error');
     expect(last.source).toBe('mqtt');
+  });
+
+  it('stamps protocol from channel tokens and omits it when shared', async () => {
+    const { appendLine, getRecentLines } = await import('./log-service');
+
+    // Main uses channel heuristics only (full tag registry stays in the renderer graph).
+    appendLine('warn', 'main', '[IPC] meshtastic:tcp-connect error: refused');
+    const owned = getRecentLines().at(-1);
+    expect(owned?.protocol).toBe('meshtastic');
+
+    appendLine('warn', 'main', '[meshtasticTransportLoss] serial link lost');
+    const registryOnly = getRecentLines().at(-1);
+    expect(registryOnly?.protocol).toBeUndefined();
+
+    appendLine('warn', 'main', '[db] migrate failed');
+    const shared = getRecentLines().at(-1);
+    expect(shared?.protocol).toBeUndefined();
+  });
+
+  it('logDeviceConnection stamps stack= protocol', async () => {
+    const { getRecentLines, logDeviceConnection } = await import('./log-service');
+
+    logDeviceConnection('transport=tcp stack=meshcore host=127.0.0.1 port=4403', 'meshcore');
+    const last = getRecentLines().at(-1);
+    expect(last?.message).toContain('[Connection]');
+    expect(last?.message).toContain('stack=meshcore');
+    expect(last?.protocol).toBe('meshcore');
+  });
+});
+
+describe('formatLine proto token (source contract)', () => {
+  it('includes [proto=…] in formatLine when protocol is known', () => {
+    expect(LOG_SERVICE_SOURCE).toContain('[proto=${protocol}]');
+    // Channel heuristics only — full LOG_TAG_SCOPE stays out of the measured main bundle.
+    expect(LOG_SERVICE_SOURCE).toContain('resolveLogProtocolFromChannel');
+    expect(LOG_SERVICE_SOURCE).not.toContain('logProtocolScope');
   });
 });
 

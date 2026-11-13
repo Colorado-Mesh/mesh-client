@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} 条目",
     "errorsShort": "{{count}} 错误",
     "warningsShort": "{{count}} 警告",
-    "protocolNote": "对特定于协议的类别使用主动无线电协议；各个日志行未按协议标记。",
     "emptyState": "当前日志视图中未检测到问题。",
     "recommendationsHeading": "建议",
     "lastMessagePrefix": "最后的：",
@@ -2496,7 +2495,9 @@
     "copySuccess": "已复制报告",
     "copyFailure": "无法复制报告。请重试或导出日志。",
     "evidence": "查看{{category}}的证据",
-    "evidenceShown": "显示{{shown}}/{{total}}条匹配条目，最新在前。"
+    "evidenceShown": "显示{{shown}}/{{total}}条匹配条目，最新在前。",
+    "ignoredOtherProtocol": "{{count}} 来自其他无线电协议的线路已被排除。",
+    "protocolNote": "使用活动的无线电协议。不包括属于另一部无线电的线路；保留整个应用程序的共享线路。"
   },
   "logAnalyzer": {
     "categories": {

@@ -25,7 +25,7 @@ interface LogAnalyzeModalProps {
   isOpen: boolean;
   onClose: () => void;
   entries: LogEntry[];
-  /** Active radio protocol for analysis gating only; log lines are not protocol-tagged. */
+  /** Active radio protocol; entries may carry an owning `protocol` field from the log service. */
   protocol: MeshProtocol;
 }
 
@@ -186,6 +186,13 @@ export default function LogAnalyzeModal({
           <p className="text-muted mt-2 text-xs leading-snug">
             {t('logAnalyzeModal.protocolNote')}
           </p>
+          {result.ignoredOtherProtocol > 0 ? (
+            <p className="text-muted mt-1 text-xs">
+              {t('logAnalyzeModal.ignoredOtherProtocol', {
+                count: result.ignoredOtherProtocol,
+              })}
+            </p>
+          ) : null}
           <p className="text-muted mt-1 text-xs">{t('logAnalyzeModal.historyNote')}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
@@ -277,6 +284,7 @@ export default function LogAnalyzeModal({
                             {entry.level}
                             {' · '}
                             {entry.source}
+                            {entry.protocol ? ` · ${entry.protocol}` : null}
                           </div>
                           <p className="mt-1 break-all whitespace-pre-wrap">{entry.message}</p>
                         </li>

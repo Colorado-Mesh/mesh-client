@@ -2,9 +2,11 @@
 
 Enable the Log panel from **App**, select the App or Device source, and choose **Analyze**. The analyzer examines buffered entries for that source and active protocol, including captured levels hidden by the level toggles. It does not read the entire log file or actively test a radio connection.
 
-Each finding shows a count and latest message. Expand **View evidence** for the newest 20 matching entries with timestamps, levels, and sources. The recommendations below the findings explain what to check. **Copy troubleshooting report** creates a plain-text summary with UTC timestamps, guidance, and up to three samples per finding. The copy happens only after clicking the button. Log samples can contain private information; review them before sharing. **Log → Export** and **App → Support / Bug reports → Export for GitHub** provide the fuller context when needed.
+Log lines may carry an owning radio stack (`protocol` on the in-memory entry; `[proto=…]` on disk in `mesh-client.log`). Lines owned by another radio are hidden from that tab’s App/Device views and excluded from Analyze (shown as an ignored-lines count). Shared / unattributable lines remain visible and analyzable from every tab. Tag ownership lives in `src/shared/logProtocolScope.ts`; `scripts/check-log-panel-filter.mjs` fails CI when a protocol-tree emitter uses an unregistered tag.
 
-Findings describe historical events, not necessarily ongoing failures. One line may match several categories, so category counts are not a count of unique incidents. **Other warnings and errors** retains unmatched warning/error lines without inventing a diagnosis; expected recovery messages can appear there. Cancelled page loads (`ERR_ABORTED`) remain excluded from findings.
+Each finding shows a count and latest message. Expand **View evidence** for the newest 20 matching entries with timestamps, levels, sources, and owner when present. The recommendations below the findings explain what to check. **Copy troubleshooting report** creates a plain-text summary with UTC timestamps, guidance, and up to three samples per finding. The copy happens only after clicking the button. Log samples can contain private information; review them before sharing. **Log → Export** and **App → Support / Bug reports → Export for GitHub** provide the fuller context when needed.
+
+Findings describe historical events, not necessarily ongoing failures. One line may match several categories, so category counts are not a count of unique incidents. **Other warnings and errors** retains unmatched warning/error lines without inventing a diagnosis; expected recovery messages can appear there. Cancelled page loads (`ERR_ABORTED`), unpackaged Electron security warnings (`experimentalFeatures` / `enableBlinkFeatures`, expected in `pnpm run dev`), and unmatched Meshtastic SDK `NO_RESPONSE` / packet-timeout lines (chat failures are already surfaced in-app) remain excluded from findings.
 
 ## Review of current logging
 
@@ -37,5 +39,7 @@ Issue [#915](https://github.com/Colorado-Mesh/mesh-client/issues/915) prompted a
 ## Maintaining patterns
 
 The pure analyzer lives in `src/renderer/lib/logAnalyzer.ts`. Add a specific emitter-backed failure pattern and a harmless counterexample in `logAnalyzer.currentLogs.test.ts`. Add static label and recommendation keys in `logAnalyzerI18n.ts` plus English strings; run the normal translation workflow. `logAnalyzerI18n.test.ts` checks that every category label has specific, resolvable advice. Prefer `requireWarnOrError: true` for new categories so debug noise does not become a finding.
+
+When adding a new `[TAG]` console prefix in a protocol-owned tree (`src/renderer/lib/{meshtastic,meshcore,reticulum}/`, MeshCore hooks, runtimes, main mqtt/gatt/reticulum/ipc), register it in `LOG_TAG_SCOPE` in `src/shared/logProtocolScope.ts` (or add `// log-filter-ok <reason>` on the call site if it must stay shared). Run `pnpm run check:log-panel-filter`.
 
 Reticulum forwards some informational Rust tracing messages through the warning console channel for support visibility. Do not add broad prefix-only rules for it. Inspect `reticulum-sidecar-manager.ts` and the original Rust emitter before inferring failure from the captured level. Preserve protocol gating and cancellation exclusions, and do not infer recovery or current health without evidence.

@@ -6,7 +6,10 @@ import fs from 'fs';
 import path from 'path';
 
 import { formatBuildInfoLogFragment } from '../shared/buildInfo';
+import type { LogEntry } from '../shared/electron-api.types';
 import { formatLogFileTimestamp } from '../shared/formatLogTimestamp';
+import { resolveLogProtocolFromChannel } from '../shared/logProtocolChannelResolve';
+import type { MeshProtocol } from '../shared/meshProtocol';
 import {
   sanitizeForConsoleEcho,
   sanitizeForLogSink,
@@ -30,13 +33,12 @@ export function formatRuntimeLogTag(): string {
 /**
  * One line per device connect: `[Connection] …` plus {@link formatRuntimeLogTag}.
  * Pass only trusted or pre-sanitized fragments in `detail`; the full line is sanitized again in {@link appendLine}.
+ * When `protocol` is omitted, ownership is resolved from `stack=` in `detail` (shared if absent).
  */
-export function logDeviceConnection(detail: string): void {
-  appendLine(
-    'debug',
-    'main',
-    `[Connection] ${sanitizeLogMessage(detail)} ${formatRuntimeLogTag()}`,
-  );
+export function logDeviceConnection(detail: string, protocol?: MeshProtocol): void {
+  const message = `[Connection] ${sanitizeLogMessage(detail)} ${formatRuntimeLogTag()}`;
+  const resolved = protocol ?? resolveLogProtocolFromChannel({ source: 'main', message });
+  appendLine('debug', 'main', message, resolved);
 }
 
 const LOG_FILENAME = 'mesh-client.log';
@@ -66,12 +68,6 @@ function stripConsoleStyles(msg: string): string {
     .trim();
 }
 
-interface LogEntry {
-  ts: number;
-  level: LogLevel;
-  source: string;
-  message: string;
-}
 const recentEntries: LogEntry[] = [];
 
 export type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
@@ -162,21 +158,40 @@ export async function flushLogBeforeQuit(): Promise<void> {
   await appendChain;
 }
 
-function formatLine(ts: number, level: LogLevel, source: string, message: string): string {
+function formatLine(
+  ts: number,
+  level: LogLevel,
+  source: string,
+  message: string,
+  protocol?: MeshProtocol,
+): string {
   const safe = message.length > MAX_LINE_LENGTH ? message.slice(0, MAX_LINE_LENGTH) + '…' : message;
-  return `${formatLogFileTimestamp(ts)} [${level}] [${source}] ${safe}\n`;
+  const protoSeg = protocol ? ` [proto=${protocol}]` : '';
+  return `${formatLogFileTimestamp(ts)} [${level}] [${source}]${protoSeg} ${safe}\n`;
 }
 
 /**
  * Append a line to the log file and broadcast to renderer.
  * All levels are recorded; UI filters by level.
  */
-function pushRecent(ts: number, level: LogLevel, source: string, message: string): void {
+function pushRecent(
+  ts: number,
+  level: LogLevel,
+  source: string,
+  message: string,
+  protocol?: MeshProtocol,
+): void {
   let msg = message;
   if (msg.length > MAX_IPC_MESSAGE_LENGTH) {
     msg = msg.slice(0, MAX_IPC_MESSAGE_LENGTH) + '…';
   }
-  recentEntries.push({ ts, level, source, message: msg });
+  recentEntries.push({
+    ts,
+    level,
+    source,
+    message: msg,
+    ...(protocol ? { protocol } : {}),
+  });
   if (recentEntries.length > RECENT_MAX) {
     recentEntries.splice(0, recentEntries.length - RECENT_MAX);
   }
@@ -194,17 +209,23 @@ export function getRecentLines(): LogEntry[] {
  * {@link sanitizeLogMessage} first so renderer IPC, stdout/stderr hooks, and main console
  * all persist single-line, control-char-free entries (GitHub/CodeQL untrusted-to-file guidance).
  */
-export function appendLine(level: LogLevel, source: string, message: string): void {
+export function appendLine(
+  level: LogLevel,
+  source: string,
+  message: string,
+  protocol?: MeshProtocol,
+): void {
   message = sanitizeLogMessage(message);
   // Source is embedded in the log line; sanitize so the whole line is control-char-free.
   source = sanitizeLogMessage(source);
+  const resolved = protocol ?? resolveLogProtocolFromChannel({ source, message });
   const ts = Date.now();
-  pushRecent(ts, level, source, message);
-  const line = formatLine(ts, level, source, message);
+  pushRecent(ts, level, source, message, resolved);
+  const line = formatLine(ts, level, source, message, resolved);
 
   if (!logFilePath) {
     pendingBuffer.push(line);
-    broadcastLine(ts, level, source, message);
+    broadcastLine(ts, level, source, message, resolved);
     return;
   }
 
@@ -225,7 +246,7 @@ export function appendLine(level: LogLevel, source: string, message: string): vo
       }
     });
 
-  broadcastLine(ts, level, source, message);
+  broadcastLine(ts, level, source, message, resolved);
 }
 
 async function rotateLogIfNeeded(): Promise<void> {
@@ -241,7 +262,13 @@ async function rotateLogIfNeeded(): Promise<void> {
   }
 }
 
-function broadcastLine(ts: number, level: LogLevel, source: string, message: string): void {
+function broadcastLine(
+  ts: number,
+  level: LogLevel,
+  source: string,
+  message: string,
+  protocol?: MeshProtocol,
+): void {
   const win = mainWindowRef;
   if (!win || win.isDestroyed()) return;
   let msg = message;
@@ -249,7 +276,13 @@ function broadcastLine(ts: number, level: LogLevel, source: string, message: str
     msg = msg.slice(0, MAX_IPC_MESSAGE_LENGTH) + '…';
   }
   try {
-    win.webContents.send('log:line', { ts, level, source, message: msg });
+    win.webContents.send('log:line', {
+      ts,
+      level,
+      source,
+      message: msg,
+      ...(protocol ? { protocol } : {}),
+    });
   } catch (e) {
     debugLogService('[log-service] broadcastLine send failed', e);
   }
@@ -333,6 +366,12 @@ function resolveMainSource(): 'sdk' | 'main' {
   return stack.includes('node_modules/@meshtastic') ? 'sdk' : 'main';
 }
 
+/** Stamp console lines via tag/message resolution (no broad stack filename map). */
+function appendConsoleLine(level: LogLevel, message: string): void {
+  const source = resolveMainSource();
+  appendLine(level, source, message, resolveLogProtocolFromChannel({ source, message }));
+}
+
 /**
  * Route main-process console.* through appendLine and still echo to original console
  * so terminal/devtools behavior is preserved.
@@ -346,33 +385,33 @@ export function patchMainConsole(): void {
   console.log = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
-    appendLine('log', resolveMainSource(), safe);
+    appendConsoleLine('log', safe);
     echoToOriginal(original.log, sanitizeForConsoleEcho(joined));
   };
   console.info = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
-    appendLine('info', resolveMainSource(), safe);
+    appendConsoleLine('info', safe);
     echoToOriginal(original.info, sanitizeForConsoleEcho(joined));
   };
   console.warn = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
-    appendLine('warn', resolveMainSource(), safe);
+    appendConsoleLine('warn', safe);
     const ts = formatLogFileTimestamp(Date.now());
     echoToOriginal(original.warn, sanitizeForConsoleEcho(`[${ts}] ${safe}`));
   };
   console.error = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
-    appendLine('error', resolveMainSource(), safe);
+    appendConsoleLine('error', safe);
     const ts = formatLogFileTimestamp(Date.now());
     echoToOriginal(original.error, sanitizeForConsoleEcho(`[${ts}] ${safe}`));
   };
   console.debug = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
-    appendLine('debug', resolveMainSource(), safe);
+    appendConsoleLine('debug', safe);
   };
 
   // Capture process.stdout/stderr text writes (some deps log without console.*)
@@ -468,5 +507,5 @@ export function forwardRendererConsoleMessage(details: {
   const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
   if (isDroppableMeshtasticSdkLogLine(msg)) return;
   if (isDroppableRendererConsoleNoise(msg)) return;
-  appendLine(mapped, src, msg);
+  appendLine(mapped, src, msg, resolveLogProtocolFromChannel({ source: src, message: msg }));
 }

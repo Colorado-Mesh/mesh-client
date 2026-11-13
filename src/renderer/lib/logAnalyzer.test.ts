@@ -24,6 +24,7 @@ describe('analyzeLogs', () => {
     expect(result.errorCount).toBe(0);
     expect(result.warningCount).toBe(0);
     expect(result.categories).toHaveLength(0);
+    expect(result.ignoredOtherProtocol).toBe(0);
   });
 
   it('counts errors and warnings separately', () => {
@@ -36,6 +37,20 @@ describe('analyzeLogs', () => {
     expect(result.totalEntries).toBe(3);
     expect(result.errorCount).toBe(1);
     expect(result.warningCount).toBe(1);
+    expect(result.ignoredOtherProtocol).toBe(0);
+  });
+
+  it('excludes other-protocol lines from totals and findings', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[meshtasticTransportLoss] serial link lost', 'warn'),
+      makeEntry('[db] migrate failed', 'error'),
+      { ...makeEntry('[MeshCore MQTT] reconnect', 'warn'), protocol: 'meshcore' },
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.ignoredOtherProtocol).toBe(1);
+    expect(result.totalEntries).toBe(2);
+    expect(result.categories.map((c) => c.id)).not.toContain('mqtt');
+    expect(result.categories.some((c) => c.id === 'transport-loss')).toBe(true);
   });
 
   it('detects BLE connection issues', () => {
@@ -268,6 +283,33 @@ describe('analyzeLogs', () => {
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     expect(result.categories.find((c) => c.id === 'internal-error')).toBeUndefined();
+  });
+
+  it('excludes Electron unpackaged security warnings from unclassified', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        'Electron Security Warning (experimentalFeatures) This renderer process has "experimentalFeatures" enabled.',
+        'warn',
+      ),
+      makeEntry(
+        'Electron Security Warning (enableBlinkFeatures) This renderer process has additional "enableBlinkFeatures" enabled.',
+        'warn',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories).toEqual([]);
+    expect(result.totalEntries).toBe(2);
+  });
+
+  it('excludes unmatched Meshtastic SDK packet timeout / NO_RESPONSE from unclassified', () => {
+    const entries: LogEntry[] = [
+      makeEntry('Error received for packet 445325495: NO_RESPONSE', 'error'),
+      makeEntry('Packet 577169153 of type packet timed out', 'warn'),
+      makeEntry('Packet 577169153 of type packet timed out.', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories).toEqual([]);
+    expect(result.totalEntries).toBe(3);
   });
 
   it('detects database failures', () => {

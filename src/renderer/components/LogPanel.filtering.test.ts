@@ -2,14 +2,19 @@ import { execFileSync } from 'child_process';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { isAppLogEntry, isDeviceEntry, isOwnedByOtherProtocol } from './LogPanel';
+import {
+  entriesForLogAnalysis,
+  isAppLogEntry,
+  isDeviceEntry,
+  isOwnedByOtherProtocol,
+} from './LogPanel';
 
 function entry(source: string, message: string, level = 'log') {
   return { ts: Date.now(), level, source, message };
 }
 
 describe('log-panel filter contract', () => {
-  it('all [TAG] prefixes in device source files are registered in isDeviceEntry', () => {
+  it('all [TAG] prefixes in protocol source files are registered in LOG_TAG_SCOPE', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
     const checkOutput = execFileSync(
       'node',
@@ -64,16 +69,17 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     ).toBe(true);
   });
 
-  it('classifies [GATT] message as Meshtastic device entry', () => {
-    expect(isDeviceEntry(entry('main', '[GATT] ws parse failed: bad json'), 'meshtastic')).toBe(
-      true,
-    );
+  it('classifies shared [GATT] as device entry on every protocol tab', () => {
+    const e = entry('main', '[GATT] ws parse failed: bad json');
+    expect(isDeviceEntry(e, 'meshtastic')).toBe(true);
+    expect(isDeviceEntry(e, 'meshcore')).toBe(true);
+    expect(isDeviceEntry(e, 'reticulum')).toBe(true);
   });
 
-  it('classifies [BLE:sessionId] message as Meshtastic device entry', () => {
-    expect(
-      isDeviceEntry(entry('main', '[BLE:abc123] connect failed: peripheral lost'), 'meshtastic'),
-    ).toBe(true);
+  it('classifies shared [BLE:sessionId] as device entry on every protocol tab', () => {
+    const e = entry('main', '[BLE:abc123] connect failed: peripheral lost');
+    expect(isDeviceEntry(e, 'meshtastic')).toBe(true);
+    expect(isDeviceEntry(e, 'meshcore')).toBe(true);
   });
 
   it('classifies sdk source as Meshtastic device entry', () => {
@@ -128,10 +134,17 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     ).toBe(false);
   });
 
-  it('classifies [GATT:all] as Meshtastic device entry', () => {
-    expect(isDeviceEntry(entry('main', '[GATT:all] adapter_missing: no radio'), 'meshtastic')).toBe(
-      true,
-    );
+  it('classifies shared [GATT:all] as device entry on every protocol tab', () => {
+    const e = entry('main', '[GATT:all] adapter_missing: no radio');
+    expect(isDeviceEntry(e, 'meshtastic')).toBe(true);
+    expect(isDeviceEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('classifies [meshtasticTransportLoss] as Meshtastic device and excludes from MeshCore app', () => {
+    const e = entry('main', '[meshtasticTransportLoss] serial link lost');
+    expect(isDeviceEntry(e, 'meshtastic')).toBe(true);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(false);
+    expect(isOwnedByOtherProtocol(e, 'meshcore')).toBe(true);
   });
 });
 
@@ -153,8 +166,9 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] rx packet'), 'meshcore')).toBe(true);
   });
 
-  it('classifies [MeshCore MQTT] message as MeshCore device entry', () => {
-    expect(isDeviceEntry(entry('main', '[MeshCore MQTT] status changed'), 'meshcore')).toBe(true);
+  it('classifies [MeshCore MQTT] message as MeshCore app entry (not device)', () => {
+    expect(isDeviceEntry(entry('main', '[MeshCore MQTT] status changed'), 'meshcore')).toBe(false);
+    expect(isAppLogEntry(entry('main', '[MeshCore MQTT] status changed'), 'meshcore')).toBe(true);
   });
 
   it('does NOT classify Meshtastic SDK source as MeshCore device entry', () => {
@@ -177,10 +191,10 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     ).toBe(false);
   });
 
-  it('does NOT classify [BLE:sessionId] message as MeshCore device entry', () => {
+  it('classifies unscoped [BLE:sessionId] as shared device entry on MeshCore', () => {
     expect(
       isDeviceEntry(entry('main', '[BLE:abc123] connect failed: peripheral lost'), 'meshcore'),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('classifies [BLE:meshcore] GATT message as MeshCore device entry', () => {
@@ -310,8 +324,8 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
     expect(isDeviceEntry(entry('main', '[Meshtastic MQTT] something'))).toBe(false);
   });
 
-  it('classifies [MeshCore MQTT] message as device entry', () => {
-    expect(isDeviceEntry(entry('main', '[MeshCore MQTT] something'))).toBe(true);
+  it('classifies [MeshCore MQTT] message as app entry (not device)', () => {
+    expect(isDeviceEntry(entry('main', '[MeshCore MQTT] something'))).toBe(false);
   });
 
   it('classifies [iMeshDevice] message as device entry', () => {
@@ -413,10 +427,10 @@ describe('protocol-scoped appEntries — MeshCore tab', () => {
     expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(false);
   });
 
-  it('routes MeshCore MQTT to device view', () => {
+  it('routes MeshCore MQTT to app view (unified with Meshtastic MQTT)', () => {
     const mqttEntry = entry('main', '[MeshCore MQTT] PINGRESP received');
-    expect(isDeviceEntry(mqttEntry, 'meshcore')).toBe(true);
-    expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(false);
+    expect(isDeviceEntry(mqttEntry, 'meshcore')).toBe(false);
+    expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(true);
   });
 
   it('excludes MeshtasticRemoteAdmin from MeshCore app view', () => {
@@ -485,5 +499,32 @@ describe('protocol-exclusive App tags — cross-protocol', () => {
     );
     expect(isAppLogEntry(e, 'meshcore')).toBe(false);
     expect(isAppLogEntry(e, 'meshtastic')).toBe(true);
+  });
+});
+
+describe('entriesForLogAnalysis — surface without protocol filter', () => {
+  it('keeps other-protocol app lines so Analyze can count ignoredOtherProtocol', () => {
+    const shared = entry('main', '[db] migrate failed');
+    const meshcoreMqtt = entry('main', '[MeshCore MQTT] PINGRESP');
+    const meshtasticMqtt = entry('main', '[Meshtastic MQTT] subscribe OK');
+    const device = entry('main', '[useMeshtasticRuntime] connected');
+    const analyzed = entriesForLogAnalysis(
+      [shared, meshcoreMqtt, meshtasticMqtt, device],
+      undefined,
+      'app',
+    );
+    expect(analyzed).toEqual(expect.arrayContaining([shared, meshcoreMqtt, meshtasticMqtt]));
+    expect(analyzed).not.toContainEqual(device);
+    // Display list for MeshCore still hides Meshtastic exclusive app tags.
+    expect(isAppLogEntry(meshtasticMqtt, 'meshcore')).toBe(false);
+  });
+
+  it('includes other-protocol device library lines for Device Analyze', () => {
+    const mt = entry('main', '[useMeshtasticRuntime] connected');
+    const mc = entry('main', '[useMeshcoreRuntime] connected');
+    const app = entry('main', '[db] migrate failed');
+    const analyzed = entriesForLogAnalysis([mt, mc, app], undefined, 'device');
+    expect(analyzed).toEqual(expect.arrayContaining([mt, mc]));
+    expect(analyzed).not.toContainEqual(app);
   });
 });

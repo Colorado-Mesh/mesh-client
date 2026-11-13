@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} girişleri",
     "errorsShort": "{{count}} hatalar",
     "warningsShort": "{{count}} uyarılar",
-    "protocolNote": "Protokole özgü kategoriler için aktif radyo protokolünü kullanır; bireysel günlük satırları protokole göre etiketlenmez.",
     "emptyState": "Mevcut günlük görünümünde herhangi bir sorun algılanmadı.",
     "recommendationsHeading": "Öneriler",
     "lastMessagePrefix": "Son:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Rapor kopyalandı!",
     "copyFailure": "Rapor kopyalanamadı. Tekrar deneyin veya günlüğü dışa aktarın.",
     "evidence": "{{category}} için kanıtları görüntüleyin",
-    "evidenceShown": "Eşleşen {{shown}}/{{total}} giriş gösteriliyor, önce en yeni."
+    "evidenceShown": "Eşleşen {{shown}}/{{total}} giriş gösteriliyor, önce en yeni.",
+    "ignoredOtherProtocol": "{{count}} diğer radyo protokollerinden gelen hatlar hariç tutuldu.",
+    "protocolNote": "Aktif telsiz protokolünü kullanır. Başka bir telsize ait hatlar hariç tutulur; uygulama genelinde paylaşılan hatlar kalır."
   },
   "logAnalyzer": {
     "categories": {

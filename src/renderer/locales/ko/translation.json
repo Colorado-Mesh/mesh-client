@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} 항목",
     "errorsShort": "{{count}} 오류",
     "warningsShort": "{{count}} 경고",
-    "protocolNote": "프로토콜별 카테고리에 활성 무선 프로토콜을 사용합니다. 개별 로그 줄은 프로토콜별로 레이블이 지정되지 않습니다.",
     "emptyState": "현재 로그 보기에서는 문제가 발견되지 않았습니다.",
     "recommendationsHeading": "권장 사항",
     "lastMessagePrefix": "마지막:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "보고서 복사 되었습니다!",
     "copyFailure": "보고서를 복사할 수 없습니다. 다시 시도하거나 로그를 내보내세요.",
     "evidence": "{{category}} 에 대한 증거 보기",
-    "evidenceShown": "일치하는 항목이 {{total}} 개 중 {{shown}} 개 표시 중 가장 최신 항목이 먼저 표시됩니다."
+    "evidenceShown": "일치하는 항목이 {{total}} 개 중 {{shown}} 개 표시 중 가장 최신 항목이 먼저 표시됩니다.",
+    "ignoredOtherProtocol": "다른 무선 프로토콜의 {{count}} 라인이 제외되었습니다.",
+    "protocolNote": "활성 무선 프로토콜을 사용합니다. 다른 무전기의 소유 라인은 제외되며, 앱 전체에서 공유되는 라인은 그대로 유지됩니다."
   },
   "logAnalyzer": {
     "categories": {

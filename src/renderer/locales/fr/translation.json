@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} entrées",
     "errorsShort": "Erreurs {{count}}",
     "warningsShort": "{{count}} avertissements",
-    "protocolNote": "Utilise le protocole radio actif pour les catégories spécifiques au protocole ; les lignes de journal individuelles ne sont pas étiquetées par protocole.",
     "emptyState": "Aucun problème détecté dans la vue actuelle du journal.",
     "recommendationsHeading": "Recommandations",
     "lastMessagePrefix": "Dernier:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Rapport copié",
     "copyFailure": "Impossible de copier le rapport. Réessayez ou exportez le journal.",
     "evidence": "Afficher les preuves pour {{category}}",
-    "evidenceShown": "Affichage de {{shown}} entrées correspondantes sur {{total}}, les plus récentes en premier."
+    "evidenceShown": "Affichage de {{shown}} entrées correspondantes sur {{total}}, les plus récentes en premier.",
+    "ignoredOtherProtocol": "{{count}} lignes provenant d’autres protocoles radio ont été exclues.",
+    "protocolNote": "Utilise le protocole radio actif. Les lignes appartenant à une autre radio sont exclues ; les lignes partagées à l’échelle de l’application sont conservées."
   },
   "logAnalyzer": {
     "categories": {

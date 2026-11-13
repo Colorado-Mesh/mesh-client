@@ -2484,7 +2484,6 @@
     "totalEntries": "{{count}} entri",
     "errorsShort": "{{count}} kesalahan",
     "warningsShort": "{{count}} peringatan",
-    "protocolNote": "Menggunakan protokol radio aktif untuk kategori protokol tertentu; baris log individu tidak diberi label oleh protokol.",
     "emptyState": "Tidak ada masalah yang terdeteksi pada tampilan log saat ini.",
     "recommendationsHeading": "Rekomendasi",
     "lastMessagePrefix": "Terakhir:",
@@ -2496,7 +2495,9 @@
     "copySuccess": "Laporan disalin",
     "copyFailure": "Tidak dapat menyalin laporan. Coba lagi atau ekspor log.",
     "evidence": "Lihat bukti untuk {{category}}",
-    "evidenceShown": "Menampilkan {{shown}} dari {{total}} entri yang cocok, terbaru terlebih dahulu."
+    "evidenceShown": "Menampilkan {{shown}} dari {{total}} entri yang cocok, terbaru terlebih dahulu.",
+    "ignoredOtherProtocol": "{{count}} baris dari protokol radio lainnya dikecualikan.",
+    "protocolNote": "Menggunakan protokol radio aktif. Saluran yang dimiliki oleh radio lain dikecualikan; saluran bersama di seluruh aplikasi tetap ada."
   },
   "logAnalyzer": {
     "categories": {

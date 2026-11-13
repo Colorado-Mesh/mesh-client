@@ -6857,6 +6857,7 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
   httpDevice = { host, tls, intervalId, fetchInFlight: false };
   logDeviceConnection(
     `transport=http stack=meshtastic host=${sanitizeLogMessage(host)} tls=${tls}`,
+    'meshtastic',
   );
 });
 
