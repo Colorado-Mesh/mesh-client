@@ -8721,14 +8721,9 @@
     "hideFiltered": "Hide filtered messages"
   },
   "channelSecurityBadges": {
-    "pskWeak": "Weak or open channel key on {{channel}}",
-    "pskAes128": "AES-128 channel key on {{channel}}",
-    "pskAes128Short": "AES128",
-    "pskAes256": "AES-256 channel key on {{channel}}",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "Precise location shared on {{channel}}",
-    "preciseLocationShort": "Loc",
-    "mqttUplink": "MQTT uplink enabled on {{channel}}",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "Secure AES channel key on {{channel}}",
+    "open": "Weak or open channel key on {{channel}}",
+    "openLocation": "Open channel key with precise location on {{channel}}",
+    "openLocationUplink": "Open channel key with precise location and MQTT uplink on {{channel}}"
   }
 }

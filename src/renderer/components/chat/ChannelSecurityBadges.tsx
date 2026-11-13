@@ -1,54 +1,57 @@
-import { LockOpen } from 'lucide-react-motion';
-import { useTranslation } from 'react-i18next';
+import { Lock, LockOpen, TriangleAlert } from 'lucide-react-motion';
 
 import {
-  channelSecurityBadgeKinds,
   type ChannelSecurityInput,
+  channelSecurityLevel,
 } from '@/renderer/lib/channelSecurityBadges';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 export interface ChannelSecurityBadgesProps {
   channel: ChannelSecurityInput;
-  /** Prefix for aria-labels (channel name). */
-  channelName: string;
+  /** Accessible name / tooltip (caller supplies i18n). */
+  label: string;
+  /** Icon pixel size (chat pills use 12; Radio rows use 14). */
+  size?: 12 | 14;
 }
 
-const BADGE_CLASS =
-  'rounded-badge text-2xs inline-flex items-center px-1 py-0.5 font-medium leading-none';
-
-/** Accessible Meshtastic channel security chips for WrappingChannelList pills. */
-export function ChannelSecurityBadges({ channel, channelName }: ChannelSecurityBadgesProps) {
-  const { t } = useTranslation();
+/** Official Meshtastic-style composite channel security lock for chat pills and Radio rows. */
+export function ChannelSecurityBadges({ channel, label, size = 12 }: ChannelSecurityBadgesProps) {
   const iconTrigger = useIconTrigger();
-  const kinds = channelSecurityBadgeKinds(channel);
-  if (kinds.length === 0) return null;
+  const level = channelSecurityLevel(channel);
+  const iconClass = size === 14 ? 'h-3.5 w-3.5' : 'h-3 w-3';
+  const iconProps = {
+    'aria-hidden': true as const,
+    trigger: iconTrigger,
+    size,
+  };
+
+  if (level === 'encrypted') {
+    return (
+      <span
+        className="inline-flex shrink-0 items-center text-green-400"
+        aria-label={label}
+        title={label}
+        data-testid="channel-security-badges"
+        data-security-level={level}
+      >
+        <Lock {...iconProps} className={iconClass} />
+      </span>
+    );
+  }
+
+  const tone = level === 'open' ? 'text-orange-400' : 'text-red-400';
   return (
     <span
-      className="inline-flex max-w-full flex-wrap items-center gap-0.5"
+      className={`inline-flex shrink-0 items-center gap-0.5 ${tone}`}
+      aria-label={label}
+      title={label}
       data-testid="channel-security-badges"
+      data-security-level={level}
     >
-      {kinds.map((kind) => {
-        const label = t(`channelSecurityBadges.${kind}`, { channel: channelName });
-        // Weak PSK is icon-only on the channel chip (like Pin/Archive): soft caution
-        // text, no solid fill, so it stays theme-friendly on brand-accent pills.
-        const tone =
-          kind === 'pskAes256'
-            ? 'bg-green-800 text-white'
-            : kind === 'pskAes128'
-              ? 'bg-ink-700 text-ink-100'
-              : kind === 'pskWeak'
-                ? 'text-orange-400'
-                : 'bg-orange-800 text-white';
-        return (
-          <span key={kind} className={`${BADGE_CLASS} ${tone}`} aria-label={label} title={label}>
-            {kind === 'pskWeak' ? (
-              <LockOpen aria-hidden className="h-3 w-3" trigger={iconTrigger} size={12} />
-            ) : (
-              t(`channelSecurityBadges.${kind}Short`)
-            )}
-          </span>
-        );
-      })}
+      <LockOpen {...iconProps} className={iconClass} />
+      {level === 'open-location-uplink' ? (
+        <TriangleAlert {...iconProps} className={`${iconClass} text-red-400`} />
+      ) : null}
     </span>
   );
 }

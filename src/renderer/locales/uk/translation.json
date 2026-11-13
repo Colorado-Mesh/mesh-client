@@ -8865,14 +8865,9 @@
     "toolbar": "Фільтр Word"
   },
   "channelSecurityBadges": {
-    "pskWeak": "Слабкий або відкритий ключ каналу на {{channel}}",
-    "pskAes128": "Ключ каналу AES-128 на {{channel}}",
-    "pskAes128Short": "AES128",
-    "pskAes256": "Ключ каналу AES-256 на {{channel}}",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "Точна локація спільно використовується на {{channel}}",
-    "preciseLocationShort": "Лок",
-    "mqttUplink": "MQTT uplink увімкнено на {{channel}}",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "Захищений ключ каналу AES на {{channel}}",
+    "open": "Слабкий або відкритий ключ каналу на {{channel}}",
+    "openLocation": "Відкрити ключ каналу з точним розташуванням на {{channel}}",
+    "openLocationUplink": "Відкрити ключ каналу з точним розташуванням і MQTT висхідним каналом на {{channel}}"
   }
 }

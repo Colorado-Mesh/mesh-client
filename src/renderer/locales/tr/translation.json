@@ -8721,14 +8721,9 @@
     "toolbar": "Kelime filtresi"
   },
   "channelSecurityBadges": {
-    "pskWeak": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
-    "pskAes128": "{{channel}} üzerinde AES-128 kanal anahtarı",
-    "pskAes128Short": "AES128",
-    "pskAes256": "{{channel}} üzerinde AES-256 kanal anahtarı",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "{{channel}} üzerinde kesin konum paylaşılıyor",
-    "preciseLocationShort": "Kon",
-    "mqttUplink": "{{channel}} üzerinde MQTT uplink açık",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "{{channel}} üzerinde AES kanal anahtarını güvenli hale getirin",
+    "open": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
+    "openLocation": "{{channel}} üzerinde kesin konuma sahip kanal anahtarını açın",
+    "openLocationUplink": "{{channel}} üzerinde kesin konumu ve MQTT yukarı bağlantısını içeren kanal anahtarını açın"
   }
 }

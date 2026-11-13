@@ -8721,14 +8721,9 @@
     "toolbar": "단어 필터"
   },
   "channelSecurityBadges": {
-    "pskWeak": "{{channel}}의 약하거나 열린 채널 키",
-    "pskAes128": "{{channel}}의 AES-128 채널 키",
-    "pskAes128Short": "AES128",
-    "pskAes256": "{{channel}}의 AES-256 채널 키",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "{{channel}}에서 공유된 정확한 위치",
-    "preciseLocationShort": "위치",
-    "mqttUplink": "MQTT 업링크는 {{channel}}에서 활성화되었습니다.",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "{{channel}}의 보안 AES 채널 키",
+    "open": "{{channel}}의 약하거나 열린 채널 키",
+    "openLocation": "{{channel}}의 정확한 위치가 포함된 채널 키 열기",
+    "openLocationUplink": "정확한 위치와 {{channel}}의 MQTT 업링크가 포함된 채널 키 열기"
   }
 }

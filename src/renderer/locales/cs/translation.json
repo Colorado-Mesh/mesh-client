@@ -8806,14 +8806,9 @@
     "toolbar": "Filtr slov"
   },
   "channelSecurityBadges": {
-    "pskWeak": "Slabý nebo otevřený klíč kanálu na {{channel}}",
-    "pskAes128": "Kanálový klíč AES-128 na {{channel}}",
-    "pskAes128Short": "AES128",
-    "pskAes256": "Kanálový klíč AES-256 na {{channel}}",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "Přesná poloha sdílená na {{channel}}",
-    "preciseLocationShort": "Loc",
-    "mqttUplink": "Uplink MQTT povolen na {{channel}}",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "Zabezpečený klíč kanálu AES na {{channel}}",
+    "open": "Slabý nebo otevřený klíč kanálu na {{channel}}",
+    "openLocation": "Otevřete klíč kanálu s přesnou polohou na {{channel}}",
+    "openLocationUplink": "Otevřete klíč kanálu s přesnou polohou a MQTT uplink na {{channel}}"
   }
 }
