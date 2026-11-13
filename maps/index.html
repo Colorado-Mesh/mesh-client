@@ -877,6 +877,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Layers and overlays">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#imported-vector-overlays-kml--kmz--geojson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imported vector overlays (KML / KMZ / GeoJSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3145,6 +3162,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Layers and overlays">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#imported-vector-overlays-kml--kmz--geojson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imported vector overlays (KML / KMZ / GeoJSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3360,6 +3394,39 @@
 <li>Diagnostic <strong>Route weights</strong>, <strong>Anomaly halos</strong>, and <strong>Congestion halos</strong> when those engines have data</li>
 </ul>
 <p>Overlays are vector layers drawn on top of the basemap. If nodes have latitude/longitude from RF, MQTT, SQLite, or your session, markers and trails can still render when the basemap is blank or only partly cached.</p>
+<h3 id="imported-vector-overlays-kml--kmz--geojson">Imported vector overlays (KML / KMZ / GeoJSON)<a class="headerlink" href="#imported-vector-overlays-kml--kmz--geojson" title="Permanent link">&para;</a></h3>
+<p>Under <strong>Imported overlays</strong> you can load a <strong>local</strong> GeoJSON, KML, or KMZ file onto every Map tab (LoRa and Reticulum). Each layer can be toggled, faded with an opacity slider, or removed. Visibility and opacity are remembered with the layer data.</p>
+<table>
+<thead>
+<tr>
+<th>Cap / rule</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Max file size</td>
+<td>about <strong>50 MB</strong></td>
+</tr>
+<tr>
+<td>Max imported layers</td>
+<td><strong>16</strong></td>
+</tr>
+<tr>
+<td>Local files only</td>
+<td>OS file dialog in the main process — no network KML / <code>NetworkLink</code></td>
+</tr>
+<tr>
+<td>Safe KML subset</td>
+<td>Point, LineString, Polygon, MultiGeometry; DOCTYPE/ENTITY rejected</td>
+</tr>
+<tr>
+<td>KMZ</td>
+<td>Zip extract into a unique temp dir (<code>mesh-kmz-…</code>); no ground overlays</td>
+</tr>
+</tbody>
+</table>
+<p>v1 does <strong>not</strong> fetch remote KML URLs, apply full KML styling, or draw KMZ ground-overlay imagery.</p>
 <p>Use <strong>Measure</strong> to click a multi-point distance line on the map (<code>km</code> / <code>mi</code> total). Use <strong>LOS profile</strong> to pick two endpoints (map clicks or node markers) and plot a terrain cross-section with first Fresnel-zone clearance for 915 / 868 / 433 MHz. Elevation samples come from a cached Open-Meteo lookup, or from offline SRTM tiles if you downloaded them under <strong>Layers → Offline maps → Offline elevation (DEM)</strong>. <strong>Show my location</strong> recenters on your resolved position when one is available.</p>
 <hr />
 <h2 id="custom-map-sources">Custom map sources<a class="headerlink" href="#custom-map-sources" title="Permanent link">&para;</a></h2>
@@ -3560,7 +3627,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:38:31 UTC">November 13, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:39:36 UTC">November 13, 2026</span>
   </span>
 
     
