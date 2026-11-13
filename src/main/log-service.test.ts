@@ -196,12 +196,17 @@ describe('getRecentLines', () => {
     expect(last.source).toBe('mqtt');
   });
 
-  it('stamps protocol from message tags and omits it when shared', async () => {
+  it('stamps protocol from channel tokens and omits it when shared', async () => {
     const { appendLine, getRecentLines } = await import('./log-service');
 
-    appendLine('warn', 'main', '[meshtasticTransportLoss] serial link lost');
+    // Main uses channel heuristics only (full tag registry stays in the renderer graph).
+    appendLine('warn', 'main', '[IPC] meshtastic:tcp-connect error: refused');
     const owned = getRecentLines().at(-1);
     expect(owned?.protocol).toBe('meshtastic');
+
+    appendLine('warn', 'main', '[meshtasticTransportLoss] serial link lost');
+    const registryOnly = getRecentLines().at(-1);
+    expect(registryOnly?.protocol).toBeUndefined();
 
     appendLine('warn', 'main', '[db] migrate failed');
     const shared = getRecentLines().at(-1);
@@ -222,7 +227,9 @@ describe('getRecentLines', () => {
 describe('formatLine proto token (source contract)', () => {
   it('includes [proto=…] in formatLine when protocol is known', () => {
     expect(LOG_SERVICE_SOURCE).toContain('[proto=${protocol}]');
-    expect(LOG_SERVICE_SOURCE).toContain('resolveLogProtocol');
+    // Channel heuristics only — full LOG_TAG_SCOPE stays out of the measured main bundle.
+    expect(LOG_SERVICE_SOURCE).toContain('resolveLogProtocolFromChannel');
+    expect(LOG_SERVICE_SOURCE).not.toContain('logProtocolScope');
   });
 });
 

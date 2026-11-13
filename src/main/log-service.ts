@@ -8,7 +8,7 @@ import path from 'path';
 import { formatBuildInfoLogFragment } from '../shared/buildInfo';
 import type { LogEntry } from '../shared/electron-api.types';
 import { formatLogFileTimestamp } from '../shared/formatLogTimestamp';
-import { resolveLogProtocol } from '../shared/logProtocolScope';
+import { resolveLogProtocolFromChannel } from '../shared/logProtocolChannelResolve';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import {
   sanitizeForConsoleEcho,
@@ -37,7 +37,7 @@ export function formatRuntimeLogTag(): string {
  */
 export function logDeviceConnection(detail: string, protocol?: MeshProtocol): void {
   const message = `[Connection] ${sanitizeLogMessage(detail)} ${formatRuntimeLogTag()}`;
-  const resolved = protocol ?? resolveLogProtocol({ source: 'main', message });
+  const resolved = protocol ?? resolveLogProtocolFromChannel({ source: 'main', message });
   appendLine('debug', 'main', message, resolved);
 }
 
@@ -218,7 +218,7 @@ export function appendLine(
   message = sanitizeLogMessage(message);
   // Source is embedded in the log line; sanitize so the whole line is control-char-free.
   source = sanitizeLogMessage(source);
-  const resolved = protocol ?? resolveLogProtocol({ source, message });
+  const resolved = protocol ?? resolveLogProtocolFromChannel({ source, message });
   const ts = Date.now();
   pushRecent(ts, level, source, message, resolved);
   const line = formatLine(ts, level, source, message, resolved);
@@ -369,7 +369,7 @@ function resolveMainSource(): 'sdk' | 'main' {
 /** Stamp console lines via tag/message resolution (no broad stack filename map). */
 function appendConsoleLine(level: LogLevel, message: string): void {
   const source = resolveMainSource();
-  appendLine(level, source, message, resolveLogProtocol({ source, message }));
+  appendLine(level, source, message, resolveLogProtocolFromChannel({ source, message }));
 }
 
 /**
@@ -507,5 +507,5 @@ export function forwardRendererConsoleMessage(details: {
   const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
   if (isDroppableMeshtasticSdkLogLine(msg)) return;
   if (isDroppableRendererConsoleNoise(msg)) return;
-  appendLine(mapped, src, msg, resolveLogProtocol({ source: src, message: msg }));
+  appendLine(mapped, src, msg, resolveLogProtocolFromChannel({ source: src, message: msg }));
 }
