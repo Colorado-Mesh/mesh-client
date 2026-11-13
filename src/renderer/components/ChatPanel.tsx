@@ -29,6 +29,7 @@ import {
   Siren,
   Smile,
   Star,
+  Trash2,
   X,
 } from 'lucide-react-motion';
 import {
@@ -5202,7 +5203,12 @@ function ChatPanel({
                               aria-label={t('chatPanel.deleteMessageLocal')}
                               title={t('chatPanel.deleteMessageLocal')}
                             >
-                              {t('chatPanel.deleteMessageLocal')}
+                              <Trash2
+                                aria-hidden
+                                className="h-3.5 w-3.5"
+                                trigger={parentIconTrigger}
+                                size={14}
+                              />
                             </button>
                             <MessageTranslateButton
                               messageKey={`${protocol}:${identityId ?? myNodeNum}:${msg.id}`}
