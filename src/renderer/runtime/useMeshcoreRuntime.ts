@@ -448,6 +448,7 @@ import {
 import {
   meshcoreRoomStatusPingTraceResult,
   meshcoreShouldPingRoomViaStatus,
+  runMeshcoreRoomStatusWithNotFoundRestore,
 } from '../lib/meshcoreRoomStatusPing';
 import {
   isMeshcoreRoomSyncSelectable,
@@ -5712,7 +5713,23 @@ export function useMeshcoreRuntime() {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
             const pingNode = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
-            // Room servers do not answer TRACE; Ping uses Status (same as the Status action).
+            /*
+             * KNOWN-GOOD Room Ping path — do not "parity" this with repeater TRACE prep.
+             * Audits / agents: Room firmware never answers SendTracePath / TraceData. Working Ping is:
+             *   1) Status RPC (same frame as the Status row action), not TRACE.
+             *   2) Admin hops only: resolveMeshcoreAdminHopsAway(node, routeBytes ?? new Uint8Array())
+             *      so a missing map entry is treated as known-empty → 0-hop. Do NOT use
+             *      resolveMeshcorePingHopsAway, refreshRepeaterContactPathFromRadio,
+             *      meshcoreIsUsableTraceStoredPath, or radio 0xFF / direct-first TRACE planning here —
+             *      Status is pubkey-framed; those steps are for TRACE wire seeds only.
+             *   3) Route-escalation on timeout (flood retry); canLogin always false (no Room BBS login).
+             *   4) On companion ERR_NOT_FOUND (contact evicted but still in UI):
+             *      runMeshcoreRoomStatusWithNotFoundRestore → addMeshcoreNodeContactToRadio once,
+             *      abort if roomPingSessionStale during restore, else mark path unknown and retry Status.
+             *   5) Success → meshcoreRoomStatusPingTraceResult (fromStatusPing) for panel SNR/path UI.
+             * Contract: useMeshcoreRuntime.room-ping.contract.test.ts. See meshcoreRoomStatusPing.ts
+             * and docs/development/meshcore-repeaters.md (Room Ping via Status).
+             */
             if (meshcoreShouldPingRoomViaStatus(pingNode?.hw_model)) {
               const roomPingSetupGen = meshcoreSetupGenerationRef.current;
               const roomPingConn = conn;
@@ -5720,63 +5737,31 @@ export function useMeshcoreRuntime() {
                 meshcoreSetupGenerationRef.current !== roomPingSetupGen ||
                 resolveMeshcoreConn() !== roomPingConn;
               try {
-                let companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+                const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
                   pathHashModeRef.current,
                 );
-                let radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
-                let storedPath = outPathMapRef.current.get(nodeId);
-                const displayedHopsAway = pingNode?.hops_away;
-                let hopsAway: number | null | undefined = displayedHopsAway;
-                const recheckDirectContact =
-                  (meshcoreTracePingRadioSaysDirect(radioContactPathLen) ||
-                    meshcoreTracePingRadioHasNoRoute(radioContactPathLen)) &&
-                  (displayedHopsAway ?? 0) >= 1;
-                const synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
-                  radioContactPathLen,
-                  companionPathHashMode,
+                const routeBytes = outPathMapRef.current.get(nodeId);
+                const radioContactPathLen =
+                  radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+                // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
+                const hopsAway = resolveMeshcoreAdminHopsAway(
+                  pingNode,
+                  routeBytes ?? new Uint8Array(),
                 );
-                if (
-                  storedPath &&
-                  !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, synthHashSizeBytes)
-                ) {
-                  outPathMapRef.current.delete(nodeId);
-                  storedPath = undefined;
-                }
-                const contactSnap = await refreshRepeaterContactPathFromRadio(
-                  nodeId,
-                  storedPath,
-                  pubKey,
-                  hopsAway,
-                  synthHashSizeBytes,
-                  recheckDirectContact,
-                );
-                storedPath = contactSnap.path ?? storedPath;
-                if (
-                  contactSnap.radioContactPathLen != null &&
-                  Number.isFinite(contactSnap.radioContactPathLen)
-                ) {
-                  radioContactPathLen = contactSnap.radioContactPathLen;
-                  radioContactPathLenByNodeRef.current.set(nodeId, radioContactPathLen);
-                } else {
-                  radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
-                }
-                companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
-                  pathHashModeRef.current,
-                );
-                const pingRouteBytes =
-                  storedPath ?? (contactSnap.radioContactFound ? new Uint8Array() : undefined);
-                hopsAway = resolveMeshcorePingHopsAway({
-                  node: pingNode,
-                  routeBytes: pingRouteBytes,
-                  radioContactPathLen,
-                  radioPathLeftover: contactSnap.radioPathLeftover,
-                });
                 const hashSizeBytes = meshcoreHashSizeForTraceSeed(
                   radioContactPathLen,
                   companionPathHashMode,
                 );
-                // Same route-escalation as Status (reset + one flood retry on timeout). No Room login.
                 // Shared deps live in a ref so this callback can run before that useMemo is declared.
+                const sendRoomStatusPing = (): Promise<
+                  Awaited<ReturnType<typeof runMeshcoreRepeaterStatusRequest>>
+                > =>
+                  runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
+                    hopsAway,
+                    runSerialized: repeaterRemoteRpcRef.current,
+                    beforeSend: () =>
+                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  });
                 const raw = await withMeshcoreRepeaterLoginFallback(
                   nodeId,
                   {
@@ -5787,11 +5772,28 @@ export function useMeshcoreRuntime() {
                     },
                   },
                   async () =>
-                    runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
-                      hopsAway,
-                      runSerialized: repeaterRemoteRpcRef.current,
-                      beforeSend: () =>
-                        awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    runMeshcoreRoomStatusWithNotFoundRestore({
+                      send: sendRoomStatusPing,
+                      restoreContact: pingNode
+                        ? async () => {
+                            console.warn(
+                              '[useMeshcoreRuntime] room ping: contact missing from radio; re-adding',
+                            );
+                            await addMeshcoreNodeContactToRadio(
+                              roomPingConn,
+                              pubKey,
+                              pingNode,
+                              repeaterRemoteRpcRef.current,
+                            );
+                          }
+                        : undefined,
+                      isSessionStale: roomPingSessionStale,
+                      afterRestore: () => {
+                        radioContactPathLenByNodeRef.current.set(
+                          nodeId >>> 0,
+                          MESHCORE_OUT_PATH_UNKNOWN_BYTE,
+                        );
+                      },
                     }),
                 );
                 if (roomPingSessionStale()) return false;

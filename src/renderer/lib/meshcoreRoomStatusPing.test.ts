@@ -1,8 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import {
+  MESHCORE_RADIO_ERR_BAD_STATE,
+  MESHCORE_RADIO_ERR_NOT_FOUND,
+  MeshcoreRadioRejectedError,
+} from './meshcoreRadioErr';
 import {
   meshcoreRoomStatusPingTraceResult,
   meshcoreShouldPingRoomViaStatus,
+  runMeshcoreRoomStatusWithNotFoundRestore,
 } from './meshcoreRoomStatusPing';
 
 describe('meshcoreShouldPingRoomViaStatus', () => {
@@ -14,6 +20,69 @@ describe('meshcoreShouldPingRoomViaStatus', () => {
     [null, false],
   ] as const)('%s → %s', (hw, expected) => {
     expect(meshcoreShouldPingRoomViaStatus(hw)).toBe(expected);
+  });
+});
+
+describe('runMeshcoreRoomStatusWithNotFoundRestore', () => {
+  it('restores once on NOT_FOUND then retries Status', async () => {
+    const send = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new MeshcoreRadioRejectedError('radio rejected request', MESHCORE_RADIO_ERR_NOT_FOUND),
+      )
+      .mockResolvedValueOnce({ ok: true });
+    const restoreContact = vi.fn(() => Promise.resolve());
+    const afterRestore = vi.fn();
+    await expect(
+      runMeshcoreRoomStatusWithNotFoundRestore({
+        send,
+        restoreContact,
+        isSessionStale: () => false,
+        afterRestore,
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(restoreContact).toHaveBeenCalledTimes(1);
+    expect(afterRestore).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not restore on unrelated radio errors', async () => {
+    const err = new MeshcoreRadioRejectedError(
+      'radio rejected request',
+      MESHCORE_RADIO_ERR_BAD_STATE,
+    );
+    const send = vi.fn().mockRejectedValueOnce(err);
+    const restoreContact = vi.fn(() => Promise.resolve());
+    await expect(
+      runMeshcoreRoomStatusWithNotFoundRestore({
+        send,
+        restoreContact,
+        isSessionStale: () => false,
+      }),
+    ).rejects.toBe(err);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(restoreContact).not.toHaveBeenCalled();
+  });
+
+  it('skips path mutation and retry when the session goes stale during restore', async () => {
+    const err = new MeshcoreRadioRejectedError(
+      'radio rejected request',
+      MESHCORE_RADIO_ERR_NOT_FOUND,
+    );
+    const send = vi.fn().mockRejectedValueOnce(err);
+    const restoreContact = vi.fn(() => Promise.resolve());
+    const afterRestore = vi.fn();
+    await expect(
+      runMeshcoreRoomStatusWithNotFoundRestore({
+        send,
+        restoreContact,
+        isSessionStale: () => true,
+        afterRestore,
+      }),
+    ).rejects.toBe(err);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(restoreContact).toHaveBeenCalledTimes(1);
+    expect(afterRestore).not.toHaveBeenCalled();
   });
 });
 
