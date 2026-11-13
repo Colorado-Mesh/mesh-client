@@ -215,19 +215,28 @@ function parseCoordinateTuples(text: string): MapOverlayPosition[] {
     if (parts.length < 2) {
       throw new MapOverlayParseError('malformed', 'Invalid KML coordinates');
     }
-    const lon = Number(parts[0]);
-    const lat = Number(parts[1]);
+    const lonRaw = parts[0]?.trim() ?? '';
+    const latRaw = parts[1]?.trim() ?? '';
+    // Reject empty fields before Number() — Number('') is 0 and would pass isFinite.
+    if (!lonRaw || !latRaw) {
+      throw new MapOverlayParseError('malformed', 'Empty KML coordinate field');
+    }
+    const lon = Number(lonRaw);
+    const lat = Number(latRaw);
     if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
       throw new MapOverlayParseError('malformed', 'Non-numeric KML coordinates');
     }
     if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
       throw new MapOverlayParseError('malformed', 'KML coordinates out of range');
     }
-    if (parts.length >= 3 && Number.isFinite(Number(parts[2]))) {
-      out.push([lon, lat, Number(parts[2])]);
-    } else {
-      out.push([lon, lat]);
+    if (parts.length >= 3) {
+      const altRaw = parts[2]?.trim() ?? '';
+      if (altRaw && Number.isFinite(Number(altRaw))) {
+        out.push([lon, lat, Number(altRaw)]);
+        continue;
+      }
     }
+    out.push([lon, lat]);
   }
   if (out.length === 0) throw new MapOverlayParseError('malformed', 'Empty KML coordinates');
   return out;
@@ -246,6 +255,23 @@ function requireIndexed<T>(items: readonly T[], index: number, message: string):
 }
 
 function parseKmlGeometry(block: string): MapOverlayGeometry | null {
+  // MultiGeometry must win before Point/LineString so nested children are not truncated.
+  const multi = /<MultiGeometry\b[^>]*>([\s\S]*?)<\/MultiGeometry>/i.exec(block);
+  if (multi?.[1]) {
+    const geometries: MapOverlayGeometry[] = [];
+    const childRe = /<(Point|LineString|Polygon|MultiGeometry)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+    let child: RegExpExecArray | null;
+    while ((child = childRe.exec(multi[1])) !== null) {
+      const parsed = parseKmlGeometry(child[0]);
+      if (parsed) geometries.push(parsed);
+    }
+    if (geometries.length === 0) return null;
+    if (geometries.length === 1) {
+      return requireIndexed(geometries, 0, 'Empty MultiGeometry');
+    }
+    return { type: 'GeometryCollection', geometries };
+  }
+
   const point = /<Point\b[^>]*>([\s\S]*?)<\/Point>/i.exec(block);
   if (point?.[1]) {
     return {
@@ -275,22 +301,6 @@ function parseKmlGeometry(block: string): MapOverlayGeometry | null {
       if (typeof ringBody === 'string') rings.push(coordinatesFromBlock(ringBody));
     }
     return { type: 'Polygon', coordinates: rings };
-  }
-
-  const multi = /<MultiGeometry\b[^>]*>([\s\S]*?)<\/MultiGeometry>/i.exec(block);
-  if (multi?.[1]) {
-    const geometries: MapOverlayGeometry[] = [];
-    const childRe = /<(Point|LineString|Polygon|MultiGeometry)\b[^>]*>([\s\S]*?)<\/\1>/gi;
-    let child: RegExpExecArray | null;
-    while ((child = childRe.exec(multi[1])) !== null) {
-      const parsed = parseKmlGeometry(child[0]);
-      if (parsed) geometries.push(parsed);
-    }
-    if (geometries.length === 0) return null;
-    if (geometries.length === 1) {
-      return requireIndexed(geometries, 0, 'Empty MultiGeometry');
-    }
-    return { type: 'GeometryCollection', geometries };
   }
 
   return null;

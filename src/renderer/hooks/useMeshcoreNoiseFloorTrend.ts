@@ -17,6 +17,11 @@ export interface UseMeshcoreNoiseFloorTrendOpts {
    */
   noiseFloor: number | undefined;
   /**
+   * Observation time (Status/local stats `fetchedAt`). Required to record a sample so
+   * opening the panel does not retimestamp a cached reading as "now".
+   */
+  observedAt: number | undefined;
+  /**
    * When true, periodically call `onRequestRepeaterStatus` while the document is visible.
    * Local companion stats already poll elsewhere — leave this false for our node.
    */
@@ -39,6 +44,7 @@ export function useMeshcoreNoiseFloorTrend({
   enabled,
   nodeId,
   noiseFloor,
+  observedAt,
   pollRemote,
   onRequestRepeaterStatus,
   pollIntervalMs = MESHCORE_NOISE_FLOOR_TREND_POLL_MS,
@@ -47,19 +53,28 @@ export function useMeshcoreNoiseFloorTrend({
   const recordSample = useNoiseFloorHistoryStore((s) => s.recordSample);
   const onRequestRef = useRef(onRequestRepeaterStatus);
   const isVisibleRef = useRef(isDocumentVisible);
+  const lastObservedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     onRequestRef.current = onRequestRepeaterStatus;
     isVisibleRef.current = isDocumentVisible;
   }, [onRequestRepeaterStatus, isDocumentVisible]);
 
+  useEffect(() => {
+    lastObservedAtRef.current = null;
+  }, [nodeId]);
+
   // Ingest snapshot readings only while this node detail is active.
   useEffect(() => {
     if (!enabled || nodeId == null || nodeId <= 0) return;
     if (!isValidNoiseFloorReading(noiseFloor)) return;
+    if (observedAt == null || !Number.isFinite(observedAt)) return;
     if (!isVisibleRef.current()) return;
-    recordSample(nodeId, noiseFloor);
-  }, [enabled, nodeId, noiseFloor, recordSample]);
+    // Same Status/local observation must not create a duplicate trend point.
+    if (lastObservedAtRef.current === observedAt) return;
+    lastObservedAtRef.current = observedAt;
+    recordSample(nodeId, noiseFloor, observedAt);
+  }, [enabled, nodeId, noiseFloor, observedAt, recordSample]);
 
   // Remote Status refresh: selected node + panel enabled + document visible only.
   useEffect(() => {

@@ -42,13 +42,41 @@ function newLayerId(): string {
   return `overlay-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function isFeatureCollection(value: unknown): value is MapOverlayFeatureCollection {
+  if (!value || typeof value !== 'object') return false;
+  const rec = value as { type?: unknown; features?: unknown };
+  return rec.type === 'FeatureCollection' && Array.isArray(rec.features);
+}
+
+/** Accept only well-shaped persisted overlay records; drop the rest. */
+export function sanitizePersistedOverlayLayers(raw: unknown): MapOverlayLayer[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: MapOverlayLayer[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const rec = item as Partial<MapOverlayLayer>;
+    if (typeof rec.id !== 'string' || !rec.id) continue;
+    if (!isFeatureCollection(rec.geojson)) continue;
+    out.push({
+      id: rec.id,
+      name: sanitizeOverlayName(rec.name),
+      visible: rec.visible !== false,
+      opacity: clampOverlayOpacity(rec.opacity ?? 0.75),
+      geojson: rec.geojson,
+    });
+    if (out.length >= MAP_OVERLAY_MAX_LAYERS) break;
+  }
+  return out;
+}
+
 export const useMapOverlayStore = create<MapOverlayState>()(
   persist(
     (set, get) => ({
       layers: [],
       lastImportError: null,
       addLayer: (layer) => {
-        if (get().layers.length >= MAP_OVERLAY_MAX_LAYERS) return { ok: false, code: 'limit' };
+        const prevLayers = get().layers;
+        if (prevLayers.length >= MAP_OVERLAY_MAX_LAYERS) return { ok: false, code: 'limit' };
         const id = layer.id ?? newLayerId();
         const next: MapOverlayLayer = {
           id,
@@ -57,7 +85,16 @@ export const useMapOverlayStore = create<MapOverlayState>()(
           opacity: clampOverlayOpacity(layer.opacity ?? 0.75),
           geojson: layer.geojson,
         };
-        set((state) => ({ layers: [...state.layers, next], lastImportError: null }));
+        try {
+          set({ layers: [...prevLayers, next], lastImportError: null });
+        } catch (err) {
+          try {
+            set({ layers: prevLayers });
+          } catch {
+            // catch-no-log-ok rollback persist may also fail; preserve original error
+          }
+          throw err;
+        }
         return { ok: true, id };
       },
       setVisible: (id, visible) => {
@@ -86,6 +123,17 @@ export const useMapOverlayStore = create<MapOverlayState>()(
     {
       name: 'mesh-client:mapOverlays',
       partialize: (state) => ({ layers: state.layers }),
+      merge: (persisted, current) => {
+        const persistedRecord =
+          persisted && typeof persisted === 'object' ? (persisted as { layers?: unknown }) : null;
+        const layers = sanitizePersistedOverlayLayers(persistedRecord?.layers);
+        return {
+          ...current,
+          ...(persistedRecord ?? {}),
+          // null => keep current (missing/non-array); [] is a valid empty hydrate
+          layers: layers ?? current.layers,
+        };
+      },
       storage: {
         getItem: (key) => {
           const raw = localStorage.getItem(key);

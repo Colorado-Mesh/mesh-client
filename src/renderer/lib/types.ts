@@ -308,6 +308,8 @@ export interface MeshCoreLocalStats {
   // Computed
   channelUtilization?: number;
   airUtilTx?: number;
+  /** Wall-clock ms when this local stats snapshot was observed. */
+  fetchedAt?: number;
 }
 
 export type RemediationCategory = 'Configuration' | 'Physical' | 'Hardware' | 'Software';

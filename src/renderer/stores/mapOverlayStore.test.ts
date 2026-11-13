@@ -52,4 +52,28 @@ describe('mapOverlayStore', () => {
       useMapOverlayStore.getState().addLayer({ name: 'overflow', geojson: sampleGeojson }).ok,
     ).toBe(false);
   });
+
+  it('rehydrates valid layers and drops invalid persisted records', async () => {
+    const added = useMapOverlayStore.getState().addLayer({
+      name: 'Trail',
+      geojson: sampleGeojson,
+    });
+    expect(added.ok).toBe(true);
+    if (!added.ok) return;
+    const id = added.id;
+    useMapOverlayStore.getState().setVisible(id, false);
+    useMapOverlayStore.getState().setOpacity(id, 0.4);
+    const raw = localStorage.getItem('mesh-client:mapOverlays');
+    expect(raw).toBeTruthy();
+
+    // Clear in-memory only, then restore the saved payload (setState would persist []).
+    useMapOverlayStore.setState({ layers: [], lastImportError: null });
+    localStorage.setItem('mesh-client:mapOverlays', raw!);
+    await useMapOverlayStore.persist.rehydrate();
+    const layer = useMapOverlayStore.getState().layers[0];
+    expect(layer?.id).toBe(id);
+    expect(layer?.visible).toBe(false);
+    expect(layer?.opacity).toBe(0.4);
+    expect(layer?.geojson.features).toHaveLength(1);
+  });
 });
