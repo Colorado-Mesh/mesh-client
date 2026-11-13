@@ -2320,6 +2320,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#word-filter-markdown-mark-unread-local-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word filter, markdown, mark unread, local delete
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3030,6 +3041,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#word-filter-markdown-mark-unread-local-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word filter, markdown, mark unread, local delete
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3063,7 +3085,9 @@
 <li><strong>Unified inbox:</strong> <code>lib/unifiedInbox.ts</code> + <code>lib/unifiedInboxActions.ts</code> — received-only newest-first feed (<code>UNIFIED_INBOX_LIMIT</code> = 200); dismiss keys in <code>mesh-client:unifiedInbox:dismissed:v1</code> (cap 2000). Stars go through existing <code>mesh-client:starred:&lt;protocol&gt;</code> and fire <code>STARRED_EXTERNAL_EVENT</code> so ChatPanel reloads. Shortcut <strong>Ctrl/Cmd+Shift+U</strong> (<code>isUnifiedInboxShortcut</code>).</li>
 <li><strong>Scheduled send:</strong> <code>lib/scheduledSend.ts</code> — one-shot only; reuses durable <code>chat_outbox</code> with <code>nextRetryAt</code> as the wall-clock target (<code>attemptCount === 0</code>); min lead 5s, max horizon 30 days. App must be running at fire time; outbox 24h age cap anchors from the scheduled time. Composer / outbox <strong>ScheduledSendDialog</strong>. Recurring multi-target schedules belong in <strong>Broadcasts</strong> (<code>scheduledBroadcasts/</code>), not this dialog.</li>
 <li><strong>Pin / archive:</strong> <code>lib/conversationPinStorage.ts</code> — per-protocol + identity localStorage (<code>mesh-client:conversationPins:v1:…</code>); pinned vs archived view keys (mutually exclusive, max 500 keys); separate from star/mute. Chat tab strip reads these prefs.</li>
-<li><strong>Conversation pills:</strong> Reticulum DMs use <code>WrappingChannelList</code>, matching the wrapped channel pills. Long peer names wrap; avatars, unread badges, mute and close actions remain on each pill. The header scrolls vertically only when needed, with above/below unread controls that reveal a conversation without selecting it or marking it read. Enlarged text retains space for a pill row and overflow hints; short panes can scroll to reach the remaining controls. Meshtastic/MeshCore retain their separate DM strip and picker.</li>
+<li><strong>Conversation pills:</strong> Reticulum DMs use <code>WrappingChannelList</code>, matching the wrapped channel pills. Long peer names wrap; avatars, unread badges, mute and close actions remain on each pill. The header scrolls vertically only when needed, with above/below unread controls that reveal a conversation without selecting it or marking it read. Enlarged text retains space for a pill row and overflow hints; short panes can scroll to reach the remaining controls. Meshtastic/MeshCore retain their separate DM strip and picker. Meshtastic channel pills also show <code>ChannelSecurityBadges</code> (<code>lib/channelSecurityBadges.ts</code>) from <code>channelSecurityByIndex</code> (PSK strength, precise location, MQTT uplink) built in <code>App.tsx</code> from <code>meshtasticRuntime.channelConfigs</code>.</li>
+<li><strong>Markdown:</strong> <code>lib/chatMarkdown.ts</code> (<code>parseChatMarkdown</code> / <code>renderChatMarkdownNodes</code> / <code>wrapSelectionWithMarkdown</code>) — safe subset only; <code>ChatComposer</code> formatting toolbar; <code>ChatPayloadText</code> renders markdown after mention/URL segments and can highlight search hits inside text nodes.</li>
+<li><strong>Word filter:</strong> <code>stores/wordFilterStore.ts</code> + <code>chat/WordFilterSettings.tsx</code> (app settings + per-conversation disable); <code>isHiddenByWordFilter</code> gates Chat list display, unread (<code>chatUnreadCounts.ts</code>), and beeps; MECP payloads never hide; <strong>Show N filtered</strong> reveal is session-local.</li>
 <li><strong>Composer limits / send cadence:</strong> <code>chatComposerLimits.ts</code> — <code>getMaxChunks(protocol)</code> via <code>ProtocolCapabilities.composerMaxChunks</code> (MeshCore = 1: no outbound <code>[i/N]</code> split; <code>splitChatMessage</code> returns <code>null</code> when text needs more than one packet), room payload via <code>getMeshcoreRoomPayloadLimit</code>, <code>computeComposerLimitStatus</code> phases (<code>warn</code> surfaces a single-packet ⓘ hint; <code>overMaxSingle</code> disables send and shows a <code>role="note"</code> callout). MeshCore also gets a <strong>non-blocking</strong> ~5s "sending too fast" advisory (<code>role="status"</code>, dismissible) from an app-wide clock in <code>meshcoreSendRateNotice.ts</code> (<code>recordMeshcoreSend</code> / <code>isMeshcoreSendTooFast</code>, <code>MESHCORE_FAST_SEND_WARN_INTERVAL_MS</code>). Every <strong>live</strong> MeshCore send advances the clock and can show the advisory — text (<code>handleSend</code>), GIF, and share-location in <code>ChatComposer</code>, plus outbox drain (<code>useChatOutbox.ts</code>). Legacy MeshCore outbox rows with <code>groupTotal &gt; 1</code> or <code>[i/N]</code> payloads are quarantined (<code>blocked</code>) on drain instead of being transmitted. Inbound multi-part <code>[i/N]</code> merge is unchanged. i18n: <code>chatPanel.composeLimit.meshcoreSingleNotice.*</code>, <code>chatPanel.meshcoreFastSend.warning</code>, <code>chatPanel.outboxLegacyMultipartBlocked</code>. See <a href="../../meshcore-meshtastic-parity/"><code>meshcore-meshtastic-parity.md</code></a>.</li>
 <li><strong>Automatic resend (regular messages):</strong> <code>lib/autoResend/autoResendController.ts</code> (mounted once via <code>useAutoResend</code> in <code>App.tsx</code>) watches own sends created this session (<code>messageStore</code> <code>subscribeMessageStoreEvents</code> <code>added</code> with <code>status: 'sending'</code>, re-keyed on <code>renamed</code>) and, when one turns <code>failed</code>, schedules up to <code>REGULAR_MESSAGE_MAX_AUTO_RESENDS</code> (3) resends with 15s / 60s / 3m backoff (<code>autoResendPolicy.ts</code>). Each resend goes through the protocol's <code>useSendMessage</code> with <code>retryOfStoreId</code>; the new bubble inherits the lineage count and the superseded failed bubble is removed (Reticulum re-keys via <code>retryOfStoreId</code>; Meshtastic/MeshCore call <code>deleteMessage</code> + <code>db:deleteFailedOutboundMessage</code>, which only deletes <code>status = 'failed'</code> rows). Excluded: MECP payloads (the emergency outbox retries those until acknowledged — see <a href="../mecp/#send-path"><code>mecp.md</code></a>), tapbacks, room posts, and channel sends on protocols without <code>ProtocolCapabilities.hasChannelDeliveryAck</code> (MeshCore floods). The failed bubble shows "Retrying (n/3) in m:ss" with <strong>Cancel retry</strong> (<code>cancelAutoResend</code>); after the budget only the manual Resend icon remains. Queued outbox rows use the same budget (<code>MAX_ATTEMPTS = 1 + 3</code>). i18n: <code>chatPanel.autoResend*</code>, <code>chatPanel.cancelAutoResend*</code>.</li>
 <li><strong>Payload / links:</strong> <code>ChatPayloadText.tsx</code> — mention highlighting, search marks, URL linkification; structured cards in <code>chat/ChatStructuredPayloads.tsx</code> (signal report, RNCP control, drone report); link previews via <code>chat:fetchLinkPreview</code> (<code>src/main/fetchLinkPreview.ts</code>): Open Graph for HTML pages; <strong>YouTube</strong> watch/shorts/youtu.be via oEmbed + thumbnail; <strong>direct image URLs</strong> (path extension via <code>chatDirectImageUrl.ts</code> or raster <code>Content-Type</code>) return <code>kind: 'image'</code> and render as inline embeds (<code>ChatInlineImage</code> / <code>DirectImageEmbed</code>); OG/YouTube use card layout. Security: message-selected network content (HTTPS URL previews, Giphy, shared-location tiles, and drone-report tiles) loads automatically. Link-preview IPC accepts HTTPS only, uses a DNS-pinned undici <code>Agent</code>, blocks private/loopback targets, magic-byte sniffs raster MIME (<code>safeRasterImageMime.ts</code>), and enforces 10s fetch / 3s DNS, 64 KiB HTML, <strong>2 MiB</strong> image fetch, 256 KiB cache-payload, LRU, and single-flight limits. LXMF attachment rasters: <code>chat:readReticulumAttachmentAsDataUrl</code> (<code>reticulum-attachment-image.ts</code>; path jail, magic-byte MIME, SVG rejected, 2 MiB, IPC rate limit) → <code>ReticulumAttachmentLine</code>. LXMF voice memos (<code>hasReticulumVoiceMemo</code>): Chat DM mic → sidecar <code>/api/v1/voice/memo/*</code> via <code>electronAPI.reticulum.voiceMemo.*</code>; playback via <code>chat:readReticulumAttachmentBytes</code> (<code>reticulum-attachment-audio.ts</code>; OggS sniff, 256 KiB) → <code>ReticulumVoiceMemoLine</code>. Reply quotes: <code>replyPreview.ts</code>.</li>
@@ -3180,6 +3204,12 @@ Sync is single-flight, excludes setup/channel writes, checks connection generati
 asynchronous work, and awaits contact persistence before reporting success. Failure leaves the
 existing chat list available for retry. A companion cannot provide room passwords or local chat
 history that were never stored on it; it can restore the room contacts and configured channels.</p>
+<h2 id="word-filter-markdown-mark-unread-local-delete">Word filter, markdown, mark unread, local delete<a class="headerlink" href="#word-filter-markdown-mark-unread-local-delete" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Word filter:</strong> <code>stores/wordFilterStore.ts</code> + <code>chat/WordFilterSettings.tsx</code> — durable <code>wordFilterEnabled</code> / <code>wordFilterWords</code> in app settings; per-conversation disable via <code>mesh-client:wordFilterDisabledConversations:v1</code>. Matching channel/DM payloads are hidden from chat views, unread badges, and notification beeps. MECP / MAYDAY / URGENT never filter (<code>isMecpMessage</code>).</li>
+<li><strong>Markdown:</strong> <code>lib/chatMarkdown.ts</code> renders a sanitized bold/italic/strike/inline-code/link subset in <code>ChatPayloadText</code> (after mentions / location / GIF / link previews). Composer toolbar inserts markers. No raw HTML.</li>
+<li><strong>Mark unread / local delete:</strong> Chat message action bar sets the conversation last-read watermark to just before an inbound message (no re-notify) and confirms before <code>deleteMessage</code> (local store only).</li>
+</ul>
 
 
 
@@ -3200,7 +3230,7 @@ history that were never stored on it; it can restore the room contacts and confi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 10, 2026 02:49:45 UTC">November 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:38:31 UTC">November 13, 2026</span>
   </span>
 
     

@@ -2377,6 +2377,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -2393,6 +2411,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#delivery-proof-and-store--forward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery proof and Store &amp; Forward++
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -2921,6 +2969,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#delivery-proof-and-store--forward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery proof and Store &amp; Forward++
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2956,6 +3023,8 @@
 <li><strong>Remote admin module snapshot:</strong> <code>meshtasticRemoteAdminModuleFetches.ts</code> — canonical list/count of <code>ModuleConfig</code> reads during remote snapshot (<code>REMOTE_ADMIN_MODULE_CONFIG_FETCHES</code>).</li>
 <li><strong>Channel URLs:</strong> <code>src/shared/meshtasticUrlEncoder.ts</code> (parse/generate), <code>src/shared/meshtasticChannelApply.ts</code> (replace vs add-only apply); Radio panel UI; Meshtastic-only.</li>
 <li><strong>S&amp;F chat history:</strong> <code>src/renderer/lib/meshtasticBacklogUtils.ts</code> — <code>CLIENT_HISTORY</code> on primary router heartbeat after RF configure (auto: 50-msg cap, 120 min window cap, 15 min per-server cooldown, 5 min offline gate; <code>storeForwardAutoFetchHistory</code> opt-out; <code>storeForwardHistoryProfile: 'conservative' | 'aggressive'</code> in <code>defaultAppSettings.ts</code> tunes offline gate / cooldown / cap aggressiveness; manual catch-up in Chat). Protobuf decode for replayed text, <code>via_store_forward</code> on messages; do not await SDK queue for history (async replay).</li>
+<li><strong>Delivery proof / SF++:</strong> <code>MeshtasticProtocol</code> emits <code>meshtastic_routing_ack</code> from <code>ROUTING_APP</code> (including <code>ackProofStatus</code>); <code>meshtasticRoutingAckSideEffects.ts</code> stamps <code>MessageRecord.ackProofStatus</code>. Store &amp; Forward++ module frames update <code>sfppPhase</code> via <code>meshtasticStoreForwardPlusPlus.ts</code> in <code>meshtasticModulePortSideEffects</code>. Chat <code>MessageStatusBadge</code> prefers proof / SF++ badges when present (<code>meshtasticAckProof.ts</code>).</li>
+<li><strong>Channel security chips:</strong> Chat Meshtastic pills use <code>channelSecurityBadges.ts</code> + <code>ChannelSecurityBadges</code> (weak/AES128/AES256 PSK, precise location, MQTT uplink) from live <code>channelConfigs</code>.</li>
 <li><strong>MQTT broker clientId:</strong> <code>src/main/mqtt-broker-client-id.ts</code> — stable per-install IDs in <code>app_settings</code> (<code>meshtasticMqttClientId</code>, <code>meshcoreMqttClientId</code>); MeshCore LetsMesh <code>v1_</code> username unchanged as clientId.</li>
 <li><strong>PKC remote admin (firmware 2.5+):</strong> <code>meshtasticRemoteAdmin.ts</code> — PKI-wrapped <code>AdminMessage</code> via <code>MeshDevice.sendRaw()</code> (<code>pkiEncrypted: true</code>, channel omitted on wire); session passkeys (~300s); tab-scoped snapshot routes in <code>meshtasticRemoteAdminSnapshot.ts</code> (Channels-first LoRa load). Per-node keys: <code>meshtasticRemoteAdminKeyStorage.ts</code> (<code>meshtasticRemoteAdminKey:&lt;nodeNum&gt;</code> in <code>app_settings</code>; base64 / <code>base64:</code> / 64-char hex paste). Dest public key: NodeDB hex first, stored admin-key base64 fallback. <code>useMeshtasticRuntime</code>: <code>configureTargetNodeNum</code>, <code>remoteConfigSnapshot</code>, <code>runRemoteAdminOp</code> (errors → UI + toast); serialize admin reads with S&amp;F (<code>remoteAdminReadsActiveCount</code> in <code>meshtasticBacklogUtils.ts</code>). <strong>Requires connected local radio</strong> (MQTT-only cannot admin). UI: <code>ConfigureNodeSelector.tsx</code>; NodeDetailModal admin key + <strong>Configure node remotely</strong>; SecurityPanel <strong>Copy</strong> public key. Persist last target in <code>meshtasticConfigureTargetNodeNum</code>. Gate with <code>hasRemoteAdmin</code>. Legacy admin channel (PSK + <code>"admin"</code>) out of scope.</li>
 <li><strong>Meshtastic last heard:</strong> <code>meshtasticLastHeard.ts</code> — bump <code>last_heard</code> on live RF packets (not only text); <code>computeNodeInfoLastHeardMs</code> merges radio NodeDB timestamps with client-side values (max wins). <strong>Configure replay guard</strong> must apply in <code>nodeStore</code> (<code>upsertNode</code>, <code>updatePosition</code>, <code>meshtasticLastHeardPatch</code>) via <code>meshtasticConfigurePhase.ts</code>, not only in <code>meshtasticNodeSideEffects</code> — PacketRouter updates the store before side effects run. During <code>device.configure()</code>, the Meshtastic SDK replays NodeDB as <code>node_info</code> frames and may emit synthetic <code>onUserPacket</code> / <code>onPositionPacket</code> with <code>rxTime = now</code>; guards skip those bumps. UserPacket path uses <code>mergeMeshtasticUserPacketLastHeard</code> (ms); NodeDB path uses <code>computeNodeInfoLastHeardMs</code> (sec). <strong>Protocol decode must use <code>meshtasticPacketRxTimeMs</code></strong> — <code>@meshtastic/core</code> <code>PacketMetadata.rxTime</code> is already a <code>Date</code> (ms); never <code>rxTime * 1000</code> (Date×1000 → ~1e15; regression lock in <code>MeshtasticProtocol.test.ts</code> Date-shaped rxTime + source-policy <code>meshtastic-protocol-rxtime-via-helper</code>). SQLite stores <code>last_heard</code> as unix seconds; <code>meshtasticDbCacheHydration.ts</code> normalizes to ms on hydrate (<code>normalizeLastHeardMs</code>); stale/online checks use <code>effectiveLastHeardMs</code>. BLE configure uses a <strong>stall watchdog</strong> (<code>MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS</code>, reset on each replayed <code>node_info</code> / position / telemetry via <code>touchMeshtasticConfigureProgress</code>) so large NodeDBs are not cut off mid-stream. Node list JSON export emits <code>last_heard</code> as unix seconds with <code>last_heard_unit: 'unix_sec'</code>.</li>
@@ -2966,6 +3035,13 @@
 <li><strong>Status Message module (2.8):</strong> <code>moduleConfigs.statusmessage.nodeStatus</code> is edited in ModulePanel; inbound <code>NODE_STATUS_APP</code> (port 36) fills <code>meshtasticRuntime.nodeStatuses</code>, shown in NodeDetailModal when <code>hasNodeStatusMessage</code>. Other 2.8 ports without a published payload schema (paging, S&amp;F++, LoRaWAN bridge, Reticulum tunnel, LoRa OTA, group alarm) are label-only entries in <code>UNTYPED_MODULE_PORTS</code>. <strong>Cayenne</strong> remains in that untyped port set for chat labeling, but inbound Cayenne LPP is decoded into <code>cayenneTelemetryStore</code> and charted on the Telemetry tab via <code>CayenneTelemetrySection</code> (<code>hasCayenneTelemetry</code>, Meshtastic only).</li>
 <li><strong>Declarative extra config fields:</strong> Less common Radio / Security / Module fields (buzzer mode, position flags, GPS / I2S / INA pins, static IPv4, rsyslog, ignore list, FEM LNA, packet signature policy, Audio module, detection trigger, Pax thresholds, health telemetry, range-test clear-on-reboot) are specs in <code>lib/meshtastic/meshtasticExtraConfigFields.ts</code>, held by <code>useMeshtasticExtraConfigFields</code> and rendered by <code>MeshtasticExtraConfigField.tsx</code>. Each section spreads the hook's <code>result.overrides</code> into its apply payload; a parse failure (bad IPv4, out-of-range number, bad node id) blocks the apply. IPv4 is a little-endian fixed32 (first octet in the low byte); nested keys such as <code>ipv4Config.ip</code> merge into a copy of the device sub-message. Position applies write <code>positionBroadcastSmartEnabled</code> (the proto field), and map reports carry <code>mapReportSettings.shouldReportLocation</code>.</li>
 <li><strong>ALERT_APP (port 11):</strong> Decoded as UTF-8 text like <code>TEXT_MESSAGE_APP</code> in <code>MeshtasticProtocol</code> and MQTT (<code>mqtt-manager.ts</code>) so MECP / critical alerts reach chat + <code>useMecpAlertWatcher</code>. See <a href="../mecp/"><code>mecp.md</code></a>.</li>
+</ul>
+<h2 id="delivery-proof-and-store--forward">Delivery proof and Store &amp; Forward++<a class="headerlink" href="#delivery-proof-and-store--forward" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Outbound chat rows may carry Meshtastic-only <code>ackProofStatus</code> / <code>sfppPhase</code> on <code>MessageRecord</code> (not in the shared <code>MessageStatus</code> union).</li>
+<li>ROUTING_APP ACKs emit <code>meshtastic_routing_ack</code> with <code>MeshPacket.ackProofStatus</code>; <code>meshtasticRoutingAckSideEffects</code> stamps the matching message id (<code>Data.requestId</code>).</li>
+<li><code>STORE_FORWARD_PLUSPLUS_APP</code> is decoded in <code>meshtasticModulePortSideEffects</code> via <code>StoreForwardPlusPlusSchema</code> and correlated by <code>encapsulatedId</code>.</li>
+<li><code>MessageStatusBadge</code> shows proven / proof-failed / relayed-unproven / SF++ routing|confirmed. Unknown enums stay neutral.</li>
 </ul>
 
 
@@ -2987,7 +3063,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:38:31 UTC">November 13, 2026</span>
   </span>
 
     

@@ -1012,6 +1012,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#waypoints-and-traceroute-overlay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Waypoints and traceroute overlay
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3269,6 +3280,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#waypoints-and-traceroute-overlay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Waypoints and traceroute overlay
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3328,7 +3350,8 @@
 <ul>
 <li><strong>Node markers</strong> — heard nodes with coordinates</li>
 <li><strong>Movement trails</strong> — recent position history</li>
-<li><strong>Waypoints</strong> — Meshtastic waypoints when the protocol provides them</li>
+<li><strong>Waypoints</strong> — Meshtastic waypoints when the protocol provides them. Create via the Map control or right-click on the map (<code>WaypointEditorDialog</code> → <code>onSendWaypoint</code>); edit unlocked owned waypoints from the marker popup.</li>
+<li><strong>Traceroute overlay</strong> — Node Detail <strong>Show traceroute on map</strong> stores hop ids in <code>mapTraceRouteStore</code> and draws polyline/markers via <code>buildTraceRouteOverlay</code> (empty-state when hops lack positions).</li>
 <li><strong>Emergency incidents</strong> — open MECP rows with coordinates (all three protocols)</li>
 <li><strong>MGRS grid</strong> — search-and-rescue grid (off by default)</li>
 <li><strong>Weather forecasts</strong> — parsed forecast circles from marked weather bots</li>
@@ -3512,6 +3535,11 @@
 <li><a href="../chat/">Chat</a> — sharing location from a conversation</li>
 <li><a href="../settings/">Settings</a> — GPS, map filters, retention of position history</li>
 </ul>
+<h2 id="waypoints-and-traceroute-overlay">Waypoints and traceroute overlay<a class="headerlink" href="#waypoints-and-traceroute-overlay" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Waypoints (Meshtastic):</strong> Map → Create waypoint opens an editor (name ≤ 29, description, icon, lock, expiry). Edit unlocked owned pins; delete-for-everyone still uses <code>expire: 1</code> via <code>onDeleteWaypoint</code> / <code>deleteWaypoint</code>.</li>
+<li><strong>Traceroute on map:</strong> Node Detail → Show traceroute on map stores hop ids in <code>mapTraceRouteStore</code> and switches to Map. <code>MapPanel</code> draws hop markers + polyline via <code>buildTraceRouteOverlay</code>; empty state when hop positions are missing.</li>
+</ul>
 
 
 
@@ -3532,7 +3560,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 20:19:41 UTC">November 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:38:31 UTC">November 13, 2026</span>
   </span>
 
     
