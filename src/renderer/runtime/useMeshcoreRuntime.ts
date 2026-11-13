@@ -1259,6 +1259,8 @@ export function useMeshcoreRuntime() {
       prev !== state.pathHashMode
     ) {
       usePathHistoryStore.getState().clearAll();
+      outPathMapRef.current.clear();
+      radioContactPathLenByNodeRef.current.clear();
     }
   }, [state.pathHashMode]);
 
@@ -5718,17 +5720,57 @@ export function useMeshcoreRuntime() {
                 meshcoreSetupGenerationRef.current !== roomPingSetupGen ||
                 resolveMeshcoreConn() !== roomPingConn;
               try {
-                const companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+                let companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
                   pathHashModeRef.current,
                 );
-                const routeBytes = outPathMapRef.current.get(nodeId);
-                const radioContactPathLen =
-                  radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
-                // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
-                const hopsAway = resolveMeshcoreAdminHopsAway(
-                  pingNode,
-                  routeBytes ?? new Uint8Array(),
+                let radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+                let storedPath = outPathMapRef.current.get(nodeId);
+                const displayedHopsAway = pingNode?.hops_away;
+                let hopsAway: number | null | undefined = displayedHopsAway;
+                const recheckDirectContact =
+                  (meshcoreTracePingRadioSaysDirect(radioContactPathLen) ||
+                    meshcoreTracePingRadioHasNoRoute(radioContactPathLen)) &&
+                  (displayedHopsAway ?? 0) >= 1;
+                const synthHashSizeBytes = meshcoreHashSizeForTraceSeed(
+                  radioContactPathLen,
+                  companionPathHashMode,
                 );
+                if (
+                  storedPath &&
+                  !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey, synthHashSizeBytes)
+                ) {
+                  outPathMapRef.current.delete(nodeId);
+                  storedPath = undefined;
+                }
+                const contactSnap = await refreshRepeaterContactPathFromRadio(
+                  nodeId,
+                  storedPath,
+                  pubKey,
+                  hopsAway,
+                  synthHashSizeBytes,
+                  recheckDirectContact,
+                );
+                storedPath = contactSnap.path ?? storedPath;
+                if (
+                  contactSnap.radioContactPathLen != null &&
+                  Number.isFinite(contactSnap.radioContactPathLen)
+                ) {
+                  radioContactPathLen = contactSnap.radioContactPathLen;
+                  radioContactPathLenByNodeRef.current.set(nodeId, radioContactPathLen);
+                } else {
+                  radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+                }
+                companionPathHashMode = resolveMeshcoreCompanionPathHashMode(
+                  pathHashModeRef.current,
+                );
+                const pingRouteBytes =
+                  storedPath ?? (contactSnap.radioContactFound ? new Uint8Array() : undefined);
+                hopsAway = resolveMeshcorePingHopsAway({
+                  node: pingNode,
+                  routeBytes: pingRouteBytes,
+                  radioContactPathLen,
+                  radioPathLeftover: contactSnap.radioPathLeftover,
+                });
                 const hashSizeBytes = meshcoreHashSizeForTraceSeed(
                   radioContactPathLen,
                   companionPathHashMode,

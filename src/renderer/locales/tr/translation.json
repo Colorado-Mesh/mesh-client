@@ -2893,7 +2893,8 @@
         "empty": "Çizilebilir geometri bulunamadı.",
         "limit": "Çok fazla içe aktarılan bindirme var (önce birini kaldırın).",
         "io": "Dosya Okunamadı",
-        "not_found": "Yer paylaşımı bulunamadı."
+        "not_found": "Yer paylaşımı bulunamadı.",
+        "quota": "Tarayıcı depolama alanı dolu; bir bindirmeyi kaldırın veya disk alanını boşaltın."
       }
     }
   },

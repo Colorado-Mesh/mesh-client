@@ -2893,7 +2893,8 @@
         "empty": "Keine zeichbaren Geometrien gefunden.",
         "limit": "Zu viele importierte Overlays (entfernen Sie zuerst eines).",
         "io": "Datei konnte nicht gelesen werden.",
-        "not_found": "Overlay nicht gefunden."
+        "not_found": "Overlay nicht gefunden.",
+        "quota": "Der Browserspeicher ist voll. Entfernen Sie ein Overlay oder schaffen Sie Speicherplatz."
       }
     }
   },

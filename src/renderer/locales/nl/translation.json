@@ -2893,7 +2893,8 @@
         "empty": "Geen tekenbare geometrieën gevonden.",
         "limit": "Te veel geïmporteerde overlays (verwijder er eerst één).",
         "io": "Kan bestand niet lezen",
-        "not_found": "Overlay niet gevonden."
+        "not_found": "Overlay niet gevonden.",
+        "quota": "De browseropslag is vol; verwijder een overlay of maak schijfruimte vrij."
       }
     }
   },

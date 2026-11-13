@@ -2893,7 +2893,8 @@
         "empty": "No se han encontrado geometrías dibujables.",
         "limit": "Demasiadas superposiciones importadas (elimina una primero).",
         "io": "No se pudo leer el archivo.",
-        "not_found": "Superposición no encontrada."
+        "not_found": "Superposición no encontrada.",
+        "quota": "El almacenamiento del navegador está lleno; elimina una superposición o libera espacio en el disco."
       }
     }
   },

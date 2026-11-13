@@ -604,6 +604,14 @@ describe('analyzeDebugSnapshot', () => {
     expect(snap.warnings.map((w) => w.code)).toContain('staleResolvedBucket');
   });
 
+  it('records invalid stored locale in ui context', () => {
+    resetDebugSnapshotUiContext();
+    setDebugSnapshotUiContext({ appLocale: 'en', storedLocaleValid: false });
+    const snap = buildDebugSnapshot();
+    expect(snap.ui.storedLocaleValid).toBe(false);
+    expect(snap.ui.appLocale).toBe('en');
+  });
+
   it('includes meshcore drain congestion fields from ui context', () => {
     setDebugSnapshotUiContext({
       meshcoreDrain: {

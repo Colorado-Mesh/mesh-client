@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import * as rendererStorage from '@/renderer/lib/rendererStorage';
 
 import { useMapOverlayStore } from './mapOverlayStore';
 
@@ -51,6 +53,22 @@ describe('mapOverlayStore', () => {
     expect(
       useMapOverlayStore.getState().addLayer({ name: 'overflow', geojson: sampleGeojson }).ok,
     ).toBe(false);
+  });
+
+  it('returns quota when persist storage is full', () => {
+    const spy = vi.spyOn(rendererStorage, 'setRendererStorageItem').mockImplementation(() => {
+      throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+    });
+    try {
+      const res = useMapOverlayStore.getState().addLayer({
+        name: 'Too big',
+        geojson: sampleGeojson,
+      });
+      expect(res).toEqual({ ok: false, code: 'quota' });
+      expect(useMapOverlayStore.getState().layers).toHaveLength(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('rehydrates valid layers and drops invalid persisted records', async () => {

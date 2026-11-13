@@ -2893,7 +2893,8 @@
         "empty": "Nenhuma geometria desenhável encontrada.",
         "limit": "Muitas sobreposições importadas (remova uma primeiro).",
         "io": "Não foi possível ler o arquivo.",
-        "not_found": "Overlay não encontrada."
+        "not_found": "Overlay não encontrada.",
+        "quota": "O armazenamento do navegador está cheio; remova uma sobreposição ou libere espaço em disco."
       }
     }
   },

@@ -3264,6 +3264,7 @@
         "unsupported": "Unsupported or network-linked overlay.",
         "empty": "No drawable geometries found.",
         "limit": "Too many imported overlays (remove one first).",
+        "quota": "Browser storage is full; remove an overlay or free disk space.",
         "io": "Could not read that file.",
         "not_found": "Overlay not found."
       }

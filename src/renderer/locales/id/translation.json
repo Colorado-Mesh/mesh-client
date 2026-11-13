@@ -2893,7 +2893,8 @@
         "empty": "Tidak ada geometri yang dapat digambar.",
         "limit": "Terlalu banyak overlay yang diimpor (hapus satu terlebih dahulu).",
         "io": "Tidak dapat membaca file tersebut.",
-        "not_found": "Overlay tidak ditemukan."
+        "not_found": "Overlay tidak ditemukan.",
+        "quota": "Penyimpanan browser penuh; hapus hamparan atau kosongkan ruang disk."
       }
     }
   },
