@@ -478,17 +478,46 @@ function isFailedLoadAbortNoise(message: string): boolean {
   return /\[main\] Failed to load:\s*-3\b/.test(message);
 }
 
+/**
+ * Electron prints these only when unpackaged (Web Serial / Blink features).
+ * Known/intentional in `pnpm run dev`; omit from Analyze findings.
+ */
+function isElectronDevSecurityWarningNoise(message: string): boolean {
+  return /Electron Security Warning \((?:experimentalFeatures|enableBlinkFeatures)\)/i.test(
+    message,
+  );
+}
+
+/**
+ * `@meshtastic/core` queue.js logs for packets that did not map to a tracked chat
+ * outbound (wantAck background / already-resolved sends). Chat failures are already
+ * applied in-app and re-logged at debug; leave the raw lines out of Analyze.
+ */
+function isMeshtasticSdkUnmatchedPacketNoise(message: string): boolean {
+  const text = message.trim();
+  return (
+    /^Error received for packet \d+: NO_RESPONSE$/i.test(text) ||
+    /^Packet \d+ of type \w+ timed out\.?$/i.test(text)
+  );
+}
+
+/** Lines that must never become findings (known noise / intentional suppressions). */
+function isIgnoredAnalysisNoise(message: string): boolean {
+  return (
+    isFailedLoadAbortNoise(message) ||
+    isElectronDevSecurityWarningNoise(message) ||
+    isMeshtasticSdkUnmatchedPacketNoise(message)
+  );
+}
+
 function matchesCategory(entry: LogEntry, category: PatternCategory): boolean {
   if (category.requireWarnOrError && !isWarnOrErrorLevel(entry.level)) {
     return false;
   }
-  return category.patterns.some((p) => {
-    if (!p.test(entry.message)) return false;
-    if (category.id === 'internal-error' && isFailedLoadAbortNoise(entry.message)) {
-      return false;
-    }
-    return true;
-  });
+  if (isIgnoredAnalysisNoise(entry.message)) {
+    return false;
+  }
+  return category.patterns.some((p) => p.test(entry.message));
 }
 
 export function dedupeRecommendations(categories: CategoryFinding[]): DedupedRecommendation[] {
@@ -589,7 +618,7 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
       (entry) =>
         isWarnOrErrorLevel(entry.level) &&
         !classified.has(entry) &&
-        !isFailedLoadAbortNoise(entry.message),
+        !isIgnoredAnalysisNoise(entry.message),
     )
     .sort((a, b) => b.ts - a.ts);
   if (unclassified.length > 0) {

@@ -451,4 +451,13 @@ describe('finding evidence', () => {
         .categories,
     ).toEqual([]);
   });
+
+  it.each([
+    'Electron Security Warning (experimentalFeatures) This renderer process has "experimentalFeatures" enabled. This warning will not show up once the app is packaged.',
+    'Electron Security Warning (enableBlinkFeatures) This renderer process has additional "enableBlinkFeatures" enabled. This warning will not show up once the app is packaged.',
+    'Error received for packet 445325495: NO_RESPONSE',
+    'Packet 577169153 of type packet timed out',
+  ])('excludes known benign noise from findings: %s', (message) => {
+    expect(analyzeLogs([entry(message)], 'meshtastic').categories).toEqual([]);
+  });
 });

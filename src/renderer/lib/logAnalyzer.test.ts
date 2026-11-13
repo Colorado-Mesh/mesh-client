@@ -285,6 +285,33 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'internal-error')).toBeUndefined();
   });
 
+  it('excludes Electron unpackaged security warnings from unclassified', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        'Electron Security Warning (experimentalFeatures) This renderer process has "experimentalFeatures" enabled.',
+        'warn',
+      ),
+      makeEntry(
+        'Electron Security Warning (enableBlinkFeatures) This renderer process has additional "enableBlinkFeatures" enabled.',
+        'warn',
+      ),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories).toEqual([]);
+    expect(result.totalEntries).toBe(2);
+  });
+
+  it('excludes unmatched Meshtastic SDK packet timeout / NO_RESPONSE from unclassified', () => {
+    const entries: LogEntry[] = [
+      makeEntry('Error received for packet 445325495: NO_RESPONSE', 'error'),
+      makeEntry('Packet 577169153 of type packet timed out', 'warn'),
+      makeEntry('Packet 577169153 of type packet timed out.', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories).toEqual([]);
+    expect(result.totalEntries).toBe(3);
+  });
+
   it('detects database failures', () => {
     const entries: LogEntry[] = [
       makeEntry('[db] Database init failed: SQLITE_CANTOPEN', 'error'),

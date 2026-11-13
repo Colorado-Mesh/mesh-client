@@ -6,7 +6,7 @@ Log lines may carry an owning radio stack (`protocol` on the in-memory entry; `[
 
 Each finding shows a count and latest message. Expand **View evidence** for the newest 20 matching entries with timestamps, levels, sources, and owner when present. The recommendations below the findings explain what to check. **Copy troubleshooting report** creates a plain-text summary with UTC timestamps, guidance, and up to three samples per finding. The copy happens only after clicking the button. Log samples can contain private information; review them before sharing. **Log → Export** and **App → Support / Bug reports → Export for GitHub** provide the fuller context when needed.
 
-Findings describe historical events, not necessarily ongoing failures. One line may match several categories, so category counts are not a count of unique incidents. **Other warnings and errors** retains unmatched warning/error lines without inventing a diagnosis; expected recovery messages can appear there. Cancelled page loads (`ERR_ABORTED`) remain excluded from findings.
+Findings describe historical events, not necessarily ongoing failures. One line may match several categories, so category counts are not a count of unique incidents. **Other warnings and errors** retains unmatched warning/error lines without inventing a diagnosis; expected recovery messages can appear there. Cancelled page loads (`ERR_ABORTED`), unpackaged Electron security warnings (`experimentalFeatures` / `enableBlinkFeatures`, expected in `pnpm run dev`), and unmatched Meshtastic SDK `NO_RESPONSE` / packet-timeout lines (chat failures are already surfaced in-app) remain excluded from findings.
 
 ## Review of current logging
 
