@@ -29,12 +29,16 @@ export function ChannelSecurityBadges({ channel, channelName }: ChannelSecurityB
     >
       {kinds.map((kind) => {
         const label = t(`channelSecurityBadges.${kind}`, { channel: channelName });
+        // Weak PSK is icon-only on the channel chip (like Pin/Archive): soft caution
+        // text, no solid fill, so it stays theme-friendly on brand-accent pills.
         const tone =
           kind === 'pskAes256'
             ? 'bg-green-800 text-white'
             : kind === 'pskAes128'
               ? 'bg-ink-700 text-ink-100'
-              : 'bg-orange-800 text-white';
+              : kind === 'pskWeak'
+                ? 'text-orange-400'
+                : 'bg-orange-800 text-white';
         return (
           <span key={kind} className={`${BADGE_CLASS} ${tone}`} aria-label={label} title={label}>
             {kind === 'pskWeak' ? (
