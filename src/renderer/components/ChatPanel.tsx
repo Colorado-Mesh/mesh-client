@@ -69,6 +69,7 @@ import {
 } from '@/renderer/lib/autoResend/autoResendController';
 import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
+import { channelSecurityBadgeKinds } from '@/renderer/lib/channelSecurityBadges';
 import {
   getComposerPayloadLimit,
   getComposerWireOverhead,
@@ -3620,15 +3621,23 @@ function ChatPanel({
                   const chMecpSeverity =
                     unread > 0 ? unreadMecpSeverity.channels.get(ch.index) : undefined;
                   const chLabel = channelButtonLabel(ch.name, unread);
+                  const chSecurity = channelSecurityByIndex?.get(ch.index);
+                  const chPskWeakLabel =
+                    chSecurity && channelSecurityBadgeKinds(chSecurity).includes('pskWeak')
+                      ? t('channelSecurityBadges.pskWeak', { channel: ch.name })
+                      : null;
+                  const chAriaLabel = [
+                    chLabel,
+                    chPskWeakLabel,
+                    chMecpSeverity !== undefined ? mecpUnreadLabel(chMecpSeverity) : null,
+                  ]
+                    .filter((part): part is string => part != null && part.length > 0)
+                    .join(', ');
                   return (
                     <button
                       type="button"
                       key={`ch-${ch.index}-${chIdx}-${ch.name}`}
-                      aria-label={
-                        chMecpSeverity !== undefined
-                          ? `${chLabel}, ${mecpUnreadLabel(chMecpSeverity)}`
-                          : chLabel
-                      }
+                      aria-label={chAriaLabel}
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}
                       data-channel-unread={unread}

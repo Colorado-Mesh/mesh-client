@@ -4575,22 +4575,59 @@ describe('ChatPanel — @mention autocomplete', () => {
 });
 
 describe('ChatPanel — word filter toolbar', () => {
-  it('toggles word-filter settings from the toolbar icon', async () => {
-    const user = userEvent.setup();
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'toggles word-filter settings from the toolbar icon (%s)',
+    async (protocol) => {
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            {...(protocol === 'reticulum'
+              ? { dmOnlyChat: true, ownNodeIds: [1], initialDmTarget: 2 }
+              : {})}
+          />
+        </ToastProvider>,
+      );
+      const toolbarBtn = screen.getByRole('button', { name: 'Word filter' });
+      expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
+      await user.click(toolbarBtn);
+      expect(toolbarBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('word-filter-settings')).toBeVisible();
+      await user.click(toolbarBtn);
+      expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
+    },
+  );
+});
+
+describe('ChatPanel — channel security aria-label', () => {
+  it('includes weak/open PSK warning on the channel chip accessible name', () => {
     render(
       <ToastProvider>
-        <ChatPanel {...baseProps} />
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          channelSecurityByIndex={
+            new Map([
+              [
+                0,
+                {
+                  psk: new Uint8Array([1]),
+                  uplinkEnabled: false,
+                  positionPrecision: 0,
+                },
+              ],
+            ])
+          }
+        />
       </ToastProvider>,
     );
-    const toolbarBtn = screen.getByRole('button', { name: 'Word filter' });
-    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
-    await user.click(toolbarBtn);
-    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('word-filter-settings')).toBeVisible();
-    await user.click(toolbarBtn);
-    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
+    expect(
+      screen.getByRole('button', { name: /Weak or open channel key on General/i }),
+    ).toBeInTheDocument();
   });
 });
 
