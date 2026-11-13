@@ -69,7 +69,10 @@ import {
 } from '@/renderer/lib/autoResend/autoResendController';
 import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
-import { channelSecurityBadgeKinds } from '@/renderer/lib/channelSecurityBadges';
+import {
+  channelSecurityLevel,
+  channelSecurityLevelI18nKey,
+} from '@/renderer/lib/channelSecurityBadges';
 import {
   getComposerPayloadLimit,
   getComposerWireOverhead,
@@ -3622,13 +3625,16 @@ function ChatPanel({
                     unread > 0 ? unreadMecpSeverity.channels.get(ch.index) : undefined;
                   const chLabel = channelButtonLabel(ch.name, unread);
                   const chSecurity = channelSecurityByIndex?.get(ch.index);
-                  const chPskWeakLabel =
-                    chSecurity && channelSecurityBadgeKinds(chSecurity).includes('pskWeak')
-                      ? t('channelSecurityBadges.pskWeak', { channel: ch.name })
+                  const chSecurityLevel = chSecurity ? channelSecurityLevel(chSecurity) : null;
+                  const chSecurityLabel =
+                    chSecurityLevel && chSecurityLevel !== 'encrypted'
+                      ? t(`channelSecurityBadges.${channelSecurityLevelI18nKey(chSecurityLevel)}`, {
+                          channel: ch.name,
+                        })
                       : null;
                   const chAriaLabel = [
                     chLabel,
-                    chPskWeakLabel,
+                    chSecurityLabel,
                     chMecpSeverity !== undefined ? mecpUnreadLabel(chMecpSeverity) : null,
                   ]
                     .filter((part): part is string => part != null && part.length > 0)
@@ -3676,10 +3682,13 @@ function ChatPanel({
                       <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
                         {ch.name}
                       </span>
-                      {channelSecurityByIndex?.get(ch.index) ? (
+                      {chSecurity && chSecurityLevel ? (
                         <ChannelSecurityBadges
-                          channelName={ch.name}
-                          channel={channelSecurityByIndex.get(ch.index)!}
+                          channel={chSecurity}
+                          label={t(
+                            `channelSecurityBadges.${channelSecurityLevelI18nKey(chSecurityLevel)}`,
+                            { channel: ch.name },
+                          )}
                         />
                       ) : null}
                       {conversationPins.pinned.has(`ch:${ch.index}`) && (

@@ -8721,14 +8721,9 @@
     "toolbar": "Wortfilter"
   },
   "channelSecurityBadges": {
-    "pskWeak": "Schwacher oder offener Kanalschlüssel auf {{channel}}",
-    "pskAes128": "AES-128-Kanalschlüssel auf {{channel}}",
-    "pskAes128Short": "AES128",
-    "pskAes256": "AES-256-Kanalschlüssel auf {{channel}}",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "Genaue Position geteilt am {{channel}}",
-    "preciseLocationShort": "Lok",
-    "mqttUplink": "MQTT-Uplink aktiviert auf {{channel}}",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "Sicherer AES-Kanalschlüssel auf {{channel}}",
+    "open": "Schwacher oder offener Kanalschlüssel auf {{channel}}",
+    "openLocation": "Kanalschlüssel mit genauer Position auf {{channel}} öffnen",
+    "openLocationUplink": "Öffnen Sie den Kanalschlüssel mit genauer Position und MQTT-Uplink auf {{channel}}"
   }
 }

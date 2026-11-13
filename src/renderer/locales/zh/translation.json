@@ -8721,14 +8721,9 @@
     "toolbar": "词过滤器"
   },
   "channelSecurityBadges": {
-    "pskWeak": "{{channel}}上的频道密钥薄弱或公开",
-    "pskAes128": "{{channel}}上的AES-128频道密钥",
-    "pskAes128Short": "AES128",
-    "pskAes256": "{{channel}}上的AES-256通道密钥",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "已在{{channel}}上共享精确位置",
-    "preciseLocationShort": "坐标地址",
-    "mqttUplink": "MQTT上行链路已在{{channel}}上启用",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "{{channel}} 上的安全 AES 通道密钥",
+    "open": "{{channel}} 上的通道密钥弱或打开",
+    "openLocation": "打开通道密钥，并在 {{channel}} 上精确定位",
+    "openLocationUplink": "打开具有精确位置和 {{channel}} 上的 MQTT 上行链路的通道密钥"
   }
 }

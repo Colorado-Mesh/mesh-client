@@ -1,12 +1,9 @@
 /**
- * Meshtastic channel security indicators for chat channel pills.
- * Mirrors RadioPanel PSK / position / MQTT uplink classification without
- * expanding shared MessageStatus.
+ * Meshtastic channel security level for chat pills and Radio channel rows.
+ * Matches official Meshtastic composite lock semantics (one icon, four states).
  */
-export type ChannelPskStrength = 'none' | 'simple' | 'aes128' | 'aes256' | 'unknown';
 
-export type ChannelSecurityBadgeKind =
-  'pskWeak' | 'pskAes128' | 'pskAes256' | 'preciseLocation' | 'mqttUplink';
+export type ChannelSecurityLevel = 'encrypted' | 'open' | 'open-location' | 'open-location-uplink';
 
 export interface ChannelSecurityInput {
   psk: Uint8Array;
@@ -14,12 +11,9 @@ export interface ChannelSecurityInput {
   positionPrecision: number;
 }
 
-export function channelPskStrength(psk: Uint8Array): ChannelPskStrength {
-  if (psk.length === 0 || (psk.length === 1 && psk[0] === 0)) return 'none';
-  if (psk.length === 1) return 'simple';
-  if (psk.length === 16) return 'aes128';
-  if (psk.length === 32) return 'aes256';
-  return 'unknown';
+/** True when the channel PSK is a real AES-128 (16) or AES-256 (32) key. */
+export function channelPskIsEncrypted(psk: Uint8Array): boolean {
+  return psk.length === 16 || psk.length === 32;
 }
 
 /**
@@ -30,22 +24,30 @@ export function channelSharesPreciseLocation(positionPrecision: number): boolean
   return Number.isFinite(positionPrecision) && positionPrecision >= 32;
 }
 
-/** Ordered badge kinds for a channel (weakest / riskiest first). */
-export function channelSecurityBadgeKinds(cfg: ChannelSecurityInput): ChannelSecurityBadgeKind[] {
-  const kinds: ChannelSecurityBadgeKind[] = [];
-  const strength = channelPskStrength(cfg.psk);
-  if (strength === 'none' || strength === 'simple' || strength === 'unknown') {
-    kinds.push('pskWeak');
-  } else if (strength === 'aes128') {
-    kinds.push('pskAes128');
-  } else {
-    kinds.push('pskAes256');
+/**
+ * Official four-state channel security level.
+ * MQTT uplink only escalates when the channel is open and shares precise location.
+ */
+export function channelSecurityLevel(cfg: ChannelSecurityInput): ChannelSecurityLevel {
+  if (channelPskIsEncrypted(cfg.psk)) return 'encrypted';
+  const precise = channelSharesPreciseLocation(cfg.positionPrecision);
+  if (precise && cfg.uplinkEnabled) return 'open-location-uplink';
+  if (precise) return 'open-location';
+  return 'open';
+}
+
+/** i18n suffix under `channelSecurityBadges.*` for a level. */
+export function channelSecurityLevelI18nKey(
+  level: ChannelSecurityLevel,
+): 'encrypted' | 'open' | 'openLocation' | 'openLocationUplink' {
+  switch (level) {
+    case 'encrypted':
+      return 'encrypted';
+    case 'open':
+      return 'open';
+    case 'open-location':
+      return 'openLocation';
+    case 'open-location-uplink':
+      return 'openLocationUplink';
   }
-  if (channelSharesPreciseLocation(cfg.positionPrecision)) {
-    kinds.push('preciseLocation');
-  }
-  if (cfg.uplinkEnabled) {
-    kinds.push('mqttUplink');
-  }
-  return kinds;
 }

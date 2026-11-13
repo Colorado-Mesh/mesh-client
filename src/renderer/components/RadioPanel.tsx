@@ -1,16 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { Lock, LockOpen, TriangleAlert } from 'lucide-react-motion';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ChannelSecurityBadges } from '@/renderer/components/chat/ChannelSecurityBadges';
 import { useFloodScopeOverride } from '@/renderer/hooks/useFloodScopeOverride';
+import { channelSecurityLevel } from '@/renderer/lib/channelSecurityBadges';
 import {
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   loadFloodScopeOverridesInitial,
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
 import { applyMeshcoreContactAdd } from '@/renderer/lib/meshClientDeepLinkApply';
 import {
@@ -3585,53 +3585,18 @@ export default function RadioPanel({
   );
 }
 
-// ─── Security level helpers ──────────────────────────────────────
-type SecurityLevel = 'encrypted' | 'open' | 'open-location' | 'open-location-uplink';
-
-function getSecurityLevel(cfg: ChannelConfig): SecurityLevel {
-  const secure = cfg.psk.length === 16 || cfg.psk.length === 32;
-  if (secure) return 'encrypted';
-  if (cfg.positionPrecision > 0 && cfg.uplinkEnabled) return 'open-location-uplink';
-  if (cfg.positionPrecision > 0) return 'open-location';
-  return 'open';
-}
-
-function SecurityIcon({ level }: { level: SecurityLevel }) {
-  const { t } = useTranslation();
-  const trigger = useIconTrigger();
-  const iconProps = {
-    'aria-hidden': true as const,
-    trigger,
-    size: 14,
-  };
-
-  if (level === 'encrypted') {
-    return (
-      <span
-        title={t('radioPanel.aesEncryptedTooltip')}
-        className="flex items-center text-green-400"
-      >
-        <Lock {...iconProps} className="h-3.5 w-3.5" />
-      </span>
-    );
+function radioChannelSecurityLabel(t: (key: string) => string, cfg: ChannelConfig): string {
+  const level = channelSecurityLevel(cfg);
+  switch (level) {
+    case 'encrypted':
+      return t('radioPanel.aesEncryptedTooltip');
+    case 'open-location-uplink':
+      return t('radioPanel.securityOpenLocationUplinkTooltip');
+    case 'open-location':
+      return t('radioPanel.securityOpenLocationTooltip');
+    case 'open':
+      return t('radioPanel.securityNoEncryptionTooltip');
   }
-  const tooltip =
-    level === 'open-location-uplink'
-      ? t('radioPanel.securityOpenLocationUplinkTooltip')
-      : level === 'open-location'
-        ? t('radioPanel.securityOpenLocationTooltip')
-        : t('radioPanel.securityNoEncryptionTooltip');
-  return (
-    <span title={tooltip} className="flex items-center gap-0.5 text-orange-500">
-      <LockOpen
-        {...iconProps}
-        className={`h-3.5 w-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
-      />
-      {level === 'open-location-uplink' && (
-        <TriangleAlert {...iconProps} className="h-3.5 w-3.5 text-red-400" />
-      )}
-    </span>
-  );
 }
 
 // ─── Channel URL import / export (Meshtastic) ───────────────────
@@ -4375,7 +4340,7 @@ function ChannelSection({
           {slots.map((cfg, i) => {
             const isSelected = selectedIndex === i;
             const role = cfg?.role ?? 0;
-            const secLevel = cfg && role !== 0 ? getSecurityLevel(cfg) : null;
+            const showSecurity = Boolean(cfg && role !== 0);
             const isFailed = remoteChannelFailedIndices?.includes(i) ?? false;
             const isPendingTail =
               i >= 1 && !cfg && !isFailed && remoteChannelsTailStatus === 'loading';
@@ -4450,7 +4415,13 @@ function ChannelSection({
                             : t('radioPanel.channelRoleDisabled')}
                   </span>
                   {/* Security indicator */}
-                  {secLevel && <SecurityIcon level={secLevel} />}
+                  {showSecurity && cfg ? (
+                    <ChannelSecurityBadges
+                      channel={cfg}
+                      label={radioChannelSecurityLabel(t, cfg)}
+                      size={14}
+                    />
+                  ) : null}
                 </button>
                 {isSelected && renderEditForm()}
               </div>

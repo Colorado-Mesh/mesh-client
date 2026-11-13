@@ -4604,7 +4604,7 @@ describe('ChatPanel — word filter toolbar', () => {
 });
 
 describe('ChatPanel — channel security aria-label', () => {
-  it('includes weak/open PSK warning on the channel chip accessible name', () => {
+  it('includes open-channel warning on the channel chip accessible name', () => {
     render(
       <ToastProvider>
         <ChatPanel

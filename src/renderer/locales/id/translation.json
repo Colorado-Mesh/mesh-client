@@ -8721,14 +8721,9 @@
     "toolbar": "Penyaring kata"
   },
   "channelSecurityBadges": {
-    "pskWeak": "Kunci saluran lemah atau terbuka pada {{channel}}",
-    "pskAes128": "Kunci saluran AES-128 pada {{channel}}",
-    "pskAes128Short": "AES128",
-    "pskAes256": "Kunci saluran AES-256 pada {{channel}}",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "Lokasi akurat dibagikan pada {{channel}}",
-    "preciseLocationShort": "Lok",
-    "mqttUplink": "Uplink MQTT diaktifkan pada {{channel}}",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "Amankan kunci saluran AES di {{channel}}",
+    "open": "Kunci saluran lemah atau terbuka di {{channel}}",
+    "openLocation": "Buka kunci saluran dengan lokasi tepat di {{channel}}",
+    "openLocationUplink": "Buka kunci saluran dengan lokasi yang tepat dan uplink MQTT di {{channel}}"
   }
 }

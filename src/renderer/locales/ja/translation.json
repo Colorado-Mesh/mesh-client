@@ -8721,14 +8721,9 @@
     "toolbar": "ワードフィルター"
   },
   "channelSecurityBadges": {
-    "pskWeak": "{{channel}} のチャンネル キーが弱いか開いています",
-    "pskAes128": "{{channel}} の AES-128 チャネル キー",
-    "pskAes128Short": "AES128",
-    "pskAes256": "{{channel}} の AES-256 チャネル キー",
-    "pskAes256Short": "AES256",
-    "preciseLocation": "{{channel}} で正確な位置情報が共有されました",
-    "preciseLocationShort": "ロック",
-    "mqttUplink": "MQTT アップリンクが {{channel}} で有効になりました",
-    "mqttUplinkShort": "MQTT"
+    "encrypted": "{{channel}} の AES チャネル キーを保護する",
+    "open": "{{channel}} のチャンネル キーが弱いか開いています",
+    "openLocation": "{{channel}} 上の正確な位置でチャンネル キーを開きます",
+    "openLocationUplink": "正確な位置と {{channel}} 上の MQTT アップリンクを含むオープン チャネル キー"
   }
 }
