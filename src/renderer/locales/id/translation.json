@@ -8716,11 +8716,11 @@
     "disableConversation": "Nonaktifkan filter kata di percakapan ini",
     "settingsTitle": "Filter kata",
     "showFiltered": "Tampilkan {{count}} yang difilter",
-    "hideFiltered": "Sembunyikan pesan yang difilter"
+    "hideFiltered": "Sembunyikan pesan yang difilter",
+    "toolbar": "Penyaring kata"
   },
   "channelSecurityBadges": {
     "pskWeak": "Kunci saluran lemah atau terbuka pada {{channel}}",
-    "pskWeakShort": "Terbuka",
     "pskAes128": "Kunci saluran AES-128 pada {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "Kunci saluran AES-256 pada {{channel}}",

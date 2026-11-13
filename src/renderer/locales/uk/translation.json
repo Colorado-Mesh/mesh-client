@@ -8860,11 +8860,11 @@
     "disableConversation": "Вимкнути фільтр слів у цій розмові",
     "settingsTitle": "Фільтр слів",
     "showFiltered": "Показати {{count}} відфільтрованих",
-    "hideFiltered": "Приховати відфільтровані повідомлення"
+    "hideFiltered": "Приховати відфільтровані повідомлення",
+    "toolbar": "Фільтр Word"
   },
   "channelSecurityBadges": {
     "pskWeak": "Слабкий або відкритий ключ каналу на {{channel}}",
-    "pskWeakShort": "Відкритий",
     "pskAes128": "Ключ каналу AES-128 на {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "Ключ каналу AES-256 на {{channel}}",

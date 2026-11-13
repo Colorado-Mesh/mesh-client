@@ -8715,12 +8715,12 @@
     "wordsAria": "Word filter list",
     "disableConversation": "Disable word filter in this conversation",
     "settingsTitle": "Word filter",
+    "toolbar": "Word filter",
     "showFiltered": "Show {{count}} filtered",
     "hideFiltered": "Hide filtered messages"
   },
   "channelSecurityBadges": {
     "pskWeak": "Weak or open channel key on {{channel}}",
-    "pskWeakShort": "Open",
     "pskAes128": "AES-128 channel key on {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "AES-256 channel key on {{channel}}",

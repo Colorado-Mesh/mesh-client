@@ -8716,11 +8716,11 @@
     "disableConversation": "Disattiva il filtro delle parole in questa conversazione",
     "settingsTitle": "Filtro delle parole",
     "showFiltered": "Mostra {{count}} filtrati",
-    "hideFiltered": "Nascondi i messaggi filtrati"
+    "hideFiltered": "Nascondi i messaggi filtrati",
+    "toolbar": "Filtro parole"
   },
   "channelSecurityBadges": {
     "pskWeak": "Chiave del canale debole o aperta su {{channel}}",
-    "pskWeakShort": "Apri",
     "pskAes128": "Chiave del canale AES-128 su {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "Chiave del canale AES-256 su {{channel}}",

@@ -8801,11 +8801,11 @@
     "disableConversation": "Zakázat filtr slov v této konverzaci",
     "settingsTitle": "Filtr slov",
     "showFiltered": "Zobrazit {{count}} filtrované",
-    "hideFiltered": "Skrýt filtrované zprávy"
+    "hideFiltered": "Skrýt filtrované zprávy",
+    "toolbar": "Filtr slov"
   },
   "channelSecurityBadges": {
     "pskWeak": "Slabý nebo otevřený klíč kanálu na {{channel}}",
-    "pskWeakShort": "OTEVŘENO",
     "pskAes128": "Kanálový klíč AES-128 na {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "Kanálový klíč AES-256 na {{channel}}",

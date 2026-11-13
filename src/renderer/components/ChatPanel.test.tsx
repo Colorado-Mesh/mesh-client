@@ -4574,6 +4574,26 @@ describe('ChatPanel — @mention autocomplete', () => {
   });
 });
 
+describe('ChatPanel — word filter toolbar', () => {
+  it('toggles word-filter settings from the toolbar icon', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} />
+      </ToastProvider>,
+    );
+    const toolbarBtn = screen.getByRole('button', { name: 'Word filter' });
+    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
+    await user.click(toolbarBtn);
+    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('word-filter-settings')).toBeVisible();
+    await user.click(toolbarBtn);
+    expect(toolbarBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('word-filter-settings')).not.toBeVisible();
+  });
+});
+
 describe('ChatPanel — jump to date', () => {
   it('shows date input when calendar button is clicked', async () => {
     const user = userEvent.setup();

@@ -1,9 +1,11 @@
+import { LockOpen } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
 import {
   channelSecurityBadgeKinds,
   type ChannelSecurityInput,
 } from '@/renderer/lib/channelSecurityBadges';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 export interface ChannelSecurityBadgesProps {
   channel: ChannelSecurityInput;
@@ -17,6 +19,7 @@ const BADGE_CLASS =
 /** Accessible Meshtastic channel security chips for WrappingChannelList pills. */
 export function ChannelSecurityBadges({ channel, channelName }: ChannelSecurityBadgesProps) {
   const { t } = useTranslation();
+  const iconTrigger = useIconTrigger();
   const kinds = channelSecurityBadgeKinds(channel);
   if (kinds.length === 0) return null;
   return (
@@ -36,7 +39,11 @@ export function ChannelSecurityBadges({ channel, channelName }: ChannelSecurityB
                 : 'bg-red-700 text-white';
         return (
           <span key={kind} className={`${BADGE_CLASS} ${tone}`} aria-label={label} title={label}>
-            {t(`channelSecurityBadges.${kind}Short`)}
+            {kind === 'pskWeak' ? (
+              <LockOpen aria-hidden className="h-3 w-3" trigger={iconTrigger} size={12} />
+            ) : (
+              t(`channelSecurityBadges.${kind}Short`)
+            )}
           </span>
         );
       })}

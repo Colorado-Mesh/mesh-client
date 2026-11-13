@@ -8716,11 +8716,11 @@
     "disableConversation": "Schakel het woordfilter uit in dit gesprek",
     "settingsTitle": "Woordfilter",
     "showFiltered": "Toon {{count}} gefilterd",
-    "hideFiltered": "Verberg gefilterde berichten"
+    "hideFiltered": "Verberg gefilterde berichten",
+    "toolbar": "Woordfilter"
   },
   "channelSecurityBadges": {
     "pskWeak": "Zwakke of open kanaaltoets op {{channel}}",
-    "pskWeakShort": "Open",
     "pskAes128": "AES-128 kanaaltoets op {{channel}}",
     "pskAes128Short": "AES128",
     "pskAes256": "AES-256 kanaaltoets op {{channel}}",

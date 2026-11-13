@@ -8716,11 +8716,11 @@
     "disableConversation": "この会話の単語フィルターを無効にする",
     "settingsTitle": "ワードフィルター",
     "showFiltered": "{{count}} をフィルタリングして表示",
-    "hideFiltered": "フィルタリングされたメッセージを非表示にする"
+    "hideFiltered": "フィルタリングされたメッセージを非表示にする",
+    "toolbar": "ワードフィルター"
   },
   "channelSecurityBadges": {
     "pskWeak": "{{channel}} のチャンネル キーが弱いか開いています",
-    "pskWeakShort": "開ける",
     "pskAes128": "{{channel}} の AES-128 チャネル キー",
     "pskAes128Short": "AES128",
     "pskAes256": "{{channel}} の AES-256 チャネル キー",

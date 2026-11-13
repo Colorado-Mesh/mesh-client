@@ -16,6 +16,7 @@ import {
   CornerUpLeft,
   Download,
   ExternalLink,
+  FunnelX,
   ListFilter,
   Mail,
   PARENT_HOVER_ATTR,
@@ -103,6 +104,7 @@ import {
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
 import { withMeshtasticTextSendPacing } from '@/renderer/lib/meshtasticTextSendPacing';
+import { subscribeOpenSettingRequests } from '@/renderer/lib/openSettingRequest';
 import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
@@ -1377,6 +1379,8 @@ function ChatPanel({
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [showWordFilter, setShowWordFilter] = useState(false);
+  const wordFilterDetailsRef = useRef<HTMLDetailsElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -2784,6 +2788,33 @@ function ChatPanel({
     });
   }, []);
 
+  const closeWordFilter = useCallback(() => {
+    const el = wordFilterDetailsRef.current;
+    if (el) el.open = false;
+    setShowWordFilter(false);
+  }, []);
+
+  const toggleWordFilter = useCallback(() => {
+    const el = wordFilterDetailsRef.current;
+    if (!el) {
+      setShowWordFilter((open) => !open);
+      return;
+    }
+    el.open = !el.open;
+  }, []);
+
+  // Settings-search / requestOpenSetting: open the word-filter details so anchors exist & reveal.
+  useEffect(
+    () =>
+      subscribeOpenSettingRequests((request) => {
+        if (!request.id.startsWith('chat.wordFilter')) return;
+        const el = wordFilterDetailsRef.current;
+        if (el) el.open = true;
+        setShowWordFilter(true);
+      }),
+    [],
+  );
+
   // Escape key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -2805,6 +2836,8 @@ function ChatPanel({
           setFilterSender(null);
         } else if (showDatePicker) {
           setShowDatePicker(false);
+        } else if (showWordFilter) {
+          closeWordFilter();
         } else if (showSearch) {
           closeSearch();
         } else if (viewMode === 'dm') {
@@ -2816,7 +2849,16 @@ function ChatPanel({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [closeSearch, showSearch, viewMode, replyTo, filterSender, showDatePicker]);
+  }, [
+    closeSearch,
+    closeWordFilter,
+    showSearch,
+    showWordFilter,
+    viewMode,
+    replyTo,
+    filterSender,
+    showDatePicker,
+  ]);
 
   useEffect(() => {
     if (showSearch) {
@@ -3807,6 +3849,18 @@ function ChatPanel({
               <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
             </ChatToolbarTooltipButton>
 
+            <ChatToolbarTooltipButton
+              tooltip={t('wordFilter.toolbar')}
+              aria-pressed={showWordFilter}
+              aria-label={t('wordFilter.toolbar')}
+              className={chatToolbarButtonClass(showWordFilter ? 'active' : 'idle')}
+              onClick={() => {
+                toggleWordFilter();
+              }}
+            >
+              <FunnelX aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
+
             {onOpenGlobalMessageSearch ? (
               <ChatToolbarTooltipButton
                 tooltip={t('globalMessageSearch.openFromChat')}
@@ -4069,7 +4123,17 @@ function ChatPanel({
         </div>
       ) : null}
 
-      <WordFilterSettings conversationKey={wordFilterConversationKey} />
+      <details
+        ref={wordFilterDetailsRef}
+        onToggle={(e) => {
+          setShowWordFilter(e.currentTarget.open);
+        }}
+      >
+        <summary className="sr-only" tabIndex={-1}>
+          {t('wordFilter.settingsTitle')}
+        </summary>
+        <WordFilterSettings conversationKey={wordFilterConversationKey} />
+      </details>
       {wordFilteredHiddenCount > 0 ? (
         <div className="mb-2 flex min-w-0 items-center gap-2">
           <button

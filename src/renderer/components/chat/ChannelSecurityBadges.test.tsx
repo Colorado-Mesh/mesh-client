@@ -38,7 +38,11 @@ describe('ChannelSecurityBadges', () => {
         </button>
       </WrappingChannelList>,
     );
-    expect(view.getByLabelText('channelSecurityBadges.pskWeak:LongFast')).toBeTruthy();
+    const weak = view.getByLabelText('channelSecurityBadges.pskWeak:LongFast');
+    expect(weak).toBeTruthy();
+    expect(weak).not.toHaveTextContent('Open');
+    expect(weak).not.toHaveTextContent('channelSecurityBadges.pskWeakShort');
+    expect(weak.querySelector('svg')).toBeTruthy();
     expect(view.getByLabelText('channelSecurityBadges.preciseLocation:LongFast')).toBeTruthy();
     expect(view.getByLabelText('channelSecurityBadges.mqttUplink:LongFast')).toBeTruthy();
   });
