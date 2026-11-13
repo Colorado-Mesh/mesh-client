@@ -4258,6 +4258,29 @@ describe('ChatPanel — copy button', () => {
   });
 });
 
+describe('ChatPanel — delete locally button', () => {
+  it('is icon-only with an accessible name and confirms before delete', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'delete me' })]} />
+      </ToastProvider>,
+    );
+
+    const btn = await screen.findByRole('button', { name: 'Delete locally' });
+    expect(btn.textContent?.trim()).toBe('');
+    expect(btn.querySelector('svg')).toBeTruthy();
+    expect(btn.getAttribute('aria-label')).toBe('Delete locally');
+    expect(btn.getAttribute('title')).toBe('Delete locally');
+
+    await user.click(btn);
+    expect(confirmSpy).toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+});
+
 describe('ChatPanel — always show message actions', () => {
   it('keeps the action bar opacity-100 when alwaysShowMessageActions is set', async () => {
     render(
