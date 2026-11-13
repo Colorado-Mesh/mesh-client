@@ -129,4 +129,22 @@ describe('logProtocolScope registry', () => {
     expect(resolveLogProtocol(line('[meshcoreRepeaterSession] login failed'))).toBe('meshcore');
     expect(resolveLogSurface(line('[meshcoreRoomSession] login failed'))).toBe('app');
   });
+
+  it('does not let a protocol tag in the message body override the leading tag', () => {
+    expect(
+      resolveLogProtocol(
+        line('[db] migrate failed while mentioning [meshtasticTransportLoss] in detail'),
+      ),
+    ).toBeUndefined();
+    expect(
+      resolveLogSurface(
+        line('[db] migrate failed while mentioning [meshtasticTransportLoss] in detail'),
+      ),
+    ).toBe('app');
+    expect(
+      resolveLogProtocol(
+        line('[MeshCore MQTT] reconnect after [meshtasticTransportLoss] on other radio'),
+      ),
+    ).toBe('meshcore');
+  });
 });

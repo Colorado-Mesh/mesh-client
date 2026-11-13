@@ -2,7 +2,12 @@ import { execFileSync } from 'child_process';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { isAppLogEntry, isDeviceEntry, isOwnedByOtherProtocol } from './LogPanel';
+import {
+  entriesForLogAnalysis,
+  isAppLogEntry,
+  isDeviceEntry,
+  isOwnedByOtherProtocol,
+} from './LogPanel';
 
 function entry(source: string, message: string, level = 'log') {
   return { ts: Date.now(), level, source, message };
@@ -494,5 +499,32 @@ describe('protocol-exclusive App tags — cross-protocol', () => {
     );
     expect(isAppLogEntry(e, 'meshcore')).toBe(false);
     expect(isAppLogEntry(e, 'meshtastic')).toBe(true);
+  });
+});
+
+describe('entriesForLogAnalysis — surface without protocol filter', () => {
+  it('keeps other-protocol app lines so Analyze can count ignoredOtherProtocol', () => {
+    const shared = entry('main', '[db] migrate failed');
+    const meshcoreMqtt = entry('main', '[MeshCore MQTT] PINGRESP');
+    const meshtasticMqtt = entry('main', '[Meshtastic MQTT] subscribe OK');
+    const device = entry('main', '[useMeshtasticRuntime] connected');
+    const analyzed = entriesForLogAnalysis(
+      [shared, meshcoreMqtt, meshtasticMqtt, device],
+      undefined,
+      'app',
+    );
+    expect(analyzed).toEqual(expect.arrayContaining([shared, meshcoreMqtt, meshtasticMqtt]));
+    expect(analyzed).not.toContainEqual(device);
+    // Display list for MeshCore still hides Meshtastic exclusive app tags.
+    expect(isAppLogEntry(meshtasticMqtt, 'meshcore')).toBe(false);
+  });
+
+  it('includes other-protocol device library lines for Device Analyze', () => {
+    const mt = entry('main', '[useMeshtasticRuntime] connected');
+    const mc = entry('main', '[useMeshcoreRuntime] connected');
+    const app = entry('main', '[db] migrate failed');
+    const analyzed = entriesForLogAnalysis([mt, mc, app], undefined, 'device');
+    expect(analyzed).toEqual(expect.arrayContaining([mt, mc]));
+    expect(analyzed).not.toContainEqual(app);
   });
 });

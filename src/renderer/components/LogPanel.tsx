@@ -99,6 +99,22 @@ export function isAppLogEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
   return isAppLogLine(entry, protocol);
 }
 
+/**
+ * Surface-scoped entries for Analyze (App or Device), without protocol filtering so
+ * `ignoredOtherProtocol` can count foreign lines. The list view stays protocol-scoped.
+ */
+export function entriesForLogAnalysis(
+  entries: LogEntry[],
+  deviceLogs: LogEntry[] | undefined,
+  logSource: 'app' | 'device',
+): LogEntry[] {
+  if (logSource === 'device') {
+    const deviceLibrary = entries.filter((e) => isDeviceEntry(e));
+    return [...(deviceLogs ?? []), ...deviceLibrary].sort((a, b) => a.ts - b.ts);
+  }
+  return entries.filter((e) => isAppLogEntry(e));
+}
+
 function formatEntry(entry: LogEntry): string {
   const ts = formatLogTimeOfDay(entry.ts);
   return `${ts} [${entry.level}] ${entry.message}`;
@@ -240,6 +256,10 @@ export default function LogPanel({
   const allDeviceLogs: LogEntry[] = useMemo(
     () => [...scopedDeviceLogs, ...libraryEntries].sort((a, b) => a.ts - b.ts),
     [scopedDeviceLogs, libraryEntries],
+  );
+  const analyzeEntries = useMemo(
+    () => entriesForLogAnalysis(entries, deviceLogs, logSource),
+    [logSource, entries, deviceLogs],
   );
 
   const visibleLines: LogEntry[] = useMemo(
@@ -518,7 +538,7 @@ export default function LogPanel({
             onClose={() => {
               setAnalyzeModalOpen(false);
             }}
-            entries={logSource === 'device' ? allDeviceLogs : appEntries}
+            entries={analyzeEntries}
             protocol={protocol ?? 'meshtastic'}
           />
         )}
@@ -546,7 +566,7 @@ export default function LogPanel({
           onClose={() => {
             setAnalyzeModalOpen(false);
           }}
-          entries={logSource === 'device' ? allDeviceLogs : appEntries}
+          entries={analyzeEntries}
           protocol={protocol ?? 'meshtastic'}
         />
       )}

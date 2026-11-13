@@ -156,9 +156,16 @@ export function extractLeadingLogTag(message: string): string | undefined {
   return `[${inner}]`;
 }
 
+/**
+ * Match `LOG_TAG_SCOPE` against the first `[…]` tag in the message only
+ * (longest-prefix wins). Body mentions of other tags must not override.
+ */
 function matchRegistryScope(message: string): LogScope | undefined {
+  const tagStart = message.indexOf('[');
+  if (tagStart < 0) return undefined;
+  const fromTag = message.slice(tagStart);
   for (const key of SCOPE_KEYS_BY_LENGTH) {
-    if (message.includes(key)) {
+    if (fromTag.startsWith(key)) {
       return LOG_TAG_SCOPE[key];
     }
   }
