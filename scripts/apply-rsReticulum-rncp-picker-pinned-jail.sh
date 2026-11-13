@@ -21,7 +21,9 @@ fi
 
 overlay_already_present() {
   [[ -f "${RNCP_RS}" ]] || return 1
+  # Require the clippy-safe per-OS expression form (see overlay comment marker).
   grep -q 'fn resolve_under_picker_pin' "${RNCP_RS}" \
+    && grep -q 'clippy does not see needless_bool' "${RNCP_RS}" \
     && grep -q 'fetch_sink_keeps_handle_alias_after_selected_root_is_replaced' "${RNCP_RS}"
 }
 

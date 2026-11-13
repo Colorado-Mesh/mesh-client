@@ -52,7 +52,7 @@ index 2351dd3..da37a08 100644
              task.abort();
          }
 diff --git a/crates/nomad-core/src/paths.rs b/crates/nomad-core/src/paths.rs
-index b813460..37998a9 100644
+index b813460..e21a2c1 100644
 --- a/crates/nomad-core/src/paths.rs
 +++ b/crates/nomad-core/src/paths.rs
 @@ -151,12 +151,15 @@ pub fn validate_content_relative_path(rel: &str) -> Result<(), NomadError> {
@@ -93,7 +93,7 @@ index b813460..37998a9 100644
              let parent_canon = parent.canonicalize().map_err(NomadError::Io)?;
              if !parent_canon.starts_with(&root_canon) {
                  return Err(NomadError::PathTraversal);
-@@ -193,6 +202,25 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
+@@ -193,6 +202,27 @@ pub fn resolve_under_root(root: &Path, rel: &str) -> Result<PathBuf, NomadError>
      Ok(cur)
  }
  
@@ -101,25 +101,27 @@ index b813460..37998a9 100644
 +/// handle-relative through the final storage open; canonicalizing them would
 +/// turn them back into a replaceable pathname.
 +fn is_picker_pinned_path(path: &Path) -> bool {
-+    #[cfg(any(target_os = "linux", target_os = "macos"))]
-+    let text = path.to_string_lossy();
++    // One cfg block per OS so clippy does not see needless_bool / needless_return
++    // after the other platform branches are cfg-stripped.
 +    #[cfg(target_os = "linux")]
-+    if text.starts_with("/proc/self/fd/") {
-+        return true;
++    {
++        path.to_string_lossy().starts_with("/proc/self/fd/")
 +    }
 +    #[cfg(target_os = "macos")]
-+    if text.starts_with("/.vol/") {
-+        return true;
++    {
++        path.to_string_lossy().starts_with("/.vol/")
 +    }
 +    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-+    let _ = path;
-+    false
++    {
++        let _ = path;
++        false
++    }
 +}
 +
  /// Reject `path` when it is a symlink (does not follow the link).
  pub(crate) fn reject_if_symlink(path: &Path) -> Result<(), NomadError> {
      let meta = fs::symlink_metadata(path).map_err(NomadError::Io)?;
-@@ -225,6 +253,19 @@ mod tests {
+@@ -225,6 +255,19 @@ mod tests {
      use super::*;
      use tempfile::tempdir;
  
@@ -139,7 +141,7 @@ index b813460..37998a9 100644
      /// Page routes are normalized.
      #[test]
      fn page_route_normalization() {
-@@ -398,6 +439,29 @@ mod tests {
+@@ -398,6 +441,29 @@ mod tests {
      }
  
      /// A root that does not exist yet keeps the logical path.

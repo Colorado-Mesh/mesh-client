@@ -22,7 +22,9 @@ fi
 
 overlay_already_present() {
   [[ -f "${PATHS_RS}" && -f "${NODE_RS}" ]] || return 1
+  # Require the clippy-safe per-OS expression form (see overlay comment marker).
   grep -q 'fn is_picker_pinned_path' "${PATHS_RS}" \
+    && grep -q 'clippy does not see needless_bool' "${PATHS_RS}" \
     && grep -q 'content_store_sink_keeps_pinned_root_after_path_replacement' "${PATHS_RS}" \
     && grep -q 'pub async fn shutdown' "${NODE_RS}"
 }

@@ -1,8 +1,7 @@
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index 832da5e..8b286b1 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
-@@ -154,6 +154,9 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+@@ -154,6 +154,9 @@
      }
      match jail {
          Some(jail_dir) => {
@@ -12,27 +11,31 @@ index 832da5e..8b286b1 100644
              let jail_canonical =
                  std::fs::canonicalize(jail_dir).map_err(|e| format!("jail canonicalize: {e}"))?;
              // canonicalize resolves symlinks (macOS `/var` → `/private/var`)
-@@ -175,6 +178,50 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+@@ -173,6 +176,52 @@
+         }
+         None => std::fs::canonicalize(path_str).map_err(|e| format!("not found: {e}")),
      }
- }
- 
++}
++
 +/// Handle-derived roots (`/proc/self/fd` on Linux and `/.vol` on macOS) must
 +/// remain in the returned path. Canonicalizing one turns it back into the
 +/// mutable pathname that the native picker was intended to replace.
 +fn is_picker_pinned_path(path: &Path) -> bool {
-+    #[cfg(any(target_os = "linux", target_os = "macos"))]
-+    let text = path.to_string_lossy();
++    // One cfg block per OS so clippy does not see needless_bool / needless_return
++    // after the other platform branches are cfg-stripped.
 +    #[cfg(target_os = "linux")]
-+    if text.starts_with("/proc/self/fd/") {
-+        return true;
++    {
++        path.to_string_lossy().starts_with("/proc/self/fd/")
 +    }
 +    #[cfg(target_os = "macos")]
-+    if text.starts_with("/.vol/") {
-+        return true;
++    {
++        path.to_string_lossy().starts_with("/.vol/")
 +    }
 +    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-+    let _ = path;
-+    false
++    {
++        let _ = path;
++        false
++    }
 +}
 +
 +fn resolve_under_picker_pin(jail: &Path, requested: &str) -> Result<PathBuf, String> {
@@ -58,15 +61,14 @@ index 832da5e..8b286b1 100644
 +        return Err("not found: requested path is not a file".into());
 +    }
 +    Ok(resolved)
-+}
-+
+ }
+ 
  /// Listener policy and file locations. Defaults generate a fresh identity,
- /// use `rncp.receive` and the current directory, disable fetch and overwrite,
- /// and leave the allow-list empty. Supply a persistent identity when the
-@@ -1595,6 +1642,21 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+@@ -1594,6 +1643,21 @@
+ #[cfg(test)]
  mod tests {
      use super::*;
- 
++
 +    #[cfg(target_os = "linux")]
 +    fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
 +        use std::os::fd::AsRawFd;
@@ -81,14 +83,14 @@ index 832da5e..8b286b1 100644
 +        let metadata = handle.metadata().unwrap();
 +        PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
 +    }
-+
+ 
      #[test]
      fn metadata_roundtrip() {
-         let packed = pack_metadata("hello.txt");
-@@ -1687,4 +1749,32 @@ mod tests {
+@@ -1687,4 +1751,32 @@
      fn successful_rncp_send_retains_python_receiver_settlement_window() {
          assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
      }
+-}
 +
 +    #[cfg(any(target_os = "linux", target_os = "macos"))]
 +    #[test]
@@ -117,4 +119,4 @@ index 832da5e..8b286b1 100644
 +        assert_eq!(std::fs::read(resolved).unwrap(), b"picked");
 +        std::fs::remove_dir_all(&dir).unwrap();
 +    }
- }
++}
