@@ -4259,26 +4259,40 @@ describe('ChatPanel — copy button', () => {
 });
 
 describe('ChatPanel — delete locally button', () => {
-  it('is icon-only with an accessible name and confirms before delete', async () => {
-    const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'is icon-only with an accessible name and confirms before delete (%s)',
+    async (protocol) => {
+      const user = userEvent.setup();
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const isReticulum = protocol === 'reticulum';
 
-    render(
-      <ToastProvider>
-        <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'delete me' })]} />
-      </ToastProvider>,
-    );
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            {...(isReticulum ? { dmOnlyChat: true, ownNodeIds: [1], initialDmTarget: 2 } : {})}
+            messages={[
+              makeMsg({
+                payload: 'delete me',
+                ...(isReticulum ? { channel: -1, to: 1 } : {}),
+              }),
+            ]}
+          />
+        </ToastProvider>,
+      );
 
-    const btn = await screen.findByRole('button', { name: 'Delete locally' });
-    expect(btn.textContent?.trim()).toBe('');
-    expect(btn.querySelector('svg')).toBeTruthy();
-    expect(btn.getAttribute('aria-label')).toBe('Delete locally');
-    expect(btn.getAttribute('title')).toBe('Delete locally');
+      const btn = await screen.findByRole('button', { name: 'Delete locally' });
+      expect(btn.textContent?.trim()).toBe('');
+      expect(btn.querySelector('svg')).toBeTruthy();
+      expect(btn.getAttribute('aria-label')).toBe('Delete locally');
+      expect(btn.getAttribute('title')).toBe('Delete locally');
 
-    await user.click(btn);
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
+      await user.click(btn);
+      expect(confirmSpy).toHaveBeenCalled();
+      confirmSpy.mockRestore();
+    },
+  );
 });
 
 describe('ChatPanel — always show message actions', () => {
