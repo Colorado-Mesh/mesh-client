@@ -1114,6 +1114,7 @@ export function useMeshcoreRuntime() {
       nRecvErrors: packet.nRecvErrors ?? undefined,
       channelUtilization,
       airUtilTx,
+      fetchedAt: now,
     };
 
     const myNodeId = myNodeNumRef.current || state.myNodeNum;

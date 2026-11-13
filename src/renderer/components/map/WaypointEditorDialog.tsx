@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { buttonClassName } from '@/renderer/components/ui/Button';
 import { CHECKBOX_CLASS, INPUT_BOX_SM_CLASS } from '@/renderer/components/ui/formClasses';
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import type { MeshWaypoint } from '@/renderer/lib/types';
 
 const NAME_MAX = 29;
@@ -16,6 +17,16 @@ export interface WaypointEditorDialogProps {
   onSubmit: (wp: Omit<MeshWaypoint, 'from' | 'timestamp'>) => Promise<void> | void;
 }
 
+/** Hours remaining until `expire` (unix seconds), or 0 when unset / past / delete sentinel. */
+export function expireHoursFromUnix(
+  expire: number | undefined,
+  nowSec = Math.floor(Date.now() / 1000),
+): number {
+  if (expire == null || expire <= 1) return 0;
+  if (expire <= nowSec) return 0;
+  return Math.max(0, Math.round((expire - nowSec) / 3600));
+}
+
 /** Create / edit Meshtastic waypoints (no geofence). Delete-for-everyone uses expire:1. */
 export function WaypointEditorDialog({
   open,
@@ -26,7 +37,7 @@ export function WaypointEditorDialog({
   onSubmit,
 }: WaypointEditorDialogProps) {
   if (!open || !initial) return null;
-  const resetKey = `${mode}:${initial.id ?? 'new'}:${initial.latitude}:${initial.longitude}:${initial.name ?? ''}:${initial.lockedTo ?? 0}`;
+  const resetKey = `${mode}:${initial.id ?? 'new'}:${initial.latitude}:${initial.longitude}:${initial.name ?? ''}:${initial.lockedTo ?? 0}:${initial.expire ?? 0}`;
   return (
     <WaypointEditorDialogForm
       key={resetKey}
@@ -60,28 +71,23 @@ function WaypointEditorDialogForm({
   const descId = useId();
   const iconId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
+  const initialExpireHours = expireHoursFromUnix(initial.expire);
   const [name, setName] = useState(() => (initial.name ?? '').slice(0, NAME_MAX));
   const [description, setDescription] = useState(() => initial.description ?? '');
   const [icon, setIcon] = useState(() => initial.icon ?? 0);
   const [locked, setLocked] = useState(() => (initial.lockedTo ?? 0) > 0);
-  const [expireHours, setExpireHours] = useState(0);
+  const [expireHours, setExpireHours] = useState(initialExpireHours);
+  const [expireTouched, setExpireTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useModalFocusTrap(panelRef, onClose);
 
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      onCloseRef.current();
-    };
-    document.addEventListener('keydown', onKeyDown);
+    mountedRef.current = true;
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
+      mountedRef.current = false;
     };
   }, []);
 
@@ -100,8 +106,11 @@ function WaypointEditorDialogForm({
     setBusy(true);
     setError(null);
     try {
-      const expire =
-        expireHours > 0 ? Math.floor(Date.now() / 1000) + Math.floor(expireHours * 3600) : 0;
+      const expire = !expireTouched
+        ? (initial.expire ?? 0)
+        : expireHours > 0
+          ? Math.floor(Date.now() / 1000) + Math.floor(expireHours * 3600)
+          : 0;
       await onSubmit({
         id: initial.id ?? (Math.floor(Math.random() * 0xffffffff) >>> 0 || 1),
         latitude: initial.latitude,
@@ -112,12 +121,13 @@ function WaypointEditorDialogForm({
         lockedTo: locked ? myNodeNum : 0,
         expire,
       });
-      onClose();
+      // A pending save from a previous editor instance must not close a newly opened one.
+      if (mountedRef.current) onClose();
     } catch (err) {
       console.warn('[WaypointEditorDialog] submit failed', err);
-      setError(t('mapPanel.waypointSaveFailed'));
+      if (mountedRef.current) setError(t('mapPanel.waypointSaveFailed'));
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
 
@@ -211,6 +221,7 @@ function WaypointEditorDialogForm({
                 value={expireHours}
                 aria-label={t('mapPanel.waypointExpireLabel')}
                 onChange={(e) => {
+                  setExpireTouched(true);
                   setExpireHours(Math.max(0, Number(e.target.value) || 0));
                 }}
               />

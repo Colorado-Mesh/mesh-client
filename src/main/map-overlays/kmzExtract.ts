@@ -72,6 +72,43 @@ async function findKmlFile(dir: string): Promise<string> {
   return found;
 }
 
+/** Inflate one zip entry while stopping as soon as `budget` bytes would be exceeded. */
+async function readZipEntryWithBudget(entry: JSZip.JSZipObject, budget: number): Promise<Buffer> {
+  if (budget <= 0) {
+    throw new KmzExtractError('too_large', 'KMZ uncompressed size exceeds limit');
+  }
+  return await new Promise<Buffer>((resolve, reject) => {
+    const stream = entry.nodeStream('nodebuffer');
+    const chunks: Buffer[] = [];
+    let size = 0;
+    let settled = false;
+    const fail = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      // Stop further inflate chunks without relying on Node-only destroy typings.
+      if (typeof stream.pause === 'function') stream.pause();
+      reject(err);
+    };
+    stream.on('data', (chunk: Buffer | string) => {
+      const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      size += buf.byteLength;
+      if (size > budget) {
+        fail(new KmzExtractError('too_large', 'KMZ uncompressed size exceeds limit'));
+        return;
+      }
+      chunks.push(buf);
+    });
+    stream.on('error', (err: Error) => {
+      fail(err instanceof Error ? err : new Error(String(err)));
+    });
+    stream.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks));
+    });
+  });
+}
+
 /**
  * Extract KMZ bytes into a unique temp directory, read the primary KML, then remove the dir.
  * Failure point: zip inflate / path checks — temp dir is always cleaned up.
@@ -99,7 +136,15 @@ export async function extractKmlTextFromKmz(kmzBytes: Buffer): Promise<string> {
         throw new KmzExtractError('unsafe_zip', 'KMZ has too many entries');
       }
       const dest = assertSafeZipEntryName(name, dir);
-      const data = await entry.async('nodebuffer');
+      // Prefer central-directory size when present so we fail before inflate.
+      const declared = (entry as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize;
+      if (typeof declared === 'number' && Number.isFinite(declared)) {
+        if (uncompressed + declared > MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES) {
+          throw new KmzExtractError('too_large', 'KMZ uncompressed size exceeds limit');
+        }
+      }
+      const remaining = MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES - uncompressed;
+      const data = await readZipEntryWithBudget(entry, remaining);
       uncompressed += data.byteLength;
       if (uncompressed > MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES) {
         throw new KmzExtractError('too_large', 'KMZ uncompressed size exceeds limit');

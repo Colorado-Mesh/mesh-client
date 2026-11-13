@@ -125,6 +125,25 @@ describe('parseKmlToGeoJson', () => {
       <Point><coordinates>0,0</coordinates></Point></Placemark></kml>`;
     expect(() => parseKmlToGeoJson(href)).toThrow(/network|unsupported/i);
   });
+
+  it('keeps both Point and LineString inside MultiGeometry', () => {
+    const kml = `<kml><Placemark><name>Both</name><MultiGeometry>
+      <Point><coordinates>-105.0,39.7,0</coordinates></Point>
+      <LineString><coordinates>-105.0,39.7 -105.1,39.8</coordinates></LineString>
+    </MultiGeometry></Placemark></kml>`;
+    const fc = parseKmlToGeoJson(kml);
+    expect(fc.features).toHaveLength(1);
+    const geom = fc.features[0]?.geometry;
+    expect(geom?.type).toBe('GeometryCollection');
+    if (geom?.type === 'GeometryCollection') {
+      expect(geom.geometries.map((g) => g.type).sort()).toEqual(['LineString', 'Point']);
+    }
+  });
+
+  it('rejects empty required lon/lat fields instead of coercing to zero', () => {
+    const missingLat = `<kml><Placemark><Point><coordinates>-105.0,</coordinates></Point></Placemark></kml>`;
+    expect(() => parseKmlToGeoJson(missingLat)).toThrow(/Empty KML coordinate field|malformed/i);
+  });
 });
 
 describe('parseMapOverlayText', () => {

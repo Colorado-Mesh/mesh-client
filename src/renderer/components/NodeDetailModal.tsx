@@ -367,6 +367,8 @@ export default function NodeDetailModal({
   const [adminKeyError, setAdminKeyError] = useState<string | null>(null);
   const [repeaterStatusPending, setRepeaterStatusPending] = useState(false);
   const [showRepeaterStats, setShowRepeaterStats] = useState(false);
+  /** Explicit Request Status / Hide — background polls must not flip visibility. */
+  const repeaterStatsWantedRef = useRef(false);
   const [positionRequestedAt, setPositionRequestedAt] = useState<number | null>(null);
   const [traceRoutePending, setTraceRoutePending] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -465,6 +467,7 @@ export default function NodeDetailModal({
     setShowDeleteConfirm(false);
     setRepeaterStatusPending(false);
     setShowRepeaterStats(false);
+    repeaterStatsWantedRef.current = false;
     setTelemetryPending(false);
     setShowTelemetry(false);
     setNeighborsPending(false);
@@ -493,11 +496,11 @@ export default function NodeDetailModal({
     };
   }, [positionRequestedAt, t]);
 
-  // Auto-show repeater stats when they arrive
+  // Clear pending when status arrives; only show if the user explicitly requested it.
   useEffect(() => {
     if (meshcoreRepeaterStatus) {
       setRepeaterStatusPending(false);
-      setShowRepeaterStats(true);
+      if (repeaterStatsWantedRef.current) setShowRepeaterStats(true);
     }
   }, [meshcoreRepeaterStatus]);
 
@@ -659,14 +662,20 @@ export default function NodeDetailModal({
   const noiseFloorTrendReading = noiseFloorTrendIsOurNode
     ? meshcoreLocalStats?.noiseFloor
     : meshcoreRepeaterStatus?.noiseFloor;
+  const noiseFloorTrendObservedAt = noiseFloorTrendIsOurNode
+    ? meshcoreLocalStats?.fetchedAt
+    : meshcoreRepeaterStatus?.fetchedAt;
   useMeshcoreNoiseFloorTrend({
     enabled: isMeshcoreProtocol && noiseFloorTrendNodeId != null,
     nodeId: noiseFloorTrendNodeId,
     noiseFloor: noiseFloorTrendReading,
+    observedAt: noiseFloorTrendObservedAt,
     pollRemote:
       isMeshcoreProtocol &&
       !noiseFloorTrendIsOurNode &&
+      isConnected &&
       showRepeaterStats &&
+      meshcoreRepeaterStatus != null &&
       hasRepeaterStatus &&
       typeof onRequestRepeaterStatus === 'function',
     onRequestRepeaterStatus,
@@ -798,6 +807,7 @@ export default function NodeDetailModal({
           type="button"
           onClick={async () => {
             if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+            repeaterStatsWantedRef.current = true;
             setRepeaterStatusPending(true);
             setActionStatus(t('nodeDetailModal.requestingStatus'));
             try {
@@ -1805,6 +1815,7 @@ export default function NodeDetailModal({
                 <button
                   type="button"
                   onClick={() => {
+                    repeaterStatsWantedRef.current = false;
                     setShowRepeaterStats(false);
                   }}
                   className="text-muted hover:text-ink-300 text-xs"

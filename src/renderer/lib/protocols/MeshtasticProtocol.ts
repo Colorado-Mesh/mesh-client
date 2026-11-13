@@ -1227,25 +1227,25 @@ export class MeshtasticProtocol implements Protocol {
         ? requestIdRaw >>> 0
         : undefined;
     if (requestId == null || requestId === 0) return null;
-    let isAck = true;
+    // Only errorReason=NONE is a delivery ACK; routeRequest/routeReply must not stamp proof.
+    let isAck: boolean;
     try {
-      if (value?.payload) {
-        // Mesh ambient types lag runtime RoutingSchema exports; cast like StatusMessageSchema.
-        const RoutingSchema = (
-          Mesh as unknown as {
-            RoutingSchema: Parameters<typeof fromBinary>[0];
-          }
-        ).RoutingSchema;
-        const routing = fromBinary(RoutingSchema, value.payload) as unknown as {
-          variant: { case?: string; value?: number };
-        };
-        if (routing.variant.case === 'errorReason') {
-          // Routing_Error.NONE === 0
-          isAck = routing.variant.value === 0;
+      if (!value?.payload) return null;
+      // Mesh ambient types lag runtime RoutingSchema exports; cast like StatusMessageSchema.
+      const RoutingSchema = (
+        Mesh as unknown as {
+          RoutingSchema: Parameters<typeof fromBinary>[0];
         }
-      }
+      ).RoutingSchema;
+      const routing = fromBinary(RoutingSchema, value.payload) as unknown as {
+        variant: { case?: string; value?: number };
+      };
+      if (routing.variant.case !== 'errorReason') return null;
+      // Routing_Error.NONE === 0 — start false for any other path via early returns above.
+      isAck = routing.variant.value === 0;
     } catch (err) {
       console.debug('[MeshtasticProtocol] malformed Routing payload on ACK', err);
+      return null;
     }
     const ackProofStatus =
       typeof packet.ackProofStatus === 'number' && Number.isFinite(packet.ackProofStatus)

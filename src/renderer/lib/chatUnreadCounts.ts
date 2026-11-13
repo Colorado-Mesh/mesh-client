@@ -200,7 +200,7 @@ function unreadDmPeer(
   if (peer == null) return undefined;
   if (ownNodeIds.has(msg.sender_id)) return undefined;
   if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) return undefined;
-  if (isHiddenByWordFilter(msg, protocol, `dm:${peer}`)) return undefined;
+  if (isHiddenByWordFilter(msg, protocol, `${protocol}:dm:${peer}`)) return undefined;
   const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
   return effectiveMessageTimestampMs(msg.timestamp, nowMs) > lr ? peer : undefined;
 }
@@ -416,7 +416,9 @@ export function resolveChatNotificationType(
   const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
   // Hidden weather posts never reach a visible channel view, so they must not beep either.
   if (peer == null && isHiddenWeatherPost(msg, protocol)) return null;
-  if (isHiddenByWordFilter(msg, protocol, peer != null ? `dm:${peer}` : undefined)) return null;
+  if (isHiddenByWordFilter(msg, protocol, peer != null ? `${protocol}:dm:${peer}` : undefined)) {
+    return null;
+  }
 
   if (msg.replyId != null) {
     const parent =

@@ -78,3 +78,15 @@ it('shows SF++ confirmed phase', async () => {
   );
   expect(screen.getByLabelText('messageStatusBadge.sfpp.confirmedTooltip')).toBeTruthy();
 });
+
+it('keeps failed badge when SF++ routing phase is also set', async () => {
+  await renderAndAssertAxe(
+    <MessageStatusBadge status="failed" transport="device" sfppPhase="routing" />,
+  );
+  expect(screen.queryByLabelText('messageStatusBadge.sfpp.routingTooltip')).toBeNull();
+  expect(
+    screen.getByLabelText(
+      'messageStatusBadge.tooltipPrefixDevice: messageStatusBadge.noAckTooltip',
+    ),
+  ).toBeTruthy();
+});

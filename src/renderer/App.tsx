@@ -467,6 +467,7 @@ import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
 import { useWeatherFilterStore } from './stores/weatherFilterStore';
+import { useWordFilterStore } from './stores/wordFilterStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -1671,11 +1672,17 @@ function AppContent() {
 
   const weatherHideInChannels = useWeatherFilterStore((s) => s.hideInChannels);
   const weatherFilterConfigs = useWeatherFilterStore((s) => s.configs);
+  const wordFilterEnabled = useWordFilterStore((s) => s.enabled);
+  const wordFilterWords = useWordFilterStore((s) => s.words);
+  const wordFilterDisabledConversations = useWordFilterStore((s) => s.disabledConversations);
 
   const meshtasticChatUnread = useMemo(() => {
     touch(lastReadRevision.meshtastic);
     touch(weatherHideInChannels);
     touch(weatherFilterConfigs);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
     const lastRead = getSanitizedMeshtasticChatLastRead(
       meshtasticUiMessages,
       meshtasticOwnNodeIdSet,
@@ -1695,6 +1702,9 @@ function AppContent() {
     meshtasticUiMessages,
     weatherHideInChannels,
     weatherFilterConfigs,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
   ]);
 
   const meshcoreChatLastRead = useMemo(() => {
@@ -1720,6 +1730,9 @@ function AppContent() {
   const meshcoreChatUnread = useMemo(() => {
     touch(weatherHideInChannels);
     touch(weatherFilterConfigs);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
     return totalUnreadCount(
       meshcoreUiMessages,
       meshcoreChatLastRead,
@@ -1736,10 +1749,16 @@ function AppContent() {
     meshcoreUiMessages,
     weatherHideInChannels,
     weatherFilterConfigs,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
   ]);
 
   const reticulumChatUnread = useMemo(() => {
     touch(lastReadRevision.reticulum);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
     const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     return computeReticulumChatUnread(
       reticulumUiMessages,
@@ -1752,6 +1771,9 @@ function AppContent() {
     reticulumConnectionView.state.status,
     reticulumOwnNodeIdSet,
     reticulumUiMessages,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
   ]);
 
   const rrcUnreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
@@ -3099,9 +3121,10 @@ function AppContent() {
 
   const traceRouteHops = useMemo(() => {
     if (!selectedNode) return undefined;
-    if (!capabilities.hasNeighborInfo) return undefined;
+    // MeshCore traceroute works without hasNeighborInfo; Meshtastic keeps the historical gate.
+    if (protocol === 'meshtastic' && !capabilities.hasNeighborInfo) return undefined;
     return traceRouteHopLabels(
-      activeRuntime.traceRouteResults.get(selectedNode.node_id),
+      asTraceRouteResultsMap(activeRuntime.traceRouteResults).get(selectedNode.node_id),
       activeConnectionView.state.myNodeNum,
       panelActions.getFullNodeLabel,
     );
@@ -3111,6 +3134,7 @@ function AppContent() {
     activeConnectionView.state.myNodeNum,
     capabilities.hasNeighborInfo,
     activeRuntime.traceRouteResults,
+    protocol,
   ]);
 
   const handleShowTraceRouteOnMap = useCallback(
@@ -3124,7 +3148,13 @@ function AppContent() {
         .setRoute(
           nodeIds,
           traceRouteHops && traceRouteHops.length > 0 ? traceRouteHops : undefined,
+          {
+            protocol,
+            identityId: selectByProtocol(identityIdByProtocol, protocol) ?? null,
+          },
         );
+      // Match handleShowOnMap: close node detail when switching to Map.
+      setSelectedNodeId(null);
       const mapTab = findTabIndexForSlot(activeTabMappings, 'Map');
       if (mapTab >= 0) setActiveTab(mapTab);
     },
@@ -3134,6 +3164,9 @@ function AppContent() {
       activeConnectionView.state.myNodeNum,
       activeTabMappings,
       traceRouteHops,
+      protocol,
+      setSelectedNodeId,
+      identityIdByProtocol,
     ],
   );
 
@@ -5028,7 +5061,7 @@ function AppContent() {
                               );
 
                               const meshtasticChannelSecurityByIndex = (() => {
-                                if (chatProtocol !== 'meshtastic') return undefined;
+                                if (!chatCapabilities.hasChannelConfig) return undefined;
                                 const map = new Map<
                                   number,
                                   {

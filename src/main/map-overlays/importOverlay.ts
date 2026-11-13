@@ -14,6 +14,21 @@ import { MAP_OVERLAY_MAX_BYTES } from '@/shared/mapOverlays/types';
 import { sanitizeLogMessage } from '../sanitize-log-message';
 import { extractKmlTextFromKmz, KmzExtractError } from './kmzExtract';
 
+/** Read at most `byteLength` bytes from an open handle starting at offset 0. */
+async function readHandleBytes(
+  fh: Awaited<ReturnType<typeof fs.open>>,
+  byteLength: number,
+): Promise<Buffer> {
+  const buf = Buffer.alloc(byteLength);
+  let offset = 0;
+  while (offset < byteLength) {
+    const { bytesRead } = await fh.read(buf, offset, byteLength - offset, offset);
+    if (bytesRead === 0) break;
+    offset += bytesRead;
+  }
+  return offset === byteLength ? buf : buf.subarray(0, offset);
+}
+
 /**
  * Read a local overlay file, enforce the size cap, parse GeoJSON/KML (KMZ via temp extract),
  * and return a FeatureCollection ready for the renderer store.
@@ -41,9 +56,10 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
     if (stat.size > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
 
     const fallbackName = mapOverlayDisplayName(base);
+    const bytes = await readHandleBytes(fh, stat.size);
+    if (bytes.byteLength > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
+
     if (format === 'kmz') {
-      const bytes = await fh.readFile();
-      if (bytes.byteLength > MAP_OVERLAY_MAX_BYTES) return { ok: false, code: 'too_large' };
       const kmlText = await extractKmlTextFromKmz(bytes);
       const geojson = parseMapOverlayText(kmlText, 'kml');
       return {
@@ -54,10 +70,7 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
       };
     }
 
-    const text = await fh.readFile('utf8');
-    if (Buffer.byteLength(text, 'utf8') > MAP_OVERLAY_MAX_BYTES) {
-      return { ok: false, code: 'too_large' };
-    }
+    const text = bytes.toString('utf8');
     if (format === 'kml') {
       const geojson = parseMapOverlayText(text, 'kml');
       return {

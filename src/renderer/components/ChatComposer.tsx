@@ -2138,6 +2138,9 @@ export function ChatComposer({
                 const end = el.selectionEnd ?? input.length;
                 const wrapped = wrapSelectionWithMarkdown(input, start, end, before, after);
                 setInput(wrapped.next);
+                // Formatting shifts offsets — drop any open mention cycle so Enter cannot insert stale.
+                setMentionQuery(null);
+                clearMentionCycle();
                 requestAnimationFrame(() => {
                   el.focus();
                   el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);

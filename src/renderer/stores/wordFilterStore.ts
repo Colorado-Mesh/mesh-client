@@ -12,7 +12,10 @@ const MAX_DISABLED_CONVERSATIONS = 500;
 export interface WordFilterState {
   enabled: boolean;
   words: readonly string[];
-  /** Conversation keys (`ch:0`, `dm:123`) where the filter is locally disabled. */
+  /**
+   * Conversation keys where the filter is locally disabled.
+   * Format: `{protocol}:ch:{index}` / `{protocol}:dm:{nodeId}` (protocol-scoped).
+   */
   disabledConversations: ReadonlySet<string>;
   setEnabled: (enabled: boolean) => void;
   setWordsText: (text: string) => void;
@@ -113,11 +116,22 @@ export function hydrateWordFilterPreferences(): void {
   useWordFilterStore.setState(initialState());
 }
 
-function conversationKeyForMessage(msg: ChatMessage): string {
-  if (msg.to != null && msg.to > 0) return `dm:${msg.to}`;
+/** Protocol-scoped conversation key for word-filter exceptions. */
+export function buildWordFilterConversationKey(
+  protocol: MeshProtocol,
+  scope: { kind: 'channel'; channel: number } | { kind: 'dm'; peer: number },
+): string {
+  if (scope.kind === 'dm') return `${protocol}:dm:${scope.peer}`;
+  return `${protocol}:ch:${scope.channel}`;
+}
+
+function conversationKeyForMessage(msg: ChatMessage, protocol: MeshProtocol): string {
+  if (msg.to != null && msg.to > 0) {
+    return buildWordFilterConversationKey(protocol, { kind: 'dm', peer: msg.to });
+  }
   // Own DM outbound uses sender as self; unread code uses destination — callers
   // should pass an explicit conversation key when available.
-  return `ch:${msg.channel}`;
+  return buildWordFilterConversationKey(protocol, { kind: 'channel', channel: msg.channel });
 }
 
 /** True when payload matches a filter word (case-insensitive substring). */
@@ -133,12 +147,12 @@ export function messageMatchesWordFilter(payload: string, words: readonly string
  */
 export function isHiddenByWordFilter(
   msg: ChatMessage,
-  _protocol: MeshProtocol,
+  protocol: MeshProtocol,
   conversationKey?: string,
 ): boolean {
   const state = useWordFilterStore.getState();
   if (!state.enabled || state.words.length === 0) return false;
-  const key = conversationKey ?? conversationKeyForMessage(msg);
+  const key = conversationKey ?? conversationKeyForMessage(msg, protocol);
   if (state.disabledConversations.has(key)) return false;
   if (isMecpMessage(msg.payload)) return false;
   return messageMatchesWordFilter(msg.payload, state.words);

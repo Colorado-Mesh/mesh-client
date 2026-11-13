@@ -53,7 +53,8 @@ export function MessageStatusBadge({
       />
     );
   }
-  if (sfppPhase === 'routing' || sfppPhase === 'confirmed') {
+  // Failed messages keep the failure badge even if an SF++ routing phase is still set.
+  if (status !== 'failed' && (sfppPhase === 'routing' || sfppPhase === 'confirmed')) {
     const sfppLabel = t(`messageStatusBadge.sfpp.${sfppPhase}`);
     const sfppTooltip = t(`messageStatusBadge.sfpp.${sfppPhase}Tooltip`);
     return (
