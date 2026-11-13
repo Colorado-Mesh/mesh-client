@@ -69,3 +69,6 @@ native/ai/windows/obj/
 .build/
 .swiftpm/
 Package.resolved
+
+# Local CodeGraph index
+.codegraph/
