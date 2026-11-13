@@ -52,11 +52,15 @@ describe('wordFilterStore', () => {
   it('respects per-conversation disable and hydrates', () => {
     useWordFilterStore.getState().setEnabled(true);
     useWordFilterStore.getState().setWordsText('spam');
-    useWordFilterStore.getState().setConversationDisabled('ch:0', true);
-    expect(isHiddenByWordFilter(msg({ payload: 'spam' }), 'meshtastic', 'ch:0')).toBe(false);
+    useWordFilterStore.getState().setConversationDisabled('meshtastic:ch:0', true);
+    expect(isHiddenByWordFilter(msg({ payload: 'spam' }), 'meshtastic', 'meshtastic:ch:0')).toBe(
+      false,
+    );
+    // MeshCore channel 0 is a different exception key.
+    expect(isHiddenByWordFilter(msg({ payload: 'spam' }), 'meshcore', 'meshcore:ch:0')).toBe(true);
     hydrateWordFilterPreferences();
     expect(useWordFilterStore.getState().enabled).toBe(true);
     expect(useWordFilterStore.getState().words).toContain('spam');
-    expect(useWordFilterStore.getState().disabledConversations.has('ch:0')).toBe(true);
+    expect(useWordFilterStore.getState().disabledConversations.has('meshtastic:ch:0')).toBe(true);
   });
 });

@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { WaypointEditorDialog } from '@/renderer/components/map/WaypointEditorDialog';
+import {
+  expireHoursFromUnix,
+  WaypointEditorDialog,
+} from '@/renderer/components/map/WaypointEditorDialog';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -45,5 +48,34 @@ describe('WaypointEditorDialog', () => {
     );
     expect(screen.getByText('mapPanel.waypointLockedByOther')).toBeTruthy();
     expect(screen.queryByLabelText('mapPanel.waypointSave')).toBeNull();
+  });
+
+  it('preserves existing expire when editing without touching the expiry field', async () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expire = nowSec + 5 * 3600;
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <WaypointEditorDialog
+        open
+        mode="edit"
+        myNodeNum={9}
+        initial={{ id: 1, latitude: 1, longitude: 2, name: 'Camp', expire, lockedTo: 9 }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    const expireInput = screen.getByLabelText('mapPanel.waypointExpireLabel');
+    expect(expireInput).toBeInstanceOf(HTMLInputElement);
+    expect(Number((expireInput as HTMLInputElement).value)).toBe(
+      expireHoursFromUnix(expire, nowSec),
+    );
+    fireEvent.change(screen.getByLabelText('mapPanel.waypointNameLabel'), {
+      target: { value: 'Camp 2' },
+    });
+    fireEvent.click(screen.getByLabelText('mapPanel.waypointSave'));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+    expect(onSubmit.mock.calls[0][0].expire).toBe(expire);
   });
 });

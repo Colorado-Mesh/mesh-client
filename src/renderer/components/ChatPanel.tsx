@@ -267,7 +267,12 @@ import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
-import { isHiddenByWordFilter } from '../stores/wordFilterStore';
+import {
+  buildWordFilterConversationKey,
+  isHiddenByWordFilter,
+  messageMatchesWordFilter,
+  useWordFilterStore,
+} from '../stores/wordFilterStore';
 import { BotBadge } from './BotBadge';
 import { CatchUpButton } from './chat/CatchUpButton';
 import { ChannelSecurityBadges } from './chat/ChannelSecurityBadges';
@@ -1932,9 +1937,16 @@ function ChatPanel({
 
   // Word-filter conversation key follows the open channel/DM (not weather/starred watermarks).
   const wordFilterConversationKey = useMemo(() => {
-    if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
-    return `ch:${channel}`;
-  }, [viewMode, activeDmNode, channel]);
+    if (viewMode === 'dm' && activeDmNode != null) {
+      return buildWordFilterConversationKey(protocol, { kind: 'dm', peer: activeDmNode });
+    }
+    return buildWordFilterConversationKey(protocol, { kind: 'channel', channel });
+  }, [viewMode, activeDmNode, channel, protocol]);
+
+  // Subscribe so filter memos / announcer recompute when settings or exceptions change.
+  const wordFilterEnabled = useWordFilterStore((s) => s.enabled);
+  const wordFilterWords = useWordFilterStore((s) => s.words);
+  const wordFilterDisabledConversations = useWordFilterStore((s) => s.disabledConversations);
 
   const [revealWordFiltered, setRevealWordFiltered] = useState(false);
   useEffect(() => {
@@ -1942,17 +1954,35 @@ function ChatPanel({
   }, [wordFilterConversationKey]);
 
   const wordFilteredHiddenCount = useMemo(() => {
+    if (!wordFilterEnabled || wordFilterWords.length === 0) return 0;
+    if (wordFilterDisabledConversations.has(wordFilterConversationKey)) return 0;
     let n = 0;
     for (const m of viewMessages) {
-      if (isHiddenByWordFilter(m, protocol, wordFilterConversationKey)) n += 1;
+      if (isMecpMessage(m.payload)) continue;
+      if (messageMatchesWordFilter(m.payload, wordFilterWords)) n += 1;
     }
     return n;
-  }, [viewMessages, protocol, wordFilterConversationKey]);
+  }, [
+    viewMessages,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
+    wordFilterConversationKey,
+  ]);
 
   const filteredMessages = useMemo(() => {
-    let msgs = revealWordFiltered
-      ? viewMessages
-      : viewMessages.filter((m) => !isHiddenByWordFilter(m, protocol, wordFilterConversationKey));
+    let msgs = viewMessages;
+    if (!revealWordFiltered) {
+      if (
+        wordFilterEnabled &&
+        wordFilterWords.length > 0 &&
+        !wordFilterDisabledConversations.has(wordFilterConversationKey)
+      ) {
+        msgs = msgs.filter(
+          (m) => isMecpMessage(m.payload) || !messageMatchesWordFilter(m.payload, wordFilterWords),
+        );
+      }
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       msgs = msgs.filter(
@@ -1967,9 +1997,11 @@ function ChatPanel({
     searchQuery,
     viewMessages,
     filterSender,
-    protocol,
-    wordFilterConversationKey,
     revealWordFiltered,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
+    wordFilterConversationKey,
   ]);
 
   // Index of first message from another node newer than unreadDividerTimestamp.
@@ -2488,7 +2520,12 @@ function ChatPanel({
       },
     });
     // MECP payloads are wire codes, not prose; the bubble renders them as a localized card.
-    const announceable = inboundForView.filter((msg) => !isMecpMessage(msg.payload));
+    // Word-filtered messages are omitted from the list — do not announce them either.
+    const announceable = inboundForView.filter(
+      (msg) =>
+        !isMecpMessage(msg.payload) &&
+        !isHiddenByWordFilter(msg, protocol, wordFilterConversationKey),
+    );
     if (announceable.length > 0) {
       messageAnnouncerRef.current.push(
         announceable.map((msg) => ({
@@ -2513,6 +2550,10 @@ function ChatPanel({
     isOwnNode,
     resolveDmPeer,
     protocol,
+    wordFilterConversationKey,
+    wordFilterEnabled,
+    wordFilterWords,
+    wordFilterDisabledConversations,
     applyNearBottomReadState,
     outerScrollMetricsRootRef,
     viewMode,
@@ -3777,7 +3818,11 @@ function ChatPanel({
                     }
                     if (newestInboundTs <= 0) return;
                     const before = Math.max(0, newestInboundTs - 1);
-                    setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[readKey, before]]));
+                    // Replace (do not merge-up): mark-unread must lower an existing watermark.
+                    setPersistedLastRead((prev) => {
+                      if (prev[readKey] === before) return prev;
+                      return { ...prev, [readKey]: before };
+                    });
                   }}
                 >
                   <Mail aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />

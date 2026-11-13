@@ -1349,20 +1349,6 @@ function OverviewMapPanel({
             </>
           );
         })()}
-        {waypointEditor && onSendWaypoint ? (
-          <WaypointEditorDialog
-            open
-            mode={waypointEditor.mode}
-            initial={waypointEditor.initial}
-            myNodeNum={myNodeNum}
-            onClose={() => {
-              setWaypointEditor(null);
-            }}
-            onSubmit={async (wp) => {
-              await onSendWaypoint(wp);
-            }}
-          />
-        ) : null}
         {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
         {hasEnvironmentTelemetry && showSensors ? (
           <EnvironmentSensorLayer
@@ -1374,6 +1360,21 @@ function OverviewMapPanel({
           />
         ) : null}
       </MeshMapShell>
+      {/* Outside MeshMapShell so map z-[1000] controls cannot cover the modal. */}
+      {waypointEditor && onSendWaypoint ? (
+        <WaypointEditorDialog
+          open
+          mode={waypointEditor.mode}
+          initial={waypointEditor.initial}
+          myNodeNum={myNodeNum}
+          onClose={() => {
+            setWaypointEditor(null);
+          }}
+          onSubmit={async (wp) => {
+            await onSendWaypoint(wp);
+          }}
+        />
+      ) : null}
     </>
   );
 }
