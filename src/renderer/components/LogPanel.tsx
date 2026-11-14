@@ -257,10 +257,10 @@ export default function LogPanel({
     () => [...scopedDeviceLogs, ...libraryEntries].sort((a, b) => a.ts - b.ts),
     [scopedDeviceLogs, libraryEntries],
   );
-  const analyzeEntries = useMemo(
-    () => entriesForLogAnalysis(entries, deviceLogs, logSource),
-    [logSource, entries, deviceLogs],
-  );
+  const analyzeEntries = useMemo(() => {
+    if (!analyzeModalOpen) return [];
+    return entriesForLogAnalysis(entries, deviceLogs, logSource);
+  }, [analyzeModalOpen, logSource, entries, deviceLogs]);
 
   const visibleLines: LogEntry[] = useMemo(
     () =>

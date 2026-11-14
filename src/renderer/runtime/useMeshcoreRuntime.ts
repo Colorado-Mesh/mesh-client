@@ -5744,10 +5744,12 @@ export function useMeshcoreRuntime() {
                 const radioContactPathLen =
                   radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
                 // Status is pubkey-framed; use admin hops (known-empty → 0), not TRACE 0xFF planning.
-                const hopsAway = resolveMeshcoreAdminHopsAway(
-                  pingNode,
-                  routeBytes ?? new Uint8Array(),
-                );
+                let useUnknownRouteHops = false;
+                const resolveRoomStatusHops = (): number =>
+                  useUnknownRouteHops
+                    ? resolveMeshcoreAdminHopsAway(pingNode, undefined)
+                    : resolveMeshcoreAdminHopsAway(pingNode, routeBytes ?? new Uint8Array());
+                const hopsAway = resolveRoomStatusHops();
                 const hashSizeBytes = meshcoreHashSizeForTraceSeed(
                   radioContactPathLen,
                   companionPathHashMode,
@@ -5757,7 +5759,7 @@ export function useMeshcoreRuntime() {
                   Awaited<ReturnType<typeof runMeshcoreRepeaterStatusRequest>>
                 > =>
                   runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
-                    hopsAway,
+                    hopsAway: resolveRoomStatusHops(),
                     runSerialized: repeaterRemoteRpcRef.current,
                     beforeSend: () =>
                       awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
@@ -5793,6 +5795,7 @@ export function useMeshcoreRuntime() {
                           nodeId >>> 0,
                           MESHCORE_OUT_PATH_UNKNOWN_BYTE,
                         );
+                        useUnknownRouteHops = true;
                       },
                     }),
                 );
@@ -6665,34 +6668,105 @@ export function useMeshcoreRuntime() {
                 `[useMeshcoreRuntime] status proceeding while ping busy node=${nodeId} waitedMs=${settle.waitedMs}`,
               );
             }
-            const statusHwModel = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model;
-            const raw = await withMeshcoreRepeaterLoginFallback(
-              nodeId,
-              {
-                ...meshcoreRepeaterRouteEscalationSharedDeps,
-                // Rooms keep their own BBS session; only repeater passwords are used here.
-                canLogin: (id) =>
-                  statusHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
-                login: () =>
-                  meshcoreTryRemoteServerLogin(
-                    conn,
-                    nodeId,
-                    pubKey,
-                    statusHwModel,
-                    repeaterRemoteRpcRef.current,
-                    makeRepeaterLoginOpts(conn, nodeId, pubKey),
-                  ),
-              },
-              async ({ escalated }) => {
-                if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
-                return runMeshcoreRepeaterStatusRequest(conn, pubKey, {
-                  hopsAway,
-                  runSerialized: repeaterRemoteRpcRef.current,
-                  beforeSend: () =>
-                    awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
-                });
-              },
-            );
+            const statusNode = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+            const statusHwModel = statusNode?.hw_model;
+            const raw = await (async () => {
+              if (meshcoreShouldPingRoomViaStatus(statusHwModel)) {
+                const statusSetupGen = meshcoreSetupGenerationRef.current;
+                const statusConn = conn;
+                const statusSessionStale = (): boolean =>
+                  meshcoreSetupGenerationRef.current !== statusSetupGen ||
+                  resolveMeshcoreConn() !== statusConn;
+                const routeBytes = outPathMapRef.current.get(nodeId);
+                let useUnknownRouteHops = false;
+                const resolveRoomStatusHops = (): number =>
+                  useUnknownRouteHops
+                    ? resolveMeshcoreAdminHopsAway(statusNode, undefined)
+                    : resolveMeshcoreAdminHopsAway(statusNode, routeBytes ?? new Uint8Array());
+                const sendRoomStatus = (): Promise<
+                  Awaited<ReturnType<typeof runMeshcoreRepeaterStatusRequest>>
+                > =>
+                  runMeshcoreRepeaterStatusRequest(statusConn, pubKey, {
+                    hopsAway: resolveRoomStatusHops(),
+                    runSerialized: repeaterRemoteRpcRef.current,
+                    beforeSend: () =>
+                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  });
+                const roomRaw = await withMeshcoreRepeaterLoginFallback(
+                  nodeId,
+                  {
+                    ...meshcoreRepeaterRouteEscalationSharedDeps,
+                    canLogin: () => false,
+                    login: async () => {
+                      // Rooms keep BBS sessions; Room Status never logs in.
+                    },
+                  },
+                  async () =>
+                    runMeshcoreRoomStatusWithNotFoundRestore({
+                      send: sendRoomStatus,
+                      restoreContact: statusNode
+                        ? async () => {
+                            console.warn(
+                              '[useMeshcoreRuntime] room status: contact missing from radio; re-adding',
+                            );
+                            try {
+                              await addMeshcoreNodeContactToRadio(
+                                statusConn,
+                                pubKey,
+                                statusNode,
+                                repeaterRemoteRpcRef.current,
+                              );
+                            } catch (e: unknown) {
+                              maybeRequestMeshcoreAutoOffloadForError(
+                                e instanceof Error ? e.cause : e,
+                              );
+                              throw e;
+                            }
+                          }
+                        : undefined,
+                      isSessionStale: statusSessionStale,
+                      afterRestore: () => {
+                        radioContactPathLenByNodeRef.current.set(
+                          nodeId >>> 0,
+                          MESHCORE_OUT_PATH_UNKNOWN_BYTE,
+                        );
+                        useUnknownRouteHops = true;
+                      },
+                    }),
+                );
+                if (statusSessionStale()) {
+                  throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+                }
+                return roomRaw;
+              }
+              return withMeshcoreRepeaterLoginFallback(
+                nodeId,
+                {
+                  ...meshcoreRepeaterRouteEscalationSharedDeps,
+                  // Rooms keep their own BBS session; only repeater passwords are used here.
+                  canLogin: (id) =>
+                    statusHwModel !== 'Room' && meshcoreRepeaterHasResolvablePassword(id),
+                  login: () =>
+                    meshcoreTryRemoteServerLogin(
+                      conn,
+                      nodeId,
+                      pubKey,
+                      statusHwModel,
+                      repeaterRemoteRpcRef.current,
+                      makeRepeaterLoginOpts(conn, nodeId, pubKey),
+                    ),
+                },
+                async ({ escalated }) => {
+                  if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
+                  return runMeshcoreRepeaterStatusRequest(conn, pubKey, {
+                    hopsAway,
+                    runSerialized: repeaterRemoteRpcRef.current,
+                    beforeSend: () =>
+                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  });
+                },
+              );
+            })();
             logMeshcoreRepeaterTimingSuccess(timing);
             const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
             const status: MeshCoreRepeaterStatus = {

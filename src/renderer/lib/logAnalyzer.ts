@@ -159,9 +159,11 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     ],
     severity: 'error',
     requireWarnOrError: true,
+    protocols: ['meshtastic', 'meshcore'],
   },
   {
     id: 'mqtt',
+    protocols: ['meshtastic', 'meshcore'],
     patterns: [
       /\[(?:Meshtastic |MeshCore )?MQTT\].*Network error/i,
       /\[(?:Meshtastic |MeshCore )?MQTT\].*Connection timeout/i,
@@ -186,6 +188,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     patterns: [/Connection lost after \d+ reconnect attempt/i],
     severity: 'warning',
     requireWarnOrError: true,
+    protocols: ['meshtastic', 'meshcore'],
   },
   {
     id: 'transport-loss',

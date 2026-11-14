@@ -64,6 +64,35 @@ describe('runMeshcoreRoomStatusWithNotFoundRestore', () => {
     expect(restoreContact).not.toHaveBeenCalled();
   });
 
+  it('invokes afterRestore before the post-restore Status retry', async () => {
+    const order: string[] = [];
+    const send = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        order.push('send-1');
+        return Promise.reject(
+          new MeshcoreRadioRejectedError('radio rejected request', MESHCORE_RADIO_ERR_NOT_FOUND),
+        );
+      })
+      .mockImplementationOnce(() => {
+        order.push('send-2');
+        return Promise.resolve({ ok: true });
+      });
+    const restoreContact = vi.fn(() => {
+      order.push('restore');
+      return Promise.resolve();
+    });
+    await runMeshcoreRoomStatusWithNotFoundRestore({
+      send,
+      restoreContact,
+      isSessionStale: () => false,
+      afterRestore: () => {
+        order.push('afterRestore');
+      },
+    });
+    expect(order).toEqual(['send-1', 'restore', 'afterRestore', 'send-2']);
+  });
+
   it('skips path mutation and retry when the session goes stale during restore', async () => {
     const err = new MeshcoreRadioRejectedError(
       'radio rejected request',
