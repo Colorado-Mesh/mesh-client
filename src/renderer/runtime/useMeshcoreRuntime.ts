@@ -58,7 +58,6 @@ import {
   mergeMeshcoreDbHydrationWithLive,
   mergeStubNodesFromMeshcoreMessages,
   MESHCORE_DEVICE_QUERY_APP_VER,
-  MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
   MESHCORE_INIT_TIMEOUT_MS,
   MESHCORE_NEIGHBORS_PAGE_SIZE,
   MESHCORE_NEIGHBORS_TIMEOUT_MS,
@@ -587,6 +586,7 @@ import { afterStartupDbPrune } from '../lib/startupDbPrune';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
+  computeMeshcoreDmAckWaitMs,
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
   MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS,
@@ -596,8 +596,6 @@ import {
   MESHCORE_REPEATER_ADMIN_SENT_WAIT_MS,
   MESHCORE_REPEATER_PING_SETTLE_SOFT_MS,
   MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS,
-  MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
-  MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
   MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
@@ -4667,8 +4665,6 @@ export function useMeshcoreRuntime() {
         // Calculate dynamic timeout based on hop count for multi-hop paths
         const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
         const hopsAway = destNode?.hops_away ?? 0;
-        const hopBasedTimeoutMs =
-          MESHCORE_ROOM_LOGIN_HOP_BASE_MS + hopsAway * MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS;
 
         try {
           const result = await connRef.current.sendTextMessage(pubKey, textToSend);
@@ -4680,12 +4676,7 @@ export function useMeshcoreRuntime() {
             );
           });
           const ackCrc = result?.expectedAckCrc;
-          // Use max of: firmware estimate, hop-based calculation, minimum floor
-          const estTimeout = Math.max(
-            result?.estTimeout ?? 30_000,
-            hopBasedTimeoutMs,
-            MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
-          );
+          const estTimeout = computeMeshcoreDmAckWaitMs(result?.estTimeout, hopsAway);
 
           if (ackCrc !== undefined) {
             const ackKey = meshcoreDmAckKeyU32(ackCrc);
@@ -9654,12 +9645,19 @@ export function useMeshcoreRuntime() {
         destNodeId != null
           ? (getIdentityNode(meshcoreIdentityIdRef.current, destNodeId)?.hops_away ?? 0)
           : 0;
-      armMeshcoreDmAckPending(params, {
-        pendingAcks: pendingAcksRef.current,
-        getSelfNodeId: () => myNodeNumRef.current,
-        outPath: outPathRaw,
-        hopsAway,
-      });
+      const effectiveWaitMs = computeMeshcoreDmAckWaitMs(params.estTimeoutMs, hopsAway);
+      console.debug(
+        `[meshcoreDmAck] wait firmware=${params.estTimeoutMs} hops=${hopsAway} effective=${effectiveWaitMs}`,
+      );
+      armMeshcoreDmAckPending(
+        { ...params, estTimeoutMs: effectiveWaitMs },
+        {
+          pendingAcks: pendingAcksRef.current,
+          getSelfNodeId: () => myNodeNumRef.current,
+          outPath: outPathRaw,
+          hopsAway,
+        },
+      );
     },
     [],
   );

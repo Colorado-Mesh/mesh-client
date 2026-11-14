@@ -72,11 +72,7 @@ export function meshcoreDmAckKeyU32(crc: number): number {
   return crc >>> 0;
 }
 
-/**
- * Firmware `estTimeout` is sometimes only a few seconds; multi-hop / repeater paths often exceed
- * that before event 130. Wait at least this long before marking outbound DM as failed.
- */
-export const MESHCORE_DM_ACK_TIMEOUT_MIN_MS = 45_000;
+export { MESHCORE_DM_ACK_TIMEOUT_MIN_MS } from '../../lib/timeConstants';
 
 /** Register pending DM ACK under every JS number the stack might use for the same CRC (signed vs unsigned). */
 export function meshcorePendingDmAckMapKeys(ackCrc: number): number[] {
