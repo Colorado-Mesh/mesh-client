@@ -33,6 +33,7 @@ import {
   registerReticulumSession,
   type ReticulumSessionApi,
 } from '../lib/sessions/reticulumSession';
+import { computeMeshcoreDmAckWaitMs, MESHCORE_DM_ACK_TIMEOUT_MIN_MS } from '../lib/timeConstants';
 import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
@@ -89,10 +90,19 @@ function ref<T>(current: T): { current: T } {
 function registerHopAckTracker(selfId: number): Map<number, PendingDmAckEntry> {
   const pendingAcks = new Map<number, PendingDmAckEntry>();
   setMeshcoreDmAckPendingImpl((params) => {
-    armMeshcoreDmAckPending(params, {
-      pendingAcks,
-      getSelfNodeId: () => selfId,
-    });
+    const hopsAway =
+      params.destNodeId != null
+        ? (useNodeStore.getState().nodes[params.identityId]?.[params.destNodeId]?.hopsAway ?? 0)
+        : 0;
+    const effectiveWaitMs = computeMeshcoreDmAckWaitMs(params.estTimeoutMs, hopsAway);
+    armMeshcoreDmAckPending(
+      { ...params, estTimeoutMs: effectiveWaitMs },
+      {
+        pendingAcks,
+        getSelfNodeId: () => selfId,
+        hopsAway,
+      },
+    );
   });
   return pendingAcks;
 }
@@ -158,7 +168,7 @@ function attachDmAckSideEffects(
   return attachMeshcoreConnSideEffects(conn, ctx);
 }
 
-function seedMeshcoreDmSender(identityId: string, peerId: number): void {
+function seedMeshcoreDmSender(identityId: string, peerId: number, hopsAway?: number): void {
   const pubKey = new Uint8Array(32).fill(0xab);
   addIdentity({
     id: identityId,
@@ -173,6 +183,7 @@ function seedMeshcoreDmSender(identityId: string, peerId: number): void {
     nodeId: peerId,
     longName: 'Peer',
     publicKey: pubKey,
+    ...(hopsAway != null ? { hopsAway } : {}),
   });
 }
 
@@ -881,7 +892,7 @@ describe('useSendMessage', () => {
     }
   });
 
-  it('marks a MeshCore DM failed after estTimeout when no hop ACK arrives', async () => {
+  it('marks a MeshCore DM failed after the hop-ACK floor when no hop ACK arrives', async () => {
     const estTimeoutMs = 5_000;
     const ackCrc = 0xabcd;
     const peerId = 0x22;
@@ -905,7 +916,14 @@ describe('useSendMessage', () => {
       );
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(estTimeoutMs - 1);
+        await vi.advanceTimersByTimeAsync(estTimeoutMs);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(MESHCORE_DM_ACK_TIMEOUT_MIN_MS - estTimeoutMs - 1);
       });
       expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
         'sending',
@@ -918,6 +936,99 @@ describe('useSendMessage', () => {
         'failed',
       );
       expect(pendingAcks.size).toBe(0);
+    } finally {
+      clearHopAckTracker(pendingAcks);
+      sendSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps a multi-hop MeshCore DM pending until the 45s floor despite short firmware estTimeout', async () => {
+    const estTimeoutMs = 5_000;
+    const ackCrc = 0xabcd;
+    const peerId = 0x22;
+    const pendingAcks = registerHopAckTracker(7);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({
+      packetId: ackCrc,
+      estTimeoutMs,
+    });
+    try {
+      vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+      seedMeshcoreDmSender(ID_MC_DM, peerId, 2);
+
+      const { result } = renderHook(() => useSendMessage(ID_MC_DM));
+      result.current('dm multi-hop', -1, peerId);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(MESHCORE_DM_ACK_TIMEOUT_MIN_MS - 1);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'failed',
+      );
+    } finally {
+      clearHopAckTracker(pendingAcks);
+      sendSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('honors a MeshCore DM firmware estTimeout longer than the 45s floor', async () => {
+    const estTimeoutMs = 60_000;
+    const ackCrc = 0xabcd;
+    const peerId = 0x22;
+    const pendingAcks = registerHopAckTracker(7);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({
+      packetId: ackCrc,
+      estTimeoutMs,
+    });
+    try {
+      vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+      seedMeshcoreDmSender(ID_MC_DM, peerId, 2);
+
+      const { result } = renderHook(() => useSendMessage(ID_MC_DM));
+      result.current('dm long wait', -1, peerId);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(MESHCORE_DM_ACK_TIMEOUT_MIN_MS);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(estTimeoutMs - MESHCORE_DM_ACK_TIMEOUT_MIN_MS - 1);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'sending',
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {})[0]?.status).toBe(
+        'failed',
+      );
     } finally {
       clearHopAckTracker(pendingAcks);
       sendSpy.mockRestore();

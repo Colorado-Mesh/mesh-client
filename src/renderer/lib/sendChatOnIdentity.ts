@@ -1,7 +1,4 @@
-import {
-  MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
-  messageToDbRow,
-} from '../hooks/meshcore/meshcoreHookPreamble';
+import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../stores/connectionStore';
 import { type IdentityRecord, useIdentityStore } from '../stores/identityStore';
 import {
@@ -59,18 +56,11 @@ function persistMeshcoreOutboundRow(
     });
 }
 
-/** Companion `estTimeout` when present; otherwise the hop-ACK floor used when firmware omits one. */
-function resolveMeshcoreDmAckWaitMs(estTimeoutMs: number | undefined): number {
-  if (typeof estTimeoutMs === 'number' && Number.isFinite(estTimeoutMs) && estTimeoutMs > 0) {
-    return Math.trunc(estTimeoutMs);
-  }
-  return MESHCORE_DM_ACK_TIMEOUT_MIN_MS;
-}
-
 /**
  * MeshCore DMs with an expected ACK CRC stay `sending` until event 130 or the runtime
- * hop-ACK timer. Channel floods and sends without a CRC are delivered when the companion
- * accepts the frame. Returns true when the row is waiting on that tracker.
+ * hop-ACK timer (hop-scaled floor applied in scheduleMeshcoreDmAckPendingImpl). Channel
+ * floods and sends without a CRC are delivered when the companion accepts the frame.
+ * Returns true when the row is waiting on that tracker.
  */
 function settleMeshcoreOutboundAfterCompanionAccept(opts: {
   identityId: IdentityId;
@@ -95,7 +85,8 @@ function settleMeshcoreOutboundAfterCompanionAccept(opts: {
     const scheduled = scheduleMeshcoreDmAckPending({
       identityId: opts.identityId,
       ackKeyU32: packetIdU32,
-      estTimeoutMs: resolveMeshcoreDmAckWaitMs(opts.estTimeoutMs),
+      // Runtime owns hop-scaled floor via computeMeshcoreDmAckWaitMs.
+      estTimeoutMs: opts.estTimeoutMs ?? 0,
       destNodeId: opts.destination,
     });
     if (!scheduled) {

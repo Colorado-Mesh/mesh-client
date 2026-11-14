@@ -95,6 +95,33 @@ export const MESHCORE_ROOM_LOGIN_HOP_BASE_MS = 3_000;
 export const MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS = 2_500;
 
 /**
+ * Firmware `estTimeout` is sometimes only a few seconds; multi-hop / repeater paths often exceed
+ * that before event 130. Wait at least this long before marking outbound DM as failed.
+ */
+export const MESHCORE_DM_ACK_TIMEOUT_MIN_MS = 45_000;
+
+/**
+ * Effective wait before an outbound MeshCore DM is marked failed.
+ * Firmware `estTimeout` under-estimates multi-hop paths, so floor it at a
+ * hop-scaled estimate and at {@link MESHCORE_DM_ACK_TIMEOUT_MIN_MS}.
+ */
+export function computeMeshcoreDmAckWaitMs(
+  estTimeoutMs: number | undefined,
+  hopsAway: number | null | undefined,
+): number {
+  const firmware =
+    typeof estTimeoutMs === 'number' && Number.isFinite(estTimeoutMs) && estTimeoutMs > 0
+      ? Math.trunc(estTimeoutMs)
+      : 0;
+  const hops =
+    typeof hopsAway === 'number' && Number.isFinite(hopsAway) && hopsAway > 0
+      ? Math.trunc(hopsAway)
+      : 0;
+  const hopScaled = MESHCORE_ROOM_LOGIN_HOP_BASE_MS + hops * MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS;
+  return Math.max(firmware, hopScaled, MESHCORE_DM_ACK_TIMEOUT_MIN_MS);
+}
+
+/**
  * Minimum LoginSuccess/LoginFail wait for 1+ hop paths in `computeRoomLoginResponseWaitMs`.
  * Aligns with the RF extra-timeout floor; hop floor uses a larger per-hop increment below.
  */
