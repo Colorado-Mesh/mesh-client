@@ -210,6 +210,18 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const scheduledBroadcastsPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/scheduledBroadcastsIntervalRebuild.ts'),
+            [
+              'export function ensureScheduledBroadcastsTable() {',
+              // Keep the measured-index exclusion assertion happy (DDL lives here, not index.js).
+              `  return 'CREATE TABLE IF NOT EXISTS scheduled_broadcasts ${scheduledBroadcastsPad}';`,
+              '}',
+              'export function rebuildScheduledBroadcastsIntervalCheckIfNeeded() {}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

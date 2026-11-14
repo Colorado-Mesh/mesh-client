@@ -28,6 +28,9 @@ describe('run-dev', () => {
       args.some((arg) => arg.startsWith('esbuild src/main/ipc/team-roster-handlers-fallback.ts')),
     ).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/main/trayUnreadDot.ts'))).toBe(true);
+    expect(
+      args.some((arg) => arg.startsWith('esbuild src/main/scheduledBroadcastsIntervalRebuild.ts')),
+    ).toBe(true);
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);
