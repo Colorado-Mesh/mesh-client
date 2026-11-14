@@ -752,7 +752,7 @@ export default function NodeListPanel({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div data-panel-anchor="Nodes" className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h2 className="text-ink-200 text-base font-semibold">{listHeading}</h2>
         <SegmentedControl

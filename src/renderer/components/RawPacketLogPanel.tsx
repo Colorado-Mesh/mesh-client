@@ -1039,7 +1039,7 @@ export default function RawPacketLogPanel(props: Props) {
   }, [onClear]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div data-panel-anchor="Sniffer" className="flex h-full min-h-0 flex-col">
       {variant === 'meshcore' ? (
         <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.transportLegendHint')}

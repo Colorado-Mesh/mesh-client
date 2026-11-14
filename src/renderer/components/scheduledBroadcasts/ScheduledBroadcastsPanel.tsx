@@ -107,6 +107,7 @@ export default function ScheduledBroadcastsPanel() {
 
   return (
     <section
+      data-panel-anchor="ScheduledBroadcasts"
       aria-labelledby="scheduled-broadcasts-title"
       className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3"
     >

@@ -288,6 +288,7 @@ export default function TeamRosterPanel({
 
   return (
     <section
+      data-panel-anchor="TeamRoster"
       aria-labelledby="team-roster-title"
       className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3"
     >

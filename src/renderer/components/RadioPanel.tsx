@@ -1796,7 +1796,7 @@ export default function RadioPanel({
   }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz, t]);
 
   return (
-    <div className="w-full space-y-4">
+    <div data-panel-anchor="Radio" className="w-full space-y-4">
       <h2 className="text-ink-200 text-xl font-semibold">{t('radioPanel.title')}</h2>
 
       {capabilities?.hasJsonRadioConfigImport && (

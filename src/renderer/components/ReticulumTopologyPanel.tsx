@@ -529,7 +529,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const hasGraph = nodes.length > 0;
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-panel-anchor="Topology" className="flex h-full flex-col">
       <div className="text-ink-400 flex flex-wrap items-center gap-4 px-4 py-2 text-xs">
         <span className="text-ink-300 font-medium">{t('reticulumTopology.title')}</span>
         <button

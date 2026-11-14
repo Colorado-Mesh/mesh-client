@@ -204,7 +204,10 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
 
   if (totalNodes === 0) {
     return (
-      <div className="text-ink-400 flex h-full items-center justify-center">
+      <div
+        data-panel-anchor="Graph"
+        className="text-ink-400 flex h-full items-center justify-center"
+      >
         {t('peerGraph.noNodes')}
       </div>
     );
@@ -222,7 +225,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
   const hasGraph = renderNodes.length > 0;
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-panel-anchor="Graph" className="flex h-full flex-col">
       <div className="text-ink-400 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs">
         <span className="text-ink-300 font-medium">{t('peerGraph.title')}</span>
         <TopologyHopFilterControls

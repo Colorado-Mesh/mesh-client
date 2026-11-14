@@ -121,14 +121,14 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
 
   if (nodeCount === 0) {
     return (
-      <div className="text-ink-400 flex h-full items-center justify-center">
+      <div data-panel-anchor="RF" className="text-ink-400 flex h-full items-center justify-center">
         {t('rfHistograms.noNodes')}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div data-panel-anchor="RF" className="flex flex-col gap-6 p-4">
       <div>
         <h2 className="text-ink-200 text-base font-semibold">{t('rfHistograms.title')}</h2>
         <p className="text-ink-400 text-xs">{t('rfHistograms.subtitle', { count: nodeCount })}</p>

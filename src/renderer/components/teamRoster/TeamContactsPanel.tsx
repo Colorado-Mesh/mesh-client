@@ -135,6 +135,7 @@ export default function TeamContactsPanel({
 
   return (
     <section
+      data-panel-anchor="TeamContacts"
       aria-labelledby="team-contacts-title"
       className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3"
     >

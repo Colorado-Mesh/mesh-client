@@ -15,6 +15,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `buttonmash.yaml`             | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
 | `e2e.yaml`                    | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
 | `e2e-meshcore-repeaters.yaml` | Path-filtered PR to `main` + manual `workflow_dispatch`        | MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required     |
+| `e2e-panels.yaml`             | Path-filtered PR to `main` + manual `workflow_dispatch`        | Per-protocol panel matrix Electron E2E (Linux); not required                               |
 | `build.yaml`                  | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
 | `reticulum-sidecar.yaml`      | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
 | `release.yaml`                | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
@@ -72,7 +73,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
 4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
 5. **Sharding:** `renderer-ui` runs in four shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
-6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds.
+6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds, then append a coverage hotspot summary (`pnpm run coverage:hotspots --md`) to the job step summary.
 7. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
 8. Upload the `vitest-report` artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged `junit.xml` for full runs.
 
@@ -127,6 +128,15 @@ Runs `e2e/meshcore-repeater-admin.spec.ts` (repeater Ping, Status, Neighbors and
 - **Steps:** Linux only (`ubuntu-24.04`): the shared `setup-node-pnpm` action, the same Electron runtime libraries as the Linux leg of `e2e.yaml`, `pnpm run build`, then the spec under `xvfb-run -a`. Playwright artifacts are uploaded on failure.
 - **Not required:** it skips on other PRs and does not run on `merge_group`, so it must not be added to the ruleset.
 - `scripts/e2e-meshcore-repeaters-workflow.test.mjs` checks that every path pattern matches a file, that the files earlier ping fixes changed are covered, and that the Electron library list matches `e2e.yaml`.
+
+### Panel matrix E2E (`e2e-panels.yaml`)
+
+Runs `e2e/panelMatrix.spec.ts` (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum, plus a connected MeshCore leg) on pull requests to `main` that touch renderer shell or panel wiring, so a panel that throws on mount fails on its own PR instead of in the next daily run.
+
+- **Paths:** `App.tsx`, lazy panel registries, `src/renderer/components/**`, `appTabMappings.ts` / `navSections.ts` / `panelLauncher.ts` / `tabSlotIds.ts`, the matrix spec and anchors, `e2e/electronApp.ts`, the MeshCore radio fixture, `playwright.config.ts` and the workflow. Changes to unit test files alone do not trigger it.
+- **Steps:** Linux only (`ubuntu-24.04`): same setup and Electron libraries as the repeater workflow, `pnpm run build`, then the matrix under `xvfb-run -a`. Playwright artifacts are uploaded on failure.
+- **Not required:** it skips on other PRs and does not run on `merge_group`, so it must not be added to the ruleset.
+- `scripts/e2e-panels-workflow.test.mjs` checks that every path pattern matches a file and that the Electron library list matches `e2e.yaml`.
 
 ### Reticulum sidecar (`reticulum-sidecar.yaml`)
 
@@ -391,7 +401,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
 - CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
-- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)`)
+- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`)
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
 

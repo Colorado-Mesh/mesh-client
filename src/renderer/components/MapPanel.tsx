@@ -585,7 +585,11 @@ export default function MapPanel(props: Props) {
     props.meshcorePackets !== undefined || props.meshtasticPackets !== undefined;
   if (!supportsTraffic) return active ? <OverviewMapPanel {...props} showMapsDocs /> : null;
   return (
-    <div hidden={!active} className={active ? 'flex h-full min-h-0 flex-col gap-2' : 'hidden'}>
+    <div
+      data-panel-anchor="Map"
+      hidden={!active}
+      className={active ? 'flex h-full min-h-0 flex-col gap-2' : 'hidden'}
+    >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1" role="group" aria-label={t('liveTraffic.mapModes')}>
           {[false, true].map((isTraffic) => (
@@ -1106,6 +1110,7 @@ function OverviewMapPanel({
   return (
     <>
       <MeshMapShell
+        panelAnchor={showMapsDocs ? 'Map' : undefined}
         ariaLabel={t('mapPanel.networkMap')}
         frameClassName="h-full min-h-[500px]"
         initialCenter={initialViewport.center}

@@ -975,21 +975,23 @@ export default function RepeatersPanel({
   if (configNode && onSendCliCommand) {
     return (
       <>
-        <MeshcoreInfraConfigPanel
-          key={configNode.node_id}
-          node={configNode}
-          isConnected={isConnected}
-          onSend={(command, isCurrent) =>
-            sendAuthenticatedCliCommand(configNode.node_id, command, { isCurrent })
-          }
-          onBack={() => {
-            setConfigNodeId(null);
-          }}
-          onOpenCli={() => {
-            setExpandedCli((previous) => new Set([...previous, configNode.node_id]));
-            setConfigNodeId(null);
-          }}
-        />
+        <div data-panel-anchor="Modules" className="h-full">
+          <MeshcoreInfraConfigPanel
+            key={configNode.node_id}
+            node={configNode}
+            isConnected={isConnected}
+            onSend={(command, isCurrent) =>
+              sendAuthenticatedCliCommand(configNode.node_id, command, { isCurrent })
+            }
+            onBack={() => {
+              setConfigNodeId(null);
+            }}
+            onOpenCli={() => {
+              setExpandedCli((previous) => new Set([...previous, configNode.node_id]));
+              setConfigNodeId(null);
+            }}
+          />
+        </div>
         {RemoteAuthModal}
       </>
     );
@@ -997,7 +999,7 @@ export default function RepeatersPanel({
 
   return (
     <>
-      <div className="flex h-full min-h-0 flex-col gap-4">
+      <div data-panel-anchor="Modules" className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h2 className="text-ink-200 text-base font-semibold">{t('repeatersPanel.title')}</h2>
           <SegmentedControl

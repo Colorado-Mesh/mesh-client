@@ -60,7 +60,11 @@ export default function IncidentPanel({
   };
 
   return (
-    <section aria-labelledby="incident-panel-title" className="flex flex-col gap-2 p-3">
+    <section
+      data-panel-anchor="Incident"
+      aria-labelledby="incident-panel-title"
+      className="flex flex-col gap-2 p-3"
+    >
       <div className="flex items-center justify-between gap-2">
         <h2 id="incident-panel-title" className="text-ink-100 text-base font-semibold">
           {t('incidentPanel.title')}

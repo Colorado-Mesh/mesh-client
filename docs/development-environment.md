@@ -410,12 +410,13 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Test
 
-| Script          | Description                            |
-| --------------- | -------------------------------------- |
-| `test`          | Run tests in watch mode (Vitest)       |
-| `test:run`      | Run tests once (CI mode)               |
-| `test:coverage` | Run tests once with V8 coverage report |
-| `test:verbose`  | Run tests with verbose output          |
+| Script              | Description                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| `test`              | Run tests in watch mode (Vitest)                                                                 |
+| `test:run`          | Run tests once (CI mode)                                                                         |
+| `test:coverage`     | Run tests once with V8 coverage report                                                           |
+| `coverage:hotspots` | Worst files by uncovered lines from `coverage/coverage-summary.json` (run `test:coverage` first) |
+| `test:verbose`      | Run tests with verbose output                                                                    |
 
 #### Lint / Format
 
@@ -590,7 +591,7 @@ Pull-request CI selects merge-base-related tests across these project jobs. Merg
 
 #### Playwright Electron E2E
 
-Standalone suite under [`e2e/`](../e2e/) launches the **unpackaged** production build with Playwright’s Electron API (`playwright._electron.launch`), using [`resolveLocalElectronBin()`](../scripts/start-electron.mjs) and an isolated `--user-data-dir` (`mesh-e2e-*` under the OS temp dir). Specs cover startup, preload IPC, tabs, window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.
+Standalone suite under [`e2e/`](../e2e/) launches the **unpackaged** production build with Playwright’s Electron API (`playwright._electron.launch`), using [`resolveLocalElectronBin()`](../scripts/start-electron.mjs) and an isolated `--user-data-dir` (`mesh-e2e-*` under the OS temp dir). Specs cover startup, preload IPC, tabs, the per-protocol panel matrix (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum), window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.
 
 | Command                    | Purpose                                                              |
 | -------------------------- | -------------------------------------------------------------------- |
@@ -602,7 +603,7 @@ Constraints:
 
 - **`workers: 1`** — main uses `requestSingleInstanceLock()`; parallel launches flake.
 - **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` for direct `pnpm run test:e2e`, or wrap with `xvfb-run -a` (`pnpm run check:environment` warns when `DISPLAY` is unset).
-- **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml).
+- **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml). Path-filtered PR job: [`e2e-panels.yaml`](../.github/workflows/e2e-panels.yaml) runs the panel matrix on Linux when renderer shell/panel code changes (not required).
 
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
 
@@ -632,6 +633,7 @@ Other useful commands:
 - `pnpm run check:pr` (before opening/updating a PR: full lint + typecheck + `typecheck:strict-shared` + full `test:run`)
 - `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
+- `pnpm run coverage:hotspots` (rank uncovered lines from `coverage/coverage-summary.json`)
 - `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
 - `pnpm run reticulum:sidecar:coverage` (optional local HTML; CI threshold in `tests.yaml`)
 - `pnpm run test:verbose` (verbose failures)

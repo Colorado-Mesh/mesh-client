@@ -486,7 +486,7 @@ export default function SecurityPanel({
       : '';
 
   return (
-    <div className="w-full max-w-5xl space-y-6 p-4">
+    <div data-panel-anchor="Security" className="w-full max-w-5xl space-y-6 p-4">
       {!isConnected && (
         <p className="text-muted py-4 text-center text-sm">{t('securityPanel.connectToManage')}</p>
       )}

@@ -116,6 +116,8 @@ export interface MeshMapShellProps {
   onForecastSenderClick?: (protocol: MeshProtocol, senderId: number) => void;
   /** The map's own Leaflet layers. */
   children?: ReactNode;
+  /** E2E-only `data-panel-anchor` marker for the tab slot this shell renders as its root. */
+  panelAnchor?: string;
 }
 
 /**
@@ -139,6 +141,7 @@ export function MeshMapShell({
   overlay,
   onForecastSenderClick,
   children,
+  panelAnchor,
 }: MeshMapShellProps) {
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
@@ -163,6 +166,7 @@ export function MeshMapShell({
   // dialog opened over this tab draws above them.
   return (
     <div
+      data-panel-anchor={panelAnchor}
       className={`border-ink-700/50 relative isolate overflow-hidden rounded-lg border ${frameClassName}`}
       aria-label={ariaLabel}
     >

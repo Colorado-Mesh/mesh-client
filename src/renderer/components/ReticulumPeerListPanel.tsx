@@ -819,7 +819,7 @@ export default function ReticulumPeerListPanel({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div data-panel-anchor="Nodes" className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* The count changes with the tab and the search, so it sits after the tab control, which
             then never moves. */}
