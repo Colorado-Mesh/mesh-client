@@ -82,6 +82,35 @@ describe('scheduled broadcast IPC boundary', () => {
     ).toThrow(/interval/);
   });
 
+  it('accepts every4h interval and round-trips', () => {
+    const save = handlers.get('db:saveScheduledBroadcast')!;
+    const saved = save(event, {
+      slot: 4,
+      label: 'Quad',
+      text: 'check',
+      enabled: true,
+      interval: 'every4h',
+      timeOfDayMin: 360,
+      targets: [
+        {
+          kind: 'meshcore-channel',
+          identityId: 'mc1',
+          label: 'Public',
+          enabled: true,
+          channelIndex: 0,
+        },
+      ],
+    }) as { slot: number; interval: string; timeOfDayMin: number };
+    expect(saved.slot).toBe(4);
+    expect(saved.interval).toBe('every4h');
+    expect(saved.timeOfDayMin).toBe(360);
+    const listed = handlers.get('db:listScheduledBroadcasts')!(event) as {
+      slot: number;
+      interval: string;
+    }[];
+    expect(listed.some((r) => r.slot === 4 && r.interval === 'every4h')).toBe(true);
+  });
+
   it('rejects bad channel index', () => {
     expect(() =>
       handlers.get('db:saveScheduledBroadcast')!(event, {

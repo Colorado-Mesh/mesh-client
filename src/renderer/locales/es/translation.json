@@ -7448,7 +7448,18 @@
     "footerNextField": "Campo siguiente",
     "footerClose": "Cerrar",
     "footerOsKeys": "Su sistema operativo puede mantener algunas teclas F",
-    "footerAutoSave": "El juego se guarda automáticamente"
+    "footerAutoSave": "El juego se guarda automáticamente",
+    "whenUsedTextOnly": "Se aplica únicamente a las macros de mensajes.",
+    "actionLabel": "Acción",
+    "actionText": "Mensaje",
+    "actionRoom": "Ir a la sala",
+    "roomTargetLabel": "Sala",
+    "roomPickerPlaceholder": "Elige una sala",
+    "roomPickerEmpty": "No se han encontrado salas. Conecte primero una radio MeshCore con contactos de sala o un hub RRC.",
+    "roomGroupMeshcore": "Salas MeshCore",
+    "roomGroupRrc": "Salas RRC",
+    "roomGroupSaved": "Guardado",
+    "jumpToRoomAria": "{{key}}: saltar a {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Pronóstico para {{place}}, {{period}}: {{temp}}",
@@ -8482,7 +8493,10 @@
       "daily": "Diario",
       "weekly": "Semanal",
       "biweekly": "Cada dos semanas",
-      "monthly": "Mensual"
+      "monthly": "Mensual",
+      "every4h": "Cada 4 horas",
+      "every8h": "Cada 8 horas",
+      "every12h": "Cada 12 horas"
     },
     "timeOfDay": "Hora",
     "weekday": "Día hábil",
@@ -8524,7 +8538,7 @@
       "meshcoreRoom": "Sala MeshCore",
       "rrcRoom": "Sala RRC"
     },
-    "airtimeWarning": "Los horarios por hora con muchos objetivos utilizan mucho tiempo al aire.",
+    "airtimeWarning": "Los horarios frecuentes con muchos objetivos utilizan mucho tiempo al aire.",
     "respectWarning": "Sé respetuoso con el tiempo de transmisión compartido de LoRa y otros operadores. No envíe spam a canales, salas o centros: prefiera horarios poco frecuentes, pocos objetivos y mensajes que la malla realmente necesite.",
     "invalidTime": "Introduzca una hora válida.",
     "invalidDayOfMonth": "El día del mes debe estar entre 1 y 31.",
@@ -8533,7 +8547,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (conectado)",
     "identityDisconnected": "{{name}} (sin conexión)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Se ejecuta a esta hora y, a continuación, cada {{hours}} horas."
   },
   "internetWeather": {
     "heading": "El tiempo en Internet",

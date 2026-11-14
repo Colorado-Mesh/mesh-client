@@ -1,5 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+
+import { firstDueAt } from '@/renderer/lib/scheduledBroadcasts/recurrence';
+import { SCHEDULED_BROADCAST_INTERVALS } from '@/shared/scheduledBroadcastTypes';
 
 import {
   hhMmToMins,
@@ -24,6 +28,73 @@ describe('ScheduledBroadcastEditorDialog time helpers', () => {
     expect(hhMmToMins('09:')).toBeNull();
     expect(hhMmToMins('24:00')).toBeNull();
     expect(hhMmToMins('12:60')).toBeNull();
+  });
+});
+
+describe('ScheduledBroadcastEditorDialog intervals', () => {
+  it('lists all eight interval options including every4h/8h/12h', () => {
+    render(
+      <ScheduledBroadcastEditorDialog
+        slot={1}
+        existing={null}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    const select = screen.getByLabelText('Repeat');
+    const values = [...select.querySelectorAll('option')].map((o) => o.value);
+    expect(values).toEqual([...SCHEDULED_BROADCAST_INTERVALS]);
+  });
+
+  it('saves every4h with time anchor and null weekday fields', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ScheduledBroadcastEditorDialog
+        slot={3}
+        existing={{
+          slot: 3,
+          label: 'Check',
+          text: 'ping',
+          enabled: true,
+          interval: 'daily',
+          timeOfDayMin: 6 * 60,
+          weekday: null,
+          dayOfMonth: null,
+          anchorYmd: null,
+          nextDueAt: null,
+          lastAttemptAt: null,
+          lastResult: null,
+          updatedAt: 1,
+          targets: [
+            {
+              kind: 'meshcore-channel',
+              identityId: 'mc1',
+              label: 'Public',
+              enabled: true,
+              channelIndex: 0,
+            },
+          ],
+        }}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />,
+    );
+    await user.selectOptions(screen.getByLabelText('Repeat'), 'every4h');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalled();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interval: 'every4h',
+        timeOfDayMin: 6 * 60,
+        weekday: null,
+        dayOfMonth: null,
+        anchorYmd: null,
+        nextDueAt: firstDueAt({ interval: 'every4h', timeOfDayMin: 6 * 60 }, Date.now()),
+      }),
+    );
   });
 });
 

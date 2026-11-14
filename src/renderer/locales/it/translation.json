@@ -7448,7 +7448,18 @@
     "footerNextField": "Campo successivo",
     "footerClose": "Chiudi",
     "footerOsKeys": "Il tuo sistema operativo potrebbe mantenere alcuni tasti F",
-    "footerAutoSave": "Salva automaticamente"
+    "footerAutoSave": "Salva automaticamente",
+    "whenUsedTextOnly": "Si applica solo alle macro dei messaggi.",
+    "actionLabel": "Action",
+    "actionText": "Messaggio",
+    "actionRoom": "Vai alla stanza",
+    "roomTargetLabel": "Stanza",
+    "roomPickerPlaceholder": "Scegli una sala",
+    "roomPickerEmpty": "Nessuna stanza trovata. Collega prima una radio MeshCore con i contatti della stanza o un hub RRC.",
+    "roomGroupMeshcore": "Sale MeshCore",
+    "roomGroupRrc": "Sale RRC",
+    "roomGroupSaved": "Salvato",
+    "jumpToRoomAria": "{{key}}: vai a {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",
@@ -8482,7 +8493,10 @@
       "daily": "3 o più volte a settimana",
       "weekly": "Settimanale",
       "biweekly": "Ogni due settimane",
-      "monthly": "Mensile"
+      "monthly": "Mensile",
+      "every4h": "Ogni 4 ore",
+      "every8h": "Ogni 8 ore 2 ore",
+      "every12h": "Ogni 12 ore"
     },
     "timeOfDay": "Tempo",
     "weekday": "Giorno lavorativo",
@@ -8524,7 +8538,7 @@
       "meshcoreRoom": "Sala MeshCore",
       "rrcRoom": "Sala RRC"
     },
-    "airtimeWarning": "Gli orari con molti obiettivi utilizzano molto tempo di trasmissione.",
+    "airtimeWarning": "Le pianificazioni frequenti con molti obiettivi usano molto tempo di trasmissione.",
     "respectWarning": "Rispetta il tempo di trasmissione condiviso LoRa e gli altri operatori. Non inviare spam a canali, stanze o hub: preferisci pianificazioni poco frequenti, pochi obiettivi e messaggi di cui la mesh ha effettivamente bisogno.",
     "invalidTime": "Inserisci un orario valido.",
     "invalidDayOfMonth": "Il giorno del mese deve essere compreso tra 1 e 31.",
@@ -8533,7 +8547,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (connesso)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Viene eseguito a quest'ora, quindi ogni {{hours}} ore."
   },
   "internetWeather": {
     "heading": "Meteo Internet",

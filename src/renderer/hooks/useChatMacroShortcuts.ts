@@ -5,6 +5,12 @@ import {
   findActiveMacroComposer,
   type MacroComposerTarget,
 } from '@/renderer/lib/chatMacroKeys';
+import {
+  navigateRoomMacro,
+  resolveMeshcoreRoomNodeIdDefault,
+  resolveRoomMacroPlan,
+} from '@/renderer/lib/roomMacros';
+import { useChatMacrosStore } from '@/renderer/stores/chatMacrosStore';
 
 function modalOpen(): boolean {
   return document.querySelector('[aria-modal="true"]') !== null;
@@ -39,6 +45,7 @@ function isForeignTextEntry(target: EventTarget | null, composer: MacroComposerT
 /**
  * Window-level F1–F12 chat macros. Mount once from App. Claims the key (preventDefault)
  * only after a non-empty slot is applied, and leaves the key alone when another field has it.
+ * Room-jump slots work from any tab (no composer required).
  */
 export function useChatMacroShortcuts(): void {
   useEffect(() => {
@@ -46,6 +53,20 @@ export function useChatMacroShortcuts(): void {
       if (e.defaultPrevented || e.repeat) return;
       const index = chatMacroIndexFromKeyEvent(e);
       if (index === null || modalOpen()) return;
+
+      const slot = useChatMacrosStore.getState().slots[index];
+      if (slot?.action === 'room' && slot.room) {
+        const plan = resolveRoomMacroPlan(slot.room, {
+          resolveMeshcoreRoomNodeId: resolveMeshcoreRoomNodeIdDefault,
+        });
+        if (plan && navigateRoomMacro(plan, index)) {
+          useChatMacrosStore.getState().markUsed(index);
+          e.preventDefault();
+        }
+        // Room slots never fall through to composer text handling.
+        return;
+      }
+
       const target = findActiveMacroComposer();
       if (!target || isForeignTextEntry(e.target, target)) return;
       if (target.apply(index)) e.preventDefault();

@@ -35,6 +35,60 @@ describe('ScheduledBroadcastsPanel', () => {
     expect(screen.getByText(/be respectful of shared lora airtime/i)).toBeInTheDocument();
   });
 
+  it('shows airtime warning for frequent intervals with many targets', () => {
+    const manyTargets = [0, 1, 2].map((i) => ({
+      kind: 'meshcore-channel' as const,
+      identityId: 'mc1',
+      label: `Ch${i}`,
+      enabled: true,
+      channelIndex: i,
+    }));
+    const row: ScheduledBroadcastRow = {
+      slot: 1,
+      label: 'Frequent',
+      text: 'hello',
+      enabled: true,
+      interval: 'every4h',
+      timeOfDayMin: 6 * 60,
+      weekday: null,
+      dayOfMonth: null,
+      anchorYmd: null,
+      nextDueAt: null,
+      lastAttemptAt: null,
+      lastResult: null,
+      updatedAt: 1,
+      targets: manyTargets,
+    };
+    useScheduledBroadcastsStore.setState({
+      hydrated: true,
+      slots: { ...useScheduledBroadcastsStore.getState().slots, 1: row },
+    });
+    const { unmount } = render(<ScheduledBroadcastsPanel />);
+    expect(screen.getByText(/frequent schedules with many targets/i)).toBeInTheDocument();
+    unmount();
+
+    useScheduledBroadcastsStore.setState({
+      hydrated: true,
+      slots: {
+        ...useScheduledBroadcastsStore.getState().slots,
+        1: { ...row, interval: 'hourly' },
+      },
+    });
+    const { unmount: unmountHourly } = render(<ScheduledBroadcastsPanel />);
+    expect(screen.getByText(/frequent schedules with many targets/i)).toBeInTheDocument();
+    unmountHourly();
+
+    useScheduledBroadcastsStore.setState({
+      hydrated: true,
+      slots: {
+        ...useScheduledBroadcastsStore.getState().slots,
+        1: { ...row, interval: 'daily' },
+      },
+    });
+    render(<ScheduledBroadcastsPanel />);
+    expect(screen.queryByText(/frequent schedules with many targets/i)).not.toBeInTheDocument();
+  });
+
   it('opens editor from Add', async () => {
     const user = userEvent.setup();
     render(<ScheduledBroadcastsPanel />);

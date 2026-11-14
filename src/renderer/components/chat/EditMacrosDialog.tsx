@@ -13,13 +13,16 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import {
   CHAT_MACRO_LABEL_MAX,
   CHAT_MACRO_TEXT_MAX,
+  type ChatMacroAction,
   type ChatMacroSendMode,
   type ChatMacroSize,
   resolveChatMacroSize,
+  type RoomMacroTarget,
   useChatMacrosStore,
 } from '@/renderer/stores/chatMacrosStore';
 
 import { chatMacroKeyName } from './ChatMacroBar';
+import { RoomJumpTargetPicker } from './RoomJumpTargetPicker';
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -33,6 +36,11 @@ const SIZE_OPTIONS: { value: ChatMacroSize; labelKey: string; px: number }[] = [
 const SEND_MODE_OPTIONS: { value: ChatMacroSendMode; labelKey: string }[] = [
   { value: 'insert', labelKey: 'chatMacros.sendModeInsert' },
   { value: 'sendNow', labelKey: 'chatMacros.sendModeSendNow' },
+];
+
+const ACTION_OPTIONS: { value: ChatMacroAction; labelKey: string }[] = [
+  { value: 'text', labelKey: 'chatMacros.actionText' },
+  { value: 'room', labelKey: 'chatMacros.actionRoom' },
 ];
 
 export interface EditMacrosDialogProps {
@@ -69,9 +77,13 @@ export function EditMacrosDialog({
   const sendMode = useChatMacrosStore((s) => s.sendMode);
   const setSlotLabel = useChatMacrosStore((s) => s.setSlotLabel);
   const setSlotText = useChatMacrosStore((s) => s.setSlotText);
+  const setSlotAction = useChatMacrosStore((s) => s.setSlotAction);
+  const setSlotRoom = useChatMacrosStore((s) => s.setSlotRoom);
   const setSize = useChatMacrosStore((s) => s.setSize);
   const setSendMode = useChatMacrosStore((s) => s.setSendMode);
   const size = resolveChatMacroSize(storedSize);
+  const hasRoomSlot = slots.some((slot) => slot.action === 'room');
+  const actionLabelId = useId();
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -177,6 +189,11 @@ export function EditMacrosDialog({
               {t('chatMacros.escKey')}
             </button>
           </div>
+          {hasRoomSlot ? (
+            <p className="text-label text-muted w-full basis-full">
+              {t('chatMacros.whenUsedTextOnly')}
+            </p>
+          ) : null}
         </div>
 
         <div className="border-ink-700 flex flex-wrap items-center gap-3 border-b px-4 py-3">
@@ -216,13 +233,19 @@ export function EditMacrosDialog({
                 index={index}
                 label={slot.label}
                 text={slot.text}
+                action={slot.action === 'room' ? 'room' : 'text'}
+                room={slot.room ?? null}
                 protocol={protocol}
                 payloadLimit={payloadLimit}
                 composerContext={composerContext}
                 senderDisplayName={senderDisplayName}
                 useWireByteCount={useWireByteCount}
+                actionLabelId={actionLabelId}
+                segmentClass={segmentClass}
                 onLabelChange={setSlotLabel}
                 onTextChange={setSlotText}
+                onActionChange={setSlotAction}
+                onRoomChange={setSlotRoom}
               />
             ))}
           </ul>
@@ -261,29 +284,42 @@ interface MacroRowProps {
   index: number;
   label: string;
   text: string;
+  action: ChatMacroAction;
+  room: RoomMacroTarget | null;
   protocol: MeshProtocol;
   payloadLimit?: number;
   composerContext?: ComposerWireContext;
   senderDisplayName?: string;
   useWireByteCount?: boolean;
+  actionLabelId: string;
+  segmentClass: (selected: boolean) => string;
   onLabelChange: (index: number, label: string) => void;
   onTextChange: (index: number, text: string) => void;
+  onActionChange: (index: number, action: ChatMacroAction) => void;
+  onRoomChange: (index: number, room: RoomMacroTarget | null) => void;
 }
 
 function MacroRow({
   index,
   label,
   text,
+  action,
+  room,
   protocol,
   payloadLimit,
   composerContext,
   senderDisplayName,
   useWireByteCount,
+  actionLabelId,
+  segmentClass,
   onLabelChange,
   onTextChange,
+  onActionChange,
+  onRoomChange,
 }: MacroRowProps) {
   const { t } = useTranslation();
   const warnId = useId();
+  const rowActionLabelId = `${actionLabelId}-${index}`;
   const key = chatMacroKeyName(index);
   const bytes = countMessageWireBytes(text.trim());
   const status = computeComposerLimitStatus(text, protocol, {
@@ -297,7 +333,7 @@ function MacroRow({
     'rounded-control text-body text-ink-200 placeholder:text-muted bg-app-bg border px-2 py-1 focus:outline-none';
 
   return (
-    <li className="flex items-center gap-2">
+    <li className="flex flex-wrap items-center gap-2">
       <span className="border-secondary-dark bg-sidebar-active-bg text-label text-ink-300 rounded-badge w-10 shrink-0 border text-center font-mono leading-5">
         {key}
       </span>
@@ -313,35 +349,69 @@ function MacroRow({
         aria-label={t('chatMacros.labelAria', { key })}
         className={`${inputBase} border-secondary-dark focus:border-brand-green w-28 shrink-0`}
       />
-      <input
-        type="text"
-        value={text}
-        maxLength={CHAT_MACRO_TEXT_MAX}
-        onChange={(e) => {
-          onTextChange(index, e.target.value);
-        }}
-        placeholder={t('chatMacros.textPlaceholder')}
-        aria-label={t('chatMacros.textAria', { key })}
-        aria-invalid={overLimit || undefined}
-        aria-describedby={overLimit ? warnId : undefined}
-        className={`${inputBase} min-w-0 flex-1 ${
-          overLimit
-            ? 'border-red-500 focus:border-red-400'
-            : 'border-secondary-dark focus:border-brand-green'
-        }`}
-      />
-      <span
-        className={`text-label inline-flex w-16 shrink-0 items-center justify-end gap-1 font-mono ${
-          overLimit ? 'text-red-400' : 'text-muted'
-        }`}
-      >
-        {overLimit && <TriangleAlert aria-hidden size={12} />}
-        {t('chatMacros.bytes', { bytes })}
+      <span id={rowActionLabelId} className="sr-only">
+        {t('chatMacros.actionLabel')}
       </span>
-      {overLimit && (
-        <span id={warnId} className="sr-only">
-          {t('chatMacros.overLimit', { limit: status.singleMessageLimit })}
-        </span>
+      <div
+        role="radiogroup"
+        aria-labelledby={rowActionLabelId}
+        className="border-secondary-dark rounded-card flex shrink-0 gap-0.5 border p-0.5"
+      >
+        {ACTION_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={action === opt.value}
+            onClick={() => {
+              onActionChange(index, opt.value);
+            }}
+            className={segmentClass(action === opt.value)}
+          >
+            {t(opt.labelKey)}
+          </button>
+        ))}
+      </div>
+      {action === 'room' ? (
+        <RoomJumpTargetPicker
+          value={room}
+          onChange={(next) => {
+            onRoomChange(index, next);
+          }}
+        />
+      ) : (
+        <>
+          <input
+            type="text"
+            value={text}
+            maxLength={CHAT_MACRO_TEXT_MAX}
+            onChange={(e) => {
+              onTextChange(index, e.target.value);
+            }}
+            placeholder={t('chatMacros.textPlaceholder')}
+            aria-label={t('chatMacros.textAria', { key })}
+            aria-invalid={overLimit || undefined}
+            aria-describedby={overLimit ? warnId : undefined}
+            className={`${inputBase} min-w-0 flex-1 ${
+              overLimit
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-secondary-dark focus:border-brand-green'
+            }`}
+          />
+          <span
+            className={`text-label inline-flex w-16 shrink-0 items-center justify-end gap-1 font-mono ${
+              overLimit ? 'text-red-400' : 'text-muted'
+            }`}
+          >
+            {overLimit && <TriangleAlert aria-hidden size={12} />}
+            {t('chatMacros.bytes', { bytes })}
+          </span>
+          {overLimit && (
+            <span id={warnId} className="sr-only">
+              {t('chatMacros.overLimit', { limit: status.singleMessageLimit })}
+            </span>
+          )}
+        </>
       )}
     </li>
   );

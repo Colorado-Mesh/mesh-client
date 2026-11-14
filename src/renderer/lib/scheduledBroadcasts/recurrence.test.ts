@@ -30,6 +30,63 @@ describe('scheduledBroadcasts recurrence', () => {
     expect(next).toBe(new Date(2024, 2, 10, 11, 15, 0, 0).getTime());
   });
 
+  it('every4h after 07:00 from 06:00 anchor → 10:00 same day', () => {
+    const after = new Date(2024, 5, 1, 7, 0, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every4h', timeOfDayMin: 6 * 60 }, after);
+    expect(next).toBe(new Date(2024, 5, 1, 10, 0, 0, 0).getTime());
+  });
+
+  it('every4h after 23:30 from 06:00 anchor → 02:00 next day', () => {
+    const after = new Date(2024, 5, 1, 23, 30, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every4h', timeOfDayMin: 6 * 60 }, after);
+    expect(next).toBe(new Date(2024, 5, 2, 2, 0, 0, 0).getTime());
+  });
+
+  it('every8h wraps 22:00 → 06:00 next day', () => {
+    const after = new Date(2024, 5, 1, 22, 0, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every8h', timeOfDayMin: 6 * 60 }, after);
+    expect(next).toBe(new Date(2024, 5, 2, 6, 0, 0, 0).getTime());
+  });
+
+  it('every12h wraps 18:30 → 06:00 next day', () => {
+    const after = new Date(2024, 5, 1, 18, 30, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every12h', timeOfDayMin: 6 * 60 }, after);
+    expect(next).toBe(new Date(2024, 5, 2, 6, 0, 0, 0).getTime());
+  });
+
+  it('every4h after exact anchor is strictly after', () => {
+    const after = new Date(2024, 5, 1, 0, 0, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every4h', timeOfDayMin: 0 }, after);
+    expect(next).toBe(new Date(2024, 5, 1, 4, 0, 0, 0).getTime());
+  });
+
+  it('every12h DST spring-forward uses wall-clock atLocal', () => {
+    // US 2024 spring forward: Mar 10 02:00 → 03:00. Start after the 14:00 slot on Mar 9
+    // so the next candidate is the nonexistent 02:00 on Mar 10 (shifted by Date).
+    const after = new Date(2024, 2, 9, 14, 0, 0, 0).getTime();
+    const next = computeNextDue({ interval: 'every12h', timeOfDayMin: 2 * 60 }, after);
+    expect(next).not.toBeNull();
+    const expectedFirst = new Date(2024, 2, 10, 2, 0, 0, 0).getTime();
+    expect(next).toBe(expectedFirst);
+    expect(new Date(next!).getHours()).toBe(new Date(expectedFirst).getHours());
+    const second = computeNextDue({ interval: 'every12h', timeOfDayMin: 2 * 60 }, next!);
+    expect(second).toBe(new Date(2024, 2, 10, 14, 0, 0, 0).getTime());
+  });
+
+  it('advancePastDue every4h skips missed slots after sleep', () => {
+    const rule = { interval: 'every4h' as const, timeOfDayMin: 6 * 60 };
+    const due = new Date(2024, 5, 1, 6, 0, 0, 0).getTime();
+    const now = new Date(2024, 5, 3, 11, 0, 0, 0).getTime();
+    const advanced = advancePastDue(rule, due, now);
+    expect(advanced).toBe(new Date(2024, 5, 3, 14, 0, 0, 0).getTime());
+  });
+
+  it('firstDueAt every4h at exact anchor returns that instant', () => {
+    const from = new Date(2024, 5, 1, 6, 0, 0, 0).getTime();
+    const due = firstDueAt({ interval: 'every4h', timeOfDayMin: 6 * 60 }, from);
+    expect(due).toBe(from);
+  });
+
   it('daily crosses midnight', () => {
     const after = new Date(2024, 2, 10, 18, 0, 0, 0).getTime();
     const next = computeNextDue({ interval: 'daily', timeOfDayMin: 9 * 60 }, after);

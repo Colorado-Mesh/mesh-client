@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Ellipsis, Plus, Settings2 } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, DoorOpen, Ellipsis, Plus, Settings2 } from 'lucide-react-motion';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,17 @@ import {
   resolveChatMacroSize,
   useChatMacrosStore,
 } from '@/renderer/stores/chatMacrosStore';
+
+/** Custom label wins; room actions prefer room.label over retained text; else text. */
+export function macroDisplayLabel(slot: ChatMacroSlot): string {
+  const custom = slot.label.trim();
+  if (custom) return custom;
+  if (slot.action === 'room') {
+    const roomLabel = slot.room?.label?.trim() || '';
+    if (roomLabel) return roomLabel;
+  }
+  return slot.text.trim();
+}
 
 export const CHAT_MACRO_MIN_VISIBLE = 6;
 
@@ -237,7 +248,8 @@ function MacroToolbar({
                 const slot = slots[index];
                 const empty = isChatMacroSlotEmpty(slot);
                 const key = chatMacroKeyName(index);
-                const label = slot.label.trim() || slot.text.trim();
+                const label = macroDisplayLabel(slot);
+                const isRoom = slot.action === 'room' && slot.room != null;
                 return (
                   <button
                     key={index}
@@ -246,7 +258,9 @@ function MacroToolbar({
                     aria-label={
                       empty
                         ? t('chatMacros.addAria', { key })
-                        : t('chatMacros.buttonAria', { key, label })
+                        : isRoom
+                          ? t('chatMacros.jumpToRoomAria', { key, label })
+                          : t('chatMacros.buttonAria', { key, label })
                     }
                     onClick={() => {
                       setMoreOpen(false);
@@ -258,6 +272,11 @@ function MacroToolbar({
                     <KeyBadge keyName={key} active={false} />
                     {empty ? (
                       <Plus aria-hidden className="text-muted" size={14} />
+                    ) : isRoom ? (
+                      <>
+                        <DoorOpen aria-hidden className="text-muted shrink-0" size={14} />
+                        <span className="min-w-0 truncate">{label}</span>
+                      </>
                     ) : (
                       <span className="min-w-0 truncate">{label}</span>
                     )}
@@ -319,7 +338,8 @@ function MacroButton({ index, slot, size, fill, active, onApply, onEdit }: Macro
   const iconTrigger = useParentIconTrigger();
   const empty = isChatMacroSlotEmpty(slot);
   const key = chatMacroKeyName(index);
-  const label = slot.label.trim() || slot.text.trim();
+  const label = macroDisplayLabel(slot);
+  const isRoom = slot.action === 'room' && slot.room != null;
   const tone = active
     ? 'border-brand-green bg-brand-green text-app-bg'
     : empty
@@ -338,7 +358,11 @@ function MacroButton({ index, slot, size, fill, active, onApply, onEdit }: Macro
         else onApply(index);
       }}
       aria-label={
-        empty ? t('chatMacros.addAria', { key }) : t('chatMacros.buttonAria', { key, label })
+        empty
+          ? t('chatMacros.addAria', { key })
+          : isRoom
+            ? t('chatMacros.jumpToRoomAria', { key, label })
+            : t('chatMacros.buttonAria', { key, label })
       }
       className={`rounded-control inline-flex min-w-0 items-center gap-1.5 border px-1.5 transition-colors ${BUTTON_HEIGHT_CLASS[size]} ${fill ? 'flex-1' : 'max-w-32'} ${tone}`}
     >
@@ -350,6 +374,16 @@ function MacroButton({ index, slot, size, fill, active, onApply, onEdit }: Macro
           trigger={iconTrigger}
           size={size === 'small' ? 12 : 14}
         />
+      ) : isRoom ? (
+        <>
+          <DoorOpen
+            aria-hidden
+            className="shrink-0"
+            trigger={iconTrigger}
+            size={size === 'small' ? 12 : 14}
+          />
+          <span className="min-w-0 truncate">{label}</span>
+        </>
       ) : (
         <span className="min-w-0 truncate">{label}</span>
       )}

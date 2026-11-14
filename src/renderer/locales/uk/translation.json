@@ -7566,7 +7566,18 @@
     "footerNextField": "Наступне поле",
     "footerClose": "Закрити",
     "footerOsKeys": "У вашій ОС можуть зберігатися деякі F-клавіші",
-    "footerAutoSave": "PIN-код зберігається автоматично."
+    "footerAutoSave": "PIN-код зберігається автоматично.",
+    "whenUsedTextOnly": "Застосовується лише до макросів повідомлень.",
+    "actionLabel": "Дія",
+    "actionText": "Повідомлення",
+    "actionRoom": "Перейти до кімнати",
+    "roomTargetLabel": "Кімната",
+    "roomPickerPlaceholder": "Вибрати A",
+    "roomPickerEmpty": "Кімнат не знайдено. Спочатку під'єднайте радіоприймач MeshCore до контактів кімнати або до концентратора RRC.",
+    "roomGroupMeshcore": "Кімнат: MeshCore",
+    "roomGroupRrc": "Кімнати RRC",
+    "roomGroupSaved": "Збережено",
+    "jumpToRoomAria": "{{key}}: перейти до {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",
@@ -8626,7 +8637,10 @@
       "daily": "Щоденний",
       "weekly": "Щотижневий",
       "biweekly": "Кожних два тижні",
-      "monthly": "Щомісяця"
+      "monthly": "Щомісяця",
+      "every4h": "Кожні 4 години",
+      "every8h": "Кожні 8 години",
+      "every12h": "Кожні 12 годин"
     },
     "timeOfDay": "Час",
     "weekday": "будень",
@@ -8668,7 +8682,7 @@
       "meshcoreRoom": "MeshCore кімната",
       "rrcRoom": "Кімната RRC"
     },
-    "airtimeWarning": "Погодинні графіки з великою кількістю цілей використовують багато ефірного часу.",
+    "airtimeWarning": "Часті розклади з великою кількістю цілей використовують багато ефірного часу.",
     "respectWarning": "Поважайте спільний LoRa ефірний час та інших операторів. Не розсилайте спам каналам, кімнатам або концентраторам — віддайте перевагу рідкісним графікам, мало цільових показників та повідомлень, які насправді потрібні сіті.",
     "invalidTime": "Введіть дійсний час.",
     "invalidDayOfMonth": "День місяця має бути від 1 до 31.",
@@ -8677,7 +8691,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (підключено)",
     "identityDisconnected": "{{name}} (офлайн)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Виконується в цей час, а потім кожні {{hours}} год."
   },
   "internetWeather": {
     "heading": "Погода в Інтернеті",

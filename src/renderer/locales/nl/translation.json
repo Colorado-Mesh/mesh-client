@@ -7448,7 +7448,18 @@
     "footerNextField": "Volgend veld",
     "footerClose": "Sluiten",
     "footerOsKeys": "Uw besturingssysteem kan enkele F-toetsen behouden",
-    "footerAutoSave": "PIN-code wordt automatisch opgeslagen."
+    "footerAutoSave": "PIN-code wordt automatisch opgeslagen.",
+    "whenUsedTextOnly": "Geldt alleen voor berichtmacro's.",
+    "actionLabel": "Actie",
+    "actionText": "Bericht",
+    "actionRoom": "Naar ruimte gaan",
+    "roomTargetLabel": "Room",
+    "roomPickerPlaceholder": "Kies een ruimte",
+    "roomPickerEmpty": "Geen ruimtes gevonden. Verbind eerst een MeshCore-radio met ruimtecontacten of een RRC-hub.",
+    "roomGroupMeshcore": "MeshCore-ruimtes",
+    "roomGroupRrc": "RRC-ruimtes",
+    "roomGroupSaved": "Opgeslagen",
+    "jumpToRoomAria": "{{key}}: ga naar {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Voorspelling voor {{place}}, {{period}}: {{temp}}",
@@ -8483,7 +8494,10 @@
       "daily": "Dagelijks",
       "weekly": "Wekelijks",
       "biweekly": "Tweewekelijks",
-      "monthly": "Maandelijks"
+      "monthly": "Maandelijks",
+      "every4h": "Elke 4 uur",
+      "every8h": "Elke 8 uur",
+      "every12h": "Elke 12 uur"
     },
     "timeOfDay": "Tijd",
     "weekday": "Weekdag",
@@ -8525,7 +8539,7 @@
       "meshcoreRoom": "MeshCore-ruimte",
       "rrcRoom": "RRC-ruimte"
     },
-    "airtimeWarning": "Uurschema's met veel doelen gebruiken veel zendtijd.",
+    "airtimeWarning": "Frequente schema's met veel doelen gebruiken veel zendtijd.",
     "respectWarning": "Respecteer gedeelde LoRa-zendtijd en andere operators. Spam geen kanalen, ruimtes of hubs — geef de voorkeur aan onregelmatige schema's, weinig doelen en berichten die het netwerk echt nodig heeft.",
     "invalidTime": "Voer een geldige tijd in.",
     "invalidDayOfMonth": "De dag van de maand moet tussen 1 en 31 liggen.",
@@ -8533,7 +8547,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (aangesloten)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Wordt op dit moment uitgevoerd, daarna om de {{hours}} uur."
   },
   "internetWeather": {
     "heading": "Internetweer",

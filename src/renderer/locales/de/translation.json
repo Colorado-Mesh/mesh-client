@@ -7448,7 +7448,18 @@
     "footerNextField": "Nächstes Feld",
     "footerClose": "Schließen",
     "footerOsKeys": "Ihr Betriebssystem kann einige F-Tasten behalten",
-    "footerAutoSave": "PIN wird automatisch gespeichert."
+    "footerAutoSave": "PIN wird automatisch gespeichert.",
+    "whenUsedTextOnly": "Gilt nur für Nachrichten-Makros.",
+    "actionLabel": "Handlung",
+    "actionText": "Meldung",
+    "actionRoom": "Zum Raum springen",
+    "roomTargetLabel": "Raum",
+    "roomPickerPlaceholder": "Wählen Sie einen Raum",
+    "roomPickerEmpty": "Keine Räume gefunden. Verbinden Sie zuerst ein MeshCore-Funkgerät mit Raumkontakten oder einen RRC-Hub.",
+    "roomGroupMeshcore": "MeshCore-Räume",
+    "roomGroupRrc": "RRC-Räume",
+    "roomGroupSaved": "Gespeichert",
+    "jumpToRoomAria": "{{key}}: Wechseln zu {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Prognose für {{place}}, {{period}}: {{temp}}",
@@ -8482,7 +8493,10 @@
       "daily": "täglich",
       "weekly": "Wöchentlich",
       "biweekly": "Alle zwei Wochen",
-      "monthly": "Einmal im Monat"
+      "monthly": "Einmal im Monat",
+      "every4h": "Alle 4 Stunden",
+      "every8h": "Alle 8 Stunden",
+      "every12h": "Alle 12 Std."
     },
     "timeOfDay": "Uhrzeit",
     "weekday": "Wochentag",
@@ -8524,7 +8538,7 @@
       "meshcoreRoom": "MeshCore-Raum",
       "rrcRoom": "RRC-Raum"
     },
-    "airtimeWarning": "Stundenpläne mit vielen Zielen verbrauchen viel Sendezeit.",
+    "airtimeWarning": "Häufige Pläne mit vielen Zielen verbrauchen viel Sendezeit.",
     "respectWarning": "Achte auf die gemeinsame Sendezeit von LoRa und anderen Betreibern. Spamen Sie keine Kanäle, Räume oder Hubs — bevorzugen Sie seltene Zeitpläne, wenige Ziele und Nachrichten, die das Netz tatsächlich benötigt.",
     "invalidTime": "Geben Sie eine gültige Uhrzeit ein.",
     "invalidDayOfMonth": "Der Tag im Monat muss zwischen 1 und 31 liegen.",
@@ -8533,7 +8547,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (verbunden)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Wird zu diesem Zeitpunkt ausgeführt, danach alle {{hours}} Stunden."
   },
   "internetWeather": {
     "heading": "Wetter im Internet",

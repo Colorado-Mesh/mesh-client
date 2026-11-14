@@ -605,8 +605,19 @@
     "editAria": "Edit macros",
     "dialogTitle": "Edit macros",
     "whenUsed": "When used",
+    "whenUsedTextOnly": "Applies to message macros only.",
     "sendModeInsert": "Put in message box",
     "sendModeSendNow": "Send now",
+    "actionLabel": "Action",
+    "actionText": "Message",
+    "actionRoom": "Jump to room",
+    "roomTargetLabel": "Room",
+    "roomPickerPlaceholder": "Choose a room",
+    "roomPickerEmpty": "No rooms found. Connect a MeshCore radio with room contacts or an RRC hub first.",
+    "roomGroupMeshcore": "MeshCore rooms",
+    "roomGroupRrc": "RRC rooms",
+    "roomGroupSaved": "Saved",
+    "jumpToRoomAria": "{{key}}: jump to {{label}}",
     "size": "Size",
     "sizeSmall": "Small",
     "sizeMedium": "Medium",
@@ -7760,12 +7771,16 @@
     "intervalLabel": "Repeat",
     "interval": {
       "hourly": "Hourly",
+      "every4h": "Every 4 hours",
+      "every8h": "Every 8 hours",
+      "every12h": "Every 12 hours",
       "daily": "Daily",
       "weekly": "Weekly",
       "biweekly": "Every two weeks",
       "monthly": "Monthly"
     },
     "timeOfDay": "Time",
+    "anchorHint": "Runs at this time, then every {{hours}} hours.",
     "weekday": "Weekday",
     "weekdays": {
       "0": "Sunday",
@@ -7812,7 +7827,7 @@
     "identityConnected": "{{name}} (connected)",
     "identityDisconnected": "{{name}} (offline)",
     "rrcRoomNamed": "{{hub}} — {{room}}",
-    "airtimeWarning": "Hourly schedules with many targets use a lot of airtime."
+    "airtimeWarning": "Frequent schedules with many targets use a lot of airtime."
   },
   "mecp": {
     "severity": {

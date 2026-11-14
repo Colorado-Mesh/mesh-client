@@ -7566,7 +7566,18 @@
     "footerNextField": "Следующее поле",
     "footerClose": "Закрыть",
     "footerOsKeys": "Ваша ОС может сохранить некоторые клавиши F",
-    "footerAutoSave": "PIN сохраняется автоматически."
+    "footerAutoSave": "PIN сохраняется автоматически.",
+    "whenUsedTextOnly": "Применяется только к макросам сообщений.",
+    "actionLabel": "Мероприятия",
+    "actionText": "message",
+    "actionRoom": "Перейти в комнату",
+    "roomTargetLabel": "Комната",
+    "roomPickerPlaceholder": "Выберите комнату",
+    "roomPickerEmpty": "Комнаты не найдены. Сначала подключите радио MeshCore с контактами комнаты или концентратор RRC.",
+    "roomGroupMeshcore": "MeshCore комнат(-ы)",
+    "roomGroupRrc": "Комнаты RRC",
+    "roomGroupSaved": "Сохранено",
+    "jumpToRoomAria": "{{key}}: перейти к {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",
@@ -8626,7 +8637,10 @@
       "daily": "Ежедневно",
       "weekly": "Еженедельно",
       "biweekly": "Раз в две недели",
-      "monthly": "Ежемесячно"
+      "monthly": "Ежемесячно",
+      "every4h": "Каждые 4 часа",
+      "every8h": "Каждые 8 часов",
+      "every12h": "Каждые 12 часов"
     },
     "timeOfDay": "Время",
     "weekday": "Будний день",
@@ -8668,7 +8682,7 @@
       "meshcoreRoom": "Комната MeshCore",
       "rrcRoom": "Комната RRC"
     },
-    "airtimeWarning": "Почасовые графики с большим количеством целей используют много эфирного времени.",
+    "airtimeWarning": "Частые расписания с большим количеством целей используют много эфирного времени.",
     "respectWarning": "С уважением относитесь к совместному использованию LoRa эфирного времени и другим операторам. Не рассылайте спам по каналам, комнатам или концентраторам — предпочитайте нечастые расписания, мало целей и сообщений, которые действительно нужны сети.",
     "invalidTime": "Введите допустимое время.",
     "invalidDayOfMonth": "День месяца должен быть от 1 до 31.",
@@ -8677,7 +8691,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (подключено)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Запускается в это время, затем каждые {{hours}} ч."
   },
   "internetWeather": {
     "heading": "Интернет-погода",

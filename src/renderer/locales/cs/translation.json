@@ -7516,7 +7516,18 @@
     "footerNextField": "Další pole",
     "footerClose": "Zavřít",
     "footerOsKeys": "Váš operační systém si může ponechat některé klávesy F-key",
-    "footerAutoSave": "PIN se ukládá automaticky."
+    "footerAutoSave": "PIN se ukládá automaticky.",
+    "whenUsedTextOnly": "Vztahuje se pouze na makra zpráv.",
+    "actionLabel": "Akce",
+    "actionText": "Zpráva",
+    "actionRoom": "Přejít do místnosti",
+    "roomTargetLabel": "Pokoj",
+    "roomPickerPlaceholder": "Vybrat místnost",
+    "roomPickerEmpty": "Nebyly nalezeny žádné místnosti. Nejprve připojte rádio MeshCore s kontakty místnosti nebo rozbočovač RRC.",
+    "roomGroupMeshcore": "MeshCore pokojů",
+    "roomGroupRrc": "Místnosti RRC",
+    "roomGroupSaved": "Uloženo",
+    "jumpToRoomAria": "{{key}}: přejít na {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Předpověď pro {{place}}, {{period}}: {{temp}}",
@@ -8567,7 +8578,10 @@
       "daily": "denně",
       "weekly": "Týdně",
       "biweekly": "Každé 2 týdny",
-      "monthly": "Měsíčně"
+      "monthly": "Měsíčně",
+      "every4h": "Každé 4 hodiny",
+      "every8h": "Každých 8 hodin",
+      "every12h": "Každých 12 hodin"
     },
     "timeOfDay": "Hod",
     "weekday": "Všední den",
@@ -8609,7 +8623,7 @@
       "meshcoreRoom": "MeshCore pokoj",
       "rrcRoom": "Místnost RRC"
     },
-    "airtimeWarning": "Hodinové rozvrhy s mnoha cíli spotřebují spoustu vysílacího času.",
+    "airtimeWarning": "Časté rozvrhy s mnoha cíli spotřebují spoustu vysílacího času.",
     "respectWarning": "Respektuj sdílený LoRa vysílací čas a ostatní operátory. Nespamujte kanály, místnosti ani rozbočovače — dejte přednost nepravidelným plánům, několika cílům a zprávám, které síť skutečně potřebuje.",
     "invalidTime": "Zadejte platný čas.",
     "invalidDayOfMonth": "Den v měsíci musí být od 1 do 31.",
@@ -8618,7 +8632,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (připojeno)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Spustí se v tuto dobu a poté každých {{hours}} hodin."
   },
   "internetWeather": {
     "heading": "Počasí na internetu",

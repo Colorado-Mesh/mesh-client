@@ -64,6 +64,12 @@ export function computeNextDue(rule: ScheduledBroadcastRule, afterMs: number): n
   switch (rule.interval) {
     case 'hourly':
       return nextHourly(afterMs, mm);
+    case 'every4h':
+      return nextEveryHours(afterMs, hh, mm, 4);
+    case 'every8h':
+      return nextEveryHours(afterMs, hh, mm, 8);
+    case 'every12h':
+      return nextEveryHours(afterMs, hh, mm, 12);
     case 'daily':
       return nextDaily(afterMs, hh, mm);
     case 'weekly': {
@@ -143,6 +149,39 @@ function nextHourly(afterMs: number, minuteOfHour: number): number | null {
       m = nextDay.getMonth();
       d = nextDay.getDate();
     }
+  }
+  return null;
+}
+
+/**
+ * Next occurrence of an N-hour cadence anchored at (hh:mm) local wall clock.
+ * stepHours must divide 24; candidates are built with `atLocal` (DST-safe).
+ */
+function nextEveryHours(
+  afterMs: number,
+  anchorHh: number,
+  anchorMm: number,
+  stepHours: number,
+): number | null {
+  if (!Number.isInteger(stepHours) || stepHours <= 0 || 24 % stepHours !== 0) return null;
+  const after = new Date(afterMs);
+  const baseY = after.getFullYear();
+  const baseM = after.getMonth();
+  const baseD = after.getDate();
+  const slotsPerDay = 24 / stepHours;
+  const unique = new Set<number>();
+  for (const dayOffset of [-1, 0, 1] as const) {
+    const day = new Date(baseY, baseM, baseD + dayOffset);
+    const y = day.getFullYear();
+    const m = day.getMonth();
+    const d = day.getDate();
+    for (let k = 0; k < slotsPerDay; k++) {
+      unique.add(atLocal(y, m, d, (anchorHh + k * stepHours) % 24, anchorMm));
+    }
+  }
+  const sorted = [...unique].sort((a, b) => a - b);
+  for (const candidate of sorted) {
+    if (candidate > afterMs) return candidate;
   }
   return null;
 }

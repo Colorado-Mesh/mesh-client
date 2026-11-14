@@ -5,6 +5,7 @@ import {
   CHAT_MACRO_SLOT_COUNT,
   CHAT_MACRO_TEXT_MAX,
   CHAT_MACROS_STORAGE_KEY,
+  isChatMacroSlotEmpty,
   resetChatMacrosStoreForTests,
   resolveChatMacroSize,
   sanitizeChatMacrosPersisted,
@@ -92,8 +93,8 @@ describe('chatMacrosStore', () => {
       collapsed: 'no',
     });
     expect(out.slots).toHaveLength(CHAT_MACRO_SLOT_COUNT);
-    expect(out.slots[0]).toEqual({ label: '', text: 'ok' });
-    expect(out.slots[1]).toEqual({ label: '', text: '' });
+    expect(out.slots[0]).toEqual({ label: '', text: 'ok', action: 'text' });
+    expect(out.slots[1]).toEqual({ label: '', text: '', action: 'text' });
     expect(out.size).toBeNull();
     expect(out.sendMode).toBe('insert');
     expect(out.collapsed).toBe(true);
@@ -112,7 +113,71 @@ describe('chatMacrosStore', () => {
     const s = useChatMacrosStore.getState();
     expect(s.collapsed).toBe(false);
     expect(s.size).toBe('large');
-    expect(s.slots[0]).toEqual({ label: 'Yes', text: 'Yes' });
+    expect(s.slots[0]).toEqual({ label: 'Yes', text: 'Yes', action: 'text' });
     expect(s.slots).toHaveLength(CHAT_MACRO_SLOT_COUNT);
+  });
+
+  it('treats v1 label/text-only slots as text actions', () => {
+    const out = sanitizeChatMacrosPersisted({
+      slots: [{ label: 'Hi', text: 'Hello' }],
+    });
+    expect(out.slots[0]).toEqual({ label: 'Hi', text: 'Hello', action: 'text' });
+  });
+
+  it('falls back to text when room target is malformed', () => {
+    const out = sanitizeChatMacrosPersisted({
+      slots: [
+        {
+          label: 'R',
+          text: '',
+          action: 'room',
+          room: { kind: 'meshcore-room', roomPubKeyHex: 'bad' },
+        },
+        { label: 'R2', text: '', action: 'room', room: null },
+        { label: 'R3', text: '', action: 'room', room: 'nope' },
+      ],
+    });
+    expect(out.slots[0]?.action).toBe('text');
+    expect(out.slots[0]?.room).toBeUndefined();
+    expect(out.slots[1]?.action).toBe('text');
+    expect(out.slots[2]?.action).toBe('text');
+  });
+
+  it('round-trips a valid room slot through sanitize', () => {
+    const room = {
+      kind: 'meshcore-room' as const,
+      identityId: 'mc1',
+      roomPubKeyHex: 'ab'.repeat(32),
+      label: 'Weather',
+    };
+    const out = sanitizeChatMacrosPersisted({
+      slots: [{ label: 'Wx', text: 'kept', action: 'room', room }],
+    });
+    expect(out.slots[0]).toEqual({
+      label: 'Wx',
+      text: 'kept',
+      action: 'room',
+      room: { ...room, roomPubKeyHex: room.roomPubKeyHex.toLowerCase() },
+    });
+  });
+
+  it('isChatMacroSlotEmpty handles room vs text slots', () => {
+    expect(isChatMacroSlotEmpty(undefined)).toBe(true);
+    expect(isChatMacroSlotEmpty({ label: '', text: '', action: 'text' })).toBe(true);
+    expect(isChatMacroSlotEmpty({ label: '', text: 'hi', action: 'text' })).toBe(false);
+    expect(isChatMacroSlotEmpty({ label: '', text: '', action: 'room' })).toBe(true);
+    expect(
+      isChatMacroSlotEmpty({
+        label: '',
+        text: '',
+        action: 'room',
+        room: {
+          kind: 'rrc-room',
+          hubDestHash: 'aabb',
+          room: '#weather',
+          label: 'weather',
+        },
+      }),
+    ).toBe(false);
   });
 });
