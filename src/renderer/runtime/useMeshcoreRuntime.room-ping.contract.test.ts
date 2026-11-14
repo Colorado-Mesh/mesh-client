@@ -70,6 +70,9 @@ describe('useMeshcoreRuntime room Status row action', () => {
     expect(body).toContain('maybeRequestMeshcoreAutoOffloadForError');
     expect(body).toContain('useUnknownRouteHops = true');
     expect(body).toContain('roomStatusSessionStale = statusSessionStale');
+    expect(body).toMatch(
+      /catch \(e: unknown\) \{[\s\S]*?if \(!statusSessionStale\(\)\) \{[\s\S]*?maybeRequestMeshcoreAutoOffloadForError/,
+    );
   });
 });
 

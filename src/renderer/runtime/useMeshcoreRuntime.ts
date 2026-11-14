@@ -6721,9 +6721,11 @@ export function useMeshcoreRuntime() {
                                 repeaterRemoteRpcRef.current,
                               );
                             } catch (e: unknown) {
-                              maybeRequestMeshcoreAutoOffloadForError(
-                                e instanceof Error ? e.cause : e,
-                              );
+                              if (!statusSessionStale()) {
+                                maybeRequestMeshcoreAutoOffloadForError(
+                                  e instanceof Error ? e.cause : e,
+                                );
+                              }
                               throw e;
                             }
                           }
