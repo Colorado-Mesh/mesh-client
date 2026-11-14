@@ -8466,7 +8466,10 @@
       "daily": "일일",
       "weekly": "주간",
       "biweekly": "격주로",
-      "monthly": "월간"
+      "monthly": "월간",
+      "every4h": "4시간마다",
+      "every8h": "8시간마다",
+      "every12h": "12시간마다"
     },
     "timeOfDay": "시간",
     "weekday": "평일",
@@ -8508,7 +8511,7 @@
       "meshcoreRoom": "MeshCore 방",
       "rrcRoom": "RRC실"
     },
-    "airtimeWarning": "목표가 많은 시간대 스케줄은 방송 시간을 많이 사용합니다.",
+    "airtimeWarning": "목표가 많은 잦은 스케줄은 방송 시간을 많이 사용합니다.",
     "respectWarning": "공용 LoRa 방송 시간 및 기타 운영자를 존중하세요. 채널, 방 또는 허브를 스팸하지 마십시오. 빈번하지 않은 일정, 몇 가지 목표 및 메시지에 실제로 필요한 메시지를 선호합니다.",
     "invalidTime": "올바른 시간을 입력하세요.",
     "invalidDayOfMonth": "일은 1에서 31 사이여야 합니다.",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (연결됨)",
     "identityDisconnected": "{{name}} (오프라인)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "이 시간에 실행한 후 {{hours}}시간마다 실행됩니다."
   },
   "internetWeather": {
     "heading": "인터넷 날씨",

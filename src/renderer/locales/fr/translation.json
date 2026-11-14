@@ -8465,7 +8465,10 @@
       "daily": "Tous les jours",
       "weekly": "Hebdomadaire",
       "biweekly": "Toutes les deux semaines",
-      "monthly": "Mensuelle"
+      "monthly": "Mensuelle",
+      "every4h": "Chaque 4 heures",
+      "every8h": "Toutes les 8 heures",
+      "every12h": "Toutes les 12 heures"
     },
     "timeOfDay": "Heure",
     "weekday": "Jour ouvré",
@@ -8507,7 +8510,7 @@
       "meshcoreRoom": "Salle MeshCore",
       "rrcRoom": "Salle RRC"
     },
-    "airtimeWarning": "Les horaires horaires avec de nombreuses cibles utilisent beaucoup de temps d'antenne.",
+    "airtimeWarning": "Les planifications fréquentes avec de nombreuses cibles utilisent beaucoup de temps d'antenne.",
     "respectWarning": "Respectez le temps d'antenne partagé LoRa et les autres opérateurs. Ne spammez pas les canaux, les salles ou les hubs — préférez des horaires peu fréquents, peu de cibles et des messages dont le maillage a réellement besoin.",
     "invalidTime": "Saisissez une heure valide.",
     "invalidDayOfMonth": "Le jour du mois doit être compris entre 1 et 31.",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}} : {{name}}",
     "identityConnected": "{{name}} (connecté)",
     "identityDisconnected": "{{name}} (hors ligne)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "S'exécute à cette heure, puis toutes les {{hours}} heures."
   },
   "internetWeather": {
     "heading": "Météo Internet",

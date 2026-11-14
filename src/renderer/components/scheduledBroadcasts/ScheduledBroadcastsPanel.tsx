@@ -12,7 +12,10 @@ import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useScheduledBroadcastsStore } from '@/renderer/stores/scheduledBroadcastsStore';
 import type { ScheduledBroadcastInput } from '@/shared/scheduledBroadcastTypes';
-import { SCHEDULED_BROADCAST_SLOT_COUNT } from '@/shared/scheduledBroadcastTypes';
+import {
+  SCHEDULED_BROADCAST_FREQUENT_INTERVALS,
+  SCHEDULED_BROADCAST_SLOT_COUNT,
+} from '@/shared/scheduledBroadcastTypes';
 
 import { Switch } from '../ui/Switch';
 import { ScheduledBroadcastEditorDialog } from './ScheduledBroadcastEditorDialog';
@@ -133,7 +136,7 @@ export default function ScheduledBroadcastsPanel() {
           (row) =>
             row != null &&
             row.enabled &&
-            row.interval === 'hourly' &&
+            (SCHEDULED_BROADCAST_FREQUENT_INTERVALS as readonly string[]).includes(row.interval) &&
             row.targets.filter((x) => x.enabled).length > 2,
         ) ? (
           <p className="text-label text-orange-400">{t('scheduledBroadcasts.airtimeWarning')}</p>

@@ -22,11 +22,20 @@ import { ScheduledBroadcastTargetPicker } from './ScheduledBroadcastTargetPicker
 
 const INTERVALS: ScheduledBroadcastInterval[] = [
   'hourly',
+  'every4h',
+  'every8h',
+  'every12h',
   'daily',
   'weekly',
   'biweekly',
   'monthly',
 ];
+
+const ANCHOR_HINT_HOURS: Partial<Record<ScheduledBroadcastInterval, number>> = {
+  every4h: 4,
+  every8h: 8,
+  every12h: 12,
+};
 
 /** Same focusable set as PanelLauncher / ScheduledSendDialog for Tab trapping. */
 const FOCUSABLE_SELECTOR =
@@ -300,6 +309,11 @@ export function ScheduledBroadcastEditorDialog({
               }}
               aria-label={t('scheduledBroadcasts.timeOfDay')}
             />
+            {ANCHOR_HINT_HOURS[interval] != null ? (
+              <span className="text-ink-400 text-2xs">
+                {t('scheduledBroadcasts.anchorHint', { hours: ANCHOR_HINT_HOURS[interval] })}
+              </span>
+            ) : null}
           </label>
           {(interval === 'weekly' || interval === 'biweekly') && (
             <label className="text-label text-ink-200 flex flex-col gap-1">

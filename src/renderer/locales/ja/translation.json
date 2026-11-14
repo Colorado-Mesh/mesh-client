@@ -8465,7 +8465,10 @@
       "daily": "毎日",
       "weekly": "週に1回",
       "biweekly": "２週間ごと",
-      "monthly": "月に1回"
+      "monthly": "月に1回",
+      "every4h": "4時間ごと",
+      "every8h": "8時間に1回",
+      "every12h": "12 時間ごと"
     },
     "timeOfDay": "時間",
     "weekday": "Weekday",
@@ -8507,7 +8510,7 @@
       "meshcoreRoom": "MeshCoreルーム",
       "rrcRoom": "RRC室"
     },
-    "airtimeWarning": "多くのターゲットを持つ時間単位のスケジュールは、多くの放送時間を使用します。",
+    "airtimeWarning": "ターゲットが多い頻繁なスケジュールは、多くの放送時間を使用します。",
     "respectWarning": "共有LoRa放送時間や他のオペレーターを尊重してください。チャンネル、ルーム、またはハブにスパムを送信しないでください。まれなスケジュール、少数のターゲット、およびメッシュが実際に必要とするメッセージを好みます。",
     "invalidTime": "有効な時刻を入力してください。",
     "invalidDayOfMonth": "日は 1 から 31 の間にしてください。",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}} ： {{name}}",
     "identityConnected": "{{name}} （接続済み）",
     "identityDisconnected": "{{name}} （オフライン）",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "この時間に実行され、その後{{hours}}時間ごとに実行されます。"
   },
   "internetWeather": {
     "heading": "インターネットの天気",

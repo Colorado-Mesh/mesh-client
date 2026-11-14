@@ -8466,7 +8466,10 @@
       "daily": "Her gün",
       "weekly": "Haftada",
       "biweekly": "İki haftada bir",
-      "monthly": "Aylık"
+      "monthly": "Aylık",
+      "every4h": "4 saatte bir",
+      "every8h": "Her 8 saatte bir",
+      "every12h": "Her 12 saat"
     },
     "timeOfDay": "Zaman",
     "weekday": "Hafta içi",
@@ -8508,7 +8511,7 @@
       "meshcoreRoom": "MeshCore oda",
       "rrcRoom": "RRC odası"
     },
-    "airtimeWarning": "Birçok hedefi olan saatlik programlar çok fazla yayın süresi kullanır.",
+    "airtimeWarning": "Çok sayıda hedefi olan sık programlar çok fazla yayın süresi kullanır.",
     "respectWarning": "Paylaşılan LoRa yayın süresine ve diğer operatörlere saygılı olun. Kanallara, odalara veya merkezlere istenmeyen e - posta göndermeyin — sık olmayan programları, az sayıda hedefi ve mesh'in gerçekten ihtiyaç duyduğu mesajları tercih edin.",
     "invalidTime": "Geçerli bir saat girin.",
     "invalidDayOfMonth": "Ayın günü 1 ile 31 arasında olmalıdır.",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (bağlı)",
     "identityDisconnected": "{{name}} (çevrimdışı)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Bu saatte ve ardından her {{hours}} saatte bir çalışır."
   },
   "internetWeather": {
     "heading": "İnternet havası",

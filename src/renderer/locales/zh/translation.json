@@ -8465,7 +8465,10 @@
       "daily": "每天",
       "weekly": "每周",
       "biweekly": "每两周发布一次",
-      "monthly": "每月"
+      "monthly": "每月",
+      "every4h": "Every 4 hours",
+      "every8h": "Every 8 hours",
+      "every12h": "每12小时"
     },
     "timeOfDay": "时间",
     "weekday": "工作日",
@@ -8507,7 +8510,7 @@
       "meshcoreRoom": "MeshCore房间",
       "rrcRoom": "RRC房间"
     },
-    "airtimeWarning": "许多目标的小时班表使用大量的通话时间。",
+    "airtimeWarning": "目标较多的频繁计划会占用大量通话时间。",
     "respectWarning": "请尊重共享的LoRa通话时间和其他操作员。不要向频道、房间或集线器发送垃圾邮件--更喜欢不频繁的时间表、很少的目标和网格实际需要的消息。",
     "invalidTime": "请输入有效时间。",
     "invalidDayOfMonth": "日必须在 1 到 31 之间。",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}} ： {{name}}",
     "identityConnected": "{{name}} （已连接）",
     "identityDisconnected": "{{name}} （离线）",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "在此时间运行，然后每{{hours}}小时运行一次。"
   },
   "internetWeather": {
     "heading": "互联网天气",

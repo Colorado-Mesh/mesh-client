@@ -8466,7 +8466,10 @@
       "daily": "Harian",
       "weekly": "Mingguan",
       "biweekly": "setiap dua minggu",
-      "monthly": "Bulanan"
+      "monthly": "Bulanan",
+      "every4h": "Setiap 4 jam",
+      "every8h": "Setiap 8 jam",
+      "every12h": "Setiap 12 jam"
     },
     "timeOfDay": "Waktu",
     "weekday": "Hari kerja",
@@ -8508,7 +8511,7 @@
       "meshcoreRoom": "Ruangan MeshCore",
       "rrcRoom": "Ruang RRC"
     },
-    "airtimeWarning": "Jadwal per jam dengan banyak target menggunakan banyak airtime.",
+    "airtimeWarning": "Jadwal sering dengan banyak target menggunakan banyak airtime.",
     "respectWarning": "Hormati waktu tayang LoRa bersama dan operator lainnya. Jangan mengirim spam ke saluran, ruangan, atau hub — lebih suka jadwal yang jarang, beberapa target, dan pesan yang benar-benar dibutuhkan mesh.",
     "invalidTime": "Masukkan waktu yang valid.",
     "invalidDayOfMonth": "Hari dalam bulan harus antara 1 dan 31.",
@@ -8516,7 +8519,8 @@
     "channelNamed": "{{kind}} {{index}}: {{name}}",
     "identityConnected": "{{name}} (terhubung)",
     "identityDisconnected": "{{name}} (offline)",
-    "rrcRoomNamed": "{{hub}} — {{room}}"
+    "rrcRoomNamed": "{{hub}} — {{room}}",
+    "anchorHint": "Berjalan pada waktu ini, lalu setiap {{hours}} jam."
   },
   "internetWeather": {
     "heading": "Cuaca internet",

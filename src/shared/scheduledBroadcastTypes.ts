@@ -1,6 +1,7 @@
 /** Durable scheduled-broadcast slots (SQLite `scheduled_broadcasts`). */
 
-export type ScheduledBroadcastInterval = 'hourly' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
+export type ScheduledBroadcastInterval =
+  'hourly' | 'every4h' | 'every8h' | 'every12h' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
 export type ScheduledBroadcastTargetKind =
   'meshtastic-channel' | 'meshcore-channel' | 'meshcore-room' | 'rrc-room';
@@ -67,10 +68,21 @@ export type ScheduledBroadcastInput = Partial<Omit<ScheduledBroadcastRow, 'slot'
 
 export const SCHEDULED_BROADCAST_INTERVALS: readonly ScheduledBroadcastInterval[] = [
   'hourly',
+  'every4h',
+  'every8h',
+  'every12h',
   'daily',
   'weekly',
   'biweekly',
   'monthly',
+] as const;
+
+/** Intervals that can burn airtime quickly; used for the panel warning. */
+export const SCHEDULED_BROADCAST_FREQUENT_INTERVALS: readonly ScheduledBroadcastInterval[] = [
+  'hourly',
+  'every4h',
+  'every8h',
+  'every12h',
 ] as const;
 
 export const SCHEDULED_BROADCAST_TARGET_KINDS: readonly ScheduledBroadcastTargetKind[] = [
