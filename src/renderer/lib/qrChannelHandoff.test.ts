@@ -30,6 +30,15 @@ describe('qrChannelHandoff', () => {
     }
   });
 
+  it('rejects a second deferred MeshCore offer while one is pending', async () => {
+    const first = offerMeshcoreChannelQr({ name: 'Ops', secretHex: 'c'.repeat(32) });
+    await Promise.resolve();
+    const second = await offerMeshcoreChannelQr({ name: 'Other', secretHex: 'd'.repeat(32) });
+    expect(second).toBe('alreadyPending');
+    await expect(first).resolves.toBe('deferred');
+    expect(takePendingMeshcoreChannelQr()?.payload.name).toBe('Ops');
+  });
+
   it('keeps a deferred MeshCore payload for Radio mount', async () => {
     const outcome = await offerMeshcoreChannelQr({
       name: 'Ops',

@@ -4438,10 +4438,9 @@ function AppContent() {
     ],
   );
 
-  useEffect(
-    () => registerRoomMacroNavigator((plan) => openRoomMacroTarget(plan)),
-    [openRoomMacroTarget],
-  );
+  useEffect(() => {
+    return registerRoomMacroNavigator((plan) => openRoomMacroTarget(plan));
+  }, [openRoomMacroTarget]);
 
   const handleOpenRepeaterOps = useCallback(
     (nodeNum: number) => {

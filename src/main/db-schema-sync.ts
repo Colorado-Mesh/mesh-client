@@ -17,6 +17,7 @@ import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../shared/meshtasticOrphanS
 import type { NodeSqliteDB } from './db-compat';
 import {
   ensureScheduledBroadcastsTableViaSibling,
+  promoteOrDropOrphanScheduledBroadcastsNewViaSibling,
   rebuildScheduledBroadcastsIntervalCheckViaSibling,
 } from './loadScheduledBroadcastsIntervalRebuild';
 import { sanitizeLogMessage } from './log-service';
@@ -664,6 +665,8 @@ function getColumnNames(db: NodeSqliteDB, table: string): Set<string> {
 
 function ensureTablesOnly(db: NodeSqliteDB): void {
   db.execScript(CANONICAL_TABLES_DDL);
+  // Sibling chunk — promote orphan `_new` before CREATE would add an empty main table.
+  promoteOrDropOrphanScheduledBroadcastsNewViaSibling(db, tableExists);
   // Sibling chunk — create only (rebuild runs after ensureColumns).
   ensureScheduledBroadcastsTableViaSibling(db);
 }

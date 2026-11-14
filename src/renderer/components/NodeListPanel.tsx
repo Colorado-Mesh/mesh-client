@@ -816,6 +816,10 @@ export default function NodeListPanel({
                 if (result.kind === 'channel' && result.channel) {
                   requestOpenSetting({ slot: 'Radio', id: 'radio.channels.meshcoreScan' });
                   const outcome = await offerMeshcoreChannelQr(result.channel);
+                  if (outcome === 'alreadyPending') {
+                    addToast(t('qrIngest.meshcoreChannelAlreadyPending'), 'info');
+                    return;
+                  }
                   if (outcome === 'rejected') {
                     addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
                     return;

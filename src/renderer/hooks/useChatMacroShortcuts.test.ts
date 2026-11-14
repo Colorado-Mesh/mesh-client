@@ -105,6 +105,20 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
     expect(e.defaultPrevented).toBe(false);
   });
 
+  it('leaves the key alone while a non-modal scanner blocks chat macros', () => {
+    const apply = vi.fn();
+    registerMacroComposer('a', { isActive: () => true, apply });
+    const popover = document.createElement('div');
+    popover.setAttribute('data-blocks-chat-macros', 'true');
+    document.body.appendChild(popover);
+    renderHook(() => {
+      useChatMacroShortcuts();
+    });
+    const e = press('F1');
+    expect(apply).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+  });
+
   it('does not preventDefault when no composer is visible', () => {
     registerMacroComposer('a', { isActive: () => false, apply: vi.fn(() => true) });
     renderHook(() => {

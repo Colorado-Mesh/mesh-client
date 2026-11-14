@@ -6656,7 +6656,8 @@
     "meshtasticScanHint": "Naskenujte QR kód odkazu na kanál Meshtastic nebo vložte obrázek. Před použitím na rádiu si přečtěte níže uvedený formulář pro import.",
     "pasteTargetAria": "Cíl pro vložení QR kódu – stisknutím kláves Ctrl nebo Cmd + V vložíte obrázek nebo odkaz",
     "gameSessionOpened": "Otevřená herní relace z QR kódu",
-    "meshcoreChannelPending": "QR kód kanálu čeká na vyřízení – otevři Rádio, zkontroluj ho a ulož"
+    "meshcoreChannelPending": "QR kód kanálu čeká na vyřízení – otevři Rádio, zkontroluj ho a ulož",
+    "meshcoreChannelAlreadyPending": "Import kanálu už čeká na dokončení – nejdřív ho dokonči na záložce Rádio"
   },
   "reticulumRemote": {
     "navAria": "Vzdálené úseky",

@@ -5,7 +5,7 @@
  */
 
 export type ChannelQrSettleOutcome = 'accepted' | 'rejected';
-export type ChannelQrOfferOutcome = ChannelQrSettleOutcome | 'deferred';
+export type ChannelQrOfferOutcome = ChannelQrSettleOutcome | 'deferred' | 'alreadyPending';
 
 export type ChannelQrSettle = (outcome: ChannelQrSettleOutcome) => void;
 
@@ -30,6 +30,9 @@ let pendingMeshtastic: PendingMeshtasticChannelQr | null = null;
 export function offerMeshcoreChannelQr(
   payload: MeshcoreChannelQrPayload,
 ): Promise<ChannelQrOfferOutcome> {
+  if (pendingMeshcore !== null) {
+    return Promise.resolve('alreadyPending');
+  }
   return new Promise((resolve) => {
     let settled = false;
     const settle: ChannelQrSettle = (outcome) => {

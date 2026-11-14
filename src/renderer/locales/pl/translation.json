@@ -6699,7 +6699,8 @@
     "meshtasticScanHint": "Zeskanuj kod QR linku do kanału Meshtastic lub wklej obraz. Przed zastosowaniem w radiu zapoznaj się z poniższym formularzem importu.",
     "pasteTargetAria": "Miejsce wklejania kodu QR – naciśnij Ctrl lub Cmd+V, aby wkleić obraz lub link",
     "gameSessionOpened": "Otwarto sesję gry z kodu QR",
-    "meshcoreChannelPending": "Oczekujący kod QR kanału – otwórz Radio, aby sprawdzić i zapisać"
+    "meshcoreChannelPending": "Oczekujący kod QR kanału – otwórz Radio, aby sprawdzić i zapisać",
+    "meshcoreChannelAlreadyPending": "Import kanału już oczekuje — najpierw dokończ go na karcie Radio"
   },
   "reticulumRemote": {
     "navAria": "Sekcje zdalne",

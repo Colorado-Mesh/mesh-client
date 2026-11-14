@@ -127,6 +127,82 @@ describe('QrIngestControl paste', () => {
     expect(onB).not.toHaveBeenCalled();
   });
 
+  it('stops the camera when disabled during an active scan', async () => {
+    const user = userEvent.setup();
+    const trackStop = vi.fn();
+    const mockStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    });
+    vi.spyOn(window.electronAPI.media, 'ensureCameraAccess').mockResolvedValue({
+      granted: true,
+      status: 'granted',
+    });
+    const cancelRaf = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+
+    const onDecoded = vi.fn();
+    const { rerender } = render(<QrIngestControl onDecoded={onDecoded} />);
+    await user.click(screen.getByRole('button', { name: 'qrIngest.scanCameraAria' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('qrIngest.cameraPreviewAria')).toBeInTheDocument();
+    });
+
+    rerender(<QrIngestControl onDecoded={onDecoded} disabled />);
+    await waitFor(() => {
+      expect(trackStop).toHaveBeenCalled();
+      expect(cancelRaf).toHaveBeenCalled();
+    });
+    expect(screen.queryByLabelText('qrIngest.cameraPreviewAria')).toBeNull();
+  });
+
+  it('stops the camera when the scanner is hidden inside closed details', async () => {
+    const user = userEvent.setup();
+    const trackStop = vi.fn();
+    const mockStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    });
+    vi.spyOn(window.electronAPI.media, 'ensureCameraAccess').mockResolvedValue({
+      granted: true,
+      status: 'granted',
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    let rafCb: FrameRequestCallback | undefined;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      rafCb = cb;
+      return 1;
+    });
+
+    const onDecoded = vi.fn();
+    render(
+      <details open>
+        <summary>Channels</summary>
+        <QrIngestControl onDecoded={onDecoded} />
+      </details>,
+    );
+    await user.click(screen.getByRole('button', { name: 'qrIngest.scanCameraAria' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('qrIngest.cameraPreviewAria')).toBeInTheDocument();
+    });
+
+    const details = screen.getByText('Channels').closest('details');
+    expect(details).not.toBeNull();
+    details!.open = false;
+    rafCb?.(0);
+    await waitFor(() => {
+      expect(trackStop).toHaveBeenCalled();
+    });
+  });
+
   it('ignores paste after Channels collapse hides the scanner', async () => {
     const user = userEvent.setup();
     const onDecoded = vi.fn();

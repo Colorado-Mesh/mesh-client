@@ -110,3 +110,14 @@ fi
 
 sudo dpkg --add-architecture arm64
 sudo apt-get update
+
+# GitHub runner amd64 toolchain packages can track a newer PPA/-updates set than
+# ports.ubuntu.com arm64 builds. Multiarch cross-deps (libdbus-1-dev:arm64,
+# gcc-aarch64-linux-gnu, …) then pin version lockstep and apt aborts with
+# "Packages were downgraded" unless downgrades are explicitly allowed on this
+# ephemeral CI host (see packaging-sidecars / build / release Linux install steps).
+apt_conf_cross=/etc/apt/apt.conf.d/99-mesh-client-ci-arm64-cross
+allow_downgrades='APT::Get::Allow-Downgrades "true";'
+if [[ ! -f "${apt_conf_cross}" ]] || ! grep -qF 'Allow-Downgrades' "${apt_conf_cross}"; then
+  printf '%s\n' "${allow_downgrades}" | sudo tee "${apt_conf_cross}" > /dev/null
+fi

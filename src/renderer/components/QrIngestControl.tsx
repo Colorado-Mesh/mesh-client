@@ -116,12 +116,6 @@ export default function QrIngestControl({
     };
   }, []);
 
-  useEffect(() => {
-    if (!disabled) return;
-    const root = rootRef.current;
-    if (activePasteRoot === root) activePasteRoot = null;
-  }, [disabled]);
-
   const markActiveForPaste = useCallback(() => {
     if (disabled) return;
     const root = rootRef.current;
@@ -158,6 +152,28 @@ export default function QrIngestControl({
     setScanning(false);
     setStarting(false);
   }, [stopTracks]);
+
+  useEffect(() => {
+    if (!disabled) return;
+    startGenerationRef.current += 1;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    stopTracks(streamRef.current);
+    streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    const root = rootRef.current;
+    if (activePasteRoot === root) activePasteRoot = null;
+    void Promise.resolve().then(() => {
+      if (!mountedRef.current) return;
+      // Yield so setState is not synchronous in the effect body (react-hooks/set-state-in-effect).
+      setScanning(false);
+      setStarting(false);
+    });
+  }, [disabled, stopTracks]);
 
   useEffect(() => {
     return () => {
@@ -309,6 +325,11 @@ export default function QrIngestControl({
       const SCAN_MIN_INTERVAL_MS = 200;
       const tick = () => {
         if (generation !== startGenerationRef.current) return;
+        const root = rootRef.current;
+        if (!root || !isPasteRootVisible(root)) {
+          stopCamera();
+          return;
+        }
         const v = videoRef.current;
         if (!v || v.readyState < 2) {
           rafRef.current = requestAnimationFrame(tick);

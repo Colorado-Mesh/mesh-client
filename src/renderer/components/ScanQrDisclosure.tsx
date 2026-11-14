@@ -178,6 +178,7 @@ export default function ScanQrDisclosure({
                 ref={panelRef}
                 id={panelId}
                 role="dialog"
+                data-blocks-chat-macros="true"
                 aria-label={visibleLabel}
                 style={{
                   zIndex: Z_POPOVER_MENU,
