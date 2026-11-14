@@ -63,6 +63,29 @@ describe('buildRoomJumpCandidates', () => {
     expect(list[0]?.target.kind).toBe('meshcore-room');
   });
 
+  it('derives lowercase hex from publicKey when publicKeyHex is absent', () => {
+    const bytes = Uint8Array.from({ length: 32 }, (_, i) => i);
+    const pub = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+    const list = buildRoomJumpCandidates({
+      identities: { mc1: identity('mc1', 'meshcore') },
+      nodesByIdentity: {
+        mc1: {
+          4: { nodeId: 4, hwModel: 'Room', publicKey: bytes, longName: 'BytesRoom' },
+          5: { nodeId: 5, hwModel: 'Room', publicKey: new Uint8Array(8), longName: 'Short' },
+        },
+      },
+      rrcHubDestHash: null,
+      rrcRoomsByHub: undefined,
+    });
+    expect(list).toHaveLength(1);
+    expect(list[0]?.target).toEqual({
+      kind: 'meshcore-room',
+      identityId: 'mc1',
+      roomPubKeyHex: pub,
+      label: 'BytesRoom',
+    });
+  });
+
   it('dedupes RRC joined + recent by match key; no hub → no RRC', () => {
     const hub = 'aabbccdd';
     const rooms = new Map([['#General', {}]]);

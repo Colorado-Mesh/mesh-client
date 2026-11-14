@@ -452,7 +452,7 @@ import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
-import { useIdentityStore } from './stores/identityStore';
+import { setActiveIdentity, useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapTraceRouteStore } from './stores/mapTraceRouteStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
@@ -4363,6 +4363,14 @@ function AppContent() {
         console.debug(`[App] room macro ignored: ${targetProtocol} disabled in App → Protocols`);
         return false;
       }
+      if (plan.protocol === 'meshcore') {
+        const identities = useIdentityStore.getState().identities;
+        const saved = identities[plan.identityId];
+        if (saved?.protocol.type !== 'meshcore') {
+          console.debug('[App] room macro ignored: saved MeshCore identity missing');
+          return false;
+        }
+      }
       const destinationPanelIndex =
         plan.protocol === 'meshcore' ? ROOMS_PANEL_INDEX : RRC_PANEL_INDEX;
       const tabIndex = findFilteredTabIndexForPanel(
@@ -4373,6 +4381,9 @@ function AppContent() {
       if (tabIndex < 0) {
         console.debug(`[App] room macro ignored: ${targetProtocol} has no destination panel tab`);
         return false;
+      }
+      if (plan.protocol === 'meshcore' && plan.identityId !== meshcoreIdentityId) {
+        setActiveIdentity(plan.identityId);
       }
       if (protocol === targetProtocol && pendingProtocolSelection == null) {
         setActiveTab(tabIndex);
@@ -4418,6 +4429,7 @@ function AppContent() {
       activeTab,
       capabilitiesByProtocol,
       enabledProtocols,
+      meshcoreIdentityId,
       pendingProtocolSelection,
       protocol,
       scheduleProtocolCommit,

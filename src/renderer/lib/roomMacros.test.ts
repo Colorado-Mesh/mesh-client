@@ -43,7 +43,7 @@ describe('resolveRoomMacroPlan', () => {
           id === 'mc1' && hex === 'ab'.repeat(32) ? 42 : undefined,
       },
     );
-    expect(plan).toEqual({ protocol: 'meshcore', roomNodeId: 42 });
+    expect(plan).toEqual({ protocol: 'meshcore', identityId: 'mc1', roomNodeId: 42 });
   });
 
   it('returns null for unknown meshcore pubkey', () => {

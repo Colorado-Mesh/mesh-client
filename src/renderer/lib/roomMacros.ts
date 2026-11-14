@@ -2,7 +2,7 @@ import { resolveMeshcoreRoomNodeId } from '@/renderer/lib/meshcoreRoomNodeLookup
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
 
 export type RoomMacroPlan =
-  | { protocol: 'meshcore'; roomNodeId: number }
+  | { protocol: 'meshcore'; identityId: string; roomNodeId: number }
   | { protocol: 'reticulum'; hubDestHash: string; room: string };
 
 /** App registers a navigator once; F-keys and macro clicks call through this. */
@@ -40,7 +40,7 @@ export function resolveRoomMacroPlan(
   if (target.kind === 'meshcore-room') {
     const roomNodeId = deps.resolveMeshcoreRoomNodeId(target.identityId, target.roomPubKeyHex);
     if (roomNodeId == null) return null;
-    return { protocol: 'meshcore', roomNodeId };
+    return { protocol: 'meshcore', identityId: target.identityId, roomNodeId };
   }
   return {
     protocol: 'reticulum',

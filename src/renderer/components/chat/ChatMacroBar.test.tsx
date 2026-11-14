@@ -19,7 +19,12 @@ import {
 } from '@/renderer/stores/chatMacrosStore';
 
 import { ChatComposer } from '../ChatComposer';
-import { computeVisibleMacroCount, CONTROL_WIDTH_REM, MIN_BUTTON_WIDTH_REM } from './ChatMacroBar';
+import {
+  computeVisibleMacroCount,
+  CONTROL_WIDTH_REM,
+  macroDisplayLabel,
+  MIN_BUTTON_WIDTH_REM,
+} from './ChatMacroBar';
 
 /** One realistic macro per key, including a max-length label. */
 const FULL_MACROS = [
@@ -132,12 +137,49 @@ describe('ChatMacroBar', () => {
     });
     renderComposer();
     const btn = screen.getByRole('button', { name: 'F1: jump to Wx' });
+    expect(btn).toHaveTextContent('Wx');
     fireEvent.click(btn);
     expect(nav).toHaveBeenCalledWith(
       { protocol: 'reticulum', hubDestHash: 'aabb', room: '#weather' },
       0,
     );
     expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('macroDisplayLabel prefers room.label over retained text when custom label is empty', () => {
+    expect(
+      macroDisplayLabel({
+        label: '  Custom  ',
+        text: 'stale text',
+        action: 'room',
+        room: {
+          kind: 'rrc-room',
+          hubDestHash: 'aa',
+          room: '#x',
+          label: 'Room Name',
+        },
+      }),
+    ).toBe('Custom');
+    expect(
+      macroDisplayLabel({
+        label: '',
+        text: 'stale text',
+        action: 'room',
+        room: {
+          kind: 'rrc-room',
+          hubDestHash: 'aa',
+          room: '#x',
+          label: 'Room Name',
+        },
+      }),
+    ).toBe('Room Name');
+    expect(
+      macroDisplayLabel({
+        label: '',
+        text: 'hello',
+        action: 'text',
+      }),
+    ).toBe('hello');
   });
 
   it('is collapsed by default: only "Show macros" shows, and F-keys still insert', () => {

@@ -15,7 +15,10 @@ import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLast
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
 import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../shared/meshtasticOrphanSendingWindow';
 import type { NodeSqliteDB } from './db-compat';
-import { ensureScheduledBroadcastsSchemaViaSibling } from './loadScheduledBroadcastsIntervalRebuild';
+import {
+  ensureScheduledBroadcastsTableViaSibling,
+  rebuildScheduledBroadcastsIntervalCheckViaSibling,
+} from './loadScheduledBroadcastsIntervalRebuild';
 import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
@@ -661,8 +664,8 @@ function getColumnNames(db: NodeSqliteDB, table: string): Set<string> {
 
 function ensureTablesOnly(db: NodeSqliteDB): void {
   db.execScript(CANONICAL_TABLES_DDL);
-  // Sibling chunk — create + strip legacy interval CHECK (out of measured index.js).
-  ensureScheduledBroadcastsSchemaViaSibling(db, tableExists);
+  // Sibling chunk — create only (rebuild runs after ensureColumns).
+  ensureScheduledBroadcastsTableViaSibling(db);
 }
 
 function ensureColumns(db: NodeSqliteDB): void {
@@ -1218,6 +1221,8 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
   try {
     ensureTablesOnly(db);
     ensureColumns(db);
+    // Sibling chunk — strip legacy interval CHECK after columns exist for the table copy.
+    rebuildScheduledBroadcastsIntervalCheckViaSibling(db, tableExists);
     // One-time: legacy last_heard-only rows were Contacts before the History split.
     if (cur < 48) {
       backfillReticulumIsContactFromLastHeard(db);

@@ -2,6 +2,7 @@ import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
 import type { IdentityRecord } from '@/renderer/stores/identityStore';
 import type { NodeRecord } from '@/renderer/stores/nodeStore';
+import { bytesToHex } from '@/shared/hexBytes';
 
 export interface RoomJumpCandidate {
   target: RoomMacroTarget;
@@ -37,7 +38,10 @@ export function buildRoomJumpCandidates(input: RoomJumpCandidatesInput): RoomJum
     const nodes = input.nodesByIdentity[identity.id] ?? {};
     for (const node of Object.values(nodes)) {
       if (node?.hwModel !== 'Room') continue;
-      const pub = (node.publicKeyHex ?? '').trim().toLowerCase();
+      const fromHex = (node.publicKeyHex ?? '').trim().toLowerCase();
+      const fromBytes =
+        node.publicKey && node.publicKey.length > 0 ? bytesToHex(node.publicKey) : '';
+      const pub = fromHex || fromBytes;
       if (!/^[0-9a-f]{64}$/.test(pub)) continue;
       const key = meshcoreCandidateKey(identity.id, pub);
       if (seen.has(key)) continue;

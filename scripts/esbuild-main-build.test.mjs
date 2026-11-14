@@ -136,7 +136,10 @@ describe('esbuild-main-build', () => {
       );
       expect(scheduledBroadcastsRebuildBytes.length).toBeGreaterThan(200);
       expect(scheduledBroadcastsRebuildBytes.toString('utf8')).toContain(
-        'ensureScheduledBroadcastsSchema',
+        'ensureScheduledBroadcastsTable',
+      );
+      expect(scheduledBroadcastsRebuildBytes.toString('utf8')).toContain(
+        'rebuildScheduledBroadcastsIntervalCheckIfNeeded',
       );
       const indexSource = fs.readFileSync(outfile, 'utf8');
       // Team roster DDL lives in the sibling chunk, not measured index.js.

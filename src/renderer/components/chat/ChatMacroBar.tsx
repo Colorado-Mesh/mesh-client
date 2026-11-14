@@ -12,8 +12,15 @@ import {
   useChatMacrosStore,
 } from '@/renderer/stores/chatMacrosStore';
 
-function macroDisplayLabel(slot: ChatMacroSlot): string {
-  return slot.label.trim() || slot.text.trim() || slot.room?.label || '';
+/** Custom label wins; room actions prefer room.label over retained text; else text. */
+export function macroDisplayLabel(slot: ChatMacroSlot): string {
+  const custom = slot.label.trim();
+  if (custom) return custom;
+  if (slot.action === 'room') {
+    const roomLabel = slot.room?.label?.trim() || '';
+    if (roomLabel) return roomLabel;
+  }
+  return slot.text.trim();
 }
 
 export const CHAT_MACRO_MIN_VISIBLE = 6;
@@ -368,12 +375,15 @@ function MacroButton({ index, slot, size, fill, active, onApply, onEdit }: Macro
           size={size === 'small' ? 12 : 14}
         />
       ) : isRoom ? (
-        <DoorOpen
-          aria-hidden
-          className="shrink-0"
-          trigger={iconTrigger}
-          size={size === 'small' ? 12 : 14}
-        />
+        <>
+          <DoorOpen
+            aria-hidden
+            className="shrink-0"
+            trigger={iconTrigger}
+            size={size === 'small' ? 12 : 14}
+          />
+          <span className="min-w-0 truncate">{label}</span>
+        </>
       ) : (
         <span className="min-w-0 truncate">{label}</span>
       )}
