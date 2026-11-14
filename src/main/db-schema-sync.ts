@@ -15,6 +15,7 @@ import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLast
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
 import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../shared/meshtasticOrphanSendingWindow';
 import type { NodeSqliteDB } from './db-compat';
+import { ensureScheduledBroadcastsSchemaViaSibling } from './loadScheduledBroadcastsIntervalRebuild';
 import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
@@ -368,23 +369,6 @@ export const CANONICAL_TABLES_DDL = `
         dom_nodes INTEGER
       );
 
-      CREATE TABLE IF NOT EXISTS scheduled_broadcasts (
-        slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),
-        label TEXT NOT NULL DEFAULT '',
-        text TEXT NOT NULL DEFAULT '',
-        enabled INTEGER NOT NULL DEFAULT 0,
-        interval TEXT NOT NULL DEFAULT 'weekly'
-          CHECK (interval IN ('hourly','every4h','every8h','every12h','daily','weekly','biweekly','monthly')),
-        time_of_day_min INTEGER NOT NULL DEFAULT 540 CHECK (time_of_day_min BETWEEN 0 AND 1439),
-        weekday INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 0 AND 6),
-        day_of_month INTEGER CHECK (day_of_month IS NULL OR day_of_month BETWEEN 1 AND 31),
-        anchor_ymd TEXT,
-        next_due_at INTEGER,
-        last_attempt_at INTEGER,
-        last_result_json TEXT,
-        targets_json TEXT NOT NULL DEFAULT '[]',
-        updated_at INTEGER NOT NULL
-      );
     `;
 
 /**
@@ -677,6 +661,8 @@ function getColumnNames(db: NodeSqliteDB, table: string): Set<string> {
 
 function ensureTablesOnly(db: NodeSqliteDB): void {
   db.execScript(CANONICAL_TABLES_DDL);
+  // Sibling chunk — create + strip legacy interval CHECK (out of measured index.js).
+  ensureScheduledBroadcastsSchemaViaSibling(db, tableExists);
 }
 
 function ensureColumns(db: NodeSqliteDB): void {
@@ -887,46 +873,6 @@ function rebuildMeshcoreTraceHistoryIfNeeded(db: NodeSqliteDB): void {
             DROP TABLE meshcore_trace_history;
             ALTER TABLE meshcore_trace_history_new RENAME TO meshcore_trace_history;
             CREATE INDEX IF NOT EXISTS idx_meshcore_trace_history_node_id ON meshcore_trace_history(node_id);
-          `);
-}
-
-/** Widen interval CHECK to include every4h/8h/12h (SQLite cannot ALTER CHECK in place). */
-function rebuildScheduledBroadcastsIntervalCheckIfNeeded(db: NodeSqliteDB): void {
-  if (!tableExists(db, 'scheduled_broadcasts')) return;
-  const row = db
-    .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='scheduled_broadcasts'`)
-    .get() as { sql: string | null } | undefined;
-  const sql = row?.sql ?? '';
-  if (sql.includes("'every4h'")) return;
-
-  db.execScript(`
-            CREATE TABLE scheduled_broadcasts_new (
-              slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),
-              label TEXT NOT NULL DEFAULT '',
-              text TEXT NOT NULL DEFAULT '',
-              enabled INTEGER NOT NULL DEFAULT 0,
-              interval TEXT NOT NULL DEFAULT 'weekly'
-                CHECK (interval IN ('hourly','every4h','every8h','every12h','daily','weekly','biweekly','monthly')),
-              time_of_day_min INTEGER NOT NULL DEFAULT 540 CHECK (time_of_day_min BETWEEN 0 AND 1439),
-              weekday INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 0 AND 6),
-              day_of_month INTEGER CHECK (day_of_month IS NULL OR day_of_month BETWEEN 1 AND 31),
-              anchor_ymd TEXT,
-              next_due_at INTEGER,
-              last_attempt_at INTEGER,
-              last_result_json TEXT,
-              targets_json TEXT NOT NULL DEFAULT '[]',
-              updated_at INTEGER NOT NULL
-            );
-            INSERT INTO scheduled_broadcasts_new (
-              slot, label, text, enabled, interval, time_of_day_min, weekday, day_of_month,
-              anchor_ymd, next_due_at, last_attempt_at, last_result_json, targets_json, updated_at
-            )
-              SELECT
-                slot, label, text, enabled, interval, time_of_day_min, weekday, day_of_month,
-                anchor_ymd, next_due_at, last_attempt_at, last_result_json, targets_json, updated_at
-              FROM scheduled_broadcasts;
-            DROP TABLE scheduled_broadcasts;
-            ALTER TABLE scheduled_broadcasts_new RENAME TO scheduled_broadcasts;
           `);
 }
 
@@ -1249,7 +1195,6 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   ensureMeshcoreMessagesDedupIndex(db);
   migrateLegacyContactGroups(db);
   rebuildMeshcoreTraceHistoryIfNeeded(db);
-  rebuildScheduledBroadcastsIntervalCheckIfNeeded(db);
   repairNodesLastHeardUnits(db);
   repairMeshcoreContactDataQuality(db);
   repairMeshtasticOrphanSendingMessages(db);
