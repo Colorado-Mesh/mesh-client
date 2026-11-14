@@ -821,7 +821,7 @@ export default function NodeListPanel({
                     return;
                   }
                   if (outcome === 'deferred') {
-                    addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+                    addToast(t('qrIngest.meshcoreChannelPending'), 'info');
                   }
                   return;
                 }

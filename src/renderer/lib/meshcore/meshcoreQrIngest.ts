@@ -68,15 +68,27 @@ export interface MeshcoreQrContactImportDeps {
   skipMountDbHydrationCommit?: () => void;
   /**
    * Persist contact; returns false on failure.
-   * Defaults to SQLite with the contact’s existing `on_radio` (0 when new).
+   * `onRadio` omitted when the store has no known radio membership (do not force 0).
    */
   saveContact?: (opts: {
     nodeId: number;
     publicKeyHex: string;
     name: string;
     contactType: number;
-    onRadio: boolean;
+    onRadio?: boolean;
   }) => Promise<boolean>;
+}
+
+/** Per identity+node ownership so a stale failed import cannot roll back a newer one. */
+const qrImportOwners = new Map<string, symbol>();
+
+function qrImportOwnerKey(storeId: string, nodeId: number): string {
+  return `${storeId}:${nodeId}`;
+}
+
+/** Test helper — clear concurrent-import ownership between cases. */
+export function resetMeshcoreQrImportOwnersForTests(): void {
+  qrImportOwners.clear();
 }
 
 async function defaultSaveMeshcoreContact(opts: {
@@ -84,7 +96,7 @@ async function defaultSaveMeshcoreContact(opts: {
   publicKeyHex: string;
   name: string;
   contactType: number;
-  onRadio: boolean;
+  onRadio?: boolean;
 }): Promise<boolean> {
   try {
     await window.electronAPI.db.saveMeshcoreContact({
@@ -92,7 +104,8 @@ async function defaultSaveMeshcoreContact(opts: {
       public_key: opts.publicKeyHex.toLowerCase(),
       adv_name: opts.name,
       contact_type: opts.contactType,
-      on_radio: opts.onRadio ? 1 : 0,
+      // Omit when unknown so UPSERT does not overwrite a live on_radio with 0/null.
+      ...(opts.onRadio !== undefined ? { on_radio: opts.onRadio ? 1 : 0 } : {}),
     });
     return true;
   } catch (err) {
@@ -130,7 +143,8 @@ export function mergeMeshcoreQrContactNode(
     longitude,
     snr: imported.snr !== 0 ? imported.snr : previous.snr,
     battery: imported.battery !== 0 ? imported.battery : previous.battery,
-    on_radio: previous.on_radio ?? false,
+    // Keep undefined when the store never learned radio membership.
+    ...(previous.on_radio !== undefined ? { on_radio: previous.on_radio } : {}),
   };
 }
 
@@ -146,6 +160,36 @@ function rollbackOptimisticQrContact(
     return;
   }
   removeNode(storeId, nodeId);
+}
+
+/**
+ * Apply QR-owned identity fields onto a runtime nodes map.
+ * Prefer `liveNodes` (identity store / readMeshcoreNodes) so RF updates during
+ * a pending save are not lost when React `prev` is stale.
+ */
+export function applyMeshcoreQrImportToNodesMap(
+  prev: Map<number, MeshNode>,
+  nodeId: number,
+  qrNode: MeshNode,
+  liveNodes: Map<number, MeshNode> = prev,
+): Map<number, MeshNode> {
+  const next = new Map(prev);
+  const current = liveNodes.get(nodeId) ?? prev.get(nodeId);
+  if (!current) {
+    next.set(nodeId, qrNode);
+    return next;
+  }
+  next.set(nodeId, {
+    ...current,
+    long_name: qrNode.long_name,
+    short_name: qrNode.short_name,
+    hw_model: qrNode.hw_model,
+    last_heard: qrNode.last_heard,
+    ...(qrNode.public_key_hex != null ? { public_key_hex: qrNode.public_key_hex } : {}),
+    ...(qrNode.hops_away !== undefined ? { hops_away: qrNode.hops_away } : {}),
+    on_radio: current.on_radio ?? qrNode.on_radio,
+  });
+  return next;
 }
 
 /**
@@ -177,6 +221,8 @@ export async function importMeshcoreQr(
   const storeId = deps.identityId;
   let previous: MeshNode | undefined;
   let nodeId: number | undefined;
+  let ownerKey: string | undefined;
+  let ownerToken: symbol | undefined;
 
   try {
     const bytes = hexToBytesExact(decoded.publicKeyHex, 32);
@@ -202,11 +248,15 @@ export async function importMeshcoreQr(
 
     previous = storeId != null ? getIdentityNodeMap(storeId).get(nodeId) : undefined;
     const node = mergeMeshcoreQrContactNode(previous, imported);
-    const onRadio = previous?.on_radio === true;
+    // New contacts default false; existing without a known flag omit so DB on_radio is retained.
+    const onRadio = node.on_radio;
 
     deps.skipMountDbHydrationCommit?.();
 
     if (storeId) {
+      ownerKey = qrImportOwnerKey(storeId, nodeId);
+      ownerToken = Symbol('meshcore-qr-import');
+      qrImportOwners.set(ownerKey, ownerToken);
       const next = new Map(getIdentityNodeMap(storeId));
       next.set(nodeId, node);
       syncNodesMapToIdentityStore(storeId, next);
@@ -218,12 +268,29 @@ export async function importMeshcoreQr(
       publicKeyHex: decoded.publicKeyHex.toLowerCase(),
       name: decoded.name,
       contactType: decoded.type,
-      onRadio,
+      ...(onRadio !== undefined ? { onRadio } : {}),
     });
 
     if (!saved) {
-      if (storeId) rollbackOptimisticQrContact(storeId, nodeId, previous);
+      if (
+        storeId != null &&
+        ownerKey != null &&
+        ownerToken != null &&
+        qrImportOwners.get(ownerKey) === ownerToken
+      ) {
+        rollbackOptimisticQrContact(storeId, nodeId, previous);
+        qrImportOwners.delete(ownerKey);
+      }
       return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
+    }
+
+    if (
+      storeId != null &&
+      ownerKey != null &&
+      ownerToken != null &&
+      qrImportOwners.get(ownerKey) === ownerToken
+    ) {
+      qrImportOwners.delete(ownerKey);
     }
 
     return {
@@ -236,8 +303,15 @@ export async function importMeshcoreQr(
     };
   } catch (err) {
     console.error('[meshcoreQrIngest] importMeshcoreQr failed: ' + errLikeToLogString(err));
-    if (storeId != null && nodeId != null) {
+    if (
+      storeId != null &&
+      nodeId != null &&
+      ownerKey != null &&
+      ownerToken != null &&
+      qrImportOwners.get(ownerKey) === ownerToken
+    ) {
       rollbackOptimisticQrContact(storeId, nodeId, previous);
+      qrImportOwners.delete(ownerKey);
     }
     return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
   }

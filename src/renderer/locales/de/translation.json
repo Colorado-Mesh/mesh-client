@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "Über QR-Code hinzufügen",
     "meshtasticScanHint": "Scannen Sie einen QR-Code für einen Meshtastic-Kanallink oder fügen Sie ein Bild ein. Überprüfen Sie das untenstehende Importformular, bevor Sie es auf das Funkgerät anwenden.",
     "pasteTargetAria": "Ziel zum Einfügen per QR-Code – Drücken Sie Strg oder Cmd+V, um ein Bild oder einen Link einzufügen",
-    "gameSessionOpened": "Spielsitzung über QR-Code geöffnet"
+    "gameSessionOpened": "Spielsitzung über QR-Code geöffnet",
+    "meshcoreChannelPending": "QR-Code des Kanals ausstehend – Radio öffnen, um ihn zu überprüfen und zu speichern"
   },
   "reticulumRemote": {
     "navAria": "Entfernte Abschnitte",

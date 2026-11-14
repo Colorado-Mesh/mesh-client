@@ -5083,6 +5083,7 @@
     "meshcoreContactImported": "MeshCore contact added from QR",
     "meshcoreContactImportFailed": "Could not import MeshCore contact from QR",
     "meshcoreChannelImported": "MeshCore channel link received — review on the Radio tab",
+    "meshcoreChannelPending": "Channel QR pending — open Radio to review and save",
     "meshcoreChannelImportFailed": "Could not import MeshCore channel from QR",
     "meshcoreChannelPrefill": "Channel details filled from QR — save to apply",
     "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",

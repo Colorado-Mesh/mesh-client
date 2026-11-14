@@ -53,9 +53,9 @@ export default function GlobalScanQrControl({
               addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
               return;
             }
-            // Live Radio settle already toasts meshcoreChannelPrefill; deferred needs the handoff toast.
+            // Live Radio settle already toasts meshcoreChannelPrefill; deferred is not imported yet.
             if (outcome === 'deferred') {
-              addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+              addToast(t('qrIngest.meshcoreChannelPending'), 'info');
             }
             onHandled?.();
             return;

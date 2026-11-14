@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "Toevoegen via QR",
     "meshtasticScanHint": "Scan een QR-code van een Meshtastic-kanaallink of plak een afbeelding. Bekijk het onderstaande importformulier voordat u het op de radio toepast.",
     "pasteTargetAria": "Doel voor plakken van QR — druk op Ctrl of Cmd+V om een afbeelding of link te plakken",
-    "gameSessionOpened": "Gamesessie geopend via QR"
+    "gameSessionOpened": "Gamesessie geopend via QR",
+    "meshcoreChannelPending": "QR-code van kanaal in behandeling — open Radio om te bekijken en op te slaan"
   },
   "reticulumRemote": {
     "navAria": "Secties op afstand",

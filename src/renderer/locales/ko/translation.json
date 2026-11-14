@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "QR 코드로 추가",
     "meshtasticScanHint": "Meshtastic 채널 링크 QR을 스캔하거나 이미지를 붙여넣으세요. 라디오에 적용하기 전에 아래의 가져오기 양식을 검토하세요.",
     "pasteTargetAria": "QR 붙여넣기 대상 — Ctrl 또는 Cmd+V를 눌러 이미지 또는 링크를 붙여넣으세요.",
-    "gameSessionOpened": "QR에서 게임 세션 열림"
+    "gameSessionOpened": "QR에서 게임 세션 열림",
+    "meshcoreChannelPending": "채널 QR 코드 대기 중 — 라디오를 열어 검토하고 저장하세요."
   },
   "reticulumRemote": {
     "navAria": "원격 섹션",

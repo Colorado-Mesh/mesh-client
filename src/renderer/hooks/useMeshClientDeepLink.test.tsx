@@ -166,8 +166,8 @@ describe('MeshClientDeepLinkHost', () => {
         expect((spy.mock.calls[0][0] as CustomEvent).detail.regionScope).toBe(
           scopeQuery.includes('unscoped') ? '' : scopeQuery ? '#metro' : undefined,
         );
-        // No MeshcoreChannelSection consumer → deferred / queued-for-review toast; pending kept.
-        expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreChannelImported', 'success');
+        // No MeshcoreChannelSection consumer → deferred pending toast; not marked imported yet.
+        expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreChannelPending', 'info');
         expect(
           screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
         ).toBeTruthy();

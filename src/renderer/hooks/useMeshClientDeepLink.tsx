@@ -184,7 +184,7 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
           applyChannel: (opts) => offerMeshcoreChannelQr(opts),
         });
         if (result.ok && result.deferred) {
-          addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+          addToast(t('qrIngest.meshcoreChannelPending'), 'info');
           return;
         }
         if (result.ok) {

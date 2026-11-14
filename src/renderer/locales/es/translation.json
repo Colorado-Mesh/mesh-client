@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "Añadir desde un código QR",
     "meshtasticScanHint": "Escanee un código QR de enlace de canal Meshtastic o pegue una imagen. Revise el formulario de importación que aparece a continuación antes de aplicarlo a la radio.",
     "pasteTargetAria": "Destino para pegar el código QR: pulsa Ctrl o Cmd+V para pegar una imagen o un enlace",
-    "gameSessionOpened": "Sesión de juego abierta desde el código QR"
+    "gameSessionOpened": "Sesión de juego abierta desde el código QR",
+    "meshcoreChannelPending": "Código QR del canal pendiente: abre Radio para revisarlo y guardarlo"
   },
   "reticulumRemote": {
     "navAria": "Secciones remotas",

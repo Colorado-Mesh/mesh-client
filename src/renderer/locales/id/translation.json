@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "Tambahkan dari QR",
     "meshtasticScanHint": "Pindai QR tautan saluran Meshtastic, atau tempel gambar. Tinjau formulir impor di bawah ini sebelum menerapkannya ke radio.",
     "pasteTargetAria": "Target tempel QR — tekan Ctrl atau Cmd+V untuk menempelkan gambar atau tautan",
-    "gameSessionOpened": "Sesi permainan dibuka dari QR"
+    "gameSessionOpened": "Sesi permainan dibuka dari QR",
+    "meshcoreChannelPending": "QR saluran berstatus tunggu — buka Radio untuk meninjau dan menyimpan"
   },
   "reticulumRemote": {
     "navAria": "Bagian terpencil",

@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { syncNodesMapToIdentityStore } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '@/renderer/lib/identityStoreReads';
 import {
+  applyMeshcoreQrImportToNodesMap,
   classifyMeshcoreQr,
   importMeshcoreQr,
   mergeMeshcoreQrContactNode,
+  resetMeshcoreQrImportOwnersForTests,
 } from '@/renderer/lib/meshcore/meshcoreQrIngest';
 import type { MeshNode } from '@/renderer/lib/types';
 import { removeNode } from '@/renderer/stores/nodeStore';
@@ -118,13 +120,61 @@ describe('mergeMeshcoreQrContactNode', () => {
     expect(merged.snr).toBe(0);
     expect(merged.on_radio).toBe(false);
   });
+
+  it('does not invent on_radio when the previous record omitted it', () => {
+    const previous = baseNode({ on_radio: undefined });
+    delete previous.on_radio;
+    const merged = mergeMeshcoreQrContactNode(
+      previous,
+      baseNode({ long_name: 'X', on_radio: false }),
+    );
+    expect(merged).not.toHaveProperty('on_radio');
+  });
+});
+
+describe('applyMeshcoreQrImportToNodesMap', () => {
+  it('keeps RF fields from liveNodes when React prev is stale', () => {
+    const nodeId = 42;
+    const qrNode = baseNode({
+      node_id: nodeId,
+      long_name: 'FromQr',
+      snr: 0,
+      battery: 0,
+      favorited: false,
+    });
+    const prev = new Map<number, MeshNode>([
+      [nodeId, baseNode({ node_id: nodeId, long_name: 'Stale', snr: 1, battery: 10 })],
+    ]);
+    const liveNodes = new Map<number, MeshNode>([
+      [
+        nodeId,
+        baseNode({
+          node_id: nodeId,
+          long_name: 'Stale',
+          snr: 12.5,
+          battery: 91,
+          favorited: true,
+          last_heard: 999,
+        }),
+      ],
+    ]);
+    const next = applyMeshcoreQrImportToNodesMap(prev, nodeId, qrNode, liveNodes);
+    expect(next.get(nodeId)).toMatchObject({
+      long_name: 'FromQr',
+      snr: 12.5,
+      battery: 91,
+      favorited: true,
+      last_heard: qrNode.last_heard,
+    });
+  });
 });
 
 describe('importMeshcoreQr', () => {
   beforeEach(() => {
+    resetMeshcoreQrImportOwnersForTests();
     vi.mocked(getIdentityNodeMap).mockReturnValue(new Map());
-    vi.mocked(syncNodesMapToIdentityStore).mockClear();
-    vi.mocked(removeNode).mockClear();
+    vi.mocked(syncNodesMapToIdentityStore).mockReset();
+    vi.mocked(removeNode).mockReset();
   });
 
   it('returns channel kind without writing DB', async () => {
@@ -254,5 +304,87 @@ describe('importMeshcoreQr', () => {
       kind: 'unsupported',
       toastKey: 'qrIngest.unknownLink',
     });
+  });
+
+  it('omits onRadio from save when the store record has no radio membership', async () => {
+    const uri = buildMeshcoreContactAddUri({
+      name: 'NoFlag',
+      publicKeyHex: PUBKEY,
+      type: 1,
+    });
+    const probe = await importMeshcoreQr(uri, {
+      identityId: 'id-mc',
+      saveContact: vi.fn().mockResolvedValue(true),
+    });
+    const nodeId = probe.nodeId!;
+    const previous = baseNode({ node_id: nodeId });
+    delete previous.on_radio;
+    vi.mocked(getIdentityNodeMap).mockReturnValue(new Map([[nodeId, previous]]));
+    const saveContact = vi.fn().mockResolvedValue(true);
+    await importMeshcoreQr(uri, { identityId: 'id-mc', saveContact });
+    expect(saveContact.mock.calls[0]?.[0]).not.toHaveProperty('onRadio');
+  });
+
+  it('does not roll back a later successful import when an earlier save fails', async () => {
+    const uriA = buildMeshcoreContactAddUri({
+      name: 'First',
+      publicKeyHex: PUBKEY,
+      type: 1,
+    });
+    const uriB = buildMeshcoreContactAddUri({
+      name: 'Second',
+      publicKeyHex: PUBKEY,
+      type: 1,
+    });
+    const probe = await importMeshcoreQr(uriA, {
+      identityId: 'id-mc',
+      saveContact: vi.fn().mockResolvedValue(true),
+    });
+    const nodeId = probe.nodeId!;
+
+    const store = new Map<number, MeshNode>();
+    vi.mocked(getIdentityNodeMap).mockImplementation(() => new Map(store));
+    vi.mocked(syncNodesMapToIdentityStore).mockImplementation((_id, next) => {
+      store.clear();
+      for (const [k, v] of next) store.set(k, v);
+    });
+    vi.mocked(removeNode).mockImplementation((_id, id) => {
+      store.delete(id);
+    });
+
+    let resolveFirst!: (ok: boolean) => void;
+    let resolveSecond!: (ok: boolean) => void;
+    const firstSave = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const secondSave = new Promise<boolean>((resolve) => {
+      resolveSecond = resolve;
+    });
+    let saveN = 0;
+    const saveContact = vi.fn().mockImplementation(() => {
+      saveN += 1;
+      return saveN === 1 ? firstSave : secondSave;
+    });
+
+    const first = importMeshcoreQr(uriA, { identityId: 'id-mc', saveContact });
+    await vi.waitFor(() => {
+      expect(saveContact).toHaveBeenCalledTimes(1);
+    });
+    const second = importMeshcoreQr(uriB, { identityId: 'id-mc', saveContact });
+    await vi.waitFor(() => {
+      expect(saveContact).toHaveBeenCalledTimes(2);
+    });
+
+    resolveSecond(true);
+    await expect(second).resolves.toMatchObject({
+      ok: true,
+      node: expect.objectContaining({ long_name: 'Second' }),
+    });
+    expect(store.get(nodeId)?.long_name).toBe('Second');
+
+    resolveFirst(false);
+    await expect(first).resolves.toMatchObject({ ok: false });
+    expect(store.get(nodeId)?.long_name).toBe('Second');
+    expect(removeNode).not.toHaveBeenCalled();
   });
 });

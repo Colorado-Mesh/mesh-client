@@ -851,6 +851,8 @@ export function buildMeshcoreNodeMapFromDb(
       longitude: coords.longitude,
       favorited: row.favorited === 1,
       hops_away: row.hops_away ?? undefined,
+      // Preserve DB radio membership so QR re-import does not force on_radio:0.
+      ...(row.on_radio === 1 ? { on_radio: true } : row.on_radio === 0 ? { on_radio: false } : {}),
     };
     initial.set(row.node_id, node);
   }

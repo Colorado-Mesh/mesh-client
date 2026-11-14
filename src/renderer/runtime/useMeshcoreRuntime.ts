@@ -225,7 +225,11 @@ import {
   replaceMeshcorePubKeyRegistry,
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
-import { importMeshcoreQr, type MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
+import {
+  applyMeshcoreQrImportToNodesMap,
+  importMeshcoreQr,
+  type MeshcoreQrImportResult,
+} from '../lib/meshcore/meshcoreQrIngest';
 import {
   mergeLiveMapChanges,
   readRadioChannels,
@@ -8907,53 +8911,39 @@ export function useMeshcoreRuntime() {
   }, []);
 
   /** Scan MeshCore contact QR: DB + identity store immediately (works offline). */
-  const importContactFromQr = useCallback(async (text: string): Promise<MeshcoreQrImportResult> => {
-    const identityId =
-      meshcoreIdentityIdRef.current ??
-      getIdentityIdForProtocol('meshcore') ??
-      getOfflineIdentityIdForProtocol('meshcore');
-    const result = await importMeshcoreQr(text, {
-      identityId,
-      skipMountDbHydrationCommit: () => {
-        skipMountDbHydrationCommitRef.current = true;
-      },
-    });
-    if (result.ok && result.kind === 'contact' && result.nodeId != null && result.node) {
-      const nodeId = result.nodeId;
-      const node = result.node;
-      // Explicit re-import clears a local delete tombstone so the contact can reappear.
-      clearMeshcoreLocallyDeletedContact(nodeId);
-      if (result.publicKey) {
-        pubKeyMapRef.current.set(nodeId, result.publicKey);
-        nicknameMapRef.current.set(nodeId, node.long_name);
-        const prefix = Array.from(result.publicKey.slice(0, 6))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-        pubKeyPrefixMapRef.current.set(prefix, nodeId);
-      }
-      setNodes((prev) => {
-        const next = new Map(prev);
-        const current = prev.get(nodeId);
-        if (!current) {
-          next.set(nodeId, node);
-        } else {
-          // Only apply QR-owned identity fields — preserve favorited / RF stats changed while save awaited.
-          next.set(nodeId, {
-            ...current,
-            long_name: node.long_name,
-            short_name: node.short_name,
-            hw_model: node.hw_model,
-            last_heard: node.last_heard,
-            ...(node.public_key_hex != null ? { public_key_hex: node.public_key_hex } : {}),
-            ...(node.hops_away !== undefined ? { hops_away: node.hops_away } : {}),
-            on_radio: current.on_radio ?? node.on_radio,
-          });
-        }
-        return next;
+  const importContactFromQr = useCallback(
+    async (text: string): Promise<MeshcoreQrImportResult> => {
+      const identityId =
+        meshcoreIdentityIdRef.current ??
+        getIdentityIdForProtocol('meshcore') ??
+        getOfflineIdentityIdForProtocol('meshcore');
+      const result = await importMeshcoreQr(text, {
+        identityId,
+        skipMountDbHydrationCommit: () => {
+          skipMountDbHydrationCommitRef.current = true;
+        },
       });
-    }
-    return result;
-  }, []);
+      if (result.ok && result.kind === 'contact' && result.nodeId != null && result.node) {
+        const nodeId = result.nodeId;
+        const node = result.node;
+        // Explicit re-import clears a local delete tombstone so the contact can reappear.
+        clearMeshcoreLocallyDeletedContact(nodeId);
+        if (result.publicKey) {
+          pubKeyMapRef.current.set(nodeId, result.publicKey);
+          nicknameMapRef.current.set(nodeId, node.long_name);
+          const prefix = Array.from(result.publicKey.slice(0, 6))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          pubKeyPrefixMapRef.current.set(prefix, nodeId);
+        }
+        // Seed from readMeshcoreNodes() so RF updates during the pending save are not dropped.
+        const liveNodes = readMeshcoreNodes();
+        setNodes((prev) => applyMeshcoreQrImportToNodesMap(prev, nodeId, node, liveNodes));
+      }
+      return result;
+    },
+    [readMeshcoreNodes],
+  );
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {

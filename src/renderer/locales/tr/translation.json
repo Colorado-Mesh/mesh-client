@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "QR kodundan ekle",
     "meshtasticScanHint": "Bir Meshtastic kanal bağlantısı QR kodunu tarayın veya bir görsel yapıştırın. Telsize uygulamadan önce aşağıdaki içe aktarma formunu inceleyin.",
     "pasteTargetAria": "QR yapıştırma hedefi — Bir görsel veya bağlantı yapıştırmak için Ctrl veya Cmd+V tuşlarına basın",
-    "gameSessionOpened": "QR'den oyun oturumu açıldı"
+    "gameSessionOpened": "QR'den oyun oturumu açıldı",
+    "meshcoreChannelPending": "Kanal QR kodu beklemede - İncelemek ve kaydetmek için Radyo'yu açın"
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

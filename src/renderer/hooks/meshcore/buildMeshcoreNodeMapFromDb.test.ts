@@ -108,6 +108,28 @@ describe('buildMeshcoreNodeMapFromDb', () => {
     expect(node?.last_heard).toBe(0);
     expect(node?.latitude).toBeNull();
     expect(node?.longitude).toBeNull();
+    expect(node?.on_radio).toBe(true);
+  });
+
+  it('maps on_radio 0 to false on MeshNode', () => {
+    const contact: MeshcoreContactDbRow = {
+      node_id: REMOTE_NODE_ID,
+      public_key: REMOTE_PUBKEY_HEX,
+      adv_name: 'Offline',
+      contact_type: 1,
+      last_advert: 1_700_000_000,
+      adv_lat: null,
+      adv_lon: null,
+      last_snr: 0,
+      last_rssi: 0,
+      favorited: 0,
+      nickname: null,
+      hops_away: null,
+      contact_flags: null,
+      on_radio: 0,
+      last_synced_from_radio: null,
+    };
+    expect(buildMeshcoreNodeMapFromDb([contact], [], []).get(REMOTE_NODE_ID)?.on_radio).toBe(false);
   });
 
   it('overlays App static GPS onto the self-node from DB advert coords', () => {

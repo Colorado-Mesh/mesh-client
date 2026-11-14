@@ -6594,7 +6594,8 @@
     "meshtasticScanHeading": "Aggiungi da QR",
     "meshtasticScanHint": "Esegui la scansione di un QR del link del canale Meshtastic o incolla un'immagine. Controlla il modulo di importazione riportato di seguito prima di applicarlo alla radio.",
     "pasteTargetAria": "Destinazione per l'incollamento tramite codice QR — Premi Ctrl o Cmd+V per incollare un'immagine o un link",
-    "gameSessionOpened": "Sessione di gioco aperta dal QR"
+    "gameSessionOpened": "Sessione di gioco aperta dal QR",
+    "meshcoreChannelPending": "QR del canale in sospeso: apri Radio per controllarlo e salvarlo"
   },
   "reticulumRemote": {
     "navAria": "Sezioni remote",
