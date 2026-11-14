@@ -267,6 +267,7 @@ import {
 } from './support-bundle';
 import { canAutoConnectTakRemote, loadTakRemoteSettings } from './tak/remote-settings';
 import type { TakServerManager } from './tak-server-manager';
+import { paintTrayUnreadDot } from './trayUnreadDot';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
 import { assertIpcSender, suspendIpcSender, validateIpcSender } from './validate-ipc-sender';
@@ -1319,7 +1320,7 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
   if (!hasUnread) return base;
 
   try {
-    // Overlay the red dot for unread messages
+    // Overlay the red unread dot (BGRA + premultiplied; see paintTrayUnreadDot / #1455).
     // Use getSize() after resize so the dot scales correctly with retina/2x template images.
     // toBitmap() on macOS template images may return a buffer that is not exactly
     // width*height*4 bytes, so we allocate the expected size and copy what we have.
@@ -1329,24 +1330,10 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
     const bitmap = Buffer.alloc(expectedSize, 0);
     rawBitmap.copy(bitmap, 0, 0, Math.min(rawBitmap.length, expectedSize));
 
-    const dotR = Math.max(2, Math.round(actualW / 8));
-    const dotCx = actualW - dotR - 1;
-    const dotCy = dotR + 1;
-
-    for (let py = 0; py < actualH; py++) {
-      for (let px = 0; px < actualW; px++) {
-        const dx = px - dotCx;
-        const dy = py - dotCy;
-        if (dx * dx + dy * dy <= dotR * dotR) {
-          const idx = (py * actualW + px) * 4;
-          bitmap[idx] = 239; // R
-          bitmap[idx + 1] = 68; // G
-          bitmap[idx + 2] = 68; // B
-          bitmap[idx + 3] = 255; // A
-        }
-      }
-    }
-
+    paintTrayUnreadDot(bitmap, actualW, actualH);
+    // OS-specific: createFromBitmap() builds a fresh NSImage and drops the template flag
+    // set on the base load above. Leave unread non-template so the red badge stays colored
+    // (re-applying setTemplateImage would desaturate the dot into a menu-bar mask).
     return nativeImage.createFromBitmap(bitmap, { width: actualW, height: actualH });
   } catch (e) {
     console.error(

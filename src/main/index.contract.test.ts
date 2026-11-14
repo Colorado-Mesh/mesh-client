@@ -1057,6 +1057,7 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
     expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
     expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
+    expect(INDEX_SOURCE).toContain('paintTrayUnreadDot(');
     expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
