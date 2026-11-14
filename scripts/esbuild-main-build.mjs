@@ -162,6 +162,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Tray unread BGRA overlay — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/trayUnreadDot.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'tray-unread-dot.js'),
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

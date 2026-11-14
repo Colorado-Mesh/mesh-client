@@ -199,6 +199,17 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const trayUnreadPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/trayUnreadDot.ts'),
+            [
+              'export const UNREAD_DOT_RING_RGB = { r: 1, g: 1, b: 1 };',
+              'export function paintTrayUnreadDot() {',
+              `  return '${trayUnreadPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.
