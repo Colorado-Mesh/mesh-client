@@ -7431,7 +7431,18 @@
     "footerNextField": "Champ suivant",
     "footerClose": "Fermer",
     "footerOsKeys": "Votre système d'exploitation peut conserver certaines touches F",
-    "footerAutoSave": "Le code PIN s’enregistre automatiquement."
+    "footerAutoSave": "Le code PIN s’enregistre automatiquement.",
+    "whenUsedTextOnly": "S'applique uniquement aux macros de message.",
+    "actionLabel": "Action",
+    "actionText": "Message",
+    "actionRoom": "Accéder à la salle",
+    "roomTargetLabel": "Salle",
+    "roomPickerPlaceholder": "Choisissez une salle",
+    "roomPickerEmpty": "Aucune salle trouvée. Connectez d’abord une radio MeshCore avec des contacts de salle ou un hub RRC.",
+    "roomGroupMeshcore": "Salles MeshCore",
+    "roomGroupRrc": "Salles RRC",
+    "roomGroupSaved": "Enregistré",
+    "jumpToRoomAria": "{{key}} : aller à {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Prévisions pour {{place}}, {{period}} : {{temp}}",

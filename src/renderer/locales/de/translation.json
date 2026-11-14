@@ -7431,7 +7431,18 @@
     "footerNextField": "Nächstes Feld",
     "footerClose": "Schließen",
     "footerOsKeys": "Ihr Betriebssystem kann einige F-Tasten behalten",
-    "footerAutoSave": "PIN wird automatisch gespeichert."
+    "footerAutoSave": "PIN wird automatisch gespeichert.",
+    "whenUsedTextOnly": "Gilt nur für Nachrichten-Makros.",
+    "actionLabel": "Handlung",
+    "actionText": "Meldung",
+    "actionRoom": "Zum Raum springen",
+    "roomTargetLabel": "Raum",
+    "roomPickerPlaceholder": "Wählen Sie einen Raum",
+    "roomPickerEmpty": "Keine Räume gefunden. Verbinden Sie zuerst ein MeshCore-Funkgerät mit Raumkontakten oder einen RRC-Hub.",
+    "roomGroupMeshcore": "MeshCore-Räume",
+    "roomGroupRrc": "RRC-Räume",
+    "roomGroupSaved": "Gespeichert",
+    "jumpToRoomAria": "{{key}}: Wechseln zu {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Prognose für {{place}}, {{period}}: {{temp}}",

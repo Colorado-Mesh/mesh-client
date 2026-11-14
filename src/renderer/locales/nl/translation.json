@@ -7431,7 +7431,18 @@
     "footerNextField": "Volgend veld",
     "footerClose": "Sluiten",
     "footerOsKeys": "Uw besturingssysteem kan enkele F-toetsen behouden",
-    "footerAutoSave": "PIN-code wordt automatisch opgeslagen."
+    "footerAutoSave": "PIN-code wordt automatisch opgeslagen.",
+    "whenUsedTextOnly": "Geldt alleen voor berichtmacro's.",
+    "actionLabel": "Actie",
+    "actionText": "Bericht",
+    "actionRoom": "Naar ruimte gaan",
+    "roomTargetLabel": "Room",
+    "roomPickerPlaceholder": "Kies een ruimte",
+    "roomPickerEmpty": "Geen ruimtes gevonden. Verbind eerst een MeshCore-radio met ruimtecontacten of een RRC-hub.",
+    "roomGroupMeshcore": "MeshCore-ruimtes",
+    "roomGroupRrc": "RRC-ruimtes",
+    "roomGroupSaved": "Opgeslagen",
+    "jumpToRoomAria": "{{key}}: ga naar {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Voorspelling voor {{place}}, {{period}}: {{temp}}",

@@ -7431,7 +7431,18 @@
     "footerNextField": "Campo successivo",
     "footerClose": "Chiudi",
     "footerOsKeys": "Il tuo sistema operativo potrebbe mantenere alcuni tasti F",
-    "footerAutoSave": "Salva automaticamente"
+    "footerAutoSave": "Salva automaticamente",
+    "whenUsedTextOnly": "Si applica solo alle macro dei messaggi.",
+    "actionLabel": "Action",
+    "actionText": "Messaggio",
+    "actionRoom": "Vai alla stanza",
+    "roomTargetLabel": "Stanza",
+    "roomPickerPlaceholder": "Scegli una sala",
+    "roomPickerEmpty": "Nessuna stanza trovata. Collega prima una radio MeshCore con i contatti della stanza o un hub RRC.",
+    "roomGroupMeshcore": "Sale MeshCore",
+    "roomGroupRrc": "Sale RRC",
+    "roomGroupSaved": "Salvato",
+    "jumpToRoomAria": "{{key}}: vai a {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",

@@ -7431,7 +7431,18 @@
     "footerNextField": "下一个字段",
     "footerClose": "关闭",
     "footerOsKeys": "您的操作系统可能会保留一些F键",
-    "footerAutoSave": "PIN自动保存。"
+    "footerAutoSave": "PIN自动保存。",
+    "whenUsedTextOnly": "仅适用于消息模板。",
+    "actionLabel": "操作",
+    "actionText": "信息",
+    "actionRoom": "跳转至房间",
+    "roomTargetLabel": "房间",
+    "roomPickerPlaceholder": "选择一间客房",
+    "roomPickerEmpty": "未找到房间。请先将MeshCore无线电连接到房间联系人或RRC集线器。",
+    "roomGroupMeshcore": "MeshCore间客房",
+    "roomGroupRrc": "RRC 房间",
+    "roomGroupSaved": "保存成功",
+    "jumpToRoomAria": "{{key}}：跳转到{{label}}"
   },
   "weatherForecast": {
     "areaAria": "{{place}} ， {{period}}的预测： {{temp}}",

@@ -7,13 +7,15 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { resetMacroComposerRegistryForTests } from '@/renderer/lib/chatMacroKeys';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import {
-  resetChatMacrosStoreForTests,
-  useChatMacrosStore,
-} from '@/renderer/stores/chatMacrosStore';
+  registerRoomMacroNavigator,
+  resetRoomMacroNavigatorForTests,
+} from '@/renderer/lib/roomMacros';
 import {
   CHAT_MACRO_LABEL_MAX,
   CHAT_MACRO_SLOT_COUNT,
   type ChatMacroSize,
+  resetChatMacrosStoreForTests,
+  useChatMacrosStore,
 } from '@/renderer/stores/chatMacrosStore';
 
 import { ChatComposer } from '../ChatComposer';
@@ -105,6 +107,7 @@ describe('ChatMacroBar', () => {
     localStorage.clear();
     resetChatMacrosStoreForTests();
     resetMacroComposerRegistryForTests();
+    resetRoomMacroNavigatorForTests();
     resetMeshcoreSendRateForTests();
     // jsdom has no layout, so treat the composer textarea as on screen.
     Element.prototype.checkVisibility = () => true;
@@ -113,6 +116,28 @@ describe('ChatMacroBar', () => {
   afterEach(() => {
     Reflect.deleteProperty(Element.prototype, 'checkVisibility');
     globalThis.ResizeObserver = originalResizeObserver;
+  });
+
+  it('room macro button jumps via navigator and does not insert text', () => {
+    const nav = vi.fn(() => true);
+    registerRoomMacroNavigator(nav);
+    useChatMacrosStore.getState().setCollapsed(false);
+    useChatMacrosStore.getState().setSlotLabel(0, 'Wx');
+    useChatMacrosStore.getState().setSlotAction(0, 'room');
+    useChatMacrosStore.getState().setSlotRoom(0, {
+      kind: 'rrc-room',
+      hubDestHash: 'aabb',
+      room: '#weather',
+      label: 'Weather',
+    });
+    renderComposer();
+    const btn = screen.getByRole('button', { name: 'F1: jump to Wx' });
+    fireEvent.click(btn);
+    expect(nav).toHaveBeenCalledWith(
+      { protocol: 'reticulum', hubDestHash: 'aabb', room: '#weather' },
+      0,
+    );
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
 
   it('is collapsed by default: only "Show macros" shows, and F-keys still insert', () => {

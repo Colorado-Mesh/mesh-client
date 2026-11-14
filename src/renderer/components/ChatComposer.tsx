@@ -37,6 +37,11 @@ import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
+import {
+  navigateRoomMacro,
+  resolveMeshcoreRoomNodeIdDefault,
+  resolveRoomMacroPlan,
+} from '@/renderer/lib/roomMacros';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import {
   isChatMacroSlotEmpty,
@@ -1023,7 +1028,16 @@ export function ChatComposer({
     (index: number): boolean => {
       const macros = useChatMacrosStore.getState();
       const slot = macros.slots[index];
-      if (isChatMacroSlotEmpty(slot) || !canTypeInComposer) return false;
+      if (isChatMacroSlotEmpty(slot)) return false;
+      if (slot.action === 'room' && slot.room) {
+        const plan = resolveRoomMacroPlan(slot.room, {
+          resolveMeshcoreRoomNodeId: resolveMeshcoreRoomNodeIdDefault,
+        });
+        if (!plan || !navigateRoomMacro(plan, index)) return false;
+        macros.markUsed(index);
+        return true;
+      }
+      if (!canTypeInComposer) return false;
       const text = slot.text.trim();
       const current = inputValueRef.current;
       const textarea = inputRef.current;

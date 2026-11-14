@@ -8,10 +8,37 @@ export const CHAT_MACROS_STORAGE_KEY = 'mesh-client:chatMacros';
 
 export type ChatMacroSize = 'small' | 'medium' | 'large';
 export type ChatMacroSendMode = 'insert' | 'sendNow';
+export type ChatMacroAction = 'text' | 'room';
+
+const MESHCORE_ROOM_PUBKEY_RE = /^[0-9a-f]{64}$/i;
+const RRC_HUB_HASH_RE = /^[0-9a-f]+$/i;
+
+export type RoomMacroTarget =
+  | {
+      kind: 'meshcore-room';
+      /** MeshCore identity whose radio owns the room contact. */
+      identityId: string;
+      /** Lowercase hex room-server public key — stable across node-id churn. */
+      roomPubKeyHex: string;
+      /** Display snapshot only; refreshed in the editor, never used for routing. */
+      label: string;
+    }
+  | {
+      kind: 'rrc-room';
+      /** Lowercase hub destination hash. */
+      hubDestHash: string;
+      /** Room name as shown in the RRC room list (may include `#`). */
+      room: string;
+      label: string;
+    };
 
 export interface ChatMacroSlot {
   label: string;
   text: string;
+  /** Missing in persisted v1 data → treated as 'text'. */
+  action?: ChatMacroAction;
+  /** Present only when action === 'room'. */
+  room?: RoomMacroTarget;
 }
 
 interface ChatMacrosPersisted {
@@ -27,6 +54,8 @@ interface ChatMacrosState extends ChatMacrosPersisted {
   lastUsedIndex: number | null;
   setSlotLabel: (index: number, label: string) => void;
   setSlotText: (index: number, text: string) => void;
+  setSlotAction: (index: number, action: ChatMacroAction) => void;
+  setSlotRoom: (index: number, room: RoomMacroTarget | null) => void;
   setSize: (size: ChatMacroSize) => void;
   setSendMode: (mode: ChatMacroSendMode) => void;
   setCollapsed: (collapsed: boolean) => void;
@@ -34,7 +63,11 @@ interface ChatMacrosState extends ChatMacrosPersisted {
 }
 
 function emptySlots(): ChatMacroSlot[] {
-  return Array.from({ length: CHAT_MACRO_SLOT_COUNT }, () => ({ label: '', text: '' }));
+  return Array.from({ length: CHAT_MACRO_SLOT_COUNT }, () => ({
+    label: '',
+    text: '',
+    action: 'text' as const,
+  }));
 }
 
 const DEFAULT_PERSISTED: ChatMacrosPersisted = {
@@ -48,13 +81,45 @@ function isSlotIndex(index: number): boolean {
   return Number.isInteger(index) && index >= 0 && index < CHAT_MACRO_SLOT_COUNT;
 }
 
+export function sanitizeRoomTarget(raw: unknown): RoomMacroTarget | undefined {
+  if (raw === null || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const label = typeof r.label === 'string' ? r.label.slice(0, CHAT_MACRO_LABEL_MAX) : '';
+  if (r.kind === 'meshcore-room') {
+    const identityId = typeof r.identityId === 'string' ? r.identityId.trim() : '';
+    const roomPubKeyHex = typeof r.roomPubKeyHex === 'string' ? r.roomPubKeyHex.trim() : '';
+    if (!identityId || !MESHCORE_ROOM_PUBKEY_RE.test(roomPubKeyHex)) return undefined;
+    return {
+      kind: 'meshcore-room',
+      identityId,
+      roomPubKeyHex: roomPubKeyHex.toLowerCase(),
+      label,
+    };
+  }
+  if (r.kind === 'rrc-room') {
+    const hubDestHash = typeof r.hubDestHash === 'string' ? r.hubDestHash.trim() : '';
+    const room = typeof r.room === 'string' ? r.room.trim() : '';
+    if (!hubDestHash || !RRC_HUB_HASH_RE.test(hubDestHash) || !room) return undefined;
+    return {
+      kind: 'rrc-room',
+      hubDestHash: hubDestHash.toLowerCase(),
+      room,
+      label,
+    };
+  }
+  return undefined;
+}
+
 function sanitizeSlot(raw: unknown): ChatMacroSlot {
-  if (raw === null || typeof raw !== 'object') return { label: '', text: '' };
-  const { label, text } = raw as { label?: unknown; text?: unknown };
-  return {
-    label: typeof label === 'string' ? label.slice(0, CHAT_MACRO_LABEL_MAX) : '',
-    text: typeof text === 'string' ? text.slice(0, CHAT_MACRO_TEXT_MAX) : '',
-  };
+  if (raw === null || typeof raw !== 'object') return { label: '', text: '', action: 'text' };
+  const r = raw as { label?: unknown; text?: unknown; action?: unknown; room?: unknown };
+  const label = typeof r.label === 'string' ? r.label.slice(0, CHAT_MACRO_LABEL_MAX) : '';
+  const text = typeof r.text === 'string' ? r.text.slice(0, CHAT_MACRO_TEXT_MAX) : '';
+  const room = r.action === 'room' ? sanitizeRoomTarget(r.room) : undefined;
+  if (r.action === 'room' && room) {
+    return { label, text, action: 'room', room };
+  }
+  return { label, text, action: 'text' };
 }
 
 /** Coerce rehydrated localStorage into a valid shape; unknown fields fall back to defaults. */
@@ -70,7 +135,9 @@ export function sanitizeChatMacrosPersisted(raw: unknown): ChatMacrosPersisted {
 }
 
 export function isChatMacroSlotEmpty(slot: ChatMacroSlot | undefined): boolean {
-  return !slot || slot.text.trim() === '';
+  if (!slot) return true;
+  if (slot.action === 'room') return slot.room == null;
+  return slot.text.trim() === '';
 }
 
 export function prefersCoarsePointer(): boolean {
@@ -109,6 +176,56 @@ export const useChatMacrosStore = create<ChatMacrosState>()(
         set((s) => ({
           slots: updateSlot(s.slots, index, { text: text.slice(0, CHAT_MACRO_TEXT_MAX) }),
         }));
+      },
+      setSlotAction: (index, action) => {
+        if (!isSlotIndex(index)) return;
+        set((s) => {
+          const slot = s.slots[index];
+          if (!slot) return s;
+          if (action === 'room') {
+            // Keep text and any existing room so switching back restores them.
+            const next: ChatMacroSlot = {
+              label: slot.label,
+              text: slot.text,
+              action: 'room',
+              ...(slot.room ? { room: slot.room } : {}),
+            };
+            return {
+              slots: s.slots.map((row, i) => (i === index ? next : row)),
+            };
+          }
+          // Drop room from the object so it is not persisted while action is text.
+          const next: ChatMacroSlot = { label: slot.label, text: slot.text, action: 'text' };
+          return {
+            slots: s.slots.map((row, i) => (i === index ? next : row)),
+          };
+        });
+      },
+      setSlotRoom: (index, room) => {
+        if (!isSlotIndex(index)) return;
+        set((s) => {
+          const slot = s.slots[index];
+          if (!slot) return s;
+          if (room == null) {
+            const next: ChatMacroSlot = {
+              label: slot.label,
+              text: slot.text,
+              action: slot.action === 'room' ? 'room' : 'text',
+            };
+            return {
+              slots: s.slots.map((row, i) => (i === index ? next : row)),
+            };
+          }
+          const next: ChatMacroSlot = {
+            label: slot.label,
+            text: slot.text,
+            action: 'room',
+            room,
+          };
+          return {
+            slots: s.slots.map((row, i) => (i === index ? next : row)),
+          };
+        });
       },
       setSize: (size) => set({ size }),
       setSendMode: (sendMode) => set({ sendMode }),

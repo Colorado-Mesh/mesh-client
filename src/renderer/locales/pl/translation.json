@@ -7549,7 +7549,18 @@
     "footerNextField": "Następne pole",
     "footerClose": "Zamknięty",
     "footerOsKeys": "Twój system operacyjny może zachować kilka klawiszy funkcyjnych",
-    "footerAutoSave": "PIN zostanie zapisany automatycznie."
+    "footerAutoSave": "PIN zostanie zapisany automatycznie.",
+    "whenUsedTextOnly": "Dotyczy tylko makr wiadomości.",
+    "actionLabel": "Czynność",
+    "actionText": "Wiadomość",
+    "actionRoom": "Przejdź do pokoju",
+    "roomTargetLabel": "Pokój",
+    "roomPickerPlaceholder": "Wybierz pokój",
+    "roomPickerEmpty": "Nie znaleziono pokoi. Najpierw podłącz radio MeshCore z kontaktami pokoi lub hub RRC.",
+    "roomGroupMeshcore": "MeshCore pokoi",
+    "roomGroupRrc": "Pokoje RRC",
+    "roomGroupSaved": "Zapisane",
+    "jumpToRoomAria": "{{key}}: przejdź do {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",

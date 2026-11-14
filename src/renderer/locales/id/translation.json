@@ -7431,7 +7431,18 @@
     "footerNextField": "Kolom berikutnya",
     "footerClose": "Tutup",
     "footerOsKeys": "OS Anda mungkin menyimpan beberapa tombol F",
-    "footerAutoSave": "Simpan secara otomatis"
+    "footerAutoSave": "Simpan secara otomatis",
+    "whenUsedTextOnly": "Berlaku untuk makro pesan saja.",
+    "actionLabel": "Tindakan",
+    "actionText": "Pesan",
+    "actionRoom": "Beralih ke ruangan",
+    "roomTargetLabel": "Room",
+    "roomPickerPlaceholder": "Pilih ruangan",
+    "roomPickerEmpty": "Tidak ada ruangan yang ditemukan. Sambungkan radio MeshCore dengan kontak ruangan atau hub RRC terlebih dahulu.",
+    "roomGroupMeshcore": "Ruangan MeshCore",
+    "roomGroupRrc": "Ruangan RRC",
+    "roomGroupSaved": "Disimpan",
+    "jumpToRoomAria": "{{key}}: lompat ke {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",

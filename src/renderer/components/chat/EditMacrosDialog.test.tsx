@@ -27,8 +27,36 @@ describe('EditMacrosDialog', () => {
     expect(useChatMacrosStore.getState().slots[0]).toEqual({
       label: 'Roger',
       text: 'Roger, copy that.',
+      action: 'text',
     });
     expect(screen.getByText('17 B')).toBeInTheDocument();
+  });
+
+  it('switches a slot to Jump to room and hides the text input', () => {
+    render(<EditMacrosDialog protocol="meshcore" onClose={vi.fn()} />);
+    const roomRadios = screen.getAllByRole('radio', { name: 'Jump to room' });
+    fireEvent.click(roomRadios[0]);
+    expect(useChatMacrosStore.getState().slots[0]?.action).toBe('room');
+    expect(screen.queryByRole('textbox', { name: 'F1 message text' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Room')).toBeInTheDocument();
+    expect(screen.getByText('Applies to message macros only.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('radio', { name: 'Message' })[0]);
+    expect(useChatMacrosStore.getState().slots[0]?.action).toBe('text');
+    expect(screen.getByRole('textbox', { name: 'F1 message text' })).toBeInTheDocument();
+  });
+
+  it('persists a chosen MeshCore room target', () => {
+    useChatMacrosStore.getState().setSlotAction(0, 'room');
+    useChatMacrosStore.getState().setSlotRoom(0, {
+      kind: 'meshcore-room',
+      identityId: 'mc1',
+      roomPubKeyHex: 'ab'.repeat(32),
+      label: 'Weather',
+    });
+    render(<EditMacrosDialog protocol="meshcore" onClose={vi.fn()} />);
+    expect(useChatMacrosStore.getState().slots[0]?.room?.kind).toBe('meshcore-room');
+    expect(screen.getByLabelText('Room')).toHaveValue(`meshcore:mc1:${'ab'.repeat(32)}`);
   });
 
   it('switches send mode and size', () => {

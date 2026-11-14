@@ -25,6 +25,7 @@ import {
 } from '../chatComposerLimits';
 import { withChatOutboxDrainLock } from '../chatOutboxDrain';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { resolveMeshcoreRoomNodeId } from '../meshcoreRoomNodeLookup';
 import { recordMeshcoreSend } from '../meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../meshtasticTextSendPacing';
 import { type RrcSendArgs, rrcSendBounded, type RrcSendResult } from '../rrc/rrcSendBounded';
@@ -100,25 +101,11 @@ function nodesOf(identityId: IdentityId): Record<number, NodeRecord | undefined>
   return useNodeStore.getState().nodes[identityId];
 }
 
-function toHex(bytes: Uint8Array): string {
-  let out = '';
-  for (const b of bytes) out += b.toString(16).padStart(2, '0');
-  return out;
-}
-
 function defaultResolveRoomNodeId(
   identityId: IdentityId,
   roomPubKeyHex: string,
 ): number | undefined {
-  const nodes = nodesOf(identityId);
-  if (!nodes) return undefined;
-  const want = roomPubKeyHex.toLowerCase();
-  for (const node of Object.values(nodes)) {
-    if (!node) continue;
-    const hex = node.publicKey ? toHex(node.publicKey) : node.publicKeyHex?.toLowerCase();
-    if (hex === want) return node.nodeId;
-  }
-  return undefined;
+  return resolveMeshcoreRoomNodeId(identityId, roomPubKeyHex);
 }
 
 function defaultGetSenderDisplayName(identityId: IdentityId): string {

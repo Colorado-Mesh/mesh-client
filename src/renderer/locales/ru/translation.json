@@ -7549,7 +7549,18 @@
     "footerNextField": "Следующее поле",
     "footerClose": "Закрыть",
     "footerOsKeys": "Ваша ОС может сохранить некоторые клавиши F",
-    "footerAutoSave": "PIN сохраняется автоматически."
+    "footerAutoSave": "PIN сохраняется автоматически.",
+    "whenUsedTextOnly": "Применяется только к макросам сообщений.",
+    "actionLabel": "Мероприятия",
+    "actionText": "message",
+    "actionRoom": "Перейти в комнату",
+    "roomTargetLabel": "Комната",
+    "roomPickerPlaceholder": "Выберите комнату",
+    "roomPickerEmpty": "Комнаты не найдены. Сначала подключите радио MeshCore с контактами комнаты или концентратор RRC.",
+    "roomGroupMeshcore": "MeshCore комнат(-ы)",
+    "roomGroupRrc": "Комнаты RRC",
+    "roomGroupSaved": "Сохранено",
+    "jumpToRoomAria": "{{key}}: перейти к {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",

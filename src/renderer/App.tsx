@@ -132,6 +132,7 @@ import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/re
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
+import { registerRoomMacroNavigator, type RoomMacroPlan } from '@/renderer/lib/roomMacros';
 import { resolveInactiveRrcNotification } from '@/renderer/lib/rrcInactiveNotifications';
 import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
@@ -4349,6 +4350,84 @@ function AppContent() {
       }
     },
     [tabsByProtocol.meshcore],
+  );
+
+  /**
+   * F-key / macro-bar room jump. Mirrors notification navigation (protocol enable check +
+   * scheduleProtocolCommit). Missing Rooms/RRC tab → debug + false (do not swallow the key).
+   */
+  const openRoomMacroTarget = useCallback(
+    (plan: RoomMacroPlan): boolean => {
+      const targetProtocol = plan.protocol;
+      if (!enabledProtocols.includes(targetProtocol)) {
+        console.debug(`[App] room macro ignored: ${targetProtocol} disabled in App → Protocols`);
+        return false;
+      }
+      const destinationPanelIndex =
+        plan.protocol === 'meshcore' ? ROOMS_PANEL_INDEX : RRC_PANEL_INDEX;
+      const tabIndex = findFilteredTabIndexForPanel(
+        selectByProtocol(tabsByProtocol, targetProtocol),
+        destinationPanelIndex,
+      );
+      // No Rooms/RRC tab for this protocol (capability gated off) — do not claim the key.
+      if (tabIndex < 0) {
+        console.debug(`[App] room macro ignored: ${targetProtocol} has no destination panel tab`);
+        return false;
+      }
+      if (protocol === targetProtocol && pendingProtocolSelection == null) {
+        setActiveTab(tabIndex);
+        if (plan.protocol === 'meshcore') setRoomsTabVisited(true);
+        else setRrcTabVisited(true);
+      } else {
+        if (protocol !== targetProtocol) {
+          lastTabByProtocol.current.set(protocol, activeTab);
+          lastPanelByProtocol.current.set(protocol, activePanelIndex);
+        }
+        scheduleProtocolCommit({
+          pending: protocol === targetProtocol ? null : targetProtocol,
+          nextProtocol: targetProtocol,
+          nextTab: tabIndex,
+          destinationPanel: destinationPanelIndex,
+          protocolChanged: protocol !== targetProtocol,
+          enablePeers: selectByProtocol(capabilitiesByProtocol, targetProtocol)
+            .hasReticulumPeersList,
+        });
+      }
+      if (plan.protocol === 'meshcore') {
+        setPendingRoomTarget(plan.roomNodeId);
+      } else {
+        const hub = plan.hubDestHash;
+        const room = plan.room;
+        const rrc = useRrcSessionStore.getState();
+        focusRrcNotificationTarget({ kind: 'rrc', room, hubHash: hub }, rrc);
+        const session = rrc.sessionsByHub.get(hub.toLowerCase());
+        const joined =
+          session != null && [...session.rooms.keys()].some((name) => rrcRoomsMatch(name, room));
+        if (!joined) {
+          void window.electronAPI.reticulum.rrc
+            .join({ hub_dest_hash: hub, room })
+            .catch((err: unknown) => {
+              console.warn('[App] room macro RRC join failed:', err);
+            });
+        }
+      }
+      return true;
+    },
+    [
+      activePanelIndex,
+      activeTab,
+      capabilitiesByProtocol,
+      enabledProtocols,
+      pendingProtocolSelection,
+      protocol,
+      scheduleProtocolCommit,
+      tabsByProtocol,
+    ],
+  );
+
+  useEffect(
+    () => registerRoomMacroNavigator((plan) => openRoomMacroTarget(plan)),
+    [openRoomMacroTarget],
   );
 
   const handleOpenRepeaterOps = useCallback(

@@ -7431,7 +7431,18 @@
     "footerNextField": "Sonraki Alan",
     "footerClose": "Kapat",
     "footerOsKeys": "İşletim sisteminizde bazı F - tuşları olabilir",
-    "footerAutoSave": "PIN otomatik olarak kaydeder."
+    "footerAutoSave": "PIN otomatik olarak kaydeder.",
+    "whenUsedTextOnly": "Yalnızca mesaj makroları için geçerlidir.",
+    "actionLabel": "Eylem",
+    "actionText": "Mesaj",
+    "actionRoom": "Odaya geç",
+    "roomTargetLabel": "Salon",
+    "roomPickerPlaceholder": "Oda Seçin…",
+    "roomPickerEmpty": "Oda bulunamadı. Önce bir MeshCore radyosunu oda kontaklarına veya bir RRC hub'ına bağlayın.",
+    "roomGroupMeshcore": "MeshCore oda",
+    "roomGroupRrc": "RRC odaları",
+    "roomGroupSaved": "Kaydedildi",
+    "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla"
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",

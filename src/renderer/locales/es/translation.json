@@ -7431,7 +7431,18 @@
     "footerNextField": "Campo siguiente",
     "footerClose": "Cerrar",
     "footerOsKeys": "Su sistema operativo puede mantener algunas teclas F",
-    "footerAutoSave": "El juego se guarda automáticamente"
+    "footerAutoSave": "El juego se guarda automáticamente",
+    "whenUsedTextOnly": "Se aplica únicamente a las macros de mensajes.",
+    "actionLabel": "Acción",
+    "actionText": "Mensaje",
+    "actionRoom": "Ir a la sala",
+    "roomTargetLabel": "Sala",
+    "roomPickerPlaceholder": "Elige una sala",
+    "roomPickerEmpty": "No se han encontrado salas. Conecte primero una radio MeshCore con contactos de sala o un hub RRC.",
+    "roomGroupMeshcore": "Salas MeshCore",
+    "roomGroupRrc": "Salas RRC",
+    "roomGroupSaved": "Guardado",
+    "jumpToRoomAria": "{{key}}: saltar a {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Pronóstico para {{place}}, {{period}}: {{temp}}",

@@ -7431,7 +7431,18 @@
     "footerNextField": "次のフィールド",
     "footerClose": "閉じる",
     "footerOsKeys": "お使いのOSにはいくつかのFキーが残っている場合があります",
-    "footerAutoSave": "PINは自動的に保存されます。"
+    "footerAutoSave": "PINは自動的に保存されます。",
+    "whenUsedTextOnly": "メッセージマクロにのみ適用されます。",
+    "actionLabel": "行うべきこと",
+    "actionText": "メッセージ",
+    "actionRoom": "ルームに移動",
+    "roomTargetLabel": "ルーム",
+    "roomPickerPlaceholder": "ルームを選択",
+    "roomPickerEmpty": "ルームが見つかりません。まず、ルーム連絡先のある MeshCore ラジオまたは RRC ハブに接続してください。",
+    "roomGroupMeshcore": "MeshCore ルーム",
+    "roomGroupRrc": "RRCルーム",
+    "roomGroupSaved": "保存済み",
+    "jumpToRoomAria": "{{key}}：{{label}}にジャンプ"
   },
   "weatherForecast": {
     "areaAria": "{{place}}、{{period}}の予測： {{temp}}",

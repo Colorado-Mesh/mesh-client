@@ -7549,7 +7549,18 @@
     "footerNextField": "Наступне поле",
     "footerClose": "Закрити",
     "footerOsKeys": "У вашій ОС можуть зберігатися деякі F-клавіші",
-    "footerAutoSave": "PIN-код зберігається автоматично."
+    "footerAutoSave": "PIN-код зберігається автоматично.",
+    "whenUsedTextOnly": "Застосовується лише до макросів повідомлень.",
+    "actionLabel": "Дія",
+    "actionText": "Повідомлення",
+    "actionRoom": "Перейти до кімнати",
+    "roomTargetLabel": "Кімната",
+    "roomPickerPlaceholder": "Вибрати A",
+    "roomPickerEmpty": "Кімнат не знайдено. Спочатку під'єднайте радіоприймач MeshCore до контактів кімнати або до концентратора RRC.",
+    "roomGroupMeshcore": "Кімнат: MeshCore",
+    "roomGroupRrc": "Кімнати RRC",
+    "roomGroupSaved": "Збережено",
+    "jumpToRoomAria": "{{key}}: перейти до {{label}}"
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",
