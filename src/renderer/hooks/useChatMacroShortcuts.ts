@@ -13,7 +13,10 @@ import {
 import { useChatMacrosStore } from '@/renderer/stores/chatMacrosStore';
 
 function modalOpen(): boolean {
-  return document.querySelector('[aria-modal="true"]') !== null;
+  return (
+    document.querySelector('[aria-modal="true"]') !== null ||
+    document.querySelector('[data-blocks-chat-macros="true"]') !== null
+  );
 }
 
 function isOrInsideContentEditable(el: HTMLElement): boolean {
