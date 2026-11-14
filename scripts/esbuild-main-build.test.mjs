@@ -23,6 +23,7 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Ratspeak 1.4 enablement (`attachments_json` on reticulum messages + IPC coalesce) nudged
  * the minified main past 797 KiB.
  * Local KML/KMZ/GeoJSON map overlay import (safe XML subset + KMZ mkdtemp extract) adds ~10 KiB.
+ * Tray unread BGRA/halo paint ships as sibling `tray-unread-dot.js` (not in index.js).
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
 
@@ -125,10 +126,16 @@ describe('esbuild-main-build', () => {
       expect(teamRosterFallbackBytes.toString('utf8')).toContain(
         'registerTeamRosterIpcFallbackHandlers',
       );
+      const trayUnreadDotBytes = fs.readFileSync(path.join(tempDir, 'tray-unread-dot.js'));
+      expect(trayUnreadDotBytes.length).toBeGreaterThan(200);
+      expect(trayUnreadDotBytes.toString('utf8')).toContain('paintTrayUnreadDot');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       // Team roster DDL lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');
       expect(teamRosterBytes.toString('utf8')).toContain('CREATE TABLE IF NOT EXISTS team_members');
+      // Tray unread AA/halo paint lives in the sibling chunk, not measured index.js.
+      expect(indexSource).not.toContain('UNREAD_DOT_RING_RGB');
+      expect(trayUnreadDotBytes.toString('utf8')).toContain('UNREAD_DOT_RING_RGB');
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');
       expect(indexSource).not.toContain('discoverXcodeDeveloperDir');

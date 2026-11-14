@@ -1,18 +1,38 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { paintTrayUnreadDot, UNREAD_DOT_RGB } from './trayUnreadDot';
+import { paintTrayUnreadDot, UNREAD_DOT_RGB, UNREAD_DOT_RING_RGB } from './trayUnreadDot';
 
 function pixelAt(bitmap: Buffer, width: number, px: number, py: number): Buffer {
   const idx = (py * width + px) * 4;
   return bitmap.subarray(idx, idx + 4);
 }
 
+/** Mirror blendPremulOver for expected-value checks. */
+function expectedAfterBlend(
+  dst: { b: number; g: number; r: number; a: number },
+  colour: { readonly r: number; readonly g: number; readonly b: number },
+  coverage: number,
+): { b: number; g: number; r: number; a: number } {
+  const sa = Math.max(0, Math.min(1, coverage));
+  const srcA = Math.round(sa * 255);
+  const srcB = Math.round((colour.b * srcA) / 255);
+  const srcG = Math.round((colour.g * srcA) / 255);
+  const srcR = Math.round((colour.r * srcA) / 255);
+  const invA = 255 - srcA;
+  return {
+    b: srcB + Math.round((dst.b * invA) / 255),
+    g: srcG + Math.round((dst.g * invA) / 255),
+    r: srcR + Math.round((dst.r * invA) / 255),
+    a: srcA + Math.round((dst.a * invA) / 255),
+  };
+}
+
 describe('paintTrayUnreadDot', () => {
   it('writes BGRA red at the dot centre (regression for #1455)', () => {
     const width = 22;
     const height = 22;
-    const bitmap = Buffer.alloc(width * height * 4, 0x7f);
+    const bitmap = Buffer.alloc(width * height * 4, 0);
     paintTrayUnreadDot(bitmap, width, height);
 
     const dotR = Math.max(2, Math.round(width / 8));
@@ -28,7 +48,7 @@ describe('paintTrayUnreadDot', () => {
     expect(b).not.toBe(UNREAD_DOT_RGB.r);
   });
 
-  it('leaves pixels outside the dot unchanged', () => {
+  it('leaves pixels outside the dot and halo unchanged', () => {
     const width = 22;
     const height = 22;
     const bitmap = Buffer.alloc(width * height * 4, 0x7f);
@@ -38,18 +58,56 @@ describe('paintTrayUnreadDot', () => {
     const dotR = Math.max(2, Math.round(width / 8));
     const cx = width - dotR - 2;
     const cy = dotR + 2;
-    const r2 = dotR * dotR;
+    const haloR = dotR + 1;
 
     for (let py = 0; py < height; py++) {
       for (let px = 0; px < width; px++) {
         const dx = px - cx;
         const dy = py - cy;
-        if (dx * dx + dy * dy <= r2) continue;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance <= haloR + 0.5) continue;
         const idx = (py * width + px) * 4;
         expect(bitmap.subarray(idx, idx + 4).equals(before.subarray(idx, idx + 4))).toBe(true);
       }
     }
     expect(bitmap.length).toBe(before.length);
+  });
+
+  it('blends halo then dot at the anti-aliased boundary (20, 5) on 22×22', () => {
+    const width = 22;
+    const height = 22;
+    const bitmap = Buffer.alloc(width * height * 4, 0);
+    paintTrayUnreadDot(bitmap, width, height);
+
+    const dotR = Math.max(2, Math.round(width / 8));
+    const cx = width - dotR - 2;
+    const cy = dotR + 2;
+    const haloR = dotR + 1;
+    expect(cx).toBe(17);
+    expect(cy).toBe(5);
+    expect(dotR).toBe(3);
+    expect(haloR).toBe(4);
+
+    const distance = Math.hypot(20 - cx, 5 - cy);
+    const dotCoverage = Math.max(0, Math.min(1, dotR + 0.5 - distance));
+    const haloCoverage = Math.max(0, Math.min(1, haloR + 0.5 - distance));
+    expect(dotCoverage).toBe(0.5);
+    expect(haloCoverage).toBe(1);
+
+    const afterHalo = expectedAfterBlend(
+      { b: 0, g: 0, r: 0, a: 0 },
+      UNREAD_DOT_RING_RGB,
+      haloCoverage,
+    );
+    const expected = expectedAfterBlend(afterHalo, UNREAD_DOT_RGB, dotCoverage);
+    // Pure-dot replace would be alpha 128; blended boundary stays opaque with both coverages.
+    expect(expected.a).toBe(255);
+
+    const [b, g, r, a] = pixelAt(bitmap, width, 20, 5);
+    expect(b).toBe(expected.b);
+    expect(g).toBe(expected.g);
+    expect(r).toBe(expected.r);
+    expect(a).toBe(expected.a);
   });
 
   it.each([16, 22, 44])('places the dot in the top-right for %ipx icons', (size) => {

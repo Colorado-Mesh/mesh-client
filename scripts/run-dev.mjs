@@ -41,6 +41,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/ipc/team-roster-handlers.ts --bundle --platform=node --outfile=dist-electron/main/team-roster-handlers.js --format=cjs --watch';
   const teamRosterFallbackBuild =
     'esbuild src/main/ipc/team-roster-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/team-roster-handlers-fallback.js --format=cjs --watch';
+  const trayUnreadDotBuild =
+    'esbuild src/main/trayUnreadDot.ts --bundle --platform=node --outfile=dist-electron/main/tray-unread-dot.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -49,7 +51,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,traydot,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -60,6 +62,7 @@ export function buildDevConcurrentlyArgs() {
     identityHydrationBuild,
     teamRosterBuild,
     teamRosterFallbackBuild,
+    trayUnreadDotBuild,
     'vite',
     electronLaunch,
   ];
