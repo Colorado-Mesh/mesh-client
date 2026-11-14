@@ -23,6 +23,10 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   teamRoster: path.join(projectRoot, 'dist-electron/main/team-roster-handlers.js'),
   teamRosterFallback: path.join(projectRoot, 'dist-electron/main/team-roster-handlers-fallback.js'),
   trayUnreadDot: path.join(projectRoot, 'dist-electron/main/tray-unread-dot.js'),
+  scheduledBroadcastsRebuild: path.join(
+    projectRoot,
+    'dist-electron/main/scheduled-broadcasts-interval-rebuild.js',
+  ),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */
