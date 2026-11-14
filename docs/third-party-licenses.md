@@ -19,7 +19,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @noble/hashes              | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-hashes.git                              |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
-| @zip.js/zip.js             | BSD-3-Clause                  | ^2.24.0         | 2.24.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
+| @zip.js/zip.js             | BSD-3-Clause                  | ^2.25.0         | 2.25.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dbus-next                  | MIT                           | 0.10.2          | 0.10.2            | git+ssh://git@github.com/dbusjs/node-dbus-next.git                             |
 | dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.17         | 3.4.17            | git://github.com/cure53/DOMPurify.git                                          |
@@ -41,9 +41,9 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.6          | 7.8.6             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.19        | 5.33.19           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.21        | 5.33.21           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.12.4         | 8.12.4            | git+https://github.com/nodejs/undici.git                                       |
-| ws                         | MIT                           | ^8.21.0         | 8.22.2            | git+https://github.com/websockets/ws.git                                       |
+| ws                         | MIT                           | ^8.21.0         | 8.23.0            | git+https://github.com/websockets/ws.git                                       |
 
 ## Development dependencies
 
@@ -61,7 +61,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
-| @testing-library/user-event           | MIT             | ^14.6.9         | 14.6.9            | git+https://github.com/testing-library/user-event.git                                |
+| @testing-library/user-event           | MIT             | ^14.6.10        | 14.6.10           | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node                           | MIT             | ^25.9.9         | 25.9.9            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -75,7 +75,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^45.3.0         | 45.3.0            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^45.3.2         | 45.3.2            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
@@ -94,7 +94,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
 | markdownlint-cli2                     | MIT             | ^0.23.3         | 0.23.3            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
-| prettier                              | MIT             | ^3.9.10         | 3.9.10            | git+https://github.com/prettier/prettier.git                                         |
+| prettier                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/prettier/prettier.git                                         |
 | prettier-plugin-sh                    | MIT             | ^0.18.1         | 0.18.1            | git+https://github.com/un-ts/prettier.git                                            |
 | prettier-plugin-tailwindcss           | MIT             | ^0.7.4          | 0.7.4             | git+https://github.com/tailwindlabs/prettier-plugin-tailwindcss.git                  |
 | react                                 | MIT             | ^19.3.1         | 19.3.1            | git+https://github.com/react/react.git                                               |
