@@ -52,7 +52,7 @@ export function withScheduledBroadcastsSavepoint(db: NodeSqliteDB, fn: () => voi
 }
 
 /** Promote a populated orphan `_new` before CREATE TABLE would add an empty `scheduled_broadcasts`. */
-function promoteOrDropOrphanNewTable(
+export function promoteOrDropOrphanNewTable(
   db: NodeSqliteDB,
   tableExists: (db: NodeSqliteDB, name: string) => boolean,
 ): void {

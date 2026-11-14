@@ -5,6 +5,7 @@ import type { NodeSqliteDB } from './db-compat';
 import type * as RebuildMod from './scheduledBroadcastsIntervalRebuild';
 import {
   ensureScheduledBroadcastsTable as ensureTableImpl,
+  promoteOrDropOrphanNewTable as promoteOrphanImpl,
   rebuildScheduledBroadcastsIntervalCheckIfNeeded as rebuildImpl,
 } from './scheduledBroadcastsIntervalRebuild';
 
@@ -12,6 +13,7 @@ const requireFromHere = createRequire(__filename);
 
 interface Mod {
   ensureScheduledBroadcastsTable: typeof RebuildMod.ensureScheduledBroadcastsTable;
+  promoteOrDropOrphanNewTable: typeof RebuildMod.promoteOrDropOrphanNewTable;
   rebuildScheduledBroadcastsIntervalCheckIfNeeded: typeof RebuildMod.rebuildScheduledBroadcastsIntervalCheckIfNeeded;
 }
 
@@ -27,6 +29,7 @@ function loadScheduledBroadcastsSchemaMod(): Mod {
   if (process.env.VITEST) {
     cached = {
       ensureScheduledBroadcastsTable: ensureTableImpl,
+      promoteOrDropOrphanNewTable: promoteOrphanImpl,
       rebuildScheduledBroadcastsIntervalCheckIfNeeded: rebuildImpl,
     };
     return cached;
@@ -38,6 +41,14 @@ function loadScheduledBroadcastsSchemaMod(): Mod {
 /** @internal */
 export function resetScheduledBroadcastsSchemaEnsureCacheForTests(): void {
   cached = undefined;
+}
+
+/** Recover orphan `scheduled_broadcasts_new` before CREATE TABLE (call from ensureTablesOnly). */
+export function promoteOrDropOrphanScheduledBroadcastsNewViaSibling(
+  db: NodeSqliteDB,
+  tableExists: (db: NodeSqliteDB, name: string) => boolean,
+): void {
+  loadScheduledBroadcastsSchemaMod().promoteOrDropOrphanNewTable(db, tableExists);
 }
 
 /** Create table if missing (call from ensureTablesOnly). */

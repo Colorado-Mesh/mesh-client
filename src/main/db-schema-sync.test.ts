@@ -665,4 +665,53 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
       }
     },
   );
+
+  it('promotes a populated scheduled_broadcasts_new before ensureTablesOnly creates main', () => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      db.execScript(`
+        CREATE TABLE scheduled_broadcasts_new (
+          slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),
+          label TEXT NOT NULL DEFAULT '',
+          text TEXT NOT NULL DEFAULT '',
+          enabled INTEGER NOT NULL DEFAULT 0,
+          interval TEXT NOT NULL DEFAULT 'weekly',
+          time_of_day_min INTEGER NOT NULL DEFAULT 540 CHECK (time_of_day_min BETWEEN 0 AND 1439),
+          weekday INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 0 AND 6),
+          day_of_month INTEGER CHECK (day_of_month IS NULL OR day_of_month BETWEEN 1 AND 31),
+          anchor_ymd TEXT,
+          next_due_at INTEGER,
+          last_attempt_at INTEGER,
+          last_result_json TEXT,
+          targets_json TEXT NOT NULL DEFAULT '[]',
+          updated_at INTEGER NOT NULL
+        );
+        INSERT INTO scheduled_broadcasts_new (slot, text, enabled, interval, updated_at)
+        VALUES (4, 'orphan-upgrade', 1, 'weekly', 4);
+      `);
+      expect(
+        db
+          .prepareOnce(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scheduled_broadcasts'",
+          )
+          .get(),
+      ).toBeUndefined();
+
+      runSchemaUpgrade(db);
+
+      expect(
+        db
+          .prepareOnce(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='scheduled_broadcasts_new'",
+          )
+          .get(),
+      ).toBeUndefined();
+      const saved = db
+        .prepareOnce(`SELECT text FROM scheduled_broadcasts WHERE slot = 4`)
+        .get() as { text: string };
+      expect(saved.text).toBe('orphan-upgrade');
+    } finally {
+      db.close();
+    }
+  });
 });
