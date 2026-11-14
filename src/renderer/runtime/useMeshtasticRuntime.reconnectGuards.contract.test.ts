@@ -42,12 +42,18 @@ describe('useMeshtasticRuntime reconnect guards (contract)', () => {
     const idx = SOURCE.indexOf('const handleConnectionLost = useCallback(() => {');
     expect(idx).toBeGreaterThan(-1);
     const body = SOURCE.slice(idx, idx + 2_500);
-    const budgetIdx = body.indexOf('shouldSkipBleReconnectAfterExhaustion({');
     const scheduleIdx = body.indexOf('meshtasticRfReconnectRef.current.onLinkLost()');
+    expect(scheduleIdx).toBeGreaterThan(-1);
+    const beforeSchedule = body.slice(0, scheduleIdx).replace(/\s+/g, ' ');
+    // Positive polarity: skip when the helper returns true, and only for BLE.
+    expect(beforeSchedule).toMatch(
+      /if\s*\(\s*connectionParamsRef\.current\?\.type\s*===\s*'ble'\s*&&\s*shouldSkipBleReconnectAfterExhaustion\s*\(/,
+    );
+    expect(beforeSchedule).not.toMatch(/!\s*shouldSkipBleReconnectAfterExhaustion/);
+    const budgetIdx = body.indexOf('shouldSkipBleReconnectAfterExhaustion');
     expect(budgetIdx).toBeGreaterThan(-1);
-    expect(scheduleIdx).toBeGreaterThan(budgetIdx);
     const branch = body.slice(budgetIdx, scheduleIdx);
-    expect(branch).toContain('skip reconnect (BLE budget exhausted)');
+    expect(branch.replace(/\s+/g, ' ')).toContain('skip reconnect (BLE budget exhausted)');
     expect(branch).toMatch(/return;/);
   });
 
