@@ -49,6 +49,12 @@ describe('useMeshcoreRuntime room ping hops', () => {
     expect(body).toContain('afterRestore');
     expect(body).toContain('useUnknownRouteHops = true');
     expect(body).toContain('resolveRoomStatusHops()');
+    expect(body).toContain('hopsAwayUsedForSend = resolveRoomStatusHops()');
+  });
+
+  it('records hops_away from the last Status send hop count', () => {
+    const body = sliceBetween('hopsAwayUsedForSend = resolveRoomStatusHops()', 'room ping error ');
+    expect(body).toContain('hops_away: hopsAwayUsedForSend');
   });
 });
 
@@ -63,5 +69,17 @@ describe('useMeshcoreRuntime room Status row action', () => {
     expect(body).toContain('canLogin: () => false');
     expect(body).toContain('maybeRequestMeshcoreAutoOffloadForError');
     expect(body).toContain('useUnknownRouteHops = true');
+    expect(body).toContain('roomStatusSessionStale = statusSessionStale');
+  });
+});
+
+describe('useMeshcoreRuntime room Status errors', () => {
+  it('skips meshcoreStatusErrors when Room Status session went stale', () => {
+    const body = sliceBetween('let roomStatusSessionStale', 'requestRepeaterStatusRef.current');
+    expect(body).toContain('roomStatusSessionStale?.()');
+    expect(body).toContain('requestRepeaterStatus abandoned (session stale)');
+    expect(body).toMatch(
+      /if \(roomStatusSessionStale\?\.\(\)\) \{[\s\S]*?throw e instanceof Error \? e : new Error/,
+    );
   });
 });

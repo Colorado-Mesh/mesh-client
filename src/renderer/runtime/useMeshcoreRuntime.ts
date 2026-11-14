@@ -5749,7 +5749,7 @@ export function useMeshcoreRuntime() {
                   useUnknownRouteHops
                     ? resolveMeshcoreAdminHopsAway(pingNode, undefined)
                     : resolveMeshcoreAdminHopsAway(pingNode, routeBytes ?? new Uint8Array());
-                const hopsAway = resolveRoomStatusHops();
+                let hopsAwayUsedForSend = resolveRoomStatusHops();
                 const hashSizeBytes = meshcoreHashSizeForTraceSeed(
                   radioContactPathLen,
                   companionPathHashMode,
@@ -5757,13 +5757,15 @@ export function useMeshcoreRuntime() {
                 // Shared deps live in a ref so this callback can run before that useMemo is declared.
                 const sendRoomStatusPing = (): Promise<
                   Awaited<ReturnType<typeof runMeshcoreRepeaterStatusRequest>>
-                > =>
-                  runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
-                    hopsAway: resolveRoomStatusHops(),
+                > => {
+                  hopsAwayUsedForSend = resolveRoomStatusHops();
+                  return runMeshcoreRepeaterStatusRequest(roomPingConn, pubKey, {
+                    hopsAway: hopsAwayUsedForSend,
                     runSerialized: repeaterRemoteRpcRef.current,
                     beforeSend: () =>
                       awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                   });
+                };
                 const raw = await withMeshcoreRepeaterLoginFallback(
                   nodeId,
                   {
@@ -5844,7 +5846,7 @@ export function useMeshcoreRuntime() {
                     ...cur,
                     snr: lastSnrDb,
                     rssi: raw.last_rssi,
-                    hops_away: hopsAway,
+                    hops_away: hopsAwayUsedForSend,
                   });
                   return next;
                 });
@@ -6653,6 +6655,7 @@ export function useMeshcoreRuntime() {
             next.delete(nodeId);
             return next;
           });
+          let roomStatusSessionStale: (() => boolean) | undefined;
           try {
             const conn = resolveMeshcoreConn();
             if (!conn) {
@@ -6677,6 +6680,7 @@ export function useMeshcoreRuntime() {
                 const statusSessionStale = (): boolean =>
                   meshcoreSetupGenerationRef.current !== statusSetupGen ||
                   resolveMeshcoreConn() !== statusConn;
+                roomStatusSessionStale = statusSessionStale;
                 const routeBytes = outPathMapRef.current.get(nodeId);
                 let useUnknownRouteHops = false;
                 const resolveRoomStatusHops = (): number =>
@@ -6816,6 +6820,13 @@ export function useMeshcoreRuntime() {
                 });
             }
           } catch (e: unknown) {
+            if (roomStatusSessionStale?.()) {
+              console.warn(
+                '[useMeshcoreRuntime] requestRepeaterStatus abandoned (session stale) ' +
+                  errLikeToLogString(e),
+              );
+              throw e instanceof Error ? e : new Error(String(e));
+            }
             const rawErr = e instanceof Error ? e.message : String(e);
             const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
             if (

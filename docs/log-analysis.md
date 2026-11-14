@@ -4,7 +4,11 @@ Enable the Log panel from **App**, select the App or Device source, and choose *
 
 Log lines may carry an owning radio stack (`protocol` on the in-memory entry; `[proto=…]` on disk in `mesh-client.log`). Lines owned by another radio are hidden from that tab’s App/Device views and excluded from Analyze (shown as an ignored-lines count). Shared / unattributable lines remain visible and analyzable from every tab. Tag ownership lives in `src/shared/logProtocolScope.ts`; `scripts/check-log-panel-filter.mjs` fails CI when a protocol-tree emitter uses an unregistered tag.
 
-Main-process MQTT broker logs (`[Meshtastic MQTT]` / `[MeshCore MQTT]` from `mqtt-manager` and adapters) are attributed through `resolveLogProtocolFromChannel` on the log line text. When a line has no registered tag and no explicit `protocol` argument, it is written without `[proto=…]` in `mesh-client.log` (the in-app log panel still classifies from message tags). Analyze MQTT finding categories are scoped to Meshtastic and MeshCore tabs only.
+**Disk (`mesh-client.log`):** `appendLine` in `src/main/log-service.ts` stamps `[proto=…]` only from an explicit `protocol` argument or from `resolveLogProtocolFromChannel` in `src/shared/logProtocolChannelResolve.ts` (IPC channel tokens, `[BLE:meshcore]`, connection `stack=…`, and similar — not the tag registry). Main-process MQTT broker lines often carry `[Meshtastic MQTT]` / `[MeshCore MQTT]` prefixes; those tags are **not** consulted on the disk path, so broker logs may be written without `[proto=…]` unless the emitter passed `protocol`.
+
+**In-app Log panel:** the renderer uses `LOG_TAG_SCOPE` in `src/shared/logProtocolScope.ts` (`resolveLogProtocol` / message tags). Registered MQTT tags can classify a line on the correct protocol tab in memory even when the on-disk file has no `[proto=…]`.
+
+Analyze MQTT finding categories are scoped to Meshtastic and MeshCore tabs only.
 
 Each finding shows a count and latest message. Expand **View evidence** for the newest 20 matching entries with timestamps, levels, sources, and owner when present. The recommendations below the findings explain what to check. **Copy troubleshooting report** creates a plain-text summary with UTC timestamps, guidance, and up to three samples per finding. The copy happens only after clicking the button. Log samples can contain private information; review them before sharing. **Log → Export** and **App → Support / Bug reports → Export for GitHub** provide the fuller context when needed.
 
