@@ -143,7 +143,7 @@ export default function ScanQrDisclosure({
       {disabled && disabledHint ? (
         <p className="text-muted text-label mb-1">{disabledHint}</p>
       ) : null}
-      <QrIngestControl disabled={disabled} onDecoded={handleDecoded} />
+      <QrIngestControl disabled={disabled} focusOnMount onDecoded={handleDecoded} />
     </>
   );
 

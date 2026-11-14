@@ -6592,7 +6592,8 @@
     "globalScanHeading": "QRコードをスキャン",
     "globalScanHint": "MeshCoreの連絡先またはチャンネルのQRコード、Meshtasticのチャンネルリンク、またはReticulumの連絡先カードをスキャンします。",
     "meshtasticScanHeading": "QRコードから追加",
-    "meshtasticScanHint": "MeshtasticチャンネルリンクのQRコードをスキャンするか、画像を貼り付けてください。ラジオに適用する前に、以下のインポートフォームを確認してください。"
+    "meshtasticScanHint": "MeshtasticチャンネルリンクのQRコードをスキャンするか、画像を貼り付けてください。ラジオに適用する前に、以下のインポートフォームを確認してください。",
+    "pasteTargetAria": "QR貼り付けターゲット — CtrlまたはCmd+Vを押して画像またはリンクを貼り付けます"
   },
   "reticulumRemote": {
     "navAria": "リモートセクション",

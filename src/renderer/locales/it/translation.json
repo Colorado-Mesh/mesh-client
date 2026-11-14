@@ -6592,7 +6592,8 @@
     "globalScanHeading": "Scansiona QR",
     "globalScanHint": "Esegui la scansione di un QR di contatto o canale MeshCore, di un link di canale Meshtastic o di una scheda contatto Reticulum.",
     "meshtasticScanHeading": "Aggiungi da QR",
-    "meshtasticScanHint": "Esegui la scansione di un QR del link del canale Meshtastic o incolla un'immagine. Controlla il modulo di importazione riportato di seguito prima di applicarlo alla radio."
+    "meshtasticScanHint": "Esegui la scansione di un QR del link del canale Meshtastic o incolla un'immagine. Controlla il modulo di importazione riportato di seguito prima di applicarlo alla radio.",
+    "pasteTargetAria": "Destinazione per l'incollamento tramite codice QR — Premi Ctrl o Cmd+V per incollare un'immagine o un link"
   },
   "reticulumRemote": {
     "navAria": "Sezioni remote",

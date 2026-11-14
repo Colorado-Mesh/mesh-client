@@ -6653,7 +6653,8 @@
     "globalScanHeading": "Naskenujte QR",
     "globalScanHint": "Naskenujte QR kód kontaktu nebo kanálu MeshCore, odkaz na kanál Meshtastic nebo vizitku kontaktu Reticulum.",
     "meshtasticScanHeading": "Přidat z QR kódu",
-    "meshtasticScanHint": "Naskenujte QR kód odkazu na kanál Meshtastic nebo vložte obrázek. Před použitím na rádiu si přečtěte níže uvedený formulář pro import."
+    "meshtasticScanHint": "Naskenujte QR kód odkazu na kanál Meshtastic nebo vložte obrázek. Před použitím na rádiu si přečtěte níže uvedený formulář pro import.",
+    "pasteTargetAria": "Cíl pro vložení QR kódu – stisknutím kláves Ctrl nebo Cmd + V vložíte obrázek nebo odkaz"
   },
   "reticulumRemote": {
     "navAria": "Vzdálené úseky",

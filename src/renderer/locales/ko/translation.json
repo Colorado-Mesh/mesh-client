@@ -6592,7 +6592,8 @@
     "globalScanHeading": "QR 스캔",
     "globalScanHint": "MeshCore 연락처 또는 채널 QR 코드, Meshtastic 채널 링크 또는 Reticulum 연락처 카드를 스캔하세요.",
     "meshtasticScanHeading": "QR 코드로 추가",
-    "meshtasticScanHint": "Meshtastic 채널 링크 QR을 스캔하거나 이미지를 붙여넣으세요. 라디오에 적용하기 전에 아래의 가져오기 양식을 검토하세요."
+    "meshtasticScanHint": "Meshtastic 채널 링크 QR을 스캔하거나 이미지를 붙여넣으세요. 라디오에 적용하기 전에 아래의 가져오기 양식을 검토하세요.",
+    "pasteTargetAria": "QR 붙여넣기 대상 — Ctrl 또는 Cmd+V를 눌러 이미지 또는 링크를 붙여넣으세요."
   },
   "reticulumRemote": {
     "navAria": "원격 섹션",

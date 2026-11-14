@@ -6592,7 +6592,8 @@
     "globalScanHeading": "QR tara",
     "globalScanHint": "Bir MeshCore kişi veya kanal QR kodunu, bir Meshtastic kanal bağlantısını veya bir Reticulum kişi kartını tarayın.",
     "meshtasticScanHeading": "QR kodundan ekle",
-    "meshtasticScanHint": "Bir Meshtastic kanal bağlantısı QR kodunu tarayın veya bir görsel yapıştırın. Telsize uygulamadan önce aşağıdaki içe aktarma formunu inceleyin."
+    "meshtasticScanHint": "Bir Meshtastic kanal bağlantısı QR kodunu tarayın veya bir görsel yapıştırın. Telsize uygulamadan önce aşağıdaki içe aktarma formunu inceleyin.",
+    "pasteTargetAria": "QR yapıştırma hedefi — Bir görsel veya bağlantı yapıştırmak için Ctrl veya Cmd+V tuşlarına basın"
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

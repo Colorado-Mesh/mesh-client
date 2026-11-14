@@ -6592,7 +6592,8 @@
     "globalScanHeading": "QR scannen",
     "globalScanHint": "Scannen Sie einen QR-Code eines MeshCore-Kontakts oder -Kanals, einen Meshtastic-Kanallink oder eine Reticulum-Kontaktkarte.",
     "meshtasticScanHeading": "Über QR-Code hinzufügen",
-    "meshtasticScanHint": "Scannen Sie einen QR-Code für einen Meshtastic-Kanallink oder fügen Sie ein Bild ein. Überprüfen Sie das untenstehende Importformular, bevor Sie es auf das Funkgerät anwenden."
+    "meshtasticScanHint": "Scannen Sie einen QR-Code für einen Meshtastic-Kanallink oder fügen Sie ein Bild ein. Überprüfen Sie das untenstehende Importformular, bevor Sie es auf das Funkgerät anwenden.",
+    "pasteTargetAria": "Ziel zum Einfügen per QR-Code – Drücken Sie Strg oder Cmd+V, um ein Bild oder einen Link einzufügen"
   },
   "reticulumRemote": {
     "navAria": "Entfernte Abschnitte",

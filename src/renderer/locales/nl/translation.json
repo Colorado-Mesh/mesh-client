@@ -6592,7 +6592,8 @@
     "globalScanHeading": "QR scannen",
     "globalScanHint": "Scan een QR-code van een MeshCore-contactpersoon of -kanaal, een Meshtastic-kanaallink of een Reticulum-contactkaart.",
     "meshtasticScanHeading": "Toevoegen via QR",
-    "meshtasticScanHint": "Scan een QR-code van een Meshtastic-kanaallink of plak een afbeelding. Bekijk het onderstaande importformulier voordat u het op de radio toepast."
+    "meshtasticScanHint": "Scan een QR-code van een Meshtastic-kanaallink of plak een afbeelding. Bekijk het onderstaande importformulier voordat u het op de radio toepast.",
+    "pasteTargetAria": "Doel voor plakken van QR — druk op Ctrl of Cmd+V om een afbeelding of link te plakken"
   },
   "reticulumRemote": {
     "navAria": "Secties op afstand",
