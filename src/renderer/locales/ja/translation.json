@@ -6595,7 +6595,8 @@
     "meshtasticScanHint": "MeshtasticチャンネルリンクのQRコードをスキャンするか、画像を貼り付けてください。ラジオに適用する前に、以下のインポートフォームを確認してください。",
     "pasteTargetAria": "QR貼り付けターゲット — CtrlまたはCmd+Vを押して画像またはリンクを貼り付けます",
     "gameSessionOpened": "QRからゲームセッションを開きました",
-    "meshcoreChannelPending": "チャンネルのQRコードが保留中です — ラジオを開いて確認し、保存してください"
+    "meshcoreChannelPending": "チャンネルのQRコードが保留中です — ラジオを開いて確認し、保存してください",
+    "meshcoreChannelAlreadyPending": "チャンネルのインポートが保留中です — 先にラジオタブで完了してください"
   },
   "reticulumRemote": {
     "navAria": "リモートセクション",

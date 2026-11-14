@@ -6595,7 +6595,8 @@
     "meshtasticScanHint": "扫描Meshtastic频道链接二维码，或粘贴图像。在应用于无线电之前，请先查看下方的导入表单。",
     "pasteTargetAria": "二维码粘贴目标 — 按 Ctrl 或 Cmd+V 粘贴图像或链接",
     "gameSessionOpened": "通过二维码打开的游戏会话",
-    "meshcoreChannelPending": "频道二维码待处理 — 打开“无线电”以查看并保存"
+    "meshcoreChannelPending": "频道二维码待处理 — 打开“无线电”以查看并保存",
+    "meshcoreChannelAlreadyPending": "已有频道导入待处理 — 请先在“无线电”选项卡中完成"
   },
   "reticulumRemote": {
     "navAria": "远程部分",
@@ -8494,8 +8495,8 @@
       "weekly": "每周",
       "biweekly": "每两周发布一次",
       "monthly": "每月",
-      "every4h": "Every 4 hours",
-      "every8h": "Every 8 hours",
+      "every4h": "每4小时",
+      "every8h": "每8小时",
       "every12h": "每12小时"
     },
     "timeOfDay": "时间",

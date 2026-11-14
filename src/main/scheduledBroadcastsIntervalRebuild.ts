@@ -20,6 +20,51 @@ const TABLE_COLS =
   "targets_json TEXT NOT NULL DEFAULT '[]'," +
   'updated_at INTEGER NOT NULL';
 
+const NEW_TABLE = 'scheduled_broadcasts_new';
+
+function scheduledBroadcastsCreateSql(rowSql: string | null | undefined): boolean {
+  return /CREATE\s+TABLE/i.test(rowSql ?? '');
+}
+
+function scheduledBroadcastsHasLegacyIntervalCheck(rowSql: string | null | undefined): boolean {
+  return /interval\s+IN\s*\(/i.test(rowSql ?? '');
+}
+
+function readScheduledBroadcastsMasterSql(db: NodeSqliteDB): string | null {
+  const row = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='scheduled_broadcasts'`)
+    .get() as { sql: string | null } | undefined;
+  return row?.sql ?? null;
+}
+
+/** Finish or discard a leftover `scheduled_broadcasts_new` from an interrupted swap. */
+function resumeScheduledBroadcastsIntervalRebuildIfNeeded(
+  db: NodeSqliteDB,
+  tableExists: (db: NodeSqliteDB, name: string) => boolean,
+): void {
+  if (!tableExists(db, NEW_TABLE)) return;
+
+  const mainExists = tableExists(db, 'scheduled_broadcasts');
+  if (!mainExists) {
+    db.execScript(`ALTER TABLE ${NEW_TABLE} RENAME TO scheduled_broadcasts;`);
+    return;
+  }
+
+  const mainSql = readScheduledBroadcastsMasterSql(db);
+  if (scheduledBroadcastsHasLegacyIntervalCheck(mainSql)) {
+    db.transaction(() => {
+      db.execScript(
+        `DROP TABLE scheduled_broadcasts; ALTER TABLE ${NEW_TABLE} RENAME TO scheduled_broadcasts;`,
+      );
+    })();
+    return;
+  }
+
+  if (scheduledBroadcastsCreateSql(mainSql)) {
+    db.execScript(`DROP TABLE ${NEW_TABLE};`);
+  }
+}
+
 /** Create table if missing. Interval values are validated in IPC (no SQLite interval CHECK). */
 export function ensureScheduledBroadcastsTable(db: NodeSqliteDB): void {
   db.execScript(`CREATE TABLE IF NOT EXISTS scheduled_broadcasts (${TABLE_COLS});`);
@@ -33,19 +78,21 @@ export function rebuildScheduledBroadcastsIntervalCheckIfNeeded(
   db: NodeSqliteDB,
   tableExists: (db: NodeSqliteDB, name: string) => boolean,
 ): void {
-  if (!tableExists(db, 'scheduled_broadcasts')) return;
-  const row = db
-    .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='scheduled_broadcasts'`)
-    .get() as { sql: string | null } | undefined;
-  // Legacy installs used CHECK (interval IN (...)); IPC validates intervals now.
-  if (!/interval\s+IN\s*\(/i.test(row?.sql ?? '')) return;
+  resumeScheduledBroadcastsIntervalRebuildIfNeeded(db, tableExists);
 
-  db.execScript(
-    `CREATE TABLE scheduled_broadcasts_new(${TABLE_COLS});` +
-      'INSERT INTO scheduled_broadcasts_new SELECT * FROM scheduled_broadcasts;' +
-      'DROP TABLE scheduled_broadcasts;' +
-      'ALTER TABLE scheduled_broadcasts_new RENAME TO scheduled_broadcasts;',
-  );
+  if (!tableExists(db, 'scheduled_broadcasts')) return;
+  const mainSql = readScheduledBroadcastsMasterSql(db);
+  // Legacy installs used CHECK (interval IN (...)); IPC validates intervals now.
+  if (!scheduledBroadcastsHasLegacyIntervalCheck(mainSql)) return;
+
+  db.transaction(() => {
+    db.execScript(
+      `CREATE TABLE ${NEW_TABLE}(${TABLE_COLS});` +
+        `INSERT INTO ${NEW_TABLE} SELECT * FROM scheduled_broadcasts;` +
+        'DROP TABLE scheduled_broadcasts;' +
+        `ALTER TABLE ${NEW_TABLE} RENAME TO scheduled_broadcasts;`,
+    );
+  })();
 }
 
 /** Ensure create + strip legacy interval CHECK. */

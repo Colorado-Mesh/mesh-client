@@ -24,6 +24,7 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   refreshReticulumPeersFromSidecar: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { resetQrChannelHandoffForTests } from '@/renderer/lib/qrChannelHandoff';
 import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 import { MeshClientDeepLinkHost } from './useMeshClientDeepLink';
@@ -35,6 +36,7 @@ const MC_SECRET = 'd'.repeat(32);
 
 describe('MeshClientDeepLinkHost', () => {
   beforeEach(() => {
+    resetQrChannelHandoffForTests();
     addToast.mockReset();
     onOpenUrl.mockReset();
     openUrlHandler = null;

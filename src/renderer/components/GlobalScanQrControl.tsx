@@ -49,6 +49,10 @@ export default function GlobalScanQrControl({
           if (action.kind === 'meshcoreChannel') {
             requestOpenSetting({ slot: 'Radio', id: 'radio.channels.meshcoreScan' });
             const outcome = await offerMeshcoreChannelQr(action.channel);
+            if (outcome === 'alreadyPending') {
+              addToast(t('qrIngest.meshcoreChannelAlreadyPending'), 'info');
+              return;
+            }
             if (outcome === 'rejected') {
               addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
               return;

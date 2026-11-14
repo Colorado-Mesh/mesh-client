@@ -117,7 +117,7 @@ export async function applyMeshcoreContactAdd(
 }
 
 /** Channel prefill settle from MeshcoreChannelSection (or deferred when unmounted). */
-export type MeshcoreChannelApplyOutcome = 'accepted' | 'deferred' | 'rejected';
+export type MeshcoreChannelApplyOutcome = 'accepted' | 'deferred' | 'rejected' | 'alreadyPending';
 
 export interface MeshcoreChannelApplyDeps {
   applyChannel: (opts: {
@@ -135,6 +135,9 @@ export async function applyMeshcoreChannelAdd(
     const outcome = await deps.applyChannel(opts);
     if (outcome === 'rejected') {
       return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
+    }
+    if (outcome === 'alreadyPending') {
+      return { ok: false, errorKey: 'qrIngest.meshcoreChannelAlreadyPending' };
     }
     if (outcome === 'deferred') {
       return { ok: true, kind: 'meshcoreChannelAdd', deferred: true };

@@ -126,6 +126,7 @@ describe('ScanQrDisclosure', () => {
     expect(trigger.className).toMatch(/bg-sidebar-active-bg/);
     await user.click(trigger);
     const dialog = screen.getByRole('dialog', { name: 'Scan contact QR' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog.className).toMatch(/fixed/);
     expect(dialog.parentElement).toBe(document.body);
     expect(screen.getByLabelText('mock-qr-ingest')).toBeInTheDocument();

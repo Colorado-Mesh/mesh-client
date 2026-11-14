@@ -191,7 +191,9 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
           // MeshcoreChannelSection owns the prefill success toast.
           setPending(null);
         } else {
-          addToast(t(result.errorKey), 'error');
+          const variant =
+            result.errorKey === 'qrIngest.meshcoreChannelAlreadyPending' ? 'info' : 'error';
+          addToast(t(result.errorKey), variant);
         }
       }
     } finally {

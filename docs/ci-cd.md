@@ -547,7 +547,7 @@ Packaging always runs `scripts/write-schema-upgrade-notice.mjs`. On a schema bum
 
 On first launch after a schema bump against an existing database, the app shows a blocking **Quit / Upgrade** dialog before mutating SQLite (see [Release Process — Database schema upgrades](release-process.md#database-schema-upgrades)).
 
-Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`. The script pins `Architectures: amd64` only on deb822 stanzas in `ubuntu.sources` that lack an `Architectures` field, writes arm64 ports mirrors as deb822 `arm64.sources` (not legacy `.list`), and is idempotent across workflow re-runs.
+Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`. The script pins `Architectures: amd64` only on deb822 stanzas in `ubuntu.sources` that lack an `Architectures` field, writes arm64 ports mirrors as deb822 `arm64.sources` (not legacy `.list`), enables scoped `APT::Get::Allow-Downgrades` when runner amd64 packages outpace `ports.ubuntu.com` arm64 builds (multiarch cross-deps otherwise abort apt), and is idempotent across workflow re-runs.
 
 Reticulum sidecar staging before `electron-builder`:
 
