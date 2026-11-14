@@ -238,16 +238,16 @@ async function walkProtocol(launched: LaunchedApp, protocol: Protocol): Promise<
 
   const visited: string[] = [];
   for (const section of matrix.sections) {
-    await openSectionById(page, section.id);
     const header = page.getByRole('banner');
-    const tabs = header.getByRole('tab');
 
     if (section.tabs.length === 0) {
+      const before = launched.rendererConsoleErrors.length;
+      await openSectionById(page, section.id);
+      const tabs = header.getByRole('tab');
       await expect(tabs).toHaveCount(0);
       const label = await header.locator('h2').innerText();
       const slot = SINGLE_PANEL_SLOT[section.id];
       if (!slot) throw new Error(`Unknown single-panel section ${section.id}`);
-      const before = launched.rendererConsoleErrors.length;
       const panel = await resolvePanel(page, null, label);
       await assertPanel(launched, section.id, slot, label, panel);
       expect(newPanelErrors(launched, before), `${section.id}/${label} console`).toEqual([]);
@@ -255,14 +255,17 @@ async function walkProtocol(launched: LaunchedApp, protocol: Protocol): Promise<
       continue;
     }
 
-    await expect(tabs).toHaveCount(section.tabs.length);
     for (const [index, tabDef] of section.tabs.entries()) {
-      const tab = tabs.nth(index);
+      const before = launched.rendererConsoleErrors.length;
+      if (index === 0) {
+        await openSectionById(page, section.id);
+        await expect(header.getByRole('tab')).toHaveCount(section.tabs.length);
+      }
+      const tab = header.getByRole('tab').nth(index);
       await expect(tab).toHaveAccessibleName(navName(tabDef.label));
       await tab.click();
       await expect(tab).toHaveAttribute('aria-selected', 'true');
 
-      const before = launched.rendererConsoleErrors.length;
       const panel = await resolvePanel(page, tab, tabDef.label);
       await assertPanel(launched, section.id, tabDef.slot, tabDef.label, panel);
       expect(newPanelErrors(launched, before), `${section.id}/${tabDef.label} console`).toEqual([]);
@@ -324,7 +327,11 @@ test.describe('panel matrix', () => {
     await page.locator('#connection-meshcore-tcp-host').fill('127.0.0.1');
     await page.locator('#connection-meshcore-tcp-port').fill(String(radio.port));
     await page.locator('[data-setting-anchor="connection.radio.connect"]').click();
-    await expect.poll(() => radio!.commands.length).toBeGreaterThan(0);
+    // Connected view in ConnectionPanel mounts the "Radio Connection" panel with Disconnect.
+    await expect(page.getByRole('heading', { name: 'Radio Connection' })).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(page.getByRole('button', { name: 'Disconnect', exact: true })).toBeVisible();
 
     await walkProtocol(launched, 'meshcore');
 

@@ -263,7 +263,9 @@ jobs:
         run: pnpm run test:coverage:merge
 
       - name: Coverage summary
-        if: needs.changes.outputs.vitest_mode == 'full'
+        if: >-
+          always() && needs.changes.outputs.vitest_mode == 'full' &&
+          hashFiles('coverage/coverage-summary.json') != ''
         run: node scripts/coverage-hotspots.mjs --md >> "$GITHUB_STEP_SUMMARY"
 
       # Related shards already wrote JUnit; collecting them needs no repository or dependencies.

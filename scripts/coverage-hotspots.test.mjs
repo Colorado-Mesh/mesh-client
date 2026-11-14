@@ -13,6 +13,7 @@ import {
   rankFiles,
   renderMarkdown,
   renderTable,
+  toRepoRelative,
 } from './coverage-hotspots.mjs';
 
 function metric(total, covered) {
@@ -65,6 +66,23 @@ describe('coverage-hotspots', () => {
       dir: 'src/main/',
     });
     expect(ranked.map((r) => r.file)).toEqual(['src/main/mqtt-manager.ts']);
+  });
+
+  it('matches absolute coverage keys against a repo-relative --dir', () => {
+    const cwd = process.cwd().replaceAll('\\', '/');
+    const absoluteMain = `${cwd}/src/main/mqtt-manager.ts`;
+    const summary = loadSummary({
+      total: fileMetrics(1000, 700),
+      [absoluteMain]: fileMetrics(200, 100),
+      [`${cwd}/src/renderer/App.tsx`]: fileMetrics(200, 50),
+    });
+    const ranked = rankFiles(summary.files, {
+      top: 10,
+      minLines: 100,
+      dir: 'src/main/',
+    });
+    expect(ranked.map((r) => toRepoRelative(r.file))).toEqual(['src/main/mqtt-manager.ts']);
+    expect(ranked.map((r) => r.file)).toEqual([absoluteMain]);
   });
 
   it('renders a plain table and escapes markdown file cells', () => {
@@ -125,5 +143,17 @@ describe('coverage-hotspots', () => {
     expect(opts.md).toBe(true);
     expect(opts.includeUntestable).toBe(true);
     expect(opts.summaryPath).toBe('/tmp/x.json');
+  });
+
+  it('rejects missing operands and invalid numeric ranges', () => {
+    expect(() => parseArgs(['--top'])).toThrow(/Missing value for --top/);
+    expect(() => parseArgs(['--top', '--json'])).toThrow(/Missing value for --top/);
+    expect(() => parseArgs(['--top', '0'])).toThrow(/Invalid value for --top/);
+    expect(() => parseArgs(['--top', '1.5'])).toThrow(/Invalid value for --top/);
+    expect(() => parseArgs(['--top', 'nope'])).toThrow(/Invalid value for --top/);
+    expect(() => parseArgs(['--min-lines'])).toThrow(/Missing value for --min-lines/);
+    expect(() => parseArgs(['--min-lines', '-1'])).toThrow(/Invalid value for --min-lines/);
+    expect(() => parseArgs(['--dir'])).toThrow(/Missing value for --dir/);
+    expect(() => parseArgs(['--dir', '--json'])).toThrow(/Missing value for --dir/);
   });
 });

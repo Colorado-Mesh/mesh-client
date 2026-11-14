@@ -14,12 +14,26 @@ const DEFAULT_MIN_LINES = 100;
 const ALWAYS_EXCLUDE = new Set(['total']);
 
 /**
+ * Normalize coverage keys and `--dir` filters to repo-relative POSIX paths so absolute
+ * keys from V8 still match repository-relative prefixes.
+ * @param {string} filePath
+ * @param {string} [cwd]
+ */
+export function toRepoRelative(filePath, cwd = process.cwd()) {
+  const normalized = filePath.replaceAll('\\', '/');
+  const root = cwd.replaceAll('\\', '/').replace(/\/$/, '');
+  if (normalized === root) return '';
+  if (normalized.startsWith(`${root}/`)) return normalized.slice(root.length + 1);
+  return normalized.replace(/^\.\//, '');
+}
+
+/**
  * @param {string} filePath
  * @param {{ includeUntestable?: boolean }} [opts]
  */
 export function isDefaultExcluded(filePath, opts = {}) {
   if (opts.includeUntestable) return false;
-  const normalized = filePath.replaceAll('\\', '/');
+  const normalized = toRepoRelative(filePath);
   if (normalized === 'src/main/index.ts' || normalized.endsWith('/src/main/index.ts')) return true;
   if (normalized === 'src/preload/index.ts' || normalized.endsWith('/src/preload/index.ts'))
     return true;
@@ -85,13 +99,13 @@ export function loadSummary(summary) {
 export function rankFiles(files, opts = {}) {
   const top = opts.top ?? DEFAULT_TOP;
   const minLines = opts.minLines ?? DEFAULT_MIN_LINES;
-  const dir = opts.dir?.replaceAll('\\', '/');
+  const dir = opts.dir != null ? toRepoRelative(opts.dir) : undefined;
   const filtered = files
     .filter((row) => !isDefaultExcluded(row.file, opts))
     .filter((row) => row.lines.total >= minLines)
     .filter((row) => {
       if (!dir) return true;
-      return row.file.replaceAll('\\', '/').startsWith(dir);
+      return toRepoRelative(row.file).startsWith(dir);
     })
     .sort((a, b) => {
       if (b.uncoveredLines !== a.uncoveredLines) return b.uncoveredLines - a.uncoveredLines;
@@ -171,6 +185,30 @@ export function renderMarkdown(total, rows) {
 /**
  * @param {string[]} argv
  */
+/**
+ * @param {string} flag
+ * @param {string | undefined} value
+ */
+function requireOperand(flag, value) {
+  if (value === undefined || value.startsWith('--')) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+  return value;
+}
+
+/**
+ * @param {string} flag
+ * @param {string | undefined} value
+ */
+function requirePositiveInt(flag, value) {
+  const raw = requireOperand(flag, value);
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`Invalid value for ${flag}: ${raw}`);
+  }
+  return n;
+}
+
 export function parseArgs(argv) {
   const opts = {
     top: DEFAULT_TOP,
@@ -184,11 +222,11 @@ export function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--top') {
-      opts.top = Number(argv[++i]);
+      opts.top = requirePositiveInt('--top', argv[++i]);
     } else if (arg === '--min-lines') {
-      opts.minLines = Number(argv[++i]);
+      opts.minLines = requirePositiveInt('--min-lines', argv[++i]);
     } else if (arg === '--dir') {
-      opts.dir = argv[++i];
+      opts.dir = requireOperand('--dir', argv[++i]);
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '--md') {
@@ -196,7 +234,7 @@ export function parseArgs(argv) {
     } else if (arg === '--include-untestable') {
       opts.includeUntestable = true;
     } else if (arg === '--summary') {
-      opts.summaryPath = argv[++i];
+      opts.summaryPath = requireOperand('--summary', argv[++i]);
     } else if (arg === '--help' || arg === '-h') {
       opts.help = true;
     } else {
