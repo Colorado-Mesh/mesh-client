@@ -226,6 +226,11 @@ import {
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
+  applyMeshcoreQrImportToNodesMap,
+  importMeshcoreQr,
+  type MeshcoreQrImportResult,
+} from '../lib/meshcore/meshcoreQrIngest';
+import {
   mergeLiveMapChanges,
   readRadioChannels,
   readRadioChats,
@@ -8905,6 +8910,41 @@ export function useMeshcoreRuntime() {
     return { imported: validEntries.length, skipped, errors };
   }, []);
 
+  /** Scan MeshCore contact QR: DB + identity store immediately (works offline). */
+  const importContactFromQr = useCallback(
+    async (text: string): Promise<MeshcoreQrImportResult> => {
+      const identityId =
+        meshcoreIdentityIdRef.current ??
+        getIdentityIdForProtocol('meshcore') ??
+        getOfflineIdentityIdForProtocol('meshcore');
+      const result = await importMeshcoreQr(text, {
+        identityId,
+        skipMountDbHydrationCommit: () => {
+          skipMountDbHydrationCommitRef.current = true;
+        },
+      });
+      if (result.ok && result.kind === 'contact' && result.nodeId != null && result.node) {
+        const nodeId = result.nodeId;
+        const node = result.node;
+        // Explicit re-import clears a local delete tombstone so the contact can reappear.
+        clearMeshcoreLocallyDeletedContact(nodeId);
+        if (result.publicKey) {
+          pubKeyMapRef.current.set(nodeId, result.publicKey);
+          nicknameMapRef.current.set(nodeId, node.long_name);
+          const prefix = Array.from(result.publicKey.slice(0, 6))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          pubKeyPrefixMapRef.current.set(prefix, nodeId);
+        }
+        // Seed from readMeshcoreNodes() so RF updates during the pending save are not dropped.
+        const liveNodes = readMeshcoreNodes();
+        setNodes((prev) => applyMeshcoreQrImportToNodesMap(prev, nodeId, node, liveNodes));
+      }
+      return result;
+    },
+    [readMeshcoreNodes],
+  );
+
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
       const storeId =
@@ -9843,6 +9883,7 @@ export function useMeshcoreRuntime() {
       requestTelemetry,
       requestNeighbors,
       importContacts,
+      importContactFromQr,
       toggleManualAddContacts,
       setMeshcoreChannel,
       deleteMeshcoreChannel,
@@ -10000,6 +10041,7 @@ export function useMeshcoreRuntime() {
       requestTelemetry,
       requestNeighbors,
       importContacts,
+      importContactFromQr,
       toggleManualAddContacts,
       setMeshcoreChannel,
       deleteMeshcoreChannel,

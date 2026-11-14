@@ -32,6 +32,8 @@ describe('logProtocolScope registry', () => {
     expect(resolveLogProtocol(line('[MeshCore MQTT] PINGRESP'))).toBe('meshcore');
     expect(resolveLogSurface(line('[MeshCore MQTT] PINGRESP'))).toBe('app');
     expect(resolveLogSurface(line('[Meshtastic MQTT] decode failed'))).toBe('app');
+    expect(resolveLogProtocol(line('[meshcoreQrIngest] importMeshcoreQr failed'))).toBe('meshcore');
+    expect(resolveLogSurface(line('[meshcoreQrIngest] importMeshcoreQr failed'))).toBe('app');
   });
 
   it('keeps bare GATT/BLE shared (no Meshtastic guess)', () => {

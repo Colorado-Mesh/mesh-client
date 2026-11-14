@@ -156,6 +156,7 @@ import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
 import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
+import GlobalScanQrControl from './components/GlobalScanQrControl';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import { UnseenEmergencyBanner } from './components/incident/UnseenEmergencyBanner';
@@ -5155,6 +5156,11 @@ function AppContent() {
                                         ? meshcorePanelActions.meshcoreDeleteChannel
                                         : undefined
                                     }
+                                    onImportContactFromQr={
+                                      chatCapabilities.hasContactImportExport
+                                        ? meshcorePanelActions.importContactFromQr
+                                        : undefined
+                                    }
                                     onClearChannelMessages={
                                       chatCapabilities.hasCompanionContactManagementConfig
                                         ? clearMeshcoreChatChannelMessages
@@ -5607,6 +5613,11 @@ function AppContent() {
                                           ? meshcorePanelActions.importContacts
                                           : undefined
                                       }
+                                      onImportContactFromQr={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePanelActions.importContactFromQr
+                                          : undefined
+                                      }
                                       meshcoreShowRefreshControl={
                                         capabilities.hasContactImportExport
                                           ? meshcoreContactsShowRefreshControl
@@ -5907,6 +5918,11 @@ function AppContent() {
                                     onMeshcoreDeleteChannel={
                                       capabilities.hasCompanionContactManagementConfig
                                         ? meshcorePanelActions.meshcoreDeleteChannel
+                                        : undefined
+                                    }
+                                    onImportContactFromQr={
+                                      capabilities.hasContactImportExport
+                                        ? meshcorePanelActions.importContactFromQr
                                         : undefined
                                     }
                                     onApplyLoraParams={
@@ -6949,6 +6965,16 @@ function AppContent() {
               }}
               settings={launcherSnapshot.settings}
               onOpenSetting={openSettingFromLauncher}
+              scanControl={
+                <GlobalScanQrControl
+                  importMeshcoreContactFromQr={
+                    capabilities.hasContactImportExport
+                      ? meshcorePanelActions.importContactFromQr
+                      : undefined
+                  }
+                  onHandled={closeLauncher}
+                />
+              }
               header={
                 shellCompact && enabledProtocols.length > 1 ? (
                   <ProtocolSwitcher

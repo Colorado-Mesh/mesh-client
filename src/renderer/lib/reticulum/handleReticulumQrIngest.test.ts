@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const applyLxmPaperIngest = vi.fn();
@@ -52,5 +53,23 @@ describe('handleReticulumQrIngest', () => {
       expect(outcome.toast.key).toBe('qrIngest.contactImported');
     }
     expect(applyLxmaContactImport).toHaveBeenCalled();
+  });
+
+  it('opens a game session from lxm://game/... QR', async () => {
+    const sessionId = '0123456789abcdef';
+    const spy = vi.fn();
+    window.addEventListener('mesh-client:openGamesSession', spy);
+    try {
+      const outcome = await handleReticulumQrIngest(`lxm://game/${sessionId}`);
+      expect(outcome).toEqual({
+        handled: true,
+        toast: { key: 'qrIngest.gameSessionOpened', variant: 'success' },
+      });
+      expect(spy).toHaveBeenCalled();
+      const detail = (spy.mock.calls[0]?.[0] as CustomEvent<{ sessionId: string }>).detail;
+      expect(detail.sessionId).toBe(sessionId);
+    } finally {
+      window.removeEventListener('mesh-client:openGamesSession', spy);
+    }
   });
 });

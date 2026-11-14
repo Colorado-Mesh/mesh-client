@@ -24,6 +24,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       deleteWaypoint: runtime.deleteWaypoint,
       requestPosition: runtime.requestPosition,
       importContacts: runtime.importContacts,
+      importContactFromQr: runtime.importContactFromQr,
       refreshContacts: runtime.refreshContacts,
       syncRadioChats: runtime.syncRadioChats,
       sendAdvert: runtime.sendAdvert,

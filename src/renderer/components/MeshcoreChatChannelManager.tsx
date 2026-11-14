@@ -5,6 +5,10 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  classifyMeshcoreQr,
+  type MeshcoreQrImportResult,
+} from '@/renderer/lib/meshcore/meshcoreQrIngest';
+import {
   findFirstFreeMeshcoreChannelIndex,
   isValidMeshcoreHashtagChannelName,
   normalizeMeshcoreHashtagChannelName,
@@ -19,6 +23,7 @@ import {
 } from '@/renderer/lib/meshcoreUtils';
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 
+import ScanQrDisclosure from './ScanQrDisclosure';
 import { useToast } from './Toast';
 import { INPUT_BOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
@@ -30,6 +35,8 @@ interface Props {
   onSelectChannel: (index: number) => void;
   /** Ask to remove a channel (the caller confirms). Public, in slot 0, never offers it. */
   onRemoveChannel?: (channel: { index: number; name: string }) => void;
+  /** Scan a MeshCore contact QR (routed to Contacts import). */
+  onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
 }
 
 export default function MeshcoreChatChannelManager({
@@ -38,6 +45,7 @@ export default function MeshcoreChatChannelManager({
   onSetChannel,
   onSelectChannel,
   onRemoveChannel,
+  onImportContactFromQr,
 }: Props) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -271,6 +279,33 @@ export default function MeshcoreChatChannelManager({
                     {feedback.message}
                   </p>
                 ) : null}
+
+                <ScanQrDisclosure
+                  label={t('qrIngest.scanChannelQr')}
+                  triggerAriaLabel={t('qrIngest.scanChannelQrAria')}
+                  hint={t('qrIngest.channelScanHint')}
+                  disabled={saving || disabled}
+                  disabledHint={t('qrIngest.connectToScan')}
+                  onDecoded={async (text) => {
+                    const decoded = classifyMeshcoreQr(text);
+                    if (decoded.kind === 'meshcoreChannelAdd') {
+                      setPrivateChannel(true);
+                      setName(decoded.name);
+                      setKeyHex(decoded.secretHex);
+                      setFeedback({
+                        message: t('qrIngest.meshcoreChannelPrefill'),
+                        type: 'success',
+                      });
+                      return;
+                    }
+                    if (decoded.kind === 'meshcoreContactAdd' && onImportContactFromQr) {
+                      const result = await onImportContactFromQr(text);
+                      addToast(t(result.toastKey), result.ok ? 'success' : 'error');
+                      return;
+                    }
+                    addToast(t('qrIngest.unknownLink'), 'error');
+                  }}
+                />
 
                 <form
                   className="space-y-3"

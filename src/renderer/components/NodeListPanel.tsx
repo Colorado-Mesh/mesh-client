@@ -54,6 +54,7 @@ import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../li
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -80,6 +81,8 @@ import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { requestOpenSetting } from '../lib/openSettingRequest';
+import { offerMeshcoreChannelQr } from '../lib/qrChannelHandoff';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
@@ -89,6 +92,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { BotBadge } from './BotBadge';
+import ScanQrDisclosure from './ScanQrDisclosure';
 import SignalBars from './SignalBars';
 import { useToast } from './Toast';
 import { Button, IconButton } from './ui/Button';
@@ -203,6 +207,8 @@ interface Props {
   onManageGroups?: () => void;
   groupMemberIds?: Set<number>;
   onImportContacts?: () => Promise<ImportContactsResult>;
+  /** MeshCore: scan contact QR (primary path; share QR already exists on node detail). */
+  onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
   /** When false, hide contact-group filter UI even if onManageGroups is set */
   contactGroupsEnabled?: boolean;
   /** MeshCore: show Refresh button on Contacts tab (paired with onRefreshContacts) */
@@ -231,6 +237,7 @@ export default function NodeListPanel({
   onManageGroups,
   groupMemberIds,
   onImportContacts,
+  onImportContactFromQr,
   contactGroupsEnabled = true,
   meshcoreShowRefreshControl = false,
   onRefreshContacts,
@@ -797,6 +804,30 @@ export default function NodeListPanel({
             >
               {t('nodeListPanel.buttonImportContacts')}
             </Button>
+          ) : null}
+          {capabilities.hasContactImportExport && onImportContactFromQr ? (
+            <ScanQrDisclosure
+              triggerStyle="toolbar"
+              anchorId="nodes.contacts.scanQr"
+              label={t('qrIngest.scanContactQr')}
+              triggerAriaLabel={t('qrIngest.scanContactQrAria')}
+              onDecoded={async (text) => {
+                const result = await onImportContactFromQr(text);
+                if (result.kind === 'channel' && result.channel) {
+                  requestOpenSetting({ slot: 'Radio', id: 'radio.channels.meshcoreScan' });
+                  const outcome = await offerMeshcoreChannelQr(result.channel);
+                  if (outcome === 'rejected') {
+                    addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
+                    return;
+                  }
+                  if (outcome === 'deferred') {
+                    addToast(t('qrIngest.meshcoreChannelPending'), 'info');
+                  }
+                  return;
+                }
+                addToast(t(result.toastKey), result.ok ? 'success' : 'error');
+              }}
+            />
           ) : null}
           <LabeledMenuButton
             size="sm"

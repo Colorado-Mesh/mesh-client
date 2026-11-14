@@ -61,6 +61,14 @@ const nodesEntries: readonly SettingSearchEntry[] = [
     visible: hasContactTools,
   },
   {
+    id: 'nodes.contacts.scanQr',
+    slot: 'Nodes',
+    labelKey: 'qrIngest.scanContactQr',
+    sectionKey: CONTACTS,
+    keywords: ['qr', 'scan', 'camera', 'image', 'paste', 'import', 'contact'],
+    visible: hasContactTools,
+  },
+  {
     id: 'nodes.contacts.offload',
     slot: 'Nodes',
     labelKey: 'radioPanel.offloadContacts',
@@ -117,5 +125,6 @@ export const nodesSurface: SettingsSearchSurface = {
     'radioPanel.failedOffloadContacts': OFFLOAD_STATUS,
     'appPanel.distanceUnitMiles': 'unit option of the distance column',
     'appPanel.distanceUnitKm': 'unit option of the distance column',
+    'qrIngest.*': 'QR scan hint and import toasts, not a setting',
   },
 };

@@ -1,4 +1,4 @@
-import { type ClipboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -13,21 +13,86 @@ export interface QrIngestControlProps {
   onDecoded: (text: string) => void;
   disabled?: boolean;
   className?: string;
+  /** Focus the paste target on mount (e.g. when a scan popover opens). */
+  focusOnMount?: boolean;
+}
+
+/** Which mounted ingest control should receive the next document paste (hover fallback). */
+let activePasteRoot: HTMLElement | null = null;
+
+/** All mounted paste roots — used so focus wins over hover across controls. */
+const mountedPasteRoots = new Set<HTMLElement>();
+
+function clipboardItems(
+  items: DataTransferItemList | DataTransferItem[],
+): readonly DataTransferItem[] {
+  return Array.from(items);
+}
+
+function clipboardHasImage(items: DataTransferItemList | DataTransferItem[]): boolean {
+  return clipboardItems(items).some((item) => item.type.startsWith('image/'));
+}
+
+function isEditableTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable) return true;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+/**
+ * Collapsed / explicitly hidden scanners must not own paste.
+ * Prefer structural checks over getClientRects — jsdom often reports empty rects
+ * for otherwise-visible nodes.
+ */
+function isPasteRootVisible(root: HTMLElement): boolean {
+  if (!root.isConnected) return false;
+  let el: Element | null = root;
+  while (el) {
+    if (el instanceof HTMLElement) {
+      if (el.hidden) return false;
+      if (el.style.display === 'none' || el.style.visibility === 'hidden') return false;
+    }
+    if (el instanceof HTMLDetailsElement && !el.open) {
+      const summary = el.querySelector(':scope > summary');
+      // Content inside a closed <details> (outside the summary) is inactive.
+      if (summary && !summary.contains(root)) return false;
+    }
+    el = el.parentElement;
+  }
+  return true;
+}
+
+function findFocusedPasteRoot(active: Element | null): HTMLElement | null {
+  if (!(active instanceof Node)) return null;
+  for (const root of mountedPasteRoots) {
+    if (root.contains(active) && isPasteRootVisible(root)) return root;
+  }
+  return null;
+}
+
+/** Test helper — reset module paste ownership between cases. */
+export function resetQrIngestPasteOwnershipForTests(): void {
+  activePasteRoot = null;
+  mountedPasteRoots.clear();
 }
 
 /**
  * Paste image / choose image file / optional camera scan → jsQR decode.
+ * Also accepts pasted deep-link text when focused / marked active.
  * Camera absence or permission denial is a localized soft failure.
  */
 export default function QrIngestControl({
   onDecoded,
   disabled = false,
   className = '',
+  focusOnMount = false,
 }: QrIngestControlProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [starting, setStarting] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -42,10 +107,35 @@ export default function QrIngestControl({
 
   useEffect(() => {
     mountedRef.current = true;
+    const root = rootRef.current;
+    if (root) mountedPasteRoots.add(root);
     return () => {
       mountedRef.current = false;
+      if (root) mountedPasteRoots.delete(root);
+      if (activePasteRoot === root) activePasteRoot = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!disabled) return;
+    const root = rootRef.current;
+    if (activePasteRoot === root) activePasteRoot = null;
+  }, [disabled]);
+
+  const markActiveForPaste = useCallback(() => {
+    if (disabled) return;
+    const root = rootRef.current;
+    if (!root || !isPasteRootVisible(root)) return;
+    activePasteRoot = root;
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!focusOnMount || disabled) return;
+    const root = rootRef.current;
+    if (!root || !isPasteRootVisible(root)) return;
+    activePasteRoot = root;
+    root.focus({ preventScroll: true });
+  }, [focusOnMount, disabled]);
 
   const stopTracks = useCallback((stream: MediaStream | null) => {
     if (!stream) return;
@@ -103,34 +193,69 @@ export default function QrIngestControl({
     [disabled, emitDecoded, t],
   );
 
-  const handlePaste = useCallback(
-    (e: ClipboardEvent) => {
-      if (disabled) return;
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (!item.type.startsWith('image/')) continue;
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (!file) continue;
-        void (async () => {
-          try {
-            const text = await decodeQrFromBlob(file);
-            if (!text) {
-              setStatus(t('qrIngest.noQrFound'));
-              return;
+  const ingestClipboard = useCallback(
+    (clipboardData: DataTransfer | null | undefined) => {
+      if (disabled || !clipboardData) return false;
+      const items = clipboardData.items;
+      if (items && clipboardHasImage(items)) {
+        for (const item of clipboardItems(items)) {
+          if (!item.type.startsWith('image/')) continue;
+          const file = item.getAsFile();
+          if (!file) continue;
+          void (async () => {
+            try {
+              const text = await decodeQrFromBlob(file);
+              if (!text) {
+                setStatus(t('qrIngest.noQrFound'));
+                return;
+              }
+              emitDecoded(text);
+            } catch (err) {
+              console.warn('[QrIngestControl] paste decode failed: ' + errLikeToLogString(err));
+              setStatus(t('qrIngest.decodeFailed'));
             }
-            emitDecoded(text);
-          } catch (err) {
-            console.warn('[QrIngestControl] paste decode failed: ' + errLikeToLogString(err));
-            setStatus(t('qrIngest.decodeFailed'));
-          }
-        })();
-        return;
+          })();
+          return true;
+        }
       }
+      const rawText = clipboardData.getData('text/plain').trim();
+      if (rawText) {
+        emitDecoded(rawText);
+        return true;
+      }
+      return false;
     },
     [disabled, emitDecoded, t],
   );
+
+  const shouldHandleDocumentPaste = useCallback((): boolean => {
+    if (disabled) return false;
+    const root = rootRef.current;
+    if (!root || !isPasteRootVisible(root)) return false;
+    const active = document.activeElement;
+    // Focused scan control always wins over hover-armed fallback.
+    const focusedOwner = findFocusedPasteRoot(active);
+    if (focusedOwner) return focusedOwner === root;
+    // Hover/click-armed paste must not steal from other inputs/textareas.
+    if (isEditableTarget(active)) return false;
+    return activePasteRoot === root;
+  }, [disabled]);
+
+  // Div onPaste only fires when a descendant is focused; document paste covers the
+  // common case (Cmd/Ctrl+V after opening scan, or after clicking the paste zone).
+  useEffect(() => {
+    if (disabled) return;
+    const onDocumentPaste = (e: ClipboardEvent) => {
+      if (!shouldHandleDocumentPaste()) return;
+      if (ingestClipboard(e.clipboardData)) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('paste', onDocumentPaste);
+    return () => {
+      document.removeEventListener('paste', onDocumentPaste);
+    };
+  }, [disabled, ingestClipboard, shouldHandleDocumentPaste]);
 
   const startCamera = useCallback(async () => {
     if (disabled || scanning || starting) return;
@@ -231,7 +356,16 @@ export default function QrIngestControl({
   }, [disabled, emitDecoded, scanning, starting, stopCamera, stopTracks, t]);
 
   return (
-    <div className={`space-y-2 ${className}`} onPaste={handlePaste}>
+    <div
+      ref={rootRef}
+      tabIndex={disabled ? -1 : 0}
+      role="group"
+      aria-label={t('qrIngest.pasteTargetAria')}
+      className={`focus-visible:ring-brand-green/60 rounded-control space-y-2 outline-none focus-visible:ring-1 ${className}`}
+      onPointerDown={markActiveForPaste}
+      onPointerEnter={markActiveForPaste}
+      onFocus={markActiveForPaste}
+    >
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

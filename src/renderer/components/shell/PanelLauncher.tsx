@@ -65,6 +65,8 @@ export interface PanelLauncherProps {
   settings?: readonly LauncherSettingItem[];
   /** Jump to a setting; the parent closes the launcher and reveals the row. */
   onOpenSetting?: (item: LauncherSettingItem) => void;
+  /** Optional Scan QR control under the search row (global QR ingest). */
+  scanControl?: ReactNode;
 }
 
 const NO_MATCHES: LauncherMatches<never> = { matches: [], more: false };
@@ -131,6 +133,7 @@ export function PanelLauncher({
   onOpenContact,
   settings,
   onOpenSetting,
+  scanControl,
 }: PanelLauncherProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -380,6 +383,9 @@ export function PanelLauncher({
             {header}
           </div>
         )}
+        {scanControl ? (
+          <div className="border-ink-800 shrink-0 border-b px-4 py-2">{scanControl}</div>
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {groups.length === 0 && !hasDestinations ? (
