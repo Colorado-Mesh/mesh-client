@@ -127,7 +127,9 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('  lrgp-rs');
     expect(result.stdout).toContain('MECP_UPSTREAM_WATCH_ENTRIES:');
     expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
+    expect(result.stdout).toContain('file:engine/src@0b7123aef545');
+    expect(result.stdout).toContain('file:languages@2452f4f38b36');
+    expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
   });
 
   it('tracks ReplyFile and multi-file attachment overlays in RATSPEAK_PATCH_ENTRIES', () => {
