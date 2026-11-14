@@ -1826,6 +1826,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#panel-matrix-e2e-e2e-panelsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panel matrix E2E (e2e-panels.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#reticulum-sidecar-reticulum-sidecaryaml" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3451,6 +3462,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#panel-matrix-e2e-e2e-panelsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panel matrix E2E (e2e-panels.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#reticulum-sidecar-reticulum-sidecaryaml" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3856,6 +3878,11 @@
 <td>MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required</td>
 </tr>
 <tr>
+<td><code>e2e-panels.yaml</code></td>
+<td>Path-filtered PR to <code>main</code> + manual <code>workflow_dispatch</code></td>
+<td>Per-protocol panel matrix Electron E2E (Linux); not required</td>
+</tr>
+<tr>
 <td><code>build.yaml</code></td>
 <td>Manual <code>workflow_dispatch</code></td>
 <td>Native 3-OS packaging smoke build (+ schema compare vs last official)</td>
@@ -3932,7 +3959,7 @@ budgets live in
 <li><strong>Safe fallback:</strong> test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.</li>
 <li><strong>Protected events:</strong> <code>merge_group</code>, pushes to <code>main</code>, and manual runs always run full coverage across <code>renderer-ui</code>, <code>renderer-logic</code>, and <code>main</code>.</li>
 <li><strong>Sharding:</strong> <code>renderer-ui</code> runs in four shards; <code>renderer-logic</code> and <code>main</code> each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named <code>junit-&lt;project&gt;-&lt;shard&gt;-&lt;total&gt;.xml</code> and print results in each shard's log. The existing <code>Coverage (...)</code> required checks verify that detection and every shard succeeded.</li>
-<li><strong>Merge job:</strong> collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run <code>pnpm run test:coverage:merge</code> to enforce global thresholds.</li>
+<li><strong>Merge job:</strong> collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run <code>pnpm run test:coverage:merge</code> to enforce global thresholds, then append a coverage hotspot summary (<code>pnpm run coverage:hotspots --md</code>) to the job step summary.</li>
 <li><strong><code>reticulum-sidecar-coverage</code>:</strong> when sidecar paths change, clone the <code>.rsstack/</code> workspace, run <code>cargo llvm-cov --fail-under-lines 45</code>, and upload <code>lcov.info</code>.</li>
 <li>Upload the <code>vitest-report</code> artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged <code>junit.xml</code> for full runs.</li>
 </ol>
@@ -3976,6 +4003,14 @@ The workflow does not change repository security settings. Existing global cover
 <li><strong>Steps:</strong> Linux only (<code>ubuntu-24.04</code>): the shared <code>setup-node-pnpm</code> action, the same Electron runtime libraries as the Linux leg of <code>e2e.yaml</code>, <code>pnpm run build</code>, then the spec under <code>xvfb-run -a</code>. Playwright artifacts are uploaded on failure.</li>
 <li><strong>Not required:</strong> it skips on other PRs and does not run on <code>merge_group</code>, so it must not be added to the ruleset.</li>
 <li><code>scripts/e2e-meshcore-repeaters-workflow.test.mjs</code> checks that every path pattern matches a file, that the files earlier ping fixes changed are covered, and that the Electron library list matches <code>e2e.yaml</code>.</li>
+</ul>
+<h3 id="panel-matrix-e2e-e2e-panelsyaml">Panel matrix E2E (<code>e2e-panels.yaml</code>)<a class="headerlink" href="#panel-matrix-e2e-e2e-panelsyaml" title="Permanent link">&para;</a></h3>
+<p>Runs <code>e2e/panelMatrix.spec.ts</code> (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum, plus a connected MeshCore leg) on pull requests to <code>main</code> that touch renderer shell or panel wiring, so a panel that throws on mount fails on its own PR instead of in the next daily run.</p>
+<ul>
+<li><strong>Paths:</strong> <code>App.tsx</code>, lazy panel registries, <code>src/renderer/components/**</code>, <code>appTabMappings.ts</code> / <code>navSections.ts</code> / <code>panelLauncher.ts</code> / <code>tabSlotIds.ts</code>, the matrix spec and anchors, <code>e2e/electronApp.ts</code>, the MeshCore radio fixture, <code>playwright.config.ts</code> and the workflow. Changes to unit test files alone do not trigger it.</li>
+<li><strong>Steps:</strong> Linux only (<code>ubuntu-24.04</code>): same setup and Electron libraries as the repeater workflow, <code>pnpm run build</code>, then the matrix under <code>xvfb-run -a</code>. Playwright artifacts are uploaded on failure.</li>
+<li><strong>Not required:</strong> it skips on other PRs and does not run on <code>merge_group</code>, so it must not be added to the ruleset.</li>
+<li><code>scripts/e2e-panels-workflow.test.mjs</code> checks that every path pattern matches a file and that the Electron library list matches <code>e2e.yaml</code>.</li>
 </ul>
 <h3 id="reticulum-sidecar-reticulum-sidecaryaml">Reticulum sidecar (<code>reticulum-sidecar.yaml</code>)<a class="headerlink" href="#reticulum-sidecar-reticulum-sidecaryaml" title="Permanent link">&para;</a></h3>
 <p>Path-filtered on <code>reticulum-sidecar/**</code> and related scripts:</p>
@@ -4299,7 +4334,7 @@ The workflow does not change repository security settings. Existing global cover
 <li><code>Reticulum sidecar coverage</code> (path-filtered)</li>
 <li><code>fmt + clippy</code> / sidecar build matrix (<code>reticulum-sidecar.yaml</code>, path-filtered)</li>
 <li>CodeQL <code>Analyze (*)</code> — <strong>default setup does not run on <code>merge_group</code></strong>. The advanced workflow supports merge groups after <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/codeql/README.md">activation</a>, but no CodeQL ruleset requirement is added by that migration.</li>
-<li>E2E, packaging smoke, Flatpak, release jobs (including the path-filtered <code>Repeater E2E (Linux)</code>)</li>
+<li>E2E, packaging smoke, Flatpak, release jobs (including the path-filtered <code>Repeater E2E (Linux)</code> and <code>Panel matrix E2E (Linux)</code>)</li>
 </ul>
 <p><code>ci.yaml</code> and <code>tests.yaml</code> both listen for <code>merge_group</code> so the queue’s temporary ref re-runs the same gates.</p>
 <h3 id="bypass-actors">Bypass actors<a class="headerlink" href="#bypass-actors" title="Permanent link">&para;</a></h3>
@@ -4496,7 +4531,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 12, 2026 17:24:44 UTC">November 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 14, 2026 21:21:53 UTC">November 14, 2026</span>
   </span>
 
     

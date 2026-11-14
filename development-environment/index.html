@@ -5128,6 +5128,10 @@ to verify each mode.</p>
 <td>Run tests once with V8 coverage report</td>
 </tr>
 <tr>
+<td><code>coverage:hotspots</code></td>
+<td>Worst files by uncovered lines from <code>coverage/coverage-summary.json</code> (run <code>test:coverage</code> first)</td>
+</tr>
+<tr>
 <td><code>test:verbose</code></td>
 <td>Run tests with verbose output</td>
 </tr>
@@ -5570,7 +5574,7 @@ to verify each mode.</p>
 <p>By default all three Vitest projects run in <strong>parallel</strong> (<code>groupOrder: 0</code>). On memory-constrained hosts, set <code>VITEST_SEQUENTIAL_PROJECTS=1</code> to run <code>renderer-ui</code> first, then <code>renderer-logic</code> + <code>main</code> together (legacy behavior).</p>
 <p>Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, <code>main</code>, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via <code>pnpm run test:coverage:merge</code> (see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a>).</p>
 <h4 id="playwright-electron-e2e">Playwright Electron E2E<a class="headerlink" href="#playwright-electron-e2e" title="Permanent link">&para;</a></h4>
-<p>Standalone suite under <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/e2e"><code>e2e/</code></a> launches the <strong>unpackaged</strong> production build with Playwright’s Electron API (<code>playwright._electron.launch</code>), using <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/start-electron.mjs"><code>resolveLocalElectronBin()</code></a> and an isolated <code>--user-data-dir</code> (<code>mesh-e2e-*</code> under the OS temp dir). Specs cover startup, preload IPC, tabs, window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.</p>
+<p>Standalone suite under <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/e2e"><code>e2e/</code></a> launches the <strong>unpackaged</strong> production build with Playwright’s Electron API (<code>playwright._electron.launch</code>), using <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/start-electron.mjs"><code>resolveLocalElectronBin()</code></a> and an isolated <code>--user-data-dir</code> (<code>mesh-e2e-*</code> under the OS temp dir). Specs cover startup, preload IPC, tabs, the per-protocol panel matrix (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum), window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.</p>
 <table>
 <thead>
 <tr>
@@ -5597,7 +5601,7 @@ to verify each mode.</p>
 <ul>
 <li><strong><code>workers: 1</code></strong> — main uses <code>requestSingleInstanceLock()</code>; parallel launches flake.</li>
 <li><strong>Linux:</strong> set <code>MESH_CLIENT_DISABLE_GPU=1</code> (harness does this); CI uses <code>xvfb-run -a</code>. Local headless Linux needs <code>DISPLAY</code> for direct <code>pnpm run test:e2e</code>, or wrap with <code>xvfb-run -a</code> (<code>pnpm run check:environment</code> warns when <code>DISPLAY</code> is unset).</li>
-<li><strong>Not</strong> wired into pre-commit, <code>pnpm run test:run</code>, or <code>pnpm run check:pr</code>. Daily + manual CI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e.yaml"><code>.github/workflows/e2e.yaml</code></a>.</li>
+<li><strong>Not</strong> wired into pre-commit, <code>pnpm run test:run</code>, or <code>pnpm run check:pr</code>. Daily + manual CI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e.yaml"><code>.github/workflows/e2e.yaml</code></a>. Path-filtered PR job: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e-panels.yaml"><code>e2e-panels.yaml</code></a> runs the panel matrix on Linux when renderer shell/panel code changes (not required).</li>
 </ul>
 <p>Monolithic protocol runtimes (<code>useMeshtasticRuntime</code>, <code>useMeshcoreRuntime</code>) also use <strong>source contract tests</strong> (read <code>.ts</code> files and assert wiring strings) where full <code>renderHook</code> integration would require heavy BLE/MQTT mocking; see <code>*.reconnect*.test.ts</code> beside those runtimes. Another example: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts"><code>meshtasticRuntimeWireEffects.diagnostics.contract.test.ts</code></a> asserts LocalStats / RF hop-SNR still call <code>processNodeUpdate</code> from <code>meshtasticNodeSideEffects</code> / <code>meshtasticRawPacketSideEffects</code>.</p>
 <h4 id="browser-dev-without-electron">Browser dev without Electron<a class="headerlink" href="#browser-dev-without-electron" title="Permanent link">&para;</a></h4>
@@ -5621,6 +5625,7 @@ to verify each mode.</p>
 <li><code>pnpm run check:pr</code> (before opening/updating a PR: full lint + typecheck + <code>typecheck:strict-shared</code> + full <code>test:run</code>)</li>
 <li><code>pnpm run test:ui</code> / <code>test:logic</code> / <code>test:main</code> (single Vitest project)</li>
 <li><code>pnpm run test:coverage</code> (CI coverage report; used by <code>act:tests:native</code>)</li>
+<li><code>pnpm run coverage:hotspots</code> (rank uncovered lines from <code>coverage/coverage-summary.json</code>)</li>
 <li><code>pnpm run test:coverage:merge</code> (merge sharded CI blob reports locally)</li>
 <li><code>pnpm run reticulum:sidecar:coverage</code> (optional local HTML; CI threshold in <code>tests.yaml</code>)</li>
 <li><code>pnpm run test:verbose</code> (verbose failures)</li>
@@ -6033,7 +6038,7 @@ to verify each mode.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 5, 2026 03:17:20 UTC">November 5, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 14, 2026 21:21:53 UTC">November 14, 2026</span>
   </span>
 
     
