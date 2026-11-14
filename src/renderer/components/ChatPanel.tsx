@@ -98,6 +98,7 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import type { MeshcoreQrImportResult } from '@/renderer/lib/meshcore/meshcoreQrIngest';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { MESHCORE_PUBLIC_CHANNEL_INDEX } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
@@ -800,6 +801,8 @@ export interface ChatPanelProps {
   onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
+  /** MeshCore: import a scanned contact QR from the channel manager. */
+  onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
   /** Clear one channel's saved messages (chat asks first). `channelKey` is snapshotted at dialog open. */
   onClearChannelMessages?: (
     index: number,
@@ -911,6 +914,7 @@ function ChatPanel({
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
+  onImportContactFromQr,
   onClearChannelMessages,
   meshcoreChannelManagementDisabled = false,
   myNodeNum,
@@ -3725,6 +3729,7 @@ function ChatPanel({
                     setViewMode('channels');
                   }}
                   onRemoveChannel={onDeleteMeshcoreChannel ? askToRemoveChannel : undefined}
+                  onImportContactFromQr={onImportContactFromQr}
                 />
               ) : null}
               <Menu

@@ -358,10 +358,26 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: hasChannelConfig,
   },
   {
+    id: 'radio.channels.scanQr',
+    slot: 'Radio',
+    labelKey: 'qrIngest.meshtasticScanHeading',
+    sectionKey: 'radioPanel.channels',
+    keywords: ['qr', 'scan', 'camera', 'image', 'paste', 'import', 'channel', 'link', 'meshtastic'],
+    visible: hasChannelConfig,
+  },
+  {
     id: 'radio.channels.meshcoreList',
     slot: 'Radio',
     labelKey: 'radioPanel.channelsMeshcore',
     keywords: ['channel', 'secret', 'key', 'hashtag'],
+    visible: isCompanion,
+  },
+  {
+    id: 'radio.channels.meshcoreScan',
+    slot: 'Radio',
+    labelKey: 'qrIngest.meshcoreScanHeading',
+    sectionKey: 'radioPanel.channelsMeshcore',
+    keywords: ['qr', 'scan', 'camera', 'image', 'paste', 'import', 'contact', 'channel'],
     visible: isCompanion,
   },
   {

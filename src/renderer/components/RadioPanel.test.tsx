@@ -1182,6 +1182,53 @@ async function openChannelsSection(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('RadioPanel channel URL import/export', () => {
+  it('keeps Meshtastic Add from QR above the channel list (parity with MeshCore)', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected channelConfigs={[primaryChannelConfig]} />
+      </ToastProvider>,
+    );
+    await openChannelsSection(user);
+
+    const qrHeading = screen.getByText('Add from QR');
+    const primaryRow = screen.getByRole('button', { name: /Primary/i });
+    const shareImport = screen.getByText('Share / import channel URL');
+    expect(
+      qrHeading.compareDocumentPosition(primaryRow) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      qrHeading.compareDocumentPosition(shareImport) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(document.querySelector('[data-setting-anchor="radio.channels.scanQr"]')).not.toBeNull();
+  });
+
+  it('fills the import URL when a Meshtastic channel QR is scanned at the top', async () => {
+    const user = userEvent.setup();
+    const { httpsUrl } = generateConfigUrl([primaryChannelConfig], undefined, {
+      includeAll: false,
+    });
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          channelConfigs={[primaryChannelConfig]}
+          onApplyChannelSet={vi.fn().mockResolvedValue({ appliedCount: 1, skipped: [] })}
+        />
+      </ToastProvider>,
+    );
+    await openChannelsSection(user);
+
+    window.dispatchEvent(new CustomEvent('mesh-client:meshtasticChannelUrl', { detail: httpsUrl }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Paste channel URL')).toHaveValue(httpsUrl);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Replace channels')).toBeInTheDocument();
+    });
+  });
+
   it('generates export URL when connected', async () => {
     const user = userEvent.setup();
     const lora = { region: 1, modemPreset: 0, usePreset: true };
@@ -1714,11 +1761,10 @@ describe('RadioPanel MeshCore channel edit form placement', () => {
     expect(alphaRow).not.toBeNull();
     expect(alphaRow!.contains(addTitle)).toBe(false);
 
-    const pasteHints = screen.getAllByText(/You can also paste a QR image here \(Ctrl\/Cmd\+V\)\./);
-    const pasteHint = pasteHints.find((el) => el.classList.contains('mb-1'));
-    expect(pasteHint).toBeDefined();
+    // QR ingest is labeled and sits above the channel list / add form (not nested in a row).
+    const qrHeading = screen.getByText('Add from QR');
     expect(
-      pasteHint!.compareDocumentPosition(addTitle) & Node.DOCUMENT_POSITION_FOLLOWING,
+      qrHeading.compareDocumentPosition(addTitle) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByLabelText(/Index \(0–/i)).toBeInTheDocument();
   });

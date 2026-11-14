@@ -225,6 +225,7 @@ import {
   replaceMeshcorePubKeyRegistry,
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
+import { importMeshcoreQr, type MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
   mergeLiveMapChanges,
   readRadioChannels,
@@ -8905,6 +8906,38 @@ export function useMeshcoreRuntime() {
     return { imported: validEntries.length, skipped, errors };
   }, []);
 
+  /** Scan MeshCore contact QR: DB + identity store immediately (works offline). */
+  const importContactFromQr = useCallback(async (text: string): Promise<MeshcoreQrImportResult> => {
+    const identityId =
+      meshcoreIdentityIdRef.current ??
+      getIdentityIdForProtocol('meshcore') ??
+      getOfflineIdentityIdForProtocol('meshcore');
+    const result = await importMeshcoreQr(text, {
+      identityId,
+      skipMountDbHydrationCommit: () => {
+        skipMountDbHydrationCommitRef.current = true;
+      },
+    });
+    if (result.ok && result.kind === 'contact' && result.nodeId != null && result.node) {
+      const nodeId = result.nodeId;
+      const node = result.node;
+      if (result.publicKey) {
+        pubKeyMapRef.current.set(nodeId, result.publicKey);
+        nicknameMapRef.current.set(nodeId, node.long_name);
+        const prefix = Array.from(result.publicKey.slice(0, 6))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+        pubKeyPrefixMapRef.current.set(prefix, nodeId);
+      }
+      setNodes((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, { ...(prev.get(nodeId) ?? {}), ...node });
+        return next;
+      });
+    }
+    return result;
+  }, []);
+
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
       const storeId =
@@ -9843,6 +9876,7 @@ export function useMeshcoreRuntime() {
       requestTelemetry,
       requestNeighbors,
       importContacts,
+      importContactFromQr,
       toggleManualAddContacts,
       setMeshcoreChannel,
       deleteMeshcoreChannel,
@@ -10000,6 +10034,7 @@ export function useMeshcoreRuntime() {
       requestTelemetry,
       requestNeighbors,
       importContacts,
+      importContactFromQr,
       toggleManualAddContacts,
       setMeshcoreChannel,
       deleteMeshcoreChannel,

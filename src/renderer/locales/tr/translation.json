@@ -6578,7 +6578,21 @@
     "paperInvalidUri": "Bu geçerli bir LXMF kağıt bağlantısı gibi görünmüyor",
     "paperDecryptFailed": "Kağıt mesajın şifresi çözülemedi — bu doğru kimlik mi?",
     "paperIdentityNotConfigured": "Reticulum kimliği hazır değil — önce yığını başlatın ve kimliği yapılandırın",
-    "paperIngestFailed": "Kağıt mesajı alınamadı"
+    "paperIngestFailed": "Kağıt mesajı alınamadı",
+    "scanQr": "QR kodunu tara",
+    "scanQrAria": "Bir kişi veya kanal eklemek için QR kodunu tarayın",
+    "scanContactQr": "Kişinin QR kodunu tarayın",
+    "scanContactQrAria": "Bir kişiyi Kişilere eklemek için QR kodunu tarayın",
+    "scanChannelQr": "Kanal QR kodunu tarayın",
+    "scanChannelQrAria": "Eklemek veya katılmak için bir kanal QR kodunu tarayın",
+    "channelScanHint": "Kamerayı bir MeshCore kanal QR koduna (ad + gizli anahtar) doğrultun veya bir resim seçin. Kaydetmeden önce formu gözden geçirin.",
+    "meshcoreScanHeading": "QR kodundan ekle",
+    "meshcoreScanHint": "Bir MeshCore kişisinin veya kanalın QR kodunu tarayın ya da bir görsel yapıştırın. Kişiler yerel olarak kaydedilir (telsize aktarılmaz); kanallar, inceleme için ekleme formunu açar.",
+    "connectToScan": "Kanal değişikliklerini taramak ve uygulamak için radyoya bağlanın.",
+    "globalScanHeading": "QR tara",
+    "globalScanHint": "Bir MeshCore kişi veya kanal QR kodunu, bir Meshtastic kanal bağlantısını veya bir Reticulum kişi kartını tarayın.",
+    "meshtasticScanHeading": "QR kodundan ekle",
+    "meshtasticScanHint": "Bir Meshtastic kanal bağlantısı QR kodunu tarayın veya bir görsel yapıştırın. Telsize uygulamadan önce aşağıdaki içe aktarma formunu inceleyin."
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

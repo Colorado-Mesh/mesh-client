@@ -65,6 +65,7 @@ export const LOG_TAG_SCOPE: Readonly<Record<string, LogScope>> = Object.freeze({
   '[meshcoreLiveContactPersist]': { protocol: 'meshcore', surface: 'device' },
   '[meshcorePathUpdatedRuntime]': { protocol: 'meshcore', surface: 'device' },
   '[meshcorePubKeyRegistry]': { protocol: 'meshcore', surface: 'device' },
+  '[meshcoreQrIngest]': { protocol: 'meshcore', surface: 'app' },
   '[meshcoreRfRxRuntime]': { protocol: 'meshcore', surface: 'device' },
   '[meshcoreSerialTransportLoss]': { protocol: 'meshcore', surface: 'device' },
   '[meshcoreWaitingMessagesSyncState]': { protocol: 'meshcore', surface: 'device' },

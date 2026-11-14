@@ -6578,7 +6578,21 @@
     "paperInvalidUri": "这看起来不像有效的LXMF纸张链接",
     "paperDecryptFailed": "无法解密纸质消息—这是正确的身份吗？",
     "paperIdentityNotConfigured": "Reticulum 身份尚未准备就绪—首先启动堆栈并配置身份",
-    "paperIngestFailed": "无法摄取纸质消息"
+    "paperIngestFailed": "无法摄取纸质消息",
+    "scanQr": "扫描二维码",
+    "scanQrAria": "扫描二维码以添加联系人或频道",
+    "scanContactQr": "扫描联系人二维码",
+    "scanContactQrAria": "扫描联系人二维码，将其添加到“联系人”",
+    "scanChannelQr": "扫描频道二维码",
+    "scanChannelQrAria": "扫描频道二维码以添加或加入频道",
+    "channelScanHint": "将摄像头对准MeshCore频道的二维码（名称 + 密钥），或选择一张图片。保存前请检查表单。",
+    "meshcoreScanHeading": "通过二维码添加",
+    "meshcoreScanHint": "扫描MeshCore联系人或频道二维码，或粘贴图像。联系人保存在本地（不推送到对讲机）；频道打开添加表单以供审核。",
+    "connectToScan": "连接到无线电以扫描并应用频道更改。",
+    "globalScanHeading": "扫描二维码",
+    "globalScanHint": "扫描MeshCore联系人或频道二维码、Meshtastic频道链接或Reticulum联系人名片。",
+    "meshtasticScanHeading": "通过二维码添加",
+    "meshtasticScanHint": "扫描Meshtastic频道链接二维码，或粘贴图像。在应用于无线电之前，请先查看下方的导入表单。"
   },
   "reticulumRemote": {
     "navAria": "远程部分",

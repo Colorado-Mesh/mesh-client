@@ -5083,7 +5083,21 @@
     "meshcoreChannelImported": "MeshCore channel link received — review on the Radio tab",
     "meshcoreChannelImportFailed": "Could not import MeshCore channel from QR",
     "meshcoreChannelPrefill": "Channel details filled from QR — save to apply",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "scanQr": "Scan QR code",
+    "scanQrAria": "Scan a QR code to add a contact or channel",
+    "scanContactQr": "Scan contact QR",
+    "scanContactQrAria": "Scan a contact QR code to add it to Contacts",
+    "scanChannelQr": "Scan channel QR",
+    "scanChannelQrAria": "Scan a channel QR code to add or join it",
+    "channelScanHint": "Point the camera at a MeshCore channel QR (name + secret), or choose an image. Review the form before saving.",
+    "meshcoreScanHeading": "Add from QR",
+    "meshcoreScanHint": "Scan a MeshCore contact or channel QR, or paste an image. Contacts are saved locally (not pushed to the radio); channels open the add form for review.",
+    "meshtasticScanHeading": "Add from QR",
+    "meshtasticScanHint": "Scan a Meshtastic channel link QR, or paste an image. Review the import form below before applying to the radio.",
+    "connectToScan": "Connect to the radio to scan and apply channel changes.",
+    "globalScanHeading": "Scan QR",
+    "globalScanHint": "Scan a MeshCore contact or channel QR, a Meshtastic channel link, or a Reticulum contact card."
   },
   "radioPanel": {
     "offloadedContacts": "Offloaded {{count}} contacts to database.",

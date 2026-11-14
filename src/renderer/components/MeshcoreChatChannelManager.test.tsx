@@ -10,6 +10,21 @@ import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { ToastProvider } from './Toast';
 
+vi.mock('./QrIngestControl', () => ({
+  default: ({ onDecoded, disabled }: { onDecoded: (text: string) => void; disabled?: boolean }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label="mock-qr-ingest"
+      onClick={() => {
+        onDecoded('meshcore://channel/add?name=FromQr&secret=' + 'ab'.repeat(16));
+      }}
+    >
+      ingest
+    </button>
+  ),
+}));
+
 const configuredSecret = new Uint8Array([1, ...new Array<number>(15).fill(0)]);
 
 function renderManager(
@@ -456,5 +471,22 @@ describe('MeshcoreChatChannelManager', () => {
     screen.getByRole('dialog').focus();
     await user.keyboard('{Tab}');
     expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+  });
+
+  it('prefills private channel name and key from a channel QR without submitting', async () => {
+    const user = userEvent.setup();
+    const props = renderManager();
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Scan a channel QR code to add or join it' }),
+    );
+    await user.click(screen.getByLabelText('mock-qr-ingest'));
+    expect(screen.getByRole('checkbox', { name: 'Private channel (enter key)' })).toBeChecked();
+    expect(screen.getByLabelText('Name')).toHaveValue('FromQr');
+    expect(screen.getByLabelText('Key (32 hex chars = 16 bytes)')).toHaveValue('ab'.repeat(16));
+    expect(props.onSetChannel).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Channel details filled from QR — save to apply',
+    );
   });
 });

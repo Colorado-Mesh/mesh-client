@@ -6578,7 +6578,21 @@
     "paperInvalidUri": "Questo non sembra un link cartaceo LXMF valido",
     "paperDecryptFailed": "Impossibile decifrare il messaggio cartaceo: è l'identità corretta?",
     "paperIdentityNotConfigured": "L'identità Reticulum non è pronta: avvia prima lo stack e configura l'identità",
-    "paperIngestFailed": "Impossibile inserire il messaggio cartaceo"
+    "paperIngestFailed": "Impossibile inserire il messaggio cartaceo",
+    "scanQr": "Scansiona il codice QR",
+    "scanQrAria": "Esegui la scansione di un codice QR per aggiungere un contatto o un canale",
+    "scanContactQr": "Scansiona il QR del contatto",
+    "scanContactQrAria": "Esegui la scansione di un codice QR di un contatto per aggiungerlo ai Contatti",
+    "scanChannelQr": "Esegui la scansione del QR del canale",
+    "scanChannelQrAria": "Esegui la scansione del codice QR di un canale per aggiungerlo o unirti ad esso",
+    "channelScanHint": "Punta la fotocamera verso un QR del canale MeshCore (nome + segreto) oppure scegli un'immagine. Controlla il modulo prima di salvarlo.",
+    "meshcoreScanHeading": "Aggiungi da QR",
+    "meshcoreScanHint": "Esegui la scansione di un codice QR di un contatto o di un canale MeshCore oppure incolla un'immagine. I contatti vengono salvati localmente (non inviati alla radio); i canali aprono il modulo di aggiunta per la revisione.",
+    "connectToScan": "Connettersi alla radio per eseguire la scansione e applicare le modifiche ai canali.",
+    "globalScanHeading": "Scansiona QR",
+    "globalScanHint": "Esegui la scansione di un QR di contatto o canale MeshCore, di un link di canale Meshtastic o di una scheda contatto Reticulum.",
+    "meshtasticScanHeading": "Aggiungi da QR",
+    "meshtasticScanHint": "Esegui la scansione di un QR del link del canale Meshtastic o incolla un'immagine. Controlla il modulo di importazione riportato di seguito prima di applicarlo alla radio."
   },
   "reticulumRemote": {
     "navAria": "Sezioni remote",

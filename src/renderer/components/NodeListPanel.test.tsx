@@ -104,6 +104,21 @@ vi.mock('./Toast', () => ({
   }),
 }));
 
+vi.mock('./QrIngestControl', () => ({
+  default: ({ onDecoded, disabled }: { onDecoded: (text: string) => void; disabled?: boolean }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label="mock-qr-ingest"
+      onClick={() => {
+        onDecoded('meshcore://contact/add?name=QrPeer&public_key=' + 'ab'.repeat(32) + '&type=1');
+      }}
+    >
+      ingest
+    </button>
+  ),
+}));
+
 vi.mock('../lib/downloadBlob', () => ({
   downloadBlob: vi.fn(),
 }));
@@ -304,6 +319,68 @@ describe('NodeListPanel import contacts', () => {
       />,
     );
     expect(screen.queryByRole('button', { name: 'Import Contacts' })).not.toBeInTheDocument();
+  });
+
+  it('shows Scan contact QR when MeshCore import callback is provided', () => {
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        onImportContactFromQr={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Scan a contact QR code to add it to Contacts' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides Scan contact QR when callback is absent', () => {
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Scan a contact QR code to add it to Contacts' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('imports a contact QR and toasts success', async () => {
+    const user = userEvent.setup();
+    const onImportContactFromQr = vi.fn().mockResolvedValue({
+      ok: true,
+      kind: 'contact',
+      toastKey: 'qrIngest.meshcoreContactImported',
+      nodeId: 1,
+    });
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        onImportContactFromQr={onImportContactFromQr}
+      />,
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Scan a contact QR code to add it to Contacts' }),
+    );
+    await user.click(screen.getByLabelText('mock-qr-ingest'));
+    await waitFor(() => {
+      expect(onImportContactFromQr).toHaveBeenCalled();
+    });
+    expect(addToastMock).toHaveBeenCalledWith('MeshCore contact added from QR', 'success');
   });
 
   it('filters Meshtastic nodes by GPS built-in group', () => {

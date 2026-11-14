@@ -6578,7 +6578,21 @@
     "paperInvalidUri": "Das sieht nicht nach einem gültigen LXMF-Papierlink aus",
     "paperDecryptFailed": "Papiernachricht konnte nicht entschlüsselt werden — ist das die richtige Identität?",
     "paperIdentityNotConfigured": "Die Reticulum-Identität ist nicht bereit — starten Sie den Stack und konfigurieren Sie zuerst die Identität",
-    "paperIngestFailed": "Papiernachricht konnte nicht aufgenommen werden"
+    "paperIngestFailed": "Papiernachricht konnte nicht aufgenommen werden",
+    "scanQr": "QR-Code scannen",
+    "scanQrAria": "Scannen Sie einen QR-Code, um einen Kontakt oder Kanal hinzuzufügen",
+    "scanContactQr": "Kontakt-QR-Code scannen",
+    "scanContactQrAria": "Scannen Sie einen Kontakt-QR-Code, um ihn zu den Kontakten hinzuzufügen",
+    "scanChannelQr": "QR-Code des Kanals scannen",
+    "scanChannelQrAria": "Scannen Sie einen Kanal-QR-Code, um ihn hinzuzufügen oder ihm beizutreten",
+    "channelScanHint": "Richten Sie die Kamera auf einen MeshCore-Kanal-QR-Code (Name + Geheimnis) oder wählen Sie ein Bild aus. Überprüfen Sie das Formular, bevor Sie es speichern.",
+    "meshcoreScanHeading": "Über QR-Code hinzufügen",
+    "meshcoreScanHint": "Scannen Sie einen MeshCore-Kontakt oder einen Kanal-QR-Code oder fügen Sie ein Bild ein. Kontakte werden lokal gespeichert (nicht an das Funkgerät übertragen); bei Kanälen wird das Formular zum Hinzufügen zur Überprüfung geöffnet.",
+    "connectToScan": "Stellen Sie eine Verbindung zum Funkgerät her, um Kanaländerungen zu suchen und anzuwenden.",
+    "globalScanHeading": "QR scannen",
+    "globalScanHint": "Scannen Sie einen QR-Code eines MeshCore-Kontakts oder -Kanals, einen Meshtastic-Kanallink oder eine Reticulum-Kontaktkarte.",
+    "meshtasticScanHeading": "Über QR-Code hinzufügen",
+    "meshtasticScanHint": "Scannen Sie einen QR-Code für einen Meshtastic-Kanallink oder fügen Sie ein Bild ein. Überprüfen Sie das untenstehende Importformular, bevor Sie es auf das Funkgerät anwenden."
   },
   "reticulumRemote": {
     "navAria": "Entfernte Abschnitte",

@@ -6578,7 +6578,21 @@
     "paperInvalidUri": "Cela ne ressemble pas à un lien papier LXMF valide",
     "paperDecryptFailed": "Impossible de déchiffrer le message papier — est-ce la bonne identité ?",
     "paperIdentityNotConfigured": "L'identité Reticulum n'est pas prête — démarrez la pile et configurez d'abord l'identité",
-    "paperIngestFailed": "Impossible d'ingérer le message papier"
+    "paperIngestFailed": "Impossible d'ingérer le message papier",
+    "scanQr": "Scan du code QR",
+    "scanQrAria": "Scanner un code QR pour ajouter un contact ou un canal",
+    "scanContactQr": "Scanner le QR du contact",
+    "scanContactQrAria": "Scanner le code QR d'un contact pour l'ajouter aux Contacts",
+    "scanChannelQr": "Scanner le QR du canal",
+    "scanChannelQrAria": "Scanner le code QR d'un canal pour l'ajouter ou le rejoindre",
+    "channelScanHint": "Pointez l'appareil photo vers un QR code de canal MeshCore (nom + secret) ou choisissez une image. Vérifiez le formulaire avant de l'enregistrer.",
+    "meshcoreScanHeading": "Ajouter à partir d'un QR code",
+    "meshcoreScanHint": "Scannez un QR code de contact ou de canal MeshCore, ou collez une image. Les contacts sont enregistrés localement (ils ne sont pas transférés vers la radio) ; les canaux ouvrent le formulaire d’ajout pour vérification.",
+    "connectToScan": "Connectez-vous à la radio pour rechercher et appliquer les changements de canal.",
+    "globalScanHeading": "Scanner le QR",
+    "globalScanHint": "Scannez un QR de contact ou de canal MeshCore, un lien de canal Meshtastic ou une carte de contact Reticulum.",
+    "meshtasticScanHeading": "Ajouter à partir d'un QR code",
+    "meshtasticScanHint": "Scannez un QR code de lien de canal Meshtastic ou collez une image. Vérifiez le formulaire d’importation ci-dessous avant de l’appliquer à la radio."
   },
   "reticulumRemote": {
     "navAria": "Sections distantes",
