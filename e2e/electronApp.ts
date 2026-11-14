@@ -352,6 +352,8 @@ export async function stubSaveDialogCanceled(
 export const RENDERER_CONSOLE_ERROR_ALLOWLIST: RegExp[] = [
   /Download the React DevTools/i,
   /Autofill\.(enable|disable)/i,
+  // Chromium reports failed map-tile/CDN/subresource fetches as console errors; not app regressions.
+  /Failed to load resource: the server responded with a status of 403/i,
 ];
 
 /** Drop known-benign renderer console errors using `RENDERER_CONSOLE_ERROR_ALLOWLIST`. */

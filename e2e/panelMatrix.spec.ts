@@ -231,10 +231,17 @@ async function walkProtocol(launched: LaunchedApp, protocol: Protocol): Promise<
   );
 
   const rail = page.getByRole('navigation', { name: 'Application panels' });
-  const sectionIds = await rail
-    .locator('[data-nav-section]')
-    .evaluateAll((els) => els.map((el) => el.getAttribute('data-nav-section') ?? ''));
-  expect(sectionIds, `${protocol} rail sections`).toEqual(matrix.sections.map((s) => s.id));
+  const expectedSectionIds = matrix.sections.map((s) => s.id);
+  // Protocol switch remounts capability-gated rail sections asynchronously (e.g. Reticulum nomad).
+  await expect
+    .poll(
+      async () =>
+        rail
+          .locator('[data-nav-section]')
+          .evaluateAll((els) => els.map((el) => el.getAttribute('data-nav-section') ?? '')),
+      { timeout: 15_000 },
+    )
+    .toEqual(expectedSectionIds);
 
   const visited: string[] = [];
   for (const section of matrix.sections) {
