@@ -8,6 +8,7 @@ import { syncNodesMapToIdentityStore } from '@/renderer/lib/hydrateIdentityStore
 import { getIdentityNodeMap } from '@/renderer/lib/identityStoreReads';
 import { meshcoreContactToMeshNode, pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
 import type { MeshNode } from '@/renderer/lib/types';
+import { removeNode } from '@/renderer/stores/nodeStore';
 import { hexToBytesExact } from '@/shared/hexBytes';
 import { classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
 
@@ -65,12 +66,16 @@ export interface MeshcoreQrContactImportDeps {
   identityId: string | null;
   /** Optional: mark mount hydration skip so DB reload does not clobber the optimistic row. */
   skipMountDbHydrationCommit?: () => void;
-  /** Persist contact; returns false on failure. Defaults to SQLite `on_radio: 0`. */
+  /**
+   * Persist contact; returns false on failure.
+   * Defaults to SQLite with the contact’s existing `on_radio` (0 when new).
+   */
   saveContact?: (opts: {
     nodeId: number;
     publicKeyHex: string;
     name: string;
     contactType: number;
+    onRadio: boolean;
   }) => Promise<boolean>;
 }
 
@@ -79,6 +84,7 @@ async function defaultSaveMeshcoreContact(opts: {
   publicKeyHex: string;
   name: string;
   contactType: number;
+  onRadio: boolean;
 }): Promise<boolean> {
   try {
     await window.electronAPI.db.saveMeshcoreContact({
@@ -86,7 +92,7 @@ async function defaultSaveMeshcoreContact(opts: {
       public_key: opts.publicKeyHex.toLowerCase(),
       adv_name: opts.name,
       contact_type: opts.contactType,
-      on_radio: 0,
+      on_radio: opts.onRadio ? 1 : 0,
     });
     return true;
   } catch (err) {
@@ -96,9 +102,56 @@ async function defaultSaveMeshcoreContact(opts: {
 }
 
 /**
+ * Merge QR-imported identity fields onto an existing contact without clobbering
+ * coordinates / SNR / battery with QR placeholder nulls and zeros.
+ */
+export function mergeMeshcoreQrContactNode(
+  previous: MeshNode | undefined,
+  imported: MeshNode,
+): MeshNode {
+  if (!previous) {
+    return { ...imported, on_radio: false };
+  }
+  const latitude =
+    imported.latitude != null && imported.latitude !== 0 ? imported.latitude : previous.latitude;
+  const longitude =
+    imported.longitude != null && imported.longitude !== 0
+      ? imported.longitude
+      : previous.longitude;
+  return {
+    ...previous,
+    long_name: imported.long_name,
+    short_name: imported.short_name,
+    hw_model: imported.hw_model,
+    last_heard: imported.last_heard,
+    ...(imported.public_key_hex != null ? { public_key_hex: imported.public_key_hex } : {}),
+    ...(imported.hops_away !== undefined ? { hops_away: imported.hops_away } : {}),
+    latitude,
+    longitude,
+    snr: imported.snr !== 0 ? imported.snr : previous.snr,
+    battery: imported.battery !== 0 ? imported.battery : previous.battery,
+    on_radio: previous.on_radio ?? false,
+  };
+}
+
+function rollbackOptimisticQrContact(
+  storeId: string,
+  nodeId: number,
+  previous: MeshNode | undefined,
+): void {
+  if (previous) {
+    const rolled = new Map(getIdentityNodeMap(storeId));
+    rolled.set(nodeId, previous);
+    syncNodesMapToIdentityStore(storeId, rolled);
+    return;
+  }
+  removeNode(storeId, nodeId);
+}
+
+/**
  * Classify decoded QR text and apply MeshCore contact imports immediately
  * (identity store + SQLite). Channel / unsupported kinds are returned for the caller to route.
- * Works offline — contact import is DB-only (`on_radio: 0`).
+ * Works offline — contact import is DB-only unless the contact was already on radio.
  */
 export async function importMeshcoreQr(
   text: string,
@@ -121,17 +174,21 @@ export async function importMeshcoreQr(
     return { ok: false, kind: 'unsupported', toastKey: 'qrIngest.unknownLink' };
   }
 
+  const storeId = deps.identityId;
+  let previous: MeshNode | undefined;
+  let nodeId: number | undefined;
+
   try {
     const bytes = hexToBytesExact(decoded.publicKeyHex, 32);
     if (!bytes) {
       return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
     }
-    const nodeId = pubkeyToNodeId(bytes);
+    nodeId = pubkeyToNodeId(bytes);
     if (nodeId === 0) {
       return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
     }
 
-    const node = meshcoreContactToMeshNode({
+    const imported = meshcoreContactToMeshNode({
       publicKey: bytes,
       type: decoded.type,
       advName: decoded.name,
@@ -143,14 +200,15 @@ export async function importMeshcoreQr(
       outPath: new Uint8Array(64),
     });
 
-    const storeId = deps.identityId;
-    const previous = storeId != null ? getIdentityNodeMap(storeId).get(nodeId) : undefined;
+    previous = storeId != null ? getIdentityNodeMap(storeId).get(nodeId) : undefined;
+    const node = mergeMeshcoreQrContactNode(previous, imported);
+    const onRadio = previous?.on_radio === true;
 
     deps.skipMountDbHydrationCommit?.();
 
     if (storeId) {
       const next = new Map(getIdentityNodeMap(storeId));
-      next.set(nodeId, { ...(previous ?? {}), ...node, on_radio: previous?.on_radio ?? false });
+      next.set(nodeId, node);
       syncNodesMapToIdentityStore(storeId, next);
     }
 
@@ -160,15 +218,11 @@ export async function importMeshcoreQr(
       publicKeyHex: decoded.publicKeyHex.toLowerCase(),
       name: decoded.name,
       contactType: decoded.type,
+      onRadio,
     });
 
     if (!saved) {
-      if (storeId) {
-        const rolled = new Map(getIdentityNodeMap(storeId));
-        if (previous) rolled.set(nodeId, previous);
-        else rolled.delete(nodeId);
-        syncNodesMapToIdentityStore(storeId, rolled);
-      }
+      if (storeId) rollbackOptimisticQrContact(storeId, nodeId, previous);
       return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
     }
 
@@ -177,11 +231,14 @@ export async function importMeshcoreQr(
       kind: 'contact',
       toastKey: 'qrIngest.meshcoreContactImported',
       nodeId,
-      node: { ...(previous ?? {}), ...node, on_radio: previous?.on_radio ?? false },
+      node,
       publicKey: bytes,
     };
   } catch (err) {
     console.error('[meshcoreQrIngest] importMeshcoreQr failed: ' + errLikeToLogString(err));
+    if (storeId != null && nodeId != null) {
+      rollbackOptimisticQrContact(storeId, nodeId, previous);
+    }
     return { ok: false, kind: 'contact', toastKey: 'qrIngest.meshcoreContactImportFailed' };
   }
 }

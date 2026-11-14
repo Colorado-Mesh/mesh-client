@@ -153,4 +153,41 @@ describe('ScanQrDisclosure', () => {
       expect(screen.queryByRole('dialog', { name: 'Scan contact QR' })).toBeNull();
     });
   });
+
+  it('does not close a newer session when an earlier decode resolves late', async () => {
+    const user = userEvent.setup();
+    let resolveFirst!: () => void;
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    let call = 0;
+    const onDecoded = vi.fn().mockImplementation(() => {
+      call += 1;
+      return call === 1 ? first : Promise.resolve();
+    });
+    render(
+      <ScanQrDisclosure
+        onDecoded={onDecoded}
+        triggerAriaLabel="qrIngest.scanQrAria"
+        label="Scan"
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'qrIngest.scanQrAria' });
+    await user.click(trigger);
+    await user.click(screen.getByLabelText('mock-qr-ingest'));
+    expect(onDecoded).toHaveBeenCalledTimes(1);
+    // Close and reopen a new session before the first decode settles.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('mock-qr-ingest')).toBeInTheDocument();
+    resolveFirst();
+    await waitFor(() => {
+      expect(onDecoded).toHaveBeenCalledTimes(1);
+    });
+    // New session must remain open despite the stale decode completing.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('mock-qr-ingest')).toBeInTheDocument();
+  });
 });

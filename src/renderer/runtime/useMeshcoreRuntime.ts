@@ -8921,6 +8921,8 @@ export function useMeshcoreRuntime() {
     if (result.ok && result.kind === 'contact' && result.nodeId != null && result.node) {
       const nodeId = result.nodeId;
       const node = result.node;
+      // Explicit re-import clears a local delete tombstone so the contact can reappear.
+      clearMeshcoreLocallyDeletedContact(nodeId);
       if (result.publicKey) {
         pubKeyMapRef.current.set(nodeId, result.publicKey);
         nicknameMapRef.current.set(nodeId, node.long_name);
@@ -8931,7 +8933,22 @@ export function useMeshcoreRuntime() {
       }
       setNodes((prev) => {
         const next = new Map(prev);
-        next.set(nodeId, { ...(prev.get(nodeId) ?? {}), ...node });
+        const current = prev.get(nodeId);
+        if (!current) {
+          next.set(nodeId, node);
+        } else {
+          // Only apply QR-owned identity fields — preserve favorited / RF stats changed while save awaited.
+          next.set(nodeId, {
+            ...current,
+            long_name: node.long_name,
+            short_name: node.short_name,
+            hw_model: node.hw_model,
+            last_heard: node.last_heard,
+            ...(node.public_key_hex != null ? { public_key_hex: node.public_key_hex } : {}),
+            ...(node.hops_away !== undefined ? { hops_away: node.hops_away } : {}),
+            on_radio: current.on_radio ?? node.on_radio,
+          });
+        }
         return next;
       });
     }

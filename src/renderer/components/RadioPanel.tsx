@@ -64,6 +64,10 @@ import {
   REGION_OPTIONS,
 } from '@/renderer/lib/meshtastic/protobufEnumOptions';
 import { syncAppUnitsFromMeshtasticDisplayUnits } from '@/renderer/lib/meshtasticDisplayUnitsSync';
+import {
+  takePendingMeshcoreChannelQr,
+  takePendingMeshtasticChannelQr,
+} from '@/renderer/lib/qrChannelHandoff';
 import type { IdentityId } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
@@ -3700,11 +3704,29 @@ function ChannelUrlImportExport({
   }, [importUrl, t]);
 
   useEffect(() => {
-    const onChannelDeepLink = (ev: Event) => {
-      const detail = (ev as CustomEvent<string>).detail;
-      if (typeof detail === 'string' && detail.trim()) {
-        setImportUrl(detail.trim());
+    const applyChannelUrl = (raw: unknown) => {
+      let url = '';
+      let settle: ((outcome: 'accepted' | 'rejected') => void) | undefined;
+      if (typeof raw === 'string') {
+        url = raw.trim();
+      } else if (raw && typeof raw === 'object' && 'url' in raw) {
+        const detail = raw as { url?: unknown; settle?: (o: 'accepted' | 'rejected') => void };
+        url = typeof detail.url === 'string' ? detail.url.trim() : '';
+        settle = detail.settle;
       }
+      if (!url) {
+        settle?.('rejected');
+        return;
+      }
+      setImportUrl(url);
+      settle?.('accepted');
+    };
+
+    const pending = takePendingMeshtasticChannelQr();
+    if (pending) applyChannelUrl(pending.url);
+
+    const onChannelDeepLink = (ev: Event) => {
+      applyChannelUrl((ev as CustomEvent<unknown>).detail);
     };
     window.addEventListener('mesh-client:meshtasticChannelUrl', onChannelDeepLink);
     return () => {
@@ -4565,16 +4587,16 @@ function MeshcoreChannelSection({
   ];
 
   useEffect(() => {
-    const onChannelQr = (ev: Event) => {
-      const detail = (
-        ev as CustomEvent<{
-          name: string;
-          secretHex: string;
-          regionScope?: string;
-          settle?: (outcome: 'accepted' | 'rejected') => void;
-        }>
-      ).detail;
-      if (!detail?.name || !detail.secretHex) return;
+    const applyChannelQr = (detail: {
+      name?: string;
+      secretHex?: string;
+      regionScope?: string;
+      settle?: (outcome: 'accepted' | 'rejected') => void;
+    }) => {
+      if (!detail?.name || !detail.secretHex) {
+        detail.settle?.('rejected');
+        return;
+      }
       const name = meshcoreChannelNameFromQr(detail.name);
       if (!name) {
         detail.settle?.('rejected');
@@ -4598,6 +4620,22 @@ function MeshcoreChannelSection({
       if (detailsRef.current) detailsRef.current.open = true;
       addToast(t('qrIngest.meshcoreChannelPrefill'), 'success');
       detail.settle?.('accepted');
+    };
+
+    const pending = takePendingMeshcoreChannelQr();
+    if (pending) applyChannelQr(pending.payload);
+
+    const onChannelQr = (ev: Event) => {
+      applyChannelQr(
+        (
+          ev as CustomEvent<{
+            name: string;
+            secretHex: string;
+            regionScope?: string;
+            settle?: (outcome: 'accepted' | 'rejected') => void;
+          }>
+        ).detail,
+      );
     };
     window.addEventListener('mesh-client:meshcoreChannelFromQr', onChannelQr);
     return () => {

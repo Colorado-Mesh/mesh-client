@@ -10,6 +10,7 @@ import {
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from '@/renderer/lib/meshClientDeepLinkApply';
+import { offerMeshcoreChannelQr } from '@/renderer/lib/qrChannelHandoff';
 import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
 import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import { classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
@@ -180,29 +181,7 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
       }
       if (pending.kind === 'meshcoreChannelAdd') {
         const result = await applyMeshcoreChannelAdd(pending, {
-          applyChannel: (opts) =>
-            new Promise((resolve) => {
-              let settled = false;
-              const settle = (outcome: 'accepted' | 'rejected' | 'deferred') => {
-                if (settled) return;
-                settled = true;
-                resolve(outcome);
-              };
-              window.dispatchEvent(
-                new CustomEvent('mesh-client:meshcoreChannelFromQr', {
-                  detail: {
-                    ...opts,
-                    settle: (outcome: 'accepted' | 'rejected') => {
-                      settle(outcome);
-                    },
-                  },
-                }),
-              );
-              // No MeshcoreChannelSection listener → keep pending for Radio review.
-              queueMicrotask(() => {
-                settle('deferred');
-              });
-            }),
+          applyChannel: (opts) => offerMeshcoreChannelQr(opts),
         });
         if (result.ok && result.deferred) {
           addToast(t('qrIngest.meshcoreChannelImported'), 'success');

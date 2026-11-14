@@ -17,8 +17,11 @@ export interface QrIngestControlProps {
   focusOnMount?: boolean;
 }
 
-/** Which mounted ingest control should receive the next document paste. */
+/** Which mounted ingest control should receive the next document paste (hover fallback). */
 let activePasteRoot: HTMLElement | null = null;
+
+/** All mounted paste roots — used so focus wins over hover across controls. */
+const mountedPasteRoots = new Set<HTMLElement>();
 
 function clipboardItems(
   items: DataTransferItemList | DataTransferItem[],
@@ -35,6 +38,43 @@ function isEditableTarget(el: EventTarget | null): boolean {
   if (el.isContentEditable) return true;
   const tag = el.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+/**
+ * Collapsed / explicitly hidden scanners must not own paste.
+ * Prefer structural checks over getClientRects — jsdom often reports empty rects
+ * for otherwise-visible nodes.
+ */
+function isPasteRootVisible(root: HTMLElement): boolean {
+  if (!root.isConnected) return false;
+  let el: Element | null = root;
+  while (el) {
+    if (el instanceof HTMLElement) {
+      if (el.hidden) return false;
+      if (el.style.display === 'none' || el.style.visibility === 'hidden') return false;
+    }
+    if (el instanceof HTMLDetailsElement && !el.open) {
+      const summary = el.querySelector(':scope > summary');
+      // Content inside a closed <details> (outside the summary) is inactive.
+      if (summary && !summary.contains(root)) return false;
+    }
+    el = el.parentElement;
+  }
+  return true;
+}
+
+function findFocusedPasteRoot(active: Element | null): HTMLElement | null {
+  if (!(active instanceof Node)) return null;
+  for (const root of mountedPasteRoots) {
+    if (root.contains(active) && isPasteRootVisible(root)) return root;
+  }
+  return null;
+}
+
+/** Test helper — reset module paste ownership between cases. */
+export function resetQrIngestPasteOwnershipForTests(): void {
+  activePasteRoot = null;
+  mountedPasteRoots.clear();
 }
 
 /**
@@ -68,21 +108,31 @@ export default function QrIngestControl({
   useEffect(() => {
     mountedRef.current = true;
     const root = rootRef.current;
+    if (root) mountedPasteRoots.add(root);
     return () => {
       mountedRef.current = false;
+      if (root) mountedPasteRoots.delete(root);
       if (activePasteRoot === root) activePasteRoot = null;
     };
   }, []);
 
+  useEffect(() => {
+    if (!disabled) return;
+    const root = rootRef.current;
+    if (activePasteRoot === root) activePasteRoot = null;
+  }, [disabled]);
+
   const markActiveForPaste = useCallback(() => {
     if (disabled) return;
-    activePasteRoot = rootRef.current;
+    const root = rootRef.current;
+    if (!root || !isPasteRootVisible(root)) return;
+    activePasteRoot = root;
   }, [disabled]);
 
   useEffect(() => {
     if (!focusOnMount || disabled) return;
     const root = rootRef.current;
-    if (!root) return;
+    if (!root || !isPasteRootVisible(root)) return;
     activePasteRoot = root;
     root.focus({ preventScroll: true });
   }, [focusOnMount, disabled]);
@@ -181,9 +231,11 @@ export default function QrIngestControl({
   const shouldHandleDocumentPaste = useCallback((): boolean => {
     if (disabled) return false;
     const root = rootRef.current;
-    if (!root) return false;
+    if (!root || !isPasteRootVisible(root)) return false;
     const active = document.activeElement;
-    if (active instanceof Node && root.contains(active)) return true;
+    // Focused scan control always wins over hover-armed fallback.
+    const focusedOwner = findFocusedPasteRoot(active);
+    if (focusedOwner) return focusedOwner === root;
     // Hover/click-armed paste must not steal from other inputs/textareas.
     if (isEditableTarget(active)) return false;
     return activePasteRoot === root;

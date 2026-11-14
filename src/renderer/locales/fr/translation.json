@@ -6593,7 +6593,8 @@
     "globalScanHint": "Scannez un QR de contact ou de canal MeshCore, un lien de canal Meshtastic ou une carte de contact Reticulum.",
     "meshtasticScanHeading": "Ajouter à partir d'un QR code",
     "meshtasticScanHint": "Scannez un QR code de lien de canal Meshtastic ou collez une image. Vérifiez le formulaire d’importation ci-dessous avant de l’appliquer à la radio.",
-    "pasteTargetAria": "Cible de collage QR : appuyez sur Ctrl ou Cmd+V pour coller une image ou un lien"
+    "pasteTargetAria": "Cible de collage QR : appuyez sur Ctrl ou Cmd+V pour coller une image ou un lien",
+    "gameSessionOpened": "Session de jeu ouverte à partir du QR code"
   },
   "reticulumRemote": {
     "navAria": "Sections distantes",

@@ -2,7 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import QrIngestControl from '@/renderer/components/QrIngestControl';
+import QrIngestControl, {
+  resetQrIngestPasteOwnershipForTests,
+} from '@/renderer/components/QrIngestControl';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -42,6 +44,7 @@ function dispatchPaste(data: { image?: Blob; text?: string }): void {
 
 describe('QrIngestControl paste', () => {
   beforeEach(() => {
+    resetQrIngestPasteOwnershipForTests();
     vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
@@ -100,6 +103,45 @@ describe('QrIngestControl paste', () => {
     await user.click(screen.getByRole('group', { name: 'qrIngest.pasteTargetAria' }));
     await user.click(screen.getByLabelText('backup'));
     dispatchPaste({ text: 'null' });
+    expect(onDecoded).not.toHaveBeenCalled();
+  });
+
+  it('gives focused scan control precedence over a hovered control', async () => {
+    const user = userEvent.setup();
+    const onA = vi.fn();
+    const onB = vi.fn();
+    render(
+      <>
+        <QrIngestControl onDecoded={onA} />
+        <QrIngestControl onDecoded={onB} />
+      </>,
+    );
+    const targets = screen.getAllByRole('group', { name: 'qrIngest.pasteTargetAria' });
+    await user.click(targets[0]);
+    // Hover B without clicking — must not steal paste from focused A.
+    targets[1].dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+    dispatchPaste({ text: 'meshcore://contact/add?n=FocusWins' });
+    await waitFor(() => {
+      expect(onA).toHaveBeenCalledWith('meshcore://contact/add?n=FocusWins');
+    });
+    expect(onB).not.toHaveBeenCalled();
+  });
+
+  it('ignores paste after Channels collapse hides the scanner', async () => {
+    const user = userEvent.setup();
+    const onDecoded = vi.fn();
+    render(
+      <details open>
+        <summary>Channels</summary>
+        <QrIngestControl onDecoded={onDecoded} />
+      </details>,
+    );
+    const target = screen.getByRole('group', { name: 'qrIngest.pasteTargetAria' });
+    await user.click(target);
+    const details = target.closest('details');
+    expect(details).not.toBeNull();
+    details!.open = false;
+    dispatchPaste({ text: 'meshcore://contact/add?n=Hidden' });
     expect(onDecoded).not.toHaveBeenCalled();
   });
 });

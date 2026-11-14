@@ -13,6 +13,7 @@ export type ScanQrRouteAction =
       channel: { name: string; secretHex: string; regionScope?: string };
     }
   | { kind: 'meshtasticChannel'; url: string }
+  | { kind: 'lxmGameSession'; sessionId: string }
   | { kind: 'reticulum'; text: string }
   | { kind: 'unknown' };
 
@@ -40,12 +41,14 @@ export function routeScannedQr(text: string): ScanQrRouteAction {
   }
 
   const parsed = classifyMeshClientDeepLink(trimmed);
+  if (parsed.kind === 'lxmGameSession') {
+    return { kind: 'lxmGameSession', sessionId: parsed.sessionId };
+  }
   if (
     parsed.kind === 'lxmContact' ||
     parsed.kind === 'lxmaContact' ||
     parsed.kind === 'lxmPaperMessage' ||
-    parsed.kind === 'lxmIdentity' ||
-    parsed.kind === 'lxmGameSession'
+    parsed.kind === 'lxmIdentity'
   ) {
     return { kind: 'reticulum', text: trimmed };
   }

@@ -5053,6 +5053,7 @@
     "contactImportFailed": "Could not import contact from link",
     "unknownLink": "Unrecognized link",
     "identityShown": "Opened identity share link",
+    "gameSessionOpened": "Opened game session from QR",
     "channelLinkReceived": "Channel link opened — review import on the Radio tab",
     "showIdentityQr": "Show identity QR",
     "showIdentityQrAria": "Show QR code for this identity",

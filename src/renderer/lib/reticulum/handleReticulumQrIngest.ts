@@ -70,6 +70,17 @@ export async function handleReticulumQrIngest(text: string): Promise<ReticulumQr
         toast: { key: 'qrIngest.identityShown', variant: 'success' },
       };
     }
+    if (parsed.kind === 'lxmGameSession') {
+      window.dispatchEvent(
+        new CustomEvent('mesh-client:openGamesSession', {
+          detail: { sessionId: parsed.sessionId },
+        }),
+      );
+      return {
+        handled: true,
+        toast: { key: 'qrIngest.gameSessionOpened', variant: 'success' },
+      };
+    }
     return {
       handled: true,
       toast: { key: 'qrIngest.unknownLink', variant: 'error' },

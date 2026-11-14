@@ -76,6 +76,8 @@ export default function ScanQrDisclosure({
   const [position, setPosition] = useState<PopoverPosition | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  /** Bumps when the disclosure opens so deferred onDecoded cannot close a newer session. */
+  const sessionRef = useRef(0);
   const visibleLabel = label ?? t('qrIngest.scanQr');
   const aria = triggerAriaLabel ?? t('qrIngest.scanQrAria');
   const isToolbar = triggerStyle === 'toolbar';
@@ -85,10 +87,11 @@ export default function ScanQrDisclosure({
   };
 
   const handleDecoded = (text: string) => {
+    const session = sessionRef.current;
     void (async () => {
       try {
         await Promise.resolve(onDecoded(text));
-        if (closeOnDecoded) close();
+        if (closeOnDecoded && sessionRef.current === session) close();
       } catch (err: unknown) {
         console.error('[ScanQrDisclosure] onDecoded failed: ' + errLikeToLogString(err));
       }
@@ -96,7 +99,11 @@ export default function ScanQrDisclosure({
   };
 
   const toggle = () => {
-    setExpanded((v) => !v);
+    setExpanded((v) => {
+      const next = !v;
+      if (next) sessionRef.current += 1;
+      return next;
+    });
   };
 
   useLayoutEffect(() => {

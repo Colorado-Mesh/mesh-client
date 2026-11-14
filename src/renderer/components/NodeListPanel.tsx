@@ -82,6 +82,7 @@ import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { requestOpenSetting } from '../lib/openSettingRequest';
+import { offerMeshcoreChannelQr } from '../lib/qrChannelHandoff';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
@@ -813,12 +814,16 @@ export default function NodeListPanel({
               onDecoded={async (text) => {
                 const result = await onImportContactFromQr(text);
                 if (result.kind === 'channel' && result.channel) {
-                  window.dispatchEvent(
-                    new CustomEvent('mesh-client:meshcoreChannelFromQr', {
-                      detail: result.channel,
-                    }),
-                  );
                   requestOpenSetting({ slot: 'Radio', id: 'radio.channels.meshcoreScan' });
+                  const outcome = await offerMeshcoreChannelQr(result.channel);
+                  if (outcome === 'rejected') {
+                    addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
+                    return;
+                  }
+                  if (outcome === 'deferred') {
+                    addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+                  }
+                  return;
                 }
                 addToast(t(result.toastKey), result.ok ? 'success' : 'error');
               }}

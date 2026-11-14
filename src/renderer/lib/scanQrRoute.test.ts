@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { routeScannedQr } from '@/renderer/lib/scanQrRoute';
 import {
   buildLxmContactUri,
+  buildLxmGameSessionUri,
   buildMeshcoreChannelAddUri,
   buildMeshcoreContactAddUri,
 } from '@/shared/meshClientDeepLink';
@@ -36,6 +37,12 @@ describe('routeScannedQr', () => {
   it('routes Reticulum contact URI', () => {
     const text = buildLxmContactUri('a'.repeat(32), 'Peer');
     expect(routeScannedQr(text)).toEqual({ kind: 'reticulum', text });
+  });
+
+  it('routes game-session QR to lxmGameSession (not reticulum)', () => {
+    const sessionId = '0123456789abcdef';
+    const text = buildLxmGameSessionUri(sessionId);
+    expect(routeScannedQr(text)).toEqual({ kind: 'lxmGameSession', sessionId });
   });
 
   it('returns unknown for empty / garbage', () => {

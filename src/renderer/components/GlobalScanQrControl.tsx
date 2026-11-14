@@ -5,6 +5,7 @@ import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MeshcoreQrImportResult } from '@/renderer/lib/meshcore/meshcoreQrIngest';
 import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
+import { offerMeshcoreChannelQr, offerMeshtasticChannelQr } from '@/renderer/lib/qrChannelHandoff';
 import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
 import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import { routeScannedQr } from '@/renderer/lib/scanQrRoute';
@@ -46,20 +47,37 @@ export default function GlobalScanQrControl({
             return;
           }
           if (action.kind === 'meshcoreChannel') {
-            window.dispatchEvent(
-              new CustomEvent('mesh-client:meshcoreChannelFromQr', { detail: action.channel }),
-            );
             requestOpenSetting({ slot: 'Radio', id: 'radio.channels.meshcoreScan' });
-            addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+            const outcome = await offerMeshcoreChannelQr(action.channel);
+            if (outcome === 'rejected') {
+              addToast(t('qrIngest.meshcoreChannelImportFailed'), 'error');
+              return;
+            }
+            // Live Radio settle already toasts meshcoreChannelPrefill; deferred needs the handoff toast.
+            if (outcome === 'deferred') {
+              addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+            }
             onHandled?.();
             return;
           }
           if (action.kind === 'meshtasticChannel') {
-            window.dispatchEvent(
-              new CustomEvent('mesh-client:meshtasticChannelUrl', { detail: action.url }),
-            );
             requestOpenSetting({ slot: 'Radio', id: 'radio.channels.scanQr' });
+            const outcome = await offerMeshtasticChannelQr(action.url);
+            if (outcome === 'rejected') {
+              addToast(t('qrIngest.unknownLink'), 'error');
+              return;
+            }
             addToast(t('qrIngest.channelLinkReceived'), 'success');
+            onHandled?.();
+            return;
+          }
+          if (action.kind === 'lxmGameSession') {
+            window.dispatchEvent(
+              new CustomEvent('mesh-client:openGamesSession', {
+                detail: { sessionId: action.sessionId },
+              }),
+            );
+            addToast(t('qrIngest.gameSessionOpened'), 'success');
             onHandled?.();
             return;
           }
