@@ -124,6 +124,14 @@ describe('analyzeLogs', () => {
     expect(mqttCategory?.severity).toBe('warning');
   });
 
+  it('does not surface untagged MQTT disconnect lines on the Reticulum tab', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[useSendMessage] no handle and MQTT disconnected for identity-1', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'reticulum');
+    expect(result.categories.find((c) => c.id === 'mqtt')).toBeUndefined();
+  });
+
   it('detects MQTT connection timeout', () => {
     const entries: LogEntry[] = [
       makeEntry('[Meshtastic MQTT] Connection timeout (will reconnect): connack timeout', 'warn'),

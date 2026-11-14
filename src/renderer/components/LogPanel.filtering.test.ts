@@ -502,6 +502,15 @@ describe('protocol-exclusive App tags — cross-protocol', () => {
   });
 });
 
+describe('LogPanel analyze entries memo', () => {
+  it('defers entriesForLogAnalysis until the Analyze modal is open', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(new URL('./LogPanel.tsx', import.meta.url), 'utf8');
+    expect(source).toMatch(/if \(!analyzeModalOpen\) return \[\]/);
+    expect(source).toMatch(/\[analyzeModalOpen, logSource, entries, deviceLogs\]/);
+  });
+});
+
 describe('entriesForLogAnalysis — surface without protocol filter', () => {
   it('keeps other-protocol app lines so Analyze can count ignoredOtherProtocol', () => {
     const shared = entry('main', '[db] migrate failed');
