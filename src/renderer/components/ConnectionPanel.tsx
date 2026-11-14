@@ -3047,7 +3047,7 @@ export default function ConnectionPanel({
 
   if (connectingProgressView) {
     return (
-      <div className="w-full space-y-4">
+      <div data-panel-anchor="Connection" className="w-full space-y-4">
         {statusTiles}
         {connectingProgressView}
         {mqttSection}
@@ -3058,7 +3058,7 @@ export default function ConnectionPanel({
 
   if (capabilities.hasReticulumInterfaceConfig) {
     return (
-      <div className="w-full space-y-4">
+      <div data-panel-anchor="Connection" className="w-full space-y-4">
         <ReticulumStackPanel
           tak={tak}
           connecting={state.status === 'connecting'}
@@ -3105,7 +3105,7 @@ export default function ConnectionPanel({
     ];
     const unplugIcon = <Unplug aria-hidden className={ICON_MD} size={16} />;
     return (
-      <div className="w-full space-y-4">
+      <div data-panel-anchor="Connection" className="w-full space-y-4">
         {statusTiles}
         {renderAutoReconnectBanner()}
 
@@ -3234,7 +3234,7 @@ export default function ConnectionPanel({
     icon: <ConnectionIcon type={type} />,
   }));
   return (
-    <div className="w-full space-y-4">
+    <div data-panel-anchor="Connection" className="w-full space-y-4">
       {statusTiles}
       {renderAutoReconnectBanner()}
 

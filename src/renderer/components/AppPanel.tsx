@@ -917,7 +917,7 @@ export default function AppPanel({
   }, [pendingAction, myNodeNum, addToast, loadMsgChannels, onNodesPruned, onMessagesPruned, t]);
 
   return (
-    <div className="w-full space-y-6">
+    <div data-panel-anchor="App" className="w-full space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
         <DocsSiteLink href={SETTINGS_DOCS_URL} />

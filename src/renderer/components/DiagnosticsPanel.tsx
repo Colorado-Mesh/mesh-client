@@ -851,7 +851,7 @@ export default function DiagnosticsPanel({
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div data-panel-anchor="Diagnostics" className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-ink-200 text-xl font-semibold">
           {t('diagnosticsPanel.networkDiagnosticsTitle')}

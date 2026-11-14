@@ -270,7 +270,7 @@ export default function TelemetryPanel({
   }, [telemetry, signalTelemetry, environmentTelemetry]);
 
   return (
-    <div className="space-y-6">
+    <div data-panel-anchor="Telemetry" className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-ink-200 text-xl font-semibold">{t('telemetryPanel.title')}</h2>

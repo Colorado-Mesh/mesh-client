@@ -10,6 +10,7 @@ import {
   _electron as electron,
   type ElectronApplication,
   expect,
+  type Locator,
   type Page,
 } from '@playwright/test';
 
@@ -363,6 +364,24 @@ export function navName(name: string): RegExp {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // eslint-disable-next-line security/detect-non-literal-regexp -- test-authored label, regex-escaped above
   return new RegExp(`^${escaped}(,|$)`);
+}
+
+/** Open a rail section by its `data-nav-section` id (v6 shell). */
+export async function openSectionById(page: Page, sectionId: string): Promise<void> {
+  const rail = page.getByRole('navigation', { name: 'Application panels' });
+  const button = rail.locator(`[data-nav-section="${sectionId}"]`);
+  await button.click();
+  await expect(button).toHaveAttribute('aria-current', 'page');
+}
+
+/** Wait until a panel's Suspense skeleton is gone. */
+export async function expectPanelSettled(panel: Locator, timeout = 15_000): Promise<void> {
+  await expect(panel.locator('[data-panel-loading="true"]')).toHaveCount(0, { timeout });
+}
+
+/** Renderer console errors recorded since `since` (already allowlist-filtered). */
+export function newPanelErrors(launched: LaunchedApp, since: number): string[] {
+  return filterUnexpectedConsoleErrors(launched.rendererConsoleErrors.slice(since));
 }
 
 /**

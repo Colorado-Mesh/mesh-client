@@ -76,7 +76,10 @@ export default class ErrorBoundary extends Component<Props, State> {
         });
       }
       return (
-        <div className="flex h-full flex-col items-center justify-center space-y-4 p-8">
+        <div
+          className="flex h-full flex-col items-center justify-center space-y-4 p-8"
+          data-error-boundary="default"
+        >
           <div className="text-xl font-semibold text-red-400">{i18n.t('errorBoundary.title')}</div>
           <div
             className="w-full max-w-lg rounded-lg border border-red-800 bg-red-900/30 p-4"

@@ -2770,7 +2770,7 @@ export default function RoomsPanel({
   );
 
   return (
-    <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
+    <div data-panel-anchor="Rooms" className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
       {forgetConfirmNodeId != null && (
         <ConfirmModal
           title={t('roomsPanel.forgetSavedPasswordConfirmTitle')}

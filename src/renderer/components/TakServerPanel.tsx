@@ -155,7 +155,7 @@ export default function TakServerPanel({
   const statusLabel = status.running ? t('takServerPanel.running') : t('takServerPanel.stopped');
 
   return (
-    <div className="w-full space-y-6 p-4">
+    <div data-panel-anchor="TAK" className="w-full space-y-6 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-ink-200 text-xl font-semibold">{t('takServerPanel.title')}</h2>
         <a

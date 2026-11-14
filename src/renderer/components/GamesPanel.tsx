@@ -249,7 +249,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const detailOpen = Boolean(selectedSession);
 
   return (
-    <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
+    <div data-panel-anchor="Games" className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
       <aside
         className={`bg-deep-black border-ink-800 flex w-full shrink-0 flex-col border-r md:w-72 ${
           detailOpen ? 'hidden md:flex' : 'flex'

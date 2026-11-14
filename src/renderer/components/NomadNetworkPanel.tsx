@@ -1442,7 +1442,10 @@ export default function NomadNetworkPanel({
   );
 
   return (
-    <div className="text-ink-100 flex h-full min-h-0 min-w-0 flex-col">
+    <div
+      data-panel-anchor="NomadNetwork"
+      className="text-ink-100 flex h-full min-h-0 min-w-0 flex-col"
+    >
       {showStartStackBanner && (
         <p className="rounded-card mb-3 border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}

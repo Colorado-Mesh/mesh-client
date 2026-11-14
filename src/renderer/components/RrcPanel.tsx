@@ -1746,7 +1746,7 @@ export default function RrcPanel({
   );
 
   return (
-    <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
+    <div data-panel-anchor="RRC" className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
       <ConversationLayout
         mode={layoutMode}
         list={listColumn}

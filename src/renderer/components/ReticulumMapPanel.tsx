@@ -292,7 +292,7 @@ export default function ReticulumMapPanel({
   }, [filteredMarkers, hasIncidentMarkers, openIncidentMarkers, selfCoords]);
 
   return (
-    <div className="flex h-full min-h-[500px] flex-col gap-3">
+    <div data-panel-anchor="Map" className="flex h-full min-h-[500px] flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div>
           <h2 className="text-ink-100 text-lg font-semibold">{t('reticulumMap.title')}</h2>

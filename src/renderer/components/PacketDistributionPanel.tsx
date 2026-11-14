@@ -342,7 +342,10 @@ export default function PacketDistributionPanel({
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-deep-black flex h-full flex-col gap-4 overflow-auto p-4">
+    <div
+      data-panel-anchor="Stats"
+      className="bg-deep-black flex h-full flex-col gap-4 overflow-auto p-4"
+    >
       {/* ── Top controls ── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Main view toggle */}

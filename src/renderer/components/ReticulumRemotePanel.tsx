@@ -86,7 +86,7 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col">
+    <div data-panel-anchor="Remote" className="flex h-full min-w-0 flex-col">
       <nav
         className="bg-deep-black border-ink-800 mb-3 flex w-fit max-w-full flex-wrap gap-0.5 rounded-lg border p-0.75"
         aria-label={t('reticulumRemote.navAria')}

@@ -745,7 +745,7 @@ export function ReticulumNetworkPanel({
   const identityActionsDisabled = !sidecarApiReady || connecting || identityActionBusy;
 
   return (
-    <div className="space-y-4">
+    <div data-panel-anchor="Radio" className="space-y-4">
       {onOpenSetupGuide && (
         <button
           type="button"

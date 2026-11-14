@@ -89,7 +89,7 @@ export default function AdminPanel({
   }, [pendingAction, confirmInFlight, nodeDbPreserveFavorites, onResetNodeDb, addToast, t]);
 
   return (
-    <div className="w-full space-y-4">
+    <div data-panel-anchor="Admin" className="w-full space-y-4">
       <h2 className="text-xl font-semibold text-red-400">{t('tabs.admin')}</h2>
 
       {!isConnected && (
