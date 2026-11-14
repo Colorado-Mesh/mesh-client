@@ -20,10 +20,10 @@ const coverageThresholds =
   process.env.VITEST_COVERAGE_SHARD === '1'
     ? undefined
     : {
-        lines: 54,
-        functions: 52,
-        branches: 46,
-        statements: 52,
+        lines: 72,
+        functions: 68,
+        branches: 64,
+        statements: 70,
       };
 
 /** Pure renderer unit tests — no RTL, no window, no setup stubs */
@@ -354,13 +354,15 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text-summary', 'lcov', 'cobertura'],
+      reporter: ['text-summary', 'json-summary', 'lcov', 'cobertura'],
       reportOnFailure: true,
       include: ['src/main/**', 'src/preload/**', 'src/shared/**', 'src/renderer/**'],
       exclude: [
         '**/*.test.{ts,tsx,mjs}',
         '**/*.d.ts',
         'src/main/fixtures/**',
+        'src/main/translation/vendor/**',
+        'src/renderer/lib/nomad/vendor/**',
         'src/renderer/locales/**',
         'src/renderer/index.html',
         'src/renderer/vitest.setup.ts',

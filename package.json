@@ -135,6 +135,7 @@
     "test:changed": "vitest run --changed HEAD",
     "test:coverage": "vitest run --coverage",
     "test:coverage:merge": "vitest run --merge-reports --coverage",
+    "coverage:hotspots": "node scripts/coverage-hotspots.mjs",
     "test:e2e": "playwright test",
     "test:e2e:build": "pnpm run build && playwright test",
     "test:e2e:headed": "playwright test --headed",
