@@ -1057,7 +1057,9 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
     expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
     expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
-    expect(INDEX_SOURCE).toContain('paintTrayUnreadDot(');
+    // Tray unread overlay writes BGRA (#1455); channel order tested in trayUnreadDot.test.ts.
+    expect(INDEX_SOURCE).toMatch(/bitmap\[idx\] = 68; \/\/ B/);
+    expect(INDEX_SOURCE).toMatch(/bitmap\[idx \+ 2\] = 239; \/\/ R/);
     expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");

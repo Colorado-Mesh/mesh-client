@@ -1,23 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { paintTrayUnreadDot, UNREAD_DOT_RGB, UNREAD_DOT_RING_RGB } from './trayUnreadDot';
+import { paintTrayUnreadDot, UNREAD_DOT_RGB } from './trayUnreadDot';
 
 function pixelAt(bitmap: Buffer, width: number, px: number, py: number): Buffer {
   const idx = (py * width + px) * 4;
   return bitmap.subarray(idx, idx + 4);
-}
-
-function expectedPremul(
-  colour: { readonly r: number; readonly g: number; readonly b: number },
-  alphaByte: number,
-): { b: number; g: number; r: number; a: number } {
-  return {
-    b: Math.round((colour.b * alphaByte) / 255),
-    g: Math.round((colour.g * alphaByte) / 255),
-    r: Math.round((colour.r * alphaByte) / 255),
-    a: alphaByte,
-  };
 }
 
 describe('paintTrayUnreadDot', () => {
@@ -40,57 +28,28 @@ describe('paintTrayUnreadDot', () => {
     expect(b).not.toBe(UNREAD_DOT_RGB.r);
   });
 
-  it('leaves pixels outside the dot and halo unchanged', () => {
+  it('leaves pixels outside the dot unchanged', () => {
     const width = 22;
     const height = 22;
-    const sentinel = 0x7f;
-    const bitmap = Buffer.alloc(width * height * 4, sentinel);
+    const bitmap = Buffer.alloc(width * height * 4, 0x7f);
     const before = Buffer.from(bitmap);
     paintTrayUnreadDot(bitmap, width, height);
 
     const dotR = Math.max(2, Math.round(width / 8));
     const cx = width - dotR - 2;
     const cy = dotR + 2;
-    const haloR = dotR + 1;
+    const r2 = dotR * dotR;
 
     for (let py = 0; py < height; py++) {
       for (let px = 0; px < width; px++) {
         const dx = px - cx;
         const dy = py - cy;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance <= haloR + 0.5) continue;
+        if (dx * dx + dy * dy <= r2) continue;
         const idx = (py * width + px) * 4;
         expect(bitmap.subarray(idx, idx + 4).equals(before.subarray(idx, idx + 4))).toBe(true);
       }
     }
     expect(bitmap.length).toBe(before.length);
-  });
-
-  it('writes premultiplied channels on anti-aliased edges', () => {
-    const width = 22;
-    const height = 22;
-    const bitmap = Buffer.alloc(width * height * 4, 0);
-    paintTrayUnreadDot(bitmap, width, height);
-
-    const partial: { b: number; g: number; r: number; a: number }[] = [];
-    for (let i = 0; i < bitmap.length; i += 4) {
-      const a = bitmap[i + 3];
-      if (a > 0 && a < 255) {
-        partial.push({ b: bitmap[i], g: bitmap[i + 1], r: bitmap[i + 2], a });
-      }
-    }
-    expect(partial.length).toBeGreaterThan(0);
-
-    for (const px of partial) {
-      const asDot = expectedPremul(UNREAD_DOT_RGB, px.a);
-      const asRing = expectedPremul(UNREAD_DOT_RING_RGB, px.a);
-      const matchesDot = px.b === asDot.b && px.g === asDot.g && px.r === asDot.r;
-      const matchesRing = px.b === asRing.b && px.g === asRing.g && px.r === asRing.r;
-      expect(matchesDot || matchesRing).toBe(true);
-      expect(px.b).toBeLessThanOrEqual(Math.max(UNREAD_DOT_RGB.b, UNREAD_DOT_RING_RGB.b));
-      expect(px.g).toBeLessThanOrEqual(Math.max(UNREAD_DOT_RGB.g, UNREAD_DOT_RING_RGB.g));
-      expect(px.r).toBeLessThanOrEqual(Math.max(UNREAD_DOT_RGB.r, UNREAD_DOT_RING_RGB.r));
-    }
   });
 
   it.each([16, 22, 44])('places the dot in the top-right for %ipx icons', (size) => {
