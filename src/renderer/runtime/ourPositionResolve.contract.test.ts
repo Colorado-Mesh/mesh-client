@@ -59,15 +59,21 @@ describe('useMeshtasticRuntime radio self position', () => {
 });
 
 describe('useMeshcoreRuntime radio self position', () => {
-  it('does not read a radio fix, because nothing records one', () => {
+  it('feeds only this session radio fix to the resolver', () => {
     const body = refreshBody(
       loadRuntimeSource('useMeshcoreRuntime.ts'),
       'const refreshOurPositionNoop = useCallback',
     );
-    expect(body).not.toContain("readRadioSelfPosition('meshcore')");
+    expect(body).toContain("readRadioSelfPosition('meshcore')");
   });
 
-  it('does not treat advert lat/lon (user- or app-set) as device GPS', () => {
-    expect(loadRuntimeSource('useMeshcoreRuntime.ts')).not.toContain('recordRadioSelfPosition');
+  it('records device GPS only from self telemetry LPP, not advert lat/lon', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    expect(source).toContain("recordRadioSelfPosition('meshcore'");
+    const advertIdx = source.indexOf('meshcoreScaledAdvLatLonToDeg');
+    expect(advertIdx).toBeGreaterThan(-1);
+    const recordNearAdvert = source.slice(Math.max(0, advertIdx - 400), advertIdx + 800);
+    expect(recordNearAdvert).not.toContain('recordRadioSelfPosition');
+    expect(source).toMatch(/applyMeshcoreTelemetryLpp[\s\S]*?recordRadioSelfPosition\('meshcore'/);
   });
 });

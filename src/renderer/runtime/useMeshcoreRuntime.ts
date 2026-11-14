@@ -469,6 +469,7 @@ import {
   setMeshcoreRoomSyncConfig,
   touchMeshcoreRoomLastSyncAt,
 } from '../lib/meshcoreRoomSyncStorage';
+import { runMeshcoreSelfTelemetryRequest } from '../lib/meshcoreSelfTelemetryRpc';
 import {
   meshcoreMessageStoreId,
   meshcoreSortedStorePrior,
@@ -554,7 +555,11 @@ import {
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { clearRadioSelfPosition } from '../lib/radioSelfPosition';
+import {
+  clearRadioSelfPosition,
+  readRadioSelfPosition,
+  recordRadioSelfPosition,
+} from '../lib/radioSelfPosition';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
@@ -958,10 +963,13 @@ export function useMeshcoreRuntime() {
   const refreshOurPositionMeshCoreRef = useRef<() => Promise<OurPosition | null>>(() =>
     Promise.resolve(null),
   );
-  /** Post-connect self telemetry (altitude); assigned to {@link requestTelemetry} below. */
-  const requestTelemetryMeshCoreRef = useRef<
-    (nodeId: number, opts?: { timeoutMs?: number }) => Promise<void>
-  >(async () => {});
+  /**
+   * Post-connect companion self telemetry (4-byte CMD_SEND_TELEMETRY_REQ → LPP GPS/altitude).
+   * Assigned to {@link requestSelfTelemetry} below (initConn runs earlier in the hook).
+   */
+  const requestSelfTelemetryMeshCoreRef = useRef<(opts?: { timeoutMs?: number }) => Promise<void>>(
+    async () => {},
+  );
   /** Rate-limit debug logs when optional packet-logger IPC publish fails. */
   const lastPacketLogPublishFailureLogAtRef = useRef(0);
   const meshcoreHookMountedRef = useRef(true);
@@ -3193,13 +3201,12 @@ export function useMeshcoreRuntime() {
           }
           const telemetryTimeoutMs =
             transportType === 'tcp' ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS : undefined;
-          await requestTelemetryMeshCoreRef
-            .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
+          await requestSelfTelemetryMeshCoreRef
+            .current({ timeoutMs: telemetryTimeoutMs })
             .catch((e: unknown) => {
               if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
               console.debug(
-                '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                  errLikeToLogString(e),
+                '[useMeshcoreRuntime] post-connect self telemetry ' + errLikeToLogString(e),
               );
             });
         };
@@ -6982,6 +6989,21 @@ export function useMeshcoreRuntime() {
           return next;
         });
       }
+      // Companion self LPP GPS is the only MeshCore radio fix that counts as device GPS
+      // (advert lat/lon can be user- or app-set via setAdvertLatLong).
+      if (nodeId === myNodeNumRef.current && result.gps) {
+        const gpsLat = result.gps.latitude;
+        const gpsLon = result.gps.longitude;
+        if (typeof gpsLat === 'number' && typeof gpsLon === 'number') {
+          recordRadioSelfPosition('meshcore', gpsLat, gpsLon, result.gps.altitude);
+          void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] refreshOurPosition after self telemetry GPS ' +
+                errLikeToLogString(e),
+            );
+          });
+        }
+      }
       meshcoreTelemetryChannelsRef.current.set(
         nodeId,
         entries.map((e) => ({ channel: e.channel, type: e.type })),
@@ -7109,7 +7131,29 @@ export function useMeshcoreRuntime() {
     ],
   );
 
-  requestTelemetryMeshCoreRef.current = requestTelemetry;
+  const requestSelfTelemetry = useCallback(
+    async (opts?: { timeoutMs?: number }) => {
+      const conn = resolveMeshcoreConn();
+      if (!conn) {
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+      }
+      const selfKey = selfInfoRef.current?.publicKey;
+      if (!(selfKey instanceof Uint8Array) || selfKey.length < 6) {
+        throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+      }
+      const myNodeId = myNodeNumRef.current;
+      if (myNodeId <= 0) {
+        throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+      }
+      const raw = await runMeshcoreSelfTelemetryRequest(conn, selfKey, {
+        timeoutMs: opts?.timeoutMs,
+      });
+      applyMeshcoreTelemetryLpp(myNodeId, raw.lppSensorData, 'rpc');
+    },
+    [applyMeshcoreTelemetryLpp, resolveMeshcoreConn],
+  );
+
+  requestSelfTelemetryMeshCoreRef.current = requestSelfTelemetry;
 
   /** Binary request to a sensor after the same login path as Sensor telemetry. */
   const sendMeshcoreSensorRequest = useCallback(
@@ -9398,7 +9442,16 @@ export function useMeshcoreRuntime() {
     const storedStatic = readStoredStaticGps();
     const staticLat = storedStatic?.lat;
     const staticLon = storedStatic?.lon;
-    const pos = await resolveOurPosition(undefined, undefined, staticLat, staticLon);
+    // Only a fix the radio reported this session (self LPP GPS) counts as device GPS; advert
+    // lat/lon and the self node row may be user- or app-set. Static still wins over radio.
+    const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshcore');
+    const pos = await resolveOurPosition(
+      radioSelf?.lat,
+      radioSelf?.lon,
+      staticLat,
+      staticLon,
+      radioSelf?.altitudeMeters,
+    );
     setOurPosition(pos);
     if (getStoredMeshProtocol() === 'meshcore') {
       publishOurPositionReference(pos);

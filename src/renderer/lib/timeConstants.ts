@@ -320,7 +320,10 @@ export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 /** Max wait for scheduler background route resolve (contacts only, no trace). */
 export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
 
-/** Optional post-connect self telemetry on TCP — altitude only; must not block MsgWaiting drain. */
+/**
+ * Optional post-connect companion self telemetry (4-byte CMD_SEND_TELEMETRY_REQ).
+ * Yields Cayenne LPP including GPS when the radio has a fix; must not block MsgWaiting drain.
+ */
 export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS = 15 * MS_PER_SECOND;
 
 /** Max wait for proactive MsgWaiting drain before post-connect self telemetry runs. */

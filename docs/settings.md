@@ -70,7 +70,7 @@ One-liners for each **App Settings** collapsible (and the MECP / Translation / A
 - **Device User / Identity** — name and node identity fields the radio accepts
 - **LoRa / Radio** — region, modem, frequency parameters
 - **TX Power** — when the stack exposes a power control
-- **Position / GPS** — fixed / advertised position (MeshCore is advert lat/lon only)
+- **Position / GPS** — fixed / advertised position (MeshCore: advert lat/lon for config; live radio GPS from companion self-telemetry LPP when available)
 - **Channels** — Meshtastic channel slots or **Channels (MeshCore)** with PSK / hashtag derive
 - **Device Actions** / **Device Commands** — Flood Advert, Sync Clock, reboot and related actions
 - **Danger Zone** — factory / NodeDB style resets where the protocol supports them

@@ -711,14 +711,21 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('uses short TCP timeout for post-connect self telemetry', () => {
+  it('uses short TCP timeout for post-connect companion self telemetry', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
     );
     expect(RUNTIME_SOURCE).not.toMatch(
       /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
-    expect(RUNTIME_SOURCE).toMatch(/replyWaitCapMs:\s*opts\.timeoutMs/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]*?requestSelfTelemetryMeshCoreRef/,
+    );
+    expect(RUNTIME_SOURCE).toContain('runMeshcoreSelfTelemetryRequest');
+    // Post-connect must not use the 36-byte repeater telemetry path for self GPS.
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]{0,600}requestTelemetryMeshCoreRef/,
+    );
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {

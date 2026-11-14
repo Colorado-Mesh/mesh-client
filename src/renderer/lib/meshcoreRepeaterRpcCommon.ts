@@ -155,6 +155,16 @@ export function buildSendTelemetryReqFrame(publicKey: Uint8Array): Uint8Array {
   return frame;
 }
 
+/**
+ * Companion "self" telemetry: CMD_SEND_TELEMETRY_REQ with len==4 (cmd + 3 reserved zeros).
+ * Firmware answers with an immediate TelemetryResponse push (no RESP_SENT).
+ */
+export function buildSendSelfTelemetryReqFrame(): Uint8Array {
+  const frame = new Uint8Array(4);
+  frame[0] = MC_CMD_SEND_TELEMETRY_REQ;
+  return frame;
+}
+
 export function buildSendBinaryReqFrame(
   publicKey: Uint8Array,
   requestCodeAndParams: Uint8Array,
