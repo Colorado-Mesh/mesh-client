@@ -620,16 +620,18 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 
 # Non-Ratspeak vendored upstreams (same file:<path>@<sha> reviewed-ref format).
 # Keep in sync when re-vendoring MECP engine/languages from https://github.com/xiang-dev-1/MECP
+# engine/src pin is the commit that removed the path (moved to mecp-app); we keep the last
+# vendored engine copy and treat further engine/src history as reviewed-closed.
 MECP_UPSTREAM_WATCH_ENTRIES=(
-  'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@1441c5d13bd777e8dac8e12567bbd144b1a73e16'
-  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@ee17ef3d58d372d8c5157407c036f846869ab251'
+  'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@0b7123aef545542955334a8dbaa69a6bab897666'
+  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@2452f4f38b36bfe2e51ea4e0bd9a907dcc926adc'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.
 # Format: "github-owner/repo|pr-number|display-label|review-url"
 # When PR merges: re-vendor languages/, bump MECP_UPSTREAM_WATCH_ENTRIES file:languages@sha, drop entry.
+# Empty: M16 (#5) merged and already present in vendored languages/.
 MECP_PR_WATCH_ENTRIES=(
-  'xiang-dev-1/MECP|5|M16 medical supply drop|https://github.com/xiang-dev-1/MECP/pull/5'
 )
 
 RATSPEAK_KNOWN_ORG_REPOS=(
@@ -912,8 +914,12 @@ if [ "${UPDATE_SH_TEST_HOOK:-}" = 'ratspeak-patches-only' ]; then
 fi
 
 # Test hook: exercise check_mecp_prs (fake gh via PATH).
+# Injects a sample entry so PR-state coverage does not depend on a live watch list.
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'mecp-prs-only' ]; then
   HAS_WARNING=0
+  MECP_PR_WATCH_ENTRIES=(
+    'xiang-dev-1/MECP|5|M16 medical supply drop|https://github.com/xiang-dev-1/MECP/pull/5'
+  )
   check_mecp_prs
   printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
   exit 0
