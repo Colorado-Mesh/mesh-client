@@ -4692,6 +4692,11 @@ function AppContent() {
             ? handleDeleteNode
             : undefined
         }
+        onForgetContactAdvert={
+          detailModalCapabilities.hasCompanionContactManagementConfig
+            ? meshcorePanelActions.forgetContactAdvert
+            : undefined
+        }
         onMessageNode={
           selectedNode?.node_id !== detailMyNodeNum &&
           !(
@@ -5269,6 +5274,11 @@ function AppContent() {
                                     composerDisabled={protocolSwitchPending || !chatActive}
                                     onReact={selectByProtocol(sendReactionByProtocol, chatProtocol)}
                                     onResend={handleResend}
+                                    onCancelPendingDmAck={
+                                      chatCapabilities.hasCompanionCli
+                                        ? meshcorePanelActions.cancelPendingDmAck
+                                        : undefined
+                                    }
                                     onNodeClick={setSelectedNodeId}
                                     onPeerClick={setSelectedPeerHash}
                                     isConnected={

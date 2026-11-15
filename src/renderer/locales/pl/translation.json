@@ -1056,7 +1056,9 @@
     "markdownStrike": "Przekreślenie",
     "markdownCode": "Kod w tekście",
     "markdownLink": "Połączyć",
-    "markdownToolbar": "Formatowanie"
+    "markdownToolbar": "Formatowanie",
+    "cancelPendingDmAck": "Anuluj oczekiwanie",
+    "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2955,7 +2957,19 @@
         "not_found": "Nie znaleziono nakładki.",
         "quota": "Pamięć przeglądarki jest zapełniona; usuń nakładkę lub zwolnij miejsce na dysku."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Promień strefy geofencing (w metrach, 0 = brak)",
+    "waypointGeofenceRadiusHint": "Oprogramowanie sprzętowe w wersji 2.8 lub nowszej wysyła alerty, gdy węzły wchodzą do tego okręgu lub go opuszczają.",
+    "waypointGeofenceRadiusSummary": "Strefa Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Prostokątna strefa geofencingowa",
+    "waypointBoundingBoxWest": "Długość geograficzna zachodnia",
+    "waypointBoundingBoxSouth": "Szerokość geograficzna południowa",
+    "waypointBoundingBoxEast": "Długość geograficzna wschodnia",
+    "waypointBoundingBoxNorth": "Szerokość geograficzna północna",
+    "waypointBoundingBoxInvalid": "W ramce ograniczającej musi być zachód < wschód i południe < północ",
+    "waypointNotifyOnEnter": "Powiadamiaj po wejściu",
+    "waypointNotifyOnExit": "Powiadom przy wyjściu",
+    "waypointNotifyFavoritesOnly": "Powiadamiaj tylko o ulubionych"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -3948,7 +3962,11 @@
     "noiseFloorTrendMax": "Maks.",
     "noiseFloorTrendLast": "Ostatni",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Pobieranie próbek do wykresu przebiegu…"
+    "noiseFloorTrendNeedMoreSamples": "Pobieranie próbek do wykresu przebiegu…",
+    "forgetAdvert": "Zapomnij o ostatnim advert",
+    "forgetAdvertAria": "Usuń ostatni znacznik czasu advert dla tego kontaktu",
+    "forgetAdvertDone": "Usunięto znacznik czasu ostatniego advert.",
+    "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -8051,7 +8069,9 @@
       "radio": "Dostrajanie radia",
       "wifi": "WIFI",
       "power": "Moc",
-      "console": "Konsola poleceń"
+      "console": "Konsola poleceń",
+      "notify": "Zawiadomienia",
+      "retry": "Ponowne próby wysłania wiadomości"
     },
     "validation": {
       "required": "Wprowadź wartość.",
@@ -8060,7 +8080,8 @@
       "outOfRange": "(Ustawiona wartość jest poza zakresem).",
       "tooLong": "Wartość jest zbyt długa.",
       "invalidChars": "Podziały linii są niedozwolone.",
-      "pinFormat": "Wprowadź 6 cyfr lub 0 dla losowego KODU PIN."
+      "pinFormat": "Wprowadź 6 cyfr lub 0 dla losowego KODU PIN.",
+      "invalidPreset": "Użyj klimatyzatora podtynkowego, dachowego lub przenośnego."
     },
     "settings": {
       "ver": {
@@ -8129,6 +8150,30 @@
       },
       "wifi_ip": {
         "label": "Adres IP"
+      },
+      "notify_enabled": {
+        "label": "Zawiadomienia",
+        "hint": "Przełącznik główny funkcji powiadamiania aplikacji towarzyszącej."
+      },
+      "notify_sound": {
+        "label": "Brzęczyk / alarmy dźwiękowe",
+        "hint": "Włącz brzęczyk towarzyszący, aby odtwarzał alerty, jeśli sprzęt to obsługuje."
+      },
+      "retry_preset": {
+        "label": "Spróbuj ponownie ustawić wstępne ustawienie",
+        "hint": "infrastruktura, dach lub urządzenie mobilne – domyślnie dostosowuje czas ponownych prób transmisji bezpośredniej i masowej."
+      },
+      "direct_retry": {
+        "label": "Ponowne próby wysłania wiadomości bezpośredniej",
+        "hint": "Gdy ta opcja jest wyłączona, radio nie podejmuje ponownych prób wysyłania wiadomości bezpośrednich."
+      },
+      "direct_retry_count": {
+        "label": "Liczba bezpośrednich ponownych prób",
+        "hint": "Od 1 do 15 prób wysłania wiadomości bezpośrednich."
+      },
+      "flood_retry_count": {
+        "label": "Liczba ponownych prób wysyłania wiadomości masowych",
+        "hint": "Od 0 do 15. Ustawienie 0 powoduje pominięcie oczekujących ponownych prób wysyłania pakietów typu „flood” i zatrzymanie kolejnych."
       }
     },
     "confirm": {

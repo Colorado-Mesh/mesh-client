@@ -39,6 +39,12 @@ const V118_WIFI_REPLIES: Record<string, string> = {
   'get wifi.ssid': '> HomeNet',
   'get wifi.status': '> connected',
   'get wifi.ip': '> 192.168.1.40',
+  'get notify': '> on',
+  'get notify.sound': '> on',
+  'get retry.preset': '> mobile',
+  'get direct.retry': '> on',
+  'get direct.retry.count': '> 4',
+  'get flood.retry.count': '> 4',
 };
 
 describe('meshcoreCompanionSettings', () => {
@@ -58,6 +64,12 @@ describe('meshcoreCompanionSettings', () => {
       'wifi.ssid': 'HomeNet',
       'wifi.status': 'connected',
       'wifi.ip': '192.168.1.40',
+      'notify.enabled': 'on',
+      'notify.sound': 'on',
+      'retry.preset': 'mobile',
+      'direct.retry': 'on',
+      'direct.retry.count': '4',
+      'flood.retry.count': '4',
     });
     expect(run).not.toHaveBeenCalledWith('get wifi.pwd');
   });
@@ -112,6 +124,10 @@ describe('meshcoreCompanionSettings', () => {
     expect(v('wifi.ssid', 'a|b')).toBeNull();
     expect(v('wifi.pwd', '')).toBeNull();
     expect(v('wifi.pwd', 'bad\npwd')).toBe('invalidChars');
+    expect(v('retry.preset', 'car')).toBe('invalidPreset');
+    expect(v('retry.preset', 'rooftop')).toBeNull();
+    expect(v('direct.retry.count', '0')).toBe('outOfRange');
+    expect(v('flood.retry.count', '0')).toBeNull();
   });
 
   it('applies a setting and reports reboot requirements', async () => {

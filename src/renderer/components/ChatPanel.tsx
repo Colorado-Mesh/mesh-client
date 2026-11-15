@@ -830,6 +830,8 @@ export interface ChatPanelProps {
   composerDisabled?: boolean;
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
+  /** MeshCore: stop waiting for a DM ACK and mark the send failed (cancels in-flight UI retry wait). */
+  onCancelPendingDmAck?: (packetId: number) => boolean;
   onNodeClick: (nodeNum: number) => void;
   /** Reticulum: open peer detail by destination hash (Peers-panel path). */
   onPeerClick?: (destinationHash: string) => void;
@@ -930,6 +932,7 @@ function ChatPanel({
   composerDisabled = false,
   onReact,
   onResend,
+  onCancelPendingDmAck,
   onNodeClick,
   onPeerClick,
   isConnected,
@@ -5063,6 +5066,22 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
+                                {isOwn &&
+                                  msg.status === 'sending' &&
+                                  msg.packetId != null &&
+                                  onCancelPendingDmAck && (
+                                    <button
+                                      type="button"
+                                      aria-label={t('chatPanel.cancelPendingDmAckAria')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onCancelPendingDmAck(msg.packetId!);
+                                      }}
+                                      className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
+                                    >
+                                      {t('chatPanel.cancelPendingDmAck')}
+                                    </button>
+                                  )}
                                 {isOwn && msg.status === 'failed' && (
                                   <AutoResendStatus protocol={protocol} msg={msg} />
                                 )}

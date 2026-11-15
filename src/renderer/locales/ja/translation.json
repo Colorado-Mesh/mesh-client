@@ -1020,7 +1020,9 @@
     "markdownStrike": "取り消し線",
     "markdownCode": "インラインコード",
     "markdownLink": "リンク",
-    "markdownToolbar": "書式設定"
+    "markdownToolbar": "書式設定",
+    "cancelPendingDmAck": "待機をキャンセル",
+    "cancelPendingDmAckAria": "配信確認の待機を停止し、このメッセージを失敗としてマークする"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2901,7 +2903,19 @@
         "not_found": "オーバーレイが見つかりません。",
         "quota": "ブラウザのストレージがいっぱいです。オーバーレイを削除するか、ディスク領域を空けてください。"
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "ジオフェンス半径（メートル、0 = なし）",
+    "waypointGeofenceRadiusHint": "ファームウェア2.8以降では、ノードがこの円内に入ったり出たりするとアラートが表示されます。",
+    "waypointGeofenceRadiusSummary": "ジオフェンス {{meters}} m",
+    "waypointBoundingBoxEnable": "長方形のジオフェンス",
+    "waypointBoundingBoxWest": "西経",
+    "waypointBoundingBoxSouth": "南緯",
+    "waypointBoundingBoxEast": "東経",
+    "waypointBoundingBoxNorth": "北緯",
+    "waypointBoundingBoxInvalid": "境界ボックスは、西<東、南<北でなければなりません",
+    "waypointNotifyOnEnter": "Enterキーを押したときに通知する",
+    "waypointNotifyOnExit": "終了時に通知する",
+    "waypointNotifyFavoritesOnly": "お気に入りのみ通知する"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "最大",
     "noiseFloorTrendLast": "姓",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "スパークラインのサンプルを収集しています…"
+    "noiseFloorTrendNeedMoreSamples": "スパークラインのサンプルを収集しています…",
+    "forgetAdvert": "最後のadvertを忘れる",
+    "forgetAdvertAria": "この連絡先の最後のadvertタイムスタンプを消去する",
+    "forgetAdvertDone": "最後のadvertのタイムスタンプが消去されました。",
+    "forgetAdvertFailed": "最後のadvertのタイムスタンプを消去できませんでした。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -7923,7 +7941,9 @@
       "radio": "ラジオチューニング",
       "wifi": "WiFi",
       "power": "出力",
-      "console": "コマンドコンソール"
+      "console": "コマンドコンソール",
+      "notify": "通知",
+      "retry": "メッセージの再試行"
     },
     "validation": {
       "required": "値を入力してください",
@@ -7932,7 +7952,8 @@
       "outOfRange": "値が範囲外です。",
       "tooLong": "値が長すぎます。",
       "invalidChars": "改行は許可されていません。",
-      "pinFormat": "6桁の数字を入力するか、ランダムな暗証番号を0にしてください。"
+      "pinFormat": "6桁の数字を入力するか、ランダムな暗証番号を0にしてください。",
+      "invalidPreset": "インフラ、屋上、またはモバイルを使用します。"
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP アドレス"
+      },
+      "notify_enabled": {
+        "label": "通知",
+        "hint": "コンパニオン通知機能のマスター スイッチ。"
+      },
+      "notify_sound": {
+        "label": "ブザー/サウンドアラート",
+        "hint": "ハードウェアが対応している場合は、コンパニオンブザーを鳴らしてアラートを知らせます。"
+      },
+      "retry_preset": {
+        "label": "プリセットを再試行",
+        "hint": "インフラ、屋上、またはモバイル — デフォルトのダイレクトおよびフラッド再試行タイミングを調整します。"
+      },
+      "direct_retry": {
+        "label": "ダイレクトメッセージの再試行",
+        "hint": "オフにすると、ラジオはダイレクトメッセージを再試行しません。"
+      },
+      "direct_retry_count": {
+        "label": "直接再試行回数",
+        "hint": "ダイレクトメッセージの試行回数は1～15回です。"
+      },
+      "flood_retry_count": {
+        "label": "フラッド再試行回数",
+        "hint": "0～15。設定値0は、キューに入れられたフラッド再試行を破棄し、今後の再試行を停止します。"
       }
     },
     "confirm": {

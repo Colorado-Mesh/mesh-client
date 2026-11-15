@@ -120,6 +120,8 @@ interface NodeDetailModalProps {
   onTraceRoute?: (nodeNum: number) => Promise<boolean | undefined>;
   traceRouteHops?: string[];
   onDeleteNode?: (nodeNum: number) => Promise<void>;
+  /** MeshCore: clear last advert timestamp in DB/UI (and radio contact when connected). */
+  onForgetContactAdvert?: (nodeNum: number) => Promise<void>;
   onMessageNode?: (nodeNum: number) => void;
   /** MeshCore room server: open Rooms tab for BBS posts (not DM). */
   onOpenRoom?: (nodeNum: number) => void;
@@ -258,6 +260,7 @@ export default function NodeDetailModal({
   onTraceRoute,
   traceRouteHops,
   onDeleteNode,
+  onForgetContactAdvert,
   onMessageNode,
   onOpenRoom,
   onToggleFavorite,
@@ -2555,6 +2558,27 @@ export default function NodeDetailModal({
 
         {/* Delete node */}
         <div className="shrink-0 px-5 pb-4">
+          {onForgetContactAdvert && !isOurNode ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-2 mr-2"
+              aria-label={t('nodeDetailModal.forgetAdvertAria')}
+              onClick={() => {
+                void onForgetContactAdvert(node.node_id)
+                  .then(() => {
+                    setActionStatus(t('nodeDetailModal.forgetAdvertDone'));
+                  })
+                  .catch((e: unknown) => {
+                    setActionStatus(
+                      e instanceof Error ? e.message : t('nodeDetailModal.forgetAdvertFailed'),
+                    );
+                  });
+              }}
+            >
+              {t('nodeDetailModal.forgetAdvert')}
+            </Button>
+          ) : null}
           {!showDeleteConfirm ? (
             <Button
               variant="danger"

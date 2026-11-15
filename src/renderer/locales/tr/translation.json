@@ -1020,7 +1020,9 @@
     "markdownStrike": "Üstü çizili",
     "markdownCode": "Satır içi kod",
     "markdownLink": "Bağlantı",
-    "markdownToolbar": "Biçimlendirme"
+    "markdownToolbar": "Biçimlendirme",
+    "cancelPendingDmAck": "Beklemeyi iptal et",
+    "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2901,7 +2903,19 @@
         "not_found": "Yer paylaşımı bulunamadı.",
         "quota": "Tarayıcı depolama alanı dolu; bir bindirmeyi kaldırın veya disk alanını boşaltın."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Coğrafi sınır yarıçapı (metre, 0 = yok)",
+    "waypointGeofenceRadiusHint": "Ürün yazılımı 2.8+, düğümler bu daireye girdiğinde veya daireden çıktığında uyarı verir.",
+    "waypointGeofenceRadiusSummary": "Coğrafi sınır {{meters}} m",
+    "waypointBoundingBoxEnable": "Dikdörtgen coğrafi sınır",
+    "waypointBoundingBoxWest": "Batı boylamı",
+    "waypointBoundingBoxSouth": "Güney enlemi",
+    "waypointBoundingBoxEast": "Doğu Boylamı",
+    "waypointBoundingBoxNorth": "Kuzey enlemi",
+    "waypointBoundingBoxInvalid": "Sınır kutusunda batı < doğu ve güney < kuzey olmalıdır",
+    "waypointNotifyOnEnter": "Giriş yapıldığında bildir",
+    "waypointNotifyOnExit": "Çıkışta bildir",
+    "waypointNotifyFavoritesOnly": "Yalnızca favoriler için bildirim gönder"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Maks",
     "noiseFloorTrendLast": "Son",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Mini grafik için örnekler toplanıyor…"
+    "noiseFloorTrendNeedMoreSamples": "Mini grafik için örnekler toplanıyor…",
+    "forgetAdvert": "Son adverti unut",
+    "forgetAdvertAria": "Bu kişi için son advert zaman damgasını silin",
+    "forgetAdvertDone": "Son advert zaman damgası silindi.",
+    "forgetAdvertFailed": "Son advert zaman damgası silinemedi."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -7923,7 +7941,9 @@
       "radio": "Radyo ayarlama",
       "wifi": "WiFi",
       "power": "Güç",
-      "console": "Komuta konsolu"
+      "console": "Komuta konsolu",
+      "notify": "Bildirimler",
+      "retry": "Mesaj yeniden denemeleri"
     },
     "validation": {
       "required": "Bir değer girin",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Değer aralık dışında",
       "tooLong": "Değer fazla uzun.",
       "invalidChars": "Satır sonlarına izin verilmez.",
-      "pinFormat": "Rastgele bir PIN kodu için 6 basamak veya 0 girin."
+      "pinFormat": "Rastgele bir PIN kodu için 6 basamak veya 0 girin.",
+      "invalidPreset": "Altyapı, çatı veya mobil kullanın."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP adresi"
+      },
+      "notify_enabled": {
+        "label": "Bildirimler",
+        "hint": "Eşlik eden bildirim özellikleri için ana anahtar."
+      },
+      "notify_sound": {
+        "label": "Sesli uyarı/sesli uyarılar",
+        "hint": "Donanım destekliyorsa uyarılar için eşlik eden sesli uyarıyı çalın."
+      },
+      "retry_preset": {
+        "label": "Ön ayarı yeniden deneyin",
+        "hint": "altyapı, çatı veya mobil — varsayılan doğrudan ve yaygın yeniden deneme zamanlamasını ayarlar."
+      },
+      "direct_retry": {
+        "label": "Doğrudan mesaj yeniden denemeleri",
+        "hint": "Kapalı olduğunda, doğrudan mesajlar telsiz tarafından yeniden denenmez."
+      },
+      "direct_retry_count": {
+        "label": "Doğrudan yeniden deneme sayısı",
+        "hint": "Doğrudan mesajlar için 1 ila 15 deneme."
+      },
+      "flood_retry_count": {
+        "label": "Yoğun istek yeniden deneme sayısı",
+        "hint": "0 ila 15. 0 ayarı, kuyruğa alınmış yayılma yeniden denemelerini iptal eder ve gelecekteki yeniden denemeleri durdurur."
       }
     },
     "confirm": {

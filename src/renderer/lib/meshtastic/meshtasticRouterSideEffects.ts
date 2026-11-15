@@ -148,6 +148,18 @@ function uplinkWaypointToMqtt(
         icon: waypoint.icon ?? 0,
         lockedTo: waypoint.lockedTo ?? 0,
         expire: waypoint.expire ?? 0,
+        geofenceRadius: waypoint.geofenceRadius,
+        boundingBox: waypoint.boundingBox
+          ? {
+              longitudeWestI: Math.round(waypoint.boundingBox.west * 1e7),
+              latitudeSouthI: Math.round(waypoint.boundingBox.south * 1e7),
+              longitudeEastI: Math.round(waypoint.boundingBox.east * 1e7),
+              latitudeNorthI: Math.round(waypoint.boundingBox.north * 1e7),
+            }
+          : undefined,
+        notifyOnEnter: waypoint.notifyOnEnter,
+        notifyOnExit: waypoint.notifyOnExit,
+        notifyFavoritesOnly: waypoint.notifyFavoritesOnly,
       },
     })
     .catch((e: unknown) => {

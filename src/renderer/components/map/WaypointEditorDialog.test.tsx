@@ -78,4 +78,36 @@ describe('WaypointEditorDialog', () => {
     });
     expect(onSubmit.mock.calls[0][0].expire).toBe(expire);
   });
+
+  it('submits geofence radius and notify flags', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <WaypointEditorDialog
+        open
+        mode="create"
+        myNodeNum={9}
+        initial={{ latitude: 40.1, longitude: -105.2 }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('mapPanel.waypointNameLabel'), {
+      target: { value: 'Fence' },
+    });
+    fireEvent.change(screen.getByLabelText('mapPanel.waypointGeofenceRadiusLabel'), {
+      target: { value: '250' },
+    });
+    fireEvent.click(screen.getByLabelText('mapPanel.waypointNotifyOnEnter'));
+    fireEvent.click(screen.getByLabelText('mapPanel.waypointSave'));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      name: 'Fence',
+      geofenceRadius: 250,
+      notifyOnEnter: true,
+      notifyOnExit: false,
+      notifyFavoritesOnly: false,
+    });
+  });
 });

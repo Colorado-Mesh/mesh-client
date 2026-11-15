@@ -5188,6 +5188,81 @@ export function useMeshcoreRuntime() {
     disconnect,
   });
 
+  const forgetContactAdvert = useCallback(async (nodeId: number) => {
+    await window.electronAPI.db.forgetMeshcoreContactAdvert(nodeId);
+    const identityId = meshcoreIdentityIdRef.current;
+    if (identityId) {
+      useNodeStore.setState((s) => {
+        const byId = s.nodes[identityId] ?? {};
+        const existing = byId[nodeId];
+        if (!existing) return s;
+        return {
+          nodes: {
+            ...s.nodes,
+            [identityId]: {
+              ...byId,
+              [nodeId]: { ...existing, lastHeardAt: undefined },
+            },
+          },
+        };
+      });
+    }
+    const pubKey = pubKeyMapRef.current.get(nodeId);
+    const conn = connRef.current;
+    if (pubKey && conn) {
+      try {
+        const contacts = await conn.getContacts();
+        const contact = contacts.find((c) => {
+          const key = c.publicKey;
+          if (key?.length !== pubKey.length) return false;
+          for (let i = 0; i < key.length; i++) if (key[i] !== pubKey[i]) return false;
+          return true;
+        });
+        if (contact) {
+          await conn.addOrUpdateContact(
+            contact.publicKey,
+            contact.type,
+            contact.flags,
+            contact.outPathLen ?? -1,
+            contact.outPath ?? new Uint8Array(0),
+            contact.advName ?? '',
+            0,
+            contact.advLat ?? 0,
+            contact.advLon ?? 0,
+          );
+        }
+      } catch (e) {
+        console.warn(
+          '[useMeshcoreRuntime] forgetContactAdvert radio update failed ' + errLikeToLogString(e),
+        );
+      }
+    }
+  }, []);
+
+  const cancelPendingDmAck = useCallback((packetId: number) => {
+    const key = meshcoreDmAckKeyU32(packetId);
+    const entry = pendingAcksRef.current.get(key);
+    if (!entry) return false;
+    clearTimeout(entry.timeoutId);
+    for (const k of entry.mapKeys) {
+      pendingAcksRef.current.delete(k);
+    }
+    const ackKey = entry.canonicalPacketIdU32;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.packetId != null && meshcoreDmAckKeyU32(m.packetId) === ackKey && m.status === 'sending'
+          ? { ...m, status: 'failed' as const }
+          : m,
+      ),
+    );
+    void window.electronAPI.db.updateMeshcoreMessageStatus(ackKey, 'failed').catch((e: unknown) => {
+      console.warn(
+        '[useMeshcoreRuntime] updateMeshcoreMessageStatus (cancel) error ' + errLikeToLogString(e),
+      );
+    });
+    return true;
+  }, []);
+
   const deleteNode = useCallback(
     async (nodeId: number) => {
       // Tombstone first so concurrent MQTT/stub merges cannot resurrect during awaits.
@@ -9947,6 +10022,8 @@ export function useMeshcoreRuntime() {
       companionRemote,
       telemetryPush,
       deleteNode,
+      forgetContactAdvert,
+      cancelPendingDmAck,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
       offloadContactsFromRadio,
@@ -10105,6 +10182,8 @@ export function useMeshcoreRuntime() {
       companionRemote,
       telemetryPush,
       deleteNode,
+      forgetContactAdvert,
+      cancelPendingDmAck,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
       offloadContactsFromRadio,

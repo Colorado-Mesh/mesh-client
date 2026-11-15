@@ -1020,7 +1020,9 @@
     "markdownStrike": "Riscar",
     "markdownCode": "Código inline",
     "markdownLink": "Link",
-    "markdownToolbar": "Formatação"
+    "markdownToolbar": "Formatação",
+    "cancelPendingDmAck": "Cancelar espera",
+    "cancelPendingDmAckAria": "Parar de esperar pela confirmação de entrega e marcar esta mensagem como com falha"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Overlay não encontrada.",
         "quota": "O armazenamento do navegador está cheio; remova uma sobreposição ou libere espaço em disco."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Raio da geocerca (metros, 0 = nenhum)",
+    "waypointGeofenceRadiusHint": "O firmware 2.8+ emite alertas quando os nós entram ou saem deste círculo.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Geofence retangular",
+    "waypointBoundingBoxWest": "Longitude oeste",
+    "waypointBoundingBoxSouth": "Latitude Sudoeste",
+    "waypointBoundingBoxEast": "Longitude leste",
+    "waypointBoundingBoxNorth": "Latitude Nordeste",
+    "waypointBoundingBoxInvalid": "A caixa delimitadora deve ter oeste < leste e sul < norte",
+    "waypointNotifyOnEnter": "Notificar ao entrar",
+    "waypointNotifyOnExit": "Notificar ao sair",
+    "waypointNotifyFavoritesOnly": "Notificar apenas para favoritos"
   },
   "meshCongestion": {
     "blockTitle": "Por que você está vendo tráfego duplicado",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Máximo",
     "noiseFloorTrendLast": "Último",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Coletando amostras para o minigráfico…"
+    "noiseFloorTrendNeedMoreSamples": "Coletando amostras para o minigráfico…",
+    "forgetAdvert": "Esquecer o último anúncio",
+    "forgetAdvertAria": "Limpar o carimbo de data/hora do último anúncio para este contato",
+    "forgetAdvertDone": "O registro de data e hora do último anúncio foi apagado.",
+    "forgetAdvertFailed": "Não foi possível limpar o carimbo de data/hora do último anúncio."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -7923,7 +7941,9 @@
       "radio": "...",
       "wifi": "WiFi",
       "power": "Energia",
-      "console": "CONSOLE DE COMANDO"
+      "console": "CONSOLE DE COMANDO",
+      "notify": "Notificações",
+      "retry": "Novas tentativas de envio de mensagem"
     },
     "validation": {
       "required": "Insira um valor",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Valor está fora do limite",
       "tooLong": "O valor é muito longo",
       "invalidChars": "Quebras de linha não são permitidas.",
-      "pinFormat": "Insira 6 dígitos ou 0 para um PIN aleatório."
+      "pinFormat": "Insira 6 dígitos ou 0 para um PIN aleatório.",
+      "invalidPreset": "Use infravermelho, no telhado ou móvel."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "Endereço de IP"
+      },
+      "notify_enabled": {
+        "label": "Notificações",
+        "hint": "Interruptor principal para os recursos de notificação do Companion."
+      },
+      "notify_sound": {
+        "label": "Sinal sonoro/alertas sonoros",
+        "hint": "Ative a campainha complementar para alertas quando o hardware for compatível."
+      },
+      "retry_preset": {
+        "label": "Tentar novamente a predefinição",
+        "hint": "infra, rooftop ou mobile — ajusta o tempo padrão de repetição de tentativas diretas e Flood."
+      },
+      "direct_retry": {
+        "label": "Novas tentativas de envio de mensagens diretas",
+        "hint": "Quando desativadas, as mensagens diretas não são repetidas pelo rádio."
+      },
+      "direct_retry_count": {
+        "label": "Contagem de novas tentativas diretas",
+        "hint": "De 1 a 15 tentativas de envio de mensagens diretas."
+      },
+      "flood_retry_count": {
+        "label": "Contagem de novas tentativas Flood",
+        "hint": "0 a 15. A configuração 0 descarta as novas tentativas de flood em fila e interrompe as futuras."
       }
     },
     "confirm": {

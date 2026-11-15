@@ -1020,7 +1020,9 @@
     "markdownStrike": "Doorhalen",
     "markdownCode": "Inline-code",
     "markdownLink": "Link",
-    "markdownToolbar": "Opmaak"
+    "markdownToolbar": "Opmaak",
+    "cancelPendingDmAck": "Wachten annuleren",
+    "cancelPendingDmAckAria": "Stop met wachten op een bevestiging van ontvangst en markeer dit bericht als mislukt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Overlay niet gevonden.",
         "quota": "De browseropslag is vol; verwijder een overlay of maak schijfruimte vrij."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Geofence-radius (meters, 0 = geen)",
+    "waypointGeofenceRadiusHint": "Firmware 2.8+ geeft een melding wanneer nodes deze cirkel binnenkomen of verlaten.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Rechthoekige geofence",
+    "waypointBoundingBoxWest": "Lengtegraad",
+    "waypointBoundingBoxSouth": "Zuidelijke breedtegraad",
+    "waypointBoundingBoxEast": "Lengtegraad",
+    "waypointBoundingBoxNorth": "Breedtegraad",
+    "waypointBoundingBoxInvalid": "Begrenzingsvak moet west < oost en zuid < noord hebben",
+    "waypointNotifyOnEnter": "Melden bij invoeren",
+    "waypointNotifyOnExit": "Melden bij afsluiten",
+    "waypointNotifyFavoritesOnly": "Alleen meldingen voor favorieten"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Max",
     "noiseFloorTrendLast": "Laatste",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Monsters verzamelen voor de sparkline…"
+    "noiseFloorTrendNeedMoreSamples": "Monsters verzamelen voor de sparkline…",
+    "forgetAdvert": "Laatste advert vergeten",
+    "forgetAdvertAria": "De tijdstempel van de laatste advert voor deze contactpersoon wissen",
+    "forgetAdvertDone": "Tijdstempel van laatste advert gewist.",
+    "forgetAdvertFailed": "Kon het tijdstempel van de laatste advert niet wissen."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -7923,7 +7941,9 @@
       "radio": "Radiotuning",
       "wifi": "Wifi",
       "power": "Vermogen",
-      "console": "besturingskast"
+      "console": "besturingskast",
+      "notify": "Meldingen",
+      "retry": "Nieuwe pogingen voor berichten"
     },
     "validation": {
       "required": "U moet een waarde invoeren.",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Deze waarde ligt buiten bereik",
       "tooLong": "Waarde is te lang",
       "invalidChars": "Regeleinden zijn niet toegestaan.",
-      "pinFormat": "Voer 6 cijfers in, of 0 voor een willekeurige PINCODE."
+      "pinFormat": "Voer 6 cijfers in, of 0 voor een willekeurige PINCODE.",
+      "invalidPreset": "Gebruik infrarood, op het dak of mobiel."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP-adres"
+      },
+      "notify_enabled": {
+        "label": "Meldingen",
+        "hint": "Hoofdschakelaar voor meldingen van de companion-app."
+      },
+      "notify_sound": {
+        "label": "Zoemer/geluidsmeldingen",
+        "hint": "Laat de bijbehorende zoemer afgaan voor waarschuwingen wanneer de hardware dit ondersteunt."
+      },
+      "retry_preset": {
+        "label": "Voorinstelling opnieuw proberen",
+        "hint": "infra, dak of mobiel — stelt de standaardtijd voor directe en flood-hertriggering in."
+      },
+      "direct_retry": {
+        "label": "Nieuwe pogingen voor directe berichten",
+        "hint": "Wanneer deze optie is uitgeschakeld, worden directe berichten niet opnieuw geprobeerd door de radio."
+      },
+      "direct_retry_count": {
+        "label": "Aantal directe nieuwe pogingen",
+        "hint": "1 tot 15 pogingen voor directe berichten."
+      },
+      "flood_retry_count": {
+        "label": "Aantal Flood-herpogingen",
+        "hint": "0 tot 15. Instelling 0 laat in de wachtrij staande flood-pogingen vallen en stopt toekomstige pogingen."
       }
     },
     "confirm": {

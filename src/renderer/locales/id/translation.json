@@ -1020,7 +1020,9 @@
     "markdownStrike": "Coret",
     "markdownCode": "Kode sebaris",
     "markdownLink": "Tautan",
-    "markdownToolbar": "Pemformatan"
+    "markdownToolbar": "Pemformatan",
+    "cancelPendingDmAck": "Batalkan penantian",
+    "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Overlay tidak ditemukan.",
         "quota": "Penyimpanan browser penuh; hapus hamparan atau kosongkan ruang disk."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Radius batas geografis (meter, 0 = tidak ada)",
+    "waypointGeofenceRadiusHint": "Firmware 2.8+ memberikan peringatan saat node memasuki atau meninggalkan lingkaran ini.",
+    "waypointGeofenceRadiusSummary": "Pagar virtual {{meters}} m",
+    "waypointBoundingBoxEnable": "Pagar virtual persegi panjang",
+    "waypointBoundingBoxWest": "Bujur barat",
+    "waypointBoundingBoxSouth": "Garis lintang selatan",
+    "waypointBoundingBoxEast": "Bujur Tim ur",
+    "waypointBoundingBoxNorth": "Garis lintang utara",
+    "waypointBoundingBoxInvalid": "Kotak pembatas harus memiliki barat < timur dan selatan < utara",
+    "waypointNotifyOnEnter": "Beri tahu saat masuk",
+    "waypointNotifyOnExit": "Beri tahu saat keluar",
+    "waypointNotifyFavoritesOnly": "Beri tahu hanya untuk favorit"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Maks",
     "noiseFloorTrendLast": "Belakang",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Mengumpulkan sampel untuk sparkline…"
+    "noiseFloorTrendNeedMoreSamples": "Mengumpulkan sampel untuk sparkline…",
+    "forgetAdvert": "Lupakan advert terakhir",
+    "forgetAdvertAria": "Hapus stempel waktu advert terakhir untuk kontak ini",
+    "forgetAdvertDone": "Stempel waktu advert terakhir dihapus.",
+    "forgetAdvertFailed": "Tidak dapat menghapus stempel waktu advert terakhir."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -7923,7 +7941,9 @@
       "radio": "Penyetelan radio",
       "wifi": "WiFi",
       "power": "Kuasa",
-      "console": "Konsol perintah"
+      "console": "Konsol perintah",
+      "notify": "Notifikasi",
+      "retry": "Percobaan ulang pesan"
     },
     "validation": {
       "required": "Masukan nilai",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Nilai di luar jangkauan",
       "tooLong": "Nilai terlalu panjang.",
       "invalidChars": "Pemutusan saluran tidak diperbolehkan.",
-      "pinFormat": "Masukkan 6 digit, atau 0 untuk PIN acak."
+      "pinFormat": "Masukkan 6 digit, atau 0 untuk PIN acak.",
+      "invalidPreset": "Gunakan infra, atap, atau ponsel."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "Alamat IP"
+      },
+      "notify_enabled": {
+        "label": "Notifikasi",
+        "hint": "Sakelar utama untuk fitur notifikasi pendamping."
+      },
+      "notify_sound": {
+        "label": "Bel/peringatan suara",
+        "hint": "Putar bel pendamping untuk pemberitahuan jika perangkat keras mendukungnya."
+      },
+      "retry_preset": {
+        "label": "Coba lagi pengaturan awal",
+        "hint": "infra, atap, atau seluler — menyesuaikan waktu percobaan ulang langsung dan flood secara default."
+      },
+      "direct_retry": {
+        "label": "Percobaan ulang pesan langsung",
+        "hint": "Jika dinonaktifkan, pesan langsung tidak dicoba lagi oleh radio."
+      },
+      "direct_retry_count": {
+        "label": "Jumlah percobaan ulang langsung",
+        "hint": "1 hingga 15 upaya untuk pesan langsung."
+      },
+      "flood_retry_count": {
+        "label": "Jumlah percobaan ulang Flood",
+        "hint": "0 hingga 15. Pengaturan 0 membatalkan upaya pengiriman ulang flood yang sedang menunggu dan menghentikan upaya pengiriman ulang berikutnya."
       }
     },
     "confirm": {

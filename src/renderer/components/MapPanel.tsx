@@ -16,7 +16,7 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Circle, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { Circle, Marker, Polyline, Popup, Rectangle, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { MAPS_DOCS_URL } from '@/shared/docsSite';
@@ -1271,48 +1271,82 @@ function OverviewMapPanel({
         {showWaypoints &&
           waypoints &&
           [...waypoints.values()].map((wp) => (
-            <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
-              <Popup>
-                <div className="space-y-1 p-2">
-                  <div className="text-ink-100 text-sm font-medium">
-                    {wp.name || t('mapPanel.waypointDefaultName')}
+            <Fragment key={wp.id}>
+              {typeof wp.geofenceRadius === 'number' && wp.geofenceRadius > 0 ? (
+                <Circle
+                  center={[wp.latitude, wp.longitude]}
+                  radius={wp.geofenceRadius}
+                  pathOptions={{
+                    color: '#38bdf8',
+                    weight: 1,
+                    fillColor: '#38bdf8',
+                    fillOpacity: 0.12,
+                  }}
+                />
+              ) : null}
+              {wp.boundingBox ? (
+                <Rectangle
+                  bounds={[
+                    [wp.boundingBox.south, wp.boundingBox.west],
+                    [wp.boundingBox.north, wp.boundingBox.east],
+                  ]}
+                  pathOptions={{
+                    color: '#38bdf8',
+                    weight: 1,
+                    dashArray: '4 4',
+                    fillColor: '#38bdf8',
+                    fillOpacity: 0.08,
+                  }}
+                />
+              ) : null}
+              <Marker position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
+                <Popup>
+                  <div className="space-y-1 p-2">
+                    <div className="text-ink-100 text-sm font-medium">
+                      {wp.name || t('mapPanel.waypointDefaultName')}
+                    </div>
+                    {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
+                    <div className="text-muted font-mono text-xs">
+                      {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
+                    </div>
+                    {typeof wp.geofenceRadius === 'number' && wp.geofenceRadius > 0 ? (
+                      <div className="text-muted text-xs">
+                        {t('mapPanel.waypointGeofenceRadiusSummary', { meters: wp.geofenceRadius })}
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-1">
+                      {onSendWaypoint && (
+                        <button
+                          type="button"
+                          aria-label={t('mapPanel.waypointEdit')}
+                          onClick={() => {
+                            setWaypointEditor({
+                              mode: 'edit',
+                              initial: wp,
+                            });
+                          }}
+                          className={buttonClassName('secondary', 'sm', 'mt-1')}
+                        >
+                          {t('mapPanel.waypointEdit')}
+                        </button>
+                      )}
+                      {onDeleteWaypoint && (
+                        <button
+                          type="button"
+                          aria-label={t('mapPanel.waypointDelete')}
+                          onClick={() => {
+                            void onDeleteWaypoint(wp.id);
+                          }}
+                          className={buttonClassName('danger', 'sm', 'mt-1')}
+                        >
+                          {t('mapPanel.waypointDelete')}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
-                  <div className="text-muted font-mono text-xs">
-                    {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {onSendWaypoint && (
-                      <button
-                        type="button"
-                        aria-label={t('mapPanel.waypointEdit')}
-                        onClick={() => {
-                          setWaypointEditor({
-                            mode: 'edit',
-                            initial: wp,
-                          });
-                        }}
-                        className={buttonClassName('secondary', 'sm', 'mt-1')}
-                      >
-                        {t('mapPanel.waypointEdit')}
-                      </button>
-                    )}
-                    {onDeleteWaypoint && (
-                      <button
-                        type="button"
-                        aria-label={t('mapPanel.waypointDelete')}
-                        onClick={() => {
-                          void onDeleteWaypoint(wp.id);
-                        }}
-                        className={buttonClassName('danger', 'sm', 'mt-1')}
-                      >
-                        {t('mapPanel.waypointDelete')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+                </Popup>
+              </Marker>
+            </Fragment>
           ))}
         {(() => {
           const routeIds = scopedMapTraceRoute?.nodeIds ?? traceRouteNodeIds;

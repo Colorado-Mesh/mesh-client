@@ -58,6 +58,8 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       sendRoomAdminCliCommand: runtime.sendRoomAdminCliCommand,
       clearCliHistory: runtime.clearCliHistory,
       deleteNode: runtime.deleteNode,
+      forgetContactAdvert: runtime.forgetContactAdvert,
+      cancelPendingDmAck: runtime.cancelPendingDmAck,
       setNodeFavorited: runtime.setNodeFavorited,
       clearRawPackets: runtime.clearRawPackets,
       requestRefresh: runtime.requestRefresh,

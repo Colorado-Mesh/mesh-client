@@ -188,6 +188,7 @@ import { registerWeatherIpcHandlers } from './ipc/weather-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
+import { loadValidateMqttPublishWaypointArgs } from './loadMqttPublishWaypointValidation';
 import { loadPaintTrayUnreadDot } from './loadTrayUnreadDot';
 import {
   clearLogFile,
@@ -1200,68 +1201,6 @@ function validateMqttPublishProxyArgs(args: unknown): void {
   if (a.retained != null && typeof a.retained !== 'boolean') {
     throw new Error('mqtt:publishProxy: retained must be a boolean');
   }
-}
-
-function validateMqttPublishWaypointArgs(args: unknown): void {
-  if (!args || typeof args !== 'object') {
-    throw new Error('mqtt:publishWaypoint: args must be an object');
-  }
-  const a = args as Record<string, unknown>;
-  if (typeof a.publishJsonMirror !== 'boolean') {
-    throw new Error('mqtt:publishWaypoint: publishJsonMirror must be a boolean');
-  }
-  const from = Number(a.from);
-  if (!Number.isFinite(from) || from <= 0) {
-    throw new Error('mqtt:publishWaypoint: from must be a positive node id');
-  }
-  const to = Number(a.to);
-  if (!Number.isFinite(to) || to < 0) {
-    throw new Error('mqtt:publishWaypoint: to must be a non-negative integer');
-  }
-  const channel = Number(a.channel);
-  if (!Number.isFinite(channel) || channel < 0) {
-    throw new Error('mqtt:publishWaypoint: channel must be a non-negative integer');
-  }
-  if (typeof a.channelName !== 'string' || !a.channelName.trim()) {
-    throw new Error('mqtt:publishWaypoint: channelName must be a non-empty string');
-  }
-  const wp = a.waypoint;
-  if (!wp || typeof wp !== 'object') {
-    throw new Error('mqtt:publishWaypoint: waypoint must be an object');
-  }
-  const w = wp as Record<string, unknown>;
-  const id = Number(w.id);
-  if (!Number.isFinite(id)) throw new Error('mqtt:publishWaypoint: waypoint.id invalid');
-  const latitudeI = Number(w.latitudeI);
-  const longitudeI = Number(w.longitudeI);
-  if (!Number.isFinite(latitudeI) || !Number.isFinite(longitudeI)) {
-    throw new Error('mqtt:publishWaypoint: waypoint latitudeI/longitudeI invalid');
-  }
-  if (typeof w.name !== 'string')
-    throw new Error('mqtt:publishWaypoint: waypoint.name must be a string');
-  if (w.name.length > 256) throw new Error('mqtt:publishWaypoint: waypoint.name too long');
-  if (w.description != null && typeof w.description !== 'string') {
-    throw new Error('mqtt:publishWaypoint: waypoint.description invalid');
-  }
-  if (typeof w.description === 'string' && w.description.length > 1024) {
-    throw new Error('mqtt:publishWaypoint: waypoint.description too long');
-  }
-  if (w.icon != null) {
-    const icon = Number(w.icon);
-    if (!Number.isFinite(icon) || icon < 0)
-      throw new Error('mqtt:publishWaypoint: waypoint.icon invalid');
-  }
-  if (w.lockedTo != null) {
-    const lt = Number(w.lockedTo);
-    if (!Number.isFinite(lt) || lt < 0)
-      throw new Error('mqtt:publishWaypoint: waypoint.lockedTo invalid');
-  }
-  if (w.expire != null) {
-    const ex = Number(w.expire);
-    if (!Number.isFinite(ex) || ex < 0)
-      throw new Error('mqtt:publishWaypoint: waypoint.expire invalid');
-  }
-  validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
 }
 
 // Enable Web Serial at the process level (LoRa BLE uses sidecar btleplug, not Web Bluetooth).
@@ -3482,7 +3421,8 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
   assertIpcSender(event, 'mqtt:publishWaypoint');
   try {
     console.debug('[IPC] mqtt:publishWaypoint');
-    validateMqttPublishWaypointArgs(args);
+    // Production: sibling mqtt-publish-waypoint-validation.js (out of measured index.js).
+    loadValidateMqttPublishWaypointArgs()(args);
     const a = args as {
       from: number;
       to: number;
@@ -3499,8 +3439,19 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
         icon?: number;
         lockedTo?: number;
         expire?: number;
+        geofenceRadius?: number;
+        boundingBox?: {
+          longitudeWestI: number;
+          latitudeSouthI: number;
+          longitudeEastI: number;
+          latitudeNorthI: number;
+        };
+        notifyOnEnter?: boolean;
+        notifyOnExit?: boolean;
+        notifyFavoritesOnly?: boolean;
       };
     };
+    validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
     return mqttManager.publishWaypoint(
       a.from,
       a.to,
@@ -6336,6 +6287,29 @@ ipcMain.handle(
     } catch (err) {
       console.error(
         '[IPC] db:updateMeshcoreContactAdvert error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  },
+);
+
+ipcMain.handle(
+  'db:forgetMeshcoreContactAdvert',
+  (event, nodeId: number, opts?: { clearPosition?: boolean }) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:forgetMeshcoreContactAdvert: unauthorized sender');
+    try {
+      const db = getDbForIpc('db:forgetMeshcoreContactAdvert');
+      if (!db) return { changes: 0 };
+      const sql =
+        opts?.clearPosition === true
+          ? 'UPDATE meshcore_contacts SET last_advert = NULL, adv_lat = NULL, adv_lon = NULL WHERE node_id = ?'
+          : 'UPDATE meshcore_contacts SET last_advert = NULL WHERE node_id = ?';
+      return db.prepareOnce(sql).run(safeNonNegativeInt(nodeId));
+    } catch (err) {
+      console.error(
+        '[IPC] db:forgetMeshcoreContactAdvert error:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;

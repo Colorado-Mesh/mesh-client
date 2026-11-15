@@ -38,9 +38,9 @@ describe('chatMacrosStore', () => {
     else Reflect.deleteProperty(window, 'matchMedia');
   });
 
-  it('starts collapsed with 12 empty slots, insert mode and pointer-based size', () => {
+  it('starts expanded with 12 empty slots, insert mode and pointer-based size', () => {
     const s = useChatMacrosStore.getState();
-    expect(s.collapsed).toBe(true);
+    expect(s.collapsed).toBe(false);
     expect(s.slots).toHaveLength(CHAT_MACRO_SLOT_COUNT);
     expect(s.slots.every((slot) => slot.label === '' && slot.text === '')).toBe(true);
     expect(s.sendMode).toBe('insert');
@@ -97,8 +97,8 @@ describe('chatMacrosStore', () => {
     expect(out.slots[1]).toEqual({ label: '', text: '', action: 'text' });
     expect(out.size).toBeNull();
     expect(out.sendMode).toBe('insert');
-    expect(out.collapsed).toBe(true);
-    expect(sanitizeChatMacrosPersisted(undefined).collapsed).toBe(true);
+    expect(out.collapsed).toBe(false);
+    expect(sanitizeChatMacrosPersisted(undefined).collapsed).toBe(false);
   });
 
   it('rehydrates sanitized data from localStorage', async () => {

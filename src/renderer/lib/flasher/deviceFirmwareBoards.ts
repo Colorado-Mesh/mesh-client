@@ -43,6 +43,15 @@ export const DEVICE_FLASH_BOARDS: readonly DeviceFlashBoard[] = [
     flashBytes: 8 * MIB,
   },
   {
+    id: 'meshtastic:heltec-v4',
+    protocol: 'meshtastic',
+    label: 'Heltec V4',
+    family: 'esp32s3',
+    meshtasticHwModel: 110,
+    meshtasticSlug: 'heltec-v4',
+    flashBytes: 8 * MIB,
+  },
+  {
     id: 'meshtastic:tbeam',
     protocol: 'meshtastic',
     label: 'LilyGo T-Beam',
@@ -66,6 +75,15 @@ export const DEVICE_FLASH_BOARDS: readonly DeviceFlashBoard[] = [
     family: 'esp32s3',
     meshcorePrefix: 'heltec_v3',
     meshcoreModelKeys: ['heltecv3'],
+    flashBytes: 8 * MIB,
+  },
+  {
+    id: 'meshcore:heltec-v4',
+    protocol: 'meshcore',
+    label: 'Heltec V4',
+    family: 'esp32s3',
+    meshcorePrefix: 'heltec_v4',
+    meshcoreModelKeys: ['heltecv4'],
     flashBytes: 8 * MIB,
   },
   {

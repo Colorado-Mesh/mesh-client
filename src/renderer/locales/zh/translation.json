@@ -1020,7 +1020,9 @@
     "markdownStrike": "删除线",
     "markdownCode": "内嵌代码",
     "markdownLink": "链接",
-    "markdownToolbar": "格式"
+    "markdownToolbar": "格式",
+    "cancelPendingDmAck": "取消等待",
+    "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "未找到叠加层。",
         "quota": "浏览器存储空间已满；请移除一个叠加层或释放磁盘空间。"
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "地理围栏半径（米，0 = 无）",
+    "waypointGeofenceRadiusHint": "固件版本 2.8 或更高版本会在节点进入或离开此圆圈时发出提醒。",
+    "waypointGeofenceRadiusSummary": "地理围栏 {{meters}} 米",
+    "waypointBoundingBoxEnable": "矩形地理围栏",
+    "waypointBoundingBoxWest": "西经",
+    "waypointBoundingBoxSouth": "南纬",
+    "waypointBoundingBoxEast": "东经",
+    "waypointBoundingBoxNorth": "最北纬度",
+    "waypointBoundingBoxInvalid": "边界框必须满足西 < 东和南 < 北",
+    "waypointNotifyOnEnter": "在进入时通知",
+    "waypointNotifyOnExit": "退出时通知",
+    "waypointNotifyFavoritesOnly": "仅通知收藏夹"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "max",
     "noiseFloorTrendLast": "最後一頁",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "正在收集迷你图的样本……"
+    "noiseFloorTrendNeedMoreSamples": "正在收集迷你图的样本……",
+    "forgetAdvert": "忘记上一则通告",
+    "forgetAdvertAria": "清除此联系人的上一个通告时间戳",
+    "forgetAdvertDone": "已清除上次通告时间戳。",
+    "forgetAdvertFailed": "无法清除上一个通告的时间戳。"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -7923,7 +7941,9 @@
       "radio": "无线电调谐",
       "wifi": "WiFi",
       "power": "兵力",
-      "console": "命令控制台"
+      "console": "命令控制台",
+      "notify": "消息",
+      "retry": "消息重试"
     },
     "validation": {
       "required": "请输入值。",
@@ -7932,7 +7952,8 @@
       "outOfRange": "行动成本值超出范围",
       "tooLong": "此值太长。",
       "invalidChars": "不允许换行。",
-      "pinFormat": "请输入6位数字，随机PIN码请输入0。"
+      "pinFormat": "请输入6位数字，随机PIN码请输入0。",
+      "invalidPreset": "使用红外摄像头、屋顶摄像头或移动摄像头。"
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP 地址"
+      },
+      "notify_enabled": {
+        "label": "消息",
+        "hint": "伴侣通知功能的主开关。"
+      },
+      "notify_sound": {
+        "label": "蜂鸣器/声音警报",
+        "hint": "如果硬件支持，则播放 Companion 蜂鸣器以发出警报。"
+      },
+      "retry_preset": {
+        "label": "重试预设",
+        "hint": "基础设施、屋顶或移动设备 — 调整默认的直接和泛洪重试时间。"
+      },
+      "direct_retry": {
+        "label": "私信重试",
+        "hint": "关闭时，无线电不会重试直接消息。"
+      },
+      "direct_retry_count": {
+        "label": "直接重试次数",
+        "hint": "1 至 15 次私信尝试。"
+      },
+      "flood_retry_count": {
+        "label": "泛洪重试次数",
+        "hint": "0 到 15。设置为 0 会丢弃已排队的泛洪重试，并停止将来的重试。"
       }
     },
     "confirm": {

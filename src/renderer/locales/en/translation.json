@@ -1048,6 +1048,8 @@
     "autoResendSending": "Retrying ({{attempt}}/{{max}})…",
     "cancelAutoResend": "Cancel retry",
     "cancelAutoResendAria": "Cancel automatic retry of this message",
+    "cancelPendingDmAck": "Cancel wait",
+    "cancelPendingDmAckAria": "Stop waiting for delivery acknowledgement and mark this message failed",
     "sendErrors": {
       "networkAckTimeout": "No acknowledgement from the network yet.",
       "networkAckFailed": "The network did not acknowledge this message.",
@@ -3267,6 +3269,18 @@
     "waypointIconLabel": "Icon",
     "waypointLockLabel": "Lock to me",
     "waypointExpireLabel": "Expire after (hours, 0 = none)",
+    "waypointGeofenceRadiusLabel": "Geofence radius (meters, 0 = none)",
+    "waypointGeofenceRadiusHint": "Firmware 2.8+ alerts when nodes enter or leave this circle.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Rectangular geofence",
+    "waypointBoundingBoxWest": "West longitude",
+    "waypointBoundingBoxSouth": "South latitude",
+    "waypointBoundingBoxEast": "East longitude",
+    "waypointBoundingBoxNorth": "North latitude",
+    "waypointBoundingBoxInvalid": "Bounding box must have west < east and south < north",
+    "waypointNotifyOnEnter": "Notify on enter",
+    "waypointNotifyOnExit": "Notify on exit",
+    "waypointNotifyFavoritesOnly": "Notify for favorites only",
     "waypointSave": "Save waypoint",
     "waypointNameRequired": "Name is required",
     "waypointSaveFailed": "Could not save waypoint",
@@ -3521,6 +3535,8 @@
       "device": "Device",
       "radio": "Radio tuning",
       "wifi": "WiFi",
+      "notify": "Notifications",
+      "retry": "Message retries",
       "power": "Power",
       "console": "Command console"
     },
@@ -3531,7 +3547,8 @@
       "outOfRange": "Value is out of range.",
       "tooLong": "Value is too long.",
       "invalidChars": "Line breaks are not allowed.",
-      "pinFormat": "Enter 6 digits, or 0 for a random PIN."
+      "pinFormat": "Enter 6 digits, or 0 for a random PIN.",
+      "invalidPreset": "Use infra, rooftop, or mobile."
     },
     "settings": {
       "ver": {
@@ -3600,6 +3617,30 @@
       },
       "wifi_ip": {
         "label": "IP address"
+      },
+      "notify_enabled": {
+        "label": "Notifications",
+        "hint": "Master switch for companion notification features."
+      },
+      "notify_sound": {
+        "label": "Buzzer / sound alerts",
+        "hint": "Play the companion buzzer for alerts when the hardware supports it."
+      },
+      "retry_preset": {
+        "label": "Retry preset",
+        "hint": "infra, rooftop, or mobile — tunes default direct and flood retry timing."
+      },
+      "direct_retry": {
+        "label": "Direct message retries",
+        "hint": "When off, direct messages are not retried by the radio."
+      },
+      "direct_retry_count": {
+        "label": "Direct retry count",
+        "hint": "1 to 15 attempts for direct messages."
+      },
+      "flood_retry_count": {
+        "label": "Flood retry count",
+        "hint": "0 to 15. Setting 0 drops queued flood retries and stops future ones."
       }
     },
     "confirm": {
@@ -4450,6 +4491,10 @@
     "unblockContact": "Unblock",
     "deleteNode": "Delete Node",
     "deleteNodeConfirm": "Remove this node from local database? It will reappear when it broadcasts again.",
+    "forgetAdvert": "Forget last advert",
+    "forgetAdvertAria": "Clear the last advert timestamp for this contact",
+    "forgetAdvertDone": "Last advert timestamp cleared.",
+    "forgetAdvertFailed": "Could not clear the last advert timestamp.",
     "cancel": "Cancel",
     "confirmDelete": "Confirm Delete",
     "deleteFailedMqtt": "Delete failed. Disconnect MQTT and try again.",

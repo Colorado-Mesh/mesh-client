@@ -30,15 +30,19 @@ Everything runs in the renderer over Web Serial. There is no main-process or IPC
 
 `DEVICE_FLASH_BOARDS` is the whole supported set (fail closed):
 
-| Id                     | Family     | Notes                                                 |
-| ---------------------- | ---------- | ----------------------------------------------------- |
-| `meshtastic:heltec-v3` | `esp32s3`  | `meshtasticHwModel` 43, slug `heltec-v3`, 8 MiB flash |
-| `meshtastic:tbeam`     | `esp32`    | `meshtasticHwModel` 4, slug `tbeam`, 4 MiB flash      |
-| `meshtastic:rak4631`   | `nrf52840` | `meshtasticHwModel` 9, slug `rak4631`                 |
-| `meshcore:heltec-v3`   | `esp32s3`  | prefix `heltec_v3`, model key `heltecv3`, 8 MiB flash |
-| `meshcore:rak4631`     | `nrf52840` | prefix `rak_4631`, model key `rak4631`                |
+| Id                     | Family     | Notes                                                  |
+| ---------------------- | ---------- | ------------------------------------------------------ |
+| `meshtastic:heltec-v3` | `esp32s3`  | `meshtasticHwModel` 43, slug `heltec-v3`, 8 MiB flash  |
+| `meshtastic:heltec-v4` | `esp32s3`  | `meshtasticHwModel` 110, slug `heltec-v4`, 8 MiB flash |
+| `meshtastic:tbeam`     | `esp32`    | `meshtasticHwModel` 4, slug `tbeam`, 4 MiB flash       |
+| `meshtastic:rak4631`   | `nrf52840` | `meshtasticHwModel` 9, slug `rak4631`                  |
+| `meshcore:heltec-v3`   | `esp32s3`  | prefix `heltec_v3`, model key `heltecv3`, 8 MiB flash  |
+| `meshcore:heltec-v4`   | `esp32s3`  | prefix `heltec_v4`, model key `heltecv4`, 8 MiB flash  |
+| `meshcore:rak4631`     | `nrf52840` | prefix `rak_4631`, model key `rak4631`                 |
 
 Add a board only after its factory image layout, chip id, and bootloader entry are verified. Ids are `<protocol>:<slug>` and unique across protocols.
+
+**Not listed yet (need verified flash layouts before adding):** Meshtastic ThinkNode M4/M8/M9, Makerfabs Nomad Terminal, RAK WisMesh Dongle; MeshCore ThinkNode M4/M8, Muzi Base, Waveshare ESP32-S3 LR1121. Use the upstream web flasher for those until they are added here.
 
 ## Contracts and invariants
 

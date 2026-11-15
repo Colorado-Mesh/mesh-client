@@ -48,6 +48,7 @@ describe('detectDeviceFlashBoard — Meshtastic', () => {
   it.each([
     ['43', 'meshtastic:heltec-v3'],
     [43, 'meshtastic:heltec-v3'],
+    [110, 'meshtastic:heltec-v4'],
     ['4', 'meshtastic:tbeam'],
     ['9', 'meshtastic:rak4631'],
   ])('matches hw_model %s', (hw, id) => {
@@ -86,18 +87,18 @@ describe('detectDeviceFlashBoard — MeshCore', () => {
   it.each([
     ['Heltec V3', 'meshcore:heltec-v3'],
     ['  heltec v3 ', 'meshcore:heltec-v3'],
+    ['Heltec V4', 'meshcore:heltec-v4'],
     ['RAK 4631', 'meshcore:rak4631'],
     ['RAK4631', 'meshcore:rak4631'],
   ])('matches manufacturer model %j', (model, id) => {
     expect(detectDeviceFlashBoard(mc(model))).toMatchObject({ status: 'matched', board: { id } });
   });
 
-  it('does not fuzzy-match near models (V3.2, V4) and reports them unsupported', () => {
+  it('does not fuzzy-match near models (V3.2) and reports them unsupported', () => {
     expect(detectDeviceFlashBoard(mc('Heltec V3.2'))).toEqual({
       status: 'unsupported',
       reported: 'Heltec V3.2',
     });
-    expect(detectDeviceFlashBoard(mc('Heltec V4'))).toMatchObject({ status: 'unsupported' });
   });
 
   it('is unknown when disconnected or no model was reported', () => {

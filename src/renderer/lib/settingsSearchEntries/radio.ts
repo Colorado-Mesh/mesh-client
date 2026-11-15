@@ -786,6 +786,22 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: hasCompanionCli,
   },
   {
+    id: 'radio.companionCli.notify',
+    slot: 'Radio',
+    labelKey: 'meshcoreCompanionCli.groups.notify',
+    sectionKey: COMPANION_CLI,
+    keywords: ['notify', 'buzzer', 'sound', 'alerts', 'notifications'],
+    visible: hasCompanionCli,
+  },
+  {
+    id: 'radio.companionCli.retry',
+    slot: 'Radio',
+    labelKey: 'meshcoreCompanionCli.groups.retry',
+    sectionKey: COMPANION_CLI,
+    keywords: ['retry', 'flood', 'direct', 'attempts', 'preset', 'infra', 'rooftop', 'mobile'],
+    visible: hasCompanionCli,
+  },
+  {
     id: 'radio.companionCli.power',
     slot: 'Radio',
     labelKey: 'meshcoreCompanionCli.groups.power',

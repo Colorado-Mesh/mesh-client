@@ -641,6 +641,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         advLon,
         advName,
       ),
+    forgetMeshcoreContactAdvert: (nodeId: number, opts?: { clearPosition?: boolean }) =>
+      ipcRenderer.invoke('db:forgetMeshcoreContactAdvert', nodeId, opts),
     updateMeshcoreContactType: (nodeId: number, contactType: number) =>
       ipcRenderer.invoke('db:updateMeshcoreContactType', nodeId, contactType),
     updateMeshcoreContactLastRf: (
@@ -955,6 +957,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
         icon?: number;
         lockedTo?: number;
         expire?: number;
+        geofenceRadius?: number;
+        boundingBox?: {
+          longitudeWestI: number;
+          latitudeSouthI: number;
+          longitudeEastI: number;
+          latitudeNorthI: number;
+        };
+        notifyOnEnter?: boolean;
+        notifyOnExit?: boolean;
+        notifyFavoritesOnly?: boolean;
       };
     }) => ipcRenderer.invoke('mqtt:publishWaypoint', args),
     publishMeshcore: (args: {

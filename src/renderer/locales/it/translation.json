@@ -1020,7 +1020,9 @@
     "markdownStrike": "Barrato",
     "markdownCode": "Codice in linea",
     "markdownLink": "Link",
-    "markdownToolbar": "Formattazione"
+    "markdownToolbar": "Formattazione",
+    "cancelPendingDmAck": "Annulla attesa",
+    "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Sovrapposizione non trovata.",
         "quota": "Lo spazio di archiviazione del browser è pieno; rimuovi una sovrapposizione o libera spazio su disco."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Raggio del geofence (metri, 0 = nessuno)",
+    "waypointGeofenceRadiusHint": "Il firmware 2.8+ invia avvisi quando i nodi entrano o escono da questo cerchio.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Geofence rettangolare",
+    "waypointBoundingBoxWest": "Longitudine ovest",
+    "waypointBoundingBoxSouth": "Latitudine sud",
+    "waypointBoundingBoxEast": "Longitudine est",
+    "waypointBoundingBoxNorth": "Latitudine nord",
+    "waypointBoundingBoxInvalid": "Il riquadro di delimitazione deve avere ovest < est e sud < nord",
+    "waypointNotifyOnEnter": "Notifica all'accesso",
+    "waypointNotifyOnExit": "Notifica all'uscita",
+    "waypointNotifyFavoritesOnly": "Notifica solo per i preferiti"
   },
   "meshCongestion": {
     "blockTitle": "Perché vedi traffico duplicato",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Max",
     "noiseFloorTrendLast": "Ultimo",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Raccolta di campioni per il grafico sparkline..."
+    "noiseFloorTrendNeedMoreSamples": "Raccolta di campioni per il grafico sparkline...",
+    "forgetAdvert": "Dimentica l'ultimo annuncio",
+    "forgetAdvertAria": "Cancella l'ultima data e ora dell'annuncio per questo contatto",
+    "forgetAdvertDone": "Data e ora dell'ultimo annuncio cancellate.",
+    "forgetAdvertFailed": "Impossibile cancellare l'ultima marca temporale dell'annuncio."
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -7923,7 +7941,9 @@
       "radio": "Sintonizzazione radio",
       "wifi": "WiFi",
       "power": "Potenza",
-      "console": "Pulpito di comando"
+      "console": "Pulpito di comando",
+      "notify": "Notifiche",
+      "retry": "Nuovi tentativi di invio del messaggio"
     },
     "validation": {
       "required": "Digitare un valore.",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Il valore è fuori intervallo.",
       "tooLong": "Il valore è troppo lungo",
       "invalidChars": "Non sono consentite interruzioni di riga.",
-      "pinFormat": "Inserisci 6 cifre o 0 per un PIN casuale."
+      "pinFormat": "Inserisci 6 cifre o 0 per un PIN casuale.",
+      "invalidPreset": "Utilizza un impianto a infrarossi, sul tetto o mobile."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "Indirizzo IP"
+      },
+      "notify_enabled": {
+        "label": "Notifiche",
+        "hint": "Interruttore generale per le funzionalità di notifica dell'app complementare."
+      },
+      "notify_sound": {
+        "label": "Avvisi acustici/con buzzer",
+        "hint": "Attiva il cicalino del dispositivo Companion per gli avvisi quando l'hardware lo supporta."
+      },
+      "retry_preset": {
+        "label": "Riprova con il preset",
+        "hint": "infra, rooftop o mobile: regola i tempi predefiniti di ripetizione dei tentativi di connessione diretta e flood."
+      },
+      "direct_retry": {
+        "label": "Nuovi tentativi di invio dei messaggi diretti",
+        "hint": "Quando è disattivato, i messaggi diretti non vengono ritentati dalla radio."
+      },
+      "direct_retry_count": {
+        "label": "Numero di tentativi diretti",
+        "hint": "Da 1 a 15 tentativi per i messaggi diretti."
+      },
+      "flood_retry_count": {
+        "label": "Conteggio dei tentativi di flood",
+        "hint": "Da 0 a 15. L'impostazione 0 elimina i tentativi di flood in coda e interrompe quelli futuri."
       }
     },
     "confirm": {

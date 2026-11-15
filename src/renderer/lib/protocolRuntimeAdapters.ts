@@ -193,7 +193,10 @@ function isMeshWaypoint(value: unknown): value is MeshWaypoint {
     typeof value.from === 'number' &&
     typeof value.timestamp === 'number' &&
     optionalString(value.description) &&
-    optionalNumbers(value, ['icon', 'lockedTo', 'expire'])
+    optionalNumbers(value, ['icon', 'lockedTo', 'expire', 'geofenceRadius']) &&
+    (value.notifyOnEnter == null || typeof value.notifyOnEnter === 'boolean') &&
+    (value.notifyOnExit == null || typeof value.notifyOnExit === 'boolean') &&
+    (value.notifyFavoritesOnly == null || typeof value.notifyFavoritesOnly === 'boolean')
   );
 }
 

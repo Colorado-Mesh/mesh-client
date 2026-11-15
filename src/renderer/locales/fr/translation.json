@@ -1020,7 +1020,9 @@
     "markdownStrike": "Barré",
     "markdownCode": "&Code en ligne",
     "markdownLink": "Lien",
-    "markdownToolbar": "Mettre en forme"
+    "markdownToolbar": "Mettre en forme",
+    "cancelPendingDmAck": "Annuler l'attente",
+    "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Superposition introuvable.",
         "quota": "L’espace de stockage du navigateur est saturé ; supprimez une superposition ou libérez de l’espace disque."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Rayon du périmètre virtuel (mètres, 0 = aucun)",
+    "waypointGeofenceRadiusHint": "Le micrologiciel 2.8+ émet des alertes lorsque des nœuds entrent dans ce cercle ou le quittent.",
+    "waypointGeofenceRadiusSummary": "Zone de géolocalisation {{meters}} m",
+    "waypointBoundingBoxEnable": "Zone de géolocalisation rectangulaire",
+    "waypointBoundingBoxWest": "de longitude ouest.",
+    "waypointBoundingBoxSouth": "Latitude Sud",
+    "waypointBoundingBoxEast": "longitude est",
+    "waypointBoundingBoxNorth": "Latitude NORD",
+    "waypointBoundingBoxInvalid": "Le cadre de délimitation doit respecter les conditions suivantes : ouest < est et sud < nord",
+    "waypointNotifyOnEnter": "Notifier à l'entrée",
+    "waypointNotifyOnExit": "Notifier à la sortie",
+    "waypointNotifyFavoritesOnly": "Notifier uniquement pour les favoris"
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Max",
     "noiseFloorTrendLast": "Dernier",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Collecte d’échantillons pour le graphique sparkline…"
+    "noiseFloorTrendNeedMoreSamples": "Collecte d’échantillons pour le graphique sparkline…",
+    "forgetAdvert": "Oublier la dernière publicité",
+    "forgetAdvertAria": "Effacer l'horodatage de la dernière publicité pour ce contact",
+    "forgetAdvertDone": "Horodatage de la dernière publicité effacé.",
+    "forgetAdvertFailed": "Impossible d'effacer l'horodatage de la dernière publicité."
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -7923,7 +7941,9 @@
       "radio": "Réglage radio",
       "wifi": "Wi-Fi",
       "power": "Puissance",
-      "console": "baie de commande"
+      "console": "baie de commande",
+      "notify": "Notifications",
+      "retry": "Nouvelles tentatives d'envoi du message"
     },
     "validation": {
       "required": "Saisir une valeur.",
@@ -7932,7 +7952,8 @@
       "outOfRange": "la valeur est hors portée.",
       "tooLong": "La valeur est trop longue",
       "invalidChars": "Les sauts de ligne ne sont pas autorisés.",
-      "pinFormat": "Entrez 6 chiffres ou 0 pour un CODE PIN aléatoire."
+      "pinFormat": "Entrez 6 chiffres ou 0 pour un CODE PIN aléatoire.",
+      "invalidPreset": "Utilisez un système infrarouge, sur le toit ou mobile."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "Adresse IP"
+      },
+      "notify_enabled": {
+        "label": "Notifications",
+        "hint": "Interrupteur principal pour les fonctionnalités de notification de l’application compagnon."
+      },
+      "notify_sound": {
+        "label": "Avertisseur sonore/alertes sonores",
+        "hint": "Faire sonner l'avertisseur sonore de l'accessoire pour les alertes lorsque le matériel le prend en charge."
+      },
+      "retry_preset": {
+        "label": "Réessayer le préréglage",
+        "hint": "infrastructure, toit ou mobile : ajuste par défaut le délai de nouvelle tentative de connexion directe et de diffusion."
+      },
+      "direct_retry": {
+        "label": "Nouvelles tentatives d'envoi de messages directs",
+        "hint": "Lorsque cette option est désactivée, les messages directs ne sont pas retentés par la radio."
+      },
+      "direct_retry_count": {
+        "label": "Nombre de nouvelles tentatives directes",
+        "hint": "1 à 15 tentatives pour les messages directs."
+      },
+      "flood_retry_count": {
+        "label": "Nombre de nouvelles tentatives de flux",
+        "hint": "0 à 15. Le réglage sur 0 supprime les nouvelles tentatives de flood en file d’attente et arrête les tentatives futures."
       }
     },
     "confirm": {

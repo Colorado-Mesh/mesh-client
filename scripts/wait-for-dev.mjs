@@ -35,6 +35,10 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
     projectRoot,
     'dist-electron/main/scheduled-broadcasts-interval-rebuild.js',
   ),
+  mqttPublishWaypointValidation: path.join(
+    projectRoot,
+    'dist-electron/main/mqtt-publish-waypoint-validation.js',
+  ),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */

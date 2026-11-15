@@ -576,6 +576,14 @@ export interface LinuxBleCapabilityStatus {
   detail: string;
 }
 
+/** Axis-aligned geofence box in degrees (Meshtastic 2.8 Waypoint.bounding_box). */
+export interface MeshWaypointBoundingBox {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}
+
 export interface MeshWaypoint {
   id: number;
   latitude: number;
@@ -585,6 +593,13 @@ export interface MeshWaypoint {
   icon?: number;
   lockedTo?: number;
   expire?: number;
+  /** Circular geofence radius in meters (0 / omitted = none). Firmware 2.8+. */
+  geofenceRadius?: number;
+  /** Optional rectangular geofence in degrees. Firmware 2.8+. */
+  boundingBox?: MeshWaypointBoundingBox;
+  notifyOnEnter?: boolean;
+  notifyOnExit?: boolean;
+  notifyFavoritesOnly?: boolean;
   from: number;
   timestamp: number;
 }
