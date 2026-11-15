@@ -56,22 +56,25 @@ function nodeMap(peerCount: number, hopsAway: number): Map<number, MeshNode> {
 }
 
 describe('PeerGraphPanel', () => {
-  it('always shows the 400/48 limit note', () => {
+  it('always shows the visible-node limit note', () => {
     render(<PeerGraphPanel nodes={nodeMap(3, 1)} myNodeId={1} />);
-    expect(screen.getByText('peerGraph.visibleNodeLimitNote:400')).toBeInTheDocument();
+    expect(screen.getByText('peerGraph.visibleNodeLimitNote:1000')).toBeInTheDocument();
   });
 
-  it('defaults to distant peers off and max hops 2', () => {
+  it('defaults to max hops 2', () => {
     render(<PeerGraphPanel nodes={nodeMap(3, 1)} myNodeId={1} />);
-    expect(screen.getByLabelText<HTMLInputElement>('peerGraph.showDistantPeers').checked).toBe(
-      false,
-    );
     expect(screen.getByLabelText<HTMLSelectElement>('peerGraph.maxHopsFilter').value).toBe('2');
   });
 
-  it('shows the full 168-node set when distant peers are on and max hops is all', () => {
+  it('shows MeshCore hop presets above 8 when hopLimitMax is 64', () => {
+    render(<PeerGraphPanel nodes={nodeMap(3, 1)} myNodeId={1} hopLimitMax={64} />);
+    expect(screen.getByText('peerGraph.maxHopsOption:16')).toBeInTheDocument();
+    expect(screen.getByText('peerGraph.maxHopsOption:32')).toBeInTheDocument();
+    expect(screen.getByText('peerGraph.maxHopsOption:64')).toBeInTheDocument();
+  });
+
+  it('shows the full 168-node set when Show all', () => {
     render(<PeerGraphPanel nodes={nodeMap(167, 1)} myNodeId={1} />);
-    fireEvent.click(screen.getByLabelText('peerGraph.showDistantPeers'));
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
       target: { value: 'all' },
     });
@@ -80,24 +83,31 @@ describe('PeerGraphPanel', () => {
     expect(screen.getByText(/peerGraph\.nodeCount:168/)).toBeInTheDocument();
   });
 
-  it('does not treat 1-hop nodes as distant: 80 one-hop nodes all show with distant off', () => {
-    render(<PeerGraphPanel nodes={nodeMap(80, 1)} myNodeId={1} />);
-    expect(screen.getByText(/peerGraph\.nodeCount:81/)).toBeInTheDocument();
-    expect(screen.queryByText(/peerGraph\.hiddenCount/)).not.toBeInTheDocument();
+  it('shows multi-hop peers with Show all alone (no distant-peers checkbox)', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, 0)],
+      [2, node(2, 1)],
+      [3, node(3, 5)],
+    ]);
+    render(<PeerGraphPanel nodes={nodes} myNodeId={1} />);
+    fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
+      target: { value: 'all' },
+    });
+    expect(screen.getByText('N2')).toBeInTheDocument();
+    expect(screen.getByText('N3')).toBeInTheDocument();
   });
 
-  it('uses graph-limit copy with 400 when distant peers are on and over the cap', () => {
-    render(<PeerGraphPanel nodes={nodeMap(401, 1)} myNodeId={1} />);
-    fireEvent.click(screen.getByLabelText('peerGraph.showDistantPeers'));
+  it('uses graph-limit copy with 1000 when Show all and over the cap', () => {
+    render(<PeerGraphPanel nodes={nodeMap(1001, 1)} myNodeId={1} />);
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
       target: { value: 'all' },
     });
     expect(screen.getByText(/peerGraph\.hiddenCountLimit:/)).toBeInTheDocument();
-    expect(screen.getByText(/peerGraph\.hiddenCountLimit:/).textContent).toContain('/400');
+    expect(screen.getByText(/peerGraph\.hiddenCountLimit:/).textContent).toContain('/1000');
     expect(screen.queryByText(/peerGraph\.hiddenCount:\d/)).not.toBeInTheDocument();
   });
 
-  it('shows 2-hop nodes at the Graph default (distant off, max hops 2)', () => {
+  it('shows 2-hop nodes at the Graph default (max hops 2)', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, 0)],
       [2, node(2, 1)],
@@ -109,18 +119,12 @@ describe('PeerGraphPanel', () => {
     expect(screen.getByText('N3')).toBeInTheDocument();
     expect(screen.queryByText('N4')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
-      target: { value: '8' },
+      target: { value: '7' },
     });
     expect(screen.getByText('N4')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
-      target: { value: 'all' },
-    });
-    expect(screen.getByText('N2')).toBeInTheDocument();
-    expect(screen.queryByText('N3')).not.toBeInTheDocument();
-    expect(screen.queryByText('N4')).not.toBeInTheDocument();
   });
 
-  it('excludes unknown-hop nodes when max hops is numeric, even with distant on', () => {
+  it('excludes unknown-hop nodes when max hops is numeric; includes them on Show all', () => {
     const unknown: MeshNode = { ...node(3, 1), hops_away: undefined };
     const nodes = new Map<number, MeshNode>([
       [1, node(1, 0)],
@@ -128,7 +132,6 @@ describe('PeerGraphPanel', () => {
       [3, unknown],
     ]);
     render(<PeerGraphPanel nodes={nodes} myNodeId={1} />);
-    fireEvent.click(screen.getByLabelText('peerGraph.showDistantPeers'));
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
       target: { value: '1' },
     });
@@ -140,12 +143,11 @@ describe('PeerGraphPanel', () => {
     expect(screen.getByText('N3')).toBeInTheDocument();
   });
 
-  it('changes the rendered node count when max hops changes with distant peers on', () => {
+  it('changes the rendered node count when max hops changes', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, 0)]]);
     for (let i = 2; i <= 31; i++) nodes.set(i, node(i, 1));
     for (let i = 32; i <= 71; i++) nodes.set(i, node(i, 3));
     render(<PeerGraphPanel nodes={nodes} myNodeId={1} />);
-    fireEvent.click(screen.getByLabelText('peerGraph.showDistantPeers'));
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
       target: { value: 'all' },
     });

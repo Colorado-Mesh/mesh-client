@@ -819,9 +819,11 @@ function OverviewMapPanel({
       return null;
     }
 
+    // MeshCore hopLimitRange max is 64 (not Meshtastic's 7).
+    const MESHCORE_ROUTE_WEIGHT_MAX_HOPS = 64;
     const weights = fallbackPeers.map((n) => {
-      const h = Math.min(7, Math.max(0, n.hops_away ?? 0));
-      return 8 - h;
+      const h = Math.min(MESHCORE_ROUTE_WEIGHT_MAX_HOPS, Math.max(0, n.hops_away ?? 0));
+      return MESHCORE_ROUTE_WEIGHT_MAX_HOPS + 1 - h;
     });
     const maxWeight = Math.max(...weights, 1);
 

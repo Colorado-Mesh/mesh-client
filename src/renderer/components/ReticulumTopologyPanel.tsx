@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -30,6 +30,7 @@ import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   topologyGraphVisibleNodeCap,
+  topologyHopFilterOptions,
 } from '@/renderer/lib/topologyGraphLimits';
 import { runTopologyBuild } from '@/renderer/lib/workers/runTopologyBuild';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
@@ -227,17 +228,15 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [includeDistantPeers, setIncludeDistantPeers] = useState(true);
   const [maxHops, setMaxHops] = useState<number | null>(null);
   const [rfOnly, setRfOnly] = useState(false);
-  const includeDistantPeersRef = useRef(includeDistantPeers);
+  const hopOptions = useMemo(() => topologyHopFilterOptions(128), []);
   const maxHopsRef = useRef(maxHops);
   const rfOnlyRef = useRef(rfOnly);
   useLayoutEffect(() => {
-    includeDistantPeersRef.current = includeDistantPeers;
     maxHopsRef.current = maxHops;
     rfOnlyRef.current = rfOnly;
-  }, [includeDistantPeers, maxHops, rfOnly]);
+  }, [maxHops, rfOnly]);
 
   const snapshotRafRef = useRef<number | null>(null);
   const refreshGenerationRef = useRef(0);
@@ -326,7 +325,6 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     if (!cached) return;
     const uniquePeers = selectReticulumTopologyPeersForRender(cached.peers, cached.interfaces, {
       rfOnly,
-      includeDistantPeers,
       maxHops,
     });
     const width = svgRef.current?.clientWidth ?? 800;
@@ -347,7 +345,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
         cx: width / 2,
         cy: height / 2,
-        filter: { includeDistantPeers, maxHops, rfOnly },
+        filter: { maxHops, rfOnly },
         serverPeerHashes: new Set(
           [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
         ),
@@ -360,7 +358,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
       .catch((e: unknown) => {
         console.debug('[ReticulumTopologyPanel] rebuild ' + errLikeToLogString(e));
       });
-  }, [applyGraph, includeDistantPeers, maxHops, rfOnly, t]);
+  }, [applyGraph, maxHops, rfOnly, t]);
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
@@ -402,7 +400,6 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           rebuildGenerationRef.current += 1;
           const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
             rfOnly: rfOnlyRef.current,
-            includeDistantPeers: includeDistantPeersRef.current,
             maxHops: maxHopsRef.current,
           });
 
@@ -428,7 +425,6 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
               cx: width / 2,
               cy: height / 2,
               filter: {
-                includeDistantPeers: includeDistantPeersRef.current,
                 maxHops: maxHopsRef.current,
                 rfOnly: rfOnlyRef.current,
               },
@@ -542,14 +538,12 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           {t('common.refresh')}
         </button>
         <TopologyHopFilterControls
-          includeDistantPeers={includeDistantPeers}
-          onIncludeDistantPeersChange={setIncludeDistantPeers}
           maxHops={maxHops}
           onMaxHopsChange={setMaxHops}
-          showDistantPeersLabel={t('reticulumTopology.showDistantPeers')}
           maxHopsFilterLabel={t('reticulumTopology.maxHopsFilter')}
           maxHopsAllLabel={t('reticulumTopology.maxHopsAll')}
           maxHopsOptionLabel={(hops) => t('reticulumTopology.maxHopsOption', { count: hops })}
+          hopOptions={hopOptions}
         />
         <label className="text-ink-400 flex items-center gap-1.5">
           <input

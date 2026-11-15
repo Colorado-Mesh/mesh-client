@@ -127,14 +127,11 @@ describe('ReticulumTopologyPanel', () => {
     expect(container.querySelector('title')?.textContent).toContain('Home Wi-Fi');
   });
 
-  it('always shows the 400/48 limit note and RF-only default off', async () => {
+  it('always shows the 1000 limit note, Show all default, and RF-only default off', async () => {
     render(<ReticulumTopologyPanel />);
     await waitFor(() => {
-      expect(screen.getByText('reticulumTopology.visibleNodeLimitNote:400')).toBeInTheDocument();
+      expect(screen.getByText('reticulumTopology.visibleNodeLimitNote:1000')).toBeInTheDocument();
     });
-    expect(
-      screen.getByLabelText<HTMLInputElement>('reticulumTopology.showDistantPeers').checked,
-    ).toBe(true);
     expect(screen.getByLabelText<HTMLSelectElement>('reticulumTopology.maxHopsFilter').value).toBe(
       'all',
     );
@@ -286,7 +283,7 @@ describe('ReticulumTopologyPanel', () => {
     });
   });
 
-  it('keeps hop-4 RF peers when distant is off and max hops is 8', async () => {
+  it('keeps hop-4 RF peers when max hops is 8 and hides them when max hops is 2', async () => {
     fetchReticulumInterfaces.mockResolvedValue([
       { id: 'rnode-1', name: 'RNode 41F4', type: 'rnode', enabled: true, status: 'up' },
     ]);
@@ -320,7 +317,9 @@ describe('ReticulumTopologyPanel', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'RF Far' })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText('reticulumTopology.showDistantPeers'));
+    fireEvent.change(screen.getByLabelText('reticulumTopology.maxHopsFilter'), {
+      target: { value: '2' },
+    });
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'RF Near' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'RF Far' })).not.toBeInTheDocument();
@@ -333,7 +332,7 @@ describe('ReticulumTopologyPanel', () => {
     });
   });
 
-  it('shows 168 nodes when distant peers are on and max hops is all', async () => {
+  it('shows 168 nodes when Show all', async () => {
     const nodes = Array.from({ length: 167 }, (_, i) => ({
       destination_hash: `p${i.toString(16).padStart(8, '0')}`,
       display_name: `Peer ${i}`,
