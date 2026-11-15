@@ -1,5 +1,6 @@
 /**
  * Optional Live traffic hop tones: pitch from geographic hop distance; length matches hop flight.
+ * Pitches are quantized to one harmonic series so concurrent hops stay consonant.
  * Honors global chat notification mute (`mesh-client:notifMuted`).
  */
 
@@ -10,16 +11,28 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 export const LIVE_TRAFFIC_HOP_TONES_STORAGE_KEY = 'mesh-client:liveTrafficHopTones';
 
-/** Shortest hop distance that maps to the highest pitch. */
+/** Shortest hop distance that maps to the highest harmonic. */
 export const HOP_TONE_MIN_DISTANCE_KM = 0.5;
-/** Longest hop distance that maps to the lowest pitch. */
+/** Longest hop distance that maps to the lowest harmonic. */
 export const HOP_TONE_MAX_DISTANCE_KM = 200;
 
-export const HOP_TONE_MAX_FREQ_HZ = 880;
-export const HOP_TONE_MIN_FREQ_HZ = 150;
+/** Common fundamental so every hop pitch is an integer multiple (no inharmonic “whale” slides). */
+export const HOP_TONE_FUNDAMENTAL_HZ = 110;
 
-const HOP_TONE_GAIN = 0.28;
-const HOP_TONE_FADE_MS = 60;
+/**
+ * Harmonic numbers (n × fundamental), low → high.
+ * Short hops use higher harmonics; long hops use lower ones.
+ */
+export const HOP_TONE_HARMONIC_NS = [2, 3, 4, 5, 6, 8] as const;
+
+export const HOP_TONE_MIN_FREQ_HZ = HOP_TONE_FUNDAMENTAL_HZ * HOP_TONE_HARMONIC_NS[0];
+export const HOP_TONE_MAX_FREQ_HZ =
+  HOP_TONE_FUNDAMENTAL_HZ * HOP_TONE_HARMONIC_NS[HOP_TONE_HARMONIC_NS.length - 1];
+
+const HOP_TONE_GAIN = 0.2;
+const HOP_TONE_OVERTONE_GAIN = 0.08;
+const HOP_TONE_ATTACK_MS = 12;
+const HOP_TONE_FADE_MS = 80;
 const MAX_CONCURRENT_TONES = 8;
 
 export interface LiveTrafficHopTone {
@@ -90,8 +103,13 @@ export function hopDistanceKm(segment: LiveTrafficSegment): number {
   return haversineDistanceKm(segment.from.lat, segment.from.lon, segment.to.lat, segment.to.lon);
 }
 
+/** Harmonic series pitches (integer multiples of {@link HOP_TONE_FUNDAMENTAL_HZ}), low → high. */
+export function hopToneHarmonicFrequenciesHz(): readonly number[] {
+  return HOP_TONE_HARMONIC_NS.map((n) => HOP_TONE_FUNDAMENTAL_HZ * n);
+}
+
 /**
- * Map geographic hop length to pitch: shorter → higher, longer → lower.
+ * Map geographic hop length to a harmonic-series pitch: shorter → higher, longer → lower.
  * Duration is supplied separately so it can match the animated hop flight.
  */
 export function frequencyForHopDistanceKm(km: number): number | null {
@@ -100,11 +118,44 @@ export function frequencyForHopDistanceKm(km: number): number | null {
   const logMin = Math.log(HOP_TONE_MIN_DISTANCE_KM);
   const logMax = Math.log(HOP_TONE_MAX_DISTANCE_KM);
   const t = (Math.log(clamped) - logMin) / (logMax - logMin);
-  return HOP_TONE_MAX_FREQ_HZ + (HOP_TONE_MIN_FREQ_HZ - HOP_TONE_MAX_FREQ_HZ) * t;
+  // t=0 (short) → highest harmonic index; t=1 (long) → lowest.
+  const freqs = hopToneHarmonicFrequenciesHz();
+  const index = Math.max(0, Math.min(freqs.length - 1, Math.round((1 - t) * (freqs.length - 1))));
+  return freqs[index] ?? HOP_TONE_MIN_FREQ_HZ;
 }
 
 export function frequencyForHopSegment(segment: LiveTrafficSegment): number | null {
   return frequencyForHopDistanceKm(hopDistanceKm(segment));
+}
+
+function schedulePartial(
+  ctx: AudioContext,
+  frequencyHz: number,
+  gainLevel: number,
+  durationSec: number,
+  startTime: number,
+  onEnded: () => void,
+): void {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = frequencyHz;
+  const attackSec = Math.min(HOP_TONE_ATTACK_MS / MS_PER_SECOND, durationSec / 4);
+  const fadeSec = Math.min(HOP_TONE_FADE_MS / MS_PER_SECOND, durationSec / 2);
+  const sustainEnd = startTime + Math.max(attackSec, durationSec - fadeSec);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(gainLevel, startTime + attackSec);
+  gain.gain.setValueAtTime(gainLevel, sustainEnd);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+    onEnded();
+  };
+  osc.start(startTime);
+  osc.stop(startTime + durationSec);
 }
 
 function playTonePulse(
@@ -113,25 +164,23 @@ function playTonePulse(
   durationSec: number,
   startTime: number,
 ): void {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.frequency.value = frequencyHz;
-  const fadeSec = Math.min(HOP_TONE_FADE_MS / MS_PER_SECOND, durationSec / 2);
-  const sustainEnd = startTime + Math.max(0, durationSec - fadeSec);
-  gain.gain.setValueAtTime(HOP_TONE_GAIN, startTime);
-  gain.gain.setValueAtTime(HOP_TONE_GAIN, sustainEnd);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
-  osc.onended = () => {
-    osc.disconnect();
-    gain.disconnect();
-    activeToneCount = Math.max(0, activeToneCount - 1);
-  };
+  // Track both partials against the concurrent-tone budget as one voice.
   activeToneCount += 1;
-  osc.start(startTime);
-  osc.stop(startTime + durationSec);
+  let remainingPartials = 2;
+  const finishPartial = () => {
+    remainingPartials -= 1;
+    if (remainingPartials <= 0) activeToneCount = Math.max(0, activeToneCount - 1);
+  };
+  schedulePartial(ctx, frequencyHz, HOP_TONE_GAIN, durationSec, startTime, finishPartial);
+  // Quiet octave (always harmonic) keeps the tone from sounding like a lone mournful sine.
+  schedulePartial(
+    ctx,
+    frequencyHz * 2,
+    HOP_TONE_OVERTONE_GAIN,
+    durationSec,
+    startTime,
+    finishPartial,
+  );
 }
 
 export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
