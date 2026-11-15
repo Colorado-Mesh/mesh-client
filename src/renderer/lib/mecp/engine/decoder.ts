@@ -1,4 +1,5 @@
-// Vendored from https://github.com/xiang-dev-1/MECP (GPLv3). Do not edit without attribution.
+// Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
+// follow MECP 1.2.1 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Decoder — Parses MECP message strings into structured data.
@@ -7,18 +8,9 @@
  * Pure function: string in, ParsedMessage out. No I/O, no side effects.
  */
 
+import { extractFreetextConventions } from './freetextExtract';
 import type { ParsedMessage, Severity } from './types';
 import { CODE_REGEX, MECP_PREFIX, VALID_SEVERITIES } from './types';
-
-/** Regex patterns for freetext extraction */
-const PATTERNS = {
-  count: /(\d+)pax/,
-  gps: /(-?\d+\.\d+),(-?\d+\.\d+)/,
-  reference: /#([A-Za-z0-9]{1,4})/,
-  languageHint: /@([a-z]{2})(?:\s|$)/,
-  timestamp: /@(\d{4})(?:\s|$)/,
-  callsign: /~([A-Za-z0-9]{1,9})(?:\s|$)/,
-};
 
 /**
  * Decode an MECP message string into a structured ParsedMessage.
@@ -36,7 +28,8 @@ export function decode(input: string): ParsedMessage {
     extracted: {
       count: null,
       gps: null,
-      eta: null,
+      duration: null,
+      durationToken: null,
       reference: null,
       language: null,
       timestamp: null,
@@ -83,8 +76,9 @@ export function decode(input: string): ParsedMessage {
   let freetextStartIndex = -1;
 
   for (let i = 0; i < tokens.length; i++) {
-    if (CODE_REGEX.test(tokens[i])) {
-      result.codes.push(tokens[i]);
+    const token = tokens[i];
+    if (CODE_REGEX.test(token)) {
+      result.codes.push(token);
     } else {
       // This token and everything after is freetext
       freetextStartIndex = i;
@@ -92,65 +86,23 @@ export function decode(input: string): ParsedMessage {
     }
   }
 
-  // Collect freetext
+  // Collect freetext (preserve original spacing after the first non-code token)
   if (freetextStartIndex >= 0) {
-    result.freetext = tokens.slice(freetextStartIndex).join(' ');
-  }
-
-  // Step 6: Extract structured patterns from freetext
-  const textToSearch = result.freetext || '';
-
-  // 6a: Person count (Npax)
-  const countMatch = PATTERNS.count.exec(textToSearch);
-  if (countMatch) {
-    result.extracted.count = parseInt(countMatch[1], 10);
-  }
-
-  // 6b: GPS coordinates
-  const gpsMatch = PATTERNS.gps.exec(textToSearch);
-  if (gpsMatch) {
-    const lat = parseFloat(gpsMatch[1]);
-    const lon = parseFloat(gpsMatch[2]);
-    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-      result.extracted.gps = { lat, lon };
+    // Rebuild from the original body so punctuation/spacing in freetext is preserved
+    let consumed = 0;
+    for (let i = 0; i < freetextStartIndex; i++) {
+      const tok = tokens[i];
+      const at = body.indexOf(tok, consumed);
+      consumed = at + tok.length;
+      while (body.charAt(consumed) === ' ') consumed++;
     }
+    result.freetext = body.slice(consumed).trimEnd();
+    if (result.freetext.length === 0) result.freetext = null;
   }
 
-  // 6c: ETA (bare integer after R03)
-  if (result.codes.includes('R03') && result.freetext) {
-    const etaMatch = /^(\d+)(?:\s|$)/.exec(result.freetext);
-    if (etaMatch) {
-      result.extracted.eta = parseInt(etaMatch[1], 10);
-    }
-  }
-
-  // 6d: Incident reference tag (#tag)
-  const refMatch = PATTERNS.reference.exec(textToSearch);
-  if (refMatch) {
-    result.extracted.reference = refMatch[1];
-  }
-
-  // 6e: Sender language hint (@xx — two lowercase letters)
-  const langMatch = PATTERNS.languageHint.exec(textToSearch);
-  if (langMatch) {
-    result.extracted.language = langMatch[1];
-  }
-
-  // 6f: Composition timestamp (@HHMM — four digits)
-  const tsMatch = PATTERNS.timestamp.exec(textToSearch);
-  if (tsMatch) {
-    const hh = parseInt(tsMatch[1].substring(0, 2), 10);
-    const mm = parseInt(tsMatch[1].substring(2, 4), 10);
-    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
-      result.extracted.timestamp = tsMatch[1];
-    }
-  }
-
-  // 6g: Sender callsign (~CALLSIGN)
-  const csMatch = PATTERNS.callsign.exec(textToSearch);
-  if (csMatch) {
-    result.extracted.callsign = csMatch[1];
-  }
+  // Step 6: Extract structured patterns from freetext (MECP 1.2.1 §6.1)
+  const extracted = extractFreetextConventions(result.freetext || '', result.codes);
+  result.extracted = extracted;
 
   // Step 7: Drill detection
   // Only D01 and D02 set isDrill. D03 and D04 do NOT.

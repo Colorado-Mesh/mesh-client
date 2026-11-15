@@ -7238,7 +7238,8 @@
       "standingAlert": "Incident Commandostation (staand alarm)",
       "standingAlertHint": "Standaard uitgeschakeld. Voor EOC's en bewaakte stations: houdt een rode banner omhoog en knippert de taakbalk of stuitert het dock totdat iemand naar elke nieuwe MAYDAY of URGENT kijkt. Iedereen hoort nog steeds de eenmalige alarmtoon en ziet de toost.",
       "showComposeButtons": "Toon MECP-knoppen in de chat",
-      "showComposeButtonsHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een rode aanvraag-/rapportknop en een blauwe antwoordknop."
+      "showComposeButtonsHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een rode aanvraag-/rapportknop en een blauwe antwoordknop.",
+      "protocolVersion": "Houdt zich aan MECP {{version}}"
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek",
     "block": {

@@ -7238,7 +7238,8 @@
       "standingAlert": "Einsatzleitstelle (Standalarm)",
       "standingAlertHint": "Standardmäßig ausgeschaltet. Für EOCs und überwachte Stationen: Lässt ein rotes Banner hoch und blinkt die Taskleiste oder springt das Dock, bis jemand jeden neuen MAYDAY oder jede neue DRINGLICHKEIT ansieht. Jeder hört immer noch den einmaligen Alarmton und sieht den Toast.",
       "showComposeButtons": "MECP-Schaltflächen im Chat anzeigen",
-      "showComposeButtonsHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine rote Anforderungs-/Bericht-Schaltfläche und eine blaue Antwort-Schaltfläche an."
+      "showComposeButtonsHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine rote Anforderungs-/Bericht-Schaltfläche und eine blaue Antwort-Schaltfläche an.",
+      "protocolVersion": "Hält sich an MECP {{version}}"
     },
     "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll",
     "block": {

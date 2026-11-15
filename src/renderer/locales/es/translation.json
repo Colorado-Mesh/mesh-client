@@ -7238,7 +7238,8 @@
       "standingAlert": "Estación de comando de incidentes (alerta permanente)",
       "standingAlertHint": "Desactivado de forma predeterminada. Para EOC y estaciones monitoreadas: mantiene un banner rojo y parpadea la barra de tareas o rebota el muelle hasta que alguien mira cada nuevo MAYDAY o URGENTE. Todos todavía escuchan el tono de alerta de una sola vez y ven el brindis.",
       "showComposeButtons": "Mostrar botones MECP en el chat",
-      "showComposeButtonsHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón rojo de solicitud/informe y un botón azul de respuesta."
+      "showComposeButtonsHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón rojo de solicitud/informe y un botón azul de respuesta.",
+      "protocolVersion": "Cumple con la MECP {{version}}"
     },
     "exportLogEmpty": "Aún no hay mensajes MECP en el registro recibido",
     "block": {

@@ -85,6 +85,21 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
   return words.join(' ');
 }
 
+/**
+ * Remove the original Duration token from freetext once its minutes were folded
+ * into a code meaning. Uses the matched wire token (`1h`, `2d`, `ETA 45min`),
+ * never the converted minute count, so road numbers are not stripped.
+ */
+function stripDurationToken(freetext: string, token: string): string {
+  const trimmed = token.trim();
+  if (!trimmed) return freetext;
+  const at = freetext.indexOf(trimmed);
+  if (at < 0) return freetext;
+  return `${freetext.slice(0, at)}${freetext.slice(at + trimmed.length)}`
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** `🆘 MAYDAY`, or `DRILL 🆘 MAYDAY` for a drill. */
 export function takMecpHeadline(
   severity: 0 | 1 | 2 | 3,
@@ -107,24 +122,24 @@ export function describeMecpForTak(
   t: TakMecpTranslate,
 ): string {
   const head = takMecpHeadline(parsed.severity ?? 3, parsed.isDrill, t);
-  const { count, gps, eta } = parsed.extracted;
+  const { count, gps, duration, durationToken } = parsed.extracted;
   const meanings = parsed.codes.map((code) => lang.codes[code] as string | undefined);
   const countInCode = count != null && meanings.some((m) => m?.includes(COUNT_PLACEHOLDER));
-  const etaInCode =
-    eta != null && meanings.some((m) => m !== undefined && MINUTES_PLACEHOLDER_RE.test(m));
+  const durationInCode =
+    duration != null && meanings.some((m) => m !== undefined && MINUTES_PLACEHOLDER_RE.test(m));
   const parts = parsed.codes.map((code, i) => {
     let meaning = meanings[i];
     if (meaning === undefined) return code;
     if (count != null) meaning = meaning.replace(COUNT_PLACEHOLDER, String(count));
-    if (eta != null) meaning = meaning.replace(MINUTES_PLACEHOLDER_RE, String(eta));
+    if (duration != null) meaning = meaning.replace(MINUTES_PLACEHOLDER_RE, String(duration));
     return meaning;
   });
   if (count != null && !countInCode) parts.push(t('mecp.atakPeople', { count }));
   if (gps) parts.push(`${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}`);
   let rest = stripMecpCoordsFromFreetext(parsed.freetext ?? '');
   if (count != null) rest = withoutWord(rest, (w) => w.toLowerCase() === `${count}pax`);
-  // The minutes leave the free text only once the sentence shows them.
-  if (etaInCode) rest = withoutWord(rest, (w) => w === String(eta));
+  // The original Duration token leaves the free text once the sentence shows the minutes.
+  if (durationInCode && durationToken) rest = stripDurationToken(rest, durationToken);
   if (rest) parts.push(`“${rest}”`);
   return parts.length > 0 ? `${head}: ${parts.join(' · ')}` : head;
 }

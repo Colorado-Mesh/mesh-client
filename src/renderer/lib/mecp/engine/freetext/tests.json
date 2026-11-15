@@ -1,0 +1,137 @@
+[
+  {
+    "convention": "timestamp",
+    "input": "MECP/3/L06 @2460 @1400 @1530",
+    "expect": { "timestamp": "14:00" }
+  },
+  {
+    "convention": "timestamp",
+    "input": "MECP/3/L06 @9999",
+    "expect": {}
+  },
+  {
+    "convention": "timestamp",
+    "input": "MECP/3/L01 @123",
+    "expect": { "timestamp": "01:23" }
+  },
+  {
+    "convention": "timestamp",
+    "input": "MECP/2/T05 @1430,",
+    "expect": { "timestamp": "14:30" }
+  },
+  {
+    "convention": "timestamp",
+    "input": "MECP/2/T05 meet@1430",
+    "expect": {}
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #base-camp,",
+    "expect": { "reference": "base-camp" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 (#tag)",
+    "expect": { "reference": "tag" }
+  },
+  {
+    "convention": "pax",
+    "input": "MECP/1/S01 3paxmore",
+    "expect": {}
+  },
+  {
+    "convention": "pax",
+    "input": "MECP/1/S01 0pax 2pax",
+    "expect": { "pax": 2 }
+  },
+  {
+    "convention": "pax",
+    "input": "MECP/1/S01 04pax",
+    "expect": { "pax": 4 }
+  },
+  {
+    "convention": "gps",
+    "input": "MECP/3/L06 95.0,200.0 47.3,8.5",
+    "expect": { "gps": { "lat": 47.3, "lon": 8.5 } }
+  },
+  {
+    "convention": "gps",
+    "input": "MECP/3/L02 2,5 km",
+    "expect": {}
+  },
+  {
+    "convention": "callsign",
+    "input": "MECP/3/L20 ~DL/OK1ABC",
+    "expect": { "callsign": "DL/OK1ABC" }
+  },
+  {
+    "convention": "callsign",
+    "input": "MECP/3/L20 ~ABCDEFGHIJKLM ~OK1ABC",
+    "expect": { "callsign": "OK1ABC" }
+  },
+  {
+    "convention": "language",
+    "input": "MECP/3/L04 @zh_CN",
+    "expect": { "language": "zh-cn" }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45min",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 2d",
+    "expect": { "duration": 2880 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 48h",
+    "expect": { "duration": 2880 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 2880min",
+    "expect": { "duration": 2880 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 ETA 45min",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/C01 R03 P05 47.3769,12.1048 45min",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/3/L06 45min",
+    "expect": {}
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/C01 R03 1pax 45",
+    "expect": {}
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 ",
+    "expect": { "valid": false }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/t05 x",
+    "expect": { "valid": false }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 T05 damaged",
+    "expect": { "valid": true }
+  }
+]

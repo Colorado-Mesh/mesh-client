@@ -619,12 +619,14 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 )
 
 # Non-Ratspeak vendored upstreams (same file:<path>@<sha> reviewed-ref format).
-# Keep in sync when re-vendoring MECP engine/languages from https://github.com/xiang-dev-1/MECP
-# engine/src pin is the commit that removed the path (moved to mecp-app); we keep the last
-# vendored engine copy and treat further engine/src history as reviewed-closed.
+# Protocol + language packs: https://github.com/mecp-org/MECP (default branch main).
+# Reference engine lives in https://github.com/mecp-org/mecp-app — mesh-client's
+# freetext decode is intentionally ahead of mecp-app until that engine implements
+# MECP 1.2.1 §6.1 patterns; bump the engine pin when re-syncing from mecp-app.
 MECP_UPSTREAM_WATCH_ENTRIES=(
-  'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@0b7123aef545542955334a8dbaa69a6bab897666'
-  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@c8fefd595944f6db67e628c6db259efbc46b6bd1'
+  'mecp-org/mecp-app||MECP engine (vendored in renderer)|file:engine/src@59090c8d157754216261018aba1bdae61c28184d'
+  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@f274b8e96e59382d4c5174db45cf2a2555220c78'
+  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@5a86f9d094e255a3ee48bfd244dd4f9c11f519b1'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.
@@ -918,7 +920,7 @@ fi
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'mecp-prs-only' ]; then
   HAS_WARNING=0
   MECP_PR_WATCH_ENTRIES=(
-    'xiang-dev-1/MECP|5|M16 medical supply drop|https://github.com/xiang-dev-1/MECP/pull/5'
+    'mecp-org/MECP|5|M16 medical supply drop|https://github.com/mecp-org/MECP/pull/5'
   )
   check_mecp_prs
   printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"

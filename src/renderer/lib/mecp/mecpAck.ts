@@ -21,8 +21,9 @@ const ACK_MARKER_CODES: ReadonlySet<string> = new Set([
   MECP_BEACON_CANCEL_CODE,
 ]);
 
-/** Decoder callsign pattern is `~[A-Za-z0-9]{1,9}`. */
-const CALLSIGN_MAX_LEN = 9;
+/** MECP 1.2.1 callsign: `~([A-Z0-9]+(?:/[A-Z0-9]+)*)`, max 12 characters. */
+const CALLSIGN_MAX_LEN = 12;
+const CALLSIGN_SEGMENT_RE = /^[A-Za-z0-9]+$/;
 
 export function isGeneralAck(codes: readonly string[]): boolean {
   return codes.includes(MECP_ACK_CODE);
@@ -33,9 +34,28 @@ export function echoedAckCodes(codes: readonly string[]): string[] {
   return [...new Set(codes.filter((c) => !ACK_MARKER_CODES.has(c)))];
 }
 
+/**
+ * Canonical encode form: uppercase A–Z / 0–9 segments joined by `/`, ≤12 chars.
+ * Drops empty / invalid segments; truncates from the end if over the limit.
+ */
 function sanitizeCallsign(callsign: string | undefined): string {
   if (!callsign) return '';
-  return callsign.replace(/[^A-Za-z0-9]/g, '').slice(0, CALLSIGN_MAX_LEN);
+  const segments = callsign
+    .split('/')
+    .map((s) => s.replace(/[^A-Za-z0-9]/g, '').toUpperCase())
+    .filter((s) => CALLSIGN_SEGMENT_RE.test(s));
+  if (segments.length === 0) return '';
+  let out = segments.join('/');
+  while (out.length > CALLSIGN_MAX_LEN && segments.length > 0) {
+    const last = segments[segments.length - 1];
+    if (last.length > 1) {
+      segments[segments.length - 1] = last.slice(0, -1);
+    } else {
+      segments.pop();
+    }
+    out = segments.join('/');
+  }
+  return out.length <= CALLSIGN_MAX_LEN ? out : out.slice(0, CALLSIGN_MAX_LEN);
 }
 
 function truncateToBytes(text: string, maxBytes: number): string {

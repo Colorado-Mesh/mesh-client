@@ -1,4 +1,4 @@
-// Vendored from https://github.com/xiang-dev-1/MECP (GPLv3). Do not edit without attribution.
+// Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Do not edit without attribution.
 
 /**
  * MECP Encoder — Composes structured data into MECP message strings.

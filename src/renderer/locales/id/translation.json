@@ -7238,7 +7238,8 @@
       "standingAlert": "Stasiun Komando Insiden (peringatan berdiri)",
       "standingAlertHint": "Mati secara default. Untuk EOC dan stasiun yang dipantau: pasang spanduk merah dan nyalakan bilah tugas atau pantulkan dok sampai seseorang melihat setiap MAYDAY baru atau MENDESAK. Semua orang masih mendengar nada peringatan satu kali dan melihat roti panggang.",
       "showComposeButtons": "Tampilkan tombol MECP di Obrolan",
-      "showComposeButtonsHint": "Mati secara default. Saat diaktifkan, Obrolan menunjukkan tombol permintaan/laporan merah dan tombol respons biru."
+      "showComposeButtonsHint": "Mati secara default. Saat diaktifkan, Obrolan menunjukkan tombol permintaan/laporan merah dan tombol respons biru.",
+      "protocolVersion": "Mematuhi MECP {{version}}"
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima",
     "block": {

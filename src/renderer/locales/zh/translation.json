@@ -7238,7 +7238,8 @@
       "standingAlert": "事故指挥站（常备警报）",
       "standingAlertHint": "默认情况下关闭。对于EOC和监控站：保持红色横幅并闪烁任务栏或反弹码头，直到有人查看每个新的MAYDAY或紧急情况。每个人仍然听到一次性的警报声，看到了祝酒词。",
       "showComposeButtons": "在聊天中显示MECP按钮",
-      "showComposeButtonsHint": "默认情况下关闭。启用时，聊天显示红色请求/报告按钮和蓝色响应按钮。"
+      "showComposeButtonsHint": "默认情况下关闭。启用时，聊天显示红色请求/报告按钮和蓝色响应按钮。",
+      "protocolVersion": "遵守MECP {{version}}"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息",
     "block": {

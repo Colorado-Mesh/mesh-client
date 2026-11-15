@@ -50,10 +50,17 @@ describe('composeGeneralAck', () => {
     expect(echoedAckCodes(parsed.codes)).toEqual(['M01', 'P05']);
   });
 
-  it('dedupes R01, drops invalid codes, and sanitizes callsign', () => {
+  it('dedupes R01, drops invalid codes, and sanitizes callsign (slash + max 12)', () => {
     const msg = composeGeneralAck(2, ['R01', 'bad', 'T04'], { callsign: 'W1-AW/portable' });
-    expect(msg).toBe('MECP/2/R01 T04 ~W1AWporta');
-    expect(tryParseMecp(msg)!.extracted.callsign).toBe('W1AWporta');
+    // W1AW/PORTABLE is 13 chars → truncate last segment to 12.
+    expect(msg).toBe('MECP/2/R01 T04 ~W1AW/PORTABL');
+    expect(tryParseMecp(msg)!.extracted.callsign).toBe('W1AW/PORTABL');
+  });
+
+  it('preserves ITU-style slash callsigns within the 12-char bound', () => {
+    const msg = composeGeneralAck(3, ['L20'], { callsign: 'VK2/OK1ABC/P' });
+    expect(msg).toBe('MECP/3/R01 L20 ~VK2/OK1ABC/P');
+    expect(tryParseMecp(msg)!.extracted.callsign).toBe('VK2/OK1ABC/P');
   });
 
   it('stays under the byte limit and keeps the callsign', () => {

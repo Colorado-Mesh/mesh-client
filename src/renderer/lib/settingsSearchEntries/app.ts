@@ -1031,6 +1031,7 @@ export const appSurface: SettingsSearchSurface = {
     'chatPanel.clearChannelMessagesRadioChanged': 'warning toast, not a control',
     'radioPanel.directMessages': 'channel option label in the Danger Zone clear-messages picker',
     'mecp.section.hint': 'section prose, no control',
+    'mecp.section.protocolVersion': 'adherence claim prose, no control',
     'mecp.section.showComposeButtonsHint': 'help text for the indexed MECP compose toggle',
     'mecp.section.standingAlertHint': 'help text for the indexed standing-alert toggle',
     'mecp.section.learnMore': 'external documentation link',

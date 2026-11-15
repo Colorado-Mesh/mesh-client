@@ -1,4 +1,5 @@
-// Vendored from https://github.com/xiang-dev-1/MECP (GPLv3). Do not edit without attribution.
+// Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
+// follow MECP 1.2.1 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Engine — Mesh Emergency Communication Protocol
@@ -19,4 +20,11 @@ export type {
   SeverityDef,
   ValidationResult,
 } from './types';
-export { CATEGORIES, CODE_REGEX, MAX_MESSAGE_BYTES, MECP_PREFIX, VALID_SEVERITIES } from './types';
+export {
+  CATEGORIES,
+  CODE_REGEX,
+  MAX_MESSAGE_BYTES,
+  MECP_PREFIX,
+  MECP_PROTOCOL_VERSION,
+  VALID_SEVERITIES,
+} from './types';
