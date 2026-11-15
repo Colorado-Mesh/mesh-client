@@ -360,6 +360,7 @@ export function createElectronAPIMock(): ElectronAPI {
       clearPositionHistory: vi.fn().mockResolvedValue(undefined),
       saveEnvironmentTelemetry: vi.fn().mockResolvedValue({ changes: 1 }),
       getEnvironmentTelemetry: vi.fn().mockResolvedValue([]),
+      claimLegacyEnvironmentTelemetryIdentity: vi.fn().mockResolvedValue({ changes: 0 }),
       clearEnvironmentTelemetry: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneEnvironmentTelemetry: vi.fn().mockResolvedValue(0),
       saveMeshcoreHopHistory: vi.fn().mockResolvedValue(true),

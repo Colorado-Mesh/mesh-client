@@ -10,15 +10,20 @@ import {
   SENSOR_LAYER_MAX_AGE_MS,
   sensorColorForValue,
 } from '@/renderer/lib/environmentSensorDisplay';
+import { meshtasticProtocol } from '@/renderer/lib/protocols/MeshtasticProtocol';
 import type { MeshNode } from '@/renderer/lib/types';
 import * as environmentTelemetryStore from '@/renderer/stores/environmentTelemetryStore';
 import {
   type EnvironmentHistoryPoint,
   useEnvironmentTelemetryStore,
 } from '@/renderer/stores/environmentTelemetryStore';
+import { addIdentity, setActiveIdentity, useIdentityStore } from '@/renderer/stores/identityStore';
 
 import { EnvironmentSensorLayer, sensorMarkersFor } from './environmentSensorLayer';
 import { EnvironmentSparklines, sparklinePoints } from './EnvironmentSparklines';
+
+const ID_MT = 'id-mt';
+const ID_MC = 'id-mc';
 
 vi.mock('react-leaflet', () => ({
   CircleMarker: ({
@@ -64,10 +69,32 @@ function node(id: number, lat?: number, lon?: number): MeshNode {
   } as MeshNode;
 }
 
-function seed(nodeId: number, points: EnvironmentHistoryPoint[]) {
+function seedHistory(
+  protocol: 'meshtastic' | 'meshcore',
+  identityId: string,
+  nodeId: number,
+  points: EnvironmentHistoryPoint[],
+) {
   useEnvironmentTelemetryStore.setState({
-    history: new Map([['meshtastic', new Map([[nodeId, points]])]]),
+    history: new Map([[protocol, new Map([[identityId, new Map([[nodeId, points]])]])]]),
   });
+}
+
+function seed(nodeId: number, points: EnvironmentHistoryPoint[]) {
+  seedHistory('meshtastic', ID_MT, nodeId, points);
+}
+
+function setupMeshtasticIdentity() {
+  useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+  addIdentity({
+    id: ID_MT,
+    protocol: meshtasticProtocol,
+    signature: 'test-mt',
+    transports: [],
+    createdAt: 1,
+    lastSeenAt: 1,
+  });
+  setActiveIdentity(ID_MT);
 }
 
 describe('sensorMarkersFor', () => {
@@ -103,6 +130,7 @@ describe('sensorColorForValue', () => {
 describe('EnvironmentSensorLayer', () => {
   beforeEach(() => {
     useEnvironmentTelemetryStore.setState({ history: new Map() });
+    setupMeshtasticIdentity();
   });
 
   it('renders nothing without readings', () => {
@@ -143,14 +171,9 @@ describe('EnvironmentSensorLayer', () => {
   });
 
   it('ignores readings stored under another protocol', () => {
-    useEnvironmentTelemetryStore.setState({
-      history: new Map([
-        [
-          'meshcore',
-          new Map([[1, [{ t: Date.now(), reading: { temperature: 20 }, source: 'rpc' }]]]),
-        ],
-      ]),
-    });
+    seedHistory('meshcore', ID_MC, 1, [
+      { t: Date.now(), reading: { temperature: 20 }, source: 'rpc' },
+    ]);
     const { container } = render(
       <EnvironmentSensorLayer
         nodes={[node(1, 39.7, -105)]}
@@ -168,9 +191,14 @@ describe('EnvironmentSensorLayer', () => {
       history: new Map([
         [
           'meshtastic',
-          new Map<number, EnvironmentHistoryPoint[]>([
-            [1, [{ t: now, reading: { temperature: 10, relativeHumidity: 40 }, source: 'rf' }]],
-            [2, [{ t: now, reading: { temperature: 12 }, source: 'rf' }]],
+          new Map([
+            [
+              ID_MT,
+              new Map<number, EnvironmentHistoryPoint[]>([
+                [1, [{ t: now, reading: { temperature: 10, relativeHumidity: 40 }, source: 'rf' }]],
+                [2, [{ t: now, reading: { temperature: 12 }, source: 'rf' }]],
+              ]),
+            ],
           ]),
         ],
       ]),
@@ -190,7 +218,7 @@ describe('EnvironmentSensorLayer', () => {
     act(() => {
       useEnvironmentTelemetryStore
         .getState()
-        .recordReading('meshtastic', 2, { temperature: 15 }, 'rf');
+        .recordReading('meshtastic', ID_MT, 2, { temperature: 15 }, 'rf');
     });
     expect(screen.getByTestId('sensor-label-2').textContent).toBe(
       'sensorLayer.valueTempC:{"value":"15.0"}',
@@ -209,6 +237,7 @@ describe('EnvironmentSensorLayer', () => {
 describe('EnvironmentSparklines', () => {
   beforeEach(() => {
     useEnvironmentTelemetryStore.setState({ history: new Map() });
+    setupMeshtasticIdentity();
   });
 
   it('builds points only for samples carrying the metric inside the window', () => {

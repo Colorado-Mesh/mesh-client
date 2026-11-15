@@ -509,6 +509,11 @@ function LoRaMapLayerRows({
           <option value="temperature">{t('sensorLayer.metricTemperature')}</option>
           <option value="relativeHumidity">{t('sensorLayer.metricHumidity')}</option>
           <option value="barometricPressure">{t('sensorLayer.metricPressure')}</option>
+          <option value="iaq">{t('sensorLayer.metricIaq')}</option>
+          <option value="pm25Standard">{t('sensorLayer.metricPm25')}</option>
+          <option value="co2">{t('sensorLayer.metricCo2')}</option>
+          <option value="lux">{t('sensorLayer.metricLux')}</option>
+          <option value="windSpeed">{t('sensorLayer.metricWind')}</option>
         </select>
       ) : null}
       {routeWeightsSupported ? (

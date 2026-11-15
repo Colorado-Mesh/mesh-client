@@ -163,4 +163,15 @@ describe('NodeInfoBody', () => {
     expect(screen.getByText('SNR')).toBeInTheDocument();
     expect(screen.getByText('4.2 dB')).toBeInTheDocument();
   });
+
+  it('renders the environment section when only PM10 is present', () => {
+    const node = makeNode({
+      node_id: 11,
+      long_name: 'Dusty',
+      env_pm10: 12,
+    });
+    render(<NodeInfoBody node={node} protocol="meshtastic" />);
+    expect(screen.getByText('PM1.0')).toBeInTheDocument();
+    expect(screen.getByText('12 µg/m³')).toBeInTheDocument();
+  });
 });

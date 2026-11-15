@@ -208,6 +208,7 @@ export interface MeshNode {
   meshcore_local_stats?: MeshCoreLocalStats;
   // Environmental sensor data (session-only, last received reading)
   env_temperature?: number;
+  env_mcu_temperature?: number;
   env_humidity?: number;
   env_pressure?: number;
   env_iaq?: number;
@@ -215,10 +216,22 @@ export interface MeshNode {
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;
+  env_wind_gust?: number;
+  env_wind_lull?: number;
+  env_weight?: number;
+  env_rainfall_1h?: number;
+  env_rainfall_24h?: number;
   env_lightning_strike_count_1h?: number;
   env_lightning_distance_km?: number;
+  env_pm10?: number;
   env_pm25?: number;
+  env_pm40?: number;
+  env_pm100?: number;
   env_co2?: number;
+  env_pm_temperature?: number;
+  env_pm_humidity?: number;
+  env_voc_idx?: number;
+  env_nox_idx?: number;
   // Neighbor info from MQTT (session-only)
   neighbors?: MeshNeighbor[];
   // PaxCounter from MQTT (combined wifi + ble count)

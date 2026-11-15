@@ -21,19 +21,12 @@ vi.mock('recharts', async (importOriginal) => {
 });
 
 describe('TelemetryPanel', () => {
-  it('shows environment section when MeshCore-style env data is present', async () => {
+  it('shows environment empty hint when battery data exists but no env history', async () => {
     const { container } = render(
       <TelemetryPanel
-        telemetry={[]}
+        telemetry={[{ timestamp: Date.now(), batteryLevel: 80, voltage: 3.9 }]}
         signalTelemetry={[]}
-        environmentTelemetry={[
-          {
-            timestamp: Date.now(),
-            nodeNum: 0x1234abcd,
-            temperature: 21.25,
-            relativeHumidity: 55,
-          },
-        ]}
+        environmentTelemetry={[]}
         useFahrenheit={false}
         onToggleFahrenheit={() => {}}
         onRefresh={async () => {}}
@@ -41,6 +34,52 @@ describe('TelemetryPanel', () => {
         capabilities={MESHCORE_CAPABILITIES}
       />,
     );
+    expect(screen.getByTestId('env-telemetry-empty-hint')).toBeInTheDocument();
+    expect(screen.getByText(/No environment sensor data heard yet/i)).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('shows environment section when store has MeshCore-style env data', async () => {
+    const { useEnvironmentTelemetryStore } = await import('../stores/environmentTelemetryStore');
+    const { useIdentityStore, addIdentity, setActiveIdentity } =
+      await import('../stores/identityStore');
+    const { meshcoreProtocol } = await import('../lib/protocols/MeshCoreProtocol');
+    const { MESHCORE_CAPABILITIES: caps } = await import('../lib/radio/BaseRadioProvider');
+    useEnvironmentTelemetryStore.setState({ history: new Map() });
+    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    addIdentity({
+      id: 'id-mc',
+      protocol: meshcoreProtocol,
+      signature: 'test',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setActiveIdentity('id-mc');
+    useEnvironmentTelemetryStore
+      .getState()
+      .recordReading(
+        'meshcore',
+        'id-mc',
+        0x1234abcd,
+        { temperature: 21.25, relativeHumidity: 55 },
+        'rpc',
+      );
+    const { container } = render(
+      <TelemetryPanel
+        telemetry={[]}
+        signalTelemetry={[]}
+        environmentTelemetry={[]}
+        useFahrenheit={false}
+        onToggleFahrenheit={() => {}}
+        onRefresh={async () => {}}
+        isConnected
+        capabilities={caps}
+      />,
+    );
+    expect(screen.queryByTestId('env-telemetry-empty-hint')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Temperature & Humidity/i })).toBeInTheDocument();
     expect(
       screen.getByRole('img', { name: /Temperature and humidity chart/i }),

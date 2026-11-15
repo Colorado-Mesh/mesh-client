@@ -86,6 +86,7 @@ import {
 import { type MeshNode, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useEnvironmentTelemetryStore } from '../stores/environmentTelemetryStore';
 import { getLiveChannelKey } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
@@ -114,6 +115,7 @@ type DangerActionId =
   | 'resetDiagnostics'
   | 'clearGpsData'
   | 'clearPositionHistory'
+  | 'clearEnvironmentHistory'
   | 'deleteOldNodes'
   | 'pruneMqttOnlyNodes'
   | 'pruneUnnamedNodes'
@@ -359,6 +361,7 @@ export default function AppPanel({
   const historyWindowHours = usePositionHistoryStore((s) => s.historyWindowHours);
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
+  const clearEnvironmentHistory = useEnvironmentTelemetryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const reticulumContactCount = useReticulumPeerStore((s) => s.contacts.size);
   const clearAllReticulumContacts = useReticulumPeerStore((s) => s.clearAllContacts);
@@ -2796,6 +2799,35 @@ export default function AppPanel({
             className={buttonClassName('danger', 'md')}
           >
             {t('appPanel.clearPositionHistory')}
+          </button>
+        </div>
+
+        <div className="space-y-2 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400/90">
+            {t('appPanel.dangerZoneEnvironmentHistoryHeading')}
+          </div>
+          <p className="text-muted text-xs leading-relaxed">
+            {t('appPanel.dangerZoneEnvironmentHistoryDesc')}
+          </p>
+          <button
+            data-setting-anchor="app.danger.clearEnvironmentHistory"
+            type="button"
+            aria-label={t('appPanel.clearEnvironmentHistory')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'clearEnvironmentHistory',
+                title: t('appPanel.clearEnvironmentHistory'),
+                message: t('appPanel.clearEnvironmentHistoryConfirm'),
+                confirmLabel: t('appPanel.clearEnvironmentHistory'),
+                danger: true,
+                action: async () => {
+                  await clearEnvironmentHistory();
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.clearEnvironmentHistory')}
           </button>
         </div>
 

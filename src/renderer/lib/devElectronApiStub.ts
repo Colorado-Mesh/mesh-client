@@ -255,6 +255,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       clearPositionHistory: noopAsync,
       saveEnvironmentTelemetry: async () => ({ changes: 0 }),
       getEnvironmentTelemetry: async () => [],
+      claimLegacyEnvironmentTelemetryIdentity: async () => ({ changes: 0 }),
       clearEnvironmentTelemetry: async () => ({ changes: 0 }),
       pruneEnvironmentTelemetry: async () => 0,
       saveMeshcoreHopHistory: async () => true,

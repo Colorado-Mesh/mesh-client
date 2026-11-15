@@ -23,7 +23,6 @@ export const telemetrySurface: SettingsSearchSurface = {
   files: [{ path: 'src/renderer/components/TelemetryPanel.tsx', sweepAllKeys: true }],
   exempt: {
     'telemetryPanel.chart*': 'chart accessible summary or missing-value placeholder',
-    'telemetryPanel.axis*': 'chart axis label',
     'telemetryPanel.series*': 'chart series legend name',
     'telemetryPanel.section*': 'read-only chart heading, no control',
     'telemetryPanel.stat*': 'read-only packet counter label',
@@ -31,5 +30,6 @@ export const telemetrySurface: SettingsSearchSurface = {
     'telemetryPanel.empty*': 'empty-state text, not a control',
     'telemetryPanel.tempUnit*': 'current value text of the indexed temperature unit toggle',
     'telemetryPanel.exportCsv': 'tooltip of the indexed CSV export button',
+    'telemetryPanel.meshtasticRefreshHelp': 'Meshtastic env-module refresh guidance, not a control',
   },
 };

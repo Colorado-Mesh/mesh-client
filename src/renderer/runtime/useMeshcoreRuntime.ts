@@ -108,6 +108,7 @@ import {
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyGattRfLink } from '../lib/bleReconnectHelper';
+import { cayenneWireEntriesToEnvironmentReading } from '../lib/cayenneToEnvironmentReading';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
@@ -6958,7 +6959,9 @@ export function useMeshcoreRuntime() {
         next.delete(nodeId);
         return next;
       });
+      const fromWire = cayenneWireEntriesToEnvironmentReading(entries);
       const hasEnv =
+        fromWire != null ||
         result.temperature != null ||
         result.mcuTemperature != null ||
         result.relativeHumidity != null ||
@@ -6967,22 +6970,30 @@ export function useMeshcoreRuntime() {
         const pt: EnvironmentTelemetryPoint = {
           timestamp: result.fetchedAt,
           nodeNum: nodeId,
-          temperature: result.temperature,
-          mcuTemperature: result.mcuTemperature,
-          relativeHumidity: result.relativeHumidity,
-          barometricPressure: result.barometricPressure,
+          temperature: fromWire?.temperature ?? result.temperature,
+          mcuTemperature: fromWire?.mcuTemperature ?? result.mcuTemperature,
+          relativeHumidity: fromWire?.relativeHumidity ?? result.relativeHumidity,
+          barometricPressure: fromWire?.barometricPressure ?? result.barometricPressure,
+          lux: fromWire?.lux,
+          windDirection: fromWire?.windDirection,
+          co2: fromWire?.co2,
         };
         setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
-        recordEnvironmentReading(
-          'meshcore',
-          nodeId,
-          {
-            temperature: result.temperature,
-            relativeHumidity: result.relativeHumidity,
-            barometricPressure: result.barometricPressure,
-          },
-          source,
-        );
+        const identityId = meshcoreIdentityIdRef.current;
+        if (identityId) {
+          recordEnvironmentReading(
+            'meshcore',
+            identityId,
+            nodeId,
+            fromWire ?? {
+              temperature: result.temperature,
+              mcuTemperature: result.mcuTemperature,
+              relativeHumidity: result.relativeHumidity,
+              barometricPressure: result.barometricPressure,
+            },
+            source,
+          );
+        }
       }
       const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);
       if (altM !== undefined) {

@@ -185,6 +185,8 @@ describe('store record adapters (merge precedence)', () => {
       last_heard: 0,
       latitude: null,
       longitude: null,
+      env_wind_gust: 9.5,
+      env_pm100: 42,
     });
     expect(back.channelUtilization).toBe(42.5);
     expect(back.airUtilTx).toBe(3.1);
@@ -205,8 +207,35 @@ describe('store record adapters (merge precedence)', () => {
         lux: 30,
         windSpeed: 5,
         windDirection: 180,
+        windGust: 9.5,
+        pm100Standard: 42,
       }),
     );
+  });
+
+  it('preserves expanded env fields through meshNodeToNodeRecord and getIdentityNode path', () => {
+    const node = meshNodeToNodeRecord({
+      node_id: 3,
+      long_name: 'Sensor',
+      short_name: 'SN',
+      hw_model: 'T-Beam',
+      snr: 0,
+      rssi: 0,
+      battery: 0,
+      last_heard: 1,
+      latitude: null,
+      longitude: null,
+      env_wind_gust: 4.2,
+      env_pm100: 17,
+      env_pm10: 3,
+    });
+    expect(node.windGust).toBe(4.2);
+    expect(node.pm100Standard).toBe(17);
+    expect(node.pm10Standard).toBe(3);
+    const mesh = nodeRecordToMeshNode(node);
+    expect(mesh.env_wind_gust).toBe(4.2);
+    expect(mesh.env_pm100).toBe(17);
+    expect(mesh.env_pm10).toBe(3);
   });
 
   it('nodeRecordsToMeshNodeMap merges legacy fields when spread under hook merge pattern', () => {

@@ -43,6 +43,7 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },
   { prefix: 'meshcoreTelemetryPrivacy.', leafKeys: true },
   { prefix: 'meshcoreCompanionCli.settings.', leafKeys: true },
+  { prefix: 'telemetryPanel.envWindow.', leafKeys: true },
   { prefix: 'meshcoreCompanionCli.validation.', leafKeys: true },
   { prefix: 'meshcoreCompanionCli.confirm.', leafKeys: true },
   { prefix: 'appPanel.theme.', suffixes: ['label', 'description'] },

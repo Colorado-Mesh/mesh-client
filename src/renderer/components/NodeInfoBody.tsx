@@ -920,11 +920,18 @@ export default function NodeInfoBody({
 
       {/* Environment */}
       {(node.env_temperature !== undefined ||
+        node.env_mcu_temperature !== undefined ||
         node.env_humidity !== undefined ||
         node.env_pressure !== undefined ||
         node.env_iaq !== undefined ||
+        node.env_gas_resistance !== undefined ||
         node.env_lux !== undefined ||
-        node.env_wind_speed !== undefined) && (
+        node.env_wind_speed !== undefined ||
+        node.env_pm10 !== undefined ||
+        node.env_pm25 !== undefined ||
+        node.env_co2 !== undefined ||
+        node.env_voc_idx !== undefined ||
+        node.env_nox_idx !== undefined) && (
         <div className="border-ink-700 mt-3 border-t pt-3">
           <div className="text-ink-400 mb-1 text-xs font-semibold uppercase">
             {t('nodeInfoBody.environment')}
@@ -936,6 +943,16 @@ export default function NodeInfoBody({
                 useFahrenheit
                   ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
                   : `${node.env_temperature.toFixed(1)}°C`
+              }
+            />
+          )}
+          {node.env_mcu_temperature !== undefined && (
+            <InfoRow
+              label={t('nodeInfoBody.mcuTemperature')}
+              value={
+                useFahrenheit
+                  ? `${((node.env_mcu_temperature * 9) / 5 + 32).toFixed(1)}°F`
+                  : `${node.env_mcu_temperature.toFixed(1)}°C`
               }
             />
           )}
@@ -957,6 +974,9 @@ export default function NodeInfoBody({
               value={`${node.env_iaq} – ${iaqLabel(node.env_iaq, t)}`}
             />
           )}
+          {node.env_gas_resistance !== undefined && (
+            <InfoRow label={t('nodeInfoBody.gasResistance')} value={`${node.env_gas_resistance}`} />
+          )}
           {node.env_lux !== undefined && (
             <InfoRow label={t('nodeInfoBody.light')} value={`${node.env_lux.toFixed(0)} lux`} />
           )}
@@ -969,6 +989,21 @@ export default function NodeInfoBody({
                   : `${node.env_wind_speed.toFixed(1)} m/s`
               }
             />
+          )}
+          {node.env_pm25 !== undefined && (
+            <InfoRow label={t('nodeInfoBody.pm25')} value={`${node.env_pm25} µg/m³`} />
+          )}
+          {node.env_pm10 !== undefined && (
+            <InfoRow label={t('nodeInfoBody.pm10')} value={`${node.env_pm10} µg/m³`} />
+          )}
+          {node.env_co2 !== undefined && (
+            <InfoRow label={t('nodeInfoBody.co2')} value={`${node.env_co2} ppm`} />
+          )}
+          {node.env_voc_idx !== undefined && (
+            <InfoRow label={t('nodeInfoBody.voc')} value={`${node.env_voc_idx}`} />
+          )}
+          {node.env_nox_idx !== undefined && (
+            <InfoRow label={t('nodeInfoBody.nox')} value={`${node.env_nox_idx}`} />
           )}
           <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
         </div>

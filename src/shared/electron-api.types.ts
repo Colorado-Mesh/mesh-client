@@ -959,12 +959,17 @@ export interface ElectronAPI {
     clearPositionHistory: () => Promise<void>;
     saveEnvironmentTelemetry: (
       protocol: MeshProtocol,
+      identityId: string,
       nodeId: number,
       recordedAt: number,
       reading: EnvironmentReading,
       source: EnvironmentTelemetrySource,
     ) => Promise<{ changes: number } | undefined>;
     getEnvironmentTelemetry: (sinceMs: number) => Promise<EnvironmentTelemetryRow[]>;
+    claimLegacyEnvironmentTelemetryIdentity: (
+      protocol: MeshProtocol,
+      identityId: string,
+    ) => Promise<{ changes: number } | undefined>;
     clearEnvironmentTelemetry: () => Promise<{ changes: number } | undefined>;
     pruneEnvironmentTelemetry: () => Promise<number | undefined>;
     saveMeshcoreHopHistory: (

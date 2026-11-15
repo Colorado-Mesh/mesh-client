@@ -22,6 +22,14 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   identityHydration: path.join(projectRoot, 'dist-electron/main/identity-hydration.js'),
   teamRoster: path.join(projectRoot, 'dist-electron/main/team-roster-handlers.js'),
   teamRosterFallback: path.join(projectRoot, 'dist-electron/main/team-roster-handlers-fallback.js'),
+  environmentTelemetry: path.join(
+    projectRoot,
+    'dist-electron/main/environment-telemetry-handlers.js',
+  ),
+  environmentTelemetryFallback: path.join(
+    projectRoot,
+    'dist-electron/main/environment-telemetry-handlers-fallback.js',
+  ),
   trayUnreadDot: path.join(projectRoot, 'dist-electron/main/tray-unread-dot.js'),
   scheduledBroadcastsRebuild: path.join(
     projectRoot,

@@ -444,11 +444,12 @@ function handleEnvironmentTelemetry(
     pmNoxIdx: telemetry.pmNoxIdx,
   };
   deps.setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
-  recordEnvironmentReading('meshtastic', nodeNum, point, 'rf');
+  recordEnvironmentReading('meshtastic', identityId, nodeNum, point, 'rf');
   const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
   saveNode(identityId, {
     ...existing,
     env_temperature: telemetry.temperature ?? existing.env_temperature,
+    env_mcu_temperature: existing.env_mcu_temperature,
     env_humidity: telemetry.relativeHumidity ?? existing.env_humidity,
     env_pressure: telemetry.barometricPressure ?? existing.env_pressure,
     env_iaq: telemetry.iaq ?? existing.env_iaq,
@@ -456,11 +457,23 @@ function handleEnvironmentTelemetry(
     env_lux: telemetry.lux ?? existing.env_lux,
     env_wind_speed: telemetry.windSpeed ?? existing.env_wind_speed,
     env_wind_direction: telemetry.windDirection ?? existing.env_wind_direction,
+    env_wind_gust: telemetry.windGust ?? existing.env_wind_gust,
+    env_wind_lull: telemetry.windLull ?? existing.env_wind_lull,
+    env_weight: telemetry.weight ?? existing.env_weight,
+    env_rainfall_1h: telemetry.rainfall1h ?? existing.env_rainfall_1h,
+    env_rainfall_24h: telemetry.rainfall24h ?? existing.env_rainfall_24h,
     env_lightning_strike_count_1h:
       telemetry.lightningStrikeCount1h ?? existing.env_lightning_strike_count_1h,
     env_lightning_distance_km: telemetry.lightningDistanceKm ?? existing.env_lightning_distance_km,
+    env_pm10: telemetry.pm10Standard ?? existing.env_pm10,
     env_pm25: telemetry.pm25Standard ?? existing.env_pm25,
+    env_pm40: telemetry.pm40Standard ?? existing.env_pm40,
+    env_pm100: telemetry.pm100Standard ?? existing.env_pm100,
     env_co2: telemetry.co2 ?? existing.env_co2,
+    env_pm_temperature: telemetry.pmTemperature ?? existing.env_pm_temperature,
+    env_pm_humidity: telemetry.pmHumidity ?? existing.env_pm_humidity,
+    env_voc_idx: telemetry.pmVocIdx ?? existing.env_voc_idx,
+    env_nox_idx: telemetry.pmNoxIdx ?? existing.env_nox_idx,
     last_heard: mergeMeshtasticLivePacketLastHeard(
       existing.last_heard || 0,
       telemetry.timestamp,

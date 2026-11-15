@@ -722,6 +722,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearPositionHistory: () => ipcRenderer.invoke('db:clearPositionHistory'),
     saveEnvironmentTelemetry: (
       protocol: MeshProtocol,
+      identityId: string,
       nodeId: number,
       recordedAt: number,
       reading: EnvironmentReading,
@@ -730,6 +731,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke(
         'db:saveEnvironmentTelemetry',
         protocol,
+        identityId,
         nodeId,
         recordedAt,
         reading,
@@ -737,6 +739,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ),
     getEnvironmentTelemetry: (sinceMs: number) =>
       ipcRenderer.invoke('db:getEnvironmentTelemetry', sinceMs),
+    claimLegacyEnvironmentTelemetryIdentity: (protocol: MeshProtocol, identityId: string) =>
+      ipcRenderer.invoke('db:claimLegacyEnvironmentTelemetryIdentity', protocol, identityId),
     clearEnvironmentTelemetry: () => ipcRenderer.invoke('db:clearEnvironmentTelemetry'),
     pruneEnvironmentTelemetry: () => ipcRenderer.invoke('db:pruneEnvironmentTelemetry'),
     saveMeshcoreHopHistory: (

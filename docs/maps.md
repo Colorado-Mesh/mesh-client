@@ -149,7 +149,7 @@ Full behaviour: [Reticulum — Map / RMAP](reticulum.md).
 
 **Weather forecasts** (Layers → **Weather forecasts**) draws circles for forecasts parsed from marked Meshtastic and MeshCore weather senders. Place names use a built-in gazetteer; optional online place lookup is under the weather filter settings. Forecasts expire about 12 hours after local receive time.
 
-**Sensors** (Layers → **Sensors**) plots the latest temperature, humidity, or pressure from nodes that report environment telemetry (including MeshCore Cayenne LPP). Pick the metric from the layer control; sparklines show recent history when available.
+**Sensors** (Layers → **Sensors**) plots the latest temperature, humidity, pressure, IAQ, PM2.5, CO₂, lux, or wind speed from nodes that report environment telemetry (including MeshCore Cayenne LPP and Meshtastic MQTT). Pick the metric from the layer control; sparklines show recent history when available.
 
 ---
 

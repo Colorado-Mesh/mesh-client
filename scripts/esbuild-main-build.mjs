@@ -162,6 +162,30 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Environment telemetry IPC — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/environment-telemetry-handlers.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'environment-telemetry-handlers.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  // Environment telemetry IPC failure stubs — sibling chunk loaded only when the primary bundle fails.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/environment-telemetry-handlers-fallback.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'environment-telemetry-handlers-fallback.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
   // Tray unread BGRA overlay — keep out of measured main `index.js`.
   await esbuild.build({
     absWorkingDir,

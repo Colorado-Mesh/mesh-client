@@ -11,7 +11,7 @@ describe('environment telemetry history wiring (source contract)', () => {
       "applyMeshcoreTelemetryLpp(nodeId, raw.lppSensorData, 'rpc');",
     );
     const body = extractUseCallbackBody(src, 'applyMeshcoreTelemetryLpp');
-    expect(body).toMatch(/recordEnvironmentReading\(\s*'meshcore',\s*nodeId,/);
+    expect(body).toMatch(/recordEnvironmentReading\(\s*'meshcore',\s*identityId,\s*nodeId,/);
     expect(body).toMatch(/recordEnvironmentReading\([\s\S]*\bsource\s*,?\s*\)/);
   });
 
@@ -23,7 +23,7 @@ describe('environment telemetry history wiring (source contract)', () => {
     expect(body).toContain('const envRecordedAt = takeEnvironmentNodeUpdateMarker(nodeUpdate);');
     expect(body).toMatch(/typeof envRecordedAt === 'number'/);
     expect(body).toMatch(
-      /recordEnvironmentReading\('meshtastic', nodeUpdate\.node_id, reading, 'mqtt'\)/,
+      /recordEnvironmentReading\('meshtastic', identityId, nodeUpdate\.node_id, reading, 'mqtt'\)/,
     );
   });
 });

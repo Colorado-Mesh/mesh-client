@@ -183,7 +183,7 @@ Operator guide: [Meshtastic guide](docs/meshtastic.md).
 - **XMODEM** upload/download on the local USB/serial radio only
 - **Firmware lockdown** status and auth when the device reports lockdown support
 - **Mesh Beacon**: configure the module, review heard offers, and join an offered channel
-- **Cayenne LPP charts** on the Telemetry tab when Cayenne packets are decoded (Meshtastic only)
+- **Cayenne LPP charts** on Device → Telemetry when Cayenne packets are decoded (Meshtastic only); environment-shaped Cayenne fields are also saved to history
 
 **Network Diagnostics**
 
@@ -202,8 +202,10 @@ Operator guide: [Meshtastic guide](docs/meshtastic.md).
 
 **Environment Telemetry**
 
-- Push-based environment charts (temperature, humidity, pressure, air quality) from Meshtastic telemetry packets, displayed in the Telemetry tab
-- **Sensor history and map layer**: environment readings from RF, MeshCore remote telemetry, and Meshtastic MQTT are saved to SQLite and shown on the Map as a **Sensors** layer (pick temperature, humidity, or pressure; node popups include sparklines). History loads are capped (newest 2,000 nodes, 500 points per node)
+- Push-based environment charts (temperature, humidity, pressure, air quality, wind, particulates, …) from Meshtastic telemetry packets and MQTT, shown in **Device → Telemetry**. Charts use saved history (up to 7 days) with a per-node selector; environment charts appear only after a sensor-equipped node reports.
+- **MeshCore**: request Cayenne LPP sensor telemetry from a contact's node detail (or enable telemetry push); the same Device → Telemetry panel charts saved history.
+- **Reticulum**: environment telemetry is not supported; Device → Telemetry stays hidden.
+- **Sensor history and map layer**: environment readings from RF, MeshCore remote telemetry, Meshtastic MQTT, and mappable Cayenne LPP fields are saved to SQLite (per identity) and shown on the Map as a **Sensors** layer (temperature, humidity, pressure, IAQ, PM2.5, CO₂, lux, wind; node popups include sparklines). History loads are capped (newest 2,000 nodes per identity, 500 points per node)
 - **Weather forecasts layer**: channel forecast posts from senders marked as weather senders are placed on the Map (**Layers → Weather forecasts**) at the named place, or near the sender when the place can't be found. Each place shows its newest forecast, and wx broadcasts drop off the map **12 hours** after they were sent — including posts loaded from chat history at startup
 - **Internet weather** (opt-in, **Layers → Internet weather**): click-anywhere Open-Meteo forecast, temperature/wind overlays, and radar (RainViewer global; NEXRAD in CONUS). Online only; session memory cache — see [Maps: Internet weather](docs/maps.md#internet-weather)
 
@@ -313,7 +315,7 @@ These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/cha
 
 **Telemetry**
 
-- Battery voltage and signal quality charts (SNR/RSSI) in the Telemetry tab
+- Battery voltage and signal quality charts (SNR/RSSI) in **Device → Telemetry**
 
 ---
 
@@ -379,8 +381,8 @@ Operator guide: [MeshCore guide](docs/meshcore.md). MeshCore runs simultaneously
 
 **Battery & Signal Telemetry**
 
-- Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in the Telemetry tab
-- **Environment charts** (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available; same panel as Meshtastic environment telemetry
+- Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in **Device → Telemetry**
+- **Environment charts** (temperature, humidity, barometric pressure, etc.) in **Device → Telemetry** when pulled or pushed Cayenne LPP data is available; same panel as Meshtastic environment telemetry
 - **Raw Packet Log** (**Sniffer** tab): virtualized log (ring-buffer capped at **2,500** entries per protocol) with **sortable columns**, **relative timestamps**, **quick-filter chips**, and expandable hex. **MeshCore:** on-air **path hash chains**, hop count, route-type color bars, device-type icons, ping/trace from row actions; **Meshtastic:** transport badges (RF/MQTT), collapsed hop count; **Reticulum:** sidecar wire packets via WebSocket/`GET /api/v1/packets` (see [docs/reticulum.md](docs/reticulum.md)); filter by type, name, or hex; **Clear** resets the buffer
 
 **Device Control**

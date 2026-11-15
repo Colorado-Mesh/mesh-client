@@ -1584,7 +1584,10 @@ export function useMeshtasticRuntime() {
       }
       if (typeof envRecordedAt === 'number') {
         const reading = environmentReadingFromNodePatch(nodeUpdate);
-        if (reading) recordEnvironmentReading('meshtastic', nodeUpdate.node_id, reading, 'mqtt');
+        const identityId = meshtasticIdentityIdRef.current;
+        if (reading && identityId) {
+          recordEnvironmentReading('meshtastic', identityId, nodeUpdate.node_id, reading, 'mqtt');
+        }
       }
     });
 

@@ -2,8 +2,11 @@ import { create } from 'zustand';
 
 import {
   ENVIRONMENT_TELEMETRY_DEDUP_WINDOW_MS,
+  ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID,
   ENVIRONMENT_TELEMETRY_MAX_NODES,
   ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
+  ENVIRONMENT_TELEMETRY_PRUNE_EVERY_N_INSERTS,
+  ENVIRONMENT_TELEMETRY_PRUNE_INTERVAL_MS,
   ENVIRONMENT_TELEMETRY_RETENTION_MS,
   type EnvironmentReading,
   type EnvironmentReadingField,
@@ -16,6 +19,7 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import type { IdentityId } from '../lib/types';
 
 export interface EnvironmentHistoryPoint {
   t: number;
@@ -29,22 +33,26 @@ type MutableNodeSeriesMap = Map<number, readonly EnvironmentHistoryPoint[]>;
 const EMPTY_SERIES: readonly EnvironmentHistoryPoint[] = [];
 const EMPTY_NODE_MAP: NodeSeriesMap = new Map();
 
-type HistoryMap = Map<MeshProtocol, MutableNodeSeriesMap>;
+/** protocol → identityId → nodeId → series */
+type HistoryMap = Map<MeshProtocol, Map<IdentityId, MutableNodeSeriesMap>>;
 
 interface EnvironmentTelemetryState {
   history: HistoryMap;
   /**
-   * Store a reading for one node. Identical readings inside the dedup window are dropped
-   * (same packet heard over RF and MQTT). Returns true when the reading was kept.
+   * Store a reading for one node under an identity. Identical readings inside the dedup window
+   * are dropped (same packet heard over RF and MQTT). Returns true when the reading was kept.
    */
   recordReading(
     protocol: MeshProtocol,
+    identityId: IdentityId,
     nodeId: number,
     reading: EnvironmentReading,
     source: EnvironmentTelemetrySource,
   ): boolean;
-  clearHistory(): void;
+  clearHistory(): Promise<void>;
   loadFromDb(): Promise<void>;
+  /** Attribute legacy (`identity_id=''`) rows to this identity for `protocol` (one-time). */
+  claimLegacyIdentity(protocol: MeshProtocol, identityId: IdentityId): Promise<void>;
 }
 
 /**
@@ -68,25 +76,29 @@ function appendBoundedSeries(
 }
 
 /**
- * Store `series` for one node. The node map is updated in place so other nodes keep their
- * series arrays (selectors for those nodes do not change). The protocol map is a shallow copy.
+ * Store `series` for one node under an identity. Other identities/nodes keep their series arrays.
  */
 function installSeries(
   history: HistoryMap,
   protocol: MeshProtocol,
+  identityId: IdentityId,
   nodeId: number,
   series: readonly EnvironmentHistoryPoint[],
 ): HistoryMap {
-  let nodes = history.get(protocol);
-  if (!nodes) {
-    nodes = new Map();
-  } else if (!nodes.has(nodeId) && nodes.size >= ENVIRONMENT_TELEMETRY_MAX_NODES) {
+  const byIdentity = history.get(protocol) ?? new Map<IdentityId, MutableNodeSeriesMap>();
+  const prior = byIdentity.get(identityId);
+  const nodes: MutableNodeSeriesMap = prior
+    ? new Map<number, readonly EnvironmentHistoryPoint[]>(prior)
+    : new Map<number, readonly EnvironmentHistoryPoint[]>();
+  if (!nodes.has(nodeId) && nodes.size >= ENVIRONMENT_TELEMETRY_MAX_NODES) {
     const firstKey = nodes.keys().next().value;
     if (firstKey !== undefined) nodes.delete(firstKey);
   }
   nodes.set(nodeId, series);
+  const nextIdentities = new Map(byIdentity);
+  nextIdentities.set(identityId, nodes);
   const next = new Map(history);
-  next.set(protocol, nodes);
+  next.set(protocol, nextIdentities);
   return next;
 }
 
@@ -114,15 +126,50 @@ function capLoadedNodes(nodes: Map<number, EnvironmentHistoryPoint[]>): MutableN
   return new Map<number, readonly EnvironmentHistoryPoint[]>(ranked);
 }
 
+let insertsSincePrune = 0;
+let pruneTimer: ReturnType<typeof setInterval> | null = null;
+/** Bumped on clear so in-flight `loadFromDb` results are discarded. */
+let historyGeneration = 0;
+
+async function runPeriodicPrune(): Promise<void> {
+  const prune = window.electronAPI?.db?.pruneEnvironmentTelemetry;
+  if (typeof prune !== 'function') return;
+  try {
+    const changes = await prune();
+    if (typeof changes === 'number' && changes > 0) {
+      console.debug(`[environmentTelemetry] periodic prune removed ${changes} rows`);
+    }
+  } catch (err: unknown) {
+    console.warn('[environmentTelemetry] periodic prune failed: ' + errLikeToLogString(err));
+  }
+}
+
+function noteSuccessfulInsert(): void {
+  insertsSincePrune += 1;
+  if (insertsSincePrune >= ENVIRONMENT_TELEMETRY_PRUNE_EVERY_N_INSERTS) {
+    insertsSincePrune = 0;
+    void runPeriodicPrune();
+  }
+  if (pruneTimer == null && typeof setInterval === 'function') {
+    pruneTimer = setInterval(() => {
+      void runPeriodicPrune();
+    }, ENVIRONMENT_TELEMETRY_PRUNE_INTERVAL_MS);
+    // Allow the process to exit in tests/Node without waiting for the timer.
+    if (typeof pruneTimer === 'object' && pruneTimer !== null && 'unref' in pruneTimer) {
+      pruneTimer.unref?.();
+    }
+  }
+}
+
 export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((set, get) => ({
   history: new Map(),
 
-  recordReading(protocol, nodeId, reading, source) {
-    if (!Number.isInteger(nodeId) || nodeId <= 0) return false;
+  recordReading(protocol, identityId, nodeId, reading, source) {
+    if (!identityId || !Number.isInteger(nodeId) || nodeId <= 0) return false;
     const clean = sanitizeEnvironmentReading(reading);
     if (!clean) return false;
     const now = Date.now();
-    const existing = get().history.get(protocol)?.get(nodeId) ?? EMPTY_SERIES;
+    const existing = get().history.get(protocol)?.get(identityId)?.get(nodeId) ?? EMPTY_SERIES;
     const last = existing.at(-1);
     if (
       last &&
@@ -132,41 +179,102 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
       return false;
     }
     const series = appendBoundedSeries(existing, { t: now, reading: clean, source }, now);
-    set({ history: installSeries(get().history, protocol, nodeId, series) });
+    set({ history: installSeries(get().history, protocol, identityId, nodeId, series) });
 
     // Fire-and-forget: persistence must never block or drop the live reading.
     const save = window.electronAPI?.db?.saveEnvironmentTelemetry;
     if (typeof save === 'function') {
-      save(protocol, nodeId, now, clean, source).catch((err: unknown) => {
-        console.warn('[environmentTelemetry] DB write failed: ' + errLikeToLogString(err));
-      });
+      save(protocol, identityId, nodeId, now, clean, source)
+        .then(() => {
+          noteSuccessfulInsert();
+        })
+        .catch((err: unknown) => {
+          console.warn('[environmentTelemetry] DB write failed: ' + errLikeToLogString(err));
+        });
     }
     return true;
   },
 
-  clearHistory() {
+  async clearHistory() {
+    historyGeneration += 1;
     set({ history: new Map() });
     const clear = window.electronAPI?.db?.clearEnvironmentTelemetry;
     if (typeof clear !== 'function') return;
-    clear().catch((err: unknown) => {
+    try {
+      await clear();
+    } catch (err: unknown) {
       console.warn('[environmentTelemetry] clear DB failed: ' + errLikeToLogString(err));
+      throw err;
+    }
+  },
+
+  async claimLegacyIdentity(protocol, identityId) {
+    if (!identityId) return;
+    const claim = window.electronAPI?.db?.claimLegacyEnvironmentTelemetryIdentity;
+    if (typeof claim !== 'function') return;
+    try {
+      await claim(protocol, identityId);
+    } catch (err: unknown) {
+      console.warn('[environmentTelemetry] claimLegacyIdentity failed: ' + errLikeToLogString(err));
+      return;
+    }
+    set((state) => {
+      const byIdentity = state.history.get(protocol);
+      if (!byIdentity) return state;
+      const legacy = byIdentity.get(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID);
+      if (!legacy || legacy.size === 0) return state;
+      const claimant = byIdentity.get(identityId);
+      const merged = new Map<number, EnvironmentHistoryPoint[]>();
+      for (const [nodeId, series] of claimant ?? []) {
+        merged.set(nodeId, [...series]);
+      }
+      for (const [nodeId, series] of legacy) {
+        const existing = merged.get(nodeId) ?? [];
+        const combined = [...existing, ...series].sort((a, b) => a.t - b.t || 0);
+        merged.set(nodeId, combined);
+      }
+      const nextByIdentity = new Map(byIdentity);
+      nextByIdentity.delete(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID);
+      nextByIdentity.set(identityId, capLoadedNodes(merged));
+      const nextHistory = new Map(state.history);
+      nextHistory.set(protocol, nextByIdentity);
+      return { history: nextHistory };
     });
   },
 
   async loadFromDb() {
     try {
+      const generation = historyGeneration;
       const sinceMs = Date.now() - ENVIRONMENT_TELEMETRY_RETENTION_MS;
       const rows = await window.electronAPI.db.getEnvironmentTelemetry(sinceMs);
+      if (generation !== historyGeneration) return;
       if (rows.length === 0) return;
-      const loaded = new Map<MeshProtocol, Map<number, EnvironmentHistoryPoint[]>>();
+      const loaded = new Map<
+        MeshProtocol,
+        Map<IdentityId, Map<number, EnvironmentHistoryPoint[]>>
+      >();
       for (const row of rows) {
         if (!isMeshProtocol(row.protocol)) continue;
         const reading = environmentReadingFromRow(row);
-        if (Object.keys(reading).length === 0) continue;
-        let nodes = loaded.get(row.protocol);
+        if (
+          Object.keys(reading).length === 0 &&
+          !reading.adcVoltages &&
+          !reading.oneWireTemperatures
+        )
+          continue;
+        const identityId =
+          typeof row.identity_id === 'string' && row.identity_id.length > 0
+            ? row.identity_id
+            : ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID;
+        let byIdentity = loaded.get(row.protocol);
+        if (!byIdentity) {
+          byIdentity = new Map();
+          loaded.set(row.protocol, byIdentity);
+        }
+        let nodes = byIdentity.get(identityId);
         if (!nodes) {
           nodes = new Map();
-          loaded.set(row.protocol, nodes);
+          byIdentity.set(identityId, nodes);
         }
         const series = nodes.get(row.node_id) ?? [];
         series.push({
@@ -180,28 +288,37 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
         nodes.set(row.node_id, series);
       }
       // Readings recorded while the DB load was in flight are newer than any row; keep them.
-      // SQL already applies both caps; cap again so a large payload cannot exceed them.
       const live = get().history;
       const merged: HistoryMap = new Map();
-      for (const [protocol, nodes] of loaded) {
-        const liveNodes = live.get(protocol);
-        for (const [nodeId, series] of nodes) {
-          let lastT = 0;
-          for (const p of series) {
-            if (p.t > lastT) lastT = p.t;
+      for (const [protocol, byIdentity] of loaded) {
+        const liveByIdentity = live.get(protocol);
+        const nextByIdentity = new Map<IdentityId, MutableNodeSeriesMap>();
+        for (const [identityId, nodes] of byIdentity) {
+          const liveNodes = liveByIdentity?.get(identityId);
+          for (const [nodeId, series] of nodes) {
+            let lastT = 0;
+            for (const p of series) {
+              if (p.t > lastT) lastT = p.t;
+            }
+            for (const p of liveNodes?.get(nodeId) ?? EMPTY_SERIES) {
+              if (p.t > lastT) series.push(p);
+            }
           }
-          for (const p of liveNodes?.get(nodeId) ?? EMPTY_SERIES) {
-            if (p.t > lastT) series.push(p);
+          for (const [nodeId, series] of liveNodes ?? EMPTY_NODE_MAP) {
+            if (!nodes.has(nodeId)) nodes.set(nodeId, [...series]);
           }
+          nextByIdentity.set(identityId, capLoadedNodes(nodes));
         }
-        for (const [nodeId, series] of liveNodes ?? EMPTY_NODE_MAP) {
-          if (!nodes.has(nodeId)) nodes.set(nodeId, [...series]);
+        const emptyIdentityNodes = new Map<IdentityId, MutableNodeSeriesMap>();
+        for (const [id, nodes] of liveByIdentity ?? emptyIdentityNodes) {
+          if (!nextByIdentity.has(id)) nextByIdentity.set(id, nodes);
         }
-        merged.set(protocol, capLoadedNodes(nodes));
+        merged.set(protocol, nextByIdentity);
       }
-      for (const [protocol, nodes] of live) {
-        if (!merged.has(protocol)) merged.set(protocol, nodes);
+      for (const [protocol, byIdentity] of live) {
+        if (!merged.has(protocol)) merged.set(protocol, byIdentity);
       }
+      if (generation !== historyGeneration) return;
       set({ history: merged });
     } catch (err) {
       console.warn('[environmentTelemetry] loadFromDb failed: ' + errLikeToLogString(err));
@@ -209,21 +326,30 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
   },
 }));
 
-/** Stable per-protocol node → series map (module-level empty constant when none). */
+/** Stable per-identity node → series map (module-level empty constant when none). */
 export function selectEnvironmentNodes(
   state: Pick<EnvironmentTelemetryState, 'history'>,
   protocol: MeshProtocol,
+  identityId: IdentityId | null | undefined,
 ): NodeSeriesMap {
-  return state.history.get(protocol) ?? EMPTY_NODE_MAP;
+  if (!identityId) return EMPTY_NODE_MAP;
+  const byIdentity = state.history.get(protocol);
+  if (!byIdentity) return EMPTY_NODE_MAP;
+  return (
+    byIdentity.get(identityId) ??
+    byIdentity.get(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID) ??
+    EMPTY_NODE_MAP
+  );
 }
 
 /** Stable series for one node (module-level empty constant when none). */
 export function selectEnvironmentSeries(
   state: Pick<EnvironmentTelemetryState, 'history'>,
   protocol: MeshProtocol,
+  identityId: IdentityId | null | undefined,
   nodeId: number,
 ): readonly EnvironmentHistoryPoint[] {
-  return state.history.get(protocol)?.get(nodeId) ?? EMPTY_SERIES;
+  return selectEnvironmentNodes(state, protocol, identityId).get(nodeId) ?? EMPTY_SERIES;
 }
 
 /** Readings scanned back from the newest when merging partial variants for display. */
@@ -254,6 +380,8 @@ export function latestEnvironmentReading(
     for (const key of Object.keys(r) as EnvironmentReadingField[]) {
       out[key] ??= r[key];
     }
+    out.adcVoltages ??= r.adcVoltages;
+    out.oneWireTemperatures ??= r.oneWireTemperatures;
   }
   return out;
 }
@@ -261,9 +389,12 @@ export function latestEnvironmentReading(
 /** Convenience for non-React callers (runtimes, side-effect modules). */
 export function recordEnvironmentReading(
   protocol: MeshProtocol,
+  identityId: IdentityId,
   nodeId: number,
   reading: EnvironmentReading,
   source: EnvironmentTelemetrySource,
 ): boolean {
-  return useEnvironmentTelemetryStore.getState().recordReading(protocol, nodeId, reading, source);
+  return useEnvironmentTelemetryStore
+    .getState()
+    .recordReading(protocol, identityId, nodeId, reading, source);
 }
