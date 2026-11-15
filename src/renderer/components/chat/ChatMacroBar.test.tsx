@@ -182,11 +182,11 @@ describe('ChatMacroBar', () => {
     ).toBe('hello');
   });
 
-  it('is collapsed by default: only "Show macros" shows, and F-keys still insert', () => {
+  it('is expanded by default: toolbar shows, and F-keys still insert', () => {
     seedMacros();
     renderComposer();
-    expect(screen.getByRole('button', { name: 'Show macros' })).toBeInTheDocument();
-    expect(screen.queryByRole('toolbar', { name: 'Message macros' })).toBeNull();
+    expect(screen.getByRole('toolbar', { name: 'Message macros' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show macros' })).toBeNull();
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', cancelable: true }));
@@ -194,10 +194,9 @@ describe('ChatMacroBar', () => {
     expect(screen.getByRole('textbox')).toHaveValue('On my way, ETA 15 min');
   });
 
-  it('expands, inserts on click without sending, highlights the last used, and collapses', () => {
+  it('inserts on click without sending, highlights the last used, and collapses', () => {
     seedMacros();
     const { onSendChunk } = renderComposer();
-    fireEvent.click(screen.getByRole('button', { name: 'Show macros' }));
     expect(useChatMacrosStore.getState().collapsed).toBe(false);
 
     const roger = screen.getByRole('button', { name: 'F1: Roger' });
@@ -290,8 +289,12 @@ describe('ChatMacroBar', () => {
   });
 
   it('gives the inline Small toolbar the leftover width instead of splitting it with the hint', () => {
-    renderComposer();
     const hintWrap = () => screen.getByText(/Enter to send/).parentElement;
+
+    act(() => {
+      useChatMacrosStore.getState().setCollapsed(true);
+    });
+    renderComposer();
     expect(hintWrap()?.className).toContain('flex-1');
 
     act(() => {
@@ -437,6 +440,9 @@ describe('ChatMacroBar', () => {
 
   it('has no axe violations collapsed and expanded with a highlighted macro', async () => {
     seedMacros();
+    act(() => {
+      useChatMacrosStore.getState().setCollapsed(true);
+    });
     const { container } = renderComposer();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();

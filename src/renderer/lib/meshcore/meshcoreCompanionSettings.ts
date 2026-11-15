@@ -5,7 +5,7 @@ import {
   stripCliValueMarker,
 } from './meshcoreCompanionCli';
 
-export type MeshcoreCompanionSettingGroup = 'device' | 'radio' | 'wifi';
+export type MeshcoreCompanionSettingGroup = 'device' | 'radio' | 'wifi' | 'notify' | 'retry';
 
 /**
  * `readonly`: shown, never written. `secret`: masked input; read only on explicit reveal.
@@ -15,7 +15,14 @@ export type MeshcoreCompanionSettingKind = 'number' | 'toggle' | 'text' | 'secre
 
 /** i18n keys under `meshcoreCompanionCli.validation.*`. */
 export type MeshcoreCompanionSettingError =
-  'required' | 'notNumber' | 'notInteger' | 'outOfRange' | 'tooLong' | 'invalidChars' | 'pinFormat';
+  | 'required'
+  | 'notNumber'
+  | 'notInteger'
+  | 'outOfRange'
+  | 'tooLong'
+  | 'invalidChars'
+  | 'pinFormat'
+  | 'invalidPreset';
 
 export interface MeshcoreCompanionSettingDescriptor {
   key: string;
@@ -268,6 +275,75 @@ export const MESHCORE_COMPANION_SETTINGS: readonly MeshcoreCompanionSettingDescr
     kind: 'readonly',
     getCommand: 'get wifi.ip',
     parse: parseIp,
+    rebootRequired: false,
+  },
+  {
+    key: 'notify.enabled',
+    group: 'notify',
+    kind: 'toggle',
+    getCommand: 'get notify',
+    setCommand: onOffSetter('notify.enabled'),
+    parse: parseOnOff,
+    rebootRequired: false,
+  },
+  {
+    key: 'notify.sound',
+    group: 'notify',
+    kind: 'toggle',
+    getCommand: 'get notify.sound',
+    setCommand: onOffSetter('notify.sound'),
+    parse: parseOnOff,
+    rebootRequired: false,
+  },
+  {
+    key: 'retry.preset',
+    group: 'retry',
+    kind: 'text',
+    getCommand: 'get retry.preset',
+    setCommand: plainSetter('retry.preset'),
+    parse: (reply) => stripCliValueMarker(reply).toLowerCase(),
+    validate: (value) => {
+      const v = value.trim().toLowerCase();
+      if (v === '') return 'required';
+      if (!/^(infra|rooftop|mobile)$/.test(v)) return 'invalidPreset';
+      return null;
+    },
+    maxLength: 16,
+    rebootRequired: false,
+  },
+  {
+    key: 'direct.retry',
+    group: 'retry',
+    kind: 'toggle',
+    getCommand: 'get direct.retry',
+    setCommand: onOffSetter('direct.retry'),
+    parse: parseOnOff,
+    rebootRequired: false,
+  },
+  {
+    key: 'direct.retry.count',
+    group: 'retry',
+    kind: 'number',
+    getCommand: 'get direct.retry.count',
+    setCommand: plainSetter('direct.retry.count'),
+    parse: parseLeadingNumber,
+    validate: numberValidator(1, 15, true),
+    min: 1,
+    max: 15,
+    step: 1,
+    rebootRequired: false,
+  },
+  {
+    key: 'flood.retry.count',
+    group: 'retry',
+    kind: 'number',
+    getCommand: 'get flood.retry.count',
+    setCommand: plainSetter('flood.retry.count'),
+    parse: parseLeadingNumber,
+    validate: numberValidator(0, 15, true),
+    min: 0,
+    max: 15,
+    step: 1,
     rebootRequired: false,
   },
 ];

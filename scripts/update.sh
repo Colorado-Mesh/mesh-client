@@ -624,7 +624,7 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 # vendored engine copy and treat further engine/src history as reviewed-closed.
 MECP_UPSTREAM_WATCH_ENTRIES=(
   'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@0b7123aef545542955334a8dbaa69a6bab897666'
-  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@2452f4f38b36bfe2e51ea4e0bd9a907dcc926adc'
+  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@c8fefd595944f6db67e628c6db259efbc46b6bd1'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.

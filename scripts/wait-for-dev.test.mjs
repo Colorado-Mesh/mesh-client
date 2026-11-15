@@ -184,3 +184,17 @@ it('requires the scheduled-broadcasts rebuild chunk before launching Electron', 
     }),
   ).toBe(false);
 });
+
+it('requires the MQTT publishWaypoint validation chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.mqttPublishWaypointValidation).toContain(
+    'mqtt-publish-waypoint-validation.js',
+  );
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('mqtt-publish-waypoint-validation.js')) {
+        throw new Error('not built');
+      }
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});

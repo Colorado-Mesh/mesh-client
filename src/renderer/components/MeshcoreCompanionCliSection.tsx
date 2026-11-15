@@ -499,6 +499,18 @@ export default function MeshcoreCompanionCliSection({
                 >
                   {renderGroupBody('wifi')}
                 </GroupFieldset>
+                <GroupFieldset
+                  anchorId="radio.companionCli.notify"
+                  legend={t('meshcoreCompanionCli.groups.notify')}
+                >
+                  {renderGroupBody('notify')}
+                </GroupFieldset>
+                <GroupFieldset
+                  anchorId="radio.companionCli.retry"
+                  legend={t('meshcoreCompanionCli.groups.retry')}
+                >
+                  {renderGroupBody('retry')}
+                </GroupFieldset>
               </>
             )}
 

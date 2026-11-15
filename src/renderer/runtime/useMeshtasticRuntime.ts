@@ -195,6 +195,7 @@ import {
   attachMeshtasticRuntimeWireEffects,
   type MeshtasticRuntimeWireEffectsDeps,
 } from '../lib/meshtastic/meshtasticRuntimeWireEffects';
+import { normalizeWaypointGeofenceForWire } from '../lib/meshtastic/meshtasticWaypointGeofence';
 import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
@@ -343,6 +344,7 @@ const meshtasticChannelProtobuf = ProtobufChannel as unknown as {
 const meshtasticMeshProtobuf = Mesh as unknown as {
   readonly UserSchema: DescMessage;
   readonly WaypointSchema: DescMessage;
+  readonly BoundingBoxSchema: DescMessage;
   readonly PositionSchema: DescMessage;
 };
 const meshtasticCannedMessagesProtobuf = CannedMessages as unknown as {
@@ -4057,6 +4059,7 @@ export function useMeshtasticRuntime() {
       if (!deviceRef.current) {
         throw new Error('No Meshtastic device connected');
       }
+      const geo = normalizeWaypointGeofenceForWire(wp);
       const waypoint: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.WaypointSchema, {
         id: wp.id,
         latitudeI: Math.round(wp.latitude * 1e7),
@@ -4066,6 +4069,20 @@ export function useMeshtasticRuntime() {
         icon: wp.icon ?? 0,
         lockedTo: wp.lockedTo ?? 0,
         expire: wp.expire ?? 0,
+        geofenceRadius: geo.geofenceRadius,
+        ...(geo.boundingBox
+          ? {
+              boundingBox: createMeshtasticMessage(meshtasticMeshProtobuf.BoundingBoxSchema, {
+                longitudeWestI: geo.boundingBox.longitudeWestI,
+                latitudeSouthI: geo.boundingBox.latitudeSouthI,
+                longitudeEastI: geo.boundingBox.longitudeEastI,
+                latitudeNorthI: geo.boundingBox.latitudeNorthI,
+              }),
+            }
+          : {}),
+        notifyOnEnter: geo.notifyOnEnter,
+        notifyOnExit: geo.notifyOnExit,
+        notifyFavoritesOnly: geo.notifyFavoritesOnly,
       });
       beginMeshtasticNonChatOutbound();
       try {
@@ -4119,6 +4136,11 @@ export function useMeshtasticRuntime() {
                 icon: wp.icon ?? 0,
                 lockedTo: wp.lockedTo ?? 0,
                 expire: wp.expire ?? 0,
+                geofenceRadius: geo.geofenceRadius,
+                boundingBox: geo.boundingBox,
+                notifyOnEnter: geo.notifyOnEnter,
+                notifyOnExit: geo.notifyOnExit,
+                notifyFavoritesOnly: geo.notifyFavoritesOnly,
               },
             })
             .catch((e: unknown) => {

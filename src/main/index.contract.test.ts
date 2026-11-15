@@ -205,9 +205,19 @@ describe('MeshCore packet log IPC (source contract)', () => {
 });
 
 describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
-  it('registers publishWaypoint handler with validation', () => {
+  it('registers publishWaypoint handler with sibling validation loader', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishWaypoint'");
-    expect(INDEX_SOURCE).toContain('validateMqttPublishWaypointArgs');
+    expect(INDEX_SOURCE).toContain('loadValidateMqttPublishWaypointArgs');
+  });
+
+  it('validates geofence radius and bounding box in sibling validation module', () => {
+    const validationSource = readFileSync(
+      join(__dirname, 'mqttPublishWaypointValidation.ts'),
+      'utf-8',
+    );
+    expect(validationSource).toContain('waypoint.geofenceRadius invalid');
+    expect(validationSource).toContain('waypoint.boundingBox invalid');
+    expect(validationSource).toContain('waypoint.boundingBox ordering invalid');
   });
 });
 
@@ -270,6 +280,13 @@ describe('MeshCore DB IPC (source contract)', () => {
       'hops_away = CASE WHEN ? IS NOT NULL AND (hops_away IS NULL OR ? < hops_away) THEN ? ELSE hops_away END,',
     );
     expect(INDEX_SOURCE).toContain('last_advert = CASE WHEN ? IS NOT NULL');
+  });
+
+  it('registers forgetMeshcoreContactAdvert to clear last_advert', () => {
+    expect(INDEX_SOURCE).toContain("'db:forgetMeshcoreContactAdvert'");
+    expect(INDEX_SOURCE).toContain(
+      'UPDATE meshcore_contacts SET last_advert = NULL WHERE node_id = ?',
+    );
   });
 
   it('saveMeshcoreContact uses UPSERT that preserves favorited on conflict', () => {

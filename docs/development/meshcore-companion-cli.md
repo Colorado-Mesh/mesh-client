@@ -14,11 +14,13 @@ All of these are gated by `ProtocolCapabilities.hasCompanionCli` plus `companion
 
 **Settings:** [`meshcoreCompanionSettings.ts`](../../src/renderer/lib/meshcore/meshcoreCompanionSettings.ts) describes each setting; the Radio panel section is [`MeshcoreCompanionCliSection.tsx`](../../src/renderer/components/MeshcoreCompanionCliSection.tsx).
 
-| Group  | Settings                                                                                                                         | Notes                                                                              |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| device | `ver`, `board` (read-only), `tz.offset`, `pin` (BLE PIN, write-only secret)                                                      | `pin` needs a reboot                                                               |
-| radio  | `af`, `dutycycle` (read-only), `int.thresh`, `cad`, `radio.rxgain`, `rxdelay`, `agc.reset.interval`, `txdelay`, `direct.txdelay` |                                                                                    |
-| wifi   | `wifi.enabled`, `wifi.ssid`, `wifi.pwd` (secret), `wifi.status`, `wifi.ip` (read-only)                                           | Enable, SSID and password need a reboot; `set wifi.clear` clears the saved network |
+| Group  | Settings                                                                                                                         | Notes                                                                                |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| device | `ver`, `board` (read-only), `tz.offset`, `pin` (BLE PIN, write-only secret)                                                      | `pin` needs a reboot                                                                 |
+| radio  | `af`, `dutycycle` (read-only), `int.thresh`, `cad`, `radio.rxgain`, `rxdelay`, `agc.reset.interval`, `txdelay`, `direct.txdelay` |                                                                                      |
+| wifi   | `wifi.enabled`, `wifi.ssid`, `wifi.pwd` (secret), `wifi.status`, `wifi.ip` (read-only)                                           | Enable, SSID and password need a reboot; `set wifi.clear` clears the saved network   |
+| notify | `notify.enabled` (`get notify`), `notify.sound`                                                                                  | Buzzer / sound alerts; unsupported commands surface as “Not supported by this radio” |
+| retry  | `retry.preset` (`infra` / `rooftop` / `mobile`), `direct.retry`, `direct.retry.count`, `flood.retry.count`                       | Firmware owns RF retries; Chat can still cancel a pending DM ACK wait in the UI      |
 
 `secret` settings are never part of bulk reads; `wifi.pwd` is read only on an explicit reveal (`MESHCORE_COMPANION_SECRET_GET_COMMANDS`).
 

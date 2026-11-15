@@ -887,6 +887,11 @@ export interface ElectronAPI {
       advLon: number | null,
       advName?: string | null,
     ) => Promise<void>;
+    /** Clears last_advert (and optional position) ignoring the monotonic update guard. */
+    forgetMeshcoreContactAdvert: (
+      nodeId: number,
+      opts?: { clearPosition?: boolean },
+    ) => Promise<void>;
     updateMeshcoreContactType: (nodeId: number, contactType: number) => Promise<void>;
     updateMeshcoreContactLastRf: (
       nodeId: number,
@@ -1153,6 +1158,16 @@ export interface ElectronAPI {
         icon?: number;
         lockedTo?: number;
         expire?: number;
+        geofenceRadius?: number;
+        boundingBox?: {
+          longitudeWestI: number;
+          latitudeSouthI: number;
+          longitudeEastI: number;
+          latitudeNorthI: number;
+        };
+        notifyOnEnter?: boolean;
+        notifyOnExit?: boolean;
+        notifyFavoritesOnly?: boolean;
       };
     }) => Promise<number>;
     publishProxy: (args: {

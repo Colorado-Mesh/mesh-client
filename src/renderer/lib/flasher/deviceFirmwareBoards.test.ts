@@ -57,6 +57,17 @@ describe('detectDeviceFlashBoard — Meshtastic', () => {
     });
   });
 
+  it('reports ambiguous when Heltec V4 OLED and TFT share hw_model 110', () => {
+    const result = detectDeviceFlashBoard(mt(110));
+    expect(result.status).toBe('ambiguous');
+    if (result.status !== 'ambiguous') return;
+    expect(result.candidates.map((b) => b.id).sort()).toEqual([
+      'meshtastic:heltec-v4',
+      'meshtastic:heltec-v4-tft',
+    ]);
+    expect(result.candidates.every((b) => b.flashBytes === 16 * 1024 * 1024)).toBe(true);
+  });
+
   it('matches legacy branded labels stored instead of numbers', () => {
     expect(detectDeviceFlashBoard(mt('Heltec V3'))).toMatchObject({
       status: 'matched',
@@ -86,18 +97,28 @@ describe('detectDeviceFlashBoard — MeshCore', () => {
   it.each([
     ['Heltec V3', 'meshcore:heltec-v3'],
     ['  heltec v3 ', 'meshcore:heltec-v3'],
+    ['Heltec V4', 'meshcore:heltec-v4'],
+    ['Heltec V4 OLED', 'meshcore:heltec-v4'],
+    ['heltec_v4_oled', 'meshcore:heltec-v4'],
     ['RAK 4631', 'meshcore:rak4631'],
     ['RAK4631', 'meshcore:rak4631'],
   ])('matches manufacturer model %j', (model, id) => {
     expect(detectDeviceFlashBoard(mc(model))).toMatchObject({ status: 'matched', board: { id } });
   });
 
-  it('does not fuzzy-match near models (V3.2, V4) and reports them unsupported', () => {
+  it('recognizes the normalized MeshCore V4 OLED model key heltecv4oled', () => {
+    expect(normalizeModelKey('Heltec V4 OLED')).toBe('heltecv4oled');
+    expect(detectDeviceFlashBoard(mc('heltecv4oled'))).toMatchObject({
+      status: 'matched',
+      board: { id: 'meshcore:heltec-v4' },
+    });
+  });
+
+  it('does not fuzzy-match near models (V3.2) and reports them unsupported', () => {
     expect(detectDeviceFlashBoard(mc('Heltec V3.2'))).toEqual({
       status: 'unsupported',
       reported: 'Heltec V3.2',
     });
-    expect(detectDeviceFlashBoard(mc('Heltec V4'))).toMatchObject({ status: 'unsupported' });
   });
 
   it('is unknown when disconnected or no model was reported', () => {

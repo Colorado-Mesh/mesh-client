@@ -21,6 +21,10 @@ import {
   toMeshtasticChannelNumber,
 } from '../meshtastic/meshtasticChannelNumber';
 import { meshtasticDeviceStatusForCode } from '../meshtastic/meshtasticDeviceStatus';
+import {
+  normalizeWaypointGeofenceForWire,
+  readWaypointGeofenceFromDecoded,
+} from '../meshtastic/meshtasticWaypointGeofence';
 import { meshtasticPacketRxTimeMs } from '../meshtasticLastHeard';
 import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
@@ -582,6 +586,7 @@ export class MeshtasticProtocol implements Protocol {
     if (id === undefined) {
       throw new TypeError('meshtastic sendWaypoint: id must be a valid unsigned integer');
     }
+    const geo = normalizeWaypointGeofenceForWire(opts);
     await device.sendWaypoint(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       create(Mesh.WaypointSchema, {
@@ -590,8 +595,24 @@ export class MeshtasticProtocol implements Protocol {
         description: opts.description ?? '',
         latitudeI: Math.round(opts.latitude * 1e7),
         longitudeI: Math.round(opts.longitude * 1e7),
+        icon: opts.icon ?? 0,
         lockedTo: opts.lockedTo ?? 0,
         expire: opts.expire ?? 0,
+        geofenceRadius: geo.geofenceRadius,
+        ...(geo.boundingBox
+          ? {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+              boundingBox: create(Mesh.BoundingBoxSchema, {
+                longitudeWestI: geo.boundingBox.longitudeWestI,
+                latitudeSouthI: geo.boundingBox.latitudeSouthI,
+                longitudeEastI: geo.boundingBox.longitudeEastI,
+                latitudeNorthI: geo.boundingBox.latitudeNorthI,
+              }),
+            }
+          : {}),
+        notifyOnEnter: geo.notifyOnEnter,
+        notifyOnExit: geo.notifyOnExit,
+        notifyFavoritesOnly: geo.notifyFavoritesOnly,
       }) as Parameters<MeshDevice['sendWaypoint']>[0],
       0xffffffff,
       MESHTASTIC_PRIMARY_CHANNEL,
@@ -1041,12 +1062,23 @@ export class MeshtasticProtocol implements Protocol {
         icon?: number;
         lockedTo?: number;
         expire?: number;
+        geofenceRadius?: number;
+        boundingBox?: {
+          longitudeWestI?: number;
+          latitudeSouthI?: number;
+          longitudeEastI?: number;
+          latitudeNorthI?: number;
+        } | null;
+        notifyOnEnter?: boolean;
+        notifyOnExit?: boolean;
+        notifyFavoritesOnly?: boolean;
       };
     };
     const waypointId = normalizedNodeNum(p.data.id);
     if (!waypointId) return [];
     const latitudeI = isFiniteNumber(p.data.latitudeI) ? p.data.latitudeI : 0;
     const longitudeI = isFiniteNumber(p.data.longitudeI) ? p.data.longitudeI : 0;
+    const geo = readWaypointGeofenceFromDecoded(p.data);
     return [
       {
         type: 'waypoint',
@@ -1061,6 +1093,11 @@ export class MeshtasticProtocol implements Protocol {
           icon: p.data.icon,
           lockedTo: p.data.lockedTo,
           expire: p.data.expire,
+          geofenceRadius: geo.geofenceRadius,
+          boundingBox: geo.boundingBox,
+          notifyOnEnter: geo.notifyOnEnter,
+          notifyOnExit: geo.notifyOnExit,
+          notifyFavoritesOnly: geo.notifyFavoritesOnly,
           from: normalizedNodeNum(p.from) ?? 0,
           to: normalizedNodeNum(p.to),
           channelIndex: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : undefined,

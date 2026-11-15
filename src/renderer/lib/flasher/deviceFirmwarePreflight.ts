@@ -62,6 +62,12 @@ export function evaluateFlashPreflight(input: PreflightInput): PreflightResult {
   } else if (detection.status === 'matched' && detection.board.id !== selectedBoard.id) {
     // Selection is locked to the live radio; reaching here means a stale/forged selection.
     blockers.push('boardMismatch');
+  } else if (
+    detection.status === 'ambiguous' &&
+    !detection.candidates.some((board) => board.id === selectedBoard.id)
+  ) {
+    // Ambiguous models (e.g. Heltec V4 OLED vs TFT) require an explicit variant pick.
+    blockers.push('boardMismatch');
   }
 
   // The app holds the USB serial port while connected; flashing would yank the live link.
@@ -89,7 +95,9 @@ export function evaluateFlashPreflight(input: PreflightInput): PreflightResult {
   // Full-flash ESP32 images rewrite NVS; the nRF52 DFU path replaces the app image only.
   if (selectedBoard && selectedBoard.family !== 'nrf52840') warnings.push('settingsReset');
   if (device.isConnected && device.connectionType !== 'serial') warnings.push('connectionDrops');
-  if (detection.status === 'unknown') warnings.push('unverifiedBoard');
+  if (detection.status === 'unknown' || detection.status === 'ambiguous') {
+    warnings.push('unverifiedBoard');
+  }
 
   return { blockers, warnings, canFlash: blockers.length === 0 };
 }

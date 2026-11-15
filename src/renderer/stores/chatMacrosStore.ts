@@ -74,7 +74,8 @@ const DEFAULT_PERSISTED: ChatMacrosPersisted = {
   slots: emptySlots(),
   size: null,
   sendMode: 'insert',
-  collapsed: true,
+  /** Expanded by default so MeshCore (and other) quick messages match companion-app canned UX. */
+  collapsed: false,
 };
 
 function isSlotIndex(index: number): boolean {

@@ -101,7 +101,9 @@ describe('planDeviceFirmware — Meshtastic ESP32', () => {
   });
 
   it('refuses a zip without an image for the board (fail closed, no fuzzy matching)', async () => {
-    const entries = [fileEntry('firmware-heltec-v4-2.7.15.abcdef0.factory.bin', s3Image)];
+    // ThinkNode M8 is not in DEVICE_FLASH_BOARDS — keep using an unsupported slug so the
+    // fail-closed path is IMAGE_NOT_FOUND (not IMAGE_BOARD_MISMATCH for a known other board).
+    const entries = [fileEntry('firmware-thinknode-m8-2.7.15.abcdef0.factory.bin', s3Image)];
     expect(
       await codeOf(
         planDeviceFirmware({ name: 'fw.zip', bytes: fakeZipBytes() }, heltec, {
@@ -186,6 +188,33 @@ describe('planDeviceFirmware — Meshtastic ESP32', () => {
         ),
       ),
     ).toBe('IMAGE_TOO_LARGE');
+  });
+
+  it('accepts Heltec V4 images whose header reports 16 MiB flash', async () => {
+    const heltecV4 = board('meshtastic:heltec-v4');
+    const heltecV4Tft = board('meshtastic:heltec-v4-tft');
+    const image = makeEspImage({ chipId: S3, flashSizeCode: 4 });
+    await expect(
+      planDeviceFirmware(
+        { name: 'firmware-heltec-v4-2.7.15.567b8ea.factory.bin', bytes: image },
+        heltecV4,
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
+    await expect(
+      planDeviceFirmware(
+        { name: 'firmware-heltec-v4-tft-2.7.15.567b8ea.factory.bin', bytes: image },
+        heltecV4Tft,
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
+    await expect(
+      planDeviceFirmware(
+        {
+          name: 'Heltec_v4_companion_radio_ble-v1.9.1-abc1234-merged.bin',
+          bytes: image,
+        },
+        board('meshcore:heltec-v4'),
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
   });
 
   it('refuses images larger than the board flash', async () => {

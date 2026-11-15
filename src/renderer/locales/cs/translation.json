@@ -1041,7 +1041,9 @@
     "markdownStrike": "Přeškrtnutí",
     "markdownCode": "Vložený kód",
     "markdownLink": "Odkaz",
-    "markdownToolbar": "Formátování"
+    "markdownToolbar": "Formátování",
+    "cancelPendingDmAck": "Zrušit čekání",
+    "cancelPendingDmAckAria": "Přestat čekat na potvrzení doručení a označit tuto zprávu jako neúspěšnou"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2932,7 +2934,19 @@
         "not_found": "Překryv nebyl nalezen.",
         "quota": "Úložiště prohlížeče je plné; odstraňte překryvný prvek nebo uvolněte místo na disku."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Poloměr geofencu (metry, 0 = žádný)",
+    "waypointGeofenceRadiusHint": "Firmware 2.8+ upozorní, když uzly vstoupí do tohoto kruhu nebo jej opustí.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Obdélníková geofence",
+    "waypointBoundingBoxWest": "Západní délka",
+    "waypointBoundingBoxSouth": "Jižní šířka",
+    "waypointBoundingBoxEast": "Východní délka",
+    "waypointBoundingBoxNorth": "Severní šířka",
+    "waypointBoundingBoxInvalid": "Ohraničující rámeček musí mít západ < východ a jih < sever",
+    "waypointNotifyOnEnter": "Upozornit při vstupu",
+    "waypointNotifyOnExit": "Upozornit při ukončení",
+    "waypointNotifyFavoritesOnly": "Upozorňovat pouze na oblíbené"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -3921,7 +3935,11 @@
     "noiseFloorTrendMax": "Max.",
     "noiseFloorTrendLast": "Poslední",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Probíhá shromažďování vzorků pro minigraf…"
+    "noiseFloorTrendNeedMoreSamples": "Probíhá shromažďování vzorků pro minigraf…",
+    "forgetAdvert": "Zapomenout poslední advert",
+    "forgetAdvertAria": "Vymazat časové razítko posledního advertu pro tento kontakt",
+    "forgetAdvertDone": "Časové razítko posledního advertu bylo vymazáno.",
+    "forgetAdvertFailed": "Nepodařilo se vymazat časové razítko posledního advertu."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -8000,7 +8018,9 @@
       "radio": "Ladění rádia",
       "wifi": "WiFi",
       "power": "Výkon",
-      "console": "Příkazová konzola"
+      "console": "Příkazová konzola",
+      "notify": "Oznámení",
+      "retry": "Opakované pokusy o odeslání zprávy"
     },
     "validation": {
       "required": "Zadej hodnotu.",
@@ -8009,7 +8029,8 @@
       "outOfRange": "Hodnota mimo rozsah",
       "tooLong": "Hodnota je příliš dlouhá.",
       "invalidChars": "Zalomení řádků není povoleno.",
-      "pinFormat": "Zadejte 6 číslic nebo 0 pro náhodný PIN."
+      "pinFormat": "Zadejte 6 číslic nebo 0 pro náhodný PIN.",
+      "invalidPreset": "Použijte infračervené, střešní nebo mobilní."
     },
     "settings": {
       "ver": {
@@ -8078,6 +8099,30 @@
       },
       "wifi_ip": {
         "label": "IP adresa"
+      },
+      "notify_enabled": {
+        "label": "Oznámení",
+        "hint": "Hlavní přepínač funkcí oznámení pro doprovodné aplikace."
+      },
+      "notify_sound": {
+        "label": "Bzučák / zvukové výstrahy",
+        "hint": "Přehrát zvukový signál pro upozornění, pokud to hardware podporuje."
+      },
+      "retry_preset": {
+        "label": "Zkusit předvolbu znovu",
+        "hint": "infrastruktura, střecha nebo mobilní – upravuje výchozí načasování přímého opakování a opakování při přetížení."
+      },
+      "direct_retry": {
+        "label": "Opakované pokusy o odeslání přímé zprávy",
+        "hint": "Když je tato funkce vypnutá, rádio se nepokouší o opětovné odeslání přímých zpráv."
+      },
+      "direct_retry_count": {
+        "label": "Počet přímých opakování",
+        "hint": "1 až 15 pokusů o odeslání přímých zpráv."
+      },
+      "flood_retry_count": {
+        "label": "Počet opakování při přetížení",
+        "hint": "0 až 15. Nastavení 0 zruší čekající opakované pokusy o přenos nadměrného množství dat a zastaví budoucí pokusy."
       }
     },
     "confirm": {
@@ -8620,7 +8665,8 @@
       "settingsReset": "Úplný flash obraz může smazat nastavení, kanály a klíče. Nejdříve exportujte zálohu.",
       "unverifiedBoard": "Rádio nebylo automaticky identifikováno — volba desky není ověřena. Špatná deska může zařízení znefunkčnit."
     },
-    "warningsTitle": "Před flashováním"
+    "warningsTitle": "Před flashováním",
+    "boardAmbiguousHint": "Toto rádio hlásí {{reported}}, což odpovídá více než jedné desce. Před nahráním firmwaru potvrďte variantu OLED nebo TFT."
   },
   "scheduledBroadcasts": {
     "title": "Plánované vysílání",

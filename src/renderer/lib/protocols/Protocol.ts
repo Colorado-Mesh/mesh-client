@@ -277,6 +277,13 @@ export interface TraceRouteEvent {
   requestId?: number;
 }
 
+export interface WaypointBoundingBoxEvent {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}
+
 export interface WaypointEvent {
   id: number;
   name: string;
@@ -289,6 +296,12 @@ export interface WaypointEvent {
   icon?: number;
   lockedTo?: number;
   expire?: number;
+  /** Circular geofence radius in meters (firmware 2.8+). */
+  geofenceRadius?: number;
+  boundingBox?: WaypointBoundingBoxEvent;
+  notifyOnEnter?: boolean;
+  notifyOnExit?: boolean;
+  notifyFavoritesOnly?: boolean;
   from: number;
   to?: number;
   channelIndex?: number;
@@ -481,6 +494,12 @@ export interface SendWaypointOptions {
   longitude: number;
   lockedTo?: number;
   expire?: number;
+  icon?: number;
+  geofenceRadius?: number;
+  boundingBox?: WaypointBoundingBoxEvent;
+  notifyOnEnter?: boolean;
+  notifyOnExit?: boolean;
+  notifyFavoritesOnly?: boolean;
 }
 
 // --- Management options ---

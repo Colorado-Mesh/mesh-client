@@ -30,20 +30,25 @@ Everything runs in the renderer over Web Serial. There is no main-process or IPC
 
 `DEVICE_FLASH_BOARDS` is the whole supported set (fail closed):
 
-| Id                     | Family     | Notes                                                 |
-| ---------------------- | ---------- | ----------------------------------------------------- |
-| `meshtastic:heltec-v3` | `esp32s3`  | `meshtasticHwModel` 43, slug `heltec-v3`, 8 MiB flash |
-| `meshtastic:tbeam`     | `esp32`    | `meshtasticHwModel` 4, slug `tbeam`, 4 MiB flash      |
-| `meshtastic:rak4631`   | `nrf52840` | `meshtasticHwModel` 9, slug `rak4631`                 |
-| `meshcore:heltec-v3`   | `esp32s3`  | prefix `heltec_v3`, model key `heltecv3`, 8 MiB flash |
-| `meshcore:rak4631`     | `nrf52840` | prefix `rak_4631`, model key `rak4631`                |
+| Id                         | Family     | Notes                                                      |
+| -------------------------- | ---------- | ---------------------------------------------------------- |
+| `meshtastic:heltec-v3`     | `esp32s3`  | `meshtasticHwModel` 43, slug `heltec-v3`, 8 MiB flash      |
+| `meshtastic:heltec-v4`     | `esp32s3`  | hw 110 OLED; slug `heltec-v4`, 16 MiB (ambiguous w/ TFT)   |
+| `meshtastic:heltec-v4-tft` | `esp32s3`  | hw 110 TFT; slug `heltec-v4-tft`, 16 MiB                   |
+| `meshtastic:tbeam`         | `esp32`    | `meshtasticHwModel` 4, slug `tbeam`, 4 MiB flash           |
+| `meshtastic:rak4631`       | `nrf52840` | `meshtasticHwModel` 9, slug `rak4631`                      |
+| `meshcore:heltec-v3`       | `esp32s3`  | prefix `heltec_v3`, model key `heltecv3`, 8 MiB            |
+| `meshcore:heltec-v4`       | `esp32s3`  | prefix `heltec_v4`, keys `heltecv4`/`heltecv4oled`, 16 MiB |
+| `meshcore:rak4631`         | `nrf52840` | prefix `rak_4631`, model key `rak4631`                     |
 
 Add a board only after its factory image layout, chip id, and bootloader entry are verified. Ids are `<protocol>:<slug>` and unique across protocols.
+
+**Not listed yet (need verified flash layouts before adding):** Meshtastic ThinkNode M4/M8/M9, Makerfabs Nomad Terminal, RAK WisMesh Dongle; MeshCore ThinkNode M4/M8, Muzi Base, Waveshare ESP32-S3 LR1121. Use the upstream web flasher for those until they are added here.
 
 ## Contracts and invariants
 
 - **Fail closed.** An unlisted board, an unrecognized file name, an ambiguous archive, or any header mismatch throws `DeviceFirmwareError` (typed `code`, optional `detail`) instead of guessing. Add new codes to both `ERROR_KEYS` in the component and `deviceFirmware.errors.*`.
-- **Detection.** `detectDeviceFlashBoard` returns `matched` (selection locked to the live radio), `unsupported` (blocks), or `unknown` (disconnected or no model reported: manual pick plus the `unverifiedBoard` warning). Meshtastic matches the numeric `hw_model` first, then a legacy branded label. MeshCore matches the normalized (`[a-z0-9]` only) `deviceQuery` manufacturer/model against `meshcoreModelKeys`. Live detection wins over `manualBoardId`.
+- **Detection.** `detectDeviceFlashBoard` returns `matched` (selection locked to the live radio), `ambiguous` (multiple matrix rows share the reported model — e.g. Heltec V4 OLED/TFT both use hw 110; user must verify the variant), `unsupported` (blocks), or `unknown` (disconnected or no model reported: manual pick plus the `unverifiedBoard` warning). Meshtastic matches the numeric `hw_model` first, then a legacy branded label. MeshCore matches the normalized (`[a-z0-9]` only) `deviceQuery` manufacturer/model against `meshcoreModelKeys`. Live detection wins over `manualBoardId` when matched.
 - **Plans are never stale.** The component re-plans on every change of file, board, or expected digest, and only uses a `PlanResult` whose `file`, `boardId`, and `expectedSha` still match the current inputs. Files over `FIRMWARE_BACKUP_MAX_BYTES` are refused before they are read into memory.
 - **Acknowledgement is bound** to `${board.id}:${payloadSha256}` and cleared after every flash attempt (`finally`).
 - **Preflight is pure.** `evaluateFlashPreflight` has no I/O. `canFlash` is true only with no blockers.

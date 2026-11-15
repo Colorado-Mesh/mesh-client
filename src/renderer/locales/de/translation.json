@@ -1020,7 +1020,9 @@
     "markdownStrike": "Durchgestrichen",
     "markdownCode": "Inline-Code",
     "markdownLink": "Link",
-    "markdownToolbar": "Formatierung"
+    "markdownToolbar": "Formatierung",
+    "cancelPendingDmAck": "Wartezeit abbrechen",
+    "cancelPendingDmAckAria": "Warten auf Zustellungsbestätigung beenden und diese Nachricht als fehlgeschlagen markieren"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Overlay nicht gefunden.",
         "quota": "Der Browserspeicher ist voll. Entfernen Sie ein Overlay oder schaffen Sie Speicherplatz."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Geofence-Radius (Meter, 0 = kein)",
+    "waypointGeofenceRadiusHint": "Die Firmware 2.8+ warnt, wenn Knoten in diesen Kreis eintreten oder ihn verlassen.",
+    "waypointGeofenceRadiusSummary": "Geofence {{meters}} m",
+    "waypointBoundingBoxEnable": "Rechteckiger Geofence",
+    "waypointBoundingBoxWest": "Westlicher Längengrad",
+    "waypointBoundingBoxSouth": "Südlicher Breitengrad",
+    "waypointBoundingBoxEast": "Östlicher Längengrad",
+    "waypointBoundingBoxNorth": "Nördlicher Breitengrad",
+    "waypointBoundingBoxInvalid": "Der Begrenzungsrahmen muss westlich < östlich und südlich < nördlich sein",
+    "waypointNotifyOnEnter": "Bei Betreten benachrichtigen",
+    "waypointNotifyOnExit": "Beim Beenden benachrichtigen",
+    "waypointNotifyFavoritesOnly": "Nur bei Favoriten benachrichtigen"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Max.",
     "noiseFloorTrendLast": "Letzte",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Proben für den Sparkline werden gesammelt …"
+    "noiseFloorTrendNeedMoreSamples": "Proben für den Sparkline werden gesammelt …",
+    "forgetAdvert": "Letzte Anzeige vergessen",
+    "forgetAdvertAria": "Den letzten Anzeigenzeitstempel für diesen Kontakt löschen",
+    "forgetAdvertDone": "Zeitstempel der letzten Anzeige wurde gelöscht.",
+    "forgetAdvertFailed": "Der Zeitstempel der letzten Anzeige konnte nicht gelöscht werden."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -7923,7 +7941,9 @@
       "radio": "Radio-Tuning",
       "wifi": "WiFi",
       "power": "Leistung",
-      "console": "Bedienerkonsole"
+      "console": "Bedienerkonsole",
+      "notify": "Benachrichtigungen",
+      "retry": "Wiederholungsversuche für Nachrichten"
     },
     "validation": {
       "required": "Geben Sie einen Wert ein.",
@@ -7932,7 +7952,8 @@
       "outOfRange": "Wert '{0}' ist außerhalb des Bereichs.",
       "tooLong": "Wert ist zu lang",
       "invalidChars": "Zeilenumbrüche sind nicht zulässig.",
-      "pinFormat": "Geben Sie 6 Ziffern oder 0 für eine zufällige PIN ein."
+      "pinFormat": "Geben Sie 6 Ziffern oder 0 für eine zufällige PIN ein.",
+      "invalidPreset": "Verwenden Sie Infrarot-, Dach- oder Mobilgeräte."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP-Adresse"
+      },
+      "notify_enabled": {
+        "label": "Benachrichtigungen",
+        "hint": "Hauptschalter für die Benachrichtigungsfunktionen der Begleit-App."
+      },
+      "notify_sound": {
+        "label": "Summer/akustische Warnsignale",
+        "hint": "Den Begleitsummer für Warnungen abspielen, wenn die Hardware dies unterstützt."
+      },
+      "retry_preset": {
+        "label": "Voreinstellung erneut versuchen",
+        "hint": "Infrastruktur, Dach oder mobil – passt die Standardeinstellungen für die direkte Übertragung und die Wiederholungszeiten bei Flood-Übertragungen an."
+      },
+      "direct_retry": {
+        "label": "Wiederholungsversuche für Direktnachrichten",
+        "hint": "Wenn diese Option deaktiviert ist, werden Direktnachrichten vom Funkgerät nicht erneut versucht."
+      },
+      "direct_retry_count": {
+        "label": "Anzahl der direkten Wiederholungsversuche",
+        "hint": "1 bis 15 Versuche für Direktnachrichten."
+      },
+      "flood_retry_count": {
+        "label": "Anzahl der Wiederholungsversuche bei Überlastung",
+        "hint": "0 bis 15. Die Einstellung 0 verwirft Wiederholungsversuche für Flood-Pakete in der Warteschlange und stoppt zukünftige Versuche."
       }
     },
     "confirm": {
@@ -8535,7 +8580,8 @@
       "settingsReset": "Full-Flash kann Einstellungen, Kanäle und Schlüssel löschen. Zuerst Backup exportieren.",
       "unverifiedBoard": "Funkgerät nicht erkannt — Boardwahl ungeprüft. Falsches Board kann Gerät unbootbar machen."
     },
-    "warningsTitle": "Vor dem Flashen"
+    "warningsTitle": "Vor dem Flashen",
+    "boardAmbiguousHint": "Dieses Radio meldet {{reported}}, was mit mehr als einer Platine übereinstimmt. Bestätigen Sie die OLED- oder TFT-Variante vor dem Flashen."
   },
   "scheduledBroadcasts": {
     "title": "Geplante Sendungen",

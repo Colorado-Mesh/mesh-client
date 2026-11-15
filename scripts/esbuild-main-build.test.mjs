@@ -28,6 +28,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * `scheduled-broadcasts-interval-rebuild.js` (not in index.js).
  * Environment telemetry IPC/SQL ships as sibling `environment-telemetry-handlers.js`
  * (not in index.js).
+ * MQTT publishWaypoint arg validation (2.8 geofence fields) ships as sibling
+ * `mqtt-publish-waypoint-validation.js` (not in index.js).
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
 
@@ -205,7 +207,19 @@ describe('esbuild-main-build', () => {
       expect(scheduledBroadcastsRebuildBytes.toString('utf8')).toContain(
         'rebuildScheduledBroadcastsIntervalCheckIfNeeded',
       );
+      const mqttWaypointValidationBytes = fs.readFileSync(
+        path.join(tempDir, 'mqtt-publish-waypoint-validation.js'),
+      );
+      expect(mqttWaypointValidationBytes.length).toBeGreaterThan(200);
+      expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
+        'validateMqttPublishWaypointArgs',
+      );
+      expect(mqttWaypointValidationBytes.toString('utf8')).toContain('geofenceRadius');
       const indexSource = fs.readFileSync(outfile, 'utf8');
+      expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
+      expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
+        'waypoint.geofenceRadius invalid',
+      );
       // Team roster DDL lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');
       expect(teamRosterBytes.toString('utf8')).toContain('CREATE TABLE IF NOT EXISTS team_members');

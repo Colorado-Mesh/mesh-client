@@ -1020,7 +1020,9 @@
     "markdownStrike": "Tachado",
     "markdownCode": "Código en línea",
     "markdownLink": "Enlaces",
-    "markdownToolbar": "Format"
+    "markdownToolbar": "Format",
+    "cancelPendingDmAck": "Cancelar la espera",
+    "cancelPendingDmAckAria": "Dejar de esperar la confirmación de entrega y marcar este mensaje como fallido"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2901,7 +2903,19 @@
         "not_found": "Superposición no encontrada.",
         "quota": "El almacenamiento del navegador está lleno; elimina una superposición o libera espacio en el disco."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "Radio de la geocerca (metros, 0 = ninguno)",
+    "waypointGeofenceRadiusHint": "El firmware 2.8 o superior avisa cuando los nodos entran o salen de este círculo.",
+    "waypointGeofenceRadiusSummary": "Geovalla {{meters}} m",
+    "waypointBoundingBoxEnable": "Geocerca rectangular",
+    "waypointBoundingBoxWest": "Longitud Oeste",
+    "waypointBoundingBoxSouth": "Latitud Sur",
+    "waypointBoundingBoxEast": "Longitud Este",
+    "waypointBoundingBoxNorth": "Latitud Norte",
+    "waypointBoundingBoxInvalid": "El recuadro delimitador debe tener oeste < este y sur < norte",
+    "waypointNotifyOnEnter": "Notificar al entrar",
+    "waypointNotifyOnExit": "Notificar al salir",
+    "waypointNotifyFavoritesOnly": "Notificar solo para los favoritos"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "Máx",
     "noiseFloorTrendLast": "Apellido",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "Recopilando muestras para el minigráfico..."
+    "noiseFloorTrendNeedMoreSamples": "Recopilando muestras para el minigráfico...",
+    "forgetAdvert": "Olvidar el último anuncio",
+    "forgetAdvertAria": "Borrar la última marca de tiempo del anuncio para este contacto",
+    "forgetAdvertDone": "Se ha borrado la marca de tiempo del último anuncio.",
+    "forgetAdvertFailed": "No se ha podido borrar la marca de tiempo del último anuncio."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -7923,7 +7941,9 @@
       "radio": "[sintonización de radio]",
       "wifi": "WIFI",
       "power": "Potencia",
-      "console": "bastidor de control"
+      "console": "bastidor de control",
+      "notify": "Notificaciones",
+      "retry": "Reintentos de envío de mensajes"
     },
     "validation": {
       "required": "Introduzca un valor.",
@@ -7932,7 +7952,8 @@
       "outOfRange": "El valor está fuera de rango.",
       "tooLong": "El valor es demasiado largo",
       "invalidChars": "No se permiten saltos de línea.",
-      "pinFormat": "Introduzca 6 dígitos, o 0 para un PIN aleatorio."
+      "pinFormat": "Introduzca 6 dígitos, o 0 para un PIN aleatorio.",
+      "invalidPreset": "Utiliza cámaras infrarrojas, de tejado o móviles."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "Dirección IP"
+      },
+      "notify_enabled": {
+        "label": "Notificaciones",
+        "hint": "Interruptor principal para las funciones de notificación del dispositivo complementario."
+      },
+      "notify_sound": {
+        "label": "Zumbador / alertas sonoras",
+        "hint": "Hacer sonar el timbre del dispositivo complementario para las alertas cuando el hardware lo admita."
+      },
+      "retry_preset": {
+        "label": "Volver a intentar el ajuste preestablecido",
+        "hint": "infra, rooftop o mobile — ajusta el tiempo predeterminado de reintento directo y Flood."
+      },
+      "direct_retry": {
+        "label": "Reintentos de mensajes directos",
+        "hint": "Cuando está desactivada, la radio no vuelve a intentar enviar los mensajes directos."
+      },
+      "direct_retry_count": {
+        "label": "Número de reintentos directos",
+        "hint": "De 1 a 15 intentos para los mensajes directos."
+      },
+      "flood_retry_count": {
+        "label": "Número de reintentos Flood",
+        "hint": "De 0 a 15. El ajuste 0 descarta los reintentos Flood en cola y detiene los futuros."
       }
     },
     "confirm": {
@@ -8535,7 +8580,8 @@
       "settingsReset": "Imagen full-flash puede borrar ajustes, canales y claves. Exporta backup primero.",
       "unverifiedBoard": "Radio no identificada — elección de placa sin verificar. Placa incorrecta puede inutilizar el dispositivo."
     },
-    "warningsTitle": "Antes de flashear"
+    "warningsTitle": "Antes de flashear",
+    "boardAmbiguousHint": "Esta radio informa de {{reported}}, que coincide con más de una placa. Confirme la variante OLED o TFT antes de actualizar el «firmware»."
   },
   "scheduledBroadcasts": {
     "title": "Transmisiones programadas",

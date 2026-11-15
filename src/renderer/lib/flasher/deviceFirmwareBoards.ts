@@ -43,6 +43,25 @@ export const DEVICE_FLASH_BOARDS: readonly DeviceFlashBoard[] = [
     flashBytes: 8 * MIB,
   },
   {
+    id: 'meshtastic:heltec-v4',
+    protocol: 'meshtastic',
+    label: 'Heltec V4 (OLED)',
+    family: 'esp32s3',
+    meshtasticHwModel: 110,
+    meshtasticSlug: 'heltec-v4',
+    flashBytes: 16 * MIB,
+  },
+  {
+    // Same hw_model 110 as OLED — detection returns ambiguous; user must pick the variant.
+    id: 'meshtastic:heltec-v4-tft',
+    protocol: 'meshtastic',
+    label: 'Heltec V4 (TFT)',
+    family: 'esp32s3',
+    meshtasticHwModel: 110,
+    meshtasticSlug: 'heltec-v4-tft',
+    flashBytes: 16 * MIB,
+  },
+  {
     id: 'meshtastic:tbeam',
     protocol: 'meshtastic',
     label: 'LilyGo T-Beam',
@@ -67,6 +86,15 @@ export const DEVICE_FLASH_BOARDS: readonly DeviceFlashBoard[] = [
     meshcorePrefix: 'heltec_v3',
     meshcoreModelKeys: ['heltecv3'],
     flashBytes: 8 * MIB,
+  },
+  {
+    id: 'meshcore:heltec-v4',
+    protocol: 'meshcore',
+    label: 'Heltec V4',
+    family: 'esp32s3',
+    meshcorePrefix: 'heltec_v4',
+    meshcoreModelKeys: ['heltecv4', 'heltecv4oled'],
+    flashBytes: 16 * MIB,
   },
   {
     id: 'meshcore:rak4631',
@@ -108,6 +136,11 @@ export interface DetectedFlashDevice {
 export type BoardDetection =
   /** Live radio identified as a supported board — selection is locked to it. */
   | { status: 'matched'; board: DeviceFlashBoard }
+  /**
+   * Live radio matched multiple matrix rows (e.g. Heltec V4 OLED vs TFT share hw_model 110).
+   * Selection stays unlocked so the user verifies the variant before flashing.
+   */
+  | { status: 'ambiguous'; reported: string; candidates: readonly DeviceFlashBoard[] }
   /** Live radio reported a model that is not in the matrix — flashing refused. */
   | { status: 'unsupported'; reported: string }
   /** Nothing to detect from (disconnected or no model reported) — manual selection + confirm. */
@@ -138,16 +171,20 @@ export function detectDeviceFlashBoard(device: DetectedFlashDevice): BoardDetect
     const { id, label } = reportedMeshtasticModel(raw);
     if (id === 0) return { status: 'unknown' }; // UNSET
     const boards = getDeviceFlashBoards('meshtastic');
-    const byId = id === null ? undefined : boards.find((b) => b.meshtasticHwModel === id);
-    if (byId) return { status: 'matched', board: byId };
+    const byId = id === null ? [] : boards.filter((b) => b.meshtasticHwModel === id);
+    const soleById = byId.length === 1 ? byId[0] : undefined;
+    if (soleById) return { status: 'matched', board: soleById };
+    if (byId.length > 1) return { status: 'ambiguous', reported: label, candidates: byId };
     // Legacy rows may store a branded label instead of the enum number.
     const labelKey = normalizeModelKey(label);
-    const byLabel = boards.find(
+    const byLabel = boards.filter(
       (b) =>
         b.meshtasticHwModel !== undefined &&
         normalizeModelKey(meshtasticHwModelName(b.meshtasticHwModel)) === labelKey,
     );
-    if (byLabel) return { status: 'matched', board: byLabel };
+    const soleByLabel = byLabel.length === 1 ? byLabel[0] : undefined;
+    if (soleByLabel) return { status: 'matched', board: soleByLabel };
+    if (byLabel.length > 1) return { status: 'ambiguous', reported: label, candidates: byLabel };
     return { status: 'unsupported', reported: label };
   }
 

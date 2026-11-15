@@ -1268,6 +1268,16 @@ export class MQTTManager extends EventEmitter {
       icon?: number;
       lockedTo?: number;
       expire?: number;
+      geofenceRadius?: number;
+      boundingBox?: {
+        longitudeWestI: number;
+        latitudeSouthI: number;
+        longitudeEastI: number;
+        latitudeNorthI: number;
+      };
+      notifyOnEnter?: boolean;
+      notifyOnExit?: boolean;
+      notifyFavoritesOnly?: boolean;
     },
     publishJsonMirror: boolean,
     pskBase64?: string,
@@ -1282,6 +1292,12 @@ export class MQTTManager extends EventEmitter {
       icon: waypoint.icon ?? 0,
       lockedTo: waypoint.lockedTo ?? 0,
       expire: waypoint.expire ?? 0,
+      geofenceRadius: waypoint.geofenceRadius ?? 0,
+      // Nested MessageInit — avoid importing BoundingBoxSchema into the main bundle.
+      ...(waypoint.boundingBox ? { boundingBox: waypoint.boundingBox } : {}),
+      notifyOnEnter: waypoint.notifyOnEnter === true,
+      notifyOnExit: waypoint.notifyOnExit === true,
+      notifyFavoritesOnly: waypoint.notifyFavoritesOnly === true,
     });
     const data = create(DataSchema, {
       portnum: PortNum.WAYPOINT_APP,

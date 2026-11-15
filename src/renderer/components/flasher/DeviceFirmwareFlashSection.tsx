@@ -126,6 +126,7 @@ export function DeviceFirmwareFlashSection({
     () => (device ? detectDeviceFlashBoard(device) : { status: 'unknown' }),
     [device],
   );
+  const boardOptions = detection.status === 'ambiguous' ? detection.candidates : boards;
 
   const [manualBoardId, setManualBoardId] = useState<string | null>(null);
   // Last live-detected board, kept so a disconnected radio (e.g. while flashing over USB) still
@@ -381,7 +382,11 @@ export function DeviceFirmwareFlashSection({
           <select
             aria-label={t('deviceFirmware.aria.board')}
             value={selectedBoard?.id ?? ''}
-            disabled={controlsDisabled || detection.status !== 'unknown'}
+            disabled={
+              controlsDisabled ||
+              detection.status === 'matched' ||
+              detection.status === 'unsupported'
+            }
             onChange={(e) => {
               const board = getDeviceFlashBoardById(e.target.value);
               setManualBoardId(board?.protocol === device.protocol ? board.id : null);
@@ -389,7 +394,7 @@ export function DeviceFirmwareFlashSection({
             className="bg-ink-800 text-ink-100 border-ink-600 mt-1 block w-full rounded border px-2 py-1 text-sm disabled:opacity-60"
           >
             <option value="">{t('deviceFirmware.boardPlaceholder')}</option>
-            {boards.map((board) => (
+            {boardOptions.map((board) => (
               <option key={board.id} value={board.id}>
                 {board.label}
               </option>
@@ -403,6 +408,11 @@ export function DeviceFirmwareFlashSection({
         ) : null}
         {detection.status === 'unknown' ? (
           <p className="text-ink-400 text-xs">{t('deviceFirmware.boardManualHint')}</p>
+        ) : null}
+        {detection.status === 'ambiguous' ? (
+          <p className="text-ink-400 text-xs">
+            {t('deviceFirmware.boardAmbiguousHint', { reported: detection.reported })}
+          </p>
         ) : null}
         {detection.status === 'unsupported' ? (
           <p role="alert" className="text-xs text-red-300">

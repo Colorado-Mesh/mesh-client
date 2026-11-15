@@ -255,6 +255,16 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const mqttWaypointPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/mqttPublishWaypointValidation.ts'),
+            [
+              'export function validateMqttPublishWaypointArgs() {',
+              `  return 'waypoint.geofenceRadius invalid ${mqttWaypointPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

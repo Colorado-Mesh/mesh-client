@@ -1020,7 +1020,9 @@
     "markdownStrike": "취소선",
     "markdownCode": "인라인 코드",
     "markdownLink": "링크",
-    "markdownToolbar": "서식 지정"
+    "markdownToolbar": "서식 지정",
+    "cancelPendingDmAck": "대기 취소",
+    "cancelPendingDmAckAria": "전달 확인을 기다리지 말고 이 메시지를 실패로 표시하세요."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2901,7 +2903,19 @@
         "not_found": "오버레이를 찾을 수 없습니다.",
         "quota": "브라우저 저장 공간이 가득 찼습니다. 오버레이를 제거하거나 디스크 공간을 확보하세요."
       }
-    }
+    },
+    "waypointGeofenceRadiusLabel": "지오펜스 반경(미터, 0 = 없음)",
+    "waypointGeofenceRadiusHint": "펌웨어 2.8+는 노드가 이 서클에 진입하거나 나갈 때 알림을 보냅니다.",
+    "waypointGeofenceRadiusSummary": "지오펜스 {{meters}}m",
+    "waypointBoundingBoxEnable": "직사각형 지오펜스",
+    "waypointBoundingBoxWest": "서경",
+    "waypointBoundingBoxSouth": "남위",
+    "waypointBoundingBoxEast": "동경",
+    "waypointBoundingBoxNorth": "북위",
+    "waypointBoundingBoxInvalid": "경계 상자는 서쪽 < 동쪽 및 남쪽 < 북쪽이어야 합니다.",
+    "waypointNotifyOnEnter": "입력 시 알림",
+    "waypointNotifyOnExit": "종료 시 알림",
+    "waypointNotifyFavoritesOnly": "즐겨찾기에 대해서만 알림"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -3886,7 +3900,11 @@
     "noiseFloorTrendMax": "최대",
     "noiseFloorTrendLast": "마지막",
     "noiseFloorTrendValueDbm": "{{value}} dBm",
-    "noiseFloorTrendNeedMoreSamples": "스파크라인을 위한 샘플 수집 중..."
+    "noiseFloorTrendNeedMoreSamples": "스파크라인을 위한 샘플 수집 중...",
+    "forgetAdvert": "마지막 advert 잊기",
+    "forgetAdvertAria": "이 연락처의 마지막 advert 타임스탬프 지우기",
+    "forgetAdvertDone": "마지막 advert 타임스탬프가 삭제되었습니다.",
+    "forgetAdvertFailed": "마지막 advert 타임스탬프를 지울 수 없습니다."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -7923,7 +7941,9 @@
       "radio": "라디오 튜닝",
       "wifi": "WiFi",
       "power": "전원",
-      "console": "명령 콘솔"
+      "console": "명령 콘솔",
+      "notify": "토",
+      "retry": "메시지 재시도"
     },
     "validation": {
       "required": "값을 입력하십시오",
@@ -7932,7 +7952,8 @@
       "outOfRange": "값이 범위를 벗어났습니다.",
       "tooLong": "값이 너무 깁니다.",
       "invalidChars": "줄 바꿈은 허용되지 않습니다.",
-      "pinFormat": "6자리 숫자를 입력하거나 무작위 PIN에 대해 0을 입력합니다."
+      "pinFormat": "6자리 숫자를 입력하거나 무작위 PIN에 대해 0을 입력합니다.",
+      "invalidPreset": "인프라, 옥상 또는 이동식 에어컨을 사용하세요."
     },
     "settings": {
       "ver": {
@@ -8001,6 +8022,30 @@
       },
       "wifi_ip": {
         "label": "IP 주소"
+      },
+      "notify_enabled": {
+        "label": "토",
+        "hint": "동반자 알림 기능을 위한 마스터 스위치."
+      },
+      "notify_sound": {
+        "label": "부저/사운드 알림",
+        "hint": "하드웨어가 지원하는 경우 알림을 위해 동반 버저를 울립니다."
+      },
+      "retry_preset": {
+        "label": "프리셋 다시 시도",
+        "hint": "인프라, 옥상 또는 모바일 — 기본 직접 및 플러드 재시도 타이밍을 조정합니다."
+      },
+      "direct_retry": {
+        "label": "다이렉트 메시지 재시도",
+        "hint": "이 기능을 끄면 무선 장치가 직접 메시지를 재시도하지 않습니다."
+      },
+      "direct_retry_count": {
+        "label": "직접 재시도 횟수",
+        "hint": "다이렉트 메시지의 경우 1~15회 시도."
+      },
+      "flood_retry_count": {
+        "label": "플러드 재시도 횟수",
+        "hint": "0~15. 0으로 설정하면 대기 중인 플러드 재시도가 중단되고 향후 재시도도 중지됩니다."
       }
     },
     "confirm": {
@@ -8535,7 +8580,8 @@
       "settingsReset": "full-flash는 설정·채널·키를 지울 수 있습니다. 먼저 백업하세요.",
       "unverifiedBoard": "무선기 미식별 — 보드 선택 미검증. 잘못된 보드는 기기를 사용 불가로 만들 수 있음."
     },
-    "warningsTitle": "플래시 전"
+    "warningsTitle": "플래시 전",
+    "boardAmbiguousHint": "이 라디오는 {{reported}}을(를) 보고하며, 이는 둘 이상의 보드와 일치합니다. 플래싱하기 전에 OLED 또는 TFT 변형을 확인하세요."
   },
   "scheduledBroadcasts": {
     "title": "예정된 방송",
