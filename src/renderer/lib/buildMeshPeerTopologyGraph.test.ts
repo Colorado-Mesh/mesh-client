@@ -5,15 +5,11 @@ import {
   isMeshPeerOnline,
   isMeshRelayHubCandidate,
   MESH_PEER_MAX_RELAY_HUBS,
-  MESH_PEER_MAX_VISIBLE_NODES,
   MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED,
   resolveMeshPeerRelayId,
 } from './buildMeshPeerTopologyGraph';
 import { FORCE_REPULSION_FULL_PAIR_CAP } from './forceDirectedGraphLayout';
-import {
-  TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
-} from './topologyGraphLimits';
+import { TOPOLOGY_GRAPH_DISTANT_NODE_CAP } from './topologyGraphLimits';
 import type { MeshNode } from './types';
 
 function node(id: number, overrides: Partial<MeshNode> = {}): MeshNode {
@@ -59,23 +55,6 @@ describe('buildMeshPeerTopologyGraph', () => {
     ).toBe(true);
   });
 
-  it('hides distant peers when includeDistantPeers is false', () => {
-    const nodes = new Map<number, MeshNode>([
-      [1, node(1, { hops_away: 0 })],
-      [2, node(2, { hops_away: 1 })],
-      [3, node(3, { hops_away: 4, path: [2] })],
-    ]);
-
-    const graph = buildMeshPeerTopologyGraph(nodes, {
-      myNodeId: 1,
-      selfLabel: 'Me',
-      filter: { includeDistantPeers: false },
-    });
-
-    expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(false);
-    expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(true);
-  });
-
   it('respects maxHops filter', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, { hops_away: 0 })],
@@ -107,6 +86,46 @@ describe('buildMeshPeerTopologyGraph', () => {
     expect(
       graph.edges.some((e) => e.source === '1' && e.target === '9' && e.kind === 'relay'),
     ).toBe(true);
+  });
+
+  it('does not promote hop-filtered path relays back into the hub ring', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0 })],
+      // Filtered out by maxHops: 2, but still referenced as a path hop.
+      [2, node(2, { hops_away: 5 })],
+      [3, node(3, { hops_away: 2, path: [2, 3] })],
+    ]);
+
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+      filter: { maxHops: 2 },
+    });
+
+    expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(false);
+    expect(graph.nodes.some((n) => n.nodeId === 3 && n.kind === 'peer')).toBe(true);
+    expect(
+      graph.edges.some((e) => e.source === '1' && e.target === '3' && e.kind === 'relay'),
+    ).toBe(true);
+  });
+
+  it('does not emit a multi-hop hub as both relay and peer', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0 })],
+      [4, node(4, { hops_away: 2 })],
+      [5, node(5, { hops_away: 3, path: [4, 5] })],
+    ]);
+
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+      filter: { maxHops: null },
+    });
+
+    const matches = graph.nodes.filter((n) => n.nodeId === 4);
+    expect(matches).toHaveLength(1);
+    expect(matches[0]?.kind).toBe('relay');
+    expect(graph.nodes.some((n) => n.nodeId === 5 && n.kind === 'peer')).toBe(true);
   });
 
   it('caps relay hubs and demotes MQTT-only direct peers to compact leaves', () => {
@@ -193,49 +212,38 @@ function peerMap(peerCount: number, hopsAway: number | undefined): Map<number, M
 }
 
 describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
-  it('re-exports the shared nearby/distant caps', () => {
-    expect(MESH_PEER_MAX_VISIBLE_NODES).toBe(TOPOLOGY_GRAPH_NEARBY_NODE_CAP);
+  it('re-exports the shared visible cap independent of the force full-pair switch', () => {
     expect(MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED).toBe(TOPOLOGY_GRAPH_DISTANT_NODE_CAP);
-    expect(MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED).toBe(FORCE_REPULSION_FULL_PAIR_CAP);
+    expect(MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED).toBe(1000);
+    expect(MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED).not.toBe(FORCE_REPULSION_FULL_PAIR_CAP);
   });
 
-  it('shows all 168 nodes when distant peers are on and max hops is all', () => {
+  it('shows all 168 nodes when Show all', () => {
     const graph = buildMeshPeerTopologyGraph(peerMap(167, 1), {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: true, maxHops: null },
+      filter: { maxHops: null },
     });
     expect(graph.nodes).toHaveLength(168);
     expect(graph.hiddenCount).toBe(0);
-  });
-
-  it('shows all 168 one-hop nodes when distant peers are hidden (1-hop is not distant)', () => {
-    const graph = buildMeshPeerTopologyGraph(peerMap(167, 1), {
-      myNodeId: 1,
-      selfLabel: 'Me',
-      filter: { includeDistantPeers: false, maxHops: null },
-    });
-    expect(graph.nodes).toHaveLength(168);
-    expect(graph.hiddenCount).toBe(0);
-    expect(graph.nodes.some((n) => n.kind === 'self')).toBe(true);
   });
 
   it.each([
-    { peers: 398, hidden: 0 },
-    { peers: 399, hidden: 0 },
-    { peers: 400, hidden: 1 },
-    { peers: 401, hidden: 2 },
-  ])('distant cap: $peers peers → hidden $hidden', ({ peers, hidden }) => {
+    { peers: 998, hidden: 0 },
+    { peers: 999, hidden: 0 },
+    { peers: 1000, hidden: 1 },
+    { peers: 1001, hidden: 2 },
+  ])('visible cap: $peers peers → hidden $hidden', ({ peers, hidden }) => {
     const graph = buildMeshPeerTopologyGraph(peerMap(peers, 1), {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: true, maxHops: null },
+      filter: { maxHops: null },
     });
     expect(graph.hiddenCount).toBe(hidden);
     expect(graph.nodes).toHaveLength(Math.min(peers + 1, MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED));
   });
 
-  it('changes visible count across maxHops 1, 2, 8, and all', () => {
+  it('changes visible count across maxHops 1, 2, 8, and Show all', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
     let id = 2;
     for (let i = 0; i < 30; i++, id++) nodes.set(id, node(id, { hops_away: 1 }));
@@ -248,7 +256,7 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
         buildMeshPeerTopologyGraph(nodes, {
           myNodeId: 1,
           selfLabel: 'Me',
-          filter: { includeDistantPeers: true, maxHops },
+          filter: { maxHops },
         }).nodes.length,
     );
     expect(counts[0]).toBeLessThan(counts[1]);
@@ -265,32 +273,26 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: true, maxHops: 2 },
+      filter: { maxHops: 2 },
     });
     expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(false);
     expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(true);
   });
 
-  it('includes unknown hops only when All hops and distant peers are on', () => {
+  it('includes unknown hops when Show all', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, { hops_away: 0 })],
       [3, node(3)],
     ]);
-    const hidden = buildMeshPeerTopologyGraph(nodes, {
-      myNodeId: 1,
-      selfLabel: 'Me',
-      filter: { includeDistantPeers: false, maxHops: null },
-    });
-    expect(hidden.nodes.some((n) => n.nodeId === 3)).toBe(false);
     const shown = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: true, maxHops: null },
+      filter: { maxHops: null },
     });
     expect(shown.nodes.some((n) => n.nodeId === 3)).toBe(true);
   });
 
-  it('hides hops > 1 when distant peers are off and max hops is all', () => {
+  it('shows multi-hop peers when Show all without a distant-peers checkbox', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, { hops_away: 0 })],
       [2, node(2, { hops_away: 1 })],
@@ -299,13 +301,13 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: false, maxHops: null },
+      filter: { maxHops: null },
     });
-    expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(false);
+    expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(true);
     expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(true);
   });
 
-  it('does not gate numeric max hops behind show-distant (Graph default combo)', () => {
+  it('applies Graph default max hops 2', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, { hops_away: 0 })],
       [2, node(2, { hops_away: 1 })],
@@ -315,13 +317,13 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: false, maxHops: 2 },
+      filter: { maxHops: 2 },
     });
     expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(true);
     expect(graph.nodes.some((n) => n.nodeId === 4)).toBe(false);
   });
 
-  it('changes visible count across maxHops with distant peers off', () => {
+  it('changes visible count across numeric maxHops', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
     let id = 2;
     for (let i = 0; i < 10; i++, id++) nodes.set(id, node(id, { hops_away: 1 }));
@@ -333,7 +335,7 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
         buildMeshPeerTopologyGraph(nodes, {
           myNodeId: 1,
           selfLabel: 'Me',
-          filter: { includeDistantPeers: false, maxHops },
+          filter: { maxHops },
         }).nodes.length,
     );
     expect(counts[0]).toBe(11);
@@ -341,15 +343,15 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     expect(counts[2]).toBe(31);
   });
 
-  it('keeps lowest-hop peers when the distant cap slices', () => {
+  it('keeps lowest-hop peers when the visible cap slices', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
-    for (let i = 2; i <= 402; i++) {
-      nodes.set(i, node(i, { hops_away: i <= 201 ? 1 : 8 }));
+    for (let i = 2; i <= 1002; i++) {
+      nodes.set(i, node(i, { hops_away: i <= 501 ? 1 : 8 }));
     }
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: true, maxHops: null },
+      filter: { maxHops: null },
     });
     expect(graph.hiddenCount).toBeGreaterThan(0);
     const hop1Ids = [...nodes.values()].filter((n) => n.hops_away === 1).map((n) => n.node_id);
@@ -358,7 +360,7 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     expect(graph.nodes.some((n) => n.hops === 8)).toBe(true);
   });
 
-  it('shows 100 MQTT 0-hop nodes when distant peers are hidden (under the 400 cap)', () => {
+  it('shows 100 MQTT 0-hop nodes under the visible cap', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
     for (let i = 2; i <= 101; i++) {
       nodes.set(i, node(i, { hops_away: 0, source: 'mqtt', heard_via_mqtt_only: true }));
@@ -366,7 +368,7 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: false },
+      filter: { maxHops: null },
     });
     expect(graph.nodes).toHaveLength(101);
     expect(graph.hiddenCount).toBe(0);

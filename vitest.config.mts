@@ -93,6 +93,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/formatRetryCountdown.test.ts',
   'src/renderer/lib/channelListDedupe.test.ts',
   'src/renderer/lib/map/mapViewportBounds.test.ts',
+  'src/renderer/lib/map/liveTrafficHopTones.test.ts',
   'src/renderer/lib/mecp/mecpComposeRoles.test.ts',
   'src/renderer/lib/nodeIcons.test.ts',
   'src/renderer/lib/meshtastic/meshtasticEnumLabels.test.ts',

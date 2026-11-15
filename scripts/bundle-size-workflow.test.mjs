@@ -28,6 +28,25 @@ if (!budgetMatch) {
 }
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = Number(budgetMatch[1]) * 1024;
 
+describe('pre-commit main bundle gate', () => {
+  const hook = fs.readFileSync(path.join(ROOT, '.githooks/pre-commit'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+
+  it('exposes check:main-bundle as the same vitest command as CI', () => {
+    expect(pkg.scripts['check:main-bundle']).toBe(command);
+  });
+
+  it('path-gates check:main-bundle for src/main and esbuild main-build scripts', () => {
+    expect(hook).toContain("pnpm run check:main-bundle || fail 'pnpm run check:main-bundle'");
+    expect(hook).toContain(
+      '^(src/main/|scripts/esbuild-main-build(\\.mjs|\\.test\\.mjs)|scripts/esbuild-main-externals\\.mjs)',
+    );
+    expect(hook).toContain(
+      'pre-commit: skip check:main-bundle (no main/esbuild bundle paths staged)',
+    );
+  });
+});
+
 describe('always-on bundle workflow', () => {
   it('runs for all PR targets and changes, including draft and retarget events', () => {
     expect(workflow.on.pull_request).toEqual({
@@ -258,6 +277,12 @@ describe('always-on bundle workflow', () => {
           if (status !== 0) {
             expect(output).toContain('keeps the minified main bundle under the size budget');
             expect(output).toContain(String(MAIN_BUNDLE_SIZE_BUDGET_BYTES));
+            expect(output).toContain('Main process bundle over budget');
+            expect(output).toContain('sibling esbuild entry');
+            expect(output).toContain('esbuild-main-externals.mjs');
+            expect(output).toContain('build:main:minify-meta');
+            expect(output).toContain('ONLY if there is absolutely no other way');
+            expect(output).toContain('Never raise the budget for convenience');
           }
         }
         for (const file of artifacts) {

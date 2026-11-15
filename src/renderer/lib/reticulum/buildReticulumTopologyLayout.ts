@@ -1,8 +1,6 @@
 import type { ForceEdge } from '../forceDirectedGraphLayout';
 import {
-  RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
   topologyPeerPassesHopFilters,
 } from '../topologyGraphLimits';
@@ -61,16 +59,10 @@ export interface ReticulumTopologyGraph {
 
 const SELF_ID = 'self';
 
-export const RETICULUM_TOPOLOGY_NEARBY_NODE_CAP = TOPOLOGY_GRAPH_NEARBY_NODE_CAP;
 export const RETICULUM_TOPOLOGY_DISTANT_NODE_CAP = TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 
 export interface ReticulumTopologyFilterOptions {
-  /**
-   * When false and Max hops is All, hide hops above the RNS nearby ceiling (2).
-   * Numeric Max hops is not gated by this checkbox.
-   */
-  includeDistantPeers?: boolean;
-  /** When set, hide peers whose reported hop count exceeds this value. */
+  /** When set, hide peers whose reported hop count exceeds this value. Null = Show all. */
   maxHops?: number | null;
   /** When true, keep RNode/KISS/BLE spokes and drop TCP/I2P/Auto hubs. */
   rfOnly?: boolean;
@@ -227,17 +219,12 @@ export function filterReticulumVisibleNodeIds(
   nodes: readonly ReticulumTopologyNodeInput[] = [],
   opts?: ReticulumTopologyFilterOptions,
 ): Set<string> {
-  const includeDistant = opts?.includeDistantPeers !== false;
   const maxHops = opts?.maxHops ?? null;
   const cap = topologyGraphVisibleNodeCap();
   const hopsById = new Map(nodes.map((n) => [n.destination_hash, n.hops]));
 
   const passesHopsFilter = (id: string): boolean =>
-    topologyPeerPassesHopFilters(hopsById.get(id), {
-      includeDistantPeers: includeDistant,
-      maxHops,
-      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
-    });
+    topologyPeerPassesHopFilters(hopsById.get(id), maxHops);
 
   const filteredIds = allIds.filter(passesHopsFilter);
   /** Non-self slots so SELF_ID + visible never exceeds the layout cap. */
@@ -255,20 +242,18 @@ export function filterReticulumVisibleNodeIds(
     }
   }
 
-  if (includeDistant) {
-    const adj = buildAdjacency(edges);
-    const queue = [SELF_ID, ...visible];
-    const visited = new Set<string>([SELF_ID, ...visible]);
-    while (queue.length > 0 && visible.size < peerCap) {
-      const current = queue.shift()!;
-      for (const neighbor of adj.get(current) ?? []) {
-        if (neighbor === SELF_ID || visited.has(neighbor)) continue;
-        if (!filteredIds.includes(neighbor)) continue;
-        visited.add(neighbor);
-        visible.add(neighbor);
-        queue.push(neighbor);
-        if (visible.size >= peerCap) break;
-      }
+  const adj = buildAdjacency(edges);
+  const queue = [SELF_ID, ...visible];
+  const visited = new Set<string>([SELF_ID, ...visible]);
+  while (queue.length > 0 && visible.size < peerCap) {
+    const current = queue.shift()!;
+    for (const neighbor of adj.get(current) ?? []) {
+      if (neighbor === SELF_ID || visited.has(neighbor)) continue;
+      if (!filteredIds.includes(neighbor)) continue;
+      visited.add(neighbor);
+      visible.add(neighbor);
+      queue.push(neighbor);
+      if (visible.size >= peerCap) break;
     }
   }
 
@@ -336,16 +321,11 @@ function filterMeshTopologyPeers(
   interfaceCount: number,
   opts?: ReticulumTopologyFilterOptions,
 ): { visible: ReticulumTopologyNodeInput[]; hiddenCount: number } {
-  const includeDistant = opts?.includeDistantPeers !== false;
   const maxHops = opts?.maxHops ?? null;
 
   let filtered = peers.filter((peer) => {
     if (!peer.destination_hash) return false;
-    return topologyPeerPassesHopFilters(peer.hops, {
-      includeDistantPeers: includeDistant,
-      maxHops,
-      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
-    });
+    return topologyPeerPassesHopFilters(peer.hops, maxHops);
   });
 
   const peerBudget = Math.max(0, topologyGraphVisibleNodeCap() - interfaceCount - 1);

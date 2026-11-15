@@ -4,16 +4,16 @@
 
 **[Joey (NV0N)](https://github.com/rinchen)** created the original [Meshtastic Mac Client](https://github.com/Colorado-Mesh/meshtastic_mac_client): a Python/PyQt6 desktop app for macOS. Driven by the lack of native, BLE-capable options for macOS, Joey initially shared the tool with the Colorado Meshtastic community. As interest grew, he matured the app by integrating MeshCore and Reticulum support to meet expanding user needs.
 
-**[dude.eth](https://github.com/defidude)** ported the concept to Electron, enabling cross-platform support across Mac, Linux, and Windows.
+**[M3SHGH0ST](https://github.com/cj-vana)** has made significant contributions to mesh-client (more than 100,000 lines of code), spanning core product work across the Electron app and related systems.
 
 ### Contributors
 
+- [dude.eth](https://github.com/defidude) - Ported the concept to Electron, enabling cross-platform support across Mac, Linux, and Windows
 - megabear - KD5IHC created the icon
 - [Soord](https://github.com/soord)
 - [WB3IHY](https://github.com/WB3IHY)
 - [Letark](https://github.com/Letark) - Apple code signing & notarization CI
 - FuzzyChaos (ADL) - Donation for devices
-- [M3SHGH0ST](https://github.com/cj-vana)
 - [M0Rf30](https://github.com/M0Rf30) - Flatpak Electron packaging
 - [ashortgrayble](https://github.com/ashortgrayble) - Colorado Mesh style guide (color scales, type, radius and elevation)
 - [W0RMT](https://github.com/RobertMTalbot)
@@ -33,7 +33,8 @@ We were inspired by features from these projects:
 - [meshcore-open](https://github.com/zjs81/meshcore-open): Flutter client for MeshCore devices
 - [meshtastic-cli](https://github.com/statico/meshtastic-cli): Terminal UI for monitoring Meshtastic mesh networks
 - [Mesh Monitor](https://meshmonitor.org/): Web-based mesh network monitoring dashboard
-- [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer with RF analytics, packet visualization, and topology tools
+- [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer; inspired Live traffic packet visualization, hop animation, and regional CoreScope feeds
+- [MeshCore Beacon](https://github.com/MeshCore-Beacon/beacon-docs): Public MeshCore map/API contract; inspired regional Beacon feeds and live packet observation grouping on the Live traffic map
 - [Ratspeak](https://github.com/ratspeak/Ratspeak): Primary reference for the Reticulum/rsReticulum/rsLXMF stack, sidecar IPC patterns, and peer interop ([rsReticulum](https://github.com/ratspeak/rsReticulum), [rsLXMF](https://github.com/ratspeak/rsLXMF))
 - [MECP](https://mecp.radio/) ([GitHub](https://github.com/xiang-dev-1/MECP)): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0)
 - [MeshCoreTracker](https://github.com/CopIXus/MeshCoreTracker): GPS tracker firmware for MeshCore radios; inspired parsing of compact tracker-fix messages (`!MT1`) with role tags and rename-safe, identity-based TAK marker IDs

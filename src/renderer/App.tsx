@@ -6837,6 +6837,7 @@ function AppContent() {
                               <PeerGraphPanel
                                 nodes={nodesForUi}
                                 myNodeId={activeSelfNodeNum}
+                                hopLimitMax={capabilities.hopLimitRange[1]}
                                 onNodeClick={setSelectedNodeId}
                               />
                             </Suspense>

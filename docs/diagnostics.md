@@ -10,7 +10,7 @@ This document is the authoritative reference for every diagnostic output in Mesh
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
 - **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
-- **Peer Graph panel**: SVG force-directed graph of mesh peers with hop filters — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead (same 48/400 visible-node cap)
+- **Peer Graph panel**: SVG force-directed graph of mesh peers with hop filters — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead (same 1000 visible-node cap)
 
 All three protocols share one **Diagnostics** tab in the Monitor section; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
 
@@ -430,8 +430,8 @@ Open it from Network > Graph.
 
 SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the **Topology** tab with the same hop controls and visible-node cap).
 
-- **Show distant peers** (Peer Graph default **off**; Topology default **on**) and **Max hops** (Peer Graph default **2**; Topology default **All hops**) filter the node set first. Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. 1-hop Mesh nodes are not distant.
-- Layout budget (known limitation): at most **400** nodes after hop filters (`FORCE_REPULSION_FULL_PAIR_CAP`). The toolbar states this limit; when the cap hides nodes the status reads “limit 400”
+- **Max hops** (Peer Graph default **2**; Topology default **Show all**) filters the node set first. Numeric **Max hops** hides peers above that count (and unknown hops). **Show all** includes every peer, including unknown hops. MeshCore presets go past 8 (16 / 32 / 64); Meshtastic presets match the 1–7 wire range.
+- Layout budget (known limitation): at most **1000** nodes after hop filters (`TOPOLOGY_GRAPH_DISTANT_NODE_CAP`). Force layout still switches from full-pair to grid repulsion above **400** (`FORCE_REPULSION_FULL_PAIR_CAP`). The toolbar states the visible limit; when the cap hides nodes the status reads “limit 1000”
 - Both Meshtastic and MeshCore use the `hops_away` field for edge inference
 - Nodes are clickable; clicking opens NodeDetailModal for that node
 - Layout uses D3-style force simulation; positions stabilize after initial render

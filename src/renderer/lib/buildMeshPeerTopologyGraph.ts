@@ -3,9 +3,7 @@ import { nodeHealthScore, type NodeHealthTier, nodeHealthTier } from './nodeHeal
 import { effectiveLastHeardMs } from './nodeStatus';
 import { MS_PER_HOUR } from './timeConstants';
 import {
-  MESH_TOPOLOGY_NEARBY_MAX_HOPS,
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
   topologyPeerPassesHopFilters,
 } from './topologyGraphLimits';
@@ -39,12 +37,7 @@ export interface MeshPeerTopologyGraph {
 }
 
 export interface MeshPeerTopologyFilterOptions {
-  /**
-   * When false and Max hops is All, hide hops above the Mesh nearby ceiling (1).
-   * Numeric Max hops is not gated by this checkbox.
-   */
-  includeDistantPeers?: boolean;
-  /** When set, hide peers whose hop count exceeds this value. */
+  /** When set, hide peers whose hop count exceeds this value. Null = Show all. */
   maxHops?: number | null;
 }
 
@@ -57,9 +50,7 @@ export interface BuildMeshPeerTopologyGraphOptions {
   nowMs?: number;
 }
 
-/** Default visible node budget when distant peers are hidden. */
-export const MESH_PEER_MAX_VISIBLE_NODES = TOPOLOGY_GRAPH_NEARBY_NODE_CAP;
-/** Visible node budget when distant peers are shown. */
+/** Visible node budget after hop filters (Show all still truncates here). */
 export const MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED = TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 /** Max relay hubs with thick self spokes; excess direct peers render as compact leaf dots. */
 export const MESH_PEER_MAX_RELAY_HUBS = 20;
@@ -138,16 +129,9 @@ function filterMeshPeers(
   peers: readonly MeshNode[],
   opts?: MeshPeerTopologyFilterOptions,
 ): { visible: MeshNode[]; hiddenCount: number } {
-  const includeDistant = opts?.includeDistantPeers !== false;
   const maxHops = opts?.maxHops ?? null;
 
-  let filtered = peers.filter((peer) =>
-    topologyPeerPassesHopFilters(effectiveHops(peer), {
-      includeDistantPeers: includeDistant,
-      maxHops,
-      nearbyMaxHops: MESH_TOPOLOGY_NEARBY_MAX_HOPS,
-    }),
-  );
+  let filtered = peers.filter((peer) => topologyPeerPassesHopFilters(effectiveHops(peer), maxHops));
 
   const peerBudget = Math.max(0, topologyGraphVisibleNodeCap() - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);
@@ -297,11 +281,16 @@ export function buildMeshPeerTopologyGraph(
     }
   }
 
+  const visiblePeerIds = new Set(visiblePeers.map((peer) => peer.node_id));
   const relayCandidates = new Map<number, number>();
   for (const peer of directPeers) {
     relayCandidates.set(peer.node_id, peersByRelay.get(peer.node_id)?.length ?? 0);
   }
+  // Only promote relays that survived hop filters / the visible-node cap. Path hops that
+  // point at filtered or truncated nodes stay out of the hub ring; distant peers fall back
+  // to a self edge when their relay is not visible.
   for (const relayId of peersByRelay.keys()) {
+    if (!visiblePeerIds.has(relayId)) continue;
     relayCandidates.set(relayId, peersByRelay.get(relayId)?.length ?? 0);
   }
 
@@ -376,6 +365,8 @@ export function buildMeshPeerTopologyGraph(
   }
 
   for (const peer of distantPeers) {
+    // Multi-hop path hubs may already be emitted as relays; do not duplicate them as peers.
+    if (visibleNodeIds.has(peer.node_id)) continue;
     graphNodes.push(buildGraphNode(peer, 'peer', 2, 0, positions, cx, cy, nowMs));
     visibleNodeIds.add(peer.node_id);
 

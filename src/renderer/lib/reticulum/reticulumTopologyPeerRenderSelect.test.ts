@@ -31,12 +31,13 @@ describe('selectReticulumTopologyPeersForRender', () => {
     expect(selected.every((p) => p.destination_hash.startsWith('rf'))).toBe(true);
   });
 
-  it('slices to 800 newest when RF-only is off', () => {
-    const peers = Array.from({ length: 900 }, (_, i) => peer(`p${i}`, 'RNS_Transport_US-East', i));
+  it('slices to 1200 newest when RF-only is off', () => {
+    const peers = Array.from({ length: 1300 }, (_, i) => peer(`p${i}`, 'RNS_Transport_US-East', i));
     const selected = selectReticulumTopologyPeersForRender(peers, [tcp], { rfOnly: false });
     expect(selected).toHaveLength(TOPOLOGY_PEER_RENDER_CAP);
-    expect(selected[0]?.destination_hash).toBe('p899');
-    expect(selected[799]?.destination_hash).toBe('p100');
+    expect(TOPOLOGY_PEER_RENDER_CAP).toBe(1200);
+    expect(selected[0]?.destination_hash).toBe('p1299');
+    expect(selected[1199]?.destination_hash).toBe('p100');
   });
 
   it('keeps all RF and drops TCP when under the ingest cap', () => {
@@ -61,8 +62,8 @@ describe('selectReticulumTopologyPeersForRender', () => {
     expect(lastSeenRank(1_700_000_000_000)).toBeGreaterThan(0);
   });
 
-  it('keeps older hop-eligible peers when 800+ fresh ineligible rows would fill the ingest cap', () => {
-    const ineligible = Array.from({ length: 900 }, (_, i) =>
+  it('keeps older hop-eligible peers when 1200+ fresh ineligible rows would fill the ingest cap', () => {
+    const ineligible = Array.from({ length: 1300 }, (_, i) =>
       peer(`far${i}`, 'RNS_Transport_US-East', 10_000 + i, 8),
     );
     const eligible = [
@@ -79,7 +80,7 @@ describe('selectReticulumTopologyPeersForRender', () => {
   it('drops NaN last_seen rows before finite ones when slicing', () => {
     const peers = [
       peer('nan', 'RNS_Transport_US-East', Number.NaN),
-      ...Array.from({ length: 800 }, (_, i) => peer(`p${i}`, 'RNS_Transport_US-East', 1_000 + i)),
+      ...Array.from({ length: 1200 }, (_, i) => peer(`p${i}`, 'RNS_Transport_US-East', 1_000 + i)),
     ];
     const selected = selectReticulumTopologyPeersForRender(peers, [tcp], { rfOnly: false });
     expect(selected).toHaveLength(TOPOLOGY_PEER_RENDER_CAP);

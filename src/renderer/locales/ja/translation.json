@@ -4361,7 +4361,6 @@
     "relayHub": "ダイレクトリレー",
     "relayCount": "{{count}}リレーハブ",
     "hopBadge": "{{count}}時間",
-    "showDistantPeers": "遠隔地の同僚を表示",
     "maxHopsFilter": "最大ホップ数",
     "maxHopsAll": "すべてのホップ",
     "maxHopsOption": "{{count}}ホップ",
@@ -5715,7 +5714,6 @@
     "edgeCount": "{{count}} リンク",
     "legendSelf": "このノード",
     "centerRns": "RNS",
-    "showDistantPeers": "遠隔地の同僚を表示",
     "maxHopsFilter": "最大ホップ数",
     "maxHopsAll": "すべてのホップ",
     "maxHopsOption": "{{count}}ホップ",
@@ -7810,7 +7808,9 @@
     "waitingQuiet": "最近のパケットの観測はありません",
     "waitingHintQuiet": "ライブトラフィックは、地元の観察の直前を示しています。古いパケットはMonitor → Snifferに残ります。",
     "retentionHint": "ローカルのライブトラフィックは、1分間観測を保持します。古いキャプチャはモニタースニッファーに→残ります。",
-    "emptyFeedQuiet": "直前の観察はありません。古いパケットはMonitor → Snifferに残ります。"
+    "emptyFeedQuiet": "直前の観察はありません。古いパケットはMonitor → Snifferに残ります。",
+    "hopTones": "ホップトーン",
+    "hopTonesHint": "アニメーション化された各ホップに対して柔らかな音を鳴らします。短いホップは高い音で、長いホップは低い音で鳴ります。各音符は、マップ上のそのホップの飛行時間と同じ長さです。ローカル、Beacon、およびCoreScopeのトラフィックで動作します。"
   },
   "meshcoreCompanionCli": {
     "summary": "コンパニオンデバイスの設定",

@@ -40,6 +40,7 @@ The supported public feeds do **not** require an API key. This connection form d
 - **All traffic** includes observations from the selected source regardless of location. A selected server region still limits a regional feed.
 - **Current map area** includes observations with a known location inside the visible map. Pan or zoom to change that area. Packets with no known location cannot match this geographic filter.
 - **Filters** opens packet-type and playback controls. Local MeshCore also offers a **Transport code** filter; it filters observed packet metadata and does not change radio settings.
+- **Hop tones** (header checkbox after the map-area control, off by default) plays a soft note for each animated hop on local, Beacon, and CoreScope traffic. Pitch is quantized to one harmonic series by hop distance (shorter = higher); each note lasts for that hop’s on-map flight. Global notification mute also silences them.
 - **+ / −** zoom in half-level steps. **Fit traffic** frames current packet locations, falling back to known nodes.
 - **Pause** freezes the displayed observations and animation for inspection. Use **Resume** to return to live traffic. Pause does not disconnect a regional feed.
 

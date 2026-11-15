@@ -29,10 +29,40 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
 
+/**
+ * AI / contributor remediation when measured `index.js` exceeds the budget.
+ * Prefer sibling chunks and externals; raise the budget only as a last resort.
+ * @param {number} size
+ * @returns {string}
+ */
+export function formatMainBundleOverBudgetMessage(size) {
+  const sizeKiB = (size / 1024).toFixed(1);
+  const budgetKiB = (MAIN_BUNDLE_SIZE_BUDGET_BYTES / 1024).toFixed(0);
+  return [
+    `Main process bundle over budget: ${size} bytes (${sizeKiB} KiB); limit is ${MAIN_BUNDLE_SIZE_BUDGET_BYTES} bytes (${budgetKiB} KiB).`,
+    '',
+    'AI / contributor remediation (do these in order — do not raise the budget first):',
+    '1. Move bulky or new main-process code into a sibling esbuild entry in scripts/esbuild-main-build.mjs',
+    '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
+    '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js) so it is NOT counted',
+    '   in the measured dist-electron/main/index.js budget.',
+    '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
+    '   (same pattern as undici/ws).',
+    '3. Analyze composition: pnpm run build:main:minify-meta then inspect dist-electron/main/meta.json',
+    '   (upload to https://esbuild.github.io/analyze/).',
+    '4. ONLY if there is absolutely no other way after exhausting (1)-(3), raise',
+    '   MAIN_BUNDLE_SIZE_BUDGET_BYTES in scripts/esbuild-main-build.test.mjs and document the KiB',
+    '   delta + reason in the comment block above that constant and in the PR body.',
+    '   Never raise the budget for convenience.',
+  ].join('\n');
+}
+
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
   expect(size).toBeGreaterThan(100_000);
-  expect(size).toBeLessThan(MAIN_BUNDLE_SIZE_BUDGET_BYTES);
+  if (size >= MAIN_BUNDLE_SIZE_BUDGET_BYTES) {
+    throw new Error(formatMainBundleOverBudgetMessage(size));
+  }
 }
 
 describe('esbuild-main-build', () => {
@@ -80,6 +110,23 @@ describe('esbuild-main-build', () => {
     fs.writeFileSync(outfile, Buffer.alloc(bytes));
     if (accepted) expectMainBundleSize(outfile);
     else expect(() => expectMainBundleSize(outfile)).toThrow();
+  });
+
+  it('emits AI remediation text when over budget', () => {
+    tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-budget-msg-'));
+    const outfile = path.join(tempDir, 'index.js');
+    const overBytes = MAIN_BUNDLE_SIZE_BUDGET_BYTES + 1;
+    fs.writeFileSync(outfile, Buffer.alloc(overBytes));
+    expect(() => expectMainBundleSize(outfile)).toThrow(
+      formatMainBundleOverBudgetMessage(overBytes),
+    );
+    const message = formatMainBundleOverBudgetMessage(overBytes);
+    expect(message).toContain('Main process bundle over budget');
+    expect(message).toContain('sibling esbuild entry');
+    expect(message).toContain('esbuild-main-externals.mjs');
+    expect(message).toContain('build:main:minify-meta');
+    expect(message).toContain('ONLY if there is absolutely no other way');
+    expect(message).toContain('Never raise the budget for convenience');
   });
 
   it('uses the esbuild JS API instead of spawning bin/esbuild (Windows shim)', () => {

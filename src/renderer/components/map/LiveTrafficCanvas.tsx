@@ -8,6 +8,10 @@ import {
 } from '@/renderer/lib/map/liveTrafficAnimation';
 import { liveTrafficPointKey } from '@/renderer/lib/map/liveTrafficGroups';
 import {
+  frequencyForHopSegment,
+  playLiveTrafficHopTone,
+} from '@/renderer/lib/map/liveTrafficHopTones';
+import {
   LIVE_TRAFFIC_MAX_AGE_MS,
   type LiveTrafficEvent,
   liveTrafficLongitudeNear,
@@ -37,6 +41,8 @@ export interface LiveTrafficCanvasProps {
   inspectionEvents?: readonly LiveTrafficEvent[];
   selectedId?: string | null;
   speed?: number;
+  /** Soft hop tones from geographic distance; off by default via the Live traffic checkbox. */
+  hopTonesEnabled?: boolean;
   onSelect?: (id: string) => void;
 }
 
@@ -85,7 +91,15 @@ export function liveTrafficPacketColors(identity: string): PacketColors {
 /** A single bounded canvas. Packet metadata remains accessible in the adjacent traffic list. */
 export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
   const map = useMap();
-  const { events, paused, inspectionEvents, selectedId, speed, skipInitialAnimation } = props;
+  const {
+    events,
+    paused,
+    inspectionEvents,
+    selectedId,
+    speed,
+    hopTonesEnabled,
+    skipInitialAnimation,
+  } = props;
   const controllerRef = useRef<{ update: (next: LiveTrafficCanvasProps) => void } | null>(null);
 
   useEffect(() => {
@@ -114,6 +128,8 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
     let seenPointCount = 0;
     const projected = new Map<string, ProjectedSegment>();
     const projectedPoints = new Map<string, PixelPoint>();
+    /** Hop keys that already played a tone for the current flight lifetime. */
+    const tonedHopKeys = new Set<string>();
     let cachedFlights = scheduler.flights;
     let cachedPoints = points;
     let selectedGeometry: { segments: ProjectedSegment[]; points: PixelPoint[] } | null = null;
@@ -276,6 +292,7 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
 
     function draw(now: number) {
       prune(now);
+      playStartedHopTones(now);
       context!.clearRect(0, 0, width, height);
       // Full geometry is available only through explicit inspection or reduced-motion mode.
       if (selected) drawStatic(selected, true);
@@ -345,8 +362,28 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
     function stopMotion() {
       scheduler.discard();
       points = [];
+      tonedHopKeys.clear();
       cancelFrame();
       invalidateProjection();
+    }
+
+    /** Play when a hop starts flying so delayed path hops match their visible motion. */
+    function playStartedHopTones(now: number) {
+      if (!current.hopTonesEnabled || !canAnimate()) return;
+      const rate = Number.isFinite(current.speed) ? Math.max(0.25, Math.min(4, current.speed!)) : 1;
+      const activeKeys = new Set<string>();
+      for (const hop of scheduler.flights) {
+        activeKeys.add(hop.key);
+        if (tonedHopKeys.has(hop.key)) continue;
+        if (now < hop.startedAt) continue;
+        tonedHopKeys.add(hop.key);
+        if (now >= hop.endsAt) continue;
+        const frequencyHz = frequencyForHopSegment(hop.segment);
+        if (frequencyHz == null) continue;
+        const wallDurationMs = (hop.endsAt - now) / rate;
+        playLiveTrafficHopTone({ frequencyHz, durationMs: wallDurationMs });
+      }
+      for (const key of tonedHopKeys) if (!activeKeys.has(key)) tonedHopKeys.delete(key);
     }
 
     function visibilityChanged() {
@@ -402,6 +439,7 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
           LIVE_TRAFFIC_MAX_ANIMATIONS - points.length,
           observedSince,
         );
+        playStartedHopTones(now);
         for (const event of incoming) {
           if (event.segments.length > 0) continue;
           const previous = seenPoints.get(event.id);
@@ -452,8 +490,15 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
   }, [map, skipInitialAnimation]);
 
   useEffect(() => {
-    controllerRef.current?.update({ events, paused, inspectionEvents, selectedId, speed });
-  }, [map, events, paused, inspectionEvents, selectedId, speed]);
+    controllerRef.current?.update({
+      events,
+      paused,
+      inspectionEvents,
+      selectedId,
+      speed,
+      hopTonesEnabled,
+    });
+  }, [map, events, paused, inspectionEvents, selectedId, speed, hopTonesEnabled]);
 
   return null;
 }

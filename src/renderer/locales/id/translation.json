@@ -4361,7 +4361,6 @@
     "relayHub": "Relai langsung",
     "relayCount": "{{count}} hub relai",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Tampilkan rekan yang jauh",
     "maxHopsFilter": "Hop maks",
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
@@ -5715,7 +5714,6 @@
     "edgeCount": "Tautan {{count}}",
     "legendSelf": "simpul ini",
     "centerRns": "RNS",
-    "showDistantPeers": "Tampilkan rekan yang jauh",
     "maxHopsFilter": "Hop maks",
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
@@ -7810,7 +7808,9 @@
     "waitingQuiet": "Tidak ada pengamatan paket terbaru",
     "waitingHintQuiet": "Lalu lintas langsung menunjukkan menit terakhir pengamatan lokal. Paket yang lebih tua tetap berada di Monitor → Sniffer.",
     "retentionHint": "Lalu lintas langsung lokal menyimpan pengamatan selama satu menit. Tangkapan yang lebih lama tetap berada di Monitor → Sniffer.",
-    "emptyFeedQuiet": "Tidak ada pengamatan di menit terakhir. Paket yang lebih tua tetap berada di Monitor → Sniffer."
+    "emptyFeedQuiet": "Tidak ada pengamatan di menit terakhir. Paket yang lebih tua tetap berada di Monitor → Sniffer.",
+    "hopTones": "Nada hop",
+    "hopTonesHint": "Putar nada lembut untuk setiap lompatan animasi. Hop yang lebih pendek terdengar lebih tinggi; hop yang lebih panjang terdengar lebih rendah. Setiap nada berdurasi selama perjalanan hop tersebut di peta. Berfungsi untuk lalu lintas lokal, Beacon, dan CoreScope."
   },
   "meshcoreCompanionCli": {
     "summary": "Pengaturan perangkat pendamping",

@@ -1,4 +1,4 @@
-import { shouldSwallowLateMeshtasticConfigureRetryableRejection } from './meshtastic/meshtasticConfigureRetry';
+import { shouldSwallowLateMeshtasticConfigureRetryableRejection } from './meshtastic/meshtasticLateConfigureRetryableSwallow';
 
 /** Log renderer-wide unhandled promise rejections without throwing a second error. */
 export function logRendererUnhandledRejection(reason: unknown): void {

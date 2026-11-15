@@ -4361,7 +4361,6 @@
     "relayHub": "Doğrudan röle",
     "relayCount": "{{count}} röle göbekleri",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Uzak akranları göster",
     "maxHopsFilter": "Maks hops",
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
@@ -5715,7 +5714,6 @@
     "edgeCount": "{{count}} bağlantılar",
     "legendSelf": "Bu düğüm",
     "centerRns": "RN'ler",
-    "showDistantPeers": "Uzak akranları göster",
     "maxHopsFilter": "Maks hops",
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
@@ -7810,7 +7808,9 @@
     "waitingQuiet": "Yakın zamanda paket gözlemi yok",
     "waitingHintQuiet": "Canlı trafik, yerel gözlemlerin son dakikasını gösterir. Eski paketler Monitor Sniffer'da → kalır.",
     "retentionHint": "Yerel canlı trafik gözlemleri bir dakika tutar. Eski yakalamalar Monitör Koklayıcısında → kalır.",
-    "emptyFeedQuiet": "Son dakikada gözlem yok. Eski paketler Monitor Sniffer'da → kalır."
+    "emptyFeedQuiet": "Son dakikada gözlem yok. Eski paketler Monitor Sniffer'da → kalır.",
+    "hopTones": "Hop tonları",
+    "hopTonesHint": "Her animasyonlu atlama için yumuşak bir ses çalın. Daha kısa atlamalar daha yüksek, daha uzun atlamalar daha alçak ses çıkarır. Her nota, harita üzerindeki ilgili atlamanın süresi boyunca çalar. Yerel, Beacon ve CoreScope trafiği için çalışır."
   },
   "meshcoreCompanionCli": {
     "summary": "Refakatçi cihaz ayarları",

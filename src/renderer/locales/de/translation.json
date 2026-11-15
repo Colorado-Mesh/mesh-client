@@ -4361,7 +4361,6 @@
     "relayHub": "Direktrelais",
     "relayCount": "{{count}} Relaisnaben",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
@@ -5714,7 +5713,6 @@
     "nodeCount": "{{count}}-Knoten",
     "edgeCount": "{{count}}-Links",
     "legendSelf": "Dieser Knoten",
-    "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
@@ -7810,7 +7808,9 @@
     "waitingQuiet": "Keine aktuellen Paketbeobachtungen",
     "waitingHintQuiet": "Live-Traffic zeigt die letzte Minute der lokalen Beobachtungen. Ältere Pakete bleiben im → Monitor-Sniffer.",
     "retentionHint": "Der lokale Live-Verkehr speichert Beobachtungen für eine Minute. Ältere Captures verbleiben im → Monitor-Sniffer.",
-    "emptyFeedQuiet": "Keine Beobachtungen in letzter Minute. Ältere Pakete bleiben im → Monitor-Sniffer."
+    "emptyFeedQuiet": "Keine Beobachtungen in letzter Minute. Ältere Pakete bleiben im → Monitor-Sniffer.",
+    "hopTones": "Hop-Töne",
+    "hopTonesHint": "Spielen Sie für jeden animierten Hop einen leisen Ton ab. Kürzere Hops klingen höher; längere Hops klingen tiefer. Jeder Ton dauert so lange wie der Flug dieses Hops auf der Karte. Funktioniert für lokalen Verkehr sowie für Beacon- und CoreScope-Verkehr."
   },
   "meshcoreCompanionCli": {
     "summary": "Companion-Geräteeinstellungen",

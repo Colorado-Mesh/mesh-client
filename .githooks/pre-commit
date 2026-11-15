@@ -187,6 +187,14 @@ else
   printf 'pre-commit: skip check:db-migrations (no DB schema paths staged)\n' >&2
 fi
 
+# Production main-bundle budget (same suite as bundle-size.yaml). String entrypoints are
+# invisible to vitest related, so path-gate the explicit check when main/esbuild paths change.
+if staged_match '^(src/main/|scripts/esbuild-main-build(\.mjs|\.test\.mjs)|scripts/esbuild-main-externals\.mjs)'; then
+  pnpm run check:main-bundle || fail 'pnpm run check:main-bundle'
+else
+  printf 'pre-commit: skip check:main-bundle (no main/esbuild bundle paths staged)\n' >&2
+fi
+
 if staged_match '^(src/shared/electron-api\.types\.ts|src/preload/|src/main/index\.ts|src/main/ipc/|src/main/updater\.ts|src/main/linuxWebBluetoothCancelIpc\.ts|scripts/check-ipc-contract\.mjs)'; then
   pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
 else

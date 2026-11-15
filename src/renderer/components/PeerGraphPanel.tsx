@@ -15,6 +15,7 @@ import {
 import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   topologyGraphVisibleNodeCap,
+  topologyHopFilterOptions,
 } from '@/renderer/lib/topologyGraphLimits';
 import type { MeshNode } from '@/renderer/lib/types';
 import { useSvgPanZoom } from '@/renderer/lib/useSvgPanZoom';
@@ -25,6 +26,8 @@ import { TopologyVisibleLimitNote } from './TopologyVisibleLimitNote';
 interface PeerGraphPanelProps {
   nodes: Map<number, MeshNode>;
   myNodeId: number;
+  /** Protocol hop-limit max (Meshtastic 7, MeshCore 64). Drives Max hops presets. */
+  hopLimitMax?: number;
   onNodeClick?: (nodeId: number) => void;
 }
 
@@ -71,7 +74,12 @@ function stopPanZoomPointer(e: React.PointerEvent): void {
   e.stopPropagation();
 }
 
-export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGraphPanelProps) {
+export default function PeerGraphPanel({
+  nodes,
+  myNodeId,
+  hopLimitMax = 7,
+  onNodeClick,
+}: PeerGraphPanelProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const simRef = useRef<SimNodeState[]>([]);
@@ -91,8 +99,16 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
     relayCount: 0,
     demotedDirectCount: 0,
   });
-  const [includeDistantPeers, setIncludeDistantPeers] = useState(false);
   const [maxHops, setMaxHops] = useState<number | null>(2);
+  const hopOptions = useMemo(() => topologyHopFilterOptions(hopLimitMax), [hopLimitMax]);
+  // Protocol switch (e.g. MeshCore 64 → Meshtastic 7) can leave a selected maxHops that is
+  // no longer in hopOptions; the <select> then looks like "Show all" while rebuildGraph still
+  // filters to the stale value. Clamp during render (React-approved props→state adjust).
+  if (maxHops != null && !hopOptions.includes(maxHops)) {
+    const clamped =
+      [...hopOptions].reverse().find((hops) => hops <= maxHops) ?? hopOptions[0] ?? null;
+    setMaxHops(clamped);
+  }
   const { transform, resetView, bindSvgRef, onPointerDown, onPointerMove, onPointerUp } =
     useSvgPanZoom();
 
@@ -170,10 +186,10 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
       selfLabel,
       cx: width / 2,
       cy: height / 2,
-      filter: { includeDistantPeers, maxHops },
+      filter: { maxHops },
     });
     applyGraph(graph);
-  }, [applyGraph, includeDistantPeers, maxHops, myNodeId, nodes, t]);
+  }, [applyGraph, maxHops, myNodeId, nodes, t]);
 
   useEffect(() => {
     rebuildGraph();
@@ -181,7 +197,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
 
   useEffect(() => {
     resetView();
-  }, [includeDistantPeers, maxHops, resetView]);
+  }, [maxHops, resetView]);
 
   const sizes = useMemo(() => graphSizes(snapshot.nodes.length), [snapshot.nodes.length]);
 
@@ -229,14 +245,12 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
       <div className="text-ink-400 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs">
         <span className="text-ink-300 font-medium">{t('peerGraph.title')}</span>
         <TopologyHopFilterControls
-          includeDistantPeers={includeDistantPeers}
-          onIncludeDistantPeersChange={setIncludeDistantPeers}
           maxHops={maxHops}
           onMaxHopsChange={setMaxHops}
-          showDistantPeersLabel={t('peerGraph.showDistantPeers')}
           maxHopsFilterLabel={t('peerGraph.maxHopsFilter')}
           maxHopsAllLabel={t('peerGraph.maxHopsAll')}
           maxHopsOptionLabel={(hops) => t('peerGraph.maxHopsOption', { count: hops })}
+          hopOptions={hopOptions}
         />
         <TopologyVisibleLimitNote
           label={t('peerGraph.visibleNodeLimitNote', {

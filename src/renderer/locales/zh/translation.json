@@ -4361,7 +4361,6 @@
     "relayHub": "直接继电器",
     "relayCount": "{{count}}继电器集线器",
     "hopBadge": "{{count}}小时",
-    "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大跳数",
     "maxHopsAll": "所有跃点",
     "maxHopsOption": "{{count}}跳",
@@ -5714,7 +5713,6 @@
     "nodeCount": "{{count}} 节点",
     "edgeCount": "{{count}} 链接",
     "legendSelf": "该节点",
-    "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大 hops",
     "maxHopsAll": "所有 hops",
     "maxHopsOption": "{{count}} hops",
@@ -7810,7 +7808,9 @@
     "waitingQuiet": "没有最近的数据包观察",
     "waitingHintQuiet": "实时交通显示当地观测的最后一分钟。较旧的数据包保留在监视器→嗅探器中。",
     "retentionHint": "本地实时交通保持观察一分钟。较早的捕获保留在监视器→嗅探器中。",
-    "emptyFeedQuiet": "在最后一分钟没有观察到任何东西。较旧的数据包保留在监视器→嗅探器中。"
+    "emptyFeedQuiet": "在最后一分钟没有观察到任何东西。较旧的数据包保留在监视器→嗅探器中。",
+    "hopTones": "跳跃音调",
+    "hopTonesHint": "为每个动画跳跃播放一个柔和的音调。跳数越少，音调越高；跳数越多，音调越低。每个音符的持续时间与该跳跃在地图上的飞行时间相同。适用于本地、Beacon 和 CoreScope 流量。"
   },
   "meshcoreCompanionCli": {
     "summary": "配套设备设置",

@@ -1,49 +1,34 @@
-import { FORCE_REPULSION_FULL_PAIR_CAP } from './forceDirectedGraphLayout';
-
-/** Visible-node budget when distant peers are hidden (nearby / 0–1 hop maps). */
-export const TOPOLOGY_GRAPH_NEARBY_NODE_CAP = 48;
-
 /**
- * Visible-node budget when distant peers are shown. Matches the force-layout
- * all-pairs repulsion cutoff so large MQTT / RNS maps stay interactive.
+ * Visible-node budget for Graph / Topology after hop filters.
+ * Decoupled from FORCE_REPULSION_FULL_PAIR_CAP (400): above that the force sim
+ * already uses grid repulsion, so the draw budget can be higher.
  */
-export const TOPOLOGY_GRAPH_DISTANT_NODE_CAP = FORCE_REPULSION_FULL_PAIR_CAP;
+export const TOPOLOGY_GRAPH_DISTANT_NODE_CAP = 1000;
 
-/** Mesh Graph nearby ceiling when distant peers are off and Max hops is All. */
-export const MESH_TOPOLOGY_NEARBY_MAX_HOPS = 1;
-/**
- * Reticulum Topology nearby ceiling when distant peers are off and Max hops is All.
- * RNS hop counts are 1-based for a direct path.
- */
-export const RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS = 2;
-
-/** Post-hop-filter layout budget remains 400 nodes (not gated by Show distant). */
+/** Post-hop-filter layout budget (prefer closer hops when truncating). */
 export function topologyGraphVisibleNodeCap(): number {
   return TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 }
 
-export interface TopologyHopFilterState {
-  includeDistantPeers: boolean;
-  maxHops: number | null;
-  nearbyMaxHops: number;
+/**
+ * Hop-filter dropdown presets capped by the protocol wire max.
+ * Meshtastic (≤7): 1, 2, 3, 5, 7. MeshCore/RNS (≥64): 1, 2, 3, 5, 8, 16, 32, 64.
+ */
+export function topologyHopFilterOptions(maxHopLimit: number): number[] {
+  const presets = maxHopLimit <= 7 ? [1, 2, 3, 5, 7] : [1, 2, 3, 5, 8, 16, 32, 64];
+  return presets.filter((hops) => hops <= maxHopLimit);
 }
 
 /**
  * Hop visibility for Graph / Topology.
- * Numeric Max hops always applies. Unknown hops are included only when Max hops
- * is All and Show distant is on — they are not 1-hop neighbors.
- * Distant-off nearby ceiling applies only when Max hops is All.
+ * Numeric Max hops hides peers above that count (and unknown hops).
+ * Show all (`maxHops == null`) includes every peer, including unknown hops.
  */
 export function topologyPeerPassesHopFilters(
   hops: number | null | undefined,
-  opts: TopologyHopFilterState,
+  maxHops: number | null,
 ): boolean {
-  if (hops == null || !Number.isFinite(hops)) {
-    return opts.includeDistantPeers && opts.maxHops == null;
-  }
-  if (opts.maxHops != null && hops > opts.maxHops) return false;
-  if (!opts.includeDistantPeers && opts.maxHops == null && hops > opts.nearbyMaxHops) {
-    return false;
-  }
+  if (hops == null || !Number.isFinite(hops)) return maxHops == null;
+  if (maxHops != null && hops > maxHops) return false;
   return true;
 }

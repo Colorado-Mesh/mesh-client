@@ -1136,11 +1136,11 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Graph or Topology does not show all nodes
 
-**Symptoms**: MeshCore/Meshtastic **Graph** or Reticulum **Topology** says it is showing 400 of N nodes even with **Show distant peers** ticked and **Max hops** set to **All hops**.
+**Symptoms**: MeshCore/Meshtastic **Graph** or Reticulum **Topology** says it is showing 1000 of N nodes even with **Max hops** set to **Show all**.
 
-**Cause**: The force-directed layout has a hard visible-node budget of **400** after hop filters. Numeric **Max hops** is not gated by Show distant. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling applies only when Max hops is **All hops**. Leftover nodes beyond the layout budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows after hop filters (sidecar 2,000).
+**Cause**: The force-directed layout has a hard visible-node budget of **1000** after hop filters. Leftover nodes beyond the layout budget are omitted on purpose (closer hops are preferred when truncating). Reticulum Topology also ingests at most 1200 path-table rows after hop filters (sidecar 2,000). Force layout uses grid repulsion above 400 nodes.
 
-**Fix**: This is expected. The toolbar note states the 400-node limit. Turn on **Show distant peers** and set **Max hops** to **All hops** to include multi-hop peers up to 400. On Topology, use **RF only** to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow **Max hops** if the graph is too dense.
+**Fix**: This is expected. The toolbar note states the 1000-node limit. Set **Max hops** to **Show all** to include multi-hop and unknown-hop peers up to 1000. On Topology, use **RF only** to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow **Max hops** if the graph is too dense.
 
 ### No signal bars on some nodes
 

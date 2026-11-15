@@ -4407,7 +4407,6 @@
     "relayHub": "Přímé relé",
     "relayCount": "{{count}} reléové rozbočovače",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Zobrazit vzdálené kolegy",
     "maxHopsFilter": "Max. hops",
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
@@ -5761,7 +5760,6 @@
     "edgeCount": "{{count}} odkazy",
     "legendSelf": "Tento uzel",
     "centerRns": "RNS",
-    "showDistantPeers": "Zobrazit vzdálené kolegy",
     "maxHopsFilter": "Max. hops",
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
@@ -7887,7 +7885,9 @@
     "waitingQuiet": "Žádná nedávná pozorování paketů",
     "waitingHintQuiet": "Živý provoz ukazuje poslední minutu místních pozorování. Starší pakety zůstávají v nástroji Monitor → Sniffer.",
     "retentionHint": "Místní živý provoz udržuje pozorování po dobu jedné minuty. Starší snímky zůstávají v nástroji Monitor → Sniffer.",
-    "emptyFeedQuiet": "Žádné připomínky na poslední chvíli. Starší pakety zůstávají v nástroji Monitor → Sniffer."
+    "emptyFeedQuiet": "Žádné připomínky na poslední chvíli. Starší pakety zůstávají v nástroji Monitor → Sniffer.",
+    "hopTones": "Tóny skoků",
+    "hopTonesHint": "Přehrát jemný tón pro každý animovaný skok. Kratší skoky zní výš; delší skoky zní níž. Každý tón trvá po dobu letu daného skoku na mapě. Funguje pro místní provoz, provoz Beacon a provoz CoreScope."
   },
   "meshcoreCompanionCli": {
     "summary": "Nastavení doprovodného zařízení",

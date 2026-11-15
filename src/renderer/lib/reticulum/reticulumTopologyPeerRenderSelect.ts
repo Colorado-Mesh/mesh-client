@@ -1,22 +1,18 @@
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { normalizeLastHeardMs } from '../nodeStatus';
-import {
-  RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
-  topologyPeerPassesHopFilters,
-} from '../topologyGraphLimits';
+import { topologyPeerPassesHopFilters } from '../topologyGraphLimits';
 import {
   filterReticulumTopologyRfOnly,
   type ReticulumTopologyRfInterface,
 } from './reticulumTopologyRfFilter';
 
 /** Cap path-table rows fed into the topology force graph (sidecar also caps at 2000). */
-export const TOPOLOGY_PEER_RENDER_CAP = 800;
+export const TOPOLOGY_PEER_RENDER_CAP = 1200;
 
 export interface SelectReticulumTopologyPeersForRenderOptions {
   rfOnly?: boolean;
   cap?: number;
-  includeDistantPeers?: boolean;
   maxHops?: number | null;
 }
 
@@ -31,15 +27,10 @@ export function selectReticulumTopologyPeersForRender(
 ): ReticulumPeerWireRow[] {
   const cap = opts?.cap ?? TOPOLOGY_PEER_RENDER_CAP;
   const rfOnly = opts?.rfOnly === true;
+  const maxHops = opts?.maxHops ?? null;
   const selected = (
     rfOnly ? filterReticulumTopologyRfOnly(interfaces, peers).peers : [...peers]
-  ).filter((peer) =>
-    topologyPeerPassesHopFilters(peer.hops, {
-      includeDistantPeers: opts?.includeDistantPeers !== false,
-      maxHops: opts?.maxHops ?? null,
-      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
-    }),
-  );
+  ).filter((peer) => topologyPeerPassesHopFilters(peer.hops, maxHops));
   if (selected.length <= cap) return selected;
   return [...selected]
     .sort((a, b) => lastSeenRank(b.last_seen) - lastSeenRank(a.last_seen))
