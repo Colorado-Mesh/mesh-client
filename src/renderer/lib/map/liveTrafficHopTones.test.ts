@@ -270,7 +270,7 @@ describe('liveTrafficHopTones', () => {
     expect(createOscillator).toHaveBeenCalledTimes(MAX_CONCURRENT_TONES * 2);
   });
 
-  it('stopActiveLiveTrafficHopTones stops scheduled oscillators', () => {
+  it('stopActiveLiveTrafficHopTones stops both scheduled partial oscillators', () => {
     const stop = vi.fn();
     const disconnect = vi.fn();
     const ctx = {
@@ -299,7 +299,53 @@ describe('liveTrafficHopTones', () => {
       }),
     );
     playLiveTrafficHopTone({ frequencyHz: 440, durationMs: 500 });
+    stop.mockClear();
+    disconnect.mockClear();
     stopActiveLiveTrafficHopTones();
-    expect(stop).toHaveBeenCalled();
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(2);
+    expect(stop).toHaveBeenCalledTimes(2);
+    expect(disconnect).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not schedule oscillators when cancelled before a suspended context resumes', async () => {
+    let resolveResume: (() => void) | undefined;
+    const resume = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveResume = resolve;
+        }),
+    );
+    const createOscillator = vi.fn(() => ({
+      type: 'sine',
+      frequency: { value: 0 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      onended: null as (() => void) | null,
+    }));
+    const ctx = {
+      state: 'suspended',
+      currentTime: 0,
+      destination: {},
+      resume,
+      createOscillator,
+      createGain: vi.fn(() => ({
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+    };
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function MockAudioContext() {
+        return ctx;
+      }),
+    );
+    playLiveTrafficHopTone({ frequencyHz: 330, durationMs: 400 });
+    stopActiveLiveTrafficHopTones();
+    resolveResume?.();
+    await Promise.resolve();
+    expect(createOscillator).not.toHaveBeenCalled();
   });
 });

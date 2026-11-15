@@ -1,5 +1,5 @@
 // Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
-// follow MECP 1.2.1 from https://github.com/mecp-org/MECP. Do not edit without attribution.
+// follow MECP 1.3.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Decoder — Parses MECP message strings into structured data.
@@ -100,7 +100,7 @@ export function decode(input: string): ParsedMessage {
     if (result.freetext.length === 0) result.freetext = null;
   }
 
-  // Step 6: Extract structured patterns from freetext (MECP 1.2.1 §6.1)
+  // Step 6: Extract structured patterns from freetext (MECP 1.3.0 §6.1)
   const extracted = extractFreetextConventions(result.freetext || '', result.codes);
   result.extracted = extracted;
 

@@ -30,13 +30,40 @@ export function selectEnvironmentChartOverlayNodeIds(
     .slice(0, maxOverlay);
 }
 
+function downsampleNodeSeries(series: readonly EnvChartRow[], cap: number): EnvChartRow[] {
+  if (series.length <= cap) return [...series];
+  const step = Math.ceil(series.length / cap);
+  const out: EnvChartRow[] = [];
+  for (let i = 0; i < series.length; i += step) out.push(series[i]);
+  const last = series[series.length - 1];
+  if (out[out.length - 1] !== last) out.push(last);
+  return out;
+}
+
+/** Downsample all-nodes rows per sensor node so each overlay keeps representative points. */
 function downsampleEnvironmentChartRows(rows: EnvChartRow[], maxRows: number): EnvChartRow[] {
   if (rows.length <= maxRows) return rows;
-  const step = Math.ceil(rows.length / maxRows);
+  const byNode = new Map<number, EnvChartRow[]>();
+  const nodeOrder: number[] = [];
+  for (const row of rows) {
+    const nodeNum = row.nodeNum ?? 0;
+    let bucket = byNode.get(nodeNum);
+    if (!bucket) {
+      bucket = [];
+      byNode.set(nodeNum, bucket);
+      nodeOrder.push(nodeNum);
+    }
+    bucket.push(row);
+  }
+  const perNodeCap = Math.max(1, Math.floor(maxRows / nodeOrder.length));
   const out: EnvChartRow[] = [];
-  for (let i = 0; i < rows.length; i += step) out.push(rows[i]);
-  const last = rows[rows.length - 1];
-  if (out[out.length - 1] !== last) out.push(last);
+  for (const nodeNum of nodeOrder) {
+    out.push(...downsampleNodeSeries(byNode.get(nodeNum) ?? [], perNodeCap));
+  }
+  out.sort((a, b) => a.t - b.t || (a.nodeNum ?? 0) - (b.nodeNum ?? 0));
+  if (out.length > maxRows) {
+    return downsampleNodeSeries(out, maxRows);
+  }
   return out;
 }
 

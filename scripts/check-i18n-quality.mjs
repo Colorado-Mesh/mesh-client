@@ -3615,7 +3615,7 @@ function checkMeshcoreOpenWireIssues(ctx) {
   const issues = [];
   if (locale !== 'en' && flatKey === MESHCORE_CLI_INVALID_PRESET_KEY && typeof val === 'string') {
     for (const token of INVALID_PRESET_WIRE_TOKENS) {
-      if (!val.includes(token)) {
+      if (!meshcoreCliPresetHasWireToken(val, token)) {
         issues.push(`invalidPreset must keep wire token "${token}"`);
       }
     }
@@ -4643,6 +4643,19 @@ export const ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS = new Set([
 
 const MESHCORE_CLI_INVALID_PRESET_KEY = 'meshcoreCompanionCli.validation.invalidPreset';
 const INVALID_PRESET_WIRE_TOKENS = ['infra', 'rooftop', 'mobile'];
+
+/** Whole preset token — rejects false friends such as Spanish "infraestructura" for wire token `infra`. */
+const INVALID_PRESET_WIRE_TOKEN_RES = {
+  infra: /(?:^|[^A-Za-z0-9])infra(?:$|[^A-Za-z0-9])/i,
+  rooftop: /(?:^|[^A-Za-z0-9])rooftop(?:$|[^A-Za-z0-9])/i,
+  mobile: /(?:^|[^A-Za-z0-9])mobile(?:$|[^A-Za-z0-9])/i,
+};
+
+export function meshcoreCliPresetHasWireToken(val, token) {
+  if (typeof val !== 'string' || typeof token !== 'string') return false;
+  const re = INVALID_PRESET_WIRE_TOKEN_RES[token];
+  return re != null && re.test(val);
+}
 const INVALID_PRESET_FALSE_FRIENDS = [
   {
     re: /infrared|infračerven|инфракрасн|infrarot|infrarouge|infravermelho|infrarood/i,

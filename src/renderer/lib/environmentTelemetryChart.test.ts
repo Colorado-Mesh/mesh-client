@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY } from '@/shared/environmentTelemetry';
 
+import type { EnvironmentHistoryPoint } from '../stores/environmentTelemetryStore';
 import {
   buildEnvironmentChartRows,
   chartRowsHaveField,
@@ -91,6 +92,36 @@ describe('environmentTelemetryChart', () => {
     );
     expect(picked).toHaveLength(ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY);
     expect(picked[0]).toBe(ids[ids.length - 1]);
+  });
+
+  it('downsamples interleaved all-nodes rows without dropping a node metric series', () => {
+    const bulky = new Map<number, EnvironmentHistoryPoint[]>();
+    bulky.set(
+      1,
+      Array.from({ length: 2000 }, (_, i) => ({
+        t: i * 2,
+        reading: { barometricPressure: 1010 + (i % 3) },
+        source: 'rf' as const,
+      })),
+    );
+    bulky.set(
+      2,
+      Array.from({ length: 2000 }, (_, i) => ({
+        t: i * 2 + 1,
+        reading: { relativeHumidity: 40 + (i % 5) },
+        source: 'mqtt' as const,
+      })),
+    );
+    const rows = buildEnvironmentChartRows(bulky, ENV_CHART_ALL_NODES, 0, false, true);
+    expect(rows.length).toBeLessThanOrEqual(1500);
+    expect(chartRowsHaveField(rows, 'barometricPressure')).toBe(true);
+    expect(chartRowsHaveField(rows, 'relativeHumidity')).toBe(true);
+    expect(rows.some((r) => r.nodeNum === 1 && typeof r.barometricPressure__1 === 'number')).toBe(
+      true,
+    );
+    expect(rows.some((r) => r.nodeNum === 2 && typeof r.relativeHumidity__2 === 'number')).toBe(
+      true,
+    );
   });
 
   it('downsamples dense all-nodes chart rows', () => {

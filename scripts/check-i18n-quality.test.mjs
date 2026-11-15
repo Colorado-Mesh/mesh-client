@@ -7,6 +7,7 @@ import {
   nodeListPanelConnectionCrossKeyIssues,
   placeholderNameSet,
   protectedBrandIssues,
+  meshcoreCliPresetHasWireToken,
   protectedProtocolTokenIssues,
   RETICULUM_RUNTIME_PREFIX,
   roomsSavedPasswordsCrossKeyIssues,
@@ -2691,6 +2692,22 @@ describe('audit locale guards', () => {
         val: '未抢到',
       }),
       '未抢到',
+    );
+  });
+
+  it('rejects invalidPreset false friends that only substring-match wire tokens', () => {
+    expect(meshcoreCliPresetHasWireToken('Use infra, rooftop, or mobile.', 'infra')).toBe(true);
+    expect(meshcoreCliPresetHasWireToken('Use infraestructura, rooftop o mobile.', 'infra')).toBe(
+      false,
+    );
+    expectIssue(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'meshcoreCompanionCli.validation.invalidPreset',
+        enVal: 'Use infra, rooftop, or mobile.',
+        val: 'Use infraestructura, rooftop o mobile.',
+      }),
+      'wire token "infra"',
     );
   });
 

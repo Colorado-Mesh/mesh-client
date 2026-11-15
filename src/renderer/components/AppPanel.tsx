@@ -241,14 +241,18 @@ function loadSettings(): AppSettings {
     'AppPanel loadSettings',
   );
   if (!parsed) return DEFAULT_SETTINGS;
-  const rawDeleteDays = parsed.deleteNodesDays;
+  const rawDeleteDays: unknown = parsed.deleteNodesDays;
   const deleteNodesDays =
     typeof rawDeleteDays === 'number' && Number.isFinite(rawDeleteDays) && rawDeleteDays >= 1
       ? Math.trunc(rawDeleteDays)
       : typeof rawDeleteDays === 'string'
         ? (() => {
-            const n = parseInt(rawDeleteDays, 10);
-            return Number.isFinite(n) && n >= 1 ? n : DEFAULT_SETTINGS.deleteNodesDays;
+            const trimmed = rawDeleteDays.trim();
+            const n = parseInt(trimmed, 10);
+            if (!Number.isFinite(n) || n < 1 || String(n) !== trimmed) {
+              return DEFAULT_SETTINGS.deleteNodesDays;
+            }
+            return n;
           })()
         : DEFAULT_SETTINGS.deleteNodesDays;
   return {

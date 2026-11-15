@@ -1124,6 +1124,17 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
     localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
   });
 
+  it('falls back to default deleteNodesDays when stored value is a non-integer string', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ deleteNodesDays: '30abc' }));
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText('Destructive actions'));
+    await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
+  });
+
   it('hydrates the age input from persisted AppSettings', async () => {
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ deleteNodesDays: 10 }));
     render(

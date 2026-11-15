@@ -1,5 +1,5 @@
 /**
- * MECP 1.2.1 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
+ * MECP 1.3.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
  * against vendored freetext/tests.json and patterns.json.
  */
 import { readFileSync } from 'node:fs';
@@ -53,7 +53,7 @@ function conventionResult(
   }
 }
 
-describe('MECP 1.2.1 freetext patterns fixture', () => {
+describe('MECP 1.3.0 freetext patterns fixture', () => {
   it('keeps every pattern string loadable from patterns.json', () => {
     expect(typeof patterns.message.decode).toBe('string');
     expect(MESSAGE_ENVELOPE_RE.test('MECP/1/T05')).toBe(true);
@@ -68,7 +68,7 @@ describe('MECP 1.2.1 freetext patterns fixture', () => {
   });
 });
 
-describe('MECP 1.2.1 freetext conformance (upstream tests.json)', () => {
+describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
   it.each(CASES)('$convention — $input', (t) => {
     if (t.convention === 'message') {
       const got = { valid: matchMessageEnvelope(t.input) != null };
@@ -79,6 +79,18 @@ describe('MECP 1.2.1 freetext conformance (upstream tests.json)', () => {
     expect(env, `envelope failed for ${t.input}`).not.toBeNull();
     const got = conventionResult(t.convention, env!.freetext, env!.codes);
     expect(got).toEqual(t.expect);
+  });
+
+  it('uses strict duration encode patterns without spaces before units (1.3.0)', () => {
+    for (const pat of patterns.duration.encode) {
+      expect(pat).not.toMatch(/ \?/);
+      expect(pat).not.toContain(' ?');
+    }
+  });
+
+  it('decode() still accepts spaced duration tokens on ingest', () => {
+    expect(decode('MECP/2/R03 45 min').extracted.duration).toBe(45);
+    expect(decode('MECP/2/R03 ETA 1h 30min').extracted.duration).toBe(90);
   });
 
   it('decode() surfaces the same duration/callsign/reference extractions', () => {
