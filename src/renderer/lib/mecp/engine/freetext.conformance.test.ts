@@ -1,5 +1,5 @@
 /**
- * MECP 1.2.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
+ * MECP 1.2.1 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
  * against vendored freetext/tests.json and patterns.json.
  */
 import { readFileSync } from 'node:fs';
@@ -53,7 +53,7 @@ function conventionResult(
   }
 }
 
-describe('MECP 1.2.0 freetext patterns fixture', () => {
+describe('MECP 1.2.1 freetext patterns fixture', () => {
   it('keeps every pattern string loadable from patterns.json', () => {
     expect(typeof patterns.message.decode).toBe('string');
     expect(MESSAGE_ENVELOPE_RE.test('MECP/1/T05')).toBe(true);
@@ -68,7 +68,7 @@ describe('MECP 1.2.0 freetext patterns fixture', () => {
   });
 });
 
-describe('MECP 1.2.0 freetext conformance (upstream tests.json)', () => {
+describe('MECP 1.2.1 freetext conformance (upstream tests.json)', () => {
   it.each(CASES)('$convention — $input', (t) => {
     if (t.convention === 'message') {
       const got = { valid: matchMessageEnvelope(t.input) != null };

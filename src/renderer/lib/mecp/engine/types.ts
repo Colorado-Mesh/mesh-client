@@ -1,5 +1,5 @@
 // Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
-// follow MECP 1.2.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
+// follow MECP 1.2.1 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Engine — Type Definitions
@@ -9,7 +9,7 @@
  */
 
 /** Canonical protocol version clients claim adherence to. */
-export const MECP_PROTOCOL_VERSION = '1.2.0';
+export const MECP_PROTOCOL_VERSION = '1.2.1';
 
 /** Severity levels: 0=MAYDAY, 1=URGENT, 2=SAFETY, 3=ROUTINE */
 export type Severity = 0 | 1 | 2 | 3;

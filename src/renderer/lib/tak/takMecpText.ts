@@ -86,7 +86,7 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
 }
 
 /**
- * Strip one MECP 1.2.0 Duration token (and an optional leading ETA alias) once the
+ * Strip one MECP 1.2.1 Duration token (and an optional leading ETA alias) once the
  * minutes have been folded into a code meaning. Matches unit-bearing forms and a
  * bare first-token integer.
  */
