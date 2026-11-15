@@ -15,8 +15,10 @@ import { Mesh } from '@meshtastic/protobufs';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { clearCayenneTelemetry, recordCayennePacket } from '../../stores/cayenneTelemetryStore';
+import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
 import { recordKeyVerificationPacket } from '../../stores/keyVerificationStore';
 import { updateMeshtasticDeliveryMeta, useMessageStore } from '../../stores/messageStore';
+import { cayenneDecodedToEnvironmentReading } from '../cayenneToEnvironmentReading';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { toPacketPayloadBytes } from '../packetPayload';
 import type { MeshtasticModulePortEvent } from '../protocols/Protocol';
@@ -214,8 +216,13 @@ function handleModulePort(
     // CAYENNE_APP: Cayenne LPP sensor payloads → Telemetry panel charts (Meshtastic-only port).
     case 'cayenne': {
       const decoded = decodeCayenneLpp(entry.data);
-      if (decoded.readings.length > 0)
+      if (decoded.readings.length > 0) {
         recordCayennePacket(identityId, { from, timestamp, decoded });
+        const envReading = cayenneDecodedToEnvironmentReading(decoded.readings);
+        if (envReading) {
+          recordEnvironmentReading('meshtastic', identityId, from, envReading, 'rf');
+        }
+      }
       break;
     }
     // REMOTE_SHELL_APP: PTY frames for the Admin-tab remote shell session (Meshtastic-only port).

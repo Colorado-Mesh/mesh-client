@@ -10,6 +10,7 @@ import {
   SENSOR_LAYER_MAX_AGE_MS,
   sensorColorForValue,
 } from '@/renderer/lib/environmentSensorDisplay';
+import { resolveIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { MeshNode } from '@/renderer/lib/types';
 import {
@@ -19,6 +20,7 @@ import {
   selectEnvironmentSeries,
   useEnvironmentTelemetryStore,
 } from '@/renderer/stores/environmentTelemetryStore';
+import { useIdentityStore } from '@/renderer/stores/identityStore';
 import type { EnvironmentReading } from '@/shared/environmentTelemetry';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
@@ -81,6 +83,7 @@ interface Props {
 interface MarkerProps {
   node: MeshNode;
   protocol: MeshProtocol;
+  identityId: string | null;
   metric: MapSensorMetric;
   useFahrenheit: boolean;
   nowMs: number;
@@ -94,6 +97,7 @@ interface MarkerProps {
 const EnvironmentSensorMarker = memo(function EnvironmentSensorMarker({
   node,
   protocol,
+  identityId,
   metric,
   useFahrenheit,
   nowMs,
@@ -101,7 +105,7 @@ const EnvironmentSensorMarker = memo(function EnvironmentSensorMarker({
 }: MarkerProps) {
   const { t } = useTranslation();
   const series = useEnvironmentTelemetryStore((s) =>
-    selectEnvironmentSeries(s, protocol, node.node_id),
+    selectEnvironmentSeries(s, protocol, identityId, node.node_id),
   );
   const marker = sensorMarkerForNode(node, series, metric, protocol, nowMs);
   if (!marker) return null;
@@ -146,6 +150,9 @@ export function EnvironmentSensorLayer({
   onNodeClick,
 }: Props) {
   const nowMs = useNowMs();
+  const identityId = useIdentityStore((s) =>
+    resolveIdentityIdForProtocol(s.identities, s.activeIdentityId, protocol),
+  );
   return (
     <>
       {nodes.map((node) => (
@@ -153,6 +160,7 @@ export function EnvironmentSensorLayer({
           key={node.node_id}
           node={node}
           protocol={protocol}
+          identityId={identityId}
           metric={metric}
           useFahrenheit={useFahrenheit}
           nowMs={nowMs}

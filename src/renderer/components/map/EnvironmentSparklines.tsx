@@ -1,18 +1,25 @@
 import { useTranslation } from 'react-i18next';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
+import { resolveIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { MS_PER_DAY } from '@/renderer/lib/timeConstants';
 import {
   type EnvironmentHistoryPoint,
   selectEnvironmentSeries,
   useEnvironmentTelemetryStore,
 } from '@/renderer/stores/environmentTelemetryStore';
+import { useIdentityStore } from '@/renderer/stores/identityStore';
 import type { EnvironmentReadingField } from '@/shared/environmentTelemetry';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 const SPARKLINE_METRICS = [
   { metric: 'temperature', labelKey: 'sensorLayer.sparklineTemperature24h' },
   { metric: 'relativeHumidity', labelKey: 'sensorLayer.sparklineHumidity24h' },
+  { metric: 'iaq', labelKey: 'sensorLayer.sparklineIaq24h' },
+  { metric: 'pm25Standard', labelKey: 'sensorLayer.sparklinePm2524h' },
+  { metric: 'co2', labelKey: 'sensorLayer.sparklineCo224h' },
+  { metric: 'lux', labelKey: 'sensorLayer.sparklineLux24h' },
+  { metric: 'windSpeed', labelKey: 'sensorLayer.sparklineWind24h' },
 ] as const satisfies readonly { metric: EnvironmentReadingField; labelKey: string }[];
 
 /** SVG polyline points for `metric` over `points`, or null with fewer than two samples. */
@@ -53,7 +60,12 @@ export function EnvironmentSparklines({
   nodeId: number;
 }) {
   const { t } = useTranslation();
-  const series = useEnvironmentTelemetryStore((s) => selectEnvironmentSeries(s, protocol, nodeId));
+  const identityId = useIdentityStore((s) =>
+    resolveIdentityIdForProtocol(s.identities, s.activeIdentityId, protocol),
+  );
+  const series = useEnvironmentTelemetryStore((s) =>
+    selectEnvironmentSeries(s, protocol, identityId, nodeId),
+  );
   const nowMs = useNowMs();
   if (nowMs <= 0 || series.length < 2) return null;
   const since = nowMs - MS_PER_DAY;

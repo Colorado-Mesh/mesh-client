@@ -43,7 +43,7 @@ function seriesLabel(series: CayenneSeries): string {
 }
 
 /**
- * Cayenne LPP sensor charts (Telemetry tab). Renders nothing until a `CAYENNE_APP` packet has been
+ * Cayenne LPP sensor charts (Device → Telemetry). Renders nothing until a `CAYENNE_APP` packet has been
  * decoded for the active Meshtastic radio.
  */
 export default function CayenneTelemetrySection({ capabilities }: Props) {

@@ -26,6 +26,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Tray unread BGRA/halo paint ships as sibling `tray-unread-dot.js` (not in index.js).
  * Scheduled Broadcasts create + legacy interval-CHECK strip ships as sibling
  * `scheduled-broadcasts-interval-rebuild.js` (not in index.js).
+ * Environment telemetry IPC/SQL ships as sibling `environment-telemetry-handlers.js`
+ * (not in index.js).
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
 
@@ -44,7 +46,8 @@ export function formatMainBundleOverBudgetMessage(size) {
     'AI / contributor remediation (do these in order — do not raise the budget first):',
     '1. Move bulky or new main-process code into a sibling esbuild entry in scripts/esbuild-main-build.mjs',
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
-    '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js) so it is NOT counted',
+    '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
+    '   environment-telemetry-handlers.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
@@ -174,6 +177,20 @@ describe('esbuild-main-build', () => {
       expect(teamRosterFallbackBytes.length).toBeGreaterThan(200);
       expect(teamRosterFallbackBytes.toString('utf8')).toContain(
         'registerTeamRosterIpcFallbackHandlers',
+      );
+      const environmentTelemetryBytes = fs.readFileSync(
+        path.join(tempDir, 'environment-telemetry-handlers.js'),
+      );
+      expect(environmentTelemetryBytes.length).toBeGreaterThan(500);
+      expect(environmentTelemetryBytes.toString('utf8')).toContain(
+        'registerEnvironmentTelemetryIpcHandlers',
+      );
+      const environmentTelemetryFallbackBytes = fs.readFileSync(
+        path.join(tempDir, 'environment-telemetry-handlers-fallback.js'),
+      );
+      expect(environmentTelemetryFallbackBytes.length).toBeGreaterThan(200);
+      expect(environmentTelemetryFallbackBytes.toString('utf8')).toContain(
+        'registerEnvironmentTelemetryIpcFallbackHandlers',
       );
       const trayUnreadDotBytes = fs.readFileSync(path.join(tempDir, 'tray-unread-dot.js'));
       expect(trayUnreadDotBytes.length).toBeGreaterThan(200);

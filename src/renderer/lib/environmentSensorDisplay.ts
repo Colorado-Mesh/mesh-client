@@ -5,6 +5,11 @@ export const MAP_SENSOR_METRICS = [
   'temperature',
   'relativeHumidity',
   'barometricPressure',
+  'iaq',
+  'pm25Standard',
+  'co2',
+  'lux',
+  'windSpeed',
 ] as const;
 export type MapSensorMetric = (typeof MAP_SENSOR_METRICS)[number];
 
@@ -48,6 +53,31 @@ const BANDS: Readonly<Record<MapSensorMetric, readonly ColorBand[]>> = {
     { below: 1020, color: SENSOR_COLOR_MILD },
     { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_WARM },
   ],
+  iaq: [
+    { below: 50, color: SENSOR_COLOR_MILD },
+    { below: 100, color: SENSOR_COLOR_WARM },
+    { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_HOT },
+  ],
+  pm25Standard: [
+    { below: 12, color: SENSOR_COLOR_MILD },
+    { below: 35, color: SENSOR_COLOR_WARM },
+    { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_HOT },
+  ],
+  co2: [
+    { below: 800, color: SENSOR_COLOR_MILD },
+    { below: 1200, color: SENSOR_COLOR_WARM },
+    { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_HOT },
+  ],
+  lux: [
+    { below: 100, color: SENSOR_COLOR_COLD },
+    { below: 1000, color: SENSOR_COLOR_COOL },
+    { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_WARM },
+  ],
+  windSpeed: [
+    { below: 3, color: SENSOR_COLOR_MILD },
+    { below: 8, color: SENSOR_COLOR_WARM },
+    { below: Number.POSITIVE_INFINITY, color: SENSOR_COLOR_HOT },
+  ],
 };
 
 /** Band color for a value in the metric's base unit; neutral when missing or not finite. */
@@ -80,5 +110,20 @@ export function formatSensorMetric(
   if (metric === 'relativeHumidity') {
     return t('sensorLayer.valueHumidity', { value: value.toFixed(0) });
   }
-  return t('sensorLayer.valuePressure', { value: value.toFixed(1) });
+  if (metric === 'barometricPressure') {
+    return t('sensorLayer.valuePressure', { value: value.toFixed(1) });
+  }
+  if (metric === 'iaq') {
+    return t('sensorLayer.valueIaq', { value: value.toFixed(0) });
+  }
+  if (metric === 'pm25Standard') {
+    return t('sensorLayer.valuePm25', { value: value.toFixed(1) });
+  }
+  if (metric === 'co2') {
+    return t('sensorLayer.valueCo2', { value: value.toFixed(0) });
+  }
+  if (metric === 'lux') {
+    return t('sensorLayer.valueLux', { value: value.toFixed(0) });
+  }
+  return t('sensorLayer.valueWind', { value: value.toFixed(1) });
 }

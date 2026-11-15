@@ -10,6 +10,7 @@ import {
 import { isMeshProtocol } from '../../shared/meshProtocol';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import {
+  claimLegacyEnvironmentTelemetryIdentityOn,
   insertEnvironmentTelemetryOn,
   pruneEnvironmentTelemetryOn,
   selectEnvironmentTelemetrySinceOn,
@@ -26,6 +27,10 @@ function safeNodeId(value: unknown): number | null {
     : null;
 }
 
+function safeIdentityId(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 && value.length <= 128 ? value : null;
+}
+
 /** Register `db:*EnvironmentTelemetry` handlers (per-node sensor history). */
 export function registerEnvironmentTelemetryIpcHandlers({
   ipcMain,
@@ -35,6 +40,7 @@ export function registerEnvironmentTelemetryIpcHandlers({
     (
       event,
       protocol: unknown,
+      identityId: unknown,
       nodeId: unknown,
       recordedAt: unknown,
       reading: unknown,
@@ -43,9 +49,11 @@ export function registerEnvironmentTelemetryIpcHandlers({
       try {
         assertIpcSender(event, 'db:saveEnvironmentTelemetry');
         if (typeof protocol !== 'string' || !isMeshProtocol(protocol)) return { changes: 0 };
+        const identity = safeIdentityId(identityId);
         const id = safeNodeId(nodeId);
         const sanitized = sanitizeEnvironmentReading(reading);
         if (
+          identity === null ||
           id === null ||
           sanitized === null ||
           typeof recordedAt !== 'number' ||
@@ -56,7 +64,15 @@ export function registerEnvironmentTelemetryIpcHandlers({
         }
         const db = getDbForIpc('db:saveEnvironmentTelemetry');
         if (!db) return { changes: 0 };
-        insertEnvironmentTelemetryOn(db, protocol, id, Math.floor(recordedAt), sanitized, source);
+        insertEnvironmentTelemetryOn(
+          db,
+          protocol,
+          identity,
+          id,
+          Math.floor(recordedAt),
+          sanitized,
+          source,
+        );
         return { changes: 1 };
       } catch (err) {
         finishDbIpcHandler('db:saveEnvironmentTelemetry', err);
@@ -80,6 +96,24 @@ export function registerEnvironmentTelemetryIpcHandlers({
       return finishDbIpcReadHandler('db:getEnvironmentTelemetry', err, []);
     }
   });
+
+  ipcMain.handle(
+    'db:claimLegacyEnvironmentTelemetryIdentity',
+    (event, protocol: unknown, identityId: unknown) => {
+      try {
+        assertIpcSender(event, 'db:claimLegacyEnvironmentTelemetryIdentity');
+        if (typeof protocol !== 'string' || !isMeshProtocol(protocol)) return { changes: 0 };
+        const identity = safeIdentityId(identityId);
+        if (identity === null) return { changes: 0 };
+        const db = getDbForIpc('db:claimLegacyEnvironmentTelemetryIdentity');
+        if (!db) return { changes: 0 };
+        const changes = claimLegacyEnvironmentTelemetryIdentityOn(db, protocol, identity);
+        return { changes };
+      } catch (err) {
+        finishDbIpcHandler('db:claimLegacyEnvironmentTelemetryIdentity', err);
+      }
+    },
+  );
 
   ipcMain.handle('db:clearEnvironmentTelemetry', (event) => {
     try {

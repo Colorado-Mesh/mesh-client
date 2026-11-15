@@ -74,7 +74,7 @@ In the v6 shell ([issue #1062](https://github.com/Colorado-Mesh/mesh-client/issu
 | Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                                                                                                                                                                                   |
 | App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                                                                                                                                                                                                                                                                                       |
 
-Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, RF, Graph.
+Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, RF, Graph. Reticulum does not expose environment telemetry; **Device → Telemetry** stays hidden (no native RNS/LXMF environment payload).
 
 The **Log panel** (right rail, toggled from **App → Log panel**) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.
 

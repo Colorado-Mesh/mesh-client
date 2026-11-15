@@ -6414,6 +6414,13 @@ function AppContent() {
                                 onRefresh={panelActions.requestRefresh}
                                 isConnected={isOperational}
                                 capabilities={capabilities}
+                                myNodeNum={activeConnectionView.state.myNodeNum}
+                                nodesById={nodesForUi}
+                                onRequestSensorTelemetry={
+                                  capabilities.hasRepeaterStatus
+                                    ? meshcorePanelActions.requestTelemetry
+                                    : undefined
+                                }
                                 meshcorePacketStats={
                                   capabilities.hasRepeaterStatus
                                     ? meshcoreRuntime.meshcoreLocalStats

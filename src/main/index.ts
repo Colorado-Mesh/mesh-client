@@ -165,7 +165,6 @@ import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
 import { registerElevationIpcHandlers } from './ipc/elevation-handlers';
-import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGeoIpcHandlers } from './ipc/geo-handlers';
@@ -6888,7 +6887,6 @@ registerReticulumIpcHandlers({
 });
 registerReticulumDbIpcHandlers({ ipcMain });
 registerRrcDbIpcHandlers({ ipcMain });
-registerEnvironmentTelemetryIpcHandlers({ ipcMain });
 registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
@@ -7005,6 +7003,41 @@ void app
           }) => void;
         };
         fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
+      }
+      // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
+      try {
+        const envTelMod = (
+          process.env.VITEST
+            ? await import('./ipc/environment-telemetry-handlers')
+            : await import(
+                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
+              )
+        ) as {
+          registerEnvironmentTelemetryIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
+        };
+        envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain });
+      } catch (err: unknown) {
+        console.error(
+          '[main] environment-telemetry IPC registration failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+        const envTelFallbackMod = (
+          process.env.VITEST
+            ? await import('./ipc/environment-telemetry-handlers-fallback')
+            : await import(
+                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers-fallback.js'))
+                  .href
+              )
+        ) as {
+          registerEnvironmentTelemetryIpcFallbackHandlers: (deps: {
+            ipcMain: typeof ipcMain;
+            assertIpcSender: typeof assertIpcSender;
+          }) => void;
+        };
+        envTelFallbackMod.registerEnvironmentTelemetryIpcFallbackHandlers({
+          ipcMain,
+          assertIpcSender,
+        });
       }
       protocol.handle(
         RENDERER_SCHEME,

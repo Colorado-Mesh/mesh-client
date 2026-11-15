@@ -218,6 +218,20 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const environmentTelemetryPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/environment-telemetry-handlers.ts'),
+            [
+              'export function registerEnvironmentTelemetryIpcHandlers() {',
+              `  return 'INSERT INTO node_environment_telemetry ${environmentTelemetryPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/environment-telemetry-handlers-fallback.ts'),
+            ['export function registerEnvironmentTelemetryIpcFallbackHandlers() {}', ''].join('\n'),
+          );
           const trayUnreadPad = 'x'.repeat(200);
           fs.writeFileSync(
             path.join(fixture, 'src/main/trayUnreadDot.ts'),

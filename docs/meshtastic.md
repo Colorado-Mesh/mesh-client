@@ -274,7 +274,7 @@ Heard beacons list under **Heard beacons** with the offered channel, region, pre
 
 ### Cayenne LPP charts
 
-**Device → Telemetry → Cayenne LPP sensors** charts Cayenne Low Power Payload packets (CAYENNE_APP) sent by sensor nodes. This is **Meshtastic only**: it is gated by the Meshtastic-only `hasCayenneTelemetry` capability and does not apply to MeshCore or Reticulum.
+**Device → Telemetry → Cayenne LPP sensors** charts Cayenne Low Power Payload packets (CAYENNE_APP) sent by sensor nodes. Environment-shaped fields (temperature, humidity, pressure, lux, …) are also saved to history and the Map Sensors layer; other kinds remain session-only in this section. This is **Meshtastic only**: it is gated by the Meshtastic-only `hasCayenneTelemetry` capability and does not apply to MeshCore or Reticulum. Environment charts from firmware `Telemetry` packets require a sensor node with the Telemetry Module (environment / air quality) enabled.
 
 - Pick a **Sensor node**, then read one chart per decoded kind: temperature, humidity, barometric pressure, illuminance, GPS position, analog and digital inputs and outputs, accelerometer, gyrometer, power, energy, distance, and more.
 - This is session history only; it is not saved.

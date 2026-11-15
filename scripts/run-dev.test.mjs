@@ -27,6 +27,14 @@ describe('run-dev', () => {
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/ipc/team-roster-handlers-fallback.ts')),
     ).toBe(true);
+    expect(
+      args.some((arg) => arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers.ts')),
+    ).toBe(true);
+    expect(
+      args.some((arg) =>
+        arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts'),
+      ),
+    ).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/main/trayUnreadDot.ts'))).toBe(true);
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/scheduledBroadcastsIntervalRebuild.ts')),

@@ -678,6 +678,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['trail', 'track', 'delete'],
   },
   {
+    id: 'app.danger.clearEnvironmentHistory',
+    slot: 'App',
+    labelKey: 'appPanel.clearEnvironmentHistory',
+    sectionKey: DANGER,
+    keywords: ['telemetry', 'sensor', 'environment', 'delete'],
+  },
+  {
     id: 'app.danger.deleteOldNodes',
     slot: 'App',
     labelKey: 'appPanel.deleteOldNodes',

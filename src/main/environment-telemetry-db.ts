@@ -1,4 +1,6 @@
 import {
+  ENVIRONMENT_READING_ARRAY_DB_COLUMNS,
+  ENVIRONMENT_READING_ARRAY_FIELDS,
   ENVIRONMENT_READING_DB_COLUMNS,
   ENVIRONMENT_READING_FIELDS,
   ENVIRONMENT_TELEMETRY_MAX_NODES,
@@ -6,36 +8,47 @@ import {
   type EnvironmentReading,
   type EnvironmentTelemetryRow,
   type EnvironmentTelemetrySource,
+  serializeSparseNumberArray,
 } from '../shared/environmentTelemetry';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import type { NodeSqliteDB } from './db-compat';
 
-const READING_COLUMNS = ENVIRONMENT_READING_FIELDS.map((f) => ENVIRONMENT_READING_DB_COLUMNS[f]);
+const READING_COLUMNS = [
+  ...ENVIRONMENT_READING_FIELDS.map((f) => ENVIRONMENT_READING_DB_COLUMNS[f]),
+  ...ENVIRONMENT_READING_ARRAY_FIELDS.map((f) => ENVIRONMENT_READING_ARRAY_DB_COLUMNS[f]),
+];
 
 const INSERT_SQL =
-  `INSERT INTO node_environment_telemetry (protocol, node_id, recorded_at, source, ` +
+  `INSERT INTO node_environment_telemetry (protocol, identity_id, node_id, recorded_at, source, ` +
   `${READING_COLUMNS.join(', ')}) ` +
-  `VALUES (?, ?, ?, ?, ${READING_COLUMNS.map(() => '?').join(', ')})`;
+  `VALUES (?, ?, ?, ?, ?, ${READING_COLUMNS.map(() => '?').join(', ')})`;
 
-const SELECT_COLUMNS = ['protocol', 'node_id', 'recorded_at', 'source', ...READING_COLUMNS];
+const SELECT_COLUMNS = [
+  'protocol',
+  'identity_id',
+  'node_id',
+  'recorded_at',
+  'source',
+  ...READING_COLUMNS,
+];
 
 /**
- * Newest `maxPerNode` rows for the `maxNodesPerProtocol` nodes (per protocol) whose latest
- * sample is newest. Tie-break is the lower node id. Binds: sinceMs, maxNodesPerProtocol,
+ * Newest `maxPerNode` rows for the `maxNodesPerProtocol` nodes (per protocol+identity) whose
+ * latest sample is newest. Tie-break is the lower node id. Binds: sinceMs, maxNodesPerProtocol,
  * sinceMs, maxPerNode.
  */
 const SELECT_SQL = `WITH latest AS (
-     SELECT protocol, node_id, MAX(recorded_at) AS latest_at
+     SELECT protocol, identity_id, node_id, MAX(recorded_at) AS latest_at
      FROM node_environment_telemetry
      WHERE recorded_at >= ?
-     GROUP BY protocol, node_id
+     GROUP BY protocol, identity_id, node_id
    ),
    kept_nodes AS (
-     SELECT protocol, node_id
+     SELECT protocol, identity_id, node_id
      FROM (
-       SELECT protocol, node_id,
+       SELECT protocol, identity_id, node_id,
               ROW_NUMBER() OVER (
-                PARTITION BY protocol
+                PARTITION BY protocol, identity_id
                 ORDER BY latest_at DESC, node_id ASC
               ) AS node_rn
        FROM latest
@@ -46,20 +59,30 @@ const SELECT_SQL = `WITH latest AS (
    FROM (
      SELECT ${SELECT_COLUMNS.map((column) => `t.${column} AS ${column}`).join(', ')},
             ROW_NUMBER() OVER (
-              PARTITION BY t.protocol, t.node_id
+              PARTITION BY t.protocol, t.identity_id, t.node_id
               ORDER BY t.recorded_at DESC, t.id DESC
             ) AS series_rn
      FROM node_environment_telemetry t
      INNER JOIN kept_nodes k
-       ON k.protocol = t.protocol AND k.node_id = t.node_id
+       ON k.protocol = t.protocol
+      AND k.identity_id = t.identity_id
+      AND k.node_id = t.node_id
      WHERE t.recorded_at >= ?
    ) AS ranked
    WHERE series_rn <= ?
-   ORDER BY protocol, node_id, recorded_at`;
+   ORDER BY protocol, identity_id, node_id, recorded_at`;
+
+function readingBindValues(reading: EnvironmentReading): unknown[] {
+  return [
+    ...ENVIRONMENT_READING_FIELDS.map((f) => reading[f] ?? null),
+    ...ENVIRONMENT_READING_ARRAY_FIELDS.map((f) => serializeSparseNumberArray(reading[f])),
+  ];
+}
 
 export function insertEnvironmentTelemetryOn(
   d: NodeSqliteDB,
   protocol: MeshProtocol,
+  identityId: string,
   nodeId: number,
   recordedAt: number,
   reading: EnvironmentReading,
@@ -67,10 +90,11 @@ export function insertEnvironmentTelemetryOn(
 ): void {
   d.prepareOnce(INSERT_SQL).run(
     protocol,
+    identityId,
     nodeId,
     recordedAt,
     source,
-    ...ENVIRONMENT_READING_FIELDS.map((f) => reading[f] ?? null),
+    ...readingBindValues(reading),
   );
 }
 
@@ -87,7 +111,7 @@ export function selectEnvironmentTelemetrySinceOn(
 
 /**
  * Drop readings older than `maxAgeMs`, then keep the newest `maxPerNode` rows per
- * (protocol, node_id). Returns total rows deleted.
+ * (protocol, identity_id, node_id). Returns total rows deleted.
  */
 export function pruneEnvironmentTelemetryOn(
   d: NodeSqliteDB,
@@ -108,7 +132,8 @@ export function pruneEnvironmentTelemetryOn(
              SELECT id FROM (
                SELECT id,
                  ROW_NUMBER() OVER (
-                   PARTITION BY protocol, node_id ORDER BY recorded_at DESC, id DESC
+                   PARTITION BY protocol, identity_id, node_id
+                   ORDER BY recorded_at DESC, id DESC
                  ) AS rn
                FROM node_environment_telemetry
              )
@@ -119,4 +144,25 @@ export function pruneEnvironmentTelemetryOn(
     );
   }
   return changes;
+}
+
+/**
+ * One-time attribution of legacy rows (`identity_id = ''`) to `identityId` for `protocol`.
+ * Multi-radio users may see pre-migration history under the first identity that claims it.
+ */
+export function claimLegacyEnvironmentTelemetryIdentityOn(
+  d: NodeSqliteDB,
+  protocol: MeshProtocol,
+  identityId: string,
+): number {
+  if (!identityId) return 0;
+  return Number(
+    d
+      .prepareOnce(
+        `UPDATE node_environment_telemetry
+         SET identity_id = ?
+         WHERE protocol = ? AND identity_id = ''`,
+      )
+      .run(identityId, protocol).changes,
+  );
 }

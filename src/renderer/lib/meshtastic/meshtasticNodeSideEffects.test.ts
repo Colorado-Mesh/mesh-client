@@ -278,7 +278,12 @@ describe('attachMeshtasticNodeSideEffects', () => {
       }),
     );
     expect(
-      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', PEER).at(-1),
+      selectEnvironmentSeries(
+        useEnvironmentTelemetryStore.getState(),
+        'meshtastic',
+        IDENTITY,
+        PEER,
+      ).at(-1),
     ).toEqual(
       expect.objectContaining({
         source: 'rf',
