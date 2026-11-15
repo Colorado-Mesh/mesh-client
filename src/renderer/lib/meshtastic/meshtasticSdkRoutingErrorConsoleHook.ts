@@ -1,4 +1,4 @@
-import { armMeshtasticLateConfigureRetryableSwallow } from './meshtasticConfigureRetry';
+import { armMeshtasticLateConfigureRetryableSwallow } from './meshtasticLateConfigureRetryableSwallow';
 import {
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,

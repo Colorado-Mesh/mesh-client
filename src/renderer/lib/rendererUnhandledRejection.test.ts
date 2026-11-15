@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   armMeshtasticLateConfigureRetryableSwallow,
   resetMeshtasticLateConfigureRetryableSwallowForTests,
-} from './meshtastic/meshtasticConfigureRetry';
+} from './meshtastic/meshtasticLateConfigureRetryableSwallow';
 import {
   installRendererUnhandledRejectionLogger,
   logRendererUnhandledRejection,

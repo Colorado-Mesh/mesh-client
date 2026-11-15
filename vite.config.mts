@@ -86,9 +86,10 @@ export default defineConfig({
     sourcemap: false,
     // Production: omit source maps (smaller bundle). For crash symbolication use
     // sourcemap: 'hidden' and exclude *.map from electron-builder artifacts.
-    // Advisory for non-App chunks. The App entry fails the build above 1000 kB
-    // (appChunkBudgetPlugin). Electron renderer; not a public web cold-load budget.
-    chunkSizeWarningLimit: 1000,
+    // Advisory for non-App chunks (shared boot / locale / vendor). The App entry still
+    // fails the build above 1000 kB (appChunkBudgetPlugin). Electron renderer; not a
+    // public web cold-load budget.
+    chunkSizeWarningLimit: 1200,
     // Vite 8: multipage HTML entries belong on rolldownOptions.input (rollupOptions.input
     // is ignored once rolldownOptions is set). Stubs for Node built-ins stay in resolve.alias —
     // do not list them as externals (bare `import "stream"` etc. break in the renderer).

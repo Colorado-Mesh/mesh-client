@@ -13,7 +13,7 @@ import {
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
 import { notifyBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
-import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticConfigureRetry';
+import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticLateConfigureRetryableSwallow';
 import { sendMeshtasticPhoneApiDisconnect } from './meshtastic/meshtasticPhoneApiDisconnect';
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
 import {

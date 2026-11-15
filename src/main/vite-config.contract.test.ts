@@ -46,7 +46,7 @@ describe('vite build config', () => {
   });
 
   it('sets chunk size warning limit for Electron renderer advisory threshold', () => {
-    expect(VITE_CONFIG).toMatch(/chunkSizeWarningLimit:\s*1000/);
+    expect(VITE_CONFIG).toMatch(/chunkSizeWarningLimit:\s*1200/);
   });
 
   it('fails the renderer build when the App entry chunk exceeds 1000 kB', () => {
