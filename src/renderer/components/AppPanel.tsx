@@ -169,6 +169,8 @@ function gpsIntervalLabel(t: (key: string) => string, secs: number): string {
 interface AppSettings {
   autoPruneEnabled: boolean;
   autoPruneDays: number;
+  /** Danger Zone one-shot "delete nodes older than N days" preference. */
+  deleteNodesDays: number;
   pruneEmptyNamesEnabled: boolean;
   nodeCapEnabled: boolean;
   nodeCapCount: number;
@@ -223,6 +225,7 @@ interface AppSettings {
 
 const DEFAULT_SETTINGS: AppSettings = {
   ...DEFAULT_APP_SETTINGS_SHARED,
+  deleteNodesDays: 90,
   filterMqttOnly: false,
   messageLimitEnabled: true,
   messageLimitCount: 1000,
@@ -396,7 +399,6 @@ export default function AppPanel({
   const [messageActionsBarBgVisible, setMessageActionsBarBgVisibleState] = useState<boolean>(
     isMessageActionsBarBgVisible(),
   );
-  const [deleteAgeDays, setDeleteAgeDays] = useState(90);
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
 
   const updateFontScale = useCallback((next: number) => {
@@ -2810,11 +2812,13 @@ export default function AppPanel({
               id="apppanel-delete-age-days"
               type="number"
               min={1}
-              value={deleteAgeDays}
+              value={settings.deleteNodesDays}
               onChange={(e) => {
-                setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
+                updateSetting('deleteNodesDays', Math.max(1, parseInt(e.target.value) || 1));
               }}
-              aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
+              aria-label={t('appPanel.deleteNodesOlderThanAria', {
+                days: settings.deleteNodesDays,
+              })}
               className="bg-app-bg text-body text-ink-200 h-8 w-20 rounded-lg border border-red-800/60 px-2.5 text-right focus:border-red-500 focus:outline-none pointer-coarse:h-10"
             />
             <span className="text-ink-300 text-sm">{t('common.days')}</span>
@@ -2827,13 +2831,13 @@ export default function AppPanel({
                   actionId: 'deleteOldNodes',
                   title: t('appPanel.deleteOldNodes'),
                   message: t('appPanel.deleteOldNodesConfirm', {
-                    days: deleteAgeDays,
-                    count: deleteAgeDays,
+                    days: settings.deleteNodesDays,
+                    count: settings.deleteNodesDays,
                   }),
                   confirmLabel: t('appPanel.deleteOldNodes'),
                   danger: true,
                   action: async () => {
-                    await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
+                    await window.electronAPI.db.deleteNodesByAge(settings.deleteNodesDays);
                   },
                 });
               }}

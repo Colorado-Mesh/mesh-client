@@ -1110,6 +1110,52 @@ describe('AppPanel: support bundle exports', () => {
   });
 });
 
+describe('AppPanel: Danger Zone delete-nodes age', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+  });
+
+  it('hydrates the age input from persisted AppSettings', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ deleteNodesDays: 10 }));
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    const input = await screen.findByLabelText(/Delete nodes last heard more than 10 days/i);
+    expect(input).toHaveValue(10);
+  });
+
+  it('persists age changes to AppSettings localStorage', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    const input = await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
+    fireEvent.change(input, { target: { value: '15' } });
+
+    await waitFor(() => {
+      const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
+      expect(raw).toBeTruthy();
+      expect(JSON.parse(raw ?? '{}')).toMatchObject({ deleteNodesDays: 15 });
+    });
+  });
+});
+
 describe('AppPanel: Reticulum clear contacts danger zone', () => {
   const defaultProps = {
     nodeCount: 0,
