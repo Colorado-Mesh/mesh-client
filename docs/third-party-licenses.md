@@ -22,7 +22,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.25.0         | 2.25.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dbus-next                  | MIT                           | 0.10.2          | 0.10.2            | git+ssh://git@github.com/dbusjs/node-dbus-next.git                             |
-| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.17         | 3.4.17            | git://github.com/cure53/DOMPurify.git                                          |
+| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.18         | 3.4.18            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.11         | 6.8.11            | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
@@ -41,7 +41,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.6          | 7.8.6             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.21        | 5.33.21           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.22        | 5.33.22           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.12.4         | 8.12.4            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.23.0            | git+https://github.com/websockets/ws.git                                       |
 
@@ -51,12 +51,12 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | :------------------------------------ | :-------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------------- |
 | @axe-core/react                       | MPL-2.0         | ^4.14.0         | 4.14.0            | git+https://github.com/dequelabs/axe-core-npm.git                                    |
 | @eslint/js                            | MIT             | ^10.0.1         | 10.0.1            | git+https://github.com/eslint/eslint.git                                             |
-| @liamcottle/meshcore.js               | MIT             | ^1.15.0         | 1.15.0            | git+https://github.com/meshcore-dev/meshcore.js.git                                  |
+| @liamcottle/meshcore.js               | MIT             | ^1.15.1         | 1.15.1            | git+https://github.com/meshcore-dev/meshcore.js.git                                  |
 | @jsr/meshtastic__core                 | n/a             | ^2.6.6          | 2.6.6             | n/a                                                                                  |
 | @jsr/meshtastic__transport-http       | n/a             | ^0.2.1          | 0.2.1             | n/a                                                                                  |
 | @jsr/meshtastic__transport-web-serial | n/a             | ^0.2.5          | 0.2.5             | n/a                                                                                  |
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
-| @playwright/test                      | Apache-2.0      | ^1.65.0         | 1.65.0            | git+https://github.com/microsoft/playwright.git                                      |
+| @playwright/test                      | Apache-2.0      | ^1.65.1         | 1.65.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.5          | 4.3.5             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
@@ -79,7 +79,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
-| eslint                                | MIT             | ^10.14.0        | 10.14.0           | git+https://github.com/eslint/eslint.git                                             |
+| eslint                                | MIT             | ^10.15.0        | 10.15.0           | git+https://github.com/eslint/eslint.git                                             |
 | eslint-config-prettier                | MIT             | ^10.1.8         | 10.1.8            | git+https://github.com/prettier/eslint-config-prettier.git                           |
 | eslint-plugin-electron                | ISC             | ^7.0.0          | 7.0.0             | https://registry.npmjs.org/eslint-plugin-electron/-/eslint-plugin-electron-7.0.0.tgz |
 | eslint-plugin-import                  | MIT             | ^2.32.0         | 2.32.0            | git+https://github.com/import-js/eslint-plugin-import.git                            |
