@@ -28,11 +28,17 @@ describe('run-dev', () => {
       args.some((arg) => arg.startsWith('esbuild src/main/ipc/team-roster-handlers-fallback.ts')),
     ).toBe(true);
     expect(
-      args.some((arg) => arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers.ts')),
+      args.some(
+        (arg) =>
+          arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers.ts') &&
+          arg.includes('--external:electron'),
+      ),
     ).toBe(true);
     expect(
-      args.some((arg) =>
-        arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts'),
+      args.some(
+        (arg) =>
+          arg.startsWith('esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts') &&
+          arg.includes('--external:electron'),
       ),
     ).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/main/trayUnreadDot.ts'))).toBe(true);

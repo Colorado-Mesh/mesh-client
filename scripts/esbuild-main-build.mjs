@@ -170,6 +170,7 @@ export async function buildMainProcess(opts = {}) {
     platform: 'node',
     format: 'cjs',
     outfile: path.join(path.dirname(outfile), 'environment-telemetry-handlers.js'),
+    external: ['electron'],
     minify,
     logLevel: 'info',
   });
@@ -181,6 +182,7 @@ export async function buildMainProcess(opts = {}) {
     platform: 'node',
     format: 'cjs',
     outfile: path.join(path.dirname(outfile), 'environment-telemetry-handlers-fallback.js'),
+    external: ['electron'],
     minify,
     logLevel: 'info',
   });

@@ -2821,8 +2821,7 @@ export default function AppPanel({
                 confirmLabel: t('appPanel.clearEnvironmentHistory'),
                 danger: true,
                 action: async () => {
-                  await Promise.resolve();
-                  clearEnvironmentHistory();
+                  await clearEnvironmentHistory();
                 },
               });
             }}

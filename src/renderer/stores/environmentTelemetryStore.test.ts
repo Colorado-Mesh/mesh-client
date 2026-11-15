@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ENVIRONMENT_TELEMETRY_DEDUP_WINDOW_MS,
+  ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID,
   ENVIRONMENT_TELEMETRY_MAX_NODES,
   ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
   ENVIRONMENT_TELEMETRY_RETENTION_MS,
@@ -244,7 +245,7 @@ describe('environmentTelemetryStore', () => {
     const next = useEnvironmentTelemetryStore.getState();
     expect(selectEnvironmentSeries(next, 'meshtastic', ID_MT, 1)).toBe(series1);
     expect(selectEnvironmentSeries(next, 'meshcore', ID_MC, 8)).toBe(meshcoreSeries);
-    expect(selectEnvironmentNodes(next, 'meshtastic', ID_MT)).toBe(meshtasticNodes);
+    expect(selectEnvironmentNodes(next, 'meshtastic', ID_MT)).not.toBe(meshtasticNodes);
     expect(selectEnvironmentNodes(next, 'meshcore', ID_MC)).toBe(meshcoreNodes);
     expect(
       selectEnvironmentSeries(next, 'meshtastic', ID_MT, 2).map((p) => p.reading.temperature),
@@ -298,6 +299,42 @@ describe('environmentTelemetryStore', () => {
     expect(series).toHaveLength(ENVIRONMENT_TELEMETRY_MAX_PER_NODE);
     expect(series[0].reading.co2).toBe(1);
     expect(series.at(-1)?.reading.co2).toBe(9999);
+  });
+
+  it('claimLegacyIdentity merges the legacy bucket into the claimant and drops the fallback', async () => {
+    const now = Date.now();
+    vi.mocked(window.electronAPI.db.getEnvironmentTelemetry).mockResolvedValueOnce([
+      row({
+        identity_id: ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID,
+        node_id: 7,
+        recorded_at: now,
+        temperature: 18,
+      }),
+    ]);
+    vi.mocked(window.electronAPI.db.claimLegacyEnvironmentTelemetryIdentity).mockResolvedValueOnce({
+      changes: 1,
+    });
+    await useEnvironmentTelemetryStore.getState().loadFromDb();
+    expect(
+      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', ID_MT, 7)[0]
+        ?.reading.temperature,
+    ).toBe(18);
+
+    await useEnvironmentTelemetryStore.getState().claimLegacyIdentity('meshtastic', ID_MT);
+    useEnvironmentTelemetryStore
+      .getState()
+      .recordReading('meshtastic', ID_MT, 7, { temperature: 19 }, 'rf');
+
+    const afterClaim = useEnvironmentTelemetryStore.getState();
+    expect(
+      afterClaim.history.get('meshtastic')?.has(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID),
+    ).toBe(false);
+    expect(
+      selectEnvironmentSeries(afterClaim, 'meshtastic', ID_MT, 7).map((p) => p.reading.temperature),
+    ).toEqual([18, 19]);
+    // Identity B must not see claimed history through the legacy fallback.
+    expect(selectEnvironmentSeries(afterClaim, 'meshtastic', 'id-other', 7)).toEqual([]);
+    expect(selectEnvironmentNodes(afterClaim, 'meshtastic', 'id-other').size).toBe(0);
   });
 
   it('hydrates at most the newest nodes per identity', async () => {

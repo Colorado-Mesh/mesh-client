@@ -98,8 +98,31 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
           )
           .get(),
       ).toEqual({ ok: 1 });
+      const indexCols = (
+        db.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+          name: string;
+        }[]
+      ).map((c) => c.name);
+      expect(indexCols).toEqual(expect.arrayContaining(['identity_id', 'protocol', 'node_id']));
       expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(54);
       expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('creates idx_node_env_telemetry_node_time including identity_id on fresh sync', () => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      runSchemaUpgrade(db);
+      const cols = (
+        db.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+          name: string;
+        }[]
+      ).map((c) => c.name);
+      expect(cols).toEqual(
+        expect.arrayContaining(['protocol', 'identity_id', 'node_id', 'recorded_at']),
+      );
     } finally {
       db.close();
     }

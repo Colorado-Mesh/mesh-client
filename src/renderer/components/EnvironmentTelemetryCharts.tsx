@@ -17,11 +17,14 @@ import {
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import {
   buildEnvironmentChartRows,
+  chartRowsHaveField,
   defaultEnvironmentChartNode,
   ENV_CHART_ALL_NODES,
+  envChartMetricKey,
   type EnvChartNodeSelection,
   environmentChartWindowMs,
 } from '@/renderer/lib/environmentTelemetryChart';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { resolveIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
@@ -40,11 +43,19 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 
 function latestDefinedNumber(
   rows: readonly Record<string, unknown>[],
-  key: string,
+  field: string,
 ): number | undefined {
+  const prefix = `${field}__`;
   for (let i = rows.length - 1; i >= 0; i--) {
-    const v = rows[i]?.[key];
-    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    const d = rows[i];
+    if (!d) continue;
+    const direct = d[field];
+    if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+    for (const k of Object.keys(d)) {
+      if (!k.startsWith(prefix)) continue;
+      const v = d[k];
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+    }
   }
   return undefined;
 }
@@ -53,8 +64,26 @@ function formatChartValue(value: number | undefined, fallback: string): string {
   return value === undefined ? fallback : String(value);
 }
 
-function hasKey(rows: readonly Record<string, unknown>[], key: string): boolean {
-  return rows.some((d) => typeof d[key] === 'number');
+interface MetricSeries {
+  key: string;
+  name: string;
+  stroke: string;
+}
+
+function expandMetricSeries(
+  field: string,
+  name: string,
+  stroke: string,
+  nodeIds: readonly number[],
+  allNodes: boolean,
+  nodeLabel: (id: number) => string,
+): MetricSeries[] {
+  if (!allNodes) return [{ key: field, name, stroke }];
+  return nodeIds.map((id) => ({
+    key: envChartMetricKey(field, id, true),
+    name: `${name} (${nodeLabel(id)})`,
+    stroke,
+  }));
 }
 
 interface Props {
@@ -93,7 +122,19 @@ export default function EnvironmentTelemetryCharts({
     selectEnvironmentNodes(s, protocol, identityId),
   );
 
-  const nodeIds = useMemo(() => [...seriesByNode.keys()], [seriesByNode]);
+  const historyNodeIds = useMemo(() => [...seriesByNode.keys()], [seriesByNode]);
+  const requestableNodeIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const id of historyNodeIds) ids.add(id);
+    if (myNodeNum != null && myNodeNum > 0) ids.add(myNodeNum);
+    if (nodesById) {
+      for (const id of nodesById.keys()) {
+        if (id > 0) ids.add(id);
+      }
+    }
+    return [...ids].sort((a, b) => a - b);
+  }, [historyNodeIds, myNodeNum, nodesById]);
+
   const lastHeard = useMemo(() => {
     const m = new Map<number, number>();
     for (const [id, series] of seriesByNode) {
@@ -108,8 +149,15 @@ export default function EnvironmentTelemetryCharts({
   const activeSelection: EnvChartNodeSelection | null = useMemo(() => {
     if (selected === ENV_CHART_ALL_NODES) return ENV_CHART_ALL_NODES;
     if (typeof selected === 'number' && seriesByNode.has(selected)) return selected;
-    return defaultEnvironmentChartNode(nodeIds, lastHeard, myNodeNum);
-  }, [selected, seriesByNode, nodeIds, lastHeard, myNodeNum]);
+    return defaultEnvironmentChartNode(historyNodeIds, lastHeard, myNodeNum);
+  }, [selected, seriesByNode, historyNodeIds, lastHeard, myNodeNum]);
+
+  const allNodes = activeSelection === ENV_CHART_ALL_NODES;
+  const seriesNodeIds = useMemo(() => {
+    if (allNodes) return historyNodeIds;
+    if (typeof activeSelection === 'number') return [activeSelection];
+    return [];
+  }, [allNodes, historyNodeIds, activeSelection]);
 
   const sinceMs = (nowMs > 0 ? nowMs : 0) - environmentChartWindowMs(windowId);
   const envChartData = useMemo(
@@ -126,7 +174,7 @@ export default function EnvironmentTelemetryCharts({
     [seriesByNode, activeSelection, sinceMs, useFahrenheit, use24HourTime],
   );
 
-  const hasAnyEnvHistory = nodeIds.length > 0;
+  const hasAnyEnvHistory = historyNodeIds.length > 0;
   const chartValueUnavailable = t('telemetryPanel.chartValueUnavailable');
 
   const nodeLabel = (id: number) => {
@@ -134,57 +182,97 @@ export default function EnvironmentTelemetryCharts({
     return node ? nodeDisplayName(node, protocol) : String(id);
   };
 
+  const metric = (field: string, name: string, stroke: string): MetricSeries[] =>
+    expandMetricSeries(field, name, stroke, seriesNodeIds, allNodes, nodeLabel);
+
+  const requestNodeId =
+    typeof activeSelection === 'number'
+      ? activeSelection
+      : (myNodeNum ?? requestableNodeIds[0] ?? null);
+
+  const showRequest =
+    capabilities?.hasRepeaterStatus === true &&
+    typeof onRequestSensorTelemetry === 'function' &&
+    requestNodeId != null;
+
+  const requestControl = showRequest ? (
+    <button
+      type="button"
+      className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
+      disabled={!isConnected}
+      onClick={() => {
+        onRequestSensorTelemetry(requestNodeId);
+      }}
+      aria-label={t('telemetryPanel.requestSensorTelemetry')}
+    >
+      {t('telemetryPanel.requestSensorTelemetry')}
+    </button>
+  ) : null;
+
   if (!hasAnyEnvHistory) {
     const isMeshcoreHint = capabilities?.hasRepeaterStatus === true;
     return (
       <div
-        className="bg-ink-800/60 border-ink-700 rounded-lg border p-4"
+        className="bg-ink-800/60 border-ink-700 space-y-3 rounded-lg border p-4"
         data-testid="env-telemetry-empty-hint"
         role="status"
       >
         <p className="text-ink-200 text-sm font-medium">{t('telemetryPanel.envEmptyTitle')}</p>
-        <p className="text-muted mt-1 text-xs">
+        <p className="text-muted text-xs">
           {isMeshcoreHint
             ? t('telemetryPanel.envEmptyMeshcoreBody')
             : t('telemetryPanel.envEmptyMeshtasticBody')}
         </p>
         {!isMeshcoreHint ? (
-          <p className="text-muted mt-2 text-xs">{t('telemetryPanel.envEmptyMeshtasticHint')}</p>
+          <p className="text-muted text-xs">{t('telemetryPanel.envEmptyMeshtasticHint')}</p>
         ) : null}
+        {requestControl}
       </div>
     );
   }
 
-  const hasTemp = hasKey(envChartData, 'temperature') || hasKey(envChartData, 'mcuTemperature');
+  const hasTemp =
+    chartRowsHaveField(envChartData, 'temperature') ||
+    chartRowsHaveField(envChartData, 'mcuTemperature') ||
+    chartRowsHaveField(envChartData, 'pmTemperature');
   const hasHumidity =
-    hasKey(envChartData, 'relativeHumidity') || hasKey(envChartData, 'pmHumidity');
-  const hasPressure = hasKey(envChartData, 'barometricPressure');
-  const hasIaq = hasKey(envChartData, 'iaq') || hasKey(envChartData, 'gasResistance');
+    chartRowsHaveField(envChartData, 'relativeHumidity') ||
+    chartRowsHaveField(envChartData, 'pmHumidity');
+  const hasPressure = chartRowsHaveField(envChartData, 'barometricPressure');
+  const hasIaq =
+    chartRowsHaveField(envChartData, 'iaq') || chartRowsHaveField(envChartData, 'gasResistance');
   const hasPm =
-    hasKey(envChartData, 'pm10Standard') ||
-    hasKey(envChartData, 'pm25Standard') ||
-    hasKey(envChartData, 'pm40Standard') ||
-    hasKey(envChartData, 'pm100Standard') ||
-    hasKey(envChartData, 'co2');
-  const hasVoc = hasKey(envChartData, 'pmVocIdx') || hasKey(envChartData, 'pmNoxIdx');
-  const hasLux = hasKey(envChartData, 'lux');
+    chartRowsHaveField(envChartData, 'pm10Standard') ||
+    chartRowsHaveField(envChartData, 'pm25Standard') ||
+    chartRowsHaveField(envChartData, 'pm40Standard') ||
+    chartRowsHaveField(envChartData, 'pm100Standard') ||
+    chartRowsHaveField(envChartData, 'co2');
+  const hasVoc =
+    chartRowsHaveField(envChartData, 'pmVocIdx') || chartRowsHaveField(envChartData, 'pmNoxIdx');
+  const hasLux = chartRowsHaveField(envChartData, 'lux');
   const hasWind =
-    hasKey(envChartData, 'windSpeed') ||
-    hasKey(envChartData, 'windGust') ||
-    hasKey(envChartData, 'windLull') ||
-    hasKey(envChartData, 'windDirection');
+    chartRowsHaveField(envChartData, 'windSpeed') ||
+    chartRowsHaveField(envChartData, 'windGust') ||
+    chartRowsHaveField(envChartData, 'windLull') ||
+    chartRowsHaveField(envChartData, 'windDirection');
   const hasRain =
-    hasKey(envChartData, 'rainfall1h') ||
-    hasKey(envChartData, 'rainfall24h') ||
-    hasKey(envChartData, 'weight');
+    chartRowsHaveField(envChartData, 'rainfall1h') ||
+    chartRowsHaveField(envChartData, 'rainfall24h') ||
+    chartRowsHaveField(envChartData, 'weight');
   const hasLightning =
-    hasKey(envChartData, 'lightningStrikeCount1h') || hasKey(envChartData, 'lightningDistanceKm');
-  const hasAdc = [0, 1, 2, 3, 4, 5, 6, 7].some((ch) => hasKey(envChartData, `adc${ch}`));
-  const hasOneWire = [0, 1, 2, 3, 4, 5, 6, 7].some((ch) => hasKey(envChartData, `oneWire${ch}`));
+    chartRowsHaveField(envChartData, 'lightningStrikeCount1h') ||
+    chartRowsHaveField(envChartData, 'lightningDistanceKm');
+  const hasAdc = [0, 1, 2, 3, 4, 5, 6, 7].some((ch) =>
+    chartRowsHaveField(envChartData, `adc${ch}`),
+  );
+  const hasOneWire = [0, 1, 2, 3, 4, 5, 6, 7].some((ch) =>
+    chartRowsHaveField(envChartData, `oneWire${ch}`),
+  );
 
   const tempHumidityChartAria = t('telemetryPanel.chartAriaTempHumidity', {
     temperature: formatChartValue(
-      latestDefinedNumber(envChartData, 'temperature'),
+      latestDefinedNumber(envChartData, 'temperature') ??
+        latestDefinedNumber(envChartData, 'pmTemperature'),
       chartValueUnavailable,
     ),
     humidity: formatChartValue(
@@ -194,8 +282,17 @@ export default function EnvironmentTelemetryCharts({
     count: envChartData.length,
   });
 
-  const requestNodeId =
-    typeof activeSelection === 'number' ? activeSelection : (myNodeNum ?? nodeIds[0] ?? null);
+  const tickFmt = (v: unknown) =>
+    typeof v === 'number' ? formatDisplayTime(v, { use24Hour: use24HourTime }) : '';
+  const labelFmt = (v: unknown) =>
+    typeof v === 'number'
+      ? formatDisplayTime(v, { withSeconds: true, use24Hour: use24HourTime })
+      : typeof v === 'string'
+        ? v
+        : '';
+
+  const visibleLines = (series: MetricSeries[]) =>
+    series.filter((s) => envChartData.some((d) => typeof d[s.key] === 'number'));
 
   return (
     <div className="space-y-4" data-testid="env-telemetry-charts">
@@ -217,12 +314,12 @@ export default function EnvironmentTelemetryCharts({
               }}
               aria-label={t('telemetryPanel.envNode')}
             >
-              {nodeIds.map((n) => (
+              {historyNodeIds.map((n) => (
                 <option key={n} value={n}>
                   {nodeLabel(n)}
                 </option>
               ))}
-              {nodeIds.length > 1 ? (
+              {historyNodeIds.length > 1 ? (
                 <option value="all">{t('telemetryPanel.envNodeAll')}</option>
               ) : null}
             </select>
@@ -244,21 +341,7 @@ export default function EnvironmentTelemetryCharts({
               ))}
             </select>
           </label>
-          {capabilities?.hasRepeaterStatus === true &&
-          onRequestSensorTelemetry &&
-          requestNodeId != null ? (
-            <button
-              type="button"
-              className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
-              disabled={!isConnected}
-              onClick={() => {
-                onRequestSensorTelemetry(requestNodeId);
-              }}
-              aria-label={t('telemetryPanel.requestSensorTelemetry')}
-            >
-              {t('telemetryPanel.requestSensorTelemetry')}
-            </button>
-          ) : null}
+          {requestControl}
         </div>
       </div>
       <p className="text-muted text-xs">
@@ -285,18 +368,11 @@ export default function EnvironmentTelemetryCharts({
               dataKey="t"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tickFormatter={(v) =>
-                typeof v === 'number'
-                  ? new Date(v).toLocaleTimeString(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : ''
-              }
+              tickFormatter={tickFmt}
               stroke="#65738c"
               tick={{ fontSize: 11 }}
             />
-            {(hasKey(envChartData, 'temperature') || hasKey(envChartData, 'mcuTemperature')) && (
+            {hasTemp && (
               <YAxis
                 yAxisId="temp"
                 stroke="#f59e0b"
@@ -330,93 +406,104 @@ export default function EnvironmentTelemetryCharts({
                 border: '1px solid #364156',
                 borderRadius: '8px',
               }}
-              labelFormatter={(v) =>
-                typeof v === 'number'
-                  ? new Date(v).toLocaleString()
-                  : typeof v === 'string'
-                    ? v
-                    : ''
-              }
+              labelFormatter={labelFmt}
             />
             <Legend />
-            {hasKey(envChartData, 'temperature') && (
+            {visibleLines(
+              metric(
+                'temperature',
+                useFahrenheit ? t('telemetryPanel.seriesTempF') : t('telemetryPanel.seriesTempC'),
+                '#f59e0b',
+              ),
+            ).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="temp"
                 type="monotone"
-                dataKey="temperature"
-                name={
-                  useFahrenheit ? t('telemetryPanel.seriesTempF') : t('telemetryPanel.seriesTempC')
-                }
-                stroke="#f59e0b"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            )}
-            {hasKey(envChartData, 'mcuTemperature') && (
+            ))}
+            {visibleLines(
+              metric(
+                'mcuTemperature',
+                useFahrenheit
+                  ? t('telemetryPanel.seriesMcuTempF')
+                  : t('telemetryPanel.seriesMcuTempC'),
+                '#fb923c',
+              ),
+            ).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="temp"
                 type="monotone"
-                dataKey="mcuTemperature"
-                name={
-                  useFahrenheit
-                    ? t('telemetryPanel.seriesMcuTempF')
-                    : t('telemetryPanel.seriesMcuTempC')
-                }
-                stroke="#fb923c"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
+            ))}
+            {visibleLines(metric('pmTemperature', t('telemetryPanel.seriesPmTemp'), '#fcd34d')).map(
+              (s) => (
+                <Line
+                  key={s.key}
+                  yAxisId="temp"
+                  type="monotone"
+                  dataKey={s.key}
+                  name={s.name}
+                  stroke={s.stroke}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                />
+              ),
             )}
-            {hasKey(envChartData, 'pmTemperature') && (
+            {visibleLines(
+              metric('relativeHumidity', t('telemetryPanel.seriesHumidityPct'), '#06b6d4'),
+            ).map((s) => (
               <Line
-                yAxisId="temp"
-                type="monotone"
-                dataKey="pmTemperature"
-                name={t('telemetryPanel.seriesPmTemp')}
-                stroke="#fcd34d"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-              />
-            )}
-            {hasKey(envChartData, 'relativeHumidity') && (
-              <Line
+                key={s.key}
                 yAxisId="humidity"
                 type="monotone"
-                dataKey="relativeHumidity"
-                name={t('telemetryPanel.seriesHumidityPct')}
-                stroke="#06b6d4"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            )}
-            {hasKey(envChartData, 'pmHumidity') && (
+            ))}
+            {visibleLines(
+              metric('pmHumidity', t('telemetryPanel.seriesPmHumidity'), '#67e8f9'),
+            ).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="humidity"
                 type="monotone"
-                dataKey="pmHumidity"
-                name={t('telemetryPanel.seriesPmHumidity')}
-                stroke="#67e8f9"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            )}
+            ))}
           </LineChart>
         </ChartCard>
       ) : null}
 
       {hasPressure ? (
-        <SimpleLineCard
+        <MultiKeyCard
           title={t('telemetryPanel.sectionBarometricPressure')}
           data={envChartData}
-          dataKey="barometricPressure"
-          name={t('telemetryPanel.seriesPressureHpa')}
-          unit="hPa"
-          stroke="#a78bfa"
+          series={metric('barometricPressure', t('telemetryPanel.seriesPressureHpa'), '#a78bfa')}
+          use24HourTime={use24HourTime}
           aria={t('telemetryPanel.chartAriaPressure', {
             pressure: formatChartValue(
               latestDefinedNumber(envChartData, 'barometricPressure'),
@@ -441,11 +528,12 @@ export default function EnvironmentTelemetryCharts({
               dataKey="t"
               type="number"
               domain={['dataMin', 'dataMax']}
+              tickFormatter={tickFmt}
               stroke="#65738c"
               tick={{ fontSize: 11 }}
             />
             <YAxis yAxisId="iaq" domain={[0, 500]} stroke="#34d399" tick={{ fontSize: 11 }} />
-            {hasKey(envChartData, 'gasResistance') ? (
+            {chartRowsHaveField(envChartData, 'gasResistance') ? (
               <YAxis yAxisId="gas" orientation="right" stroke="#86efac" tick={{ fontSize: 11 }} />
             ) : null}
             <Tooltip
@@ -454,32 +542,37 @@ export default function EnvironmentTelemetryCharts({
                 border: '1px solid #364156',
                 borderRadius: '8px',
               }}
+              labelFormatter={labelFmt}
             />
             <Legend />
-            {hasKey(envChartData, 'iaq') ? (
+            {visibleLines(metric('iaq', t('telemetryPanel.seriesIaq'), '#34d399')).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="iaq"
                 type="monotone"
-                dataKey="iaq"
-                name={t('telemetryPanel.seriesIaq')}
-                stroke="#34d399"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            ) : null}
-            {hasKey(envChartData, 'gasResistance') ? (
+            ))}
+            {visibleLines(
+              metric('gasResistance', t('telemetryPanel.seriesGasResistance'), '#86efac'),
+            ).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="gas"
                 type="monotone"
-                dataKey="gasResistance"
-                name={t('telemetryPanel.seriesGasResistance')}
-                stroke="#86efac"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            ) : null}
+            ))}
           </LineChart>
         </ChartCard>
       ) : null}
@@ -502,6 +595,7 @@ export default function EnvironmentTelemetryCharts({
               dataKey="t"
               type="number"
               domain={['dataMin', 'dataMax']}
+              tickFormatter={tickFmt}
               stroke="#65738c"
               tick={{ fontSize: 11 }}
             />
@@ -513,6 +607,7 @@ export default function EnvironmentTelemetryCharts({
                 border: '1px solid #364156',
                 borderRadius: '8px',
               }}
+              labelFormatter={labelFmt}
             />
             <Legend />
             {(
@@ -522,33 +617,34 @@ export default function EnvironmentTelemetryCharts({
                 ['pm40Standard', t('telemetryPanel.seriesPm40'), '#8b5cf6'],
                 ['pm100Standard', t('telemetryPanel.seriesPm100'), '#7c3aed'],
               ] as const
-            ).map(([key, name, stroke]) =>
-              hasKey(envChartData, key) ? (
+            ).flatMap(([field, name, stroke]) =>
+              visibleLines(metric(field, name, stroke)).map((s) => (
                 <Line
-                  key={key}
+                  key={s.key}
                   yAxisId="pm"
                   type="monotone"
-                  dataKey={key}
-                  name={name}
-                  stroke={stroke}
+                  dataKey={s.key}
+                  name={s.name}
+                  stroke={s.stroke}
                   strokeWidth={2}
                   dot={false}
                   connectNulls
                 />
-              ) : null,
+              )),
             )}
-            {hasKey(envChartData, 'co2') ? (
+            {visibleLines(metric('co2', t('telemetryPanel.seriesCo2'), '#fbbf24')).map((s) => (
               <Line
+                key={s.key}
                 yAxisId="co2"
                 type="monotone"
-                dataKey="co2"
-                name={t('telemetryPanel.seriesCo2')}
-                stroke="#fbbf24"
+                dataKey={s.key}
+                name={s.name}
+                stroke={s.stroke}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
               />
-            ) : null}
+            ))}
           </LineChart>
         </ChartCard>
       ) : null}
@@ -558,20 +654,19 @@ export default function EnvironmentTelemetryCharts({
           title={t('telemetryPanel.sectionVocNox')}
           data={envChartData}
           series={[
-            { key: 'pmVocIdx', name: t('telemetryPanel.seriesVoc'), stroke: '#f472b6' },
-            { key: 'pmNoxIdx', name: t('telemetryPanel.seriesNox'), stroke: '#e879f9' },
+            ...metric('pmVocIdx', t('telemetryPanel.seriesVoc'), '#f472b6'),
+            ...metric('pmNoxIdx', t('telemetryPanel.seriesNox'), '#e879f9'),
           ]}
+          use24HourTime={use24HourTime}
         />
       ) : null}
 
       {hasLux ? (
-        <SimpleLineCard
+        <MultiKeyCard
           title={t('telemetryPanel.sectionLight')}
           data={envChartData}
-          dataKey="lux"
-          name={t('telemetryPanel.seriesLux')}
-          unit="lx"
-          stroke="#fde047"
+          series={metric('lux', t('telemetryPanel.seriesLux'), '#fde047')}
+          use24HourTime={use24HourTime}
           aria={t('telemetryPanel.chartAriaLux', {
             lux: formatChartValue(latestDefinedNumber(envChartData, 'lux'), chartValueUnavailable),
             count: envChartData.length,
@@ -584,15 +679,12 @@ export default function EnvironmentTelemetryCharts({
           title={t('telemetryPanel.sectionWind')}
           data={envChartData}
           series={[
-            { key: 'windSpeed', name: t('telemetryPanel.seriesWindSpeed'), stroke: '#38bdf8' },
-            { key: 'windGust', name: t('telemetryPanel.seriesWindGust'), stroke: '#0ea5e9' },
-            { key: 'windLull', name: t('telemetryPanel.seriesWindLull'), stroke: '#7dd3fc' },
-            {
-              key: 'windDirection',
-              name: t('telemetryPanel.seriesWindDirection'),
-              stroke: '#0284c7',
-            },
+            ...metric('windSpeed', t('telemetryPanel.seriesWindSpeed'), '#38bdf8'),
+            ...metric('windGust', t('telemetryPanel.seriesWindGust'), '#0ea5e9'),
+            ...metric('windLull', t('telemetryPanel.seriesWindLull'), '#7dd3fc'),
+            ...metric('windDirection', t('telemetryPanel.seriesWindDirection'), '#0284c7'),
           ]}
+          use24HourTime={use24HourTime}
         />
       ) : null}
 
@@ -601,10 +693,11 @@ export default function EnvironmentTelemetryCharts({
           title={t('telemetryPanel.sectionRainWeight')}
           data={envChartData}
           series={[
-            { key: 'rainfall1h', name: t('telemetryPanel.seriesRain1h'), stroke: '#60a5fa' },
-            { key: 'rainfall24h', name: t('telemetryPanel.seriesRain24h'), stroke: '#3b82f6' },
-            { key: 'weight', name: t('telemetryPanel.seriesWeight'), stroke: '#93c5fd' },
+            ...metric('rainfall1h', t('telemetryPanel.seriesRain1h'), '#60a5fa'),
+            ...metric('rainfall24h', t('telemetryPanel.seriesRain24h'), '#3b82f6'),
+            ...metric('weight', t('telemetryPanel.seriesWeight'), '#93c5fd'),
           ]}
+          use24HourTime={use24HourTime}
         />
       ) : null}
 
@@ -613,17 +706,18 @@ export default function EnvironmentTelemetryCharts({
           title={t('telemetryPanel.sectionLightning')}
           data={envChartData}
           series={[
-            {
-              key: 'lightningStrikeCount1h',
-              name: t('telemetryPanel.seriesLightningStrikes'),
-              stroke: '#f87171',
-            },
-            {
-              key: 'lightningDistanceKm',
-              name: t('telemetryPanel.seriesLightningDistance'),
-              stroke: '#fb7185',
-            },
+            ...metric(
+              'lightningStrikeCount1h',
+              t('telemetryPanel.seriesLightningStrikes'),
+              '#f87171',
+            ),
+            ...metric(
+              'lightningDistanceKm',
+              t('telemetryPanel.seriesLightningDistance'),
+              '#fb7185',
+            ),
           ]}
+          use24HourTime={use24HourTime}
         />
       ) : null}
 
@@ -631,11 +725,14 @@ export default function EnvironmentTelemetryCharts({
         <MultiKeyCard
           title={t('telemetryPanel.sectionAdc')}
           data={envChartData}
-          series={[0, 1, 2, 3, 4, 5, 6, 7].map((ch) => ({
-            key: `adc${ch}`,
-            name: t('telemetryPanel.seriesAdcChannel', { channel: ch }),
-            stroke: `hsl(${200 + ch * 20} 70% 60%)`,
-          }))}
+          series={[0, 1, 2, 3, 4, 5, 6, 7].flatMap((ch) =>
+            metric(
+              `adc${ch}`,
+              t('telemetryPanel.seriesAdcChannel', { channel: ch }),
+              `hsl(${200 + ch * 20} 70% 60%)`,
+            ),
+          )}
+          use24HourTime={use24HourTime}
         />
       ) : null}
 
@@ -643,11 +740,14 @@ export default function EnvironmentTelemetryCharts({
         <MultiKeyCard
           title={t('telemetryPanel.sectionOneWire')}
           data={envChartData}
-          series={[0, 1, 2, 3, 4, 5, 6, 7].map((ch) => ({
-            key: `oneWire${ch}`,
-            name: t('telemetryPanel.seriesOneWireChannel', { channel: ch }),
-            stroke: `hsl(${30 + ch * 15} 80% 55%)`,
-          }))}
+          series={[0, 1, 2, 3, 4, 5, 6, 7].flatMap((ch) =>
+            metric(
+              `oneWire${ch}`,
+              t('telemetryPanel.seriesOneWireChannel', { channel: ch }),
+              `hsl(${30 + ch * 15} 80% 55%)`,
+            ),
+          )}
+          use24HourTime={use24HourTime}
         />
       ) : null}
     </div>
@@ -675,82 +775,38 @@ function ChartCard({
   );
 }
 
-function SimpleLineCard({
-  title,
-  data,
-  dataKey,
-  name,
-  unit,
-  stroke,
-  aria,
-}: {
-  title: string;
-  data: readonly Record<string, unknown>[];
-  dataKey: string;
-  name: string;
-  unit: string;
-  stroke: string;
-  aria: string;
-}) {
-  return (
-    <ChartCard title={title} aria={aria}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
-        <XAxis
-          dataKey="t"
-          type="number"
-          domain={['dataMin', 'dataMax']}
-          stroke="#65738c"
-          tick={{ fontSize: 11 }}
-        />
-        <YAxis
-          yAxisId="y"
-          stroke={stroke}
-          tick={{ fontSize: 11 }}
-          label={{ value: unit, angle: -90, position: 'insideLeft', style: { fill: stroke } }}
-        />
-        <Tooltip
-          contentStyle={{
-            background: '#19212d',
-            border: '1px solid #364156',
-            borderRadius: '8px',
-          }}
-        />
-        <Legend />
-        <Line
-          yAxisId="y"
-          type="monotone"
-          dataKey={dataKey}
-          name={name}
-          stroke={stroke}
-          strokeWidth={2}
-          dot={false}
-          connectNulls
-        />
-      </LineChart>
-    </ChartCard>
-  );
-}
-
 function MultiKeyCard({
   title,
   data,
   series,
+  use24HourTime,
+  aria,
 }: {
   title: string;
   data: readonly Record<string, unknown>[];
-  series: readonly { key: string; name: string; stroke: string }[];
+  series: readonly MetricSeries[];
+  use24HourTime: boolean;
+  aria?: string;
 }) {
-  const visible = series.filter((s) => hasKey(data, s.key));
+  const visible = series.filter((s) => data.some((d) => typeof d[s.key] === 'number'));
   if (visible.length === 0) return null;
+  const tickFmt = (v: unknown) =>
+    typeof v === 'number' ? formatDisplayTime(v, { use24Hour: use24HourTime }) : '';
+  const labelFmt = (v: unknown) =>
+    typeof v === 'number'
+      ? formatDisplayTime(v, { withSeconds: true, use24Hour: use24HourTime })
+      : typeof v === 'string'
+        ? v
+        : '';
   return (
-    <ChartCard title={title} aria={title}>
+    <ChartCard title={title} aria={aria ?? title}>
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
         <XAxis
           dataKey="t"
           type="number"
           domain={['dataMin', 'dataMax']}
+          tickFormatter={tickFmt}
           stroke="#65738c"
           tick={{ fontSize: 11 }}
         />
@@ -761,6 +817,7 @@ function MultiKeyCard({
             border: '1px solid #364156',
             borderRadius: '8px',
           }}
+          labelFormatter={labelFmt}
         />
         <Legend />
         {visible.map((s) => (

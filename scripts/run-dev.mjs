@@ -42,9 +42,9 @@ export function buildDevConcurrentlyArgs() {
   const teamRosterFallbackBuild =
     'esbuild src/main/ipc/team-roster-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/team-roster-handlers-fallback.js --format=cjs --watch';
   const environmentTelemetryBuild =
-    'esbuild src/main/ipc/environment-telemetry-handlers.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers.js --format=cjs --watch';
+    'esbuild src/main/ipc/environment-telemetry-handlers.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers.js --external:electron --format=cjs --watch';
   const environmentTelemetryFallbackBuild =
-    'esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers-fallback.js --format=cjs --watch';
+    'esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers-fallback.js --external:electron --format=cjs --watch';
   const trayUnreadDotBuild =
     'esbuild src/main/trayUnreadDot.ts --bundle --platform=node --outfile=dist-electron/main/tray-unread-dot.js --format=cjs --watch';
   const scheduledBroadcastsRebuildBuild =

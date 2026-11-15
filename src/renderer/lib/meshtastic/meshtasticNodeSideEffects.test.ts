@@ -267,6 +267,8 @@ describe('attachMeshtasticNodeSideEffects', () => {
           variantCase: 'environmentMetrics',
           temperature: 21.5,
           relativeHumidity: 45,
+          windGust: 6.5,
+          pm100Standard: 28,
         },
       },
       IDENTITY,
@@ -275,6 +277,8 @@ describe('attachMeshtasticNodeSideEffects', () => {
       expect.objectContaining({
         env_temperature: 21.5,
         env_humidity: 45,
+        env_wind_gust: 6.5,
+        env_pm100: 28,
       }),
     );
     expect(
@@ -287,7 +291,12 @@ describe('attachMeshtasticNodeSideEffects', () => {
     ).toEqual(
       expect.objectContaining({
         source: 'rf',
-        reading: { temperature: 21.5, relativeHumidity: 45 },
+        reading: {
+          temperature: 21.5,
+          relativeHumidity: 45,
+          windGust: 6.5,
+          pm100Standard: 28,
+        },
       }),
     );
     detach();

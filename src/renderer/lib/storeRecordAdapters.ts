@@ -192,6 +192,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
     env_temperature: record.temperature,
+    env_mcu_temperature: record.mcuTemperature,
     env_humidity: record.relativeHumidity,
     env_pressure: record.barometricPressure,
     env_iaq: record.iaq,
@@ -199,9 +200,21 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     env_lux: record.lux,
     env_wind_speed: record.windSpeed,
     env_wind_direction: record.windDirection,
+    env_wind_gust: record.windGust,
+    env_wind_lull: record.windLull,
+    env_weight: record.weight,
+    env_rainfall_1h: record.rainfall1h,
+    env_rainfall_24h: record.rainfall24h,
     env_lightning_strike_count_1h: record.lightningStrikeCount1h,
     env_lightning_distance_km: record.lightningDistanceKm,
+    env_pm10: record.pm10Standard,
     env_pm25: record.pm25Standard,
+    env_pm40: record.pm40Standard,
+    env_pm100: record.pm100Standard,
+    env_pm_temperature: record.pmTemperature,
+    env_pm_humidity: record.pmHumidity,
+    env_voc_idx: record.pmVocIdx,
+    env_nox_idx: record.pmNoxIdx,
     env_co2: record.co2,
     lastPositionWarning: record.lastPositionWarning,
     num_packets_rx_bad: record.numPacketsRxBad,
@@ -256,6 +269,11 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.lux === b.lux &&
     a.windSpeed === b.windSpeed &&
     a.windDirection === b.windDirection &&
+    a.windGust === b.windGust &&
+    a.windLull === b.windLull &&
+    a.weight === b.weight &&
+    a.rainfall1h === b.rainfall1h &&
+    a.rainfall24h === b.rainfall24h &&
     a.lastPositionWarning === b.lastPositionWarning &&
     a.numPacketsRxBad === b.numPacketsRxBad &&
     a.numRxDupe === b.numRxDupe &&
@@ -266,7 +284,15 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.reticulumDestinationHash === b.reticulumDestinationHash &&
     a.lightningStrikeCount1h === b.lightningStrikeCount1h &&
     a.lightningDistanceKm === b.lightningDistanceKm &&
+    a.pm10Standard === b.pm10Standard &&
     a.pm25Standard === b.pm25Standard &&
+    a.pm40Standard === b.pm40Standard &&
+    a.pm100Standard === b.pm100Standard &&
+    a.pmTemperature === b.pmTemperature &&
+    a.pmHumidity === b.pmHumidity &&
+    a.pmVocIdx === b.pmVocIdx &&
+    a.pmNoxIdx === b.pmNoxIdx &&
+    a.mcuTemperature === b.mcuTemperature &&
     a.co2 === b.co2 &&
     a.keyManuallyVerified === b.keyManuallyVerified &&
     a.hasXeddsaSigned === b.hasXeddsaSigned
@@ -344,6 +370,7 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     channelUtilization: node.channel_utilization,
     airUtilTx: node.air_util_tx,
     temperature: node.env_temperature,
+    mcuTemperature: node.env_mcu_temperature,
     relativeHumidity: node.env_humidity,
     barometricPressure: node.env_pressure,
     iaq: node.env_iaq,
@@ -351,9 +378,21 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     lux: node.env_lux,
     windSpeed: node.env_wind_speed,
     windDirection: node.env_wind_direction,
+    windGust: node.env_wind_gust,
+    windLull: node.env_wind_lull,
+    weight: node.env_weight,
+    rainfall1h: node.env_rainfall_1h,
+    rainfall24h: node.env_rainfall_24h,
     lightningStrikeCount1h: node.env_lightning_strike_count_1h,
     lightningDistanceKm: node.env_lightning_distance_km,
+    pm10Standard: node.env_pm10,
     pm25Standard: node.env_pm25,
+    pm40Standard: node.env_pm40,
+    pm100Standard: node.env_pm100,
+    pmTemperature: node.env_pm_temperature,
+    pmHumidity: node.env_pm_humidity,
+    pmVocIdx: node.env_voc_idx,
+    pmNoxIdx: node.env_nox_idx,
     co2: node.env_co2,
     lastPositionWarning: node.lastPositionWarning,
     numPacketsRxBad: node.num_packets_rx_bad,

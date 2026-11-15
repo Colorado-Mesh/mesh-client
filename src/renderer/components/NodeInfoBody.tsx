@@ -927,6 +927,7 @@ export default function NodeInfoBody({
         node.env_gas_resistance !== undefined ||
         node.env_lux !== undefined ||
         node.env_wind_speed !== undefined ||
+        node.env_pm10 !== undefined ||
         node.env_pm25 !== undefined ||
         node.env_co2 !== undefined ||
         node.env_voc_idx !== undefined ||

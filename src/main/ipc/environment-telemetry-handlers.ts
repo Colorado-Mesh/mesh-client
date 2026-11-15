@@ -1,4 +1,4 @@
-import type { IpcMain } from 'electron';
+import type { IpcMain, IpcMainInvokeEvent } from 'electron';
 
 import {
   ENVIRONMENT_TELEMETRY_MAX_NODES,
@@ -11,14 +11,16 @@ import { isMeshProtocol } from '../../shared/meshProtocol';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import {
   claimLegacyEnvironmentTelemetryIdentityOn,
+  ensureEnvironmentTelemetryNodeTimeIndexOn,
   insertEnvironmentTelemetryOn,
   pruneEnvironmentTelemetryOn,
   selectEnvironmentTelemetrySinceOn,
 } from '../environment-telemetry-db';
-import { assertIpcSender } from '../validate-ipc-sender';
 
 export interface EnvironmentTelemetryIpcDeps {
   ipcMain: IpcMain;
+  /** Main-owned sender check (includes suspension fence) — do not import validate-ipc-sender here. */
+  assertIpcSender: (event: IpcMainInvokeEvent, channel: string) => void;
 }
 
 function safeNodeId(value: unknown): number | null {
@@ -34,7 +36,11 @@ function safeIdentityId(value: unknown): string | null {
 /** Register `db:*EnvironmentTelemetry` handlers (per-node sensor history). */
 export function registerEnvironmentTelemetryIpcHandlers({
   ipcMain,
+  assertIpcSender,
 }: EnvironmentTelemetryIpcDeps): void {
+  const dbForIndex = getDbForIpc('db:ensureEnvironmentTelemetryNodeTimeIndex');
+  if (dbForIndex) ensureEnvironmentTelemetryNodeTimeIndexOn(dbForIndex);
+
   ipcMain.handle(
     'db:saveEnvironmentTelemetry',
     (

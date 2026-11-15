@@ -166,3 +166,20 @@ export function claimLegacyEnvironmentTelemetryIdentityOn(
       .run(identityId, protocol).changes,
   );
 }
+
+/**
+ * Rebuild `idx_node_env_telemetry_node_time` when a legacy definition lacks `identity_id`
+ * (`CREATE INDEX IF NOT EXISTS` would otherwise keep the old columns). Lives in the sibling
+ * IPC chunk so measured main `index.js` stays under budget.
+ */
+export function ensureEnvironmentTelemetryNodeTimeIndexOn(d: NodeSqliteDB): void {
+  const cols = d.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+    name: string;
+  }[];
+  if (cols.some((c) => c.name === 'identity_id')) return;
+  d.execScript(
+    `DROP INDEX IF EXISTS idx_node_env_telemetry_node_time;
+     CREATE INDEX IF NOT EXISTS idx_node_env_telemetry_node_time
+     ON node_environment_telemetry(protocol, identity_id, node_id, recorded_at)`,
+  );
+}

@@ -49,7 +49,7 @@ interface EnvironmentTelemetryState {
     reading: EnvironmentReading,
     source: EnvironmentTelemetrySource,
   ): boolean;
-  clearHistory(): void;
+  clearHistory(): Promise<void>;
   loadFromDb(): Promise<void>;
   /** Attribute legacy (`identity_id=''`) rows to this identity for `protocol` (one-time). */
   claimLegacyIdentity(protocol: MeshProtocol, identityId: IdentityId): Promise<void>;
@@ -86,10 +86,11 @@ function installSeries(
   series: readonly EnvironmentHistoryPoint[],
 ): HistoryMap {
   const byIdentity = history.get(protocol) ?? new Map<IdentityId, MutableNodeSeriesMap>();
-  let nodes = byIdentity.get(identityId);
-  if (!nodes) {
-    nodes = new Map();
-  } else if (!nodes.has(nodeId) && nodes.size >= ENVIRONMENT_TELEMETRY_MAX_NODES) {
+  const prior = byIdentity.get(identityId);
+  const nodes: MutableNodeSeriesMap = prior
+    ? new Map<number, readonly EnvironmentHistoryPoint[]>(prior)
+    : new Map<number, readonly EnvironmentHistoryPoint[]>();
+  if (!nodes.has(nodeId) && nodes.size >= ENVIRONMENT_TELEMETRY_MAX_NODES) {
     const firstKey = nodes.keys().next().value;
     if (firstKey !== undefined) nodes.delete(firstKey);
   }
@@ -192,13 +193,16 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
     return true;
   },
 
-  clearHistory() {
+  async clearHistory() {
     set({ history: new Map() });
     const clear = window.electronAPI?.db?.clearEnvironmentTelemetry;
     if (typeof clear !== 'function') return;
-    clear().catch((err: unknown) => {
+    try {
+      await clear();
+    } catch (err: unknown) {
       console.warn('[environmentTelemetry] clear DB failed: ' + errLikeToLogString(err));
-    });
+      throw err;
+    }
   },
 
   async claimLegacyIdentity(protocol, identityId) {
@@ -209,7 +213,30 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
       await claim(protocol, identityId);
     } catch (err: unknown) {
       console.warn('[environmentTelemetry] claimLegacyIdentity failed: ' + errLikeToLogString(err));
+      return;
     }
+    set((state) => {
+      const byIdentity = state.history.get(protocol);
+      if (!byIdentity) return state;
+      const legacy = byIdentity.get(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID);
+      if (!legacy || legacy.size === 0) return state;
+      const claimant = byIdentity.get(identityId);
+      const merged = new Map<number, EnvironmentHistoryPoint[]>();
+      for (const [nodeId, series] of claimant ?? []) {
+        merged.set(nodeId, [...series]);
+      }
+      for (const [nodeId, series] of legacy) {
+        const existing = merged.get(nodeId) ?? [];
+        const combined = [...existing, ...series].sort((a, b) => a.t - b.t || 0);
+        merged.set(nodeId, combined);
+      }
+      const nextByIdentity = new Map(byIdentity);
+      nextByIdentity.delete(ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID);
+      nextByIdentity.set(identityId, capLoadedNodes(merged));
+      const nextHistory = new Map(state.history);
+      nextHistory.set(protocol, nextByIdentity);
+      return { history: nextHistory };
+    });
   },
 
   async loadFromDb() {

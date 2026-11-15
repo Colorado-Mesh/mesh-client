@@ -7013,9 +7013,12 @@ void app
                 pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
               )
         ) as {
-          registerEnvironmentTelemetryIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
+          registerEnvironmentTelemetryIpcHandlers: (deps: {
+            ipcMain: typeof ipcMain;
+            assertIpcSender: typeof assertIpcSender;
+          }) => void;
         };
-        envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain });
+        envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
       } catch (err: unknown) {
         console.error(
           '[main] environment-telemetry IPC registration failed:',

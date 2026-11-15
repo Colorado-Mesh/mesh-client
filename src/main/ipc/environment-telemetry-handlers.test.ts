@@ -12,15 +12,12 @@ vi.mock('../db-ipc-lifecycle', () => ({
   }),
 }));
 
-vi.mock('../validate-ipc-sender', () => ({
-  assertIpcSender: vi.fn(),
-}));
-
 import { MS_PER_DAY } from '../../shared/timeConstants';
 import { NodeSqliteDB } from '../db-compat';
 import { getDbForIpc } from '../db-ipc-lifecycle';
 import { runSchemaUpgrade } from '../db-schema-sync';
 import {
+  ensureEnvironmentTelemetryNodeTimeIndexOn,
   insertEnvironmentTelemetryOn,
   pruneEnvironmentTelemetryOn,
   selectEnvironmentTelemetrySinceOn,
@@ -33,6 +30,7 @@ const ID_MT = 'id-mt';
 const ID_MC = 'id-mc';
 
 const getDbForIpcMock = vi.mocked(getDbForIpc);
+const assertIpcSender = vi.fn();
 
 describe('environment-telemetry-handlers', { timeout: 30_000 }, () => {
   const handlers = new Map<string, IpcHandler>();
@@ -52,6 +50,7 @@ describe('environment-telemetry-handlers', { timeout: 30_000 }, () => {
           handlers.set(channel, fn);
         },
       } as unknown as IpcMain,
+      assertIpcSender,
     });
   });
 
@@ -226,5 +225,27 @@ describe('environment-telemetry-handlers', { timeout: 30_000 }, () => {
     }[];
     expect(rows.filter((r) => r.protocol === 'meshtastic').map((r) => r.node_id)).toEqual([2, 3]);
     expect(rows.filter((r) => r.protocol === 'meshcore')).toHaveLength(1);
+  });
+
+  it('rebuilds idx_node_env_telemetry_node_time when the legacy definition lacks identity_id', () => {
+    db.execScript('DROP INDEX IF EXISTS idx_node_env_telemetry_node_time');
+    db.execScript(
+      'CREATE INDEX idx_node_env_telemetry_node_time ON node_environment_telemetry(protocol, node_id, recorded_at)',
+    );
+    const before = (
+      db.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+        name: string;
+      }[]
+    ).map((c) => c.name);
+    expect(before).not.toContain('identity_id');
+    ensureEnvironmentTelemetryNodeTimeIndexOn(db);
+    const after = (
+      db.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+        name: string;
+      }[]
+    ).map((c) => c.name);
+    expect(after).toEqual(
+      expect.arrayContaining(['protocol', 'identity_id', 'node_id', 'recorded_at']),
+    );
   });
 });
