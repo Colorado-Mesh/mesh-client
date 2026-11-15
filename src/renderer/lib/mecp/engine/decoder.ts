@@ -29,6 +29,7 @@ export function decode(input: string): ParsedMessage {
       count: null,
       gps: null,
       duration: null,
+      durationToken: null,
       reference: null,
       language: null,
       timestamp: null,

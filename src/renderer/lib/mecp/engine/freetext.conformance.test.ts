@@ -84,6 +84,7 @@ describe('MECP 1.2.1 freetext conformance (upstream tests.json)', () => {
   it('decode() surfaces the same duration/callsign/reference extractions', () => {
     const duration = decode('MECP/2/R03 45min');
     expect(duration.extracted.duration).toBe(45);
+    expect(duration.extracted.durationToken).toBe('45min');
     expect(decode('MECP/3/L06 45min').extracted.duration).toBeNull();
 
     // #28: any SI unit, no 1440-minute upper bound
@@ -99,5 +100,19 @@ describe('MECP 1.2.1 freetext conformance (upstream tests.json)', () => {
 
     const ts = decode('MECP/3/L06 @2460 @1400 @1530');
     expect(ts.extracted.timestamp).toBe('14:00');
+  });
+
+  it('rejects 0s so a later positive seconds duration can match', () => {
+    const parsed = decode('MECP/2/R03 0s 7200s');
+    expect(parsed.extracted.duration).toBe(120);
+    expect(parsed.extracted.durationToken).toBe('7200s');
+  });
+
+  it('treats * and / as §6.1 boundaries for pax and duration', () => {
+    expect(decode('MECP/1/S01 *3pax*').extracted.count).toBe(3);
+    const slash = decode('MECP/2/C01 R03 3pax/45min');
+    expect(slash.extracted.count).toBe(3);
+    expect(slash.extracted.duration).toBe(45);
+    expect(slash.extracted.durationToken).toBe('45min');
   });
 });

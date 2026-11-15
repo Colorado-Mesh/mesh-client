@@ -37,6 +37,8 @@ export interface ParsedMessage {
     gps: { lat: number; lon: number } | null;
     /** Duration in minutes (R03-scoped Duration convention) */
     duration: number | null;
+    /** Original Duration token (e.g. `1h`, `2d`, `ETA 45min`) for UI stripping */
+    durationToken: string | null;
     /** Incident reference tag from #tag pattern */
     reference: string | null;
     /** Sender language hint from @xx pattern (ISO 639-1 / BCP-47) */

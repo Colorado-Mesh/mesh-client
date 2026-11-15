@@ -6,9 +6,14 @@
 
 import patternsJson from './freetext/patterns.json';
 
-/** Boundary class B from §6.1 rule 4 (ASCII whitespace/punctuation + listed Unicode). */
+/**
+ * Boundary class B from §6.1 rule 4: ASCII whitespace/punctuation except sigils
+ * `@ # ~ +` and `- _`, plus listed Unicode. Includes `*` and `/` so forms like
+ * `*3pax*` and `3pax/45min` bound correctly; `/` inside callsign still matches
+ * because it is part of that convention's pattern.
+ */
 const B_CLASS =
-  '[\\t\\n\\f\\r ,.;:!?\'"()\\[\\]{}\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000\\u060C\\u061B\\u061F\\u06D4\\u00AB\\u00BB\\u2013\\u2014\\u2018-\\u201D\\u2026\\u3001\\u3002\\u300C-\\u300F\\u3010\\u3011\\uFF01\\uFF08\\uFF09\\uFF0C\\uFF0E\\uFF1A\\uFF1B\\uFF1F]';
+  '[\\t\\n\\f\\r ,.;:!?\'"()\\[\\]{}*/\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000\\u060C\\u061B\\u061F\\u06D4\\u00AB\\u00BB\\u2013\\u2014\\u2018-\\u201D\\u2026\\u3001\\u3002\\u300C-\\u300F\\u3010\\u3011\\uFF01\\uFF08\\uFF09\\uFF0C\\uFF0E\\uFF1A\\uFF1B\\uFF1F]';
 const B_ONE = new RegExp(`^${B_CLASS}$`);
 
 const PATTERNS = patternsJson;
@@ -17,6 +22,8 @@ export interface FreetextExtracted {
   count: number | null;
   gps: { lat: number; lon: number } | null;
   duration: number | null;
+  /** Original Duration token text (e.g. `45min`, `1h`, `ETA 2d`), for UI stripping. */
+  durationToken: string | null;
   reference: string | null;
   language: string | null;
   timestamp: string | null;
@@ -24,6 +31,12 @@ export interface FreetextExtracted {
 }
 
 type RegExpMatch = RegExpMatchArray;
+
+interface BoundedMatch {
+  match: RegExpMatch;
+  /** Match excluding one-code-point boundary on each side, when present. */
+  token: string;
+}
 
 function validateGps(m: RegExpMatch): boolean {
   const lat = Number(m[1]);
@@ -56,7 +69,9 @@ function toMinutes(kind: string, m: RegExpMatch): number {
     case 'd':
       return a * 1440;
     case 's':
-      return Math.max(1, Math.ceil(a / 60));
+      // Ceiling only — do not clamp to 1. `0s` stays 0 so Additional Validation
+      // rejects it and matching can continue to a later valid duration (e.g. 7200s).
+      return Math.ceil(a / 60);
     default:
       return Number.NaN;
   }
@@ -76,7 +91,7 @@ function firstValidMatch(
   pattern: string,
   freetext: string,
   validate: ((m: RegExpMatch) => boolean) | null,
-): RegExpMatch | null {
+): BoundedMatch | null {
   // eslint-disable-next-line security/detect-non-literal-regexp -- pattern from vendored MECP patterns.json
   const re = new RegExp(`(?:^|${B_CLASS})(?:${pattern})(?:${B_CLASS}|$)`);
   let pos = 0;
@@ -98,12 +113,15 @@ function firstValidMatch(
       pos = Math.max(tokenEnd, abs + 1);
       continue;
     }
-    return m;
+    return { match: m, token: freetext.slice(tokenStart, tokenEnd) };
   }
   return null;
 }
 
-function decodeDuration(freetext: string, codes: readonly string[]): number | null {
+function decodeDuration(
+  freetext: string,
+  codes: readonly string[],
+): { minutes: number; token: string } | null {
   const spec = PATTERNS.duration;
   if (spec.scope && !codes.includes(spec.scope)) return null;
   const decodeList = spec.decode;
@@ -118,70 +136,78 @@ function decodeDuration(freetext: string, codes: readonly string[]): number | nu
       const m = re.exec(freetext);
       if (!m) continue;
       const mins = toMinutes('bare', m);
-      if (validateDurationMinutes(mins)) return mins;
-      continue;
+      if (!validateDurationMinutes(mins)) continue;
+      const full = m[0];
+      const usedRightB = full.length > 0 && B_ONE.test(full[full.length - 1]);
+      const token = usedRightB ? full.slice(0, -1) : full;
+      return { minutes: mins, token };
     }
-    const m = firstValidMatch(pat, freetext, (mm) => validateDurationMinutes(toMinutes(kind, mm)));
-    if (m) return toMinutes(kind, m);
+    const found = firstValidMatch(pat, freetext, (mm) =>
+      validateDurationMinutes(toMinutes(kind, mm)),
+    );
+    if (found) return { minutes: toMinutes(kind, found.match), token: found.token };
   }
   return null;
 }
 
 function decodePax(freetext: string): number | null {
-  const m = firstValidMatch(PATTERNS.pax.decode, freetext, null);
-  if (!m) return null;
-  return Number(m[1]);
+  const found = firstValidMatch(PATTERNS.pax.decode, freetext, null);
+  if (!found) return null;
+  return Number(found.match[1]);
 }
 
 function decodeGps(freetext: string): { lat: number; lon: number } | null {
-  const m = firstValidMatch(PATTERNS.gps.decode, freetext, validateGps);
-  if (!m) return null;
-  return { lat: Number(m[1]), lon: Number(m[2]) };
+  const found = firstValidMatch(PATTERNS.gps.decode, freetext, validateGps);
+  if (!found) return null;
+  return { lat: Number(found.match[1]), lon: Number(found.match[2]) };
 }
 
 function decodeTimestamp(freetext: string): string | null {
-  const m = firstValidMatch(PATTERNS.timestamp.decode, freetext, null);
-  if (!m) return null;
-  return `${String(Number(m[1])).padStart(2, '0')}:${m[2]}`;
+  const found = firstValidMatch(PATTERNS.timestamp.decode, freetext, null);
+  if (!found) return null;
+  return `${String(Number(found.match[1])).padStart(2, '0')}:${found.match[2]}`;
 }
 
 function decodeLanguage(freetext: string): string | null {
-  const m = firstValidMatch(PATTERNS.language.decode, freetext, null);
-  if (!m) return null;
-  return m[1].toLowerCase().replace(/_/g, '-');
+  const found = firstValidMatch(PATTERNS.language.decode, freetext, null);
+  if (!found) return null;
+  return found.match[1].toLowerCase().replace(/_/g, '-');
 }
 
 function decodeCallsign(freetext: string): string | null {
-  const m = firstValidMatch(PATTERNS.callsign.decode, freetext, validateCallsign);
-  if (!m) return null;
-  return m[1].toUpperCase();
+  const found = firstValidMatch(PATTERNS.callsign.decode, freetext, validateCallsign);
+  if (!found) return null;
+  return found.match[1].toUpperCase();
 }
 
 function decodeReference(freetext: string): string | null {
-  const m = firstValidMatch(PATTERNS.reference.decode, freetext, null);
-  return m ? m[1] : null;
+  const found = firstValidMatch(PATTERNS.reference.decode, freetext, null);
+  return found ? found.match[1] : null;
 }
+
+const EMPTY_EXTRACTED: FreetextExtracted = {
+  count: null,
+  gps: null,
+  duration: null,
+  durationToken: null,
+  reference: null,
+  language: null,
+  timestamp: null,
+  callsign: null,
+};
 
 /** Extract structured conventions from MECP freetext (codes needed for scoped Duration). */
 export function extractFreetextConventions(
   freetext: string,
   codes: readonly string[],
 ): FreetextExtracted {
-  if (!freetext) {
-    return {
-      count: null,
-      gps: null,
-      duration: null,
-      reference: null,
-      language: null,
-      timestamp: null,
-      callsign: null,
-    };
-  }
+  if (!freetext) return { ...EMPTY_EXTRACTED };
+  const duration = decodeDuration(freetext, codes);
   return {
     count: decodePax(freetext),
     gps: decodeGps(freetext),
-    duration: decodeDuration(freetext, codes),
+    duration: duration?.minutes ?? null,
+    durationToken: duration?.token ?? null,
     reference: decodeReference(freetext),
     language: decodeLanguage(freetext),
     timestamp: decodeTimestamp(freetext),

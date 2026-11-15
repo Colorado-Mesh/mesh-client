@@ -59,6 +59,14 @@ describe('describeMecpForTak', () => {
     expect(describeIn('MECP/3/R03 ETA 45min')).toBe('ℹ️ ROUTINE: ETA 45');
   });
 
+  it('strips the original duration token, not converted minutes (keeps road numbers)', () => {
+    expect(describeIn('MECP/3/R03 1h near highway 60')).toBe(
+      'ℹ️ ROUTINE: ETA 60 · “near highway 60”',
+    );
+    expect(describeIn('MECP/3/R03 2d mile 2880')).toBe('ℹ️ ROUTINE: ETA 2880 · “mile 2880”');
+    expect(describeIn('MECP/3/R03 48h exit 2880')).toBe('ℹ️ ROUTINE: ETA 2880 · “exit 2880”');
+  });
+
   it('says a drill is a drill', () => {
     expect(describeIn('MECP/0/D01 M01')).toBe('DRILL 🆘 MAYDAY: This is a drill · Injury');
   });

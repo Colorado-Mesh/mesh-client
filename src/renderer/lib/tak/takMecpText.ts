@@ -86,27 +86,18 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
 }
 
 /**
- * Strip one MECP 1.2.1 Duration token (and an optional leading ETA alias) once the
- * minutes have been folded into a code meaning. Matches unit-bearing forms and a
- * bare first-token integer.
+ * Remove the original Duration token from freetext once its minutes were folded
+ * into a code meaning. Uses the matched wire token (`1h`, `2d`, `ETA 45min`),
+ * never the converted minute count, so road numbers are not stripped.
  */
-function stripDurationToken(freetext: string, minutes: number): string {
-  const n = String(minutes);
-  // Prefer unit-bearing / ETA forms anywhere, then a bare number as a whole word.
-  /* eslint-disable security/detect-non-literal-regexp -- n is digits from decoded duration minutes */
-  const unitBearing = new RegExp(
-    String.raw`(?:^|\s)(?:ETA\s*)?${n}\s*(?:h\s*\d{1,2}\s*min|h|min|d|s)\b`,
-    'i',
-  );
-  if (unitBearing.test(freetext)) {
-    return freetext.replace(unitBearing, ' ').replace(/\s+/g, ' ').trim();
-  }
-  const etaBare = new RegExp(String.raw`(?:^|\s)ETA\s*${n}(?=\s|$)`, 'i');
-  /* eslint-enable security/detect-non-literal-regexp */
-  if (etaBare.test(freetext)) {
-    return freetext.replace(etaBare, ' ').replace(/\s+/g, ' ').trim();
-  }
-  return withoutWord(freetext, (w) => w === n);
+function stripDurationToken(freetext: string, token: string): string {
+  const trimmed = token.trim();
+  if (!trimmed) return freetext;
+  const at = freetext.indexOf(trimmed);
+  if (at < 0) return freetext;
+  return `${freetext.slice(0, at)}${freetext.slice(at + trimmed.length)}`
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** `🆘 MAYDAY`, or `DRILL 🆘 MAYDAY` for a drill. */
@@ -131,7 +122,7 @@ export function describeMecpForTak(
   t: TakMecpTranslate,
 ): string {
   const head = takMecpHeadline(parsed.severity ?? 3, parsed.isDrill, t);
-  const { count, gps, duration } = parsed.extracted;
+  const { count, gps, duration, durationToken } = parsed.extracted;
   const meanings = parsed.codes.map((code) => lang.codes[code] as string | undefined);
   const countInCode = count != null && meanings.some((m) => m?.includes(COUNT_PLACEHOLDER));
   const durationInCode =
@@ -147,8 +138,8 @@ export function describeMecpForTak(
   if (gps) parts.push(`${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}`);
   let rest = stripMecpCoordsFromFreetext(parsed.freetext ?? '');
   if (count != null) rest = withoutWord(rest, (w) => w.toLowerCase() === `${count}pax`);
-  // The minutes leave the free text only once the sentence shows them.
-  if (duration != null && durationInCode) rest = stripDurationToken(rest, duration);
+  // The original Duration token leaves the free text once the sentence shows the minutes.
+  if (durationInCode && durationToken) rest = stripDurationToken(rest, durationToken);
   if (rest) parts.push(`“${rest}”`);
   return parts.length > 0 ? `${head}: ${parts.join(' · ')}` : head;
 }
