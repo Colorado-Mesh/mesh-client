@@ -18,6 +18,7 @@ import {
 } from '../meshtasticMqttPublish';
 import type { DomainEvent } from '../protocols/Protocol';
 import type { IdentityId, MQTTStatus } from '../types';
+import { normalizeWaypointGeofenceForWire } from './meshtasticWaypointGeofence';
 
 const BROADCAST_ADDR = 0xffffffff;
 
@@ -131,6 +132,13 @@ function uplinkWaypointToMqtt(
   const uplink = resolveMqttUplink(channelIndex, deps);
   if (!uplink) return;
 
+  const geo = normalizeWaypointGeofenceForWire({
+    geofenceRadius: waypoint.geofenceRadius,
+    boundingBox: waypoint.boundingBox,
+    notifyOnEnter: waypoint.notifyOnEnter,
+    notifyOnExit: waypoint.notifyOnExit,
+    notifyFavoritesOnly: waypoint.notifyFavoritesOnly,
+  });
   void window.electronAPI.mqtt
     .publishWaypoint({
       from,
@@ -148,18 +156,11 @@ function uplinkWaypointToMqtt(
         icon: waypoint.icon ?? 0,
         lockedTo: waypoint.lockedTo ?? 0,
         expire: waypoint.expire ?? 0,
-        geofenceRadius: waypoint.geofenceRadius,
-        boundingBox: waypoint.boundingBox
-          ? {
-              longitudeWestI: Math.round(waypoint.boundingBox.west * 1e7),
-              latitudeSouthI: Math.round(waypoint.boundingBox.south * 1e7),
-              longitudeEastI: Math.round(waypoint.boundingBox.east * 1e7),
-              latitudeNorthI: Math.round(waypoint.boundingBox.north * 1e7),
-            }
-          : undefined,
-        notifyOnEnter: waypoint.notifyOnEnter,
-        notifyOnExit: waypoint.notifyOnExit,
-        notifyFavoritesOnly: waypoint.notifyFavoritesOnly,
+        geofenceRadius: geo.geofenceRadius > 0 ? geo.geofenceRadius : undefined,
+        boundingBox: geo.boundingBox,
+        notifyOnEnter: geo.notifyOnEnter ? true : undefined,
+        notifyOnExit: geo.notifyOnExit ? true : undefined,
+        notifyFavoritesOnly: geo.notifyFavoritesOnly ? true : undefined,
       },
     })
     .catch((e: unknown) => {

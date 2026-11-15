@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "Berichten in de ruimte hebben hun eigen limiet van dezelfde grootte, zodat drukke kanalen ze nooit verdringen.",
     "notifyOnDiagnosticErrors": "Melden bij nieuwe diagnostische fouten",
     "notifyOnDiagnosticErrorsHint": "Bureaubladmelding en geluid wanneer een nieuwe foutmelding verschijnt voor het actieve protocol. Bestaande rijen worden niet opnieuw afgespeeld bij het opstarten.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Omgevingsgeschiedenis wissen",
+    "clearEnvironmentHistoryConfirm": "Hiermee wordt alle opgeslagen omgevingssensorgeschiedenis permanent uit de database verwijderd. Apparaat → Telemetriegrafieken, kaartsensoren en sparklines worden gewist tot er nieuwe metingen binnenkomen. Doorgaan?",
+    "dangerZoneEnvironmentHistoryHeading": "Omgevingsgeschiedenis",
+    "dangerZoneEnvironmentHistoryDesc": "Verwijdert alle opgeslagen temperatuur-, vochtigheids-, druk- en luchtkwaliteitsmetingen voor elk protocol en elke identiteit."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -6307,24 +6307,24 @@
       "hint": "Gedecodeerd uit Cayenne Low Power Payload-pakketten (CAYENNE_APP) verzonden door sensorknooppunten. Alleen sessiegeschiedenis; het wordt niet opgeslagen.",
       "chartAria": "{{kind}} grafiek, {{count}} metingen"
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Nog geen omgevingssensorgegevens ontvangen",
+    "envEmptyMeshtasticBody": "Grafieken verschijnen wanneer een node met een temperatuur-, vochtigheids-, druk- of luchtkwaliteitssensor telemetrie rapporteert (RF of MQTT).",
+    "envEmptyMeshtasticHint": "Schakel op sensornodes Apparaat → Modules → Telemetriemodule (omgeving / luchtkwaliteit) in en stel een rapportage-interval in.",
+    "envEmptyMeshcoreBody": "Vraag sensortelemetrie aan via het node-detail van een contact, of schakel telemetrie-push voor dat contact in.",
+    "envEmptyWindow": "Geen metingen in dit tijdvenster. Probeer 7 dagen of wacht op het volgende sensorrapport.",
+    "envSectionTitle": "Omgevingssensoren",
+    "envNode": "Sensornode",
+    "envNodeAll": "Alle nodes",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Grafieken gebruiken opgeslagen geschiedenis (tot 7 dagen) van RF en MQTT, plus Cayenne LPP-velden die naar omgevingsmetrieken zijn gemapt.",
+    "envHistoryHintMeshcore": "Grafieken gebruiken opgeslagen geschiedenis van aangevraagde of gepushte Cayenne LPP-sensordata.",
+    "requestSensorTelemetry": "Sensortelemetrie aanvragen",
+    "meshtasticRefreshHelp": "Vernieuwen synchroniseert de apparaatconfiguratie opnieuw. Omgevingsgrafieken vullen wanneer sensornodes rapporteren op hun telemetriemodule-interval (of via MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "Waarde is te lang",
       "invalidChars": "Regeleinden zijn niet toegestaan.",
       "pinFormat": "Voer 6 cijfers in, of 0 voor een willekeurige PINCODE.",
-      "invalidPreset": "Gebruik infrarood, op het dak of mobiel."
+      "invalidPreset": "Gebruik infra, rooftop of mobile."
     },
     "settings": {
       "ver": {

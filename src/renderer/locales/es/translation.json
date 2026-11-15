@@ -7954,7 +7954,7 @@
       "tooLong": "El valor es demasiado largo",
       "invalidChars": "No se permiten saltos de línea.",
       "pinFormat": "Introduzca 6 dígitos, o 0 para un PIN aleatorio.",
-      "invalidPreset": "Utiliza cámaras infrarrojas, de tejado o móviles."
+      "invalidPreset": "Use infra, rooftop o mobile."
     },
     "settings": {
       "ver": {

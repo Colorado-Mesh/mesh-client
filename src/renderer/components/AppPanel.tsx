@@ -241,9 +241,24 @@ function loadSettings(): AppSettings {
     'AppPanel loadSettings',
   );
   if (!parsed) return DEFAULT_SETTINGS;
+  const rawDeleteDays: unknown = parsed.deleteNodesDays;
+  const deleteNodesDays =
+    typeof rawDeleteDays === 'number' && Number.isFinite(rawDeleteDays) && rawDeleteDays >= 1
+      ? Math.trunc(rawDeleteDays)
+      : typeof rawDeleteDays === 'string'
+        ? (() => {
+            const trimmed = rawDeleteDays.trim();
+            const n = parseInt(trimmed, 10);
+            if (!Number.isFinite(n) || n < 1 || String(n) !== trimmed) {
+              return DEFAULT_SETTINGS.deleteNodesDays;
+            }
+            return n;
+          })()
+        : DEFAULT_SETTINGS.deleteNodesDays;
   return {
     ...DEFAULT_SETTINGS,
     ...parsed,
+    deleteNodesDays,
     shareMyLocation: parsed.shareMyLocation === true,
     hiddenProtocols: sanitizeHiddenProtocols(parsed.hiddenProtocols),
     mecpStandingAlertEnabled: getOperationalAlertSettings().mecpStandingAlertEnabled,

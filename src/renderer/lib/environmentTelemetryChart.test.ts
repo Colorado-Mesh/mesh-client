@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import { ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY } from '@/shared/environmentTelemetry';
+
+import type { EnvironmentHistoryPoint } from '../stores/environmentTelemetryStore';
 import {
   buildEnvironmentChartRows,
   chartRowsHaveField,
   defaultEnvironmentChartNode,
   ENV_CHART_ALL_NODES,
   environmentTelemetryCsvHeaders,
+  selectEnvironmentChartOverlayNodeIds,
 } from './environmentTelemetryChart';
 
 describe('environmentTelemetryChart', () => {
@@ -73,6 +77,67 @@ describe('environmentTelemetryChart', () => {
     expect(chartRowsHaveField(rows, 'pmTemperature')).toBe(true);
     expect(chartRowsHaveField(rows, 'temperature')).toBe(false);
     expect(chartRowsHaveField(rows, 'mcuTemperature')).toBe(false);
+  });
+
+  it('caps all-nodes overlay to newest reporting nodes', () => {
+    const ids = Array.from(
+      { length: ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY + 5 },
+      (_, i) => i + 1,
+    );
+    const lastHeard = new Map(ids.map((id, i) => [id, i * 1000]));
+    const picked = selectEnvironmentChartOverlayNodeIds(
+      ids,
+      lastHeard,
+      ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY,
+    );
+    expect(picked).toHaveLength(ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY);
+    expect(picked[0]).toBe(ids[ids.length - 1]);
+  });
+
+  it('downsamples interleaved all-nodes rows without dropping a node metric series', () => {
+    const bulky = new Map<number, EnvironmentHistoryPoint[]>();
+    bulky.set(
+      1,
+      Array.from({ length: 2000 }, (_, i) => ({
+        t: i * 2,
+        reading: { barometricPressure: 1010 + (i % 3) },
+        source: 'rf' as const,
+      })),
+    );
+    bulky.set(
+      2,
+      Array.from({ length: 2000 }, (_, i) => ({
+        t: i * 2 + 1,
+        reading: { relativeHumidity: 40 + (i % 5) },
+        source: 'mqtt' as const,
+      })),
+    );
+    const rows = buildEnvironmentChartRows(bulky, ENV_CHART_ALL_NODES, 0, false, true);
+    expect(rows.length).toBeLessThanOrEqual(1500);
+    expect(chartRowsHaveField(rows, 'barometricPressure')).toBe(true);
+    expect(chartRowsHaveField(rows, 'relativeHumidity')).toBe(true);
+    expect(rows.some((r) => r.nodeNum === 1 && typeof r.barometricPressure__1 === 'number')).toBe(
+      true,
+    );
+    expect(rows.some((r) => r.nodeNum === 2 && typeof r.relativeHumidity__2 === 'number')).toBe(
+      true,
+    );
+  });
+
+  it('downsamples dense all-nodes chart rows', () => {
+    const series = new Map([
+      [
+        1,
+        Array.from({ length: 4000 }, (_, i) => ({
+          t: i * 1000,
+          reading: { temperature: i },
+          source: 'rf' as const,
+        })),
+      ],
+    ]);
+    const rows = buildEnvironmentChartRows(series, ENV_CHART_ALL_NODES, 0, false, true);
+    expect(rows.length).toBeLessThan(2000);
+    expect(rows.at(-1)?.t).toBe(3_999_000);
   });
 
   it('includes every reading field in CSV headers', () => {

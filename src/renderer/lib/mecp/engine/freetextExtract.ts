@@ -1,5 +1,5 @@
 /**
- * MECP 1.2.1 §6.1 freetext convention extraction.
+ * MECP 1.3.0 §6.1 freetext convention extraction.
  * Patterns and semantics from https://github.com/mecp-org/MECP (freetext/patterns.json,
  * scripts/check-freetext.mjs). Additional Validation failures are ignored; freetext is preserved.
  */

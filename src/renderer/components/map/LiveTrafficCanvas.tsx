@@ -10,6 +10,7 @@ import { liveTrafficPointKey } from '@/renderer/lib/map/liveTrafficGroups';
 import {
   frequencyForHopSegment,
   playLiveTrafficHopTone,
+  stopActiveLiveTrafficHopTones,
 } from '@/renderer/lib/map/liveTrafficHopTones';
 import {
   LIVE_TRAFFIC_MAX_AGE_MS,
@@ -397,6 +398,7 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
       const previouslyReduced = reducedMotion;
       reducedMotion = readReduceMotion() || (motionQuery?.matches ?? false);
       if (previouslyReduced && !reducedMotion) observedSince = Date.now();
+      stopActiveLiveTrafficHopTones();
       stopMotion();
       redraw();
     }
@@ -478,6 +480,7 @@ export function LiveTrafficCanvas(props: LiveTrafficCanvasProps) {
     motionQuery?.addEventListener('change', motionChanged);
     const unsubscribeMotion = subscribeReduceMotion(motionChanged);
     return () => {
+      stopActiveLiveTrafficHopTones();
       controllerRef.current = null;
       cancelFrame();
       map.off('move zoom', mapMoved);

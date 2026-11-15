@@ -2745,6 +2745,10 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
     issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
 
+  if (locale !== 'en' && ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS.has(flatKey) && val === enVal) {
+    issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
+  }
+
   if (
     locale !== 'en' &&
     leafKey === 'copyMeshtastic' &&
@@ -3609,6 +3613,18 @@ function checkAppPanelReduceMotionAndBrandIssues(ctx) {
 function checkMeshcoreOpenWireIssues(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
+  if (locale !== 'en' && flatKey === MESHCORE_CLI_INVALID_PRESET_KEY && typeof val === 'string') {
+    for (const token of INVALID_PRESET_WIRE_TOKENS) {
+      if (!meshcoreCliPresetHasWireToken(val, token)) {
+        issues.push(`invalidPreset must keep wire token "${token}"`);
+      }
+    }
+    for (const rule of INVALID_PRESET_FALSE_FRIENDS) {
+      if (rule.re.test(val)) {
+        issues.push(`invalidPreset: ${rule.hint}`);
+      }
+    }
+  }
   if (locale !== 'en' && isMeshcoreOpenWireUiLeafKey(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
@@ -4604,6 +4620,52 @@ const AUDIT_MUST_TRANSLATE_KEYS = new Set([
   'scheduledBroadcasts.reasons.channelMissing',
   'internetWeather.unitsTemp',
 ]);
+
+/** Device → Telemetry env history / empty-state keys (#1467–#1472 audit). */
+export const ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS = new Set([
+  'appPanel.clearEnvironmentHistory',
+  'appPanel.clearEnvironmentHistoryConfirm',
+  'appPanel.dangerZoneEnvironmentHistoryHeading',
+  'appPanel.dangerZoneEnvironmentHistoryDesc',
+  'telemetryPanel.envEmptyTitle',
+  'telemetryPanel.envEmptyMeshtasticBody',
+  'telemetryPanel.envEmptyMeshtasticHint',
+  'telemetryPanel.envEmptyMeshcoreBody',
+  'telemetryPanel.envEmptyWindow',
+  'telemetryPanel.envSectionTitle',
+  'telemetryPanel.envNode',
+  'telemetryPanel.envNodeAll',
+  'telemetryPanel.envHistoryHintMeshtastic',
+  'telemetryPanel.envHistoryHintMeshcore',
+  'telemetryPanel.requestSensorTelemetry',
+  'telemetryPanel.meshtasticRefreshHelp',
+]);
+
+const MESHCORE_CLI_INVALID_PRESET_KEY = 'meshcoreCompanionCli.validation.invalidPreset';
+const INVALID_PRESET_WIRE_TOKENS = ['infra', 'rooftop', 'mobile'];
+
+/** Whole preset token — rejects false friends such as Spanish "infraestructura" for wire token `infra`. */
+const INVALID_PRESET_WIRE_TOKEN_RES = {
+  infra: /(?:^|[^A-Za-z0-9])infra(?:$|[^A-Za-z0-9])/i,
+  rooftop: /(?:^|[^A-Za-z0-9])rooftop(?:$|[^A-Za-z0-9])/i,
+  mobile: /(?:^|[^A-Za-z0-9])mobile(?:$|[^A-Za-z0-9])/i,
+};
+
+export function meshcoreCliPresetHasWireToken(val, token) {
+  if (typeof val !== 'string' || typeof token !== 'string') return false;
+  const re = INVALID_PRESET_WIRE_TOKEN_RES[token];
+  return re != null && re.test(val);
+}
+const INVALID_PRESET_FALSE_FRIENDS = [
+  {
+    re: /infrared|infračerven|инфракрасн|infrarot|infrarouge|infravermelho|infrarood/i,
+    hint: 'not IR cameras — keep wire token infra',
+  },
+  {
+    re: /camera|камер|klimatyz|air.?condition|обогреват|heater|phone|телефон/i,
+    hint: 'companion CLI preset names only',
+  },
+];
 
 /** Short product strings whose English `RRC` token must survive translation. */
 const AUDIT_RRC_TOKEN_KEYS = new Set([

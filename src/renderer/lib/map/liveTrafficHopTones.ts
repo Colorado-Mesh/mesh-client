@@ -43,6 +43,9 @@ export interface LiveTrafficHopTone {
 
 let sharedAudioContext: AudioContext | null = null;
 let activeToneCount = 0;
+const activeOscillators = new Set<OscillatorNode>();
+/** Bumped on cancel/stop so pending resume and partial callbacks cannot affect newer plays. */
+let hopTonePlayGeneration = 0;
 
 function getSharedAudioContext(): AudioContext | null {
   try {
@@ -68,6 +71,23 @@ function isNotifMuted(): boolean {
 /** @internal Test helper — reset singleton between tests. */
 export function resetLiveTrafficHopTonesForTests(): void {
   sharedAudioContext = null;
+  activeToneCount = 0;
+  activeOscillators.clear();
+  hopTonePlayGeneration = 0;
+}
+
+/** Stop tones already scheduled (e.g. when Reduce motion is enabled). */
+export function stopActiveLiveTrafficHopTones(): void {
+  hopTonePlayGeneration += 1;
+  for (const osc of activeOscillators) {
+    try {
+      osc.stop();
+      osc.disconnect();
+    } catch {
+      // catch-no-log-ok: oscillator may already be stopped
+    }
+  }
+  activeOscillators.clear();
   activeToneCount = 0;
 }
 
@@ -135,6 +155,7 @@ function schedulePartial(
   gainLevel: number,
   durationSec: number,
   startTime: number,
+  playGeneration: number,
   onEnded: () => void,
 ): void {
   const osc = ctx.createOscillator();
@@ -142,6 +163,7 @@ function schedulePartial(
   osc.type = 'sine';
   osc.connect(gain);
   gain.connect(ctx.destination);
+  activeOscillators.add(osc);
   osc.frequency.value = frequencyHz;
   const attackSec = Math.min(HOP_TONE_ATTACK_MS / MS_PER_SECOND, durationSec / 4);
   const fadeSec = Math.min(HOP_TONE_FADE_MS / MS_PER_SECOND, durationSec / 2);
@@ -151,9 +173,10 @@ function schedulePartial(
   gain.gain.setValueAtTime(gainLevel, sustainEnd);
   gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
   osc.onended = () => {
+    activeOscillators.delete(osc);
     osc.disconnect();
     gain.disconnect();
-    onEnded();
+    if (playGeneration === hopTonePlayGeneration) onEnded();
   };
   osc.start(startTime);
   osc.stop(startTime + durationSec);
@@ -168,20 +191,34 @@ function playTonePulse(
   frequencyHz: number,
   durationSec: number,
   startTime: number,
+  playGeneration: number,
 ): void {
   let remainingPartials = 2;
+  let released = false;
   const finishPartial = () => {
+    if (playGeneration !== hopTonePlayGeneration || released) return;
     remainingPartials -= 1;
-    if (remainingPartials <= 0) activeToneCount = Math.max(0, activeToneCount - 1);
+    if (remainingPartials <= 0) {
+      released = true;
+      activeToneCount = Math.max(0, activeToneCount - 1);
+    }
   };
-  schedulePartial(ctx, frequencyHz, HOP_TONE_GAIN, durationSec, startTime, finishPartial);
-  // Quiet octave (always harmonic) keeps the tone from sounding like a lone mournful sine.
+  schedulePartial(
+    ctx,
+    frequencyHz,
+    HOP_TONE_GAIN,
+    durationSec,
+    startTime,
+    playGeneration,
+    finishPartial,
+  );
   schedulePartial(
     ctx,
     frequencyHz * 2,
     HOP_TONE_OVERTONE_GAIN,
     durationSec,
     startTime,
+    playGeneration,
     finishPartial,
   );
 }
@@ -200,19 +237,23 @@ export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
   const durationSec = Math.max(tone.durationMs, HOP_TONE_FADE_MS * 2) / MS_PER_SECOND;
-  // Reserve before any async resume so concurrent pending plays count against the budget.
+  const playGeneration = hopTonePlayGeneration;
   activeToneCount += 1;
   const releaseReservation = () => {
+    if (playGeneration !== hopTonePlayGeneration) return;
     activeToneCount = Math.max(0, activeToneCount - 1);
   };
   const go = () => {
-    // Mute may flip while resume is pending — honor it before scheduling oscillators.
+    if (playGeneration !== hopTonePlayGeneration) {
+      releaseReservation();
+      return;
+    }
     if (isNotifMuted()) {
       releaseReservation();
       return;
     }
     try {
-      playTonePulse(ctx, tone.frequencyHz, durationSec, ctx.currentTime);
+      playTonePulse(ctx, tone.frequencyHz, durationSec, ctx.currentTime, playGeneration);
     } catch {
       // catch-no-log-ok: AudioContext unavailable in test/headless environments
       releaseReservation();

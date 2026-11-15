@@ -2,6 +2,7 @@
  * Build Device → Telemetry chart rows from persisted environment history.
  */
 import {
+  ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS,
   ENVIRONMENT_READING_FIELDS,
   ENVIRONMENT_TELEMETRY_CHART_WINDOWS,
   type EnvironmentReading,
@@ -14,6 +15,57 @@ import { formatDisplayTime } from './formatDisplayTime';
 
 export const ENV_CHART_ALL_NODES = 'all' as const;
 export type EnvChartNodeSelection = number | typeof ENV_CHART_ALL_NODES;
+
+export { ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY as ENV_CHART_ALL_NODES_MAX_OVERLAY } from '@/shared/environmentTelemetry';
+
+/** Newest-reporting nodes kept when “All nodes” would exceed the overlay cap. */
+export function selectEnvironmentChartOverlayNodeIds(
+  nodeIds: readonly number[],
+  lastHeardByNode: ReadonlyMap<number, number>,
+  maxOverlay: number,
+): number[] {
+  if (nodeIds.length <= maxOverlay) return [...nodeIds];
+  return [...nodeIds]
+    .sort((a, b) => (lastHeardByNode.get(b) ?? 0) - (lastHeardByNode.get(a) ?? 0))
+    .slice(0, maxOverlay);
+}
+
+function downsampleNodeSeries(series: readonly EnvChartRow[], cap: number): EnvChartRow[] {
+  if (series.length <= cap) return [...series];
+  const step = Math.ceil(series.length / cap);
+  const out: EnvChartRow[] = [];
+  for (let i = 0; i < series.length; i += step) out.push(series[i]);
+  const last = series[series.length - 1];
+  if (out[out.length - 1] !== last) out.push(last);
+  return out;
+}
+
+/** Downsample all-nodes rows per sensor node so each overlay keeps representative points. */
+function downsampleEnvironmentChartRows(rows: EnvChartRow[], maxRows: number): EnvChartRow[] {
+  if (rows.length <= maxRows) return rows;
+  const byNode = new Map<number, EnvChartRow[]>();
+  const nodeOrder: number[] = [];
+  for (const row of rows) {
+    const nodeNum = row.nodeNum ?? 0;
+    let bucket = byNode.get(nodeNum);
+    if (!bucket) {
+      bucket = [];
+      byNode.set(nodeNum, bucket);
+      nodeOrder.push(nodeNum);
+    }
+    bucket.push(row);
+  }
+  const perNodeCap = Math.max(1, Math.floor(maxRows / nodeOrder.length));
+  const out: EnvChartRow[] = [];
+  for (const nodeNum of nodeOrder) {
+    out.push(...downsampleNodeSeries(byNode.get(nodeNum) ?? [], perNodeCap));
+  }
+  out.sort((a, b) => a.t - b.t || (a.nodeNum ?? 0) - (b.nodeNum ?? 0));
+  if (out.length > maxRows) {
+    return downsampleNodeSeries(out, maxRows);
+  }
+  return out;
+}
 
 /** Per-node metric key when plotting multiple nodes on one chart. */
 export function envChartMetricKey(field: string, nodeNum: number, allNodes: boolean): string {
@@ -99,7 +151,7 @@ export function buildEnvironmentChartRows(
     }
   }
   points.sort((a, b) => a.t - b.t || a.nodeNum - b.nodeNum);
-  return points.map(({ t, nodeNum, reading }) => {
+  const rows = points.map(({ t, nodeNum, reading }) => {
     const keyFor = (base: string) => envChartMetricKey(base, nodeNum, allNodes);
     const row: EnvChartRow = {
       t,
@@ -119,6 +171,10 @@ export function buildEnvironmentChartRows(
     expandArrays(reading, row, useFahrenheit, keyFor);
     return row;
   });
+  if (allNodes && rows.length > ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS) {
+    return downsampleEnvironmentChartRows(rows, ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS);
+  }
+  return rows;
 }
 
 /** True when any row has `field` or a per-node `field__<id>` value. */

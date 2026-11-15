@@ -112,6 +112,11 @@ export const ENVIRONMENT_TELEMETRY_CHART_WINDOWS = [
 export type EnvironmentTelemetryChartWindowId =
   (typeof ENVIRONMENT_TELEMETRY_CHART_WINDOWS)[number]['id'];
 
+/** Max distinct node lines per metric when Device → Telemetry plots “All nodes”. */
+export const ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY = 32;
+/** Max chart rows when plotting all nodes (downsample beyond this). */
+export const ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS = 1500;
+
 /** Empty / legacy rows before identity scoping; treated as belonging to the hydrating identity. */
 export const ENVIRONMENT_TELEMETRY_LEGACY_IDENTITY_ID = '';
 

@@ -29,7 +29,10 @@ vi.mock('../meshtasticMqttPublish', () => ({
 describe('attachMeshtasticRouterSideEffects', () => {
   beforeEach(() => {
     window.electronAPI = {
-      mqtt: { publish: vi.fn().mockResolvedValue(1) },
+      mqtt: {
+        publish: vi.fn().mockResolvedValue(1),
+        publishWaypoint: vi.fn().mockResolvedValue(1),
+      },
     } as unknown as typeof window.electronAPI;
   });
 
@@ -110,6 +113,61 @@ describe('attachMeshtasticRouterSideEffects', () => {
     );
     expect(applyRoutingErrorFromLog).toHaveBeenCalled();
     expect(applyForeignLoraFromLog).toHaveBeenCalled();
+    detach();
+  });
+
+  it('uplinks broadcast waypoints with invalid geofence boxes stripped', () => {
+    const publishWaypoint = window.electronAPI.mqtt.publishWaypoint as ReturnType<typeof vi.fn>;
+    const deps: MeshtasticRouterSideEffectsDeps = {
+      getMyNodeNum: () => 1,
+      getMqttStatus: () => 'connected',
+      getChannelConfigs: () => [
+        {
+          index: 0,
+          name: 'LongFast',
+          role: 1,
+          psk: new Uint8Array(16),
+          uplinkEnabled: true,
+          downlinkEnabled: true,
+          positionPrecision: 0,
+        },
+      ],
+      hasRfDevice: () => true,
+      registerMqttEchoPacketId: vi.fn(),
+      requestNodeInfoForNode: vi.fn(),
+      applyForeignLoraFromLog: vi.fn(),
+      applyRoutingErrorFromLog: vi.fn(),
+      setFirmwareVersion: vi.fn(),
+    };
+    const detach = attachMeshtasticRouterSideEffects('mesh-id', deps);
+    packetRouter.dispatch(
+      {
+        type: 'waypoint',
+        payload: {
+          id: 42,
+          from: 9,
+          to: 0xffffffff,
+          channelIndex: 0,
+          latitude: 4,
+          longitude: -10.5,
+          latitudeI: 40_000_000,
+          longitudeI: -105_000_000,
+          name: 'Camp',
+          timestamp: Date.now(),
+          boundingBox: { west: 10, south: 20, east: 5, north: 25 },
+          notifyOnEnter: true,
+        },
+      },
+      'mesh-id',
+    );
+    expect(publishWaypoint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        waypoint: expect.objectContaining({
+          boundingBox: undefined,
+          notifyOnEnter: true,
+        }),
+      }),
+    );
     detach();
   });
 

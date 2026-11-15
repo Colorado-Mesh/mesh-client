@@ -7954,7 +7954,7 @@
       "tooLong": "此值太长。",
       "invalidChars": "不允许换行。",
       "pinFormat": "请输入6位数字，随机PIN码请输入0。",
-      "invalidPreset": "使用红外摄像头、屋顶摄像头或移动摄像头。"
+      "invalidPreset": "请使用 infra、rooftop 或 mobile。"
     },
     "settings": {
       "ver": {

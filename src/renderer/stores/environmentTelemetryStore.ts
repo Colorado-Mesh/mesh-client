@@ -196,16 +196,20 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
   },
 
   async clearHistory() {
-    historyGeneration += 1;
-    set({ history: new Map() });
     const clear = window.electronAPI?.db?.clearEnvironmentTelemetry;
-    if (typeof clear !== 'function') return;
+    if (typeof clear !== 'function') {
+      historyGeneration += 1;
+      set({ history: new Map() });
+      return;
+    }
     try {
       await clear();
     } catch (err: unknown) {
       console.warn('[environmentTelemetry] clear DB failed: ' + errLikeToLogString(err));
       throw err;
     }
+    historyGeneration += 1;
+    set({ history: new Map() });
   },
 
   async claimLegacyIdentity(protocol, identityId) {

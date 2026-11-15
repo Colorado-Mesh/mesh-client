@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "ルームの投稿には同じサイズの制限があるため、ビジーチャンネルが投稿を押し出すことはありません。",
     "notifyOnDiagnosticErrors": "新しい診断エラーの通知",
     "notifyOnDiagnosticErrorsHint": "アクティブなプロトコルの新しいエラー重大度診断が表示されたときのデスクトップ通知とサウンド。既存の行は起動時に再生されません。",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "環境履歴をクリア",
+    "clearEnvironmentHistoryConfirm": "保存されている環境センサー履歴がデータベースから完全に削除されます。デバイス → テレメトリのグラフ、マップのセンサー、スパークラインは新しい測定値が届くまでクリアされます。続行しますか？",
+    "dangerZoneEnvironmentHistoryHeading": "環境履歴",
+    "dangerZoneEnvironmentHistoryDesc": "すべてのプロトコルとアイデンティティについて、保存されている温度・湿度・気圧・空気品質の測定値を削除します。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -6307,24 +6307,24 @@
       },
       "hint": "センサー ノードによって送信された Cayenne Low Power Payload パケット (CAYENNE_APP) からデコードされます。セッション履歴のみ。保存されません。"
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "環境センサーのデータはまだ受信されていません",
+    "envEmptyMeshtasticBody": "温度・湿度・気圧・空気品質センサーを持つノードがテレメトリ（RF または MQTT）を報告するとグラフが表示されます。",
+    "envEmptyMeshtasticHint": "センサーノードで、デバイス → モジュール → テレメトリモジュール（環境 / 空気品質）を有効にし、報告間隔を設定してください。",
+    "envEmptyMeshcoreBody": "連絡先のノード詳細からセンサーテレメトリを要求するか、その連絡先でテレメトリプッシュを有効にしてください。",
+    "envEmptyWindow": "この時間範囲に測定値がありません。7 日間を試すか、次のセンサー報告をお待ちください。",
+    "envSectionTitle": "環境センサー",
+    "envNode": "センサーノード",
+    "envNodeAll": "すべてのノード",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "グラフは RF と MQTT から保存された履歴（最大 7 日間）と、環境指標にマップされた Cayenne LPP フィールドを使用します。",
+    "envHistoryHintMeshcore": "グラフは要求またはプッシュされた Cayenne LPP センサーデータの保存履歴を使用します。",
+    "requestSensorTelemetry": "センサーテレメトリを要求",
+    "meshtasticRefreshHelp": "更新するとデバイス設定が再同期されます。センサーノードがテレメトリモジュールの間隔（または MQTT）で報告すると、環境グラフが埋まります。",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "値が長すぎます。",
       "invalidChars": "改行は許可されていません。",
       "pinFormat": "6桁の数字を入力するか、ランダムな暗証番号を0にしてください。",
-      "invalidPreset": "インフラ、屋上、またはモバイルを使用します。"
+      "invalidPreset": "infra、rooftop、または mobile を使用してください。"
     },
     "settings": {
       "ver": {

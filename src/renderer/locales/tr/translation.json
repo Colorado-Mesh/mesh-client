@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "Oda gönderilerinin aynı boyutta kendi sınırları vardır, bu nedenle meşgul kanallar onları asla dışarı itmez.",
     "notifyOnDiagnosticErrors": "Yeni tanılama hatalarını bildir",
     "notifyOnDiagnosticErrorsHint": "Etkin protokol için yeni bir hata şiddeti teşhisi göründüğünde masaüstü bildirimi ve sesi. Mevcut satırlar başlatmada tekrar oynatılmaz.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Ortam geçmişini temizle",
+    "clearEnvironmentHistoryConfirm": "Bu, veritabanındaki kayıtlı tüm ortam sensörü geçmişini kalıcı olarak siler. Cihaz → Telemetri grafikleri, harita sensörleri ve kıvılcım çizgileri yeni okumalar gelene kadar temizlenir. Devam edilsin mi?",
+    "dangerZoneEnvironmentHistoryHeading": "Ortam geçmişi",
+    "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -6307,24 +6307,24 @@
       "node": "Sensör düğümü",
       "hint": "Sensör düğümleri tarafından gönderilen Cayenne Düşük Güç Yükü paketlerinden (CAYENNE_APP) kodu çözüldü. Yalnızca oturum geçmişi; kaydedilmedi."
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Henüz ortam sensörü verisi alınmadı",
+    "envEmptyMeshtasticBody": "Sıcaklık, nem, basınç veya hava kalitesi sensörü olan bir düğüm telemetri (RF veya MQTT) bildirdiğinde grafikler görünür.",
+    "envEmptyMeshtasticHint": "Sensör düğümlerinde Cihaz → Modüller → Telemetri modülü (ortam / hava kalitesi) özelliğini etkinleştirin ve bir raporlama aralığı ayarlayın.",
+    "envEmptyMeshcoreBody": "Bir kişinin düğüm ayrıntısından sensör telemetrisi isteyin veya o kişi için telemetri push özelliğini etkinleştirin.",
+    "envEmptyWindow": "Bu zaman penceresinde okuma yok. 7 gün deneyin veya bir sonraki sensör raporunu bekleyin.",
+    "envSectionTitle": "Ortam sensörleri",
+    "envNode": "Sensör düğümü",
+    "envNodeAll": "Tüm düğümler",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Grafikler, RF ve MQTT kaynaklı kayıtlı geçmişi (7 güne kadar) ve ortam metriklerine eşlenen Cayenne LPP alanlarını kullanır.",
+    "envHistoryHintMeshcore": "Grafikler, istenen veya push edilen Cayenne LPP sensör verilerinin kayıtlı geçmişini kullanır.",
+    "requestSensorTelemetry": "Sensör telemetrisi iste",
+    "meshtasticRefreshHelp": "Yenile, cihaz yapılandırmasını yeniden senkronize eder. Sensör düğümleri Telemetri Modülü aralığında (veya MQTT üzerinden) bildirdiğinde ortam grafikleri dolar.",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "Değer fazla uzun.",
       "invalidChars": "Satır sonlarına izin verilmez.",
       "pinFormat": "Rastgele bir PIN kodu için 6 basamak veya 0 girin.",
-      "invalidPreset": "Altyapı, çatı veya mobil kullanın."
+      "invalidPreset": "infra, rooftop veya mobile kullanın."
     },
     "settings": {
       "ver": {

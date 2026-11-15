@@ -77,7 +77,9 @@ export function WaypointEditorDialog({
   onSubmit,
 }: WaypointEditorDialogProps) {
   if (!open || !initial) return null;
-  const resetKey = `${mode}:${initial.id ?? 'new'}:${initial.latitude}:${initial.longitude}:${initial.name ?? ''}:${initial.lockedTo ?? 0}:${initial.expire ?? 0}:${initial.geofenceRadius ?? 0}`;
+  const box = initial.boundingBox;
+  const boxKey = box ? `${box.west}:${box.south}:${box.east}:${box.north}` : 'none';
+  const resetKey = `${mode}:${initial.id ?? 'new'}:${initial.latitude}:${initial.longitude}:${initial.name ?? ''}:${initial.lockedTo ?? 0}:${initial.expire ?? 0}:${initial.geofenceRadius ?? 0}:${boxKey}:${initial.notifyOnEnter === true ? 1 : 0}:${initial.notifyOnExit === true ? 1 : 0}:${initial.notifyFavoritesOnly === true ? 1 : 0}`;
   return (
     <WaypointEditorDialogForm
       key={resetKey}

@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "Pesan ruangan memiliki batas sendiri dengan ukuran yang sama, jadi saluran yang ramai tidak pernah menggesernya.",
     "notifyOnDiagnosticErrors": "Beri tahu tentang kesalahan diagnostik baru",
     "notifyOnDiagnosticErrorsHint": "Pemberitahuan dan suara desktop ketika diagnostik tingkat keparahan kesalahan baru muncul untuk protokol aktif. Baris yang ada tidak diputar ulang saat peluncuran.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Hapus riwayat lingkungan",
+    "clearEnvironmentHistoryConfirm": "Ini akan menghapus secara permanen semua riwayat sensor lingkungan yang tersimpan dari basis data. Perangkat → Bagan telemetri, sensor peta, dan sparkline akan dikosongkan sampai pembacaan baru tiba. Lanjutkan?",
+    "dangerZoneEnvironmentHistoryHeading": "Riwayat lingkungan",
+    "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -6307,24 +6307,24 @@
         "switch": "Sakelar"
       }
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Belum ada data sensor lingkungan yang diterima",
+    "envEmptyMeshtasticBody": "Bagan muncul ketika simpul dengan sensor suhu, kelembapan, tekanan, atau kualitas udara melaporkan telemetri (RF atau MQTT).",
+    "envEmptyMeshtasticHint": "Pada simpul sensor, aktifkan Perangkat → Modul → Modul telemetri (lingkungan / kualitas udara) dan atur interval laporan.",
+    "envEmptyMeshcoreBody": "Minta telemetri sensor dari detail simpul kontak, atau aktifkan push telemetri untuk kontak tersebut.",
+    "envEmptyWindow": "Tidak ada pembacaan dalam jendela waktu ini. Coba 7 hari, atau tunggu laporan sensor berikutnya.",
+    "envSectionTitle": "Sensor lingkungan",
+    "envNode": "Simpul sensor",
+    "envNodeAll": "Semua simpul",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Bagan menggunakan riwayat tersimpan (hingga 7 hari) dari RF dan MQTT, plus bidang Cayenne LPP yang dipetakan ke metrik lingkungan.",
+    "envHistoryHintMeshcore": "Bagan menggunakan riwayat tersimpan dari data sensor Cayenne LPP yang diminta atau didorong.",
+    "requestSensorTelemetry": "Minta telemetri sensor",
+    "meshtasticRefreshHelp": "Penyegaran menyinkronkan ulang konfigurasi perangkat. Bagan lingkungan terisi saat simpul sensor melapor pada interval Modul Telemetri (atau melalui MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "Nilai terlalu panjang.",
       "invalidChars": "Pemutusan saluran tidak diperbolehkan.",
       "pinFormat": "Masukkan 6 digit, atau 0 untuk PIN acak.",
-      "invalidPreset": "Gunakan infra, atap, atau ponsel."
+      "invalidPreset": "Gunakan infra, rooftop, atau mobile."
     },
     "settings": {
       "ver": {

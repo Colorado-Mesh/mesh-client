@@ -37,6 +37,17 @@ export function validateMqttPublishWaypointArgs(args: unknown): void {
   if (!Number.isFinite(latitudeI) || !Number.isFinite(longitudeI)) {
     throw new Error('mqtt:publishWaypoint: waypoint latitudeI/longitudeI invalid');
   }
+  const DEG_SCALE = 1e7;
+  const coordLatOk = (v: number) =>
+    Number.isFinite(v) && v >= -90 * DEG_SCALE && v <= 90 * DEG_SCALE;
+  const coordLonOk = (v: number) =>
+    Number.isFinite(v) && v >= -180 * DEG_SCALE && v <= 180 * DEG_SCALE;
+  if (!coordLatOk(latitudeI)) {
+    throw new Error('mqtt:publishWaypoint: waypoint latitudeI out of range');
+  }
+  if (!coordLonOk(longitudeI)) {
+    throw new Error('mqtt:publishWaypoint: waypoint longitudeI out of range');
+  }
   if (typeof w.name !== 'string')
     throw new Error('mqtt:publishWaypoint: waypoint.name must be a string');
   if (w.name.length > 256) throw new Error('mqtt:publishWaypoint: waypoint.name too long');
@@ -71,7 +82,6 @@ export function validateMqttPublishWaypointArgs(args: unknown): void {
       throw new Error('mqtt:publishWaypoint: waypoint.boundingBox invalid');
     const box = w.boundingBox as Record<string, unknown>;
     // Wire coords are degrees × 1e7 (same scale as Position / Waypoint lat/lon).
-    const DEG_SCALE = 1e7;
     const west = Number(box.longitudeWestI);
     const south = Number(box.latitudeSouthI);
     const east = Number(box.longitudeEastI);
