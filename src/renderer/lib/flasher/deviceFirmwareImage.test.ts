@@ -190,6 +190,33 @@ describe('planDeviceFirmware — Meshtastic ESP32', () => {
     ).toBe('IMAGE_TOO_LARGE');
   });
 
+  it('accepts Heltec V4 images whose header reports 16 MiB flash', async () => {
+    const heltecV4 = board('meshtastic:heltec-v4');
+    const heltecV4Tft = board('meshtastic:heltec-v4-tft');
+    const image = makeEspImage({ chipId: S3, flashSizeCode: 4 });
+    await expect(
+      planDeviceFirmware(
+        { name: 'firmware-heltec-v4-2.7.15.567b8ea.factory.bin', bytes: image },
+        heltecV4,
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
+    await expect(
+      planDeviceFirmware(
+        { name: 'firmware-heltec-v4-tft-2.7.15.567b8ea.factory.bin', bytes: image },
+        heltecV4Tft,
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
+    await expect(
+      planDeviceFirmware(
+        {
+          name: 'Heltec_v4_companion_radio_ble-v1.9.1-abc1234-merged.bin',
+          bytes: image,
+        },
+        board('meshcore:heltec-v4'),
+      ),
+    ).resolves.toMatchObject({ kind: 'esp32' });
+  });
+
   it('refuses images larger than the board flash', async () => {
     expect(
       await codeOf(

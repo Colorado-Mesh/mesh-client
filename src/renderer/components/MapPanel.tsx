@@ -1276,6 +1276,7 @@ function OverviewMapPanel({
                 <Circle
                   center={[wp.latitude, wp.longitude]}
                   radius={wp.geofenceRadius}
+                  interactive={false}
                   pathOptions={{
                     color: '#38bdf8',
                     weight: 1,
@@ -1290,6 +1291,7 @@ function OverviewMapPanel({
                     [wp.boundingBox.south, wp.boundingBox.west],
                     [wp.boundingBox.north, wp.boundingBox.east],
                   ]}
+                  interactive={false}
                   pathOptions={{
                     color: '#38bdf8',
                     weight: 1,

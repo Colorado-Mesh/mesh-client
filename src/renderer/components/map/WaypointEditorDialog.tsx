@@ -7,6 +7,46 @@ import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import type { MeshWaypoint } from '@/renderer/lib/types';
 
 const NAME_MAX = 29;
+const LNG_MIN = -180;
+const LNG_MAX = 180;
+const LAT_MIN = -90;
+const LAT_MAX = 90;
+
+function clampLng(value: number): number {
+  return Math.min(LNG_MAX, Math.max(LNG_MIN, value));
+}
+
+function clampLat(value: number): number {
+  return Math.min(LAT_MAX, Math.max(LAT_MIN, value));
+}
+
+/** True when west/east and south/north are finite, in-range, and ordered. */
+export function isValidWaypointBoundingBox(box: {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}): boolean {
+  const { west, south, east, north } = box;
+  if (![west, south, east, north].every(Number.isFinite)) return false;
+  if (west < LNG_MIN || west > LNG_MAX || east < LNG_MIN || east > LNG_MAX) return false;
+  if (south < LAT_MIN || south > LAT_MAX || north < LAT_MIN || north > LAT_MAX) return false;
+  return west < east && south < north;
+}
+
+/** Default ±delta box around a point, clamped to geographic ranges (poles / antimeridian). */
+export function defaultBoundingBoxAround(
+  longitude: number,
+  latitude: number,
+  delta = 0.01,
+): { west: number; south: number; east: number; north: number } {
+  return {
+    west: clampLng(longitude - delta),
+    south: clampLat(latitude - delta),
+    east: clampLng(longitude + delta),
+    north: clampLat(latitude + delta),
+  };
+}
 
 export interface WaypointEditorDialogProps {
   open: boolean;
@@ -84,18 +124,22 @@ function WaypointEditorDialogForm({
       : 0,
   );
   const [useBoundingBox, setUseBoundingBox] = useState(() => initial.boundingBox != null);
-  const [boxWest, setBoxWest] = useState(
-    () => initial.boundingBox?.west ?? initial.longitude - 0.01,
-  );
-  const [boxSouth, setBoxSouth] = useState(
-    () => initial.boundingBox?.south ?? initial.latitude - 0.01,
-  );
-  const [boxEast, setBoxEast] = useState(
-    () => initial.boundingBox?.east ?? initial.longitude + 0.01,
-  );
-  const [boxNorth, setBoxNorth] = useState(
-    () => initial.boundingBox?.north ?? initial.latitude + 0.01,
-  );
+  const [boxWest, setBoxWest] = useState(() => {
+    if (initial.boundingBox) return clampLng(initial.boundingBox.west);
+    return defaultBoundingBoxAround(initial.longitude, initial.latitude).west;
+  });
+  const [boxSouth, setBoxSouth] = useState(() => {
+    if (initial.boundingBox) return clampLat(initial.boundingBox.south);
+    return defaultBoundingBoxAround(initial.longitude, initial.latitude).south;
+  });
+  const [boxEast, setBoxEast] = useState(() => {
+    if (initial.boundingBox) return clampLng(initial.boundingBox.east);
+    return defaultBoundingBoxAround(initial.longitude, initial.latitude).east;
+  });
+  const [boxNorth, setBoxNorth] = useState(() => {
+    if (initial.boundingBox) return clampLat(initial.boundingBox.north);
+    return defaultBoundingBoxAround(initial.longitude, initial.latitude).north;
+  });
   const [notifyOnEnter, setNotifyOnEnter] = useState(() => initial.notifyOnEnter === true);
   const [notifyOnExit, setNotifyOnExit] = useState(() => initial.notifyOnExit === true);
   const [notifyFavoritesOnly, setNotifyFavoritesOnly] = useState(
@@ -126,7 +170,15 @@ function WaypointEditorDialogForm({
       setError(t('mapPanel.waypointNameRequired'));
       return;
     }
-    if (useBoundingBox && !(boxWest < boxEast && boxSouth < boxNorth)) {
+    if (
+      useBoundingBox &&
+      !isValidWaypointBoundingBox({
+        west: boxWest,
+        south: boxSouth,
+        east: boxEast,
+        north: boxNorth,
+      })
+    ) {
       setError(t('mapPanel.waypointBoundingBoxInvalid'));
       return;
     }

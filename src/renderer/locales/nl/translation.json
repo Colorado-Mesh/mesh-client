@@ -8580,7 +8580,8 @@
       "settingsReset": "Full-flash kan instellingen, kanalen en sleutels wissen. Eerst backup exporteren.",
       "unverifiedBoard": "Radio niet herkend — boardkeuze ongecontroleerd. Verkeerd board kan apparaat unbootable maken."
     },
-    "warningsTitle": "Vóór het flashen"
+    "warningsTitle": "Vóór het flashen",
+    "boardAmbiguousHint": "Deze radio meldt {{reported}}, wat overeenkomt met meer dan één printplaat. Bevestig de OLED- of TFT-variant voordat u gaat flashen."
   },
   "scheduledBroadcasts": {
     "title": "Geplande uitzendingen",

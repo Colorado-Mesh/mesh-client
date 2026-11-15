@@ -8660,6 +8660,7 @@
     "boardPlaceholder": "Select your board…",
     "boardLocked": "Detected from the connected radio: {{board}}",
     "boardManualHint": "The radio was not identified automatically. Pick your board manually.",
+    "boardAmbiguousHint": "This radio reports {{reported}}, which matches more than one board. Confirm the OLED or TFT variant before flashing.",
     "boardUnsupported": "The connected radio reports “{{reported}}”, which is not a supported flash target. Flashing is disabled.",
     "firmwareFile": "Firmware file",
     "fileHint": {

@@ -8724,7 +8724,8 @@
       "settingsReset": "Full-flash może skasować ustawienia, kanały i klucze. Najpierw eksport kopii.",
       "unverifiedBoard": "Radio nie rozpoznane — wybór płytki niezweryfikowany. Zła płytka może zablokować urządzenie."
     },
-    "warningsTitle": "Przed flashowaniem"
+    "warningsTitle": "Przed flashowaniem",
+    "boardAmbiguousHint": "To radio zgłasza {{reported}}, co odpowiada więcej niż jednej płycie. Przed programowaniem potwierdź wariant OLED lub TFT."
   },
   "scheduledBroadcasts": {
     "title": "Zaplanowane transmisje",

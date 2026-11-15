@@ -70,9 +70,25 @@ export function validateMqttPublishWaypointArgs(args: unknown): void {
     if (typeof w.boundingBox !== 'object')
       throw new Error('mqtt:publishWaypoint: waypoint.boundingBox invalid');
     const box = w.boundingBox as Record<string, unknown>;
-    for (const key of ['longitudeWestI', 'latitudeSouthI', 'longitudeEastI', 'latitudeNorthI']) {
-      if (!Number.isFinite(Number(box[key])))
-        throw new Error(`mqtt:publishWaypoint: waypoint.boundingBox.${key} invalid`);
+    // Wire coords are degrees × 1e7 (same scale as Position / Waypoint lat/lon).
+    const DEG_SCALE = 1e7;
+    const west = Number(box.longitudeWestI);
+    const south = Number(box.latitudeSouthI);
+    const east = Number(box.longitudeEastI);
+    const north = Number(box.latitudeNorthI);
+    const lonOk = (v: number) =>
+      Number.isFinite(v) && v >= -180 * DEG_SCALE && v <= 180 * DEG_SCALE;
+    const latOk = (v: number) => Number.isFinite(v) && v >= -90 * DEG_SCALE && v <= 90 * DEG_SCALE;
+    if (!lonOk(west))
+      throw new Error('mqtt:publishWaypoint: waypoint.boundingBox.longitudeWestI invalid');
+    if (!latOk(south))
+      throw new Error('mqtt:publishWaypoint: waypoint.boundingBox.latitudeSouthI invalid');
+    if (!lonOk(east))
+      throw new Error('mqtt:publishWaypoint: waypoint.boundingBox.longitudeEastI invalid');
+    if (!latOk(north))
+      throw new Error('mqtt:publishWaypoint: waypoint.boundingBox.latitudeNorthI invalid');
+    if (!(west < east && south < north)) {
+      throw new Error('mqtt:publishWaypoint: waypoint.boundingBox ordering invalid');
     }
   }
   for (const key of ['notifyOnEnter', 'notifyOnExit', 'notifyFavoritesOnly'] as const) {

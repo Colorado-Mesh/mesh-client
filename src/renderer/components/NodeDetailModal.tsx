@@ -2570,6 +2570,9 @@ export default function NodeDetailModal({
                     setActionStatus(t('nodeDetailModal.forgetAdvertDone'));
                   })
                   .catch((e: unknown) => {
+                    console.warn(
+                      '[NodeDetailModal] forgetContactAdvert failed ' + errLikeToLogString(e),
+                    );
                     setActionStatus(
                       e instanceof Error ? e.message : t('nodeDetailModal.forgetAdvertFailed'),
                     );

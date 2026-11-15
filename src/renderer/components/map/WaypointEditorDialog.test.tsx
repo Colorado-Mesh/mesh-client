@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  defaultBoundingBoxAround,
   expireHoursFromUnix,
+  isValidWaypointBoundingBox,
   WaypointEditorDialog,
 } from '@/renderer/components/map/WaypointEditorDialog';
 
@@ -109,5 +111,40 @@ describe('WaypointEditorDialog', () => {
       notifyOnExit: false,
       notifyFavoritesOnly: false,
     });
+  });
+
+  it('rejects invalid bounding boxes and accepts boundary coordinates', async () => {
+    expect(isValidWaypointBoundingBox({ west: 10, south: 20, east: 10, north: 21 })).toBe(false);
+    expect(isValidWaypointBoundingBox({ west: -181, south: 0, east: -170, north: 1 })).toBe(false);
+    expect(isValidWaypointBoundingBox({ west: -180, south: -90, east: 180, north: 90 })).toBe(true);
+
+    const nearPole = defaultBoundingBoxAround(0, 89.995);
+    expect(nearPole.north).toBeLessThanOrEqual(90);
+    expect(nearPole.south).toBeLessThan(nearPole.north);
+    expect(isValidWaypointBoundingBox(nearPole)).toBe(true);
+
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <WaypointEditorDialog
+        open
+        mode="create"
+        myNodeNum={9}
+        initial={{
+          latitude: 40,
+          longitude: -105,
+          boundingBox: { west: 10, south: 20, east: 5, north: 21 },
+        }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('mapPanel.waypointNameLabel'), {
+      target: { value: 'Bad box' },
+    });
+    fireEvent.click(screen.getByLabelText('mapPanel.waypointSave'));
+    await waitFor(() => {
+      expect(screen.getByText('mapPanel.waypointBoundingBoxInvalid')).toBeTruthy();
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

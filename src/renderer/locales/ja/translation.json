@@ -8580,7 +8580,8 @@
       "settingsReset": "full-flash は設定・チャンネル・鍵を消す場合があります。先にバックアップを。",
       "unverifiedBoard": "無線機未識別 — ボード選択未検証。誤ったボードは起動不能にする可能性。"
     },
-    "warningsTitle": "フラッシュ前"
+    "warningsTitle": "フラッシュ前",
+    "boardAmbiguousHint": "このラジオは{{reported}}を報告しており、これは複数のボードに一致します。フラッシュする前に、OLEDまたはTFTのバリアントを確認してください。"
   },
   "scheduledBroadcasts": {
     "title": "スケジュールされたブロードキャスト",

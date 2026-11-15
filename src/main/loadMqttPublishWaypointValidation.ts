@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { validateMqttPublishWaypointArgs as ValidateFn } from './mqttPublishWaypointValidation';
+import { validateMqttPublishWaypointArgs as validateMqttPublishWaypointArgsImpl } from './mqttPublishWaypointValidation';
 
 const requireFromHere = createRequire(__filename);
 
@@ -11,16 +12,21 @@ let cached: ValidateMqttPublishWaypointArgs | undefined;
 
 /**
  * Production loads sibling `mqtt-publish-waypoint-validation.js` (out of measured index.js).
- * Vitest loads the TypeScript source; `process.env.VITEST` is defined away in prod esbuild.
+ * Vitest uses the TypeScript binding via a static import; `process.env.VITEST` is defined away
+ * in prod esbuild so that import is tree-shaken out of measured `index.js` (no extensionless
+ * or `.ts` require on Node 22.15–22.17).
  */
 export function loadValidateMqttPublishWaypointArgs(): ValidateMqttPublishWaypointArgs {
   if (cached) return cached;
-  const mod = (
-    process.env.VITEST
-      ? requireFromHere('./mqttPublishWaypointValidation')
-      : requireFromHere(path.join(__dirname, 'mqtt-publish-waypoint-validation.js'))
-  ) as { validateMqttPublishWaypointArgs: ValidateMqttPublishWaypointArgs };
-  cached = mod.validateMqttPublishWaypointArgs;
+  if (process.env.VITEST) {
+    cached = validateMqttPublishWaypointArgsImpl;
+    return cached;
+  }
+  cached = (
+    requireFromHere(path.join(__dirname, 'mqtt-publish-waypoint-validation.js')) as {
+      validateMqttPublishWaypointArgs: ValidateMqttPublishWaypointArgs;
+    }
+  ).validateMqttPublishWaypointArgs;
   return cached;
 }
 

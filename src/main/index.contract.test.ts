@@ -217,6 +217,7 @@ describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
     );
     expect(validationSource).toContain('waypoint.geofenceRadius invalid');
     expect(validationSource).toContain('waypoint.boundingBox invalid');
+    expect(validationSource).toContain('waypoint.boundingBox ordering invalid');
   });
 });
 

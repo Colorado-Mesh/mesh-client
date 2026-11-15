@@ -8665,7 +8665,8 @@
       "settingsReset": "Úplný flash obraz může smazat nastavení, kanály a klíče. Nejdříve exportujte zálohu.",
       "unverifiedBoard": "Rádio nebylo automaticky identifikováno — volba desky není ověřena. Špatná deska může zařízení znefunkčnit."
     },
-    "warningsTitle": "Před flashováním"
+    "warningsTitle": "Před flashováním",
+    "boardAmbiguousHint": "Toto rádio hlásí {{reported}}, což odpovídá více než jedné desce. Před nahráním firmwaru potvrďte variantu OLED nebo TFT."
   },
   "scheduledBroadcasts": {
     "title": "Plánované vysílání",

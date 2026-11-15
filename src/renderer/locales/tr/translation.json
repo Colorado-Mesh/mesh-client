@@ -8580,7 +8580,8 @@
       "settingsReset": "Full-flash ayarları, kanalları ve anahtarları silebilir. Önce yedek alın.",
       "unverifiedBoard": "Radyo tanımlanmadı — kart seçimi doğrulanmadı. Yanlış kart cihazı kullanılamaz yapabilir."
     },
-    "warningsTitle": "Flaşlamadan önce"
+    "warningsTitle": "Flaşlamadan önce",
+    "boardAmbiguousHint": "Bu radyo, birden fazla karta uyan {{reported}} değerini bildiriyor. Yazılım yüklemeden önce OLED veya TFT varyantını onaylayın."
   },
   "scheduledBroadcasts": {
     "title": "Planlanmış yayınlar",

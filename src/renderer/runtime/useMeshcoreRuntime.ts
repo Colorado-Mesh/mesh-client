@@ -173,7 +173,10 @@ import {
   setMeshcoreRadioMaxContacts,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
-import { armMeshcoreDmAckPending } from '../lib/meshcore/meshcoreDmAckRuntime';
+import {
+  armMeshcoreDmAckPending,
+  syncMeshcoreDmAckToMessageStore,
+} from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -5189,8 +5192,21 @@ export function useMeshcoreRuntime() {
   });
 
   const forgetContactAdvert = useCallback(async (nodeId: number) => {
-    await window.electronAPI.db.forgetMeshcoreContactAdvert(nodeId);
     const identityId = meshcoreIdentityIdRef.current;
+    const setupGen = meshcoreSetupGenerationRef.current;
+    const pubKeyMap = pubKeyMapRef.current;
+    const pubKey = pubKeyMap.get(nodeId);
+    const conn = connRef.current;
+    await window.electronAPI.db.forgetMeshcoreContactAdvert(nodeId);
+    // Drop mutations if the radio/session changed while the DB call was in flight.
+    if (
+      meshcoreSetupGenerationRef.current !== setupGen ||
+      meshcoreIdentityIdRef.current !== identityId ||
+      pubKeyMapRef.current !== pubKeyMap ||
+      connRef.current !== conn
+    ) {
+      return;
+    }
     if (identityId) {
       useNodeStore.setState((s) => {
         const byId = s.nodes[identityId] ?? {};
@@ -5207,11 +5223,24 @@ export function useMeshcoreRuntime() {
         };
       });
     }
-    const pubKey = pubKeyMapRef.current.get(nodeId);
-    const conn = connRef.current;
+    // MeshNode.last_heard is a number; 0 is the cleared value adapters use when absent.
+    setNodes((prev) => {
+      const existing = prev.get(nodeId);
+      if (!existing) return prev;
+      const next = new Map(prev);
+      next.set(nodeId, { ...existing, last_heard: 0 });
+      return next;
+    });
     if (pubKey && conn) {
       try {
         const contacts = await conn.getContacts();
+        if (
+          meshcoreSetupGenerationRef.current !== setupGen ||
+          meshcoreIdentityIdRef.current !== identityId ||
+          connRef.current !== conn
+        ) {
+          return;
+        }
         const contact = contacts.find((c) => {
           const key = c.publicKey;
           if (key?.length !== pubKey.length) return false;
@@ -5255,6 +5284,10 @@ export function useMeshcoreRuntime() {
           : m,
       ),
     );
+    const identityId = meshcoreIdentityIdRef.current;
+    if (identityId) {
+      syncMeshcoreDmAckToMessageStore(identityId, ackKey, myNodeNumRef.current, 'failed');
+    }
     void window.electronAPI.db.updateMeshcoreMessageStatus(ackKey, 'failed').catch((e: unknown) => {
       console.warn(
         '[useMeshcoreRuntime] updateMeshcoreMessageStatus (cancel) error ' + errLikeToLogString(e),

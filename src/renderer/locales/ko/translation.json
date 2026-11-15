@@ -8580,7 +8580,8 @@
       "settingsReset": "full-flash는 설정·채널·키를 지울 수 있습니다. 먼저 백업하세요.",
       "unverifiedBoard": "무선기 미식별 — 보드 선택 미검증. 잘못된 보드는 기기를 사용 불가로 만들 수 있음."
     },
-    "warningsTitle": "플래시 전"
+    "warningsTitle": "플래시 전",
+    "boardAmbiguousHint": "이 라디오는 {{reported}}을(를) 보고하며, 이는 둘 이상의 보드와 일치합니다. 플래싱하기 전에 OLED 또는 TFT 변형을 확인하세요."
   },
   "scheduledBroadcasts": {
     "title": "예정된 방송",

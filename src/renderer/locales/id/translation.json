@@ -8580,7 +8580,8 @@
       "settingsReset": "Full-flash dapat menghapus pengaturan, saluran, kunci. Ekspor cadangan dulu.",
       "unverifiedBoard": "Radio tidak teridentifikasi — pilihan papan belum diverifikasi. Papan salah bisa brick perangkat."
     },
-    "warningsTitle": "Sebelum flash"
+    "warningsTitle": "Sebelum flash",
+    "boardAmbiguousHint": "Radio ini melaporkan {{reported}}, yang cocok dengan lebih dari satu board. Konfirmasikan varian OLED atau TFT sebelum melakukan flashing."
   },
   "scheduledBroadcasts": {
     "title": "Siaran terjadwal",

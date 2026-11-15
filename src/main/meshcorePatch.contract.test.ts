@@ -11,7 +11,8 @@ const PATCH = readFileSync(
 describe('meshcore.js patch — firmware-ahead push codes', () => {
   it('leaves CONTROL_DATA (0x8E) to upstream PushCodes.ControlData (1.15.1+)', () => {
     // meshcore.js 1.15.1 handles ControlData natively; the patch must not re-add a silent drop.
-    expect(PATCH).toContain('Constants.PushCodes.ControlData');
+    // Require a unified-diff context line (leading space) so deleting the branch fails this check.
+    expect(PATCH).toMatch(/^ .*Constants\.PushCodes\.ControlData/m);
     expect(PATCH).not.toMatch(/responseCode === 0x8E[\s\S]*drop silently/);
   });
 

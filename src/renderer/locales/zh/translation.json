@@ -8580,7 +8580,8 @@
       "settingsReset": "完整刷写镜像可能清除设置、信道和密钥。请先导出备份。",
       "unverifiedBoard": "无线电未自动识别 — 板型选择未验证。错误板型可能导致无法启动。"
     },
-    "warningsTitle": "刷写前"
+    "warningsTitle": "刷写前",
+    "boardAmbiguousHint": "此无线电报告{{reported}}，它与多个板匹配。在刷写之前，请确认是 OLED 还是 TFT 型号。"
   },
   "scheduledBroadcasts": {
     "title": "定时广播",

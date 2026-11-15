@@ -8580,7 +8580,8 @@
       "settingsReset": "Imagem full-flash pode apagar configurações, canais e chaves. Exporte backup antes.",
       "unverifiedBoard": "Rádio não identificado — escolha de placa não verificada. Placa errada pode inutilizar."
     },
-    "warningsTitle": "Antes do flash"
+    "warningsTitle": "Antes do flash",
+    "boardAmbiguousHint": "Este rádio informa {{reported}}, o que corresponde a mais de uma placa. Confirme a variante OLED ou TFT antes de fazer o flashing."
   },
   "scheduledBroadcasts": {
     "title": "Transmissões programadas",

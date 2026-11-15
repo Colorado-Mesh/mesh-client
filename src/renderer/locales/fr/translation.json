@@ -8580,7 +8580,8 @@
       "settingsReset": "Image full-flash peut effacer paramètres, canaux et clés. Exportez d’abord une sauvegarde.",
       "unverifiedBoard": "Radio non identifiée — choix de carte non vérifié. Mauvaise carte peut rendre l’appareil inutilisable."
     },
-    "warningsTitle": "Avant de flasher"
+    "warningsTitle": "Avant de flasher",
+    "boardAmbiguousHint": "Cette radio indique {{reported}}, ce qui correspond à plus d’une carte. Confirmez la variante OLED ou TFT avant de procéder au flashage."
   },
   "scheduledBroadcasts": {
     "title": "Diffusions programmées",

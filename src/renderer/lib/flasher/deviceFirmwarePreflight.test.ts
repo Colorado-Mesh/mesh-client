@@ -75,6 +75,39 @@ describe('evaluateFlashPreflight', () => {
     expect(result.warnings).toContain('unverifiedBoard');
   });
 
+  it('requires a verified Heltec V4 variant when detection is ambiguous', () => {
+    const oled = getDeviceFlashBoardById('meshtastic:heltec-v4');
+    const tft = getDeviceFlashBoardById('meshtastic:heltec-v4-tft');
+    if (!oled || !tft) throw new Error('missing Heltec V4 boards');
+    const ambiguous = {
+      status: 'ambiguous' as const,
+      reported: 'HELTEC_V4',
+      candidates: [oled, tft],
+    };
+    expect(
+      evaluateFlashPreflight({
+        ...ready,
+        detection: ambiguous,
+        selectedBoard: null,
+      }).blockers,
+    ).toContain('noBoard');
+    expect(
+      evaluateFlashPreflight({
+        ...ready,
+        detection: ambiguous,
+        selectedBoard: rak,
+      }).blockers,
+    ).toContain('boardMismatch');
+    const ok = evaluateFlashPreflight({
+      ...ready,
+      detection: ambiguous,
+      selectedBoard: oled,
+    });
+    expect(ok.blockers).not.toContain('boardMismatch');
+    expect(ok.blockers).not.toContain('noBoard');
+    expect(ok.warnings).toContain('unverifiedBoard');
+  });
+
   it('blocks while the app holds the USB serial connection', () => {
     const result = evaluateFlashPreflight({
       ...ready,
