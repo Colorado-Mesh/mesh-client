@@ -711,14 +711,31 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('uses short TCP timeout for post-connect self telemetry', () => {
+  it('uses short TCP timeout for post-connect companion self telemetry', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
     );
     expect(RUNTIME_SOURCE).not.toMatch(
       /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
-    expect(RUNTIME_SOURCE).toMatch(/replyWaitCapMs:\s*opts\.timeoutMs/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]*?requestSelfTelemetryMeshCoreRef/,
+    );
+    expect(RUNTIME_SOURCE).toContain('runMeshcoreSelfTelemetryRequest');
+    // Post-connect must not use the 36-byte repeater telemetry path for self GPS.
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]{0,600}requestTelemetryMeshCoreRef/,
+    );
+  });
+
+  it('discards self telemetry replies after setup generation changes', () => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'requestSelfTelemetry');
+    expect(body).toMatch(
+      /const setupGen = meshcoreSetupGenerationRef\.current[\s\S]*?await runMeshcoreSelfTelemetryRequest/,
+    );
+    expect(body).toMatch(
+      /await runMeshcoreSelfTelemetryRequest[\s\S]*?meshcoreSetupGenerationRef\.current !== setupGen[\s\S]*?return;[\s\S]*?applyMeshcoreTelemetryLpp/,
+    );
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
@@ -800,6 +817,12 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(tcpGuardIdx).toBeGreaterThan(-1);
     expect(openHopClearIdx).toBeLessThan(tcpGuardIdx);
     expect(bridgeClearIdx).toBeLessThan(tcpGuardIdx);
+  });
+
+  it('clears MeshCore radio self position before each transport open', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain("clearRadioSelfPosition('meshcore')");
+    expect(prepareBody).toContain('refreshOurPositionGenerationRef.current += 1');
   });
 
   it('clears connection params on manual prepare and latches provisional params before open', () => {

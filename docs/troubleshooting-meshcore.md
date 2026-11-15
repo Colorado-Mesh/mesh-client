@@ -20,7 +20,7 @@ MeshCore-specific problems. For general connection, Bluetooth, USB serial, MQTT,
 
 **Symptoms**: After TCP connect to pyMC/OpenHop, the header shows **Fetching queued messages…** or **Message sync paused while the radio is busy…** for one to two minutes; Chat backlog arrives slowly; developer bundle may show `ui.waitingMessagesDrainDeferred: true` and log lines like `requestTelemetry error timeout` ~120s after connect.
 
-**Cause**: Post-connect self telemetry (optional altitude fetch) used to run before proactive MsgWaiting drain and could hold the companion RF lane for up to **120s**. Silent bulk `getWaitingMessages` on TCP also used a **45s** timeout before falling back to one-at-a-time `syncNextMessage`. On busy meshes the companion queue can keep growing during init RPCs (contacts/channels dump, autoadd, MQTT export) before drain starts.
+**Cause**: Post-connect companion self telemetry (Cayenne LPP for GPS/altitude) used to run before proactive MsgWaiting drain and could hold the companion RF lane for up to **120s**. Silent bulk `getWaitingMessages` on TCP also used a **45s** timeout before falling back to one-at-a-time `syncNextMessage`. On busy meshes the companion queue can keep growing during init RPCs (contacts/channels dump, autoadd, MQTT export) before drain starts.
 
 **Fix**:
 

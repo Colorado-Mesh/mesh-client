@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildSendBinaryReqFrame,
   buildSendLoginFrame,
+  buildSendSelfTelemetryReqFrame,
   buildSendStatusReqFrame,
   buildSendTelemetryReqFrame,
   MESHCORE_PUBKEY_PREFIX_LEN,
@@ -179,6 +180,11 @@ describe('frame builders', () => {
     expect(frame[0]).toBe(MC_CMD_SEND_TELEMETRY_REQ);
     expect(frame.subarray(1, 4)).toEqual(new Uint8Array([0, 0, 0]));
     expect(frame.subarray(4)).toEqual(key);
+  });
+
+  it('buildSendSelfTelemetryReqFrame is cmd + 3 reserved zeros (len 4)', () => {
+    const frame = buildSendSelfTelemetryReqFrame();
+    expect(frame).toEqual(new Uint8Array([MC_CMD_SEND_TELEMETRY_REQ, 0, 0, 0]));
   });
 
   it('buildSendBinaryReqFrame appends request payload after the key', () => {
