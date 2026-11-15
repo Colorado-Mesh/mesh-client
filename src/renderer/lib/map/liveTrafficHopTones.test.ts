@@ -20,6 +20,7 @@ import {
   readLiveTrafficHopTonesEnabled,
   resetLiveTrafficHopTonesForTests,
   setLiveTrafficHopTonesEnabled,
+  stopActiveLiveTrafficHopTones,
   warmLiveTrafficHopTones,
 } from './liveTrafficHopTones';
 
@@ -267,5 +268,38 @@ describe('liveTrafficHopTones', () => {
     await Promise.resolve();
     // Two partials per admitted tone.
     expect(createOscillator).toHaveBeenCalledTimes(MAX_CONCURRENT_TONES * 2);
+  });
+
+  it('stopActiveLiveTrafficHopTones stops scheduled oscillators', () => {
+    const stop = vi.fn();
+    const disconnect = vi.fn();
+    const ctx = {
+      state: 'running',
+      currentTime: 0,
+      destination: {},
+      createOscillator: vi.fn(() => ({
+        type: 'sine',
+        frequency: { value: 0 },
+        connect: vi.fn(),
+        disconnect,
+        start: vi.fn(),
+        stop,
+        onended: null as (() => void) | null,
+      })),
+      createGain: vi.fn(() => ({
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+    };
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function MockAudioContext() {
+        return ctx;
+      }),
+    );
+    playLiveTrafficHopTone({ frequencyHz: 440, durationMs: 500 });
+    stopActiveLiveTrafficHopTones();
+    expect(stop).toHaveBeenCalled();
   });
 });

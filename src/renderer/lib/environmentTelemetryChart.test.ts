@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY } from '@/shared/environmentTelemetry';
+
 import {
   buildEnvironmentChartRows,
   chartRowsHaveField,
   defaultEnvironmentChartNode,
   ENV_CHART_ALL_NODES,
   environmentTelemetryCsvHeaders,
+  selectEnvironmentChartOverlayNodeIds,
 } from './environmentTelemetryChart';
 
 describe('environmentTelemetryChart', () => {
@@ -73,6 +76,37 @@ describe('environmentTelemetryChart', () => {
     expect(chartRowsHaveField(rows, 'pmTemperature')).toBe(true);
     expect(chartRowsHaveField(rows, 'temperature')).toBe(false);
     expect(chartRowsHaveField(rows, 'mcuTemperature')).toBe(false);
+  });
+
+  it('caps all-nodes overlay to newest reporting nodes', () => {
+    const ids = Array.from(
+      { length: ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY + 5 },
+      (_, i) => i + 1,
+    );
+    const lastHeard = new Map(ids.map((id, i) => [id, i * 1000]));
+    const picked = selectEnvironmentChartOverlayNodeIds(
+      ids,
+      lastHeard,
+      ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY,
+    );
+    expect(picked).toHaveLength(ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY);
+    expect(picked[0]).toBe(ids[ids.length - 1]);
+  });
+
+  it('downsamples dense all-nodes chart rows', () => {
+    const series = new Map([
+      [
+        1,
+        Array.from({ length: 4000 }, (_, i) => ({
+          t: i * 1000,
+          reading: { temperature: i },
+          source: 'rf' as const,
+        })),
+      ],
+    ]);
+    const rows = buildEnvironmentChartRows(series, ENV_CHART_ALL_NODES, 0, false, true);
+    expect(rows.length).toBeLessThan(2000);
+    expect(rows.at(-1)?.t).toBe(3_999_000);
   });
 
   it('includes every reading field in CSV headers', () => {

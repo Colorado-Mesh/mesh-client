@@ -36,6 +36,21 @@ describe('validateMqttPublishWaypointArgs bounding box', () => {
     }).not.toThrow();
   });
 
+  it('rejects waypoint latitudeI/longitudeI outside ±90° / ±180°', () => {
+    expect(() => {
+      validateMqttPublishWaypointArgs({
+        ...baseArgs(),
+        waypoint: { ...baseArgs().waypoint, latitudeI: 91 * DEG, longitudeI: 0 },
+      });
+    }).toThrow(/latitudeI out of range/);
+    expect(() => {
+      validateMqttPublishWaypointArgs({
+        ...baseArgs(),
+        waypoint: { ...baseArgs().waypoint, latitudeI: 0, longitudeI: 181 * DEG },
+      });
+    }).toThrow(/longitudeI out of range/);
+  });
+
   it('rejects coordinates outside lon ±180 / lat ±90 and unordered boxes', () => {
     expect(() => {
       validateMqttPublishWaypointArgs(

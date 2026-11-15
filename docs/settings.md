@@ -41,23 +41,23 @@ Pin limit and hints use the launcher copy (**Up to {{max}} panels can be pinned*
 
 One-liners for each **App Settings** collapsible (and the MECP / Translation / AI blocks mounted with them):
 
-| Group                         | What it is for                                                                         |
-| ----------------------------- | -------------------------------------------------------------------------------------- |
-| **Protocols**                 | Enable or hide Meshtastic, MeshCore, and Reticulum on the switcher                     |
-| **Log panel**                 | Show the live log stream on the right                                                  |
-| **Flood Advert**              | MeshCore scheduled flood / zero-hop advert while connected                             |
-| **GPS / Location**            | Share my location, refresh interval, coordinate format, saved locations                |
-| **Map & Node Filtering**      | Distance filter, hide MQTT-only, movement paths, position history window               |
-| **Retention & limits**        | Startup prune/caps for nodes, contacts, messages, RRC history, destinations            |
-| **Window**                    | Close to system tray; keep computer awake while connected                              |
-| **Updates**                   | Download updates automatically                                                         |
-| **Appearance**                | Theme, colors, font size, reduce motion, 24-hour time, compact messages                |
-| **Notifications**             | Sound, chat policy, notification tones, operational alerts, RRC unread                 |
-| **Translation**               | Offline packs and optional LibreTranslate                                              |
-| **AI conversation summaries** | Opt-in Catch up engines (off by default); see [Catch up](ai-catch-up.md)               |
-| **Data Management**           | Export / import-merge database; support bundles for GitHub or developer                |
-| **MECP**                      | Chat buttons, Incident Command station, blocked senders, audit export, bridge          |
-| **Danger Zone**               | Destructive clears (diagnostics, GPS, nodes, messages, MeshCore/Reticulum, everything) |
+| Group                         | What it is for                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Protocols**                 | Enable or hide Meshtastic, MeshCore, and Reticulum on the switcher                                                                         |
+| **Log panel**                 | Show the live log stream on the right                                                                                                      |
+| **Flood Advert**              | MeshCore scheduled flood / zero-hop advert while connected                                                                                 |
+| **GPS / Location**            | Share my location, refresh interval, coordinate format, saved locations                                                                    |
+| **Map & Node Filtering**      | Distance filter, hide MQTT-only, movement paths, position history window                                                                   |
+| **Retention & limits**        | Startup prune/caps for nodes, contacts, messages, RRC history, destinations                                                                |
+| **Window**                    | Close to system tray; keep computer awake while connected                                                                                  |
+| **Updates**                   | Download updates automatically                                                                                                             |
+| **Appearance**                | Theme, colors, font size, reduce motion, 24-hour time, compact messages                                                                    |
+| **Notifications**             | Sound, chat policy, notification tones, operational alerts, RRC unread                                                                     |
+| **Translation**               | Offline packs and optional LibreTranslate                                                                                                  |
+| **AI conversation summaries** | Opt-in Catch up engines (off by default); see [Catch up](ai-catch-up.md)                                                                   |
+| **Data Management**           | Export / import-merge database; support bundles for GitHub or developer                                                                    |
+| **MECP**                      | Chat buttons, Incident Command station, blocked senders, audit export, bridge                                                              |
+| **Danger Zone**               | Destructive clears (diagnostics, GPS, nodes, messages, environment sensor history, delete-stale-nodes age, MeshCore/Reticulum, everything) |
 
 ---
 

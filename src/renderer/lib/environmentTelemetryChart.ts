@@ -2,6 +2,7 @@
  * Build Device → Telemetry chart rows from persisted environment history.
  */
 import {
+  ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS,
   ENVIRONMENT_READING_FIELDS,
   ENVIRONMENT_TELEMETRY_CHART_WINDOWS,
   type EnvironmentReading,
@@ -14,6 +15,30 @@ import { formatDisplayTime } from './formatDisplayTime';
 
 export const ENV_CHART_ALL_NODES = 'all' as const;
 export type EnvChartNodeSelection = number | typeof ENV_CHART_ALL_NODES;
+
+export { ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY as ENV_CHART_ALL_NODES_MAX_OVERLAY } from '@/shared/environmentTelemetry';
+
+/** Newest-reporting nodes kept when “All nodes” would exceed the overlay cap. */
+export function selectEnvironmentChartOverlayNodeIds(
+  nodeIds: readonly number[],
+  lastHeardByNode: ReadonlyMap<number, number>,
+  maxOverlay: number,
+): number[] {
+  if (nodeIds.length <= maxOverlay) return [...nodeIds];
+  return [...nodeIds]
+    .sort((a, b) => (lastHeardByNode.get(b) ?? 0) - (lastHeardByNode.get(a) ?? 0))
+    .slice(0, maxOverlay);
+}
+
+function downsampleEnvironmentChartRows(rows: EnvChartRow[], maxRows: number): EnvChartRow[] {
+  if (rows.length <= maxRows) return rows;
+  const step = Math.ceil(rows.length / maxRows);
+  const out: EnvChartRow[] = [];
+  for (let i = 0; i < rows.length; i += step) out.push(rows[i]);
+  const last = rows[rows.length - 1];
+  if (out[out.length - 1] !== last) out.push(last);
+  return out;
+}
 
 /** Per-node metric key when plotting multiple nodes on one chart. */
 export function envChartMetricKey(field: string, nodeNum: number, allNodes: boolean): string {
@@ -99,7 +124,7 @@ export function buildEnvironmentChartRows(
     }
   }
   points.sort((a, b) => a.t - b.t || a.nodeNum - b.nodeNum);
-  return points.map(({ t, nodeNum, reading }) => {
+  const rows = points.map(({ t, nodeNum, reading }) => {
     const keyFor = (base: string) => envChartMetricKey(base, nodeNum, allNodes);
     const row: EnvChartRow = {
       t,
@@ -119,6 +144,10 @@ export function buildEnvironmentChartRows(
     expandArrays(reading, row, useFahrenheit, keyFor);
     return row;
   });
+  if (allNodes && rows.length > ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS) {
+    return downsampleEnvironmentChartRows(rows, ENVIRONMENT_CHART_ALL_NODES_MAX_ROWS);
+  }
+  return rows;
 }
 
 /** True when any row has `field` or a per-node `field__<id>` value. */

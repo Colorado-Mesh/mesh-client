@@ -301,6 +301,22 @@ describe('environmentTelemetryStore', () => {
     expect(series.at(-1)?.reading.co2).toBe(9999);
   });
 
+  it('keeps in-memory history when clearEnvironmentTelemetry IPC fails', async () => {
+    useEnvironmentTelemetryStore
+      .getState()
+      .recordReading('meshtastic', ID_MT, 3, { co2: 12 }, 'rf');
+    vi.mocked(window.electronAPI.db.clearEnvironmentTelemetry).mockRejectedValueOnce(
+      new Error('db locked'),
+    );
+    await expect(useEnvironmentTelemetryStore.getState().clearHistory()).rejects.toThrow(
+      'db locked',
+    );
+    expect(useEnvironmentTelemetryStore.getState().history.size).toBeGreaterThan(0);
+    expect(
+      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', ID_MT, 3),
+    ).toHaveLength(1);
+  });
+
   it('discards loadFromDb results when clearHistory runs during the read', async () => {
     const now = Date.now();
     let resolve: (rows: EnvironmentTelemetryRow[]) => void = () => {};

@@ -20,9 +20,11 @@ import {
   chartRowsHaveField,
   defaultEnvironmentChartNode,
   ENV_CHART_ALL_NODES,
+  ENV_CHART_ALL_NODES_MAX_OVERLAY,
   envChartMetricKey,
   type EnvChartNodeSelection,
   environmentChartWindowMs,
+  selectEnvironmentChartOverlayNodeIds,
 } from '@/renderer/lib/environmentTelemetryChart';
 import { formatDisplayDateTime, formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { resolveIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
@@ -30,6 +32,7 @@ import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { MeshNode } from '@/renderer/lib/types';
 import {
+  type EnvironmentHistoryPoint,
   selectEnvironmentNodes,
   useEnvironmentTelemetryStore,
 } from '@/renderer/stores/environmentTelemetryStore';
@@ -163,10 +166,26 @@ export default function EnvironmentTelemetryCharts({
 
   const allNodes = activeSelection === ENV_CHART_ALL_NODES;
   const seriesNodeIds = useMemo(() => {
-    if (allNodes) return historyNodeIds;
+    if (allNodes) {
+      return selectEnvironmentChartOverlayNodeIds(
+        historyNodeIds,
+        lastHeard,
+        ENV_CHART_ALL_NODES_MAX_OVERLAY,
+      );
+    }
     if (typeof activeSelection === 'number') return [activeSelection];
     return [];
-  }, [allNodes, historyNodeIds, activeSelection]);
+  }, [allNodes, historyNodeIds, lastHeard, activeSelection]);
+
+  const chartSeriesByNode = useMemo(() => {
+    if (!allNodes) return seriesByNode;
+    const keep = new Set(seriesNodeIds);
+    const filtered = new Map<number, readonly EnvironmentHistoryPoint[]>();
+    for (const [id, series] of seriesByNode) {
+      if (keep.has(id)) filtered.set(id, series);
+    }
+    return filtered;
+  }, [allNodes, seriesByNode, seriesNodeIds]);
 
   const sinceMs = (nowMs > 0 ? nowMs : 0) - environmentChartWindowMs(windowId);
   const multiDayWindow = windowId === '7d';
@@ -175,13 +194,13 @@ export default function EnvironmentTelemetryCharts({
       activeSelection == null
         ? []
         : buildEnvironmentChartRows(
-            seriesByNode,
+            chartSeriesByNode,
             activeSelection,
             sinceMs,
             useFahrenheit,
             use24HourTime,
           ),
-    [seriesByNode, activeSelection, sinceMs, useFahrenheit, use24HourTime],
+    [chartSeriesByNode, activeSelection, sinceMs, useFahrenheit, use24HourTime],
   );
 
   const hasAnyEnvHistory = historyNodeIds.length > 0;

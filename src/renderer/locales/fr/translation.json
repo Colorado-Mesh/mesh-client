@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "Les messages de la salle ont leur propre limite, de la même taille, pour que les canaux chargés ne les évincent jamais.",
     "notifyOnDiagnosticErrors": "Notifier les nouvelles erreurs de diagnostic",
     "notifyOnDiagnosticErrorsHint": "Notification sur le bureau et son lorsqu'un nouveau diagnostic de gravité d'erreur apparaît pour le protocole actif. Les lignes existantes ne sont pas rejouées au lancement.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Effacer l'historique d'environnement",
+    "clearEnvironmentHistoryConfirm": "Cela supprimera définitivement de la base de données tout l'historique enregistré des capteurs d'environnement. Appareil → Les graphiques de télémétrie, les capteurs de la carte et les sparklines seront effacés jusqu'à l'arrivée de nouvelles mesures. Continuer ?",
+    "dangerZoneEnvironmentHistoryHeading": "Historique d'environnement",
+    "dangerZoneEnvironmentHistoryDesc": "Supprime toutes les mesures enregistrées de température, humidité, pression et qualité de l'air pour chaque protocole et identité."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -6307,24 +6307,24 @@
       },
       "chartAria": "{{kind}} graphique, {{count}} relevés"
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Aucune donnée de capteur d'environnement reçue pour l'instant",
+    "envEmptyMeshtasticBody": "Les graphiques apparaissent lorsqu'un nœud doté d'un capteur de température, d'humidité, de pression ou de qualité de l'air envoie de la télémétrie (RF ou MQTT).",
+    "envEmptyMeshtasticHint": "Sur les nœuds capteurs, activez Appareil → Modules → Module télémétrie (environnement / qualité de l'air) et définissez un intervalle de rapport.",
+    "envEmptyMeshcoreBody": "Demandez la télémétrie capteur depuis le détail du nœud du contact, ou activez le push de télémétrie pour ce contact.",
+    "envEmptyWindow": "Aucune mesure dans cette fenêtre de temps. Essayez 7 jours ou attendez le prochain rapport du capteur.",
+    "envSectionTitle": "Capteurs d'environnement",
+    "envNode": "Nœud capteur",
+    "envNodeAll": "Tous les nœuds",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Les graphiques utilisent l'historique enregistré (jusqu'à 7 jours) provenant du RF et du MQTT, ainsi que les champs Cayenne LPP mappés aux métriques d'environnement.",
+    "envHistoryHintMeshcore": "Les graphiques utilisent l'historique enregistré des données capteurs Cayenne LPP demandées ou poussées.",
+    "requestSensorTelemetry": "Demander la télémétrie capteur",
+    "meshtasticRefreshHelp": "L'actualisation resynchronise la configuration de l'appareil. Les graphiques d'environnement se remplissent lorsque les nœuds capteurs envoient selon l'intervalle du module télémétrie (ou via MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "La valeur est trop longue",
       "invalidChars": "Les sauts de ligne ne sont pas autorisés.",
       "pinFormat": "Entrez 6 chiffres ou 0 pour un CODE PIN aléatoire.",
-      "invalidPreset": "Utilisez un système infrarouge, sur le toit ou mobile."
+      "invalidPreset": "Utilisez infra, rooftop ou mobile."
     },
     "settings": {
       "ver": {

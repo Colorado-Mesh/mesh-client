@@ -43,6 +43,7 @@ export interface LiveTrafficHopTone {
 
 let sharedAudioContext: AudioContext | null = null;
 let activeToneCount = 0;
+const activeOscillators = new Set<OscillatorNode>();
 
 function getSharedAudioContext(): AudioContext | null {
   try {
@@ -68,6 +69,21 @@ function isNotifMuted(): boolean {
 /** @internal Test helper — reset singleton between tests. */
 export function resetLiveTrafficHopTonesForTests(): void {
   sharedAudioContext = null;
+  activeToneCount = 0;
+  activeOscillators.clear();
+}
+
+/** Stop tones already scheduled (e.g. when Reduce motion is enabled). */
+export function stopActiveLiveTrafficHopTones(): void {
+  for (const osc of activeOscillators) {
+    try {
+      osc.stop();
+      osc.disconnect();
+    } catch {
+      // catch-no-log-ok: oscillator may already be stopped
+    }
+  }
+  activeOscillators.clear();
   activeToneCount = 0;
 }
 
@@ -142,6 +158,7 @@ function schedulePartial(
   osc.type = 'sine';
   osc.connect(gain);
   gain.connect(ctx.destination);
+  activeOscillators.add(osc);
   osc.frequency.value = frequencyHz;
   const attackSec = Math.min(HOP_TONE_ATTACK_MS / MS_PER_SECOND, durationSec / 4);
   const fadeSec = Math.min(HOP_TONE_FADE_MS / MS_PER_SECOND, durationSec / 2);
@@ -151,6 +168,7 @@ function schedulePartial(
   gain.gain.setValueAtTime(gainLevel, sustainEnd);
   gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
   osc.onended = () => {
+    activeOscillators.delete(osc);
     osc.disconnect();
     gain.disconnect();
     onEnded();

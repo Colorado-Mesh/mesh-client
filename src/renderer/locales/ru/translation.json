@@ -546,10 +546,10 @@
     "meshcoreRoomPostRetentionHint": "Публикации в комнатах имеют свой предел того же размера, поэтому занятые каналы никогда не вытесняют их.",
     "notifyOnDiagnosticErrors": "Уведомлять о новых диагностических ошибках",
     "notifyOnDiagnosticErrorsHint": "Уведомление на рабочем столе и звук при появлении новой диагностики серьезности ошибок для активного протокола. Существующие строки не воспроизводятся при запуске.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Очистить историю среды",
+    "clearEnvironmentHistoryConfirm": "Это навсегда удалит из базы данных всю сохранённую историю датчиков окружающей среды. Устройство → Диаграммы телеметрии, датчики на карте и спарклайны будут очищены, пока не поступят новые показания. Продолжить?",
+    "dangerZoneEnvironmentHistoryHeading": "История среды",
+    "dangerZoneEnvironmentHistoryDesc": "Удаляет все сохранённые показания температуры, влажности, давления и качества воздуха для каждого протокола и идентичности."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -6393,24 +6393,24 @@
       },
       "hint": "Decoded from Cayenne Low Power Payload packets (CAYENNE_APP) sent by sensor nodes. Только история сеансов; оно не сохраняется."
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Данные с датчика окружающей среды пока не получены",
+    "envEmptyMeshtasticBody": "Диаграммы появляются, когда узел с датчиком температуры, влажности, давления или качества воздуха передаёт телеметрию (RF или MQTT).",
+    "envEmptyMeshtasticHint": "На сенсорных узлах включите Устройство → Модули → Модуль телеметрии (среда / качество воздуха) и задайте интервал отчётности.",
+    "envEmptyMeshcoreBody": "Запросите телеметрию датчика в сведениях об узле контакта или включите push-телеметрию для этого контакта.",
+    "envEmptyWindow": "Нет показаний в этом временном окне. Попробуйте 7 дней или дождитесь следующего отчёта датчика.",
+    "envSectionTitle": "Датчики окружающей среды",
+    "envNode": "Сенсорный узел",
+    "envNodeAll": "Все узлы",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Диаграммы используют сохранённую историю (до 7 дней) с RF и MQTT, а также поля Cayenne LPP, сопоставленные с метриками среды.",
+    "envHistoryHintMeshcore": "Диаграммы используют сохранённую историю запрошенных или push-данных датчиков Cayenne LPP.",
+    "requestSensorTelemetry": "Запросить телеметрию датчика",
+    "meshtasticRefreshHelp": "Обновление повторно синхронизирует конфигурацию устройства. Диаграммы среды заполняются, когда сенсорные узлы передают данные по интервалу модуля телеметрии (или через MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -8082,7 +8082,7 @@
       "tooLong": "Значение слишком длинное.",
       "invalidChars": "Разрывы строк не допускаются.",
       "pinFormat": "Введите 6 цифр или 0 для случайного PIN-КОДА.",
-      "invalidPreset": "Используйте инфракрасные, крышные или мобильные обогреватели."
+      "invalidPreset": "Используйте infra, rooftop или mobile."
     },
     "settings": {
       "ver": {

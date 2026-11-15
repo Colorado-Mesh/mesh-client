@@ -538,10 +538,10 @@
     "meshcoreRoomPostRetentionHint": "Příspěvky v místnosti mají svůj vlastní limit stejné velikosti, takže je zaneprázdněné kanály nikdy nevytlačují ven.",
     "notifyOnDiagnosticErrors": "Upozornit na nové diagnostické chyby",
     "notifyOnDiagnosticErrorsHint": "Oznámení na ploše a zvuk, když se objeví nová diagnostika chyby a závažnosti pro aktivní protokol. Stávající řádky se při spuštění nepřehrávají.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Vymazat historii prostředí",
+    "clearEnvironmentHistoryConfirm": "Tímto trvale odstraníte veškerou uloženou historii senzorů prostředí z databáze. Grafy Zařízení → Telemetrie, senzory na mapě a minigrafy se vymažou, dokud nedorazí nová měření. Pokračovat?",
+    "dangerZoneEnvironmentHistoryHeading": "Historie prostředí",
+    "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -6354,24 +6354,24 @@
         "unixTime": "Časové razítko"
       }
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Zatím nebyla přijata žádná data ze senzoru prostředí",
+    "envEmptyMeshtasticBody": "Grafy se zobrazí, když uzel s teplotním, vlhkostním, tlakovým nebo senzorem kvality ovzduší odešle telemetrii (RF nebo MQTT).",
+    "envEmptyMeshtasticHint": "Na senzorových uzlech povolte Zařízení → Moduly → Telemetrický modul (prostředí / kvalita ovzduší) a nastavte interval hlášení.",
+    "envEmptyMeshcoreBody": "Vyžádejte senzorovou telemetrii z detailu uzlu kontaktu nebo zapněte push telemetrie pro tento kontakt.",
+    "envEmptyWindow": "V tomto časovém okně nejsou žádná měření. Zkuste 7 dní nebo počkejte na další hlášení senzoru.",
+    "envSectionTitle": "Senzory prostředí",
+    "envNode": "Senzorový uzel",
+    "envNodeAll": "Všechny uzly",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Grafy používají uloženou historii (až 7 dní) z RF a MQTT a polí Cayenne LPP mapovaných na metriky prostředí.",
+    "envHistoryHintMeshcore": "Grafy používají uloženou historii z požadovaných nebo pushovaných dat senzorů Cayenne LPP.",
+    "requestSensorTelemetry": "Vyžádat senzorovou telemetrii",
+    "meshtasticRefreshHelp": "Obnovení znovu synchronizuje konfiguraci zařízení. Grafy prostředí se zaplní, když senzorové uzly hlásí podle intervalu telemetrického modulu (nebo přes MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -8031,7 +8031,7 @@
       "tooLong": "Hodnota je příliš dlouhá.",
       "invalidChars": "Zalomení řádků není povoleno.",
       "pinFormat": "Zadejte 6 číslic nebo 0 pro náhodný PIN.",
-      "invalidPreset": "Použijte infračervené, střešní nebo mobilní."
+      "invalidPreset": "Použijte infra, rooftop nebo mobile."
     },
     "settings": {
       "ver": {

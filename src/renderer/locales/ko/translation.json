@@ -530,10 +530,10 @@
     "meshcoreRoomPostRetentionHint": "방 게시물에는 동일한 크기의 제한이 있으므로 바쁜 채널은 절대 밀어내지 않습니다.",
     "notifyOnDiagnosticErrors": "새 진단 오류 알림",
     "notifyOnDiagnosticErrorsHint": "활성 프로토콜에 대한 새로운 오류 심각도 진단이 나타날 때 데스크톱 알림 및 사운드. 기존 행은 실행 시 재생되지 않습니다.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "환경 기록 지우기",
+    "clearEnvironmentHistoryConfirm": "데이터베이스에 저장된 모든 환경 센서 기록이 영구적으로 삭제됩니다. 장치 → 원격 측정 차트, 지도 센서 및 스파크라인은 새 측정값이 도착할 때까지 비워집니다. 계속하시겠습니까?",
+    "dangerZoneEnvironmentHistoryHeading": "환경 기록",
+    "dangerZoneEnvironmentHistoryDesc": "모든 프로토콜 및 ID에 대해 저장된 온도, 습도, 기압 및 공기질 측정값을 제거합니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -6307,24 +6307,24 @@
       "hint": "센서 노드에서 보낸 Cayenne 저전력 페이로드 패킷(CAYENNE_APP)에서 디코딩됩니다. 세션 기록만; 저장되지 않습니다.",
       "chartAria": "{{kind}} 차트, {{count}} 판독값"
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "아직 환경 센서 데이터를 수신하지 못했습니다",
+    "envEmptyMeshtasticBody": "온도, 습도, 기압 또는 공기질 센서가 있는 노드가 원격 측정(RF 또는 MQTT)을 보고하면 차트가 표시됩니다.",
+    "envEmptyMeshtasticHint": "센서 노드에서 장치 → 모듈 → 원격 측정 모듈(환경 / 공기질)을 활성화하고 보고 간격을 설정하세요.",
+    "envEmptyMeshcoreBody": "연락처의 노드 세부 정보에서 센서 원격 측정을 요청하거나 해당 연락처에 대해 원격 측정 푸시를 활성화하세요.",
+    "envEmptyWindow": "이 시간 창에 측정값이 없습니다. 7일을 시도하거나 다음 센서 보고를 기다리세요.",
+    "envSectionTitle": "환경 센서",
+    "envNode": "센서 노드",
+    "envNodeAll": "모든 노드",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "차트는 RF 및 MQTT에서 저장된 기록(최대 7일)과 환경 지표에 매핑된 Cayenne LPP 필드를 사용합니다.",
+    "envHistoryHintMeshcore": "차트는 요청되거나 푸시된 Cayenne LPP 센서 데이터의 저장 기록을 사용합니다.",
+    "requestSensorTelemetry": "센서 원격 측정 요청",
+    "meshtasticRefreshHelp": "새로고침하면 장치 구성이 다시 동기화됩니다. 센서 노드가 원격 측정 모듈 간격(또는 MQTT)으로 보고하면 환경 차트가 채워집니다.",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -7954,7 +7954,7 @@
       "tooLong": "값이 너무 깁니다.",
       "invalidChars": "줄 바꿈은 허용되지 않습니다.",
       "pinFormat": "6자리 숫자를 입력하거나 무작위 PIN에 대해 0을 입력합니다.",
-      "invalidPreset": "인프라, 옥상 또는 이동식 에어컨을 사용하세요."
+      "invalidPreset": "infra, rooftop 또는 mobile을 사용하세요."
     },
     "settings": {
       "ver": {

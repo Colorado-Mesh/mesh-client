@@ -546,10 +546,10 @@
     "meshcoreRoomPostRetentionHint": "Posty w pokojach mają własny limit tej samej wielkości, więc zajęte kanały nigdy ich nie wypychają.",
     "notifyOnDiagnosticErrors": "Powiadamiaj o nowych błędach diagnostycznych",
     "notifyOnDiagnosticErrorsHint": "Powiadomienie na pulpicie i dźwięk, gdy pojawi się nowa diagnostyka istotności błędu dla aktywnego protokołu. Istniejące wiersze nie odtwarzają się ponownie po uruchomieniu.",
-    "clearEnvironmentHistory": "Clear Environment History",
-    "clearEnvironmentHistoryConfirm": "This will permanently delete all saved environment sensor history from the database. Device → Telemetry charts, Map Sensors, and sparklines will clear until new readings arrive. Continue?",
-    "dangerZoneEnvironmentHistoryHeading": "Environment history",
-    "dangerZoneEnvironmentHistoryDesc": "Remove all stored temperature, humidity, pressure, and air-quality readings for every protocol and identity."
+    "clearEnvironmentHistory": "Wyczyść historię środowiska",
+    "clearEnvironmentHistoryConfirm": "Spowoduje to trwałe usunięcie całej zapisanej historii czujników środowiskowych z bazy danych. Urządzenie → Wykresy telemetrii, czujniki na mapie i wykresy mini zostaną wyczyszczone, dopóki nie nadejdą nowe odczyty. Kontynuować?",
+    "dangerZoneEnvironmentHistoryHeading": "Historia środowiska",
+    "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -6393,24 +6393,24 @@
         "unixTime": "Znacznik czasu"
       }
     },
-    "envEmptyTitle": "No environment sensor data heard yet",
-    "envEmptyMeshtasticBody": "Charts appear when a node with a temperature, humidity, pressure, or air-quality sensor reports telemetry (RF or MQTT).",
-    "envEmptyMeshtasticHint": "On sensor nodes, enable Device → Modules → Telemetry Module (environment / air quality) and set a report interval.",
-    "envEmptyMeshcoreBody": "Request sensor telemetry from a contact's node detail, or enable telemetry push on that contact.",
-    "envEmptyWindow": "No readings in this time window. Try 7 days, or wait for the next sensor report.",
-    "envSectionTitle": "Environment sensors",
-    "envNode": "Sensor node",
-    "envNodeAll": "All nodes",
+    "envEmptyTitle": "Nie odebrano jeszcze danych z czujnika środowiskowego",
+    "envEmptyMeshtasticBody": "Wykresy pojawią się, gdy węzeł z czujnikiem temperatury, wilgotności, ciśnienia lub jakości powietrza zgłosi telemetrię (RF lub MQTT).",
+    "envEmptyMeshtasticHint": "Na węzłach z czujnikami włącz Urządzenie → Moduły → Moduł telemetrii (środowisko / jakość powietrza) i ustaw interwał raportowania.",
+    "envEmptyMeshcoreBody": "Zażądaj telemetrii czujnika ze szczegółów węzła kontaktu lub włącz push telemetrii dla tego kontaktu.",
+    "envEmptyWindow": "Brak odczytów w tym oknie czasowym. Spróbuj 7 dni lub poczekaj na następny raport czujnika.",
+    "envSectionTitle": "Czujniki środowiskowe",
+    "envNode": "Węzeł czujnika",
+    "envNodeAll": "Wszystkie węzły",
     "envWindowLabel": "Time range",
     "envWindow": {
       "1h": "1 hour",
       "24h": "24 hours",
       "7d": "7 days"
     },
-    "envHistoryHintMeshtastic": "Charts use saved history (up to 7 days) from RF and MQTT, plus Cayenne LPP fields that map to environment metrics.",
-    "envHistoryHintMeshcore": "Charts use saved history from requested or pushed Cayenne LPP sensor data.",
-    "requestSensorTelemetry": "Request sensor telemetry",
-    "meshtasticRefreshHelp": "Refresh re-syncs device config. Environment charts fill when sensor nodes report on their Telemetry Module interval (or via MQTT).",
+    "envHistoryHintMeshtastic": "Wykresy korzystają z zapisanej historii (do 7 dni) z RF i MQTT oraz pól Cayenne LPP mapowanych na metryki środowiskowe.",
+    "envHistoryHintMeshcore": "Wykresy korzystają z zapisanej historii żądanych lub pushowanych danych czujników Cayenne LPP.",
+    "requestSensorTelemetry": "Zażądaj telemetrii czujnika",
+    "meshtasticRefreshHelp": "Odświeżenie ponownie synchronizuje konfigurację urządzenia. Wykresy środowiskowe wypełniają się, gdy węzły czujników raportują w interwale modułu telemetrii (lub przez MQTT).",
     "sectionVocNox": "VOC / NOx",
     "sectionLight": "Light",
     "sectionWind": "Wind",
@@ -8082,7 +8082,7 @@
       "tooLong": "Wartość jest zbyt długa.",
       "invalidChars": "Podziały linii są niedozwolone.",
       "pinFormat": "Wprowadź 6 cyfr lub 0 dla losowego KODU PIN.",
-      "invalidPreset": "Użyj klimatyzatora podtynkowego, dachowego lub przenośnego."
+      "invalidPreset": "Użyj infra, rooftop lub mobile."
     },
     "settings": {
       "ver": {

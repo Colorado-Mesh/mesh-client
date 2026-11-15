@@ -7954,7 +7954,7 @@
       "tooLong": "Wert ist zu lang",
       "invalidChars": "Zeilenumbrüche sind nicht zulässig.",
       "pinFormat": "Geben Sie 6 Ziffern oder 0 für eine zufällige PIN ein.",
-      "invalidPreset": "Verwenden Sie Infrarot-, Dach- oder Mobilgeräte."
+      "invalidPreset": "Verwenden Sie infra, rooftop oder mobile."
     },
     "settings": {
       "ver": {

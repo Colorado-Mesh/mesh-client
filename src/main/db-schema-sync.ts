@@ -1103,6 +1103,18 @@ function ensureIndexes(db: NodeSqliteDB): void {
   for (const ddl of INDEX_DDLS) {
     db.execScript(ddl);
   }
+  if (tableExists(db, 'node_environment_telemetry')) {
+    const cols = db.prepareOnce(`PRAGMA index_info('idx_node_env_telemetry_node_time')`).all() as {
+      name: string;
+    }[];
+    if (!cols.some((c) => c.name === 'identity_id')) {
+      db.execScript(
+        `DROP INDEX IF EXISTS idx_node_env_telemetry_node_time;
+         CREATE INDEX IF NOT EXISTS idx_node_env_telemetry_node_time
+         ON node_environment_telemetry(protocol, identity_id, node_id, recorded_at)`,
+      );
+    }
+  }
 }
 
 function seedAppSettings(db: NodeSqliteDB): void {
