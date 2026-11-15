@@ -11,6 +11,7 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
+import { MECP_PROTOCOL_VERSION } from '@/renderer/lib/mecp/mecpMessages';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
@@ -2565,6 +2566,9 @@ export default function AppPanel({
         <div className="space-y-3 border-t border-red-900/40 px-4 pt-3 pb-4">
           <div className="space-y-1">
             <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
+            <p className="text-muted text-xs">
+              {t('mecp.section.protocolVersion', { version: MECP_PROTOCOL_VERSION })}
+            </p>
             <div className="flex flex-wrap gap-x-3 gap-y-1">
               <a
                 href="https://mecp.radio/"
@@ -2576,7 +2580,7 @@ export default function AppPanel({
                 {t('mecp.section.learnMore')}
               </a>
               <a
-                href="https://github.com/xiang-dev-1/MECP"
+                href="https://github.com/mecp-org/MECP"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted text-xs underline-offset-2 hover:underline"

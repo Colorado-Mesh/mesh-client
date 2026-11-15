@@ -7238,7 +7238,8 @@
       "standingAlert": "Incidente Stazione di comando (allarme in piedi)",
       "standingAlertHint": "Disattivato per impostazione predefinita. Per EOC e stazioni monitorate: mantiene un banner rosso e lampeggia sulla barra delle applicazioni o fa rimbalzare il dock fino a quando qualcuno non guarda ogni nuovo MAYDAY o URGENTE. Tutti sentono ancora il tono di allerta una tantum e vedono il brindisi.",
       "showComposeButtons": "Mostra pulsanti MeCP in Chat",
-      "showComposeButtonsHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante rosso di richiesta/segnalazione e un pulsante blu di risposta."
+      "showComposeButtonsHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante rosso di richiesta/segnalazione e un pulsante blu di risposta.",
+      "protocolVersion": "Aderisce a MECP {{version}}"
     },
     "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto",
     "block": {

@@ -7238,7 +7238,8 @@
       "standingAlert": "인시던트 커맨드 스테이션 (스탠딩 알림)",
       "standingAlertHint": "기본적으로 꺼짐. EOC 및 모니터링 스테이션의 경우: 빨간색 배너를 위로 올리고 작업 표시줄을 깜박이거나 누군가가 새로운 메이데이 또는 긴급을 볼 때까지 도크를 바운스합니다. 모두가 여전히 일회성 경고음을 듣고 건배사를 봅니다.",
       "showComposeButtons": "채팅에 MECP 버튼 표시",
-      "showComposeButtonsHint": "기본적으로 꺼져 있습니다. 활성화되면 채팅에 빨간색 요청/신고 버튼과 파란색 응답 버튼이 표시됩니다."
+      "showComposeButtonsHint": "기본적으로 꺼져 있습니다. 활성화되면 채팅에 빨간색 요청/신고 버튼과 파란색 응답 버튼이 표시됩니다.",
+      "protocolVersion": "MECP 준수 {{version}}"
     },
     "exportLogEmpty": "아직 수신된 로그에 MECP 메시지가 없습니다",
     "block": {

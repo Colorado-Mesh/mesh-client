@@ -1,6 +1,6 @@
 /**
  * App-facing MECP helpers wrapping the vendored engine
- * (https://github.com/xiang-dev-1/MECP, GPLv3).
+ * (https://github.com/mecp-org/mecp-app, GPLv3; protocol https://github.com/mecp-org/MECP).
  */
 
 import type { CategoryLetter, EncodeResult, LanguageFile, ParsedMessage, Severity } from './engine';
@@ -12,9 +12,10 @@ import {
   isMECP,
   MAX_MESSAGE_BYTES,
   MECP_PREFIX,
+  MECP_PROTOCOL_VERSION,
 } from './engine';
 /**
- * Vendored MECP packs (CC BY 4.0, https://github.com/xiang-dev-1/MECP `languages/`).
+ * Vendored MECP packs (CC BY 4.0, https://github.com/mecp-org/MECP `languages/`).
  * Upstream JSON includes a website `ui` block and other unread metadata; this app
  * strips those keys. A resync must strip them again and keep `codes` / `categories`.
  * English stays on the main chunk; other packs load on demand.
@@ -27,7 +28,15 @@ export const MECP_REGEX = /^MECP\/[0-3]\//;
 export type MecpParsed = ParsedMessage;
 
 export type { CategoryLetter, EncodeResult, LanguageFile, Severity };
-export { CATEGORIES, encode, getByteLength, isMECP, MAX_MESSAGE_BYTES, MECP_PREFIX };
+export {
+  CATEGORIES,
+  encode,
+  getByteLength,
+  isMECP,
+  MAX_MESSAGE_BYTES,
+  MECP_PREFIX,
+  MECP_PROTOCOL_VERSION,
+};
 
 const FALLBACK_LANGUAGE: LanguageFile = enLanguage;
 

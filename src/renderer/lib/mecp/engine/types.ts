@@ -1,4 +1,5 @@
-// Vendored from https://github.com/xiang-dev-1/MECP (GPLv3). Do not edit without attribution.
+// Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
+// follow MECP 1.2.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Engine — Type Definitions
@@ -6,6 +7,9 @@
  *
  * Pure type definitions. No runtime code.
  */
+
+/** Canonical protocol version clients claim adherence to. */
+export const MECP_PROTOCOL_VERSION = '1.2.0';
 
 /** Severity levels: 0=MAYDAY, 1=URGENT, 2=SAFETY, 3=ROUTINE */
 export type Severity = 0 | 1 | 2 | 3;
@@ -31,13 +35,13 @@ export interface ParsedMessage {
     count: number | null;
     /** GPS coordinates from lat,lon pattern */
     gps: { lat: number; lon: number } | null;
-    /** ETA in minutes (bare integer after R03) */
-    eta: number | null;
+    /** Duration in minutes (R03-scoped Duration convention) */
+    duration: number | null;
     /** Incident reference tag from #tag pattern */
     reference: string | null;
-    /** Sender language hint from @xx pattern (ISO 639-1) */
+    /** Sender language hint from @xx pattern (ISO 639-1 / BCP-47) */
     language: string | null;
-    /** Composition timestamp from @HHMM pattern (UTC) */
+    /** Composition timestamp from @HHMM pattern as HH:MM (UTC) */
     timestamp: string | null;
     /** Sender callsign from ~CALLSIGN pattern */
     callsign: string | null;
@@ -92,7 +96,7 @@ export interface CategoryDef {
 /**
  * Fields this app reads from a vendored MECP language pack.
  *
- * Upstream packs (https://github.com/xiang-dev-1/MECP `languages/`, CC BY 4.0)
+ * Upstream packs (https://github.com/mecp-org/MECP `languages/`, CC BY 4.0)
  * also include a website `ui` block — mecp.radio copy such as `site_hero_headline`
  * and `site_nav_github` — plus metadata this app does not read: `language`,
  * `language_name`, `language_name_en`, `language_name_latin`, `flag_emoji`,

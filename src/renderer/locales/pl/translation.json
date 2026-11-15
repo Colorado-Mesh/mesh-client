@@ -7348,7 +7348,8 @@
       "standingAlert": "Stanowisko kierowania incydentami (stan gotowości)",
       "standingAlertHint": "Domyślnie wyłączone. W przypadku EOC i monitorowanych stacji: trzyma podniesiony czerwony baner i miga na pasku zadań lub odbija się od doku, dopóki ktoś nie spojrzy na każdy nowy MAYDAY lub PILNY. Wszyscy wciąż słyszą jednorazowy sygnał ostrzegawczy i widzą grzankę.",
       "showComposeButtons": "Pokaż przyciski MECP na czacie",
-      "showComposeButtonsHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje czerwony przycisk żądania/raportu i niebieski przycisk odpowiedzi."
+      "showComposeButtonsHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje czerwony przycisk żądania/raportu i niebieski przycisk odpowiedzi.",
+      "protocolVersion": "Przestrzega MECP {{version}}"
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku",
     "block": {

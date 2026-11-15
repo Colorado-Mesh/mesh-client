@@ -127,8 +127,9 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('  lrgp-rs');
     expect(result.stdout).toContain('MECP_UPSTREAM_WATCH_ENTRIES:');
     expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('file:engine/src@0b7123aef545');
-    expect(result.stdout).toContain('file:languages@c8fefd595944');
+    expect(result.stdout).toContain('file:engine/src@59090c8d1577');
+    expect(result.stdout).toContain('file:languages@f274b8e96e59');
+    expect(result.stdout).toContain('file:freetext@954f44aaf6e4');
     expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
   });
 
@@ -320,17 +321,17 @@ exit 1
     {
       mode: /** @type {const} */ ('merged'),
       expectedWarning: '1',
-      stdoutMatch: /xiang-dev-1\/MECP#5 merged — re-vendor languages/,
+      stdoutMatch: /mecp-org\/MECP#5 merged — re-vendor languages/,
     },
     {
       mode: /** @type {const} */ ('closed'),
       expectedWarning: '1',
-      stdoutMatch: /xiang-dev-1\/MECP#5 closed without merge/,
+      stdoutMatch: /mecp-org\/MECP#5 closed without merge/,
     },
     {
       mode: /** @type {const} */ ('unavailable'),
       expectedWarning: '0',
-      stdoutMatch: /could not query xiang-dev-1\/MECP#5/,
+      stdoutMatch: /could not query mecp-org\/MECP#5/,
     },
   ])(
     'mecp-prs-only maps $mode to HAS_WARNING=$expectedWarning',

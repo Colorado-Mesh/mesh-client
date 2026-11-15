@@ -7302,7 +7302,8 @@
       "standingAlert": "Stanice velení incidentu (stálá pohotovost)",
       "standingAlertHint": "Ve výchozím nastavení vypnuto. Pro EOC a monitorované stanice: udržuje červený banner nahoře a bliká na hlavním panelu nebo odrazí dok, dokud se někdo nepodívá na každý nový MAYDAY nebo URGENTNÍ. Každý stále slyší jednorázový výstražný tón a vidí přípitek.",
       "showComposeButtons": "Zobrazit tlačítka MECP v chatu",
-      "showComposeButtonsHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje červené tlačítko požadavku/zprávy a modré tlačítko odpovědi."
+      "showComposeButtonsHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje červené tlačítko požadavku/zprávy a modré tlačítko odpovědi.",
+      "protocolVersion": "Dodržuje MECP {{version}}"
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP",
     "block": {

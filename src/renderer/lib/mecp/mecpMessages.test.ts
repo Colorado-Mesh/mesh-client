@@ -9,9 +9,16 @@ import {
   isMecpMessage,
   localizeMecpCodes,
   MAX_MESSAGE_BYTES,
+  MECP_PROTOCOL_VERSION,
   MECP_REGEX,
   tryParseMecp,
 } from './mecpMessages';
+
+describe('MECP_PROTOCOL_VERSION', () => {
+  it('claims MECP 1.2.0 adherence', () => {
+    expect(MECP_PROTOCOL_VERSION).toBe('1.2.0');
+  });
+});
 
 describe('localizeMecpCodes', () => {
   const lang = { codes: { D02: 'This is a test' } } as unknown as Parameters<

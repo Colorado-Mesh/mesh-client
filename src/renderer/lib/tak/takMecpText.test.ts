@@ -55,6 +55,8 @@ describe('describeMecpForTak', () => {
   it("fills the code's own count and minutes, without repeating them", () => {
     expect(describeIn('MECP/3/H07 4pax')).toBe('ℹ️ ROUTINE: Have shelter / space for 4pax');
     expect(describeIn('MECP/3/R03 15')).toBe('ℹ️ ROUTINE: ETA 15');
+    expect(describeIn('MECP/3/R03 45min')).toBe('ℹ️ ROUTINE: ETA 45');
+    expect(describeIn('MECP/3/R03 ETA 45min')).toBe('ℹ️ ROUTINE: ETA 45');
   });
 
   it('says a drill is a drill', () => {

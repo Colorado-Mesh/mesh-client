@@ -85,6 +85,30 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
   return words.join(' ');
 }
 
+/**
+ * Strip one MECP 1.2.0 Duration token (and an optional leading ETA alias) once the
+ * minutes have been folded into a code meaning. Matches unit-bearing forms and a
+ * bare first-token integer.
+ */
+function stripDurationToken(freetext: string, minutes: number): string {
+  const n = String(minutes);
+  // Prefer unit-bearing / ETA forms anywhere, then a bare number as a whole word.
+  /* eslint-disable security/detect-non-literal-regexp -- n is digits from decoded duration minutes */
+  const unitBearing = new RegExp(
+    String.raw`(?:^|\s)(?:ETA\s*)?${n}\s*(?:h\s*\d{1,2}\s*min|h|min|d|s)\b`,
+    'i',
+  );
+  if (unitBearing.test(freetext)) {
+    return freetext.replace(unitBearing, ' ').replace(/\s+/g, ' ').trim();
+  }
+  const etaBare = new RegExp(String.raw`(?:^|\s)ETA\s*${n}(?=\s|$)`, 'i');
+  /* eslint-enable security/detect-non-literal-regexp */
+  if (etaBare.test(freetext)) {
+    return freetext.replace(etaBare, ' ').replace(/\s+/g, ' ').trim();
+  }
+  return withoutWord(freetext, (w) => w === n);
+}
+
 /** `🆘 MAYDAY`, or `DRILL 🆘 MAYDAY` for a drill. */
 export function takMecpHeadline(
   severity: 0 | 1 | 2 | 3,
@@ -107,16 +131,16 @@ export function describeMecpForTak(
   t: TakMecpTranslate,
 ): string {
   const head = takMecpHeadline(parsed.severity ?? 3, parsed.isDrill, t);
-  const { count, gps, eta } = parsed.extracted;
+  const { count, gps, duration } = parsed.extracted;
   const meanings = parsed.codes.map((code) => lang.codes[code] as string | undefined);
   const countInCode = count != null && meanings.some((m) => m?.includes(COUNT_PLACEHOLDER));
-  const etaInCode =
-    eta != null && meanings.some((m) => m !== undefined && MINUTES_PLACEHOLDER_RE.test(m));
+  const durationInCode =
+    duration != null && meanings.some((m) => m !== undefined && MINUTES_PLACEHOLDER_RE.test(m));
   const parts = parsed.codes.map((code, i) => {
     let meaning = meanings[i];
     if (meaning === undefined) return code;
     if (count != null) meaning = meaning.replace(COUNT_PLACEHOLDER, String(count));
-    if (eta != null) meaning = meaning.replace(MINUTES_PLACEHOLDER_RE, String(eta));
+    if (duration != null) meaning = meaning.replace(MINUTES_PLACEHOLDER_RE, String(duration));
     return meaning;
   });
   if (count != null && !countInCode) parts.push(t('mecp.atakPeople', { count }));
@@ -124,7 +148,7 @@ export function describeMecpForTak(
   let rest = stripMecpCoordsFromFreetext(parsed.freetext ?? '');
   if (count != null) rest = withoutWord(rest, (w) => w.toLowerCase() === `${count}pax`);
   // The minutes leave the free text only once the sentence shows them.
-  if (etaInCode) rest = withoutWord(rest, (w) => w === String(eta));
+  if (duration != null && durationInCode) rest = stripDurationToken(rest, duration);
   if (rest) parts.push(`“${rest}”`);
   return parts.length > 0 ? `${head}: ${parts.join(' · ')}` : head;
 }

@@ -7238,7 +7238,8 @@
       "standingAlert": "Olay Komuta istasyonu (ayakta alarm)",
       "standingAlertHint": "Varsayılan olarak kapalı. EOC'ler ve izlenen istasyonlar için: kırmızı bir başlığı yukarıda tutar ve görev çubuğunu yanıp söner veya biri her yeni Mayday'e veya ACİL duruma bakana kadar rıhtımı sektirir. Herkes hala bir kerelik uyarı tonunu duyar ve tostu görür.",
       "showComposeButtons": "Sohbette MECP düğmelerini göster",
-      "showComposeButtonsHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet kırmızı bir istek/rapor düğmesi ve mavi bir yanıt düğmesi gösterir."
+      "showComposeButtonsHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet kırmızı bir istek/rapor düğmesi ve mavi bir yanıt düğmesi gösterir.",
+      "protocolVersion": "MECP'ye uyar {{version}}"
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok",
     "block": {
