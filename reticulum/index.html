@@ -3885,7 +3885,7 @@
 </tr>
 </tbody>
 </table>
-<p>Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, RF, Graph.</p>
+<p>Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, RF, Graph. Reticulum does not expose environment telemetry; <strong>Device → Telemetry</strong> stays hidden (no native RNS/LXMF environment payload).</p>
 <p>The <strong>Log panel</strong> (right rail, toggled from <strong>App → Log panel</strong>) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.</p>
 <h3 id="default-hub-presets">Default hub presets<a class="headerlink" href="#default-hub-presets" title="Permanent link">&para;</a></h3>
 <p><strong>Connection → Interfaces</strong> offers <strong>Add default backbones</strong>, which opens a regional checkbox picker (Primary &amp; Global Backbone selected by default). <strong>Enable 1 to 3 backbone gateways at most</strong>—2 is the sweet spot for redundancy without bandwidth bloat (1 global hub + 1 regional gateway; specialty like I2P/Yggdrasil only as needed). Locally connected RNodes and local LAN interfaces do not count toward this limit. The UI warns when more than three default backbones are enabled. Sync applies only the selected presets from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts"><code>reticulumDefaultHubPresets.ts</code></a>. New presets are added <strong>disabled</strong> so you can enable them after review (add always sets <code>mode=boundary</code>). The sync <strong>skips</strong> rows that already match the preset (including any valid rnsd <code>mode</code>), <strong>repairs</strong> rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting or a missing/invalid <code>mode</code> (missing/invalid → <code>boundary</code>; does not overwrite a valid non-boundary mode or change <code>enabled</code>), <strong>disables</strong> enabled interfaces pointed at remaining decommissioned official testnet endpoints (Amsterdam) even when those hubs were not in the selected region set, and <strong>adds</strong> missing selected presets. The interfaces list is grouped by the same regions, with non-preset rows under <strong>User Defined</strong>. Disabled rows are visually muted; use row checkboxes and <strong>Delete selected</strong> to remove many interfaces at once (system-managed rows are not selectable):</p>
@@ -4746,7 +4746,7 @@ page creates a new controller even when the page source is byte-for-byte identic
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 18:55:57 UTC">November 15, 2026</span>
   </span>
 
     

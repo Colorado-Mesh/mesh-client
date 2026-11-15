@@ -3187,7 +3187,7 @@
 <li><strong>XMODEM</strong> upload/download on the local USB/serial radio only</li>
 <li><strong>Firmware lockdown</strong> status and auth when the device reports lockdown support</li>
 <li><strong>Mesh Beacon</strong>: configure the module, review heard offers, and join an offered channel</li>
-<li><strong>Cayenne LPP charts</strong> on the Telemetry tab when Cayenne packets are decoded (Meshtastic only)</li>
+<li><strong>Cayenne LPP charts</strong> on Device → Telemetry when Cayenne packets are decoded (Meshtastic only); environment-shaped Cayenne fields are also saved to history</li>
 </ul>
 <p><strong>Network Diagnostics</strong></p>
 <ul>
@@ -3207,8 +3207,10 @@
 </blockquote>
 <p><strong>Environment Telemetry</strong></p>
 <ul>
-<li>Push-based environment charts (temperature, humidity, pressure, air quality) from Meshtastic telemetry packets, displayed in the Telemetry tab</li>
-<li><strong>Sensor history and map layer</strong>: environment readings from RF, MeshCore remote telemetry, and Meshtastic MQTT are saved to SQLite and shown on the Map as a <strong>Sensors</strong> layer (pick temperature, humidity, or pressure; node popups include sparklines). History loads are capped (newest 2,000 nodes, 500 points per node)</li>
+<li>Push-based environment charts (temperature, humidity, pressure, air quality, wind, particulates, …) from Meshtastic telemetry packets and MQTT, shown in <strong>Device → Telemetry</strong>. Charts use saved history (up to 7 days) with a per-node selector; environment charts appear only after a sensor-equipped node reports.</li>
+<li><strong>MeshCore</strong>: request Cayenne LPP sensor telemetry from a contact's node detail (or enable telemetry push); the same Device → Telemetry panel charts saved history.</li>
+<li><strong>Reticulum</strong>: environment telemetry is not supported; Device → Telemetry stays hidden.</li>
+<li><strong>Sensor history and map layer</strong>: environment readings from RF, MeshCore remote telemetry, Meshtastic MQTT, and mappable Cayenne LPP fields are saved to SQLite (per identity) and shown on the Map as a <strong>Sensors</strong> layer (temperature, humidity, pressure, IAQ, PM2.5, CO₂, lux, wind; node popups include sparklines). History loads are capped (newest 2,000 nodes per identity, 500 points per node)</li>
 <li><strong>Weather forecasts layer</strong>: channel forecast posts from senders marked as weather senders are placed on the Map (<strong>Layers → Weather forecasts</strong>) at the named place, or near the sender when the place can't be found. Each place shows its newest forecast, and wx broadcasts drop off the map <strong>12 hours</strong> after they were sent — including posts loaded from chat history at startup</li>
 <li><strong>Internet weather</strong> (opt-in, <strong>Layers → Internet weather</strong>): click-anywhere Open-Meteo forecast, temperature/wind overlays, and radar (RainViewer global; NEXRAD in CONUS). Online only; session memory cache — see <a href="../maps/#internet-weather">Maps: Internet weather</a></li>
 </ul>
@@ -3315,7 +3317,7 @@
 </ul>
 <p><strong>Telemetry</strong></p>
 <ul>
-<li>Battery voltage and signal quality charts (SNR/RSSI) in the Telemetry tab</li>
+<li>Battery voltage and signal quality charts (SNR/RSSI) in <strong>Device → Telemetry</strong></li>
 </ul>
 <hr />
 <h2 id="meshcore-features">MeshCore Features<a class="headerlink" href="#meshcore-features" title="Permanent link">&para;</a></h2>
@@ -3379,8 +3381,8 @@
 </ul>
 <p><strong>Battery &amp; Signal Telemetry</strong></p>
 <ul>
-<li>Battery voltage from device <code>selfInfo</code>; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in the Telemetry tab</li>
-<li><strong>Environment charts</strong> (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available; same panel as Meshtastic environment telemetry</li>
+<li>Battery voltage from device <code>selfInfo</code>; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in <strong>Device → Telemetry</strong></li>
+<li><strong>Environment charts</strong> (temperature, humidity, barometric pressure, etc.) in <strong>Device → Telemetry</strong> when pulled or pushed Cayenne LPP data is available; same panel as Meshtastic environment telemetry</li>
 <li><strong>Raw Packet Log</strong> (<strong>Sniffer</strong> tab): virtualized log (ring-buffer capped at <strong>2,500</strong> entries per protocol) with <strong>sortable columns</strong>, <strong>relative timestamps</strong>, <strong>quick-filter chips</strong>, and expandable hex. <strong>MeshCore:</strong> on-air <strong>path hash chains</strong>, hop count, route-type color bars, device-type icons, ping/trace from row actions; <strong>Meshtastic:</strong> transport badges (RF/MQTT), collapsed hop count; <strong>Reticulum:</strong> sidecar wire packets via WebSocket/<code>GET /api/v1/packets</code> (see <a href="../reticulum/">docs/reticulum.md</a>); filter by type, name, or hex; <strong>Clear</strong> resets the buffer</li>
 </ul>
 <p><strong>Device Control</strong></p>
@@ -3532,7 +3534,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:26:31 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 18:56:44 UTC">November 15, 2026</span>
   </span>
 
     
