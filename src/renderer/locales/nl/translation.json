@@ -7808,7 +7808,9 @@
     "waitingQuiet": "Geen recente pakketwaarnemingen",
     "waitingHintQuiet": "Live verkeer toont de laatste minuut van lokale waarnemingen. Oudere pakketten blijven in Monitor → Sniffer.",
     "retentionHint": "Lokaal live verkeer houdt observaties gedurende één minuut bij. Oudere opnames blijven in Monitor → Sniffer.",
-    "emptyFeedQuiet": "Geen observaties in de laatste minuut. Oudere pakketten blijven in Monitor → Sniffer."
+    "emptyFeedQuiet": "Geen observaties in de laatste minuut. Oudere pakketten blijven in Monitor → Sniffer.",
+    "hopTones": "Hoptonen",
+    "hopTonesHint": "Speel een zachte toon af voor elke geanimeerde sprong. Kortere hops klinken hoger; langere hops klinken lager. Elke noot duurt even lang als de vlucht van die hop op de kaart. Werkt voor lokaal verkeer, Beacon-verkeer en CoreScope-verkeer."
   },
   "meshcoreCompanionCli": {
     "summary": "Instellingen van begeleidende apparaten",

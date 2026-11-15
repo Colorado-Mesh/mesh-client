@@ -48,6 +48,11 @@ import type { OurPosition } from '@/renderer/lib/gpsSource';
 import { liveTrafficLocalEmptyCopy } from '@/renderer/lib/map/liveTrafficEmptyState';
 import { groupLiveTrafficEvents, liveTrafficPointKey } from '@/renderer/lib/map/liveTrafficGroups';
 import {
+  readLiveTrafficHopTonesEnabled,
+  setLiveTrafficHopTonesEnabled,
+  warmLiveTrafficHopTones,
+} from '@/renderer/lib/map/liveTrafficHopTones';
+import {
   buildLiveTrafficEvents,
   buildLiveTrafficNodeIndex,
   buildMeshtasticLiveTrafficEvents,
@@ -82,7 +87,7 @@ import type { LiveMapView } from '@/shared/liveMapWindow';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { Button, IconButton } from '../ui/Button';
-import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from '../ui/formClasses';
+import { CHECKBOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from '../ui/formClasses';
 import { BeaconConnectionControls } from './BeaconConnectionControls';
 import { ensureMapStyles, MapResizeInvalidator } from './leafletMapControls';
 import {
@@ -374,6 +379,7 @@ export default function LiveTrafficPanel({
   const [scope, setScope] = useState('');
   const [kind, setKind] = useState('all');
   const [speed, setSpeed] = useState(1);
+  const [hopTonesEnabled, setHopTonesEnabled] = useState(readLiveTrafficHopTonesEnabled);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savedViewport, setSavedViewport] = useState<MapViewport | null>(() =>
     initialView ? { center: initialView.center, zoom: initialView.zoom } : null,
@@ -681,6 +687,24 @@ export default function LiveTrafficPanel({
             <option value="all">{t('liveTraffic.areas.all')}</option>
             <option value="viewport">{t('liveTraffic.areas.viewport')}</option>
           </select>
+          <label
+            className="text-muted flex items-center gap-2 text-xs"
+            title={t('liveTraffic.hopTonesHint')}
+          >
+            <input
+              type="checkbox"
+              className={CHECKBOX_CLASS}
+              aria-label={t('liveTraffic.hopTones')}
+              checked={hopTonesEnabled}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setLiveTrafficHopTonesEnabled(enabled);
+                setHopTonesEnabled(enabled);
+                if (enabled) warmLiveTrafficHopTones();
+              }}
+            />
+            {t('liveTraffic.hopTones')}
+          </label>
           <Button
             size="sm"
             variant="ghost"
@@ -932,6 +956,7 @@ export default function LiveTrafficPanel({
                 paused={paused || !visible}
                 selectedId={selectedId ?? undefined}
                 speed={speed}
+                hopTonesEnabled={hopTonesEnabled}
               />
               {markerPoints.map((point, pointIndex) => (
                 <TrafficNodeMarker

@@ -2,6 +2,7 @@ import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { groupLiveTrafficEvents } from '@/renderer/lib/map/liveTrafficGroups';
+import type * as LiveTrafficHopTonesModule from '@/renderer/lib/map/liveTrafficHopTones';
 import type { LiveTrafficEvent, LiveTrafficPoint } from '@/renderer/lib/map/liveTrafficModel';
 
 import {
@@ -11,7 +12,7 @@ import {
   liveTrafficPacketColors,
 } from './LiveTrafficCanvas';
 
-const { map, motion } = vi.hoisted(() => ({
+const { map, motion, hopTones } = vi.hoisted(() => ({
   map: {
     getContainer: vi.fn(),
     getSize: vi.fn(() => ({ x: 800, y: 600 })),
@@ -25,6 +26,9 @@ const { map, motion } = vi.hoisted(() => ({
     listeners: new Set<() => void>(),
     unsubscribe: vi.fn(),
   },
+  hopTones: {
+    play: vi.fn(),
+  },
 }));
 
 vi.mock('react-leaflet', () => ({ useMap: () => map }));
@@ -37,6 +41,10 @@ vi.mock('@/renderer/lib/reduceMotionPreference', () => ({
       motion.unsubscribe();
     };
   },
+}));
+vi.mock('@/renderer/lib/map/liveTrafficHopTones', async (importOriginal) => ({
+  ...(await importOriginal<typeof LiveTrafficHopTonesModule>()),
+  playLiveTrafficHopTone: (...args: unknown[]) => hopTones.play(...args),
 }));
 
 const point: LiveTrafficPoint = { nodeId: 1, lat: 10, lon: 10, label: 'Relay' };
@@ -92,6 +100,7 @@ describe('LiveTrafficCanvas', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    hopTones.play.mockClear();
     map.getCenter.mockReturnValue({ lat: 30, lng: 40 });
     map.latLngToContainerPoint.mockImplementation(([lat, lon]: number[]) => ({
       x: lon * 10,
@@ -588,6 +597,38 @@ describe('LiveTrafficCanvas', () => {
     flush(990);
     expect(heads()).toEqual([[-50, 100]]);
     view.unmount();
+  });
+
+  it('plays a hop tone when each hop starts flying, lasting for its flight', () => {
+    const middle = { ...point, nodeId: 2, lon: 20 };
+    const end = { ...point, nodeId: 3, lon: 30 };
+    const packets = group(path('route', [point, middle, end]));
+    const view = render(<LiveTrafficCanvas events={packets} paused={false} hopTonesEnabled />);
+    // First hop starts immediately; later hops wait until their startedAt.
+    expect(hopTones.play).toHaveBeenCalledTimes(1);
+    expect(hopTones.play.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        frequencyHz: expect.any(Number),
+        durationMs: expect.any(Number),
+      }),
+    );
+    expect(hopTones.play.mock.calls[0]?.[0].durationMs).toBeGreaterThan(500);
+    flush(660);
+    expect(hopTones.play).toHaveBeenCalledTimes(2);
+    expect(hopTones.play.mock.calls[1]?.[0].durationMs).toBeGreaterThan(500);
+    view.unmount();
+  });
+
+  it('does not play hop tones when the checkbox is off', () => {
+    const end = { ...point, nodeId: 2, lon: 20 };
+    render(
+      <LiveTrafficCanvas
+        events={group(path('quiet', [point, end]))}
+        paused={false}
+        hopTonesEnabled={false}
+      />,
+    );
+    expect(hopTones.play).not.toHaveBeenCalled();
   });
 
   it('uses a broad deterministic palette while keeping one hash the same color', () => {

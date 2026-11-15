@@ -7936,7 +7936,9 @@
     "waitingQuiet": "Brak ostatnich obserwacji pakietów",
     "waitingHintQuiet": "Ruch na żywo pokazuje ostatnią minutę lokalnych obserwacji. Starsze pakiety pozostają w Monitor → Sniffer.",
     "retentionHint": "Lokalny ruch na żywo przechowuje obserwacje przez jedną minutę. Starsze przechwyty pozostają w Monitor → Sniffer.",
-    "emptyFeedQuiet": "Brak obserwacji w ostatniej chwili. Starsze pakiety pozostają w Monitor → Sniffer."
+    "emptyFeedQuiet": "Brak obserwacji w ostatniej chwili. Starsze pakiety pozostają w Monitor → Sniffer.",
+    "hopTones": "Tony skoków",
+    "hopTonesHint": "Odtwórz cichy dźwięk przy każdym animowanym przeskoku. Krótsze przeskoki brzmią wyżej; dłuższe przeskoki brzmią niżej. Każdy dźwięk trwa tak długo, jak przelot danego odcinka na mapie. Działa w przypadku ruchu lokalnego, Beacon i CoreScope."
   },
   "meshcoreCompanionCli": {
     "summary": "Ustawienia urządzenia towarzyszącego",

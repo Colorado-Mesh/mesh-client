@@ -8198,6 +8198,8 @@
     "speed": "Playback",
     "speedNormal": "1×",
     "speedFast": "2×",
+    "hopTones": "Hop tones",
+    "hopTonesHint": "Play a soft tone for each animated hop. Shorter hops sound higher; longer hops sound lower. Each note lasts for that hop’s flight on the map. Works for local, Beacon, and CoreScope traffic.",
     "mapAria": "Live packet traffic map",
     "basemap": "Map style",
     "darkMap": "Dark",

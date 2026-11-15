@@ -7808,7 +7808,9 @@
     "waitingQuiet": "Nessuna osservazione recente sui pacchetti",
     "waitingHintQuiet": "Il traffico in tempo reale mostra l'ultimo minuto delle osservazioni locali. I pacchetti più vecchi rimangono nel Monitor → Sniffer.",
     "retentionHint": "Il traffico locale in tempo reale mantiene le osservazioni per un minuto. Le acquisizioni più vecchie rimangono nel Monitor → Sniffer.",
-    "emptyFeedQuiet": "Nessuna osservazione all'ultimo minuto. I pacchetti più vecchi rimangono nel Monitor → Sniffer."
+    "emptyFeedQuiet": "Nessuna osservazione all'ultimo minuto. I pacchetti più vecchi rimangono nel Monitor → Sniffer.",
+    "hopTones": "Tonalità dei salti",
+    "hopTonesHint": "Riproduci un suono delicato per ogni salto animato. Gli hop più brevi hanno un suono più acuto; gli hop più lunghi hanno un suono più grave. Ogni nota dura per tutta la durata del volo di quel salto sulla mappa. Funziona per il traffico locale, Beacon e CoreScope."
   },
   "meshcoreCompanionCli": {
     "summary": "Impostazioni del dispositivo Companion",

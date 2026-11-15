@@ -157,6 +157,7 @@ function latestCanvas(): {
   events: readonly LiveTrafficEvent[];
   paused: boolean;
   inspectionEvents?: readonly LiveTrafficEvent[];
+  hopTonesEnabled?: boolean;
 } {
   return canvas.mock.calls.at(-1)![0];
 }
@@ -483,6 +484,24 @@ describe('LiveTrafficPanel', () => {
       'true',
     );
     expect(latestCanvas().events).toHaveLength(0);
+  });
+
+  it('toggles hop tones from the header and persists the preference', async () => {
+    localStorage.removeItem('mesh-client:liveTrafficHopTones');
+    await renderPanel(
+      <LiveTrafficPanel
+        nodes={nodes}
+        myNodeNum={1}
+        meshcorePackets={[meshcorePacket(Date.now())]}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox', { name: 'liveTraffic.hopTones' });
+    expect(checkbox).not.toBeChecked();
+    expect(latestCanvas().hopTonesEnabled).toBe(false);
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+    expect(localStorage.getItem('mesh-client:liveTrafficHopTones')).toBe('1');
+    expect(latestCanvas().hopTonesEnabled).toBe(true);
   });
 
   it('accepts translated scope suggestions and the English keyword aliases', async () => {
