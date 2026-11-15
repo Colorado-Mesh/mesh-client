@@ -4490,7 +4490,7 @@
 <li><strong>NodeListPanel</strong>: inline anomaly badges, redundancy <code>+N</code> echo count, MQTT-only node dimming, Node Health Score badge, JSON export</li>
 <li><strong>MapPanel</strong>: channel utilization halos, routing anomaly aura circles</li>
 <li><strong>RF Histograms panel</strong>: SNR, RSSI, and hop-count bar charts across all nodes</li>
-<li><strong>Peer Graph panel</strong>: SVG force-directed graph of mesh peers with hop filters — <strong>Meshtastic and MeshCore only</strong>; Reticulum uses the <strong>Topology</strong> tab instead (same 48/400 visible-node cap)</li>
+<li><strong>Peer Graph panel</strong>: SVG force-directed graph of mesh peers with hop filters — <strong>Meshtastic and MeshCore only</strong>; Reticulum uses the <strong>Topology</strong> tab instead (same 1000 visible-node cap)</li>
 </ul>
 <p>All three protocols share one <strong>Diagnostics</strong> tab in the Monitor section; sections differ by <code>ProtocolCapabilities</code> (see <strong>Multi-protocol tab scoping</strong> below).</p>
 <hr />
@@ -5188,8 +5188,8 @@
 <p>Open it from Network &gt; Graph.</p>
 <p>SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the <strong>Topology</strong> tab with the same hop controls and visible-node cap).</p>
 <ul>
-<li><strong>Show distant peers</strong> (Peer Graph default <strong>off</strong>; Topology default <strong>on</strong>) and <strong>Max hops</strong> (Peer Graph default <strong>2</strong>; Topology default <strong>All hops</strong>) filter the node set first. Numeric <strong>Max hops</strong> is applied even when Show distant is off. Unknown hops are omitted unless Max hops is <strong>All hops</strong> and Show distant is on. The nearby hop ceiling (Mesh hops &gt; 1, Reticulum hops &gt; 2) applies only when Max hops is <strong>All hops</strong>. 1-hop Mesh nodes are not distant.</li>
-<li>Layout budget (known limitation): at most <strong>400</strong> nodes after hop filters (<code>FORCE_REPULSION_FULL_PAIR_CAP</code>). The toolbar states this limit; when the cap hides nodes the status reads “limit 400”</li>
+<li><strong>Max hops</strong> (Peer Graph default <strong>2</strong>; Topology default <strong>Show all</strong>) filters the node set first. Numeric <strong>Max hops</strong> hides peers above that count (and unknown hops). <strong>Show all</strong> includes every peer, including unknown hops. MeshCore presets go past 8 (16 / 32 / 64); Meshtastic presets match the 1–7 wire range.</li>
+<li>Layout budget (known limitation): at most <strong>1000</strong> nodes after hop filters (<code>TOPOLOGY_GRAPH_DISTANT_NODE_CAP</code>). Force layout still switches from full-pair to grid repulsion above <strong>400</strong> (<code>FORCE_REPULSION_FULL_PAIR_CAP</code>). The toolbar states the visible limit; when the cap hides nodes the status reads “limit 1000”</li>
 <li>Both Meshtastic and MeshCore use the <code>hops_away</code> field for edge inference</li>
 <li>Nodes are clickable; clicking opens NodeDetailModal for that node</li>
 <li>Layout uses D3-style force simulation; positions stabilize after initial render</li>
@@ -5643,7 +5643,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:50:49 UTC">November 13, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
   </span>
 
     

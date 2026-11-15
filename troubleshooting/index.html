@@ -6158,9 +6158,9 @@ allocations as <code>mainLiveness</code>.</p>
 <p><strong>Symptoms</strong>: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.</p>
 <p><strong>Fix</strong>: Foreign-LoRa overhear tables render on the <strong>Meshtastic</strong> and <strong>MeshCore</strong> Diagnostics tabs (keyed by that protocol’s self node id). Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).</p>
 <h3 id="graph-or-topology-does-not-show-all-nodes">Graph or Topology does not show all nodes<a class="headerlink" href="#graph-or-topology-does-not-show-all-nodes" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms</strong>: MeshCore/Meshtastic <strong>Graph</strong> or Reticulum <strong>Topology</strong> says it is showing 400 of N nodes even with <strong>Show distant peers</strong> ticked and <strong>Max hops</strong> set to <strong>All hops</strong>.</p>
-<p><strong>Cause</strong>: The force-directed layout has a hard visible-node budget of <strong>400</strong> after hop filters. Numeric <strong>Max hops</strong> is not gated by Show distant. Unknown hops are omitted unless Max hops is <strong>All hops</strong> and Show distant is on. The nearby hop ceiling applies only when Max hops is <strong>All hops</strong>. Leftover nodes beyond the layout budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows after hop filters (sidecar 2,000).</p>
-<p><strong>Fix</strong>: This is expected. The toolbar note states the 400-node limit. Turn on <strong>Show distant peers</strong> and set <strong>Max hops</strong> to <strong>All hops</strong> to include multi-hop peers up to 400. On Topology, use <strong>RF only</strong> to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow <strong>Max hops</strong> if the graph is too dense.</p>
+<p><strong>Symptoms</strong>: MeshCore/Meshtastic <strong>Graph</strong> or Reticulum <strong>Topology</strong> says it is showing 1000 of N nodes even with <strong>Max hops</strong> set to <strong>Show all</strong>.</p>
+<p><strong>Cause</strong>: The force-directed layout has a hard visible-node budget of <strong>1000</strong> after hop filters. Leftover nodes beyond the layout budget are omitted on purpose (closer hops are preferred when truncating). Reticulum Topology also ingests at most 1200 path-table rows after hop filters (sidecar 2,000). Force layout uses grid repulsion above 400 nodes.</p>
+<p><strong>Fix</strong>: This is expected. The toolbar note states the 1000-node limit. Set <strong>Max hops</strong> to <strong>Show all</strong> to include multi-hop and unknown-hop peers up to 1000. On Topology, use <strong>RF only</strong> to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow <strong>Max hops</strong> if the graph is too dense.</p>
 <h3 id="no-signal-bars-on-some-nodes">No signal bars on some nodes<a class="headerlink" href="#no-signal-bars-on-some-nodes" title="Permanent link">&para;</a></h3>
 <p><strong>Cause</strong>: Signal strength is only available for <strong>direct (0-hop) RF</strong> neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.</p>
 <p><strong>Fix</strong>: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.</p>
@@ -6289,7 +6289,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 5, 2026 03:17:20 UTC">November 5, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
   </span>
 
     
