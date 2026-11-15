@@ -3109,6 +3109,16 @@
 <td><code>wifi.enabled</code>, <code>wifi.ssid</code>, <code>wifi.pwd</code> (secret), <code>wifi.status</code>, <code>wifi.ip</code> (read-only)</td>
 <td>Enable, SSID and password need a reboot; <code>set wifi.clear</code> clears the saved network</td>
 </tr>
+<tr>
+<td>notify</td>
+<td><code>notify.enabled</code> (<code>get notify</code>), <code>notify.sound</code></td>
+<td>Buzzer / sound alerts; unsupported commands surface as “Not supported by this radio”</td>
+</tr>
+<tr>
+<td>retry</td>
+<td><code>retry.preset</code> (<code>infra</code> / <code>rooftop</code> / <code>mobile</code>), <code>direct.retry</code>, <code>direct.retry.count</code>, <code>flood.retry.count</code></td>
+<td>Firmware owns RF retries; Chat can still cancel a pending DM ACK wait in the UI</td>
+</tr>
 </tbody>
 </table>
 <p><code>secret</code> settings are never part of bulk reads; <code>wifi.pwd</code> is read only on an explicit reveal (<code>MESHCORE_COMPANION_SECRET_GET_COMMANDS</code>).</p>
@@ -3153,7 +3163,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 15, 2026 20:31:17 UTC">October 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 20:57:23 UTC">November 15, 2026</span>
   </span>
 
     

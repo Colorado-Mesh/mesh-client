@@ -3242,6 +3242,16 @@
 <td><code>meshtasticHwModel</code> 43, slug <code>heltec-v3</code>, 8 MiB flash</td>
 </tr>
 <tr>
+<td><code>meshtastic:heltec-v4</code></td>
+<td><code>esp32s3</code></td>
+<td>hw 110 OLED; slug <code>heltec-v4</code>, 16 MiB (ambiguous w/ TFT)</td>
+</tr>
+<tr>
+<td><code>meshtastic:heltec-v4-tft</code></td>
+<td><code>esp32s3</code></td>
+<td>hw 110 TFT; slug <code>heltec-v4-tft</code>, 16 MiB</td>
+</tr>
+<tr>
 <td><code>meshtastic:tbeam</code></td>
 <td><code>esp32</code></td>
 <td><code>meshtasticHwModel</code> 4, slug <code>tbeam</code>, 4 MiB flash</td>
@@ -3254,7 +3264,12 @@
 <tr>
 <td><code>meshcore:heltec-v3</code></td>
 <td><code>esp32s3</code></td>
-<td>prefix <code>heltec_v3</code>, model key <code>heltecv3</code>, 8 MiB flash</td>
+<td>prefix <code>heltec_v3</code>, model key <code>heltecv3</code>, 8 MiB</td>
+</tr>
+<tr>
+<td><code>meshcore:heltec-v4</code></td>
+<td><code>esp32s3</code></td>
+<td>prefix <code>heltec_v4</code>, keys <code>heltecv4</code>/<code>heltecv4oled</code>, 16 MiB</td>
 </tr>
 <tr>
 <td><code>meshcore:rak4631</code></td>
@@ -3264,10 +3279,11 @@
 </tbody>
 </table>
 <p>Add a board only after its factory image layout, chip id, and bootloader entry are verified. Ids are <code>&lt;protocol&gt;:&lt;slug&gt;</code> and unique across protocols.</p>
+<p><strong>Not listed yet (need verified flash layouts before adding):</strong> Meshtastic ThinkNode M4/M8/M9, Makerfabs Nomad Terminal, RAK WisMesh Dongle; MeshCore ThinkNode M4/M8, Muzi Base, Waveshare ESP32-S3 LR1121. Use the upstream web flasher for those until they are added here.</p>
 <h2 id="contracts-and-invariants">Contracts and invariants<a class="headerlink" href="#contracts-and-invariants" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Fail closed.</strong> An unlisted board, an unrecognized file name, an ambiguous archive, or any header mismatch throws <code>DeviceFirmwareError</code> (typed <code>code</code>, optional <code>detail</code>) instead of guessing. Add new codes to both <code>ERROR_KEYS</code> in the component and <code>deviceFirmware.errors.*</code>.</li>
-<li><strong>Detection.</strong> <code>detectDeviceFlashBoard</code> returns <code>matched</code> (selection locked to the live radio), <code>unsupported</code> (blocks), or <code>unknown</code> (disconnected or no model reported: manual pick plus the <code>unverifiedBoard</code> warning). Meshtastic matches the numeric <code>hw_model</code> first, then a legacy branded label. MeshCore matches the normalized (<code>[a-z0-9]</code> only) <code>deviceQuery</code> manufacturer/model against <code>meshcoreModelKeys</code>. Live detection wins over <code>manualBoardId</code>.</li>
+<li><strong>Detection.</strong> <code>detectDeviceFlashBoard</code> returns <code>matched</code> (selection locked to the live radio), <code>ambiguous</code> (multiple matrix rows share the reported model — e.g. Heltec V4 OLED/TFT both use hw 110; user must verify the variant), <code>unsupported</code> (blocks), or <code>unknown</code> (disconnected or no model reported: manual pick plus the <code>unverifiedBoard</code> warning). Meshtastic matches the numeric <code>hw_model</code> first, then a legacy branded label. MeshCore matches the normalized (<code>[a-z0-9]</code> only) <code>deviceQuery</code> manufacturer/model against <code>meshcoreModelKeys</code>. Live detection wins over <code>manualBoardId</code> when matched.</li>
 <li><strong>Plans are never stale.</strong> The component re-plans on every change of file, board, or expected digest, and only uses a <code>PlanResult</code> whose <code>file</code>, <code>boardId</code>, and <code>expectedSha</code> still match the current inputs. Files over <code>FIRMWARE_BACKUP_MAX_BYTES</code> are refused before they are read into memory.</li>
 <li><strong>Acknowledgement is bound</strong> to <code>${board.id}:${payloadSha256}</code> and cleared after every flash attempt (<code>finally</code>).</li>
 <li><strong>Preflight is pure.</strong> <code>evaluateFlashPreflight</code> has no I/O. <code>canFlash</code> is true only with no blockers.</li>
@@ -3484,7 +3500,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 20:57:23 UTC">November 15, 2026</span>
   </span>
 
     
