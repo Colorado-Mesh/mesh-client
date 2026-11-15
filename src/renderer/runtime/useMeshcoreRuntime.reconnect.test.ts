@@ -809,6 +809,12 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(bridgeClearIdx).toBeLessThan(tcpGuardIdx);
   });
 
+  it('clears MeshCore radio self position before each transport open', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain("clearRadioSelfPosition('meshcore')");
+    expect(prepareBody).toContain('refreshOurPositionGenerationRef.current += 1');
+  });
+
   it('clears connection params on manual prepare and latches provisional params before open', () => {
     const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
     expect(prepareBody).toMatch(

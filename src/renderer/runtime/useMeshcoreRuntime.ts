@@ -963,6 +963,8 @@ export function useMeshcoreRuntime() {
   const refreshOurPositionMeshCoreRef = useRef<() => Promise<OurPosition | null>>(() =>
     Promise.resolve(null),
   );
+  /** Drop superseded host/IP lookups so they cannot overwrite newer radio GPS. */
+  const refreshOurPositionGenerationRef = useRef(0);
   /**
    * Post-connect companion self telemetry (4-byte CMD_SEND_TELEMETRY_REQ → LPP GPS/altitude).
    * Assigned to {@link requestSelfTelemetry} below (initConn runs earlier in the hook).
@@ -3499,6 +3501,9 @@ export function useMeshcoreRuntime() {
       setMeshcoreRepeaterRpcPending(new Map());
       repeaterCommandServiceRef.current?.clear();
       resetMeshcoreRoomAutoLoginSingleFlight();
+      // Drop prior radio's session GPS before opening a (possibly different) transport.
+      clearRadioSelfPosition('meshcore');
+      refreshOurPositionGenerationRef.current += 1;
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
         bleConnectInProgressRef.current = false;
@@ -9439,6 +9444,7 @@ export function useMeshcoreRuntime() {
     if (getStoredMeshProtocol() !== 'meshcore') {
       return null;
     }
+    const generation = ++refreshOurPositionGenerationRef.current;
     const storedStatic = readStoredStaticGps();
     const staticLat = storedStatic?.lat;
     const staticLon = storedStatic?.lon;
@@ -9452,6 +9458,9 @@ export function useMeshcoreRuntime() {
       staticLon,
       radioSelf?.altitudeMeters,
     );
+    if (generation !== refreshOurPositionGenerationRef.current) {
+      return null;
+    }
     setOurPosition(pos);
     if (getStoredMeshProtocol() === 'meshcore') {
       publishOurPositionReference(pos);

@@ -67,6 +67,20 @@ describe('useMeshcoreRuntime radio self position', () => {
     expect(body).toContain("readRadioSelfPosition('meshcore')");
   });
 
+  it('drops superseded refresh commits after await', () => {
+    const body = refreshBody(
+      loadRuntimeSource('useMeshcoreRuntime.ts'),
+      'const refreshOurPositionNoop = useCallback',
+    );
+    expect(body).toContain('refreshOurPositionGenerationRef');
+    expect(body).toMatch(
+      /await resolveOurPosition\([\s\S]*?generation !== refreshOurPositionGenerationRef\.current/,
+    );
+    expect(body).toMatch(
+      /generation !== refreshOurPositionGenerationRef\.current[\s\S]*?return null/,
+    );
+  });
+
   it('records device GPS only from self telemetry LPP, not advert lat/lon', () => {
     const source = loadRuntimeSource('useMeshcoreRuntime.ts');
     expect(source).toContain("recordRadioSelfPosition('meshcore'");

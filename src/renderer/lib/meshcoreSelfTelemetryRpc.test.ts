@@ -41,18 +41,22 @@ describe('runMeshcoreSelfTelemetryRequest', () => {
     const conn = createMockMeshcoreConn();
     const selfKey = makePubKey(0x33);
     const wrongPrefix = makePubKey(0x44).subarray(0, 6);
-    const lppSensorData = new Uint8Array([2, 3, 4]);
+    const wrongLppSensorData = new Uint8Array([9, 9, 9]);
+    const selfLppSensorData = new Uint8Array([2, 3, 4]);
 
     const promise = runMeshcoreSelfTelemetryRequest(conn, selfKey, { timeoutMs: 5000 });
     await Promise.resolve();
 
-    conn.emit(MC_PUSH_TELEMETRY_RESPONSE, { pubKeyPrefix: wrongPrefix, lppSensorData });
+    conn.emit(MC_PUSH_TELEMETRY_RESPONSE, {
+      pubKeyPrefix: wrongPrefix,
+      lppSensorData: wrongLppSensorData,
+    });
     conn.emit(MC_PUSH_TELEMETRY_RESPONSE, {
       pubKeyPrefix: selfKey.subarray(0, 6),
-      lppSensorData,
+      lppSensorData: selfLppSensorData,
     });
 
-    await expect(promise).resolves.toMatchObject({ lppSensorData });
+    await expect(promise).resolves.toMatchObject({ lppSensorData: selfLppSensorData });
   });
 
   it('times out when no matching TelemetryResponse arrives', async () => {
