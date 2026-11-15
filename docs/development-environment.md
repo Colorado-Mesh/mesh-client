@@ -438,32 +438,33 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Quality checks
 
-| Script                                | Description                                                             |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)             |
-| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                    |
-| `check:console-log`                   | Fail on bare `console.log` in production paths                          |
-| `check:db-migrations`                 | Verify SQLite migrations are valid                                      |
-| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                  |
-| `check:environment`                   | Verify local dev prerequisites (run after clone)                        |
-| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                               |
-| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage            |
-| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules              |
-| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only              |
-| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)  |
-| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer              |
-| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)      |
-| `check:log-injection`                 | Detect unsanitized user data in log calls                               |
-| `check:log-panel-filter`              | Verify log panel filter wiring                                          |
-| `check:log-service-sinks`             | Verify log service sink configuration                                   |
-| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network) |
-| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                  |
-| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                           |
-| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                  |
-| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)   |
-| `check:silent-catches`                | Detect empty or unlogged catch blocks                                   |
-| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                |
-| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                     |
+| Script                                | Description                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)               |
+| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                      |
+| `check:console-log`                   | Fail on bare `console.log` in production paths                            |
+| `check:db-migrations`                 | Verify SQLite migrations are valid                                        |
+| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                    |
+| `check:environment`                   | Verify local dev prerequisites (run after clone)                          |
+| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                                 |
+| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage              |
+| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules                |
+| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only                |
+| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)    |
+| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer                |
+| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)        |
+| `check:log-injection`                 | Detect unsanitized user data in log calls                                 |
+| `check:log-panel-filter`              | Verify log panel filter wiring                                            |
+| `check:log-service-sinks`             | Verify log service sink configuration                                     |
+| `check:main-bundle`                   | Production main `index.js` size budget (same suite as `bundle-size.yaml`) |
+| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network)   |
+| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                    |
+| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                             |
+| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                    |
+| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)     |
+| `check:silent-catches`                | Detect empty or unlogged catch blocks                                     |
+| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                  |
+| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                       |
 
 #### Documentation
 
@@ -673,6 +674,17 @@ When `CSC_LINK` is unset, local `dist:mac` can skip signing/notarization. Releas
 
 ### Build analysis
 
+Enforce the production main `index.js` budget (same suite as CI `bundle-size.yaml`):
+
+```bash
+pnpm run check:main-bundle
+```
+
+Pre-commit path-gates this when `src/main/` or the esbuild main-build scripts are staged. On
+failure, follow the printed remediation: move bulky code into a sibling esbuild entry, prefer
+externals, analyze the metafile — raise `MAIN_BUNDLE_SIZE_BUDGET_BYTES` only if there is
+absolutely no other way.
+
 To analyze the main process bundle size and composition:
 
 ```bash
@@ -703,7 +715,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
 7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
 8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
-9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
+9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:main-bundle` (when `src/main/` or esbuild main-build scripts staged), `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 

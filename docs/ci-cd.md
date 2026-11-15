@@ -98,7 +98,10 @@ binary download and `install-app-deps` probe: the check only bundles the main pr
 This explicitly selects the existing esbuild regression because its string entrypoint is invisible
 to Vitest's import-based related selection. The test builds the production minified main process,
 checks worker/license artifacts and enforces the strict `MAIN_BUNDLE_SIZE_BUDGET_BYTES` budget
-defined in that test.
+defined in that test. Locally and in pre-commit, the same suite runs via `pnpm run check:main-bundle`
+when `src/main/` or the esbuild main-build scripts are staged. An over-budget failure prints
+AI-friendly remediation (prefer sibling esbuild entries / externals / metafile analysis; raise
+the budget only as a last resort).
 An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
 The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
 it uses no repository secrets or privileged `pull_request_target` execution.
