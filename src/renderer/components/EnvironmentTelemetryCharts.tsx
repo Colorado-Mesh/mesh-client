@@ -24,7 +24,7 @@ import {
   type EnvChartNodeSelection,
   environmentChartWindowMs,
 } from '@/renderer/lib/environmentTelemetryChart';
-import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
+import { formatDisplayDateTime, formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { resolveIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
@@ -62,6 +62,14 @@ function latestDefinedNumber(
 
 function formatChartValue(value: number | undefined, fallback: string): string {
   return value === undefined ? fallback : String(value);
+}
+
+/** Tooltip labels: date+time for multi-day windows; time-only for 1h/24h. */
+function formatChartTooltipLabel(value: unknown, use24Hour: boolean, multiDay: boolean): string {
+  if (typeof value !== 'number') return typeof value === 'string' ? value : '';
+  return multiDay
+    ? formatDisplayDateTime(value, { use24Hour })
+    : formatDisplayTime(value, { withSeconds: true, use24Hour });
 }
 
 interface MetricSeries {
@@ -145,6 +153,7 @@ export default function EnvironmentTelemetryCharts({
 
   const [selected, setSelected] = useState<EnvChartNodeSelection | null>(null);
   const [windowId, setWindowId] = useState<EnvironmentTelemetryChartWindowId>('24h');
+  const [requestTargetId, setRequestTargetId] = useState<number | null>(null);
 
   const activeSelection: EnvChartNodeSelection | null = useMemo(() => {
     if (selected === ENV_CHART_ALL_NODES) return ENV_CHART_ALL_NODES;
@@ -160,6 +169,7 @@ export default function EnvironmentTelemetryCharts({
   }, [allNodes, historyNodeIds, activeSelection]);
 
   const sinceMs = (nowMs > 0 ? nowMs : 0) - environmentChartWindowMs(windowId);
+  const multiDayWindow = windowId === '7d';
   const envChartData = useMemo(
     () =>
       activeSelection == null
@@ -185,28 +195,51 @@ export default function EnvironmentTelemetryCharts({
   const metric = (field: string, name: string, stroke: string): MetricSeries[] =>
     expandMetricSeries(field, name, stroke, seriesNodeIds, allNodes, nodeLabel);
 
-  const requestNodeId =
-    typeof activeSelection === 'number'
-      ? activeSelection
-      : (myNodeNum ?? requestableNodeIds[0] ?? null);
+  const resolvedRequestTargetId = useMemo(() => {
+    if (requestTargetId != null && requestableNodeIds.includes(requestTargetId)) {
+      return requestTargetId;
+    }
+    if (myNodeNum != null && requestableNodeIds.includes(myNodeNum)) return myNodeNum;
+    return requestableNodeIds[0] ?? null;
+  }, [requestTargetId, requestableNodeIds, myNodeNum]);
 
   const showRequest =
     capabilities?.hasRepeaterStatus === true &&
     typeof onRequestSensorTelemetry === 'function' &&
-    requestNodeId != null;
+    resolvedRequestTargetId != null;
 
   const requestControl = showRequest ? (
-    <button
-      type="button"
-      className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
-      disabled={!isConnected}
-      onClick={() => {
-        onRequestSensorTelemetry(requestNodeId);
-      }}
-      aria-label={t('telemetryPanel.requestSensorTelemetry')}
-    >
-      {t('telemetryPanel.requestSensorTelemetry')}
-    </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="text-muted flex items-center gap-2 text-xs">
+        {t('telemetryPanel.envNode')}
+        <select
+          className="bg-ink-800 text-ink-200 rounded px-2 py-1 text-xs"
+          value={String(resolvedRequestTargetId)}
+          onChange={(e) => {
+            setRequestTargetId(Number(e.target.value));
+          }}
+          aria-label={t('telemetryPanel.requestSensorTelemetry')}
+          data-testid="env-telemetry-request-target"
+        >
+          {requestableNodeIds.map((n) => (
+            <option key={n} value={n}>
+              {nodeLabel(n)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
+        disabled={!isConnected}
+        onClick={() => {
+          onRequestSensorTelemetry(resolvedRequestTargetId);
+        }}
+        aria-label={t('telemetryPanel.requestSensorTelemetry')}
+      >
+        {t('telemetryPanel.requestSensorTelemetry')}
+      </button>
+    </div>
   ) : null;
 
   if (!hasAnyEnvHistory) {
@@ -284,12 +317,7 @@ export default function EnvironmentTelemetryCharts({
 
   const tickFmt = (v: unknown) =>
     typeof v === 'number' ? formatDisplayTime(v, { use24Hour: use24HourTime }) : '';
-  const labelFmt = (v: unknown) =>
-    typeof v === 'number'
-      ? formatDisplayTime(v, { withSeconds: true, use24Hour: use24HourTime })
-      : typeof v === 'string'
-        ? v
-        : '';
+  const labelFmt = (v: unknown) => formatChartTooltipLabel(v, use24HourTime, multiDayWindow);
 
   const visibleLines = (series: MetricSeries[]) =>
     series.filter((s) => envChartData.some((d) => typeof d[s.key] === 'number'));
@@ -504,6 +532,7 @@ export default function EnvironmentTelemetryCharts({
           data={envChartData}
           series={metric('barometricPressure', t('telemetryPanel.seriesPressureHpa'), '#a78bfa')}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
           aria={t('telemetryPanel.chartAriaPressure', {
             pressure: formatChartValue(
               latestDefinedNumber(envChartData, 'barometricPressure'),
@@ -658,6 +687,7 @@ export default function EnvironmentTelemetryCharts({
             ...metric('pmNoxIdx', t('telemetryPanel.seriesNox'), '#e879f9'),
           ]}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
 
@@ -667,6 +697,7 @@ export default function EnvironmentTelemetryCharts({
           data={envChartData}
           series={metric('lux', t('telemetryPanel.seriesLux'), '#fde047')}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
           aria={t('telemetryPanel.chartAriaLux', {
             lux: formatChartValue(latestDefinedNumber(envChartData, 'lux'), chartValueUnavailable),
             count: envChartData.length,
@@ -685,6 +716,7 @@ export default function EnvironmentTelemetryCharts({
             ...metric('windDirection', t('telemetryPanel.seriesWindDirection'), '#0284c7'),
           ]}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
 
@@ -698,6 +730,7 @@ export default function EnvironmentTelemetryCharts({
             ...metric('weight', t('telemetryPanel.seriesWeight'), '#93c5fd'),
           ]}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
 
@@ -718,6 +751,7 @@ export default function EnvironmentTelemetryCharts({
             ),
           ]}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
 
@@ -733,6 +767,7 @@ export default function EnvironmentTelemetryCharts({
             ),
           )}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
 
@@ -748,6 +783,7 @@ export default function EnvironmentTelemetryCharts({
             ),
           )}
           use24HourTime={use24HourTime}
+          multiDayWindow={multiDayWindow}
         />
       ) : null}
     </div>
@@ -780,24 +816,21 @@ function MultiKeyCard({
   data,
   series,
   use24HourTime,
+  multiDayWindow,
   aria,
 }: {
   title: string;
   data: readonly Record<string, unknown>[];
   series: readonly MetricSeries[];
   use24HourTime: boolean;
+  multiDayWindow: boolean;
   aria?: string;
 }) {
   const visible = series.filter((s) => data.some((d) => typeof d[s.key] === 'number'));
   if (visible.length === 0) return null;
   const tickFmt = (v: unknown) =>
     typeof v === 'number' ? formatDisplayTime(v, { use24Hour: use24HourTime }) : '';
-  const labelFmt = (v: unknown) =>
-    typeof v === 'number'
-      ? formatDisplayTime(v, { withSeconds: true, use24Hour: use24HourTime })
-      : typeof v === 'string'
-        ? v
-        : '';
+  const labelFmt = (v: unknown) => formatChartTooltipLabel(v, use24HourTime, multiDayWindow);
   return (
     <ChartCard title={title} aria={aria ?? title}>
       <LineChart data={data}>

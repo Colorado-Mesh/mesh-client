@@ -301,6 +301,27 @@ describe('environmentTelemetryStore', () => {
     expect(series.at(-1)?.reading.co2).toBe(9999);
   });
 
+  it('discards loadFromDb results when clearHistory runs during the read', async () => {
+    const now = Date.now();
+    let resolve: (rows: EnvironmentTelemetryRow[]) => void = () => {};
+    vi.mocked(window.electronAPI.db.getEnvironmentTelemetry).mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    vi.mocked(window.electronAPI.db.clearEnvironmentTelemetry).mockResolvedValueOnce({
+      changes: 1,
+    });
+    const pending = useEnvironmentTelemetryStore.getState().loadFromDb();
+    await useEnvironmentTelemetryStore.getState().clearHistory();
+    resolve([row({ identity_id: ID_MT, node_id: 9, recorded_at: now, temperature: 11 })]);
+    await pending;
+    expect(useEnvironmentTelemetryStore.getState().history.size).toBe(0);
+    expect(
+      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', ID_MT, 9),
+    ).toEqual([]);
+  });
+
   it('claimLegacyIdentity merges the legacy bucket into the claimant and drops the fallback', async () => {
     const now = Date.now();
     vi.mocked(window.electronAPI.db.getEnvironmentTelemetry).mockResolvedValueOnce([

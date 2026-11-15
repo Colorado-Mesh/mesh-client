@@ -128,6 +128,8 @@ function capLoadedNodes(nodes: Map<number, EnvironmentHistoryPoint[]>): MutableN
 
 let insertsSincePrune = 0;
 let pruneTimer: ReturnType<typeof setInterval> | null = null;
+/** Bumped on clear so in-flight `loadFromDb` results are discarded. */
+let historyGeneration = 0;
 
 async function runPeriodicPrune(): Promise<void> {
   const prune = window.electronAPI?.db?.pruneEnvironmentTelemetry;
@@ -194,6 +196,7 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
   },
 
   async clearHistory() {
+    historyGeneration += 1;
     set({ history: new Map() });
     const clear = window.electronAPI?.db?.clearEnvironmentTelemetry;
     if (typeof clear !== 'function') return;
@@ -241,8 +244,10 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
 
   async loadFromDb() {
     try {
+      const generation = historyGeneration;
       const sinceMs = Date.now() - ENVIRONMENT_TELEMETRY_RETENTION_MS;
       const rows = await window.electronAPI.db.getEnvironmentTelemetry(sinceMs);
+      if (generation !== historyGeneration) return;
       if (rows.length === 0) return;
       const loaded = new Map<
         MeshProtocol,
@@ -313,6 +318,7 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
       for (const [protocol, byIdentity] of live) {
         if (!merged.has(protocol)) merged.set(protocol, byIdentity);
       }
+      if (generation !== historyGeneration) return;
       set({ history: merged });
     } catch (err) {
       console.warn('[environmentTelemetry] loadFromDb failed: ' + errLikeToLogString(err));
