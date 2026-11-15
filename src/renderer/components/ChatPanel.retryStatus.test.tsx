@@ -174,6 +174,8 @@ describe('ChatPanel retry status controls', () => {
       </ToastProvider>,
     );
     expect(await screen.findByText('Waiting for network acknowledgement…')).toBeInTheDocument();
+    expect(screen.getByText('MAYDAY')).toBeInTheDocument();
+    expect(screen.queryByText('Emergency')).not.toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
     await user.click(screen.getByRole('button', { name: /stop retrying/i }));
@@ -188,5 +190,25 @@ describe('ChatPanel retry status controls', () => {
       expect.anything(),
       expect.anything(),
     );
+  });
+
+  it('shows SAFETY (not Emergency) for a queued MECP safety outbox row', async () => {
+    vi.mocked(mockOutbox.list).mockResolvedValue([
+      emergencyRow({
+        id: 502,
+        payload: 'MECP/2/W01',
+        status: 'queued',
+      }),
+    ]);
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps()} messages={[]} onSend={vi.fn()} isConnected={false} />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('SAFETY')).toBeInTheDocument();
+    expect(screen.queryByText('Emergency')).not.toBeInTheDocument();
+    expect(screen.getByText('MECP/2/W01')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

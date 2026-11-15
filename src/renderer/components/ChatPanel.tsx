@@ -492,18 +492,25 @@ function OutboxBubble({
           : 'text-red-400';
   const displayError = row.error ? translateChatSendError(t, row.error) : null;
   const isEmergency = isEmergencyOutboxPriority(row);
+  const mecpSeverity = isEmergency ? tryParseMecp(row.payload)?.severity : null;
+  const emergencyTone =
+    mecpSeverity != null
+      ? mecpChatBubbleToneClasses(mecpSeverity, true)
+      : isEmergency
+        ? 'border border-red-500'
+        : 'opacity-80';
   return (
     <div className="mb-1 flex justify-end px-4">
-      <div
-        className={`bg-ink-700 max-w-[75%] rounded-xl px-3 py-2 ${
-          isEmergency ? 'border border-red-500' : 'opacity-80'
-        }`}
-      >
+      <div className={`bg-ink-700 max-w-[75%] rounded-xl px-3 py-2 ${emergencyTone}`}>
         {isEmergency && (
           <div className="text-label mb-1 flex items-center gap-2">
-            <span className="rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">
-              {t('chatPanel.outboxEmergencyBadge')}
-            </span>
+            {mecpSeverity != null ? (
+              <MecpSeverityBadge severity={mecpSeverity} />
+            ) : (
+              <span className="rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">
+                {t('chatPanel.outboxEmergencyBadge')}
+              </span>
+            )}
             {row.status !== 'blocked' && (
               <span className="text-ink-300">{t('chatPanel.outboxEmergencyWillSend')}</span>
             )}
