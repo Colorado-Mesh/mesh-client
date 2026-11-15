@@ -7150,9 +7150,14 @@ export function useMeshcoreRuntime() {
       if (myNodeId <= 0) {
         throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
       }
+      const setupGen = meshcoreSetupGenerationRef.current;
       const raw = await runMeshcoreSelfTelemetryRequest(conn, selfKey, {
         timeoutMs: opts?.timeoutMs,
       });
+      // prepareRfConnect bumps setup generation; do not apply a superseded radio's LPP/GPS.
+      if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+        return;
+      }
       applyMeshcoreTelemetryLpp(myNodeId, raw.lppSensorData, 'rpc');
     },
     [applyMeshcoreTelemetryLpp, resolveMeshcoreConn],

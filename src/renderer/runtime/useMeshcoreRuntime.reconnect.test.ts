@@ -728,6 +728,16 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
+  it('discards self telemetry replies after setup generation changes', () => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'requestSelfTelemetry');
+    expect(body).toMatch(
+      /const setupGen = meshcoreSetupGenerationRef\.current[\s\S]*?await runMeshcoreSelfTelemetryRequest/,
+    );
+    expect(body).toMatch(
+      /await runMeshcoreSelfTelemetryRequest[\s\S]*?meshcoreSetupGenerationRef\.current !== setupGen[\s\S]*?return;[\s\S]*?applyMeshcoreTelemetryLpp/,
+    );
+  });
+
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
     assertPowerResumeSkipsOnExplicitDisconnect(
       RUNTIME_SOURCE,
