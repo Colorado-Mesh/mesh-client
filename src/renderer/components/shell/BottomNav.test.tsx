@@ -53,7 +53,7 @@ describe('BottomNav', () => {
     const { nav } = renderNav({ badgeCounts: { Incident: 2, Diagnostics: 3, Chat: 1 } });
     expect(
       within(nav).getByRole('button', {
-        name: 'Incident, 2 open MAYDAY or URGENT incidents',
+        name: 'Incident, 2 open incidents',
       }),
     ).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: /^More/ })).toHaveTextContent('3');

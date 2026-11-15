@@ -587,7 +587,7 @@
     "switchToMeshCoreWithUnread": "Switch to MeshCore, {{count}} unread",
     "switchToReticulumWithUnread": "Switch to Reticulum, {{count}} unread",
     "tabWithUnread": "{{label}}, {{count}} unread",
-    "tabWithOpenIncidents": "{{label}}, {{count}} open MAYDAY or URGENT incidents",
+    "tabWithOpenIncidents": "{{label}}, {{count}} open incidents",
     "backToTop": "Back to top"
   },
   "battery": {
@@ -7818,10 +7818,10 @@
   },
   "incidentPanel": {
     "title": "Emergency incidents",
-    "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab, including drills. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
-    "empty": "No open emergency incidents.",
+    "intro": "Common operating picture for open MECP reports heard on any protocol — every severity, including drills. Open rows badge this tab. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
+    "empty": "No open incidents (including drills).",
     "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat, then use MECP in Chat. Map → Layers can show open incidents with coordinates.",
-    "listAria": "Open emergency incidents",
+    "listAria": "Open incidents, including drills",
     "exportLog": "Export log",
     "exportMenuLabel": "Export incident log format",
     "exportJson": "Export JSON",

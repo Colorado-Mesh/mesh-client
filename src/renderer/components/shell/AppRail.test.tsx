@@ -129,9 +129,7 @@ describe('AppRail', () => {
         onSectionSelect={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: 'Incident, 2 open MAYDAY or URGENT incidents' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Incident, 2 open incidents' })).toBeInTheDocument();
   });
 
   it('shows Reticulum pending file offers on Network in amber', () => {

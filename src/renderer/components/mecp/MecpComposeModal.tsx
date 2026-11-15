@@ -16,9 +16,16 @@ import {
 } from '@/renderer/lib/mecp/mecpMessages';
 
 import { TEXTAREA_BOX_CLASS } from '../ui/formClasses';
-import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
 
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
+
+/** Selected control fill: red = request/report, blue = response (mode accent, not severity badge). */
+function mecpComposeSelectedClass(responseMode: boolean, strong: boolean): string {
+  if (responseMode) {
+    return strong ? 'bg-blue-700 text-white' : 'bg-blue-900/80 text-blue-100';
+  }
+  return strong ? 'bg-red-700 text-white' : 'bg-red-900/80 text-red-100';
+}
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -265,7 +272,9 @@ export function MecpComposeModal({
                 setSeverity(s);
               }}
               className={`rounded px-2 py-1 text-xs font-semibold ${
-                severity === s ? MECP_SEVERITY_BADGE_CLASSES[s] : 'bg-ink-800 text-ink-300'
+                severity === s
+                  ? mecpComposeSelectedClass(responseMode, true)
+                  : 'bg-ink-800 text-ink-300'
               }`}
             >
               {t(severityLabelKey(s))}
@@ -299,11 +308,9 @@ export function MecpComposeModal({
                 clearError();
                 setCategory(letter);
               }}
-              className={`text-2xs rounded px-1 py-1 ${
+              className={`text-2xs min-h-10 w-full rounded px-1 py-1 text-left leading-tight ${
                 category === letter
-                  ? responseMode
-                    ? 'bg-blue-900/80 text-blue-100'
-                    : 'bg-red-900/80 text-red-100'
+                  ? mecpComposeSelectedClass(responseMode, false)
                   : 'bg-ink-800 text-ink-300'
               }`}
             >
@@ -324,9 +331,7 @@ export function MecpComposeModal({
               }}
               className={`text-2xs rounded px-1.5 py-0.5 ${
                 codes.includes(code)
-                  ? responseMode
-                    ? 'bg-blue-700 text-white'
-                    : 'bg-red-700 text-white'
+                  ? mecpComposeSelectedClass(responseMode, true)
                   : 'bg-ink-800 text-ink-300'
               }`}
             >
