@@ -88,6 +88,46 @@ describe('buildMeshPeerTopologyGraph', () => {
     ).toBe(true);
   });
 
+  it('does not promote hop-filtered path relays back into the hub ring', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0 })],
+      // Filtered out by maxHops: 2, but still referenced as a path hop.
+      [2, node(2, { hops_away: 5 })],
+      [3, node(3, { hops_away: 2, path: [2, 3] })],
+    ]);
+
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+      filter: { maxHops: 2 },
+    });
+
+    expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(false);
+    expect(graph.nodes.some((n) => n.nodeId === 3 && n.kind === 'peer')).toBe(true);
+    expect(
+      graph.edges.some((e) => e.source === '1' && e.target === '3' && e.kind === 'relay'),
+    ).toBe(true);
+  });
+
+  it('does not emit a multi-hop hub as both relay and peer', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0 })],
+      [4, node(4, { hops_away: 2 })],
+      [5, node(5, { hops_away: 3, path: [4, 5] })],
+    ]);
+
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+      filter: { maxHops: null },
+    });
+
+    const matches = graph.nodes.filter((n) => n.nodeId === 4);
+    expect(matches).toHaveLength(1);
+    expect(matches[0]?.kind).toBe('relay');
+    expect(graph.nodes.some((n) => n.nodeId === 5 && n.kind === 'peer')).toBe(true);
+  });
+
   it('caps relay hubs and demotes MQTT-only direct peers to compact leaves', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
     for (let i = 2; i <= 40; i++) {

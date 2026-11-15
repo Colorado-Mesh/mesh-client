@@ -73,6 +73,19 @@ describe('PeerGraphPanel', () => {
     expect(screen.getByText('peerGraph.maxHopsOption:64')).toBeInTheDocument();
   });
 
+  it('clamps selected maxHops when switching MeshCore presets down to Meshtastic', () => {
+    const nodes = nodeMap(3, 1);
+    const { rerender } = render(<PeerGraphPanel nodes={nodes} myNodeId={1} hopLimitMax={64} />);
+    fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
+      target: { value: '16' },
+    });
+    expect(screen.getByLabelText<HTMLSelectElement>('peerGraph.maxHopsFilter').value).toBe('16');
+
+    rerender(<PeerGraphPanel nodes={nodes} myNodeId={1} hopLimitMax={7} />);
+    expect(screen.getByLabelText<HTMLSelectElement>('peerGraph.maxHopsFilter').value).toBe('7');
+    expect(screen.queryByText('peerGraph.maxHopsOption:16')).not.toBeInTheDocument();
+  });
+
   it('shows the full 168-node set when Show all', () => {
     render(<PeerGraphPanel nodes={nodeMap(167, 1)} myNodeId={1} />);
     fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {

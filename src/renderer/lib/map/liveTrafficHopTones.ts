@@ -33,7 +33,8 @@ const HOP_TONE_GAIN = 0.2;
 const HOP_TONE_OVERTONE_GAIN = 0.08;
 const HOP_TONE_ATTACK_MS = 12;
 const HOP_TONE_FADE_MS = 80;
-const MAX_CONCURRENT_TONES = 8;
+/** Concurrent hop-tone budget (pending resume + playing voices). */
+export const MAX_CONCURRENT_TONES = 8;
 
 export interface LiveTrafficHopTone {
   frequencyHz: number;
@@ -158,14 +159,16 @@ function schedulePartial(
   osc.stop(startTime + durationSec);
 }
 
+/**
+ * Schedule root + octave partials for one reserved voice.
+ * Caller already incremented {@link activeToneCount}; this releases it when both partials end.
+ */
 function playTonePulse(
   ctx: AudioContext,
   frequencyHz: number,
   durationSec: number,
   startTime: number,
 ): void {
-  // Track both partials against the concurrent-tone budget as one voice.
-  activeToneCount += 1;
   let remainingPartials = 2;
   const finishPartial = () => {
     remainingPartials -= 1;
@@ -197,11 +200,22 @@ export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
   const durationSec = Math.max(tone.durationMs, HOP_TONE_FADE_MS * 2) / MS_PER_SECOND;
+  // Reserve before any async resume so concurrent pending plays count against the budget.
+  activeToneCount += 1;
+  const releaseReservation = () => {
+    activeToneCount = Math.max(0, activeToneCount - 1);
+  };
   const go = () => {
+    // Mute may flip while resume is pending — honor it before scheduling oscillators.
+    if (isNotifMuted()) {
+      releaseReservation();
+      return;
+    }
     try {
       playTonePulse(ctx, tone.frequencyHz, durationSec, ctx.currentTime);
     } catch {
       // catch-no-log-ok: AudioContext unavailable in test/headless environments
+      releaseReservation();
     }
   };
   if (ctx.state === 'suspended') {
@@ -210,6 +224,7 @@ export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
       .then(go)
       .catch(() => {
         // catch-no-log-ok: resume blocked without user gesture in some environments
+        releaseReservation();
       });
     return;
   }

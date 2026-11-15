@@ -281,11 +281,16 @@ export function buildMeshPeerTopologyGraph(
     }
   }
 
+  const visiblePeerIds = new Set(visiblePeers.map((peer) => peer.node_id));
   const relayCandidates = new Map<number, number>();
   for (const peer of directPeers) {
     relayCandidates.set(peer.node_id, peersByRelay.get(peer.node_id)?.length ?? 0);
   }
+  // Only promote relays that survived hop filters / the visible-node cap. Path hops that
+  // point at filtered or truncated nodes stay out of the hub ring; distant peers fall back
+  // to a self edge when their relay is not visible.
   for (const relayId of peersByRelay.keys()) {
+    if (!visiblePeerIds.has(relayId)) continue;
     relayCandidates.set(relayId, peersByRelay.get(relayId)?.length ?? 0);
   }
 
@@ -360,6 +365,8 @@ export function buildMeshPeerTopologyGraph(
   }
 
   for (const peer of distantPeers) {
+    // Multi-hop path hubs may already be emitted as relays; do not duplicate them as peers.
+    if (visibleNodeIds.has(peer.node_id)) continue;
     graphNodes.push(buildGraphNode(peer, 'peer', 2, 0, positions, cx, cy, nowMs));
     visibleNodeIds.add(peer.node_id);
 

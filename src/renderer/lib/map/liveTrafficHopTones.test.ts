@@ -15,6 +15,7 @@ import {
   hopDistanceKm,
   hopToneHarmonicFrequenciesHz,
   LIVE_TRAFFIC_HOP_TONES_STORAGE_KEY,
+  MAX_CONCURRENT_TONES,
   playLiveTrafficHopTone,
   readLiveTrafficHopTonesEnabled,
   resetLiveTrafficHopTonesForTests,
@@ -175,5 +176,96 @@ describe('liveTrafficHopTones', () => {
     expect(oscillators[0]?.start).toHaveBeenCalledWith(1);
     expect(oscillators[0]?.stop.mock.calls[0]?.[0]).toBeCloseTo(1.66);
     expect(exponentialRampToValueAtTime).toHaveBeenCalled();
+  });
+
+  it('skips playback when mute flips on before a suspended context resumes', async () => {
+    let resolveResume: (() => void) | undefined;
+    const resume = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveResume = resolve;
+        }),
+    );
+    const createOscillator = vi.fn(() => ({
+      type: 'sine',
+      frequency: { value: 0 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      onended: null as (() => void) | null,
+    }));
+    const ctx = {
+      state: 'suspended',
+      resume,
+      currentTime: 0,
+      destination: {},
+      createOscillator,
+      createGain: vi.fn(() => ({
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+    };
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function MockAudioContext() {
+        return ctx;
+      }),
+    );
+
+    playLiveTrafficHopTone({ frequencyHz: 440, durationMs: 100 });
+    expect(resume).toHaveBeenCalledOnce();
+    localStorage.setItem(CHAT_NOTIF_MUTED_STORAGE_KEY, '1');
+    resolveResume?.();
+    await Promise.resolve();
+    expect(createOscillator).not.toHaveBeenCalled();
+  });
+
+  it('counts pending suspended resumes against the concurrent tone budget', async () => {
+    const resumeResolvers: (() => void)[] = [];
+    const resume = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resumeResolvers.push(resolve);
+        }),
+    );
+    const createOscillator = vi.fn(() => ({
+      type: 'sine',
+      frequency: { value: 0 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      onended: null as (() => void) | null,
+    }));
+    const ctx = {
+      state: 'suspended',
+      resume,
+      currentTime: 0,
+      destination: {},
+      createOscillator,
+      createGain: vi.fn(() => ({
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+    };
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function MockAudioContext() {
+        return ctx;
+      }),
+    );
+
+    for (let i = 0; i < MAX_CONCURRENT_TONES + 3; i += 1) {
+      playLiveTrafficHopTone({ frequencyHz: 220 + i, durationMs: 100 });
+    }
+    expect(resume).toHaveBeenCalledTimes(MAX_CONCURRENT_TONES);
+
+    for (const resolve of resumeResolvers) resolve();
+    await Promise.resolve();
+    // Two partials per admitted tone.
+    expect(createOscillator).toHaveBeenCalledTimes(MAX_CONCURRENT_TONES * 2);
   });
 });

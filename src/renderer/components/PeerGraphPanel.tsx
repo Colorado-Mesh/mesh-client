@@ -101,6 +101,14 @@ export default function PeerGraphPanel({
   });
   const [maxHops, setMaxHops] = useState<number | null>(2);
   const hopOptions = useMemo(() => topologyHopFilterOptions(hopLimitMax), [hopLimitMax]);
+  // Protocol switch (e.g. MeshCore 64 → Meshtastic 7) can leave a selected maxHops that is
+  // no longer in hopOptions; the <select> then looks like "Show all" while rebuildGraph still
+  // filters to the stale value. Clamp during render (React-approved props→state adjust).
+  if (maxHops != null && !hopOptions.includes(maxHops)) {
+    const clamped =
+      [...hopOptions].reverse().find((hops) => hops <= maxHops) ?? hopOptions[0] ?? null;
+    setMaxHops(clamped);
+  }
   const { transform, resetView, bindSvgRef, onPointerDown, onPointerMove, onPointerUp } =
     useSvgPanZoom();
 
