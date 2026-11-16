@@ -75,7 +75,6 @@ export function buildMeshcoreRoomMembershipContext(
   for (const n of opts.nodes) {
     if (n.hw_model === 'Room' && n.favorited) favorited.add(n.node_id);
   }
-  const postCounts = meshcoreRoomPostCountsFromMessages(opts.messages ?? []);
   const lastRead = opts.roomsLastRead ?? {};
   const isLoggedIn = opts.isLoggedIn ?? meshcoreIsRoomLoggedIn;
   const hasSavedGuestCredential =
@@ -85,8 +84,9 @@ export function buildMeshcoreRoomMembershipContext(
     isLoggedIn,
     hasSavedGuestCredential,
     isFavorited: (nodeId) => favorited.has(nodeId),
-    hasLocalPosts: (nodeId) =>
-      (postCounts.get(nodeId) ?? 0) > 0 || getMeshcoreRoomLastPostAt(nodeId) != null,
+    // Sync last-post watermark only (clearable on dismiss). In-memory message rows
+    // alone must not permanently pin a room in Chat → Rooms after Remove.
+    hasLocalPosts: (nodeId) => getMeshcoreRoomLastPostAt(nodeId) != null,
     hasLastRead: (nodeId) => (lastRead[nodeId] ?? 0) > 0,
     isAutoSyncEnabled: (nodeId) => getMeshcoreRoomSyncConfig(nodeId).enabled,
     isAutoLoginOnConnect: (nodeId) => getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect === true,

@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
+  loadPersistedRoomsLastRead,
   mergeRoomLastReadWatermark,
   savePersistedRoomsLastRead,
   saveStarred,
@@ -648,6 +649,47 @@ describe('RoomsPanel', () => {
       connectionType: 'ble',
     });
     expect(screen.getByText(/messageStatusBadge\.transportBt/)).toBeInTheDocument();
+  });
+
+  it('links to Network Room servers from the joined list chrome', () => {
+    const room = makeRoom(0x10ab, 'Joined Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const onOpenRoomServers = vi.fn();
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onOpenRoomServers,
+    });
+    expect(screen.getByText('roomsPanel.joinedListHint')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.browseRoomServersAria' }));
+    expect(onOpenRoomServers).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes a room from Chat Rooms and clears last-read', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = { ...makeRoom(0x10aa, 'Dismiss Room'), favorited: false };
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    savePersistedRoomsLastRead({ [room.node_id]: 5_000 });
+    const onToggleFavorite = vi.fn();
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onToggleFavorite,
+    });
+
+    expect(screen.getAllByText('Dismiss Room').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.moreActions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'roomsPanel.removeFromRooms' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'roomsPanel.removeFromRooms',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Dismiss Room')).not.toBeInTheDocument();
+    });
+    expect(loadPersistedRoomsLastRead()[room.node_id]).toBeUndefined();
+    expect(screen.getByText('roomsPanel.noJoinedRoomsYet')).toBeInTheDocument();
   });
 
   it('shows leave in progress while onLeaveRoom is pending', async () => {

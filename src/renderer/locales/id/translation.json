@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
     "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan.",
     "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah.",
-    "noJoinedRoomsYet": "Belum ada ruang yang diikuti. Buka Jaringan → Server ruang untuk menelusuri ruang BBS yang ditemukan, lalu masuk atau tambahkan ke favorit."
+    "noJoinedRoomsYet": "Belum ada ruang yang diikuti. Buka Jaringan → Server ruang untuk menelusuri ruang BBS yang ditemukan, lalu masuk atau tambahkan ke favorit.",
+    "joinedListHint": "Daftar ini berisi ruang yang telah Anda ikuti. Temukan server ruang baru di Jaringan → Server ruang.",
+    "browseRoomServers": "Server ruangan",
+    "browseRoomServersAria": "Buka direktori server Ruang Jaringan",
+    "browseRoomServersHint": "Telusuri server ruang MeshCore yang ditemukan di tab Jaringan",
+    "removeFromRooms": "Hapus dari Ruangan",
+    "removeFromRoomsHint": "Hapus status login dan pindahkan ruangan ini kembali ke Jaringan → Server ruangan",
+    "removeFromRoomsConfirmTitle": "Hapus dari Ruang Obrolan?",
+    "removeFromRoomsConfirmMessage": "Keluar jika diperlukan, melupakan kata sandi yang disimpan, menghapus favorit dan status baca untuk ruang ini, dan mengembalikannya ke Jaringan → Server ruang. Riwayat postingan lokal disimpan.",
+    "removeFromRoomsFailed": "Tidak dapat menghapus ruang dari Ruang Obrolan."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",

@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Diesen Raum verlassen?",
     "leaveRoomConfirmMessage": "Von diesem Raumserver loggen Sie sich über das Funkgerät aus. Sie können sich später mit dem Gast oder dem gespeicherten Passwort erneut anmelden.",
     "syncSaveFailed": "Die Synchronisierungseinstellungen konnten nicht gespeichert werden. Ihre bisherigen Einstellungen sind unverändert.",
-    "noJoinedRoomsYet": "Noch keine beigetretenen Räume. Öffnen Sie Netzwerk → Raumserver, um die gefundenen BBS-Räume zu durchsuchen, und melden Sie sich dann an oder fügen Sie einen Raum zu Ihren Favoriten hinzu."
+    "noJoinedRoomsYet": "Noch keine beigetretenen Räume. Öffnen Sie Netzwerk → Raumserver, um die gefundenen BBS-Räume zu durchsuchen, und melden Sie sich dann an oder fügen Sie einen Raum zu Ihren Favoriten hinzu.",
+    "joinedListHint": "Diese Liste enthält Räume, denen Sie beigetreten sind. Entdecke neue Raumserver unter Netzwerk → Raumserver.",
+    "browseRoomServers": "Raumserver",
+    "browseRoomServersAria": "Verzeichnis der Network-Room-Server öffnen",
+    "browseRoomServersHint": "Durchsuchen Sie die erkannten MeshCore-Raumserver auf der Registerkarte „Netzwerk“",
+    "removeFromRooms": "Aus Räumen entfernen",
+    "removeFromRoomsHint": "Meldezustand löschen und diesen Raum zurück zu „Netzwerk“ → „Raumserver“ verschieben",
+    "removeFromRoomsConfirmTitle": "Aus den Chaträumen entfernen?",
+    "removeFromRoomsConfirmMessage": "Meldet sich bei Bedarf ab, vergisst das gespeicherte Passwort, löscht die Favoriten und den Lesestatus für diesen Raum und kehrt zu Netzwerk → Raumserver zurück. Der lokale Beitragshistorie wird beibehalten.",
+    "removeFromRoomsFailed": "Der Raum konnte nicht aus den Chaträumen entfernt werden."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

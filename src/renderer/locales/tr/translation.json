@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
     "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz.",
     "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi.",
-    "noJoinedRoomsYet": "Henüz katıldığınız bir oda yok. Keşfedilen BBS odalarına göz atmak için Ağ → Oda sunucuları'nı açın, ardından oturum açın veya birini favori olarak işaretleyin."
+    "noJoinedRoomsYet": "Henüz katıldığınız bir oda yok. Keşfedilen BBS odalarına göz atmak için Ağ → Oda sunucuları'nı açın, ardından oturum açın veya birini favori olarak işaretleyin.",
+    "joinedListHint": "Bu liste, katıldığınız odaları içerir. Ağ → Oda sunucuları bölümünden yeni oda sunucularını keşfedin.",
+    "browseRoomServers": "Oda sunucuları",
+    "browseRoomServersAria": "Ağ Odası sunucuları dizinini açın",
+    "browseRoomServersHint": "Ağ sekmesinde bulunan MeshCore oda sunucusuna göz atın",
+    "removeFromRooms": "Odalardan kaldır",
+    "removeFromRoomsHint": "Oturum açma durumunu temizleyin ve bu odayı Ağ → Oda sunucuları bölümüne geri taşıyın",
+    "removeFromRoomsConfirmTitle": "Sohbet Odalarından kaldırılsın mı?",
+    "removeFromRoomsConfirmMessage": "Gerekirse oturumu kapatır, kaydedilen parolayı unutur, bu oda için favorileri ve okuma durumunu temizler ve Odayı Ağ → Oda sunucuları bölümüne geri döndürür. Yerel gönderi geçmişi saklanır.",
+    "removeFromRoomsFailed": "Sohbet Odaları'ndan oda kaldırılamadı."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

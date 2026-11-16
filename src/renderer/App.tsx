@@ -1827,11 +1827,19 @@ function AppContent() {
       messages: meshcoreUiMessages,
       roomsLastRead,
     });
+    // Prefer live Room contacts; also keep engaged room ids from messages when the
+    // node map is empty (startup hydrate) or the contact briefly dropped.
     const knownRoomServerIds = new Set(
       [...meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values())].filter((id) =>
         isMeshcoreRoomJoined(id, membershipCtx),
       ),
     );
+    for (const msg of meshcoreUiMessages) {
+      const id = msg.roomServerId;
+      if (id != null && isMeshcoreRoomJoined(id, membershipCtx)) {
+        knownRoomServerIds.add(id);
+      }
+    }
     const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       roomsLastRead,
@@ -4558,6 +4566,16 @@ function AppContent() {
     [tabsByProtocol.meshcore],
   );
 
+  const handleOpenRoomServers = useCallback(() => {
+    const filteredIndex = findFilteredTabIndexForPanel(
+      tabsByProtocol.meshcore,
+      ROOM_SERVERS_PANEL_INDEX,
+    );
+    if (filteredIndex >= 0) {
+      setActiveTab(filteredIndex);
+    }
+  }, [tabsByProtocol.meshcore]);
+
   const handleRoomTargetConsumed = useCallback(() => {
     setPendingRoomTarget(null);
   }, []);
@@ -6579,6 +6597,7 @@ function AppContent() {
                                   onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                   onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
                                   onOpenRepeaterOps={handleOpenRepeaterOps}
+                                  onOpenRoomServers={handleOpenRoomServers}
                                   onMessageNode={handleMessageNode}
                                   onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                   scrollToTopRef={scrollToTopRoomsRef}

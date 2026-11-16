@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Sair desta sala?",
     "leaveRoomConfirmMessage": "Você sairá deste servidor de sala pelo rádio. Você pode fazer login novamente mais tarde com o convidado ou a senha salva.",
     "syncSaveFailed": "Não foi possível salvar as configurações de sincronização. Suas configurações anteriores permanecem inalteradas.",
-    "noJoinedRoomsYet": "Ainda não há salas em que você tenha entrado. Abra Rede → Servidores de salas para navegar pelas salas BBS encontradas e, em seguida, faça login ou adicione uma delas aos favoritos."
+    "noJoinedRoomsYet": "Ainda não há salas em que você tenha entrado. Abra Rede → Servidores de salas para navegar pelas salas BBS encontradas e, em seguida, faça login ou adicione uma delas aos favoritos.",
+    "joinedListHint": "Esta lista contém as salas das quais você participa. Descubra novos servidores de sala em Rede → Servidores de sala.",
+    "browseRoomServers": "Servidores de sala",
+    "browseRoomServersAria": "Abrir o diretório de servidores da sala de rede",
+    "browseRoomServersHint": "Navegue pelos servidores de sala MeshCore descobertos na guia Rede",
+    "removeFromRooms": "Remover das salas",
+    "removeFromRoomsHint": "Limpar o estado de login e mover esta sala de volta para Rede → Servidores da sala",
+    "removeFromRoomsConfirmTitle": "Remover das salas de chat?",
+    "removeFromRoomsConfirmMessage": "Encerra a sessão, se necessário, esquece a senha salva, limpa os favoritos e o estado de leitura desta sala e a retorna para Rede → Servidores da sala. O histórico de posts locais é mantido.",
+    "removeFromRoomsFailed": "Não foi possível remover a sala das Salas de Chat."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",

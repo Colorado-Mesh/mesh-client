@@ -162,6 +162,17 @@ export async function setMeshcoreRoomLastPostAt(nodeId: number, atMs: number): P
   }
 }
 
+/** Clear the last-post watermark so dismiss can return a room to Network → Room servers. */
+export async function clearMeshcoreRoomLastPostAt(nodeId: number): Promise<void> {
+  const settingKey = meshcoreRoomLastPostSettingForNode(nodeId);
+  mergeAppSetting(settingKey, '', 'meshcoreRoomSyncStorage clear lastPost');
+  try {
+    await window.electronAPI.appSettings.remove(settingKey);
+  } catch (e: unknown) {
+    console.warn('[meshcoreRoomSyncStorage] clear lastPostAt failed ' + errLikeToLogString(e));
+  }
+}
+
 export function listMeshcoreRoomSyncEnabledNodeIds(): number[] {
   const settings = parseStoredJson<Record<string, unknown>>(
     getAppSettingsRaw(),

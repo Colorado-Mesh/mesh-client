@@ -5956,7 +5956,16 @@
     "leaveRoomConfirmTitle": "Opustit tuto místnost?",
     "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla.",
     "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna.",
-    "noJoinedRoomsYet": "Zatím žádné místnosti, ke kterým jste se připojili. Otevřete Síť → Servery místností a prohlédněte si objevené místnosti BBS. Poté se přihlaste nebo si nějakou přidejte do oblíbených."
+    "noJoinedRoomsYet": "Zatím žádné místnosti, ke kterým jste se připojili. Otevřete Síť → Servery místností a prohlédněte si objevené místnosti BBS. Poté se přihlaste nebo si nějakou přidejte do oblíbených.",
+    "joinedListHint": "Tento seznam obsahuje místnosti, ke kterým jste se připojili. Objevte nové servery místností v části Síť → Servery místností.",
+    "browseRoomServers": "Servery místností",
+    "browseRoomServersAria": "Otevřít adresář serverů v síťové místnosti",
+    "browseRoomServersHint": "Procházet zjištěné servery místností MeshCore na kartě Síť",
+    "removeFromRooms": "Odebrat z místností",
+    "removeFromRoomsHint": "Vymazat stav přihlášení a přesunout tuto místnost zpět do části Síť → Servery místností",
+    "removeFromRoomsConfirmTitle": "Odebrat z chatovacích místností?",
+    "removeFromRoomsConfirmMessage": "V případě potřeby se odhlásí, zapomene uložené heslo, vymaže oblíbené položky a stav přečtení pro tuto místnost a vrátí ji do části Síť → Servery místností. Historie místních příspěvků se uchovává.",
+    "removeFromRoomsFailed": "Místnost nelze odebrat z chatovacích místností."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

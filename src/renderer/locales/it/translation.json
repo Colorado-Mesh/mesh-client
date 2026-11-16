@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Uscire da questa sala?",
     "leaveRoomConfirmMessage": "Esci da questo server della stanza alla radio. Puoi accedere di nuovo in seguito con l'ospite o la password salvata.",
     "syncSaveFailed": "Impossibile salvare le impostazioni di sincronizzazione. Le impostazioni precedenti non sono cambiate.",
-    "noJoinedRoomsYet": "Ancora nessuna room a cui ti sei unito. Apri Rete → Server delle room per sfogliare le room BBS rilevate, quindi accedi o aggiungine una ai preferiti."
+    "noJoinedRoomsYet": "Ancora nessuna room a cui ti sei unito. Apri Rete → Server delle room per sfogliare le room BBS rilevate, quindi accedi o aggiungine una ai preferiti.",
+    "joinedListHint": "Questo elenco contiene le room a cui hai aderito. Scopri nuovi server di stanza in Rete → Server di stanza.",
+    "browseRoomServers": "Server delle room",
+    "browseRoomServersAria": "Apri la directory dei server della sala rete",
+    "browseRoomServersHint": "Cerca i server delle stanze MeshCore rilevati nella scheda Rete",
+    "removeFromRooms": "Rimuovi dalle stanze",
+    "removeFromRoomsHint": "Cancella lo stato di accesso e sposta questa stanza in Rete → Server delle stanze",
+    "removeFromRoomsConfirmTitle": "Rimuovere dalle chat room?",
+    "removeFromRoomsConfirmMessage": "Effettua la disconnessione se necessario, dimentica la password salvata, cancella i preferiti e lo stato di lettura per questa room e la riporta in Rete → Server delle room. La cronologia dei post locali viene conservata.",
+    "removeFromRoomsFailed": "Impossibile rimuovere la stanza da Chat Room."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",

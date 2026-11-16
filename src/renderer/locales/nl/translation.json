@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Deze ruimte verlaten?",
     "leaveRoomConfirmMessage": "U logt uit bij deze roomserver op de radio. Je kunt later opnieuw inloggen met de gast of het opgeslagen wachtwoord.",
     "syncSaveFailed": "Kon de synchronisatie-instellingen niet opslaan. Je vorige instellingen zijn ongewijzigd.",
-    "noJoinedRoomsYet": "Nog geen ruimtes waaraan je deelneemt. Open Netwerk → Roomservers om door ontdekte BBS-ruimtes te bladeren en log vervolgens in of maak er een favoriet van."
+    "noJoinedRoomsYet": "Nog geen ruimtes waaraan je deelneemt. Open Netwerk → Roomservers om door ontdekte BBS-ruimtes te bladeren en log vervolgens in of maak er een favoriet van.",
+    "joinedListHint": "Deze lijst bevat ruimtes waar je lid van bent geworden. Ontdek nieuwe ruimteservers onder Netwerk → Ruimteservers.",
+    "browseRoomServers": "Ruimteservers",
+    "browseRoomServersAria": "Map met servers in de netwerkruimte openen",
+    "browseRoomServersHint": "Blader door gevonden MeshCore-roomservers op het tabblad Netwerk",
+    "removeFromRooms": "Verwijderen uit ruimtes",
+    "removeFromRoomsHint": "Wis de inlogstatus en verplaats deze ruimte terug naar Netwerk → Ruimteservers",
+    "removeFromRoomsConfirmTitle": "Verwijderen uit chatrooms?",
+    "removeFromRoomsConfirmMessage": "Logt indien nodig uit, vergeet het opgeslagen wachtwoord, wist favorieten en de gelezen status voor deze ruimte en keert terug naar Netwerk → Ruimteservers. De lokale berichtgeschiedenis wordt bewaard.",
+    "removeFromRoomsFailed": "Kon de ruimte niet uit de chatrooms verwijderen."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

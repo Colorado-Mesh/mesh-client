@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "要离开这个房间吗？",
     "leaveRoomConfirmMessage": "您将通过收音机退出此房间服务器。您可以稍后使用房客密码或保存的密码重新登录。",
     "syncSaveFailed": "无法保存同步设置。您之前的设置保持不变。",
-    "noJoinedRoomsYet": "尚未加入任何房间。打开“网络” → “房间服务器”以浏览已发现的 BBS 房间，然后登录或收藏一个房间。"
+    "noJoinedRoomsYet": "尚未加入任何房间。打开“网络” → “房间服务器”以浏览已发现的 BBS 房间，然后登录或收藏一个房间。",
+    "joinedListHint": "此列表是您已加入的房间。在“网络”→“房间服务器”下发现新的房间服务器。",
+    "browseRoomServers": "房间服务器",
+    "browseRoomServersAria": "打开网络机房服务器目录",
+    "browseRoomServersHint": "在“网络”选项卡上浏览已发现的MeshCore房间服务器",
+    "removeFromRooms": "从房间中移除",
+    "removeFromRoomsHint": "清除登录状态，并将此房间移回“网络” → “房间服务器”",
+    "removeFromRoomsConfirmTitle": "从聊天室中移除？",
+    "removeFromRoomsConfirmMessage": "如果需要，将注销，忘记已保存的密码，清除此房间的收藏夹和已读状态，并将其返回到“网络” → “房间服务器”。本地帖子历史记录将保留。",
+    "removeFromRoomsFailed": "无法从聊天室中移除房间。"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",

@@ -865,3 +865,25 @@ export function clearPersistedRoomsLastRead(): void {
   savePersistedRoomsLastRead({});
   notifyPersistedRoomsLastReadChanged();
 }
+
+/** Drop the last-read watermark for one MeshCore room server (Chat Rooms dismiss). */
+export function removePersistedRoomsLastReadForRoom(nodeId: number): void {
+  if (!Number.isInteger(nodeId) || nodeId <= 0) return;
+  const drop = nodeId >>> 0;
+  const loaded = loadPersistedRoomsLastRead();
+  if (!(drop in loaded)) return;
+  const next: Record<number, number> = {};
+  for (const [id, ts] of Object.entries(loaded)) {
+    const n = Number(id) >>> 0;
+    if (n !== drop) next[n] = ts;
+  }
+  try {
+    savePersistedRoomsLastRead(next);
+    notifyPersistedRoomsLastReadChanged();
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] removePersistedRoomsLastReadForRoom failed ' +
+        errLikeToLogString(e),
+    );
+  }
+}

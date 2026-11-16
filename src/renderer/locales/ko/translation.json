@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "이 방에서 나가시겠어요?",
     "leaveRoomConfirmMessage": "라디오에서 이 룸 서버에서 로그아웃합니다. 나중에 게스트 또는 저장된 비밀번호로 다시 로그인할 수 있습니다.",
     "syncSaveFailed": "동기화 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않습니다.",
-    "noJoinedRoomsYet": "아직 참여한 채팅방이 없습니다. 네트워크 → 룸 서버를 열어 검색된 BBS 룸을 탐색한 다음 로그인하거나 즐겨찾기에 추가하세요."
+    "noJoinedRoomsYet": "아직 참여한 채팅방이 없습니다. 네트워크 → 룸 서버를 열어 검색된 BBS 룸을 탐색한 다음 로그인하거나 즐겨찾기에 추가하세요.",
+    "joinedListHint": "이 목록은 귀하가 참여한 채팅방입니다. 네트워크 → 룸 서버에서 새로운 룸 서버를 찾아보세요.",
+    "browseRoomServers": "룸 서버",
+    "browseRoomServersAria": "네트워크 룸 서버 디렉터리 열기",
+    "browseRoomServersHint": "네트워크 탭에서 검색된 MeshCore개의 룸 서버를 찾아보세요.",
+    "removeFromRooms": "룸에서 삭제",
+    "removeFromRoomsHint": "로그인 상태를 지우고 이 채팅방을 네트워크 → 채팅방 서버로 다시 이동합니다.",
+    "removeFromRoomsConfirmTitle": "채팅방에서 삭제하시겠어요?",
+    "removeFromRoomsConfirmMessage": "필요한 경우 로그아웃하고, 저장된 비밀번호를 잊어버리고, 이 채팅방의 즐겨찾기와 읽음 상태를 지우고, '네트워크 → 채팅방 서버'로 되돌립니다. 로컬 게시물 내역은 보관됩니다.",
+    "removeFromRoomsFailed": "채팅룸에서 룸을 삭제할 수 없습니다."
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

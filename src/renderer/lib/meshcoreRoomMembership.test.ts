@@ -145,4 +145,12 @@ describe('buildMeshcoreRoomMembershipContext', () => {
     const ctx = buildMeshcoreRoomMembershipContext({ nodes: [room(7)] });
     expect(isMeshcoreRoomJoined(7, ctx)).toBe(true);
   });
+
+  it('does not treat in-memory message history alone as joined', () => {
+    const ctx = buildMeshcoreRoomMembershipContext({
+      nodes: [room(8)],
+      messages: [{ roomServerId: 8, timestamp: 1 } as ChatMessage],
+    });
+    expect(isMeshcoreRoomJoined(8, ctx)).toBe(false);
+  });
 });

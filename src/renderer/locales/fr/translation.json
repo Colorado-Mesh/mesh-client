@@ -5910,7 +5910,16 @@
     "leaveRoomConfirmTitle": "Quitter cette salle ?",
     "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré.",
     "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés.",
-    "noJoinedRoomsYet": "Aucun salon rejoint pour le moment. Ouvrez Réseau → Serveurs de salons pour parcourir les salons BBS découverts, puis connectez-vous ou ajoutez-en un à vos favoris."
+    "noJoinedRoomsYet": "Aucun salon rejoint pour le moment. Ouvrez Réseau → Serveurs de salons pour parcourir les salons BBS découverts, puis connectez-vous ou ajoutez-en un à vos favoris.",
+    "joinedListHint": "Cette liste répertorie les salons auxquels vous avez rejoint. Découvrez de nouveaux serveurs de salons sous Réseau → Serveurs de salons.",
+    "browseRoomServers": "Serveurs de salons",
+    "browseRoomServersAria": "Ouvrir le répertoire des serveurs de salons réseau",
+    "browseRoomServersHint": "Parcourir les serveurs de salons MeshCore découverts sur l'onglet Réseau",
+    "removeFromRooms": "Retirer des salons",
+    "removeFromRoomsHint": "Effacer l'état de connexion et déplacer ce salon vers Réseau → Serveurs de salon",
+    "removeFromRoomsConfirmTitle": "Supprimer des salons de discussion ?",
+    "removeFromRoomsConfirmMessage": "Se déconnecte si nécessaire, oublie le mot de passe enregistré, efface les favoris et l’état de lecture de ce salon, et le renvoie vers Réseau → Serveurs de salon. L’historique des publications locales est conservé.",
+    "removeFromRoomsFailed": "Impossible de supprimer le salon des salons de discussion."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

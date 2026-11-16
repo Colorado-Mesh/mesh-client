@@ -23,6 +23,7 @@ import {
   loadStarred,
   mergeRoomLastReadWatermark,
   openDmTabsStorageKey,
+  removePersistedRoomsLastReadForRoom,
   roomsLastReadStorageKey,
   sanitizeMeshcoreChatLastRead,
   sanitizeMeshcoreRoomsLastRead,
@@ -594,6 +595,16 @@ describe('rooms last read storage', () => {
     const unsub = subscribePersistedRoomsLastRead(listener);
     clearPersistedRoomsLastRead();
     expect(loadPersistedRoomsLastRead()).toEqual({});
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsub();
+  });
+
+  it('removePersistedRoomsLastReadForRoom drops one room and notifies', () => {
+    savePersistedRoomsLastRead({ 0xabc: 5000, 0xdef: 6000 });
+    const listener = vi.fn();
+    const unsub = subscribePersistedRoomsLastRead(listener);
+    removePersistedRoomsLastReadForRoom(0xabc);
+    expect(loadPersistedRoomsLastRead()).toEqual({ 0xdef: 6000 });
     expect(listener).toHaveBeenCalledTimes(1);
     unsub();
   });
