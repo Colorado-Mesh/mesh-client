@@ -500,17 +500,26 @@ function isStarredMessage(value: unknown): value is StarredMessage {
 
 const STARRED_LIMIT = 200;
 
-/** Load starred messages for this protocol. */
-export function loadStarred(protocol: MeshProtocol): StarredMessage[] {
+/** Parse a stored starred document (the `mesh-client:starred:<protocol>` value) already read. */
+export function parseStarred(raw: string | null): StarredMessage[] {
+  if (!raw) return [];
   try {
-    const raw = localStorage.getItem(`mesh-client:starred:${protocol}`);
-    if (!raw) return [];
     const parsed = parseStoredJson<unknown>(raw, 'ChatPanel starred');
     if (Array.isArray(parsed)) return parsed.filter(isStarredMessage);
   } catch (e) {
-    console.debug('[chatPanelProtocolStorage] loadStarred failed ' + errLikeToLogString(e));
+    console.debug('[chatPanelProtocolStorage] parseStarred failed ' + errLikeToLogString(e));
   }
   return [];
+}
+
+/** Load starred messages for this protocol. */
+export function loadStarred(protocol: MeshProtocol): StarredMessage[] {
+  try {
+    return parseStarred(localStorage.getItem(`mesh-client:starred:${protocol}`));
+  } catch (e) {
+    console.debug('[chatPanelProtocolStorage] loadStarred failed ' + errLikeToLogString(e));
+    return [];
+  }
 }
 
 /** Persist starred messages for this protocol. Enforces STARRED_LIMIT by dropping oldest. */
