@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { loadStarred, saveStarred, type StarredMessage } from '../lib/chatPanelProtocolStorage';
 import { starredStorageKey, subscribeStarred, updateStarred } from '../lib/starredMessageStore';
@@ -87,6 +87,35 @@ describe('useStarredMessages', () => {
       window.dispatchEvent(new StorageEvent('storage', { key: starredStorageKey('meshcore') }));
     });
     expect(ids(view.result.current.starred)).toEqual(['from-window']);
+  });
+
+  it('shows the list in the snapshot it rendered, not a later read of storage', () => {
+    saveStarred('meshcore', [star('snapshot')]);
+    const newer = JSON.stringify([star('newer')]);
+    const realGetItem = localStorage.getItem.bind(localStorage);
+    let newerServed = 0;
+    // Another window writes after the snapshot read: any second read of the document during the
+    // render (here, one made inside loadStarred) sees the newer list.
+    const read = vi.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      if (
+        key === starredStorageKey('meshcore') &&
+        (new Error().stack ?? '').includes('loadStarred')
+      ) {
+        newerServed += 1;
+        return newer;
+      }
+      return realGetItem(key);
+    });
+    try {
+      const view = renderHook(() => useStarredMessages('meshcore'));
+      expect(read).toHaveBeenCalled();
+      expect({ starred: ids(view.result.current.starred), newerServed }).toEqual({
+        starred: ['snapshot'],
+        newerServed: 0,
+      });
+    } finally {
+      read.mockRestore();
+    }
   });
 
   it('uses the key loadStarred reads', () => {
