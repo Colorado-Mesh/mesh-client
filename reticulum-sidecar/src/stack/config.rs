@@ -283,6 +283,16 @@ fn default_required_discovery_value() -> f64 {
     16.0
 }
 
+/// Match RNS: positive finite values are clamped to 0..=100; non-finite / non-positive
+/// use the pinned runtime default (`DEFAULT_STAMP_VALUE` / 16).
+fn normalize_required_discovery_value(v: f64) -> f64 {
+    if v.is_finite() && v > 0.0 {
+        v.clamp(0.0, 100.0)
+    } else {
+        default_required_discovery_value()
+    }
+}
+
 /// Partial stack-settings update. Omitted fields keep their on-disk values.
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct StackSettingsPatch {
@@ -398,6 +408,8 @@ pub fn apply_stack_settings_patch(
     if let Some(v) = patch.link_mtu_discovery {
         settings.link_mtu_discovery = v;
     }
+    settings.required_discovery_value =
+        normalize_required_discovery_value(settings.required_discovery_value);
     // Only rewrite stamp_destinations/stamp_prs when the UI explicitly toggled
     // enable_stamping. Otherwise an omitted-field patch (e.g. loglevel only)
     // would collapse asymmetric INI values via the OR-aggregate read.
@@ -440,13 +452,7 @@ fn set_stack_settings_ex(
         &settings.autoconnect_discovered_interfaces.to_string(),
     );
     // RNS treats unset / non-positive required_discovery_value as DEFAULT_STAMP_VALUE (16).
-    let stamp = if settings.required_discovery_value.is_finite()
-        && settings.required_discovery_value > 0.0
-    {
-        settings.required_discovery_value.clamp(0.0, 100.0)
-    } else {
-        default_required_discovery_value()
-    };
+    let stamp = normalize_required_discovery_value(settings.required_discovery_value);
     parsed
         .reticulum
         .set("required_discovery_value", &format_stamp_value(stamp));
@@ -4047,6 +4053,52 @@ loglevel = 4
             loaded.required_discovery_value,
             default_required_discovery_value()
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_patch_normalizes_required_discovery_value_before_return() {
+        let dir = test_config_dir("discovery-patch-normalize");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                required_discovery_value: Some(0.0),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            updated.required_discovery_value,
+            default_required_discovery_value()
+        );
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains(&format!(
+                "required_discovery_value = {}",
+                format_stamp_value(default_required_discovery_value())
+            )),
+            "{content}"
+        );
+        let positive = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                required_discovery_value: Some(18.5),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(positive.required_discovery_value, 18.5);
         let _ = fs::remove_dir_all(&dir);
     }
 

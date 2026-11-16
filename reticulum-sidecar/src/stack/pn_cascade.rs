@@ -245,6 +245,7 @@ pub fn auto_discovered_candidates(
     if mode != PropagationMode::Auto {
         return Vec::new();
     }
+    let max_peering_cost = f64::from(max_peering_cost);
     let self_norm = self_lxmf_hash_hex.trim().to_lowercase();
     let mut seen: HashSet<[u8; 16]> = configured.iter().map(|c| c.hash).collect();
     let mut out = Vec::new();
@@ -354,7 +355,7 @@ mod tests {
             hops,
             last_seen: Some(1),
             node_state: true,
-            peering_cost: 0,
+            peering_cost: 0.0,
             medium,
         }
     }
@@ -638,7 +639,7 @@ mod tests {
         let mut inactive = discovered_row(&"cc".repeat(16), Some(1));
         inactive.node_state = false;
         let mut costly = discovered_row(&"dd".repeat(16), Some(1));
-        costly.peering_cost = 30;
+        costly.peering_cost = 30.0;
         let discovered = vec![
             inactive,
             costly,

@@ -194,7 +194,8 @@ pub struct DiscoveredPropagationRow {
     pub last_seen: Option<u64>,
     /// Actively serving when true (from PN announce `node_state`).
     pub node_state: bool,
-    pub peering_cost: u8,
+    /// Fractional peering stamp cost from the PN announce (LXMF 1.5 / RNS 1.6).
+    pub peering_cost: f64,
     /// Medium the announce path was learned over, when a path is known.
     ///
     /// Auto ranking deprioritizes RF: a propagation node reachable only over LoRa

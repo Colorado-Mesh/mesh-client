@@ -300,6 +300,33 @@ async fn dual_tcp_require_stamps_blocks_then_retry() {
     let server = spawn_tcp_stack(true, port).await;
     let client = spawn_tcp_stack(false, port).await;
 
+    let server_id = server.handle.identity_status().await;
+    wait_peer_lxmf_path(&client.handle, &server_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("client path before control send");
+
+    // Positive control: path + LXMF delivery work before stamp enforcement.
+    let control_body = format!("interop-stamp-control-{}", uuid::Uuid::new_v4());
+    let control_req = LxmfSendRequest {
+        destination_hash: server_id.lxmf_hash.clone(),
+        text: control_body.clone(),
+        reply_to_hash: None,
+        reply_to_id: None,
+        reply_preview_text: None,
+        audio: None,
+        attachments: vec![],
+        image: None,
+    };
+    let control = client
+        .handle
+        .lxmf_send(control_req)
+        .await
+        .expect("control send");
+    assert_eq!(control.get("ok"), Some(&serde_json::Value::Bool(true)));
+    wait_inbound_text(&server.handle, &control_body, INBOUND_TIMEOUT)
+        .await
+        .expect("control dm delivered before stamp enforcement");
+
     server
         .handle
         .patch_stack_settings(&StackSettingsPatch {
@@ -309,8 +336,13 @@ async fn dual_tcp_require_stamps_blocks_then_retry() {
         .await
         .expect("enforce on server");
     server.handle.soft_restart().await.expect("server restart");
+    wait_stack_ready(&server.handle, READY_TIMEOUT)
+        .await
+        .expect("server ready after enforce restart");
+    wait_peer_lxmf_path(&client.handle, &server_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("client path after enforce restart");
 
-    let server_id = server.handle.identity_status().await;
     let body = format!("interop-stamp-{}", uuid::Uuid::new_v4());
     let req = LxmfSendRequest {
         destination_hash: server_id.lxmf_hash.clone(),
@@ -323,27 +355,34 @@ async fn dual_tcp_require_stamps_blocks_then_retry() {
         image: None,
     };
 
-    wait_peer_lxmf_path(&client.handle, &server_id.lxmf_hash, PEER_TIMEOUT)
-        .await
-        .expect("client path before blocked send");
-
     let blocked = client.handle.lxmf_send(req.clone()).await;
-    let blocked_ok = blocked
-        .as_ref()
-        .ok()
-        .and_then(|v| v.get("ok"))
-        .and_then(serde_json::Value::as_bool);
+    let (blocked_ok, blocked_err) = match &blocked {
+        Ok(v) => (
+            v.get("ok").and_then(serde_json::Value::as_bool),
+            None::<String>,
+        ),
+        Err(e) => {
+            // IPC / send-path rejection is an acceptable stamp-enforcement signal.
+            let msg = e.clone();
+            assert!(
+                msg.to_lowercase().contains("stamp") || msg.to_lowercase().contains("enforc"),
+                "unexpected lxmf_send error under stamp enforcement: {msg}"
+            );
+            (None, Some(msg))
+        }
+    };
+    // Assert send outcome is inspected (not only logged). Remote drop may still
+    // report ok=true; the hard gate is no delivery — positive control above proved
+    // the path was healthy before enforcement.
+    assert!(
+        blocked.is_err() || blocked_ok.is_some(),
+        "lxmf_send must return err or a JSON ok field under stamp enforcement; got {blocked:?}"
+    );
     let delivery_seen = wait_inbound_text(&server.handle, &body, Duration::from_secs(8)).await;
     assert!(
         delivery_seen.is_err(),
-        "unstamped message must not deliver under stamp enforcement"
+        "unstamped message must not deliver under stamp enforcement (send ok={blocked_ok:?}, err={blocked_err:?})"
     );
-    if blocked_ok == Some(true) {
-        tracing::debug!(
-            target: "interop-tcp",
-            "lxmf_send reported ok for unstamped send; delivery still blocked"
-        );
-    }
 
     client
         .handle

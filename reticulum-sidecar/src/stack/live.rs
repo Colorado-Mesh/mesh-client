@@ -2639,7 +2639,7 @@ impl LiveBridge {
                     hops: Some(evt.hops),
                     last_seen: Some(last_seen),
                     node_state: parsed.node_state,
-                    peering_cost: parsed.peering_cost.round().clamp(0.0, 255.0) as u8,
+                    peering_cost: parsed.peering_cost,
                     medium,
                 };
                 let (payload, cascade_fields_changed) = {
@@ -2652,7 +2652,8 @@ impl LiveBridge {
                     let changed = previous.is_none_or(|prev| {
                         prev.node_state != row.node_state
                             || prev.hops != row.hops
-                            || prev.peering_cost != row.peering_cost
+                            // Exact wire value (not epsilon): cascade rebuilds on announce bit flips.
+                            || prev.peering_cost.to_bits() != row.peering_cost.to_bits()
                             || prev.medium != row.medium
                     });
                     while cache.len() > MAX_DISCOVERED_PROPAGATION {
@@ -9517,7 +9518,7 @@ mod discovered_medium_reconcile_tests {
             hops: Some(2),
             last_seen: Some(1_700_000_000),
             node_state: true,
-            peering_cost: 0,
+            peering_cost: 0.0,
             medium,
         }
     }
