@@ -3666,7 +3666,17 @@
       "autoconnectUnverifiedHint": "Domyślnie wyłączone. Włącz w przypadku komunikacji równorzędnej z rsRNS lub innym systemem szkieletowym innym niż Python, który ogłasza, że ​​nie reklamuje zweryfikowanej implementacji języka Python Reticulum.",
       "interfaceStatsTitle": "Liczniki interfejsu na żywo",
       "interfaceStatsLine": "Spadek TX {{txDropped}} B · protokół {{protocol}} · IFAC {{ifac}} · filtr {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Zapisano. Zrestartuj stos Reticulum, aby niezweryfikowane automatyczne połączenie zaczęło obowiązywać."
+      "autoconnectUnverifiedRestartRequired": "Zapisano. Zrestartuj stos Reticulum, aby niezweryfikowane automatyczne połączenie zaczęło obowiązywać.",
+      "enableStamping": "Ogłoszenia dotyczące stempli i wnioski o ścieżki",
+      "enableStampingAria": "Oznaczaj komunikaty wychodzące i żądania ścieżki",
+      "enableStampingHint": "Wyłączone domyślnie (Reticulum 1.6.0). Dołącz wcześnie, aby węzły transportowe wymagające znaczników przekierowywały Cię dalej; przygotuj się na wersję 1.6.1 z domyślnie włączonym wysyłaniem. Starsze węzły ignorują znaczniki.",
+      "enforceStamps": "Wymagaj pieczątek od innych osób",
+      "enforceStampsAria": "Wymagaj ważnych pieczęci sieciowych od partnerów",
+      "enforceStampsHint": "Domyślnie wyłączone (Reticulum 1.6.0). Zabezpiecz prywatny lub otwarty hub przed niesygnowanym spamem. Ostrzeżenie: starsze węzły znikają, w tym LXST Call do nieoznaczonych wiadomości Ratspeak. W wersji Upstream 1.6.2 ta opcja jest domyślnie włączona.",
+      "linkMtuDiscovery": "Wykrywanie MTU łącza",
+      "linkMtuDiscoveryAria": "Negocjuj największy rozmiar pakietu obsługiwany przez każde łącze",
+      "linkMtuDiscoveryHint": "Domyślnie włączone. Pozostaw włączone, aby przyspieszyć przesyłanie danych przez dobre łącza. Wyłącz, jeśli duże pakiety zachowują się nieprawidłowo na ścieżce.",
+      "stampMtuRestartRequired": "Zapisano. Uruchom ponownie stos Reticulum, aby zmiany dotyczące znacznika sieciowego i jednostki MTU łącza zaczęły obowiązywać."
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",

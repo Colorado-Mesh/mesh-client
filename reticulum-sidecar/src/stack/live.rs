@@ -441,11 +441,11 @@ impl LiveBridge {
         let share_instance = config::get_stack_settings(&config_dir)
             .map(|s| s.share_instance)
             .unwrap_or(false);
-        let startup = super::instance_policy::init_owned_or_standalone(
+        let startup = Box::pin(super::instance_policy::init_owned_or_standalone(
             &config_str,
             share_instance,
             is_foreground,
-        )
+        ))
         .await?;
         let shutdown = startup.shutdown;
         let shutdown_guard = LiveRuntimeShutdown(shutdown.clone());
@@ -1866,6 +1866,11 @@ impl LiveBridge {
             client_label: "nomad.link".into(),
             identify,
             track_phy_stats: false,
+            proof_strategy: rns_identity::destination::ProofStrategy::ProveNone,
+            resource_dir: None,
+            // None = no inbound reassembly cap (same as leaving Default's Some(limit)
+            // when rns-protocol is not a direct crate dep).
+            inbound_reassembly_limit: None,
         };
         let session = LinkSession::connect(
             self.handle.transport_tx.clone(),
@@ -2634,7 +2639,7 @@ impl LiveBridge {
                     hops: Some(evt.hops),
                     last_seen: Some(last_seen),
                     node_state: parsed.node_state,
-                    peering_cost: parsed.peering_cost,
+                    peering_cost: parsed.peering_cost.round().clamp(0.0, 255.0) as u8,
                     medium,
                 };
                 let (payload, cascade_fields_changed) = {
@@ -2693,8 +2698,8 @@ impl LiveBridge {
                         let peered = router.autopeer(lxmf_core::router::AutopeerCandidate {
                             destination_hash: evt.destination_hash,
                             timebase: parsed.timebase as f64,
-                            transfer_limit: Some(parsed.transfer_limit as f64),
-                            sync_limit: Some(parsed.sync_limit as f64),
+                            transfer_limit: Some(parsed.transfer_limit.as_f64()),
+                            sync_limit: Some(parsed.sync_limit.as_f64()),
                             stamp_cost: Some(parsed.stamp_cost),
                             stamp_flexibility: Some(parsed.stamp_flex),
                             peering_cost: Some(parsed.peering_cost),
@@ -5097,7 +5102,7 @@ impl LiveBridge {
     async fn resolve_propagation_peering(
         &self,
         destination_hex: &str,
-    ) -> Result<([u8; 16], [u8; 16], u8, Option<Vec<u8>>), String> {
+    ) -> Result<([u8; 16], [u8; 16], f64, Option<Vec<u8>>), String> {
         let pub_key = self
             .outbound
             .lock()
@@ -5117,23 +5122,27 @@ impl LiveBridge {
             .pn_hosting_policy
             .lock()
             .ok()
-            .map(|p| p.max_peering_cost)
+            .map(|p| f64::from(p.max_peering_cost))
             .unwrap_or(lxmf_core::constants::MAX_PEERING_COST);
         if peering_cost > max_cost {
             return Err("PROPAGATION_PEER_COST_EXCEEDS_MAX".into());
         }
-        let precomputed = if peering_cost == 0 {
+        let precomputed = if peering_cost <= 0.0 {
             Some(Vec::new())
         } else {
             let stamp = tokio::task::spawn_blocking(move || {
                 let mut peering_id = Vec::with_capacity(32);
                 peering_id.extend_from_slice(&peer_id);
                 peering_id.extend_from_slice(&local_id);
+                let ctl = rns_identity::stamps::StampControl::default();
                 lxmf_core::stamper::generate_stamp(
                     &peering_id,
                     peering_cost,
                     lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PEERING,
+                    &ctl,
                 )
+                .ok()
+                .flatten()
                 .map(|(stamp, _)| stamp.to_vec())
             })
             .await
@@ -5146,7 +5155,7 @@ impl LiveBridge {
 
     /// Learn PN stamp/peering costs from a recent `lxmf.propagation` announce (lxmd parity).
     /// Returns `(stamp_cost, peering_cost)` when found.
-    async fn refresh_pn_announce_costs(&self, destination_hex: &str) -> Option<(u8, u8)> {
+    async fn refresh_pn_announce_costs(&self, destination_hex: &str) -> Option<(f64, f64)> {
         let resp = self
             .query_control_timed(TransportQuery::GetRecentAnnounces)
             .await;
@@ -6009,12 +6018,12 @@ impl LiveBridge {
 
         let identity = self.identity.clone();
         let mut router = self.router.lock().await;
-        let message = match router.ingest_lxm_uri(trimmed, |ciphertext| {
+        let ingest = match router.ingest_lxm_uri(trimmed, false, |ciphertext| {
             identity
                 .decrypt(ciphertext, None, false)
                 .map_err(|_| lxmf_core::message::MessageError::PackFailed("decrypt".into()))
         }) {
-            Ok(message) => message,
+            Ok(ingest) => ingest,
             Err(
                 lxmf_core::message::MessageError::InvalidUri(_)
                 | lxmf_core::message::MessageError::TooShort(_),
@@ -6036,6 +6045,12 @@ impl LiveBridge {
                     "error": "internal_error",
                 }));
             }
+        };
+        let lxmf_core::router::PaperIngest::Delivered(message) = ingest else {
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "duplicate",
+            }));
         };
 
         let sender_hex = hex::encode(message.source_hash());
@@ -7981,62 +7996,72 @@ fn drive_local_host_peer_sync(
         Err(_) => return,
     };
 
-    let policies = router.sync_peer_policies_for_store(offer_generation);
-    for policy in policies {
-        let peer_hash = policy.peer_hash;
-        let Some(peer) = router.peers.get(&peer_hash) else {
-            continue;
-        };
-        if !peer.stamp_costs_known() {
-            continue;
-        }
-        if peer.peering_cost > 0 && !peer.peering_key_ready() {
-            if propagation.peering_key_job_inflight(&peer_hash) {
-                continue;
-            }
-            let peer_hex = hex::encode(peer_hash);
-            let Some(pub_key) = driver.public_key_for(&peer_hex) else {
-                tracing::debug!(
-                    target: "propagation-sync",
-                    peer = %peer_hex,
-                    "host peer sync postponed until identity is known"
-                );
-                continue;
-            };
-            let Ok(peer_identity) = Identity::from_public_key(&pub_key) else {
-                continue;
-            };
-            let peering_cost = peer.peering_cost;
-            propagation.spawn_peering_key_job(
-                peer_hash,
-                peering_cost,
-                peer_identity.hash,
-                local_identity_hash,
-            );
-            continue;
-        }
-
-        if driver.has_inflight_delivery_to(&peer_hash) {
-            continue;
-        }
-
-        let ready_policy = OutboundOfferPolicy::from(peer);
-        if peer.peering_cost > 0 && ready_policy.peering_key.is_empty() {
-            continue;
-        }
-
-        if propagation.start_sync_with_policy(ready_policy) {
-            if let Some(peer) = router.peers.get_mut(&peer_hash) {
-                peer.begin_sync();
-            }
-            driver.set_propagation_sync_target(Some(peer_hash));
-            tracing::info!(
-                target: "propagation-sync",
-                peer = %hex::encode(peer_hash),
-                "local host queued outbound peer inventory sync"
-            );
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs_f64();
+    let pass = router.sync_peers(now, offer_generation);
+    if !pass.culled.is_empty() {
+        tracing::debug!(
+            target: "propagation-sync",
+            culled = pass.culled.len(),
+            "culled unreachable host propagation peers"
+        );
+    }
+    let Some(peer_hash) = pass.selected else {
+        return;
+    };
+    let Some(peer) = router.peers.get(&peer_hash) else {
+        return;
+    };
+    if !peer.stamp_costs_known() {
+        return;
+    }
+    if peer.peering_cost > 0.0 && !peer.peering_key_ready() {
+        if propagation.peering_key_job_inflight(&peer_hash) {
             return;
         }
+        let peer_hex = hex::encode(peer_hash);
+        let Some(pub_key) = driver.public_key_for(&peer_hex) else {
+            tracing::debug!(
+                target: "propagation-sync",
+                peer = %peer_hex,
+                "host peer sync postponed until identity is known"
+            );
+            return;
+        };
+        let Ok(peer_identity) = Identity::from_public_key(&pub_key) else {
+            return;
+        };
+        let peering_cost_u8 = peer.peering_cost.round().clamp(0.0, 255.0) as u8;
+        propagation.spawn_peering_key_job(
+            peer_hash,
+            peering_cost_u8,
+            peer_identity.hash,
+            local_identity_hash,
+        );
+        return;
+    }
+
+    if driver.has_inflight_delivery_to(&peer_hash) {
+        return;
+    }
+
+    let ready_policy = OutboundOfferPolicy::from(peer);
+    if peer.peering_cost > 0.0 && ready_policy.peering_key.is_empty() {
+        return;
+    }
+
+    if propagation.start_sync_with_policy(ready_policy) {
+        if let Some(peer) = router.peers.get_mut(&peer_hash) {
+            peer.begin_sync();
+        }
+        driver.set_propagation_sync_target(Some(peer_hash));
+        tracing::info!(
+            target: "propagation-sync",
+            peer = %hex::encode(peer_hash),
+            "local host queued outbound peer inventory sync"
+        );
     }
 }
 

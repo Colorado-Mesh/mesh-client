@@ -27,9 +27,9 @@ pub fn build_propagation_announce_packet(
         node_state && !policy.from_static_only,
         policy.propagation_limit_kb as u64,
         policy.sync_limit_kb as u64,
-        policy.propagation_stamp_cost,
-        policy.propagation_stamp_flex,
-        policy.peering_cost,
+        f64::from(policy.propagation_stamp_cost),
+        f64::from(policy.propagation_stamp_flex),
+        f64::from(policy.peering_cost),
     );
     if let Some(ref name) = policy.node_name {
         pn_data.set_name(name);

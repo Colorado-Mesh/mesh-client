@@ -89,7 +89,7 @@ pub(crate) fn build_client_download_blob(
     recipient: &Identity,
     content: &str,
 ) -> Vec<u8> {
-    use lxmf_core::propagation_send::PropagationEnvelope;
+    use lxmf_core::propagation_send::{EncryptionBinding, PropagationEnvelope};
     use rns_identity::destination::Destination;
 
     let dest_hash =
@@ -110,7 +110,8 @@ pub(crate) fn build_client_download_blob(
     // The envelope's ciphertext is exactly the inner lxmf_data entry
     // (dest || encrypted_data) that a client download yields.
     let remote = Identity::from_public_key(&recipient.get_public_key()).expect("remote identity");
-    let envelope = PropagationEnvelope::new(msg, [0u8; 32], 0, |plaintext| {
+    let binding = EncryptionBinding::for_recipient(&remote.get_public_key(), None);
+    let envelope = PropagationEnvelope::new(msg, binding, 0.0, |plaintext| {
         remote
             .encrypt(plaintext, None)
             .map_err(|e| lxmf_core::message::MessageError::PackFailed(e.to_string()))
@@ -132,11 +133,11 @@ pub(crate) fn zero_cost_policy() -> super::pn_hosting_policy::PnHostingPolicy {
 /// PN stamp value actually measured for `stamp` over `lxmf_data`'s transient id. LXMF 1.4 relay
 /// ingress requires the claimed value to equal this measurement (no caller-asserted values).
 #[cfg(test)]
-pub(crate) fn measured_pn_stamp_value(lxmf_data: &[u8], stamp: &[u8; 32]) -> u8 {
+pub(crate) fn measured_pn_stamp_value(lxmf_data: &[u8], stamp: &[u8; 32]) -> f64 {
     use lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PN;
     let tid = propagation_transient_id(lxmf_data);
     let workblock = lxmf_core::stamper::stamp_workblock(&tid, STAMP_WORKBLOCK_EXPAND_ROUNDS_PN);
-    u8::try_from(lxmf_core::stamper::stamp_value(&workblock, stamp)).unwrap_or(u8::MAX)
+    lxmf_core::stamper::stamp_value(&workblock, stamp)
 }
 
 /// Admit `lxmf_data` + `stamp` into `node` using the measured stamp value.
@@ -156,13 +157,19 @@ pub(crate) fn deposit_client_blob_for_test(
     blob: &[u8],
 ) -> bool {
     use lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PN;
+    use rns_identity::stamps::StampControl;
     let tid = propagation_transient_id(blob);
-    let (stamp, _) = lxmf_core::stamper::generate_stamp(
+    let ctl = StampControl::default();
+    let generated = lxmf_core::stamper::generate_stamp(
         &tid,
         node.min_stamp_cost(),
         STAMP_WORKBLOCK_EXPAND_ROUNDS_PN,
+        &ctl,
     )
     .expect("test stamp");
+    let Some((stamp, _)) = generated else {
+        return false;
+    };
     accept_stamped_for_test(node, blob, &stamp)
 }
 

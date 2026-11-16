@@ -1,0 +1,330 @@
+diff --git a/crates/nomad-core/src/node.rs b/crates/nomad-core/src/node.rs
+index da37a08..83acca5 100644
+--- a/crates/nomad-core/src/node.rs
++++ b/crates/nomad-core/src/node.rs
+@@ -6,6 +6,7 @@
+ //! small or host behind a process that isolates disk stalls.
+ 
+ use std::collections::{HashMap, HashSet};
++use std::io::Cursor;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::{Arc, Mutex, RwLock};
+ use std::time::{Duration, Instant};
+@@ -611,7 +612,7 @@ fn handle_request(
+ 
+     let Some(route) = route else {
+         shared.stats.not_found_count.fetch_add(1, Ordering::Relaxed);
+-        return RequestOutcome::Reply(not_found_page("/page/unknown").into_bytes());
++        return RequestOutcome::ReplyValue(not_found_page("/page/unknown").into_bytes());
+     };
+ 
+     if route == MEDIA_ROUTE {
+@@ -629,7 +630,7 @@ fn handle_request(
+ 
+ /// The reply for a visitor who is not on the allow list.
+ fn deny_pages_or_files() -> RequestOutcome {
+-    RequestOutcome::Reply(not_allowed_page().as_bytes().to_vec())
++    RequestOutcome::ReplyValue(not_allowed_page().as_bytes().to_vec())
+ }
+ 
+ /// Serves a page. An executable page runs as a script when scripts are on, and a script that fails gets an error page.
+@@ -651,7 +652,7 @@ fn serve_page(
+         Ok(p) => p,
+         Err(NomadError::NotFound(_)) | Err(NomadError::PathTraversal) => {
+             shared.stats.not_found_count.fetch_add(1, Ordering::Relaxed);
+-            return RequestOutcome::Reply(not_found_page(route).into_bytes());
++            return RequestOutcome::ReplyValue(not_found_page(route).into_bytes());
+         }
+         Err(e) => {
+             tracing::warn!(error = %e, route = %route, "page path resolve failed");
+@@ -676,11 +677,11 @@ fn serve_page(
+         match run_cgi(&abs, link_id, remote_identity, &fields, max, &shared.cgi) {
+             Ok(bytes) => {
+                 shared.stats.page_hits.fetch_add(1, Ordering::Relaxed);
+-                return RequestOutcome::Reply(bytes);
++                return RequestOutcome::ReplyValue(bytes);
+             }
+             Err(e) => {
+                 tracing::warn!(error = %e, route = %route, "nomad CGI page failed");
+-                return RequestOutcome::Reply(script_failed_page(route).into_bytes());
++                return RequestOutcome::ReplyValue(script_failed_page(route).into_bytes());
+             }
+         }
+     }
+@@ -693,17 +694,17 @@ fn serve_page(
+     // text (which may hold secrets) must not go out as if it were a page.
+     if !shared.allow_executable_pages && is_unix_executable(&abs) {
+         shared.stats.not_found_count.fetch_add(1, Ordering::Relaxed);
+-        return RequestOutcome::Reply(not_found_page(route).into_bytes());
++        return RequestOutcome::ReplyValue(not_found_page(route).into_bytes());
+     }
+ 
+     match shared.store.read_page_route(route) {
+         Ok(bytes) => {
+             shared.stats.page_hits.fetch_add(1, Ordering::Relaxed);
+-            RequestOutcome::Reply(bytes)
++            RequestOutcome::ReplyValue(bytes)
+         }
+         Err(NomadError::NotFound(_)) => {
+             shared.stats.not_found_count.fetch_add(1, Ordering::Relaxed);
+-            RequestOutcome::Reply(not_found_page(route).into_bytes())
++            RequestOutcome::ReplyValue(not_found_page(route).into_bytes())
+         }
+         Err(e) => {
+             tracing::warn!(error = %e, route = %route, "nomad page serve failed");
+@@ -745,11 +746,10 @@ fn serve_file(
+         Ok(bytes) => {
+             shared.stats.file_hits.fetch_add(1, Ordering::Relaxed);
+             let rel_name = route.strip_prefix(FILE_PREFIX).unwrap_or(route).to_string();
+-            let auto_compress = bytes.len() < FILE_AUTO_COMPRESS_MAX_BYTES;
++            let _auto_compress = bytes.len() < FILE_AUTO_COMPRESS_MAX_BYTES;
+             RequestOutcome::ReplyFile {
+-                data: bytes,
++                source: Box::new(Cursor::new(bytes)),
+                 metadata: Some(pack_file_name_metadata(&rel_name)),
+-                auto_compress,
+             }
+         }
+         Err(NomadError::NotFound(_)) => {
+@@ -865,16 +865,26 @@ fn serve_media(
+     };
+ 
+     shared.stats.media_hits.fetch_add(1, Ordering::Relaxed);
+-    let auto_compress = reply_bytes.len() < FILE_AUTO_COMPRESS_MAX_BYTES;
++    let _auto_compress = reply_bytes.len() < FILE_AUTO_COMPRESS_MAX_BYTES;
+     RequestOutcome::ReplyFile {
+-        data: reply_bytes,
++        source: Box::new(Cursor::new(reply_bytes)),
+         metadata: Some(pack_file_name_metadata(&reply_name)),
+-        auto_compress,
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
++
++    fn drain_resource_source(
++        mut source: Box<dyn rns_runtime::resource_source::ResourceSource>,
++    ) -> Vec<u8> {
++        use std::io::{Read, Seek, SeekFrom};
++        source.seek(SeekFrom::Start(0)).expect("seek");
++        let mut buf = Vec::new();
++        source.read_to_end(&mut buf).expect("read");
++        buf
++    }
++
+     use super::*;
+     use crate::request::encode_media_request;
+     use crate::storage::NomadContentRoots;
+@@ -969,7 +979,7 @@ mod tests {
+ 
+         let page_hash = path_hash("/page/index.mu");
+         match call(&shared, page_hash, Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert_eq!(bytes, b"> Hello from host\n");
+             }
+             _ => panic!("expected page reply from link request handler"),
+@@ -977,13 +987,9 @@ mod tests {
+ 
+         let file_hash = path_hash("/file/readme.txt");
+         match call(&shared, file_hash, Vec::new(), None) {
+-            RequestOutcome::ReplyFile {
+-                data,
+-                metadata,
+-                auto_compress,
+-            } => {
++            RequestOutcome::ReplyFile { source, metadata } => {
++                let data = drain_resource_source(source);
+                 assert_eq!(data, b"file-bytes");
+-                assert!(auto_compress);
+                 let meta = metadata.expect("file responses include filename metadata");
+                 let value = rmpv::decode::read_value(&mut &meta[..]).unwrap();
+                 let map = value.as_map().expect("metadata map");
+@@ -1018,8 +1024,10 @@ mod tests {
+             &[("photos/pic.png", b"PNG")],
+         );
+         match call(&shared, path_hash("/file/photos/pic.png"), Vec::new(), None) {
+-            RequestOutcome::ReplyFile { metadata, data, .. } => {
+-                assert_eq!(data, b"PNG");
++            RequestOutcome::ReplyFile {
++                metadata, source, ..
++            } => {
++                assert_eq!(drain_resource_source(source), b"PNG");
+                 let meta = metadata.expect("metadata");
+                 let value = rmpv::decode::read_value(&mut &meta[..]).unwrap();
+                 let map = value.as_map().unwrap();
+@@ -1038,7 +1046,7 @@ mod tests {
+         assert!(before >= 1);
+ 
+         match call(&shared, [0u8; 16], Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 let body = String::from_utf8_lossy(&bytes);
+                 assert!(body.contains("Not found"));
+             }
+@@ -1049,7 +1057,7 @@ mod tests {
+         assert_eq!(before, after, "soft-miss must not wipe the route table");
+ 
+         match call(&shared, path_hash("/page/index.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => assert_eq!(bytes, b"> ok\n"),
++            RequestOutcome::ReplyValue(bytes) => assert_eq!(bytes, b"> ok\n"),
+             _ => panic!("expected page reply after unknown-hash miss"),
+         }
+     }
+@@ -1106,7 +1114,7 @@ mod tests {
+         let shared = shared_with_content(&dir, &[("index.mu", b"> ok\n")], &[]);
+         let forbidden = path_hash("/page/.secret.mu");
+         match call(&shared, forbidden, Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 let body = String::from_utf8_lossy(&bytes);
+                 assert!(body.contains("Not found"));
+             }
+@@ -1126,7 +1134,7 @@ mod tests {
+             .write_page_rel("extra.mu", b"> extra\n")
+             .unwrap();
+         match call(&shared, path_hash("/page/extra.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert!(String::from_utf8_lossy(&bytes).contains("Not found"));
+             }
+             _ => panic!("expected not-found before reload"),
+@@ -1136,7 +1144,7 @@ mod tests {
+             rebuild_routes(&mut routes, &shared.store).unwrap();
+         }
+         match call(&shared, path_hash("/page/extra.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => assert_eq!(bytes, b"> extra\n"),
++            RequestOutcome::ReplyValue(bytes) => assert_eq!(bytes, b"> extra\n"),
+             _ => panic!("expected reply after reload"),
+         }
+     }
+@@ -1244,13 +1252,9 @@ mod tests {
+         );
+         let body = encode_media_request("/media/img/Hero.WEBP");
+         match call(&shared, path_hash(MEDIA_ROUTE), body, None) {
+-            RequestOutcome::ReplyFile {
+-                data,
+-                metadata,
+-                auto_compress,
+-            } => {
++            RequestOutcome::ReplyFile { source, metadata } => {
++                let data = drain_resource_source(source);
+                 assert_eq!(data, b"RIFFWEBP");
+-                assert!(auto_compress);
+                 let meta = metadata.expect("basename metadata");
+                 let value = rmpv::decode::read_value(&mut &meta[..]).unwrap();
+                 let map = value.as_map().unwrap();
+@@ -1296,9 +1300,12 @@ mod tests {
+         let body = encode_media_request("pix.png");
+         let first = call(&shared, path_hash(MEDIA_ROUTE), body.clone(), None);
+         let webp_bytes = match first {
+-            RequestOutcome::ReplyFile { data, metadata, .. } => {
++            RequestOutcome::ReplyFile {
++                source, metadata, ..
++            } => {
+                 let name = crate::client::reply_file_name(metadata.as_deref());
+                 assert_eq!(name.as_deref(), Some("pix.webp"));
++                let data = drain_resource_source(source);
+                 assert!(data.windows(4).any(|w| w == b"WEBP"));
+                 data
+             }
+@@ -1312,7 +1319,9 @@ mod tests {
+         );
+         // Second hit should serve from cache (same bytes).
+         match call(&shared, path_hash(MEDIA_ROUTE), body, None) {
+-            RequestOutcome::ReplyFile { data, .. } => assert_eq!(data, webp_bytes),
++            RequestOutcome::ReplyFile { source, .. } => {
++                assert_eq!(drain_resource_source(source), webp_bytes)
++            }
+             other => panic!("expected cached ReplyFile, got {other:?}"),
+         }
+         shared.media_cache.lock().unwrap().clear().unwrap();
+@@ -1347,7 +1356,7 @@ mod tests {
+         )
+         .unwrap();
+         match call(&shared, path_hash("/page/secret.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 let body = String::from_utf8_lossy(&bytes);
+                 assert!(body.contains("Request Not Allowed"));
+             }
+@@ -1359,7 +1368,7 @@ mod tests {
+             Vec::new(),
+             Some(identity_with_hash(hash)),
+         ) {
+-            RequestOutcome::Reply(bytes) => assert_eq!(bytes, b"> no\n"),
++            RequestOutcome::ReplyValue(bytes) => assert_eq!(bytes, b"> no\n"),
+             _ => panic!("expected allow for listed identity"),
+         }
+     }
+@@ -1377,7 +1386,7 @@ mod tests {
+         )
+         .unwrap();
+         match call(&shared, path_hash("/file/secret.bin"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert!(String::from_utf8_lossy(&bytes).contains("Request Not Allowed"));
+             }
+             _ => panic!("expected not-allowed micron for file deny"),
+@@ -1408,7 +1417,9 @@ mod tests {
+             body,
+             Some(identity_with_hash(hash)),
+         ) {
+-            RequestOutcome::ReplyFile { data, .. } => assert_eq!(data, b"W"),
++            RequestOutcome::ReplyFile { source, .. } => {
++                assert_eq!(drain_resource_source(source), b"W")
++            }
+             _ => panic!("listed identity must receive media"),
+         }
+     }
+@@ -1430,7 +1441,7 @@ mod tests {
+             rebuild_routes(&mut routes, &shared.store).unwrap();
+         }
+         match call(&shared, path_hash("/page/dyn.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 let text = String::from_utf8_lossy(&bytes);
+                 assert!(!text.contains("SHOULD_NOT_RUN"), "{text}");
+                 assert_eq!(bytes, not_found_page("/page/dyn.mu").into_bytes());
+@@ -1459,7 +1470,7 @@ mod tests {
+         fields.insert("field_q".into(), "cgi-ok".into());
+         let data = crate::request::encode_request_fields(&fields);
+         match call(&shared, path_hash("/page/dyn.mu"), data, None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert_eq!(bytes, b"> cgi-ok\n");
+             }
+             other => panic!("expected CGI stdout reply, got {other:?}"),
+@@ -1483,7 +1494,7 @@ mod tests {
+     #[cfg(unix)]
+     fn assert_failure_page(shared: &SharedState, route: &str) {
+         match call(shared, path_hash(route), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 let body = String::from_utf8_lossy(&bytes);
+                 assert!(
+                     body.contains("Page failed") && body.contains(route),
+@@ -1547,7 +1558,7 @@ mod tests {
+             rebuild_routes(&mut routes, &shared.store).unwrap();
+         }
+         match call(&shared, path_hash("/page/dyn.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert!(String::from_utf8_lossy(&bytes).contains("Request Not Allowed"));
+             }
+             _ => panic!("ACL must deny before CGI"),
+@@ -1582,11 +1593,11 @@ mod tests {
+             Vec::new(),
+             Some(identity_with_hash(hash)),
+         ) {
+-            RequestOutcome::Reply(bytes) => assert_eq!(bytes, b"> in\n"),
++            RequestOutcome::ReplyValue(bytes) => assert_eq!(bytes, b"> in\n"),
+             other => panic!("expected allow via executable .allowed, got {other:?}"),
+         }
+         match call(&shared, path_hash("/page/gate.mu"), Vec::new(), None) {
+-            RequestOutcome::Reply(bytes) => {
++            RequestOutcome::ReplyValue(bytes) => {
+                 assert!(String::from_utf8_lossy(&bytes).contains("Request Not Allowed"));
+             }
+             _ => panic!("anonymous must still be denied"),

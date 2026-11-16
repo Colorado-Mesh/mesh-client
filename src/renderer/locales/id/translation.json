@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Mati secara default. Aktifkan ketika melakukan peering dengan rsRNS atau Backbone non-Python lainnya mengumumkan bahwa tidak mengiklankan implementasi Python Reticulum yang terverifikasi.",
       "interfaceStatsTitle": "Penghitung antarmuka langsung",
       "interfaceStatsLine": "Penurunan TX {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filter {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Disimpan. Mulai ulang tumpukan Reticulum agar sambungan otomatis yang belum terverifikasi dapat diterapkan."
+      "autoconnectUnverifiedRestartRequired": "Disimpan. Mulai ulang tumpukan Reticulum agar sambungan otomatis yang belum terverifikasi dapat diterapkan.",
+      "enableStamping": "Pengumuman stempel dan permintaan jalur",
+      "enableStampingAria": "Beri stempel pada pengumuman keluar dan permintaan jalur",
+      "enableStampingHint": "Nonaktif secara default (Reticulum 1.6.0). Ikut serta lebih awal agar node transportasi yang memerlukan stempel meneruskan Anda; bersiaplah untuk emisi default-on 1.6.1. Peer yang lebih lama mengabaikan stempel.",
+      "enforceStamps": "Wajibkan stempel dari pihak lain",
+      "enforceStampsAria": "Memerlukan stempel jaringan yang valid dari rekan",
+      "enforceStampsHint": "Nonaktif secara default (Reticulum 1.6.0). Perkuat hub pribadi atau terbuka terhadap spam tanpa stempel. Peringatan: Peer yang lebih lama akan hilang, termasuk LXST Call ke Ratspeak yang tidak diberi stempel. Upstream 1.6.2 mengaktifkan ini secara default.",
+      "linkMtuDiscovery": "Penemuan MTU tautan",
+      "linkMtuDiscoveryAria": "Menegosiasikan ukuran paket terbesar yang didukung oleh setiap tautan",
+      "linkMtuDiscoveryHint": "Aktif secara default. Biarkan aktif untuk transfer yang lebih cepat pada koneksi yang baik. Nonaktifkan jika paket besar bermasalah pada jalur.",
+      "stampMtuRestartRequired": "Tersimpan. Mulai ulang stack Reticulum agar perubahan stempel jaringan dan tautan MTU berlaku."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",

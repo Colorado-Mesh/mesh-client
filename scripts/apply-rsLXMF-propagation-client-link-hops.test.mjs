@@ -17,7 +17,8 @@ describe('apply-rsLXMF-propagation-client-link-hops', () => {
     const patch = readFileSync(PATCH_FILE, 'utf8');
     expect(patch).toContain('LinkEstablishTimeout');
     expect(patch).toContain('link_hops');
-    expect(patch).toContain('Link::new_initiator(node_hash, hops)');
+    expect(patch).toContain('Link::new_initiator_with_keys(node_hash, hops, keys, mtu)');
+    expect(patch).toContain('self.link_stamper.new_initiator(node_hash, hops, mtu)');
     expect(patch).toContain('start_download_with_limit(None, 1)');
   });
 

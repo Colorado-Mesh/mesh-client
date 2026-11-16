@@ -198,6 +198,9 @@ export function ReticulumNetworkPanel({
     network_identity: '',
     slow_rf_announce_filter: true,
     autoconnect_unverified_implementations: false,
+    enable_stamping: false,
+    enforce_stamps: false,
+    link_mtu_discovery: true,
   });
   /** Last GET snapshot — save only sends keys that differ so concurrent patches are preserved. */
   const stackSettingsBaselineRef = useRef<typeof stackSettings | null>(null);
@@ -226,6 +229,9 @@ export function ReticulumNetworkPanel({
         network_identity: body.network_identity,
         slow_rf_announce_filter: body.slow_rf_announce_filter,
         autoconnect_unverified_implementations: body.autoconnect_unverified_implementations,
+        enable_stamping: body.enable_stamping,
+        enforce_stamps: body.enforce_stamps,
+        link_mtu_discovery: body.link_mtu_discovery,
       };
       setStackSettings(next);
       stackSettingsBaselineRef.current = next;
@@ -719,6 +725,19 @@ export function ReticulumNetworkPanel({
         patch.autoconnect_unverified_implementations =
           stackSettings.autoconnect_unverified_implementations;
       }
+      let stampMtuChanged = false;
+      if (baseline.enable_stamping !== stackSettings.enable_stamping) {
+        patch.enable_stamping = stackSettings.enable_stamping;
+        stampMtuChanged = true;
+      }
+      if (baseline.enforce_stamps !== stackSettings.enforce_stamps) {
+        patch.enforce_stamps = stackSettings.enforce_stamps;
+        stampMtuChanged = true;
+      }
+      if (baseline.link_mtu_discovery !== stackSettings.link_mtu_discovery) {
+        patch.link_mtu_discovery = stackSettings.link_mtu_discovery;
+        stampMtuChanged = true;
+      }
       if (Object.keys(patch).length === 0) {
         return;
       }
@@ -734,6 +753,9 @@ export function ReticulumNetworkPanel({
           t('networkPanel.reticulumStackSettings.autoconnectUnverifiedRestartRequired'),
           'info',
         );
+      }
+      if (stampMtuChanged) {
+        addToast(t('networkPanel.reticulumStackSettings.stampMtuRestartRequired'), 'info');
       }
     } catch (e) {
       // catch-no-log-ok: stack settings save failure shown via setIdentityError
@@ -811,6 +833,75 @@ export function ReticulumNetworkPanel({
           <p className="text-label text-muted pl-6">
             {t('networkPanel.reticulumStackSettings.slowRfAnnounceFilterHint')}
           </p>
+          <label
+            data-setting-anchor="radio.reticulumStack.enableStamping"
+            className="text-ink-300 flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={stackSettings.enable_stamping}
+              disabled={!sidecarApiReady}
+              onChange={(e) => {
+                setStackSettings((s) => ({ ...s, enable_stamping: e.target.checked }));
+              }}
+              aria-label={t('networkPanel.reticulumStackSettings.enableStampingAria')}
+            />
+            <span>
+              <span className="block">
+                {t('networkPanel.reticulumStackSettings.enableStamping')}
+              </span>
+              <span className="text-label text-muted mt-1 block">
+                {t('networkPanel.reticulumStackSettings.enableStampingHint')}
+              </span>
+            </span>
+          </label>
+          <label
+            data-setting-anchor="radio.reticulumStack.enforceStamps"
+            className="text-ink-300 flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={stackSettings.enforce_stamps}
+              disabled={!sidecarApiReady}
+              onChange={(e) => {
+                setStackSettings((s) => ({ ...s, enforce_stamps: e.target.checked }));
+              }}
+              aria-label={t('networkPanel.reticulumStackSettings.enforceStampsAria')}
+            />
+            <span>
+              <span className="block">
+                {t('networkPanel.reticulumStackSettings.enforceStamps')}
+              </span>
+              <span className="text-label text-muted mt-1 block">
+                {t('networkPanel.reticulumStackSettings.enforceStampsHint')}
+              </span>
+            </span>
+          </label>
+          <label
+            data-setting-anchor="radio.reticulumStack.linkMtuDiscovery"
+            className="text-ink-300 flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={stackSettings.link_mtu_discovery}
+              disabled={!sidecarApiReady}
+              onChange={(e) => {
+                setStackSettings((s) => ({ ...s, link_mtu_discovery: e.target.checked }));
+              }}
+              aria-label={t('networkPanel.reticulumStackSettings.linkMtuDiscoveryAria')}
+            />
+            <span>
+              <span className="block">
+                {t('networkPanel.reticulumStackSettings.linkMtuDiscovery')}
+              </span>
+              <span className="text-label text-muted mt-1 block">
+                {t('networkPanel.reticulumStackSettings.linkMtuDiscoveryHint')}
+              </span>
+            </span>
+          </label>
           <ReticulumShareForOtherApps sidecarApiReady={sidecarApiReady} />
           <label
             data-setting-anchor="radio.reticulumStack.logLevel"
@@ -924,8 +1015,9 @@ export function ReticulumNetworkPanel({
               {t('networkPanel.reticulumStackSettings.requiredDiscoveryValue')}
               <input
                 type="number"
-                min={1}
-                max={32}
+                min={0}
+                max={100}
+                step="any"
                 value={stackSettings.required_discovery_value}
                 disabled={!sidecarApiReady}
                 onChange={(e) => {

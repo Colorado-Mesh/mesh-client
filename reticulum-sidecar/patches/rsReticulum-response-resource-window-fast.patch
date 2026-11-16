@@ -1,8 +1,8 @@
 diff --git a/crates/rns-protocol/src/resource.rs b/crates/rns-protocol/src/resource.rs
-index 0ddd16b..6a61e64 100644
+index efc6de7..fd795df 100644
 --- a/crates/rns-protocol/src/resource.rs
 +++ b/crates/rns-protocol/src/resource.rs
-@@ -227,6 +227,21 @@ impl WindowState {
+@@ -243,6 +243,21 @@ impl WindowState {
          }
      }
  
@@ -21,10 +21,10 @@ index 0ddd16b..6a61e64 100644
 +        self.very_slow_rate_rounds = 0;
 +    }
 +
-     /// Shrink the window and ceiling toward their minimum after a timeout.
-     /// If the ceiling remains more than `WINDOW_FLEXIBILITY - 1` above the
-     /// window, lower it once more; one call need not close a larger gap.
-@@ -2773,6 +2788,16 @@ mod tests {
+     /// Shrink after a part timeout. Nothing changes at the window minimum;
+     /// otherwise the ceiling follows, closing a gap wider than the
+     /// flexibility by one more step (Resource.py).
+@@ -2996,6 +3011,16 @@ mod tests {
          assert_eq!(ws.window, initial);
      }
  
@@ -42,30 +42,18 @@ index 0ddd16b..6a61e64 100644
      fn test_progress() {
          let inbound = InboundResource::new(
 diff --git a/crates/rns-runtime/src/link_session.rs b/crates/rns-runtime/src/link_session.rs
-index 9af0f69..c806c7c 100644
+index 3ad7b33..7c0528d 100644
 --- a/crates/rns-runtime/src/link_session.rs
 +++ b/crates/rns-runtime/src/link_session.rs
-@@ -2355,7 +2355,7 @@ fn inbound_transfer_from_advertisement(
-     if advertisement.total_segments > 1 && advertisement.segment_index > 1 {
-         flags.has_metadata = false;
-     }
--    InboundTransfer::from_advertisement(
-+    let mut transfer = InboundTransfer::from_advertisement(
-         advertisement.num_parts,
-         advertisement.transfer_size,
-         advertisement.data_size,
-@@ -2365,7 +2365,13 @@ fn inbound_transfer_from_advertisement(
-         advertisement.get_map_hashes(),
-         rtt,
+@@ -2705,6 +2705,11 @@ fn inbound_transfer_from_advertisement(
      )
--    .map_err(|error| LinkSessionResourceError::InvalidAdvertisement(error.to_string()))
-+    .map_err(|error| LinkSessionResourceError::InvalidAdvertisement(error.to_string()))?;
-+    // Response Resources (Nomad /file /media) over a sub-second RTT never
-+    // promote past WINDOW_MAX_SLOW=10 when a TCP hub keeps rate < RATE_FAST.
-+    if flags.is_response && rtt <= Duration::from_millis(1000) {
-+        transfer.resource.window.promote_fast();
-+    }
-+    Ok(transfer)
- }
- 
- async fn accept_inbound_offer(
+     .map(|mut transfer| {
+         transfer.resource.sdu = link.resource_sdu();
++        // Response Resources (Nomad /file /media) over a sub-second RTT never
++        // promote past WINDOW_MAX_SLOW=10 when a TCP hub keeps rate < RATE_FAST.
++        if flags.is_response && rtt <= Duration::from_millis(1000) {
++            transfer.resource.window.promote_fast();
++        }
+         transfer
+     })
+     .map_err(|error| LinkSessionResourceError::InvalidAdvertisement(error.to_string()))

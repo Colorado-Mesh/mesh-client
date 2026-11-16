@@ -77,12 +77,13 @@ impl PropagationServeHandle {
 
         let static_peers = parse_static_peer_hashes(&policy.static_peers);
         let max_resource_bytes = policy.sync_limit_kb.saturating_mul(1000);
-        let min_stamp_cost = policy.min_stamp_cost();
+        let min_stamp_cost = f64::from(policy.min_stamp_cost());
         let admission_config = PnInboundAdmissionConfig {
             sequential_validation: true,
             static_sequential: false,
             max_inbound_syncs: 4,
             from_static_only: policy.from_static_only,
+            invalid_stamp_throttle: PnInboundAdmissionConfig::default().invalid_stamp_throttle,
         };
         let admission = Arc::new(Mutex::new(PnInboundRuntime::new(
             admission_config,
@@ -321,7 +322,7 @@ fn handle_pn_offer_request(
 
 struct ValidatedPnEntry {
     lxmf_data: Vec<u8>,
-    stamp_value: u32,
+    stamp_value: f64,
     stamp_data: [u8; 32],
     transient_id: [u8; 32],
 }
@@ -329,7 +330,7 @@ struct ValidatedPnEntry {
 fn validate_pn_resource_job(
     job: PnValidationJob,
     max_transfer_bytes: usize,
-    min_cost: u8,
+    min_cost: f64,
 ) -> (PnValidationOutcome, Vec<ValidatedPnEntry>, usize) {
     let allow_multiple = job.allow_multiple();
     let data = job.into_data();
@@ -383,7 +384,7 @@ fn validate_pn_resource_job(
 fn spawn_propagation_validation(
     job: PnValidationJob,
     max_transfer_bytes: usize,
-    min_cost: u8,
+    min_cost: f64,
     admission: Arc<Mutex<PnInboundRuntime>>,
     local_node: Arc<Mutex<PropagationNode>>,
     pn_hash_hex: String,
@@ -430,7 +431,7 @@ fn spawn_propagation_validation(
             let mut accepted = 0usize;
             if let Ok(mut node) = accept_local_node.lock() {
                 for entry in &entries {
-                    let stamp_value = u8::try_from(entry.stamp_value).unwrap_or(u8::MAX);
+                    let stamp_value = entry.stamp_value;
                     if node.accept_stamped_propagated_blob(
                         &entry.lxmf_data,
                         &entry.stamp_data,
@@ -548,7 +549,7 @@ mod tests {
 
         let mut node = PropagationNode::with_storage(
             lxmf_core::propagation_node::PropagationNodeConfig {
-                min_stamp_cost: 0,
+                min_stamp_cost: 0.0,
                 ..Default::default()
             },
             [0xAA; 16],
@@ -559,14 +560,21 @@ mod tests {
         let mut lxmf_data = vec![0xBB; 16];
         lxmf_data.extend_from_slice(&[0xCC; 64]);
         let stamp = [0x5A; 32];
-        assert!(node.accept_stamped_propagated_blob(&lxmf_data, &stamp, 0));
+        let stamp_value = stamper::stamp_value(
+            &stamper::stamp_workblock(
+                &rns_crypto::sha::full_hash(&lxmf_data),
+                lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PN,
+            ),
+            &stamp,
+        );
+        assert!(node.accept_stamped_propagated_blob(&lxmf_data, &stamp, stamp_value));
         assert_eq!(node.message_count(), 1);
 
         // Truncated stamped entry fails validate_pn_stamp (needs ≥32-byte stamp trailer).
         let bad = validate_pn_resource_job(
             PnValidationJob::for_test(vec![0x01, 0x02, 0x03], false),
             10_000,
-            0,
+            0.0,
         );
         assert_eq!(bad.0, PnValidationOutcome::Failed);
         assert!(bad.1.is_empty());

@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "默认关闭。当与 rsRNS 或其他非 Python Backbone 进行对等互连时启用，该 Backbone 宣布不宣传经过验证的 Python Reticulum 实现。",
       "interfaceStatsTitle": "实时界面计数器",
       "interfaceStatsLine": "TX 子站 {{txDropped}} B · 协议 {{protocol}} · IFAC {{ifac}} · 过滤器 {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "已保存。重新启动 Reticulum 堆栈以使未经验证的自动连接生效。"
+      "autoconnectUnverifiedRestartRequired": "已保存。重新启动 Reticulum 堆栈以使未经验证的自动连接生效。",
+      "enableStamping": "盖章公告和路径请求",
+      "enableStampingAria": "标记传出通告和路径请求",
+      "enableStampingHint": "默认关闭（Reticulum 1.6.0）。尽早选择加入，以便需要戳记的传输节点将您转发；为 1.6.1 默认开启的发送做好准备。较旧的节点会忽略戳记。",
+      "enforceStamps": "需要他人的印章",
+      "enforceStampsAria": "要求同行提供有效的网络印章",
+      "enforceStampsHint": "默认关闭（Reticulum 1.6.0）。加强私有或开放式集线器，抵御未加盖戳记的垃圾邮件。警告：较旧的对等节点将消失，包括LXST Call到未加盖戳记的Ratspeak。上游 1.6.2 默认启用此功能。",
+      "linkMtuDiscovery": "链路 MTU 发现",
+      "linkMtuDiscoveryAria": "协商每条链路支持的最大数据包大小",
+      "linkMtuDiscoveryHint": "默认开启。在链路状况良好的情况下保持开启，以实现更快的传输。如果大包在路径上出现异常，请关闭。",
+      "stampMtuRestartRequired": "已保存。请重启Reticulum堆栈，以便网络戳和链路MTU更改生效。"
     },
     "reticulumConfigImport": {
       "title": "导入 Reticulum config",

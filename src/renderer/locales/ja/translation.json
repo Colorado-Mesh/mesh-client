@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "デフォルトではオフです。 rsRNS または検証済みの Python Reticulum 実装をアドバタイズしない他の非 Python バックボーン アナウンスとピアリングする場合に有効にします。",
       "interfaceStatsTitle": "ライブインターフェースカウンター",
       "interfaceStatsLine": "TX ドロップ {{txDropped}} B · プロトコル {{protocol}} · IFAC {{ifac}} · フィルター {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "保存されました。未検証の自動接続を有効にするには、Reticulum スタックを再起動します。"
+      "autoconnectUnverifiedRestartRequired": "保存されました。未検証の自動接続を有効にするには、Reticulum スタックを再起動します。",
+      "enableStamping": "スタンプの発表とパスのリクエスト",
+      "enableStampingAria": "発信アナウンスとパス要求にスタンプを押す",
+      "enableStampingHint": "デフォルトではオフ（Reticulum 1.6.0）。スタンプを必要とするトランスポートノードがあなたを転送するように、早期にオプトインしてください。1.6.1のデフォルトで有効なエミッションに備えてください。古いピアはスタンプを無視します。",
+      "enforceStamps": "他のユーザーからのスタンプを必須にする",
+      "enforceStampsAria": "ピアから有効なネットワークスタンプを要求する",
+      "enforceStampsHint": "デフォルトではオフ（Reticulum 1.6.0）。プライベートハブまたはオープンハブをスタンプされていないスパムから保護します。警告：スタンプされていないRatspeakへのLXST Callを含む、古いピアが消えます。アップストリーム1.6.2では、これがデフォルトで有効になっています。",
+      "linkMtuDiscovery": "リンクMTU検出",
+      "linkMtuDiscoveryAria": "各リンクがサポートする最大パケットサイズをネゴシエートする",
+      "linkMtuDiscoveryHint": "デフォルトでオンになっています。良好なリンクでの転送速度を上げるには、オンのままにしてください。パス上で大きなパケットに問題がある場合はオフにしてください。",
+      "stampMtuRestartRequired": "保存されました。ネットワークスタンプとリンクMTUの変更を有効にするには、Reticulumスタックを再起動してください。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",

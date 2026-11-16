@@ -30,7 +30,7 @@ use super::propagation_download::{
 };
 
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
-type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
+type PeeringKeyResult = ([u8; 16], [u8; 32], f64);
 
 /// Cap concurrent host-peer peering-key PoW jobs (CPU-heavy stamp generation).
 const MAX_PEERING_KEY_JOBS: usize = 8;
@@ -138,8 +138,8 @@ impl PropagationBridge {
         let node_config = PropagationNodeConfig {
             max_storage: policy.message_storage_limit_bytes(),
             max_message_age: lxmf_core::constants::MESSAGE_EXPIRY,
-            min_stamp_cost: policy.min_stamp_cost(),
-            peering_cost: policy.peering_cost,
+            min_stamp_cost: f64::from(policy.min_stamp_cost()),
+            peering_cost: f64::from(policy.peering_cost),
             max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
             max_offer_size: policy.sync_limit_kb.saturating_mul(1000),
         };
@@ -335,11 +335,15 @@ impl PropagationBridge {
                 let mut peering_id = Vec::with_capacity(32);
                 peering_id.extend_from_slice(&peer_identity_hash);
                 peering_id.extend_from_slice(&local_identity_hash);
+                let ctl = rns_identity::stamps::StampControl::default();
                 lxmf_core::stamper::generate_stamp(
                     &peering_id,
-                    peering_cost,
+                    f64::from(peering_cost),
                     lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PEERING,
+                    &ctl,
                 )
+                .ok()
+                .flatten()
                 .map(|(stamp, value)| (peer_hash, stamp, value))
             })
             .await
@@ -390,7 +394,12 @@ impl PropagationBridge {
             SyncTaskState::AwaitingResponse => 40.0,
             SyncTaskState::Transferring => 70.0,
             SyncTaskState::Complete => 100.0,
-            SyncTaskState::Idle | SyncTaskState::Failed => 0.0,
+            SyncTaskState::Idle
+            | SyncTaskState::Failed
+            | SyncTaskState::PathRequested
+            | SyncTaskState::NoPath
+            | SyncTaskState::Throttled
+            | SyncTaskState::NoAccess => 0.0,
         }
     }
 
@@ -489,7 +498,7 @@ impl PropagationBridge {
     pub fn start_sync(
         &self,
         remote_hash: [u8; 16],
-        peering: Option<([u8; 16], [u8; 16], u8, Option<Vec<u8>>)>,
+        peering: Option<([u8; 16], [u8; 16], f64, Option<Vec<u8>>)>,
     ) -> bool {
         let Ok(mut task) = self.sync_task.lock() else {
             return false;
@@ -565,7 +574,14 @@ impl PropagationBridge {
             return 0.0;
         };
         match client.state() {
-            PropagationClientState::Idle | PropagationClientState::Failed => 0.0,
+            PropagationClientState::Idle
+            | PropagationClientState::Failed
+            | PropagationClientState::PathRequested
+            | PropagationClientState::NoPath
+            | PropagationClientState::LinkFailed
+            | PropagationClientState::TransferFailed
+            | PropagationClientState::NoIdentityReceived
+            | PropagationClientState::NoAccess => 0.0,
             PropagationClientState::LinkEstablishing => 10.0,
             PropagationClientState::LinkEstablished => Self::CLIENT_LINK_ESTABLISHED_PROGRESS,
             PropagationClientState::ListRequested => 40.0,
@@ -1359,7 +1375,10 @@ pub(crate) fn apply_peer_sync_terminal(
                 peer.mark_offer_generation_processed(generation);
             }
         }
-        PeerSyncTerminalState::Failed => {
+        PeerSyncTerminalState::Failed
+        | PeerSyncTerminalState::NoPath
+        | PeerSyncTerminalState::Throttled
+        | PeerSyncTerminalState::NoAccess => {
             peer.sync_failed();
         }
     }
@@ -1560,7 +1579,7 @@ mod tests {
 
         let mut node_a = PropagationNode::with_storage(
             PropagationNodeConfig {
-                min_stamp_cost: 0,
+                min_stamp_cost: 0.0,
                 ..Default::default()
             },
             hash_a,
@@ -1569,7 +1588,7 @@ mod tests {
         .expect("node a");
         let mut node_b = PropagationNode::with_storage(
             PropagationNodeConfig {
-                min_stamp_cost: 0,
+                min_stamp_cost: 0.0,
                 ..Default::default()
             },
             hash_b,

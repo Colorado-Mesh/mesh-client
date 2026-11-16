@@ -1,8 +1,8 @@
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index 345f27b..733efaf 100644
+index a9ced72..3483845 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
-@@ -42,6 +42,11 @@ mod rpc;
+@@ -45,6 +45,11 @@ use rpc::InterfaceEvent;
  // endpoints are owned by this actor. Real interface ids are allocated upward
  // from one by the runtime, so reserve the top two values for this private
  // duplex route. They never appear on the wire or in the interface registry.
@@ -14,10 +14,10 @@ index 345f27b..733efaf 100644
  const LOCAL_LINK_INITIATOR_INTERFACE: InterfaceId = InterfaceId::MAX;
  const LOCAL_LINK_RESPONDER_INTERFACE: InterfaceId = InterfaceId::MAX - 1;
  
-@@ -195,6 +200,13 @@ pub struct TransportActor {
+@@ -232,6 +237,13 @@ pub struct TransportActor {
      last_held_announce_check: f64,
  
-     pub is_transport_enabled: bool,
+     pub(crate) is_transport_enabled: bool,
 +    /// mesh-client policy (non-standard, default on): when true, unsolicited
 +    /// announces learned on fast interfaces are not queued for rebroadcast
 +    /// onto slow RF interfaces (bitrate <= `SLOW_RF_ANNOUNCE_MAX_BITRATE_BPS`).
@@ -28,15 +28,15 @@ index 345f27b..733efaf 100644
      /// Hash used for wire-facing transport identifiers and local next-hop
      /// answers. Derived from the internal or ephemeral hash by identity policy;
      /// it is not itself a signing key.
-@@ -461,6 +473,7 @@ impl TransportActor {
+@@ -582,6 +594,7 @@ impl TransportActor {
              last_rate_cull: 0.0,
              last_held_announce_check: 0.0,
              is_transport_enabled: false,
 +            slow_rf_announce_filter_enabled: true,
              transport_identity_hash: None,
              internal_identity_hash: None,
-             ephemeral_identity_hash: None,
-@@ -2183,6 +2196,43 @@ impl TransportActor {
+             ephemeral_identity_hash: options.ephemeral_identity_hash,
+@@ -2425,6 +2438,43 @@ impl TransportActor {
          accepted
      }
  
@@ -77,10 +77,10 @@ index 345f27b..733efaf 100644
 +        false
 +    }
 +
-     /// Enqueue an announce on every eligible outbound interface (except
-     /// optionally one). Eligibility mirrors Python's AP/roaming/boundary mode
-     /// gates. Enqueueing lets `process_announce_queues` apply ANNOUNCE_CAP
-@@ -2205,6 +2255,7 @@ impl TransportActor {
+     /// Python `Transport._outbound` for a broadcast announce (Transport.py:
+     /// 1676-1791): offline interfaces are skipped; Roaming, Boundary and
+     /// non-local Internal egress and hop-0 announces send at once, uncapped.
+@@ -2449,6 +2499,7 @@ impl TransportActor {
              .keys()
              .copied()
              .filter(|id| self.interface_allows_announce(*id, &destination_hash, except))
@@ -88,10 +88,10 @@ index 345f27b..733efaf 100644
              .collect();
  
          for id in ids {
-@@ -8527,6 +8578,91 @@ mod tests {
-         );
+@@ -8970,6 +9021,88 @@ mod tests {
      }
  
+     /// Python 1.3.8 Transport.py keeps one queued announce per
 +    /// mesh-client slow-RF announce filter (default on): a slow interface
 +    /// must not queue internet-learned announces, but must queue local and
 +    /// RF-learned destinations; disabling the filter restores stock queueing.
@@ -100,91 +100,88 @@ index 345f27b..733efaf 100644
 +        let (mut actor, _tx) = TransportActor::new();
 +        assert!(actor.slow_rf_announce_filter_enabled, "filter defaults on");
 +
-+        let (mut slow, _slow_rx) = make_test_interface("rnode_lora");
++        let (mut slow, mut slow_rx) = make_test_interface("rnode_lora");
 +        slow.bitrate = 3_125;
 +        actor.interfaces.insert(1, slow);
-+        let (fast, _fast_rx) = make_test_interface("tcp_hub");
++        let (fast, mut fast_rx) = make_test_interface("tcp_hub");
 +        actor.interfaces.insert(2, fast);
 +
++        // An announce reaches an interface when it is sent at once or queued.
++        fn reached(
++            actor: &TransportActor,
++            rx: &mut mpsc::Receiver<Bytes>,
++            id: InterfaceId,
++            dest: [u8; 16],
++        ) -> bool {
++            let mut sent = false;
++            while rx.try_recv().is_ok() {
++                sent = true;
++            }
++            sent || actor.interfaces[&id]
++                .announce_queue
++                .iter()
++                .any(|q| q.destination_hash == dest)
++        }
++
 +        // Internet-learned destination: live path via the fast hub.
-+        let (raw_net, dest_net) = make_valid_announce("test.slowrf.net", 0);
++        let (raw_net, dest_net) = make_valid_announce("test.slowrf.net", 1);
 +        actor.path_table.insert(
 +            dest_net,
 +            crate::path_table::PathEntry::new(None, 1, 2, InterfaceMode::Gateway),
 +        );
 +        actor.broadcast_announce_on_interfaces(&raw_net, None);
-+        assert_eq!(
-+            actor.interfaces.get(&1).unwrap().announce_queue.len(),
-+            0,
-+            "slow RF must not queue internet-learned announces"
++        assert!(
++            !reached(&actor, &mut slow_rx, 1, dest_net),
++            "slow RF must not carry internet-learned announces"
 +        );
-+        assert_eq!(
-+            actor.interfaces.get(&2).unwrap().announce_queue.len(),
-+            1,
-+            "fast interfaces keep stock queueing"
++        assert!(
++            reached(&actor, &mut fast_rx, 2, dest_net),
++            "fast interfaces keep stock announce egress"
 +        );
 +
 +        // RF-learned destination: live path via the slow interface itself.
-+        let (raw_rf, dest_rf) = make_valid_announce("test.slowrf.rf", 0);
++        let (raw_rf, dest_rf) = make_valid_announce("test.slowrf.rf", 1);
 +        actor.path_table.insert(
 +            dest_rf,
 +            crate::path_table::PathEntry::new(None, 1, 1, InterfaceMode::Gateway),
 +        );
 +        actor.broadcast_announce_on_interfaces(&raw_rf, None);
 +        assert!(
-+            actor
-+                .interfaces
-+                .get(&1)
-+                .unwrap()
-+                .announce_queue
-+                .iter()
-+                .any(|q| q.destination_hash == dest_rf),
-+            "slow RF must queue RF-learned (mesh) announces"
++            reached(&actor, &mut slow_rx, 1, dest_rf),
++            "slow RF must carry RF-learned (mesh) announces"
 +        );
 +
 +        // Local destination on the slow interface.
-+        let (raw_local, dest_local) = make_valid_announce("test.slowrf.local", 0);
++        let (raw_local, dest_local) = make_valid_announce("test.slowrf.local", 1);
 +        actor.local_destinations.insert(dest_local);
 +        actor.broadcast_announce_on_interfaces(&raw_local, None);
 +        assert!(
-+            actor
-+                .interfaces
-+                .get(&1)
-+                .unwrap()
-+                .announce_queue
-+                .iter()
-+                .any(|q| q.destination_hash == dest_local),
-+            "slow RF must queue local announces"
++            reached(&actor, &mut slow_rx, 1, dest_local),
++            "slow RF must carry local announces"
 +        );
 +
-+        // Filter off: stock behaviour — internet announce now queues on RF.
++        // Filter off: stock behaviour — internet announce now reaches RF.
 +        actor.slow_rf_announce_filter_enabled = false;
-+        let (raw_net2, dest_net2) = make_valid_announce("test.slowrf.net2", 0);
++        let (raw_net2, dest_net2) = make_valid_announce("test.slowrf.net2", 1);
 +        actor.path_table.insert(
 +            dest_net2,
 +            crate::path_table::PathEntry::new(None, 1, 2, InterfaceMode::Gateway),
 +        );
 +        actor.broadcast_announce_on_interfaces(&raw_net2, None);
 +        assert!(
-+            actor
-+                .interfaces
-+                .get(&1)
-+                .unwrap()
-+                .announce_queue
-+                .iter()
-+                .any(|q| q.destination_hash == dest_net2),
-+            "filter off must restore stock queueing onto slow RF"
++            reached(&actor, &mut slow_rx, 1, dest_net2),
++            "filter off must restore stock egress onto slow RF"
 +        );
 +    }
 +
-     /// Python 1.3.8 Transport.py:1286-1308 keeps one queued announce per
      /// destination and replaces it only when the wire emission time advances.
      #[test]
+     fn rebroadcast_queue_coalesces_destination_to_freshest_announce() {
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index ce01391..3e0a7b7 100644
+index a94cb77..3b97b66 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -314,6 +314,42 @@ impl TransportActor {
+@@ -400,6 +400,42 @@ impl TransportActor {
                  }
                  TransportQueryResponse::Ok
              }
@@ -228,10 +225,10 @@ index ce01391..3e0a7b7 100644
                  let cleared = self.path_table.len();
                  self.path_table = crate::path_table::PathTable::new();
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 864cc54..cb73c86 100644
+index 88b3ca5..bad842b 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -997,6 +997,17 @@ pub enum TransportQuery {
+@@ -1171,6 +1171,17 @@ pub enum TransportQuery {
          duration: f64,
      },
      DropAnnounceQueues,

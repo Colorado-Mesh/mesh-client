@@ -1,33 +1,37 @@
 diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
-index d034fb4..82e7de9 100644
+index 42ffc11..0ee845c 100644
 --- a/crates/lxmf-core/src/propagation_client.rs
 +++ b/crates/lxmf-core/src/propagation_client.rs
-@@ -269,6 +269,8 @@ pub struct PropagationClient {
+@@ -311,6 +311,8 @@ pub struct PropagationClient {
      started_at: Option<Instant>,
      timeout: Duration,
      identified: bool,
 +    /// Sticky Establishing failure (LRPROOF identity miss / invalid proof).
 +    last_establish_error: Option<&'static str>,
- }
- 
- impl PropagationClient {
-@@ -334,9 +336,15 @@ impl PropagationClient {
+     path_query: Option<oneshot::Receiver<TransportQueryResponse>>,
+     bitrate_query: Option<oneshot::Receiver<TransportQueryResponse>>,
+     path_requested_at: Option<Instant>,
+@@ -390,6 +392,7 @@ impl PropagationClient {
              started_at: None,
              timeout: Duration::from_secs(120),
              identified: false,
 +            last_establish_error: None,
-         }
-     }
+             path_query: None,
+             bitrate_query: None,
+             path_requested_at: None,
+@@ -411,6 +414,11 @@ impl PropagationClient {
  
+     /// Select the node to download from. Changing it tears down a Link to the
+     /// previous node, as `LXMRouter.set_outbound_propagation_node` does.
 +    /// Sticky establish failure from the last LinkProof attempt (identity miss / invalid proof).
 +    pub const fn last_establish_error(&self) -> Option<&'static str> {
 +        self.last_establish_error
 +    }
 +
      pub fn set_propagation_node(&mut self, dest_hash: [u8; 16]) {
-         self.outbound_propagation_node = Some(dest_hash);
-     }
-@@ -576,6 +584,7 @@ impl PropagationClient {
+         if self.outbound_propagation_node == Some(dest_hash) {
+             return;
+@@ -661,6 +669,7 @@ impl PropagationClient {
          self.pending_wants.clear();
          self.unread_bytes = 0;
          self.identified = false;
@@ -35,15 +39,15 @@ index d034fb4..82e7de9 100644
      }
  
      pub fn start_download(&mut self) -> bool {
-@@ -622,6 +631,7 @@ impl PropagationClient {
+@@ -696,6 +705,7 @@ impl PropagationClient {
          if !self.pending_transport.is_empty() {
              return false;
          }
 +        self.last_establish_error = None;
- 
-         let (link, request_data) = Link::new_initiator(node_hash, 1);
-         let link_id = link.link_id;
-@@ -1056,21 +1066,45 @@ impl PropagationClient {
+         // An active Link to the node is reused: identify, then list again.
+         if self.link.as_ref().is_some_and(|link| {
+             link.state == LinkState::Active && link.destination_hash == node_hash
+@@ -1296,21 +1306,45 @@ impl PropagationClient {
                                  continue;
                              }
                              let node_hex = self.outbound_propagation_node.map(|h| hex_encode(&h));
@@ -103,7 +107,7 @@ index d034fb4..82e7de9 100644
                                  }
                              }
                          }
-@@ -1161,9 +1195,14 @@ impl PropagationClient {
+@@ -1401,9 +1435,14 @@ impl PropagationClient {
              None => return,
          };
  

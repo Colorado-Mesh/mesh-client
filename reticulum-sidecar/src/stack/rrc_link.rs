@@ -178,6 +178,10 @@ pub async fn open_rrc_link_with_path_refresh(
         client_label: "rrc.link".into(),
         identify: true,
         track_phy_stats: false,
+        proof_strategy: rns_identity::destination::ProofStrategy::ProveNone,
+        resource_dir: None,
+        // None = no inbound reassembly cap (rns-protocol is not a direct crate dep).
+        inbound_reassembly_limit: None,
     };
 
     let session = LinkSession::connect(transport_tx, identity, config)
@@ -742,6 +746,11 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
         // LXMF/RNS 1.4: the request could not be dispatched on the link (same class as a
         // rejected send, not a handshake or crypto failure).
         LinkSessionError::RequestDispatch(_) => RrcLinkError::SendNotAccepted("request_dispatch"),
+        // rsReticulum 1.5: response Resource rejected / stamp work failed on LR.
+        LinkSessionError::ResponseRejected { .. } => {
+            RrcLinkError::SendNotAccepted("response_rejected")
+        }
+        LinkSessionError::StampFailure(_) => RrcLinkError::SendNotAccepted("link_stamp"),
     }
 }
 
@@ -759,17 +768,27 @@ mod tests {
         hops: u8,
         iface: &str,
     ) -> PathTableRpcEntry {
-        PathTableRpcEntry {
-            hash: dest,
-            timestamp: 1.0,
-            via: Some(via),
-            hops,
-            expires: unix_now_secs() + 86_400.0,
-            interface: iface.into(),
-            interface_id: 1,
-            interface_mode: InterfaceMode::Full,
-            interface_role: InterfaceRole::Normal,
-        }
+        let mut entry = PathTableRpcEntry::default();
+        entry.hash = dest;
+        entry.timestamp = 1.0;
+        entry.via = Some(via);
+        entry.hops = hops;
+        entry.expires = unix_now_secs() + 86_400.0;
+        entry.interface = iface.into();
+        entry.interface_id = 1;
+        entry.interface_mode = InterfaceMode::Full;
+        entry.interface_role = InterfaceRole::Normal;
+        entry
+    }
+
+    fn recalled_destination(dest: [u8; 16], public_key: [u8; 64]) -> RecalledDestinationRpcEntry {
+        let mut entry = RecalledDestinationRpcEntry::default();
+        entry.dest_hash = dest;
+        entry.public_key = public_key;
+        entry.hops = 1;
+        entry.timestamp = 1.0;
+        entry.hops_known = true;
+        entry
     }
 
     async fn recv_transport(
@@ -946,14 +965,7 @@ mod tests {
                         } else {
                             response_tx
                                 .send(TransportQueryResponse::RecalledDestination(Some(
-                                    RecalledDestinationRpcEntry {
-                                        dest_hash: dest,
-                                        public_key,
-                                        app_data: None,
-                                        ratchet: None,
-                                        hops: 1,
-                                        timestamp: 1.0,
-                                    },
+                                    recalled_destination(dest, public_key),
                                 )))
                                 .unwrap();
                         }
@@ -1050,14 +1062,7 @@ mod tests {
                         } else {
                             response_tx
                                 .send(TransportQueryResponse::RecalledDestination(Some(
-                                    RecalledDestinationRpcEntry {
-                                        dest_hash: dest,
-                                        public_key,
-                                        app_data: None,
-                                        ratchet: None,
-                                        hops: 1,
-                                        timestamp: 1.0,
-                                    },
+                                    recalled_destination(dest, public_key),
                                 )))
                                 .unwrap();
                         }
@@ -1080,14 +1085,7 @@ mod tests {
                     }) => {
                         response_tx
                             .send(TransportQueryResponse::RecalledDestination(Some(
-                                RecalledDestinationRpcEntry {
-                                    dest_hash: dest,
-                                    public_key,
-                                    app_data: None,
-                                    ratchet: None,
-                                    hops: 1,
-                                    timestamp: 1.0,
-                                },
+                                recalled_destination(dest, public_key),
                             )))
                             .unwrap();
                     }

@@ -215,6 +215,8 @@ impl VoiceSessionManager {
             .send(TelephonyControl::Call {
                 remote_identity: remote,
                 profile: Some(DEFAULT_CALL_PROFILE),
+                // rsLXST 0.4 / LXST 0.6.0: None = full duplex.
+                mode: None,
                 discovery_timeout: DEFAULT_DISCOVERY_TIMEOUT,
             })
             .await
@@ -488,7 +490,9 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
                     "role": call_role_str(c.role),
                     "status": signalling_status_str(c.status),
                     "profile": c.profile.map(Profile::wire_value),
+                    "mode": c.mode.map(|m| format!("{m:?}")),
                     "answered": c.answered,
+                    "transmit_squelched": c.transmit_squelched,
                 })
             });
             {
@@ -1137,7 +1141,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn answer_succeeds_when_control_acks_connecting() {
+    async fn answer_succeeds_when_control_acks_established() {
+        // rsLXST 0.4 / LXST 0.6.0: callee is ESTABLISHED as soon as it answers
+        // (no CONNECTING retry / echo wait).
         let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
         let link = [0x41u8; 16];
         let link_hex = hex::encode(link);
@@ -1161,9 +1167,11 @@ mod tests {
                     link_id: link,
                     remote_identity: [0x22u8; 16],
                     role: CallRole::Incoming,
-                    status: SignallingStatus::Connecting,
+                    status: SignallingStatus::Established,
                     profile: None,
+                    mode: None,
                     answered: true,
+                    transmit_squelched: false,
                 }));
             }
             other => panic!("expected Answer control, got {other:?}"),
@@ -1171,7 +1179,7 @@ mod tests {
         let resp = answer_task.await.expect("join");
         assert_eq!(resp["ok"], true, "{resp}");
         assert_eq!(resp["link_id"], link_hex);
-        assert_eq!(resp["status"], "connecting");
+        assert_eq!(resp["status"], "established");
     }
 
     #[tokio::test]

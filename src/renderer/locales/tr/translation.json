@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Varsayılan olarak kapalıdır. Doğrulanmış bir Python Reticulum uygulamasının reklamını yapmayan rsRNS veya Python olmayan diğer Backbone duyurularıyla eşleme yaparken etkinleştirin.",
       "interfaceStatsTitle": "Canlı arayüz sayaçları",
       "interfaceStatsLine": "TX düşüşü {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtre {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Kaydedildi. Doğrulanmamış otomatik bağlantının etkili olması için Reticulum yığınını yeniden başlatın."
+      "autoconnectUnverifiedRestartRequired": "Kaydedildi. Doğrulanmamış otomatik bağlantının etkili olması için Reticulum yığınını yeniden başlatın.",
+      "enableStamping": "Damga duyuruları ve yol talepleri",
+      "enableStampingAria": "Giden duyuruları ve yol taleplerini damgalayın",
+      "enableStampingHint": "Varsayılan olarak kapalı (Reticulum 1.6.0). Damga gerektiren taşıma düğümlerinin sizi yönlendirmesi için erkenden katılın; 1.6.1 sürümünde varsayılan olarak etkin hâle gelecek yayına hazırlanın. Eski eşler damgaları dikkate almaz.",
+      "enforceStamps": "Başkalarından damga isteyin",
+      "enforceStampsAria": "Eşlerden geçerli ağ damgaları isteyin",
+      "enforceStampsHint": "Varsayılan olarak kapalı (Reticulum 1.6.0). Özel veya açık bir hub'ı damgasız istenmeyen e-postalara karşı güçlendirin. Uyarı: LXST Call to unstamped Ratspeak dâhil olmak üzere eski eşler kaybolur. Upstream 1.6.2 bunu varsayılan olarak açar.",
+      "linkMtuDiscovery": "Bağlantı MTU keşfi",
+      "linkMtuDiscoveryAria": "Her bağlantının desteklediği en büyük paket boyutunu belirleyin",
+      "linkMtuDiscoveryHint": "Varsayılan olarak açıktır. İyi bağlantılarda daha hızlı aktarım için açık bırakın. Büyük paketler bir yolda sorun çıkarıyorsa kapatın.",
+      "stampMtuRestartRequired": "Kaydedildi. Ağ damgası ve bağlantı MTU değişikliklerinin geçerli olması için Reticulum yığınını yeniden başlatın."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Apply mesh-client rsLXMF PropagationSyncTask peering/identity overlay for rns-stack builds.
-# On current rsLXMF main, LinkIdentify lives as set_identity()/send_identify() (API rewrite);
-# the historical set_local_identity overlay is only needed on older checkouts.
+# Upstream owns LinkIdentify (set_identity()/send_identify()); this overlay adds
+# configure_peering, the empty peering-key stamp before /offer, and sticky
+# offer/establish/finish diagnostics. Carries ratspeak/rsLXMF#4 until it merges.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,11 +24,7 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-# Tip (post API-parity rewrite) or historical overlay.
-if [[ -f "${SYNC_RS}" ]] && {
-  grep -qE 'fn set_identity\(' "${SYNC_RS}" \
-    || grep -qE 'fn set_local_identity\(' "${SYNC_RS}"
-}; then
+if [[ -f "${SYNC_RS}" ]] && grep -qE 'fn configure_peering\(' "${SYNC_RS}"; then
   echo "propagation-sync peering/identity capability present on rsLXMF @ $(git -C "${LXMF_DIR}" rev-parse --short HEAD)"
   exit 0
 fi

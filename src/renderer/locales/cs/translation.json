@@ -3641,7 +3641,17 @@
       "autoconnectUnverifiedHint": "Ve výchozím nastavení vypnuto. Povolit, když partnerský vztah s rsRNS nebo jinou páteřní sítí mimo Python oznámí, že neinzeruje ověřenou implementaci Pythonu Reticulum.",
       "interfaceStatsTitle": "Počítadla živého rozhraní",
       "interfaceStatsLine": "TX drop {{txDropped}} B · protokol {{protocol}} · IFAC {{ifac}} · filtr {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Uloženo. Restartujte zásobník Reticulum, aby se projevilo neověřené automatické připojení."
+      "autoconnectUnverifiedRestartRequired": "Uloženo. Restartujte zásobník Reticulum, aby se projevilo neověřené automatické připojení.",
+      "enableStamping": "Oznámení o razítku a žádosti o cestu",
+      "enableStampingAria": "Označit odchozí oznámení a požadavky na cestu",
+      "enableStampingHint": "Ve výchozím nastavení vypnuto (Reticulum 1.6.0). Přihlaste se brzy, aby vás transportní uzly vyžadující razítka přesměrovaly; připravte se na verzi 1.6.1 s výchozím nastavením zapnuto. Starší peery razítka ignorují.",
+      "enforceStamps": "Požadovat razítka od ostatních",
+      "enforceStampsAria": "Vyžadovat platná razítka sítě od partnerů",
+      "enforceStampsHint": "Ve výchozím nastavení vypnuto (Reticulum 1.6.0). Zabezpečte soukromý nebo otevřený hub proti neoznačenému spamu. Upozornění: Starší partneři zmizí, včetně LXST Call na neoznačený Ratspeak. Verze Upstream 1.6.2 tuto funkci ve výchozím nastavení zapíná.",
+      "linkMtuDiscovery": "Zjišťování MTU propojení",
+      "linkMtuDiscoveryAria": "Vyjednejte největší velikost paketu, kterou každý odkaz podporuje",
+      "linkMtuDiscoveryHint": "Ve výchozím nastavení zapnuto. Ponechte zapnuto pro rychlejší přenosy na kvalitních linkách. Vypněte, pokud se velké pakety na trase chovají nesprávně.",
+      "stampMtuRestartRequired": "Uloženo. Restartujte zásobník Reticulum pro použití razítka sítě a projevení změn MTU odkazu."
     },
     "reticulumConfigImport": {
       "title": "Import konfigurace Reticulum",

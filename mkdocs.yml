@@ -140,6 +140,7 @@ nav:
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
       - Service Announcements: service-announcements.md
+      - Tests & Interoperability: interop.md
       - Meshtastic & MeshCore Parity: meshcore-meshtastic-parity.md
       - Reticulum Development: reticulum-development.md
       - Reticulum Sidecar IPC: reticulum-sidecar-ipc.md

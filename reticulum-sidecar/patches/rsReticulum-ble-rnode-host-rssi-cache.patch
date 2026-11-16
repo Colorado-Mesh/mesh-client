@@ -1,8 +1,8 @@
 diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
-index 8eaaf22..282d937 100644
+index 6858a7c..88b26fd 100644
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -167,6 +167,108 @@ static RNODE_RUNNING: std::sync::OnceLock<
+@@ -165,6 +165,111 @@ static RNODE_RUNNING: std::sync::OnceLock<
      std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>>,
  > = std::sync::OnceLock::new();
  
@@ -35,7 +35,10 @@ index 8eaaf22..282d937 100644
 +        && stripped.as_bytes().get(13) == Some(&b'-')
 +        && stripped.as_bytes().get(18) == Some(&b'-')
 +        && stripped.as_bytes().get(23) == Some(&b'-')
-+        && stripped.chars().filter(|c| *c != '-').all(|c| c.is_ascii_hexdigit())
++        && stripped
++            .chars()
++            .filter(|c| *c != '-')
++            .all(|c| c.is_ascii_hexdigit())
 +    {
 +        return stripped
 +            .chars()
@@ -96,10 +99,10 @@ index 8eaaf22..282d937 100644
 +        return;
 +    };
 +    remember_host_rssi(&addr, rssi);
-+    if let Some(ref name) = props.local_name {
-+        if !name.is_empty() {
-+            remember_host_rssi(name, rssi);
-+        }
++    if let Some(ref name) = props.local_name
++        && !name.is_empty()
++    {
++        remember_host_rssi(name, rssi);
 +    }
 +    for key in extra_keys {
 +        if !key.is_empty() {
@@ -111,7 +114,7 @@ index 8eaaf22..282d937 100644
  fn running_map()
  -> &'static std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>> {
      RNODE_RUNNING.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
-@@ -1479,6 +1581,11 @@ pub async fn scan_ble_devices(timeout_secs: u64) -> Result<Vec<BleDevice>, Strin
+@@ -1478,6 +1583,11 @@ pub async fn scan_ble_devices(timeout_secs: u64) -> Result<Vec<BleDevice>, Strin
              #[cfg(not(target_os = "linux"))]
              let bonded = false;
  
@@ -123,39 +126,67 @@ index 8eaaf22..282d937 100644
              devices.push(BleDevice {
                  name,
                  address,
-@@ -1523,6 +1630,7 @@ async fn resolve_ble_target(
-         for p in &peripherals {
-             if let Ok(Some(props)) = bounded_ble_operation("properties", p.properties()).await {
-                 if props.services.contains(&NUS_SERVICE_UUID) {
-+                    remember_peripheral_host_rssi(p, &[]).await;
-                     return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
-                 }
-                 // A populated list without NUS means a different device;
-@@ -1531,6 +1639,7 @@ async fn resolve_ble_target(
-                     && let Some(ref name) = props.local_name
-                     && name.starts_with("RNode ")
-                 {
-+                    remember_peripheral_host_rssi(p, &[]).await;
-                     return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
-                 }
-             }
-@@ -1546,6 +1655,7 @@ async fn resolve_ble_target(
-         let addr = p.id().to_string();
-         if addr.eq_ignore_ascii_case(target) {
-             ble_diag(format!("[ble] resolve matched by address: {addr}"));
-+            remember_peripheral_host_rssi(p, &[target]).await;
-             return Ok((p.clone(), BleTargetResolutionClass::PrimaryId));
-         }
+@@ -1558,6 +1668,9 @@ async fn resolve_ble_target(
+         .ok();
+     if let Some((peripheral, class)) = selection {
+         ble_diag(format!("[ble] resolve matched {}", class.label()));
++        let mut rssi_keys = vec![target];
++        rssi_keys.extend(generation_stable_name);
++        remember_peripheral_host_rssi(&peripheral, &rssi_keys).await;
+         return Ok((peripheral, class));
      }
-@@ -1578,6 +1688,7 @@ async fn resolve_ble_target(
-             } else {
-                 ble_diag("[ble] resolve matched by generation-stable advertised name");
-             }
-+            remember_peripheral_host_rssi(p, &[target, name.as_str()]).await;
-             return Ok((p.clone(), resolution_class));
-         }
-     }
-@@ -5573,6 +5684,29 @@ mod tests {
+ 
+@@ -2105,13 +2218,12 @@ async fn connect_rnode(
+     // encrypted read path. Once bonded, this subscription completes normally
+     // and is not repeated within the accepted generation.
+     #[cfg(any(target_os = "ios", target_os = "macos"))]
+-    let subscribe_stage = if pairing_trigger == DesktopPairingTrigger::SecuredSubscribe
+-        && !session_already_bonded
+-    {
+-        BleOperationStage::PairingSubscribe
+-    } else {
+-        BleOperationStage::Subscribe
+-    };
++    let subscribe_stage =
++        if pairing_trigger == DesktopPairingTrigger::SecuredSubscribe && !session_already_bonded {
++            BleOperationStage::PairingSubscribe
++        } else {
++            BleOperationStage::Subscribe
++        };
+     #[cfg(not(any(target_os = "ios", target_os = "macos")))]
+     let subscribe_stage = BleOperationStage::Subscribe;
+ 
+@@ -2160,8 +2272,7 @@ async fn connect_rnode(
+                         .await?;
+                     }
+                     #[cfg(any(target_os = "ios", target_os = "macos"))]
+-                    let retry_stage = if pairing_trigger
+-                        == DesktopPairingTrigger::SecuredSubscribe
++                    let retry_stage = if pairing_trigger == DesktopPairingTrigger::SecuredSubscribe
+                     {
+                         BleOperationStage::PairingSubscribe
+                     } else {
+@@ -3853,8 +3964,7 @@ pub async fn spawn_ble_rnode_interface_with_driver_and_options(
+                 let mut permit_ok = pending_outbound.is_some()
+                     && (background_permitted || claim_ble_packet_permit(flow_control, &ready));
+                 if pending_outbound.is_some() && !permit_ok && flow_control {
+-                    let waiting_since =
+-                        fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
++                    let waiting_since = fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
+                     if waiting_since.elapsed() >= BLE_FLOW_CONTROL_READY_TIMEOUT {
+                         tracing::debug!(
+                             id,
+@@ -4774,8 +4884,7 @@ pub async fn spawn_ble_rnode_interface_native_with_driver_and_options(
+                 let mut permit_ok = should_write
+                     && (background_permitted || claim_ble_packet_permit(flow_control, &ready));
+                 if should_write && !permit_ok && flow_control {
+-                    let waiting_since =
+-                        fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
++                    let waiting_since = fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
+                     if waiting_since.elapsed() >= BLE_FLOW_CONTROL_READY_TIMEOUT {
+                         tracing::debug!(
+                             id,
+@@ -5710,6 +5819,29 @@ mod tests {
  
      // ── Device type tests ──
  

@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Désactivé par défaut. Activer lors du peering avec rsRNS ou d'autres annonces non-Python Backbone qui n'annoncent pas une implémentation Python Reticulum vérifiée.",
       "interfaceStatsTitle": "Compteurs d'interface en direct",
       "interfaceStatsLine": "Chute TX {{txDropped}} B · protocole {{protocol}} · IFAC {{ifac}} · filtre {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Enregistré. Redémarrez la pile Reticulum pour que la connexion automatique non vérifiée prenne effet."
+      "autoconnectUnverifiedRestartRequired": "Enregistré. Redémarrez la pile Reticulum pour que la connexion automatique non vérifiée prenne effet.",
+      "enableStamping": "Annonces de tampons et demandes de trajet",
+      "enableStampingAria": "Apposer un cachet sur les annonces sortantes et les demandes de chemin",
+      "enableStampingHint": "Désactivé par défaut (Reticulum 1.6.0). Activez-le tôt pour que les nœuds de transport nécessitant des tampons vous transmettent ; préparez-vous à l’émission activée par défaut de la version 1.6.1. Les pairs plus anciens ignorent les tampons.",
+      "enforceStamps": "Demander des tampons à d'autres personnes",
+      "enforceStampsAria": "Exiger des tampons réseau valides de la part des pairs",
+      "enforceStampsHint": "Désactivé par défaut (Reticulum 1.6.0). Renforcer un hub privé ou ouvert contre les spams non estampillés. Avertissement : les pairs plus anciens disparaissent, y compris LXST Call vers Ratspeak non estampillé. La version 1.6.2 en amont active cette option par défaut.",
+      "linkMtuDiscovery": "Découverte de la MTU de la liaison",
+      "linkMtuDiscoveryAria": "Négocier la plus grande taille de paquet prise en charge par chaque liaison",
+      "linkMtuDiscoveryHint": "Activé par défaut. Laissez activé pour des transferts plus rapides sur les bonnes liaisons. Désactivez-la si de gros paquets se comportent mal sur un chemin.",
+      "stampMtuRestartRequired": "Enregistré. Redémarrez la pile Reticulum pour que les modifications apportées à l'horodatage réseau et à la MTU de liaison prennent effet."
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",

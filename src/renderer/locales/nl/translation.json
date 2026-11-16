@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Standaard uitgeschakeld. Inschakelen bij peering met rsRNS of andere niet-Python Backbone-aankondigingen die geen geverifieerde Python Reticulum-implementatie adverteren.",
       "interfaceStatsTitle": "Live-interfacetellers",
       "interfaceStatsLine": "TX-daling {{txDropped}} B · protocol {{protocol}} · IFAC {{ifac}} · filter {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Opgeslagen. Start de stapel Reticulum opnieuw op, zodat niet-geverifieerde automatische verbinding van kracht wordt."
+      "autoconnectUnverifiedRestartRequired": "Opgeslagen. Start de stapel Reticulum opnieuw op, zodat niet-geverifieerde automatische verbinding van kracht wordt.",
+      "enableStamping": "Stempelmeldingen en padverzoeken",
+      "enableStampingAria": "Uitgaande aankondigingen en padverzoeken voorzien van een stempel",
+      "enableStampingHint": "Standaard uitgeschakeld (Reticulum 1.6.0). Meld je vroegtijdig aan, zodat transportknooppunten die een stempel vereisen je doorsturen; bereid je voor op 1.6.1 standaard ingeschakelde emissie. Oudere peers negeren stempels.",
+      "enforceStamps": "Stempels van anderen vereisen",
+      "enforceStampsAria": "Geldige netwerkstempels van peers vereisen",
+      "enforceStampsHint": "Standaard uitgeschakeld (Reticulum 1.6.0). Beveilig een privé- of open hub tegen niet-gestempelde spam. Waarschuwing: oudere peers verdwijnen, inclusief LXST Call naar niet-gestempelde Ratspeak. Upstream 1.6.2 schakelt dit standaard in.",
+      "linkMtuDiscovery": "MTU-detectie koppelen",
+      "linkMtuDiscoveryAria": "Onderhandel over de grootste pakketgrootte die elke link ondersteunt",
+      "linkMtuDiscoveryHint": "Standaard ingeschakeld. Laat ingeschakeld voor snellere overdrachten op goede verbindingen. Schakel uit als grote pakketten zich niet goed gedragen op een pad.",
+      "stampMtuRestartRequired": "Opgeslagen. Start de Reticulum-stack opnieuw op, zodat de wijzigingen in de netwerkstempel en de MTU van de link van kracht worden."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",

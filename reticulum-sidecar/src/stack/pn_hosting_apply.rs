@@ -9,20 +9,25 @@ use super::pn_hosting_policy::PnHostingPolicy;
 pub fn apply_pn_hosting_policy_to_router(router: &mut LxmRouter, policy: &PnHostingPolicy) {
     router.set_autopeer(policy.autopeer);
     router.set_max_peers(policy.max_peers);
-    router.set_propagation_limit(policy.propagation_limit_kb);
-    router.set_stamp_requirements(policy.propagation_stamp_cost, policy.propagation_stamp_flex);
-    router.set_message_storage_limit(Some(policy.message_storage_limit_bytes()));
-    router.set_authentication(policy.auth_required);
-    // rsLXMF tip dropped set_enforce_stamps/ratchets (stamp gating via set_stamp_requirements).
-    let _ = (policy.enforce_stamps, policy.enforce_ratchets);
-
-    router.config.sync_limit_kb = policy.sync_limit_kb;
-    #[allow(clippy::cast_precision_loss)] // KB policy is integer; router tip uses f64
+    // Policy UI keeps integer KB / stamp costs; rsLXMF 1.5 uses PnLimit / f64.
+    #[allow(clippy::cast_precision_loss)]
     {
+        router.set_propagation_limit(policy.propagation_limit_kb as u64);
+        router.set_stamp_requirements(
+            f64::from(policy.propagation_stamp_cost),
+            f64::from(policy.propagation_stamp_flex),
+        );
+        router.set_message_storage_limit(Some(policy.message_storage_limit_bytes()));
+        router.set_authentication(policy.auth_required);
+        // rsLXMF tip dropped set_enforce_stamps/ratchets (stamp gating via set_stamp_requirements).
+        let _ = (policy.enforce_stamps, policy.enforce_ratchets);
+
+        router.config.sync_limit_kb =
+            lxmf_core::handlers::PnLimit::Int(policy.sync_limit_kb as u64);
         router.config.delivery_limit_kb = policy.delivery_limit_kb as f64;
+        router.config.ext.peering_cost = f64::from(policy.peering_cost);
+        router.config.ext.max_peering_cost = f64::from(policy.max_peering_cost);
     }
-    router.config.ext.peering_cost = policy.peering_cost;
-    router.config.ext.max_peering_cost = policy.max_peering_cost;
     router.config.ext.autopeer_maxdepth = policy.autopeer_maxdepth;
     router.config.ext.from_static_only = policy.from_static_only;
     router.config.ext.name = policy.node_name.clone();
@@ -57,7 +62,7 @@ pub fn apply_pn_hosting_policy_to_router(router: &mut LxmRouter, policy: &PnHost
 }
 
 pub fn apply_pn_hosting_policy_to_node(node: &mut PropagationNode, policy: &PnHostingPolicy) {
-    node.set_min_stamp_cost(policy.min_stamp_cost());
+    node.set_min_stamp_cost(f64::from(policy.min_stamp_cost()));
     node.set_peering_cost(policy.peering_cost);
     node.set_max_storage(policy.message_storage_limit_bytes());
     node.set_max_message_size(policy.propagation_limit_kb.saturating_mul(1024));
@@ -130,9 +135,9 @@ mod tests {
             timebase: 1.0,
             transfer_limit: Some(256.0),
             sync_limit: Some(1024.0),
-            stamp_cost: Some(16),
-            stamp_flexibility: Some(3),
-            peering_cost: Some(18),
+            stamp_cost: Some(16.0),
+            stamp_flexibility: Some(3.0),
+            peering_cost: Some(18.0),
             metadata: None,
             hops: Some(10),
         }));
@@ -143,9 +148,9 @@ mod tests {
             timebase: 1.0,
             transfer_limit: Some(256.0),
             sync_limit: Some(1024.0),
-            stamp_cost: Some(16),
-            stamp_flexibility: Some(3),
-            peering_cost: Some(18),
+            stamp_cost: Some(16.0),
+            stamp_flexibility: Some(3.0),
+            peering_cost: Some(18.0),
             metadata: None,
             hops: Some(5),
         }));
@@ -157,9 +162,9 @@ mod tests {
             timebase: 1.0,
             transfer_limit: Some(256.0),
             sync_limit: Some(1024.0),
-            stamp_cost: Some(16),
-            stamp_flexibility: Some(3),
-            peering_cost: Some(26),
+            stamp_cost: Some(16.0),
+            stamp_flexibility: Some(3.0),
+            peering_cost: Some(26.0),
             metadata: None,
             hops: Some(1),
         }));
@@ -170,9 +175,9 @@ mod tests {
             timebase: 1.0,
             transfer_limit: Some(256.0),
             sync_limit: Some(1024.0),
-            stamp_cost: Some(16),
-            stamp_flexibility: Some(3),
-            peering_cost: Some(18),
+            stamp_cost: Some(16.0),
+            stamp_flexibility: Some(3.0),
+            peering_cost: Some(18.0),
             metadata: None,
             hops: Some(1),
         }));
@@ -197,9 +202,9 @@ mod tests {
             timebase: 1.0,
             transfer_limit: Some(256.0),
             sync_limit: Some(1024.0),
-            stamp_cost: Some(16),
-            stamp_flexibility: Some(3),
-            peering_cost: Some(18),
+            stamp_cost: Some(16.0),
+            stamp_flexibility: Some(3.0),
+            peering_cost: Some(18.0),
             metadata: None,
             hops: Some(1),
         }));

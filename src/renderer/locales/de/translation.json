@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Standardmäßig deaktiviert. Aktivieren Sie diese Option beim Peering mit rsRNS oder anderen Nicht-Python-Backbone-Ankündigungen, die keine verifizierte Python-Reticulum-Implementierung ankündigen.",
       "interfaceStatsTitle": "Live-Schnittstellenzähler",
       "interfaceStatsLine": "TX-Drop {{txDropped}} B · Protokoll {{protocol}} · IFAC {{ifac}} · Filter {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Gespeichert. Starten Sie den Reticulum-Stack neu, damit die nicht überprüfte automatische Verbindung wirksam wird."
+      "autoconnectUnverifiedRestartRequired": "Gespeichert. Starten Sie den Reticulum-Stack neu, damit die nicht überprüfte automatische Verbindung wirksam wird.",
+      "enableStamping": "Stempelankündigungen und Weganfragen",
+      "enableStampingAria": "Ausgehende Ankündigungen und Pfadanforderungen kennzeichnen",
+      "enableStampingHint": "Standardmäßig deaktiviert (Reticulum 1.6.0). Melden Sie sich frühzeitig an, damit Transportknoten, die einen Stempel benötigen, Sie weiterleiten; bereiten Sie sich auf die standardmäßig aktivierte Emission in Version 1.6.1 vor. Ältere Peers ignorieren Stempel.",
+      "enforceStamps": "Stempel von anderen verlangen",
+      "enforceStampsAria": "Gültige Netzwerkstempel von Peers verlangen",
+      "enforceStampsHint": "Standardmäßig deaktiviert (Reticulum 1.6.0). Sichere einen privaten oder offenen Hub gegen nicht gestempelten Spam ab. Warnung: Ältere Peers verschwinden, einschließlich LXST Call zu nicht gestempeltem Ratspeak. Upstream 1.6.2 aktiviert dies standardmäßig.",
+      "linkMtuDiscovery": "MTU-Erkennung für Verbindungen",
+      "linkMtuDiscoveryAria": "Aushandeln der größten Paketgröße, die jede Verbindung unterstützt",
+      "linkMtuDiscoveryHint": "Standardmäßig aktiviert. Lassen Sie die Option aktiviert, um schnellere Übertragungen bei guten Verbindungen zu ermöglichen. Deaktivieren Sie diese Option, wenn große Pakete auf einem Pfad Fehlverhalten zeigen.",
+      "stampMtuRestartRequired": "Gespeichert. Starten Sie den Reticulum-Stack neu, damit die Änderungen an Netzwerkstempel und Link-MTU wirksam werden."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",
