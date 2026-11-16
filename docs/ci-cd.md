@@ -69,7 +69,7 @@ budgets live in
 Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 
 1. **Detect scope:** compare a pull request head with its true merge base and reuse the local staged-test planner to select related paths and Vitest projects.
-2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.
+2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Shared contracts select all projects. Any Vitest test that names a changed file by its whole repo path (for example `scripts/bundle-size-workflow.test.mjs`, which copies `scripts/esbuild-main-build.mjs`, or a workflow test that reads its YAML) is added with its project, because `vitest related` follows imports only and cannot reach it. Docs-only changes skip Vitest unless such a test names one of the changed files. Paths a test builds from segments are not found; protected events still run the full suite.
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
 4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
 5. **Sharding:** `renderer-ui` runs in four shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
