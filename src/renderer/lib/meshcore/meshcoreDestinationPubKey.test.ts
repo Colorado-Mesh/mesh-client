@@ -82,6 +82,14 @@ describe('resolveMeshcoreDestinationPubKeySync', () => {
     ).toBeUndefined();
   });
 
+  it('rejects malformed hexadecimal keys', () => {
+    const malformed = `${'zz'.repeat(31)}01`;
+    expect(malformed).toHaveLength(64);
+    expect(
+      resolveMeshcoreDestinationPubKeySync(PEER_NODE_ID, { storePublicKeyHex: malformed }),
+    ).toBeUndefined();
+  });
+
   it('rejects keys that do not hash to nodeId', () => {
     const mismatched = new Uint8Array(32).fill(0xab);
     expect(pubkeyToNodeId(mismatched)).not.toBe(PEER_NODE_ID);

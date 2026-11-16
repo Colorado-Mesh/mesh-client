@@ -274,6 +274,35 @@ describe('startAutoResend', () => {
       ]);
     });
 
+    it('emits gave-up exactly once when sendFn synchronously fails at the last attempt', () => {
+      const identityId = identityFor('meshcore');
+      addMessage(identityId, dm('1'));
+      let currentId = '1';
+      for (let attempt = 1; attempt < REGULAR_MESSAGE_MAX_AUTO_RESENDS; attempt += 1) {
+        setStatus(identityId, currentId, 'failed');
+        vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[attempt - 1]);
+        currentId = String(nextId);
+      }
+      // Final attempt: create as sending (tracks lineage) then fail before sendFn returns.
+      send.mockImplementationOnce((protocol, args) => {
+        nextId += 1;
+        const id = String(nextId);
+        addMessage(identityFor(protocol), dm(id, { payload: args.text }));
+        setStatus(identityFor(protocol), id, 'failed');
+        return id;
+      });
+      setStatus(identityId, currentId, 'failed');
+      vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[REGULAR_MESSAGE_MAX_AUTO_RESENDS - 1]);
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshcore', originId: '1', outcome: 'gave-up' },
+      ]);
+      // A subsequent store tick must not emit a second gave-up for a restored lineage.
+      setStatus(identityId, String(nextId), 'failed');
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshcore', originId: '1', outcome: 'gave-up' },
+      ]);
+    });
+
     it('reports nothing for a cancelled retry', () => {
       const identityId = identityFor('meshtastic');
       addMessage(identityId, dm('1'));

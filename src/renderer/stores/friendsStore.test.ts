@@ -28,7 +28,15 @@ describe('friendsStore', () => {
   it('ignores invalid node ids', () => {
     useFriendsStore.getState().addFriend('id-a', 0);
     useFriendsStore.getState().addFriend('id-a', -3);
+    useFriendsStore.getState().addFriend('id-a', 0x100000000);
     useFriendsStore.getState().addFriend('', 5);
     expect(useFriendsStore.getState().byIdentity).toEqual({});
+  });
+
+  it('accepts the maximum valid unsigned node id and rejects values above it', () => {
+    useFriendsStore.getState().addFriend('id-a', 0xffffffff);
+    expect(useFriendsStore.getState().listFriends('id-a')).toEqual([0xffffffff]);
+    useFriendsStore.getState().addFriend('id-a', 0x100000000);
+    expect(useFriendsStore.getState().listFriends('id-a')).toEqual([0xffffffff]);
   });
 });

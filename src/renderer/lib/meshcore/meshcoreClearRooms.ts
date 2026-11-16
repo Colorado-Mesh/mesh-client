@@ -34,6 +34,7 @@ export async function clearMeshcoreRooms(
 ): Promise<ClearMeshcoreRoomsResult> {
   const { conn, selfNodeId, nodes, dbContacts, clearDbRooms } = deps;
 
+  /** Snapshot of favorited rooms at start; rechecked immediately before each removal. */
   const favoritedIds = new Set<number>();
   for (const row of dbContacts) {
     if (row.favorited === 1) favoritedIds.add(row.node_id);
@@ -41,7 +42,12 @@ export async function clearMeshcoreRooms(
   for (const [id, node] of nodes) {
     if (node.favorited) favoritedIds.add(id);
   }
-  const keep = (id: number) => id === selfNodeId || favoritedIds.has(id);
+  const keep = (id: number) => {
+    if (id === selfNodeId) return true;
+    if (favoritedIds.has(id)) return true;
+    // Recheck live node favorited flag — user may favorite during cleanup.
+    return Boolean(nodes.get(id)?.favorited);
+  };
 
   const removed = new Set<number>();
   for (const [id, node] of nodes) {
@@ -60,7 +66,11 @@ export async function clearMeshcoreRooms(
       for (const c of raw) {
         if (c.type !== MESHCORE_CONTACT_TYPE_ROOM) continue;
         const id = pubkeyToNodeId(c.publicKey);
-        if (id === 0 || keep(id)) continue;
+        if (id === 0 || keep(id)) {
+          // Newly favorited during getContacts — do not report for UI deletion.
+          removed.delete(id);
+          continue;
+        }
         try {
           await conn.removeContact(c.publicKey);
         } catch (e: unknown) {
@@ -69,12 +79,21 @@ export async function clearMeshcoreRooms(
             '[meshcoreClearRooms] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
           );
         }
+        if (keep(id)) {
+          removed.delete(id);
+          continue;
+        }
         removed.add(id);
       }
     } catch (e: unknown) {
       radioRemoveFailures += 1;
       console.warn('[meshcoreClearRooms] getContacts error ' + errLikeToLogString(e));
     }
+  }
+
+  // Drop any ids that became favorited after the initial pass (DB clear also skips favorites).
+  for (const id of [...removed]) {
+    if (keep(id)) removed.delete(id);
   }
 
   try {

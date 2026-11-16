@@ -232,8 +232,19 @@ function fireResend(key: string): void {
     emitOutcome(info, 'gave-up');
     return;
   }
-  // `sending` may already have tracked via pendingResendLineage; refresh to be sure.
-  trackOutbound(autoResendKey(entry.protocol, newId), nextLineage);
+  const newKey = autoResendKey(entry.protocol, newId);
+  // Synchronous terminal outcome during sendFn may already have emitted gave-up via
+  // evaluateTrackedOutbound and dropped the lineage — do not restore it.
+  if (!tracked.has(newKey)) {
+    const recordAfter = recordFor(entry.identityId, newId);
+    const alreadyGaveUp =
+      recordAfter?.status === 'failed' &&
+      nextLineage.resendsUsed >= REGULAR_MESSAGE_MAX_AUTO_RESENDS;
+    if (!alreadyGaveUp) {
+      // `sending` may already have tracked via pendingResendLineage; refresh to be sure.
+      trackOutbound(newKey, nextLineage);
+    }
+  }
   if (newId !== entry.messageId) {
     removeSupersededBubble(entry.protocol, entry.identityId, entry.messageId);
   }

@@ -69,7 +69,7 @@ describe('resolveRoomMacroPlan', () => {
     expect(plan).toBeNull();
   });
 
-  it('resolves chat channel targets with saved index fallback', () => {
+  it('resolves index-only chat channel targets when no live map is owned', () => {
     const plan = resolveRoomMacroPlan(
       {
         kind: 'meshcore-channel',
@@ -85,6 +85,20 @@ describe('resolveRoomMacroPlan', () => {
       identityId: 'mc1',
       channelIndex: 2,
     });
+  });
+
+  it('returns null when a keyed channel target cannot resolve against a live map', () => {
+    const plan = resolveRoomMacroPlan(
+      {
+        kind: 'meshcore-channel',
+        identityId: 'mc1',
+        channelIndex: 2,
+        channelKey: 'missing-key',
+        label: '#weather',
+      },
+      { resolveMeshcoreRoomNodeId: () => undefined },
+    );
+    expect(plan).toBeNull();
   });
 
   it('lowercases RRC hub hash', () => {

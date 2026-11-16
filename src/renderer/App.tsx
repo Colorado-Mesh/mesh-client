@@ -2219,6 +2219,9 @@ function AppContent() {
     touch(lastReadRevision.meshtastic);
     touch(lastReadRevision.meshcore);
     touch(lastReadRevision.reticulum);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
     const persisted =
       protocol === 'meshtastic'
         ? getSanitizedMeshtasticChatLastRead(meshtasticUiMessages, meshtasticOwnNodeIdSet)
@@ -2247,6 +2250,9 @@ function AppContent() {
     protocol,
     reticulumOwnNodeIdSet,
     reticulumUiMessages,
+    wordFilterDisabledConversations,
+    wordFilterEnabled,
+    wordFilterWords,
   ]);
   const chatUnread = Math.max(0, chatUnreadTotal - friendsUnread);
   const storeMessageCountByProtocol = useMemo(
@@ -4395,6 +4401,14 @@ function AppContent() {
       setActiveTab(1); // Switch to Chat tab
     },
     [detailModalProtocol, protocol],
+  );
+
+  const handleOpenFriendDm = useCallback(
+    (nodeNum: number) => {
+      setPendingDmTarget({ protocol, peer: nodeNum });
+      setActiveTab(1); // Switch to Chat tab
+    },
+    [protocol],
   );
 
   const handleDeleteNode = useCallback(
@@ -6556,7 +6570,7 @@ function AppContent() {
                                     ? meshcoreChatUnreadDmOptions.excludeDmPeer
                                     : undefined
                                 }
-                                onOpenDm={handleMessageNode}
+                                onOpenDm={handleOpenFriendDm}
                                 isActive={activePanelIndex === FRIENDS_PANEL_INDEX}
                               />
                             </Suspense>

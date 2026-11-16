@@ -99,6 +99,7 @@ describe('buildRoomJumpCandidates', () => {
         meshcore: { radioNodeId: 1, keyByIndex: { 0: 'aaa', 2: 'bbb' } },
         meshtastic: { radioNodeId: 2, keyByIndex: { 1: 'ccc' } },
       },
+      connectedIdentityByProtocol: { meshcore: 'mc1', meshtastic: 'mt1' },
       devicesByIdentity: {
         mc1: {
           channels: [],
@@ -148,6 +149,55 @@ describe('buildRoomJumpCandidates', () => {
     ]);
     expect(channels.some((c) => c.target.kind === 'meshcore-channel')).toBe(true);
     expect(channels.some((c) => c.target.kind === 'meshtastic-channel')).toBe(true);
+  });
+
+  it('does not apply another identity live channel map to offline identities', () => {
+    const list = buildRoomJumpCandidates({
+      identities: {
+        mc1: identity('mc1', 'meshcore'),
+        mc2: identity('mc2', 'meshcore'),
+      },
+      nodesByIdentity: {},
+      rrcHubDestHash: null,
+      rrcRoomsByHub: undefined,
+      liveChannelKeysByProtocol: {
+        meshcore: { radioNodeId: 1, keyByIndex: { 0: 'live-only' } },
+      },
+      connectedIdentityByProtocol: { meshcore: 'mc1' },
+      devicesByIdentity: {
+        mc2: {
+          channels: [],
+          channelConfigs: [],
+          meshtasticConfigSlices: {},
+          moduleConfigs: {},
+          securityConfig: null,
+          deviceOwner: null,
+          deviceGpsMode: 0,
+          deviceFixedPosition: null,
+          telemetryDeviceUpdateInterval: null,
+          ourPosition: null,
+          rawPackets: [],
+          deviceLogs: [],
+          ringtone: null,
+          meshtasticPortBuffers: { fromRadio: new Uint8Array(), toRadio: new Uint8Array() },
+          meshcoreChannels: [{ index: 3, name: 'stored', secretHex: '00'.repeat(16) }],
+        } as never,
+      },
+    });
+    const mc2 = list.filter(
+      (c) => c.target.kind === 'meshcore-channel' && c.target.identityId === 'mc2',
+    );
+    expect(mc2).toHaveLength(1);
+    expect(mc2[0]?.target).toMatchObject({ channelIndex: 3, label: '#stored' });
+    expect(
+      list.some(
+        (c) =>
+          c.target.kind === 'meshcore-channel' &&
+          c.target.identityId === 'mc2' &&
+          'channelKey' in c.target &&
+          c.target.channelKey === 'live-only',
+      ),
+    ).toBe(false);
   });
 
   it('dedupes RRC joined + recent by match key; no hub → no RRC', () => {

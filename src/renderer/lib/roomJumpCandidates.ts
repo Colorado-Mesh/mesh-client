@@ -28,6 +28,12 @@ export interface RoomJumpCandidatesInput {
   rrcHubDisplayName?: string;
   /** Live channel-key maps per LoRa protocol (connected radio slots). */
   liveChannelKeysByProtocol?: Partial<Record<'meshtastic' | 'meshcore', LiveChannelKeys | null>>;
+  /**
+   * Identity that currently owns the connected radio for each LoRa protocol.
+   * Live keys are applied only when this matches the candidate identity; other
+   * identities fall back to their stored device channel list.
+   */
+  connectedIdentityByProtocol?: Partial<Record<'meshtastic' | 'meshcore', string | null>>;
   /** Device records for channel display names when live keys are present. */
   devicesByIdentity?: Record<string, DeviceRecord | undefined>;
 }
@@ -140,7 +146,8 @@ export function buildRoomJumpCandidates(input: RoomJumpCandidatesInput): RoomJum
     const protocol = identity.protocol.type;
     if (protocol !== 'meshcore' && protocol !== 'meshtastic') continue;
     const kind = protocol === 'meshcore' ? 'meshcore-channel' : 'meshtastic-channel';
-    const live = input.liveChannelKeysByProtocol?.[protocol];
+    const ownsLiveRadio = input.connectedIdentityByProtocol?.[protocol] === identity.id;
+    const live = ownsLiveRadio ? input.liveChannelKeysByProtocol?.[protocol] : undefined;
     const device = input.devicesByIdentity?.[identity.id];
     for (const slot of channelSlotsForIdentity(protocol, identity.id, live, device)) {
       const key = channelCandidateKey(kind, identity.id, slot.channelKey, slot.index);

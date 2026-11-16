@@ -2104,7 +2104,10 @@ export function ChatComposer({
       </div>
 
       <div className="mt-1 flex min-w-0 items-center gap-2">
-        <ChatMarkdownToolbar onWrap={wrapMarkdownSelection} disabled={disabled || !isConnected} />
+        <ChatMarkdownToolbar
+          onWrap={wrapMarkdownSelection}
+          disabled={disabled || (!isConnected && !allowOutbox)}
+        />
         {/* The inline Small toolbar takes the leftover width; the hint keeps only its text width. */}
         <div className={macroToolbarInline ? 'min-w-0' : 'min-w-0 flex-1'}>
           {!showCounter && (

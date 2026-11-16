@@ -194,10 +194,24 @@ describe('meshcoreContactCapacityPush', () => {
   });
 
   describe('count trigger', () => {
-    it('fires at radio max minus the margin (default 350 → 340)', async () => {
+    it('skips count thresholds until setMeshcoreRadioMaxContacts establishes the max', () => {
       writeMeshcoreAutoOffloadWhenFull(true);
       const runner = vi.fn().mockResolvedValue(undefined);
       registerMeshcoreContactsFullOffloadRunner(runner);
+
+      expect(maybeRequestMeshcoreAutoOffloadForCount(340, 1_000)).toBe(false);
+      expect(runner).not.toHaveBeenCalled();
+
+      setMeshcoreRadioMaxContacts(350);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(339, 2_000)).toBe(false);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(340, 2_000)).toBe(true);
+    });
+
+    it('fires at radio max minus the margin once the max is known (350 → 340)', async () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(undefined);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+      setMeshcoreRadioMaxContacts(350);
 
       expect(maybeRequestMeshcoreAutoOffloadForCount(339, 1_000)).toBe(false);
       expect(maybeRequestMeshcoreAutoOffloadForCount(340, 1_000)).toBe(true);
@@ -274,9 +288,10 @@ describe('meshcoreContactCapacityPush', () => {
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(
-    'keeps the alarm debounce when auto-offload removes nothing on %s',
+    'keeps the alarm debounce and firmware-full latch when auto-offload removes nothing on %s',
     async () => {
       writeMeshcoreAutoOffloadWhenFull(true);
+      setMeshcoreRadioMaxContacts(510);
       const runner = vi.fn().mockResolvedValue(0);
       registerMeshcoreContactsFullOffloadRunner(runner);
 
@@ -285,9 +300,11 @@ describe('meshcoreContactCapacityPush', () => {
         expect(runner).toHaveBeenCalledTimes(1);
       });
       expect(isMeshcoreAutoOffloadInFlight()).toBe(false);
+      expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
 
       requestMeshcoreAutoOffload('firmware_full', 1_001);
       expect(runner).toHaveBeenCalledTimes(1);
+      expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
     },
   );
 

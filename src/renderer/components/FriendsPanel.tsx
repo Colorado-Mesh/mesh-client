@@ -5,8 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { computeDmUnreadCounts } from '@/renderer/lib/chatUnreadCounts';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
+import { canonicalizeReticulumChatDmNodeId } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import { useFriendsStore } from '@/renderer/stores/friendsStore';
+import { useWordFilterStore } from '@/renderer/stores/wordFilterStore';
+import { touch } from '@/shared/touch';
 
 import { buttonClassName } from './ui/Button';
 
@@ -36,29 +39,44 @@ export default function FriendsPanel({
   const { t } = useTranslation();
   const byIdentity = useFriendsStore((s) => s.byIdentity);
   const removeFriend = useFriendsStore((s) => s.removeFriend);
+  const wordFilterEnabled = useWordFilterStore((s) => s.enabled);
+  const wordFilterWords = useWordFilterStore((s) => s.words);
+  const wordFilterDisabledConversations = useWordFilterStore((s) => s.disabledConversations);
 
   const friendIds = useMemo(() => {
     if (!identityId) return [] as number[];
     return byIdentity[identityId] ?? [];
   }, [byIdentity, identityId]);
 
-  const dmUnread = useMemo(
-    () =>
-      computeDmUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol, {
-        excludeDmPeer,
-      }),
-    [excludeDmPeer, messages, ownNodeIds, persistedLastRead, protocol],
-  );
+  const dmUnread = useMemo(() => {
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
+    return computeDmUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol, {
+      excludeDmPeer,
+    });
+  }, [
+    excludeDmPeer,
+    messages,
+    ownNodeIds,
+    persistedLastRead,
+    protocol,
+    wordFilterDisabledConversations,
+    wordFilterEnabled,
+    wordFilterWords,
+  ]);
 
   const rows = useMemo(() => {
     return friendIds
       .map((nodeId) => {
         const node = nodes.get(nodeId);
         const name = nodeDisplayName(node, protocol) || t('friends.unknownPeer', { id: nodeId });
+        // Canonicalize always: non-Reticulum ids have no LXMF remap and round-trip unchanged.
+        const unreadKey = canonicalizeReticulumChatDmNodeId(nodeId);
         return {
           nodeId,
           name,
-          unread: dmUnread.get(nodeId) ?? 0,
+          unread: dmUnread.get(unreadKey) ?? 0,
           missing: !node,
         };
       })

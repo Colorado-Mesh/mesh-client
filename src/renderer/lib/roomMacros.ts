@@ -1,6 +1,23 @@
 import { resolveMeshcoreRoomNodeId } from '@/renderer/lib/meshcoreRoomNodeLookup';
 import { resolveChannelTargetIndex } from '@/renderer/lib/scheduledBroadcasts/resolveChannelTarget';
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
+import { getConnection } from '@/renderer/stores/connectionStore';
+import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { getLiveChannelKeys } from '@/renderer/stores/liveChannelKeyStore';
+
+/** Live slot map only when `identityId` owns the connected radio for that protocol. */
+function liveKeyByIndexForTargetIdentity(
+  identityId: string,
+  kind: 'meshcore-channel' | 'meshtastic-channel',
+): Readonly<Record<number, string>> | null {
+  const protocol = kind === 'meshcore-channel' ? 'meshcore' : 'meshtastic';
+  const identity = useIdentityStore.getState().identities[identityId] as
+    { protocol: { type: string } } | undefined;
+  if (identity?.protocol.type !== protocol) return null;
+  const conn = getConnection(identityId);
+  if (!conn || (conn.status !== 'connected' && conn.status !== 'configured')) return null;
+  return getLiveChannelKeys(protocol)?.keyByIndex ?? null;
+}
 
 export type RoomMacroPlan =
   | { kind: 'meshcore-room'; protocol: 'meshcore'; identityId: string; roomNodeId: number }
@@ -56,25 +73,29 @@ export function resolveRoomMacroPlan(
     };
   }
   if (target.kind === 'meshcore-channel') {
-    const resolved = resolveChannelTargetIndex(target);
-    const channelIndex = resolved.ok ? resolved.channelIndex : target.channelIndex;
-    if (!Number.isInteger(channelIndex) || channelIndex < 0) return null;
+    const resolved = resolveChannelTargetIndex(
+      target,
+      liveKeyByIndexForTargetIdentity(target.identityId, 'meshcore-channel'),
+    );
+    if (!resolved.ok) return null;
     return {
       kind: 'meshcore-channel',
       protocol: 'meshcore',
       identityId: target.identityId,
-      channelIndex,
+      channelIndex: resolved.channelIndex,
     };
   }
   if (target.kind === 'meshtastic-channel') {
-    const resolved = resolveChannelTargetIndex(target);
-    const channelIndex = resolved.ok ? resolved.channelIndex : target.channelIndex;
-    if (!Number.isInteger(channelIndex) || channelIndex < 0) return null;
+    const resolved = resolveChannelTargetIndex(
+      target,
+      liveKeyByIndexForTargetIdentity(target.identityId, 'meshtastic-channel'),
+    );
+    if (!resolved.ok) return null;
     return {
       kind: 'meshtastic-channel',
       protocol: 'meshtastic',
       identityId: target.identityId,
-      channelIndex,
+      channelIndex: resolved.channelIndex,
     };
   }
   // Remaining variant is rrc-room (RoomMacroTarget exhaustiveness).

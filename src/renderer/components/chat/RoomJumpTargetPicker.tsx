@@ -9,6 +9,7 @@ import {
 import { loadRrcRecentRooms } from '@/renderer/lib/rrcRecentRooms';
 import { resolveRrcHubDisplayLabel } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
+import { useConnectionStore } from '@/renderer/stores/connectionStore';
 import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
@@ -27,6 +28,7 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
   const nodesByIdentity = useNodeStore((s) => s.nodes);
   const devices = useDeviceStore((s) => s.devices);
   const liveByProtocol = useLiveChannelKeyStore((s) => s.byProtocol);
+  const connections = useConnectionStore((s) => s.connections);
   const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const hubDisplayName = useRrcHubStore((s) =>
@@ -39,6 +41,16 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
       rrcRoomsByHub.set(hub, session.rooms);
     }
     const hub = rrcHubDestHash?.trim().toLowerCase() ?? null;
+    const connectedIdentityByProtocol: Partial<Record<'meshtastic' | 'meshcore', string | null>> =
+      {};
+    for (const identity of Object.values(identities)) {
+      const protocol = identity.protocol.type;
+      if (protocol !== 'meshtastic' && protocol !== 'meshcore') continue;
+      const conn = connections[identity.id];
+      if (!conn || (conn.status !== 'connected' && conn.status !== 'configured')) continue;
+      // First live radio identity wins; dual-identity edge cases omit competing live maps.
+      connectedIdentityByProtocol[protocol] ??= identity.id;
+    }
     return buildRoomJumpCandidates({
       identities,
       nodesByIdentity,
@@ -47,6 +59,7 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
       rrcRecentRooms: hub ? loadRrcRecentRooms(hub) : [],
       rrcHubDisplayName: resolveRrcHubDisplayLabel(hub ?? undefined, hubDisplayName),
       liveChannelKeysByProtocol: liveByProtocol,
+      connectedIdentityByProtocol,
       devicesByIdentity: devices,
     });
   }, [
@@ -56,6 +69,7 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
     sessionsByHub,
     hubDisplayName,
     liveByProtocol,
+    connections,
     devices,
   ]);
 

@@ -96,6 +96,7 @@ import {
 } from '@/renderer/lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreCancelAllRoomLogins,
+  meshcoreCancelRoomLogin,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
@@ -1460,6 +1461,8 @@ export default function RoomsPanel({
     setRemoveConfirmRoomId(null);
     void (async () => {
       try {
+        // Cancel in-flight / queued login so a late success cannot re-surface the room.
+        meshcoreCancelRoomLogin(nodeId);
         if (meshcoreIsRoomLoggedIn(nodeId) && isConnected) {
           await onLeaveRoom(nodeId);
         }
@@ -1491,8 +1494,11 @@ export default function RoomsPanel({
           return next;
         });
         await clearMeshcoreRoomLastPostAt(nodeId);
-        setSelectedRoomId(null);
-        if (layoutMode.compact) setCompactPane('list');
+        // Only clear selection/pane when the user has not switched rooms mid-removal.
+        if (selectedRoomIdRef.current === nodeId) {
+          setSelectedRoomId(null);
+          if (layoutMode.compact) setCompactPane('list');
+        }
         refreshStoredRooms();
       } catch (e: unknown) {
         console.warn('[RoomsPanel] remove from rooms failed ' + errLikeToLogString(e));

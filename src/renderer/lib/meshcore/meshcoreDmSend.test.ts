@@ -21,7 +21,8 @@ describe('meshcoreSendTextMessageWithErrCode', () => {
       },
       sendTextMessage: vi.fn(async () => {
         for (const cb of listeners.get(1) ?? []) {
-          cb({ errCode: MESHCORE_RADIO_ERR_NOT_FOUND });
+          // Use TABLE_FULL (≠ NOT_FOUND fallback) so we assert the emitted code is preserved.
+          cb({ errCode: 3 });
         }
         // meshcore.js sendTextMessage uses bare reject() on ResponseCodes.Err
         // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- simulate bare reject()
@@ -33,8 +34,9 @@ describe('meshcoreSendTextMessageWithErrCode', () => {
       meshcoreSendTextMessageWithErrCode(conn as never, new Uint8Array(32).fill(1), 'hello'),
     ).rejects.toMatchObject({
       name: 'MeshcoreRadioRejectedError',
-      errCode: MESHCORE_RADIO_ERR_NOT_FOUND,
+      errCode: 3,
     });
+    expect(3).not.toBe(MESHCORE_RADIO_ERR_NOT_FOUND);
     await expect(
       meshcoreSendTextMessageWithErrCode(conn as never, new Uint8Array(32).fill(1), 'hello'),
     ).rejects.toBeInstanceOf(MeshcoreRadioRejectedError);

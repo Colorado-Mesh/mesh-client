@@ -12,7 +12,8 @@ function meshcorePubKeyMatchesNodeId(pubKey: Uint8Array, nodeId: number): boolea
 function meshcorePubKeyBytesFromHex(raw: string): Uint8Array | null {
   const hex = raw.replace(/\s/g, '');
   if (meshcoreIsSyntheticPlaceholderPubKeyHex(hex)) return null;
-  if (hex.length !== 64) return null;
+  // Require exactly 64 hex digits before parseInt — non-hex pairs would become 0 bytes.
+  if (!/^[0-9a-fA-F]{64}$/.test(hex)) return null;
   const pairs = hex.match(/.{2}/g);
   if (pairs?.length !== 32) return null;
   return new Uint8Array(pairs.map((b) => parseInt(b, 16)));

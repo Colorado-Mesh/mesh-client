@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   isMeshcoreAutoOffloadInFlight,
+  isMeshcoreFirmwareContactsFullActive,
   registerMeshcoreContactsFullOffloadRunner,
   requestMeshcoreAutoOffload,
   resetMeshcoreContactCapacityPushForTests,
@@ -82,6 +83,30 @@ describe('useMeshcoreContactCapacity', () => {
       isWarning: false,
       isCritical: false,
     });
+  });
+
+  it('preserves the firmware-full latch when zero contacts leave a full 510 table', async () => {
+    setMeshcoreRadioMaxContacts(MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING);
+    requestMeshcoreAutoOffload('firmware_full', 1_000);
+    expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
+
+    vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(510);
+    vi.mocked(window.electronAPI.db.offloadAllMeshcoreContacts).mockResolvedValue(0);
+    const refreshContacts = vi.fn().mockResolvedValue(undefined);
+    const offloadFromRadio = vi.fn().mockResolvedValue(0);
+
+    const { result } = renderHook(() => useMeshcoreContactCapacity());
+    await waitFor(() => {
+      expect(result.current.contactCount).toBe(510);
+    });
+
+    await act(async () => {
+      await result.current.offloadAndReconcile(refreshContacts, offloadFromRadio);
+    });
+
+    expect(offloadFromRadio).toHaveBeenCalledTimes(1);
+    expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
+    expect(result.current.summary.isCritical).toBe(true);
   });
 
   it('reconciles count after offload and refresh callback', async () => {

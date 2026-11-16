@@ -173,7 +173,13 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
         throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
 
         const reconciledCount = await refreshCount({ preserveOnError: true });
-        clearMeshcoreFirmwareContactsFullLatch();
+        const radioMax = getMeshcoreRadioMaxContacts();
+        const capacityAvailable =
+          reconciledCount != null && reconciledCount < meshcoreContactThresholds(radioMax).critical;
+        // Zero radio removals with a still-full table must keep the firmware-full latch.
+        if (capacityAvailable || (offloadedFromRadioCount ?? 0) > 0) {
+          clearMeshcoreFirmwareContactsFullLatch();
+        }
         return { offloadedFromRadioCount, offloadedCount, reconciledCount, refreshFailed };
       } catch (e) {
         if (isMeshcoreOffloadAbortError(e)) {

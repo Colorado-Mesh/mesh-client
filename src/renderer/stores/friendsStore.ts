@@ -22,7 +22,8 @@ interface FriendsState extends FriendsPersisted {
 }
 
 function sanitizeNodeId(nodeId: number): number | null {
-  if (!Number.isInteger(nodeId) || nodeId <= 0) return null;
+  // Reject before unsigned wrap so values above 0xffffffff cannot alias another peer.
+  if (!Number.isInteger(nodeId) || nodeId < 1 || nodeId > 0xffffffff) return null;
   return nodeId >>> 0;
 }
 

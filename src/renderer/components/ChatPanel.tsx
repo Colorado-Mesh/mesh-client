@@ -5383,11 +5383,7 @@ function ChatPanel({
                                     ) ||
                                       meshcoreIsChatStubNodeId(msg.sender_id) ||
                                       (identityId != null &&
-                                        !hasMeshcoreDestinationPubKey(
-                                          identityId,
-                                          msg.sender_id,
-                                          nodes.get(msg.sender_id)?.public_key_hex,
-                                        )))
+                                        !hasMeshcoreDestinationPubKey(identityId, msg.sender_id)))
                                   ) && (
                                     <button
                                       type="button"

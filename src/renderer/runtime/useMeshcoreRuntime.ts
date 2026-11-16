@@ -165,7 +165,6 @@ import { clearMeshcoreRooms } from '../lib/meshcore/meshcoreClearRooms';
 import { meshcoreCompanionProtocolVersionFromDeviceQuery } from '../lib/meshcore/meshcoreCompanionCli';
 import {
   attachMeshcoreContactCapacityPush,
-  clearMeshcoreFirmwareContactsFullLatch,
   getMeshcoreRadioMaxContacts,
   maybeRequestMeshcoreAutoOffloadForCount,
   maybeRequestMeshcoreAutoOffloadForError,
@@ -5421,6 +5420,14 @@ export function useMeshcoreRuntime() {
   }, [applyMeshcoreContactRemoval, nodes]);
 
   const clearAllRooms = useCallback(async () => {
+    const sessionConn = connRef.current;
+    const sessionIdentity = meshcoreIdentityIdRef.current;
+    const sessionGeneration = meshcoreSetupGenerationRef.current;
+    const sessionStillCurrent = (): boolean =>
+      connRef.current === sessionConn &&
+      meshcoreIdentityIdRef.current === sessionIdentity &&
+      meshcoreSetupGenerationRef.current === sessionGeneration;
+
     let dbContacts: MeshcoreContactDbRow[];
     try {
       dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
@@ -5430,13 +5437,39 @@ export function useMeshcoreRuntime() {
       );
       throw e instanceof Error ? e : new Error(String(e));
     }
-    const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRooms({
-      conn: connRef.current,
-      selfNodeId: myNodeNumRef.current,
-      nodes,
-      dbContacts,
-      clearDbRooms: () => window.electronAPI.db.clearMeshcoreRooms(),
-    });
+
+    // Disconnected: DB/UI-only clear — do not enter the radio chat operation lane.
+    if (!sessionConn) {
+      if (!sessionStillCurrent()) return;
+      const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRooms({
+        conn: null,
+        selfNodeId: myNodeNumRef.current,
+        nodes,
+        dbContacts,
+        clearDbRooms: () => window.electronAPI.db.clearMeshcoreRooms(),
+      });
+      if (!sessionStillCurrent()) return;
+      applyMeshcoreContactRemoval(removedNodeIds, radioRemoveFailures);
+      return;
+    }
+
+    if (!sessionStillCurrent()) return;
+    const { removedNodeIds, radioRemoveFailures } = await runRadioChatOperation(
+      sessionConn,
+      async () => {
+        if (!sessionStillCurrent()) {
+          return { removedNodeIds: [] as number[], radioRemoveFailures: 0 };
+        }
+        return clearMeshcoreRooms({
+          conn: sessionConn,
+          selfNodeId: myNodeNumRef.current,
+          nodes,
+          dbContacts,
+          clearDbRooms: () => window.electronAPI.db.clearMeshcoreRooms(),
+        });
+      },
+    );
+    if (!sessionStillCurrent()) return;
     applyMeshcoreContactRemoval(removedNodeIds, radioRemoveFailures);
   }, [applyMeshcoreContactRemoval, nodes]);
 
@@ -10043,11 +10076,9 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
         pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
-        clearMeshcoreFirmwareContactsFullLatch();
-        // The removals already happened; a zero count must keep the contacts-full debounce.
+        // Latch/debounce ownership stays with runContactsFullOffload (zero removals keep latch).
         return removedFromRadio;
       }
-      clearMeshcoreFirmwareContactsFullLatch();
       pushAppToast(
         i18n.t('radioPanel.offloadedContacts', {
           count: Math.max(offloadedCount, removedFromRadio),

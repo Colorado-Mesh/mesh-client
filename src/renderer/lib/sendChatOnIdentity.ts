@@ -385,11 +385,7 @@ export function sendChatOnIdentity(
         );
         throw restoreErr;
       }
-      if (storeRecord) {
-        upsertNodeRecord(identityId, { ...storeRecord, onRadio: true });
-      } else {
-        upsertNodeRecord(identityId, { nodeId: destination, onRadio: true });
-      }
+      upsertNodeRecord(identityId, { nodeId: destination, onRadio: true });
       return await identity.protocol.sendMessage(sendHandle, opts);
     }
   };
@@ -474,7 +470,8 @@ export function sendChatOnIdentity(
       return;
     }
 
-    const liveHandle = handle ?? connectionDriver.getHandle(identityId);
+    // Prefer a fresh driver handle so an async DM key lookup cannot reuse a stale capture.
+    const liveHandle = connectionDriver.getHandle(identityId) ?? handle;
     if (!liveHandle) {
       console.warn('[useSendMessage] no handle for', identityId);
       abandonMeshcoreHeardRepeat();
@@ -560,15 +557,17 @@ export function sendChatOnIdentity(
 
   if (isMeshcoreDm && !destinationPubKey) {
     void (async () => {
-      const liveHandle =
+      const lookupHandle =
         (handle as Connection | null | undefined) ??
         (connectionDriver.getHandle(identityId) as Connection | null | undefined);
       const key = await resolveMeshcoreDmDestinationPubKeyAsync(
         identityId,
         destination,
         nodesOf(identityId)?.[destination],
-        { conn: liveHandle },
+        { conn: lookupHandle },
       );
+      // Re-read after the async lookup so a reconnect mid-wait is not short-circuited by
+      // the earlier captured handle (beginOutboundSend also prefers a fresh getHandle).
       beginOutboundSend(key);
     })();
     return provisionalId;
