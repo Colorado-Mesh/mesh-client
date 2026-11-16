@@ -82,6 +82,10 @@ import {
   meshcoreRoomLoginQueueSize,
 } from '@/renderer/lib/meshcoreRoomLoginQueue';
 import {
+  buildMeshcoreRoomMembershipContext,
+  isMeshcoreRoomJoined,
+} from '@/renderer/lib/meshcoreRoomMembership';
+import {
   disableMeshcoreRoomAutoLogin,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
@@ -421,18 +425,34 @@ export default function RoomsPanel({
 
   useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
 
-  const roomServers = useMemo(
+  const membershipCtx = useMemo(
     () =>
-      Array.from(nodes.values())
-        .filter((n) => n.hw_model === 'Room')
-        .sort((a, b) => {
-          const aFav = a.favorited ? 1 : 0;
-          const bFav = b.favorited ? 1 : 0;
-          if (aFav !== bFav) return bFav - aFav;
-          return (a.long_name ?? '').localeCompare(b.long_name ?? '');
-        }),
-    [nodes],
+      buildMeshcoreRoomMembershipContext({
+        nodes: nodes.values(),
+        messages,
+        roomsLastRead: persistedRoomsLastRead,
+        isLoggedIn: (nodeId) => roomSessionRevision >= 0 && meshcoreIsRoomLoggedIn(nodeId),
+        hasSavedGuestCredential: (nodeId) =>
+          storedRoomIds.has(nodeId) || meshcoreRoomHasSavedGuestCredential(nodeId),
+      }),
+    [messages, nodes, persistedRoomsLastRead, roomSessionRevision, storedRoomIds],
   );
+
+  const roomServers = useMemo(() => {
+    const all = Array.from(nodes.values()).filter((n) => n.hw_model === 'Room');
+    return all
+      .filter((n) => {
+        // Keep an explicitly opened conversation visible before engage signals persist.
+        if (selectedRoomId === n.node_id) return true;
+        return isMeshcoreRoomJoined(n.node_id, membershipCtx);
+      })
+      .sort((a, b) => {
+        const aFav = a.favorited ? 1 : 0;
+        const bFav = b.favorited ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav;
+        return (a.long_name ?? '').localeCompare(b.long_name ?? '');
+      });
+  }, [membershipCtx, nodes, selectedRoomId]);
 
   const roomOrderItems = roomServers.map((room) => ({
     id: String(room.node_id),
@@ -1805,7 +1825,7 @@ export default function RoomsPanel({
       )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {roomServers.length === 0 ? (
-          <p className="text-muted px-3 py-4 text-sm">{t('roomsPanel.noRoomsYet')}</p>
+          <p className="text-muted px-3 py-4 text-sm">{t('roomsPanel.noJoinedRoomsYet')}</p>
         ) : (
           <ul aria-label={t('roomsPanel.title')}>{roomRows}</ul>
         )}

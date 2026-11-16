@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "ルームサーバー",
-    "noRoomsYet": "まだルームサーバーが見つかりません。Roomタイプのノードがメッシュ上でアドバタイズすると、ルームの連絡先が表示されます。",
     "selectRoom": "メッセージを表示して投稿するルームサーバーを選択します",
     "postCount": "{{count}}件の投稿",
     "lastPost": "最後の投稿",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "自動ログイン設定を保存できませんでした。以前の設定は変更されていません。",
     "leaveRoomConfirmTitle": "このルームを出ますか？",
     "leaveRoomConfirmMessage": "ラジオでこのルームサーバーからログアウトします。後でゲストまたは保存したパスワードを使用して再度ログインすることができます。",
-    "syncSaveFailed": "同期設定を保存できませんでした。以前の設定は変更されていません。"
+    "syncSaveFailed": "同期設定を保存できませんでした。以前の設定は変更されていません。",
+    "noJoinedRoomsYet": "まだ参加しているルームはありません。「ネットワーク」→「ルームサーバー」を開いて、検出されたBBSルームを閲覧し、ログインするか、お気に入りに登録します。"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "放送",
     "teamcontacts": "チームの連絡先",
     "teamroster": "チーム名簿",
-    "friends": "友人"
+    "friends": "友人",
+    "roomServers": "ルームサーバー"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -8891,5 +8892,13 @@
     "addAria": "{{name}}さんを友達に追加",
     "removeFromFriends": "友達から削除",
     "unknownPeer": "ノード{{id}}"
+  },
+  "roomServers": {
+    "title": "ルームサーバー",
+    "intro": "MeshCore まだ参加していないBBSルームがメッシュ上で見つかりました。いずれかを開いてログインするか、お気に入りに登録しましょう。参加中のルームは「チャット」→「ルーム」に表示されます。",
+    "empty": "現在、未参加のルームサーバーはありません。新しいルームの連絡先は、メッシュ上で公開されると表示されます。",
+    "openAria": "{{name}}を開く",
+    "unknownRoom": "ルーム{{id}}",
+    "hops": "{{count}}回の乗り継ぎ"
   }
 }

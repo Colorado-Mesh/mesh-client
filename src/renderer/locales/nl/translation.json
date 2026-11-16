@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Roomservers",
-    "noRoomsYet": "Nog geen roomservers ontdekt. Roomcontacten verschijnen wanneer type Room op het mesh adverteert.",
     "selectRoom": "Selecteer een roomserver om berichten te bekijken en te plaatsen",
     "postCount": "{{count}} berichten",
     "lastPost": "Laatste post",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Kon de instelling voor automatisch inloggen niet opslaan. Uw vorige instelling is ongewijzigd.",
     "leaveRoomConfirmTitle": "Deze ruimte verlaten?",
     "leaveRoomConfirmMessage": "U logt uit bij deze roomserver op de radio. Je kunt later opnieuw inloggen met de gast of het opgeslagen wachtwoord.",
-    "syncSaveFailed": "Kon de synchronisatie-instellingen niet opslaan. Je vorige instellingen zijn ongewijzigd."
+    "syncSaveFailed": "Kon de synchronisatie-instellingen niet opslaan. Je vorige instellingen zijn ongewijzigd.",
+    "noJoinedRoomsYet": "Nog geen ruimtes waaraan je deelneemt. Open Netwerk → Roomservers om door ontdekte BBS-ruimtes te bladeren en log vervolgens in of maak er een favoriet van."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Berichten",
     "teamcontacts": "Teamcontacten",
     "teamroster": "Teamrooster",
-    "friends": "Vrienden"
+    "friends": "Vrienden",
+    "roomServers": "Roomservers"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -8891,5 +8892,13 @@
     "addAria": "{{name}} aan vrienden toevoegen",
     "removeFromFriends": "Verwijderen uit vriendenlijst",
     "unknownPeer": "Knooppunt {{id}}"
+  },
+  "roomServers": {
+    "title": "Roomservers",
+    "intro": "MeshCore BBS-ruimtes ontdekt op het mesh-netwerk waar je nog geen lid van bent. Open er een om in te loggen of als favoriet te markeren — aangesloten ruimtes staan onder Chat → Ruimtes.",
+    "empty": "Er zijn momenteel geen roomservers waar je nog niet lid van bent. Nieuwe Room-contacten verschijnen wanneer ze zich op de mesh aankondigen.",
+    "openAria": "{{name}} openen",
+    "unknownRoom": "Ruimte {{id}}",
+    "hops": "{{count}} overstappen"
   }
 }

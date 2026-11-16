@@ -263,6 +263,7 @@ import {
   ReticulumRemotePanel,
   ReticulumTopologyPanel,
   RFHistogramsPanel,
+  RoomServersPanel,
   RoomsPanel,
   RrcPanel,
   ScheduledBroadcastsPanel,
@@ -299,6 +300,7 @@ import {
   REMOTE_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   RF_PANEL_INDEX,
+  ROOM_SERVERS_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
   RRC_PANEL_INDEX,
   SCHEDULED_BROADCASTS_PANEL_INDEX,
@@ -367,6 +369,10 @@ import {
   rememberMeshcoreFloodScopePreset,
   saveMeshcoreFloodScopePresets,
 } from './lib/meshcoreFloodScopePresetsStorage';
+import {
+  buildMeshcoreRoomMembershipContext,
+  isMeshcoreRoomJoined,
+} from './lib/meshcoreRoomMembership';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { isMeshcoreDmExcludedHwModel, pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -1816,7 +1822,16 @@ function AppContent() {
     touch(roomsLastReadRevision);
     touch(meshcoreMutedViewsRevision);
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
-    const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
+    const membershipCtx = buildMeshcoreRoomMembershipContext({
+      nodes: meshcoreUiNodes.values(),
+      messages: meshcoreUiMessages,
+      roomsLastRead,
+    });
+    const knownRoomServerIds = new Set(
+      [...meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values())].filter((id) =>
+        isMeshcoreRoomJoined(id, membershipCtx),
+      ),
+    );
     const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       roomsLastRead,
@@ -6572,6 +6587,28 @@ function AppContent() {
                                   alwaysShowMessageActions={alwaysShowMessageActions}
                                 />
                               </div>
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${ROOM_SERVERS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), ROOM_SERVERS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== ROOM_SERVERS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === ROOM_SERVERS_PANEL_INDEX &&
+                        capabilities.hasRoomServersPanel ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <RoomServersPanel
+                                nodes={meshcoreUiNodes}
+                                messages={meshcoreUiMessages}
+                                onOpenRoom={handleOpenRoom}
+                                onToggleFavorite={meshcorePanelActions.setNodeFavorited}
+                                isActive={activePanelIndex === ROOM_SERVERS_PANEL_INDEX}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

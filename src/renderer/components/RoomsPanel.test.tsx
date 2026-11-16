@@ -104,6 +104,8 @@ function makeRoom(nodeId: number, longName: string): MeshNode {
     long_name: longName,
     short_name: '',
     hw_model: 'Room',
+    // Favorited ⇒ joined so Chat Rooms list includes fixture rooms by default.
+    favorited: true,
     battery: 0,
     snr: 0,
     rssi: 0,

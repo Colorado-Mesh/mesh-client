@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "房间服务器",
-    "noRoomsYet": "尚未发现聊天室服务器。当“房间”类型在网格上发布广告时，将显示房间联系人。",
     "selectRoom": "选择要查看和发布消息的聊天室服务器",
     "postCount": "{{count}} 条帖子",
     "lastPost": "最后发表",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "无法保存自动登录设置。您之前的设置保持不变。",
     "leaveRoomConfirmTitle": "要离开这个房间吗？",
     "leaveRoomConfirmMessage": "您将通过收音机退出此房间服务器。您可以稍后使用房客密码或保存的密码重新登录。",
-    "syncSaveFailed": "无法保存同步设置。您之前的设置保持不变。"
+    "syncSaveFailed": "无法保存同步设置。您之前的设置保持不变。",
+    "noJoinedRoomsYet": "尚未加入任何房间。打开“网络” → “房间服务器”以浏览已发现的 BBS 房间，然后登录或收藏一个房间。"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "广播",
     "teamcontacts": "团队联系方式",
     "teamroster": "团队名单",
-    "friends": "同舟同济"
+    "friends": "同舟同济",
+    "roomServers": "客房服务员"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -8891,5 +8892,13 @@
     "addAria": "将{{name}}添加为好友",
     "removeFromFriends": "从好友中移除",
     "unknownPeer": "节点{{id}}"
+  },
+  "roomServers": {
+    "title": "客房服务员",
+    "intro": "在网状网络上发现了MeshCore个您尚未加入的BBS聊天室。打开一个房间以登录或将其收藏 — 已加入的房间位于“聊天”→“房间”下。",
+    "empty": "目前没有未加入的房间服务器。新房间联系人在网状网络上发布信息时会显示。",
+    "openAria": "打开{{name}}",
+    "unknownRoom": "房间{{id}}",
+    "hops": "{{count}}个中转站"
   }
 }

@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Raumserver",
-    "noRoomsYet": "Noch keine Raumserver entdeckt. Raumkontakte erscheinen, wenn der Typ Raum auf dem Netz wirbt.",
     "selectRoom": "Wählen Sie einen Raumserver aus, um Nachrichten anzuzeigen und zu posten",
     "postCount": "{{count}} Posts",
     "lastPost": "Letzter Beitrag",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Die Auto-Login-Einstellung konnte nicht gespeichert werden. Ihre vorherige Einstellung ist unverändert.",
     "leaveRoomConfirmTitle": "Diesen Raum verlassen?",
     "leaveRoomConfirmMessage": "Von diesem Raumserver loggen Sie sich über das Funkgerät aus. Sie können sich später mit dem Gast oder dem gespeicherten Passwort erneut anmelden.",
-    "syncSaveFailed": "Die Synchronisierungseinstellungen konnten nicht gespeichert werden. Ihre bisherigen Einstellungen sind unverändert."
+    "syncSaveFailed": "Die Synchronisierungseinstellungen konnten nicht gespeichert werden. Ihre bisherigen Einstellungen sind unverändert.",
+    "noJoinedRoomsYet": "Noch keine beigetretenen Räume. Öffnen Sie Netzwerk → Raumserver, um die gefundenen BBS-Räume zu durchsuchen, und melden Sie sich dann an oder fügen Sie einen Raum zu Ihren Favoriten hinzu."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Mitteilungen",
     "teamcontacts": "Teamkontakte",
     "teamroster": "Teamliste",
-    "friends": "Freunde"
+    "friends": "Freunde",
+    "roomServers": "Raumserver"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -8891,5 +8892,13 @@
     "addAria": "{{name}} zu Freunden hinzufügen",
     "removeFromFriends": "Aus der Kontaktliste entfernen",
     "unknownPeer": "Knoten {{id}}"
+  },
+  "roomServers": {
+    "title": "Raumserver",
+    "intro": "MeshCore BBS-Räume, die im Mesh entdeckt wurden und denen du noch nicht beigetreten bist. Öffne einen Raum, um dich anzumelden oder ihn zu deinen Favoriten hinzuzufügen – Räume, denen du beigetreten bist, findest du unter Chat → Räume.",
+    "empty": "Derzeit gibt es keine Raumserver, denen man beitreten kann. Neue Raumkontakte werden angezeigt, wenn sie im Mesh-Netzwerk bekannt gegeben werden.",
+    "openAria": "{{name}} öffnen",
+    "unknownRoom": "Raum {{id}}",
+    "hops": "{{count}} Umstiege"
   }
 }

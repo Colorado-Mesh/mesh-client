@@ -5845,7 +5845,6 @@
   },
   "roomsPanel": {
     "title": "Pokojové servery",
-    "noRoomsYet": "Zatím nebyly objeveny žádné pokojové servery. Kontakty na pokoj se zobrazují, když je na mřížce uveden typ Pokoj.",
     "selectRoom": "Vyberte pokojový server pro prohlížení a zveřejňování zpráv",
     "postCount": "{{count}} příspěvky",
     "lastPost": "Poslední příspěvek",
@@ -5956,7 +5955,8 @@
     "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo.",
     "leaveRoomConfirmTitle": "Opustit tuto místnost?",
     "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla.",
-    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna."
+    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna.",
+    "noJoinedRoomsYet": "Zatím žádné místnosti, ke kterým jste se připojili. Otevřete Síť → Servery místností a prohlédněte si objevené místnosti BBS. Poté se přihlaste nebo si nějakou přidejte do oblíbených."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -6078,7 +6078,8 @@
     "scheduledbroadcasts": "Broadcasts",
     "teamcontacts": "Týmové kontakty",
     "teamroster": "Soupiska týmu",
-    "friends": "Přátelé"
+    "friends": "Přátelé",
+    "roomServers": "Pokojové servery"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -8976,5 +8977,13 @@
     "addAria": "Přidat {{name}} mezi přátele",
     "removeFromFriends": "Odebrat z přátel",
     "unknownPeer": "Uzel {{id}}"
+  },
+  "roomServers": {
+    "title": "Pokojové servery",
+    "intro": "MeshCore BBS místnosti objevené v síti, ke kterým jste se ještě nepřipojili. Otevřete jednu z nich a přihlaste se nebo si ji přidejte do oblíbených – místnosti, ke kterým jste se připojili, najdete v části Chat → Místnosti.",
+    "empty": "Momentálně nejsou k dispozici žádné nepřipojené servery místností. Nové kontakty v místnosti se zobrazí, když se objeví v síti.",
+    "openAria": "Otevřít {{name}}",
+    "unknownRoom": "Místnost {{id}}",
+    "hops": "{{count}} přestupů"
   }
 }

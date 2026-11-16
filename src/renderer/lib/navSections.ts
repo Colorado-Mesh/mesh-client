@@ -59,6 +59,7 @@ const SECTION_SLOT_ORDER: Record<NavSectionId, readonly TabSlotId[]> = {
     'TeamContacts',
     'TeamRoster',
     'Modules',
+    'RoomServers',
     'Topology',
     'Remote',
     'TAK',

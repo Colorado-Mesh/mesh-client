@@ -24,6 +24,7 @@ const LABELS: Record<string, string> = {
   'tabs.repeaters': 'Repeaters',
   'tabs.admin': 'Admin',
   'tabs.rooms': 'Rooms',
+  'tabs.roomServers': 'Room servers',
   'tabs.telemetry': 'Telemetry',
   'tabs.security': 'Security',
   'tabs.tak': 'TAK',
@@ -138,16 +139,17 @@ describe('PanelLauncher', () => {
     );
   });
 
-  it('lists all 22 MeshCore panels grouped by section', () => {
+  it('lists all 23 MeshCore panels grouped by section', () => {
     renderLauncher();
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
-    expect(within(dialog).getByText('22 panels')).toBeInTheDocument();
+    expect(within(dialog).getByText('23 panels')).toBeInTheDocument();
     for (const group of ['Chat', 'Network', 'Monitor', 'Device', 'Other']) {
       expect(within(dialog).getByRole('region', { name: group })).toBeInTheDocument();
     }
     const chat = within(dialog).getByRole('region', { name: 'Chat' });
     expect(within(chat).getByRole('button', { name: 'Friends' })).toBeInTheDocument();
     const network = within(dialog).getByRole('region', { name: 'Network' });
+    expect(within(network).getByRole('button', { name: 'Room servers' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Contact Cards' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Team Roster' })).toBeInTheDocument();

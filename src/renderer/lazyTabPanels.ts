@@ -22,6 +22,7 @@ export const ReticulumRemotePanel = lazy(() => import('./components/ReticulumRem
 export const ReticulumPeerListPanel = lazy(() => import('./components/ReticulumPeerListPanel'));
 export const RepeatersPanel = lazy(() => import('./components/RepeatersPanel'));
 export const RoomsPanel = lazy(() => import('./components/RoomsPanel'));
+export const RoomServersPanel = lazy(() => import('./components/RoomServersPanel'));
 export const FriendsPanel = lazy(() => import('./components/FriendsPanel'));
 export const SecurityPanel = lazy(() => import('./components/SecurityPanel'));
 export const TelemetryPanel = lazy(() => import('./components/TelemetryPanel'));

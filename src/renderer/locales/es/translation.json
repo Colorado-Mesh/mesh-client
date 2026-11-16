@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Servidores de sala",
-    "noRoomsYet": "Aún no se ha descubierto ningún servidor de sala. Los contactos de sala aparecen cuando el tipo Room se anuncia en la malla.",
     "selectRoom": "Seleccione un servidor de sala para ver y publicar mensajes",
     "postCount": "{{count}} publicaciones",
     "lastPost": "Última publicación",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "No se ha podido guardar la configuración de inicio de sesión automático. Su configuración anterior no ha cambiado.",
     "leaveRoomConfirmTitle": "¿Salir de esta sala?",
     "leaveRoomConfirmMessage": "Cerrará sesión en el servidor de esta sala en la radio. Puedes iniciar sesión de nuevo más tarde con el invitado o la contraseña guardada.",
-    "syncSaveFailed": "No se ha podido guardar la configuración de sincronización. Tus ajustes anteriores no han cambiado."
+    "syncSaveFailed": "No se ha podido guardar la configuración de sincronización. Tus ajustes anteriores no han cambiado.",
+    "noJoinedRoomsYet": "Aún no te has unido a ninguna sala. Abre Red → Servidores de salas para explorar las salas BBS descubiertas y, a continuación, inicia sesión o marca una como favorita."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Broadcasts",
     "teamcontacts": "Contactos del equipo",
     "teamroster": "Lista del equipo",
-    "friends": "Amigos"
+    "friends": "Amigos",
+    "roomServers": "Servidores de sala"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -8891,5 +8892,13 @@
     "addAria": "Añadir a {{name}} a Amigos",
     "removeFromFriends": "Eliminar de Amigos",
     "unknownPeer": "Nodo {{id}}"
+  },
+  "roomServers": {
+    "title": "Servidores de sala",
+    "intro": "Salas BBS de MeshCore descubiertas en la malla a las que aún no te has unido. Abre una para iniciar sesión o marcarla como favorita; las salas unidas están en Chat → Salas.",
+    "empty": "No hay servidores de sala sin unir ahora. Los contactos Room nuevos aparecen cuando se anuncian en la malla.",
+    "openAria": "Abrir {{name}}",
+    "unknownRoom": "Sala {{id}}",
+    "hops": "{{count}} escalas"
   }
 }

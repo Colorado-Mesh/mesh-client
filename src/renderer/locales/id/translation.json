@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Server ruangan",
-    "noRoomsYet": "Belum ada server ruangan yang ditemukan. Kontak ruangan muncul saat tipe Room beriklan di mesh.",
     "selectRoom": "Pilih server ruangan untuk melihat dan memposting pesan",
     "postCount": "{{count}} postingan",
     "lastPost": "Postingan terakhir",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah.",
     "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
     "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan.",
-    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah."
+    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah.",
+    "noJoinedRoomsYet": "Belum ada ruang yang diikuti. Buka Jaringan → Server ruang untuk menelusuri ruang BBS yang ditemukan, lalu masuk atau tambahkan ke favorit."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Siaran",
     "teamcontacts": "Kontak Tim",
     "teamroster": "Daftar Tim",
-    "friends": "Teman"
+    "friends": "Teman",
+    "roomServers": "Server ruangan"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -8891,5 +8892,13 @@
     "addAria": "Tambahkan {{name}} ke Teman",
     "removeFromFriends": "Hapus dari Teman",
     "unknownPeer": "Node {{id}}"
+  },
+  "roomServers": {
+    "title": "Server ruangan",
+    "intro": "MeshCore ruang BBS ditemukan di mesh yang belum Anda ikuti. Buka salah satu untuk masuk atau tambahkan ke favorit — ruang yang sudah Anda ikuti ada di Obrolan → Ruang.",
+    "empty": "Saat ini tidak ada server ruang yang belum bergabung. Kontak Ruang Baru muncul saat mereka beriklan di mesh.",
+    "openAria": "Buka {{name}}",
+    "unknownRoom": "Ruangan {{id}}",
+    "hops": "{{count}} transit"
   }
 }

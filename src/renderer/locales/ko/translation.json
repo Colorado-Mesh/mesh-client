@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "룸 서버",
-    "noRoomsYet": "아직 룸 서버가 발견되지 않았습니다. Room 타입이 메시에 광고되면 룸 연락처가 표시됩니다.",
     "selectRoom": "메시지를 보고 게시할 룸 서버 선택",
     "postCount": "{{count}}개 게시물",
     "lastPost": "마지막 게시글",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "자동 로그인 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않았습니다.",
     "leaveRoomConfirmTitle": "이 방에서 나가시겠어요?",
     "leaveRoomConfirmMessage": "라디오에서 이 룸 서버에서 로그아웃합니다. 나중에 게스트 또는 저장된 비밀번호로 다시 로그인할 수 있습니다.",
-    "syncSaveFailed": "동기화 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않습니다."
+    "syncSaveFailed": "동기화 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않습니다.",
+    "noJoinedRoomsYet": "아직 참여한 채팅방이 없습니다. 네트워크 → 룸 서버를 열어 검색된 BBS 룸을 탐색한 다음 로그인하거나 즐겨찾기에 추가하세요."
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "방송",
     "teamcontacts": "팀 연락처",
     "teamroster": "팀 명단",
-    "friends": "친구"
+    "friends": "친구",
+    "roomServers": "룸 서버"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -8891,5 +8892,13 @@
     "addAria": "{{name}} 님을 친구로 추가",
     "removeFromFriends": "친구 목록에서 삭제",
     "unknownPeer": "노드 {{id}}"
+  },
+  "roomServers": {
+    "title": "룸 서버",
+    "intro": "아직 가입하지 않은 MeshCore개의 BBS 룸이 메시에서 발견되었습니다. 로그인하거나 즐겨찾기에 추가하려면 하나를 여세요. 가입한 채팅방은 채팅 → 채팅방 아래에 표시됩니다.",
+    "empty": "현재 참여하지 않은 룸 서버가 없습니다. 새로운 룸 연락처는 메시에 광고할 때 표시됩니다.",
+    "openAria": "{{name}} 열기",
+    "unknownRoom": "룸 {{id}}",
+    "hops": "경유지 {{count}}곳"
   }
 }

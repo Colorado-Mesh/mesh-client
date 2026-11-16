@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Serveurs de salle",
-    "noRoomsYet": "Aucun serveur de salle n'a encore été découvert. Les contacts de pièce apparaissent lorsque le type de pièce annonce sur le maillage.",
     "selectRoom": "Sélectionnez un serveur de salle pour afficher et publier des messages",
     "postCount": "{{count}} publications",
     "lastPost": "Dernière publication",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés.",
     "leaveRoomConfirmTitle": "Quitter cette salle ?",
     "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré.",
-    "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés."
+    "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés.",
+    "noJoinedRoomsYet": "Aucun salon rejoint pour le moment. Ouvrez Réseau → Serveurs de salons pour parcourir les salons BBS découverts, puis connectez-vous ou ajoutez-en un à vos favoris."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Messages généraux",
     "teamcontacts": "Contacts de l'équipe",
     "teamroster": "Composition de l'équipe",
-    "friends": "Amis"
+    "friends": "Amis",
+    "roomServers": "Serveurs de salle"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -8891,5 +8892,13 @@
     "addAria": "Ajouter {{name}} aux amis",
     "removeFromFriends": "Supprimer de la liste d’amis",
     "unknownPeer": "Nœud {{id}}"
+  },
+  "roomServers": {
+    "title": "Serveurs de salle",
+    "intro": "MeshCore salles BBS découvertes sur le réseau maillé auxquelles vous n'avez pas encore adhéré. Ouvrez-en un pour vous connecter ou l'ajouter à vos favoris. Les salons auxquels vous avez rejoint se trouvent sous Chat → Salons.",
+    "empty": "Aucun serveur de salon non rejoint pour le moment. Les nouveaux contacts du salon apparaissent lorsqu’ils se signalent sur le mesh.",
+    "openAria": "Ouvrir {{name}}",
+    "unknownRoom": "Salle {{id}}",
+    "hops": "{{count}} escales"
   }
 }

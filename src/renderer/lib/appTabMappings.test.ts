@@ -197,6 +197,7 @@ describe('computeTabMappings', () => {
       'Modules',
       'Admin',
       'Rooms',
+      'RoomServers',
       'Telemetry',
       'Security',
       'TAK',

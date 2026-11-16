@@ -103,6 +103,7 @@ export function buildRoomJumpCandidates(input: RoomJumpCandidatesInput): RoomJum
   const out: RoomJumpCandidate[] = [];
   const seen = new Set<string>();
 
+  const meshcoreRooms: { candidate: RoomJumpCandidate; favorited: boolean }[] = [];
   for (const identity of Object.values(input.identities)) {
     if (identity.protocol.type !== 'meshcore') continue;
     const nodes = input.nodesByIdentity[identity.id] ?? {};
@@ -117,17 +118,23 @@ export function buildRoomJumpCandidates(input: RoomJumpCandidatesInput): RoomJum
       if (seen.has(key)) continue;
       seen.add(key);
       const label = (node.longName || node.shortName || pub.slice(0, 8)).trim();
-      out.push({
-        key,
-        target: {
-          kind: 'meshcore-room',
-          identityId: identity.id,
-          roomPubKeyHex: pub,
-          label,
+      meshcoreRooms.push({
+        favorited: Boolean(node.favorited),
+        candidate: {
+          key,
+          target: {
+            kind: 'meshcore-room',
+            identityId: identity.id,
+            roomPubKeyHex: pub,
+            label,
+          },
         },
       });
     }
   }
+  // Prefer favorited (joined-ish) MeshCore rooms first in the picker.
+  meshcoreRooms.sort((a, b) => Number(b.favorited) - Number(a.favorited));
+  for (const row of meshcoreRooms) out.push(row.candidate);
 
   for (const identity of Object.values(input.identities)) {
     const protocol = identity.protocol.type;

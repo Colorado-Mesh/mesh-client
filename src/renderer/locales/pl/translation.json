@@ -5883,7 +5883,6 @@
   },
   "roomsPanel": {
     "title": "Serwery pokojowe",
-    "noRoomsYet": "Nie znaleziono jeszcze serwerów pokojowych. Kontakty do pokoju pojawiają się, gdy typ Pokój reklamuje się na siatce.",
     "selectRoom": "Wybierz serwer pokoju, aby przeglądać i publikować wiadomości",
     "postCount": "{{count}} postów",
     "lastPost": "Ostatni wpis",
@@ -5994,7 +5993,8 @@
     "autoLoginSaveFailed": "Nie można zapisać ustawienia automatycznego logowania. Twoje poprzednie ustawienie pozostaje niezmienione.",
     "leaveRoomConfirmTitle": "Opuścić ten pokój?",
     "leaveRoomConfirmMessage": "Wylogujesz się z tego serwera pokoju przez radio. Możesz zalogować się ponownie później za pomocą gościa lub zapisanego hasła.",
-    "syncSaveFailed": "Nie można zapisać ustawień synchronizacji. Twoje poprzednie ustawienia pozostają niezmienione."
+    "syncSaveFailed": "Nie można zapisać ustawień synchronizacji. Twoje poprzednie ustawienia pozostają niezmienione.",
+    "noJoinedRoomsYet": "Brak dołączonych pokoi. Otwórz Sieć → Serwery pokojów, aby przeglądać wykryte pokoje BBS, a następnie zaloguj się lub dodaj jeden z nich do ulubionych."
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -6116,7 +6116,8 @@
     "scheduledbroadcasts": "Transmisje",
     "teamcontacts": "Kontakty zespołu",
     "teamroster": "Skład drużyny",
-    "friends": "Przyjaciele"
+    "friends": "Przyjaciele",
+    "roomServers": "Serwery pokojowe"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -9035,5 +9036,13 @@
     "addAria": "Dodaj użytkownika {{name}} do znajomych",
     "removeFromFriends": "Usuń z listy znajomych",
     "unknownPeer": "Węzeł {{id}}"
+  },
+  "roomServers": {
+    "title": "Serwery pokojowe",
+    "intro": "MeshCore pokoi BBS znalezionych w sieci mesh, do których jeszcze nie dołączyłeś(-aś). Otwórz jeden z nich, aby się zalogować lub dodać go do ulubionych – pokoje, do których dołączono, znajdują się w sekcji Czat → Pokoje.",
+    "empty": "Obecnie nie ma serwerów pokoi, do których nie dołączono. Nowe kontakty z pokoju pojawiają się, gdy ogłaszają się w sieci mesh.",
+    "openAria": "Otwórz {{name}}",
+    "unknownRoom": "Pokój {{id}}",
+    "hops": "{{count}} przesiadki"
   }
 }

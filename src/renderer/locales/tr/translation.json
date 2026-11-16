@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Oda sunucuları",
-    "noRoomsYet": "Henüz oda sunucusu keşfedilmedi. Oda iletişim bilgileri, Oda türü ağda reklam verdiğinde görünür.",
     "selectRoom": "Mesajları görüntülemek ve göndermek için bir oda sunucusu seçin",
     "postCount": "{{count}} gönderiler",
     "lastPost": "Son Gönderi",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi.",
     "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
     "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz.",
-    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi."
+    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi.",
+    "noJoinedRoomsYet": "Henüz katıldığınız bir oda yok. Keşfedilen BBS odalarına göz atmak için Ağ → Oda sunucuları'nı açın, ardından oturum açın veya birini favori olarak işaretleyin."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Yayınlar",
     "teamcontacts": "Ekip İrtibat Kişileri",
     "teamroster": "Takım Kadrosu",
-    "friends": "Arkadaşlar"
+    "friends": "Arkadaşlar",
+    "roomServers": "Oda sunucuları"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -8891,5 +8892,13 @@
     "addAria": "{{name}} kişisini Arkadaşlara ekle",
     "removeFromFriends": "Arkadaşlar'dan kaldır",
     "unknownPeer": "Düğüm {{id}}"
+  },
+  "roomServers": {
+    "title": "Oda görevlileri",
+    "intro": "Ağda henüz katılmadığınız MeshCore BBS odası bulundu. Oturum açmak veya favorilere eklemek için birini açın. Katıldığınız odalar Sohbet → Odalar bölümünde bulunur.",
+    "empty": "Şu anda katılınmamış oda sunucusu yok. Yeni Oda kişileri, ağda duyuru yaptıklarında görünür.",
+    "openAria": "{{name}} öğesini açın",
+    "unknownRoom": "Oda {{id}}",
+    "hops": "{{count}} aktarma"
   }
 }

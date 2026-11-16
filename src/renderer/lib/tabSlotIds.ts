@@ -13,6 +13,7 @@ export const TAB_SLOT_IDS = [
   'Modules',
   'Admin',
   'Rooms',
+  'RoomServers',
   'Telemetry',
   'Security',
   'TAK',

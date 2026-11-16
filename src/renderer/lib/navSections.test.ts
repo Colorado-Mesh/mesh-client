@@ -68,7 +68,15 @@ describe('computeNavSections', () => {
     // Telemetry sits with the device it reports on; TAK is a network bridge, not a device.
     expect(slotsBySection(PROTOCOLS[1])).toEqual({
       chat: ['Chat', 'Friends', 'Rooms'],
-      network: ['Nodes', 'TeamContacts', 'TeamRoster', 'Modules', 'TAK', 'ScheduledBroadcasts'],
+      network: [
+        'Nodes',
+        'TeamContacts',
+        'TeamRoster',
+        'Modules',
+        'RoomServers',
+        'TAK',
+        'ScheduledBroadcasts',
+      ],
       map: ['Map'],
       monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF', 'Graph'],
       device: ['Connection', 'Radio', 'Telemetry', 'Admin', 'Security'],
@@ -106,6 +114,7 @@ describe('computeNavSections', () => {
       'tabs.teamcontacts',
       'tabs.teamroster',
       'tabs.repeaters',
+      'tabs.roomServers',
       'tabs.tak',
       'tabs.scheduledbroadcasts',
     ]);

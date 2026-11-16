@@ -101,7 +101,7 @@ export const roomsSurface: SettingsSearchSurface = {
     'roomsPanel.unreadPosts': 'per-room status text',
     'roomsPanel.newMessagesDivider': 'room post view divider',
     'roomsPanel.noPostsYet': 'empty state of the room post view',
-    'roomsPanel.noRoomsYet': 'empty state of the room list',
+    'roomsPanel.noJoinedRoomsYet': 'empty state of the joined-only room list',
     'roomsPanel.sidebarLegendTitle': 'room list legend heading',
   },
 };

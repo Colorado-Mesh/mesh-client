@@ -15,6 +15,7 @@ export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
 export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
 export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
+export const ROOM_SERVERS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RoomServers');
 export const RADIO_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Radio');
 export const MODULES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Modules');
 export const ADMIN_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Admin');
@@ -47,7 +48,8 @@ export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)
   { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
-  'hasRoomServersPanel', // Rooms
+  'hasRoomServersPanel', // Rooms (joined)
+  'hasRoomServersPanel', // RoomServers (discovered directory)
   'hasEnvironmentTelemetry', // Telemetry
   'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
@@ -85,6 +87,9 @@ function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `t
     return 'tabs.repeaters';
   }
   if (panelIndex === ROOMS_PANEL_INDEX && capabilities.hasRoomServersPanel) return 'tabs.rooms';
+  if (panelIndex === ROOM_SERVERS_PANEL_INDEX && capabilities.hasRoomServersPanel) {
+    return 'tabs.roomServers';
+  }
   if (panelIndex === RADIO_TAB_PANEL_INDEX && capabilities.hasReticulumNetworkPanel) {
     return 'tabs.network';
   }

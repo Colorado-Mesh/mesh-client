@@ -6829,7 +6829,7 @@
     "title": "Room servers",
     "collapseRoomList": "Collapse room list",
     "expandRoomList": "Expand room list",
-    "noRoomsYet": "No room servers discovered yet. Room contacts appear when type Room advertises on the mesh.",
+    "noJoinedRoomsYet": "No joined rooms yet. Open Network → Room servers to browse discovered BBS rooms, then log in or favorite one.",
     "selectRoom": "Select a room server to view and post messages",
     "postCount": "{{count}} posts",
     "lastPost": "Last post",
@@ -7217,6 +7217,14 @@
     "removeFromFriends": "Remove from Friends",
     "unknownPeer": "Node {{id}}"
   },
+  "roomServers": {
+    "title": "Room servers",
+    "intro": "MeshCore BBS rooms discovered on the mesh that you have not joined yet. Open one to log in or favorite it — joined rooms live under Chat → Rooms.",
+    "empty": "No unjoined room servers right now. New Room contacts appear when they advertise on the mesh.",
+    "openAria": "Open {{name}}",
+    "unknownRoom": "Room {{id}}",
+    "hops": "{{count}} hops"
+  },
   "tabs": {
     "connection": "Connection",
     "chat": "Chat",
@@ -7243,6 +7251,7 @@
     "sniffer": "Sniffer",
     "repeaters": "Repeaters",
     "rooms": "Rooms",
+    "roomServers": "Room servers",
     "rf": "RF",
     "graph": "Graph",
     "topology": "Network topology",

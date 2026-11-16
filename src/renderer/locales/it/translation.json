@@ -5799,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Server di sala",
-    "noRoomsYet": "Nessun server della stanza ancora scoperto. I contatti della stanza vengono visualizzati quando il tipo Room pubblicizza sulla mesh.",
     "selectRoom": "Seleziona un server della room per visualizzare e pubblicare i messaggi",
     "postCount": "{{count}} post",
     "lastPost": "Ultimo post",
@@ -5910,7 +5909,8 @@
     "autoLoginSaveFailed": "Impossibile salvare l'impostazione di accesso automatico. L'impostazione precedente è invariata.",
     "leaveRoomConfirmTitle": "Uscire da questa sala?",
     "leaveRoomConfirmMessage": "Esci da questo server della stanza alla radio. Puoi accedere di nuovo in seguito con l'ospite o la password salvata.",
-    "syncSaveFailed": "Impossibile salvare le impostazioni di sincronizzazione. Le impostazioni precedenti non sono cambiate."
+    "syncSaveFailed": "Impossibile salvare le impostazioni di sincronizzazione. Le impostazioni precedenti non sono cambiate.",
+    "noJoinedRoomsYet": "Ancora nessuna room a cui ti sei unito. Apri Rete → Server delle room per sfogliare le room BBS rilevate, quindi accedi o aggiungine una ai preferiti."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
@@ -6032,7 +6032,8 @@
     "scheduledbroadcasts": "Trasmissioni",
     "teamcontacts": "Contatti della squadra",
     "teamroster": "Elenco delle squadre",
-    "friends": "Amici"
+    "friends": "Amici",
+    "roomServers": "Camerieri di sala"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -8891,5 +8892,13 @@
     "addAria": "Aggiungi {{name}} agli amici",
     "removeFromFriends": "Rimuovi dagli amici",
     "unknownPeer": "Nodo {{id}}"
+  },
+  "roomServers": {
+    "title": "Camerieri di sala",
+    "intro": "MeshCore room BBS scoperte sulla mesh a cui non ti sei ancora unito. Aprine una per accedere o aggiungerla ai preferiti: le room a cui hai aderito si trovano in Chat → Room.",
+    "empty": "Al momento non ci sono server di room non collegati. I nuovi contatti della stanza vengono visualizzati quando si rendono visibili sulla mesh.",
+    "openAria": "Apri {{name}}",
+    "unknownRoom": "Stanza {{id}}",
+    "hops": "{{count}} scali"
   }
 }

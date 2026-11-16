@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Network,
   Radio,
+  Server,
   Settings,
   Shield,
   Siren,
@@ -80,6 +81,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Radio {...p} />;
     case 'Rooms':
       return <House {...p} />;
+    case 'RoomServers':
+      return <Server {...p} />;
     case 'TAK':
       return <Crosshair {...p} />;
     case 'Stats':
