@@ -3955,7 +3955,7 @@ budgets live in
 <p>Runs on every push, pull request, and merge-queue <code>merge_group</code> for <code>main</code>:</p>
 <ol>
 <li><strong>Detect scope:</strong> compare a pull request head with its true merge base and reuse the local staged-test planner to select related paths and Vitest projects.</li>
-<li><strong>Pull requests:</strong> run <code>vitest related</code> without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.</li>
+<li><strong>Pull requests:</strong> run <code>vitest related</code> without coverage for the affected project lanes. Shared contracts select all projects. Any Vitest test that names a changed file by its whole repo path (for example <code>scripts/bundle-size-workflow.test.mjs</code>, which copies <code>scripts/esbuild-main-build.mjs</code>, or a workflow test that reads its YAML) is added with its project, because <code>vitest related</code> follows imports only and cannot reach it. Docs-only changes skip Vitest unless such a test names one of the changed files. Paths a test builds from segments are not found; protected events still run the full suite.</li>
 <li><strong>Safe fallback:</strong> test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.</li>
 <li><strong>Protected events:</strong> <code>merge_group</code>, pushes to <code>main</code>, and manual runs always run full coverage across <code>renderer-ui</code>, <code>renderer-logic</code>, and <code>main</code>.</li>
 <li><strong>Sharding:</strong> <code>renderer-ui</code> runs in four shards; <code>renderer-logic</code> and <code>main</code> each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named <code>junit-&lt;project&gt;-&lt;shard&gt;-&lt;total&gt;.xml</code> and print results in each shard's log. The existing <code>Coverage (...)</code> required checks verify that detection and every shard succeeded.</li>
@@ -4534,7 +4534,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 16, 2026 02:38:55 UTC">November 16, 2026</span>
   </span>
 
     
