@@ -2986,6 +2986,10 @@ function ChatPanel({
     });
     setActiveDmNode(nodeNum);
     setViewMode('dm');
+    // DM tab / switcher buttons keep focus after click; move caret into the composer.
+    queueMicrotask(() => {
+      composerInputRef.current?.focus();
+    });
   }, []);
 
   const submitDmByAddress = useCallback(() => {
