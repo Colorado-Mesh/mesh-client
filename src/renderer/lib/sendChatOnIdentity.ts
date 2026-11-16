@@ -16,6 +16,7 @@ import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
 } from './meshcore/heardRepeatTracker';
+import { resolveMeshcoreDestinationPubKeyForIdentity } from './meshcore/meshcoreDestinationPubKey';
 import {
   isMeshcoreTcpOpenHopDeadAccepted,
   trackMeshcoreTcpUserTxSend,
@@ -31,6 +32,9 @@ import { tryGetMeshcoreSession } from './sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from './sessions/meshtasticSession';
 import { messageRecordToChatMessage } from './storeRecordAdapters';
 import type { IdentityId } from './types';
+
+const MESHCORE_DM_NO_KEY_ERROR =
+  'Cannot send DM: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.';
 
 /** The identity's known nodes; either level of the lookup can miss. */
 function nodesOf(identityId: IdentityId): Record<number, NodeRecord | undefined> | undefined {
@@ -317,8 +321,14 @@ export function sendChatOnIdentity(
 
   let destinationPubKey: Uint8Array | undefined;
   if (isMeshcoreDm) {
-    destinationPubKey = nodesOf(identityId)?.[destination]?.publicKey;
-    destinationPubKey ??= tryGetMeshcoreSession()?.getDestinationPubKey?.(destination);
+    destinationPubKey = resolveMeshcoreDestinationPubKeyForIdentity(identityId, destination);
+    if (!destinationPubKey) {
+      console.warn('[useSendMessage] send failed ' + MESHCORE_DM_NO_KEY_ERROR);
+      updateMessageStatus(identityId, provisionalId, 'failed', MESHCORE_DM_NO_KEY_ERROR);
+      persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+      abandonMeshcoreHeardRepeat();
+      return provisionalId;
+    }
   }
 
   const wireText = resolvedOutbound.wireText;

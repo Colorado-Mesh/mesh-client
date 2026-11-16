@@ -48,6 +48,16 @@ const ID_MC_FAIL = 'id-send-mc-fail';
 const ID_MC_DM = 'id-send-mc-dm';
 
 const ID_MT = 'id-send-mt';
+
+/** Little-endian first word = nodeId; remaining zeros → pubkeyToNodeId === nodeId. */
+function meshcoreKeyForNodeId(nodeId: number): Uint8Array {
+  const b = new Uint8Array(32);
+  b[0] = nodeId & 0xff;
+  b[1] = (nodeId >>> 8) & 0xff;
+  b[2] = (nodeId >>> 16) & 0xff;
+  b[3] = (nodeId >>> 24) & 0xff;
+  return b;
+}
 const ID_MC = 'id-send-mc';
 const ID_RT = 'id-send-rt';
 
@@ -169,7 +179,6 @@ function attachDmAckSideEffects(
 }
 
 function seedMeshcoreDmSender(identityId: string, peerId: number, hopsAway?: number): void {
-  const pubKey = new Uint8Array(32).fill(0xab);
   addIdentity({
     id: identityId,
     protocol: meshcoreProtocol,
@@ -182,7 +191,7 @@ function seedMeshcoreDmSender(identityId: string, peerId: number, hopsAway?: num
   upsertNode(identityId, {
     nodeId: peerId,
     longName: 'Peer',
-    publicKey: pubKey,
+    publicKey: meshcoreKeyForNodeId(peerId),
     ...(hopsAway != null ? { hopsAway } : {}),
   });
 }
@@ -535,7 +544,7 @@ describe('useSendMessage', () => {
           upsertNode(ID_MC, {
             nodeId: peerId,
             longName: 'Peer',
-            publicKey: new Uint8Array(32).fill(3),
+            publicKey: meshcoreKeyForNodeId(peerId),
           });
           addMessage(ID_MC, {
             id: 'older-message',
@@ -616,7 +625,6 @@ describe('useSendMessage', () => {
     const handle = { kind: 'rf' };
     vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
     const peerId = 0x22;
-    const pubKey = new Uint8Array(32).fill(3);
     addIdentity({
       id: ID_MC_DM,
       protocol: meshcoreProtocol,
@@ -629,7 +637,7 @@ describe('useSendMessage', () => {
     upsertNode(ID_MC_DM, {
       nodeId: peerId,
       longName: 'Peer',
-      publicKey: pubKey,
+      publicKey: meshcoreKeyForNodeId(peerId),
     });
 
     const { result } = renderHook(() => useSendMessage(ID_MC_DM));

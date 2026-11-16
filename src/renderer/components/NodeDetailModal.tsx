@@ -22,7 +22,10 @@ import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeEr
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { touch } from '@/shared/touch';
 
-import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
+import {
+  MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+  meshcoreFullPubKeyBytesFromContactDbHex,
+} from '../hooks/meshcore/meshcoreHookPreamble';
 import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
 import type { MeshcoreTelemetryPushActions } from '../hooks/meshcore/useMeshcoreTelemetryPush';
 import { useMeshcoreNoiseFloorTrend } from '../hooks/useMeshcoreNoiseFloorTrend';
@@ -34,6 +37,7 @@ import {
   getMeshcoreRadioMaxContacts,
   subscribeMeshcoreRadioMaxContacts,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
+import { resolveMeshcoreDestinationPubKeyHexSync } from '../lib/meshcore/meshcoreDestinationPubKey';
 import { meshcoreFloodSendPercent } from '../lib/meshcore/meshcoreFloodSendPercent';
 import type {
   MeshCoreNeighborResult,
@@ -59,6 +63,7 @@ import {
   meshcoreContactTypeFromHwModel,
   meshcoreReportedMaxContactsIsProtocolCeiling,
   meshcoreTracePathLenToHops,
+  pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import { meshtasticFirmwareSupportsKeyVerification } from '../lib/meshtastic/meshtasticKeyVerification';
 import {
@@ -325,6 +330,10 @@ export default function NodeDetailModal({
   const storeContactPublicKey = useNodeStore((s) => {
     if (!meshcoreIdentityId || node == null) return undefined;
     return s.nodes[meshcoreIdentityId]?.[node.node_id]?.publicKey;
+  });
+  const storeContactPublicKeyHex = useNodeStore((s) => {
+    if (!meshcoreIdentityId || node == null) return undefined;
+    return s.nodes[meshcoreIdentityId]?.[node.node_id]?.publicKeyHex;
   });
 
   const pathHistoryRecordsForNode = usePathHistoryStore((s) =>
@@ -612,8 +621,11 @@ export default function NodeDetailModal({
       return;
     }
     let cancelled = false;
-    const storeHex =
-      storeContactPublicKey?.length === 32 ? meshcorePublicKeyToHex(storeContactPublicKey) : null;
+    const syncHex = resolveMeshcoreDestinationPubKeyHexSync(node.node_id, {
+      storePublicKey: storeContactPublicKey,
+      storePublicKeyHex: storeContactPublicKeyHex,
+      meshNodePublicKeyHex: node.public_key_hex,
+    });
     const fetchStatus = async () => {
       try {
         const contact = await window.electronAPI.db.getMeshcoreContactById(node.node_id);
@@ -621,17 +633,23 @@ export default function NodeDetailModal({
           if (contact && 'on_radio' in contact) {
             // on_radio: 1 = on radio, 0 = only in DB, null = treat as on radio (legacy data)
             setContactOnRadio(contact.on_radio !== 0);
-            setContactPubkey(contact.public_key ?? storeHex ?? null);
           } else {
             setContactOnRadio(true);
-            setContactPubkey(storeHex ?? null);
           }
+          let dbHex: string | null = null;
+          if (contact?.public_key) {
+            const fromDb = meshcoreFullPubKeyBytesFromContactDbHex(contact.public_key);
+            if (fromDb && pubkeyToNodeId(fromDb) === node.node_id) {
+              dbHex = meshcorePublicKeyToHex(fromDb);
+            }
+          }
+          setContactPubkey(syncHex ?? dbHex);
         }
       } catch {
         // catch-no-log-ok handle gracefully - show as unknown
         if (!cancelled) {
           setContactOnRadio(null);
-          setContactPubkey(storeHex ?? null);
+          setContactPubkey(syncHex);
         }
       }
       try {
@@ -648,7 +666,7 @@ export default function NodeDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [protocol, node, storeContactPublicKey]);
+  }, [protocol, node, storeContactPublicKey, storeContactPublicKeyHex]);
 
   // Align with MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS (queue + tracePath in useMeshcoreRuntime)
   useEffect(() => {

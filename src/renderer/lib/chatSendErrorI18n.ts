@@ -45,6 +45,8 @@ const EXACT_ENGLISH_TO_KEY: Record<string, string> = {
   'MeshCore messages must contain text.': CHAT_SEND_ERROR_EMPTY_KEY,
   'MeshCore direct messages require destinationPubKey to be provided in SendMessageOptions.':
     CHAT_SEND_ERROR_DEST_KEY_KEY,
+  'Cannot send DM: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.':
+    CHAT_SEND_ERROR_DEST_KEY_KEY,
   'Reply requires the message RF packet id (wait for send ack or refresh chat).':
     'chatPanel.replyRequiresPacketId',
   'Room session expired — log in again to post': CHAT_SEND_ERROR_ROOM_SESSION_KEY,
