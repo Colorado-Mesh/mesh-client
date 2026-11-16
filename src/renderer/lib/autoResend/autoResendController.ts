@@ -118,6 +118,13 @@ const tracked = new Map<string, TrackedOutbound>();
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 let sendFn: AutoResendSendFn | null = null;
 let resolveProtocol: (identityId: IdentityId) => MeshProtocol | null = () => null;
+/**
+ * Lineage for the in-flight `sendFn` call from {@link fireResend}. The message-store
+ * `sending` event runs inside `sendFn` (before it returns), and without this would seed
+ * `resendsUsed: 0` — then an immediate fail (e.g. missing MeshCore DM key) schedules
+ * attempt 1 / 15s again forever.
+ */
+let pendingResendLineage: TrackedOutbound | null = null;
 
 function trackOutbound(key: string, value: TrackedOutbound): void {
   if (tracked.size >= MAX_TRACKED_OUTBOUND && !tracked.has(key)) {
@@ -188,33 +195,45 @@ function fireResend(key: string): void {
   clearEntry(key);
   if (!entry || !sendFn) return;
   const record = recordFor(entry.identityId, entry.messageId);
-  // Superseded meanwhile (manual Resend, Reticulum announce resend, late ACK).
-  if (record?.status !== 'failed') return;
   const info: TrackedOutbound = tracked.get(key) ?? {
     identityId: entry.identityId,
     protocol: entry.protocol,
     resendsUsed: entry.attempt - 1,
     originId: entry.messageId,
   };
+  // Superseded meanwhile (manual Resend, Reticulum announce resend, late ACK).
+  if (record?.status !== 'failed') {
+    // Keep tracking while status is somehow `sending` again; drop missing/acked rows.
+    if (record?.status !== 'sending') {
+      tracked.delete(key);
+      if (record?.status === 'acked') emitOutcome(info, 'acked');
+    }
+    return;
+  }
   tracked.delete(key);
+  const nextLineage: TrackedOutbound = {
+    identityId: entry.identityId,
+    protocol: entry.protocol,
+    resendsUsed: entry.attempt,
+    originId: info.originId,
+  };
   let newId: string | undefined;
+  pendingResendLineage = nextLineage;
   try {
     newId = sendFn(entry.protocol, resendArgsFor(record));
   } catch (err: unknown) {
     console.warn('[autoResend] resend failed to start ' + errLikeToLogString(err));
     emitOutcome(info, 'gave-up');
     return;
+  } finally {
+    pendingResendLineage = null;
   }
   if (newId == null || newId === '') {
     emitOutcome(info, 'gave-up');
     return;
   }
-  trackOutbound(autoResendKey(entry.protocol, newId), {
-    identityId: entry.identityId,
-    protocol: entry.protocol,
-    resendsUsed: entry.attempt,
-    originId: info.originId,
-  });
+  // `sending` may already have tracked via pendingResendLineage; refresh to be sure.
+  trackOutbound(autoResendKey(entry.protocol, newId), nextLineage);
   if (newId !== entry.messageId) {
     removeSupersededBubble(entry.protocol, entry.identityId, entry.messageId);
   }
@@ -223,6 +242,8 @@ function fireResend(key: string): void {
 function schedule(key: string, info: TrackedOutbound, messageId: string, now: number): void {
   const attempt = info.resendsUsed + 1;
   const nextAt = now + autoResendDelayMs(attempt);
+  const prevTimer = timers.get(key);
+  if (prevTimer != null) clearTimeout(prevTimer);
   useAutoResendStore.setState((s) => ({
     entries: {
       ...s.entries,
@@ -301,12 +322,23 @@ export function startAutoResend(
     if (protocol == null || !isAutoResendEligible(protocol, record)) return;
     const key = autoResendKey(protocol, record.id);
     if (!tracked.has(key)) {
-      trackOutbound(key, {
-        identityId: event.identityId,
-        protocol,
-        resendsUsed: 0,
-        originId: record.id,
-      });
+      const lineage = pendingResendLineage;
+      trackOutbound(
+        key,
+        lineage?.protocol === protocol
+          ? {
+              identityId: event.identityId,
+              protocol,
+              resendsUsed: lineage.resendsUsed,
+              originId: lineage.originId,
+            }
+          : {
+              identityId: event.identityId,
+              protocol,
+              resendsUsed: 0,
+              originId: record.id,
+            },
+      );
     }
   });
   const unsubStore = useMessageStore.subscribe(() => {
@@ -316,6 +348,7 @@ export function startAutoResend(
     unsubEvents();
     unsubStore();
     sendFn = null;
+    pendingResendLineage = null;
   };
 }
 
@@ -326,6 +359,7 @@ export function resetAutoResendForTests(): void {
   tracked.clear();
   outcomeListeners.clear();
   sendFn = null;
+  pendingResendLineage = null;
   resolveProtocol = () => null;
   useAutoResendStore.setState({ entries: {} });
 }
