@@ -45,15 +45,14 @@ import { useConversationSummary } from '@/renderer/hooks/useConversationSummary'
 import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
+import { useStarredMessages } from '@/renderer/hooks/useStarredMessages';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import {
   loadPersistedRoomsLastRead,
-  loadStarred,
   mergeRoomLastReadWatermark,
   notifyPersistedRoomsLastReadChanged,
   removePersistedRoomsLastReadForRoom,
   savePersistedRoomsLastRead,
-  saveStarred,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
@@ -367,7 +366,8 @@ export default function RoomsPanel({
     persistedRoomsLastReadRef.current = persistedRoomsLastRead;
   }, [persistedRoomsLastRead]);
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
-  const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
+  // Shared with the Chat panel and the inbox: every change applies to the stored list.
+  const { starred, updateStarred } = useStarredMessages('meshcore');
   const layoutMode = useConversationLayoutMode();
   /** Phones: the room list and the open room take turns filling the panel. */
   const [compactPane, setCompactPane] = useState<'list' | 'conversation'>(() =>
@@ -1297,10 +1297,6 @@ export default function RoomsPanel({
   const canAdminRoom = selectedRoomId != null && meshcoreRoomCanAdmin(selectedRoomId);
 
   useEffect(() => {
-    saveStarred('meshcore', starred);
-  }, [starred]);
-
-  useEffect(() => {
     if (streamView !== 'posts' || !scrollToRowKey) return;
     const index = findIndexByRowKey(roomPosts, scrollToRowKey, roomPostRowKey);
     if (index >= 0) {
@@ -1316,7 +1312,7 @@ export default function RoomsPanel({
   const toggleStar = useCallback(
     (msg: ChatMessage) => {
       const starId = roomMsgStarId(msg);
-      setStarred((prev) => {
+      updateStarred((prev) => {
         if (prev.some((s) => s.starId === starId)) {
           return prev.filter((s) => s.starId !== starId);
         }
@@ -1334,7 +1330,7 @@ export default function RoomsPanel({
         return [...prev, entry];
       });
     },
-    [roomViewKey],
+    [roomViewKey, updateStarred],
   );
 
   const handleRefreshAcl = useCallback(async () => {

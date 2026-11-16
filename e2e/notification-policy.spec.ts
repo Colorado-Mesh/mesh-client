@@ -108,8 +108,10 @@ test('mentions, mute/unmute and previews through a synthetic TCP radio, with res
     await expect.poll(async () => (await counts(page)).previews.length).toBe(2);
     expect((await counts(page)).permissions).toBe(0);
     await page.getByRole('button', { name: 'Mute this conversation', exact: true }).last().click();
-    await openPanel(page, 'Chat', 'Rooms');
-    await page.getByRole('button', { name: 'Alpha Room 0 posts', exact: true }).click();
+    // A room that was never joined is opened from Network > Room servers, which lands on its
+    // login card in Chat > Rooms.
+    await openPanel(page, 'Network', 'Room servers');
+    await page.getByRole('button', { name: 'Open Alpha Room', exact: true }).click();
     await page.getByRole('button', { name: 'Continue read-only', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Mute this conversation', exact: true }),

@@ -5494,6 +5494,22 @@ describe('ChatPanel reticulum dm-only chat', () => {
         JSON.stringify({ [`dm:${readyOldId}`]: 'ready peer draft' }),
       );
       localStorage.setItem(
+        'mesh-client:starred:reticulum',
+        JSON.stringify([
+          {
+            starId: 'ready-star',
+            timestamp: 1,
+            payload: 'ready peer star',
+            sender_name: 'Ready',
+            sender_id: readyOldId,
+            viewKey: `dm:${readyOldId}`,
+            channel: 0,
+            to: null,
+            starredAt: 1,
+          },
+        ]),
+      );
+      localStorage.setItem(
         'mesh-client:mutedViews:reticulum',
         JSON.stringify([`dm:${telephonyId}`, ...(readyMuted ? [`dm:${readyOldId}`] : [])]),
       );
@@ -5525,6 +5541,13 @@ describe('ChatPanel reticulum dm-only chat', () => {
         expect(JSON.parse(localStorage.getItem('mesh-client:drafts:reticulum') ?? '{}')).toEqual({
           [`dm:${readyNewId}`]: 'ready peer draft',
         });
+        expect(
+          (
+            JSON.parse(localStorage.getItem('mesh-client:starred:reticulum') ?? '[]') as {
+              viewKey: string;
+            }[]
+          ).map((s) => s.viewKey),
+        ).toEqual([`dm:${readyNewId}`]);
         const originalWrite = localStorage.setItem;
         const write = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
           if (key === 'mesh-client:conversationMutes:v1') throw new Error('quota');
