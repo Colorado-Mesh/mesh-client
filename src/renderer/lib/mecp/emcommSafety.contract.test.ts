@@ -11,7 +11,7 @@
  * S6  Cross-protocol rebroadcast does not duplicate incidents.
  * S7  B02/B03 do not open new incidents; B02 is not the general ACK compose.
  * S8  Incident tab lazy export is mounted in App.
- * S9  Tab badge counts open sev 0/1 only.
+ * S9  Tab badge counts every open Incident-panel row (any severity, drills included).
  * S10 Manual disconnect does not fire link-down / does not cancel emergency outbox retries.
  * S11 Link-down suppressed while RF reconnect is in progress.
  * S12 Incident-open nodes exempt from position_history prune.
@@ -100,11 +100,14 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/App.tsx')).toMatch(/<IncidentPanel/);
   });
 
-  it('S9: rail and launcher badge open sev 0/1 incidents (drills included)', () => {
+  it('S9: rail and launcher badge every open incident (drills included)', () => {
     expect(readSrc('renderer/lib/navBadges.ts')).toMatch(/Incident: 'incident'/);
     expect(readSrc('renderer/App.tsx')).toMatch(/Incident: incidentBadgeCount/);
     expect(readSrc('renderer/App.tsx')).toMatch(/useIncidentStore\(incidentTabBadgeCount\)/);
-    expect(readSrc('renderer/stores/incidentStore.ts')).toMatch(/incidentTabBadgeCount/);
+    const store = readSrc('renderer/stores/incidentStore.ts');
+    expect(store).toMatch(/export function incidentTabBadgeCount/);
+    expect(store).toMatch(/if \(isUnresolved\(inc\)\) n\+\+/);
+    expect(store).not.toMatch(/incidentTabBadgeCount[\s\S]*?severity <= 1/);
   });
 
   it('S14 remains: mecp compose defaults false (duplicate guard)', () => {

@@ -82,6 +82,24 @@ describe('MecpComposeModal', () => {
     expect(onSend).toHaveBeenCalledWith('MECP/3/R02');
   });
 
+  it('uses mode accent for selected severity and equalizes category cells', () => {
+    const { unmount } = render(
+      <MecpComposeModal mode="request" open onClose={() => {}} onSend={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: 'ROUTINE' })).toHaveClass('bg-red-700');
+    expect(screen.getByRole('button', { name: 'Drill / Test' })).toHaveClass('bg-red-900/80');
+    expect(screen.getByRole('button', { name: 'Threat / Security' })).toHaveClass(
+      'min-h-10',
+      'w-full',
+    );
+    expect(screen.getByRole('button', { name: 'Beacon' })).toHaveClass('min-h-10', 'w-full');
+    unmount();
+
+    render(<MecpComposeModal mode="response" open onClose={() => {}} onSend={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'ROUTINE' })).toHaveClass('bg-blue-700');
+    expect(screen.getByRole('button', { name: 'Response' })).toHaveClass('bg-blue-900/80');
+  });
+
   it.each(['request', 'response'] as const)(
     'has no axe violations in %s mode with a selected code',
     async (mode) => {

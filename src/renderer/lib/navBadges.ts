@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import type { NavSection } from './navSections';
 import type { TabSlotId } from './tabSlotIds';
 
-/** `unread` messages, `pending` rncp offers (Remote), `incident` open MAYDAY/URGENT incidents. */
+/** `unread` messages, `pending` rncp offers (Remote), `incident` open Incident-panel rows. */
 export type NavBadgeTone = 'unread' | 'pending' | 'incident';
 
 export interface NavBadge {
