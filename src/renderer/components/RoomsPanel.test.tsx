@@ -8,6 +8,7 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   loadPersistedRoomsLastRead,
+  loadStarred,
   mergeRoomLastReadWatermark,
   savePersistedRoomsLastRead,
   saveStarred,
@@ -39,6 +40,8 @@ import {
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
+import { buildUnifiedInboxItems } from '@/renderer/lib/unifiedInbox';
+import { starInboxItems } from '@/renderer/lib/unifiedInboxActions';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 
@@ -935,6 +938,54 @@ describe('RoomsPanel', () => {
     if (lastDmButton == null) throw new Error('expected DM button on room post');
     fireEvent.click(lastDmButton);
     expect(onMessageNode).toHaveBeenCalledWith(posterId);
+  });
+
+  it('keeps a star saved elsewhere while Rooms was open when Rooms stars a post', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomId = 0x2004;
+    const room = makeRoom(roomId, 'Shared Star Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const post = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Room keeper',
+      roomServerId: roomId,
+      authorId: 0x11,
+      authorName: 'Author',
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: roomId, messages: [post] });
+
+    // The inbox (or the Chat panel) stars a DM while this panel is mounted.
+    const dm: ChatMessage = {
+      id: 42,
+      sender_id: 0x33,
+      sender_name: 'Bob',
+      payload: 'DM keeper',
+      channel: 0,
+      to: 9,
+      timestamp: 1_700_000_100_000,
+    };
+    act(() => {
+      starInboxItems(
+        buildUnifiedInboxItems({
+          enabledProtocols: ['meshcore'],
+          messagesByProtocol: { meshtastic: [], meshcore: [dm], reticulum: [] },
+        }),
+      );
+    });
+    expect(loadStarred('meshcore').map((s) => s.payload)).toEqual(['DM keeper']);
+
+    await userEvent.click(screen.getByLabelText('chatPanel.starMessage'));
+    expect(
+      loadStarred('meshcore')
+        .map((s) => s.payload)
+        .sort(),
+    ).toEqual(['DM keeper', 'Room keeper']);
   });
 
   it('persists starred room posts under meshcore storage', async () => {
