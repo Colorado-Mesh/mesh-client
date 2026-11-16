@@ -86,6 +86,22 @@ export function shouldStripRoomPostAuthorPrefix(
   return false;
 }
 
+/**
+ * A room line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
+ * room server itself, so the room is its author. Ingest stores it that way and the live decoder
+ * keys it the same way, so a reload builds the same id.
+ */
+export function isMeshcoreRoomOwnLine(
+  wireText: string,
+  txtType: number | undefined,
+  isKnownRoomNode?: boolean,
+): boolean {
+  return (
+    txtType !== MESHCORE_TXT_TYPE_SIGNED_PLAIN &&
+    !shouldStripRoomPostAuthorPrefix(wireText, txtType, isKnownRoomNode)
+  );
+}
+
 export function isMeshcoreRoomServerHwModel(hwModel: string | undefined): boolean {
   return hwModel === 'Room';
 }

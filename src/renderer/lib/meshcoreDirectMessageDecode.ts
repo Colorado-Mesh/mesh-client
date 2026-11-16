@@ -11,6 +11,7 @@ import {
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
 import {
+  isMeshcoreRoomOwnLine,
   meshcoreRoomMessageId,
   meshcoreRoomPostBodyFromWire,
   meshcoreRoomWireLooksLikeRoom,
@@ -124,13 +125,21 @@ export function decodeMeshcoreDirectMessageEvents(
     isKnownRoomNode,
   });
   const roomServerId = isRoomWire && senderId !== 0 ? senderId : undefined;
-  // A room post id carries the body meshcoreIngest will store, so a reload builds the same id.
+  // A room post id carries the author and body meshcoreIngest will store (the room itself for its
+  // own lines), so a reload builds the same id.
   const roomPostId =
     roomServerId != null
       ? meshcoreRoomMessageId(
           roomServerId,
           raw.senderTimestamp,
-          resolveRoomAuthorIdForMessageId(raw.text, raw.txtType, isKnownRoomNode, nodeIdByPrefix),
+          isMeshcoreRoomOwnLine(raw.text, raw.txtType, isKnownRoomNode)
+            ? roomServerId
+            : resolveRoomAuthorIdForMessageId(
+                raw.text,
+                raw.txtType,
+                isKnownRoomNode,
+                nodeIdByPrefix,
+              ),
           meshcoreRoomPostBodyFromWire(raw.text, raw.txtType, nodeIdByPrefix, { isKnownRoomNode })
             .payload,
         )

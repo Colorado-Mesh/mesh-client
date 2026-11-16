@@ -31,7 +31,6 @@ import {
 } from '../meshcore/meshcorePubKeyRegistry';
 import {
   buildMeshcoreRoomIncomingMessage,
-  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   meshcoreMessageMatchesReplyKey,
   normalizeMeshcoreIncomingText,
   parseMeshcoreChannelIncomingFromThread,
@@ -43,10 +42,10 @@ import {
   resolveMeshcoreIngestRxHops,
 } from '../meshcoreRawPacketCorrelate';
 import {
+  isMeshcoreRoomOwnLine,
   isMeshcoreRoomServerHwModel,
   meshcoreRoomPostBodyFromWire,
   meshcoreRoomWireLooksLikeRoom,
-  shouldStripRoomPostAuthorPrefix,
 } from '../meshcoreRoomMessageRouting';
 import { meshcoreSortedStorePrior, upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
 import {
@@ -307,14 +306,13 @@ function handleTextMessage(
     );
     // A line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
     // room server itself, so the room is its author.
-    const isRoomOwnLine =
-      event.payload.txtType !== MESHCORE_TXT_TYPE_SIGNED_PLAIN &&
-      !shouldStripRoomPostAuthorPrefix(
-        event.payload.payload,
-        event.payload.txtType,
-        isKnownRoomNode,
-      );
-    const authorId = isRoomOwnLine ? roomServerId : prefixAuthorId;
+    const authorId = isMeshcoreRoomOwnLine(
+      event.payload.payload,
+      event.payload.txtType,
+      isKnownRoomNode,
+    )
+      ? roomServerId
+      : prefixAuthorId;
     const authorNode =
       authorId !== 0
         ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
