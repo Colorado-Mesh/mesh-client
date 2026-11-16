@@ -57,6 +57,7 @@ import {
   MESHCORE_CHAT_STUB_ID_MIN,
   meshcoreContactThresholds,
   meshcoreContactTypeFromHwModel,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import { meshtasticFirmwareSupportsKeyVerification } from '../lib/meshtastic/meshtasticKeyVerification';
@@ -1258,6 +1259,7 @@ export default function NodeDetailModal({
             )}
             {protocol === 'meshcore' &&
               radioContactCount !== null &&
+              !meshcoreReportedMaxContactsIsProtocolCeiling(radioContactThresholds.max) &&
               radioContactCount >= radioContactThresholds.critical && (
                 <span
                   className="text-2xs shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 font-medium text-red-300"

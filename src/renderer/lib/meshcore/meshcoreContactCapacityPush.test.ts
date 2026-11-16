@@ -216,6 +216,48 @@ describe('meshcoreContactCapacityPush', () => {
       expect(maybeRequestMeshcoreAutoOffloadForCount(90, 1_000)).toBe(true);
     });
 
+    it('skips count thresholds when DEVICE_INFO reports the 510 protocol ceiling', () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(undefined);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+      setMeshcoreRadioMaxContacts(510);
+
+      expect(maybeRequestMeshcoreAutoOffloadForCount(500, 1_000)).toBe(false);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(510, 1_000)).toBe(false);
+      expect(runner).not.toHaveBeenCalled();
+      expect(pushAppToast).not.toHaveBeenCalled();
+    });
+
+    it('still handles TABLE_FULL when max is the protocol ceiling', () => {
+      writeMeshcoreAutoOffloadWhenFull(false);
+      setMeshcoreRadioMaxContacts(510);
+      registerMeshcoreContactsFullOffloadRunner(vi.fn().mockResolvedValue(undefined));
+
+      expect(maybeRequestMeshcoreAutoOffloadForError({ errCode: 3 }, 1_000)).toBe(true);
+      expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
+      expect(pushAppToast).toHaveBeenCalledWith(
+        'radioPanel.contactsFullAlarm',
+        'error',
+        20_000,
+        expect.anything(),
+      );
+    });
+
+    it('still handles firmware CONTACTS_FULL when max is the protocol ceiling', () => {
+      writeMeshcoreAutoOffloadWhenFull(false);
+      setMeshcoreRadioMaxContacts(510);
+      registerMeshcoreContactsFullOffloadRunner(vi.fn().mockResolvedValue(undefined));
+
+      handleMeshcoreContactsFullPush(1_000);
+      expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
+      expect(pushAppToast).toHaveBeenCalledWith(
+        'radioPanel.contactsFullAlarm',
+        'error',
+        20_000,
+        expect.anything(),
+      );
+    });
+
     it('does nothing when auto-offload is off', () => {
       const runner = vi.fn().mockResolvedValue(undefined);
       registerMeshcoreContactsFullOffloadRunner(runner);

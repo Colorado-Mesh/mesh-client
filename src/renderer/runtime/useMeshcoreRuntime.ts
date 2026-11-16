@@ -524,6 +524,7 @@ import {
   meshcoreMinimalNodeFromAdvertEvent,
   meshcorePreviousAdvertNameForRebuild,
   meshcoreRemoveContactErrorMessage,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSyntheticPlaceholderPubKeyHex,
   meshcoreTelemetryGpsAltitudeMeters,
@@ -5019,7 +5020,10 @@ export function useMeshcoreRuntime() {
         await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline, assertCurrent);
 
         const radioMax = getMeshcoreRadioMaxContacts();
-        if (contacts.length > meshcoreContactThresholds(radioMax).warning) {
+        if (
+          !meshcoreReportedMaxContactsIsProtocolCeiling(radioMax) &&
+          contacts.length > meshcoreContactThresholds(radioMax).warning
+        ) {
           console.warn(
             `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${radioMax})`,
           );

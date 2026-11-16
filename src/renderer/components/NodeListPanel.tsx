@@ -59,7 +59,11 @@ import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
 } from '../lib/meshcoreOffload';
-import { isMeshcoreDmExcludedHwModel, meshcoreContactThresholds } from '../lib/meshcoreUtils';
+import {
+  isMeshcoreDmExcludedHwModel,
+  meshcoreContactThresholds,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
+} from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
@@ -404,10 +408,16 @@ export default function NodeListPanel({
         onOffloadContactsFromRadio,
       );
       addToast(t('radioPanel.offloadedContacts', { count: offloadedCount }), 'success');
-      if (reconciledCount !== null && reconciledCount >= summary.max) {
+      // Protocol ceiling (510) is not a reliable table size — skip count-based reconcile alarms.
+      if (
+        reconciledCount !== null &&
+        !meshcoreReportedMaxContactsIsProtocolCeiling(summary.max) &&
+        reconciledCount >= summary.max
+      ) {
         addToast(t('radioPanel.offloadReconcileStillFull', { count: reconciledCount }), 'error');
       } else if (
         reconciledCount !== null &&
+        !meshcoreReportedMaxContactsIsProtocolCeiling(summary.max) &&
         reconciledCount >= meshcoreContactThresholds(summary.max).warning
       ) {
         addToast(

@@ -6,13 +6,56 @@ import {
   registerMeshcoreContactsFullOffloadRunner,
   requestMeshcoreAutoOffload,
   resetMeshcoreContactCapacityPushForTests,
+  setMeshcoreRadioMaxContacts,
   writeMeshcoreAutoOffloadWhenFull,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import {
   MeshcoreOffloadAbortedError,
   type MeshcoreOffloadFromRadioOptions,
 } from '../lib/meshcoreOffload';
-import { useMeshcoreContactCapacity } from './useMeshcoreContactCapacity';
+import { MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING } from '../lib/meshcoreUtils';
+import {
+  summarizeMeshcoreContactCapacity,
+  useMeshcoreContactCapacity,
+} from './useMeshcoreContactCapacity';
+
+describe('summarizeMeshcoreContactCapacity', () => {
+  it('skips count-based warning/critical when max is the DEVICE_INFO protocol ceiling', () => {
+    expect(
+      summarizeMeshcoreContactCapacity(500, false, MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING),
+    ).toEqual({
+      count: 500,
+      max: MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING,
+      level: 'normal',
+      isWarning: false,
+      isCritical: false,
+    });
+  });
+
+  it('still marks critical when firmware reports contacts-full at the protocol ceiling', () => {
+    expect(
+      summarizeMeshcoreContactCapacity(500, true, MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING),
+    ).toEqual({
+      count: 500,
+      max: MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING,
+      level: 'critical',
+      isWarning: true,
+      isCritical: true,
+    });
+  });
+
+  it('keeps count-based levels for real radio table sizes', () => {
+    expect(summarizeMeshcoreContactCapacity(340, false, 350)).toMatchObject({
+      level: 'critical',
+      isCritical: true,
+    });
+    expect(summarizeMeshcoreContactCapacity(320, false, 350)).toMatchObject({
+      level: 'warning',
+      isWarning: true,
+      isCritical: false,
+    });
+  });
+});
 
 describe('useMeshcoreContactCapacity', () => {
   beforeEach(() => {
@@ -22,6 +65,23 @@ describe('useMeshcoreContactCapacity', () => {
     vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(350);
     vi.mocked(window.electronAPI.db.offloadAllMeshcoreContacts).mockReset();
     vi.mocked(window.electronAPI.db.offloadAllMeshcoreContacts).mockResolvedValue(10);
+  });
+
+  it('reports normal capacity for a high count when radio max is the protocol ceiling', async () => {
+    setMeshcoreRadioMaxContacts(MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(500);
+
+    const { result } = renderHook(() => useMeshcoreContactCapacity());
+    await waitFor(() => {
+      expect(result.current.contactCount).toBe(500);
+    });
+    expect(result.current.summary).toEqual({
+      count: 500,
+      max: MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING,
+      level: 'normal',
+      isWarning: false,
+      isCritical: false,
+    });
   });
 
   it('reconciles count after offload and refresh callback', async () => {

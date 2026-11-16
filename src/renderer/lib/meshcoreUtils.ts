@@ -37,6 +37,18 @@ export const MESHCORE_AUTO_OFFLOAD_MARGIN =
 const MESHCORE_CONTACTS_WARNING_MARGIN =
   MESHCORE_MAX_CONTACTS - MESHCORE_CONTACTS_WARNING_THRESHOLD;
 
+/**
+ * DEVICE_INFO reports capacity as a single `max_contacts_div_2` byte, so the largest value a
+ * companion can advertise is 255 × 2 = 510. Virtual hosts (e.g. OpenHop with 1000 slots) saturate
+ * here; treat that report as "at least 510, real limit unknown" for count-based offload/UI.
+ */
+export const MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING = 510;
+
+/** True when `max` is the saturated DEVICE_INFO ceiling (real table size may be larger). */
+export function meshcoreReportedMaxContactsIsProtocolCeiling(max: number): boolean {
+  return max === MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING;
+}
+
 export interface MeshcoreContactThresholds {
   max: number;
   warning: number;

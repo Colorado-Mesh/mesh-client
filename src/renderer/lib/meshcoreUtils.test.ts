@@ -13,6 +13,7 @@ import {
   MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
+  MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING,
   MESHCORE_MAX_CONTACTS,
   meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
@@ -35,6 +36,7 @@ import {
   meshcorePreviousAdvertNameForRebuild,
   meshcorePubkeyShortId,
   meshcoreRemoveContactErrorMessage,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
   meshcoreResolvedTxPowerMax,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSelfInfoBwToDisplayKhz,
@@ -85,10 +87,22 @@ describe('MeshCore contact capacity thresholds', () => {
 
   it('meshcoreMaxContactsFromDeviceQuery reads positive integer maxContacts only', () => {
     expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: 100 })).toBe(100);
+    expect(
+      meshcoreMaxContactsFromDeviceQuery({
+        maxContacts: MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING,
+      }),
+    ).toBe(MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING);
     expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: null })).toBeNull();
     expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: 0 })).toBeNull();
     expect(meshcoreMaxContactsFromDeviceQuery({})).toBeNull();
     expect(meshcoreMaxContactsFromDeviceQuery(null)).toBeNull();
+  });
+
+  it('treats DEVICE_INFO maxContacts of 510 as the protocol ceiling', () => {
+    expect(MESHCORE_DEVICE_INFO_MAX_CONTACTS_CEILING).toBe(510);
+    expect(meshcoreReportedMaxContactsIsProtocolCeiling(510)).toBe(true);
+    expect(meshcoreReportedMaxContactsIsProtocolCeiling(350)).toBe(false);
+    expect(meshcoreReportedMaxContactsIsProtocolCeiling(1000)).toBe(false);
   });
 });
 
