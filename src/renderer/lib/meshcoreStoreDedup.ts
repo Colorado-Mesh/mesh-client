@@ -22,6 +22,7 @@ import {
   removeMeshcoreDedupeIndexForMessage,
 } from './meshcoreMessageDedupeIndex';
 import { nextMeshcoreMessageLocalOrder } from './meshcoreMessageOrder';
+import { meshcoreRoomMessageId } from './meshcoreRoomMessageRouting';
 import {
   chatMessageToMessageRecord,
   messageRecordsToChatMessages,
@@ -40,17 +41,6 @@ export function meshcoreChannelMessageStoreId(
   return `ch:${channel}:${timestampSec}`;
 }
 
-export function meshcoreRoomMessageStoreId(
-  roomServerId: number,
-  timestampSec: number,
-  authorId?: number,
-): string {
-  if (authorId != null && authorId !== 0) {
-    return `room:${roomServerId}:${authorId}:${timestampSec}`;
-  }
-  return `room:${roomServerId}:${timestampSec}`;
-}
-
 /** MeshCore wire timestamps are Unix seconds; mesh-client UI/DB rows use ms when above 1e12. */
 function meshcoreTimestampSec(timestamp: number): number {
   return timestamp >= LAST_HEARD_MS_THRESHOLD ? Math.floor(timestamp / 1000) : timestamp;
@@ -59,17 +49,19 @@ function meshcoreTimestampSec(timestamp: number): number {
 /** Canonical Zustand key for MeshCore chat rows (aligns RF PacketRouter ids with hook-local state). */
 export function meshcoreMessageStoreId(msg: ChatMessage): string {
   if (msg.roomServerId != null) {
-    return meshcoreRoomMessageStoreId(
+    return meshcoreRoomMessageId(
       msg.roomServerId,
       meshcoreTimestampSec(msg.timestamp),
       msg.sender_id > 0 ? msg.sender_id : undefined,
+      msg.payload,
     );
   }
   if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) {
-    return meshcoreRoomMessageStoreId(
+    return meshcoreRoomMessageId(
       msg.to,
       meshcoreTimestampSec(msg.timestamp),
       msg.sender_id > 0 ? msg.sender_id : undefined,
+      msg.payload,
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
@@ -280,8 +272,9 @@ function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): C
 
 /**
  * True when a store row is the same logical MeshCore message as the merge target.
- * Required before deleting `meshcoreMessageStoreId` alts: that id omits wire text, so two
- * distinct posts from the same sender in the same UTC second share one store id.
+ * Required before deleting `meshcoreMessageStoreId` alts: for channel messages and packetless DMs
+ * that id omits the text, so two distinct messages from the same sender in the same UTC second
+ * share one store id.
  */
 function meshcoreAltRecordMatchesMergedMessage(
   record: MessageRecord,

@@ -1449,7 +1449,10 @@ export function useMeshcoreRuntime() {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
         // Send/reply/dedup read `messageStore`, so mount hydration has to land there too.
         if (storeId) {
-          upsertMessageRecordsForIdentity(storeId, meshcoreHydratedMessageRecords(mapped));
+          upsertMessageRecordsForIdentity(
+            storeId,
+            meshcoreHydratedMessageRecords(mapped, meshcoreRows),
+          );
         }
       }
       if (opts?.hydrateMessages && storeId) {

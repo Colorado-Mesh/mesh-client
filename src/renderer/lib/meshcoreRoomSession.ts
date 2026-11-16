@@ -1,9 +1,12 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
-import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import {
+  deserializeMeshcoreUserMessage,
+  serializeMeshcoreUserMessage,
+} from './meshcore/meshcoreMessageI18n';
 import { resolveRoomAdminPassword } from './meshcoreInfraAdminSecrets';
+import { isMeshcoreNotFoundError, isMeshcoreTableFullError } from './meshcoreRadioErr';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
-import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
@@ -14,7 +17,11 @@ import {
   enqueueMeshcoreRoomLogin,
   resetMeshcoreRoomLoginQueue,
 } from './meshcoreRoomLoginQueue';
-import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
+import {
+  MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+  MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE,
+  runMeshcoreRoomLogin,
+} from './meshcoreRoomLoginRpc';
 import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
@@ -325,8 +332,24 @@ function sleepMs(ms: number): Promise<void> {
   });
 }
 
+/** User messages {@link meshcoreRoomLoginFailureMessage} gives a LoginFail, and nothing else. */
+const MESHCORE_ROOM_LOGIN_REJECTED_KEYS: ReadonlySet<string> = new Set([
+  'meshcore.errors.roomLogin.rejectedBlankGuest',
+  'meshcore.errors.roomLogin.rejectedDefaultGuest',
+  'meshcore.errors.roomLogin.rejectedCheckPassword',
+]);
+
+/**
+ * True only when the room server refused the password or ACL: the LoginFail error from
+ * `runMeshcoreRoomLogin`, or the message `meshcoreRoomLogin` throws for it after its retries.
+ * Companion refusals ("radio rejected ..."), timeouts and route errors are not auth failures, even
+ * though their text may say "rejected".
+ */
 export function meshcoreRoomLoginErrorIsAuthFailure(err: unknown): boolean {
-  return meshcoreLoginErrorIsAuthFailure(err);
+  const message = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  if (message === MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE) return true;
+  const ref = deserializeMeshcoreUserMessage(message);
+  return typeof ref === 'object' && 'key' in ref && MESHCORE_ROOM_LOGIN_REJECTED_KEYS.has(ref.key);
 }
 
 export function meshcoreRoomLoginErrorIsNoRoute(err: unknown): boolean {
@@ -346,6 +369,12 @@ export function meshcoreRoomLoginFailureMessage(
       return { key: 'meshcore.errors.roomLogin.rejectedDefaultGuest' };
     }
     return { key: 'meshcore.errors.roomLogin.rejectedCheckPassword' };
+  }
+  if (isMeshcoreNotFoundError(err)) {
+    return { key: 'meshcore.errors.radioContactMissing' };
+  }
+  if (isMeshcoreTableFullError(err)) {
+    return { key: 'meshcore.errors.radioContactTableFull' };
   }
   if (msg.includes('timeout') || msg.includes('loginRoom') || msg.includes('program the route')) {
     if (password.length === 0) {

@@ -226,19 +226,20 @@ describe('getChatMessageVirtualizerKey', () => {
 });
 
 describe('roomPostVirtualizerKey', () => {
-  it('content row key collides for same-second posts from same sender', () => {
+  it('content row key tells two same-second posts from one sender apart by their text', () => {
     const ts = 1_710_000_000_500;
     const a = makeMsg({ timestamp: ts, sender_id: 99, payload: 'hi', roomServerId: 1 });
     const b = makeMsg({ timestamp: ts + 100, sender_id: 99, payload: 'again', roomServerId: 1 });
-    expect(roomPostRowKey(a)).toBe(roomPostRowKey(b));
+    expect(roomPostRowKey(a)).not.toBe(roomPostRowKey(b));
   });
 
-  it('virtualizer keys stay unique for colliding content keys', () => {
+  it('virtualizer keys stay unique for colliding content keys (same text, same second)', () => {
     const ts = 1_710_000_000_500;
     const posts = [
       makeMsg({ timestamp: ts, sender_id: 99, payload: 'hi', roomServerId: 1 }),
-      makeMsg({ timestamp: ts + 100, sender_id: 99, payload: 'again', roomServerId: 1 }),
+      makeMsg({ timestamp: ts + 100, sender_id: 99, payload: 'hi', roomServerId: 1 }),
     ];
+    expect(roomPostRowKey(posts[0])).toBe(roomPostRowKey(posts[1]));
     expect(roomPostVirtualizerKey(posts[0], 0)).not.toBe(roomPostVirtualizerKey(posts[1], 1));
   });
 });

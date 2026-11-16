@@ -255,10 +255,14 @@ export function getChatMessageVirtualizerKey(
     : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
 }
 
-/** Stable content key for room BBS posts (starred jump, scroll-to-row). */
+/**
+ * Stable content key for room BBS posts (star id, starred jump, scroll-to-row). It ends with the
+ * post's text so two posts by one author in the same second keep separate stars; `loadStarred`
+ * moves stars saved before that to this shape.
+ */
 export function roomPostRowKey(m: ChatMessage): string {
   return m.roomServerId != null
-    ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
+    ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}:${m.payload}`
     : `${m.timestamp}:${m.sender_id}:${m.payload}`;
 }
 

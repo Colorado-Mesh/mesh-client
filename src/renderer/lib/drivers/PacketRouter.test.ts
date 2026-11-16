@@ -194,6 +194,71 @@ describe('PacketRouter', () => {
     expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
   });
 
+  it('renames a repeated non-room message after its sender becomes known', () => {
+    const textEvent: DomainEvent = {
+      type: 'text_message',
+      payload: {
+        id: 'msg2',
+        from: 0x1234,
+        to: 0xffffffff,
+        payload: 'hello',
+        channelIndex: 0,
+        timestamp: 1000,
+      },
+    };
+    packetRouter.dispatch(textEvent, ID);
+    expect(useMessageStore.getState().messages[ID].msg2.senderName).toBe('!00001234');
+    packetRouter.dispatch(
+      { type: 'node_info', payload: { nodeId: 0x1234, longName: 'Alfa Node', shortName: 'ALFA' } },
+      ID,
+    );
+    packetRouter.dispatch(textEvent, ID);
+    expect(useMessageStore.getState().messages[ID].msg2.senderName).toBe('ALFA');
+  });
+
+  it('keeps a stored author only for room posts', () => {
+    // The stored text equals the wire text after its first 4 characters, as a room post body
+    // does; without a roomServerId the router still writes the event as it came.
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          msg3: {
+            id: 'msg3',
+            from: 0x1234,
+            to: 0xffffffff,
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: 1000,
+            senderName: '!00001234',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      { type: 'node_info', payload: { nodeId: 0x1234, longName: 'Alfa Node', shortName: 'ALFA' } },
+      ID,
+    );
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'msg3',
+          from: 0x1234,
+          to: 0xffffffff,
+          payload: 'abcdhello',
+          channelIndex: 0,
+          timestamp: 1000,
+        },
+      },
+      ID,
+    );
+    const row = useMessageStore.getState().messages[ID].msg3;
+    expect({ payload: row.payload, senderName: row.senderName }).toEqual({
+      payload: 'abcdhello',
+      senderName: 'ALFA',
+    });
+  });
+
   it('re-keys optimistic tapback row when RF echo arrives (no duplicate)', () => {
     const tempId = '289800531';
     const realId = '672866887';

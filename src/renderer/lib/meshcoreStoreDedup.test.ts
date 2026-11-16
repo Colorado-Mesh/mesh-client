@@ -6,10 +6,10 @@ import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreRoomIncomingMessage,
 } from './meshcoreChannelText';
+import { meshcoreRoomMessageId } from './meshcoreRoomMessageRouting';
 import {
   meshcoreChannelMessageStoreId,
   meshcoreMessageStoreId,
-  meshcoreRoomMessageStoreId,
   syncMeshcoreDisplayReplyRepairs,
   upsertMeshcoreMessageWithDedup,
 } from './meshcoreStoreDedup';
@@ -372,7 +372,7 @@ describe('meshcoreStoreDedup', () => {
       receivedVia: 'rf' as const,
       meshcoreDedupeKey: 'Welcome',
     };
-    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000`);
+    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000:Welcome`);
   });
 
   it('assigns room store ids when only legacy room channel and to are set', () => {
@@ -386,7 +386,7 @@ describe('meshcoreStoreDedup', () => {
       to: roomId,
       receivedVia: 'rf' as const,
     };
-    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000`);
+    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000:Welcome`);
   });
 
   it('keeps two room posts in the same UTC second from different authors', () => {
@@ -404,7 +404,7 @@ describe('meshcoreStoreDedup', () => {
         timestamp: tsMs,
         receivedVia: 'rf',
       }),
-      meshcoreRoomMessageStoreId(roomId, tsSec, 0x11),
+      meshcoreRoomMessageId(roomId, tsSec, 0x11, 'From Alice'),
     );
     upsertMeshcoreMessageWithDedup(
       ID,
@@ -416,7 +416,7 @@ describe('meshcoreStoreDedup', () => {
         timestamp: tsMs,
         receivedVia: 'rf',
       }),
-      meshcoreRoomMessageStoreId(roomId, tsSec, 0x22),
+      meshcoreRoomMessageId(roomId, tsSec, 0x22, 'From Bob'),
     );
 
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(2);
@@ -452,7 +452,12 @@ describe('meshcoreStoreDedup', () => {
     const result = upsertMeshcoreMessageWithDedup(
       ID,
       echo,
-      meshcoreRoomMessageStoreId(roomId, Math.floor(firmwareTsMs / 1000), authorId),
+      meshcoreRoomMessageId(
+        roomId,
+        Math.floor(firmwareTsMs / 1000),
+        authorId,
+        'Testing from the mesh-client',
+      ),
     );
 
     expect(result.inserted).toBe(false);
@@ -467,7 +472,7 @@ describe('meshcoreStoreDedup', () => {
     const authorId = 0x22;
     const tsMs = 1_700_000_001_000;
     const tsSec = Math.floor(tsMs / 1000);
-    const canonicalId = meshcoreRoomMessageStoreId(roomId, tsSec, authorId);
+    const canonicalId = meshcoreRoomMessageId(roomId, tsSec, authorId, 'Hello room');
 
     const first = buildMeshcoreRoomIncomingMessage({
       rawText: 'Hello room',
@@ -573,7 +578,7 @@ describe('meshcoreStoreDedup', () => {
         timestamp: tsMs + 500,
         receivedVia: 'rf',
       }),
-      meshcoreRoomMessageStoreId(roomId, Math.floor((tsMs + 500) / 1000), authorId),
+      meshcoreRoomMessageId(roomId, Math.floor((tsMs + 500) / 1000), authorId, 'Sync replay'),
     );
 
     expect(result.inserted).toBe(false);

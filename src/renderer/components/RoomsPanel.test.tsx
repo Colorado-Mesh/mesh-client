@@ -8,6 +8,7 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   loadPersistedRoomsLastRead,
+  loadStarred,
   mergeRoomLastReadWatermark,
   savePersistedRoomsLastRead,
   saveStarred,
@@ -962,6 +963,83 @@ describe('RoomsPanel', () => {
     const raw = localStorage.getItem('mesh-client:starred:meshcore');
     expect(raw).toBeTruthy();
     expect(raw).toContain('Bookmark me');
+  });
+
+  describe('two posts by one author in the same second', () => {
+    const roomId = 0x2010;
+    function setUpPair(): ChatMessage[] {
+      meshcoreClearAllRoomSessions();
+      meshcoreApplyRoomSession(roomId, {
+        guestPassword: 'hello',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+      return ['first in second', 'second in second'].map((rawText, i) =>
+        buildMeshcoreRoomIncomingMessage({
+          rawText,
+          roomServerId: roomId,
+          authorId: 0x11,
+          authorName: 'Author',
+          timestamp: 1_700_000_000_000 + i * 200,
+          receivedVia: 'rf',
+        }),
+      );
+    }
+    const nodes = () => new Map<number, MeshNode>([[roomId, makeRoom(roomId, 'Pair Room')]]);
+
+    it('stars only the post that was starred', async () => {
+      const messages = setUpPair();
+      renderRoomsPanel(nodes(), { initialRoomTarget: roomId, messages });
+
+      await userEvent.click(screen.getAllByLabelText('chatPanel.starMessage')[1]);
+
+      expect({
+        starred: screen.getAllByLabelText('chatPanel.unstarMessage').length,
+        unstarred: screen.getAllByLabelText('chatPanel.starMessage').length,
+        saved: loadStarred('meshcore').map((s) => s.payload),
+      }).toEqual({ starred: 1, unstarred: 1, saved: ['second in second'] });
+    });
+
+    it('jumps to the starred post of the two', async () => {
+      const messages = setUpPair();
+      renderRoomsPanel(nodes(), { initialRoomTarget: roomId, messages, isActive: true });
+      await userEvent.click(screen.getAllByLabelText('chatPanel.starMessage')[1]);
+      await userEvent.click(screen.getByLabelText('chatPanel.starredMessages'));
+      mockScrollToIndex.mockClear();
+
+      await userEvent.click(screen.getByLabelText('chatPanel.goToMessage'));
+
+      expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center', behavior: 'smooth' });
+    });
+
+    it('shows and jumps to a star saved before star ids carried the text', async () => {
+      const messages = setUpPair();
+      const second = messages[1];
+      saveStarred('meshcore', [
+        {
+          starId: `room:${roomId}:${Math.floor(second.timestamp / 1000)}:${second.sender_id}`,
+          timestamp: second.timestamp,
+          payload: second.payload,
+          sender_name: second.sender_name,
+          sender_id: second.sender_id,
+          viewKey: `room:${roomId}`,
+          channel: second.channel,
+          to: second.to ?? null,
+          starredAt: Date.now(),
+        },
+      ]);
+      renderRoomsPanel(nodes(), { initialRoomTarget: roomId, messages, isActive: true });
+      const starredOnPosts = screen.getAllByLabelText('chatPanel.unstarMessage').length;
+      await userEvent.click(screen.getByLabelText('chatPanel.starredMessages'));
+      mockScrollToIndex.mockClear();
+
+      await userEvent.click(screen.getByLabelText('chatPanel.goToMessage'));
+
+      expect({ starredOnPosts, jump: mockScrollToIndex.mock.calls[0] }).toEqual({
+        starredOnPosts: 1,
+        jump: [1, { align: 'center', behavior: 'smooth' }],
+      });
+    });
   });
 
   it('keeps room post actions visible when alwaysShowMessageActions is set', () => {
