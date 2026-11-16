@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Borrar el historial del entorno",
     "clearEnvironmentHistoryConfirm": "Esto eliminará permanentemente todo el historial guardado de los sensores ambientales de la base de datos. Dispositivo → Los gráficos de telemetría, los sensores del mapa y los minigráficos se borrarán hasta que lleguen nuevas lecturas. ¿Desea continuar?",
     "dangerZoneEnvironmentHistoryHeading": "Historial del entorno",
-    "dangerZoneEnvironmentHistoryDesc": "Eliminar todas las lecturas almacenadas de temperatura, humedad, presión y calidad del aire para cada protocolo e identidad."
+    "dangerZoneEnvironmentHistoryDesc": "Eliminar todas las lecturas almacenadas de temperatura, humedad, presión y calidad del aire para cada protocolo e identidad.",
+    "clearAllRooms": "Borrar todas las salas",
+    "clearAllRoomsConfirm": "Esto elimina todos los servidores de salas MeshCore que no estén en favoritos de la radio conectada y de la base de datos local. Las salas vuelven a aparecer cuando se anuncian de nuevo. Esta acción no se puede deshacer."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -6029,7 +6031,8 @@
     "incident": "Incidente",
     "scheduledbroadcasts": "Broadcasts",
     "teamcontacts": "Contactos del equipo",
-    "teamroster": "Lista del equipo"
+    "teamroster": "Lista del equipo",
+    "friends": "Amigos"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "Salas MeshCore",
     "roomGroupRrc": "Salas RRC",
     "roomGroupSaved": "Guardado",
-    "jumpToRoomAria": "{{key}}: saltar a {{label}}"
+    "jumpToRoomAria": "{{key}}: saltar a {{label}}",
+    "roomGroupChatChannels": "Canales de chat."
   },
   "weatherForecast": {
     "areaAria": "Pronóstico para {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "Tecla de canal débil o abierta en {{channel}}",
     "openLocation": "Abrir clave de canal con ubicación precisa en {{channel}}",
     "openLocationUplink": "Abrir clave de canal con ubicación precisa y enlace ascendente MQTT en {{channel}}"
+  },
+  "friends": {
+    "title": "Amigos",
+    "intro": "Personas a las que escribes a menudo. Añade a alguien a partir de sus datos de contacto o de un mensaje directo. Los mensajes no leídos de amigos se muestran aquí en lugar de duplicarse en el chat.",
+    "empty": "Aún no tienes amigos. Abre un contacto y elige «Añadir a amigos».",
+    "openDm": "Mensaje {{name}}",
+    "openDmWithUnread": "Mensaje {{name}}, {{count}} sin leer",
+    "remove": "Eliminar",
+    "removeAria": "Eliminar a {{name}} de Amigos",
+    "add": "Añadir a Amigos",
+    "addAria": "Añadir a {{name}} a Amigos",
+    "removeFromFriends": "Eliminar de Amigos",
+    "unknownPeer": "Nodo {{id}}"
   }
 }

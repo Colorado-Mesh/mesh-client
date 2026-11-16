@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Limpar histórico de ambiente",
     "clearEnvironmentHistoryConfirm": "Isso excluirá permanentemente todo o histórico salvo dos sensores de ambiente do banco de dados. Dispositivo → Gráficos de telemetria, sensores do mapa e sparklines serão limpos até chegarem novas leituras. Continuar?",
     "dangerZoneEnvironmentHistoryHeading": "Histórico de ambiente",
-    "dangerZoneEnvironmentHistoryDesc": "Remove todas as leituras armazenadas de temperatura, umidade, pressão e qualidade do ar para cada protocolo e identidade."
+    "dangerZoneEnvironmentHistoryDesc": "Remove todas as leituras armazenadas de temperatura, umidade, pressão e qualidade do ar para cada protocolo e identidade.",
+    "clearAllRooms": "Limpar todas as salas",
+    "clearAllRoomsConfirm": "Isso remove todos os servidores de salas MeshCore que não estão nos favoritos do rádio conectado e do banco de dados local. As salas reaparecem quando são anunciadas novamente. Esta ação não pode ser desfeita."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -6029,7 +6031,8 @@
     "incident": "Incidente",
     "scheduledbroadcasts": "Transmissões",
     "teamcontacts": "Contatos da equipe",
-    "teamroster": "Lista da equipe"
+    "teamroster": "Lista da equipe",
+    "friends": "Amigos"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "Salas MeshCore",
     "roomGroupRrc": "Salas do RRC",
     "roomGroupSaved": "Salva",
-    "jumpToRoomAria": "{{key}}: pular para {{label}}"
+    "jumpToRoomAria": "{{key}}: pular para {{label}}",
+    "roomGroupChatChannels": "Canais de chat"
   },
   "weatherForecast": {
     "areaAria": "Previsão para {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "Chave de canal fraca ou aberta em {{channel}}",
     "openLocation": "Chave de canal aberta com localização precisa em {{channel}}",
     "openLocationUplink": "Chave de canal aberta com localização precisa e uplink MQTT em {{channel}}"
+  },
+  "friends": {
+    "title": "Amigos",
+    "intro": "Pessoas para quem você envia mensagens com frequência. Adicione alguém a partir das informações de contato ou de uma mensagem direta. As mensagens não lidas para amigos aparecem aqui, em vez de serem duplicadas no Chat.",
+    "empty": "Ainda não há amigos. Abra um contato e escolha Adicionar aos amigos.",
+    "openDm": "Mensagem {{name}}",
+    "openDmWithUnread": "Mensagem {{name}}, {{count}} não lida",
+    "remove": "Remover",
+    "removeAria": "Remover {{name}} da lista de amigos",
+    "add": "Adicionar á lista de amigos",
+    "addAria": "Adicionar {{name}} aos amigos",
+    "removeFromFriends": "Retirar da lista de amigos",
+    "unknownPeer": "Nó {{id}}"
   }
 }

@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Cancella cronologia ambiente",
     "clearEnvironmentHistoryConfirm": "Questo eliminerà definitivamente dal database tutta la cronologia salvata dei sensori ambientali. Dispositivo → I grafici di telemetria, i sensori sulla mappa e gli sparkline si svuoteranno finché non arriveranno nuove letture. Continuare?",
     "dangerZoneEnvironmentHistoryHeading": "Cronologia ambiente",
-    "dangerZoneEnvironmentHistoryDesc": "Rimuove tutte le letture memorizzate di temperatura, umidità, pressione e qualità dell'aria per ogni protocollo e identità."
+    "dangerZoneEnvironmentHistoryDesc": "Rimuove tutte le letture memorizzate di temperatura, umidità, pressione e qualità dell'aria per ogni protocollo e identità.",
+    "clearAllRooms": "Svuota tutte le sale",
+    "clearAllRoomsConfirm": "Questa operazione rimuove tutti i server delle room MeshCore non preferiti dalla radio connessa e dal database locale. Le room ricompaiono quando vengono nuovamente pubblicizzate. Questa operazione non può essere annullata."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -6029,7 +6031,8 @@
     "incident": "Incidente",
     "scheduledbroadcasts": "Trasmissioni",
     "teamcontacts": "Contatti della squadra",
-    "teamroster": "Elenco delle squadre"
+    "teamroster": "Elenco delle squadre",
+    "friends": "Amici"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "Sale MeshCore",
     "roomGroupRrc": "Sale RRC",
     "roomGroupSaved": "Salvato",
-    "jumpToRoomAria": "{{key}}: vai a {{label}}"
+    "jumpToRoomAria": "{{key}}: vai a {{label}}",
+    "roomGroupChatChannels": "Canali di chat"
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "Chiave del canale debole o aperta su {{channel}}",
     "openLocation": "Chiave del canale aperto con posizione precisa su {{channel}}",
     "openLocationUplink": "Chiave del canale aperto con posizione precisa e uplink MQTT su {{channel}}"
+  },
+  "friends": {
+    "title": "Amici",
+    "intro": "Persone a cui scrivi spesso. Aggiungi qualcuno dai suoi dati di contatto o da un messaggio diretto. I messaggi non letti per gli amici vengono visualizzati qui invece di essere duplicati nella chat.",
+    "empty": "Ancora nessun amico. Apri un contatto e scegli Aggiungi agli amici.",
+    "openDm": "Messaggio {{name}}",
+    "openDmWithUnread": "Messaggio {{name}}, {{count}} non letto",
+    "remove": "Rimuovi",
+    "removeAria": "Rimuovi {{name}} dagli amici",
+    "add": "AGGIUNGI AGLI AMICI",
+    "addAria": "Aggiungi {{name}} agli amici",
+    "removeFromFriends": "Rimuovi dagli amici",
+    "unknownPeer": "Nodo {{id}}"
   }
 }

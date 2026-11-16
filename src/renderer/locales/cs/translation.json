@@ -541,7 +541,9 @@
     "clearEnvironmentHistory": "Vymazat historii prostředí",
     "clearEnvironmentHistoryConfirm": "Tímto trvale odstraníte veškerou uloženou historii senzorů prostředí z databáze. Grafy Zařízení → Telemetrie, senzory na mapě a minigrafy se vymažou, dokud nedorazí nová měření. Pokračovat?",
     "dangerZoneEnvironmentHistoryHeading": "Historie prostředí",
-    "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu."
+    "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu.",
+    "clearAllRooms": "Vymazat všechny místnosti",
+    "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -6075,7 +6077,8 @@
     "incident": "Incident",
     "scheduledbroadcasts": "Broadcasts",
     "teamcontacts": "Týmové kontakty",
-    "teamroster": "Soupiska týmu"
+    "teamroster": "Soupiska týmu",
+    "friends": "Přátelé"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -7613,7 +7616,8 @@
     "roomGroupMeshcore": "MeshCore pokojů",
     "roomGroupRrc": "Místnosti RRC",
     "roomGroupSaved": "Uloženo",
-    "jumpToRoomAria": "{{key}}: přejít na {{label}}"
+    "jumpToRoomAria": "{{key}}: přejít na {{label}}",
+    "roomGroupChatChannels": "Chatovací kanály"
   },
   "weatherForecast": {
     "areaAria": "Předpověď pro {{place}}, {{period}}: {{temp}}",
@@ -8959,5 +8963,18 @@
     "open": "Slabý nebo otevřený klíč kanálu na {{channel}}",
     "openLocation": "Otevřete klíč kanálu s přesnou polohou na {{channel}}",
     "openLocationUplink": "Otevřete klíč kanálu s přesnou polohou a MQTT uplink na {{channel}}"
+  },
+  "friends": {
+    "title": "Přátelé",
+    "intro": "Lidé, kterým často píšeš. Přidej někoho z jeho kontaktních údajů nebo z přímé zprávy. Nepřečtené zprávy od přátel se zobrazují tady, aby se nezobrazovaly dvakrát v chatu.",
+    "empty": "Zatím žádní přátelé. Otevřete kontakt a vyberte Přidat k přátelům.",
+    "openDm": "Zpráva {{name}}",
+    "openDmWithUnread": "Zpráva {{name}}, {{count}} nepřečtená",
+    "remove": "Odstranit",
+    "removeAria": "Odebrat {{name}} z přátel",
+    "add": "Přidat do přátelCore version string not (yet) available",
+    "addAria": "Přidat {{name}} mezi přátele",
+    "removeFromFriends": "Odebrat z přátel",
+    "unknownPeer": "Uzel {{id}}"
   }
 }

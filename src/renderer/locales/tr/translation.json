@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Ortam geçmişini temizle",
     "clearEnvironmentHistoryConfirm": "Bu, veritabanındaki kayıtlı tüm ortam sensörü geçmişini kalıcı olarak siler. Cihaz → Telemetri grafikleri, harita sensörleri ve kıvılcım çizgileri yeni okumalar gelene kadar temizlenir. Devam edilsin mi?",
     "dangerZoneEnvironmentHistoryHeading": "Ortam geçmişi",
-    "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır."
+    "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır.",
+    "clearAllRooms": "Tüm Odaları Temizle",
+    "clearAllRoomsConfirm": "Bu işlem, favori olmayan tüm MeshCore oda sunucularını bağlı radyodan ve yerel veritabanından kaldırır. Odalar tekrar duyuru yaptıklarında yeniden görünür. Bu işlem geri alınamaz."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -6029,7 +6031,8 @@
     "incident": "Olay",
     "scheduledbroadcasts": "Yayınlar",
     "teamcontacts": "Ekip İrtibat Kişileri",
-    "teamroster": "Takım Kadrosu"
+    "teamroster": "Takım Kadrosu",
+    "friends": "Arkadaşlar"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "MeshCore oda",
     "roomGroupRrc": "RRC odaları",
     "roomGroupSaved": "Kaydedildi",
-    "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla"
+    "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla",
+    "roomGroupChatChannels": "Sohbet kanalları"
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
     "openLocation": "{{channel}} üzerinde kesin konuma sahip kanal anahtarını açın",
     "openLocationUplink": "{{channel}} üzerinde kesin konumu ve MQTT yukarı bağlantısını içeren kanal anahtarını açın"
+  },
+  "friends": {
+    "title": "Arkadaşlar",
+    "intro": "Sık sık mesajlaştığınız kişiler. İletişim bilgilerinden veya DM'den birini ekleyin. Arkadaşlarınız için okunmamış mesajlar, Sohbet'te iki kez görünmek yerine burada gösterilir.",
+    "empty": "Henüz arkadaş yok. Bir kişiyi açın ve Arkadaşlara Ekle'yi seçin.",
+    "openDm": "Mesaj {{name}}",
+    "openDmWithUnread": "Mesaj {{name}}, {{count}} okunmamış",
+    "remove": "Kaldır",
+    "removeAria": "{{name}} adlı kişiyi arkadaşlardan kaldır",
+    "add": "Arkadaşlara ekle",
+    "addAria": "{{name}} kişisini Arkadaşlara ekle",
+    "removeFromFriends": "Arkadaşlar'dan kaldır",
+    "unknownPeer": "Düğüm {{id}}"
   }
 }

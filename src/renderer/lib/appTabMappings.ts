@@ -5,6 +5,7 @@ import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
 export const CHAT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Chat');
+export const FRIENDS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Friends');
 export const INCIDENT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Incident');
 export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
 export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
@@ -36,6 +37,7 @@ type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof Protoc
 export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
+  undefined, // Friends
   'hasLrgpGames', // Games
   'hasRrcPanel', // RRC
   'hasNomadNetworkPanel', // Nomad Network

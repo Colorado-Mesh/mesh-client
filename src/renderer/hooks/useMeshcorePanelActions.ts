@@ -45,6 +45,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       clearAllMeshcoreContacts: runtime.clearAllMeshcoreContacts,
       offloadContactsFromRadio: runtime.offloadContactsFromRadio,
       clearAllRepeaters: runtime.clearAllRepeaters,
+      clearAllRooms: runtime.clearAllRooms,
       requestRepeaterStatus: runtime.requestRepeaterStatus,
       requestNeighbors: runtime.requestNeighbors,
       requestTelemetry: runtime.requestTelemetry,

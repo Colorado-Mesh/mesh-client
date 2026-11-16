@@ -1,9 +1,17 @@
 import { resolveMeshcoreRoomNodeId } from '@/renderer/lib/meshcoreRoomNodeLookup';
+import { resolveChannelTargetIndex } from '@/renderer/lib/scheduledBroadcasts/resolveChannelTarget';
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
 
 export type RoomMacroPlan =
-  | { protocol: 'meshcore'; identityId: string; roomNodeId: number }
-  | { protocol: 'reticulum'; hubDestHash: string; room: string };
+  | { kind: 'meshcore-room'; protocol: 'meshcore'; identityId: string; roomNodeId: number }
+  | { kind: 'meshcore-channel'; protocol: 'meshcore'; identityId: string; channelIndex: number }
+  | {
+      kind: 'meshtastic-channel';
+      protocol: 'meshtastic';
+      identityId: string;
+      channelIndex: number;
+    }
+  | { kind: 'rrc-room'; protocol: 'reticulum'; hubDestHash: string; room: string };
 
 /** App registers a navigator once; F-keys and macro clicks call through this. */
 export type RoomMacroNavigator = (plan: RoomMacroPlan, slotIndex: number) => boolean;
@@ -32,7 +40,7 @@ export interface RoomMacroResolveDeps {
   resolveMeshcoreRoomNodeId: (identityId: string, roomPubKeyHex: string) => number | undefined;
 }
 
-/** Pure: target → plan (null when the room cannot be resolved right now). */
+/** Pure: target → plan (null when the room/channel cannot be resolved right now). */
 export function resolveRoomMacroPlan(
   target: RoomMacroTarget,
   deps: RoomMacroResolveDeps,
@@ -40,9 +48,38 @@ export function resolveRoomMacroPlan(
   if (target.kind === 'meshcore-room') {
     const roomNodeId = deps.resolveMeshcoreRoomNodeId(target.identityId, target.roomPubKeyHex);
     if (roomNodeId == null) return null;
-    return { protocol: 'meshcore', identityId: target.identityId, roomNodeId };
+    return {
+      kind: 'meshcore-room',
+      protocol: 'meshcore',
+      identityId: target.identityId,
+      roomNodeId,
+    };
   }
+  if (target.kind === 'meshcore-channel') {
+    const resolved = resolveChannelTargetIndex(target);
+    const channelIndex = resolved.ok ? resolved.channelIndex : target.channelIndex;
+    if (!Number.isInteger(channelIndex) || channelIndex < 0) return null;
+    return {
+      kind: 'meshcore-channel',
+      protocol: 'meshcore',
+      identityId: target.identityId,
+      channelIndex,
+    };
+  }
+  if (target.kind === 'meshtastic-channel') {
+    const resolved = resolveChannelTargetIndex(target);
+    const channelIndex = resolved.ok ? resolved.channelIndex : target.channelIndex;
+    if (!Number.isInteger(channelIndex) || channelIndex < 0) return null;
+    return {
+      kind: 'meshtastic-channel',
+      protocol: 'meshtastic',
+      identityId: target.identityId,
+      channelIndex,
+    };
+  }
+  // Remaining variant is rrc-room (RoomMacroTarget exhaustiveness).
   return {
+    kind: 'rrc-room',
     protocol: 'reticulum',
     hubDestHash: target.hubDestHash.toLowerCase(),
     room: target.room,

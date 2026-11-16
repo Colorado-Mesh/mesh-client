@@ -21,7 +21,12 @@ describe('roomMacros registry', () => {
       seen.push(plan);
       return true;
     });
-    const plan: RoomMacroPlan = { protocol: 'reticulum', hubDestHash: 'aa', room: '#x' };
+    const plan: RoomMacroPlan = {
+      kind: 'rrc-room',
+      protocol: 'reticulum',
+      hubDestHash: 'aa',
+      room: '#x',
+    };
     expect(navigateRoomMacro(plan, 0)).toBe(true);
     expect(seen).toEqual([plan]);
     unregister();
@@ -43,7 +48,12 @@ describe('resolveRoomMacroPlan', () => {
           id === 'mc1' && hex === 'ab'.repeat(32) ? 42 : undefined,
       },
     );
-    expect(plan).toEqual({ protocol: 'meshcore', identityId: 'mc1', roomNodeId: 42 });
+    expect(plan).toEqual({
+      kind: 'meshcore-room',
+      protocol: 'meshcore',
+      identityId: 'mc1',
+      roomNodeId: 42,
+    });
   });
 
   it('returns null for unknown meshcore pubkey', () => {
@@ -59,6 +69,24 @@ describe('resolveRoomMacroPlan', () => {
     expect(plan).toBeNull();
   });
 
+  it('resolves chat channel targets with saved index fallback', () => {
+    const plan = resolveRoomMacroPlan(
+      {
+        kind: 'meshcore-channel',
+        identityId: 'mc1',
+        channelIndex: 2,
+        label: '#weather',
+      },
+      { resolveMeshcoreRoomNodeId: () => undefined },
+    );
+    expect(plan).toEqual({
+      kind: 'meshcore-channel',
+      protocol: 'meshcore',
+      identityId: 'mc1',
+      channelIndex: 2,
+    });
+  });
+
   it('lowercases RRC hub hash', () => {
     const plan = resolveRoomMacroPlan(
       {
@@ -70,6 +98,7 @@ describe('resolveRoomMacroPlan', () => {
       { resolveMeshcoreRoomNodeId: () => undefined },
     );
     expect(plan).toEqual({
+      kind: 'rrc-room',
       protocol: 'reticulum',
       hubDestHash: 'aabbcc',
       room: '#weather',

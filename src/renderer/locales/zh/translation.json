@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "清除环境历史记录",
     "clearEnvironmentHistoryConfirm": "这将永久性地从数据库中删除所有已保存的环境传感器历史记录。设备 → 遥测图表、地图传感器和迷你图将被清空，直至有新读数传入。是否继续？",
     "dangerZoneEnvironmentHistoryHeading": "环境历史记录",
-    "dangerZoneEnvironmentHistoryDesc": "删除每个方案和身份的所有已存储温度、湿度、压力和空气质量读数。"
+    "dangerZoneEnvironmentHistoryDesc": "删除每个方案和身份的所有已存储温度、湿度、压力和空气质量读数。",
+    "clearAllRooms": "清空所有房间",
+    "clearAllRoomsConfirm": "这将从已连接的收音机和本地数据库中移除所有未收藏的MeshCore房间服务器。房间在再次发布时会重新出现。此操作无法撤消。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -6029,7 +6031,8 @@
     "incident": "事件",
     "scheduledbroadcasts": "广播",
     "teamcontacts": "团队联系方式",
-    "teamroster": "团队名单"
+    "teamroster": "团队名单",
+    "friends": "同舟同济"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "MeshCore间客房",
     "roomGroupRrc": "RRC 房间",
     "roomGroupSaved": "保存成功",
-    "jumpToRoomAria": "{{key}}：跳转到{{label}}"
+    "jumpToRoomAria": "{{key}}：跳转到{{label}}",
+    "roomGroupChatChannels": "实时对话频道"
   },
   "weatherForecast": {
     "areaAria": "{{place}} ， {{period}}的预测： {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "{{channel}} 上的通道密钥弱或打开",
     "openLocation": "打开通道密钥，并在 {{channel}} 上精确定位",
     "openLocationUplink": "打开具有精确位置和 {{channel}} 上的 MQTT 上行链路的通道密钥"
+  },
+  "friends": {
+    "title": "同舟同济",
+    "intro": "您经常发消息的人。通过联系人详细信息或私信添加某人。好友的未读消息将显示在此处，而不会在聊天中重复显示。",
+    "empty": "尚无好友。打开联系人，然后选择“添加为好友”。",
+    "openDm": "消息 {{name}}",
+    "openDmWithUnread": "消息 {{name}}，{{count}} 条未读",
+    "remove": "移除",
+    "removeAria": "将{{name}}从好友中移除",
+    "add": "添加为好友( A) Core version string not (yet) available",
+    "addAria": "将{{name}}添加为好友",
+    "removeFromFriends": "从好友中移除",
+    "unknownPeer": "节点{{id}}"
   }
 }

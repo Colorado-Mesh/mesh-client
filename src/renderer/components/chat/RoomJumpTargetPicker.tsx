@@ -9,7 +9,9 @@ import {
 import { loadRrcRecentRooms } from '@/renderer/lib/rrcRecentRooms';
 import { resolveRrcHubDisplayLabel } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import type { RoomMacroTarget } from '@/renderer/stores/chatMacrosStore';
+import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
@@ -23,6 +25,8 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
   const { t } = useTranslation();
   const identities = useIdentityStore((s) => s.identities);
   const nodesByIdentity = useNodeStore((s) => s.nodes);
+  const devices = useDeviceStore((s) => s.devices);
+  const liveByProtocol = useLiveChannelKeyStore((s) => s.byProtocol);
   const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const hubDisplayName = useRrcHubStore((s) =>
@@ -42,12 +46,25 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
       rrcRoomsByHub,
       rrcRecentRooms: hub ? loadRrcRecentRooms(hub) : [],
       rrcHubDisplayName: resolveRrcHubDisplayLabel(hub ?? undefined, hubDisplayName),
+      liveChannelKeysByProtocol: liveByProtocol,
+      devicesByIdentity: devices,
     });
-  }, [identities, nodesByIdentity, rrcHubDestHash, sessionsByHub, hubDisplayName]);
+  }, [
+    identities,
+    nodesByIdentity,
+    rrcHubDestHash,
+    sessionsByHub,
+    hubDisplayName,
+    liveByProtocol,
+    devices,
+  ]);
 
   const selectedKey = value ? roomJumpTargetKey(value) : '';
   const selectedInList = candidates.some((c) => c.key === selectedKey);
-  const meshcore = candidates.filter((c) => c.target.kind === 'meshcore-room');
+  const meshcoreRooms = candidates.filter((c) => c.target.kind === 'meshcore-room');
+  const chatChannels = candidates.filter(
+    (c) => c.target.kind === 'meshcore-channel' || c.target.kind === 'meshtastic-channel',
+  );
   const rrc = candidates.filter((c) => c.target.kind === 'rrc-room');
   const empty = candidates.length === 0 && !value;
 
@@ -78,9 +95,18 @@ export function RoomJumpTargetPicker({ value, onChange }: RoomJumpTargetPickerPr
         }}
       >
         <option value="">{t('chatMacros.roomPickerPlaceholder')}</option>
-        {meshcore.length > 0 ? (
+        {chatChannels.length > 0 ? (
+          <optgroup label={t('chatMacros.roomGroupChatChannels')}>
+            {chatChannels.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.target.label}
+              </option>
+            ))}
+          </optgroup>
+        ) : null}
+        {meshcoreRooms.length > 0 ? (
           <optgroup label={t('chatMacros.roomGroupMeshcore')}>
-            {meshcore.map((c) => (
+            {meshcoreRooms.map((c) => (
               <option key={c.key} value={c.key}>
                 {c.target.label}
               </option>

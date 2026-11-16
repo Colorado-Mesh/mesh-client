@@ -9,6 +9,7 @@ import {
   GitBranch,
   Globe,
   Hash,
+  Heart,
   House,
   Link2,
   Lock,
@@ -42,6 +43,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'Friends':
+      return <Heart {...p} />;
     case 'ScheduledBroadcasts':
       return <Megaphone {...p} />;
     case 'Incident':

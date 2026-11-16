@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Omgevingsgeschiedenis wissen",
     "clearEnvironmentHistoryConfirm": "Hiermee wordt alle opgeslagen omgevingssensorgeschiedenis permanent uit de database verwijderd. Apparaat → Telemetriegrafieken, kaartsensoren en sparklines worden gewist tot er nieuwe metingen binnenkomen. Doorgaan?",
     "dangerZoneEnvironmentHistoryHeading": "Omgevingsgeschiedenis",
-    "dangerZoneEnvironmentHistoryDesc": "Verwijdert alle opgeslagen temperatuur-, vochtigheids-, druk- en luchtkwaliteitsmetingen voor elk protocol en elke identiteit."
+    "dangerZoneEnvironmentHistoryDesc": "Verwijdert alle opgeslagen temperatuur-, vochtigheids-, druk- en luchtkwaliteitsmetingen voor elk protocol en elke identiteit.",
+    "clearAllRooms": "Alle ruimtes wissen",
+    "clearAllRoomsConfirm": "Hiermee worden alle niet-favoriete MeshCore-roomservers van de aangesloten radio en de lokale database verwijderd. Ruimtes verschijnen opnieuw wanneer ze weer worden aangekondigd. Dit kan niet ongedaan worden gemaakt."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -6029,7 +6031,8 @@
     "incident": "Incident",
     "scheduledbroadcasts": "Berichten",
     "teamcontacts": "Teamcontacten",
-    "teamroster": "Teamrooster"
+    "teamroster": "Teamrooster",
+    "friends": "Vrienden"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "MeshCore-ruimtes",
     "roomGroupRrc": "RRC-ruimtes",
     "roomGroupSaved": "Opgeslagen",
-    "jumpToRoomAria": "{{key}}: ga naar {{label}}"
+    "jumpToRoomAria": "{{key}}: ga naar {{label}}",
+    "roomGroupChatChannels": "Chatkanalen"
   },
   "weatherForecast": {
     "areaAria": "Voorspelling voor {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "Zwakke of open kanaaltoets op {{channel}}",
     "openLocation": "Open kanaalsleutel met nauwkeurige locatie op {{channel}}",
     "openLocationUplink": "Open kanaalsleutel met nauwkeurige locatie en MQTT uplink op {{channel}}"
+  },
+  "friends": {
+    "title": "Vrienden",
+    "intro": "Mensen aan wie je vaak een bericht stuurt. Voeg iemand toe via diens contactgegevens of een DM. Ongelezen berichten voor vrienden worden hier weergegeven in plaats van dubbel in Chat.",
+    "empty": "Nog geen vrienden. Open een contactpersoon en kies Toevoegen aan vrienden.",
+    "openDm": "Bericht {{name}}",
+    "openDmWithUnread": "Bericht {{name}}, {{count}} ongelezen",
+    "remove": "Verwijderen",
+    "removeAria": "{{name}} uit vriendenlijst verwijderen",
+    "add": "Toevoegen & aan vriendenCore version string not (yet) available",
+    "addAria": "{{name}} aan vrienden toevoegen",
+    "removeFromFriends": "Verwijderen uit vriendenlijst",
+    "unknownPeer": "Knooppunt {{id}}"
   }
 }

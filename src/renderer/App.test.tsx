@@ -272,6 +272,7 @@ const {
     refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
     clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),
     clearAllRepeaters: vi.fn().mockResolvedValue(undefined),
+    clearAllRooms: vi.fn().mockResolvedValue(undefined),
     requestRepeaterStatus: vi.fn().mockResolvedValue(undefined),
     requestTelemetry: vi.fn().mockResolvedValue(undefined),
     requestNeighbors: vi.fn().mockResolvedValue(undefined),

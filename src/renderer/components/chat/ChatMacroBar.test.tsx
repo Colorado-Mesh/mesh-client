@@ -140,7 +140,12 @@ describe('ChatMacroBar', () => {
     expect(btn).toHaveTextContent('Wx');
     fireEvent.click(btn);
     expect(nav).toHaveBeenCalledWith(
-      { protocol: 'reticulum', hubDestHash: 'aabb', room: '#weather' },
+      {
+        kind: 'rrc-room',
+        protocol: 'reticulum',
+        hubDestHash: 'aabb',
+        room: '#weather',
+      },
       0,
     );
     expect(screen.getByRole('textbox')).toHaveValue('');

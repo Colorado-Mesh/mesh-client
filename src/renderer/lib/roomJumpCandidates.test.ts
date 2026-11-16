@@ -86,6 +86,70 @@ describe('buildRoomJumpCandidates', () => {
     });
   });
 
+  it('includes MeshCore and Meshtastic chat #channels from live keys and device names', () => {
+    const list = buildRoomJumpCandidates({
+      identities: {
+        mc1: identity('mc1', 'meshcore'),
+        mt1: identity('mt1', 'meshtastic'),
+      },
+      nodesByIdentity: {},
+      rrcHubDestHash: null,
+      rrcRoomsByHub: undefined,
+      liveChannelKeysByProtocol: {
+        meshcore: { radioNodeId: 1, keyByIndex: { 0: 'aaa', 2: 'bbb' } },
+        meshtastic: { radioNodeId: 2, keyByIndex: { 1: 'ccc' } },
+      },
+      devicesByIdentity: {
+        mc1: {
+          channels: [],
+          channelConfigs: [],
+          meshtasticConfigSlices: {},
+          moduleConfigs: {},
+          securityConfig: null,
+          deviceOwner: null,
+          deviceGpsMode: 0,
+          deviceFixedPosition: null,
+          telemetryDeviceUpdateInterval: null,
+          ourPosition: null,
+          rawPackets: [],
+          deviceLogs: [],
+          ringtone: null,
+          meshtasticPortBuffers: { fromRadio: new Uint8Array(), toRadio: new Uint8Array() },
+          meshcoreChannels: [
+            { index: 0, name: 'public', secretHex: '00'.repeat(16) },
+            { index: 2, name: '#weather', secretHex: '11'.repeat(16) },
+          ],
+        } as never,
+        mt1: {
+          channels: [{ index: 1, name: 'LongFast' }],
+          channelConfigs: [],
+          meshtasticConfigSlices: {},
+          moduleConfigs: {},
+          securityConfig: null,
+          deviceOwner: null,
+          deviceGpsMode: 0,
+          deviceFixedPosition: null,
+          telemetryDeviceUpdateInterval: null,
+          ourPosition: null,
+          rawPackets: [],
+          deviceLogs: [],
+          ringtone: null,
+          meshtasticPortBuffers: { fromRadio: new Uint8Array(), toRadio: new Uint8Array() },
+        } as never,
+      },
+    });
+    const channels = list.filter(
+      (c) => c.target.kind === 'meshcore-channel' || c.target.kind === 'meshtastic-channel',
+    );
+    expect(channels.map((c) => c.target.label).sort()).toEqual([
+      '#LongFast',
+      '#public',
+      '#weather',
+    ]);
+    expect(channels.some((c) => c.target.kind === 'meshcore-channel')).toBe(true);
+    expect(channels.some((c) => c.target.kind === 'meshtastic-channel')).toBe(true);
+  });
+
   it('dedupes RRC joined + recent by match key; no hub → no RRC', () => {
     const hub = 'aabbccdd';
     const rooms = new Map([['#General', {}]]);

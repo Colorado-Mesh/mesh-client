@@ -346,6 +346,7 @@ export function createElectronAPIMock(): ElectronAPI {
       deleteMeshcoreContactsByAge: vi.fn().mockResolvedValue(0),
       pruneMeshcoreContactsByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       clearMeshcoreRepeaters: vi.fn().mockResolvedValue(undefined),
+      clearMeshcoreRooms: vi.fn().mockResolvedValue(undefined),
       markAllMeshcoreContactsOffRadio: vi.fn().mockResolvedValue(undefined),
       getMeshcoreContactCount: vi.fn().mockResolvedValue(0),
       deleteMeshcoreContactsWithoutPubkey: vi

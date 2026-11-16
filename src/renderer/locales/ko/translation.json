@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "환경 기록 지우기",
     "clearEnvironmentHistoryConfirm": "데이터베이스에 저장된 모든 환경 센서 기록이 영구적으로 삭제됩니다. 장치 → 원격 측정 차트, 지도 센서 및 스파크라인은 새 측정값이 도착할 때까지 비워집니다. 계속하시겠습니까?",
     "dangerZoneEnvironmentHistoryHeading": "환경 기록",
-    "dangerZoneEnvironmentHistoryDesc": "모든 프로토콜 및 ID에 대해 저장된 온도, 습도, 기압 및 공기질 측정값을 제거합니다."
+    "dangerZoneEnvironmentHistoryDesc": "모든 프로토콜 및 ID에 대해 저장된 온도, 습도, 기압 및 공기질 측정값을 제거합니다.",
+    "clearAllRooms": "모든 룸 지우기",
+    "clearAllRoomsConfirm": "이렇게 하면 연결된 라디오와 로컬 데이터베이스에서 즐겨찾기에 등록되지 않은 MeshCore 룸 서버가 모두 제거됩니다. 룸은 다시 광고할 때 다시 나타납니다. 이 작업은 실행 취소할 수 없습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -6029,7 +6031,8 @@
     "incident": "인시던트",
     "scheduledbroadcasts": "방송",
     "teamcontacts": "팀 연락처",
-    "teamroster": "팀 명단"
+    "teamroster": "팀 명단",
+    "friends": "친구"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "MeshCore 룸",
     "roomGroupRrc": "RRC 룸",
     "roomGroupSaved": "저장했습니다",
-    "jumpToRoomAria": "{{key}}: {{label}}(으)로 이동"
+    "jumpToRoomAria": "{{key}}: {{label}}(으)로 이동",
+    "roomGroupChatChannels": "실시간 채팅 채널"
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} 에 대한 예측: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "{{channel}}의 약하거나 열린 채널 키",
     "openLocation": "{{channel}}의 정확한 위치가 포함된 채널 키 열기",
     "openLocationUplink": "정확한 위치와 {{channel}}의 MQTT 업링크가 포함된 채널 키 열기"
+  },
+  "friends": {
+    "title": "친구",
+    "intro": "자주 메시지를 주고받는 사람들입니다. 연락처 정보나 DM에서 누군가를 추가하세요. 친구의 읽지 않은 메시지는 채팅에서 중복 표시되는 대신 여기에 표시됩니다.",
+    "empty": "아직 친구가 없습니다. 연락처를 열고 '친구에 추가'를 선택하세요.",
+    "openDm": "메시지 {{name}}",
+    "openDmWithUnread": "메시지 {{name}}, 읽지 않음 {{count}}개",
+    "remove": "제거",
+    "removeAria": "친구 목록에서 {{name}} 님 삭제",
+    "add": "친구에 추가",
+    "addAria": "{{name}} 님을 친구로 추가",
+    "removeFromFriends": "친구 목록에서 삭제",
+    "unknownPeer": "노드 {{id}}"
   }
 }

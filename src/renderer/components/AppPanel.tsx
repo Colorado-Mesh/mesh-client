@@ -128,6 +128,7 @@ type DangerActionId =
   | 'clearReticulumContacts'
   | 'clearMessages'
   | 'clearAllRepeaters'
+  | 'clearAllRooms'
   | 'clearAllData';
 
 const NODE_PRUNE_ACTIONS: DangerActionId[] = [
@@ -287,6 +288,7 @@ interface Props {
   /** The panel is on screen. It stays mounted once visited, so lists reload on each visit. */
   isActive?: boolean;
   onClearMeshcoreRepeaters?: () => Promise<void>;
+  onClearMeshcoreRooms?: () => Promise<void>;
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
@@ -340,6 +342,7 @@ export default function AppPanel({
   onMessagesPruned,
   isActive = true,
   onClearMeshcoreRepeaters,
+  onClearMeshcoreRooms,
   onAutoFloodAdvertIntervalChange,
   onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
@@ -3284,29 +3287,51 @@ export default function AppPanel({
         </div>
 
         {/* MeshCore */}
-        {onClearMeshcoreRepeaters && (
+        {(onClearMeshcoreRepeaters || onClearMeshcoreRooms) && (
           <div className="space-y-2 border-t border-red-900/50 pt-4">
             <div className="text-xs font-medium text-red-400">
               {t('appPanel.dangerZoneMeshcoreHeading')}
             </div>
-            <button
-              data-setting-anchor="app.danger.clearAllRepeaters"
-              type="button"
-              aria-label={t('appPanel.clearAllRepeaters')}
-              onClick={() => {
-                executeWithConfirmation({
-                  actionId: 'clearAllRepeaters',
-                  title: t('appPanel.clearAllRepeaters'),
-                  message: t('appPanel.clearAllRepeatersConfirm'),
-                  confirmLabel: t('appPanel.clearAllRepeaters'),
-                  danger: true,
-                  action: onClearMeshcoreRepeaters,
-                });
-              }}
-              className={buttonClassName('danger', 'md')}
-            >
-              {t('appPanel.clearAllRepeaters')}
-            </button>
+            {onClearMeshcoreRepeaters ? (
+              <button
+                data-setting-anchor="app.danger.clearAllRepeaters"
+                type="button"
+                aria-label={t('appPanel.clearAllRepeaters')}
+                onClick={() => {
+                  executeWithConfirmation({
+                    actionId: 'clearAllRepeaters',
+                    title: t('appPanel.clearAllRepeaters'),
+                    message: t('appPanel.clearAllRepeatersConfirm'),
+                    confirmLabel: t('appPanel.clearAllRepeaters'),
+                    danger: true,
+                    action: onClearMeshcoreRepeaters,
+                  });
+                }}
+                className={buttonClassName('danger', 'md')}
+              >
+                {t('appPanel.clearAllRepeaters')}
+              </button>
+            ) : null}
+            {onClearMeshcoreRooms ? (
+              <button
+                data-setting-anchor="app.danger.clearAllRooms"
+                type="button"
+                aria-label={t('appPanel.clearAllRooms')}
+                onClick={() => {
+                  executeWithConfirmation({
+                    actionId: 'clearAllRooms',
+                    title: t('appPanel.clearAllRooms'),
+                    message: t('appPanel.clearAllRoomsConfirm'),
+                    confirmLabel: t('appPanel.clearAllRooms'),
+                    danger: true,
+                    action: onClearMeshcoreRooms,
+                  });
+                }}
+                className={buttonClassName('danger', 'md')}
+              >
+                {t('appPanel.clearAllRooms')}
+              </button>
+            ) : null}
           </div>
         )}
 

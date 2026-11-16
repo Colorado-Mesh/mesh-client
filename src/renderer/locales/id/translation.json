@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Hapus riwayat lingkungan",
     "clearEnvironmentHistoryConfirm": "Ini akan menghapus secara permanen semua riwayat sensor lingkungan yang tersimpan dari basis data. Perangkat → Bagan telemetri, sensor peta, dan sparkline akan dikosongkan sampai pembacaan baru tiba. Lanjutkan?",
     "dangerZoneEnvironmentHistoryHeading": "Riwayat lingkungan",
-    "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas."
+    "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas.",
+    "clearAllRooms": "Hapus Semua Ruangan",
+    "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -6029,7 +6031,8 @@
     "incident": "Insiden",
     "scheduledbroadcasts": "Siaran",
     "teamcontacts": "Kontak Tim",
-    "teamroster": "Daftar Tim"
+    "teamroster": "Daftar Tim",
+    "friends": "Teman"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "Ruangan MeshCore",
     "roomGroupRrc": "Ruangan RRC",
     "roomGroupSaved": "Disimpan",
-    "jumpToRoomAria": "{{key}}: lompat ke {{label}}"
+    "jumpToRoomAria": "{{key}}: lompat ke {{label}}",
+    "roomGroupChatChannels": "Saluran obrolan"
   },
   "weatherForecast": {
     "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "Kunci saluran lemah atau terbuka di {{channel}}",
     "openLocation": "Buka kunci saluran dengan lokasi tepat di {{channel}}",
     "openLocationUplink": "Buka kunci saluran dengan lokasi yang tepat dan uplink MQTT di {{channel}}"
+  },
+  "friends": {
+    "title": "Teman",
+    "intro": "Orang-orang yang sering kamu kirimi pesan. Tambahkan seseorang dari detail kontak mereka atau DM. Pesan yang belum dibaca untuk teman ditampilkan di sini, bukan ditampilkan dua kali di Obrolan.",
+    "empty": "Belum ada teman. Buka kontak dan pilih Tambahkan ke Teman.",
+    "openDm": "Pesan {{name}}",
+    "openDmWithUnread": "Pesan {{name}}, {{count}} belum dibaca",
+    "remove": "Hapus",
+    "removeAria": "Hapus {{name}} dari Teman",
+    "add": "Tambahkan ke Teman",
+    "addAria": "Tambahkan {{name}} ke Teman",
+    "removeFromFriends": "Hapus dari Teman",
+    "unknownPeer": "Node {{id}}"
   }
 }

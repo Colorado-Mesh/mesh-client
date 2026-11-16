@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "環境履歴をクリア",
     "clearEnvironmentHistoryConfirm": "保存されている環境センサー履歴がデータベースから完全に削除されます。デバイス → テレメトリのグラフ、マップのセンサー、スパークラインは新しい測定値が届くまでクリアされます。続行しますか？",
     "dangerZoneEnvironmentHistoryHeading": "環境履歴",
-    "dangerZoneEnvironmentHistoryDesc": "すべてのプロトコルとアイデンティティについて、保存されている温度・湿度・気圧・空気品質の測定値を削除します。"
+    "dangerZoneEnvironmentHistoryDesc": "すべてのプロトコルとアイデンティティについて、保存されている温度・湿度・気圧・空気品質の測定値を削除します。",
+    "clearAllRooms": "すべてのルームをクリア",
+    "clearAllRoomsConfirm": "これにより、お気に入り登録されていないMeshCoreルームサーバーがすべて、接続されている無線およびローカルデータベースから削除されます。ルームは、再度アドバタイズされると再表示されます。この操作は元に戻せません。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -6029,7 +6031,8 @@
     "incident": "案件",
     "scheduledbroadcasts": "放送",
     "teamcontacts": "チームの連絡先",
-    "teamroster": "チーム名簿"
+    "teamroster": "チーム名簿",
+    "friends": "友人"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -7545,7 +7548,8 @@
     "roomGroupMeshcore": "MeshCore ルーム",
     "roomGroupRrc": "RRCルーム",
     "roomGroupSaved": "保存済み",
-    "jumpToRoomAria": "{{key}}：{{label}}にジャンプ"
+    "jumpToRoomAria": "{{key}}：{{label}}にジャンプ",
+    "roomGroupChatChannels": "チャットチャンネル"
   },
   "weatherForecast": {
     "areaAria": "{{place}}、{{period}}の予測： {{temp}}",
@@ -8874,5 +8878,18 @@
     "open": "{{channel}} のチャンネル キーが弱いか開いています",
     "openLocation": "{{channel}} 上の正確な位置でチャンネル キーを開きます",
     "openLocationUplink": "正確な位置と {{channel}} 上の MQTT アップリンクを含むオープン チャネル キー"
+  },
+  "friends": {
+    "title": "友人",
+    "intro": "よくメッセージをやり取りする人。連絡先の詳細またはDMからユーザーを追加します。友達からの未読メッセージは、チャットに重複して表示されるのではなく、ここに表示されます。",
+    "empty": "まだ友達がいません。連絡先を開いて「友達に追加」を選択してください。",
+    "openDm": "メッセージ{{name}}",
+    "openDmWithUnread": "メッセージ{{name}}、{{count}}件の未読",
+    "remove": "削除する",
+    "removeAria": "{{name}}さんを友達から削除する",
+    "add": "友達へ",
+    "addAria": "{{name}}さんを友達に追加",
+    "removeFromFriends": "友達から削除",
+    "unknownPeer": "ノード{{id}}"
   }
 }

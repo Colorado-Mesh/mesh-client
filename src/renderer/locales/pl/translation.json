@@ -549,7 +549,9 @@
     "clearEnvironmentHistory": "Wyczyść historię środowiska",
     "clearEnvironmentHistoryConfirm": "Spowoduje to trwałe usunięcie całej zapisanej historii czujników środowiskowych z bazy danych. Urządzenie → Wykresy telemetrii, czujniki na mapie i wykresy mini zostaną wyczyszczone, dopóki nie nadejdą nowe odczyty. Kontynuować?",
     "dangerZoneEnvironmentHistoryHeading": "Historia środowiska",
-    "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości."
+    "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości.",
+    "clearAllRooms": "Wyczyść wszystkie pokoje",
+    "clearAllRoomsConfirm": "Spowoduje to usunięcie wszystkich nieulubionych serwerów pomieszczeń MeshCore z podłączonego radia i lokalnej bazy danych. Pokoje pojawiają się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -6113,7 +6115,8 @@
     "incident": "Zdarzenie",
     "scheduledbroadcasts": "Transmisje",
     "teamcontacts": "Kontakty zespołu",
-    "teamroster": "Skład drużyny"
+    "teamroster": "Skład drużyny",
+    "friends": "Przyjaciele"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -7663,7 +7666,8 @@
     "roomGroupMeshcore": "MeshCore pokoi",
     "roomGroupRrc": "Pokoje RRC",
     "roomGroupSaved": "Zapisane",
-    "jumpToRoomAria": "{{key}}: przejdź do {{label}}"
+    "jumpToRoomAria": "{{key}}: przejdź do {{label}}",
+    "roomGroupChatChannels": "Kanały czatu"
   },
   "weatherForecast": {
     "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",
@@ -9018,5 +9022,18 @@
     "open": "Słaby lub otwarty klucz kanału na {{channel}}",
     "openLocation": "Otwórz klucz kanału z dokładną lokalizacją na {{channel}}",
     "openLocationUplink": "Klucz otwartego kanału z dokładną lokalizacją i łączem wysyłającym MQTT na {{channel}}"
+  },
+  "friends": {
+    "title": "Przyjaciele",
+    "intro": "Osoby, do których często piszesz. Dodaj kogoś na podstawie danych kontaktowych lub wiadomości bezpośredniej. Nieprzeczytane wiadomości od znajomych są wyświetlane tutaj, zamiast powtarzać się na czacie.",
+    "empty": "Nie masz jeszcze znajomych. Otwórz kontakt i wybierz „Dodaj do znajomych”.",
+    "openDm": "Wiadomość {{name}}",
+    "openDmWithUnread": "Wiadomość {{name}}, {{count}} nieprzeczytana",
+    "remove": "Usuń",
+    "removeAria": "Usuń użytkownika {{name}} z listy znajomych",
+    "add": "Dodaj to przyjaciółCore version string not (yet) available",
+    "addAria": "Dodaj użytkownika {{name}} do znajomych",
+    "removeFromFriends": "Usuń z listy znajomych",
+    "unknownPeer": "Węzeł {{id}}"
   }
 }

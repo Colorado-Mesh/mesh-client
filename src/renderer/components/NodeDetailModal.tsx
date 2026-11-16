@@ -126,6 +126,9 @@ interface NodeDetailModalProps {
   onMessageNode?: (nodeNum: number) => void;
   /** MeshCore room server: open Rooms tab for BBS posts (not DM). */
   onOpenRoom?: (nodeNum: number) => void;
+  /** When set, show Add/Remove Friends for DM-capable peers. */
+  isFriend?: boolean;
+  onToggleFriend?: (nodeNum: number, next: boolean) => void;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
   mqttConnected?: boolean;
@@ -264,6 +267,8 @@ export default function NodeDetailModal({
   onForgetContactAdvert,
   onMessageNode,
   onOpenRoom,
+  isFriend = false,
+  onToggleFriend,
   onToggleFavorite,
   isConnected,
   mqttConnected = false,
@@ -956,6 +961,28 @@ export default function NodeDetailModal({
             )}
           >
             {t('nodeDetailModal.messageButton')}
+          </button>
+        )}
+      {onToggleFriend &&
+        onMessageNode &&
+        !(protocol === 'meshcore' && isMeshcoreDmExcludedHwModel(node.hw_model)) && (
+          <button
+            type="button"
+            onClick={() => {
+              onToggleFriend(node.node_id, !isFriend);
+            }}
+            aria-label={
+              isFriend
+                ? t('friends.removeAria', {
+                    name: node.long_name || node.short_name || String(node.node_id),
+                  })
+                : t('friends.addAria', {
+                    name: node.long_name || node.short_name || String(node.node_id),
+                  })
+            }
+            className={buttonClassName('secondary', 'md', variant === 'pane' ? 'basis-full' : '')}
+          >
+            {isFriend ? t('friends.removeFromFriends') : t('friends.add')}
           </button>
         )}
       {protocol === 'meshcore' && onExportContact && (
