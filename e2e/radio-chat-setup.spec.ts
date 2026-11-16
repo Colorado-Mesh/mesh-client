@@ -1,7 +1,14 @@
 import { expect, test } from '@playwright/test';
 
 import type { ElectronAPI } from '../src/shared/electron-api.types';
-import { closeApp, launchApp, type LaunchedApp, openPanel, teardownApp } from './electronApp';
+import {
+  closeApp,
+  launchApp,
+  type LaunchedApp,
+  navName,
+  openPanel,
+  teardownApp,
+} from './electronApp';
 import { startMeshcoreRadio } from './fixtures/meshcore-radio';
 
 let launched: LaunchedApp;
@@ -124,6 +131,20 @@ test('fresh opt-in defaults, radio import/sync, drag/A–Z and restart persisten
       ['Delta Room', 1],
       ['Zulu Room', 1],
     ]);
+
+  // Rooms that were never joined are listed in Network > Room servers, not Chat > Rooms.
+  // Favoriting joins a room, so all three stay in the Rooms list across the restart below.
+  await openPanel(page, 'Network', 'Room servers');
+  const roomServers = page.getByRole('tabpanel', { name: navName('Room servers') });
+  for (const name of ['Alpha Room', 'Delta Room', 'Zulu Room']) {
+    const openLabel = { name: `Open ${name}`, exact: true };
+    await roomServers
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('button', openLabel) })
+      .getByRole('button', { name: 'Favorite room', exact: true })
+      .click();
+    await expect(roomServers.getByRole('button', openLabel)).toHaveCount(0);
+  }
 
   await openPanel(page, 'Chat', 'Rooms');
   await expect(page.getByRole('button', { name: /Delta Room/ }).first()).toBeVisible();

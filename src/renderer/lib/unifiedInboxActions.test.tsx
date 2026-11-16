@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { loadStarred } from './chatPanelProtocolStorage';
+import { subscribeStarred } from './starredMessageStore';
 import type { ChatMessage } from './types';
 import { buildUnifiedInboxItems } from './unifiedInbox';
-import { starInboxItems, STARRED_EXTERNAL_EVENT } from './unifiedInboxActions';
+import { starInboxItems } from './unifiedInboxActions';
 
 function msg(id: number, over: Partial<ChatMessage> = {}): ChatMessage {
   return {
@@ -22,7 +23,7 @@ describe('starInboxItems', () => {
     localStorage.clear();
   });
 
-  it('writes per-protocol starred documents, dedupes, and notifies ChatPanel', () => {
+  it('writes per-protocol starred documents, dedupes, and notifies mounted panels', () => {
     const items = buildUnifiedInboxItems({
       enabledProtocols: ['meshtastic', 'meshcore'],
       messagesByProtocol: {
@@ -32,9 +33,7 @@ describe('starInboxItems', () => {
       },
     });
     const events: string[] = [];
-    const onEvent = (e: Event) =>
-      events.push((e as CustomEvent<{ protocol: string }>).detail.protocol);
-    window.addEventListener(STARRED_EXTERNAL_EVENT, onEvent);
+    const unsubscribe = subscribeStarred((protocol) => events.push(protocol));
 
     expect(starInboxItems(items, 5000)).toBe(3);
     expect(
@@ -50,7 +49,7 @@ describe('starInboxItems', () => {
     events.length = 0;
     expect(starInboxItems(items)).toBe(0);
     expect(events).toEqual([]);
-    window.removeEventListener(STARRED_EXTERNAL_EVENT, onEvent);
+    unsubscribe();
   });
 
   it('keeps pre-existing stars', () => {
@@ -74,7 +73,6 @@ describe('starInboxItems', () => {
       enabledProtocols: ['meshtastic'],
       messagesByProtocol: { meshtastic: [msg(1)], meshcore: [], reticulum: [] },
     });
-    vi.spyOn(window, 'dispatchEvent');
     expect(starInboxItems(items)).toBe(1);
     expect(loadStarred('meshtastic').map((s) => s.starId)).toEqual(['99', '1']);
   });

@@ -179,6 +179,7 @@ import { useConversationPins } from '../hooks/useConversationPins';
 import { useNowMs } from '../hooks/useNowMs';
 import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
+import { useStarredMessages } from '../hooks/useStarredMessages';
 import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
@@ -189,13 +190,11 @@ import {
   loadDraftsInitial,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
-  loadStarred,
   notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
   saveActiveChannel,
   saveActiveDm,
   savePersistedLastRead,
-  saveStarred,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
 import {
@@ -268,7 +267,6 @@ import {
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
-import { STARRED_EXTERNAL_EVENT, type StarredExternalDetail } from '../lib/unifiedInboxActions';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useBotSendersStore } from '../stores/botSendersStore';
@@ -1485,7 +1483,8 @@ function ChatPanel({
   const [showArchivedConversations, setShowArchivedConversations] = useState(false);
 
   // Feature: message starring
-  const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred(protocol));
+  // Shared with the Rooms panel and the inbox: every change applies to the stored list.
+  const { starred, updateStarred } = useStarredMessages(protocol);
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
@@ -1600,11 +1599,9 @@ function ChatPanel({
       );
       return changed ? next : prev;
     });
-    setStarred((prev) => {
+    updateStarred((prev) => {
       const { next, changed } = remapDmStarredViewKeys(prev, replacements);
-      if (!changed) return prev;
-      saveStarred(protocol, next);
-      return next;
+      return changed ? next : prev;
     });
     try {
       const drafts = loadDraftsInitial(protocol);
@@ -1627,6 +1624,7 @@ function ChatPanel({
     setMutedViews,
     openDmTabs,
     activeDmNode,
+    updateStarred,
   ]);
 
   // Drop in-progress memo capture when switching DMs so the mic does not stay open.
@@ -1699,7 +1697,6 @@ function ChatPanel({
 
   useEffect(() => {
     setReplyTo(null);
-    setStarred(loadStarred(protocol));
   }, [protocol]);
 
   // Handle initialDmTarget from Nodes tab
@@ -2417,25 +2414,6 @@ function ChatPanel({
     setFilterSender(null);
   }, [viewKey]);
 
-  // Persist starred messages
-  useEffect(() => {
-    saveStarred(protocol, starred);
-  }, [protocol, starred]);
-
-  // Unified inbox stars messages straight into localStorage; reload so this panel's persist
-  // effect does not overwrite them.
-  useEffect(() => {
-    const onExternalStar = (e: Event) => {
-      if ((e as CustomEvent<StarredExternalDetail>).detail?.protocol === protocol) {
-        setStarred(loadStarred(protocol));
-      }
-    };
-    window.addEventListener(STARRED_EXTERNAL_EVENT, onExternalStar);
-    return () => {
-      window.removeEventListener(STARRED_EXTERNAL_EVENT, onExternalStar);
-    };
-  }, [protocol]);
-
   // Sound notification: regular channel/DM tones for other views; MECP always (incl. open view).
   useEffect(() => {
     const prevLen = prevMessagesLengthRef.current;
@@ -3085,7 +3063,7 @@ function ChatPanel({
   const toggleStar = useCallback(
     (msg: ChatMessage) => {
       const starId = msgStarId(msg);
-      setStarred((prev) => {
+      updateStarred((prev) => {
         if (prev.some((s) => s.starId === starId)) return prev.filter((s) => s.starId !== starId);
         const entry: StarredMessage = {
           starId,
@@ -3101,7 +3079,7 @@ function ChatPanel({
         return [...prev, entry];
       });
     },
-    [viewKey],
+    [updateStarred, viewKey],
   );
 
   function formatTime(ts: number): string {
@@ -4528,7 +4506,7 @@ function ChatPanel({
                         <button
                           type="button"
                           onClick={() => {
-                            setStarred((prev) => prev.filter((x) => x.starId !== s.starId));
+                            updateStarred((prev) => prev.filter((x) => x.starId !== s.starId));
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
                           className="text-2xs rounded p-1 text-orange-500 hover:text-orange-300"

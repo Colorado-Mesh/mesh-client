@@ -1,18 +1,8 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
-import { loadStarred, saveStarred, type StarredMessage } from './chatPanelProtocolStorage';
+import type { StarredMessage } from './chatPanelProtocolStorage';
+import { updateStarred } from './starredMessageStore';
 import type { UnifiedInboxItem } from './unifiedInbox';
-
-/**
- * Dispatched on `window` after the inbox writes starred messages to localStorage so a mounted
- * ChatPanel can reload its in-memory `starred` state (otherwise its persist effect would later
- * overwrite the inbox's additions).
- */
-export const STARRED_EXTERNAL_EVENT = 'mesh-client:starred-external';
-
-export interface StarredExternalDetail {
-  protocol: MeshProtocol;
-}
 
 function toStarredMessage(item: UnifiedInboxItem, starredAt: number): StarredMessage {
   const { message: m } = item;
@@ -30,7 +20,8 @@ function toStarredMessage(item: UnifiedInboxItem, starredAt: number): StarredMes
 }
 
 /**
- * Star inbox rows into each protocol's existing `mesh-client:starred:<protocol>` document.
+ * Star inbox rows into each protocol's shared `mesh-client:starred:<protocol>` list, through
+ * `updateStarred` so mounted Chat and Rooms panels show them at once and keep them.
  * Idempotent: rows already starred are skipped. Returns how many new stars were added.
  *
  * Failure point: `saveStarred` swallows storage errors (logs at debug), so on a quota failure
@@ -46,22 +37,17 @@ export function starInboxItems(items: readonly UnifiedInboxItem[], now = Date.no
 
   let added = 0;
   for (const [protocol, list] of byProtocol) {
-    const existing = loadStarred(protocol);
-    const have = new Set(existing.map((s) => s.starId));
-    const fresh: StarredMessage[] = [];
-    for (const item of list) {
-      if (have.has(item.starId)) continue;
-      have.add(item.starId);
-      fresh.push(toStarredMessage(item, now));
-    }
-    if (fresh.length === 0) continue;
-    saveStarred(protocol, [...existing, ...fresh]);
-    added += fresh.length;
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent<StarredExternalDetail>(STARRED_EXTERNAL_EVENT, { detail: { protocol } }),
-      );
-    }
+    updateStarred(protocol, (existing) => {
+      const have = new Set(existing.map((s) => s.starId));
+      const fresh: StarredMessage[] = [];
+      for (const item of list) {
+        if (have.has(item.starId)) continue;
+        have.add(item.starId);
+        fresh.push(toStarredMessage(item, now));
+      }
+      added += fresh.length;
+      return fresh.length === 0 ? existing : [...existing, ...fresh];
+    });
   }
   return added;
 }
