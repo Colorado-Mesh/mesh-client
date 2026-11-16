@@ -38,7 +38,7 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
         id: 'chat',
         tabs: [
           { label: 'Chat', slot: 'Chat' },
-          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
+          { label: 'Friends', slot: 'Friends' },
         ],
       },
       {
@@ -47,8 +47,8 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
           { label: 'Nodes', slot: 'Nodes' },
           { label: 'Contact Cards', slot: 'TeamContacts' },
           { label: 'Team Roster', slot: 'TeamRoster' },
-          { label: 'Graph', slot: 'Graph' },
           { label: 'TAK', slot: 'TAK' },
+          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
         ],
       },
       { id: 'map', tabs: [] },
@@ -59,6 +59,7 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
           { label: 'Stats', slot: 'Stats' },
           { label: 'Sniffer', slot: 'Sniffer' },
           { label: 'RF', slot: 'RF' },
+          { label: 'Graph', slot: 'Graph' },
         ],
       },
       {
@@ -83,8 +84,8 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
         id: 'chat',
         tabs: [
           { label: 'Chat', slot: 'Chat' },
+          { label: 'Friends', slot: 'Friends' },
           { label: 'Rooms', slot: 'Rooms' },
-          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
         ],
       },
       {
@@ -94,8 +95,9 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
           { label: 'Contact Cards', slot: 'TeamContacts' },
           { label: 'Team Roster', slot: 'TeamRoster' },
           { label: 'Repeaters', slot: 'Modules' },
-          { label: 'Graph', slot: 'Graph' },
+          { label: 'Room servers', slot: 'RoomServers' },
           { label: 'TAK', slot: 'TAK' },
+          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
         ],
       },
       { id: 'map', tabs: [] },
@@ -106,6 +108,7 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
           { label: 'Stats', slot: 'Stats' },
           { label: 'Sniffer', slot: 'Sniffer' },
           { label: 'RF', slot: 'RF' },
+          { label: 'Graph', slot: 'Graph' },
         ],
       },
       {
@@ -129,9 +132,9 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
         id: 'chat',
         tabs: [
           { label: 'Chat', slot: 'Chat' },
+          { label: 'Friends', slot: 'Friends' },
           { label: 'RRC', slot: 'RRC' },
           { label: 'Games', slot: 'Games' },
-          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
         ],
       },
       {
@@ -143,6 +146,7 @@ const EXPECTED_MATRIX: Record<Protocol, { radio: string; sections: MatrixSection
           { label: 'Network topology', slot: 'Topology' },
           { label: 'Remote', slot: 'Remote' },
           { label: 'TAK', slot: 'TAK' },
+          { label: 'Broadcasts', slot: 'ScheduledBroadcasts' },
         ],
       },
       { id: 'map', tabs: [] },
