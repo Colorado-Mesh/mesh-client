@@ -9,6 +9,7 @@ import {
   GitBranch,
   Globe,
   Hash,
+  Heart,
   House,
   Link2,
   Lock,
@@ -17,6 +18,7 @@ import {
   MessageCircle,
   Network,
   Radio,
+  Server,
   Settings,
   Shield,
   Siren,
@@ -42,6 +44,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'Friends':
+      return <Heart {...p} />;
     case 'ScheduledBroadcasts':
       return <Megaphone {...p} />;
     case 'Incident':
@@ -77,6 +81,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Radio {...p} />;
     case 'Rooms':
       return <House {...p} />;
+    case 'RoomServers':
+      return <Server {...p} />;
     case 'TAK':
       return <Crosshair {...p} />;
     case 'Stats':

@@ -61,7 +61,9 @@ import {
 import {
   buildProtocolSwitcherUnreadByProtocol,
   type ChatUnreadDmOptions,
+  computeDmUnreadCounts,
   computeReticulumChatUnread,
+  partitionDmUnreadByFriends,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
 import {
@@ -242,6 +244,7 @@ import {
   AppPanel,
   ChannelUtilizationChart,
   DiagnosticsPanel,
+  FriendsPanel,
   GamesPanel,
   IncidentPanel,
   MapPanel,
@@ -259,6 +262,7 @@ import {
   ReticulumRemotePanel,
   ReticulumTopologyPanel,
   RFHistogramsPanel,
+  RoomServersPanel,
   RoomsPanel,
   RrcPanel,
   ScheduledBroadcastsPanel,
@@ -283,6 +287,7 @@ import {
   computeTabMappings,
   DIAGNOSTICS_PANEL_INDEX,
   findFilteredTabIndexForPanel,
+  FRIENDS_PANEL_INDEX,
   GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
   INCIDENT_PANEL_INDEX,
@@ -294,6 +299,7 @@ import {
   REMOTE_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   RF_PANEL_INDEX,
+  ROOM_SERVERS_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
   RRC_PANEL_INDEX,
   SCHEDULED_BROADCASTS_PANEL_INDEX,
@@ -362,6 +368,10 @@ import {
   rememberMeshcoreFloodScopePreset,
   saveMeshcoreFloodScopePresets,
 } from './lib/meshcoreFloodScopePresetsStorage';
+import {
+  buildMeshcoreRoomMembershipContext,
+  isMeshcoreRoomJoined,
+} from './lib/meshcoreRoomMembership';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { isMeshcoreDmExcludedHwModel, pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -453,6 +463,7 @@ import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { useFriendsStore } from './stores/friendsStore';
 import { setActiveIdentity, useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapTraceRouteStore } from './stores/mapTraceRouteStore';
@@ -1810,7 +1821,24 @@ function AppContent() {
     touch(roomsLastReadRevision);
     touch(meshcoreMutedViewsRevision);
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
-    const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
+    const membershipCtx = buildMeshcoreRoomMembershipContext({
+      nodes: meshcoreUiNodes.values(),
+      messages: meshcoreUiMessages,
+      roomsLastRead,
+    });
+    // Prefer live Room contacts; also keep engaged room ids from messages when the
+    // node map is empty (startup hydrate) or the contact briefly dropped.
+    const knownRoomServerIds = new Set(
+      [...meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values())].filter((id) =>
+        isMeshcoreRoomJoined(id, membershipCtx),
+      ),
+    );
+    for (const msg of meshcoreUiMessages) {
+      const id = msg.roomServerId;
+      if (id != null && isMeshcoreRoomJoined(id, membershipCtx)) {
+        knownRoomServerIds.add(id);
+      }
+    }
     const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       roomsLastRead,
@@ -2161,8 +2189,72 @@ function AppContent() {
     () => protocolRecord(0, meshcoreRoomsUnread, 0),
     [meshcoreRoomsUnread],
   );
-  const chatUnread = selectByProtocol(chatUnreadByProtocol, protocol);
+  const chatUnreadTotal = selectByProtocol(chatUnreadByProtocol, protocol);
   const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
+  const activeFriendsIdentityId =
+    protocol === 'meshtastic'
+      ? meshtasticIdentityId
+      : protocol === 'meshcore'
+        ? meshcoreIdentityId
+        : reticulumIdentityId;
+  const friendsByIdentity = useFriendsStore((s) => s.byIdentity);
+  const activeFriendNodeIds = useMemo(() => {
+    if (!activeFriendsIdentityId) return new Set<number>();
+    return new Set(friendsByIdentity[activeFriendsIdentityId] ?? []);
+  }, [activeFriendsIdentityId, friendsByIdentity]);
+  const friendsUnread = useMemo(() => {
+    if (activeFriendNodeIds.size === 0) return 0;
+    const messages =
+      protocol === 'meshtastic'
+        ? meshtasticUiMessages
+        : protocol === 'meshcore'
+          ? meshcoreUiMessages
+          : reticulumUiMessages;
+    const own =
+      protocol === 'meshtastic'
+        ? meshtasticOwnNodeIdSet
+        : protocol === 'meshcore'
+          ? meshcoreOwnNodeIdSet
+          : reticulumOwnNodeIdSet;
+    touch(lastReadRevision.meshtastic);
+    touch(lastReadRevision.meshcore);
+    touch(lastReadRevision.reticulum);
+    touch(wordFilterEnabled);
+    touch(wordFilterWords);
+    touch(wordFilterDisabledConversations);
+    const persisted =
+      protocol === 'meshtastic'
+        ? getSanitizedMeshtasticChatLastRead(meshtasticUiMessages, meshtasticOwnNodeIdSet)
+        : protocol === 'meshcore'
+          ? meshcoreChatLastRead
+          : getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
+    const dm = computeDmUnreadCounts(
+      messages,
+      persisted,
+      own,
+      protocol,
+      protocol === 'meshcore' ? meshcoreChatUnreadDmOptions : undefined,
+    );
+    return partitionDmUnreadByFriends(dm, activeFriendNodeIds).friendsUnread;
+  }, [
+    activeFriendNodeIds,
+    lastReadRevision.meshtastic,
+    lastReadRevision.meshcore,
+    lastReadRevision.reticulum,
+    meshcoreChatLastRead,
+    meshcoreChatUnreadDmOptions,
+    meshcoreOwnNodeIdSet,
+    meshcoreUiMessages,
+    meshtasticOwnNodeIdSet,
+    meshtasticUiMessages,
+    protocol,
+    reticulumOwnNodeIdSet,
+    reticulumUiMessages,
+    wordFilterDisabledConversations,
+    wordFilterEnabled,
+    wordFilterWords,
+  ]);
+  const chatUnread = Math.max(0, chatUnreadTotal - friendsUnread);
   const storeMessageCountByProtocol = useMemo(
     () =>
       protocolRecord(
@@ -2250,6 +2342,7 @@ function AppContent() {
   const navBadgeCounts = useMemo<NavBadgeCounts>(
     () => ({
       Chat: chatUnread,
+      Friends: friendsUnread,
       Rooms: roomsUnread,
       RRC: rrcUnread,
       Games: capabilities.hasLrgpGames ? gamesUnread : 0,
@@ -2258,6 +2351,7 @@ function AppContent() {
     }),
     [
       chatUnread,
+      friendsUnread,
       roomsUnread,
       rrcUnread,
       capabilities.hasLrgpGames,
@@ -4309,6 +4403,14 @@ function AppContent() {
     [detailModalProtocol, protocol],
   );
 
+  const handleOpenFriendDm = useCallback(
+    (nodeNum: number) => {
+      setPendingDmTarget({ protocol, peer: nodeNum });
+      setActiveTab(1); // Switch to Chat tab
+    },
+    [protocol],
+  );
+
   const handleDeleteNode = useCallback(
     async (nodeNum: number) => {
       if (detailModalProtocol === 'meshcore') {
@@ -4354,8 +4456,8 @@ function AppContent() {
   );
 
   /**
-   * F-key / macro-bar room jump. Mirrors notification navigation (protocol enable check +
-   * scheduleProtocolCommit). Missing Rooms/RRC tab → debug + false (do not swallow the key).
+   * F-key / macro-bar room/channel jump. Mirrors notification navigation (protocol enable check +
+   * scheduleProtocolCommit). Missing destination tab → debug + false (do not swallow the key).
    */
   const openRoomMacroTarget = useCallback(
     (plan: RoomMacroPlan): boolean => {
@@ -4364,7 +4466,7 @@ function AppContent() {
         console.debug(`[App] room macro ignored: ${targetProtocol} disabled in App → Protocols`);
         return false;
       }
-      if (plan.protocol === 'meshcore') {
+      if (plan.kind === 'meshcore-room' || plan.kind === 'meshcore-channel') {
         const identities = useIdentityStore.getState().identities;
         const saved = identities[plan.identityId];
         if (saved?.protocol.type !== 'meshcore') {
@@ -4372,24 +4474,42 @@ function AppContent() {
           return false;
         }
       }
+      if (plan.kind === 'meshtastic-channel') {
+        const identities = useIdentityStore.getState().identities;
+        const saved = identities[plan.identityId];
+        if (saved?.protocol.type !== 'meshtastic') {
+          console.debug('[App] room macro ignored: saved Meshtastic identity missing');
+          return false;
+        }
+      }
       const destinationPanelIndex =
-        plan.protocol === 'meshcore' ? ROOMS_PANEL_INDEX : RRC_PANEL_INDEX;
+        plan.kind === 'meshcore-room'
+          ? ROOMS_PANEL_INDEX
+          : plan.kind === 'rrc-room'
+            ? RRC_PANEL_INDEX
+            : CHAT_PANEL_INDEX;
       const tabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, targetProtocol),
         destinationPanelIndex,
       );
-      // No Rooms/RRC tab for this protocol (capability gated off) — do not claim the key.
+      // No destination tab for this protocol (capability gated off) — do not claim the key.
       if (tabIndex < 0) {
         console.debug(`[App] room macro ignored: ${targetProtocol} has no destination panel tab`);
         return false;
       }
-      if (plan.protocol === 'meshcore' && plan.identityId !== meshcoreIdentityId) {
+      if (
+        (plan.kind === 'meshcore-room' || plan.kind === 'meshcore-channel') &&
+        plan.identityId !== meshcoreIdentityId
+      ) {
+        setActiveIdentity(plan.identityId);
+      }
+      if (plan.kind === 'meshtastic-channel' && plan.identityId !== meshtasticIdentityId) {
         setActiveIdentity(plan.identityId);
       }
       if (protocol === targetProtocol && pendingProtocolSelection == null) {
         setActiveTab(tabIndex);
-        if (plan.protocol === 'meshcore') setRoomsTabVisited(true);
-        else setRrcTabVisited(true);
+        if (plan.kind === 'meshcore-room') setRoomsTabVisited(true);
+        else if (plan.kind === 'rrc-room') setRrcTabVisited(true);
       } else {
         if (protocol !== targetProtocol) {
           lastTabByProtocol.current.set(protocol, activeTab);
@@ -4405,8 +4525,10 @@ function AppContent() {
             .hasReticulumPeersList,
         });
       }
-      if (plan.protocol === 'meshcore') {
+      if (plan.kind === 'meshcore-room') {
         setPendingRoomTarget(plan.roomNodeId);
+      } else if (plan.kind === 'meshcore-channel' || plan.kind === 'meshtastic-channel') {
+        setPendingChannelTarget({ protocol: plan.protocol, channel: plan.channelIndex });
       } else {
         const hub = plan.hubDestHash;
         const room = plan.room;
@@ -4431,6 +4553,7 @@ function AppContent() {
       capabilitiesByProtocol,
       enabledProtocols,
       meshcoreIdentityId,
+      meshtasticIdentityId,
       pendingProtocolSelection,
       protocol,
       scheduleProtocolCommit,
@@ -4455,6 +4578,16 @@ function AppContent() {
     },
     [tabsByProtocol.meshcore],
   );
+
+  const handleOpenRoomServers = useCallback(() => {
+    const filteredIndex = findFilteredTabIndexForPanel(
+      tabsByProtocol.meshcore,
+      ROOM_SERVERS_PANEL_INDEX,
+    );
+    if (filteredIndex >= 0) {
+      setActiveTab(filteredIndex);
+    }
+  }, [tabsByProtocol.meshcore]);
 
   const handleRoomTargetConsumed = useCallback(() => {
     setPendingRoomTarget(null);
@@ -4704,6 +4837,36 @@ function AppContent() {
             isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
           )
             ? handleMessageNode
+            : undefined
+        }
+        isFriend={Boolean(
+          selectedNode &&
+          (detailModalProtocol === 'meshtastic'
+            ? meshtasticIdentityId &&
+              (friendsByIdentity[meshtasticIdentityId] ?? []).includes(selectedNode.node_id)
+            : detailModalProtocol === 'meshcore'
+              ? meshcoreIdentityId &&
+                (friendsByIdentity[meshcoreIdentityId] ?? []).includes(selectedNode.node_id)
+              : reticulumIdentityId &&
+                (friendsByIdentity[reticulumIdentityId] ?? []).includes(selectedNode.node_id)),
+        )}
+        onToggleFriend={
+          selectedNode?.node_id !== detailMyNodeNum &&
+          !(
+            detailModalProtocol === 'meshcore' &&
+            isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
+          )
+            ? (nodeNum, next) => {
+                const identityId =
+                  detailModalProtocol === 'meshtastic'
+                    ? meshtasticIdentityId
+                    : detailModalProtocol === 'meshcore'
+                      ? meshcoreIdentityId
+                      : reticulumIdentityId;
+                if (!identityId) return;
+                if (next) useFriendsStore.getState().addFriend(identityId, nodeNum);
+                else useFriendsStore.getState().removeFriend(identityId, nodeNum);
+              }
             : undefined
         }
         onOpenRoom={
@@ -6362,6 +6525,59 @@ function AppContent() {
                         ) : null}
                       </div>
                       <div
+                        id={`panel-${FRIENDS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), FRIENDS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== FRIENDS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === FRIENDS_PANEL_INDEX ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <FriendsPanel
+                                protocol={protocol}
+                                identityId={activeFriendsIdentityId}
+                                nodes={nodesForUi}
+                                messages={
+                                  protocol === 'meshtastic'
+                                    ? meshtasticUiMessages
+                                    : protocol === 'meshcore'
+                                      ? meshcoreUiMessages
+                                      : reticulumUiMessages
+                                }
+                                ownNodeIds={
+                                  protocol === 'meshtastic'
+                                    ? meshtasticOwnNodeIdSet
+                                    : protocol === 'meshcore'
+                                      ? meshcoreOwnNodeIdSet
+                                      : reticulumOwnNodeIdSet
+                                }
+                                persistedLastRead={
+                                  protocol === 'meshtastic'
+                                    ? getSanitizedMeshtasticChatLastRead(
+                                        meshtasticUiMessages,
+                                        meshtasticOwnNodeIdSet,
+                                      )
+                                    : protocol === 'meshcore'
+                                      ? meshcoreChatLastRead
+                                      : getSanitizedReticulumChatLastRead(
+                                          reticulumUiMessages,
+                                          reticulumOwnNodeIdSet,
+                                        )
+                                }
+                                excludeDmPeer={
+                                  protocol === 'meshcore'
+                                    ? meshcoreChatUnreadDmOptions.excludeDmPeer
+                                    : undefined
+                                }
+                                onOpenDm={handleOpenFriendDm}
+                                isActive={activePanelIndex === FRIENDS_PANEL_INDEX}
+                              />
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
                         id={`panel-${ROOMS_PANEL_INDEX}`}
                         role="tabpanel"
                         aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), ROOMS_PANEL_INDEX))}`}
@@ -6393,6 +6609,7 @@ function AppContent() {
                                   onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                   onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
                                   onOpenRepeaterOps={handleOpenRepeaterOps}
+                                  onOpenRoomServers={handleOpenRoomServers}
                                   onMessageNode={handleMessageNode}
                                   onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                   scrollToTopRef={scrollToTopRoomsRef}
@@ -6401,6 +6618,28 @@ function AppContent() {
                                   alwaysShowMessageActions={alwaysShowMessageActions}
                                 />
                               </div>
+                            </Suspense>
+                          </ErrorBoundary>
+                        ) : null}
+                      </div>
+                      <div
+                        id={`panel-${ROOM_SERVERS_PANEL_INDEX}`}
+                        role="tabpanel"
+                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), ROOM_SERVERS_PANEL_INDEX))}`}
+                        hidden={activePanelIndex !== ROOM_SERVERS_PANEL_INDEX}
+                        className="h-full w-full min-w-0"
+                      >
+                        {activePanelIndex === ROOM_SERVERS_PANEL_INDEX &&
+                        capabilities.hasRoomServersPanel ? (
+                          <ErrorBoundary>
+                            <Suspense fallback={<PanelSkeleton />}>
+                              <RoomServersPanel
+                                nodes={meshcoreUiNodes}
+                                messages={meshcoreUiMessages}
+                                onOpenRoom={handleOpenRoom}
+                                onToggleFavorite={meshcorePanelActions.setNodeFavorited}
+                                isActive={activePanelIndex === ROOM_SERVERS_PANEL_INDEX}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -6651,6 +6890,11 @@ function AppContent() {
                                   onClearMeshcoreRepeaters={
                                     capabilities.modulesTabUsesRepeatersLabel
                                       ? meshcorePanelActions.clearAllRepeaters
+                                      : undefined
+                                  }
+                                  onClearMeshcoreRooms={
+                                    capabilities.hasRoomServersPanel
+                                      ? meshcorePanelActions.clearAllRooms
                                       : undefined
                                   }
                                   onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}

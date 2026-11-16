@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Hapus riwayat lingkungan",
     "clearEnvironmentHistoryConfirm": "Ini akan menghapus secara permanen semua riwayat sensor lingkungan yang tersimpan dari basis data. Perangkat → Bagan telemetri, sensor peta, dan sparkline akan dikosongkan sampai pembacaan baru tiba. Lanjutkan?",
     "dangerZoneEnvironmentHistoryHeading": "Riwayat lingkungan",
-    "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas."
+    "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas.",
+    "clearAllRooms": "Hapus Semua Ruangan",
+    "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -5797,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Server ruangan",
-    "noRoomsYet": "Belum ada server ruangan yang ditemukan. Kontak ruangan muncul saat tipe Room beriklan di mesh.",
     "selectRoom": "Pilih server ruangan untuk melihat dan memposting pesan",
     "postCount": "{{count}} postingan",
     "lastPost": "Postingan terakhir",
@@ -5908,7 +5909,17 @@
     "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah.",
     "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
     "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan.",
-    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah."
+    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah.",
+    "noJoinedRoomsYet": "Belum ada ruang yang diikuti. Buka Jaringan → Server ruang untuk menelusuri ruang BBS yang ditemukan, lalu masuk atau tambahkan ke favorit.",
+    "joinedListHint": "Daftar ini berisi ruang yang telah Anda ikuti. Temukan server ruang baru di Jaringan → Server ruang.",
+    "browseRoomServers": "Server ruangan",
+    "browseRoomServersAria": "Buka direktori server Ruang Jaringan",
+    "browseRoomServersHint": "Telusuri server ruang MeshCore yang ditemukan di tab Jaringan",
+    "removeFromRooms": "Hapus dari Ruangan",
+    "removeFromRoomsHint": "Hapus status login dan pindahkan ruangan ini kembali ke Jaringan → Server ruangan",
+    "removeFromRoomsConfirmTitle": "Hapus dari Ruang Obrolan?",
+    "removeFromRoomsConfirmMessage": "Keluar jika diperlukan, melupakan kata sandi yang disimpan, menghapus favorit dan status baca untuk ruang ini, dan mengembalikannya ke Jaringan → Server ruang. Riwayat postingan lokal disimpan.",
+    "removeFromRoomsFailed": "Tidak dapat menghapus ruang dari Ruang Obrolan."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -6029,7 +6040,9 @@
     "incident": "Insiden",
     "scheduledbroadcasts": "Siaran",
     "teamcontacts": "Kontak Tim",
-    "teamroster": "Daftar Tim"
+    "teamroster": "Daftar Tim",
+    "friends": "Teman",
+    "roomServers": "Server ruangan"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -7545,7 +7558,8 @@
     "roomGroupMeshcore": "Ruangan MeshCore",
     "roomGroupRrc": "Ruangan RRC",
     "roomGroupSaved": "Disimpan",
-    "jumpToRoomAria": "{{key}}: lompat ke {{label}}"
+    "jumpToRoomAria": "{{key}}: lompat ke {{label}}",
+    "roomGroupChatChannels": "Saluran obrolan"
   },
   "weatherForecast": {
     "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8888,26 @@
     "open": "Kunci saluran lemah atau terbuka di {{channel}}",
     "openLocation": "Buka kunci saluran dengan lokasi tepat di {{channel}}",
     "openLocationUplink": "Buka kunci saluran dengan lokasi yang tepat dan uplink MQTT di {{channel}}"
+  },
+  "friends": {
+    "title": "Teman",
+    "intro": "Orang-orang yang sering kamu kirimi pesan. Tambahkan seseorang dari detail kontak mereka atau DM. Pesan yang belum dibaca untuk teman ditampilkan di sini, bukan ditampilkan dua kali di Obrolan.",
+    "empty": "Belum ada teman. Buka kontak dan pilih Tambahkan ke Teman.",
+    "openDm": "Pesan {{name}}",
+    "openDmWithUnread": "Pesan {{name}}, {{count}} belum dibaca",
+    "remove": "Hapus",
+    "removeAria": "Hapus {{name}} dari Teman",
+    "add": "Tambahkan ke Teman",
+    "addAria": "Tambahkan {{name}} ke Teman",
+    "removeFromFriends": "Hapus dari Teman",
+    "unknownPeer": "Node {{id}}"
+  },
+  "roomServers": {
+    "title": "Server ruangan",
+    "intro": "MeshCore ruang BBS ditemukan di mesh yang belum Anda ikuti. Buka salah satu untuk masuk atau tambahkan ke favorit — ruang yang sudah Anda ikuti ada di Obrolan → Ruang.",
+    "empty": "Saat ini tidak ada server ruang yang belum bergabung. Kontak Ruang Baru muncul saat mereka beriklan di mesh.",
+    "openAria": "Buka {{name}}",
+    "unknownRoom": "Ruangan {{id}}",
+    "hops": "{{count}} transit"
   }
 }

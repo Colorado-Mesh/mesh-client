@@ -3,6 +3,7 @@ import type { Connection } from '@liamcottle/meshcore.js';
 
 import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { rememberMeshcoreDiscoverSelf } from '../meshcore/meshcoreDiscoverSelfCache';
+import { meshcoreSendTextMessageWithErrCode } from '../meshcore/meshcoreDmSend';
 import type { MeshCoreContactRaw } from '../meshcore/meshcoreHookTypes';
 import { seedMeshcorePrefixLookupMaps } from '../meshcore/meshcorePubKeyRegistry';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
@@ -248,7 +249,11 @@ export class MeshCoreProtocol implements Protocol {
           'MeshCore direct messages require destinationPubKey to be provided in SendMessageOptions.',
         );
       }
-      const result = await conn.sendTextMessage(opts.destinationPubKey, opts.text);
+      const result = await meshcoreSendTextMessageWithErrCode(
+        conn,
+        opts.destinationPubKey,
+        opts.text,
+      );
       const ackCrc = result.expectedAckCrc;
       if (ackCrc == null) return {};
       const estTimeout =

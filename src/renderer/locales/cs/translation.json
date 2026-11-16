@@ -541,7 +541,9 @@
     "clearEnvironmentHistory": "Vymazat historii prostředí",
     "clearEnvironmentHistoryConfirm": "Tímto trvale odstraníte veškerou uloženou historii senzorů prostředí z databáze. Grafy Zařízení → Telemetrie, senzory na mapě a minigrafy se vymažou, dokud nedorazí nová měření. Pokračovat?",
     "dangerZoneEnvironmentHistoryHeading": "Historie prostředí",
-    "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu."
+    "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu.",
+    "clearAllRooms": "Vymazat všechny místnosti",
+    "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -5843,7 +5845,6 @@
   },
   "roomsPanel": {
     "title": "Pokojové servery",
-    "noRoomsYet": "Zatím nebyly objeveny žádné pokojové servery. Kontakty na pokoj se zobrazují, když je na mřížce uveden typ Pokoj.",
     "selectRoom": "Vyberte pokojový server pro prohlížení a zveřejňování zpráv",
     "postCount": "{{count}} příspěvky",
     "lastPost": "Poslední příspěvek",
@@ -5954,7 +5955,17 @@
     "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo.",
     "leaveRoomConfirmTitle": "Opustit tuto místnost?",
     "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla.",
-    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna."
+    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna.",
+    "noJoinedRoomsYet": "Zatím žádné místnosti, ke kterým jste se připojili. Otevřete Síť → Servery místností a prohlédněte si objevené místnosti BBS. Poté se přihlaste nebo si nějakou přidejte do oblíbených.",
+    "joinedListHint": "Tento seznam obsahuje místnosti, ke kterým jste se připojili. Objevte nové servery místností v části Síť → Servery místností.",
+    "browseRoomServers": "Servery místností",
+    "browseRoomServersAria": "Otevřít adresář serverů v síťové místnosti",
+    "browseRoomServersHint": "Procházet zjištěné servery místností MeshCore na kartě Síť",
+    "removeFromRooms": "Odebrat z místností",
+    "removeFromRoomsHint": "Vymazat stav přihlášení a přesunout tuto místnost zpět do části Síť → Servery místností",
+    "removeFromRoomsConfirmTitle": "Odebrat z chatovacích místností?",
+    "removeFromRoomsConfirmMessage": "V případě potřeby se odhlásí, zapomene uložené heslo, vymaže oblíbené položky a stav přečtení pro tuto místnost a vrátí ji do části Síť → Servery místností. Historie místních příspěvků se uchovává.",
+    "removeFromRoomsFailed": "Místnost nelze odebrat z chatovacích místností."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -6075,7 +6086,9 @@
     "incident": "Incident",
     "scheduledbroadcasts": "Broadcasts",
     "teamcontacts": "Týmové kontakty",
-    "teamroster": "Soupiska týmu"
+    "teamroster": "Soupiska týmu",
+    "friends": "Přátelé",
+    "roomServers": "Pokojové servery"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -7613,7 +7626,8 @@
     "roomGroupMeshcore": "MeshCore pokojů",
     "roomGroupRrc": "Místnosti RRC",
     "roomGroupSaved": "Uloženo",
-    "jumpToRoomAria": "{{key}}: přejít na {{label}}"
+    "jumpToRoomAria": "{{key}}: přejít na {{label}}",
+    "roomGroupChatChannels": "Chatovací kanály"
   },
   "weatherForecast": {
     "areaAria": "Předpověď pro {{place}}, {{period}}: {{temp}}",
@@ -8959,5 +8973,26 @@
     "open": "Slabý nebo otevřený klíč kanálu na {{channel}}",
     "openLocation": "Otevřete klíč kanálu s přesnou polohou na {{channel}}",
     "openLocationUplink": "Otevřete klíč kanálu s přesnou polohou a MQTT uplink na {{channel}}"
+  },
+  "friends": {
+    "title": "Přátelé",
+    "intro": "Lidé, kterým často píšeš. Přidej někoho z jeho kontaktních údajů nebo z přímé zprávy. Nepřečtené zprávy od přátel se zobrazují tady, aby se nezobrazovaly dvakrát v chatu.",
+    "empty": "Zatím žádní přátelé. Otevřete kontakt a vyberte Přidat k přátelům.",
+    "openDm": "Zpráva {{name}}",
+    "openDmWithUnread": "Zpráva {{name}}, {{count}} nepřečtená",
+    "remove": "Odstranit",
+    "removeAria": "Odebrat {{name}} z přátel",
+    "add": "Přidat do přátelCore version string not (yet) available",
+    "addAria": "Přidat {{name}} mezi přátele",
+    "removeFromFriends": "Odebrat z přátel",
+    "unknownPeer": "Uzel {{id}}"
+  },
+  "roomServers": {
+    "title": "Pokojové servery",
+    "intro": "MeshCore BBS místnosti objevené v síti, ke kterým jste se ještě nepřipojili. Otevřete jednu z nich a přihlaste se nebo si ji přidejte do oblíbených – místnosti, ke kterým jste se připojili, najdete v části Chat → Místnosti.",
+    "empty": "Momentálně nejsou k dispozici žádné nepřipojené servery místností. Nové kontakty v místnosti se zobrazí, když se objeví v síti.",
+    "openAria": "Otevřít {{name}}",
+    "unknownRoom": "Místnost {{id}}",
+    "hops": "{{count}} přestupů"
   }
 }

@@ -926,6 +926,7 @@ export interface ElectronAPI {
     deleteMeshcoreContactsByAge: (days: number) => Promise<void>;
     pruneMeshcoreContactsByCount: (maxCount: number) => Promise<DbPruneResult>;
     clearMeshcoreRepeaters: () => Promise<void>;
+    clearMeshcoreRooms: () => Promise<void>;
     markAllMeshcoreContactsOffRadio: () => Promise<void>;
     getMeshcoreContactCount: () => Promise<number>;
     deleteMeshcoreContactsWithoutPubkey: () => Promise<{

@@ -98,12 +98,16 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { hasMeshcoreDestinationPubKey } from '@/renderer/lib/meshcore/meshcoreDestinationPubKey';
 import type { MeshcoreQrImportResult } from '@/renderer/lib/meshcore/meshcoreQrIngest';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { MESHCORE_PUBLIC_CHANNEL_INDEX } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
 import { recordMeshcoreSend } from '@/renderer/lib/meshcoreSendRateNotice';
-import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
+import {
+  isMeshcoreDmExcludedHwModel,
+  meshcoreIsChatStubNodeId,
+} from '@/renderer/lib/meshcoreUtils';
 import {
   MeshtasticHybridPathIcons,
   MeshtasticMqttPathIcon,
@@ -2982,6 +2986,10 @@ function ChatPanel({
     });
     setActiveDmNode(nodeNum);
     setViewMode('dm');
+    // DM tab / switcher buttons keep focus after click; move caret into the composer.
+    queueMicrotask(() => {
+      composerInputRef.current?.focus();
+    });
   }, []);
 
   const submitDmByAddress = useCallback(() => {
@@ -5366,11 +5374,16 @@ function ChatPanel({
                                         </button>
                                       );
                                     })()}
-                                {/* Quick DM */}
+                                {/* Quick DM — MeshCore needs a real contact key (hide stubs / keyless). */}
                                 {!isOwn &&
                                   !(
                                     protocol === 'meshcore' &&
-                                    isMeshcoreDmExcludedHwModel(nodes.get(msg.sender_id)?.hw_model)
+                                    (isMeshcoreDmExcludedHwModel(
+                                      nodes.get(msg.sender_id)?.hw_model,
+                                    ) ||
+                                      meshcoreIsChatStubNodeId(msg.sender_id) ||
+                                      (identityId != null &&
+                                        !hasMeshcoreDestinationPubKey(identityId, msg.sender_id)))
                                   ) && (
                                     <button
                                       type="button"

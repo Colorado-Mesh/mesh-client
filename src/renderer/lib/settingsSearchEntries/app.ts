@@ -765,6 +765,14 @@ const appEntries: readonly SettingSearchEntry[] = [
     visible: (ctx) => ctx.capabilities.modulesTabUsesRepeatersLabel,
   },
   {
+    id: 'app.danger.clearAllRooms',
+    slot: 'App',
+    labelKey: 'appPanel.clearAllRooms',
+    sectionKey: DANGER,
+    keywords: ['delete', 'rooms', 'bbs'],
+    visible: (ctx) => ctx.capabilities.hasRoomServersPanel,
+  },
+  {
     id: 'app.danger.clearAllLocalData',
     slot: 'App',
     labelKey: 'appPanel.clearAllLocalData',

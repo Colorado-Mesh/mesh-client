@@ -24,6 +24,22 @@ export type RoomMacroTarget =
       label: string;
     }
   | {
+      kind: 'meshcore-channel';
+      identityId: string;
+      /** Live slot at last save; remapped at jump via `channelKey` when present. */
+      channelIndex: number;
+      /** Stable channel identity key (name+PSK digest); preferred over index. */
+      channelKey?: string;
+      label: string;
+    }
+  | {
+      kind: 'meshtastic-channel';
+      identityId: string;
+      channelIndex: number;
+      channelKey?: string;
+      label: string;
+    }
+  | {
       kind: 'rrc-room';
       /** Lowercase hub destination hash. */
       hubDestHash: string;
@@ -94,6 +110,32 @@ export function sanitizeRoomTarget(raw: unknown): RoomMacroTarget | undefined {
       kind: 'meshcore-room',
       identityId,
       roomPubKeyHex: roomPubKeyHex.toLowerCase(),
+      label,
+    };
+  }
+  if (r.kind === 'meshcore-channel' || r.kind === 'meshtastic-channel') {
+    const identityId = typeof r.identityId === 'string' ? r.identityId.trim() : '';
+    const channelIndex =
+      typeof r.channelIndex === 'number' && Number.isInteger(r.channelIndex) ? r.channelIndex : NaN;
+    if (!identityId || !Number.isInteger(channelIndex) || channelIndex < 0) return undefined;
+    const channelKey =
+      typeof r.channelKey === 'string' && r.channelKey.trim()
+        ? r.channelKey.trim().toLowerCase()
+        : undefined;
+    if (r.kind === 'meshcore-channel') {
+      return {
+        kind: 'meshcore-channel',
+        identityId,
+        channelIndex,
+        ...(channelKey ? { channelKey } : {}),
+        label,
+      };
+    }
+    return {
+      kind: 'meshtastic-channel',
+      identityId,
+      channelIndex,
+      ...(channelKey ? { channelKey } : {}),
       label,
     };
   }

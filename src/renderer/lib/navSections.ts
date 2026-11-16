@@ -53,12 +53,22 @@ export const NAV_SECTION_RAIL_LABEL_KEYS: Partial<Record<NavSectionId, string>> 
  * Repeaters) and Device (Meshtastic module config); `navSectionForSlot` picks one by capability.
  */
 const SECTION_SLOT_ORDER: Record<NavSectionId, readonly TabSlotId[]> = {
-  chat: ['Chat', 'Rooms', 'RRC', 'Games', 'ScheduledBroadcasts'],
-  network: ['Nodes', 'TeamContacts', 'TeamRoster', 'Modules', 'Graph', 'Topology', 'Remote', 'TAK'],
+  chat: ['Chat', 'Friends', 'Rooms', 'RRC', 'Games'],
+  network: [
+    'Nodes',
+    'TeamContacts',
+    'TeamRoster',
+    'Modules',
+    'RoomServers',
+    'Topology',
+    'Remote',
+    'TAK',
+    'ScheduledBroadcasts',
+  ],
   map: ['Map'],
   // Reticulum only: Nomad Network gets its own rail entry so it is not buried under Network.
   nomad: ['NomadNetwork'],
-  monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF'],
+  monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF', 'Graph'],
   device: ['Connection', 'Radio', 'Modules', 'Telemetry', 'Admin', 'Security'],
   incident: ['Incident'],
   app: ['App'],

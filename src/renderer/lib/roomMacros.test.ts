@@ -21,7 +21,12 @@ describe('roomMacros registry', () => {
       seen.push(plan);
       return true;
     });
-    const plan: RoomMacroPlan = { protocol: 'reticulum', hubDestHash: 'aa', room: '#x' };
+    const plan: RoomMacroPlan = {
+      kind: 'rrc-room',
+      protocol: 'reticulum',
+      hubDestHash: 'aa',
+      room: '#x',
+    };
     expect(navigateRoomMacro(plan, 0)).toBe(true);
     expect(seen).toEqual([plan]);
     unregister();
@@ -43,7 +48,12 @@ describe('resolveRoomMacroPlan', () => {
           id === 'mc1' && hex === 'ab'.repeat(32) ? 42 : undefined,
       },
     );
-    expect(plan).toEqual({ protocol: 'meshcore', identityId: 'mc1', roomNodeId: 42 });
+    expect(plan).toEqual({
+      kind: 'meshcore-room',
+      protocol: 'meshcore',
+      identityId: 'mc1',
+      roomNodeId: 42,
+    });
   });
 
   it('returns null for unknown meshcore pubkey', () => {
@@ -53,6 +63,38 @@ describe('resolveRoomMacroPlan', () => {
         identityId: 'mc1',
         roomPubKeyHex: 'cd'.repeat(32),
         label: 'Gone',
+      },
+      { resolveMeshcoreRoomNodeId: () => undefined },
+    );
+    expect(plan).toBeNull();
+  });
+
+  it('resolves index-only chat channel targets when no live map is owned', () => {
+    const plan = resolveRoomMacroPlan(
+      {
+        kind: 'meshcore-channel',
+        identityId: 'mc1',
+        channelIndex: 2,
+        label: '#weather',
+      },
+      { resolveMeshcoreRoomNodeId: () => undefined },
+    );
+    expect(plan).toEqual({
+      kind: 'meshcore-channel',
+      protocol: 'meshcore',
+      identityId: 'mc1',
+      channelIndex: 2,
+    });
+  });
+
+  it('returns null when a keyed channel target cannot resolve against a live map', () => {
+    const plan = resolveRoomMacroPlan(
+      {
+        kind: 'meshcore-channel',
+        identityId: 'mc1',
+        channelIndex: 2,
+        channelKey: 'missing-key',
+        label: '#weather',
       },
       { resolveMeshcoreRoomNodeId: () => undefined },
     );
@@ -70,6 +112,7 @@ describe('resolveRoomMacroPlan', () => {
       { resolveMeshcoreRoomNodeId: () => undefined },
     );
     expect(plan).toEqual({
+      kind: 'rrc-room',
       protocol: 'reticulum',
       hubDestHash: 'aabbcc',
       room: '#weather',

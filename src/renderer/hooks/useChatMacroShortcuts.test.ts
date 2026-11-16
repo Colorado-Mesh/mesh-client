@@ -203,7 +203,12 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
     });
     const e = press('F3');
     expect(nav).toHaveBeenCalledWith(
-      { protocol: 'reticulum', hubDestHash: 'aabb', room: '#weather' },
+      {
+        kind: 'rrc-room',
+        protocol: 'reticulum',
+        hubDestHash: 'aabb',
+        room: '#weather',
+      },
       2,
     );
     expect(e.defaultPrevented).toBe(true);

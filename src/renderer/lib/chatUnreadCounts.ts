@@ -305,6 +305,26 @@ export function mostSevereMecp(
   return best;
 }
 
+export function sumUnreadMap(counts: ReadonlyMap<number, number>): number {
+  let total = 0;
+  for (const n of counts.values()) total += n;
+  return total;
+}
+
+/** Split DM unreads so Friends and Chat tab badges do not double-count the same peers. */
+export function partitionDmUnreadByFriends(
+  dmCounts: ReadonlyMap<number, number>,
+  friendNodeIds: ReadonlySet<number>,
+): { friendsUnread: number; otherDmUnread: number } {
+  let friendsUnread = 0;
+  let otherDmUnread = 0;
+  for (const [peer, n] of dmCounts) {
+    if (friendNodeIds.has(peer)) friendsUnread += n;
+    else otherDmUnread += n;
+  }
+  return { friendsUnread, otherDmUnread };
+}
+
 export function totalUnreadCount(
   messages: readonly ChatMessage[],
   persistedLastRead: Readonly<Record<string, number>>,
@@ -333,9 +353,9 @@ export function totalUnreadCount(
   let total = 0;
   // Reticulum chat is DM-only; channel-indexed rows must not inflate the badge.
   if (protocol !== 'reticulum') {
-    for (const n of channel.values()) total += n;
+    total += sumUnreadMap(channel);
   }
-  for (const n of dm.values()) total += n;
+  total += sumUnreadMap(dm);
   return total;
 }
 

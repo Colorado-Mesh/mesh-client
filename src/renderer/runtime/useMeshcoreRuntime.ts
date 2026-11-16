@@ -161,10 +161,10 @@ import {
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import { clearMeshcoreRepeaters } from '../lib/meshcore/meshcoreClearRepeaters';
+import { clearMeshcoreRooms } from '../lib/meshcore/meshcoreClearRooms';
 import { meshcoreCompanionProtocolVersionFromDeviceQuery } from '../lib/meshcore/meshcoreCompanionCli';
 import {
   attachMeshcoreContactCapacityPush,
-  clearMeshcoreFirmwareContactsFullLatch,
   getMeshcoreRadioMaxContacts,
   maybeRequestMeshcoreAutoOffloadForCount,
   maybeRequestMeshcoreAutoOffloadForError,
@@ -524,6 +524,7 @@ import {
   meshcoreMinimalNodeFromAdvertEvent,
   meshcorePreviousAdvertNameForRebuild,
   meshcoreRemoveContactErrorMessage,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSyntheticPlaceholderPubKeyHex,
   meshcoreTelemetryGpsAltitudeMeters,
@@ -5019,7 +5020,10 @@ export function useMeshcoreRuntime() {
         await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline, assertCurrent);
 
         const radioMax = getMeshcoreRadioMaxContacts();
-        if (contacts.length > meshcoreContactThresholds(radioMax).warning) {
+        if (
+          !meshcoreReportedMaxContactsIsProtocolCeiling(radioMax) &&
+          contacts.length > meshcoreContactThresholds(radioMax).warning
+        ) {
           console.warn(
             `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${radioMax})`,
           );
@@ -5365,6 +5369,36 @@ export function useMeshcoreRuntime() {
     setRawPackets([]);
   }, []);
 
+  const applyMeshcoreContactRemoval = useCallback(
+    (removedNodeIds: number[], radioRemoveFailures: number) => {
+      const removedIds = new Set(removedNodeIds);
+      setNodes((prev) => {
+        const next = new Map(prev);
+        for (const id of removedIds) next.delete(id);
+        return next;
+      });
+      const storeId = resolveMeshcoreStoreIdentityId();
+      for (const id of removedIds) {
+        if (storeId) removeNode(storeId, id);
+        pubKeyMapRef.current.delete(id);
+        outPathMapRef.current.delete(id);
+        radioContactPathLenByNodeRef.current.delete(id);
+      }
+      for (const [prefix, id] of pubKeyPrefixMapRef.current) {
+        if (removedIds.has(id)) pubKeyPrefixMapRef.current.delete(prefix);
+      }
+      setMeshcorePubKeyHexByNodeId((prev) => {
+        const next = new Map(prev);
+        for (const id of removedIds) next.delete(id);
+        return next;
+      });
+      if (radioRemoveFailures > 0) {
+        pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
+      }
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
+
   const clearAllRepeaters = useCallback(async () => {
     let dbContacts: MeshcoreContactDbRow[];
     try {
@@ -5382,31 +5416,62 @@ export function useMeshcoreRuntime() {
       dbContacts,
       clearDbRepeaters: () => window.electronAPI.db.clearMeshcoreRepeaters(),
     });
-    const removedIds = new Set(removedNodeIds);
-    setNodes((prev) => {
-      const next = new Map(prev);
-      for (const id of removedIds) next.delete(id);
-      return next;
-    });
-    const storeId = resolveMeshcoreStoreIdentityId();
-    for (const id of removedIds) {
-      if (storeId) removeNode(storeId, id);
-      pubKeyMapRef.current.delete(id);
-      outPathMapRef.current.delete(id);
-      radioContactPathLenByNodeRef.current.delete(id);
+    applyMeshcoreContactRemoval(removedNodeIds, radioRemoveFailures);
+  }, [applyMeshcoreContactRemoval, nodes]);
+
+  const clearAllRooms = useCallback(async () => {
+    const sessionConn = connRef.current;
+    const sessionIdentity = meshcoreIdentityIdRef.current;
+    const sessionGeneration = meshcoreSetupGenerationRef.current;
+    const sessionStillCurrent = (): boolean =>
+      connRef.current === sessionConn &&
+      meshcoreIdentityIdRef.current === sessionIdentity &&
+      meshcoreSetupGenerationRef.current === sessionGeneration;
+
+    let dbContacts: MeshcoreContactDbRow[];
+    try {
+      dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+    } catch (e: unknown) {
+      console.warn(
+        '[useMeshcoreRuntime] clearAllRooms getMeshcoreContacts error ' + errLikeToLogString(e),
+      );
+      throw e instanceof Error ? e : new Error(String(e));
     }
-    for (const [prefix, id] of pubKeyPrefixMapRef.current) {
-      if (removedIds.has(id)) pubKeyPrefixMapRef.current.delete(prefix);
+
+    // Disconnected: DB/UI-only clear — do not enter the radio chat operation lane.
+    if (!sessionConn) {
+      if (!sessionStillCurrent()) return;
+      const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRooms({
+        conn: null,
+        selfNodeId: myNodeNumRef.current,
+        nodes,
+        dbContacts,
+        clearDbRooms: () => window.electronAPI.db.clearMeshcoreRooms(),
+      });
+      if (!sessionStillCurrent()) return;
+      applyMeshcoreContactRemoval(removedNodeIds, radioRemoveFailures);
+      return;
     }
-    setMeshcorePubKeyHexByNodeId((prev) => {
-      const next = new Map(prev);
-      for (const id of removedIds) next.delete(id);
-      return next;
-    });
-    if (radioRemoveFailures > 0) {
-      pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
-    }
-  }, [nodes, resolveMeshcoreStoreIdentityId]);
+
+    if (!sessionStillCurrent()) return;
+    const { removedNodeIds, radioRemoveFailures } = await runRadioChatOperation(
+      sessionConn,
+      async () => {
+        if (!sessionStillCurrent()) {
+          return { removedNodeIds: [] as number[], radioRemoveFailures: 0 };
+        }
+        return clearMeshcoreRooms({
+          conn: sessionConn,
+          selfNodeId: myNodeNumRef.current,
+          nodes,
+          dbContacts,
+          clearDbRooms: () => window.electronAPI.db.clearMeshcoreRooms(),
+        });
+      },
+    );
+    if (!sessionStillCurrent()) return;
+    applyMeshcoreContactRemoval(removedNodeIds, radioRemoveFailures);
+  }, [applyMeshcoreContactRemoval, nodes]);
 
   const clearAllMeshcoreContacts = useCallback(async () => {
     const conn = connRef.current;
@@ -10011,11 +10076,9 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
         pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
-        clearMeshcoreFirmwareContactsFullLatch();
-        // The removals already happened; a zero count must keep the contacts-full debounce.
+        // Latch/debounce ownership stays with runContactsFullOffload (zero removals keep latch).
         return removedFromRadio;
       }
-      clearMeshcoreFirmwareContactsFullLatch();
       pushAppToast(
         i18n.t('radioPanel.offloadedContacts', {
           count: Math.max(offloadedCount, removedFromRadio),
@@ -10061,6 +10124,7 @@ export function useMeshcoreRuntime() {
       forgetContactAdvert,
       cancelPendingDmAck,
       clearAllRepeaters,
+      clearAllRooms,
       clearAllMeshcoreContacts,
       offloadContactsFromRadio,
       setOwner,
@@ -10221,6 +10285,7 @@ export function useMeshcoreRuntime() {
       forgetContactAdvert,
       cancelPendingDmAck,
       clearAllRepeaters,
+      clearAllRooms,
       clearAllMeshcoreContacts,
       offloadContactsFromRadio,
       setOwner,

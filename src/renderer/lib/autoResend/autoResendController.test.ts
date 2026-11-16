@@ -155,6 +155,51 @@ describe('startAutoResend', () => {
     expect(hasMessage(identityId, '1')).toBe(true);
   });
 
+  it('advances attempt + backoff when send fails immediately inside sendFn (sending→failed)', () => {
+    // Mirrors MeshCore DM auto-resend when companion send fails before ACK (e.g. missing key):
+    // addMessage(sending) then updateMessageStatus(failed) run inside sendFn, before it returns.
+    const protocol: MeshProtocol = 'meshcore';
+    const identityId = identityFor(protocol);
+    send.mockImplementation((_proto, args) => {
+      nextId += 1;
+      const id = String(nextId);
+      addMessage(identityId, dm(id, { payload: args.text, status: 'sending' }));
+      setStatus(identityId, id, 'failed');
+      return id;
+    });
+
+    addMessage(identityId, dm('1'));
+    setStatus(identityId, '1', 'failed');
+    expect(useAutoResendStore.getState().entries[autoResendKey(protocol, '1')]).toMatchObject({
+      attempt: 1,
+    });
+
+    vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[0]);
+    expect(send).toHaveBeenCalledTimes(1);
+    const afterFirst = String(nextId);
+    expect(
+      useAutoResendStore.getState().entries[autoResendKey(protocol, afterFirst)],
+    ).toMatchObject({
+      attempt: 2,
+      messageId: afterFirst,
+    });
+
+    vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[1]);
+    expect(send).toHaveBeenCalledTimes(2);
+    const afterSecond = String(nextId);
+    expect(
+      useAutoResendStore.getState().entries[autoResendKey(protocol, afterSecond)],
+    ).toMatchObject({
+      attempt: 3,
+      messageId: afterSecond,
+    });
+
+    vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[2]);
+    expect(send).toHaveBeenCalledTimes(3);
+    setStatus(identityId, String(nextId), 'failed');
+    expect(useAutoResendStore.getState().entries).toEqual({});
+  });
+
   it('does not resend when the message is acked before the timer fires', () => {
     const identityId = identityFor('meshtastic');
     addMessage(identityId, dm('1'));
@@ -226,6 +271,35 @@ describe('startAutoResend', () => {
       vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[0]);
       expect(outcomes).toEqual([
         { identityId, protocol: 'meshtastic', originId: '1', outcome: 'gave-up' },
+      ]);
+    });
+
+    it('emits gave-up exactly once when sendFn synchronously fails at the last attempt', () => {
+      const identityId = identityFor('meshcore');
+      addMessage(identityId, dm('1'));
+      let currentId = '1';
+      for (let attempt = 1; attempt < REGULAR_MESSAGE_MAX_AUTO_RESENDS; attempt += 1) {
+        setStatus(identityId, currentId, 'failed');
+        vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[attempt - 1]);
+        currentId = String(nextId);
+      }
+      // Final attempt: create as sending (tracks lineage) then fail before sendFn returns.
+      send.mockImplementationOnce((protocol, args) => {
+        nextId += 1;
+        const id = String(nextId);
+        addMessage(identityFor(protocol), dm(id, { payload: args.text }));
+        setStatus(identityFor(protocol), id, 'failed');
+        return id;
+      });
+      setStatus(identityId, currentId, 'failed');
+      vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[REGULAR_MESSAGE_MAX_AUTO_RESENDS - 1]);
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshcore', originId: '1', outcome: 'gave-up' },
+      ]);
+      // A subsequent store tick must not emit a second gave-up for a restored lineage.
+      setStatus(identityId, String(nextId), 'failed');
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshcore', originId: '1', outcome: 'gave-up' },
       ]);
     });
 

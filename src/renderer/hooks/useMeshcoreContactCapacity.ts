@@ -20,7 +20,10 @@ import {
   type MeshcoreOffloadProgress,
   throwIfMeshcoreOffloadAborted,
 } from '../lib/meshcoreOffload';
-import { meshcoreContactThresholds } from '../lib/meshcoreUtils';
+import {
+  meshcoreContactThresholds,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
+} from '../lib/meshcoreUtils';
 
 export type MeshcoreContactCapacityLevel = 'unknown' | 'normal' | 'warning' | 'critical';
 
@@ -43,7 +46,8 @@ export type OffloadContactsFromRadioFn = (
   options?: MeshcoreOffloadFromRadioOptions,
 ) => Promise<number>;
 
-function summarizeMeshcoreContactCapacity(
+/** Exported for unit tests of protocol-ceiling capacity behaviour. */
+export function summarizeMeshcoreContactCapacity(
   count: number | null,
   firmwareFull: boolean,
   radioMax: number,
@@ -51,6 +55,13 @@ function summarizeMeshcoreContactCapacity(
   const { max, warning, critical } = meshcoreContactThresholds(radioMax);
   if (firmwareFull) {
     return { count, max, level: 'critical', isWarning: true, isCritical: true };
+  }
+  // DEVICE_INFO max of 510 is a protocol ceiling, not a reliable table size — skip count levels.
+  if (meshcoreReportedMaxContactsIsProtocolCeiling(max)) {
+    if (count === null) {
+      return { count, max, level: 'unknown', isWarning: false, isCritical: false };
+    }
+    return { count, max, level: 'normal', isWarning: false, isCritical: false };
   }
   if (count === null) {
     return { count, max, level: 'unknown', isWarning: false, isCritical: false };
@@ -162,7 +173,13 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
         throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
 
         const reconciledCount = await refreshCount({ preserveOnError: true });
-        clearMeshcoreFirmwareContactsFullLatch();
+        const radioMax = getMeshcoreRadioMaxContacts();
+        const capacityAvailable =
+          reconciledCount != null && reconciledCount < meshcoreContactThresholds(radioMax).critical;
+        // Zero radio removals with a still-full table must keep the firmware-full latch.
+        if (capacityAvailable || (offloadedFromRadioCount ?? 0) > 0) {
+          clearMeshcoreFirmwareContactsFullLatch();
+        }
         return { offloadedFromRadioCount, offloadedCount, reconciledCount, refreshFailed };
       } catch (e) {
         if (isMeshcoreOffloadAbortError(e)) {

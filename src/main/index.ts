@@ -6041,6 +6041,24 @@ ipcMain.handle('db:clearMeshcoreRepeaters', (event) => {
   }
 });
 
+// Deletes only non-favorited Room-type contacts (contact_type = 3), leaving Chat and Repeater contacts intact.
+ipcMain.handle('db:clearMeshcoreRooms', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  try {
+    const db = getDbForIpc('db:clearMeshcoreRooms');
+    if (!db) return { changes: 0 };
+    return db
+      .prepareOnce(
+        'DELETE FROM meshcore_contacts WHERE contact_type = 3 AND COALESCE(favorited, 0) = 0',
+      )
+      .run();
+  } catch (err) {
+    finishDbIpcHandler('db:clearMeshcoreRooms', err);
+  }
+});
+
 // Marks all contacts as not on radio (on_radio = 0).
 ipcMain.handle('db:markAllMeshcoreContactsOffRadio', (event) => {
   if (!validateIpcSender(event))

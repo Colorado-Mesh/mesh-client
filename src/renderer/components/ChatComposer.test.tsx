@@ -36,6 +36,12 @@ vi.mock('react-i18next', () => ({
         'roomsPanel.postFailed': 'Failed to post to room',
         'chatPanel.emojiButton': 'Emoji',
         'chatPanel.insertEmoji': 'Insert emoji',
+        'chatPanel.markdownToolbar': 'Markdown formatting',
+        'chatPanel.markdownBold': 'Bold',
+        'chatPanel.markdownItalic': 'Italic',
+        'chatPanel.markdownStrike': 'Strikethrough',
+        'chatPanel.markdownCode': 'Code',
+        'chatPanel.markdownLink': 'Link',
         'chatPanel.cancelReply': 'Cancel reply',
         'chatPanel.queueButton': 'Queue',
         'chatPanel.replyingTo': 'Replying to',
@@ -112,6 +118,27 @@ describe('ChatComposer', () => {
     resetMeshtasticTextSendPacingForTests();
     resetMeshcoreSendRateForTests();
     resetLateSendOutcomesForTests();
+  });
+
+  it('shows markdown toolbar and wraps the selected text', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="channel:0"
+        isConnected
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+        payloadLimit={MESHTASTIC_PAYLOAD_LIMIT}
+        showMacros={false}
+      />,
+    );
+    expect(screen.getByTestId('chat-markdown-toolbar')).toBeInTheDocument();
+    const textarea = screen.getByRole<HTMLTextAreaElement>('textbox');
+    await user.click(textarea);
+    await user.type(textarea, 'hello');
+    textarea.setSelectionRange(0, 5);
+    await user.click(screen.getByRole('button', { name: 'Bold' }));
+    expect(textarea).toHaveValue('**hello**');
   });
 
   it('has no axe violations when connected', async () => {

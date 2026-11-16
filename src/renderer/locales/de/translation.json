@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Umgebungsverlauf löschen",
     "clearEnvironmentHistoryConfirm": "Dadurch wird der gesamte gespeicherte Verlauf der Umgebungssensoren dauerhaft aus der Datenbank gelöscht. Gerät → Telemetrie-Diagramme, Karten-Sensoren und Sparklines werden gelöscht, bis neue Messwerte eingehen. Fortfahren?",
     "dangerZoneEnvironmentHistoryHeading": "Umgebungsverlauf",
-    "dangerZoneEnvironmentHistoryDesc": "Entfernen Sie alle gespeicherten Messwerte für Temperatur, Luftfeuchtigkeit, Druck und Luftqualität für jedes Protokoll und jede Identität."
+    "dangerZoneEnvironmentHistoryDesc": "Entfernen Sie alle gespeicherten Messwerte für Temperatur, Luftfeuchtigkeit, Druck und Luftqualität für jedes Protokoll und jede Identität.",
+    "clearAllRooms": "Alle Räume löschen",
+    "clearAllRoomsConfirm": "Dadurch werden alle nicht zu den Favoriten gehörenden MeshCore-Room-Server aus dem verbundenen Radio und der lokalen Datenbank entfernt. Räume werden wieder angezeigt, wenn sie erneut angekündigt werden. Dieser Vorgang kann nicht rückgängig gemacht werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -5797,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Raumserver",
-    "noRoomsYet": "Noch keine Raumserver entdeckt. Raumkontakte erscheinen, wenn der Typ Raum auf dem Netz wirbt.",
     "selectRoom": "Wählen Sie einen Raumserver aus, um Nachrichten anzuzeigen und zu posten",
     "postCount": "{{count}} Posts",
     "lastPost": "Letzter Beitrag",
@@ -5908,7 +5909,17 @@
     "autoLoginSaveFailed": "Die Auto-Login-Einstellung konnte nicht gespeichert werden. Ihre vorherige Einstellung ist unverändert.",
     "leaveRoomConfirmTitle": "Diesen Raum verlassen?",
     "leaveRoomConfirmMessage": "Von diesem Raumserver loggen Sie sich über das Funkgerät aus. Sie können sich später mit dem Gast oder dem gespeicherten Passwort erneut anmelden.",
-    "syncSaveFailed": "Die Synchronisierungseinstellungen konnten nicht gespeichert werden. Ihre bisherigen Einstellungen sind unverändert."
+    "syncSaveFailed": "Die Synchronisierungseinstellungen konnten nicht gespeichert werden. Ihre bisherigen Einstellungen sind unverändert.",
+    "noJoinedRoomsYet": "Noch keine beigetretenen Räume. Öffnen Sie Netzwerk → Raumserver, um die gefundenen BBS-Räume zu durchsuchen, und melden Sie sich dann an oder fügen Sie einen Raum zu Ihren Favoriten hinzu.",
+    "joinedListHint": "Diese Liste enthält Räume, denen Sie beigetreten sind. Entdecke neue Raumserver unter Netzwerk → Raumserver.",
+    "browseRoomServers": "Raumserver",
+    "browseRoomServersAria": "Verzeichnis der Network-Room-Server öffnen",
+    "browseRoomServersHint": "Durchsuchen Sie die erkannten MeshCore-Raumserver auf der Registerkarte „Netzwerk“",
+    "removeFromRooms": "Aus Räumen entfernen",
+    "removeFromRoomsHint": "Meldezustand löschen und diesen Raum zurück zu „Netzwerk“ → „Raumserver“ verschieben",
+    "removeFromRoomsConfirmTitle": "Aus den Chaträumen entfernen?",
+    "removeFromRoomsConfirmMessage": "Meldet sich bei Bedarf ab, vergisst das gespeicherte Passwort, löscht die Favoriten und den Lesestatus für diesen Raum und kehrt zu Netzwerk → Raumserver zurück. Der lokale Beitragshistorie wird beibehalten.",
+    "removeFromRoomsFailed": "Der Raum konnte nicht aus den Chaträumen entfernt werden."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -6029,7 +6040,9 @@
     "incident": "Vorfall",
     "scheduledbroadcasts": "Mitteilungen",
     "teamcontacts": "Teamkontakte",
-    "teamroster": "Teamliste"
+    "teamroster": "Teamliste",
+    "friends": "Freunde",
+    "roomServers": "Raumserver"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -7545,7 +7558,8 @@
     "roomGroupMeshcore": "MeshCore-Räume",
     "roomGroupRrc": "RRC-Räume",
     "roomGroupSaved": "Gespeichert",
-    "jumpToRoomAria": "{{key}}: Wechseln zu {{label}}"
+    "jumpToRoomAria": "{{key}}: Wechseln zu {{label}}",
+    "roomGroupChatChannels": "Chat-Kanäle"
   },
   "weatherForecast": {
     "areaAria": "Prognose für {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8888,26 @@
     "open": "Schwacher oder offener Kanalschlüssel auf {{channel}}",
     "openLocation": "Kanalschlüssel mit genauer Position auf {{channel}} öffnen",
     "openLocationUplink": "Öffnen Sie den Kanalschlüssel mit genauer Position und MQTT-Uplink auf {{channel}}"
+  },
+  "friends": {
+    "title": "Freunde",
+    "intro": "Personen, denen du häufig Nachrichten schickst. Füge jemanden über dessen Kontaktdaten oder eine Direktnachricht hinzu. Ungelesene Nachrichten von Freunden werden hier angezeigt, anstatt im Chat doppelt zu erscheinen.",
+    "empty": "Noch keine Freunde. Öffnen Sie einen Kontakt und wählen Sie „Zu Freunden hinzufügen“.",
+    "openDm": "Nachricht {{name}}",
+    "openDmWithUnread": "Nachricht {{name}}, {{count}} ungelesen",
+    "remove": "Entlassen",
+    "removeAria": "{{name}} aus Freunden entfernen",
+    "add": "Zur Freundesliste hinzufügen",
+    "addAria": "{{name}} zu Freunden hinzufügen",
+    "removeFromFriends": "Aus der Kontaktliste entfernen",
+    "unknownPeer": "Knoten {{id}}"
+  },
+  "roomServers": {
+    "title": "Raumserver",
+    "intro": "MeshCore BBS-Räume, die im Mesh entdeckt wurden und denen du noch nicht beigetreten bist. Öffne einen Raum, um dich anzumelden oder ihn zu deinen Favoriten hinzuzufügen – Räume, denen du beigetreten bist, findest du unter Chat → Räume.",
+    "empty": "Derzeit gibt es keine Raumserver, denen man beitreten kann. Neue Raumkontakte werden angezeigt, wenn sie im Mesh-Netzwerk bekannt gegeben werden.",
+    "openAria": "{{name}} öffnen",
+    "unknownRoom": "Raum {{id}}",
+    "hops": "{{count}} Umstiege"
   }
 }

@@ -12,7 +12,11 @@ import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter
 import { errLikeToLogString } from '../errLikeToLogString';
 import i18n from '../i18n';
 import { isMeshcoreTableFullError } from '../meshcoreRadioErr';
-import { MESHCORE_MAX_CONTACTS, meshcoreContactThresholds } from '../meshcoreUtils';
+import {
+  MESHCORE_MAX_CONTACTS,
+  meshcoreContactThresholds,
+  meshcoreReportedMaxContactsIsProtocolCeiling,
+} from '../meshcoreUtils';
 import { MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS } from '../timeConstants';
 import type { IdentityId } from '../types';
 
@@ -180,10 +184,9 @@ async function runContactsFullOffload(): Promise<void> {
   if (!tryBeginMeshcoreOffload()) return;
   try {
     const removed = await runner();
-    setFirmwareContactsFullActive(false);
-    // Zero removals leave the table full. Keeping the alarm timestamp preserves the debounce
-    // so the next count check does not start another offload immediately.
+    // Zero removals leave the table full — keep the firmware-full latch and debounce stamp.
     if (removed !== 0) {
+      setFirmwareContactsFullActive(false);
       lastContactsFullAlarmAt = 0;
     }
   } finally {
@@ -273,7 +276,13 @@ export function maybeRequestMeshcoreAutoOffloadForCount(
   now = Date.now(),
 ): boolean {
   if (!readMeshcoreAutoOffloadWhenFull()) return false;
-  const { critical } = meshcoreContactThresholds(getMeshcoreRadioMaxContacts());
+  // Wait until DEVICE_INFO / setMeshcoreRadioMaxContacts established the real max.
+  // Debounced rebuilds during initConn must not fire on the 350 fallback.
+  if (radioMaxContacts == null) return false;
+  const radioMax = getMeshcoreRadioMaxContacts();
+  // DEVICE_INFO saturates at 510; count thresholds are unreliable for larger virtual companions.
+  if (meshcoreReportedMaxContactsIsProtocolCeiling(radioMax)) return false;
+  const { critical } = meshcoreContactThresholds(radioMax);
   if (onRadioCount < critical) return false;
   requestMeshcoreAutoOffload('count_threshold', now);
   return true;

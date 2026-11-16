@@ -21,7 +21,9 @@ import {
   PARENT_HOVER_ATTR,
   RotateCw,
   Search,
+  Server,
   Star,
+  Trash2,
   Wrench,
   X,
 } from 'lucide-react-motion';
@@ -49,6 +51,7 @@ import {
   loadStarred,
   mergeRoomLastReadWatermark,
   notifyPersistedRoomsLastReadChanged,
+  removePersistedRoomsLastReadForRoom,
   savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
@@ -82,6 +85,10 @@ import {
   meshcoreRoomLoginQueueSize,
 } from '@/renderer/lib/meshcoreRoomLoginQueue';
 import {
+  buildMeshcoreRoomMembershipContext,
+  isMeshcoreRoomJoined,
+} from '@/renderer/lib/meshcoreRoomMembership';
+import {
   disableMeshcoreRoomAutoLogin,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
@@ -89,6 +96,7 @@ import {
 } from '@/renderer/lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreCancelAllRoomLogins,
+  meshcoreCancelRoomLogin,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
@@ -99,6 +107,7 @@ import {
 import { resolveMeshcoreRoomSidebarMarker } from '@/renderer/lib/meshcoreRoomSidebarMarker';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import {
+  clearMeshcoreRoomLastPostAt,
   getMeshcoreRoomLastPostAt,
   getMeshcoreRoomSyncConfig,
   setMeshcoreRoomSyncConfig,
@@ -214,6 +223,8 @@ interface Props {
   onSendRoomAdminCli: (nodeId: number, command: string) => Promise<string>;
   /** Jump to Repeaters & Rooms ops for this room (infrastructure CLI / ACL). */
   onOpenRepeaterOps?: (nodeId: number) => void;
+  /** Jump to Network → Room servers (discovered BBS directory). */
+  onOpenRoomServers?: () => void;
   onMessageNode?: (nodeNum: number) => void;
   onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
   /** Ref for scroll-to-top (Rooms tab inner message stream). */
@@ -290,6 +301,7 @@ export default function RoomsPanel({
   onSendRoomPost,
   onSendRoomAdminCli,
   onOpenRepeaterOps,
+  onOpenRoomServers,
   onMessageNode,
   onToggleFavorite,
   scrollToTopRef,
@@ -332,6 +344,8 @@ export default function RoomsPanel({
   const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
   /** Room id captured when Leave is clicked; null when the confirm dialog is closed. */
   const [leaveConfirmRoomId, setLeaveConfirmRoomId] = useState<number | null>(null);
+  /** Room id for Remove from Chat Rooms confirm; null when closed. */
+  const [removeConfirmRoomId, setRemoveConfirmRoomId] = useState<number | null>(null);
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const consumedInitialRoomRef = useRef<number | null>(null);
@@ -421,18 +435,34 @@ export default function RoomsPanel({
 
   useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
 
-  const roomServers = useMemo(
+  const membershipCtx = useMemo(
     () =>
-      Array.from(nodes.values())
-        .filter((n) => n.hw_model === 'Room')
-        .sort((a, b) => {
-          const aFav = a.favorited ? 1 : 0;
-          const bFav = b.favorited ? 1 : 0;
-          if (aFav !== bFav) return bFav - aFav;
-          return (a.long_name ?? '').localeCompare(b.long_name ?? '');
-        }),
-    [nodes],
+      buildMeshcoreRoomMembershipContext({
+        nodes: nodes.values(),
+        messages,
+        roomsLastRead: persistedRoomsLastRead,
+        isLoggedIn: (nodeId) => roomSessionRevision >= 0 && meshcoreIsRoomLoggedIn(nodeId),
+        hasSavedGuestCredential: (nodeId) =>
+          storedRoomIds.has(nodeId) || meshcoreRoomHasSavedGuestCredential(nodeId),
+      }),
+    [messages, nodes, persistedRoomsLastRead, roomSessionRevision, storedRoomIds],
   );
+
+  const roomServers = useMemo(() => {
+    const all = Array.from(nodes.values()).filter((n) => n.hw_model === 'Room');
+    return all
+      .filter((n) => {
+        // Keep an explicitly opened conversation visible before engage signals persist.
+        if (selectedRoomId === n.node_id) return true;
+        return isMeshcoreRoomJoined(n.node_id, membershipCtx);
+      })
+      .sort((a, b) => {
+        const aFav = a.favorited ? 1 : 0;
+        const bFav = b.favorited ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav;
+        return (a.long_name ?? '').localeCompare(b.long_name ?? '');
+      });
+  }, [membershipCtx, nodes, selectedRoomId]);
 
   const roomOrderItems = roomServers.map((room) => ({
     id: String(room.node_id),
@@ -1416,8 +1446,80 @@ export default function RoomsPanel({
     startRoomLeave(nodeId, () => onLeaveRoom(nodeId));
   }, [isConnected, leaveConfirmRoomId, onLeaveRoom, startRoomLeave]);
 
+  const handleRemoveFromRooms = useCallback(() => {
+    if (selectedRoomId == null) return;
+    setRemoveConfirmRoomId(selectedRoomId);
+  }, [selectedRoomId]);
+
+  const cancelRemoveFromRoomsConfirm = useCallback(() => {
+    setRemoveConfirmRoomId(null);
+  }, []);
+
+  const confirmRemoveFromRooms = useCallback(() => {
+    const nodeId = removeConfirmRoomId;
+    if (nodeId == null) return;
+    setRemoveConfirmRoomId(null);
+    void (async () => {
+      try {
+        // Cancel in-flight / queued login so a late success cannot re-surface the room.
+        meshcoreCancelRoomLogin(nodeId);
+        if (meshcoreIsRoomLoggedIn(nodeId) && isConnected) {
+          await onLeaveRoom(nodeId);
+        }
+        const secrets = getMeshcoreRoomSavedSecretsSummary(nodeId);
+        if (secrets.hasCredential || secrets.syncEnabled || secrets.autoLoginOnConnect) {
+          await forgetMeshcoreRoomSavedSecrets(nodeId);
+        } else {
+          const prev = getMeshcoreRoomSyncConfig(nodeId);
+          if (prev.enabled || prev.autoLoginOnConnect) {
+            await setMeshcoreRoomSyncConfig(nodeId, {
+              enabled: false,
+              intervalMinutes: prev.intervalMinutes,
+              autoLoginOnConnect: false,
+            });
+          }
+        }
+        const node = nodes.get(nodeId);
+        if (node?.favorited && onToggleFavorite) {
+          onToggleFavorite(nodeId, false);
+        }
+        removePersistedRoomsLastReadForRoom(nodeId);
+        setPersistedRoomsLastRead((prev) => {
+          if (prev[nodeId] == null) return prev;
+          const next: Record<number, number> = {};
+          for (const [id, ts] of Object.entries(prev)) {
+            const n = Number(id) >>> 0;
+            if (n !== nodeId >>> 0) next[n] = ts;
+          }
+          return next;
+        });
+        await clearMeshcoreRoomLastPostAt(nodeId);
+        // Only clear selection/pane when the user has not switched rooms mid-removal.
+        if (selectedRoomIdRef.current === nodeId) {
+          setSelectedRoomId(null);
+          if (layoutMode.compact) setCompactPane('list');
+        }
+        refreshStoredRooms();
+      } catch (e: unknown) {
+        console.warn('[RoomsPanel] remove from rooms failed ' + errLikeToLogString(e));
+        addToast(t('roomsPanel.removeFromRoomsFailed'), 'error');
+      }
+    })();
+  }, [
+    addToast,
+    isConnected,
+    layoutMode.compact,
+    nodes,
+    onLeaveRoom,
+    onToggleFavorite,
+    refreshStoredRooms,
+    removeConfirmRoomId,
+    t,
+  ]);
+
   useEffect(() => {
     setLeaveConfirmRoomId(null);
+    setRemoveConfirmRoomId(null);
   }, [selectedRoomId, isActive]);
 
   const handleOpenRepeaterOps = useCallback(() => {
@@ -1542,6 +1644,14 @@ export default function RoomsPanel({
           },
         ]
       : []),
+    {
+      id: 'remove-from-rooms',
+      label: t('roomsPanel.removeFromRooms'),
+      description: t('roomsPanel.removeFromRoomsHint'),
+      icon: <Trash2 aria-hidden className="h-4 w-4" size={16} />,
+      disabled: selectedRoomId == null || selectedRoomLeaveLoading,
+      onSelect: handleRemoveFromRooms,
+    },
   ];
 
   const roomRows = orderedRoomServers.map((room) => {
@@ -1681,7 +1791,7 @@ export default function RoomsPanel({
           />
         )}
       </div>
-      <div className="border-ink-800 flex shrink-0 items-center gap-2 border-b px-3 py-2">
+      <div className="border-ink-800 flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
         {onLoginAllSaved && roomServers.length > 0 ? (
           <Button
             size="sm"
@@ -1698,9 +1808,25 @@ export default function RoomsPanel({
             {t('roomsPanel.loginAllSaved')}
           </Button>
         ) : null}
+        {onOpenRoomServers ? (
+          <Button
+            size="sm"
+            onClick={onOpenRoomServers}
+            aria-label={t('roomsPanel.browseRoomServersAria')}
+            title={t('roomsPanel.browseRoomServersHint')}
+          >
+            <Server aria-hidden className="h-3.5 w-3.5" size={14} />
+            {t('roomsPanel.browseRoomServers')}
+          </Button>
+        ) : null}
         <span className="flex-1" />
         <DocsSiteLink href={MESHCORE_ROOMS_DOCS_URL} />
       </div>
+      {onOpenRoomServers ? (
+        <p className="text-muted border-ink-800 shrink-0 border-b px-3 py-2 text-xs">
+          {t('roomsPanel.joinedListHint')}
+        </p>
+      ) : null}
       {roomServers.length > 0 && (
         <ul
           aria-label={t('roomsPanel.sidebarLegendTitle')}
@@ -1805,7 +1931,21 @@ export default function RoomsPanel({
       )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {roomServers.length === 0 ? (
-          <p className="text-muted px-3 py-4 text-sm">{t('roomsPanel.noRoomsYet')}</p>
+          <div className="flex flex-col items-stretch gap-3 px-3 py-4">
+            <p className="text-muted text-sm">{t('roomsPanel.noJoinedRoomsYet')}</p>
+            {onOpenRoomServers ? (
+              <Button
+                size="sm"
+                variant="primary"
+                className="self-start"
+                onClick={onOpenRoomServers}
+                aria-label={t('roomsPanel.browseRoomServersAria')}
+              >
+                <Server aria-hidden className="h-3.5 w-3.5" size={14} />
+                {t('roomsPanel.browseRoomServers')}
+              </Button>
+            ) : null}
+          </div>
         ) : (
           <ul aria-label={t('roomsPanel.title')}>{roomRows}</ul>
         )}
@@ -1942,7 +2082,26 @@ export default function RoomsPanel({
           </div>
         )}
         {/* Login & sync settings (auto-login, auto-sync) stay reachable before login. */}
-        {!loggedIn && roomDetailsButton}
+        {!loggedIn && (
+          <>
+            {roomDetailsButton}
+            <MenuButton
+              aria-label={t('roomsPanel.moreActions')}
+              menuLabel={t('roomsPanel.moreActions')}
+              icon={<Ellipsis aria-hidden className="h-4 w-4" size={16} />}
+              entries={[
+                {
+                  id: 'remove-from-rooms',
+                  label: t('roomsPanel.removeFromRooms'),
+                  description: t('roomsPanel.removeFromRoomsHint'),
+                  icon: <Trash2 aria-hidden className="h-4 w-4" size={16} />,
+                  disabled: selectedRoomId == null,
+                  onSelect: handleRemoveFromRooms,
+                },
+              ]}
+            />
+          </>
+        )}
       </header>
     ) : null;
 
@@ -2148,6 +2307,15 @@ export default function RoomsPanel({
                 {t('roomsPanel.forgetSavedPassword')}
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={handleRemoveFromRooms}
+              disabled={selectedRoomLeaveLoading}
+              aria-label={t('roomsPanel.removeFromRooms')}
+            >
+              {t('roomsPanel.removeFromRooms')}
+            </Button>
           </section>
 
           <section aria-labelledby="rooms-details-members-heading" className="space-y-3">
@@ -2794,6 +2962,17 @@ export default function RoomsPanel({
           confirmDisabled={!isConnected || leaveLoadingRoomIds.has(leaveConfirmRoomId)}
           onConfirm={confirmLeaveRoom}
           onCancel={cancelLeaveRoomConfirm}
+        />
+      )}
+      {removeConfirmRoomId != null && (
+        <ConfirmModal
+          title={t('roomsPanel.removeFromRoomsConfirmTitle')}
+          message={t('roomsPanel.removeFromRoomsConfirmMessage')}
+          confirmLabel={t('roomsPanel.removeFromRooms')}
+          danger
+          confirmDisabled={leaveLoadingRoomIds.has(removeConfirmRoomId)}
+          onConfirm={confirmRemoveFromRooms}
+          onCancel={cancelRemoveFromRoomsConfirm}
         />
       )}
       <ConversationLayout

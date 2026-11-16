@@ -697,6 +697,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     pruneMeshcoreContactsByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneMeshcoreContactsByCount', maxCount),
     clearMeshcoreRepeaters: () => ipcRenderer.invoke('db:clearMeshcoreRepeaters'),
+    clearMeshcoreRooms: () => ipcRenderer.invoke('db:clearMeshcoreRooms'),
     markAllMeshcoreContactsOffRadio: () => ipcRenderer.invoke('db:markAllMeshcoreContactsOffRadio'),
     getMeshcoreContactCount: () => ipcRenderer.invoke('db:getMeshcoreContactCount'),
     deleteMeshcoreContactsWithoutPubkey: () =>

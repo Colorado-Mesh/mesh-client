@@ -549,7 +549,9 @@
     "clearEnvironmentHistory": "Wyczyść historię środowiska",
     "clearEnvironmentHistoryConfirm": "Spowoduje to trwałe usunięcie całej zapisanej historii czujników środowiskowych z bazy danych. Urządzenie → Wykresy telemetrii, czujniki na mapie i wykresy mini zostaną wyczyszczone, dopóki nie nadejdą nowe odczyty. Kontynuować?",
     "dangerZoneEnvironmentHistoryHeading": "Historia środowiska",
-    "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości."
+    "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości.",
+    "clearAllRooms": "Wyczyść wszystkie pokoje",
+    "clearAllRoomsConfirm": "Spowoduje to usunięcie wszystkich nieulubionych serwerów pomieszczeń MeshCore z podłączonego radia i lokalnej bazy danych. Pokoje pojawiają się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -5881,7 +5883,6 @@
   },
   "roomsPanel": {
     "title": "Serwery pokojowe",
-    "noRoomsYet": "Nie znaleziono jeszcze serwerów pokojowych. Kontakty do pokoju pojawiają się, gdy typ Pokój reklamuje się na siatce.",
     "selectRoom": "Wybierz serwer pokoju, aby przeglądać i publikować wiadomości",
     "postCount": "{{count}} postów",
     "lastPost": "Ostatni wpis",
@@ -5992,7 +5993,17 @@
     "autoLoginSaveFailed": "Nie można zapisać ustawienia automatycznego logowania. Twoje poprzednie ustawienie pozostaje niezmienione.",
     "leaveRoomConfirmTitle": "Opuścić ten pokój?",
     "leaveRoomConfirmMessage": "Wylogujesz się z tego serwera pokoju przez radio. Możesz zalogować się ponownie później za pomocą gościa lub zapisanego hasła.",
-    "syncSaveFailed": "Nie można zapisać ustawień synchronizacji. Twoje poprzednie ustawienia pozostają niezmienione."
+    "syncSaveFailed": "Nie można zapisać ustawień synchronizacji. Twoje poprzednie ustawienia pozostają niezmienione.",
+    "noJoinedRoomsYet": "Brak dołączonych pokoi. Otwórz Sieć → Serwery pokojów, aby przeglądać wykryte pokoje BBS, a następnie zaloguj się lub dodaj jeden z nich do ulubionych.",
+    "joinedListHint": "Ta lista zawiera pokoje, do których dołączyłeś(-aś). Odkrywaj nowe serwery pokojów w sekcji Sieć → Serwery pokojów.",
+    "browseRoomServers": "Serwery pokojowe",
+    "browseRoomServersAria": "Otwórz katalog serwerów Network Room",
+    "browseRoomServersHint": "Przeglądaj wykryte serwery pokoi (MeshCore) na karcie „Sieć”",
+    "removeFromRooms": "Usuń z pokoi",
+    "removeFromRoomsHint": "Wyczyść stan logowania i przenieś ten pokój z powrotem do sekcji Sieć → Serwery pokojów.",
+    "removeFromRoomsConfirmTitle": "Usunąć z czatów?",
+    "removeFromRoomsConfirmMessage": "W razie potrzeby wylogowuje się, zapomina zapisane hasło, usuwa ulubione i status przeczytania dla tego pokoju oraz przywraca go do pozycji Sieć → Serwery pokoi. Lokalna historia postów jest zachowywana.",
+    "removeFromRoomsFailed": "Nie udało się usunąć pokoju z listy pokoi czatu."
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -6113,7 +6124,9 @@
     "incident": "Zdarzenie",
     "scheduledbroadcasts": "Transmisje",
     "teamcontacts": "Kontakty zespołu",
-    "teamroster": "Skład drużyny"
+    "teamroster": "Skład drużyny",
+    "friends": "Przyjaciele",
+    "roomServers": "Serwery pokojowe"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -7663,7 +7676,8 @@
     "roomGroupMeshcore": "MeshCore pokoi",
     "roomGroupRrc": "Pokoje RRC",
     "roomGroupSaved": "Zapisane",
-    "jumpToRoomAria": "{{key}}: przejdź do {{label}}"
+    "jumpToRoomAria": "{{key}}: przejdź do {{label}}",
+    "roomGroupChatChannels": "Kanały czatu"
   },
   "weatherForecast": {
     "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",
@@ -9018,5 +9032,26 @@
     "open": "Słaby lub otwarty klucz kanału na {{channel}}",
     "openLocation": "Otwórz klucz kanału z dokładną lokalizacją na {{channel}}",
     "openLocationUplink": "Klucz otwartego kanału z dokładną lokalizacją i łączem wysyłającym MQTT na {{channel}}"
+  },
+  "friends": {
+    "title": "Przyjaciele",
+    "intro": "Osoby, do których często piszesz. Dodaj kogoś na podstawie danych kontaktowych lub wiadomości bezpośredniej. Nieprzeczytane wiadomości od znajomych są wyświetlane tutaj, zamiast powtarzać się na czacie.",
+    "empty": "Nie masz jeszcze znajomych. Otwórz kontakt i wybierz „Dodaj do znajomych”.",
+    "openDm": "Wiadomość {{name}}",
+    "openDmWithUnread": "Wiadomość {{name}}, {{count}} nieprzeczytana",
+    "remove": "Usuń",
+    "removeAria": "Usuń użytkownika {{name}} z listy znajomych",
+    "add": "Dodaj to przyjaciółCore version string not (yet) available",
+    "addAria": "Dodaj użytkownika {{name}} do znajomych",
+    "removeFromFriends": "Usuń z listy znajomych",
+    "unknownPeer": "Węzeł {{id}}"
+  },
+  "roomServers": {
+    "title": "Serwery pokojowe",
+    "intro": "MeshCore pokoi BBS znalezionych w sieci mesh, do których jeszcze nie dołączyłeś(-aś). Otwórz jeden z nich, aby się zalogować lub dodać go do ulubionych – pokoje, do których dołączono, znajdują się w sekcji Czat → Pokoje.",
+    "empty": "Obecnie nie ma serwerów pokoi, do których nie dołączono. Nowe kontakty z pokoju pojawiają się, gdy ogłaszają się w sieci mesh.",
+    "openAria": "Otwórz {{name}}",
+    "unknownRoom": "Pokój {{id}}",
+    "hops": "{{count}} przesiadki"
   }
 }

@@ -14,6 +14,7 @@ import { LORA_BLOCKLIST_SCOPE_ID } from '../lib/loraBlocklist';
 import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { setMeshcoreRepeaterCredential } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
+import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { registerMeshtasticKeyVerificationSender } from '../lib/meshtastic/meshtasticKeyVerification';
 import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import {
@@ -28,6 +29,20 @@ import { resetKeyVerificationStore, useKeyVerificationStore } from '../stores/ke
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import NodeDetailModal from './NodeDetailModal';
+
+/** Little-endian first word = nodeId; remaining zeros → pubkeyToNodeId === nodeId. */
+function meshcoreKeyForNodeId(nodeId: number): Uint8Array {
+  const b = new Uint8Array(32);
+  b[0] = nodeId & 0xff;
+  b[1] = (nodeId >>> 8) & 0xff;
+  b[2] = (nodeId >>> 16) & 0xff;
+  b[3] = (nodeId >>> 24) & 0xff;
+  return b;
+}
+
+function meshcoreKeyHexForNodeId(nodeId: number): string {
+  return Array.from(meshcoreKeyForNodeId(nodeId), (x) => x.toString(16).padStart(2, '0')).join('');
+}
 
 vi.mock('../lib/downloadBlob', () => ({
   downloadBlob: vi.fn(),
@@ -272,7 +287,8 @@ describe('NodeDetailModal accessibility', () => {
   });
 });
 
-function seedMeshcoreContactPubkey(pubKey = new Uint8Array(32).fill(0xab)) {
+function seedMeshcoreContactPubkey(pubKey = meshcoreKeyForNodeId(meshcoreRepeaterNode.node_id)) {
+  expect(pubkeyToNodeId(pubKey)).toBe(meshcoreRepeaterNode.node_id);
   useNodeStore.setState({
     nodes: {
       [OFFLINE_MESHCORE_IDENTITY_ID]: {
@@ -345,7 +361,7 @@ describe('NodeDetailModal MeshCore actions', () => {
 
   it('renders the full public key with a copy button and copies it on click', async () => {
     const { writeClipboardText } = await import('@/renderer/lib/writeClipboardText');
-    const pubkeyHex = 'ab'.repeat(32);
+    const pubkeyHex = meshcoreKeyHexForNodeId(meshcoreRepeaterNode.node_id);
     vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
       public_key: pubkeyHex,
       on_radio: 1,
@@ -356,7 +372,6 @@ describe('NodeDetailModal MeshCore actions', () => {
     const pubkeyEl = await screen.findByText(pubkeyHex);
     expect(pubkeyEl).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Test Node' })).toBeInTheDocument();
-    expect(screen.queryByText('!abababab')).not.toBeInTheDocument();
 
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
@@ -371,7 +386,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     'shows a DM-capable key badge for a MeshCore %s contact with a public key',
     async (hwModel) => {
       vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
-        public_key: 'ab'.repeat(32),
+        public_key: meshcoreKeyHexForNodeId(meshcoreRepeaterNode.node_id),
         on_radio: 1,
       } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
       const { container } = renderMeshcoreModal({
@@ -390,7 +405,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     'shows a key-only badge (no DM) for a MeshCore %s contact with a public key',
     async (hwModel) => {
       vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
-        public_key: 'ab'.repeat(32),
+        public_key: meshcoreKeyHexForNodeId(meshcoreRepeaterNode.node_id),
         on_radio: 1,
       } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
       const { container } = renderMeshcoreModal({
@@ -408,7 +423,7 @@ describe('NodeDetailModal MeshCore actions', () => {
 
   it('enables Message when live store has pubkey but DB contact row does not', async () => {
     const chatNode: MeshNode = { ...meshcoreRepeaterNode, hw_model: 'Chat' };
-    const pubKey = new Uint8Array(32).fill(0xab);
+    const pubKey = meshcoreKeyForNodeId(chatNode.node_id);
     useNodeStore.setState({
       nodes: {
         [OFFLINE_MESHCORE_IDENTITY_ID]: {
@@ -423,6 +438,32 @@ describe('NodeDetailModal MeshCore actions', () => {
     renderMeshcoreModal({ node: chatNode });
 
     expect(await screen.findByRole('button', { name: 'Message' })).not.toBeDisabled();
+  });
+
+  it('enables Message when MeshNode has public_key_hex but store/DB do not', async () => {
+    const pubkeyHex = meshcoreKeyHexForNodeId(meshcoreRepeaterNode.node_id);
+    const chatNode: MeshNode = {
+      ...meshcoreRepeaterNode,
+      hw_model: 'Chat',
+      public_key_hex: pubkeyHex,
+    };
+
+    renderMeshcoreModal({ node: chatNode });
+
+    expect(await screen.findByRole('button', { name: 'Message' })).not.toBeDisabled();
+  });
+
+  it('keeps Message disabled for synthetic placeholder public_key_hex only', async () => {
+    const { meshcoreSyntheticPlaceholderPubKeyHex } = await import('../lib/meshcoreUtils');
+    const chatNode: MeshNode = {
+      ...meshcoreRepeaterNode,
+      hw_model: 'Chat',
+      public_key_hex: meshcoreSyntheticPlaceholderPubKeyHex(meshcoreRepeaterNode.node_id),
+    };
+
+    renderMeshcoreModal({ node: chatNode });
+
+    expect(await screen.findByRole('button', { name: 'Message' })).toBeDisabled();
   });
 
   it('shows success status when shareContact resolves true', async () => {

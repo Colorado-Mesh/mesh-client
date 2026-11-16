@@ -2,6 +2,7 @@
 export const TAB_SLOT_IDS = [
   'Connection',
   'Chat',
+  'Friends',
   'Games',
   'RRC',
   'NomadNetwork',
@@ -12,6 +13,7 @@ export const TAB_SLOT_IDS = [
   'Modules',
   'Admin',
   'Rooms',
+  'RoomServers',
   'Telemetry',
   'Security',
   'TAK',

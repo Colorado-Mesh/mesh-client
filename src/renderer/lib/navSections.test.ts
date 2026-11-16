@@ -67,10 +67,18 @@ describe('computeNavSections', () => {
   it('groups MeshCore tabs as in the Option B mockups, with the maintainer moves', () => {
     // Telemetry sits with the device it reports on; TAK is a network bridge, not a device.
     expect(slotsBySection(PROTOCOLS[1])).toEqual({
-      chat: ['Chat', 'Rooms', 'ScheduledBroadcasts'],
-      network: ['Nodes', 'TeamContacts', 'TeamRoster', 'Modules', 'Graph', 'TAK'],
+      chat: ['Chat', 'Friends', 'Rooms'],
+      network: [
+        'Nodes',
+        'TeamContacts',
+        'TeamRoster',
+        'Modules',
+        'RoomServers',
+        'TAK',
+        'ScheduledBroadcasts',
+      ],
       map: ['Map'],
-      monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF'],
+      monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF', 'Graph'],
       device: ['Connection', 'Radio', 'Telemetry', 'Admin', 'Security'],
       incident: ['Incident'],
       app: ['App'],
@@ -106,8 +114,9 @@ describe('computeNavSections', () => {
       'tabs.teamcontacts',
       'tabs.teamroster',
       'tabs.repeaters',
-      'tabs.graph',
+      'tabs.roomServers',
       'tabs.tak',
+      'tabs.scheduledbroadcasts',
     ]);
     expect(network?.tabs[3]?.iconSlot).toBe('Repeaters');
   });
@@ -121,7 +130,7 @@ describe('section lookups', () => {
   it('finds the section that owns a tab', () => {
     const graphTab = findTabIndexForSlot(mappings, 'Graph');
     expect(graphTab).toBeGreaterThanOrEqual(0);
-    expect(findNavSectionForTab(sections, graphTab)?.id).toBe('network');
+    expect(findNavSectionForTab(sections, graphTab)?.id).toBe('monitor');
     expect(findNavSectionForTab(sections, 999)).toBeUndefined();
   });
 

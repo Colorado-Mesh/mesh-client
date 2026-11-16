@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Cancella cronologia ambiente",
     "clearEnvironmentHistoryConfirm": "Questo eliminerà definitivamente dal database tutta la cronologia salvata dei sensori ambientali. Dispositivo → I grafici di telemetria, i sensori sulla mappa e gli sparkline si svuoteranno finché non arriveranno nuove letture. Continuare?",
     "dangerZoneEnvironmentHistoryHeading": "Cronologia ambiente",
-    "dangerZoneEnvironmentHistoryDesc": "Rimuove tutte le letture memorizzate di temperatura, umidità, pressione e qualità dell'aria per ogni protocollo e identità."
+    "dangerZoneEnvironmentHistoryDesc": "Rimuove tutte le letture memorizzate di temperatura, umidità, pressione e qualità dell'aria per ogni protocollo e identità.",
+    "clearAllRooms": "Svuota tutte le sale",
+    "clearAllRoomsConfirm": "Questa operazione rimuove tutti i server delle room MeshCore non preferiti dalla radio connessa e dal database locale. Le room ricompaiono quando vengono nuovamente pubblicizzate. Questa operazione non può essere annullata."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -5797,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Server di sala",
-    "noRoomsYet": "Nessun server della stanza ancora scoperto. I contatti della stanza vengono visualizzati quando il tipo Room pubblicizza sulla mesh.",
     "selectRoom": "Seleziona un server della room per visualizzare e pubblicare i messaggi",
     "postCount": "{{count}} post",
     "lastPost": "Ultimo post",
@@ -5908,7 +5909,17 @@
     "autoLoginSaveFailed": "Impossibile salvare l'impostazione di accesso automatico. L'impostazione precedente è invariata.",
     "leaveRoomConfirmTitle": "Uscire da questa sala?",
     "leaveRoomConfirmMessage": "Esci da questo server della stanza alla radio. Puoi accedere di nuovo in seguito con l'ospite o la password salvata.",
-    "syncSaveFailed": "Impossibile salvare le impostazioni di sincronizzazione. Le impostazioni precedenti non sono cambiate."
+    "syncSaveFailed": "Impossibile salvare le impostazioni di sincronizzazione. Le impostazioni precedenti non sono cambiate.",
+    "noJoinedRoomsYet": "Ancora nessuna room a cui ti sei unito. Apri Rete → Server delle room per sfogliare le room BBS rilevate, quindi accedi o aggiungine una ai preferiti.",
+    "joinedListHint": "Questo elenco contiene le room a cui hai aderito. Scopri nuovi server di stanza in Rete → Server di stanza.",
+    "browseRoomServers": "Server delle room",
+    "browseRoomServersAria": "Apri la directory dei server della sala rete",
+    "browseRoomServersHint": "Cerca i server delle stanze MeshCore rilevati nella scheda Rete",
+    "removeFromRooms": "Rimuovi dalle stanze",
+    "removeFromRoomsHint": "Cancella lo stato di accesso e sposta questa stanza in Rete → Server delle stanze",
+    "removeFromRoomsConfirmTitle": "Rimuovere dalle chat room?",
+    "removeFromRoomsConfirmMessage": "Effettua la disconnessione se necessario, dimentica la password salvata, cancella i preferiti e lo stato di lettura per questa room e la riporta in Rete → Server delle room. La cronologia dei post locali viene conservata.",
+    "removeFromRoomsFailed": "Impossibile rimuovere la stanza da Chat Room."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
@@ -6029,7 +6040,9 @@
     "incident": "Incidente",
     "scheduledbroadcasts": "Trasmissioni",
     "teamcontacts": "Contatti della squadra",
-    "teamroster": "Elenco delle squadre"
+    "teamroster": "Elenco delle squadre",
+    "friends": "Amici",
+    "roomServers": "Camerieri di sala"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -7545,7 +7558,8 @@
     "roomGroupMeshcore": "Sale MeshCore",
     "roomGroupRrc": "Sale RRC",
     "roomGroupSaved": "Salvato",
-    "jumpToRoomAria": "{{key}}: vai a {{label}}"
+    "jumpToRoomAria": "{{key}}: vai a {{label}}",
+    "roomGroupChatChannels": "Canali di chat"
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",
@@ -8874,5 +8888,26 @@
     "open": "Chiave del canale debole o aperta su {{channel}}",
     "openLocation": "Chiave del canale aperto con posizione precisa su {{channel}}",
     "openLocationUplink": "Chiave del canale aperto con posizione precisa e uplink MQTT su {{channel}}"
+  },
+  "friends": {
+    "title": "Amici",
+    "intro": "Persone a cui scrivi spesso. Aggiungi qualcuno dai suoi dati di contatto o da un messaggio diretto. I messaggi non letti per gli amici vengono visualizzati qui invece di essere duplicati nella chat.",
+    "empty": "Ancora nessun amico. Apri un contatto e scegli Aggiungi agli amici.",
+    "openDm": "Messaggio {{name}}",
+    "openDmWithUnread": "Messaggio {{name}}, {{count}} non letto",
+    "remove": "Rimuovi",
+    "removeAria": "Rimuovi {{name}} dagli amici",
+    "add": "AGGIUNGI AGLI AMICI",
+    "addAria": "Aggiungi {{name}} agli amici",
+    "removeFromFriends": "Rimuovi dagli amici",
+    "unknownPeer": "Nodo {{id}}"
+  },
+  "roomServers": {
+    "title": "Camerieri di sala",
+    "intro": "MeshCore room BBS scoperte sulla mesh a cui non ti sei ancora unito. Aprine una per accedere o aggiungerla ai preferiti: le room a cui hai aderito si trovano in Chat → Room.",
+    "empty": "Al momento non ci sono server di room non collegati. I nuovi contatti della stanza vengono visualizzati quando si rendono visibili sulla mesh.",
+    "openAria": "Apri {{name}}",
+    "unknownRoom": "Stanza {{id}}",
+    "hops": "{{count}} scali"
   }
 }

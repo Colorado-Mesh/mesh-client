@@ -59,6 +59,7 @@ export const LOG_TAG_SCOPE: Readonly<Record<string, LogScope>> = Object.freeze({
   '[meshcoreRoom': { protocol: 'meshcore', surface: 'app' },
   '[meshcoreRepeater': { protocol: 'meshcore', surface: 'app' },
   '[meshcoreClearRepeaters]': { protocol: 'meshcore', surface: 'app' },
+  '[meshcoreClearRooms]': { protocol: 'meshcore', surface: 'app' },
   '[meshcoreContactCapacityPush]': { protocol: 'meshcore', surface: 'app' },
   '[meshcoreDmAckRuntime]': { protocol: 'meshcore', surface: 'device' },
   '[meshcoreHookPreamble]': { protocol: 'meshcore', surface: 'device' },

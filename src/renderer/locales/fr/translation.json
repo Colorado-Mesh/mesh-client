@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Effacer l'historique d'environnement",
     "clearEnvironmentHistoryConfirm": "Cela supprimera définitivement de la base de données tout l'historique enregistré des capteurs d'environnement. Appareil → Les graphiques de télémétrie, les capteurs de la carte et les sparklines seront effacés jusqu'à l'arrivée de nouvelles mesures. Continuer ?",
     "dangerZoneEnvironmentHistoryHeading": "Historique d'environnement",
-    "dangerZoneEnvironmentHistoryDesc": "Supprime toutes les mesures enregistrées de température, humidité, pression et qualité de l'air pour chaque protocole et identité."
+    "dangerZoneEnvironmentHistoryDesc": "Supprime toutes les mesures enregistrées de température, humidité, pression et qualité de l'air pour chaque protocole et identité.",
+    "clearAllRooms": "Effacer toutes les salles",
+    "clearAllRoomsConfirm": "Cette action supprime tous les serveurs de salles MeshCore non favoris de la radio connectée et de la base de données locale. Les salles réapparaissent lorsqu’elles se signalent à nouveau. Cette action est irréversible."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -5797,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Serveurs de salle",
-    "noRoomsYet": "Aucun serveur de salle n'a encore été découvert. Les contacts de pièce apparaissent lorsque le type de pièce annonce sur le maillage.",
     "selectRoom": "Sélectionnez un serveur de salle pour afficher et publier des messages",
     "postCount": "{{count}} publications",
     "lastPost": "Dernière publication",
@@ -5908,7 +5909,17 @@
     "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés.",
     "leaveRoomConfirmTitle": "Quitter cette salle ?",
     "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré.",
-    "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés."
+    "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés.",
+    "noJoinedRoomsYet": "Aucun salon rejoint pour le moment. Ouvrez Réseau → Serveurs de salons pour parcourir les salons BBS découverts, puis connectez-vous ou ajoutez-en un à vos favoris.",
+    "joinedListHint": "Cette liste répertorie les salons auxquels vous avez rejoint. Découvrez de nouveaux serveurs de salons sous Réseau → Serveurs de salons.",
+    "browseRoomServers": "Serveurs de salons",
+    "browseRoomServersAria": "Ouvrir le répertoire des serveurs de salons réseau",
+    "browseRoomServersHint": "Parcourir les serveurs de salons MeshCore découverts sur l'onglet Réseau",
+    "removeFromRooms": "Retirer des salons",
+    "removeFromRoomsHint": "Effacer l'état de connexion et déplacer ce salon vers Réseau → Serveurs de salon",
+    "removeFromRoomsConfirmTitle": "Supprimer des salons de discussion ?",
+    "removeFromRoomsConfirmMessage": "Se déconnecte si nécessaire, oublie le mot de passe enregistré, efface les favoris et l’état de lecture de ce salon, et le renvoie vers Réseau → Serveurs de salon. L’historique des publications locales est conservé.",
+    "removeFromRoomsFailed": "Impossible de supprimer le salon des salons de discussion."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -6029,7 +6040,9 @@
     "incident": "Incident",
     "scheduledbroadcasts": "Messages généraux",
     "teamcontacts": "Contacts de l'équipe",
-    "teamroster": "Composition de l'équipe"
+    "teamroster": "Composition de l'équipe",
+    "friends": "Amis",
+    "roomServers": "Serveurs de salle"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -7545,7 +7558,8 @@
     "roomGroupMeshcore": "Salles MeshCore",
     "roomGroupRrc": "Salles RRC",
     "roomGroupSaved": "Enregistré",
-    "jumpToRoomAria": "{{key}} : aller à {{label}}"
+    "jumpToRoomAria": "{{key}} : aller à {{label}}",
+    "roomGroupChatChannels": "Canaux de discussion"
   },
   "weatherForecast": {
     "areaAria": "Prévisions pour {{place}}, {{period}} : {{temp}}",
@@ -8874,5 +8888,26 @@
     "open": "Clé de canal faible ou ouverte sur {{channel}}",
     "openLocation": "Clé de canal ouvert avec localisation précise sur {{channel}}",
     "openLocationUplink": "Clé de canal ouvert avec localisation précise et liaison montante MQTT sur {{channel}}"
+  },
+  "friends": {
+    "title": "Amis",
+    "intro": "Personnes à qui vous envoyez souvent des messages. Ajoutez une personne à partir de ses coordonnées ou d'un message direct. Les messages non lus pour les amis s'affichent ici au lieu d'apparaître deux fois dans le chat.",
+    "empty": "Pas encore d'amis. Ouvrez un contact et choisissez Ajouter aux amis.",
+    "openDm": "Message {{name}}",
+    "openDmWithUnread": "Message {{name}}, {{count}} non lu",
+    "remove": "Supprimer",
+    "removeAria": "Supprimer {{name}} de la liste d’amis",
+    "add": "Ajouter aux amis",
+    "addAria": "Ajouter {{name}} aux amis",
+    "removeFromFriends": "Supprimer de la liste d’amis",
+    "unknownPeer": "Nœud {{id}}"
+  },
+  "roomServers": {
+    "title": "Serveurs de salle",
+    "intro": "MeshCore salles BBS découvertes sur le réseau maillé auxquelles vous n'avez pas encore adhéré. Ouvrez-en un pour vous connecter ou l'ajouter à vos favoris. Les salons auxquels vous avez rejoint se trouvent sous Chat → Salons.",
+    "empty": "Aucun serveur de salon non rejoint pour le moment. Les nouveaux contacts du salon apparaissent lorsqu’ils se signalent sur le mesh.",
+    "openAria": "Ouvrir {{name}}",
+    "unknownRoom": "Salle {{id}}",
+    "hops": "{{count}} escales"
   }
 }

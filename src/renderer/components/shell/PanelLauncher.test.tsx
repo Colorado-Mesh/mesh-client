@@ -16,6 +16,7 @@ import { PanelLauncher } from './PanelLauncher';
 const LABELS: Record<string, string> = {
   'tabs.connection': 'Connection',
   'tabs.chat': 'Chat',
+  'tabs.friends': 'Friends',
   'tabs.scheduledbroadcasts': 'Broadcasts',
   'tabs.contacts': 'Contacts',
   'tabs.map': 'Map',
@@ -23,6 +24,7 @@ const LABELS: Record<string, string> = {
   'tabs.repeaters': 'Repeaters',
   'tabs.admin': 'Admin',
   'tabs.rooms': 'Rooms',
+  'tabs.roomServers': 'Room servers',
   'tabs.telemetry': 'Telemetry',
   'tabs.security': 'Security',
   'tabs.tak': 'TAK',
@@ -137,18 +139,22 @@ describe('PanelLauncher', () => {
     );
   });
 
-  it('lists all 21 MeshCore panels grouped by section', () => {
+  it('lists all 23 MeshCore panels grouped by section', () => {
     renderLauncher();
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
-    expect(within(dialog).getByText('21 panels')).toBeInTheDocument();
+    expect(within(dialog).getByText('23 panels')).toBeInTheDocument();
     for (const group of ['Chat', 'Network', 'Monitor', 'Device', 'Other']) {
       expect(within(dialog).getByRole('region', { name: group })).toBeInTheDocument();
     }
     const chat = within(dialog).getByRole('region', { name: 'Chat' });
-    expect(within(chat).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
+    expect(within(chat).getByRole('button', { name: 'Friends' })).toBeInTheDocument();
     const network = within(dialog).getByRole('region', { name: 'Network' });
+    expect(within(network).getByRole('button', { name: 'Room servers' })).toBeInTheDocument();
+    expect(within(network).getByRole('button', { name: 'Broadcasts' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Contact Cards' })).toBeInTheDocument();
     expect(within(network).getByRole('button', { name: 'Team Roster' })).toBeInTheDocument();
+    const monitor = within(dialog).getByRole('region', { name: 'Monitor' });
+    expect(within(monitor).getByRole('button', { name: 'Graph' })).toBeInTheDocument();
     const other = within(dialog).getByRole('region', { name: 'Other' });
     expect(within(other).getByRole('button', { name: 'Map' })).toBeInTheDocument();
     expect(within(other).getByRole('button', { name: 'Incident' })).toBeInTheDocument();
@@ -217,21 +223,20 @@ describe('PanelLauncher', () => {
       name: 'Search panels, contacts, channels and settings',
     });
     const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
-    const rooms = screen.getByRole('button', { name: 'Rooms, 2 unread' });
+    const friends = screen.getByRole('button', { name: 'Friends' });
     expect(activeEntryRows()).toEqual([chat]);
     expect(chat.className).toContain('focus-visible:outline-brand-green');
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(rooms).toHaveFocus();
-    expect(activeEntryRows()).toEqual([rooms]);
+    expect(friends).toHaveFocus();
+    expect(activeEntryRows()).toEqual([friends]);
 
-    fireEvent.keyDown(rooms, { key: 'ArrowDown' });
-    const third = document.activeElement;
-    expect(third).toHaveAttribute('data-launcher-entry');
-    expect(third).not.toBe(rooms);
-    fireEvent.keyDown(third as HTMLElement, { key: 'ArrowUp' });
+    fireEvent.keyDown(friends, { key: 'ArrowDown' });
+    const rooms = screen.getByRole('button', { name: 'Rooms, 2 unread' });
     expect(rooms).toHaveFocus();
     fireEvent.keyDown(rooms, { key: 'ArrowUp' });
+    expect(friends).toHaveFocus();
+    fireEvent.keyDown(friends, { key: 'ArrowUp' });
     expect(chat).toHaveFocus();
     fireEvent.keyDown(chat, { key: 'ArrowUp' });
     expect(input).toHaveFocus();
@@ -245,10 +250,9 @@ describe('PanelLauncher', () => {
     const input = screen.getByRole('textbox', {
       name: 'Search panels, contacts, channels and settings',
     });
-    await user.type(input, 'a');
-    const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
+    await user.type(input, 'broadcast');
     const broadcasts = screen.getByRole('button', { name: 'Broadcasts' });
-    expect(activeEntryRows()).toEqual([chat]);
+    expect(activeEntryRows()).toEqual([broadcasts]);
 
     await user.keyboard('{ArrowDown}');
     expect(broadcasts).toHaveFocus();

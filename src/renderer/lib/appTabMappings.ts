@@ -5,6 +5,7 @@ import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
 export const CHAT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Chat');
+export const FRIENDS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Friends');
 export const INCIDENT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Incident');
 export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
 export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
@@ -14,6 +15,7 @@ export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
 export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
 export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
+export const ROOM_SERVERS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RoomServers');
 export const RADIO_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Radio');
 export const MODULES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Modules');
 export const ADMIN_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Admin');
@@ -36,6 +38,7 @@ type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof Protoc
 export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
+  undefined, // Friends
   'hasLrgpGames', // Games
   'hasRrcPanel', // RRC
   'hasNomadNetworkPanel', // Nomad Network
@@ -45,7 +48,8 @@ export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)
   { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
-  'hasRoomServersPanel', // Rooms
+  'hasRoomServersPanel', // Rooms (joined)
+  'hasRoomServersPanel', // RoomServers (discovered directory)
   'hasEnvironmentTelemetry', // Telemetry
   'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
@@ -83,6 +87,9 @@ function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `t
     return 'tabs.repeaters';
   }
   if (panelIndex === ROOMS_PANEL_INDEX && capabilities.hasRoomServersPanel) return 'tabs.rooms';
+  if (panelIndex === ROOM_SERVERS_PANEL_INDEX && capabilities.hasRoomServersPanel) {
+    return 'tabs.roomServers';
+  }
   if (panelIndex === RADIO_TAB_PANEL_INDEX && capabilities.hasReticulumNetworkPanel) {
     return 'tabs.network';
   }

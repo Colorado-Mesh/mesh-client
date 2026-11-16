@@ -1,3 +1,5 @@
+import type { Connection } from '@liamcottle/meshcore.js';
+
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../stores/connectionStore';
 import { type IdentityRecord, useIdentityStore } from '../stores/identityStore';
@@ -7,7 +9,7 @@ import {
   renameMessageId,
   updateMessageStatus,
 } from '../stores/messageStore';
-import { type NodeRecord, useNodeStore } from '../stores/nodeStore';
+import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { isMeshcoreOpenWireCompatEnabled } from './appSettingsStorage';
 import { withMeshtasticChannelIdentity } from './channelIdentity';
 import { connectionDriver } from './drivers/ConnectionDriver';
@@ -16,6 +18,9 @@ import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
 } from './meshcore/heardRepeatTracker';
+import { maybeRequestMeshcoreAutoOffloadForError } from './meshcore/meshcoreContactCapacityPush';
+import { resolveMeshcoreDestinationPubKeyForIdentity } from './meshcore/meshcoreDestinationPubKey';
+import { resolveMeshcoreDmDestinationPubKeyAsync } from './meshcore/meshcoreDmSend';
 import {
   isMeshcoreTcpOpenHopDeadAccepted,
   trackMeshcoreTcpUserTxSend,
@@ -23,14 +28,22 @@ import {
 import { resolveMeshcoreOutboundWireText } from './meshcoreChannelText';
 import { scheduleMeshcoreDmAckPending } from './meshcoreDmAckDelivery';
 import { nextMeshcoreMessageLocalOrder } from './meshcoreMessageOrder';
+import { isMeshcoreNotFoundError, isMeshcoreTableFullError } from './meshcoreRadioErr';
+import {
+  addMeshcoreNodeContactToRadio,
+  type MeshcoreRoomLoginPathSyncConn,
+} from './meshcoreRoomLoginPathSync';
 import { listChatMessagesFromStore } from './meshcoreStoreDedup';
 import type { SendResult } from './protocols/Protocol';
 import { useRelayCoverageStore } from './relayCoverage/relayCoverageStore';
 import { sendReticulumChatMessage } from './reticulum/sendReticulumChatMessage';
 import { tryGetMeshcoreSession } from './sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from './sessions/meshtasticSession';
-import { messageRecordToChatMessage } from './storeRecordAdapters';
+import { messageRecordToChatMessage, nodeRecordToMeshNode } from './storeRecordAdapters';
 import type { IdentityId } from './types';
+
+const MESHCORE_DM_NO_KEY_ERROR =
+  'Cannot send DM: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.';
 
 /** The identity's known nodes; either level of the lookup can miss. */
 function nodesOf(identityId: IdentityId): Record<number, NodeRecord | undefined> | undefined {
@@ -317,99 +330,170 @@ export function sendChatOnIdentity(
 
   let destinationPubKey: Uint8Array | undefined;
   if (isMeshcoreDm) {
-    destinationPubKey = nodesOf(identityId)?.[destination]?.publicKey;
-    destinationPubKey ??= tryGetMeshcoreSession()?.getDestinationPubKey?.(destination);
+    destinationPubKey = resolveMeshcoreDestinationPubKeyForIdentity(identityId, destination);
   }
 
   const wireText = resolvedOutbound.wireText;
 
-  if (isMeshcore && isMeshcoreTcpOpenHopDeadAccepted()) {
-    void (async () => {
-      try {
-        const applyOpenHopSendResult = (res: SendResult): void => {
-          const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
-          if (res.packetId != null && resolvedId !== provisionalId) {
-            renameMessageId(identityId, provisionalId, resolvedId);
-          }
-          settleMeshcoreOutboundAfterCompanionAccept({
-            identityId,
-            resolvedId,
-            record,
-            myNodeNum,
-            senderName: meshcoreSenderName,
-            packetId: res.packetId,
-            estTimeoutMs: res.estTimeoutMs,
-            isDm: isMeshcoreDm,
-            destination,
-          });
-        };
-        const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
-        if (!runTx) {
-          await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
-          const liveHandle = connectionDriver.getHandle(identityId);
-          if (!liveHandle) {
-            throw new Error('MeshCore TCP live reopen produced no handle');
-          }
-          const sendPromise = identity.protocol.sendMessage(liveHandle, {
-            text: wireText,
-            channelIndex,
-            destination,
-            destinationPubKey,
-            replyTo,
-          });
-          trackMeshcoreTcpUserTxSend(sendPromise);
-          applyOpenHopSendResult(await sendPromise);
-          return;
-        }
-        const res = await runTx(async () => {
-          const liveHandle = connectionDriver.getHandle(identityId);
-          if (!liveHandle) {
-            throw new Error('MeshCore TCP live reopen produced no handle');
-          }
-          return identity.protocol.sendMessage(liveHandle, {
-            text: wireText,
-            channelIndex,
-            destination,
-            destinationPubKey,
-            replyTo,
-          });
-        });
-        // Only after OpenHop retry loop resolves — not inside the parked op (latch-retry
-        // may re-run the send; premature acked would stick if attempt 2 failed).
-        applyOpenHopSendResult(res);
-      } catch (e: unknown) {
-        const errMsg = errLikeToLogString(e);
-        console.warn('[useSendMessage] OpenHop live reopen failed ' + errMsg);
-        updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
-        persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
-        abandonMeshcoreHeardRepeat();
-      }
-    })();
-    return provisionalId;
-  }
-
-  if (!handle) {
-    console.warn('[useSendMessage] no handle for', identityId);
+  const failMeshcoreDmNoKey = (): void => {
+    console.warn('[useSendMessage] send failed ' + MESHCORE_DM_NO_KEY_ERROR);
+    updateMessageStatus(identityId, provisionalId, 'failed', MESHCORE_DM_NO_KEY_ERROR);
+    persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
     abandonMeshcoreHeardRepeat();
-    return;
-  }
+  };
 
-  // getHandle() is `unknown`; NonNullable<unknown> is `unknown & {}` and trips
-  // @typescript-eslint/no-generated-empty-object-type under typescript-eslint 8.70+.
-  const finishSend = (
+  /** Companion SendTxtMsg needs the contact on-radio; restore once on ERR_NOT_FOUND. */
+  const sendMeshcoreProtocolMessage = async (
     sendHandle: unknown,
-    opts?: { trackForOpenHopLiveWindow?: boolean },
-  ): void => {
-    const sendPromise = identity.protocol.sendMessage(sendHandle, {
+    key: Uint8Array,
+  ): Promise<SendResult> => {
+    const opts = {
       text: wireText,
       channelIndex,
       destination,
-      destinationPubKey,
+      destinationPubKey: key,
       replyTo,
-    });
-    if (opts?.trackForOpenHopLiveWindow) {
-      trackMeshcoreTcpUserTxSend(sendPromise);
+    };
+    try {
+      return await identity.protocol.sendMessage(sendHandle, opts);
+    } catch (e: unknown) {
+      if (!isMeshcoreNotFoundError(e) || destination == null) {
+        if (isMeshcoreTableFullError(e)) {
+          maybeRequestMeshcoreAutoOffloadForError(e);
+        }
+        throw e;
+      }
+      const storeRecord = nodesOf(identityId)?.[destination];
+      const nodeForRadio = storeRecord
+        ? nodeRecordToMeshNode(storeRecord)
+        : {
+            long_name: '',
+            hw_model: '',
+            last_heard: 0,
+            latitude: null as number | null,
+            longitude: null as number | null,
+          };
+      try {
+        await addMeshcoreNodeContactToRadio(
+          sendHandle as MeshcoreRoomLoginPathSyncConn,
+          key,
+          nodeForRadio,
+        );
+      } catch (restoreErr: unknown) {
+        maybeRequestMeshcoreAutoOffloadForError(
+          restoreErr instanceof Error ? restoreErr.cause : restoreErr,
+        );
+        throw restoreErr;
+      }
+      upsertNodeRecord(identityId, { nodeId: destination, onRadio: true });
+      return await identity.protocol.sendMessage(sendHandle, opts);
     }
+  };
+
+  const beginOutboundSend = (dmKey: Uint8Array | undefined): void => {
+    if (isMeshcoreDm) {
+      if (!dmKey) {
+        failMeshcoreDmNoKey();
+        return;
+      }
+      destinationPubKey = dmKey;
+    }
+
+    if (isMeshcore && isMeshcoreTcpOpenHopDeadAccepted()) {
+      void (async () => {
+        try {
+          const applyOpenHopSendResult = (res: SendResult): void => {
+            const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+            if (res.packetId != null && resolvedId !== provisionalId) {
+              renameMessageId(identityId, provisionalId, resolvedId);
+            }
+            settleMeshcoreOutboundAfterCompanionAccept({
+              identityId,
+              resolvedId,
+              record,
+              myNodeNum,
+              senderName: meshcoreSenderName,
+              packetId: res.packetId,
+              estTimeoutMs: res.estTimeoutMs,
+              isDm: isMeshcoreDm,
+              destination,
+            });
+          };
+          const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
+          if (!runTx) {
+            await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
+            const liveHandle = connectionDriver.getHandle(identityId);
+            if (!liveHandle) {
+              throw new Error('MeshCore TCP live reopen produced no handle');
+            }
+            const sendPromise =
+              isMeshcoreDm && dmKey
+                ? sendMeshcoreProtocolMessage(liveHandle, dmKey)
+                : identity.protocol.sendMessage(liveHandle, {
+                    text: wireText,
+                    channelIndex,
+                    destination,
+                    destinationPubKey: dmKey,
+                    replyTo,
+                  });
+            trackMeshcoreTcpUserTxSend(sendPromise);
+            applyOpenHopSendResult(await sendPromise);
+            return;
+          }
+          const res = await runTx(async () => {
+            const liveHandle = connectionDriver.getHandle(identityId);
+            if (!liveHandle) {
+              throw new Error('MeshCore TCP live reopen produced no handle');
+            }
+            if (isMeshcoreDm && dmKey) {
+              return sendMeshcoreProtocolMessage(liveHandle, dmKey);
+            }
+            return identity.protocol.sendMessage(liveHandle, {
+              text: wireText,
+              channelIndex,
+              destination,
+              destinationPubKey: dmKey,
+              replyTo,
+            });
+          });
+          // Only after OpenHop retry loop resolves — not inside the parked op (latch-retry
+          // may re-run the send; premature acked would stick if attempt 2 failed).
+          applyOpenHopSendResult(res);
+        } catch (e: unknown) {
+          const errMsg = errLikeToLogString(e);
+          console.warn('[useSendMessage] OpenHop live reopen failed ' + errMsg);
+          updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+          persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+          abandonMeshcoreHeardRepeat();
+        }
+      })();
+      return;
+    }
+
+    // Prefer a fresh driver handle so an async DM key lookup cannot reuse a stale capture.
+    const liveHandle = connectionDriver.getHandle(identityId) ?? handle;
+    if (!liveHandle) {
+      console.warn('[useSendMessage] no handle for', identityId);
+      abandonMeshcoreHeardRepeat();
+      return;
+    }
+
+    finishSend(liveHandle, dmKey);
+  };
+
+  // getHandle() is `unknown`; NonNullable<unknown> is `unknown & {}` and trips
+  // @typescript-eslint/no-generated-empty-object-type under typescript-eslint 8.70+.
+  const finishSend = (sendHandle: unknown, dmKey?: Uint8Array): void => {
+    const sendPromise =
+      isMeshcoreDm && dmKey
+        ? sendMeshcoreProtocolMessage(sendHandle, dmKey)
+        : identity.protocol.sendMessage(sendHandle, {
+            text: wireText,
+            channelIndex,
+            destination,
+            destinationPubKey: dmKey ?? destinationPubKey,
+            replyTo,
+          });
     void sendPromise.then(
       (res) => {
         const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
@@ -471,6 +555,24 @@ export function sendChatOnIdentity(
     );
   };
 
-  finishSend(handle);
+  if (isMeshcoreDm && !destinationPubKey) {
+    void (async () => {
+      const lookupHandle =
+        (handle as Connection | null | undefined) ??
+        (connectionDriver.getHandle(identityId) as Connection | null | undefined);
+      const key = await resolveMeshcoreDmDestinationPubKeyAsync(
+        identityId,
+        destination,
+        nodesOf(identityId)?.[destination],
+        { conn: lookupHandle },
+      );
+      // Re-read after the async lookup so a reconnect mid-wait is not short-circuited by
+      // the earlier captured handle (beginOutboundSend also prefers a fresh getHandle).
+      beginOutboundSend(key);
+    })();
+    return provisionalId;
+  }
+
+  beginOutboundSend(destinationPubKey);
   return provisionalId;
 }

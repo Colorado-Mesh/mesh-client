@@ -65,6 +65,7 @@ import {
 } from '../lib/chatComposerLimits';
 import { formatLocationMessage } from '../lib/chatLocationUtils';
 import { wrapSelectionWithMarkdown } from '../lib/chatMarkdown';
+import { registerChatMarkdownToolbarTarget } from '../lib/chatMarkdownToolbarTarget';
 import {
   clearDraft,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -96,6 +97,7 @@ import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickCo
 import { toScheduledEntry } from '../lib/scheduledSend';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { ChatMacroBar } from './chat/ChatMacroBar';
+import { ChatMarkdownToolbar } from './chat/ChatMarkdownToolbar';
 import { EditMacrosDialog } from './chat/EditMacrosDialog';
 import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { HelpTooltip } from './HelpTooltip';
@@ -1092,6 +1094,32 @@ export function ChatComposer({
     });
   }, [macroComposerId, showMacros]);
 
+  const wrapMarkdownSelection = useCallback(
+    (before: string, after: string) => {
+      const el = inputRef.current;
+      if (!el || disabled) return;
+      const value = inputValueRef.current;
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const wrapped = wrapSelectionWithMarkdown(value, start, end, before, after);
+      setInput(wrapped.next);
+      setMentionQuery(null);
+      clearMentionCycle();
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);
+      });
+    },
+    [clearMentionCycle, disabled],
+  );
+
+  useEffect(() => {
+    return registerChatMarkdownToolbarTarget({
+      isActive: () => isElementOnScreen(inputRef.current),
+      wrap: wrapMarkdownSelection,
+    });
+  }, [wrapMarkdownSelection]);
+
   const openMacroDialog = useCallback((focusIndex: number) => {
     setMacroDialogFocus(focusIndex);
   }, []);
@@ -2076,6 +2104,10 @@ export function ChatComposer({
       </div>
 
       <div className="mt-1 flex min-w-0 items-center gap-2">
+        <ChatMarkdownToolbar
+          onWrap={wrapMarkdownSelection}
+          disabled={disabled || (!isConnected && !allowOutbox)}
+        />
         {/* The inline Small toolbar takes the leftover width; the hint keeps only its text width. */}
         <div className={macroToolbarInline ? 'min-w-0' : 'min-w-0 flex-1'}>
           {!showCounter && (
@@ -2123,47 +2155,6 @@ export function ChatComposer({
               )}
             </div>
           )}
-        </div>
-        <div
-          className="mb-1 flex flex-wrap items-center gap-1"
-          role="toolbar"
-          aria-label={t('chatPanel.markdownToolbar')}
-          data-testid="chat-markdown-toolbar"
-        >
-          {(
-            [
-              ['bold', '**', '**', 'chatPanel.markdownBold'],
-              ['italic', '*', '*', 'chatPanel.markdownItalic'],
-              ['strike', '~~', '~~', 'chatPanel.markdownStrike'],
-              ['code', '`', '`', 'chatPanel.markdownCode'],
-              ['link', '[', '](https://)', 'chatPanel.markdownLink'],
-            ] as const
-          ).map(([id, before, after, labelKey]) => (
-            <button
-              key={id}
-              type="button"
-              className="text-muted hover:text-ink-100 rounded px-1.5 py-0.5 text-xs"
-              aria-label={t(labelKey)}
-              title={t(labelKey)}
-              onClick={() => {
-                const el = inputRef.current;
-                if (!el) return;
-                const start = el.selectionStart ?? input.length;
-                const end = el.selectionEnd ?? input.length;
-                const wrapped = wrapSelectionWithMarkdown(input, start, end, before, after);
-                setInput(wrapped.next);
-                // Formatting shifts offsets — drop any open mention cycle so Enter cannot insert stale.
-                setMentionQuery(null);
-                clearMentionCycle();
-                requestAnimationFrame(() => {
-                  el.focus();
-                  el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);
-                });
-              }}
-            >
-              {t(labelKey)}
-            </button>
-          ))}
         </div>
         {showMacros && (
           <ChatMacroBar placement="inline" onApply={applyMacro} onEdit={openMacroDialog} />

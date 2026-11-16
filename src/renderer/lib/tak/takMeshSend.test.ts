@@ -8,7 +8,7 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../../stores/messageStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { upsertNode, useNodeStore } from '../../stores/nodeStore';
 import { resetAutoResendForTests, startAutoResend } from '../autoResend/autoResendController';
 import { connectionDriver } from '../drivers/ConnectionDriver';
 import { resetHeardRepeatWindowsForTests } from '../meshcore/heardRepeatTracker';
@@ -32,6 +32,17 @@ vi.mock('../drivers/ConnectionDriver', () => ({
 
 const ID_MC = 'id-tak-send-mc';
 const ID_MT = 'id-tak-send-mt';
+const MC_DM_PEER = 123;
+
+/** Little-endian first word = nodeId; remaining zeros → pubkeyToNodeId === nodeId. */
+function meshcoreKeyForNodeId(nodeId: number): Uint8Array {
+  const b = new Uint8Array(32);
+  b[0] = nodeId & 0xff;
+  b[1] = (nodeId >>> 8) & 0xff;
+  b[2] = (nodeId >>> 16) & 0xff;
+  b[3] = (nodeId >>> 24) & 0xff;
+  return b;
+}
 
 function addMeshcoreIdentity(): void {
   addIdentity({
@@ -43,6 +54,14 @@ function addMeshcoreIdentity(): void {
     lastSeenAt: 1,
   });
   setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+}
+
+function seedMeshcoreDmPeer(peerId: number = MC_DM_PEER): void {
+  upsertNode(ID_MC, {
+    nodeId: peerId,
+    longName: 'Peer',
+    publicKey: meshcoreKeyForNodeId(peerId),
+  });
 }
 
 function rows(identityId: string) {
@@ -135,18 +154,23 @@ describe('sendTakTextOnMesh', () => {
       .mockImplementation(() => new Promise(() => {}));
     vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
     addMeshcoreIdentity();
+    seedMeshcoreDmPeer();
 
     await sendTakTextOnMesh(
-      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: 123 },
+      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: MC_DM_PEER },
       '[VIPER] meet at the gate',
     );
 
     expect(sendSpy).toHaveBeenCalledWith(
       { kind: 'rf' },
-      expect.objectContaining({ text: '[VIPER] meet at the gate', destination: 123 }),
+      expect.objectContaining({
+        text: '[VIPER] meet at the gate',
+        destination: MC_DM_PEER,
+        destinationPubKey: meshcoreKeyForNodeId(MC_DM_PEER),
+      }),
     );
     expect(rows(ID_MC)).toEqual([
-      expect.objectContaining({ to: 123, channelIndex: -1, status: 'sending' }),
+      expect.objectContaining({ to: MC_DM_PEER, channelIndex: -1, status: 'sending' }),
     ]);
   });
 
@@ -155,6 +179,7 @@ describe('sendTakTextOnMesh', () => {
     vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
     const dmStatus = vi.spyOn(window.electronAPI.tak, 'dmStatus').mockResolvedValue(undefined);
     addMeshcoreIdentity();
+    seedMeshcoreDmPeer();
     const stopResend = startAutoResend(
       () => undefined,
       (id) => (id === ID_MC ? 'meshcore' : null),
@@ -163,7 +188,7 @@ describe('sendTakTextOnMesh', () => {
     const dmRef = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';
 
     await sendTakTextOnMesh(
-      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: 123, dmRef },
+      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: MC_DM_PEER, dmRef },
       '[VIPER] meet at the gate',
     );
     expect(dmStatus).not.toHaveBeenCalled();

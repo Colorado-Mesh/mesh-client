@@ -533,7 +533,9 @@
     "clearEnvironmentHistory": "Ortam geçmişini temizle",
     "clearEnvironmentHistoryConfirm": "Bu, veritabanındaki kayıtlı tüm ortam sensörü geçmişini kalıcı olarak siler. Cihaz → Telemetri grafikleri, harita sensörleri ve kıvılcım çizgileri yeni okumalar gelene kadar temizlenir. Devam edilsin mi?",
     "dangerZoneEnvironmentHistoryHeading": "Ortam geçmişi",
-    "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır."
+    "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır.",
+    "clearAllRooms": "Tüm Odaları Temizle",
+    "clearAllRoomsConfirm": "Bu işlem, favori olmayan tüm MeshCore oda sunucularını bağlı radyodan ve yerel veritabanından kaldırır. Odalar tekrar duyuru yaptıklarında yeniden görünür. Bu işlem geri alınamaz."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -5797,7 +5799,6 @@
   },
   "roomsPanel": {
     "title": "Oda sunucuları",
-    "noRoomsYet": "Henüz oda sunucusu keşfedilmedi. Oda iletişim bilgileri, Oda türü ağda reklam verdiğinde görünür.",
     "selectRoom": "Mesajları görüntülemek ve göndermek için bir oda sunucusu seçin",
     "postCount": "{{count}} gönderiler",
     "lastPost": "Son Gönderi",
@@ -5908,7 +5909,17 @@
     "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi.",
     "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
     "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz.",
-    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi."
+    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi.",
+    "noJoinedRoomsYet": "Henüz katıldığınız bir oda yok. Keşfedilen BBS odalarına göz atmak için Ağ → Oda sunucuları'nı açın, ardından oturum açın veya birini favori olarak işaretleyin.",
+    "joinedListHint": "Bu liste, katıldığınız odaları içerir. Ağ → Oda sunucuları bölümünden yeni oda sunucularını keşfedin.",
+    "browseRoomServers": "Oda sunucuları",
+    "browseRoomServersAria": "Ağ Odası sunucuları dizinini açın",
+    "browseRoomServersHint": "Ağ sekmesinde bulunan MeshCore oda sunucusuna göz atın",
+    "removeFromRooms": "Odalardan kaldır",
+    "removeFromRoomsHint": "Oturum açma durumunu temizleyin ve bu odayı Ağ → Oda sunucuları bölümüne geri taşıyın",
+    "removeFromRoomsConfirmTitle": "Sohbet Odalarından kaldırılsın mı?",
+    "removeFromRoomsConfirmMessage": "Gerekirse oturumu kapatır, kaydedilen parolayı unutur, bu oda için favorileri ve okuma durumunu temizler ve Odayı Ağ → Oda sunucuları bölümüne geri döndürür. Yerel gönderi geçmişi saklanır.",
+    "removeFromRoomsFailed": "Sohbet Odaları'ndan oda kaldırılamadı."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -6029,7 +6040,9 @@
     "incident": "Olay",
     "scheduledbroadcasts": "Yayınlar",
     "teamcontacts": "Ekip İrtibat Kişileri",
-    "teamroster": "Takım Kadrosu"
+    "teamroster": "Takım Kadrosu",
+    "friends": "Arkadaşlar",
+    "roomServers": "Oda sunucuları"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -7545,7 +7558,8 @@
     "roomGroupMeshcore": "MeshCore oda",
     "roomGroupRrc": "RRC odaları",
     "roomGroupSaved": "Kaydedildi",
-    "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla"
+    "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla",
+    "roomGroupChatChannels": "Sohbet kanalları"
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",
@@ -8874,5 +8888,26 @@
     "open": "{{channel}} üzerinde zayıf veya açık kanal anahtarı",
     "openLocation": "{{channel}} üzerinde kesin konuma sahip kanal anahtarını açın",
     "openLocationUplink": "{{channel}} üzerinde kesin konumu ve MQTT yukarı bağlantısını içeren kanal anahtarını açın"
+  },
+  "friends": {
+    "title": "Arkadaşlar",
+    "intro": "Sık sık mesajlaştığınız kişiler. İletişim bilgilerinden veya DM'den birini ekleyin. Arkadaşlarınız için okunmamış mesajlar, Sohbet'te iki kez görünmek yerine burada gösterilir.",
+    "empty": "Henüz arkadaş yok. Bir kişiyi açın ve Arkadaşlara Ekle'yi seçin.",
+    "openDm": "Mesaj {{name}}",
+    "openDmWithUnread": "Mesaj {{name}}, {{count}} okunmamış",
+    "remove": "Kaldır",
+    "removeAria": "{{name}} adlı kişiyi arkadaşlardan kaldır",
+    "add": "Arkadaşlara ekle",
+    "addAria": "{{name}} kişisini Arkadaşlara ekle",
+    "removeFromFriends": "Arkadaşlar'dan kaldır",
+    "unknownPeer": "Düğüm {{id}}"
+  },
+  "roomServers": {
+    "title": "Oda görevlileri",
+    "intro": "Ağda henüz katılmadığınız MeshCore BBS odası bulundu. Oturum açmak veya favorilere eklemek için birini açın. Katıldığınız odalar Sohbet → Odalar bölümünde bulunur.",
+    "empty": "Şu anda katılınmamış oda sunucusu yok. Yeni Oda kişileri, ağda duyuru yaptıklarında görünür.",
+    "openAria": "{{name}} öğesini açın",
+    "unknownRoom": "Oda {{id}}",
+    "hops": "{{count}} aktarma"
   }
 }

@@ -10,6 +10,10 @@ import App from './App';
 import { getProtocolUnreadBadgeLabel, hydrateAxeThemeColors } from './lib/a11yTestHelpers';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
+  loadPersistedRoomsLastRead,
+  savePersistedRoomsLastRead,
+} from './lib/chatPanelProtocolStorage';
+import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
@@ -97,6 +101,9 @@ function ensureMeshcoreRoomNode(roomServerId: number): void {
     longName: `Room ${roomServerId.toString(16)}`,
     hwModel: 'Room',
   });
+  // Last-read watermark marks the room joined (messages alone do not) so tray/Chat
+  // unread still counts after startup hydrate replaces the in-memory node map.
+  savePersistedRoomsLastRead({ ...loadPersistedRoomsLastRead(), [roomServerId]: 1 });
 }
 
 const {
@@ -272,6 +279,7 @@ const {
     refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
     clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),
     clearAllRepeaters: vi.fn().mockResolvedValue(undefined),
+    clearAllRooms: vi.fn().mockResolvedValue(undefined),
     requestRepeaterStatus: vi.fn().mockResolvedValue(undefined),
     requestTelemetry: vi.fn().mockResolvedValue(undefined),
     requestNeighbors: vi.fn().mockResolvedValue(undefined),
