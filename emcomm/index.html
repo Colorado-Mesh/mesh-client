@@ -3300,7 +3300,7 @@
 <ul>
 <li>Codes are a letter plus two digits (for example <code>M01</code>). Labels come from the MECP language packs, so codes display in your language.</li>
 <li>A report is at most <strong>200 bytes</strong> (UTF-8).</li>
-<li>Drill codes (<code>D01</code>, <code>D02</code>) mark a report as a drill: it is listed but never plays an alert tone or toast and never adds an unread alert badge. Open MAYDAY and URGENT drills still count toward the <strong>Incident</strong> tab badge.</li>
+<li>Drill codes (<code>D01</code>, <code>D02</code>) mark a report as a drill: it is listed and counts toward the <strong>Incident</strong> tab badge, but never plays an alert tone or toast and never adds an unread alert badge.</li>
 <li>Tones and volume are configurable per severity in <strong>App → Notifications → Notification tones</strong>. MAYDAY and URGENT keep their mute bypass and a 10% volume floor. See <a href="../notification-sounds/">Notification sounds</a>.</li>
 <li>Chat channel and DM chips show a shield icon, colored by the most severe unread MECP report in that conversation.</li>
 </ul>
@@ -3313,7 +3313,7 @@
 <p>Both workflows use the same standard MECP codes and translated labels, so other clients can read them. On MeshCore, queued reports and retries use the destination channel’s saved scope. Choose <strong>Unscoped</strong> beside Send for mesh-wide floods, or a saved region for local floods; <strong>Default</strong> follows the companion radio’s default.</p>
 <p>Every report goes through the <strong>emergency outbox</strong>. It is sent right away when the radio is up, and it keeps retrying (after 30 seconds, 1 minute, 2 minutes, then every 5 minutes) until the network acknowledges it. Acknowledgement means the radio heard the mesh repeat or confirm it (a Meshtastic ACK, a MeshCore repeater rebroadcast or DM ACK, a Reticulum delivery receipt), or another station acknowledged or relayed your report. There is no age cutoff or attempt limit. While a report is waiting, Chat shows it with <strong>Waiting for network acknowledgement…</strong> or a retry countdown. If a report is stuck, use <strong>Stop retrying</strong> on it (you are asked to confirm). A soft cap of 20 queued emergency reports blocks the least urgent extras, but never deletes anything and never blocks a MAYDAY.</p>
 <h2 id="incident-tab">Incident tab<a class="headerlink" href="#incident-tab" title="Permanent link">&para;</a></h2>
-<p>The <strong>Incident</strong> tab is always visible on all three protocols, at the bottom of the rail next to <strong>App</strong>. Its red badge counts open MAYDAY and URGENT reports (drills included), so you notice them even if you rarely open the tab.</p>
+<p>The <strong>Incident</strong> tab is always visible on all three protocols, at the bottom of the rail next to <strong>App</strong>. Its red badge counts every open row on the tab (any severity, drills included), so you notice them even if you rarely open the tab.</p>
 <p>Each row shows severity, sender, MECP codes, free text, ACK count, which protocols heard the report, and whether a distress <strong>beacon</strong> is active. The same report heard on several protocols (for example bridged from Meshtastic to MeshCore) appears once.</p>
 <p>Coordinates come from the report itself or the sender's last known position, and appear on the Map under <strong>Layers → Emergency incidents</strong> (Meshtastic, MeshCore, and Reticulum maps).</p>
 <h3 id="acknowledge-confirm-resolve">Acknowledge, confirm, resolve<a class="headerlink" href="#acknowledge-confirm-resolve" title="Permanent link">&para;</a></h3>
@@ -3418,7 +3418,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 8, 2026 20:19:41 UTC">November 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 16, 2026 00:05:15 UTC">November 16, 2026</span>
   </span>
 
     
