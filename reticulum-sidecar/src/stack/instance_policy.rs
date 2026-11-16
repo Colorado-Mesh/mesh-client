@@ -78,7 +78,10 @@ fn init_options_from_stack_settings(config_dir: &str) -> InitOptions {
     let path = std::path::Path::new(config_dir);
     match crate::stack::config::get_stack_settings(path) {
         Ok(settings) => {
-            options.enable_stamping = settings.enable_stamping;
+            // Do not map the UI aggregate `enable_stamping` (OR of stamp_destinations /
+            // stamp_prs) into InitOptions.enable_stamping — that constructor override
+            // forces destinations+prs+lrs on and would erase asymmetric INI emit flags.
+            // `[stamps]` stamp_destinations / stamp_prs stay authoritative at startup.
             options.enforce_stamps = settings.enforce_stamps;
         }
         Err(e) => {

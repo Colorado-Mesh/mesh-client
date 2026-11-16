@@ -335,9 +335,15 @@ async fn dual_tcp_require_stamps_blocks_then_retry() {
         .and_then(serde_json::Value::as_bool);
     let delivery_seen = wait_inbound_text(&server.handle, &body, Duration::from_secs(8)).await;
     assert!(
-        blocked_ok != Some(true) || delivery_seen.is_err(),
-        "expected stamp enforcement to block or prevent delivery"
+        delivery_seen.is_err(),
+        "unstamped message must not deliver under stamp enforcement"
     );
+    if blocked_ok == Some(true) {
+        tracing::debug!(
+            target: "interop-tcp",
+            "lxmf_send reported ok for unstamped send; delivery still blocked"
+        );
+    }
 
     client
         .handle
@@ -355,11 +361,20 @@ async fn dual_tcp_require_stamps_blocks_then_retry() {
         .await
         .expect("client path after restart");
 
-    let retry = client.handle.lxmf_send(req).await.expect("stamped resend");
-    assert_eq!(retry.get("ok"), Some(&serde_json::Value::Bool(true)));
-    wait_inbound_text(&server.handle, &body, INBOUND_TIMEOUT)
+    let retry_body = format!("interop-stamp-retry-{}", uuid::Uuid::new_v4());
+    let retry_req = LxmfSendRequest {
+        text: retry_body.clone(),
+        ..req
+    };
+    let retry = client
+        .handle
+        .lxmf_send(retry_req)
         .await
-        .expect("stamped dm delivered");
+        .expect("stamped resend");
+    assert_eq!(retry.get("ok"), Some(&serde_json::Value::Bool(true)));
+    wait_inbound_text(&server.handle, &retry_body, INBOUND_TIMEOUT)
+        .await
+        .expect("stamped retry dm delivered");
 
     teardown_dual(&server, &client).await;
 }

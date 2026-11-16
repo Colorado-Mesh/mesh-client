@@ -8033,10 +8033,9 @@ fn drive_local_host_peer_sync(
         let Ok(peer_identity) = Identity::from_public_key(&pub_key) else {
             return;
         };
-        let peering_cost_u8 = peer.peering_cost.round().clamp(0.0, 255.0) as u8;
         propagation.spawn_peering_key_job(
             peer_hash,
-            peering_cost_u8,
+            peer.peering_cost,
             peer_identity.hash,
             local_identity_hash,
         );

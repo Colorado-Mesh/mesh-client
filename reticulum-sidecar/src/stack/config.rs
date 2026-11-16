@@ -398,11 +398,28 @@ pub fn apply_stack_settings_patch(
     if let Some(v) = patch.link_mtu_discovery {
         settings.link_mtu_discovery = v;
     }
-    set_stack_settings(config_dir, &settings)?;
+    // Only rewrite stamp_destinations/stamp_prs when the UI explicitly toggled
+    // enable_stamping. Otherwise an omitted-field patch (e.g. loglevel only)
+    // would collapse asymmetric INI values via the OR-aggregate read.
+    set_stack_settings_ex(
+        config_dir,
+        &settings,
+        patch.enable_stamping.is_some(),
+        patch.enforce_stamps.is_some(),
+    )?;
     Ok(settings)
 }
 
 pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result<(), String> {
+    set_stack_settings_ex(config_dir, settings, true, true)
+}
+
+fn set_stack_settings_ex(
+    config_dir: &Path,
+    settings: &StackSettings,
+    sync_stamp_emit: bool,
+    sync_enforce_stamps: bool,
+) -> Result<(), String> {
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;
     parsed
@@ -422,7 +439,10 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
         "autoconnect_discovered_interfaces",
         &settings.autoconnect_discovered_interfaces.to_string(),
     );
-    let stamp = if settings.required_discovery_value.is_finite() {
+    // RNS treats unset / non-positive required_discovery_value as DEFAULT_STAMP_VALUE (16).
+    let stamp = if settings.required_discovery_value.is_finite()
+        && settings.required_discovery_value > 0.0
+    {
         settings.required_discovery_value.clamp(0.0, 100.0)
     } else {
         default_required_discovery_value()
@@ -442,16 +462,20 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
         "link_mtu_discovery",
         &bool_to_ini(settings.link_mtu_discovery),
     );
-    // One UI toggle → both emit flags (Ratspeak / RNS stamp_destinations + stamp_prs).
-    parsed
-        .stamps
-        .set("stamp_destinations", &bool_to_ini(settings.enable_stamping));
-    parsed
-        .stamps
-        .set("stamp_prs", &bool_to_ini(settings.enable_stamping));
-    parsed
-        .stamps
-        .set("enforce_stamps", &bool_to_ini(settings.enforce_stamps));
+    if sync_stamp_emit {
+        // One UI toggle → both emit flags (Ratspeak / RNS stamp_destinations + stamp_prs).
+        parsed
+            .stamps
+            .set("stamp_destinations", &bool_to_ini(settings.enable_stamping));
+        parsed
+            .stamps
+            .set("stamp_prs", &bool_to_ini(settings.enable_stamping));
+    }
+    if sync_enforce_stamps {
+        parsed
+            .stamps
+            .set("enforce_stamps", &bool_to_ini(settings.enforce_stamps));
+    }
     // Prefer the Python/manual key; drop the legacy alias so one source of truth remains.
     if parsed
         .reticulum
@@ -3942,6 +3966,87 @@ destination_cost = 23.5
         assert!(content.contains("enforce_stamps = Yes"), "{content}");
         assert!(content.contains("destination_cost = 23.5"), "{content}");
         assert!(content.contains("link_mtu_discovery = No"), "{content}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn omitted_enable_stamping_preserves_asymmetric_stamp_emit_keys() {
+        let dir = test_config_dir("stamps-asymmetric");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+
+[stamps]
+stamp_destinations = No
+stamp_prs = Yes
+enforce_stamps = No
+"#,
+        )
+        .unwrap();
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                loglevel: Some(3),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.loglevel, 3);
+        // Aggregate read is still true (stamp_prs = Yes).
+        assert!(updated.enable_stamping);
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("loglevel = 3"), "{content}");
+        assert!(
+            content.contains("stamp_destinations = No"),
+            "omitted enable_stamping must not rewrite stamp_destinations: {content}"
+        );
+        assert!(
+            content.contains("stamp_prs = Yes"),
+            "omitted enable_stamping must not rewrite stamp_prs: {content}"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn zero_required_discovery_value_persists_runtime_default() {
+        let dir = test_config_dir("discovery-zero");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        set_stack_settings(
+            &dir,
+            &StackSettings {
+                required_discovery_value: 0.0,
+                ..StackSettings::default()
+            },
+        )
+        .unwrap();
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains(&format!(
+                "required_discovery_value = {}",
+                format_stamp_value(default_required_discovery_value())
+            )),
+            "{content}"
+        );
+        let loaded = get_stack_settings(&dir).unwrap();
+        assert_eq!(
+            loaded.required_discovery_value,
+            default_required_discovery_value()
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 

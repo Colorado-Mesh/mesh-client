@@ -314,7 +314,7 @@ impl PropagationBridge {
     pub fn spawn_peering_key_job(
         self: &Arc<Self>,
         peer_hash: [u8; 16],
-        peering_cost: u8,
+        peering_cost: f64,
         peer_identity_hash: [u8; 16],
         local_identity_hash: [u8; 16],
     ) {
@@ -338,7 +338,7 @@ impl PropagationBridge {
                 let ctl = rns_identity::stamps::StampControl::default();
                 lxmf_core::stamper::generate_stamp(
                     &peering_id,
-                    f64::from(peering_cost),
+                    peering_cost,
                     lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PEERING,
                     &ctl,
                 )
