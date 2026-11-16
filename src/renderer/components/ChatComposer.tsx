@@ -97,6 +97,7 @@ import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickCo
 import { toScheduledEntry } from '../lib/scheduledSend';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { ChatMacroBar } from './chat/ChatMacroBar';
+import { ChatMarkdownToolbar } from './chat/ChatMarkdownToolbar';
 import { EditMacrosDialog } from './chat/EditMacrosDialog';
 import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { HelpTooltip } from './HelpTooltip';
@@ -1093,26 +1094,31 @@ export function ChatComposer({
     });
   }, [macroComposerId, showMacros]);
 
+  const wrapMarkdownSelection = useCallback(
+    (before: string, after: string) => {
+      const el = inputRef.current;
+      if (!el || disabled) return;
+      const value = inputValueRef.current;
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const wrapped = wrapSelectionWithMarkdown(value, start, end, before, after);
+      setInput(wrapped.next);
+      setMentionQuery(null);
+      clearMentionCycle();
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);
+      });
+    },
+    [clearMentionCycle, disabled],
+  );
+
   useEffect(() => {
     return registerChatMarkdownToolbarTarget({
       isActive: () => isElementOnScreen(inputRef.current),
-      wrap: (before, after) => {
-        const el = inputRef.current;
-        if (!el || disabled) return;
-        const value = inputValueRef.current;
-        const start = el.selectionStart ?? value.length;
-        const end = el.selectionEnd ?? value.length;
-        const wrapped = wrapSelectionWithMarkdown(value, start, end, before, after);
-        setInput(wrapped.next);
-        setMentionQuery(null);
-        clearMentionCycle();
-        requestAnimationFrame(() => {
-          el.focus();
-          el.setSelectionRange(wrapped.selectionStart, wrapped.selectionEnd);
-        });
-      },
+      wrap: wrapMarkdownSelection,
     });
-  }, [clearMentionCycle, disabled]);
+  }, [wrapMarkdownSelection]);
 
   const openMacroDialog = useCallback((focusIndex: number) => {
     setMacroDialogFocus(focusIndex);
@@ -2098,6 +2104,7 @@ export function ChatComposer({
       </div>
 
       <div className="mt-1 flex min-w-0 items-center gap-2">
+        <ChatMarkdownToolbar onWrap={wrapMarkdownSelection} disabled={disabled || !isConnected} />
         {/* The inline Small toolbar takes the leftover width; the hint keeps only its text width. */}
         <div className={macroToolbarInline ? 'min-w-0' : 'min-w-0 flex-1'}>
           {!showCounter && (

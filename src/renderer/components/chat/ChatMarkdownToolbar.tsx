@@ -29,17 +29,25 @@ const ACTIONS = [
   },
 ] as const;
 
+export interface ChatMarkdownToolbarProps {
+  /** When set, wrap this composer directly (ChatComposer). Otherwise use the registry. */
+  onWrap?: (before: string, after: string) => void;
+  /** When set with `onWrap`, gates buttons (same as emoji / send). */
+  disabled?: boolean;
+}
+
 /**
- * Fixed header formatting controls (icons + tooltips). Targets the active ChatComposer via
- * `registerChatMarkdownToolbarTarget` so macro size changes cannot reflow these buttons.
+ * Markdown formatting controls next to the chat text entry. With `onWrap`, targets that
+ * composer; without it, uses `registerChatMarkdownToolbarTarget` (unit tests / fallback).
  */
-export function ChatMarkdownToolbar() {
+export function ChatMarkdownToolbar({ onWrap, disabled = false }: ChatMarkdownToolbarProps = {}) {
   const { t } = useTranslation();
-  const enabled = useSyncExternalStore(
+  const hasRegistryTarget = useSyncExternalStore(
     subscribeChatMarkdownToolbarTarget,
     hasChatMarkdownToolbarTarget,
     () => false,
   );
+  const enabled = onWrap != null ? !disabled : hasRegistryTarget;
 
   return (
     <div
@@ -56,7 +64,15 @@ export function ChatMarkdownToolbar() {
           aria-label={t(labelKey)}
           title={t(labelKey)}
           disabled={!enabled}
+          onMouseDown={(e) => {
+            // Keep textarea selection/focus when clicking the toolbar.
+            e.preventDefault();
+          }}
           onClick={() => {
+            if (onWrap) {
+              onWrap(before, after);
+              return;
+            }
             applyChatMarkdownWrap(before, after);
           }}
         >

@@ -155,7 +155,6 @@ import {
 import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
-import { ChatMarkdownToolbar } from './components/chat/ChatMarkdownToolbar';
 import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -5069,7 +5068,6 @@ function AppContent() {
               onTabSelect={handleTabSelect}
               actions={
                 <>
-                  <ChatMarkdownToolbar />
                   {capabilities.hasRoomServersPanel ? (
                     <MeshcoreFloodAdvertHeaderButton
                       disabled={!isOperational}

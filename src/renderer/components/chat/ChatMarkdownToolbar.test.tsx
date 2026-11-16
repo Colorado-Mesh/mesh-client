@@ -37,6 +37,24 @@ describe('ChatMarkdownToolbar', () => {
     expect(screen.getByRole('button', { name: 'Bold' })).toBeDisabled();
   });
 
+  it('calls onWrap and ignores the registry when provided', () => {
+    const onWrap = vi.fn();
+    const registryWrap = vi.fn();
+    registerChatMarkdownToolbarTarget({
+      isActive: () => true,
+      wrap: registryWrap,
+    });
+    render(<ChatMarkdownToolbar onWrap={onWrap} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Italic' }));
+    expect(onWrap).toHaveBeenCalledWith('*', '*');
+    expect(registryWrap).not.toHaveBeenCalled();
+  });
+
+  it('disables buttons when onWrap is set and disabled', () => {
+    render(<ChatMarkdownToolbar onWrap={vi.fn()} disabled />);
+    expect(screen.getByRole('button', { name: 'Bold' })).toBeDisabled();
+  });
+
   it('has no axe violations', async () => {
     const { container } = render(<ChatMarkdownToolbar />);
     hydrateAxeThemeColors(container);
