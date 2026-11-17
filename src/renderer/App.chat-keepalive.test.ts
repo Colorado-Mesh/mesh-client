@@ -23,7 +23,7 @@ describe('App Chat keep-alive (regression)', () => {
     expect(COMMIT).not.toMatch(/chat:\s*(true|false)/);
   });
 
-  it('renders one ChatPanel per visited enabled protocol without key={protocol} remount', () => {
+  it('renders one ChatSurface per visited enabled protocol without key={protocol} remount', () => {
     expect(SOURCE).toMatch(/REGISTERED_MESH_PROTOCOLS\.filter\(\(chatProtocol\) => \{/);
     expect(SOURCE).toMatch(/enabledProtocols\.includes\(chatProtocol\)/);
     expect(SOURCE).toMatch(/visitedChatProtocols\.has\(chatProtocol\)/);
@@ -33,7 +33,7 @@ describe('App Chat keep-alive (regression)', () => {
       SOURCE.indexOf('visitedChatProtocols.size > 0) && ('),
       SOURCE.indexOf('id={`panel-${GAMES_PANEL_INDEX}`}'),
     );
-    expect(chatBlock).toContain('<ChatPanel');
+    expect(chatBlock).toContain('<ChatSurface');
     expect(chatBlock).not.toContain('key={protocol}');
   });
 
