@@ -600,6 +600,29 @@ it.each(['linux', 'darwin', 'win32'] as const)(
   },
 );
 
+it('catches up on lines that arrived after the read mark and sends only their text and stamp', async () => {
+  const { result } = renderHook(() =>
+    useConversationSummary({
+      ...input,
+      history: null,
+      // The read mark is the arrival time of the last line read.
+      watermark: 10_000,
+      messages: [
+        { at: 12_000, order: 9_000, sender: 'Alice', body: 'Read fast clock line' },
+        { at: 1_000, order: 11_000, sender: 'Bob', body: 'Unread slow clock line' },
+      ],
+    }),
+  );
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(window.electronAPI.ai.summarize).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      messages: [{ at: 1_000, sender: 'Bob', body: 'Unread slow clock line' }],
+    }),
+  );
+});
+
 it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
   'keeps a newest window under the %s renderer budget instead of reintroducing an answered question',
   async (protocol) => {

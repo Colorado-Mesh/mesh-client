@@ -841,14 +841,14 @@ export function ensureReticulumChatLastReadSanitized(
 /** Clamp MeshCore room last-read watermarks that exceed post times or client clock. */
 export function sanitizeMeshcoreRoomsLastRead(
   persisted: Readonly<Record<number, number>>,
-  messages: readonly { roomServerId?: number; timestamp: number }[],
+  messages: readonly { roomServerId?: number; timestamp: number; receivedAt?: number }[],
 ): Record<number, number> {
   const maxById = maxRoomPostTimestampByServerId(messages);
   return sanitizeNumericKeyLastRead(persisted, maxById);
 }
 
 export function getSanitizedMeshcoreRoomsLastRead(
-  messages: readonly { roomServerId?: number; timestamp: number }[],
+  messages: readonly { roomServerId?: number; timestamp: number; receivedAt?: number }[],
 ): Record<number, number> {
   return sanitizeMeshcoreRoomsLastRead(loadPersistedRoomsLastRead(), messages);
 }

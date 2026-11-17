@@ -1,3 +1,4 @@
+import { chatReceivedAtMs } from '@/renderer/lib/chatReceiveOrder';
 import {
   type ChatUnreadDmOptions,
   filterRegularChatMessages,
@@ -6,6 +7,7 @@ import {
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 
 export interface ChatDmPeerIndexEntry {
+  /** Latest arrival with this peer (the stamp for rows saved before arrival times were kept). */
   lastMessageAt: number;
   messageCount: number;
 }
@@ -30,8 +32,8 @@ export function buildChatDmPeerIndex(
   for (const msg of regular) {
     const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
     if (peer == null) continue;
-    const ts =
-      typeof msg.timestamp === 'number' && Number.isFinite(msg.timestamp) ? msg.timestamp : 0;
+    const arrivedAt = chatReceivedAtMs(msg);
+    const ts = typeof arrivedAt === 'number' && Number.isFinite(arrivedAt) ? arrivedAt : 0;
     const prev = peers.get(peer);
     if (!prev) {
       peers.set(peer, { lastMessageAt: ts, messageCount: 1 });

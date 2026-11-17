@@ -1,11 +1,8 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
+import { chatReadOrderMs, isChatReadOrderPoisoned } from '@/renderer/lib/chatReceiveOrder';
 import { isMecpMessage, type Severity, tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
-import {
-  clampReadWatermarkMs,
-  effectiveMessageTimestampMs,
-  isUnreasonablyFutureMessageTimestampMs,
-} from '@/renderer/lib/nodeStatus';
+import { clampReadWatermarkMs } from '@/renderer/lib/nodeStatus';
 import {
   buildMeshtasticReplyParentIndex,
   findMeshtasticParentMessageForReply,
@@ -185,11 +182,11 @@ function unreadChannelIndex(
   if (msg.channel < 0) return undefined;
   if (configured && configured.size > 0 && !configured.has(msg.channel)) return undefined;
   if (msg.isHistory) return undefined;
-  if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) return undefined;
+  if (isChatReadOrderPoisoned(msg, nowMs)) return undefined;
   if (isHiddenWeatherPost(msg, protocol)) return undefined;
   if (isHiddenByWordFilter(msg, protocol)) return undefined;
   const lastRead = clampReadWatermarkMs(persistedLastRead[`ch:${msg.channel}`] ?? 0, nowMs);
-  return effectiveMessageTimestampMs(msg.timestamp, nowMs) > lastRead ? msg.channel : undefined;
+  return chatReadOrderMs(msg, nowMs) > lastRead ? msg.channel : undefined;
 }
 
 /** DM peer when `msg` counts as unread direct traffic, else undefined. */
@@ -205,10 +202,10 @@ function unreadDmPeer(
   const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
   if (peer == null) return undefined;
   if (ownNodeIds.has(msg.sender_id)) return undefined;
-  if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) return undefined;
+  if (isChatReadOrderPoisoned(msg, nowMs)) return undefined;
   if (isHiddenByWordFilter(msg, protocol, `${protocol}:dm:${peer}`)) return undefined;
   const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
-  return effectiveMessageTimestampMs(msg.timestamp, nowMs) > lr ? peer : undefined;
+  return chatReadOrderMs(msg, nowMs) > lr ? peer : undefined;
 }
 
 export function computeChannelUnreadCounts(

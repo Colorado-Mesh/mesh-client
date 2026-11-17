@@ -129,6 +129,24 @@ describe('normalize*SearchRow', () => {
   });
 });
 
+describe('search hit arrival time', () => {
+  it.each([
+    ['meshtastic', normalizeMeshtasticSearchRow({ id: 1, timestamp: 10, received_at: 90 })],
+    ['meshcore', normalizeMeshcoreSearchRow({ id: 1, timestamp: 10, received_at: 90 })],
+    ['reticulum', normalizeReticulumSearchRow({ id: 1, timestamp: 10, received_at: 90 })],
+  ])('keeps a saved %s arrival time beside the stamp', (_protocol, hit) => {
+    expect(hit.timestamp).toBe(10);
+    expect(hit.receivedAt).toBe(90);
+    expect(chatMessageFromSearchHit(hit)).toMatchObject({ timestamp: 10, receivedAt: 90 });
+  });
+
+  it('leaves the arrival time out for a row saved without one', () => {
+    expect(
+      normalizeMeshtasticSearchRow({ id: 1, timestamp: 10, received_at: null }),
+    ).not.toHaveProperty('receivedAt');
+  });
+});
+
 describe('search hit focus', () => {
   it('leaves a missing sender name empty', () => {
     expect(normalizeMeshtasticSearchRow({ id: 1, payload: 'hi', timestamp: 1 }).senderName).toBe(
@@ -266,6 +284,22 @@ describe('filterGlobalMessageSearchHits', () => {
     ]);
   });
 
+  it('reads the date range against arrival, falling back to the stamp', () => {
+    const arrivals: GlobalMessageSearchHit[] = [
+      // Stamped before the range by a slow clock, arrived inside it.
+      { ...hits[0], dbId: 11, timestamp: 500, receivedAt: 1600 },
+      // Stamped inside the range, arrived after it.
+      { ...hits[1], dbId: 12, timestamp: 1600, receivedAt: 2600 },
+      // No arrival time saved: the stamp decides.
+      { ...hits[0], dbId: 13, timestamp: 1700 },
+    ];
+    expect(
+      filterGlobalMessageSearchHits(arrivals, { protocol: 'all', fromTs: 1500, toTs: 2500 }).map(
+        (h) => h.dbId,
+      ),
+    ).toEqual([11, 13]);
+  });
+
   it('filters by date range and direction', () => {
     expect(filterGlobalMessageSearchHits(hits, { protocol: 'all', fromTs: 1500 })).toHaveLength(1);
     expect(
@@ -349,6 +383,45 @@ describe('runGlobalMessageSearch', () => {
     expect(api.searchMeshcoreMessages).toHaveBeenCalled();
     expect(api.searchReticulumMessages).toHaveBeenCalledWith('id-1', 'o', 50);
     expect(hits.map((h) => h.timestamp)).toEqual([20, 15, 10]);
+  });
+
+  it('lists hits from every protocol newest arrival first and keeps their stamps', async () => {
+    const api = {
+      // A slow clock: stamped earliest, arrived last.
+      searchMessages: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 1, sender_name: 'A', payload: 'one', channel: 0, timestamp: 10, received_at: 90 },
+        ]),
+      searchMeshcoreMessages: vi.fn().mockResolvedValue([
+        {
+          id: 2,
+          sender_name: 'B',
+          payload: 'two',
+          channel_idx: 0,
+          timestamp: 70,
+          received_at: 70,
+        },
+      ]),
+      // Saved before arrival times were kept, so its stamp stands in.
+      searchReticulumMessages: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 3, sender_id: 'aa'.repeat(16), payload: 'three', timestamp: 80, received_at: null },
+        ]),
+    };
+    const hits = await runGlobalMessageSearch({
+      query: 'o',
+      filters: { protocol: 'all' },
+      api,
+      reticulumIdentityId: 'id-1',
+      enabledProtocols: ['meshtastic', 'meshcore', 'reticulum'],
+    });
+    expect(hits.map((h) => [h.protocol, h.timestamp, h.receivedAt])).toEqual([
+      ['meshtastic', 10, 90],
+      ['reticulum', 80, undefined],
+      ['meshcore', 70, 70],
+    ]);
   });
 
   it('skips reticulum without identity', async () => {

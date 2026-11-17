@@ -357,7 +357,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               `SELECT r.* FROM reticulum_messages r
              INNER JOIN reticulum_messages_fts ON reticulum_messages_fts.rowid = r.id
              WHERE r.identity_id = ? AND reticulum_messages_fts MATCH ?
-             ORDER BY r.timestamp DESC LIMIT ?`,
+             ORDER BY COALESCE(r.received_at, r.timestamp) DESC LIMIT ?`,
             )
             .all(identityId, ftsQuery, safeLimit) as Record<string, unknown>[];
         }
@@ -366,7 +366,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           .prepareOnce(
             `SELECT * FROM reticulum_messages
            WHERE identity_id = ? AND payload LIKE ? COLLATE NOCASE
-           ORDER BY timestamp DESC LIMIT ?`,
+           ORDER BY COALESCE(received_at, timestamp) DESC LIMIT ?`,
           )
           .all(identityId, pattern, safeLimit) as Record<string, unknown>[];
       } catch (err) {

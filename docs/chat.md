@@ -34,7 +34,7 @@ Unread counts stay on a conversation chip even while it is selected until you ha
 
 ### Message order and times
 
-Messages appear in the order this computer received or sent them, not by the time written on each message. That time comes from whichever clock stamped the message, usually the sender's, so a node with a wrong clock does not push its messages up or down the history. Each bubble still shows the stamped time, with the date in front of it when it falls on a different day from the arrival. Day separators, **Jump to date**, and the unified inbox follow the arrival order. Messages saved by app versions that did not record an arrival time keep their stamped order.
+Messages appear in the order this computer received or sent them, not by the time written on each message. That time comes from whichever clock stamped the message, usually the sender's, so a node with a wrong clock does not push its messages up or down the history. Each bubble still shows the stamped time, with the date in front of it when it falls on a different day from the arrival. Day separators, **Jump to date**, the unified inbox and global search follow the arrival order. Unread counts, the **New messages** divider, **Mark unread** and **Catch up** since last read go by arrival as well, so a message from a clock that runs behind still counts as unread when it arrives after you read the conversation (Catch up reads older history from storage by its stamped time). The same holds for Rooms (its **Last post** time is the stamp of the post that arrived last) and for the DM order on the Nodes **History** tab. Messages saved by app versions that did not record an arrival time keep their stamped order.
 
 ### Mute
 
@@ -114,7 +114,7 @@ Chat can hide messages whose text matches a blocked-word list (case-insensitive 
 
 ### Mark unread and delete
 
-Conversation tools include **Mark unread** (sets the read watermark just before the newest inbound message; does not re-notify). Message action bars offer **Delete locally** with a confirm (removes the row from this device’s in-memory store only).
+Conversation tools include **Mark unread** (sets the read watermark just before the inbound message that arrived last; does not re-notify). Message action bars offer **Delete locally** with a confirm (removes the row from this device’s in-memory store only).
 
 ### Spellcheck, emoji, and extras
 
@@ -158,7 +158,7 @@ Emergency reports are off in the composer until you enable **App → MECP → Sh
 Press **Ctrl+Shift+F** (**Cmd+Shift+F** on macOS) to open **Search all messages**, or use **Search all conversations** in the Chat toolbar. It searches saved history for every enabled protocol at once.
 
 - Narrow results with **Protocol**, **Direction** (**All**, **Received**, **Sent**), and **Sender** (a name or id).
-- Each protocol returns at most 50 matches per query, merged newest first.
+- Each protocol returns at most 50 matches per query, merged with the most recently received first.
 - Picking a result opens that conversation and scrolls to the message.
 - Direction needs to know which messages are yours. If your own node or hash is not known yet, **Received** and **Sent** return nothing for that protocol.
 - Search covers what is stored locally, not what is still on a radio.

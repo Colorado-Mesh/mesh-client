@@ -3122,6 +3122,190 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
+  describe('read marks by arrival', () => {
+    const HOUR = 3_600_000;
+    const storedMarks = () =>
+      JSON.parse(localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}') as Record<
+        string,
+        number
+      >;
+
+    it('puts the unread divider above a slow-clock line that arrived after the read mark', async () => {
+      mockIsAtEnd = false;
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Read line',
+                channel: 0,
+                timestamp: ts - 6000,
+                receivedAt: ts - 6000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts - 1000,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      const divider = await screen.findByText('New messages');
+      expect(
+        screen.getByText('Read line').compareDocumentPosition(divider) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        divider.compareDocumentPosition(screen.getByText('Slow clock line')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('stores the newest arrival as the read mark when the view is read', async () => {
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 3000 }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Read line',
+                channel: 0,
+                timestamp: ts - 4000,
+                receivedAt: ts - 4000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      await waitFor(() => {
+        expect(storedMarks()['ch:0']).toBe(ts);
+      });
+    });
+
+    it('Mark unread leaves the newest arrival unread', async () => {
+      mockIsAtEnd = false;
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'On time line',
+                channel: 0,
+                timestamp: ts - 6000,
+                receivedAt: ts - 6000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts - 1000,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Mark unread' }));
+      await waitFor(() => {
+        expect(storedMarks()['ch:0']).toBe(ts - 1001);
+      });
+    });
+
+    it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+      'catches up %s lines that arrived after the read mark, whatever their stamps',
+      async (protocol) => {
+        useAiSummaryStore.getState().setStatus({
+          ...(await window.electronAPI.ai.getStatus()),
+          enabled: true,
+          engine: 'local',
+          model: 'test',
+          baseUrl: 'http://127.0.0.1:1234',
+        });
+        vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue([]);
+        vi.mocked(window.electronAPI.ai.summarize).mockClear();
+        mockIsAtEnd = false;
+        const ts = Date.now();
+        localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ 'ch:0': ts - 5000 }));
+        const { unmount } = render(
+          <ToastProvider>
+            <ChatPanel
+              {...baseProps}
+              protocol={protocol}
+              messages={[
+                {
+                  sender_id: 2,
+                  sender_name: 'Alice',
+                  payload: 'Read fast clock line',
+                  channel: 0,
+                  timestamp: ts + 2 * 60_000,
+                  receivedAt: ts - 6000,
+                  status: 'acked',
+                },
+                {
+                  sender_id: 3,
+                  sender_name: 'Bob',
+                  payload: 'Unread slow clock line',
+                  channel: 0,
+                  timestamp: ts - 2 * HOUR,
+                  receivedAt: ts - 1000,
+                  status: 'acked',
+                },
+              ]}
+            />
+          </ToastProvider>,
+        );
+        try {
+          fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+          await waitFor(() => {
+            expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+          });
+          const request = vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0];
+          expect(request.messages.map((message) => message.body)).toEqual([
+            'Unread slow clock line',
+          ]);
+        } finally {
+          unmount();
+        }
+      },
+    );
+  });
+
   it('marks MeshCore DM read when opened with all messages visible', async () => {
     const user = userEvent.setup();
     const ts = Date.now();

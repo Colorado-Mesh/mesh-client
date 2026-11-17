@@ -167,4 +167,41 @@ describe('listDmPeers', () => {
     expect(rows.map((r) => r.node_id)).toEqual([10, 9]);
     expect(rows.every((r) => r.node_id !== own)).toBe(true);
   });
+
+  it('listMeshtasticDmPeersFromDb orders peers by their latest arrival', () => {
+    const own = 1;
+    const insert = db!.prepareOnce(
+      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, to_node, received_at)
+       VALUES (?, 'p', 'hi', 0, ?, ?, ?)`,
+    );
+    // Peer 2's clock runs two hours behind, and its DM arrived last.
+    insert.run(2, 1_699_992_800_000, own, 1_700_000_120_000);
+    // Peer 3 stamped later but arrived earlier.
+    insert.run(3, 1_700_000_060_000, own, 1_700_000_060_000);
+    // Peer 4 was saved before arrival times were kept, so its stamp stands in.
+    insert.run(4, 1_700_000_090_000, own, null);
+
+    expect(listMeshtasticDmPeersFromDb(db!, own)).toEqual([
+      { node_id: 2, last_message_at: 1_700_000_120_000 },
+      { node_id: 4, last_message_at: 1_700_000_090_000 },
+      { node_id: 3, last_message_at: 1_700_000_060_000 },
+    ]);
+  });
+
+  it('listMeshcoreDmPeersFromDb orders peers by their latest arrival', () => {
+    const own = 1;
+    const insert = db!.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, to_node, received_at)
+       VALUES (?, 'p', 'hi', -1, ?, ?, ?)`,
+    );
+    insert.run(9, 1_699_992_800_000, own, 1_700_000_120_000);
+    insert.run(10, 1_700_000_060_000, own, 1_700_000_060_000);
+    insert.run(11, 1_700_000_090_000, own, null);
+
+    expect(listMeshcoreDmPeersFromDb(db!, own)).toEqual([
+      { node_id: 9, last_message_at: 1_700_000_120_000 },
+      { node_id: 11, last_message_at: 1_700_000_090_000 },
+      { node_id: 10, last_message_at: 1_700_000_060_000 },
+    ]);
+  });
 });

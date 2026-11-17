@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { mergeSummaryMessages, selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
+import {
+  type AiSummaryLiveMessage,
+  mergeSummaryMessages,
+  selectSummaryMessages,
+} from '@/renderer/lib/aiSummaryScope';
 import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
@@ -29,7 +33,8 @@ export interface ConversationSummaryInput {
   label: string;
   protocol: AiSummaryRequest['protocol'];
   surface: AiSummaryRequest['surface'];
-  messages: AiSummaryMessage[];
+  messages: AiSummaryLiveMessage[];
+  /** Read mark (arrival time of the last message read); "since last read" compares `order`. */
   watermark: number;
   history: Omit<AiHistoryQuery, 'sinceMs' | 'untilMs'> | null;
   includeHistoryMessage?: (message: AiHistoryMessage) => boolean;
@@ -194,7 +199,8 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           if (message.body.length > AI_MAX_TOTAL_CHARS) continue;
           break;
         }
-        bounded.push(message);
+        // The model gets the stamp, sender and text only.
+        bounded.push({ at: message.at, sender: message.sender, body: message.body });
         chars += message.body.length;
       }
       await runSummary(

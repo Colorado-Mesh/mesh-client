@@ -158,11 +158,6 @@ import { getLiveChannelKey } from '@/renderer/stores/liveChannelKeyStore';
 import { CHAT_DOCS_URL } from '@/shared/docsSite';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
-import {
-  clampReadWatermarkMs,
-  effectiveMessageTimestampMs,
-  isUnreasonablyFutureMessageTimestampMs,
-} from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 import { touch } from '@/shared/touch';
@@ -197,7 +192,13 @@ import {
   savePersistedLastRead,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
-import { chatReceivedAtMs, chatSentOnAnotherDay } from '../lib/chatReceiveOrder';
+import {
+  chatReadOrderMs,
+  chatReceivedAtMs,
+  chatSentOnAnotherDay,
+  isChatReadOrderPoisoned,
+  latestChatReadMs,
+} from '../lib/chatReceiveOrder';
 import {
   CHAT_SCROLL_END_THRESHOLD,
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
@@ -765,16 +766,6 @@ function isDismissedDmConversation(
   const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
   const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
   return dmCount > 0 && dismissedCount >= dmCount;
-}
-
-function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
-  let latest = 0;
-  for (const msg of messages) {
-    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
-    const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
-    if (ts > latest) latest = ts;
-  }
-  return clampReadWatermarkMs(latest, nowMs);
 }
 
 function mergeReadWatermarks(
@@ -2048,13 +2039,15 @@ function ChatPanel({
     wordFilterConversationKey,
   ]);
 
-  // Index of first message from another node newer than unreadDividerTimestamp.
+  // Index of the first message from another node that arrived after unreadDividerTimestamp
+  // (the read mark when the view opened), by the same key as the unread counts.
   // Returns -1 when: search active, timestamp=0, or no qualifying messages.
   const unreadStartIndex = useMemo(() => {
     if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredMessages.length; i++) {
       const msg = filteredMessages[i];
-      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
+      if (isOwnNode(msg.sender_id) || isChatReadOrderPoisoned(msg)) continue;
+      if (chatReadOrderMs(msg) > unreadDividerTimestamp) return i;
     }
     return -1;
   }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
@@ -2375,7 +2368,7 @@ function ChatPanel({
     if (viewMode === 'starred') return;
     if (viewMode === 'dm' && activeDmNode == null) return;
 
-    const latest = latestMessageTimestamp(viewMessages);
+    const latest = latestChatReadMs(viewMessages);
     if (latest === 0) return;
     setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[readKey, latest]]));
   }, [activeDmNode, readKey, viewMessages, viewMode]);
@@ -3017,7 +3010,7 @@ function ChatPanel({
             (m.sender_id === nodeNum && isOwnNode(m.to ?? 0))
           );
         });
-        const latest = latestMessageTimestamp(peerMessages);
+        const latest = latestChatReadMs(peerMessages);
         if (dmOnlyChat && latest > 0) {
           setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[dmViewKey, latest]]));
         }
@@ -3211,6 +3204,8 @@ function ChatPanel({
       aiEnabled
         ? viewMessages.map((m) => ({
             at: m.timestamp,
+            // Catch up picks "since last read" lines by arrival, like the read mark.
+            order: chatReceivedAtMs(m),
             sender: m.sender_name.slice(0, 120),
             body: m.payload,
           }))
@@ -3913,15 +3908,13 @@ function ChatPanel({
                   tooltip={t('chatPanel.markUnread')}
                   aria-label={t('chatPanel.markUnread')}
                   onClick={() => {
-                    // Set watermark just before newest inbound so it and newer stay unread.
-                    // Watermark changes alone do not fire notification beeps.
-                    let newestInboundTs = 0;
-                    for (const m of viewMessages) {
-                      if (isOwnNode(m.sender_id)) continue;
-                      if ((m.timestamp ?? 0) > newestInboundTs) newestInboundTs = m.timestamp ?? 0;
-                    }
-                    if (newestInboundTs <= 0) return;
-                    const before = Math.max(0, newestInboundTs - 1);
+                    // Set watermark just before the newest inbound arrival so it and newer stay
+                    // unread. Watermark changes alone do not fire notification beeps.
+                    const newestInbound = latestChatReadMs(
+                      viewMessages.filter((m) => !isOwnNode(m.sender_id)),
+                    );
+                    if (newestInbound <= 0) return;
+                    const before = newestInbound - 1;
                     // Replace (do not merge-up): mark-unread must lower an existing watermark.
                     setPersistedLastRead((prev) => {
                       if (prev[readKey] === before) return prev;

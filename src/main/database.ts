@@ -732,19 +732,19 @@ export function searchMessages(query: string, limit = 50): unknown[] {
   if (ftsQuery && isMessageFtsReady(db)) {
     return db
       .prepare(
-        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel, m.timestamp, m.to_node
+        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel, m.timestamp, m.to_node, m.received_at
          FROM messages m
          INNER JOIN messages_fts ON messages_fts.rowid = m.id
          WHERE messages_fts MATCH ?
-         ORDER BY m.timestamp DESC LIMIT ?`,
+         ORDER BY COALESCE(m.received_at, m.timestamp) DESC LIMIT ?`,
       )
       .all(ftsQuery, limit);
   }
   const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
-      `SELECT id, sender_id, sender_name, payload, channel, timestamp, to_node
-       FROM messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
+      `SELECT id, sender_id, sender_name, payload, channel, timestamp, to_node, received_at
+       FROM messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY COALESCE(received_at, timestamp) DESC LIMIT ?`,
     )
     .all(like, limit);
 }
@@ -755,19 +755,19 @@ export function searchMeshcoreMessages(query: string, limit = 50): unknown[] {
   if (ftsQuery && isMessageFtsReady(db)) {
     return db
       .prepare(
-        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel_idx, m.timestamp, m.to_node
+        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel_idx, m.timestamp, m.to_node, m.received_at
          FROM meshcore_messages m
          INNER JOIN meshcore_messages_fts ON meshcore_messages_fts.rowid = m.id
          WHERE meshcore_messages_fts MATCH ?
-         ORDER BY m.timestamp DESC LIMIT ?`,
+         ORDER BY COALESCE(m.received_at, m.timestamp) DESC LIMIT ?`,
       )
       .all(ftsQuery, limit);
   }
   const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
-      `SELECT id, sender_id, sender_name, payload, channel_idx, timestamp, to_node
-       FROM meshcore_messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY timestamp DESC LIMIT ?`,
+      `SELECT id, sender_id, sender_name, payload, channel_idx, timestamp, to_node, received_at
+       FROM meshcore_messages WHERE payload LIKE ? ESCAPE '\\' ORDER BY COALESCE(received_at, timestamp) DESC LIMIT ?`,
     )
     .all(like, limit);
 }

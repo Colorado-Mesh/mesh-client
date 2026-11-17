@@ -75,3 +75,34 @@ describe('maxRoomPostTimestampByServerId', () => {
     expect(maxById[0xabc]).toBe(2000);
   });
 });
+
+describe('read marks taken by arrival', () => {
+  const now = 1_700_000_000_000;
+  const HOUR = 3_600_000;
+
+  it('keeps the newest arrival per view key, not the newest stamp', () => {
+    const maxByKey = maxMessageTimestampByViewKey([
+      { channel: 0, timestamp: now - 60_000, receivedAt: now - 60_000 },
+      { channel: 0, timestamp: now - 2 * HOUR, receivedAt: now - 1_000 },
+    ]);
+    expect(maxByKey['ch:0']).toBe(now - 1_000);
+  });
+
+  it('does not lower a mark taken from a slow-clock line that was read', () => {
+    const persisted = { 'ch:0': now - 1_000 };
+    const maxByKey = maxMessageTimestampByViewKey([
+      { channel: 0, timestamp: now - 2 * HOUR, receivedAt: now - 1_000 },
+    ]);
+    expect(sanitizeViewKeyLastRead(persisted, maxByKey, now)).toBe(persisted);
+  });
+
+  it('keeps the newest room post arrival, not the newest stamp', () => {
+    const maxById = maxRoomPostTimestampByServerId([
+      { roomServerId: 0xabc, timestamp: now - 60_000, receivedAt: now - 60_000 },
+      { roomServerId: 0xabc, timestamp: now - 3 * HOUR, receivedAt: now - 1_000 },
+    ]);
+    expect(maxById[0xabc]).toBe(now - 1_000);
+    const persisted = { [0xabc]: now - 1_000 };
+    expect(sanitizeNumericKeyLastRead(persisted, maxById, now)).toBe(persisted);
+  });
+});

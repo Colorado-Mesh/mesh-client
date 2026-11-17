@@ -70,6 +70,28 @@ describe('buildChatDmPeerIndex', () => {
     expect(index.has(12)).toBe(false);
   });
 
+  it.each([
+    ['meshtastic', 0],
+    ['meshcore', -1],
+  ] as const)(
+    'keeps the latest %s DM arrival per peer, not the latest stamp',
+    (protocol, channel) => {
+      const index = buildChatDmPeerIndex(
+        [
+          msg({ channel, sender_id: 2, to: 1, timestamp: 5_000, receivedAt: 5_000 }),
+          // Peer 2's clock runs behind: stamped earlier, arrived later.
+          msg({ channel, sender_id: 2, to: 1, timestamp: 1_000, receivedAt: 9_000 }),
+          // Saved before arrival times were kept, so its stamp stands in.
+          msg({ channel, sender_id: 3, to: 1, timestamp: 7_000 }),
+        ],
+        OWN,
+        protocol,
+      );
+      expect(index.get(2)?.lastMessageAt).toBe(9_000);
+      expect(index.get(3)?.lastMessageAt).toBe(7_000);
+    },
+  );
+
   it('chatDmPeerMessageCounts matches index counts', () => {
     const messages = [
       msg({ channel: 0, sender_id: 2, to: 1, timestamp: 1000 }),

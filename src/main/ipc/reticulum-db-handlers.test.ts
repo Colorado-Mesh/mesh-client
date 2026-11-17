@@ -387,6 +387,43 @@ describe('reticulum destination / activity prune IPC', () => {
     ]);
   });
 
+  it('searchReticulumMessages lists hits newest arrival first on both search paths', () => {
+    const identityId = 'id-rt-search-order';
+    const save = handlers.get('db:saveReticulumMessage');
+    const rows: [text: string, timestamp: number, receivedAt: number | undefined][] = [
+      ['first arrival', 1_700_000_000_000, 1_700_000_000_000],
+      ['slow clock arrived last', 1_699_992_800_000, 1_700_000_120_000],
+      ['on time arrived second', 1_700_000_060_000, 1_700_000_060_000],
+      ['saved before receipts', 1_700_000_030_000, undefined],
+    ];
+    rows.forEach(([text, timestamp, receivedAt], index) => {
+      save?.(event, {
+        identity_id: identityId,
+        sender_id: 'cc'.repeat(16),
+        sender_name: 'Peer',
+        payload: `ping * ${text}`,
+        timestamp,
+        message_hash: `${index + 1}`.repeat(64),
+        delivery_status: 'delivered',
+        ...(receivedAt != null ? { received_at: receivedAt } : {}),
+      });
+    });
+    const search = handlers.get('db:searchReticulumMessages');
+    // A word goes through full-text search; a bare `*` falls back to the text match.
+    const byWord = search?.(event, identityId, 'ping', 10) as { payload: string }[];
+    expect(byWord.map((r) => r.payload.replace('ping * ', ''))).toEqual([
+      'slow clock arrived last',
+      'on time arrived second',
+      'saved before receipts',
+      'first arrival',
+    ]);
+    const byText = search?.(event, identityId, '*', 2) as { payload: string }[];
+    expect(byText.map((r) => r.payload.replace('ping * ', ''))).toEqual([
+      'slow clock arrived last',
+      'on time arrived second',
+    ]);
+  });
+
   it('saveReticulumMessage coalesces attachment_path onto an existing Completes row', () => {
     const identityId = 'id-rt-attach-coalesce';
     const messageHash = 'a1'.repeat(32);

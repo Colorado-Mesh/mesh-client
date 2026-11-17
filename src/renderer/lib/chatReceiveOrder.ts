@@ -7,6 +7,12 @@
  * has none and keeps its wire `timestamp` as the order key, so old rows do not move.
  */
 
+import {
+  clampReadWatermarkMs,
+  effectiveMessageTimestampMs,
+  isUnreasonablyFutureMessageTimestampMs,
+} from '@/shared/messageTimestampSkew';
+
 let lastReceivedAt = 0;
 
 /**
@@ -52,6 +58,40 @@ export function earliestChatReceivedAt(
   if (a == null) return b;
   if (b == null) return a;
   return Math.min(a, b);
+}
+
+/**
+ * The key read marks use (unread counts, the unread divider, Mark unread and the mark itself): the
+ * order key, treated like a wire time, so a key far ahead of this clock reads as now.
+ */
+export function chatReadOrderMs(message: ChatReceiveOrderFields, nowMs = Date.now()): number {
+  return effectiveMessageTimestampMs(chatReceivedAtMs(message), nowMs);
+}
+
+/**
+ * True when the order key is too far ahead of this clock to trust: a saved stamp from a fast
+ * clock, or a receipt taken before this clock was set back. Such a row never counts as unread and
+ * never sets a read mark.
+ */
+export function isChatReadOrderPoisoned(
+  message: ChatReceiveOrderFields,
+  nowMs = Date.now(),
+): boolean {
+  return isUnreasonablyFutureMessageTimestampMs(chatReceivedAtMs(message), nowMs);
+}
+
+/** Read mark for a conversation: its newest usable read key, capped like any mark; 0 when none. */
+export function latestChatReadMs(
+  messages: readonly ChatReceiveOrderFields[],
+  nowMs = Date.now(),
+): number {
+  let latest = 0;
+  for (const message of messages) {
+    if (isChatReadOrderPoisoned(message, nowMs)) continue;
+    const at = chatReadOrderMs(message, nowMs);
+    if (at > latest) latest = at;
+  }
+  return clampReadWatermarkMs(latest, nowMs);
 }
 
 /** Ascending receipt order; ties fall back to the wire time, then to `tieBreak`. */
