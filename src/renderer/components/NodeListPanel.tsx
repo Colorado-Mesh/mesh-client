@@ -281,6 +281,11 @@ function NodeListPanel({
   const [statusFilter, setStatusFilter] = useState<NodeStatusFilter>('all');
   const [importLoading, setImportLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
+  /**
+   * Session sticky DM peers seen in the live in-memory window. Avoids dropping History
+   * entries after MAX_IN_MEMORY eviction without re-querying SQLite on every insert.
+   */
+  const sessionDmPeersRef = useRef<Map<number, ChatDmPeerDbRow>>(new Map());
 
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
@@ -302,6 +307,10 @@ function NodeListPanel({
     () => (mode === 'meshcore' ? { excludeDmPeer } : undefined),
     [excludeDmPeer, mode],
   );
+
+  useEffect(() => {
+    sessionDmPeersRef.current = new Map();
+  }, [mode, myNodeNum]);
 
   useEffect(() => {
     let cancelled = false;
@@ -331,7 +340,19 @@ function NodeListPanel({
     if (!active) return EMPTY_DM_PEER_INDEX;
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
-    const merged = mergeChatDmPeerDbRows(fromMemory, dbDmPeers);
+    for (const [peerId, entry] of fromMemory) {
+      const prev = sessionDmPeersRef.current.get(peerId);
+      if (!prev || entry.lastMessageAt > prev.last_message_at) {
+        sessionDmPeersRef.current.set(peerId, {
+          node_id: peerId,
+          last_message_at: entry.lastMessageAt,
+        });
+      }
+    }
+    const merged = mergeChatDmPeerDbRows(
+      mergeChatDmPeerDbRows(fromMemory, [...sessionDmPeersRef.current.values()]),
+      dbDmPeers,
+    );
     if (mode !== 'meshcore' || !meshcoreExcludedDmPeerIds) return merged;
     // Drop Room/Repeater peers even if SQLite still has DM-shaped rows.
     for (const peer of [...merged.keys()]) {

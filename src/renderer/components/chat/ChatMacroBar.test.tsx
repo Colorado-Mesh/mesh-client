@@ -181,6 +181,7 @@ describe('ChatMacroBar', () => {
         hubDestHash: 'aabb',
         room: '#test',
       },
+      createdAtMs: expect.any(Number),
     });
     expect(screen.getByRole('textbox')).toHaveValue('');
   });

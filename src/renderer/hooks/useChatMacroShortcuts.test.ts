@@ -242,6 +242,7 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
         hubDestHash: 'aabb',
         room: '#weather',
       },
+      createdAtMs: expect.any(Number),
     });
   });
 

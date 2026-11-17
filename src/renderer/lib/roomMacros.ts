@@ -1,5 +1,6 @@
 import { resolveMeshcoreRoomNodeId } from '@/renderer/lib/meshcoreRoomNodeLookup';
 import { resolveChannelTargetIndex } from '@/renderer/lib/scheduledBroadcasts/resolveChannelTarget';
+import { ROOM_MACRO_TEXT_APPLY_TTL_MS } from '@/renderer/lib/timeConstants';
 import { type RoomMacroTarget, useChatMacrosStore } from '@/renderer/stores/chatMacrosStore';
 import { getConnection } from '@/renderer/stores/connectionStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
@@ -56,6 +57,8 @@ export function resetRoomMacroNavigatorForTests(): void {
 export interface PendingRoomMacroTextApply {
   slotIndex: number;
   plan: RoomMacroPlan;
+  /** Wall-clock ms when queued; peek/take discard after {@link ROOM_MACRO_TEXT_APPLY_TTL_MS}. */
+  createdAtMs: number;
 }
 
 export type RoomMacroPlanMatcher = (plan: RoomMacroPlan) => boolean;
@@ -67,14 +70,26 @@ function notifyRoomMacroTextApplyListeners(): void {
   for (const listener of textApplyListeners) listener();
 }
 
+function clearPendingRoomMacroTextApply(): void {
+  if (pendingTextApply === null) return;
+  pendingTextApply = null;
+}
+
+/** Drop expired pending applies so a late composer mount cannot insert/send stale text. */
+function discardExpiredPendingRoomMacroTextApply(nowMs: number = Date.now()): void {
+  if (!pendingTextApply) return;
+  if (nowMs - pendingTextApply.createdAtMs <= ROOM_MACRO_TEXT_APPLY_TTL_MS) return;
+  clearPendingRoomMacroTextApply();
+}
+
 /**
  * Queue optional post-jump text for `slotIndex` when the slot has non-empty text.
- * Replaces any prior pending apply. No-op when the slot text is blank.
+ * Replaces any prior pending apply. No-op when the slot text is blank (does not clear).
  */
 export function queueRoomMacroTextApply(slotIndex: number, plan: RoomMacroPlan): void {
   const text = useChatMacrosStore.getState().slots[slotIndex]?.text.trim() ?? '';
   if (text === '') return;
-  pendingTextApply = { slotIndex, plan };
+  pendingTextApply = { slotIndex, plan, createdAtMs: Date.now() };
   notifyRoomMacroTextApplyListeners();
 }
 
@@ -86,14 +101,16 @@ export function subscribeRoomMacroTextApply(listener: () => void): () => void {
 }
 
 export function peekPendingRoomMacroTextApply(): PendingRoomMacroTextApply | null {
+  discardExpiredPendingRoomMacroTextApply();
   return pendingTextApply;
 }
 
 /** Take and clear the pending apply when `matcher` accepts its plan; otherwise leave it. */
 export function takePendingRoomMacroTextApplyIfMatch(matcher: RoomMacroPlanMatcher): number | null {
+  discardExpiredPendingRoomMacroTextApply();
   if (!pendingTextApply || !matcher(pendingTextApply.plan)) return null;
   const { slotIndex } = pendingTextApply;
-  pendingTextApply = null;
+  clearPendingRoomMacroTextApply();
   return slotIndex;
 }
 
@@ -102,12 +119,17 @@ export function resetRoomMacroTextApplyForTests(): void {
   textApplyListeners.clear();
 }
 
-/** Navigate, then queue post-jump text when the slot has any. Returns navigate success. */
+/**
+ * Navigate, then queue post-jump text when the slot has any. Returns navigate success.
+ * Always clears any prior pending apply on a successful jump so a blank-text navigate
+ * cannot leave a stale insert/send for a later matching composer.
+ */
 export function navigateRoomMacroAndMaybeQueueText(
   plan: RoomMacroPlan,
   slotIndex: number,
 ): boolean {
   if (!navigateRoomMacro(plan, slotIndex)) return false;
+  clearPendingRoomMacroTextApply();
   queueRoomMacroTextApply(slotIndex, plan);
   return true;
 }
