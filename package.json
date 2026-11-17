@@ -116,6 +116,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
+    "release:bump": "node scripts/release-bump.mjs",
     "reticulum:config:check": "node scripts/reticulum-config-check.mjs",
     "reticulum:rsnomad:clippy": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad.sh",
     "reticulum:rsnomad:fmt:check": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad-fmt.sh",
