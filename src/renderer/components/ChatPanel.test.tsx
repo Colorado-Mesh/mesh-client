@@ -8181,4 +8181,38 @@ describe('ChatPanel receive order', () => {
     // The late bubble still shows the sender's time, with the sender's date in front of it.
     expect(screen.getByText((content) => content.startsWith(`${senderDate} `))).toBeInTheDocument();
   });
+
+  it('lets a bubble header wrap so a dated time cannot squeeze out the sender name', async () => {
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    const sentTwoDaysEarlier = arrivedMs - 2 * 86_400_000;
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Pat',
+              payload: 'late clock',
+              channel: 0,
+              timestamp: sentTwoDaysEarlier,
+              receivedAt: arrivedMs,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('late clock');
+
+    const timeLabel = screen.getByText((content) =>
+      content.startsWith(`${formatIsoDate(sentTwoDaysEarlier)} `),
+    );
+    // Narrow bubbles (tablet, phone) have no room for the dated time beside the name on one line.
+    expect(timeLabel.parentElement).toHaveClass('flex-wrap');
+    // On a phone the dated time is wider than the bubble by itself, so it may break after the date.
+    expect(timeLabel).not.toHaveClass('whitespace-nowrap');
+  });
 });

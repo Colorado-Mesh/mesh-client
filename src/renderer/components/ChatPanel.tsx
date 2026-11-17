@@ -4748,7 +4748,9 @@ function ChatPanel({
                             {!isContinuation &&
                               (() => {
                                 return (
-                                  <div className="mb-0.5 flex items-center gap-2">
+                                  // Wraps so a narrow bubble moves the time below the name
+                                  // instead of shrinking the name away.
+                                  <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                     {isOwn && senderFaceHash ? (
                                       <ReticulumProfileIconSlot
                                         iconName={senderAppearance?.icon_name}
@@ -4858,7 +4860,12 @@ function ChatPanel({
                                       <span className="text-muted text-2xs font-medium">DM</span>
                                     )}
                                     <span
-                                      className="text-muted text-2xs shrink-0 font-mono whitespace-nowrap tabular-nums"
+                                      className={`text-muted text-2xs font-mono tabular-nums ${
+                                        // A dated time may break after the date in a phone-width bubble.
+                                        chatSentOnAnotherDay(msg)
+                                          ? 'min-w-0'
+                                          : 'shrink-0 whitespace-nowrap'
+                                      }`}
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
                                       {formatBubbleTime(msg)}
