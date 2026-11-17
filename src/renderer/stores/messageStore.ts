@@ -37,6 +37,7 @@ export type MessageTransport =
   | 'paper'
   | `${'rf' | 'ble' | 'tcp' | 'network'}+${string}`;
 
+/** Records are immutable once stored — writers always replace. Do not mutate in place. */
 export interface MessageRecord {
   id: string;
   from: number;

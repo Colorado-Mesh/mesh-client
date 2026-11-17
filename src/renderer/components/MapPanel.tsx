@@ -539,7 +539,7 @@ function LoRaMapLayerRows({
 
 // ─── MapPanel ─────────────────────────────────────────────────────────────────
 
-interface Props {
+export interface MapPanelProps {
   /** Keep the view controller and regional session while its map DOM is unmounted. */
   active?: boolean;
   isCurrentProtocol?: boolean;
@@ -570,7 +570,7 @@ interface Props {
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
 
-export default function MapPanel(props: Props) {
+function MapPanel(props: MapPanelProps) {
   const { t } = useTranslation();
   const active = props.active ?? true;
   const isCurrentProtocol = props.isCurrentProtocol ?? true;
@@ -652,7 +652,7 @@ function OverviewMapPanel({
   protocol = 'meshtastic',
   useFahrenheit = false,
   showMapsDocs = true,
-}: Props & { showMapsDocs?: boolean }) {
+}: MapPanelProps & { showMapsDocs?: boolean }) {
   const { t } = useTranslation();
   const [waypointEditor, setWaypointEditor] = useState<{
     mode: 'create' | 'edit';
@@ -1449,3 +1449,5 @@ function OverviewMapPanel({
     </>
   );
 }
+
+export default memo(MapPanel);

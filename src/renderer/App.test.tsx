@@ -460,7 +460,7 @@ vi.mock('./components/ReticulumStackAutostartCoordinator', () => ({
 }));
 
 vi.mock('./lazyAppPanels', () => ({
-  ChatPanel: (props: Record<string, unknown>) => {
+  ChatSurface: (props: Record<string, unknown>) => {
     lastChatPanelProps.current = props;
     const channels = Array.isArray(props.channels)
       ? (props.channels as { name: string }[]).map((ch) => ch.name).join(',')

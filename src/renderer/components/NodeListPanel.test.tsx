@@ -1421,6 +1421,106 @@ describe('NodeListPanel History tab', () => {
     });
     expect(screen.queryByText('NearNoDm')).not.toBeInTheDocument();
   });
+
+  it('does not refetch listMeshtasticDmPeers when an in-memory message is appended', async () => {
+    const listSpy = vi.mocked(window.electronAPI.db.listMeshtasticDmPeers);
+    listSpy.mockClear();
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'Me' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalled();
+    });
+    const callsAfterMount = listSpy.mock.calls.length;
+    act(() => {
+      addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        id: 'dm-live-1',
+        from: 2,
+        senderName: 'LivePeer',
+        to: 1,
+        payload: 'hi',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+      });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(listSpy.mock.calls.length).toBe(callsAfterMount);
+  });
+
+  it('refetches listMeshtasticDmPeers when DB hydration revision bumps', async () => {
+    const { bumpDbHydrationRevision, resetDbHydrationRevisionForTests } =
+      await import('../lib/dbHydrationRevision');
+    onTestFinished(() => {
+      resetDbHydrationRevisionForTests();
+    });
+    const listSpy = vi.mocked(window.electronAPI.db.listMeshtasticDmPeers);
+    listSpy.mockClear();
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'Me' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalled();
+    });
+    const callsAfterMount = listSpy.mock.calls.length;
+    act(() => {
+      bumpDbHydrationRevision();
+    });
+    await waitFor(() => {
+      expect(listSpy.mock.calls.length).toBeGreaterThan(callsAfterMount);
+    });
+  });
+
+  it('still includes memory-only DM peers on History after an in-memory append', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeListPanel
+        nodes={
+          new Map([
+            [1, makeNode({ node_id: 1, long_name: 'Me' })],
+            [9, makeNode({ node_id: 9, long_name: 'MemoryOnly' })],
+          ])
+        }
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    act(() => {
+      addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        id: 'dm-mem-only',
+        from: 9,
+        senderName: 'MemoryOnly',
+        to: 1,
+        payload: 'yo',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+      });
+    });
+    await user.click(screen.getByRole('radio', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('MemoryOnly')).toBeInTheDocument();
+    });
+  });
 });
 
 describe('NodeListPanel status filter and detail selection', () => {

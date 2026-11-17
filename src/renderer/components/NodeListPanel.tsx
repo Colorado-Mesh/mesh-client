@@ -12,7 +12,7 @@ import {
   Upload,
   User,
 } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
@@ -25,6 +25,7 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
+import { useDbHydrationRevision } from '../hooks/useDbHydrationRevision';
 import {
   type OffloadContactsFromRadioFn,
   useMeshcoreContactCapacity,
@@ -196,7 +197,7 @@ function SortIcon({
 
 type NodeStatusFilter = 'all' | 'online' | 'stale' | 'offline';
 
-interface Props {
+export interface NodeListPanelProps {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   onNodeClick: (node: MeshNode) => void;
@@ -224,9 +225,13 @@ interface Props {
   onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
   /** Node shown in the detail pane; its row is highlighted. */
   selectedNodeId?: number | null;
+  /** When false (parked after visit), skip heavy DM-peer derivation. */
+  active?: boolean;
 }
 
-export default function NodeListPanel({
+const EMPTY_DM_PEER_INDEX = new Map<number, ChatDmPeerIndexEntry>();
+
+function NodeListPanel({
   nodes,
   myNodeNum,
   onNodeClick,
@@ -250,7 +255,8 @@ export default function NodeListPanel({
   onShowOnMap,
   onOffloadContactsFromRadio,
   selectedNodeId = null,
-}: Props) {
+  active = true,
+}: NodeListPanelProps) {
   const { addToast } = useToast();
   const { t } = useTranslation();
   const iconTrigger = useIconTrigger();
@@ -278,6 +284,7 @@ export default function NodeListPanel({
 
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
+  const dbHydrationRevision = useDbHydrationRevision();
   const ownNodeIdSet = useMemo(() => new Set([myNodeNum >>> 0]), [myNodeNum]);
   const meshcoreExcludedDmPeerIds = useMemo(() => {
     if (mode !== 'meshcore') return null;
@@ -318,9 +325,10 @@ export default function NodeListPanel({
     return () => {
       cancelled = true;
     };
-  }, [mode, myNodeNum, identityMessages.length]);
+  }, [mode, myNodeNum, dbHydrationRevision]);
 
   const dmPeerIndex = useMemo(() => {
+    if (!active) return EMPTY_DM_PEER_INDEX;
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     const merged = mergeChatDmPeerDbRows(fromMemory, dbDmPeers);
@@ -331,6 +339,7 @@ export default function NodeListPanel({
     }
     return merged;
   }, [
+    active,
     chatUnreadDmOptions,
     dbDmPeers,
     identityMessages,
@@ -1782,3 +1791,5 @@ export default function NodeListPanel({
     </div>
   );
 }
+
+export default memo(NodeListPanel);

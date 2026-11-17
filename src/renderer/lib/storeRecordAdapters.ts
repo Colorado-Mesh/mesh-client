@@ -97,6 +97,21 @@ export function groupChatReactionsByParentKey(messages: ChatMessage[]): {
   return { regularMessages: regular, reactionsByParentKey: reactions };
 }
 
+/**
+ * `MessageRecord` objects are immutable once written to `messageStore` (writers always replace
+ * the record object; `upsertMessage` mutates only a fresh spread). That makes a WeakMap keyed
+ * by record safe and turns a per-message O(n) reallocation into O(changed rows).
+ */
+const chatMessageByRecord = new WeakMap<MessageRecord, ChatMessage>();
+
+export function messageRecordToChatMessageCached(record: MessageRecord): ChatMessage {
+  const cached = chatMessageByRecord.get(record);
+  if (cached) return cached;
+  const chat = messageRecordToChatMessage(record);
+  chatMessageByRecord.set(record, chat);
+  return chat;
+}
+
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
@@ -162,7 +177,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
 }
 
 export function messageRecordsToChatMessages(records: MessageRecord[]): ChatMessage[] {
-  return records.map(messageRecordToChatMessage);
+  return records.map(messageRecordToChatMessageCached);
 }
 
 export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {

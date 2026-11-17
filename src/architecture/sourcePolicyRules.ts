@@ -174,4 +174,11 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'Wire-originated CLI received lines belong in handleCliResponse; runtime may only append local [Error: …] (suppress with source-policy-ok)',
   },
+  {
+    id: 'app-no-inline-chat-pipeline',
+    include: ['src/renderer/App.tsx'],
+    forbid: /messageRecordsToChatMessages\s*\(|repairMeshtasticReplyPreviews\s*\(/,
+    message:
+      'Store→ChatMessage pipeline belongs in useProtocolChatMessages / ChatSurface — not inline in App.tsx',
+  },
 ];

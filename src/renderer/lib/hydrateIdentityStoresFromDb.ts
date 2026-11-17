@@ -23,6 +23,7 @@ import {
   useNodeStore,
 } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
+import { bumpDbHydrationRevision } from './dbHydrationRevision';
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
@@ -543,6 +544,7 @@ export async function hydrateIdentityStoresFromDb(
   try {
     await hydrator(identityId, opts, isCurrent);
     if (!isCurrent()) return;
+    bumpDbHydrationRevision();
   } catch (e) {
     if (!isCurrent()) return;
     console.warn(`[hydrateIdentityStoresFromDb] ${protocol} failed ` + errLikeToLogString(e));
