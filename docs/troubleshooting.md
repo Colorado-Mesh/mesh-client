@@ -1104,6 +1104,23 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Chat desktop notifications** appear for Meshtastic, MeshCore, Reticulum LXMF Chat and RRC, but only while the app window is inactive. They are visual-only (`silent: true`) and follow the same mutes as the sound. Typed sounds come from the app’s Web Audio path. The main process session permission handlers must allow `notifications`; otherwise the renderer's `Notification.permission` reads `denied` and nothing is shown (the log prints `[permissions] checkHandler: notifications → denied`). If the log shows `granted` and still nothing appears, check that the OS allows notifications for Mesh-Client.
 
+### Windows: Preview silent and Mesh-client missing from Volume mixer
+
+**Symptoms**
+
+- **App → Notifications → Preview** is silent for every tone (presets and imported WAV).
+- No Preview error in the UI; no `[notificationSounds] … failed` lines in the log.
+- Mesh-client never appears under Windows **Volume mixer** while other apps play fine on the same output (including USB speakers).
+
+**Cause**
+
+- Chromium’s out-of-process / sandboxed audio service sometimes never opens a WASAPI session on Windows 11 (especially with certain USB outputs). Web Audio can schedule oscillators successfully while no hardware stream exists ([#1487](https://github.com/Colorado-Mesh/mesh-client/issues/1487)).
+
+**Fix**
+
+- Use a build that disables `AudioServiceOutOfProcess` / `AudioServiceSandbox` on win32 and plays notification tones through Windows `System.Media.SoundPlayer` (rendered WAV), not only through live Web Audio.
+- Confirm system volume and the default output device; then retry Preview. The app should appear in the mixer (or SoundPlayer briefly occupies an audio session) when a tone plays.
+
 ## Diagnostics and map
 
 ### Diagnostics panel: "restored from last session" banner

@@ -34,6 +34,8 @@ export interface NotificationSoundsApi {
     previousId?: string,
   ) => Promise<NotificationSoundRecord>;
   read: (event: NotificationSoundEvent, id: string) => Promise<string | null>;
+  /** Windows-only: play a mono/stereo PCM WAV via System.Media.SoundPlayer (#1487). */
+  playWav: (dataBase64: string) => Promise<void>;
 }
 
 export function isNotificationSoundEvent(value: unknown): value is NotificationSoundEvent {

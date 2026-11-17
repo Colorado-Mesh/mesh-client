@@ -50,6 +50,10 @@ describe('configured notification playback', () => {
     metadataResult = 'loaded';
     releaseMetadata.mockClear();
     revokeUrl.mockClear();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    vi.mocked(window.electronAPI.notificationSounds.playWav)
+      .mockReset()
+      .mockResolvedValue(undefined);
     vi.stubGlobal(
       'URL',
       class extends URL {
@@ -81,7 +85,10 @@ describe('configured notification playback', () => {
     decode.mockReset().mockResolvedValue({ duration: 0.2 });
     createOscillator.mockReset().mockImplementation(makeSource);
     createBufferSource.mockReset().mockImplementation(makeSource);
-    resume.mockReset().mockResolvedValue(undefined);
+    resume.mockReset().mockImplementation(() => {
+      state = 'running';
+      return Promise.resolve();
+    });
     resetChatNotificationAudioContextForTests();
     vi.stubGlobal(
       'AudioContext',
@@ -116,16 +123,19 @@ describe('configured notification playback', () => {
     vi.useRealTimers();
   });
 
-  it('plays the selected preset at its volume and honors a muted ordinary event', () => {
+  it('plays the selected preset at its volume and honors a muted ordinary event', async () => {
     mergeAppSetting(
       'notificationSounds',
       { channel: { sound: 'chime', volume: 50 }, dm: { sound: 'bell', volume: 0 } },
       'test',
     );
     playMessageNotification('channel');
-    expect(createOscillator).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => {
+      expect(createOscillator).toHaveBeenCalledTimes(2);
+    });
     expect(levels[0]).toBe(0.5);
     playMessageNotification('dm');
+    await Promise.resolve();
     expect(createOscillator).toHaveBeenCalledTimes(2);
   });
 
@@ -252,7 +262,10 @@ describe('configured notification playback', () => {
     let resumed!: () => void;
     resume.mockReturnValueOnce(
       new Promise<void>((resolve) => {
-        resumed = resolve;
+        resumed = () => {
+          state = 'running';
+          resolve();
+        };
       }),
     );
     const preview = previewNotificationSound('channel', { sound: 'default', volume: 100 });
@@ -262,24 +275,86 @@ describe('configured notification playback', () => {
     expect(createOscillator).not.toHaveBeenCalled();
   });
 
+  it('rejects preview when resume leaves the context suspended', async () => {
+    state = 'suspended';
+    resume.mockImplementationOnce(() => Promise.resolve());
+    await expect(
+      previewNotificationSound('channel', { sound: 'default', volume: 100 }),
+    ).rejects.toThrow('Audio is unavailable');
+    expect(createOscillator).not.toHaveBeenCalled();
+  });
+
   it('stops only preview sources, leaving real incoming alerts running', async () => {
     playMessageNotification('channel');
+    await vi.waitFor(() => {
+      expect(sources[0]).toBeDefined();
+    });
     const incoming = sources[0];
     const preview = previewNotificationSound('dm', { sound: 'default', volume: 100 });
+    await vi.waitFor(() => {
+      expect(sources.length).toBeGreaterThan(2);
+    });
     stopNotificationSoundPreview();
     await preview;
-    expect(incoming.stop).toHaveBeenCalledOnce(); // Its scheduled natural end only.
+    expect(incoming.stop).toHaveBeenCalledOnce(); // scheduled end only — preview stop must not touch it
     expect(sources[1]?.stop).toHaveBeenCalledTimes(2);
     expect(sources[2]?.stop).toHaveBeenCalledTimes(2);
   });
 
   it('finishes preview when its audio ends and reports an unavailable custom recording', async () => {
     const preview = previewNotificationSound('channel', { sound: 'bell', volume: 100 });
+    await vi.waitFor(() => {
+      expect(sources[0]).toBeDefined();
+    });
     sources[0].onended?.();
     await preview;
     vi.mocked(window.electronAPI.notificationSounds.read).mockResolvedValue(null);
     await expect(
       previewNotificationSound('channel', { sound: { id, name: 'gone' }, volume: 50 }),
     ).rejects.toThrow('unavailable');
+  });
+
+  it('routes Windows preview and incoming tones through native playWav (#1487)', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const startRendering = vi.fn().mockResolvedValue({
+      length: 8,
+      numberOfChannels: 1,
+      sampleRate: 44_100,
+      getChannelData: () => new Float32Array(8),
+      duration: 8 / 44_100,
+    });
+    vi.stubGlobal(
+      'OfflineAudioContext',
+      class {
+        currentTime = 0;
+        destination = {};
+        createOscillator = createOscillator;
+        createBufferSource = createBufferSource;
+        createGain() {
+          return {
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            gain: {
+              setValueAtTime: vi.fn(),
+              exponentialRampToValueAtTime: vi.fn(),
+            },
+          };
+        }
+        startRendering = startRendering;
+      },
+    );
+    playMessageNotification('channel');
+    await vi.waitFor(() => {
+      expect(window.electronAPI.notificationSounds.playWav).toHaveBeenCalledOnce();
+    });
+    expect(startRendering).toHaveBeenCalledOnce();
+    const wav = vi.mocked(window.electronAPI.notificationSounds.playWav).mock.calls[0]?.[0] ?? '';
+    expect(wav.length).toBeGreaterThan(0);
+    expect(atob(wav).slice(0, 4)).toBe('RIFF');
+
+    vi.mocked(window.electronAPI.notificationSounds.playWav).mockClear();
+    const preview = previewNotificationSound('dm', { sound: 'chime', volume: 80 });
+    await preview;
+    expect(window.electronAPI.notificationSounds.playWav).toHaveBeenCalledOnce();
   });
 });

@@ -8,13 +8,16 @@ import {
   getNotificationSoundSettings,
   type NotificationSoundSetting,
 } from './notificationSoundSettings';
+import { audioBufferToWavBase64 } from './notificationSoundWav';
 
 let sharedAudioContext: AudioContext | null = null;
+let defaultSinkBound = false;
 
 function getSharedAudioContext(): AudioContext | null {
   try {
     if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
       sharedAudioContext = new AudioContext();
+      defaultSinkBound = false;
     }
     return sharedAudioContext;
   } catch {
@@ -23,9 +26,38 @@ function getSharedAudioContext(): AudioContext | null {
   }
 }
 
+function usesNativeNotificationPlayback(): boolean {
+  try {
+    return window.electronAPI.getPlatform() === 'win32';
+  } catch {
+    // catch-no-log-ok: preload bridge unavailable in unit tests without the mock
+    return false;
+  }
+}
+
+async function ensureAudioContextReady(ctx: AudioContext): Promise<void> {
+  if (ctx.state === 'suspended') await ctx.resume();
+  const withSink = ctx as AudioContext & {
+    setSinkId?: (sinkId: string) => Promise<void>;
+  };
+  if (!defaultSinkBound && typeof withSink.setSinkId === 'function') {
+    defaultSinkBound = true;
+    try {
+      await withSink.setSinkId('');
+    } catch {
+      // catch-no-log-ok: setSinkId may be unsupported or denied on some builds
+      defaultSinkBound = false;
+    }
+  }
+  if (ctx.state !== 'running') {
+    throw new Error('Audio is unavailable');
+  }
+}
+
 /** @internal Test helper — reset singleton between tests. */
 export function resetChatNotificationAudioContextForTests(): void {
   sharedAudioContext = null;
+  defaultSinkBound = false;
   audioBuffers.clear();
   stopNotificationSoundPreview();
 }
@@ -162,7 +194,7 @@ interface Playback {
   finished: Promise<void>;
 }
 
-function createPlayback(ctx: AudioContext, volume: number): Playback {
+function createPlayback(ctx: BaseAudioContext, volume: number): Playback {
   const output = ctx.createGain();
   output.gain.setValueAtTime(volume / 100, ctx.currentTime);
   output.connect(ctx.destination);
@@ -195,7 +227,7 @@ function createPlayback(ctx: AudioContext, volume: number): Playback {
 }
 
 function playTonePulse(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   playback: Playback,
   freq: number,
   dur: number,
@@ -217,7 +249,7 @@ function playTonePulse(
 }
 
 function scheduleSiren(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   playback: Playback,
   profile: Extract<SoundProfile, { kind: 'siren' }>,
 ): void {
@@ -243,7 +275,7 @@ function scheduleSiren(
 }
 
 function scheduleEas(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   playback: Playback,
   profile: Extract<SoundProfile, { kind: 'eas' }>,
 ): void {
@@ -266,7 +298,7 @@ function scheduleEas(
   }
 }
 
-function scheduleProfile(ctx: AudioContext, playback: Playback, profile: SoundProfile): void {
+function scheduleProfile(ctx: BaseAudioContext, playback: Playback, profile: SoundProfile): void {
   const now = ctx.currentTime;
   if (profile.kind === 'single') {
     playTonePulse(ctx, playback, profile.freq, profile.dur, now, profile.gain);
@@ -318,6 +350,44 @@ function scheduleProfile(ctx: AudioContext, playback: Playback, profile: SoundPr
   scheduleSiren(ctx, playback, profile);
 }
 
+/** @internal Exported for unit tests. */
+export function profileDurationSec(profile: SoundProfile): number {
+  if (profile.kind === 'single') return profile.dur;
+  if (profile.kind === 'dual') return profile.dur * 2 + profile.gap;
+  if (profile.kind === 'triple') {
+    const repeats = profile.repeats ?? 1;
+    const repeatGap = profile.repeatGap ?? 0.15;
+    const one =
+      profile.freqs.length * profile.dur + Math.max(0, profile.freqs.length - 1) * profile.gap;
+    return repeats * one + Math.max(0, repeats - 1) * repeatGap;
+  }
+  if (profile.kind === 'shortLong') {
+    return (
+      profile.repeats * (profile.shortDur + profile.pulseGap + profile.longDur + profile.pairGap)
+    );
+  }
+  if (profile.kind === 'eas') return profile.dur;
+  return profile.cycles * 2 * (profile.sweepMs / 1000);
+}
+
+function resolveProfile(
+  event: ChatNotificationType,
+  setting: NotificationSoundSetting,
+): SoundProfile {
+  return typeof setting.sound === 'string' && setting.sound !== 'default'
+    ? PRESET_PROFILES[setting.sound]
+    : SOUND_PROFILES[event];
+}
+
+function selectedDurationSec(
+  event: ChatNotificationType,
+  setting: NotificationSoundSetting,
+  buffer?: AudioBuffer,
+): number {
+  if (buffer) return buffer.duration;
+  return profileDurationSec(resolveProfile(event, setting));
+}
+
 const audioBuffers = new Map<
   ChatNotificationType,
   { id: string; buffer: Promise<AudioBuffer>; retryAt: number }
@@ -363,7 +433,7 @@ async function validateSoundMetadata(bytes: ArrayBuffer): Promise<void> {
   }
 }
 
-async function decodeSound(ctx: AudioContext, dataBase64: string): Promise<AudioBuffer> {
+async function decodeSound(ctx: BaseAudioContext, dataBase64: string): Promise<AudioBuffer> {
   if (!dataBase64 || dataBase64.length > Math.ceil(MAX_NOTIFICATION_SOUND_BYTES / 3) * 4) {
     throw new Error('Sound exceeds size limit');
   }
@@ -371,7 +441,7 @@ async function decodeSound(ctx: AudioContext, dataBase64: string): Promise<Audio
   if (bytes.length > MAX_NOTIFICATION_SOUND_BYTES) throw new Error('Sound exceeds size limit');
   // Probe duration without allocating a full PCM buffer for a long compressed recording.
   await validateSoundMetadata(bytes.buffer);
-  const buffer = await ctx.decodeAudioData(bytes.buffer);
+  const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
   if (
     !Number.isFinite(buffer.duration) ||
     buffer.duration <= 0 ||
@@ -389,7 +459,7 @@ export async function validateNotificationSound(dataBase64: string): Promise<voi
 }
 
 function loadCustomSound(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   event: ChatNotificationType,
   id: string,
 ): Promise<AudioBuffer> {
@@ -409,7 +479,7 @@ function loadCustomSound(
 }
 
 function scheduleSelected(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   event: ChatNotificationType,
   setting: NotificationSoundSetting,
   buffer?: AudioBuffer,
@@ -422,44 +492,86 @@ function scheduleSelected(
     playback.track(source);
     source.start();
   } else {
-    const profile =
-      typeof setting.sound === 'string' && setting.sound !== 'default'
-        ? PRESET_PROFILES[setting.sound]
-        : SOUND_PROFILES[event];
-    scheduleProfile(ctx, playback, profile);
+    scheduleProfile(ctx, playback, resolveProfile(event, setting));
   }
   return playback;
 }
 
+const NATIVE_RENDER_SAMPLE_RATE = 44_100;
+
+async function renderNotificationWav(
+  event: ChatNotificationType,
+  setting: NotificationSoundSetting,
+  buffer?: AudioBuffer,
+): Promise<string> {
+  const durationSec = Math.min(
+    MAX_NOTIFICATION_SOUND_SECONDS,
+    Math.max(0.05, selectedDurationSec(event, setting, buffer) + 0.05),
+  );
+  const frameCount = Math.max(1, Math.ceil(durationSec * NATIVE_RENDER_SAMPLE_RATE));
+  const offline = new OfflineAudioContext(1, frameCount, NATIVE_RENDER_SAMPLE_RATE);
+  scheduleSelected(offline, event, setting, buffer);
+  const rendered = await offline.startRendering();
+  return audioBufferToWavBase64(rendered);
+}
+
+async function playNativeNotificationSound(
+  event: ChatNotificationType,
+  setting: NotificationSoundSetting,
+  buffer?: AudioBuffer,
+): Promise<void> {
+  const wav = await renderNotificationWav(event, setting, buffer);
+  await window.electronAPI.notificationSounds.playWav(wav);
+}
+
+async function loadOptionalCustomSound(
+  ctx: BaseAudioContext,
+  event: ChatNotificationType,
+  setting: NotificationSoundSetting,
+): Promise<AudioBuffer | undefined> {
+  if (typeof setting.sound !== 'object') return undefined;
+  try {
+    return await loadCustomSound(ctx, event, setting.sound.id);
+  } catch {
+    // catch-no-log-ok: a missing/invalid saved sound falls back to the event's built-in tone.
+    return undefined;
+  }
+}
+
 export function playMessageNotification(type: ChatNotificationType = 'channel'): void {
-  const ctx = getSharedAudioContext();
-  if (!ctx) return;
   const setting = getNotificationSoundSettings()[type];
   if (setting.volume === 0) return;
-  const run = async () => {
-    let buffer: AudioBuffer | undefined;
-    if (typeof setting.sound === 'object') {
-      try {
-        buffer = await loadCustomSound(ctx, type, setting.sound.id);
-      } catch {
-        // catch-no-log-ok: a missing/invalid saved sound falls back to the event's built-in tone.
+
+  // OS-specific: Windows SoundPlayer bypass when Chromium never opens a WASAPI session (#1487).
+  if (usesNativeNotificationPlayback()) {
+    void (async () => {
+      const ctx = getSharedAudioContext();
+      let buffer: AudioBuffer | undefined;
+      if (ctx && typeof setting.sound === 'object') {
+        buffer = await loadOptionalCustomSound(ctx, type, setting);
       }
-    }
-    scheduleSelected(ctx, type, setting, buffer);
-  };
-  const play = () => {
-    void run().catch((error: unknown) => {
+      await playNativeNotificationSound(type, setting, buffer);
+    })().catch((error: unknown) => {
       console.warn('[notificationSounds] playback failed', error);
     });
+    return;
+  }
+
+  const ctx = getSharedAudioContext();
+  if (!ctx) return;
+  const run = async () => {
+    await ensureAudioContextReady(ctx);
+    const buffer = await loadOptionalCustomSound(ctx, type, setting);
+    scheduleSelected(ctx, type, setting, buffer);
   };
-  if (ctx.state === 'suspended') {
-    void ctx
-      .resume()
-      .then(play)
-      .catch((error: unknown) => {
-        console.warn('[notificationSounds] resume failed', error);
-      });
-  } else play();
+  void run().catch((error: unknown) => {
+    console.warn(
+      error instanceof Error && error.message === 'Audio is unavailable'
+        ? '[notificationSounds] resume failed'
+        : '[notificationSounds] playback failed',
+      error,
+    );
+  });
 }
 
 export function stopNotificationSoundPreview(): void {
@@ -475,9 +587,29 @@ export async function previewNotificationSound(
   stopNotificationSoundPreview();
   const version = previewVersion;
   if (setting.volume === 0) return;
+
+  // OS-specific: Windows SoundPlayer bypass when Chromium never opens a WASAPI session (#1487).
+  if (usesNativeNotificationPlayback()) {
+    const ctx = getSharedAudioContext();
+    let buffer: AudioBuffer | undefined;
+    if (typeof setting.sound === 'object') {
+      if (!ctx) throw new Error('Audio is unavailable');
+      const loading = loadCustomSound(ctx, event, setting.sound.id);
+      try {
+        buffer = await loading;
+      } catch (error) {
+        if (audioBuffers.get(event)?.buffer === loading) clearNotificationSoundCache(event);
+        throw error;
+      }
+    }
+    if (version !== previewVersion) return;
+    await playNativeNotificationSound(event, setting, buffer);
+    return;
+  }
+
   const ctx = getSharedAudioContext();
   if (!ctx) throw new Error('Audio is unavailable');
-  if (ctx.state === 'suspended') await ctx.resume();
+  await ensureAudioContextReady(ctx);
   let buffer: AudioBuffer | undefined;
   if (typeof setting.sound === 'object') {
     const loading = loadCustomSound(ctx, event, setting.sound.id);

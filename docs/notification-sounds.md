@@ -46,7 +46,7 @@ There is no single documented Electron API for opening each OS's alert-tone sett
 
 Sources: [Electron Notification](https://www.electronjs.org/docs/latest/api/notification), [Electron Dialog](https://www.electronjs.org/docs/latest/api/dialog), [Windows toast audio](https://learn.microsoft.com/en-us/uwp/schemas/tiles/toastschema/element-audio), [Desktop Notifications](https://specifications.freedesktop.org/notification/latest-single/).
 
-Keep a single Web Audio owner for chat/MECP. Adding a second native sound path would risk two sounds per event and different behavior when the app is focused. This change adds flexibility there first; watched-node/update OS notifications and the voice-call state machine remain separate follow-up work.
+Keep a single Web Audio owner for chat/MECP on macOS and Linux. On Windows, notification Preview and incoming tones are also rendered to WAV and played through `System.Media.SoundPlayer` so audio still works when Chromium never opens a WASAPI session ([#1487](https://github.com/Colorado-Mesh/mesh-client/issues/1487)); win32 also disables Chromium `AudioServiceOutOfProcess` / `AudioServiceSandbox`. Watched-node/update OS notifications and the voice-call state machine remain separate.
 
 ## Controls
 

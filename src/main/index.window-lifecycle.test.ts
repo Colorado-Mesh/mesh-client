@@ -653,6 +653,13 @@ describe('Linux Web Bluetooth device selection', () => {
     expect(INDEX_SOURCE).not.toContain("'Serial,WebBluetooth'");
     expect(INDEX_SOURCE).not.toContain("appendSwitch('enable-features', 'WebBluetooth')");
   });
+
+  it('disables Chromium out-of-process audio on win32 for WASAPI session reliability (#1487)', () => {
+    expect(INDEX_SOURCE).toContain("process.platform === 'win32'");
+    expect(INDEX_SOURCE).toContain(
+      "appendSwitch('disable-features', 'AudioServiceOutOfProcess,AudioServiceSandbox')",
+    );
+  });
 });
 
 // ─── Session permission handlers ─────────────────────────────────────────────

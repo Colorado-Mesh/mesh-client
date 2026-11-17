@@ -27,6 +27,8 @@ const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
   // Sibling-loaded identity hydration IPC (built as identity-hydration.js).
   path.join(ROOT, 'src', 'main', 'identityHydrationSnapshot.ts'),
+  // Sibling-loaded Windows notification SoundPlayer IPC (built as notification-sound-play-wav.js).
+  path.join(ROOT, 'src', 'main', 'notificationSoundPlayWav.ts'),
   ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
 ];
 

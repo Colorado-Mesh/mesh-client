@@ -12,6 +12,10 @@ vi.mock('../notification-sounds', () => ({
   saveNotificationSound: vi.fn(),
   readNotificationSound: vi.fn(),
 }));
+const registerPlayWav = vi.fn();
+vi.mock('../loadNotificationSoundPlayWav', () => ({
+  loadRegisterNotificationSoundPlayWavIpc: () => registerPlayWav,
+}));
 vi.mock('../validate-ipc-sender', () => ({ assertIpcSender: vi.fn() }));
 
 import { dialog, ipcMain, type OpenDialogOptions } from 'electron';
@@ -97,6 +101,13 @@ describe('notification sound IPC', () => {
     expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     expect(saveNotificationSound).not.toHaveBeenCalled();
     expect(readNotificationSound).not.toHaveBeenCalled();
+  });
+
+  it('registers Windows SoundPlayer playWav via the sibling loader (#1487)', () => {
+    expect(registerPlayWav).toHaveBeenCalledWith({
+      ipcMain,
+      assertIpcSender,
+    });
   });
 
   it('does not stack dialogs and releases the lock after a cancelled selection', async () => {
