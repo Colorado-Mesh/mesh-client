@@ -321,6 +321,23 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
   return { status: 'opened', version: resultVersion, branch, title, body, url };
 }
 
+/**
+ * What to do after a promotion pull request was opened or updated. A release still needs the
+ * maintainer's approval in Cut release before it is tagged; a promotion without a release tags
+ * nothing.
+ * @param {{ status: 'opened' | 'updated', version: string | null, url: string }} result
+ * @returns {string[]}
+ */
+export function nextSteps(result) {
+  return [
+    `${result.status === 'opened' ? 'Opened' : 'Updated'} ${result.url}`,
+    'Next: wait for the Promotion Doctor and CI on that pull request, get a review, and merge it with a merge commit.',
+    result.version
+      ? `Merging starts Cut release: approve its Tag release job (release-cut environment) to tag v${result.version}, then check the draft release once its artifacts are attached and publish it.`
+      : 'This promotion keeps the current version, so merging it tags no release.',
+  ];
+}
+
 function ghRunner(cwd) {
   return (args, input) =>
     execFileSync('gh', args, { cwd, encoding: 'utf8', input, stdio: ['pipe', 'pipe', 'inherit'] });
@@ -387,10 +404,7 @@ async function main() {
       console.info(result.body);
       break;
     default:
-      console.info(`${result.status === 'opened' ? 'Opened' : 'Updated'} ${result.url}`);
-      console.info(
-        'Next: wait for the Promotion Doctor and CI on that pull request, get a review, and merge it with a merge commit. The release tag and draft release follow automatically.',
-      );
+      for (const line of nextSteps(result)) console.info(line);
   }
 }
 

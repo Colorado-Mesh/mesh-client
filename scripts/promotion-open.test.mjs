@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { backportMainIntoStaging, openPromotion, parseArgs } from './promotion-open.mjs';
+import { backportMainIntoStaging, nextSteps, openPromotion, parseArgs } from './promotion-open.mjs';
 import { extractSection } from './promotionNotes.mjs';
 import {
   cleanupRepos,
@@ -77,6 +77,31 @@ describe('parseArgs', () => {
   it('refuses unknown flags and bump values', () => {
     expect(() => parseArgs(['--bump', 'huge'])).toThrow(/Usage/);
     expect(() => parseArgs(['--force'])).toThrow(/Usage/);
+  });
+});
+
+describe('nextSteps', () => {
+  const merge =
+    'Next: wait for the Promotion Doctor and CI on that pull request, get a review, and merge it with a merge commit.';
+
+  it('names the tag approval and the draft release for a release promotion', () => {
+    expect(
+      nextSteps({ status: 'opened', version: '6.10.0', url: 'https://github.com/o/r/pull/6' }),
+    ).toEqual([
+      'Opened https://github.com/o/r/pull/6',
+      merge,
+      'Merging starts Cut release: approve its Tag release job (release-cut environment) to tag v6.10.0, then check the draft release once its artifacts are attached and publish it.',
+    ]);
+  });
+
+  it('says a promotion without a release tags nothing', () => {
+    expect(
+      nextSteps({ status: 'updated', version: null, url: 'https://github.com/o/r/pull/11' }),
+    ).toEqual([
+      'Updated https://github.com/o/r/pull/11',
+      merge,
+      'This promotion keeps the current version, so merging it tags no release.',
+    ]);
   });
 });
 
