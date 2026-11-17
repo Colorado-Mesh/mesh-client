@@ -55,17 +55,20 @@ const PASSING_CONCLUSIONS = new Set(['success', 'neutral', 'skipped']);
 const REBUILD = 'rebuild it with pnpm run promotion:open';
 
 /**
- * The checks every promotion and hotfix must pass, from e2e.yaml: the Electron E2E on three
- * operating systems and the release preflight. A gate passes only on `success`, and a gate with
- * no run is waited for, never read as green. Names are matched by family: the Doctor runs from
- * main while the check names come from the pull request's own e2e.yaml, so a promotion that
- * moves the Linux runner to a newer image must not wait for the old name. A test pins these
- * against e2e.yaml.
- * @type {ReadonlyArray<{ label: string, prefix?: string, name?: string }>}
+ * The checks every promotion and hotfix must pass, from e2e.yaml: the Electron E2E on each of
+ * its three operating systems and the release preflight. A gate passes only on `success`, and a
+ * gate with no run is waited for, never read as green. The Doctor runs from main while the check
+ * names come from the pull request's own e2e.yaml, so each E2E leg is matched by its operating
+ * system's runner prefix: a promotion that moves a leg to a newer runner image still matches,
+ * while a leg that disappears is missing. Dropping an operating system from e2e.yaml therefore
+ * needs this list changed on main first, through a hotfix. A test pins these against e2e.yaml.
+ * @type {ReadonlyArray<{ label: string, group: string, prefix?: string, name?: string }>}
  */
 export const REQUIRED_GATES = [
-  { label: 'Electron E2E', prefix: 'Electron E2E (' },
-  { label: 'Release preflight', name: 'Release preflight' },
+  { label: 'Electron E2E on Linux', group: 'Electron E2E', prefix: 'Electron E2E (ubuntu-' },
+  { label: 'Electron E2E on macOS', group: 'Electron E2E', prefix: 'Electron E2E (macos-' },
+  { label: 'Electron E2E on Windows', group: 'Electron E2E', prefix: 'Electron E2E (windows-' },
+  { label: 'Release preflight', group: 'Release preflight', name: 'Release preflight' },
 ];
 
 /** How long the Doctor waits for any gate to start before it says how to start them. */
@@ -377,18 +380,23 @@ function latestCheckRuns(checkRuns, selfName) {
 }
 
 /**
- * The required gates with no run yet, and gate runs that finished without success but with a
- * conclusion the general summary counts as passing (skipped, neutral).
+ * The required gates with no run yet (their labels, and the groups they belong to), and gate
+ * runs that finished without success but with a conclusion the general summary counts as
+ * passing (skipped, neutral).
  * @param {{ checkRuns: CheckRun[], selfName: string }} input
- * @returns {{ missing: string[], notRun: string[] }}
+ * @returns {{ missing: string[], missingGroups: string[], notRun: string[] }}
  */
 export function summarizeGates({ checkRuns, selfName }) {
   const latest = latestCheckRuns(checkRuns, selfName);
   const missing = [];
+  const missingGroups = [];
   const notRun = [];
   for (const gate of REQUIRED_GATES) {
     const runs = latest.filter((run) => gateMatchesName(gate, run.name));
-    if (runs.length === 0) missing.push(gate.label);
+    if (runs.length === 0) {
+      missing.push(gate.label);
+      if (!missingGroups.includes(gate.group)) missingGroups.push(gate.group);
+    }
     for (const run of runs) {
       if (
         run.status === 'completed' &&
@@ -399,7 +407,7 @@ export function summarizeGates({ checkRuns, selfName }) {
       }
     }
   }
-  return { missing, notRun };
+  return { missing, missingGroups, notRun };
 }
 
 /**
@@ -489,7 +497,7 @@ async function waitForGreenChecks({
       return {
         result: fail(
           'Checks',
-          `No run of ${gates.missing.join(' or ')} on ${short(headSha)}. A pull request to main starts them when it is opened, reopened or pushed to, but not when it is retargeted from another branch: close and reopen it, or push a commit.`,
+          `No run of ${gates.missingGroups.join(' or ')} on ${short(headSha)}. A pull request to main starts them when it is opened, reopened or pushed to, but not when it is retargeted from another branch: close and reopen it, or push a commit.`,
         ),
         waited,
       };

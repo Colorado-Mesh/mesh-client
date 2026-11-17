@@ -842,6 +842,36 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
     expect(detailOf(result, 'Checks')).toBe('Not started: Release preflight.');
   });
 
+  it('names each operating system that has no Electron E2E run', async () => {
+    const { fixture, pr } = await canonical();
+    let clock = 0;
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [
+        [
+          job('completed', 'success'),
+          checkRun('Electron E2E (ubuntu-24.04)', 'completed', 'success'),
+          checkRun('Release preflight', 'completed', 'success'),
+        ],
+      ],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+      now: () => clock,
+      sleep: async () => {
+        clock += 600;
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(detailOf(result, 'Checks')).toBe(
+      'Not started: Electron E2E on macOS, Electron E2E on Windows.',
+    );
+  });
+
   it('does not count a skipped gate as passed', async () => {
     const { fixture, pr } = await canonical();
     const api = apiFor(fixture.remote, pr, {
@@ -870,20 +900,26 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
     const jobs = Object.entries(
       yaml.load(readFileSync('.github/workflows/e2e.yaml', 'utf8')).jobs,
     ).map(([id, definition]) => ({ ...definition, name: definition.name ?? id }));
-    for (const gate of REQUIRED_GATES) {
-      const matching = jobs.filter((definition) =>
-        gateMatchesName(gate, definition.name.replace(MATRIX_OS, 'x')),
-      );
-      expect(matching, gate.label).toHaveLength(1);
-      expect(matching[0].if, gate.label).toContain("github.event_name == 'pull_request'");
-    }
-    const checkNames = jobs.flatMap((definition) =>
+    // One check per matrix leg, named as GitHub names it.
+    const checks = jobs.flatMap((definition) =>
       MATRIX_OS.test(definition.name)
-        ? definition.strategy.matrix.os.map((os) => definition.name.replace(MATRIX_OS, os))
-        : [definition.name],
+        ? definition.strategy.matrix.os.map((os) => ({
+            name: definition.name.replace(MATRIX_OS, os),
+            definition,
+          }))
+        : [{ name: definition.name, definition }],
     );
+    for (const gate of REQUIRED_GATES) {
+      const matching = checks.filter((check) => gateMatchesName(gate, check.name));
+      expect(matching, gate.label).toHaveLength(1);
+      expect(matching[0].definition.if, gate.label).toContain(
+        "github.event_name == 'pull_request'",
+      );
+    }
     expect(
-      checkNames.filter((name) => REQUIRED_GATES.some((gate) => gateMatchesName(gate, name))),
+      checks
+        .map((check) => check.name)
+        .filter((name) => REQUIRED_GATES.some((gate) => gateMatchesName(gate, name))),
     ).toEqual(GATE_NAMES);
   });
 
