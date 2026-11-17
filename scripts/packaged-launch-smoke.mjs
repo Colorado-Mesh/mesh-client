@@ -180,8 +180,8 @@ async function killChild(child, state, killGraceMs) {
     // catch-no-log-ok process already exited
     return;
   }
-  const deadline = Date.now() + killGraceMs;
-  while (Date.now() < deadline) {
+  const termDeadline = Date.now() + killGraceMs;
+  while (Date.now() < termDeadline) {
     if (child.exitCode !== null || child.signalCode !== null) return;
     await sleepMs(100);
   }
@@ -189,7 +189,18 @@ async function killChild(child, state, killGraceMs) {
     child.kill('SIGKILL');
   } catch {
     // catch-no-log-ok process already exited
+    return;
   }
+  // Wait for the SIGKILL'd child so callers do not race an alive process holding
+  // userData; bound the wait so a stuck process cannot hang the smoke forever.
+  const killDeadline = Date.now() + killGraceMs;
+  while (Date.now() < killDeadline) {
+    if (child.exitCode !== null || child.signalCode !== null) return;
+    await sleepMs(100);
+  }
+  console.warn(
+    `[packaged-launch-smoke] child pid ${child.pid ?? '?'} did not exit after SIGKILL within ${killGraceMs}ms`,
+  );
 }
 
 /**
@@ -238,6 +249,8 @@ export async function launchAndAssert({
 }) {
   const logPath = path.join(userDataDir, LOG_FILENAME);
   let stdioBuf = '';
+  /** Sticky: renderer-failure seen in uncapped stdio (survives appendCapped trim). */
+  let rendererFailureFromStdio = false;
   /** Shared teardown flag so our own SIGTERM/SIGKILL is not counted as a crash. */
   const state = { teardownStarted: false };
   /** @type {{ code: number | null, signal: NodeJS.Signals | null, error?: string } | null} */
@@ -250,7 +263,13 @@ export async function launchAndAssert({
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const onChunk = (d) => {
-    stdioBuf = appendCapped(stdioBuf, String(d));
+    const chunk = String(d);
+    // Detect against previous buffer + chunk *before* capping so a failure line
+    // followed by >STDIO_TAIL_MAX of noise is not lost from the diagnostic tail.
+    if (!rendererFailureFromStdio && logShowsRendererFailure(`${stdioBuf}${chunk}`)) {
+      rendererFailureFromStdio = true;
+    }
+    stdioBuf = appendCapped(stdioBuf, chunk);
   };
   child.stdout.on('data', onChunk);
   child.stderr.on('data', onChunk);
@@ -268,6 +287,8 @@ export async function launchAndAssert({
   });
 
   const observedText = (logText) => `${logText}\n${stdioBuf}`;
+  const sawRendererFailure = (logText) =>
+    rendererFailureFromStdio || logShowsRendererFailure(observedText(logText));
 
   try {
     let logText = '';
@@ -288,7 +309,7 @@ export async function launchAndAssert({
       }
 
       logText = readLog(logPath, logText);
-      if (logShowsRendererFailure(observedText(logText))) {
+      if (sawRendererFailure(logText)) {
         fail(
           'Renderer failed to stay up (renderer-gone, failed-load, or child-process-gone).\n' +
             `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +
@@ -323,7 +344,7 @@ export async function launchAndAssert({
           `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
       );
     }
-    if (logShowsRendererFailure(observedText(logText))) {
+    if (sawRendererFailure(logText)) {
       fail(
         'Renderer failed to stay up (renderer-gone, failed-load, or child-process-gone).\n' +
           `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +

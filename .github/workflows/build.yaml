@@ -301,8 +301,8 @@ jobs:
         with:
           name: mesh-client-win-x64-install-logs-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/mesh-client-install-x64-*/**
-            ${{ runner.temp }}/mesh-client-win-x64-launch-diagnostics-*/**
+            ${{ runner.temp }}/mesh-client-install-x64.log
+            ${{ runner.temp }}/mesh-client-win-x64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7
 
@@ -313,8 +313,8 @@ jobs:
         with:
           name: mesh-client-win-arm64-install-logs-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/mesh-client-install-arm64-*/**
-            ${{ runner.temp }}/mesh-client-7z-probe-*/**
-            ${{ runner.temp }}/mesh-client-win-arm64-launch-diagnostics-*/**
+            ${{ runner.temp }}/mesh-client-install-arm64.log
+            ${{ runner.temp }}/mesh-client-7z-probe/**
+            ${{ runner.temp }}/mesh-client-win-arm64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7

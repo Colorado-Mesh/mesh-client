@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,9 @@ import {
   baseLaunchArgs,
   launchAndAssert,
 } from './packaged-launch-smoke.mjs';
+
+/** Must match STDIO_TAIL_MAX in packaged-launch-smoke.mjs. */
+const STDIO_TAIL_MAX = 64 * 1024;
 
 const RENDERER_LOADED_LINE =
   '2026-01-01T00:00:00.000Z [debug] [main] [Startup] renderer loaded: file:///app/index.html';
@@ -80,18 +83,19 @@ describe('launchAndAssert shared surface', () => {
     }
   }, 15_000);
 
-  it('teardown resolves when the child ignores SIGTERM', async () => {
+  it('teardown SIGKILL-escalates and waits until the child exits', async () => {
     if (process.platform === 'win32') {
       return;
     }
     const userDataDir = mkdtempSync(path.join(tmpdir(), 'mesh-launch-term-'));
+    const pidPath = path.join(userDataDir, 'child.pid');
     const source = `
       const fs = require('fs');
       const path = require('path');
-      fs.writeFileSync(path.join(process.env.SMOKE_USER_DATA, ${JSON.stringify(LOG_FILENAME)}), ${JSON.stringify(`${RENDERER_LOADED_LINE}\n`)});
-      process.on('SIGTERM', () => {
-        setTimeout(() => process.exit(0), 300);
-      });
+      const ud = process.env.SMOKE_USER_DATA;
+      fs.writeFileSync(path.join(ud, ${JSON.stringify(LOG_FILENAME)}), ${JSON.stringify(`${RENDERER_LOADED_LINE}\n`)});
+      fs.writeFileSync(path.join(ud, 'child.pid'), String(process.pid));
+      process.on('SIGTERM', () => {}); // ignore — force SIGKILL escalation
       setInterval(() => {}, 1000);
     `;
     try {
@@ -105,6 +109,37 @@ describe('launchAndAssert shared surface', () => {
         pollMs: 50,
         killGraceMs: 150,
       });
+      const pid = Number(readFileSync(pidPath, 'utf-8'));
+      expect(Number.isFinite(pid) && pid > 0).toBe(true);
+      // launchAndAssert must not resolve while the child is still alive.
+      expect(() => process.kill(pid, 0)).toThrow();
+    } finally {
+      rmSync(userDataDir, { recursive: true, force: true });
+    }
+  }, 15_000);
+
+  it('still fails when a renderer-failure line is flushed past the stdio cap', async () => {
+    const userDataDir = mkdtempSync(path.join(tmpdir(), 'mesh-launch-cap-'));
+    const source = `
+      const fs = require('fs');
+      const path = require('path');
+      fs.writeFileSync(path.join(process.env.SMOKE_USER_DATA, ${JSON.stringify(LOG_FILENAME)}), ${JSON.stringify(`${RENDERER_LOADED_LINE}\n`)});
+      process.stderr.write('[main] Renderer process gone: crashed 1\\n');
+      process.stderr.write('x'.repeat(${STDIO_TAIL_MAX + 2048}));
+      setInterval(() => {}, 1000);
+    `;
+    try {
+      await expect(
+        launchAndAssert({
+          command: process.execPath,
+          args: ['-e', source],
+          userDataDir,
+          env: { ...process.env, SMOKE_USER_DATA: userDataDir },
+          startupAliveMs: 400,
+          logWaitMs: 2000,
+          pollMs: 50,
+        }),
+      ).rejects.toThrow(/renderer-gone, failed-load, or child-process-gone/);
     } finally {
       rmSync(userDataDir, { recursive: true, force: true });
     }

@@ -16,7 +16,7 @@
  * Set MESH_CLIENT_KEEP_TEMP=1 to skip rmSync of extract/userData dirs (assertions
  * unchanged). MESH_CLIENT_APP_NAME overrides the productName (default Mesh-client).
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -61,14 +61,26 @@ export function pickHostArchZip(matches, hostArch) {
 }
 
 /**
+ * CI uses the fixed `$RUNNER_TEMP/mesh-client-mac-launch-diagnostics` upload path.
+ * Locally (no RUNNER_TEMP), allocate a unique dir under os.tmpdir() so CodeQL
+ * `js/insecure-temporary-file` stays clean.
+ */
+function resolveLaunchDiagnosticsDir() {
+  const runnerTemp = process.env.RUNNER_TEMP;
+  if (runnerTemp) {
+    const outDir = path.join(runnerTemp, 'mesh-client-mac-launch-diagnostics');
+    mkdirSync(outDir, { recursive: true });
+    return outDir;
+  }
+  return mkdtempSync(path.join(tmpdir(), 'mesh-client-mac-launch-diagnostics-'));
+}
+
+/**
  * @param {string} userDataDir
  * @param {string} message
  */
 function writeLaunchDiagnostics(userDataDir, message) {
-  const runnerTemp = process.env.RUNNER_TEMP || tmpdir();
-  // Unique dir under RUNNER_TEMP so CI can glob mesh-client-mac-launch-diagnostics-*/**
-  // without using a predictable fixed path (CodeQL js/insecure-temporary-file).
-  const outDir = mkdtempSync(path.join(runnerTemp, 'mesh-client-mac-launch-diagnostics-'));
+  const outDir = resolveLaunchDiagnosticsDir();
   writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
   const logPath = path.join(userDataDir, LOG_FILENAME);
   if (existsSync(logPath)) {
