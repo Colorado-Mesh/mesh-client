@@ -9,8 +9,8 @@ import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { type IdentityId, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useIdentityStore } from '../stores/identityStore';
-import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+import { useMessageCount } from './useMessageCount';
 
 export interface ActiveMeshIdentity {
   protocol: MeshProtocol;
@@ -24,10 +24,8 @@ export interface ActiveMeshIdentity {
 }
 
 function useBucketCounts(primaryId: IdentityId | null, offlineId: IdentityId) {
-  const primaryMsgCount = useMessageStore((s) =>
-    primaryId ? Object.keys(s.messages[primaryId] ?? {}).length : 0,
-  );
-  const offlineMsgCount = useMessageStore((s) => Object.keys(s.messages[offlineId] ?? {}).length);
+  const primaryMsgCount = useMessageCount(primaryId);
+  const offlineMsgCount = useMessageCount(offlineId);
   const primaryNodeCount = useNodeStore((s) =>
     primaryId ? Object.keys(s.nodes[primaryId] ?? {}).length : 0,
   );

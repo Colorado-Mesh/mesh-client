@@ -7558,7 +7558,6 @@
     "footerClose": "Sluiten",
     "footerOsKeys": "Uw besturingssysteem kan enkele F-toetsen behouden",
     "footerAutoSave": "PIN-code wordt automatisch opgeslagen.",
-    "whenUsedTextOnly": "Geldt alleen voor berichtmacro's.",
     "actionLabel": "Actie",
     "actionText": "Bericht",
     "actionRoom": "Naar ruimte gaan",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "RRC-ruimtes",
     "roomGroupSaved": "Opgeslagen",
     "jumpToRoomAria": "{{key}}: ga naar {{label}}",
-    "roomGroupChatChannels": "Chatkanalen"
+    "roomGroupChatChannels": "Chatkanalen",
+    "whenUsedRoomHelp": "Voor Jump-to-room-slots wordt er een optioneel bericht in het vak geplaatst of na de jump verzonden.",
+    "roomTextPlaceholder": "Optioneel bericht na doorverwijzing",
+    "roomTextAria": "{{key}} optioneel bericht na doorverwijzing",
+    "roomTextApplyFailed": "Kon het macrobericht niet toepassen na naar de ruimte te zijn gegaan."
   },
   "weatherForecast": {
     "areaAria": "Voorspelling voor {{place}}, {{period}}: {{temp}}",

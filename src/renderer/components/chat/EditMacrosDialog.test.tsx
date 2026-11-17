@@ -32,18 +32,30 @@ describe('EditMacrosDialog', () => {
     expect(screen.getByText('17 B')).toBeInTheDocument();
   });
 
-  it('switches a slot to Jump to room and hides the text input', () => {
+  it('switches a slot to Jump to room and keeps an optional message field', () => {
     render(<EditMacrosDialog protocol="meshcore" onClose={vi.fn()} />);
     const roomRadios = screen.getAllByRole('radio', { name: 'Jump to room' });
     fireEvent.click(roomRadios[0]);
     expect(useChatMacrosStore.getState().slots[0]?.action).toBe('room');
     expect(screen.queryByRole('textbox', { name: 'F1 message text' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', { name: 'F1 optional message after jump' }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Room')).toBeInTheDocument();
-    expect(screen.getByText('Applies to message macros only.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'For Jump to room slots, an optional message is put in the box or sent after the jump.',
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'F1 optional message after jump' }), {
+      target: { value: 'Test' },
+    });
+    expect(useChatMacrosStore.getState().slots[0]?.text).toBe('Test');
 
     fireEvent.click(screen.getAllByRole('radio', { name: 'Message' })[0]);
     expect(useChatMacrosStore.getState().slots[0]?.action).toBe('text');
-    expect(screen.getByRole('textbox', { name: 'F1 message text' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'F1 message text' })).toHaveValue('Test');
   });
 
   it('persists a chosen MeshCore room target', () => {

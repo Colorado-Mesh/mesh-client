@@ -7558,7 +7558,6 @@
     "footerClose": "閉じる",
     "footerOsKeys": "お使いのOSにはいくつかのFキーが残っている場合があります",
     "footerAutoSave": "PINは自動的に保存されます。",
-    "whenUsedTextOnly": "メッセージマクロにのみ適用されます。",
     "actionLabel": "行うべきこと",
     "actionText": "メッセージ",
     "actionRoom": "ルームに移動",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "RRCルーム",
     "roomGroupSaved": "保存済み",
     "jumpToRoomAria": "{{key}}：{{label}}にジャンプ",
-    "roomGroupChatChannels": "チャットチャンネル"
+    "roomGroupChatChannels": "チャットチャンネル",
+    "whenUsedRoomHelp": "「ルームに移動」のスロットの場合、オプションのメッセージがボックスに入力されるか、移動後に送信されます。",
+    "roomTextPlaceholder": "ジャンプ後のオプションメッセージ",
+    "roomTextAria": "{{key}} ジャンプ後のオプションメッセージ",
+    "roomTextApplyFailed": "ルームに移動した後、マクロメッセージを適用できませんでした。"
   },
   "weatherForecast": {
     "areaAria": "{{place}}、{{period}}の予測： {{temp}}",

@@ -1,4 +1,5 @@
 import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
+import { perfSpanSync } from './perfTrace';
 import {
   normalizeReticulumMessageHash,
   reticulumMessageHashesEqual,
@@ -86,6 +87,51 @@ function pickLatestMeshtasticReplyMatch(matches: readonly ChatMessage[]): ChatMe
   return matches[matches.length - 1];
 }
 
+export interface MeshtasticReplyParentIndex {
+  /** packetId → rows carrying that packet id, in chronological (input) order. */
+  readonly byPacketId: ReadonlyMap<number, readonly ChatMessage[]>;
+}
+
+/**
+ * Build once per message-list change. Meshtastic wire `reply_id` is the parent MeshPacket id,
+ * so the index is packetId-keyed (no timestamp fallbacks — see findMeshtasticParentMessageForReply).
+ */
+export function buildMeshtasticReplyParentIndex(
+  messages: readonly ChatMessage[],
+): MeshtasticReplyParentIndex {
+  const byPacketId = new Map<number, ChatMessage[]>();
+  for (const m of messages) {
+    if (m.packetId == null) continue;
+    const bucket = byPacketId.get(m.packetId);
+    if (bucket) bucket.push(m);
+    else byPacketId.set(m.packetId, [m]);
+  }
+  return { byPacketId };
+}
+
+function resolveMeshtasticParentFromPacketMatches(
+  packetMatchesRaw: readonly ChatMessage[],
+  opts?: MeshtasticReplyLookupOptions,
+): ChatMessage | undefined {
+  let packetMatches = filterMeshtasticThreadMatches(packetMatchesRaw, opts);
+  if (opts?.excludeSenderId != null && packetMatches.length > 1) {
+    const withoutReplyAuthor = packetMatches.filter((m) => m.sender_id !== opts.excludeSenderId);
+    if (withoutReplyAuthor.length > 0) packetMatches = withoutReplyAuthor;
+  }
+  return disambiguateMeshtasticReplyMatches(packetMatches, opts);
+}
+
+/** Indexed variant of {@link findMeshtasticParentMessageForReply} (O(1) packet-id bucket). */
+export function findMeshtasticParentMessageInIndex(
+  index: MeshtasticReplyParentIndex,
+  replyId: number,
+  opts?: MeshtasticReplyLookupOptions,
+): ChatMessage | undefined {
+  const raw = index.byPacketId.get(replyId);
+  if (!raw || raw.length === 0) return undefined;
+  return resolveMeshtasticParentFromPacketMatches(raw, opts);
+}
+
 /**
  * Meshtastic wire `reply_id` is the parent MeshPacket id (uint32, per-sender counter).
  * Lookup is packet-id only — no timestamp fallbacks (they collide with unrelated ids).
@@ -95,16 +141,10 @@ export function findMeshtasticParentMessageForReply(
   replyId: number,
   opts?: MeshtasticReplyLookupOptions,
 ): ChatMessage | undefined {
-  let packetMatches = filterMeshtasticThreadMatches(
+  return resolveMeshtasticParentFromPacketMatches(
     messages.filter((m) => m.packetId === replyId),
     opts,
   );
-  if (opts?.excludeSenderId != null && packetMatches.length > 1) {
-    const withoutReplyAuthor = packetMatches.filter((m) => m.sender_id !== opts.excludeSenderId);
-    if (withoutReplyAuthor.length > 0) packetMatches = withoutReplyAuthor;
-  }
-  const parent = disambiguateMeshtasticReplyMatches(packetMatches, opts);
-  return parent;
 }
 
 /** Resolve UI reply key to the RF packet id on the wire (must match a known parent packet id). */
@@ -119,27 +159,30 @@ export function resolveMeshtasticWireReplyId(
 
 /** Re-derive reply preview fields from the loaded thread (fixes stale DB previews). */
 export function repairMeshtasticReplyPreviews(messages: readonly ChatMessage[]): ChatMessage[] {
-  return messages.map((msg) => {
-    if (msg.replyId == null || msg.emoji != null) return msg;
-    const parent = findMeshtasticParentMessageForReply(messages, msg.replyId, {
-      replyPreviewSender: msg.replyPreviewSender,
-      beforeTimestamp: msg.timestamp,
-      channel: msg.channel,
-      to: msg.to,
-      excludeSenderId: msg.sender_id,
+  return perfSpanSync('repairMeshtasticReplyPreviews', () => {
+    const index = buildMeshtasticReplyParentIndex(messages);
+    return messages.map((msg) => {
+      if (msg.replyId == null || msg.emoji != null) return msg;
+      const parent = findMeshtasticParentMessageInIndex(index, msg.replyId, {
+        replyPreviewSender: msg.replyPreviewSender,
+        beforeTimestamp: msg.timestamp,
+        channel: msg.channel,
+        to: msg.to,
+        excludeSenderId: msg.sender_id,
+      });
+      if (!parent) {
+        if (msg.replyPreviewText == null && msg.replyPreviewSender == null) return msg;
+        return { ...msg, replyPreviewText: undefined, replyPreviewSender: undefined };
+      }
+      const preview = truncateReplyPreviewText(parent.payload);
+      const sender =
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+        parent.sender_name != null && parent.sender_name.trim() !== ''
+          ? parent.sender_name
+          : msg.replyPreviewSender;
+      if (msg.replyPreviewText === preview && msg.replyPreviewSender === sender) return msg;
+      return { ...msg, replyPreviewText: preview, replyPreviewSender: sender };
     });
-    if (!parent) {
-      if (msg.replyPreviewText == null && msg.replyPreviewSender == null) return msg;
-      return { ...msg, replyPreviewText: undefined, replyPreviewSender: undefined };
-    }
-    const preview = truncateReplyPreviewText(parent.payload);
-    const sender =
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-      parent.sender_name != null && parent.sender_name.trim() !== ''
-        ? parent.sender_name
-        : msg.replyPreviewSender;
-    if (msg.replyPreviewText === preview && msg.replyPreviewSender === sender) return msg;
-    return { ...msg, replyPreviewText: preview, replyPreviewSender: sender };
   });
 }
 

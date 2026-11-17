@@ -12,7 +12,7 @@
  * stay in the Linux caller — those are not portable.
  */
 import { spawn, spawnSync } from 'child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
 import path from 'path';
 
 export const LOG_FILENAME = 'mesh-client.log';
@@ -24,6 +24,12 @@ export const LOG_WAIT_MS = 25_000;
 export const LOG_POLL_MS = 500;
 /** Grace period for a clean kill before SIGKILL (ms). */
 export const KILL_GRACE_MS = 5_000;
+/**
+ * Extra settle after Windows taskkill before callers delete `--user-data-dir`.
+ * Chromium LevelDB files (e.g. declarative_performance_observer.db) can stay
+ * EBUSY briefly after the process tree exits.
+ */
+export const WIN32_USERDATA_SETTLE_MS = 500;
 /** Keep only the tail of a child's stdio so a noisy boot cannot grow without bound. */
 const STDIO_TAIL_MAX = 64 * 1024;
 
@@ -172,6 +178,14 @@ async function killChild(child, state, killGraceMs) {
   // Reticulum sidecar child cannot hold the throwaway user-data dir open.
   if (process.platform === 'win32' && child.pid) {
     spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+    // Wait for Node's ChildProcess exit (and Chromium handle release) before
+    // callers rmSync the throwaway user-data dir — taskkill returning is not enough.
+    const killDeadline = Date.now() + killGraceMs;
+    while (Date.now() < killDeadline) {
+      if (child.exitCode !== null || child.signalCode !== null) break;
+      await sleepMs(100);
+    }
+    await sleepMs(WIN32_USERDATA_SETTLE_MS);
     return;
   }
   try {
@@ -201,6 +215,47 @@ async function killChild(child, state, killGraceMs) {
   console.warn(
     `[packaged-launch-smoke] child pid ${child.pid ?? '?'} did not exit after SIGKILL within ${killGraceMs}ms`,
   );
+}
+
+/**
+ * Best-effort delete of a throwaway `--user-data-dir` after launch smoke.
+ * Retries Windows EBUSY/EPERM (Chromium LevelDB locks) then warns — never throws
+ * after a successful boot assertion.
+ *
+ * @param {string} dir
+ * @param {{
+ *   retries?: number,
+ *   delayMs?: number,
+ *   label?: string,
+ *   rm?: typeof rmSync,
+ *   sleep?: (ms: number) => Promise<void>,
+ * }} [opts]
+ */
+export async function rmTempDirBestEffort(dir, opts = {}) {
+  const retries = opts.retries ?? 8;
+  const delayMs = opts.delayMs ?? 250;
+  const label = opts.label ?? 'packaged-launch-smoke';
+  const rm = opts.rm ?? rmSync;
+  const sleep = opts.sleep ?? sleepMs;
+  let lastErr = /** @type {unknown} */ (null);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      rm(dir, { recursive: true, force: true });
+      return;
+    } catch (e) {
+      lastErr = e;
+      const code =
+        e && typeof e === 'object' && 'code' in e
+          ? String(/** @type {{ code?: unknown }} */ (e).code)
+          : '';
+      if (code !== 'EBUSY' && code !== 'EPERM' && code !== 'EACCES') break;
+      if (attempt < retries) {
+        await sleep(delayMs);
+      }
+    }
+  }
+  const detail = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  console.warn(`[${label}] left temp dir ${dir} (${detail})`);
 }
 
 /**

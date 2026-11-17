@@ -41,6 +41,7 @@ import {
   LOG_FILENAME,
   baseLaunchArgs,
   launchAndAssert,
+  rmTempDirBestEffort,
   tailText,
 } from './packaged-launch-smoke.mjs';
 import { findWinSetupInstaller } from './win-setup-installer-names.mjs';
@@ -338,11 +339,12 @@ async function main(arch, probe7z, launch) {
           throw e;
         }
       } finally {
-        rmSync(userDataDir, { recursive: true, force: true });
+        // Chromium can keep LevelDB files EBUSY after taskkill; do not fail a green launch.
+        await rmTempDirBestEffort(userDataDir, { label: 'test-win-nsis-install' });
       }
     }
   } finally {
-    rmSync(workDir, { recursive: true, force: true });
+    await rmTempDirBestEffort(workDir, { label: 'test-win-nsis-install' });
   }
 }
 

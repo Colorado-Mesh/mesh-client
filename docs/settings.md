@@ -95,20 +95,20 @@ Reticulum does not use this Radio panel; stack settings are under **Network**.
 
 Modifier is **Cmd** on macOS and **Ctrl** on Windows/Linux (`formatShortcut` in the launcher helpers). Verified in `App.tsx`, `PanelLauncher`, `globalMessageSearch`, `unifiedInbox`, and chat macro hooks:
 
-| Shortcut                        | Action                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| **Ctrl/Cmd+K**                  | Open or close the panel launcher                                       |
-| **Ctrl/Cmd+1** … **Ctrl/Cmd+4** | Open pinned panel 1–4                                                  |
-| **Ctrl/Cmd+P**                  | Pin or unpin the focused launcher panel (launcher open)                |
-| **Ctrl/Cmd+Shift+F**            | Global message search (cross-protocol FTS)                             |
-| **Ctrl/Cmd+Shift+U**            | Unified inbox of received messages                                     |
-| **F1**–**F12**                  | Chat composer macros (plain F-keys only; any modifier ignores the key) |
-| **Esc**                         | Close launcher, menu, or dialog                                        |
-| Arrow keys, **Home**, **End**   | Move within tablists, segmented controls, and menus                    |
-| **↑** / **↓** in the launcher   | Move between results                                                   |
-| **Enter** in the launcher       | Open the focused or first result                                       |
+| Shortcut                        | Action                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Ctrl/Cmd+K**                  | Open or close the panel launcher                                                                           |
+| **Ctrl/Cmd+1** … **Ctrl/Cmd+4** | Open pinned panel 1–4                                                                                      |
+| **Ctrl/Cmd+P**                  | Pin or unpin the focused launcher panel (launcher open)                                                    |
+| **Ctrl/Cmd+Shift+F**            | Global message search (cross-protocol FTS)                                                                 |
+| **Ctrl/Cmd+Shift+U**            | Unified inbox of received messages                                                                         |
+| **F1**–**F12**                  | Chat macros: insert/send text, or jump to a room/channel (plain F-keys only; any modifier ignores the key) |
+| **Esc**                         | Close launcher, menu, or dialog                                                                            |
+| Arrow keys, **Home**, **End**   | Move within tablists, segmented controls, and menus                                                        |
+| **↑** / **↓** in the launcher   | Move between results                                                                                       |
+| **Enter** in the launcher       | Open the focused or first result                                                                           |
 
-Macros insert or send the slot text in the visible Chat composer (editable under the composer macro bar). Global search and inbox are toggles from anywhere the window has focus. More Chat behaviour: [Chat](chat.md).
+Macros can insert or send slot text in the visible Chat composer, or jump to a MeshCore room, chat channel, or RRC room and optionally insert/send text there (editable under the composer macro bar). Global search and inbox are toggles from anywhere the window has focus. More Chat behaviour: [Chat](chat.md).
 
 ---
 

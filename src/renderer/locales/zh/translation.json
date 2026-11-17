@@ -7558,7 +7558,6 @@
     "footerClose": "关闭",
     "footerOsKeys": "您的操作系统可能会保留一些F键",
     "footerAutoSave": "PIN自动保存。",
-    "whenUsedTextOnly": "仅适用于消息模板。",
     "actionLabel": "操作",
     "actionText": "信息",
     "actionRoom": "跳转至房间",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "RRC 房间",
     "roomGroupSaved": "保存成功",
     "jumpToRoomAria": "{{key}}：跳转到{{label}}",
-    "roomGroupChatChannels": "实时对话频道"
+    "roomGroupChatChannels": "实时对话频道",
+    "whenUsedRoomHelp": "对于“跳转至房间”时段，可在方框中输入可选消息，或在跳转后发送消息。",
+    "roomTextPlaceholder": "跳转后的可选消息",
+    "roomTextAria": "{{key}} 跳转后的可选消息",
+    "roomTextApplyFailed": "跳转到房间后无法应用宏消息。"
   },
   "weatherForecast": {
     "areaAria": "{{place}} ， {{period}}的预测： {{temp}}",

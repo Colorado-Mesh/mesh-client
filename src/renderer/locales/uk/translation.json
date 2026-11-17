@@ -7676,7 +7676,6 @@
     "footerClose": "Закрити",
     "footerOsKeys": "У вашій ОС можуть зберігатися деякі F-клавіші",
     "footerAutoSave": "PIN-код зберігається автоматично.",
-    "whenUsedTextOnly": "Застосовується лише до макросів повідомлень.",
     "actionLabel": "Дія",
     "actionText": "Повідомлення",
     "actionRoom": "Перейти до кімнати",
@@ -7687,7 +7686,11 @@
     "roomGroupRrc": "Кімнати RRC",
     "roomGroupSaved": "Збережено",
     "jumpToRoomAria": "{{key}}: перейти до {{label}}",
-    "roomGroupChatChannels": "Канали чату"
+    "roomGroupChatChannels": "Канали чату",
+    "whenUsedRoomHelp": "Для слотів «Перейти до кімнати» в полі можна ввести необов'язкове повідомлення або надіслати його після переходу.",
+    "roomTextPlaceholder": "Додаткове повідомлення після переходу",
+    "roomTextAria": "{{key}} необов'язкове повідомлення після переходу",
+    "roomTextApplyFailed": "Не вдалося застосувати макрос-повідомлення після переходу до кімнати."
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",

@@ -9,14 +9,24 @@ import { getChatNotificationMode, mentionsLocalChatIdentity } from '../lib/chatN
 import { loadMutedViews } from '../lib/chatPanelProtocolStorage';
 import { chatViewKeyForMessage, resolveChatNotificationType } from '../lib/chatUnreadCounts';
 import { isMecpMessage } from '../lib/mecp/mecpMessages';
+import { buildMeshtasticReplyParentIndex } from '../lib/replyPreview';
 import { useToast } from './Toast';
 
 const EMPTY_OWN_IDS = new Set<number>();
+const EMPTY_MESSAGES: Record<MeshProtocol, ChatMessage[]> = {
+  meshtastic: [],
+  meshcore: [],
+  reticulum: [],
+};
 
 export interface InactiveProtocolNotifierProps {
   activeProtocol: MeshProtocol;
   ownNodeIdsByProtocol?: Partial<Record<MeshProtocol, ReadonlySet<number>>>;
-  messagesByProtocol: Record<MeshProtocol, ChatMessage[]>;
+  /**
+   * Prefer App’s already-derived `uiMessagesByProtocol` so this notifier does not
+   * re-run the store→UI pipeline on the hot path.
+   */
+  messagesByProtocol?: Record<MeshProtocol, ChatMessage[]>;
   /** Protocols enabled in App → Protocols; disabled ones never toast. */
   enabledProtocols?: readonly MeshProtocol[];
 }
@@ -25,11 +35,12 @@ export interface InactiveProtocolNotifierProps {
 export function InactiveProtocolNotifier({
   activeProtocol,
   ownNodeIdsByProtocol,
-  messagesByProtocol,
+  messagesByProtocol = EMPTY_MESSAGES,
   enabledProtocols = REGISTERED_MESH_PROTOCOLS,
 }: InactiveProtocolNotifierProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
+  const resolvedMessages = messagesByProtocol;
   const prevCountRef = useRef<Record<MeshProtocol, number>>(
     Object.fromEntries(REGISTERED_MESH_PROTOCOLS.map((p) => [p, 0])) as Record<
       MeshProtocol,
@@ -47,11 +58,11 @@ export function InactiveProtocolNotifier({
     for (const inactiveProtocol of REGISTERED_MESH_PROTOCOLS) {
       if (inactiveProtocol === activeProtocol) {
         isInitRef.current[inactiveProtocol] = true;
-        prevCountRef.current[inactiveProtocol] = messagesByProtocol[inactiveProtocol].length;
+        prevCountRef.current[inactiveProtocol] = resolvedMessages[inactiveProtocol].length;
         continue;
       }
 
-      const count = messagesByProtocol[inactiveProtocol].length;
+      const count = resolvedMessages[inactiveProtocol].length;
       if (isInitRef.current[inactiveProtocol]) {
         prevCountRef.current[inactiveProtocol] = count;
         if (count > 0) isInitRef.current[inactiveProtocol] = false;
@@ -59,11 +70,16 @@ export function InactiveProtocolNotifier({
       }
 
       if (count > prevCountRef.current[inactiveProtocol]) {
-        const newMsgs = messagesByProtocol[inactiveProtocol].slice(
+        const newMsgs = resolvedMessages[inactiveProtocol].slice(
           prevCountRef.current[inactiveProtocol],
         );
         const own = ownNodeIdsByProtocol?.[inactiveProtocol] ?? EMPTY_OWN_IDS;
         const mutedViews = loadMutedViews(inactiveProtocol);
+        const allForProtocol = resolvedMessages[inactiveProtocol];
+        const meshtasticReplyIndex =
+          inactiveProtocol === 'meshtastic'
+            ? buildMeshtasticReplyParentIndex(allForProtocol)
+            : undefined;
         const realNew = newMsgs.filter((m) => {
           if (m.emoji || m.isHistory || own.has(m.sender_id)) return false;
           // Preserve the existing passive emergency toast; dedicated MECP
@@ -82,9 +98,11 @@ export function InactiveProtocolNotifier({
             !mutedViews.has(chatViewKeyForMessage(m, inactiveProtocol, own)) &&
             resolveChatNotificationType(
               m,
-              messagesByProtocol[inactiveProtocol],
+              allForProtocol,
               own,
               inactiveProtocol,
+              undefined,
+              meshtasticReplyIndex,
             ) != null
           );
         });
@@ -101,7 +119,7 @@ export function InactiveProtocolNotifier({
       }
       prevCountRef.current[inactiveProtocol] = count;
     }
-  }, [activeProtocol, ownNodeIdsByProtocol, messagesByProtocol, enabledProtocols, addToast, t]);
+  }, [activeProtocol, ownNodeIdsByProtocol, resolvedMessages, enabledProtocols, addToast, t]);
 
   return null;
 }

@@ -77,7 +77,7 @@ import {
 } from '@/renderer/lib/rrcReactions';
 import { rrcReplyMention } from '@/renderer/lib/rrcReplyMention';
 import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
-import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
+import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -1243,6 +1243,14 @@ export function RrcChatView({
           composeSeed={composerSeed}
           textareaRef={composerTextareaRef}
           className="w-full"
+          roomMacroMatch={
+            hubDestHash && activeRoom
+              ? (plan) =>
+                  plan.kind === 'rrc-room' &&
+                  plan.hubDestHash === hubDestHash.trim().toLowerCase() &&
+                  rrcRoomsMatch(plan.room, activeRoom)
+              : undefined
+          }
         />
       </div>
       {pendingAddress && (

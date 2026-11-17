@@ -191,7 +191,7 @@ export function EditMacrosDialog({
           </div>
           {hasRoomSlot ? (
             <p className="text-label text-muted w-full basis-full">
-              {t('chatMacros.whenUsedTextOnly')}
+              {t('chatMacros.whenUsedRoomHelp')}
             </p>
           ) : null}
         </div>
@@ -379,39 +379,42 @@ function MacroRow({
             onRoomChange(index, next);
           }}
         />
-      ) : (
-        <>
-          <input
-            type="text"
-            value={text}
-            maxLength={CHAT_MACRO_TEXT_MAX}
-            onChange={(e) => {
-              onTextChange(index, e.target.value);
-            }}
-            placeholder={t('chatMacros.textPlaceholder')}
-            aria-label={t('chatMacros.textAria', { key })}
-            aria-invalid={overLimit || undefined}
-            aria-describedby={overLimit ? warnId : undefined}
-            className={`${inputBase} min-w-0 flex-1 ${
-              overLimit
-                ? 'border-red-500 focus:border-red-400'
-                : 'border-secondary-dark focus:border-brand-green'
-            }`}
-          />
-          <span
-            className={`text-label inline-flex w-16 shrink-0 items-center justify-end gap-1 font-mono ${
-              overLimit ? 'text-red-400' : 'text-muted'
-            }`}
-          >
-            {overLimit && <TriangleAlert aria-hidden size={12} />}
-            {t('chatMacros.bytes', { bytes })}
-          </span>
-          {overLimit && (
-            <span id={warnId} className="sr-only">
-              {t('chatMacros.overLimit', { limit: status.singleMessageLimit })}
-            </span>
-          )}
-        </>
+      ) : null}
+      <input
+        type="text"
+        value={text}
+        maxLength={CHAT_MACRO_TEXT_MAX}
+        onChange={(e) => {
+          onTextChange(index, e.target.value);
+        }}
+        placeholder={
+          action === 'room' ? t('chatMacros.roomTextPlaceholder') : t('chatMacros.textPlaceholder')
+        }
+        aria-label={
+          action === 'room'
+            ? t('chatMacros.roomTextAria', { key })
+            : t('chatMacros.textAria', { key })
+        }
+        aria-invalid={overLimit || undefined}
+        aria-describedby={overLimit ? warnId : undefined}
+        className={`${inputBase} min-w-0 flex-1 ${
+          overLimit
+            ? 'border-red-500 focus:border-red-400'
+            : 'border-secondary-dark focus:border-brand-green'
+        }`}
+      />
+      <span
+        className={`text-label inline-flex w-16 shrink-0 items-center justify-end gap-1 font-mono ${
+          overLimit ? 'text-red-400' : 'text-muted'
+        }`}
+      >
+        {overLimit && <TriangleAlert aria-hidden size={12} />}
+        {t('chatMacros.bytes', { bytes })}
+      </span>
+      {overLimit && (
+        <span id={warnId} className="sr-only">
+          {t('chatMacros.overLimit', { limit: status.singleMessageLimit })}
+        </span>
       )}
     </li>
   );

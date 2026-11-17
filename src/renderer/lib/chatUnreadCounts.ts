@@ -7,8 +7,11 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/renderer/lib/nodeStatus';
 import {
+  buildMeshtasticReplyParentIndex,
   findMeshtasticParentMessageForReply,
+  findMeshtasticParentMessageInIndex,
   findParentMessageForReply,
+  type MeshtasticReplyParentIndex,
 } from '@/renderer/lib/replyPreview';
 import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
 import {
@@ -438,6 +441,7 @@ export function resolveChatNotificationType(
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
   dmOptions?: ChatUnreadDmOptions,
+  replyIndex?: MeshtasticReplyParentIndex,
 ): ChatNotificationType | null {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return null;
   if (msg.emoji && msg.replyId) return null;
@@ -453,15 +457,18 @@ export function resolveChatNotificationType(
   }
 
   if (msg.replyId != null) {
+    const replyOpts = {
+      replyPreviewSender: msg.replyPreviewSender,
+      beforeTimestamp: msg.timestamp,
+      channel: msg.channel,
+      to: msg.to,
+      excludeSenderId: msg.sender_id,
+    };
     const parent =
       protocol === 'meshtastic'
-        ? findMeshtasticParentMessageForReply(allMessages, msg.replyId, {
-            replyPreviewSender: msg.replyPreviewSender,
-            beforeTimestamp: msg.timestamp,
-            channel: msg.channel,
-            to: msg.to,
-            excludeSenderId: msg.sender_id,
-          })
+        ? replyIndex
+          ? findMeshtasticParentMessageInIndex(replyIndex, msg.replyId, replyOpts)
+          : findMeshtasticParentMessageForReply(allMessages, msg.replyId, replyOpts)
         : findParentMessageForReply(allMessages, msg.replyId);
     if (parent && ownNodeIds.has(parent.sender_id)) return 'reply';
   }
@@ -495,6 +502,8 @@ export function pickAudibleNotification(
   let best: AudibleChatNotification | null = null;
   let highestPriority = -1;
   const lookupMessages = allMessages ?? messages;
+  const replyIndex =
+    protocol === 'meshtastic' ? buildMeshtasticReplyParentIndex(lookupMessages) : undefined;
 
   const regular = filterRegularChatMessages(messages, protocol);
   for (const msg of regular) {
@@ -503,7 +512,14 @@ export function pickAudibleNotification(
     const viewKey = chatViewKeyForMessage(msg, protocol, ownNodeIds, dmOptions);
     if (mutedViews.has(viewKey)) continue;
 
-    const type = resolveChatNotificationType(msg, lookupMessages, ownNodeIds, protocol, dmOptions);
+    const type = resolveChatNotificationType(
+      msg,
+      lookupMessages,
+      ownNodeIds,
+      protocol,
+      dmOptions,
+      replyIndex,
+    );
     if (type == null) continue;
 
     const priority = NOTIFICATION_TYPE_PRIORITY[type];

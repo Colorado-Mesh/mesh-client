@@ -38,9 +38,13 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import {
-  navigateRoomMacro,
+  navigateRoomMacroAndMaybeQueueText,
   resolveMeshcoreRoomNodeIdDefault,
   resolveRoomMacroPlan,
+  restorePendingRoomMacroTextApply,
+  type RoomMacroPlanMatcher,
+  subscribeRoomMacroTextApply,
+  takePendingRoomMacroTextApplyIfMatch,
 } from '@/renderer/lib/roomMacros';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import {
@@ -269,6 +273,11 @@ export interface ChatComposerProps {
   /** F1–F12 macro bar and shortcuts (default on). */
   showMacros?: boolean;
   /**
+   * When set, this composer consumes a pending post-jump room-macro text apply whose plan
+   * matches (Rooms / Chat channel / RRC destination).
+   */
+  roomMacroMatch?: RoomMacroPlanMatcher;
+  /**
    * Show a Send-menu "Send later" action that queues the draft in the durable outbox for a later
    * time (requires `queueOutbox`). Default off; ChatPanel enables it for channels and DMs.
    */
@@ -316,6 +325,7 @@ export function ChatComposer({
   mentionAdapter,
   composeSeed,
   showMacros = true,
+  roomMacroMatch,
   allowScheduledSend = false,
 }: ChatComposerProps) {
   const { t } = useTranslation();
@@ -1026,28 +1036,25 @@ export function ChatComposer({
   const pendingMacroSendRef = useRef<string | null>(null);
   const canTypeInComposer = !disabled && (isConnected || allowOutbox);
 
-  const applyMacro = useCallback(
-    (index: number): boolean => {
+  /**
+   * Insert/send slot text only (no room navigate). Used by message macros and post-jump consume.
+   * `opts.text` applies a captured string (room-jump queue) instead of re-reading the slot.
+   */
+  const applyMacroText = useCallback(
+    (index: number, opts?: { markUsed?: boolean; text?: string }): boolean => {
       const macros = useChatMacrosStore.getState();
       const slot = macros.slots[index];
-      if (isChatMacroSlotEmpty(slot)) return false;
-      if (slot.action === 'room' && slot.room) {
-        const plan = resolveRoomMacroPlan(slot.room, {
-          resolveMeshcoreRoomNodeId: resolveMeshcoreRoomNodeIdDefault,
-        });
-        if (!plan || !navigateRoomMacro(plan, index)) return false;
-        macros.markUsed(index);
-        return true;
-      }
+      const text = (opts?.text ?? slot?.text ?? '').trim();
+      if (text === '') return false;
       if (!canTypeInComposer) return false;
-      const text = slot.text.trim();
       const current = inputValueRef.current;
       const textarea = inputRef.current;
+      const shouldMarkUsed = opts?.markUsed !== false;
 
       // Send now only when the box is empty, so a half-written draft is never sent or lost.
       if (macros.sendMode === 'sendNow' && !current.trim() && !sending) {
         if (!suppressLimits && text.length > maxInputLength) return false;
-        macros.markUsed(index);
+        if (shouldMarkUsed) macros.markUsed(index);
         pendingMacroSendRef.current = text;
         setInput(text);
         setChatActionError(null);
@@ -1061,7 +1068,7 @@ export function ChatComposer({
       const insert = before && !/\s$/.test(before) ? ` ${text}` : text;
       const next = before + insert + current.slice(end);
       if (!suppressLimits && next.length > maxInputLength) return false;
-      macros.markUsed(index);
+      if (shouldMarkUsed) macros.markUsed(index);
       setInput(next);
       setChatActionError(null);
       setMentionQuery(null);
@@ -1075,6 +1082,24 @@ export function ChatComposer({
     [canTypeInComposer, maxInputLength, sending, suppressLimits],
   );
 
+  const applyMacro = useCallback(
+    (index: number): boolean => {
+      const macros = useChatMacrosStore.getState();
+      const slot = macros.slots[index];
+      if (isChatMacroSlotEmpty(slot)) return false;
+      if (slot.action === 'room' && slot.room) {
+        const plan = resolveRoomMacroPlan(slot.room, {
+          resolveMeshcoreRoomNodeId: resolveMeshcoreRoomNodeIdDefault,
+        });
+        if (!plan || !navigateRoomMacroAndMaybeQueueText(plan, index)) return false;
+        macros.markUsed(index);
+        return true;
+      }
+      return applyMacroText(index);
+    },
+    [applyMacroText],
+  );
+
   useEffect(() => {
     const pending = pendingMacroSendRef.current;
     if (pending === null || input !== pending) return;
@@ -1083,7 +1108,34 @@ export function ChatComposer({
   }, [input, handleSend]);
 
   const applyMacroRef = useRef(applyMacro);
-  applyMacroRef.current = applyMacro;
+  const applyMacroTextRef = useRef(applyMacroText);
+  const roomMacroMatchRef = useRef(roomMacroMatch);
+  useLayoutEffect(() => {
+    applyMacroRef.current = applyMacro;
+    applyMacroTextRef.current = applyMacroText;
+    roomMacroMatchRef.current = roomMacroMatch;
+  }, [applyMacro, applyMacroText, roomMacroMatch]);
+
+  useEffect(() => {
+    if (!roomMacroMatch || !canTypeInComposer) return;
+    const tryConsume = () => {
+      const matcher = roomMacroMatchRef.current;
+      if (!matcher) return;
+      const pending = takePendingRoomMacroTextApplyIfMatch(matcher);
+      if (!pending) return;
+      const applied = applyMacroTextRef.current(pending.slotIndex, {
+        markUsed: false,
+        text: pending.text,
+      });
+      if (!applied) {
+        // Keep text for retry when deps change; no notify — avoid re-entering this listener.
+        restorePendingRoomMacroTextApply(pending, { notify: false });
+        addToast(t('chatMacros.roomTextApplyFailed'), 'warning');
+      }
+    };
+    tryConsume();
+    return subscribeRoomMacroTextApply(tryConsume);
+  }, [roomMacroMatch, canTypeInComposer, addToast, t]);
 
   useEffect(() => {
     if (!showMacros) return;

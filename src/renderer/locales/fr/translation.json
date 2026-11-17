@@ -7558,7 +7558,6 @@
     "footerClose": "Fermer",
     "footerOsKeys": "Votre système d'exploitation peut conserver certaines touches F",
     "footerAutoSave": "Le code PIN s’enregistre automatiquement.",
-    "whenUsedTextOnly": "S'applique uniquement aux macros de message.",
     "actionLabel": "Action",
     "actionText": "Message",
     "actionRoom": "Accéder à la salle",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "Salles RRC",
     "roomGroupSaved": "Enregistré",
     "jumpToRoomAria": "{{key}} : aller à {{label}}",
-    "roomGroupChatChannels": "Canaux de discussion"
+    "roomGroupChatChannels": "Canaux de discussion",
+    "whenUsedRoomHelp": "Pour les créneaux Accéder à la salle, un message facultatif est placé dans la boîte ou envoyé après l'accès.",
+    "roomTextPlaceholder": "Message facultatif après le saut",
+    "roomTextAria": "{{key}} message facultatif après le saut",
+    "roomTextApplyFailed": "Impossible d'appliquer le message macro après avoir accédé à la salle."
   },
   "weatherForecast": {
     "areaAria": "Prévisions pour {{place}}, {{period}} : {{temp}}",

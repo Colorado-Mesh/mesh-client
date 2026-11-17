@@ -7558,7 +7558,6 @@
     "footerClose": "닫기",
     "footerOsKeys": "OS에서 일부 F 키를 보관할 수 있습니다.",
     "footerAutoSave": "PIN이 자동으로 저장됩니다.",
-    "whenUsedTextOnly": "메시지 매크로에만 적용됩니다.",
     "actionLabel": "액션",
     "actionText": "메시지",
     "actionRoom": "룸으로 이동",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "RRC 룸",
     "roomGroupSaved": "저장했습니다",
     "jumpToRoomAria": "{{key}}: {{label}}(으)로 이동",
-    "roomGroupChatChannels": "실시간 채팅 채널"
+    "roomGroupChatChannels": "실시간 채팅 채널",
+    "whenUsedRoomHelp": "'방으로 이동' 슬롯의 경우, 선택 사항인 메시지가 상자에 표시되거나 이동 후에 전송됩니다.",
+    "roomTextPlaceholder": "점프 후 선택적 메시지",
+    "roomTextAria": "{{key}} 점프 후 선택적 메시지",
+    "roomTextApplyFailed": "채팅방으로 이동한 후 매크로 메시지를 적용할 수 없었습니다."
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} 에 대한 예측: {{temp}}",

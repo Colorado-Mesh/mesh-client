@@ -13,7 +13,7 @@ import {
 import { OFFLINE_MESHTASTIC_IDENTITY_ID } from '../lib/offlineProtocolIdentities';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
-import { addMessage, useMessageStore } from '../stores/messageStore';
+import { addMessage, clearMessageIdentity, useMessageStore } from '../stores/messageStore';
 import NodeListPanel from './NodeListPanel';
 
 const HYBRID_MQTT_PATH_ARIA = 'RF and MQTT path';
@@ -1420,6 +1420,151 @@ describe('NodeListPanel History tab', () => {
       expect(screen.getByText('FarPeer')).toBeInTheDocument();
     });
     expect(screen.queryByText('NearNoDm')).not.toBeInTheDocument();
+  });
+
+  it('does not refetch listMeshtasticDmPeers when an in-memory message is appended', async () => {
+    const listSpy = vi.mocked(window.electronAPI.db.listMeshtasticDmPeers);
+    listSpy.mockClear();
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'Me' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalled();
+    });
+    const callsAfterMount = listSpy.mock.calls.length;
+    act(() => {
+      addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        id: 'dm-live-1',
+        from: 2,
+        senderName: 'LivePeer',
+        to: 1,
+        payload: 'hi',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+      });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(listSpy.mock.calls.length).toBe(callsAfterMount);
+  });
+
+  it('refetches listMeshtasticDmPeers when DB hydration revision bumps', async () => {
+    const { bumpDbHydrationRevision, resetDbHydrationRevisionForTests } =
+      await import('../lib/dbHydrationRevision');
+    onTestFinished(() => {
+      resetDbHydrationRevisionForTests();
+    });
+    const listSpy = vi.mocked(window.electronAPI.db.listMeshtasticDmPeers);
+    listSpy.mockClear();
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'Me' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalled();
+    });
+    const callsAfterMount = listSpy.mock.calls.length;
+    act(() => {
+      bumpDbHydrationRevision();
+    });
+    await waitFor(() => {
+      expect(listSpy.mock.calls.length).toBeGreaterThan(callsAfterMount);
+    });
+  });
+
+  it('still includes memory-only DM peers on History after an in-memory append', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeListPanel
+        nodes={
+          new Map([
+            [1, makeNode({ node_id: 1, long_name: 'Me' })],
+            [9, makeNode({ node_id: 9, long_name: 'MemoryOnly' })],
+          ])
+        }
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    act(() => {
+      addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        id: 'dm-mem-only',
+        from: 9,
+        senderName: 'MemoryOnly',
+        to: 1,
+        payload: 'yo',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+      });
+    });
+    await user.click(screen.getByRole('radio', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('MemoryOnly')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps a session-seen DM peer on History after in-memory messages are cleared', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeListPanel
+        nodes={
+          new Map([
+            [1, makeNode({ node_id: 1, long_name: 'Me' })],
+            [9, makeNode({ node_id: 9, long_name: 'StickyPeer' })],
+          ])
+        }
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    act(() => {
+      addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        id: 'dm-sticky-1',
+        from: 9,
+        senderName: 'StickyPeer',
+        to: 1,
+        payload: 'yo',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+      });
+    });
+    await user.click(screen.getByRole('radio', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('StickyPeer')).toBeInTheDocument();
+    });
+    const listSpy = vi.mocked(window.electronAPI.db.listMeshtasticDmPeers);
+    const callsBeforeClear = listSpy.mock.calls.length;
+    act(() => {
+      clearMessageIdentity(OFFLINE_MESHTASTIC_IDENTITY_ID);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('StickyPeer')).toBeInTheDocument();
+    });
+    // Sticky session peers cover eviction; clearing memory must not refetch SQLite.
+    expect(listSpy.mock.calls.length).toBe(callsBeforeClear);
   });
 });
 

@@ -7676,7 +7676,6 @@
     "footerClose": "Zamknięty",
     "footerOsKeys": "Twój system operacyjny może zachować kilka klawiszy funkcyjnych",
     "footerAutoSave": "PIN zostanie zapisany automatycznie.",
-    "whenUsedTextOnly": "Dotyczy tylko makr wiadomości.",
     "actionLabel": "Czynność",
     "actionText": "Wiadomość",
     "actionRoom": "Przejdź do pokoju",
@@ -7687,7 +7686,11 @@
     "roomGroupRrc": "Pokoje RRC",
     "roomGroupSaved": "Zapisane",
     "jumpToRoomAria": "{{key}}: przejdź do {{label}}",
-    "roomGroupChatChannels": "Kanały czatu"
+    "roomGroupChatChannels": "Kanały czatu",
+    "whenUsedRoomHelp": "W przypadku opcji Przejdź do okienek pokoju w polu umieszczana jest opcjonalna wiadomość lub wysyłana jest ona po przejściu.",
+    "roomTextPlaceholder": "Opcjonalna wiadomość po przejściu",
+    "roomTextAria": "{{key}} opcjonalna wiadomość po przejściu",
+    "roomTextApplyFailed": "Nie udało się zastosować wiadomości makra po przejściu do pokoju."
   },
   "weatherForecast": {
     "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",

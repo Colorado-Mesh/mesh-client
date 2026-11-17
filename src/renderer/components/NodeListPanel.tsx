@@ -12,7 +12,7 @@ import {
   Upload,
   User,
 } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
@@ -25,6 +25,7 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
+import { useDbHydrationRevision } from '../hooks/useDbHydrationRevision';
 import {
   type OffloadContactsFromRadioFn,
   useMeshcoreContactCapacity,
@@ -196,7 +197,7 @@ function SortIcon({
 
 type NodeStatusFilter = 'all' | 'online' | 'stale' | 'offline';
 
-interface Props {
+export interface NodeListPanelProps {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   onNodeClick: (node: MeshNode) => void;
@@ -224,9 +225,13 @@ interface Props {
   onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
   /** Node shown in the detail pane; its row is highlighted. */
   selectedNodeId?: number | null;
+  /** When false (parked after visit), skip heavy DM-peer derivation. */
+  active?: boolean;
 }
 
-export default function NodeListPanel({
+const EMPTY_DM_PEER_INDEX = new Map<number, ChatDmPeerIndexEntry>();
+
+function NodeListPanel({
   nodes,
   myNodeNum,
   onNodeClick,
@@ -250,7 +255,8 @@ export default function NodeListPanel({
   onShowOnMap,
   onOffloadContactsFromRadio,
   selectedNodeId = null,
-}: Props) {
+  active = true,
+}: NodeListPanelProps) {
   const { addToast } = useToast();
   const { t } = useTranslation();
   const iconTrigger = useIconTrigger();
@@ -275,9 +281,15 @@ export default function NodeListPanel({
   const [statusFilter, setStatusFilter] = useState<NodeStatusFilter>('all');
   const [importLoading, setImportLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
+  /**
+   * Session sticky DM peers seen in the live in-memory window. Avoids dropping History
+   * entries after MAX_IN_MEMORY eviction without re-querying SQLite on every insert.
+   */
+  const sessionDmPeersRef = useRef<Map<number, ChatDmPeerDbRow>>(new Map());
 
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
+  const dbHydrationRevision = useDbHydrationRevision();
   const ownNodeIdSet = useMemo(() => new Set([myNodeNum >>> 0]), [myNodeNum]);
   const meshcoreExcludedDmPeerIds = useMemo(() => {
     if (mode !== 'meshcore') return null;
@@ -295,6 +307,10 @@ export default function NodeListPanel({
     () => (mode === 'meshcore' ? { excludeDmPeer } : undefined),
     [excludeDmPeer, mode],
   );
+
+  useEffect(() => {
+    sessionDmPeersRef.current = new Map();
+  }, [mode, myNodeNum]);
 
   useEffect(() => {
     let cancelled = false;
@@ -318,12 +334,25 @@ export default function NodeListPanel({
     return () => {
       cancelled = true;
     };
-  }, [mode, myNodeNum, identityMessages.length]);
+  }, [mode, myNodeNum, dbHydrationRevision]);
 
   const dmPeerIndex = useMemo(() => {
+    if (!active) return EMPTY_DM_PEER_INDEX;
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
-    const merged = mergeChatDmPeerDbRows(fromMemory, dbDmPeers);
+    for (const [peerId, entry] of fromMemory) {
+      const prev = sessionDmPeersRef.current.get(peerId);
+      if (!prev || entry.lastMessageAt > prev.last_message_at) {
+        sessionDmPeersRef.current.set(peerId, {
+          node_id: peerId,
+          last_message_at: entry.lastMessageAt,
+        });
+      }
+    }
+    const merged = mergeChatDmPeerDbRows(
+      mergeChatDmPeerDbRows(fromMemory, [...sessionDmPeersRef.current.values()]),
+      dbDmPeers,
+    );
     if (mode !== 'meshcore' || !meshcoreExcludedDmPeerIds) return merged;
     // Drop Room/Repeater peers even if SQLite still has DM-shaped rows.
     for (const peer of [...merged.keys()]) {
@@ -331,6 +360,7 @@ export default function NodeListPanel({
     }
     return merged;
   }, [
+    active,
     chatUnreadDmOptions,
     dbDmPeers,
     identityMessages,
@@ -1782,3 +1812,5 @@ export default function NodeListPanel({
     </div>
   );
 }
+
+export default memo(NodeListPanel);

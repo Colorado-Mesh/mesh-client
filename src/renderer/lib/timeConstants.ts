@@ -498,3 +498,9 @@ export const PICKER_RSSI_REORDER_DEBOUNCE_MS = MS_PER_SECOND;
 
 /** TAK map contacts: drop contacts past their CoT stale time between main's update batches. */
 export const TAK_CONTACT_LOCAL_PRUNE_MS = 30 * MS_PER_SECOND;
+
+/**
+ * Max age for a queued room-macro text apply before peek/take discard it.
+ * Covers tab switch + destination composer mount; stale applies must not fire later.
+ */
+export const ROOM_MACRO_TEXT_APPLY_TTL_MS = 30 * MS_PER_SECOND;

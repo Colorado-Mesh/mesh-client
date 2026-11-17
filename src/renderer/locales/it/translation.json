@@ -7558,7 +7558,6 @@
     "footerClose": "Chiudi",
     "footerOsKeys": "Il tuo sistema operativo potrebbe mantenere alcuni tasti F",
     "footerAutoSave": "Salva automaticamente",
-    "whenUsedTextOnly": "Si applica solo alle macro dei messaggi.",
     "actionLabel": "Action",
     "actionText": "Messaggio",
     "actionRoom": "Vai alla stanza",
@@ -7569,7 +7568,11 @@
     "roomGroupRrc": "Sale RRC",
     "roomGroupSaved": "Salvato",
     "jumpToRoomAria": "{{key}}: vai a {{label}}",
-    "roomGroupChatChannels": "Canali di chat"
+    "roomGroupChatChannels": "Canali di chat",
+    "whenUsedRoomHelp": "Per gli slot Vai alla stanza, un messaggio facoltativo viene inserito nella casella o inviato dopo il passaggio.",
+    "roomTextPlaceholder": "Messaggio facoltativo dopo il salto",
+    "roomTextAria": "{{key}} messaggio facoltativo dopo il salto",
+    "roomTextApplyFailed": "Impossibile applicare il messaggio macro dopo essere passati alla stanza."
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",
