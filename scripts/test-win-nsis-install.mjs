@@ -8,10 +8,12 @@
  * With `--launch`, also boots the installed exe via the shared packaged-launch
  * smoke engine (renderer-loaded marker under a throwaway --user-data-dir).
  *
- * Diagnostics for CI upload land under `$RUNNER_TEMP` (or os.tmpdir() locally):
- *   mesh-client-install-${arch}.log
- *   mesh-client-win-${arch}-launch-diagnostics/**
- * Private mkdtemp work dirs are still deleted in `finally`.
+ * Diagnostics for CI upload land under unique mkdtemp dirs in `$RUNNER_TEMP`
+ * (or os.tmpdir() locally); workflows glob prefixes:
+ *   mesh-client-install-${arch}-
+ *   mesh-client-win-${arch}-launch-diagnostics-
+ *   mesh-client-7z-probe-
+ * Private install/probe work dirs are still deleted in `finally`.
  *
  * Usage (Windows CI only):
  *   node scripts/test-win-nsis-install.mjs --arch x64|arm64 [--probe-7z] [--launch]
@@ -55,19 +57,19 @@ function runnerTempRoot() {
 }
 
 /**
- * Copy/write a file into RUNNER_TEMP so workflow upload-artifact steps can find it
- * after private mkdtemp dirs are removed.
- * @param {string} destName basename under RUNNER_TEMP
+ * Copy the NSIS install log into a unique RUNNER_TEMP dir for upload-artifact
+ * after the private workDir is removed.
+ * @param {'x64' | 'arm64'} arch
  * @param {string} sourcePath
  */
-function persistInstallLog(destName, sourcePath) {
+function persistInstallLog(arch, sourcePath) {
   if (!existsSync(sourcePath)) return;
-  const dest = path.join(runnerTempRoot(), destName);
   try {
-    copyFileSync(sourcePath, dest);
+    const destDir = mkdtempSync(path.join(runnerTempRoot(), `mesh-client-install-${arch}-`));
+    copyFileSync(sourcePath, path.join(destDir, `mesh-client-install-${arch}.log`));
   } catch (e) {
     console.warn(
-      `[test-win-nsis-install] Failed to persist install log to ${dest}: ${e instanceof Error ? e.message : String(e)}`,
+      `[test-win-nsis-install] Failed to persist install log: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
 }
@@ -78,8 +80,9 @@ function persistInstallLog(destName, sourcePath) {
  * @param {string} message
  */
 function writeLaunchDiagnostics(arch, userDataDir, message) {
-  const outDir = path.join(runnerTempRoot(), `mesh-client-win-${arch}-launch-diagnostics`);
-  mkdirSync(outDir, { recursive: true });
+  const outDir = mkdtempSync(
+    path.join(runnerTempRoot(), `mesh-client-win-${arch}-launch-diagnostics-`),
+  );
   writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
   const logPath = path.join(userDataDir, LOG_FILENAME);
   if (existsSync(logPath)) {
@@ -234,13 +237,12 @@ async function main(arch, probe7z, launch) {
 
   if (probe7z) {
     const probeDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-7z-probe-'));
-    const probeUploadDir = path.join(runnerTempRoot(), 'mesh-client-7z-probe');
     try {
       probe7zExtract(installerPath, probeDir, arch);
     } catch (e) {
-      // Best-effort: copy probe tree for CI upload before private dir is removed.
+      // Best-effort: unique RUNNER_TEMP dir for CI upload before private dir is removed.
       try {
-        mkdirSync(probeUploadDir, { recursive: true });
+        const probeUploadDir = mkdtempSync(path.join(runnerTempRoot(), 'mesh-client-7z-probe-'));
         writeFileSync(
           path.join(probeUploadDir, 'probe-error.txt'),
           e instanceof Error ? e.message : String(e),
@@ -270,7 +272,7 @@ async function main(arch, probe7z, launch) {
     console.debug(`[test-win-nsis-install] Installing ${installer} → ${instDir}`);
     const installStatus = run(installerPath, ['/S', `/LOG=${logPath}`]);
     // Always persist for CI upload (success or failure); workDir is deleted in finally.
-    persistInstallLog(installLogName, logPath);
+    persistInstallLog(arch, logPath);
 
     if (installStatus !== 0) {
       if (existsSync(logPath)) {

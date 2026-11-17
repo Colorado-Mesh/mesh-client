@@ -16,7 +16,7 @@
  * Set MESH_CLIENT_KEEP_TEMP=1 to skip rmSync of extract/userData dirs (assertions
  * unchanged). MESH_CLIENT_APP_NAME overrides the productName (default Mesh-client).
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -66,8 +66,9 @@ export function pickHostArchZip(matches, hostArch) {
  */
 function writeLaunchDiagnostics(userDataDir, message) {
   const runnerTemp = process.env.RUNNER_TEMP || tmpdir();
-  const outDir = path.join(runnerTemp, 'mesh-client-mac-launch-diagnostics');
-  mkdirSync(outDir, { recursive: true });
+  // Unique dir under RUNNER_TEMP so CI can glob mesh-client-mac-launch-diagnostics-*/**
+  // without using a predictable fixed path (CodeQL js/insecure-temporary-file).
+  const outDir = mkdtempSync(path.join(runnerTemp, 'mesh-client-mac-launch-diagnostics-'));
   writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
   const logPath = path.join(userDataDir, LOG_FILENAME);
   if (existsSync(logPath)) {
