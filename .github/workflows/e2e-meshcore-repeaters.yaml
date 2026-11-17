@@ -13,7 +13,7 @@ permissions:
 # scripts/e2e-meshcore-repeaters-workflow.test.mjs checks that every path below matches a file.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'src/renderer/runtime/useMeshcoreRuntime.ts'
       - 'src/renderer/lib/meshcore*.ts'

@@ -192,8 +192,8 @@ describe('CodeQL advanced workflow', () => {
 
   it('scans protected events and retains independent per-language SARIF artifacts', () => {
     expect(workflow.on).toEqual({
-      push: { branches: ['main'] },
-      pull_request: { branches: ['main'] },
+      push: { branches: ['main', 'staging'] },
+      pull_request: { branches: ['main', 'staging'] },
       merge_group: null,
       schedule: [{ cron: '23 7 * * 1' }],
       workflow_dispatch: null,

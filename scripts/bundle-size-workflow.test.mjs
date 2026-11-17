@@ -62,7 +62,7 @@ describe('always-on bundle workflow', () => {
     expect(workflow.on).not.toHaveProperty('pull_request_target');
     expect(workflow.on).toHaveProperty('merge_group');
     expect(workflow.on).toHaveProperty('workflow_dispatch');
-    expect(workflow.on.push).toEqual({ branches: ['main'] });
+    expect(workflow.on.push).toEqual({ branches: ['main', 'staging'] });
   });
 
   it.each([

@@ -40,6 +40,10 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # Feature PRs target staging. CodeRabbit reviews the default branch plus these, so staging
+    # PRs stay reviewed whichever branch is default; promotion PRs to main repeat reviewed work.
+    base_branches:
+      - '^staging$'
     auto_pause_after_reviewed_commits: 2
     exclude_user_handles:
       - 'dependabot[bot]'

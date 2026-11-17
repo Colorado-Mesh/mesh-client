@@ -8,7 +8,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
     tags: ['v*']
     paths:
       - 'reticulum-sidecar/**'

@@ -2,9 +2,9 @@ name: CodeQL (advanced)
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
   merge_group:
   schedule:
     - cron: '23 7 * * 1'

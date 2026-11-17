@@ -11,7 +11,7 @@ on:
     # Include retargeting and draft transitions; stacked and fork PRs use this too.
     types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft]
   push:
-    branches: [main]
+    branches: [main, staging]
   merge_group:
   workflow_dispatch:
 

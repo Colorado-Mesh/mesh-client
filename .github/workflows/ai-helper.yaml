@@ -7,7 +7,7 @@ on:
       - 'scripts/lib/stage-mlx-helper.mjs'
       - '.github/workflows/ai-helper.yaml'
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'native/ai/**'
       - 'scripts/build-ai-helper.mjs'

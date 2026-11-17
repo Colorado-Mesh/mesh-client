@@ -5,7 +5,8 @@
  *
  * Usage: pnpm run check:pr
  *
- * Merge-base: origin/main when available; otherwise skips sidecar path detection
+ * Merge-base: origin/staging (the branch pull requests target), falling back to
+ * origin/main before staging exists; otherwise skips sidecar path detection
  * (still runs sidecar check only if forced via env — not used by default).
  */
 import { spawnSync } from 'node:child_process';
@@ -40,11 +41,12 @@ function run(cmd, args) {
 
 /**
  * @param {string} gitArgs
+ * @param {string} [cwd]
  * @returns {string}
  */
-function gitStdout(gitArgs) {
+function gitStdout(gitArgs, cwd = ROOT) {
   const result = spawnSync('git', gitArgs.split(' '), {
-    cwd: ROOT,
+    cwd,
     encoding: 'utf8',
     shell: false,
   });
@@ -53,17 +55,23 @@ function gitStdout(gitArgs) {
 }
 
 /**
- * @returns {string | null} merge-base SHA, or null if unavailable
+ * Merge-base with the branch this work will merge into: staging (where pull requests go),
+ * or main before staging exists.
+ * @param {{ cwd?: string }} [options]
+ * @returns {{ branch: 'staging' | 'main', mergeBase: string } | null}
  */
-export function resolveOriginMainMergeBase() {
-  const hasOriginMain = spawnSync('git', ['rev-parse', '--verify', 'origin/main'], {
-    cwd: ROOT,
-    stdio: 'ignore',
-    shell: false,
-  });
-  if (hasOriginMain.status !== 0) return null;
-  const mb = gitStdout('merge-base HEAD origin/main');
-  return mb || null;
+export function resolvePrMergeBase({ cwd = ROOT } = {}) {
+  for (const branch of /** @type {const} */ (['staging', 'main'])) {
+    const exists = spawnSync('git', ['rev-parse', '--verify', `origin/${branch}`], {
+      cwd,
+      stdio: 'ignore',
+      shell: false,
+    });
+    if (exists.status !== 0) continue;
+    const mergeBase = gitStdout(`merge-base HEAD origin/${branch}`, cwd);
+    return mergeBase ? { branch, mergeBase } : null;
+  }
+  return null;
 }
 
 /**
@@ -106,21 +114,21 @@ export function main() {
     if (code !== 0) return code;
   }
 
-  const mergeBase = resolveOriginMainMergeBase();
-  if (!mergeBase) {
+  const base = resolvePrMergeBase();
+  if (!base) {
     console.error(
-      'check:pr: skip sidecar path check (origin/main unavailable); run pnpm run check:reticulum-sidecar manually if needed',
+      'check:pr: skip sidecar path check (origin/staging and origin/main unavailable); run pnpm run check:reticulum-sidecar manually if needed',
     );
     return 0;
   }
 
-  const changed = listChangedPathsVsMergeBase(mergeBase);
+  const changed = listChangedPathsVsMergeBase(base.mergeBase);
   if (branchTouchesSidecar(changed)) {
     const code = run('pnpm', ['run', 'check:reticulum-sidecar']);
     if (code !== 0) return code;
   } else {
     console.error(
-      'check:pr: skip check:reticulum-sidecar (no sidecar paths in branch vs origin/main)',
+      `check:pr: skip check:reticulum-sidecar (no sidecar paths in branch vs origin/${base.branch})`,
     );
   }
 

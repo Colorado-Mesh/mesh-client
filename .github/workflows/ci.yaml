@@ -8,10 +8,10 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
-  # Merge queue temporary refs (required when main uses a merge queue ruleset).
+    branches: [main, staging]
+  # Merge queue temporary refs (required while a branch uses a merge queue ruleset).
   merge_group:
   workflow_dispatch:
 

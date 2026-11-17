@@ -131,7 +131,12 @@ describe('privileged workflow boundaries', () => {
     const licenses = loadWorkflow('third-party-licenses');
     const source = read('.github/workflows/third-party-licenses.yaml');
     expect(licenses.on.workflow_dispatch).toBeUndefined();
-    expect(licenses.on.push.branches).toEqual(['main']);
+    // Dependency changes land on staging; main only receives promotions.
+    expect(licenses.on.push.branches).toEqual(['staging']);
+    const licenseCheckout = licenses.jobs.update.steps.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(licenseCheckout.with.ref).toBe('staging');
     expect(licenses.jobs.update.environment).toBe('license-automation');
     expect(licenses.permissions).toEqual({ contents: 'read' });
     expect(licenses.jobs.update.permissions).toEqual({
@@ -147,6 +152,7 @@ describe('privileged workflow boundaries', () => {
     const createPr = licenses.jobs.update.steps.find((step) => step.name === 'Create pull request');
     expect(createPr.with.token).toBe('${{ secrets.LICENSE_PR_TOKEN }}');
     expect(createPr.with['add-paths'].trim()).toBe('docs/third-party-licenses.md');
+    expect(createPr.with.base).toBe('staging');
     expect(stepNames).toContain('Require LICENSE_PR_TOKEN for unattended merge');
     expect(stepNames).toContain('Admin-merge license documentation PR');
     expect(source).toContain('gh pr merge');

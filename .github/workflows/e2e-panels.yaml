@@ -12,7 +12,7 @@ permissions:
 # scripts/e2e-panels-workflow.test.mjs checks that every path below matches a file.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'src/renderer/App.tsx'
       - 'src/renderer/lazyTabPanels.ts'

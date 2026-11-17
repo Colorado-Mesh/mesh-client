@@ -4,11 +4,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
-# Schedules only run on the default branch (main). workflow_dispatch can run from any branch.
+# Schedules only run on the default branch (staging, which holds what ships next).
+# Pull requests to main are promotions and hotfixes: the 3-OS E2E and the release
+# preflight run on each one before it can release, and the Promotion Doctor waits for them.
+# workflow_dispatch can run from any branch.
 on:
   schedule:
-    # Daily 09:00 UTC — restricted to main via job `if` below as defense in depth.
+    # Daily 09:00 UTC: restricted to staging or main via the job `if` below as defense in depth.
     - cron: '0 9 * * *'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +23,9 @@ concurrency:
 jobs:
   e2e:
     name: Electron E2E (${{ matrix.os }})
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main'
     permissions:
       contents: read
     runs-on: ${{ matrix.os }}
@@ -105,12 +112,14 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # scripts/release.sh pre-flight on a fresh runner with the same composites as
-  # cut-release.yaml, stopping before any bump, tag, or push. Catches release-only
-  # breakage a warm local checkout hides (e.g. a check that needs .rsstack/).
+  # scripts/release.sh pre-flight on a fresh runner, stopping before any bump, tag, or
+  # push. On a promotion it checks the exact tree that will be tagged; daily it catches
+  # release-only breakage a warm local checkout hides (e.g. a check that needs .rsstack/).
   release-preflight:
     name: Release preflight
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main'
     permissions:
       contents: read
     runs-on: ubuntu-latest

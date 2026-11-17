@@ -6,9 +6,11 @@ env:
 permissions:
   contents: read
 
+# Dependency changes land on staging (main only receives promotions), so the
+# regenerated license document goes to staging too and ships with the next promotion.
 on:
   push:
-    branches: [main]
+    branches: [staging]
     paths:
       - package.json
       - pnpm-lock.yaml
@@ -38,11 +40,11 @@ jobs:
       # actions/checkout v6.1.0
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: main
+          ref: staging
           persist-credentials: false
 
       # Rust sidecar tables need cargo metadata --all-features (Ratspeak path deps).
-      # Without this, docs:licenses writes the "run locally" stub and PRs regress main.
+      # Without this, docs:licenses writes the "run locally" stub and PRs regress staging.
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad, rsLXST, lrgp-rs)
         shell: bash
         env:
@@ -90,12 +92,12 @@ jobs:
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
 
-      # Open a PR instead of pushing to main — the merge-queue ruleset blocks
+      # Open a PR instead of pushing to staging — the merge-queue ruleset blocks
       # direct pushes, and GitHub Actions cannot be added as a bypass actor
       # on this org (“must be part of the ruleset source or owner organization”).
       # LICENSE_PR_TOKEN (repo-admin PAT on license-automation) opens the PR and
       # admin-merges it so docs-only license updates need no maintainer review.
-      # Unique branch per run avoids thrashing one tip under concurrent main pushes.
+      # Unique branch per run avoids thrashing one tip under concurrent staging pushes.
       - name: Require LICENSE_PR_TOKEN for unattended merge
         if: steps.licenses_diff.outputs.changed == 'true'
         env:
@@ -122,9 +124,9 @@ jobs:
             Regenerated `docs/third-party-licenses.md` after dependency changes.
 
             Opened and admin-merged automatically by `third-party-licenses.yaml`
-            via `LICENSE_PR_TOKEN` (direct pushes to `main` are blocked by the
+            via `LICENSE_PR_TOKEN` (direct pushes to `staging` are blocked by the
             merge-queue ruleset; this docs-only PR is validated in-job before merge).
-          base: main
+          base: staging
           branch: chore/third-party-licenses-${{ github.run_id }}
           delete-branch: true
           add-paths: |

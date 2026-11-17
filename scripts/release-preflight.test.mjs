@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { existsSync, readFileSync } from 'node:fs';
 
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 const cutRelease = readFileSync('.github/workflows/cut-release.yaml', 'utf8');
@@ -9,10 +10,11 @@ const toolchain = readFileSync('.github/actions/setup-release-toolchain/action.y
 const preflightJob = e2e.slice(e2e.indexOf('\n  release-preflight:'));
 
 describe('Release preflight (e2e.yaml job)', () => {
-  it('is a job in e2e.yaml, not a standalone PR workflow', () => {
+  it('is a job in e2e.yaml that gates only pull requests to main', () => {
     expect(e2e).toContain('\n  release-preflight:');
     expect(existsSync('.github/workflows/release-preflight.yaml')).toBe(false);
-    expect(e2e).not.toMatch(/^\s*pull_request:/m);
+    // Promotions and hotfixes are the release gate; feature pull requests to staging skip it.
+    expect(yaml.load(e2e).on.pull_request).toEqual({ branches: ['main'] });
   });
 
   it('runs the release tooling in the preflight job; Cut release only tags', () => {
@@ -45,9 +47,13 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(preflightJob).toMatch(/permissions:\s*\n\s*contents: read/);
     expect(preflightJob).not.toContain('RELEASE_PUSH_TOKEN');
     expect(preflightJob).toContain("MESH_CLIENT_RELEASE_PARSE_ONLY: ''");
-    expect(preflightJob).toContain(
-      "if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'",
-    );
+    // Schedules run on the default branch: staging after the switch, main before it.
+    const guard =
+      "github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || " +
+      "github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main'";
+    const jobs = yaml.load(e2e).jobs;
+    expect(jobs['release-preflight'].if).toBe(guard);
+    expect(jobs.e2e.if).toBe(guard);
   });
 
   it('keeps the admin token out of checkout, planning and tag creation', () => {
