@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import {
   LaunchSmokeError,
   baseLaunchArgs,
   launchAndAssert,
+  rmTempDirBestEffort,
 } from './packaged-launch-smoke.mjs';
 
 /** Must match STDIO_TAIL_MAX in packaged-launch-smoke.mjs. */
@@ -23,6 +24,54 @@ afterEach(() => {
 describe('baseLaunchArgs', () => {
   it('returns exactly one --user-data-dir argument', () => {
     expect(baseLaunchArgs('/tmp/ud')).toEqual(['--user-data-dir=/tmp/ud']);
+  });
+});
+
+describe('rmTempDirBestEffort', () => {
+  it('removes an empty temp dir', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-rm-ok-'));
+    await rmTempDirBestEffort(dir);
+    expect(existsSync(dir)).toBe(false);
+  });
+
+  it('retries EBUSY then succeeds without throwing', async () => {
+    const sleep = vi.fn(async () => {});
+    const ebusy = Object.assign(new Error('EBUSY: resource busy'), { code: 'EBUSY' });
+    const rm = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw ebusy;
+      })
+      .mockImplementationOnce(() => {});
+    await rmTempDirBestEffort('/tmp/mesh-fake-ud', {
+      retries: 3,
+      delayMs: 1,
+      rm,
+      sleep,
+      label: 'test-rm',
+    });
+    expect(rm).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it('warns and does not throw after exhausting EBUSY retries', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const sleep = vi.fn(async () => {});
+    const ebusy = Object.assign(new Error('EBUSY: resource busy'), { code: 'EBUSY' });
+    const rm = vi.fn(() => {
+      throw ebusy;
+    });
+    await expect(
+      rmTempDirBestEffort('/tmp/mesh-fake-ud-stuck', {
+        retries: 2,
+        delayMs: 1,
+        rm,
+        sleep,
+        label: 'test-rm',
+      }),
+    ).resolves.toBeUndefined();
+    expect(rm).toHaveBeenCalledTimes(3);
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/\[test-rm\] left temp dir .*EBUSY/));
   });
 });
 
