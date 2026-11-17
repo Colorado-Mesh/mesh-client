@@ -36,6 +36,7 @@ import {
   prNumberFromSubject,
   PROMOTION_TITLE_PREFIX,
   RELEASE_NOTES_HEADING,
+  RELEASE_SUBJECT_RE,
   SCHEMA_HEADING,
 } from './promotionNotes.mjs';
 import {
@@ -113,11 +114,22 @@ export function checkPromotionShape({ cwd, headSha, mainSha, stagingSha }) {
     results.push(pass('Staging snapshot', `Ships staging at ${short(snapshot)}.`));
     const newer = Number(git(cwd, ['rev-list', '--count', `${snapshot}..${stagingSha}`]));
     if (newer > 0) {
+      // A newer version bump means promotion:open rebuilt this promotion for another version;
+      // merging this one would tag a version that staging has already replaced.
+      const bump = git(cwd, ['log', '--format=%s', `${snapshot}..${stagingSha}`])
+        .split('\n')
+        .map((subject) => subject.trim())
+        .find((subject) => RELEASE_SUBJECT_RE.test(subject));
       results.push(
-        info(
-          'Staging moved on',
-          `${newer} newer staging commit(s) will ship in the next promotion; ${REBUILD} to include them now.`,
-        ),
+        bump
+          ? fail(
+              'Superseded',
+              `staging has a newer version bump (${bump}), so this promotion is out of date; ${REBUILD}.`,
+            )
+          : info(
+              'Staging moved on',
+              `${newer} newer staging commit(s) will ship in the next promotion; ${REBUILD} to include them now.`,
+            ),
       );
     }
   }

@@ -297,6 +297,25 @@ describe('runDoctor on promotions', { timeout: 60_000 }, () => {
     expect(detailOf(result, 'Staging moved on')).toContain('1 newer');
   });
 
+  it('fails a promotion that a newer version bump on staging superseded', async () => {
+    const fixture = released();
+    land(fixture.seed, 'staging', { 'a.txt': 'a\n' }, 'fix: a (#1)');
+    const stale = await promotion(fixture);
+    land(fixture.seed, 'staging', { 'b.txt': 'b\n' }, 'feat: b (#2)');
+    await promotion(fixture);
+    const pr = publishPull(fixture.remote, stale.branch, stale.sha, {
+      title: stale.title,
+      body: stale.body,
+    });
+
+    const result = await doctor(fixture, apiFor(fixture.remote, pr));
+
+    expect(result.ok).toBe(false);
+    expect(statusOf(result, 'Superseded')).toEqual(['fail']);
+    expect(detailOf(result, 'Superseded')).toContain('chore: release v1.1.0');
+    expect(statusOf(result, 'Staging moved on')).toEqual([]);
+  });
+
   it('fails when main has moved past the first parent', async () => {
     const fixture = released();
     land(fixture.seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
