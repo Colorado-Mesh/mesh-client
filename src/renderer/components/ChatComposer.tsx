@@ -41,6 +41,7 @@ import {
   navigateRoomMacroAndMaybeQueueText,
   resolveMeshcoreRoomNodeIdDefault,
   resolveRoomMacroPlan,
+  restorePendingRoomMacroTextApply,
   type RoomMacroPlanMatcher,
   subscribeRoomMacroTextApply,
   takePendingRoomMacroTextApplyIfMatch,
@@ -1035,14 +1036,17 @@ export function ChatComposer({
   const pendingMacroSendRef = useRef<string | null>(null);
   const canTypeInComposer = !disabled && (isConnected || allowOutbox);
 
-  /** Insert/send slot text only (no room navigate). Used by message macros and post-jump consume. */
+  /**
+   * Insert/send slot text only (no room navigate). Used by message macros and post-jump consume.
+   * `opts.text` applies a captured string (room-jump queue) instead of re-reading the slot.
+   */
   const applyMacroText = useCallback(
-    (index: number, opts?: { markUsed?: boolean }): boolean => {
+    (index: number, opts?: { markUsed?: boolean; text?: string }): boolean => {
       const macros = useChatMacrosStore.getState();
       const slot = macros.slots[index];
-      if (!slot || slot.text.trim() === '') return false;
+      const text = (opts?.text ?? slot?.text ?? '').trim();
+      if (text === '') return false;
       if (!canTypeInComposer) return false;
-      const text = slot.text.trim();
       const current = inputValueRef.current;
       const textarea = inputRef.current;
       const shouldMarkUsed = opts?.markUsed !== false;
@@ -1104,24 +1108,34 @@ export function ChatComposer({
   }, [input, handleSend]);
 
   const applyMacroRef = useRef(applyMacro);
-  applyMacroRef.current = applyMacro;
   const applyMacroTextRef = useRef(applyMacroText);
-  applyMacroTextRef.current = applyMacroText;
   const roomMacroMatchRef = useRef(roomMacroMatch);
-  roomMacroMatchRef.current = roomMacroMatch;
+  useLayoutEffect(() => {
+    applyMacroRef.current = applyMacro;
+    applyMacroTextRef.current = applyMacroText;
+    roomMacroMatchRef.current = roomMacroMatch;
+  }, [applyMacro, applyMacroText, roomMacroMatch]);
 
   useEffect(() => {
     if (!roomMacroMatch || !canTypeInComposer) return;
     const tryConsume = () => {
       const matcher = roomMacroMatchRef.current;
       if (!matcher) return;
-      const slotIndex = takePendingRoomMacroTextApplyIfMatch(matcher);
-      if (slotIndex == null) return;
-      applyMacroTextRef.current(slotIndex, { markUsed: false });
+      const pending = takePendingRoomMacroTextApplyIfMatch(matcher);
+      if (!pending) return;
+      const applied = applyMacroTextRef.current(pending.slotIndex, {
+        markUsed: false,
+        text: pending.text,
+      });
+      if (!applied) {
+        // Keep text for retry when deps change; no notify — avoid re-entering this listener.
+        restorePendingRoomMacroTextApply(pending, { notify: false });
+        addToast(t('chatMacros.roomTextApplyFailed'), 'warning');
+      }
     };
     tryConsume();
     return subscribeRoomMacroTextApply(tryConsume);
-  }, [roomMacroMatch, canTypeInComposer]);
+  }, [roomMacroMatch, canTypeInComposer, addToast, t]);
 
   useEffect(() => {
     if (!showMacros) return;

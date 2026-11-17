@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "실시간 채팅 채널",
     "whenUsedRoomHelp": "'방으로 이동' 슬롯의 경우, 선택 사항인 메시지가 상자에 표시되거나 이동 후에 전송됩니다.",
     "roomTextPlaceholder": "점프 후 선택적 메시지",
-    "roomTextAria": "{{key}} 점프 후 선택적 메시지"
+    "roomTextAria": "{{key}} 점프 후 선택적 메시지",
+    "roomTextApplyFailed": "채팅방으로 이동한 후 매크로 메시지를 적용할 수 없었습니다."
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} 에 대한 예측: {{temp}}",

@@ -23,6 +23,7 @@ describe('perfTrace', () => {
     });
     const mod = await import('./perfTrace');
     expect(mod.PERF_TRACE_ENABLED).toBe(true);
+    expect(globalThis.__meshPerf).toBe(mod.perfReport);
     mod.perfReset();
     mod.perfSpanSync('unit-span', () => 'ok');
     mod.perfSpan('unit-span', () => undefined);

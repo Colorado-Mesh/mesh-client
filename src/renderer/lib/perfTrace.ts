@@ -83,6 +83,6 @@ declare global {
   var __meshPerf: (() => void) | undefined;
 }
 
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV || PERF_TRACE_ENABLED) {
   globalThis.__meshPerf = perfReport;
 }

@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Chat-Kanäle",
     "whenUsedRoomHelp": "Bei den Slots „Zum Raum springen“ wird eine optionale Nachricht in das Feld eingegeben oder nach dem Wechsel gesendet.",
     "roomTextPlaceholder": "Optionale Nachricht nach dem Sprung",
-    "roomTextAria": "{{key}} optionale Nachricht nach dem Sprung"
+    "roomTextAria": "{{key}} optionale Nachricht nach dem Sprung",
+    "roomTextApplyFailed": "Die Makronachricht konnte nach dem Wechseln in den Raum nicht angewendet werden."
   },
   "weatherForecast": {
     "areaAria": "Prognose für {{place}}, {{period}}: {{temp}}",

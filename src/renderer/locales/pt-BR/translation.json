@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Canais de chat",
     "whenUsedRoomHelp": "Para os espaços de Ir para a sala, uma mensagem opcional é colocada na caixa ou enviada após o salto.",
     "roomTextPlaceholder": "Mensagem opcional após o salto",
-    "roomTextAria": "{{key}} mensagem opcional após o salto"
+    "roomTextAria": "{{key}} mensagem opcional após o salto",
+    "roomTextApplyFailed": "Não foi possível aplicar a mensagem macro após entrar na sala."
   },
   "weatherForecast": {
     "areaAria": "Previsão para {{place}}, {{period}}: {{temp}}",

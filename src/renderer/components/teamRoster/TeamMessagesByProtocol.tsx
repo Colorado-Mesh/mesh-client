@@ -10,7 +10,10 @@ export interface TeamMessagesByProtocolProps extends AllProtocolChatMessagesOpti
   children: (messagesByProtocol: MessagesByProtocol) => ReactNode;
 }
 
-/** Fetches store→UI messages for team panels so AppContent need not pass arrays. */
+/**
+ * Store→UI messages for team-like surfaces that do not already have App’s
+ * `uiMessagesByProtocol`. Prefer passing that map from App when available.
+ */
 export function TeamMessagesByProtocol({ children, ...options }: TeamMessagesByProtocolProps) {
   const messagesByProtocol = useAllProtocolChatMessages(options);
   return <>{children(messagesByProtocol)}</>;

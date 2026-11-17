@@ -7689,7 +7689,8 @@
     "roomGroupChatChannels": "Kanały czatu",
     "whenUsedRoomHelp": "W przypadku opcji Przejdź do okienek pokoju w polu umieszczana jest opcjonalna wiadomość lub wysyłana jest ona po przejściu.",
     "roomTextPlaceholder": "Opcjonalna wiadomość po przejściu",
-    "roomTextAria": "{{key}} opcjonalna wiadomość po przejściu"
+    "roomTextAria": "{{key}} opcjonalna wiadomość po przejściu",
+    "roomTextApplyFailed": "Nie udało się zastosować wiadomości makra po przejściu do pokoju."
   },
   "weatherForecast": {
     "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",
