@@ -46,6 +46,7 @@ import {
   PACKAGE_JSON_PATH,
   parseSchemaVersion,
   readPackageVersion,
+  releaseBaseline,
   resolveNextVersion,
   restoreMetainfoRelease,
   SCHEMA_SOURCE_PATH,
@@ -298,8 +299,15 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
 
   const latestTag = latestReleaseTag(cwd, mainSha);
   if (!latestTag) throw new Error('No vX.Y.Z release tag is reachable from main');
-  const latestVersion = latestTag.slice(1);
-  const shipped = commitsInRange(cwd, `${latestTag}..${stagingTip}`, { noMerges: true }).filter(
+  // While main's last release waits for its tag, count from main's version and ship only what
+  // main does not have yet; that release's own changes are already on their way.
+  const baseline = releaseBaseline({
+    tagVersion: latestTag.slice(1),
+    mainVersion: readPackageVersion(showFile(cwd, mainSha, PACKAGE_JSON_PATH)),
+  });
+  const latestVersion = baseline.version;
+  const since = baseline.waiting ? mainSha : latestTag;
+  const shipped = commitsInRange(cwd, `${since}..${stagingTip}`, { noMerges: true }).filter(
     (commit) => !isBookkeepingSubject(commit.subject),
   );
   const detected = detectReleaseBump(
@@ -340,9 +348,7 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
   });
   const branch = release ? `release/v${version}` : `release/promote-staging-${today}`;
   const body = buildPromotionBody({
-    notes: buildReleaseNotes(
-      commitsInRange(cwd, `${latestTag}..${stagingTip}`, { noMerges: true }),
-    ),
+    notes: buildReleaseNotes(commitsInRange(cwd, `${since}..${stagingTip}`, { noMerges: true })),
     fromVersion: latestVersion,
     toVersion: release ? version : latestVersion,
     bumpReason: bumpReason(bump, detected),

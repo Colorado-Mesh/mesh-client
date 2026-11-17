@@ -12,6 +12,7 @@ import {
   PACKAGE_JSON_PATH,
   parseSchemaVersion,
   readPackageVersion,
+  releaseBaseline,
   resolveNextVersion,
   restoreMetainfoRelease,
   SCHEMA_SOURCE_PATH,
@@ -104,6 +105,33 @@ describe('resolveNextVersion', () => {
   it('rejects unknown bumps and auto without a detected kind', () => {
     expect(() => resolveNextVersion({ latestVersion: '6.8.0', bump: 'huge' })).toThrow(/bump/);
     expect(() => resolveNextVersion({ latestVersion: '6.8.0', bump: 'auto' })).toThrow(/detected/);
+  });
+});
+
+describe('releaseBaseline', () => {
+  it('counts from the latest tag when main carries that version', () => {
+    expect(releaseBaseline({ tagVersion: '6.8.0', mainVersion: '6.8.0' })).toEqual({
+      version: '6.8.0',
+      waiting: false,
+    });
+  });
+
+  it("counts from main's version while its release waits for the tag", () => {
+    expect(releaseBaseline({ tagVersion: '6.8.0', mainVersion: '6.9.0' })).toEqual({
+      version: '6.9.0',
+      waiting: true,
+    });
+  });
+
+  it('never counts from a version below the latest tag', () => {
+    expect(releaseBaseline({ tagVersion: '6.8.0', mainVersion: '6.7.2' })).toEqual({
+      version: '6.8.0',
+      waiting: false,
+    });
+  });
+
+  it('rejects versions that are not X.Y.Z', () => {
+    expect(() => releaseBaseline({ tagVersion: '6.8.0', mainVersion: 'next' })).toThrow(/X\.Y\.Z/);
   });
 });
 

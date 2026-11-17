@@ -45,6 +45,7 @@ import {
   PACKAGE_JSON_PATH,
   parseSchemaVersion,
   readPackageVersion,
+  releaseBaseline,
   resolveNextVersion,
   SCHEMA_SOURCE_PATH,
 } from './releaseVersion.mjs';
@@ -52,6 +53,31 @@ import {
 export const DOCTOR_CHECK_NAME = 'Promotion Doctor';
 const PASSING_CONCLUSIONS = new Set(['success', 'neutral', 'skipped']);
 const REBUILD = 'rebuild it with pnpm run promotion:open';
+
+/**
+ * The checks every promotion and hotfix must pass, from e2e.yaml: the Electron E2E on three
+ * operating systems and the release preflight. A gate passes only on `success`, and a gate with
+ * no run is waited for, never read as green. Names are matched by family: the Doctor runs from
+ * main while the check names come from the pull request's own e2e.yaml, so a promotion that
+ * moves the Linux runner to a newer image must not wait for the old name. A test pins these
+ * against e2e.yaml.
+ * @type {ReadonlyArray<{ label: string, prefix?: string, name?: string }>}
+ */
+export const REQUIRED_GATES = [
+  { label: 'Electron E2E', prefix: 'Electron E2E (' },
+  { label: 'Release preflight', name: 'Release preflight' },
+];
+
+/** How long the Doctor waits for any gate to start before it says how to start them. */
+const GATES_START_GRACE_MS = 15 * 60 * 1000;
+
+/**
+ * @param {{ prefix?: string, name?: string }} gate
+ * @param {string} checkName
+ */
+export function gateMatchesName(gate, checkName) {
+  return gate.prefix ? checkName.startsWith(gate.prefix) : checkName === gate.name;
+}
 
 /** @typedef {{ name: string, status: 'pass'|'fail'|'warn'|'info', detail: string }} Result */
 
@@ -78,6 +104,31 @@ export function classifyPullRequest(pr, { stagingExists }) {
 /** @param {string} cwd @param {string} sha @returns {string[]} */
 function parentsOf(cwd, sha) {
   return git(cwd, ['rev-list', '--parents', '-n', '1', sha]).split(' ').slice(1);
+}
+
+/**
+ * Staging commits after the promotion's snapshot. A version bump among them means
+ * promotion:open rebuilt the promotion for another version, so merging this one would tag a
+ * version staging has already replaced; other commits simply ship in the next promotion.
+ * @param {{ cwd: string, snapshot: string, stagingSha: string }} input
+ * @returns {Result | null}
+ */
+function checkStagingSince({ cwd, snapshot, stagingSha }) {
+  const newer = Number(git(cwd, ['rev-list', '--count', `${snapshot}..${stagingSha}`]));
+  if (newer === 0) return null;
+  const bump = git(cwd, ['log', '--format=%s', `${snapshot}..${stagingSha}`])
+    .split('\n')
+    .map((subject) => subject.trim())
+    .find((subject) => RELEASE_SUBJECT_RE.test(subject));
+  return bump
+    ? fail(
+        'Superseded',
+        `staging has a newer version bump (${bump}), so this promotion is out of date; ${REBUILD}.`,
+      )
+    : info(
+        'Staging moved on',
+        `${newer} newer staging commit(s) will ship in the next promotion; ${REBUILD} to include them now.`,
+      );
 }
 
 /**
@@ -112,26 +163,8 @@ export function checkPromotionShape({ cwd, headSha, mainSha, stagingSha }) {
     results.push(fail('Staging snapshot', `Staging ${short(snapshot)} is already in main.`));
   } else {
     results.push(pass('Staging snapshot', `Ships staging at ${short(snapshot)}.`));
-    const newer = Number(git(cwd, ['rev-list', '--count', `${snapshot}..${stagingSha}`]));
-    if (newer > 0) {
-      // A newer version bump means promotion:open rebuilt this promotion for another version;
-      // merging this one would tag a version that staging has already replaced.
-      const bump = git(cwd, ['log', '--format=%s', `${snapshot}..${stagingSha}`])
-        .split('\n')
-        .map((subject) => subject.trim())
-        .find((subject) => RELEASE_SUBJECT_RE.test(subject));
-      results.push(
-        bump
-          ? fail(
-              'Superseded',
-              `staging has a newer version bump (${bump}), so this promotion is out of date; ${REBUILD}.`,
-            )
-          : info(
-              'Staging moved on',
-              `${newer} newer staging commit(s) will ship in the next promotion; ${REBUILD} to include them now.`,
-            ),
-      );
-    }
+    const moved = checkStagingSince({ cwd, snapshot, stagingSha });
+    if (moved) results.push(moved);
   }
   if (treeOf(cwd, headSha) === treeOf(cwd, snapshot)) {
     results.push(
@@ -150,28 +183,39 @@ export function checkPromotionShape({ cwd, headSha, mainSha, stagingSha }) {
 }
 
 /**
- * @param {{ cwd: string, headSha: string, latestTag: string, tagExists: boolean }} input
+ * @param {{ cwd: string, headSha: string, mainSha: string, latestTag: string, tagExists: boolean }} input
  * @returns {Result[]}
  */
-export function checkReleaseVersion({ cwd, headSha, latestTag, tagExists }) {
+export function checkReleaseVersion({ cwd, headSha, mainSha, latestTag, tagExists }) {
   const version = readPackageVersion(showFile(cwd, headSha, PACKAGE_JSON_PATH));
-  const latest = latestTag.slice(1);
+  // A merged release whose tag still waits for approval leaves main's version ahead of the tag;
+  // that version is taken, so the new one is measured against it.
+  const baseline = releaseBaseline({
+    tagVersion: latestTag.slice(1),
+    mainVersion: readPackageVersion(showFile(cwd, mainSha, PACKAGE_JSON_PATH)),
+  });
+  const latest = baseline.version;
+  const latestLabel = baseline.waiting
+    ? `${latest}, which main carries while its release tag waits for approval`
+    : `the latest release ${latest}`;
   const results = [];
   if (version === latest) {
     results.push(info('Release', `No release: version stays ${version}, so merging does not tag.`));
   } else if (compareVersions(version, latest) < 0) {
-    results.push(
-      fail(
-        'Release version',
-        `package.json ${version} is lower than the latest release ${latest}.`,
-      ),
-    );
+    results.push(fail('Release version', `package.json ${version} is lower than ${latestLabel}.`));
   } else if (tagExists) {
     results.push(
       fail('Release version', `v${version} is already tagged; ${REBUILD} for a new version.`),
     );
   } else {
-    results.push(pass('Release version', `Merging releases v${version} (latest is ${latest}).`));
+    results.push(
+      pass(
+        'Release version',
+        baseline.waiting
+          ? `Merging releases v${version} (main carries ${latest}, whose tag waits for approval).`
+          : `Merging releases v${version} (latest is ${latest}).`,
+      ),
+    );
   }
   const top = parseTopReleaseVersion(showFile(cwd, headSha, METAINFO_PATH));
   results.push(
@@ -183,7 +227,8 @@ export function checkReleaseVersion({ cwd, headSha, latestTag, tagExists }) {
         ),
   );
   if (version !== latest) {
-    const shipped = commitsInRange(cwd, `${latestTag}..${headSha}`, { noMerges: true }).filter(
+    const since = baseline.waiting ? mainSha : latestTag;
+    const shipped = commitsInRange(cwd, `${since}..${headSha}`, { noMerges: true }).filter(
       (commit) => !isBookkeepingSubject(commit.subject),
     );
     const detected = detectReleaseBump(
@@ -290,7 +335,7 @@ export function checkHotfix({ cwd, headSha, mainSha, stagingSha, body, latestTag
   if (headVersion === mainVersion) {
     results.push(info('Release', 'No version change, so merging does not tag a release.'));
   } else {
-    results.push(...checkReleaseVersion({ cwd, headSha, latestTag, tagExists }));
+    results.push(...checkReleaseVersion({ cwd, headSha, mainSha, latestTag, tagExists }));
     if (!extractSection(body ?? '', RELEASE_NOTES_HEADING)) {
       results.push(
         fail(
@@ -310,14 +355,17 @@ export function checkHotfix({ cwd, headSha, mainSha, stagingSha, body, latestTag
 }
 
 /**
- * @param {{
- *   checkRuns: Array<{ id: number, name: string, status: string, conclusion: string | null, app?: { id?: number } }>,
- *   statuses: Array<{ context: string, state: string }>,
- *   selfName: string,
- * }} input
+ * @typedef {{ id: number, name: string, status: string, conclusion: string | null, app?: { id?: number } }} CheckRun
  */
-export function summarizeChecks({ checkRuns, statuses, selfName }) {
-  /** @type {Map<string, (typeof checkRuns)[number]>} */
+
+/**
+ * The newest attempt of each check (by app and name), leaving out the Doctor itself.
+ * @param {CheckRun[]} checkRuns
+ * @param {string} selfName
+ * @returns {CheckRun[]}
+ */
+function latestCheckRuns(checkRuns, selfName) {
+  /** @type {Map<string, CheckRun>} */
   const latest = new Map();
   for (const run of checkRuns) {
     if (run.name === selfName) continue;
@@ -325,8 +373,45 @@ export function summarizeChecks({ checkRuns, statuses, selfName }) {
     const current = latest.get(key);
     if (!current || run.id > current.id) latest.set(key, run);
   }
+  return [...latest.values()];
+}
+
+/**
+ * The required gates with no run yet, and gate runs that finished without success but with a
+ * conclusion the general summary counts as passing (skipped, neutral).
+ * @param {{ checkRuns: CheckRun[], selfName: string }} input
+ * @returns {{ missing: string[], notRun: string[] }}
+ */
+export function summarizeGates({ checkRuns, selfName }) {
+  const latest = latestCheckRuns(checkRuns, selfName);
+  const missing = [];
+  const notRun = [];
+  for (const gate of REQUIRED_GATES) {
+    const runs = latest.filter((run) => gateMatchesName(gate, run.name));
+    if (runs.length === 0) missing.push(gate.label);
+    for (const run of runs) {
+      if (
+        run.status === 'completed' &&
+        run.conclusion !== 'success' &&
+        PASSING_CONCLUSIONS.has(run.conclusion)
+      ) {
+        notRun.push(`${run.name} (${run.conclusion})`);
+      }
+    }
+  }
+  return { missing, notRun };
+}
+
+/**
+ * @param {{
+ *   checkRuns: CheckRun[],
+ *   statuses: Array<{ context: string, state: string }>,
+ *   selfName: string,
+ * }} input
+ */
+export function summarizeChecks({ checkRuns, statuses, selfName }) {
   const summary = { pending: [], failing: [], passing: [] };
-  for (const run of latest.values()) {
+  for (const run of latestCheckRuns(checkRuns, selfName)) {
     if (run.status !== 'completed') summary.pending.push(run.name);
     else if (PASSING_CONCLUSIONS.has(run.conclusion)) summary.passing.push(run.name);
     else summary.failing.push(`${run.name} (${run.conclusion})`);
@@ -362,27 +447,59 @@ export function renderSummary({ kind, results }) {
 /**
  * @param {{
  *   api: ReturnType<typeof createGithubApi>, headSha: string, waitForChecks: boolean,
- *   timeoutMs: number, pollMs: number, sleep: (ms: number) => Promise<void>, now: () => number,
+ *   timeoutMs: number, startGraceMs: number, pollMs: number,
+ *   sleep: (ms: number) => Promise<void>, now: () => number,
  * }} input
  * @returns {Promise<{ result: Result, waited: boolean }>}
  */
-async function waitForGreenChecks({ api, headSha, waitForChecks, timeoutMs, pollMs, sleep, now }) {
-  const deadline = now() + timeoutMs;
+async function waitForGreenChecks({
+  api,
+  headSha,
+  waitForChecks,
+  timeoutMs,
+  startGraceMs,
+  pollMs,
+  sleep,
+  now,
+}) {
+  const started = now();
+  const deadline = started + timeoutMs;
   let waited = false;
   for (;;) {
+    const checkRuns = await api.listCheckRuns(headSha);
     const summary = summarizeChecks({
-      checkRuns: await api.listCheckRuns(headSha),
+      checkRuns,
       statuses: await api.combinedStatuses(headSha),
       selfName: DOCTOR_CHECK_NAME,
     });
-    if (summary.failing.length > 0) {
-      return { result: fail('Checks', `Failing: ${summary.failing.join(', ')}.`), waited };
+    const gates = summarizeGates({ checkRuns, selfName: DOCTOR_CHECK_NAME });
+    const failing = [...summary.failing, ...gates.notRun];
+    if (failing.length > 0) {
+      return { result: fail('Checks', `Failing: ${failing.join(', ')}.`), waited };
     }
-    if (summary.pending.length === 0) {
+    if (summary.pending.length === 0 && gates.missing.length === 0) {
       return { result: pass('Checks', `${summary.passing.length} check(s) green.`), waited };
     }
+    // e2e.yaml starts on opened, reopened and synchronize only; a pull request retargeted to
+    // main from staging gets neither gate until something starts them.
+    if (
+      gates.missing.length === REQUIRED_GATES.length &&
+      (!waitForChecks || now() - started >= startGraceMs)
+    ) {
+      return {
+        result: fail(
+          'Checks',
+          `No run of ${gates.missing.join(' or ')} on ${short(headSha)}. A pull request to main starts them when it is opened, reopened or pushed to, but not when it is retargeted from another branch: close and reopen it, or push a commit.`,
+        ),
+        waited,
+      };
+    }
     if (!waitForChecks || now() >= deadline) {
-      return { result: fail('Checks', `Still pending: ${summary.pending.join(', ')}.`), waited };
+      const detail = [
+        summary.pending.length > 0 ? `Still pending: ${summary.pending.join(', ')}.` : '',
+        gates.missing.length > 0 ? `Not started: ${gates.missing.join(', ')}.` : '',
+      ];
+      return { result: fail('Checks', detail.filter(Boolean).join(' ')), waited };
     }
     await sleep(pollMs);
     waited = true;
@@ -393,7 +510,8 @@ async function waitForGreenChecks({ api, headSha, waitForChecks, timeoutMs, poll
  * @param {{
  *   prNumber: number, cwd: string, api: ReturnType<typeof createGithubApi>, remote: string,
  *   token?: string, requireGreenChecks: boolean, waitForChecks: boolean, timeoutMs: number,
- *   pollMs: number, sleep?: (ms: number) => Promise<void>, now?: () => number,
+ *   startGraceMs?: number, pollMs: number, sleep?: (ms: number) => Promise<void>,
+ *   now?: () => number,
  * }} options
  * @returns {Promise<{ ok: boolean, kind: string, results: Result[] }>}
  */
@@ -406,6 +524,7 @@ export async function runDoctor({
   requireGreenChecks,
   waitForChecks,
   timeoutMs,
+  startGraceMs = GATES_START_GRACE_MS,
   pollMs,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = Date.now,
@@ -486,7 +605,7 @@ export async function runDoctor({
 
   if (kind === 'promotion') {
     results.push(...checkPromotionShape({ cwd, headSha, mainSha, stagingSha }));
-    results.push(...checkReleaseVersion({ cwd, headSha, latestTag, tagExists }));
+    results.push(...checkReleaseVersion({ cwd, headSha, mainSha, latestTag, tagExists }));
     const parents = parentsOf(cwd, headSha);
     if (parents.length === 2) {
       results.push(
@@ -525,17 +644,29 @@ export async function runDoctor({
     headSha,
     waitForChecks,
     timeoutMs,
+    startGraceMs,
     pollMs,
     sleep,
     now,
   });
   results.push(checks.result);
   if (checks.waited && checks.result.status === 'pass') {
+    // The branch checks above ran before the wait, which can last hours; read both tips again.
     const freshMain = await api.branchSha('main');
     if (freshMain !== mainSha) {
       results.push(
         fail('Main moved', `main moved to ${short(freshMain)} while the checks ran; ${REBUILD}.`),
       );
+    }
+    const freshStaging = kind === 'promotion' ? await api.branchSha('staging') : stagingSha;
+    if (freshStaging && freshStaging !== stagingSha) {
+      fetchRefs(cwd, remote, [`+refs/heads/staging:refs/remotes/${remote}/staging`], { token });
+      const moved = checkStagingSince({
+        cwd,
+        snapshot: parentsOf(cwd, headSha)[1],
+        stagingSha: freshStaging,
+      });
+      if (moved?.status === 'fail') results.push(moved);
     }
   }
   return done(results);

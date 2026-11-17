@@ -51,7 +51,13 @@ describe('privileged workflow boundaries', () => {
     const source = read('.github/workflows/cut-release.yaml');
     expect(cut.on.push).toEqual({ branches: ['main'] });
     expect('workflow_dispatch' in cut.on).toBe(true);
-    expect(cut.concurrency).toEqual({ group: 'cut-release', 'cancel-in-progress': false });
+    // queue: max keeps every waiting run; the default keeps one and cancels the others, which
+    // could drop a releasing merge while an earlier run waits for approval.
+    expect(cut.concurrency).toEqual({
+      group: 'cut-release',
+      'cancel-in-progress': false,
+      queue: 'max',
+    });
 
     const { plan, tag } = cut.jobs;
     expect(plan.if).toBe("github.ref == 'refs/heads/main'");

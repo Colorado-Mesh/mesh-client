@@ -16,6 +16,8 @@ import { pathToFileURL } from 'node:url';
 import {
   METAINFO_PATH,
   PACKAGE_JSON_PATH,
+  readPackageVersion,
+  releaseBaseline,
   resolveNextVersion,
   setPackageVersion,
   upsertMetainfoRelease,
@@ -34,15 +36,32 @@ export function parseBumpArgument(argv) {
   return ['patch', 'minor', 'major'].includes(bump) || /^\d+\.\d+\.\d+$/.test(bump) ? bump : null;
 }
 
+const MAIN_REF = 'refs/remotes/origin/main';
+
 /**
+ * Count from the latest release tag, or from the version main carried where this branch left it
+ * when that release still waits for its tag, so a hotfix never reuses or lowers it. Running
+ * again on the same branch replaces the earlier bump instead of stacking a second one.
  * @param {{ cwd: string, bump: string, today: string }} options
  * @returns {{ version: string, latestVersion: string }}
  */
 export function runReleaseBump({ cwd, bump, today }) {
   const git = (args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
   const root = git(['rev-parse', '--show-toplevel']);
+  try {
+    git(['rev-parse', '--verify', '--quiet', MAIN_REF]);
+  } catch {
+    // catch-no-log-ok the missing ref is reported by the error below, which main() prints
+    throw new Error(
+      'release:bump counts from origin/main, which this checkout does not have; run git fetch origin main first.',
+    );
+  }
+  const branchPoint = git(['merge-base', 'HEAD', MAIN_REF]);
   const latestTag = git(['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*', 'HEAD']);
-  const latestVersion = latestTag.replace(/^v/, '');
+  const { version: latestVersion } = releaseBaseline({
+    tagVersion: latestTag.replace(/^v/, ''),
+    mainVersion: readPackageVersion(git(['show', `${branchPoint}:${PACKAGE_JSON_PATH}`])),
+  });
   const version = resolveNextVersion({ latestVersion, bump });
 
   const packagePath = path.join(root, PACKAGE_JSON_PATH);

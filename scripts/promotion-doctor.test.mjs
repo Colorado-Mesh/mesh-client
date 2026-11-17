@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
+
+import yaml from 'js-yaml';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -6,13 +9,22 @@ import {
   checkSchemaCallout,
   classifyPullRequest,
   DOCTOR_CHECK_NAME,
+  gateMatchesName,
   renderSummary,
+  REQUIRED_GATES,
   runDoctor,
   summarizeChecks,
 } from './promotion-doctor.mjs';
 import { commitTree, showFile, treeOf, treeWithFiles } from './promotionGit.mjs';
 import { openPromotion } from './promotion-open.mjs';
-import { cleanupRepos, land, released, run } from './promotionTestRepos.mjs';
+import {
+  cleanupRepos,
+  FIXTURE_METAINFO,
+  land,
+  released,
+  run,
+  writeFiles,
+} from './promotionTestRepos.mjs';
 import { setPackageVersion } from './releaseVersion.mjs';
 
 const REPO = 'Colorado-Mesh/mesh-client';
@@ -252,6 +264,34 @@ const doctor = (fixture, api, overrides = {}) =>
     ...overrides,
   });
 
+/** Merge a promotion into main and leave its release tag unmade, as while approval is pending. */
+function mergeWithoutTag(fixture, built) {
+  run(fixture.remote, ['update-ref', 'refs/heads/main', built.sha]);
+}
+
+const HOTFIX_NOTES = '## Release notes\n\n- fix: crash (#9)\n';
+
+/**
+ * Push hotfix/crash cut from main: a fix, then a version bump to `version` with `releases`
+ * (version and date pairs, newest first) as the MetaInfo list. Returns the head commit.
+ */
+function pushHotfix(fixture, version, releases) {
+  run(fixture.seed, ['fetch', '-q', 'origin']);
+  run(fixture.seed, ['checkout', '-q', '-B', 'hotfix/crash', 'origin/main']);
+  writeFiles(fixture.seed, { 'crash.txt': 'fixed\n' });
+  run(fixture.seed, ['add', '-A']);
+  run(fixture.seed, ['commit', '-q', '-m', 'fix: crash (#9)']);
+  writeFiles(fixture.seed, {
+    'package.json': `{\n  "name": "fixture",\n  "version": "${version}"\n}\n`,
+    [FIXTURE_METAINFO]: `<component>\n  <releases>\n${releases
+      .map(([v, date]) => `    <release version="${v}" date="${date}"/>\n`)
+      .join('')}  </releases>\n</component>\n`,
+  });
+  run(fixture.seed, ['commit', '-q', '-am', `chore: release v${version}`]);
+  run(fixture.seed, ['push', '-q', 'origin', 'HEAD:hotfix/crash']);
+  return run(fixture.remote, ['rev-parse', 'refs/heads/hotfix/crash']);
+}
+
 describe('runDoctor on promotions', { timeout: 60_000 }, () => {
   it('passes a canonical promotion', async () => {
     const fixture = released();
@@ -426,6 +466,24 @@ describe('runDoctor on promotions', { timeout: 60_000 }, () => {
     expect(detailOf(result, 'Release')).toContain('No release');
   });
 
+  it('reports no release over a version whose tag waits for approval', async () => {
+    const fixture = released();
+    land(fixture.seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    mergeWithoutTag(fixture, await promotion(fixture));
+    land(fixture.seed, 'staging', { 'guide.md': 'guide\n' }, 'docs: guide (#7)');
+    const built = await promotion(fixture, { bump: 'none' });
+    const pr = publishPull(fixture.remote, built.branch, built.sha, {
+      title: built.title,
+      body: built.body,
+    });
+
+    const result = await doctor(fixture, apiFor(fixture.remote, pr));
+
+    expect(failures(result)).toEqual([]);
+    expect(statusOf(result, 'Release')).toEqual(['info']);
+    expect(detailOf(result, 'Release')).toContain('No release');
+  });
+
   it('fails when the version is already tagged', async () => {
     const fixture = released();
     land(fixture.seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
@@ -521,6 +579,48 @@ describe('runDoctor on other pull requests', { timeout: 60_000 }, () => {
     expect(statusOf(result, 'Back-port')).toEqual(['info']);
   });
 
+  it('fails a hotfix whose version is below the version main carries', async () => {
+    const fixture = released();
+    land(fixture.seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    mergeWithoutTag(fixture, await promotion(fixture));
+    const sha = pushHotfix(fixture, '1.0.1', [
+      ['1.0.1', '2026-11-21'],
+      ['1.0.0', '2026-01-01'],
+    ]);
+    const pr = publishPull(fixture.remote, 'hotfix/crash', sha, {
+      title: 'fix: crash',
+      body: HOTFIX_NOTES,
+    });
+
+    const result = await doctor(fixture, apiFor(fixture.remote, pr));
+
+    expect(result).toMatchObject({ ok: false, kind: 'hotfix' });
+    expect(statusOf(result, 'Release version')).toEqual(['fail']);
+    expect(detailOf(result, 'Release version')).toContain('1.1.0');
+  });
+
+  it('counts a releasing hotfix from the version main carries', async () => {
+    const fixture = released();
+    land(fixture.seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    mergeWithoutTag(fixture, await promotion(fixture));
+    const sha = pushHotfix(fixture, '1.1.1', [
+      ['1.1.1', '2026-11-21'],
+      ['1.1.0', '2026-11-20'],
+      ['1.0.0', '2026-01-01'],
+    ]);
+    const pr = publishPull(fixture.remote, 'hotfix/crash', sha, {
+      title: 'fix: crash',
+      body: HOTFIX_NOTES,
+    });
+
+    const result = await doctor(fixture, apiFor(fixture.remote, pr));
+
+    expect(failures(result)).toEqual([]);
+    expect(statusOf(result, 'Version choice')).toEqual([]);
+    expect(detailOf(result, 'Release version')).toContain('v1.1.1');
+    expect(detailOf(result, 'Release version')).toContain('1.1.0');
+  });
+
   it('passes everything while staging does not exist yet', async () => {
     const fixture = released({ withStaging: false });
     const pr = pull({ title: 'feat: x' });
@@ -552,6 +652,23 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
     conclusion,
     app: { id: 15368 },
   });
+  // The check names e2e.yaml produced on a real pull request to main.
+  const GATE_NAMES = [
+    'Electron E2E (ubuntu-24.04)',
+    'Electron E2E (macos-latest)',
+    'Electron E2E (windows-latest)',
+    'Release preflight',
+  ];
+  let nextId = 100;
+  const checkRun = (name, status, conclusion) => ({
+    id: nextId++,
+    name,
+    status,
+    conclusion,
+    app: { id: 15368 },
+  });
+  const gates = (status, conclusion) =>
+    GATE_NAMES.map((name) => checkRun(name, status, conclusion));
 
   async function canonical() {
     const fixture = released();
@@ -569,7 +686,10 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
     const { fixture, pr } = await canonical();
     let sleeps = 0;
     const api = apiFor(fixture.remote, pr, {
-      checkRuns: [[job('in_progress', null)], [job('completed', 'success')]],
+      checkRuns: [
+        [job('in_progress', null), ...gates('in_progress', null)],
+        [job('completed', 'success'), ...gates('completed', 'success')],
+      ],
     });
 
     const result = await doctor(fixture, api, {
@@ -590,7 +710,9 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
   it('fails with the pending names when the timeout passes', async () => {
     const { fixture, pr } = await canonical();
     let clock = 0;
-    const api = apiFor(fixture.remote, pr, { checkRuns: [[job('queued', null)]] });
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [[job('queued', null), ...gates('queued', null)]],
+    });
 
     const result = await doctor(fixture, api, {
       requireGreenChecks: true,
@@ -631,7 +753,10 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
   it('fails when main moves while the checks run', async () => {
     const { fixture, pr, mainSha } = await canonical();
     const api = apiFor(fixture.remote, pr, {
-      checkRuns: [[job('in_progress', null)], [job('completed', 'success')]],
+      checkRuns: [
+        [job('in_progress', null), ...gates('in_progress', null)],
+        [job('completed', 'success'), ...gates('completed', 'success')],
+      ],
       mainShas: [mainSha, 'e'.repeat(40)],
     });
 
@@ -644,5 +769,174 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
 
     expect(result.ok).toBe(false);
     expect(statusOf(result, 'Main moved')).toEqual(['fail']);
+  });
+
+  it('names the way to start the gates when none has run, instead of passing an empty list', async () => {
+    const { fixture, pr } = await canonical();
+    let clock = 0;
+    const api = apiFor(fixture.remote, pr, { checkRuns: [[]] });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 10_000,
+      startGraceMs: 1000,
+      pollMs: 10,
+      now: () => clock,
+      sleep: async () => {
+        clock += 600;
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(clock).toBe(1200);
+    expect(statusOf(result, 'Checks')).toEqual(['fail']);
+    expect(detailOf(result, 'Checks')).toContain('No run of Electron E2E or Release preflight');
+    expect(detailOf(result, 'Checks')).toContain('close and reopen it, or push a commit');
+  });
+
+  it('keeps waiting while only checks other than the gates have finished', async () => {
+    const { fixture, pr } = await canonical();
+    let sleeps = 0;
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [
+        [job('completed', 'success')],
+        [job('completed', 'success'), ...gates('completed', 'success')],
+      ],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+      sleep: async () => {
+        sleeps += 1;
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(sleeps).toBe(1);
+    expect(statusOf(result, 'Checks')).toEqual(['pass']);
+  });
+
+  it('names a gate that never started when the time runs out', async () => {
+    const { fixture, pr } = await canonical();
+    let clock = 0;
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [[job('completed', 'success'), ...gates('completed', 'success').slice(0, 3)]],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+      now: () => clock,
+      sleep: async () => {
+        clock += 600;
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(detailOf(result, 'Checks')).toBe('Not started: Release preflight.');
+  });
+
+  it('does not count a skipped gate as passed', async () => {
+    const { fixture, pr } = await canonical();
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [
+        [
+          job('completed', 'success'),
+          ...gates('completed', 'success').slice(0, 3),
+          checkRun('Release preflight', 'completed', 'skipped'),
+        ],
+      ],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(detailOf(result, 'Checks')).toBe('Failing: Release preflight (skipped).');
+  });
+
+  it('requires gates that e2e.yaml runs on every pull request to main', () => {
+    const MATRIX_OS = /\$\{\{ matrix\.os \}\}/;
+    const jobs = Object.entries(
+      yaml.load(readFileSync('.github/workflows/e2e.yaml', 'utf8')).jobs,
+    ).map(([id, definition]) => ({ ...definition, name: definition.name ?? id }));
+    for (const gate of REQUIRED_GATES) {
+      const matching = jobs.filter((definition) =>
+        gateMatchesName(gate, definition.name.replace(MATRIX_OS, 'x')),
+      );
+      expect(matching, gate.label).toHaveLength(1);
+      expect(matching[0].if, gate.label).toContain("github.event_name == 'pull_request'");
+    }
+    const checkNames = jobs.flatMap((definition) =>
+      MATRIX_OS.test(definition.name)
+        ? definition.strategy.matrix.os.map((os) => definition.name.replace(MATRIX_OS, os))
+        : [definition.name],
+    );
+    expect(
+      checkNames.filter((name) => REQUIRED_GATES.some((gate) => gateMatchesName(gate, name))),
+    ).toEqual(GATE_NAMES);
+  });
+
+  it('fails Superseded when staging gets a newer version bump while the checks run', async () => {
+    const { fixture, pr } = await canonical();
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [
+        [job('in_progress', null), ...gates('in_progress', null)],
+        [job('completed', 'success'), ...gates('completed', 'success')],
+      ],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+      sleep: async () => {
+        land(
+          fixture.seed,
+          'staging',
+          { 'package.json': '{\n  "name": "fixture",\n  "version": "1.2.0"\n}\n' },
+          'chore: release v1.2.0',
+        );
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(statusOf(result, 'Checks')).toEqual(['pass']);
+    expect(statusOf(result, 'Superseded')).toEqual(['fail']);
+    expect(detailOf(result, 'Superseded')).toContain('chore: release v1.2.0');
+  });
+
+  it('still passes when staging gets other commits while the checks run', async () => {
+    const { fixture, pr } = await canonical();
+    const api = apiFor(fixture.remote, pr, {
+      checkRuns: [
+        [job('in_progress', null), ...gates('in_progress', null)],
+        [job('completed', 'success'), ...gates('completed', 'success')],
+      ],
+    });
+
+    const result = await doctor(fixture, api, {
+      requireGreenChecks: true,
+      waitForChecks: true,
+      timeoutMs: 1000,
+      pollMs: 10,
+      sleep: async () => {
+        land(fixture.seed, 'staging', { 'later.txt': 'later\n' }, 'fix: later (#2)');
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(statusOf(result, 'Superseded')).toEqual([]);
   });
 });

@@ -127,6 +127,15 @@ const MERGED_METAINFO = [
   '</component>',
 ].join('\n');
 
+/**
+ * Merge an open promotion the way main receives it, and leave its release tag unmade, as while
+ * the Cut release approval is still pending.
+ */
+function mergePromotion(remote, fake, branch) {
+  remoteGit(remote, ['update-ref', 'refs/heads/main', remoteSha(remote, branch)]);
+  fake.pulls.find((pr) => pr.headRefName === branch).state = 'MERGED';
+}
+
 const open = (user, gh, overrides = {}) =>
   openPromotion({
     cwd: user,
@@ -491,6 +500,52 @@ describe('openPromotion', { timeout: 60_000 }, () => {
     expect(parentsOf(remote, 'release/v1.1.0')).toEqual([
       remoteSha(remote, 'main'),
       remoteSha(remote, 'staging'),
+    ]);
+  });
+
+  it('counts the next version from main while its release tag waits for approval', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    const fake = fakeGh();
+    await open(user, fake.gh);
+    mergePromotion(remote, fake, 'release/v1.1.0');
+    land(seed, 'staging', { 'b.txt': 'b\n' }, 'fix: b (#2)');
+
+    const result = await open(user, fake.gh);
+
+    expect(result).toMatchObject({ status: 'opened', version: '1.1.1' });
+    expect(subjectOf(remote, 'staging')).toBe('chore: release v1.1.1');
+    expect(remoteGit(remote, ['show', `staging:${METAINFO}`])).toBe(
+      [
+        '<component>',
+        '  <releases>',
+        `    <release version="1.1.1" date="${TODAY}"/>`,
+        `    <release version="1.1.0" date="${TODAY}"/>`,
+        '    <release version="1.0.0" date="2026-01-01"/>',
+        '  </releases>',
+        '</component>',
+      ].join('\n'),
+    );
+    const create = fake.calls.filter((call) => call.args[1] === 'create').at(-1);
+    expect(create.input).toContain('- fix: b (#2)');
+    expect(create.input).not.toContain('feat: maps (#1)');
+  });
+
+  it('promotes without a release over a version whose tag waits for approval', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    const fake = fakeGh();
+    await open(user, fake.gh);
+    mergePromotion(remote, fake, 'release/v1.1.0');
+    land(seed, 'staging', { 'guide.md': 'guide\n' }, 'docs: guide (#7)');
+
+    const result = await open(user, fake.gh, { bump: 'none' });
+
+    expect(result).toMatchObject({ status: 'opened', version: null });
+    const subjects = remoteGit(remote, ['log', '--format=%s', 'staging']).split('\n');
+    expect(subjects.filter((subject) => /^chore: release v/.test(subject))).toEqual([
+      'chore: release v1.1.0',
+      'chore: release v1.0.0',
     ]);
   });
 

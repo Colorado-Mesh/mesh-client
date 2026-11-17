@@ -25,9 +25,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One run at a time, in order. A run that waits for the release-cut approval holds the group, and
+# queue: max keeps every run behind it; the default keeps only the newest waiting run, so a
+# releasing merge could be dropped and its version tagged on a later commit. A later run whose
+# version is already tagged ends at the plan job.
 concurrency:
   group: cut-release
   cancel-in-progress: false
+  queue: max
 
 jobs:
   plan:

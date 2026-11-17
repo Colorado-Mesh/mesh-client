@@ -105,6 +105,22 @@ export function resolveNextVersion({ latestVersion, bump, detected }) {
 }
 
 /**
+ * The version a new release has to be above. That is the latest release tag, except while a
+ * merged release waits for its tag (the Cut release approval is still pending): main's
+ * package.json is then already ahead of the tag, and counting from the tag would reuse or lower
+ * the waiting version.
+ * @param {{ tagVersion: string, mainVersion: string }} input
+ * @returns {{ version: string, waiting: boolean }} `waiting` when main's version is ahead of the tag
+ */
+export function releaseBaseline({ tagVersion, mainVersion }) {
+  assertSemver(tagVersion, 'Latest released version');
+  assertSemver(mainVersion, "main's package.json version");
+  return compareVersions(mainVersion, tagVersion) > 0
+    ? { version: mainVersion, waiting: true }
+    : { version: tagVersion, waiting: false };
+}
+
+/**
  * Put `version` at the top of the MetaInfo `<releases>` list. An unreleased top entry (newer
  * than `latestVersion`, left by an earlier attempt) is replaced rather than stacked.
  * @param {string} xml
