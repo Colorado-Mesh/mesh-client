@@ -71,12 +71,14 @@ function main() {
     platform: 'win32',
     bundleRoot: path.join(releaseDir, 'win-unpacked'),
     fail,
+    expectedArch: 'x64',
   });
   assertBundledReticulumSidecarInBundle({
     label: 'arm64 bundled Reticulum sidecar',
     platform: 'win32',
     bundleRoot: path.join(releaseDir, 'win-arm64-unpacked'),
     fail,
+    expectedArch: 'arm64',
   });
 
   const installers = collectSetupInstallers(version);

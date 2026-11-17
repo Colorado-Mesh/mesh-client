@@ -3,6 +3,7 @@
  */
 import { existsSync, statSync } from 'fs';
 import path from 'path';
+import { assertBinaryArch } from './binary-arch.mjs';
 import { MIN_SIDECAR_BYTES, sidecarBinaryFileName } from './reticulum-sidecar-staging.mjs';
 
 /** @typedef {'win32' | 'linux' | 'darwin'} ElectronPlatform */
@@ -31,12 +32,16 @@ export function resolveBundledSidecarPath(platform, bundleRoot) {
  * @param {string} opts.sidecarPath
  * @param {(message: string) => void} opts.fail
  * @param {number} [opts.minBytes]
+ * @param {ElectronPlatform} [opts.platform] Required when `expectedArch` is set.
+ * @param {'x64' | 'arm64' | 'universal'} [opts.expectedArch]
  */
 export function assertBundledReticulumSidecar({
   label,
   sidecarPath,
   fail,
   minBytes = MIN_SIDECAR_BYTES,
+  platform,
+  expectedArch,
 }) {
   if (!existsSync(sidecarPath)) {
     fail(`Missing ${label}: ${sidecarPath}`);
@@ -44,6 +49,18 @@ export function assertBundledReticulumSidecar({
   const size = statSync(sidecarPath).size;
   if (size < minBytes) {
     fail(`${label} too small (${size} bytes, need >= ${minBytes}): ${sidecarPath}`);
+  }
+  if (expectedArch) {
+    if (!platform) {
+      fail(`${label} expectedArch requires platform`);
+    }
+    assertBinaryArch({
+      label,
+      filePath: sidecarPath,
+      expectedArch,
+      platform,
+      fail,
+    });
   }
 }
 
@@ -53,11 +70,20 @@ export function assertBundledReticulumSidecar({
  * @param {ElectronPlatform} opts.platform
  * @param {string} opts.bundleRoot
  * @param {(message: string) => void} opts.fail
+ * @param {'x64' | 'arm64' | 'universal'} [opts.expectedArch]
  */
-export function assertBundledReticulumSidecarInBundle({ label, platform, bundleRoot, fail }) {
+export function assertBundledReticulumSidecarInBundle({
+  label,
+  platform,
+  bundleRoot,
+  fail,
+  expectedArch,
+}) {
   assertBundledReticulumSidecar({
     label,
     sidecarPath: resolveBundledSidecarPath(platform, bundleRoot),
     fail,
+    platform,
+    expectedArch,
   });
 }

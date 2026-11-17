@@ -624,6 +624,7 @@ function validateAppBundle(bundleRoot, sourceLabel, expectedArch, signatureOptio
     platform: 'darwin',
     bundleRoot,
     fail,
+    expectedArch,
   });
   assertMacCodeSignature(bundleRoot, label, signatureOptions);
 }
@@ -857,6 +858,7 @@ export {
   collectArchives,
   detachDmgMount,
   expectedLipoArchsForMacArch,
+  extractZipToTemp,
   fail,
   isCompleteAppBundle,
   isDeveloperIdApplicationAuthority,

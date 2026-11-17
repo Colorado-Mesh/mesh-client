@@ -5,12 +5,23 @@
  * Failure point: NSIS can report success while dropping the main exe on WoA.
  * Fallback: exit non-zero with install log path so CI uploads diagnostics.
  *
+ * With `--launch`, also boots the installed exe via the shared packaged-launch
+ * smoke engine (renderer-loaded marker under a throwaway --user-data-dir).
+ *
+ * Diagnostics for CI upload use fixed names under `$RUNNER_TEMP`:
+ *   mesh-client-install-${arch}.log
+ *   mesh-client-win-${arch}-launch-diagnostics/
+ *   mesh-client-7z-probe/
+ * Locally (no RUNNER_TEMP), a single mkdtemp root under os.tmpdir() hosts the
+ * same relative layout (CodeQL js/insecure-temporary-file).
+ * Private install/probe work dirs are still deleted in `finally`.
+ *
  * Usage (Windows CI only):
- *   node scripts/test-win-nsis-install.mjs --arch x64
- *   node scripts/test-win-nsis-install.mjs --arch arm64 [--probe-7z]
+ *   node scripts/test-win-nsis-install.mjs --arch x64|arm64 [--probe-7z] [--launch]
  */
 import { spawnSync } from 'child_process';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -18,12 +29,20 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { findAppArchive } from './find-nsis-app-archive.mjs';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import {
+  LaunchSmokeError,
+  LOG_FILENAME,
+  baseLaunchArgs,
+  launchAndAssert,
+  tailText,
+} from './packaged-launch-smoke.mjs';
 import { findWinSetupInstaller } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +51,60 @@ const releaseDir = path.join(projectRoot, 'release');
 
 const APP_EXE = 'Mesh-client.exe';
 const MIN_EXE_BYTES = 50 * 1024 * 1024;
+
+/** @type {string | null} */
+let localDiagnosticsRoot = null;
+
+/**
+ * CI: `$RUNNER_TEMP`. Local: one reusable mkdtemp under os.tmpdir().
+ * @returns {string}
+ */
+function runnerTempRoot() {
+  if (process.env.RUNNER_TEMP) {
+    return process.env.RUNNER_TEMP;
+  }
+  if (!localDiagnosticsRoot) {
+    localDiagnosticsRoot = mkdtempSync(path.join(tmpdir(), 'mesh-client-win-smoke-'));
+  }
+  return localDiagnosticsRoot;
+}
+
+/**
+ * Copy the NSIS install log for upload-artifact after the private workDir is removed.
+ * @param {'x64' | 'arm64'} arch
+ * @param {string} sourcePath
+ */
+function persistInstallLog(arch, sourcePath) {
+  if (!existsSync(sourcePath)) return;
+  const dest = path.join(runnerTempRoot(), `mesh-client-install-${arch}.log`);
+  try {
+    copyFileSync(sourcePath, dest);
+  } catch (e) {
+    console.warn(
+      `[test-win-nsis-install] Failed to persist install log to ${dest}: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+}
+
+/**
+ * @param {'x64' | 'arm64'} arch
+ * @param {string} userDataDir
+ * @param {string} message
+ */
+function writeLaunchDiagnostics(arch, userDataDir, message) {
+  const outDir = path.join(runnerTempRoot(), `mesh-client-win-${arch}-launch-diagnostics`);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
+  const logPath = path.join(userDataDir, LOG_FILENAME);
+  if (existsSync(logPath)) {
+    try {
+      const text = readFileSync(logPath, 'utf-8');
+      writeFileSync(path.join(outDir, LOG_FILENAME), tailText(text, 64 * 1024), 'utf-8');
+    } catch {
+      // catch-no-log-ok best-effort diagnostics
+    }
+  }
+}
 
 /** @param {string} msg */
 function fail(msg) {
@@ -141,14 +214,19 @@ function probe7zExtract(installerPath, outDir, arch) {
     platform: 'win32',
     bundleRoot: archiveDir,
     fail,
+    expectedArch: arch,
   });
   console.debug(
     `[test-win-nsis-install] OK — ${APP_EXE} + Reticulum sidecar present after 7z probe (${appArchiveName})`,
   );
 }
 
-/** @param {'x64' | 'arm64'} arch @param {boolean} probe7z */
-function main(arch, probe7z) {
+/**
+ * @param {'x64' | 'arm64'} arch
+ * @param {boolean} probe7z
+ * @param {boolean} launch
+ */
+async function main(arch, probe7z, launch) {
   if (process.platform !== 'win32') {
     console.debug('[test-win-nsis-install] Skipping on non-Windows host');
     return;
@@ -172,6 +250,20 @@ function main(arch, probe7z) {
     const probeDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-7z-probe-'));
     try {
       probe7zExtract(installerPath, probeDir, arch);
+    } catch (e) {
+      // Best-effort: fixed relative layout under runnerTempRoot for CI upload.
+      try {
+        const probeUploadDir = path.join(runnerTempRoot(), 'mesh-client-7z-probe');
+        mkdirSync(probeUploadDir, { recursive: true });
+        writeFileSync(
+          path.join(probeUploadDir, 'probe-error.txt'),
+          e instanceof Error ? e.message : String(e),
+          'utf-8',
+        );
+      } catch {
+        // catch-no-log-ok diagnostics best-effort
+      }
+      throw e;
     } finally {
       rmSync(probeDir, { recursive: true, force: true });
     }
@@ -183,13 +275,17 @@ function main(arch, probe7z) {
   }
   const instDir = path.join(localAppData, 'Programs', 'Mesh-client');
   const workDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-install-'));
+  const installLogName = `mesh-client-install-${arch}.log`;
   try {
-    const logPath = path.join(workDir, `mesh-client-install-${arch}.log`);
+    const logPath = path.join(workDir, installLogName);
 
     rmSync(instDir, { recursive: true, force: true });
 
     console.debug(`[test-win-nsis-install] Installing ${installer} → ${instDir}`);
     const installStatus = run(installerPath, ['/S', `/LOG=${logPath}`]);
+    // Always persist for CI upload (success or failure); workDir is deleted in finally.
+    persistInstallLog(arch, logPath);
+
     if (installStatus !== 0) {
       if (existsSync(logPath)) {
         console.error('[test-win-nsis-install] --- NSIS install log ---');
@@ -215,10 +311,36 @@ function main(arch, probe7z) {
       platform: 'win32',
       bundleRoot: instDir,
       fail,
+      expectedArch: arch,
     });
     console.debug(
       `[test-win-nsis-install] OK — ${arch} NSIS install left ${exePath} with bundled Reticulum sidecar`,
     );
+
+    if (launch) {
+      const userDataDir = mkdtempSync(path.join(tmpdir(), `mesh-client-userdata-win-${arch}-`));
+      try {
+        try {
+          await launchAndAssert({
+            label: 'test-win-nsis-install',
+            command: exePath,
+            args: baseLaunchArgs(userDataDir),
+            cwd: instDir,
+            env: { ...process.env },
+            userDataDir,
+          });
+          console.debug(
+            `[test-win-nsis-install] OK — installed ${APP_EXE} boots and loads the renderer`,
+          );
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          writeLaunchDiagnostics(arch, userDataDir, message);
+          throw e;
+        }
+      } finally {
+        rmSync(userDataDir, { recursive: true, force: true });
+      }
+    }
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }
@@ -229,17 +351,19 @@ const archArg =
   args.find((a) => a.startsWith('--arch='))?.split('=')[1] ??
   (args.includes('--arch') ? args[args.indexOf('--arch') + 1] : undefined);
 const probe7z = args.includes('--probe-7z');
+const launch = args.includes('--launch');
 
 if (archArg !== 'x64' && archArg !== 'arm64') {
-  fail('Usage: node scripts/test-win-nsis-install.mjs --arch x64|arm64 [--probe-7z]');
+  fail('Usage: node scripts/test-win-nsis-install.mjs --arch x64|arm64 [--probe-7z] [--launch]');
 }
 
-try {
-  main(archArg, probe7z);
-} catch (e) {
-  if (e instanceof Error && e.name === 'TestFail') {
+main(archArg, probe7z, launch).catch((e) => {
+  if ((e instanceof Error && e.name === 'TestFail') || e instanceof LaunchSmokeError) {
+    if (e instanceof LaunchSmokeError) {
+      console.error(`[test-win-nsis-install] ${e.message}`);
+    }
     process.exit(1);
   }
   console.error('[test-win-nsis-install] Unexpected error:', e);
   process.exit(1);
-}
+});

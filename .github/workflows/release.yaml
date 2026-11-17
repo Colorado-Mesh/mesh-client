@@ -433,13 +433,13 @@ jobs:
             artifact: mesh-client-windows-${{ github.sha }}
             smoke_run: >-
               node scripts/assert-update-yml-artifacts.mjs --require latest.yml
-              && node scripts/test-win-nsis-install.mjs --arch x64
+              && node scripts/test-win-nsis-install.mjs --arch x64 --launch
           - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
             artifact: mesh-client-windows-${{ github.sha }}
             smoke_run: >-
               node scripts/assert-update-yml-artifacts.mjs --require latest.yml
-              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z --launch
     steps:
       - name: Checkout code
         # actions/checkout v6.1.0
@@ -461,6 +461,7 @@ jobs:
         run: bash scripts/ci-install-linux-appimage-smoke-deps.sh
 
       - name: Run packaging smoke test
+        timeout-minutes: 15
         env:
           MESH_CLIENT_MAC_SIGNATURE_POLICY: ${{ matrix.os == 'macos-latest' && 'required' || 'optional' }}
           MESH_CLIENT_EXPECTED_MAC_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
@@ -473,6 +474,24 @@ jobs:
         timeout-minutes: 5
         run: xvfb-run -a node scripts/test-linux-appimage-launch.mjs
 
+      # Proves the shipped .app actually boots (signed + notarized bundle from the
+      # uploaded ZIP), not just that codesign/stapler/structure are correct.
+      # build.yaml is unsigned (CSC_IDENTITY_AUTO_DISCOVERY=false) so launch lives here only.
+      - name: Launch smoke (macOS)
+        if: matrix.os == 'macos-latest'
+        timeout-minutes: 8
+        run: node scripts/test-mac-app-launch.mjs
+
+      - name: Upload macOS launch failure logs
+        if: failure() && matrix.os == 'macos-latest'
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mesh-client-mac-launch-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/mesh-client-mac-launch-diagnostics/**
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload Windows x64 install failure logs
         if: failure() && matrix.os == 'windows-latest'
         # actions/upload-artifact v7.0.2
@@ -481,6 +500,7 @@ jobs:
           name: mesh-client-win-x64-install-logs-${{ github.sha }}
           path: |
             ${{ runner.temp }}/mesh-client-install-x64.log
+            ${{ runner.temp }}/mesh-client-win-x64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7
 
@@ -493,5 +513,6 @@ jobs:
           path: |
             ${{ runner.temp }}/mesh-client-install-arm64.log
             ${{ runner.temp }}/mesh-client-7z-probe/**
+            ${{ runner.temp }}/mesh-client-win-arm64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7
