@@ -11,6 +11,7 @@
 //! and over-quota transfers never reach persistent storage.
 
 use std::collections::{HashMap, HashSet};
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -20,8 +21,8 @@ use rns_identity::destination::{DestType, Destination, Direction};
 use rns_identity::identity::Identity;
 use rns_runtime::rncp::{
     RncpAdmissionReason, RncpEvent, RncpFetchRequest, RncpInboundLimits, RncpListenerConfig,
-    RncpListenerHandle, RncpPayloadAck, RncpReceiveMode, RncpSendRequest, default_rncp_app_name,
-    rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
+    RncpListenerHandle, RncpPayloadAck, RncpProgress, RncpReceiveMode, RncpSendRequest,
+    default_rncp_app_name, rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
 };
 use rns_transport::messages::{OutboundRequest, TransportMessage};
 use serde_json::json;
@@ -58,7 +59,7 @@ const MAX_RESERVED_INBOUND_RNCP_BYTES: usize =
 const RNCP_PATH_WAIT: Duration = Duration::from_secs(30);
 /// Generous ceiling for a bounded (25 MiB) transfer over a possibly
 /// RF-speed-constrained Reticulum path.
-const RNCP_TRANSFER_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+const _RNCP_TRANSFER_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 /// Brief settle before the first listen announce so TCP hubs can come up
 /// (matches LXMF delivery startup announce).
 const RNCP_LISTEN_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
@@ -283,11 +284,11 @@ impl RncpTransferManager {
                     identity,
                     dest_hash,
                     file_name: &file_name,
-                    data,
+                    source: Box::new(Cursor::new(data)),
                     auto_compress: true,
-                    overall_timeout: RNCP_TRANSFER_TIMEOUT,
-                    path_wait: RNCP_PATH_WAIT,
+                    path_timeout: RNCP_PATH_WAIT,
                     progress_tx: Some(progress_tx),
+                    shutdown: None,
                 })
                 .await;
                 match result {
@@ -390,9 +391,9 @@ impl RncpTransferManager {
                     remote_path: &remote_path_owned,
                     save_dir: &save_dir_task,
                     overwrite: false,
-                    overall_timeout: RNCP_TRANSFER_TIMEOUT,
-                    path_wait: RNCP_PATH_WAIT,
+                    path_timeout: RNCP_PATH_WAIT,
                     progress_tx: Some(progress_tx),
+                    shutdown: None,
                 })
                 .await;
                 match result {
@@ -786,15 +787,19 @@ impl RncpTransferManager {
             .map(|s| s.destination_hash.clone())
     }
 
-    fn spawn_progress_forwarder(&self, transfer_id: String) -> mpsc::Sender<f32> {
-        let (tx, mut rx) = mpsc::channel::<f32>(32);
+    fn spawn_progress_forwarder(&self, transfer_id: String) -> mpsc::Sender<RncpProgress> {
+        let (tx, mut rx) = mpsc::channel::<RncpProgress>(32);
         let event_tx = self.event_tx.clone();
         tokio::spawn(async move {
-            while let Some(progress) = rx.recv().await {
+            while let Some(update) = rx.recv().await {
                 emit(
                     &event_tx,
                     "rncp.progress",
-                    json!({ "transfer_id": transfer_id, "progress": progress }),
+                    json!({
+                        "transfer_id": transfer_id,
+                        "progress": update.progress,
+                        "phy_bytes": update.phy_bytes,
+                    }),
                 );
             }
         });

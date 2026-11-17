@@ -12,10 +12,12 @@ use lxmf_core::link_delivery::{
 };
 use lxmf_core::message::LxMessage;
 use lxmf_core::propagation_node::PropagationNode;
-use lxmf_core::propagation_send::{AdvertisedNodePolicy, PreparedNode, PropagationEnvelope};
+use lxmf_core::propagation_send::{
+    AdvertisedNodePolicy, EncryptionBinding, PreparedNode, PropagationEnvelope,
+};
 use lxmf_core::router::{
-    DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState, DirectRouteSnapshot,
-    LxmRouter, OutboundAction, SendError, plan_direct_delivery,
+    DirectReusableLinkState, LinkDeliveryPlan, LxmRouter, MediumSnapshot, OutboundAction,
+    OutboundInputs, RouteInfo, SendError,
 };
 use lxmf_core::stamper;
 use rns_identity::identity::Identity;
@@ -141,8 +143,8 @@ const PN_ENVELOPE_UNBOUNDED_TRANSFER_LIMIT_KB: f64 = 1.0e12;
 
 /// Correlatable ids for an in-flight Propagated deposit (`pn_hash`, optional `transient_id`).
 type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
-/// Validated PN stamp entry: (transient_id, lxmf_data, stamp_u8, stamp_data).
-type ValidatedPnStamp = ([u8; 32], Vec<u8>, u8, [u8; 32]);
+/// Validated PN stamp entry: (transient_id, lxmf_data, stamp_value, stamp_data).
+type ValidatedPnStamp = ([u8; 32], Vec<u8>, f64, [u8; 32]);
 
 /// Result of depositing into the local hosted PN without LinkDelivery.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,10 +160,36 @@ fn enqueue_router(router: &mut LxmRouter, message: LxMessage) -> Result<(), Send
     router.try_send(message)
 }
 
+/// Update an existing `pending_outbound` row after `DeliverOverLink` (rsLXMF 1.5).
+/// Resets `Outbound` so the next tick can emit another in-process deposit attempt.
+fn refresh_pending_outbound(router: &mut LxmRouter, mut message: LxMessage) {
+    use lxmf_core::constants::MessageState;
+    message.state = MessageState::Outbound;
+    let hash = message.message_id();
+    if let Some(slot) = router
+        .pending_outbound
+        .iter_mut()
+        .find(|m| m.message_id() == hash)
+    {
+        *slot = message;
+        return;
+    }
+    if let Err(error) = router.try_send(message) {
+        tracing::warn!(
+            target: "lxmf-outbound",
+            msg = %hex::encode(hash),
+            error = %error,
+            "refresh_pending_outbound: message missing from queue"
+        );
+        let _ = take_send_error_message(error);
+    }
+}
+
 fn take_send_error_message(error: SendError) -> Box<LxMessage> {
     match error {
         SendError::MissingOutboundPropagationNode(message)
-        | SendError::TicketPreparation { message, .. } => message,
+        | SendError::TicketPreparation { message, .. }
+        | SendError::ContentTooLarge { message, .. } => message,
     }
 }
 
@@ -590,40 +618,9 @@ impl LxmfOutboundDriver {
     }
 
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
-        let direct_inputs: HashMap<[u8; 16], DirectDeliveryPlanInput> = router
-            .pending_outbound
-            .iter()
-            .map(LxMessage::destination_hash)
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .map(|dest| {
-                let dest_hex = hex::encode(dest);
-                (
-                    dest,
-                    DirectDeliveryPlanInput {
-                        // lxmd parity: path alone is not identity knowledge — LRPROOF needs
-                        // the destination public key from known_identities.
-                        identity_known: self
-                            .known_identities
-                            .contains_key(&dest_hex.to_lowercase()),
-                        route: direct_route_snapshot(&self.route_hops, dest),
-                        reusable_link: direct_reusable_link_state(&self.link_delivery, dest),
-                    },
-                )
-            })
-            .collect();
-
         self.ensure_router_pn_for_dispatch(router);
-        let mut actions = router.process_outbound_with_direct(|message, _now| {
-            direct_inputs
-                .get(&message.destination_hash())
-                .cloned()
-                .unwrap_or(DirectDeliveryPlanInput {
-                    identity_known: false,
-                    route: None,
-                    reusable_link: DirectReusableLinkState::None,
-                })
-        });
+        let inputs = self.build_outbound_inputs(router);
+        let mut actions = router.process_outbound_with_inputs(&inputs, now_f64());
         self.apply_pending_pn_targets(&mut actions);
 
         if !actions.is_empty() {
@@ -654,20 +651,29 @@ impl LxmfOutboundDriver {
     ) {
         for action in actions {
             match action {
-                OutboundAction::DeliverPropagated { message, prop_hash } => {
-                    self.deliver_propagated(router, event_tx, message, prop_hash);
+                OutboundAction::Failed(msg) => {
+                    tracing::warn!(
+                        dest = %hex::encode(msg.destination_hash()),
+                        "LXMF outbound message failed"
+                    );
+                    self.fail_outbound_message(router, event_tx, msg);
                 }
-                OutboundAction::DeliverDirect { message, dest_hash } => {
-                    self.deliver_direct(router, event_tx, message, dest_hash, None);
-                }
-                OutboundAction::PlanDirect {
-                    message,
-                    dest_hash,
-                    plan,
+                OutboundAction::RequestPath {
+                    destination,
+                    drop_existing,
                 } => {
-                    self.deliver_direct(router, event_tx, message, dest_hash, Some(plan));
+                    self.request_path_gated(
+                        router,
+                        event_tx,
+                        destination,
+                        drop_existing,
+                        "outbound path request",
+                        None,
+                        true,
+                    );
                 }
-                OutboundAction::DeliverOpportunistic { message, dest_hash } => {
+                OutboundAction::SendOpportunistic { message } => {
+                    let dest_hash = message.destination_hash();
                     if let Ok(packed) = message.pack_payload() {
                         let _ = self.transport_tx.try_send(TransportMessage::Outbound(
                             rns_transport::messages::OutboundRequest {
@@ -677,12 +683,16 @@ impl LxmfOutboundDriver {
                         ));
                     }
                 }
-                OutboundAction::Failed(msg) | OutboundAction::Expired(msg) => {
-                    tracing::warn!(
-                        dest = %hex::encode(msg.destination_hash()),
-                        "LXMF outbound message failed or expired"
-                    );
-                    self.fail_outbound_message(router, event_tx, msg);
+                OutboundAction::DeliverOverLink {
+                    message,
+                    target,
+                    plan,
+                } => {
+                    if message.method == DeliveryMethod::Propagated {
+                        self.deliver_propagated(router, event_tx, message, target);
+                    } else {
+                        self.deliver_direct(router, event_tx, message, target, plan);
+                    }
                 }
             }
         }
@@ -799,7 +809,7 @@ impl LxmfOutboundDriver {
                     prop_hash,
                     false,
                     "propagation node path",
-                    message,
+                    Some(message),
                     false,
                 );
                 return;
@@ -819,7 +829,7 @@ impl LxmfOutboundDriver {
                 Ok(guard) => {
                     let local_floor = guard.min_stamp_cost();
                     drop(guard);
-                    local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0))
+                    local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0.0))
                 }
                 Err(InProcessDepositOutcome::Busy) => {
                     let now = now_f64();
@@ -833,7 +843,7 @@ impl LxmfOutboundDriver {
                         let hash = message.message_id();
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    self.enqueue_or_fail(router, event_tx, message);
+                    refresh_pending_outbound(router, message);
                     return;
                 }
                 Err(InProcessDepositOutcome::Failed | InProcessDepositOutcome::Completed) => {
@@ -856,7 +866,7 @@ impl LxmfOutboundDriver {
                 }
             }
         } else {
-            router.get_stamp_cost(&prop_hash).unwrap_or(0)
+            router.get_stamp_cost(&prop_hash).unwrap_or(0.0)
         };
         let Some((packed, transient_id)) =
             self.pack_for_propagation(&message, prop_hash, target_cost)
@@ -929,7 +939,7 @@ impl LxmfOutboundDriver {
                         self.pending_pn_deposits.remove(&hash);
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    self.enqueue_or_fail(router, event_tx, message);
+                    refresh_pending_outbound(router, message);
                     return;
                 }
                 InProcessDepositOutcome::Failed => {
@@ -1035,8 +1045,7 @@ impl LxmfOutboundDriver {
             else {
                 continue;
             };
-            let stamp_u8 = u8::try_from(stamp_value).unwrap_or(u8::MAX);
-            validated.push((transient_id, lxmf_data, stamp_u8, stamp_data));
+            validated.push((transient_id, lxmf_data, stamp_value, stamp_data));
         }
         if validated.is_empty() {
             tracing::warn!(
@@ -1055,15 +1064,15 @@ impl LxmfOutboundDriver {
                 Ok(g) => g,
                 Err(outcome) => return outcome,
             };
-            for (transient_id, lxmf_data, stamp_u8, stamp_data) in &validated {
-                if guard.accept_stamped_propagated_blob(lxmf_data, stamp_data, *stamp_u8) {
+            for (transient_id, lxmf_data, stamp_value, stamp_data) in &validated {
+                if guard.accept_stamped_propagated_blob(lxmf_data, stamp_data, *stamp_value) {
                     accepted += 1;
                     last_tid = Some(*transient_id);
                     tracing::info!(
                         target: "propagation-deposit",
                         pn_hash = %prop_hex,
                         transient_id = %hex::encode(transient_id),
-                        stamp_value = stamp_u8,
+                        stamp_value,
                         blob_len = lxmf_data.len(),
                         "local PN accepted in-process cascade deposit"
                     );
@@ -1149,80 +1158,53 @@ impl LxmfOutboundDriver {
         &mut self,
         router: &mut LxmRouter,
         event_tx: &broadcast::Sender<String>,
-        mut message: LxMessage,
+        message: LxMessage,
         dest_hash: [u8; 16],
-        planned: Option<DirectDeliveryPlan>,
+        plan: LinkDeliveryPlan,
     ) {
         let dest_hex = hex::encode(dest_hash);
-        // Capture ownership before consuming `planned` (lxmd `router_owned` parity).
-        let router_owned = planned.is_some();
-        let plan = planned.unwrap_or_else(|| {
-            plan_direct_delivery(
-                &mut message,
-                DirectDeliveryPlanInput {
-                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase()),
-                    route: direct_route_snapshot(&self.route_hops, dest_hash),
-                    reusable_link: direct_reusable_link_state(&self.link_delivery, dest_hash),
-                },
-                now_f64(),
-            )
-        });
-
-        // `router_owned` ⇒ message still sits in `pending_outbound`
-        // (`process_outbound_with_direct`). Must not `router.send` again or we
-        // fork-bomb duplicates and fill the transport channel while waiting for LRPROOF.
-        match plan {
-            DirectDeliveryPlan::WaitForReusableLink => {
-                if !router_owned {
-                    self.enqueue_or_fail(router, event_tx, message);
-                }
-            }
-            DirectDeliveryPlan::RequestPath { drop_existing } => {
-                self.request_path_gated(
-                    router,
-                    event_tx,
-                    dest_hash,
-                    drop_existing,
-                    "direct delivery path",
-                    message,
-                    router_owned,
-                );
-            }
-            DirectDeliveryPlan::DeferTerminalFailure | DirectDeliveryPlan::Fail => {
-                self.fail_outbound_message(router, event_tx, message);
-            }
-            DirectDeliveryPlan::UseReusableLink | DirectDeliveryPlan::StartNewLink { .. } => {
-                // Unhealthy Auto + live private hub → suppress Auto before opening Direct.
-                if matches!(plan, DirectDeliveryPlan::StartNewLink { .. })
-                    && self.maybe_preempt_unhealthy_auto_path(dest_hash)
-                {
-                    if !router_owned {
-                        let now = now_f64();
-                        message.method = DeliveryMethod::Direct;
-                        message.last_delivery_attempt = now;
-                        message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
-                        self.enqueue_or_fail(router, event_tx, message);
-                    }
-                    // router_owned: message remains in pending_outbound; cleared path
-                    // forces RequestPath on the next tick after Auto suppress.
-                    return;
-                }
-                let hops = match plan {
-                    DirectDeliveryPlan::StartNewLink { hops } => hops,
-                    _ => route_hops_for(&self.route_hops, dest_hash),
-                };
-                if let Err(err) = self
-                    .link_delivery
-                    .start_delivery_with_report(message, dest_hash, hops)
-                {
-                    tracing::warn!(
-                        dest = %dest_hex,
-                        error = %err.error,
-                        "direct link delivery start failed"
-                    );
-                    self.enqueue_or_fail(router, event_tx, *err.message);
-                }
-            }
+        // DeliverOverLink from `process_outbound_with_inputs`: message stays in pending_outbound.
+        if matches!(plan, LinkDeliveryPlan::StartLink { .. })
+            && self.maybe_preempt_unhealthy_auto_path(dest_hash)
+        {
+            // Cleared path forces RequestPath on the next tick after Auto suppress.
+            return;
+        }
+        let hops = match plan {
+            LinkDeliveryPlan::StartLink { hops } => hops,
+            LinkDeliveryPlan::UseLink => route_hops_for(&self.route_hops, dest_hash),
+        };
+        let msg_hash = message.message_id();
+        let started = if plan == LinkDeliveryPlan::UseLink
+            && self.link_delivery.direct_link_snapshot(dest_hash).is_none()
+            && self
+                .link_delivery
+                .backchannel_link_snapshot(dest_hash)
+                .is_some()
+        {
+            self.link_delivery
+                .start_backchannel_delivery(message, dest_hash)
+                .map(|_| ())
+                .map_err(|failure| failure.error.to_string())
+        } else {
+            self.link_delivery
+                .start_delivery_with_report(message, dest_hash, hops)
+                .map(|_| ())
+                .map_err(|failure| failure.error.to_string())
+        };
+        if let Err(reason) = started {
+            tracing::warn!(
+                dest = %dest_hex,
+                %reason,
+                plan = ?plan,
+                "direct link delivery start failed"
+            );
+            let medium = self.build_medium_snapshot();
+            let activated = plan == LinkDeliveryPlan::UseLink;
+            let mut follow_up =
+                router.outbound_link_closed(&msg_hash, activated, &medium, now_f64());
+            self.apply_pending_pn_targets(&mut follow_up);
+            self.execute_actions(router, event_tx, follow_up);
         }
     }
 
@@ -1267,7 +1249,7 @@ impl LxmfOutboundDriver {
         request_hash: [u8; 16],
         drop_existing: bool,
         reason: &str,
-        message: LxMessage,
+        message: Option<LxMessage>,
         router_owned: bool,
     ) {
         let now = now_f64();
@@ -1275,7 +1257,9 @@ impl LxmfOutboundDriver {
             PathRequestDecision::Send => {
                 if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
                     self.path_request_gate.record_send(request_hash, now);
-                    if !router_owned {
+                    if let Some(message) = message
+                        && !router_owned
+                    {
                         self.enqueue_or_fail(router, event_tx, message);
                     }
                 } else {
@@ -1288,13 +1272,17 @@ impl LxmfOutboundDriver {
                             "failed to queue path request for LXMF delivery (transport channel full)"
                         );
                     }
-                    if !router_owned {
+                    if let Some(message) = message
+                        && !router_owned
+                    {
                         self.enqueue_or_fail(router, event_tx, message);
                     }
                 }
             }
             PathRequestDecision::Backoff => {
-                if !router_owned {
+                if let Some(message) = message
+                    && !router_owned
+                {
                     self.enqueue_or_fail(router, event_tx, message);
                 }
             }
@@ -1304,7 +1292,9 @@ impl LxmfOutboundDriver {
                     reason,
                     "LXMF path request budget exhausted; marking outbound failed"
                 );
-                self.fail_outbound_message(router, event_tx, message);
+                if let Some(message) = message {
+                    self.fail_outbound_message(router, event_tx, message);
+                }
             }
         }
     }
@@ -1472,16 +1462,95 @@ impl LxmfOutboundDriver {
         }
     }
 
-    /// Rewrite `DeliverPropagated.prop_hash` from the per-message cascade target map.
+    /// Rewrite `DeliverOverLink.target` for propagated cascade when pending.
     fn apply_pending_pn_targets(&self, actions: &mut [OutboundAction]) {
         for action in actions.iter_mut() {
-            if let OutboundAction::DeliverPropagated { message, prop_hash } = action
-                && let Some(hash) = Some(message.message_id())
-                && let Some(target) = self.pending_pn_targets.get(&hash)
+            if let OutboundAction::DeliverOverLink {
+                message, target, ..
+            } = action
+                && message.method == DeliveryMethod::Propagated
+                && let Some(pending) = self.pending_pn_targets.get(&message.message_id())
             {
-                *prop_hash = *target;
+                *target = *pending;
             }
         }
+    }
+
+    fn build_medium_snapshot(&self) -> MediumSnapshot {
+        // PATH_REQUEST_WAIT is a small constant (seconds); u32→f64 is exact.
+        let path_wait = f64::from(u32::try_from(PATH_REQUEST_WAIT).unwrap_or(u32::MAX));
+        let routes = self
+            .route_hops
+            .iter()
+            .map(|(dest, hops)| {
+                (
+                    *dest,
+                    RouteInfo {
+                        hops: *hops,
+                        first_hop_timeout: path_wait,
+                    },
+                )
+            })
+            .collect();
+        MediumSnapshot {
+            lowest_interface_bitrate: None,
+            medium_path_timeout: path_wait,
+            routes,
+        }
+    }
+
+    fn local_in_process_propagation_pending(&self, router: &LxmRouter, node: [u8; 16]) -> bool {
+        self.local_prop_node.is_some()
+            && router.pending_outbound.iter().any(|message| {
+                message.method == DeliveryMethod::Propagated
+                    && self.pn_cascade_local.contains(&message.message_id())
+                    && self.pending_pn_targets.get(&message.message_id()) == Some(&node)
+            })
+    }
+
+    fn build_outbound_inputs(&self, router: &LxmRouter) -> OutboundInputs {
+        let mut inputs = OutboundInputs {
+            medium: self.build_medium_snapshot(),
+            ..OutboundInputs::default()
+        };
+        for message in &router.pending_outbound {
+            let destination = message.destination_hash();
+            if self
+                .link_delivery
+                .message_delivery_snapshot(message.message_id())
+                .is_some()
+            {
+                inputs.link_owned.insert(message.message_id());
+            }
+            let dest_hex = hex::encode(destination);
+            if self.known_identities.contains_key(&dest_hex.to_lowercase()) {
+                inputs.identities.insert(destination);
+            }
+            if message.method == DeliveryMethod::Direct {
+                inputs.direct_links.insert(
+                    destination,
+                    direct_reusable_link_state(&self.link_delivery, destination),
+                );
+            }
+        }
+        if let Some(node) = router.outbound_propagation_node {
+            let node_hex = hex::encode(node);
+            let local_in_process = self.local_in_process_propagation_pending(router, node);
+            if local_in_process || self.known_identities.contains_key(&node_hex.to_lowercase()) {
+                inputs.identities.insert(node);
+            }
+            inputs.propagation_link = if local_in_process {
+                // rsLXMF 1.5 `plan_propagated` only emits DeliverOverLink when the
+                // propagation Link is Active; in-process local PN deposit has no Link.
+                DirectReusableLinkState::Active
+            } else {
+                self.link_delivery
+                    .propagation_link_snapshot(node)
+                    .map(|snapshot| reusable_link_from_direct_snapshot(&snapshot))
+                    .unwrap_or(DirectReusableLinkState::None)
+            };
+        }
+        inputs
     }
 
     /// Advance Direct→Propagated cascade: preferred remote → other remotes → local-prop.
@@ -1565,11 +1634,11 @@ impl LxmfOutboundDriver {
         &self,
         message: &LxMessage,
         prop_hash: [u8; 16],
-        target_cost: u8,
+        target_cost: f64,
     ) -> Option<(Vec<u8>, [u8; 32])> {
         let dest_hex = hex::encode(message.destination_hash());
-        // Bind the envelope to the recipient key it was encrypted for.
-        let encryption_binding = rns_crypto::sha::full_hash(&self.public_key_for(&dest_hex)?);
+        let public_key = self.public_key_for(&dest_hex)?;
+        let encryption_binding = EncryptionBinding::for_recipient(&public_key, None);
         // lxmd parity: stamp against the *propagation node* cost, not the DM peer.
         let mut envelope = PropagationEnvelope::new(
             message.clone(),
@@ -2156,14 +2225,17 @@ fn route_hops_for(route_hops: &HashMap<[u8; 16], u8>, dest_hash: [u8; 16]) -> u8
     route_hops.get(&dest_hash).copied().unwrap_or(1).max(1)
 }
 
-fn direct_route_snapshot(
-    route_hops: &HashMap<[u8; 16], u8>,
-    dest_hash: [u8; 16],
-) -> Option<DirectRouteSnapshot> {
-    route_hops
-        .get(&dest_hash)
-        .copied()
-        .map(|hops| DirectRouteSnapshot::new(dest_hash, hops))
+fn reusable_link_from_direct_snapshot(
+    snapshot: &lxmf_core::link_delivery::DirectLinkSnapshot,
+) -> DirectReusableLinkState {
+    if snapshot.link_closed() {
+        return DirectReusableLinkState::Pending;
+    }
+    if snapshot.link_active() {
+        DirectReusableLinkState::Active
+    } else {
+        DirectReusableLinkState::Pending
+    }
 }
 
 fn direct_reusable_link_state(
@@ -3123,7 +3195,7 @@ mod tests {
         );
         assert!(
             src.contains("pending_pn_targets") && src.contains("apply_pending_pn_targets"),
-            "per-message PN targets must rewrite DeliverPropagated.prop_hash"
+            "per-message PN targets must rewrite DeliverOverLink.target"
         );
         assert!(
             src.contains("pack_for_propagation failed — advancing PN cascade"),
@@ -3227,6 +3299,7 @@ mod tests {
                 dest_hash: prefer,
                 message: failed,
                 reason: "link establishment timeout".into(),
+                link_activated: false,
             },
         );
 
@@ -3404,6 +3477,7 @@ mod tests {
                 dest_hash: prefer,
                 message: failed,
                 reason: "link establishment timeout".into(),
+                link_activated: false,
             },
         );
 

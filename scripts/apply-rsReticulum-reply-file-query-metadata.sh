@@ -26,9 +26,7 @@ fi
 
 overlay_already_present() {
   [[ -f "${LINK_MANAGER_RS}" ]] || return 1
-  grep -qE 'enum RequestOutcome' "${LINK_MANAGER_RS}" \
-    && grep -qE 'ReplyFile\s*\{' "${LINK_MANAGER_RS}" \
-    && grep -qE 'fn pack_file_name_metadata\(' "${LINK_MANAGER_RS}"
+  grep -qE 'fn pack_file_name_metadata\(' "${LINK_MANAGER_RS}"
 }
 
 if overlay_already_present; then

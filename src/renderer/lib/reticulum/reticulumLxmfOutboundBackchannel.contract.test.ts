@@ -43,10 +43,13 @@ describe('reticulum LXMF outbound Direct backchannel contracts', () => {
   it.skipIf(!existsSync(LXMF_LINK))(
     'sibling LinkDeliveryManager Acks even when inbound_packet_tx is unset',
     () => {
-      // Documents Ack-without-payload: LinkProof is staged after decrypt without
-      // requiring the sender. Payload is published only after the proof TX succeeds
-      // (`PublishInboundPacket`). mesh-client must still wire set_inbound_packet_sender
-      // or first Direct replies are dropped.
+      // Documents Ack-without-payload (rsLXMF 1.5): inbound DATA is decrypted and a
+      // packet proof is staged via EndpointSendSuccess::PublishInboundPacket without
+      // requiring inbound_packet_tx. Payload is published only after that proof TX
+      // succeeds in poll_endpoint_send_results. mesh-client must still wire
+      // set_inbound_packet_sender or first Direct replies are dropped.
+      // LinkProof context is demuxed separately (incoming proofs), not inside
+      // handle_inbound_link_packet (which emits the Ack with PacketContext::None).
       const source = readFileSync(LXMF_LINK, 'utf8');
       expect(source).toMatch(/pub fn set_inbound_packet_sender\s*\(/);
       expect(source).toContain('if let Some(ref tx) = self.inbound_packet_tx');
@@ -59,7 +62,7 @@ describe('reticulum LXMF outbound Direct backchannel contracts', () => {
         handlerIdx,
         handlerEnd > handlerIdx ? handlerEnd : handlerIdx + 4000,
       );
-      expect(handler).toContain('PacketContext::LinkProof');
+      expect(handler).toContain('prove_packet_with_local_signer');
       expect(handler).toContain('EndpointSendSuccess::PublishInboundPacket');
       expect(handler).not.toContain('inbound_packet_tx');
 

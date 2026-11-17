@@ -213,6 +213,50 @@ describe('ReticulumNetworkPanel', () => {
     });
   });
 
+  it('defaults stamp toggles off and link MTU discovery on, and saves them with a restart toast', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    const enableStamping = await screen.findByRole('checkbox', {
+      name: 'networkPanel.reticulumStackSettings.enableStampingAria',
+    });
+    const enforceStamps = screen.getByRole('checkbox', {
+      name: 'networkPanel.reticulumStackSettings.enforceStampsAria',
+    });
+    const linkMtu = screen.getByRole('checkbox', {
+      name: 'networkPanel.reticulumStackSettings.linkMtuDiscoveryAria',
+    });
+    expect(enableStamping).not.toBeChecked();
+    expect(enforceStamps).not.toBeChecked();
+    expect(linkMtu).toBeChecked();
+
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
+    });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
+    });
+    await user.click(enableStamping);
+    await user.click(enforceStamps);
+    await user.click(linkMtu);
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+        enable_stamping: true,
+        enforce_stamps: true,
+        link_mtu_discovery: false,
+      });
+    });
+    expect(
+      await screen.findByText('networkPanel.reticulumStackSettings.stampMtuRestartRequired'),
+    ).toBeInTheDocument();
+  });
+
   it('skips stack settings PUT when the form is unchanged', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);

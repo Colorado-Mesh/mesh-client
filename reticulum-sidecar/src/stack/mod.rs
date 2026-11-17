@@ -61,6 +61,8 @@ mod via;
 mod games_outbound_store;
 #[cfg(feature = "rns-stack")]
 mod games_session;
+#[cfg(all(test, feature = "rns-stack"))]
+mod interop_tcp_tests;
 #[cfg(feature = "rns-stack")]
 mod link_task;
 #[cfg(feature = "rns-stack")]

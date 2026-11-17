@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Desativado por padrão. Habilite ao peering com rsRNS ou outros anúncios de Backbone não Python que não anunciam uma implementação Python Reticulum verificada.",
       "interfaceStatsTitle": "Contadores de interface ao vivo",
       "interfaceStatsLine": "Queda TX {{txDropped}} B · protocolo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Salvo. Reinicie a pilha Reticulum para que a conexão automática não verificada tenha efeito."
+      "autoconnectUnverifiedRestartRequired": "Salvo. Reinicie a pilha Reticulum para que a conexão automática não verificada tenha efeito.",
+      "enableStamping": "Anúncios de carimbo e solicitações de caminho",
+      "enableStampingAria": "Marcar anúncios de saída e solicitações de caminho",
+      "enableStampingHint": "Desativado por padrão (Reticulum 1.6.0). Ative antecipadamente para que os nós de transporte que exigem carimbos encaminhem você; prepare-se para a emissão ativada por padrão na versão 1.6.1. Peers mais antigos ignoram os selos.",
+      "enforceStamps": "Exigir carimbos de outras pessoas",
+      "enforceStampsAria": "Exigir carimbos de rede válidos dos pares",
+      "enforceStampsHint": "Desativado por padrão (Reticulum 1.6.0). Proteja um hub privado ou aberto contra spam não carimbado. Aviso: peers mais antigos desaparecem, incluindo o LXST Call para Ratspeak sem carimbo. O Upstream 1.6.2 ativa isso por padrão.",
+      "linkMtuDiscovery": "Detecção de MTU de link",
+      "linkMtuDiscoveryAria": "Negociar o maior tamanho de pacote que cada link suporta",
+      "linkMtuDiscoveryHint": "Ativado por padrão. Deixe ativado para transferências mais rápidas em links bons. Desative se pacotes grandes apresentarem problemas em um caminho.",
+      "stampMtuRestartRequired": "Salvo. Reinicie a pilha Reticulum para que as alterações no carimbo de rede e no MTU do link entrem em vigor."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",

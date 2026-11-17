@@ -166,6 +166,9 @@ impl RnshSessionManager {
             cols: Some(DEFAULT_COLS),
             hpix: None,
             vpix: None,
+            tcflags: None,
+            terminate_rx: None,
+            progress_tx: None,
         };
 
         let transport_tx = self.shared.transport_tx.clone();
@@ -375,7 +378,7 @@ fn map_rnsh_error(err: &RnshError) -> (&'static str, String) {
     let reason_key = match err {
         RnshError::NoIdentity => "not_announced",
         RnshError::PathTimeout | RnshError::Timeout(_) => "timeout",
-        RnshError::Denied => "not_allowed",
+        RnshError::Denied(_) => "not_allowed",
         RnshError::Remote(msg) if msg.to_ascii_lowercase().contains("incompatible") => {
             "version_mismatch"
         }
@@ -463,7 +466,10 @@ mod tests {
         assert_eq!(map_rnsh_error(&RnshError::NoIdentity).0, "not_announced");
         assert_eq!(map_rnsh_error(&RnshError::PathTimeout).0, "timeout");
         assert_eq!(map_rnsh_error(&RnshError::Timeout("link")).0, "timeout");
-        assert_eq!(map_rnsh_error(&RnshError::Denied).0, "not_allowed");
+        assert_eq!(
+            map_rnsh_error(&RnshError::Denied("Identity not allowed".into())).0,
+            "not_allowed"
+        );
         assert_eq!(
             map_rnsh_error(&RnshError::Remote("Incompatible protocol version".into())).0,
             "version_mismatch"

@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "기본적으로 꺼져 있습니다. rsRNS 또는 기타 Python이 아닌 백본과 피어링할 때 활성화하면 확인된 Python Reticulum 구현을 광고하지 않는다고 알립니다.",
       "interfaceStatsTitle": "라이브 인터페이스 카운터",
       "interfaceStatsLine": "TX 드롭 {{txDropped}} B · 프로토콜 {{protocol}} · IFAC {{ifac}} · 필터 {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "저장되었습니다. 확인되지 않은 자동 연결을 적용하려면 Reticulum 스택을 다시 시작하세요."
+      "autoconnectUnverifiedRestartRequired": "저장되었습니다. 확인되지 않은 자동 연결을 적용하려면 Reticulum 스택을 다시 시작하세요.",
+      "enableStamping": "스탬프 공지 및 경로 요청",
+      "enableStampingAria": "발신 알림 및 경로 요청에 스탬프 찍기",
+      "enableStampingHint": "기본적으로 비활성화(Reticulum 1.6.0). 스탬프가 필요한 전송 노드가 귀하를 전달할 수 있도록 일찍 참여하세요. 1.6.1 버전부터는 스탬프가 기본적으로 활성화되니 이에 대비하세요. 이전 버전의 피어는 스탬프를 무시합니다.",
+      "enforceStamps": "다른 사람의 스탬프 필요",
+      "enforceStampsAria": "피어로부터 유효한 네트워크 스탬프 요구",
+      "enforceStampsHint": "기본적으로 비활성화(Reticulum 1.6.0). 스탬프가 없는 스팸으로부터 비공개 또는 공개 허브를 보호합니다. 경고: 스탬프가 없는 Ratspeak에 대한 LXST Call을 포함하여 이전 피어가 사라집니다. 업스트림 1.6.2에서는 이 기능이 기본적으로 활성화됩니다.",
+      "linkMtuDiscovery": "링크 MTU 검색",
+      "linkMtuDiscoveryAria": "각 링크가 지원하는 최대 패킷 크기 협상",
+      "linkMtuDiscoveryHint": "기본적으로 켜져 있습니다. 양호한 연결에서 더 빠른 전송을 위해 켜 둡니다. 경로에서 대용량 패킷에 문제가 있는 경우 비활성화하세요.",
+      "stampMtuRestartRequired": "저장되었습니다. 네트워크 스탬프 및 링크 MTU 변경 사항이 적용되도록 Reticulum 스택을 다시 시작하세요."
     },
     "reticulumConfigImport": {
       "title": "Reticulum config 가져오기",

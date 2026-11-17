@@ -312,7 +312,7 @@ Carry [ratspeak/rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) on the revi
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `e609864d8898d70d0a67072e527aa012055edcab` (`ratspeak/rsLXMF` `origin/main`) |
+| **Base commit** | `b21732352bcf72b7ca955bbe4cab9ea95d64c6fc` (`ratspeak/rsLXMF` v1.5.0; PR #7 diff with README hunk rebased onto upstream's `LxMessageDraft` paragraph) |
 | **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/7 |
 
 **Adds (2 files):**
@@ -341,16 +341,16 @@ After [ratspeak/rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) merges, adv
 
 ## rsLXMF-propagation-sync-peering.patch
 
-LinkIdentify + peering stamp before LXMF `/offer`, sticky offer/finish fields, plus Establishing diagnostics (`last_establish_error` + warn when LRPROOF is ignored for missing identity or invalid proof) so mesh-client can complete remote PN sync and surface non-generic failures.
+Carries [ratspeak/rsLXMF#4](https://github.com/ratspeak/rsLXMF/pull/4) (`42bb87d`) on top of upstream's LinkIdentify (`set_identity` / `send_identify`): `configure_peering` plus an empty-peering-key stamp before `/offer` (PNs with `peering_cost > 0` otherwise answer `ErrorInvalidKey`), a `set_local_identity` alias, and sticky `last_offer_error` / `last_establish_error` / `last_finished_ok` diagnostics. An invalid LRPROOF only records `LrproofInvalid` and stays `Establishing` (upstream `invalid_sync_lrproof_allows_later_valid_interface_binding`); `ErrorThrottled` / `ErrorNoAccess` keep upstream's `Throttled` / `NoAccess` states and the one-shot identify retry.
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | historical (`68ad7c8…`); tip uses `set_identity` / `send_identify` instead |
+| **Base commit** | `b21732352bcf72b7ca955bbe4cab9ea95d64c6fc` (`ratspeak/rsLXMF` v1.5.0) + `rsLXMF-file-attachments-list.patch` |
 | **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/4 |
 
 **Modifies (1 file):**
 
-- `crates/lxmf-core/src/propagation_sync.rs` — identify/stamp before `/offer` on older checkouts. On current `main`, apply script no-ops when `set_identity` is already present.
+- `crates/lxmf-core/src/propagation_sync.rs` — peering material, `/offer` peering-key stamp, sticky diagnostics. Apply script no-ops when `fn configure_peering(` is already present.
 
 ### Apply locally
 
@@ -364,21 +364,22 @@ From mesh-client repo root (`.rsstack/rsLXMF` required):
 
 ### Regenerate
 
-On the current reviewed `RS_LXMF_PIN`, the apply script **no-ops** when `set_identity` is already present — regenerate only if you still need the overlay for an older pin:
-
 ```bash
 cd .rsstack/rsLXMF
 source ../../reticulum-sidecar/ratspeak-stack-pins.env
-git fetch origin "${RS_LXMF_PIN}"
+git fetch origin "${RS_LXMF_PIN}" pull/4/head
 git reset --hard "${RS_LXMF_PIN}" && git clean -fd
-# only needed for older pins without set_identity / send_identify:
-git diff -- crates/lxmf-core/src/propagation_sync.rs \
+git apply ../../reticulum-sidecar/patches/rsLXMF-file-attachments-list.patch
+git add -A && git -c user.name=x -c user.email=x@x commit -qm tmp-base
+git cherry-pick -n FETCH_HEAD   # resolve toward v1.5.0 APIs, keep identify + stamp before /offer
+git diff HEAD -- crates/lxmf-core/src/propagation_sync.rs \
   > ../../reticulum-sidecar/patches/rsLXMF-propagation-sync-peering.patch
+git reset --hard "${RS_LXMF_PIN}"
 ```
 
 ### Sunset
 
-After the reviewed `RS_LXMF_PIN` includes identify/stamp before `/offer`, pass the full-feature checks before removing this patch or its apply step.
+After [ratspeak/rsLXMF#4](https://github.com/ratspeak/rsLXMF/pull/4) merges, advance `RS_LXMF_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
 
 ## rsLXMF-propagation-node-policy-setters.patch
 
@@ -386,7 +387,7 @@ Live mutators for local PN hosting policy updates (`set_peering_cost`, `set_max_
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_LXMF_PIN` at regeneration time |
+| **Base commit** | `b21732352bcf72b7ca955bbe4cab9ea95d64c6fc` (`ratspeak/rsLXMF` v1.5.0; `set_peering_cost` widens `u8` into upstream's `f64` `peering_cost`) |
 | **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/6 |
 
 **Modifies (1 file):**
@@ -608,7 +609,7 @@ Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync 
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_LXMF_PIN` @ `00f439d` (v1.4.0) after other rsLXMF overlays (incl. abort-transfer) |
+| **Base commit** | `b21732352bcf72b7ca955bbe4cab9ea95d64c6fc` (v1.5.0) after other rsLXMF overlays (incl. abort-transfer) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (`drain_events` / `handle_link_proof` establish diagnostics)
@@ -627,11 +628,11 @@ After upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, 
 
 ## rsLXMF-propagation-client-link-hops.patch
 
-Path-scales `Link::new_initiator` hops on `PropagationClient::start_download_with_limit` (was hard-coded `hops=1` → 6s establish) and stamps `LinkEstablishTimeout` when the Link closes with `CloseReason::Timeout` during `LinkEstablishing` without a prior LRPROOF sticky error. Sidecar passes Nomad-style TCP hop floors (`propagation_link_initiator_hops`) so multi-hop TCP/RMAP Sync is not false-`NoLinkProof`.
+Path-scales Link initiator hops on `PropagationClient::start_download_with_limit` (stored as `link_hops` and used by `establish_link` once the path wait resolves; was hard-coded `hops=1` → 6s establish) and stamps `LinkEstablishTimeout` when the Link closes with `CloseReason::Timeout` during `LinkEstablishing` without a prior LRPROOF sticky error. Sidecar passes Nomad-style TCP hop floors (`propagation_link_initiator_hops`) so multi-hop TCP/RMAP Sync is not false-`NoLinkProof`.
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_LXMF_PIN` @ `00f439d` (v1.4.0) after `rsLXMF-propagation-client-lrproof-diagnostics` |
+| **Base commit** | `b21732352bcf72b7ca955bbe4cab9ea95d64c6fc` (v1.5.0) after `rsLXMF-propagation-client-lrproof-diagnostics` |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (`start_download_with_limit` hops arg; `tick` Closed(Timeout) → `LinkEstablishTimeout`)
@@ -756,7 +757,7 @@ Moves RNCP receive policy ahead of Resource acceptance. The listener requires an
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_RETICULUM_PIN` `14241a383910e6ee7665303eff1e7c8d98957cc0` (v1.4.0) after the other rsReticulum overlays |
+| **Base commit** | `5976f6bccef81851d3186e889e5924665283f21c` (`ratspeak/rsReticulum` v1.5.0) after the other rsReticulum overlays |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-runtime/src/rncp.rs`, `crates/rns-runtime/src/link_manager.rs`, `crates/rns-tools/src/commands/rncp.rs`, the generated API snapshots for earlier stacked overlays, and `api/stability.json`
@@ -772,3 +773,22 @@ Listed last in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_
 ### Sunset
 
 When upstream rsReticulum provides equivalent pre-advertisement identity, byte, concurrency, and reservation limits plus an application-owned payload handoff, remove this patch and its apply step.
+
+## rsNomad-request-outcome-reply-value.patch
+
+Migrate Nomad page/file/media handlers from `RequestOutcome::Reply` / `ReplyFile { data, auto_compress, … }` to rsReticulum **1.5** `ReplyValue` and `ReplyFile { source, metadata }` (`Cursor` as `ResourceSource`). Apply **after** picker-pinned-roots.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | reviewed `RS_NOMAD_PIN` after `rsNomad-picker-pinned-roots` |
+| **Upstream PR** | none yet (mesh-client-local; watch Colorado-Mesh/rsNomad) |
+
+### Apply locally
+
+```bash
+./scripts/apply-rsNomad-request-outcome-reply-value.sh
+```
+
+### Sunset
+
+When Colorado-Mesh/rsNomad lands equivalent ReplyValue / ReplyFile `source` API against rsReticulum 1.5, advance `RS_NOMAD_PIN` and remove this overlay.

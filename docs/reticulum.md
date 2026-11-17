@@ -143,9 +143,19 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 | Setting               | Config key                          | Default               |
 | --------------------- | ----------------------------------- | --------------------- |
 | Autoconnect limit     | `autoconnect_discovered_interfaces` | `0` (never auto-dial) |
-| Minimum stamp         | `required_discovery_value`          | `16`                  |
+| Minimum stamp         | `required_discovery_value`          | `16` (fractional OK)  |
 | Trusted sources       | `interface_discovery_sources`       | empty (any source)    |
 | Network identity path | `network_identity`                  | empty                 |
+
+**Network stamps & Link MTU (Network → Stack settings):** Match Ratspeak 1.1.0 / Reticulum **1.6.0** defaults (emit off, enforce off, MTU discovery on). Saving any of these requires a stack soft-restart (same pattern as unverified Auto implementations).
+
+| Setting                           | Config / InitOptions                                                                | Default |
+| --------------------------------- | ----------------------------------------------------------------------------------- | ------- |
+| Stamp announces and path requests | `[stamps]` `stamp_destinations` + `stamp_prs` **and** `InitOptions.enable_stamping` | off     |
+| Require stamps from others        | `[stamps]` `enforce_stamps` **and** `InitOptions.enforce_stamps`                    | off     |
+| Link MTU discovery                | `[reticulum]` `link_mtu_discovery`                                                  | on      |
+
+Phased upstream loadout: **1.6.0** primitives with emit/enforce off (mesh-client defaults); **1.6.1** emit on by default; **1.6.2** enforce on by default. Turning on **Require stamps** hides unstamped / older peers (including LXST Call to unstamped Ratspeak). Raw stamp cost floats stay INI-only.
 
 **`bootstrap_only`:** Per-interface checkbox on Connection → Interfaces. When set, rsReticulum tears the interface down once the autoconnect quota is filled (useful for an expensive LoRa/TCP bridge). Requires autoconnect limit > 0.
 
@@ -441,11 +451,12 @@ Wire interop and smoke scenarios: [Reticulum development — Remote (rnsh / rncp
 
 ## LXST voice calls
 
-**Call** on Peers rows and Chat DM starts live **LXST** telephony (rsLXST in the sidecar) — not an LXMF voice memo clip. There is no separate Voice tab.
+**Call** on Peers rows and Chat DM starts live **LXST** telephony (rsLXST **0.4** / LXST 0.6.0 in the sidecar) — not an LXMF voice memo clip. There is no separate Voice tab.
 
 - Requires a live Reticulum stack built with LXST (`hasLxstVoice`); the renderer owns mic/speaker (`getUserMedia` / Web Audio).
-- Media starts only after the call is established; hang up / reject ends the session.
-- Live interop with Ratspeak / Python LXST should be verified on a real mesh. Voice memos stay under [Chat (LXMF)](#chat-lxmf).
+- Dial uses full-duplex (`TelephonyControl::Call { mode: None }`); media starts only after establish / `audio_started`; hang up / reject ends the session.
+- Calls honor Network stamp / Link MTU settings — keep stamp emit/enforce aligned with the peer (Require stamps alone can block Call to older unstamped Ratspeak).
+- Automated: mesh-client ↔ mesh-client signalling (dual-sidecar TCP). Manual gold: mesh-client ↔ Ratspeak 1.1.0 Call (audio + stamp off/on). Voice memos stay under [Chat (LXMF)](#chat-lxmf).
 
 ---
 

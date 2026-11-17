@@ -219,8 +219,9 @@ pub struct StackSettings {
     #[serde(default)]
     pub autoconnect_discovered_interfaces: u32,
     /// Minimum discovery stamp value to accept (Python `required_discovery_value`).
+    /// Fractional costs match Reticulum 1.6.0 / rsReticulum 1.5.0.
     #[serde(default = "default_required_discovery_value")]
-    pub required_discovery_value: u8,
+    pub required_discovery_value: f64,
     /// Comma-separated 32-hex network/transport identity allowlist (empty = any).
     #[serde(default)]
     pub interface_discovery_sources: String,
@@ -236,9 +237,24 @@ pub struct StackSettings {
     /// implementations (rsRNS). Default off — matches Python Reticulum 1.5 / rsReticulum 1.4.
     #[serde(default)]
     pub autoconnect_unverified_implementations: bool,
+    /// Stamp destination announces and path requests (`[stamps]` + InitOptions).
+    /// Off by default (RNS 1.6.0 / Ratspeak 1.1.0).
+    #[serde(default)]
+    pub enable_stamping: bool,
+    /// Drop announces/path/link requests that fail stamp cost checks.
+    /// Off by default until RNS 1.6.2 phased enforcement.
+    #[serde(default)]
+    pub enforce_stamps: bool,
+    /// Discover largest usable Link MTU on fast paths (default on in rsReticulum 1.5).
+    #[serde(default = "default_link_mtu_discovery")]
+    pub link_mtu_discovery: bool,
 }
 
 fn default_slow_rf_announce_filter() -> bool {
+    true
+}
+
+fn default_link_mtu_discovery() -> bool {
     true
 }
 
@@ -250,18 +266,31 @@ impl Default for StackSettings {
             loglevel: 0,
             announce_interval_sec: 0,
             autoconnect_discovered_interfaces: 0,
-            required_discovery_value: 0,
+            required_discovery_value: 0.0,
             interface_discovery_sources: String::new(),
             network_identity: String::new(),
             // Non-standard policy must default on even for struct-literal users.
             slow_rf_announce_filter: true,
             autoconnect_unverified_implementations: false,
+            enable_stamping: false,
+            enforce_stamps: false,
+            link_mtu_discovery: true,
         }
     }
 }
 
-fn default_required_discovery_value() -> u8 {
-    16
+fn default_required_discovery_value() -> f64 {
+    16.0
+}
+
+/// Match RNS: positive finite values are clamped to 0..=100; non-finite / non-positive
+/// use the pinned runtime default (`DEFAULT_STAMP_VALUE` / 16).
+fn normalize_required_discovery_value(v: f64) -> f64 {
+    if v.is_finite() && v > 0.0 {
+        v.clamp(0.0, 100.0)
+    } else {
+        default_required_discovery_value()
+    }
 }
 
 /// Partial stack-settings update. Omitted fields keep their on-disk values.
@@ -272,11 +301,14 @@ pub struct StackSettingsPatch {
     pub loglevel: Option<i32>,
     pub announce_interval_sec: Option<u32>,
     pub autoconnect_discovered_interfaces: Option<u32>,
-    pub required_discovery_value: Option<u8>,
+    pub required_discovery_value: Option<f64>,
     pub interface_discovery_sources: Option<String>,
     pub network_identity: Option<String>,
     pub slow_rf_announce_filter: Option<bool>,
     pub autoconnect_unverified_implementations: Option<bool>,
+    pub enable_stamping: Option<bool>,
+    pub enforce_stamps: Option<bool>,
+    pub link_mtu_discovery: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -295,6 +327,8 @@ struct IniBlock {
 struct ParsedConfig {
     reticulum: IniBlock,
     logging: IniBlock,
+    /// Reticulum 1.6.0 / rsReticulum 1.5 `[stamps]` section (must round-trip intact).
+    stamps: IniBlock,
     interfaces: Vec<IniBlock>,
     /// Raw lines preserved for unknown top-level sections (future-proof).
     extra_sections: Vec<String>,
@@ -365,11 +399,39 @@ pub fn apply_stack_settings_patch(
     if let Some(v) = patch.autoconnect_unverified_implementations {
         settings.autoconnect_unverified_implementations = v;
     }
-    set_stack_settings(config_dir, &settings)?;
+    if let Some(v) = patch.enable_stamping {
+        settings.enable_stamping = v;
+    }
+    if let Some(v) = patch.enforce_stamps {
+        settings.enforce_stamps = v;
+    }
+    if let Some(v) = patch.link_mtu_discovery {
+        settings.link_mtu_discovery = v;
+    }
+    settings.required_discovery_value =
+        normalize_required_discovery_value(settings.required_discovery_value);
+    // Only rewrite stamp_destinations/stamp_prs when the UI explicitly toggled
+    // enable_stamping. Otherwise an omitted-field patch (e.g. loglevel only)
+    // would collapse asymmetric INI values via the OR-aggregate read.
+    set_stack_settings_ex(
+        config_dir,
+        &settings,
+        patch.enable_stamping.is_some(),
+        patch.enforce_stamps.is_some(),
+    )?;
     Ok(settings)
 }
 
 pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result<(), String> {
+    set_stack_settings_ex(config_dir, settings, true, true)
+}
+
+fn set_stack_settings_ex(
+    config_dir: &Path,
+    settings: &StackSettings,
+    sync_stamp_emit: bool,
+    sync_enforce_stamps: bool,
+) -> Result<(), String> {
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;
     parsed
@@ -389,10 +451,11 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
         "autoconnect_discovered_interfaces",
         &settings.autoconnect_discovered_interfaces.to_string(),
     );
-    let stamp = settings.required_discovery_value.max(1);
+    // RNS treats unset / non-positive required_discovery_value as DEFAULT_STAMP_VALUE (16).
+    let stamp = normalize_required_discovery_value(settings.required_discovery_value);
     parsed
         .reticulum
-        .set("required_discovery_value", &stamp.to_string());
+        .set("required_discovery_value", &format_stamp_value(stamp));
     parsed.reticulum.set(
         "slow_rf_announce_filter",
         &bool_to_ini(settings.slow_rf_announce_filter),
@@ -401,6 +464,24 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
         "autoconnect_unverified_implementations",
         &bool_to_ini(settings.autoconnect_unverified_implementations),
     );
+    parsed.reticulum.set(
+        "link_mtu_discovery",
+        &bool_to_ini(settings.link_mtu_discovery),
+    );
+    if sync_stamp_emit {
+        // One UI toggle → both emit flags (Ratspeak / RNS stamp_destinations + stamp_prs).
+        parsed
+            .stamps
+            .set("stamp_destinations", &bool_to_ini(settings.enable_stamping));
+        parsed
+            .stamps
+            .set("stamp_prs", &bool_to_ini(settings.enable_stamping));
+    }
+    if sync_enforce_stamps {
+        parsed
+            .stamps
+            .set("enforce_stamps", &bool_to_ini(settings.enforce_stamps));
+    }
     // Prefer the Python/manual key; drop the legacy alias so one source of truth remains.
     if parsed
         .reticulum
@@ -491,6 +572,9 @@ fn merge_configs(existing: &mut ParsedConfig, incoming: &ParsedConfig) {
     for (k, v) in &incoming.logging.values {
         existing.logging.set(k, v);
     }
+    for (k, v) in &incoming.stamps.values {
+        existing.stamps.set(k, v);
+    }
     for iface in &incoming.interfaces {
         if let Some(idx) = existing
             .interfaces
@@ -567,6 +651,17 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .reticulum
             .get_bool("autoconnect_unverified_implementations")
             .unwrap_or(false),
+        enable_stamping: parsed
+            .stamps
+            .get_bool("stamp_destinations")
+            .unwrap_or(false)
+            || parsed.stamps.get_bool("stamp_prs").unwrap_or(false),
+        enforce_stamps: parsed.stamps.get_bool("enforce_stamps").unwrap_or(false),
+        // Absent key = discovery on (rsReticulum 1.5 default).
+        link_mtu_discovery: parsed
+            .reticulum
+            .get_bool("link_mtu_discovery")
+            .unwrap_or(true),
     }
 }
 
@@ -1903,6 +1998,21 @@ fn bool_to_ini(v: bool) -> String {
     if v { "Yes".into() } else { "No".into() }
 }
 
+/// Format stamp/discovery values without trailing `.0` when integral.
+fn format_stamp_value(v: f64) -> String {
+    // Integers outside the f64 exact-int range keep decimal formatting.
+    #[allow(clippy::cast_precision_loss)]
+    let exact_int_max = (1i64 << 53) as f64;
+    if v.fract() == 0.0 && v.abs() <= exact_int_max {
+        #[allow(clippy::cast_possible_truncation)]
+        {
+            format!("{}", v as i64)
+        }
+    } else {
+        format!("{v}")
+    }
+}
+
 impl IniBlock {
     fn new(name: impl Into<String>) -> Self {
         Self {
@@ -1939,6 +2049,7 @@ fn parse_bool(raw: &str) -> Option<bool> {
 fn parse_config(input: &str) -> Result<ParsedConfig, String> {
     let mut reticulum = IniBlock::new("reticulum");
     let mut logging = IniBlock::new("logging");
+    let mut stamps = IniBlock::new("stamps");
     let mut interfaces: Vec<IniBlock> = Vec::new();
     let mut extra_sections: Vec<String> = Vec::new();
 
@@ -1965,7 +2076,11 @@ fn parse_config(input: &str) -> Result<ParsedConfig, String> {
             if open == 1 {
                 current_iface = None;
                 current_top = Some(name.to_string());
-                if name != "reticulum" && name != "logging" && name != "interfaces" {
+                if name != "reticulum"
+                    && name != "logging"
+                    && name != "interfaces"
+                    && name != "stamps"
+                {
                     extra_sections.push(format!("[{name}]"));
                 }
             } else if open == 2 {
@@ -1998,6 +2113,7 @@ fn parse_config(input: &str) -> Result<ParsedConfig, String> {
         match current_top.as_deref() {
             Some("reticulum") => reticulum.set(key, &value),
             Some("logging") => logging.set(key, &value),
+            Some("stamps") => stamps.set(key, &value),
             Some("interfaces") => {
                 if let Some(idx) = current_iface {
                     interfaces[idx].set(key, &value);
@@ -2013,6 +2129,7 @@ fn parse_config(input: &str) -> Result<ParsedConfig, String> {
     Ok(ParsedConfig {
         reticulum,
         logging,
+        stamps,
         interfaces,
         extra_sections,
     })
@@ -2036,6 +2153,10 @@ fn serialize_config(parsed: &ParsedConfig) -> String {
     write_block_section(&mut out, "reticulum", &parsed.reticulum);
     out.push('\n');
     write_block_section(&mut out, "logging", &parsed.logging);
+    if !parsed.stamps.order.is_empty() {
+        out.push('\n');
+        write_block_section(&mut out, "stamps", &parsed.stamps);
+    }
     out.push_str("\n[interfaces]\n\n");
     for iface in &parsed.interfaces {
         let _ = writeln!(out, "[[{}]]", iface.name);
@@ -2203,6 +2324,7 @@ fn default_config_content() -> String {
             b.set("loglevel", "4");
             b
         },
+        stamps: IniBlock::new("stamps"),
         interfaces: Vec::new(),
         extra_sections: Vec::new(),
     })
@@ -3715,11 +3837,14 @@ loglevel = 4
                 loglevel: 4,
                 announce_interval_sec: 3600,
                 autoconnect_discovered_interfaces: 2,
-                required_discovery_value: 18,
+                required_discovery_value: 18.0,
                 interface_discovery_sources: "521c87a83afb8f29e4455e77930b973b".into(),
                 network_identity: "/tmp/mesh-net.id".into(),
                 slow_rf_announce_filter: true,
                 autoconnect_unverified_implementations: false,
+                enable_stamping: true,
+                enforce_stamps: false,
+                link_mtu_discovery: true,
             },
         )
         .unwrap();
@@ -3740,9 +3865,16 @@ loglevel = 4
             content.contains("network_identity = /tmp/mesh-net.id"),
             "{content}"
         );
+        assert!(content.contains("[stamps]"), "{content}");
+        assert!(content.contains("stamp_destinations = Yes"), "{content}");
+        assert!(content.contains("stamp_prs = Yes"), "{content}");
+        assert!(content.contains("link_mtu_discovery = Yes"), "{content}");
         let loaded = get_stack_settings(&dir).unwrap();
         assert_eq!(loaded.autoconnect_discovered_interfaces, 2);
-        assert_eq!(loaded.required_discovery_value, 18);
+        assert_eq!(loaded.required_discovery_value, 18.0);
+        assert!(loaded.enable_stamping);
+        assert!(!loaded.enforce_stamps);
+        assert!(loaded.link_mtu_discovery);
         assert_eq!(
             loaded.interface_discovery_sources,
             "521c87a83afb8f29e4455e77930b973b"
@@ -3781,7 +3913,7 @@ loglevel = 4
         assert!(updated.share_instance);
         assert_eq!(updated.announce_interval_sec, 600);
         assert_eq!(updated.autoconnect_discovered_interfaces, 3);
-        assert_eq!(updated.required_discovery_value, 18);
+        assert_eq!(updated.required_discovery_value, 18.0);
         assert_eq!(
             updated.interface_discovery_sources,
             "521c87a83afb8f29e4455e77930b973b"
@@ -3790,6 +3922,183 @@ loglevel = 4
         assert_eq!(updated.loglevel, 4);
         // Absent slow_rf_announce_filter key defaults on.
         assert!(updated.slow_rf_announce_filter);
+        // Absent stamps / MTU keys use RNS 1.6.0 defaults.
+        assert!(!updated.enable_stamping);
+        assert!(!updated.enforce_stamps);
+        assert!(updated.link_mtu_discovery);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn stamps_section_round_trips_through_stack_settings() {
+        let dir = test_config_dir("stamps-roundtrip");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+link_mtu_discovery = No
+
+[logging]
+loglevel = 4
+
+[stamps]
+stamp_destinations = Yes
+stamp_prs = Yes
+enforce_stamps = No
+destination_cost = 23.5
+"#,
+        )
+        .unwrap();
+        let loaded = get_stack_settings(&dir).unwrap();
+        assert!(loaded.enable_stamping);
+        assert!(!loaded.enforce_stamps);
+        assert!(!loaded.link_mtu_discovery);
+        // Preserve destination_cost when rewriting stamps emit/enforce keys.
+        set_stack_settings(
+            &dir,
+            &StackSettings {
+                enable_stamping: true,
+                enforce_stamps: true,
+                link_mtu_discovery: false,
+                ..loaded
+            },
+        )
+        .unwrap();
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("[stamps]"), "{content}");
+        assert!(content.contains("stamp_destinations = Yes"), "{content}");
+        assert!(content.contains("stamp_prs = Yes"), "{content}");
+        assert!(content.contains("enforce_stamps = Yes"), "{content}");
+        assert!(content.contains("destination_cost = 23.5"), "{content}");
+        assert!(content.contains("link_mtu_discovery = No"), "{content}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn omitted_enable_stamping_preserves_asymmetric_stamp_emit_keys() {
+        let dir = test_config_dir("stamps-asymmetric");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+
+[stamps]
+stamp_destinations = No
+stamp_prs = Yes
+enforce_stamps = No
+"#,
+        )
+        .unwrap();
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                loglevel: Some(3),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.loglevel, 3);
+        // Aggregate read is still true (stamp_prs = Yes).
+        assert!(updated.enable_stamping);
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("loglevel = 3"), "{content}");
+        assert!(
+            content.contains("stamp_destinations = No"),
+            "omitted enable_stamping must not rewrite stamp_destinations: {content}"
+        );
+        assert!(
+            content.contains("stamp_prs = Yes"),
+            "omitted enable_stamping must not rewrite stamp_prs: {content}"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn zero_required_discovery_value_persists_runtime_default() {
+        let dir = test_config_dir("discovery-zero");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        set_stack_settings(
+            &dir,
+            &StackSettings {
+                required_discovery_value: 0.0,
+                ..StackSettings::default()
+            },
+        )
+        .unwrap();
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains(&format!(
+                "required_discovery_value = {}",
+                format_stamp_value(default_required_discovery_value())
+            )),
+            "{content}"
+        );
+        let loaded = get_stack_settings(&dir).unwrap();
+        assert_eq!(
+            loaded.required_discovery_value,
+            default_required_discovery_value()
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_patch_normalizes_required_discovery_value_before_return() {
+        let dir = test_config_dir("discovery-patch-normalize");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = No
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                required_discovery_value: Some(0.0),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            updated.required_discovery_value,
+            default_required_discovery_value()
+        );
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains(&format!(
+                "required_discovery_value = {}",
+                format_stamp_value(default_required_discovery_value())
+            )),
+            "{content}"
+        );
+        let positive = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                required_discovery_value: Some(18.5),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(positive.required_discovery_value, 18.5);
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -3886,6 +4195,7 @@ mode = boundary
         let serialized = serialize_config(&ParsedConfig {
             reticulum: parsed.reticulum.clone(),
             logging: parsed.logging.clone(),
+            stamps: parsed.stamps.clone(),
             interfaces: vec![interface_row_to_block(&rows[0])],
             extra_sections: Vec::new(),
         });

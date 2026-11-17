@@ -307,6 +307,7 @@ check_ratspeak_patches() {
     'rsReticulum-rncp-picker-pinned-jail.patch|ratspeak/rsReticulum||rsReticulum RNCP native-picker pinned fetch jail|'
     'rsReticulum-rncp-inbound-admission.patch|ratspeak/rsReticulum||rsReticulum RNCP pre-advertisement inbound admission|'
     'rsNomad-picker-pinned-roots.patch|Colorado-Mesh/rsNomad||rsNomad native-picker pinned content roots|'
+    'rsNomad-request-outcome-reply-value.patch|Colorado-Mesh/rsNomad||rsNomad RequestOutcome ReplyValue/ReplyFile source for rsReticulum 1.5|'
     'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
@@ -610,9 +611,9 @@ process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
 # stub-kind: games-parity → warn only when a published release is newer than reviewed-ref.
 # (voice/games stubs cleared after lxst-telephony / lrgp-rs integration; empty stub = informational.)
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
-  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.1'
+  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.4.0'
   'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.42'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.1.0'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851'
   # Identity vault is refreshed from the latest ratspeak/Ratspeak release by
   # scripts/sync-ratspeak-releases.mjs during `pnpm run update` — no file: watch.

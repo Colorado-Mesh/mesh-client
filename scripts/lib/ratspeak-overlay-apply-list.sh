@@ -35,6 +35,7 @@ RS_LXMF_APPLY_SCRIPTS=(
 
 RS_NOMAD_APPLY_SCRIPTS=(
   apply-rsNomad-picker-pinned-roots.sh
+  apply-rsNomad-request-outcome-reply-value.sh
 )
 
 apply_ratspeak_rns_overlays() {

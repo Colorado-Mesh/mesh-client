@@ -1,8 +1,25 @@
 diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
-index 82e7de9..16f9bc6 100644
+index 0ee845c..a3dcebb 100644
 --- a/crates/lxmf-core/src/propagation_client.rs
 +++ b/crates/lxmf-core/src/propagation_client.rs
-@@ -588,7 +588,9 @@ impl PropagationClient {
+@@ -313,6 +313,8 @@ pub struct PropagationClient {
+     identified: bool,
+     /// Sticky Establishing failure (LRPROOF identity miss / invalid proof).
+     last_establish_error: Option<&'static str>,
++    /// Hop count for the next Link request (`ESTABLISHMENT_TIMEOUT_PER_HOP` × hops).
++    link_hops: u8,
+     path_query: Option<oneshot::Receiver<TransportQueryResponse>>,
+     bitrate_query: Option<oneshot::Receiver<TransportQueryResponse>>,
+     path_requested_at: Option<Instant>,
+@@ -393,6 +395,7 @@ impl PropagationClient {
+             timeout: Duration::from_secs(120),
+             identified: false,
+             last_establish_error: None,
++            link_hops: 1,
+             path_query: None,
+             bitrate_query: None,
+             path_requested_at: None,
+@@ -673,7 +676,9 @@ impl PropagationClient {
      }
  
      pub fn start_download(&mut self) -> bool {
@@ -13,7 +30,7 @@ index 82e7de9..16f9bc6 100644
      }
  
      /// Start a propagation download, limiting newly requested messages across
-@@ -598,7 +600,12 @@ impl PropagationClient {
+@@ -683,7 +688,12 @@ impl PropagationClient {
      /// Move live downloads into the durable adapter before restarting. Failure
      /// or cancellation drops the client-owned queue and revokes its tokens;
      /// already moved payload/worker owners retain their memory leases.
@@ -27,21 +44,34 @@ index 82e7de9..16f9bc6 100644
          self.prune_suppression();
          if !self.received_messages.is_empty()
              || self.suppression_persist_failed
-@@ -633,7 +640,8 @@ impl PropagationClient {
+@@ -706,6 +716,7 @@ impl PropagationClient {
+             return false;
          }
          self.last_establish_error = None;
- 
--        let (link, request_data) = Link::new_initiator(node_hash, 1);
-+        let hops = link_hops.max(1);
-+        let (link, request_data) = Link::new_initiator(node_hash, hops);
-         let link_id = link.link_id;
- 
-         if !self.queue_transport(TransportMessage::RegisterDestination {
-@@ -2118,7 +2126,18 @@ impl PropagationClient {
-                 );
-                 self.fail();
++        self.link_hops = link_hops.max(1);
+         // An active Link to the node is reused: identify, then list again.
+         if self.link.as_ref().is_some_and(|link| {
+             link.state == LinkState::Active && link.destination_hash == node_hash
+@@ -851,11 +862,12 @@ impl PropagationClient {
+             .take()
+             .and_then(|mut receiver| crate::link_delivery::answered_hardware_mtu(&mut receiver));
+         let mtu = crate::link_delivery::signalled_link_mtu(&self.link_stamper, next_hop_mtu);
++        let hops = self.link_hops.max(1);
+         let initiator = match self.prepared_link_keys.take() {
+             Some((node, keys)) if node == node_hash => {
+-                Ok(Link::new_initiator_with_keys(node_hash, 1, keys, mtu))
++                Ok(Link::new_initiator_with_keys(node_hash, hops, keys, mtu))
              }
--            Some(LinkAction::Closed(_)) => self.fail(),
+-            _ => self.link_stamper.new_initiator(node_hash, 1, mtu),
++            _ => self.link_stamper.new_initiator(node_hash, hops, mtu),
+         };
+         let Ok((link, request_data)) = initiator else {
+             tracing::warn!("propagation client link request stamp generation failed");
+@@ -2377,7 +2389,18 @@ impl PropagationClient {
+                 );
+                 self.link_lost();
+             }
+-            Some(LinkAction::Closed(_)) => self.link_lost(),
 +            Some(LinkAction::Closed(reason)) => {
 +                if self.status.state == PropagationClientState::LinkEstablishing
 +                    && self.last_establish_error.is_none()
@@ -52,7 +82,7 @@ index 82e7de9..16f9bc6 100644
 +                    // this as a client-local NoLinkProof.
 +                    self.last_establish_error = Some("LinkEstablishTimeout");
 +                }
-+                self.fail();
++                self.link_lost();
 +            }
              Some(LinkAction::None) | None => {}
          }

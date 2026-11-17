@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Disattivato per impostazione predefinita. Abilita quando si esegue il peering con rsRNS o altri annunci backbone non Python che non pubblicizzano un'implementazione Reticulum Python verificata.",
       "interfaceStatsTitle": "Contatori dell'interfaccia live",
       "interfaceStatsLine": "Derivazione TX {{txDropped}} B · protocollo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Salvato. Riavvia lo stack Reticulum affinché la connessione automatica non verificata abbia effetto."
+      "autoconnectUnverifiedRestartRequired": "Salvato. Riavvia lo stack Reticulum affinché la connessione automatica non verificata abbia effetto.",
+      "enableStamping": "Annunci di timbro e richieste di percorso",
+      "enableStampingAria": "Apporre timbro su annunci in uscita e richieste di percorso",
+      "enableStampingHint": "Disattivato per impostazione predefinita (Reticulum 1.6.0). Attiva la funzionalità in anticipo in modo che i nodi di trasporto che richiedono timbri ti inoltrino; preparati all'emissione predefinita della versione 1.6.1. I peer meno recenti ignorano i timbri.",
+      "enforceStamps": "Richiedi timbri ad altri",
+      "enforceStampsAria": "Richiedi timbri di rete validi dai peer",
+      "enforceStampsHint": "Disattivato per impostazione predefinita (Reticulum 1.6.0). Rafforza un hub privato o aperto contro lo spam non contrassegnato. Avvertenza: i peer meno recenti scompaiono, incluso LXST Call per Ratspeak non timbrato. La versione 1.6.2 upstream attiva questa impostazione per impostazione predefinita.",
+      "linkMtuDiscovery": "Rilevamento MTU del collegamento",
+      "linkMtuDiscoveryAria": "Negoziare la dimensione massima del pacchetto supportata da ciascun collegamento",
+      "linkMtuDiscoveryHint": "Attivato per impostazione predefinita. Lascia attivato per trasferimenti più rapidi su connessioni di buona qualità. Disattiva se i pacchetti di grandi dimensioni si comportano in modo anomalo su un percorso.",
+      "stampMtuRestartRequired": "Salvato. Riavvia lo stack Reticulum affinché le modifiche al timbro di rete e all'MTU del collegamento abbiano effetto."
     },
     "reticulumConfigImport": {
       "title": "Importa configurazione Reticulum",

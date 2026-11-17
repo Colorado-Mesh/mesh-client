@@ -17,6 +17,12 @@ export interface ReticulumStackSettingsPayload {
   slow_rf_announce_filter: boolean;
   /** Opt-in auto-connect for non-Python / unverified Backbone announces (rsRNS). */
   autoconnect_unverified_implementations: boolean;
+  /** Network stamps (Reticulum 1.6.0); off when the sidecar omits the key. */
+  enable_stamping: boolean;
+  /** Reject announces without valid network stamps; off when absent. */
+  enforce_stamps: boolean;
+  /** Link MTU discovery; on when the sidecar omits the key. */
+  link_mtu_discovery: boolean;
 }
 
 /** Coerce announce interval from stack settings JSON; preserves explicit `0`. */
@@ -35,11 +41,12 @@ export function clampAutoconnectDiscoveredInterfaces(value: number): number {
   return Math.min(32, Math.round(value));
 }
 
+/** Discovery stamp values may be fractional upstream (e.g. 15.8), so no integer rounding. */
 export function clampRequiredDiscoveryValue(value: number): number {
   if (!Number.isFinite(value)) {
     return DEFAULT_REQUIRED_DISCOVERY_VALUE;
   }
-  return Math.min(32, Math.max(1, Math.round(value)));
+  return Math.min(100, Math.max(0, value));
 }
 
 /** Validate comma/whitespace-separated 32-hex discovery source hashes. */
@@ -82,6 +89,10 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     slow_rf_announce_filter:
       obj.slow_rf_announce_filter === undefined ? true : Boolean(obj.slow_rf_announce_filter),
     autoconnect_unverified_implementations: Boolean(obj.autoconnect_unverified_implementations),
+    enable_stamping: Boolean(obj.enable_stamping),
+    enforce_stamps: Boolean(obj.enforce_stamps),
+    link_mtu_discovery:
+      obj.link_mtu_discovery === undefined ? true : Boolean(obj.link_mtu_discovery),
   };
 }
 
@@ -114,6 +125,9 @@ export async function patchReticulumStackSettings(
   if (patch.autoconnect_unverified_implementations !== undefined) {
     body.autoconnect_unverified_implementations = patch.autoconnect_unverified_implementations;
   }
+  if (patch.enable_stamping !== undefined) body.enable_stamping = patch.enable_stamping;
+  if (patch.enforce_stamps !== undefined) body.enforce_stamps = patch.enforce_stamps;
+  if (patch.link_mtu_discovery !== undefined) body.link_mtu_discovery = patch.link_mtu_discovery;
   return (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', body)) as {
     ok?: boolean;
     error?: string;

@@ -181,16 +181,16 @@ describe('apply-rsReticulum-reply-file-query-metadata.sh', () => {
     expect(result.stderr).toMatch(/patch not found/);
   });
 
-  it('is a no-op when ReplyFile overlay markers are already present', () => {
+  it('is a no-op when pack_file_name_metadata overlay markers are already present', () => {
     const rns = makeFakeRsReticulumFromFiles(
       new Map([
         [
           'crates/rns-runtime/src/link_manager.rs',
           `pub enum RequestOutcome {
     Reply(Vec<u8>),
-    ReplyFile { path: PathBuf, metadata: Option<Vec<u8>> },
 }
-fn pack_file_name_metadata(name: &str) -> Vec<u8> { vec![] }
+/// Pack NomadNet / rncp-compatible Resource filename metadata.
+pub fn pack_file_name_metadata(name: &str) -> Vec<u8> { vec![] }
 `,
         ],
       ]),
@@ -211,7 +211,10 @@ fn pack_file_name_metadata(name: &str) -> Vec<u8> { vec![] }
       path.join(rns, 'crates/rns-runtime/src/link_manager.rs'),
       'utf8',
     );
-    expect(linkManager).toMatch(/ReplyFile\s*\{/);
     expect(linkManager).toContain('fn pack_file_name_metadata(');
+    expect(linkManager).toContain('pack_file_name_metadata_uses_binary_name');
+    expect(linkManager).toMatch(
+      /Fn\(\[u8; 16\], \[u8; 16\], Vec<u8>, Option<Identity>\) -> RequestOutcome/,
+    );
   });
 });

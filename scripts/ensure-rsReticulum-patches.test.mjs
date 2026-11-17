@@ -86,6 +86,7 @@ const APPLY_SCRIPTS = [
   'apply-rsLXMF-propagation-client-lrproof-diagnostics.sh',
   'apply-rsLXMF-propagation-client-link-hops.sh',
   'apply-rsNomad-picker-pinned-roots.sh',
+  'apply-rsNomad-request-outcome-reply-value.sh',
 ];
 
 /**

@@ -73,10 +73,29 @@ pub fn instance_mode_label(mode: InstanceMode) -> &'static str {
     }
 }
 
+fn init_options_from_stack_settings(config_dir: &str) -> InitOptions {
+    let mut options = InitOptions::default();
+    let path = std::path::Path::new(config_dir);
+    match crate::stack::config::get_stack_settings(path) {
+        Ok(settings) => {
+            // Do not map the UI aggregate `enable_stamping` (OR of stamp_destinations /
+            // stamp_prs) into InitOptions.enable_stamping — that constructor override
+            // forces destinations+prs+lrs on and would erase asymmetric INI emit flags.
+            // `[stamps]` stamp_destinations / stamp_prs stay authoritative at startup.
+            options.enforce_stamps = settings.enforce_stamps;
+        }
+        Err(e) => {
+            tracing::warn!("stack settings for InitOptions unavailable ({e}); using defaults");
+        }
+    }
+    options
+}
+
 async fn init_once(
     config_dir: &str,
     is_foreground: Arc<AtomicBool>,
     policy: InstancePolicy,
+    options: InitOptions,
 ) -> Result<(ReticulumHandle, ShutdownSignal), (InstanceStartupError, ShutdownSignal)> {
     let shutdown = ShutdownSignal::new();
     match reticulum::init_with_policy(
@@ -84,7 +103,7 @@ async fn init_once(
         None,
         shutdown.clone(),
         is_foreground,
-        InitOptions::default(),
+        options,
         rns_runtime::prelude::RNodeStartupOptions::default(),
         policy,
     )
@@ -101,11 +120,13 @@ pub async fn init_owned_or_standalone(
     share_instance: bool,
     is_foreground: Arc<AtomicBool>,
 ) -> Result<OwnedInstanceStartup, String> {
-    match init_once(
+    let options = init_options_from_stack_settings(config_dir);
+    match Box::pin(init_once(
         config_dir,
         is_foreground.clone(),
         policy_for_share_instance(share_instance),
-    )
+        options,
+    ))
     .await
     {
         Ok((handle, shutdown)) => Ok(OwnedInstanceStartup {
@@ -118,13 +139,17 @@ pub async fn init_owned_or_standalone(
             tracing::warn!(
                 "shared instance endpoint owned by another Reticulum app ({error}); starting standalone"
             );
-            let (handle, shutdown) =
-                init_once(config_dir, is_foreground, InstancePolicy::Standalone)
-                    .await
-                    .map_err(|(e, s)| {
-                        s.trigger();
-                        format!("RNS init failed: {e}")
-                    })?;
+            let (handle, shutdown) = Box::pin(init_once(
+                config_dir,
+                is_foreground,
+                InstancePolicy::Standalone,
+                options,
+            ))
+            .await
+            .map_err(|(e, s)| {
+                s.trigger();
+                format!("RNS init failed: {e}")
+            })?;
             let endpoint = shared_endpoint_display(&handle.config);
             Ok(OwnedInstanceStartup {
                 handle,
@@ -201,10 +226,13 @@ mod tests {
         let control = free_port().await;
         write_tcp_shared_config(&dir, true, port, control);
 
-        let startup =
-            init_owned_or_standalone(dir.to_str().unwrap(), true, Arc::new(AtomicBool::new(true)))
-                .await
-                .expect("standalone fallback");
+        let startup = Box::pin(init_owned_or_standalone(
+            dir.to_str().unwrap(),
+            true,
+            Arc::new(AtomicBool::new(true)),
+        ))
+        .await
+        .expect("standalone fallback");
         assert_eq!(startup.handle.instance_mode, InstanceMode::Standalone);
         assert_eq!(
             startup.shared_instance_conflict.as_deref(),
@@ -227,10 +255,13 @@ mod tests {
         }
         write_tcp_shared_config(&dir, true, port, control);
 
-        let startup =
-            init_owned_or_standalone(dir.to_str().unwrap(), true, Arc::new(AtomicBool::new(true)))
-                .await
-                .expect("shared owner");
+        let startup = Box::pin(init_owned_or_standalone(
+            dir.to_str().unwrap(),
+            true,
+            Arc::new(AtomicBool::new(true)),
+        ))
+        .await
+        .expect("shared owner");
         assert_eq!(startup.handle.instance_mode, InstanceMode::Shared);
         assert!(startup.shared_instance_conflict.is_none());
         let settings = client_settings_json(
@@ -258,11 +289,11 @@ mod tests {
         let control = free_port().await;
         write_tcp_shared_config(&dir, false, port, control);
 
-        let startup = init_owned_or_standalone(
+        let startup = Box::pin(init_owned_or_standalone(
             dir.to_str().unwrap(),
             false,
             Arc::new(AtomicBool::new(true)),
-        )
+        ))
         .await
         .expect("standalone");
         assert_eq!(startup.handle.instance_mode, InstanceMode::Standalone);

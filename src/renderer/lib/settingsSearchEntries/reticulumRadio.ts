@@ -38,6 +38,30 @@ const reticulumRadioEntries: readonly SettingSearchEntry[] = [
     visible: hasNetworkPanel,
   },
   {
+    id: 'radio.reticulumStack.enableStamping',
+    slot: 'Radio',
+    labelKey: 'networkPanel.reticulumStackSettings.enableStamping',
+    sectionKey: STACK,
+    keywords: ['network stamps', 'stamp', 'proof of work', 'spam', 'announce', '1.6.0'],
+    visible: hasNetworkPanel,
+  },
+  {
+    id: 'radio.reticulumStack.enforceStamps',
+    slot: 'Radio',
+    labelKey: 'networkPanel.reticulumStackSettings.enforceStamps',
+    sectionKey: STACK,
+    keywords: ['network stamps', 'stamp', 'enforce', 'reject', 'spam', 'announce'],
+    visible: hasNetworkPanel,
+  },
+  {
+    id: 'radio.reticulumStack.linkMtuDiscovery',
+    slot: 'Radio',
+    labelKey: 'networkPanel.reticulumStackSettings.linkMtuDiscovery',
+    sectionKey: STACK,
+    keywords: ['mtu', 'packet size', 'link', 'path', 'debug'],
+    visible: hasNetworkPanel,
+  },
+  {
     id: 'radio.reticulumStack.logLevel',
     slot: 'Radio',
     labelKey: 'networkPanel.reticulumStackSettings.logLevel',
@@ -372,6 +396,8 @@ export const reticulumRadioSurface: SettingsSearchSurface = {
     'networkPanel.reticulumStackSettings.saveFailed': 'result toast, not a control',
     'networkPanel.reticulumStackSettings.autoconnectUnverifiedRestartRequired':
       'result toast after saving the indexed unverified autoconnect toggle',
+    'networkPanel.reticulumStackSettings.stampMtuRestartRequired':
+      'result toast after saving the indexed stamp / link MTU toggles',
     'reticulumSetup.open': 'navigation link to the setup guide, not a setting',
     'reticulumSetup.tabUnavailable': 'navigation error toast',
     'connectionPanel.reticulumPropagation.enable': 'per-node toggle in the propagation list',

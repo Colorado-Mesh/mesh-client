@@ -1,8 +1,8 @@
 diff --git a/README.md b/README.md
-index 69a4402..7a3e20b 100644
+index 2ca98bb..d2f58f4 100644
 --- a/README.md
 +++ b/README.md
-@@ -329,6 +329,14 @@ values. Standard fields have defined schemas. The 1.4 library preserves signed
+@@ -331,6 +331,14 @@ values. Standard fields have defined schemas. The library preserves signed
  and unsigned integer IDs beyond the CLI’s 0–255 range and rejects duplicate
  outer IDs. Encoding a structured field as a binary blob changes its meaning.
  
@@ -14,14 +14,14 @@ index 69a4402..7a3e20b 100644
 +| `FIELD_FILE_ATTACHMENTS` (`0x05`) | `[[name, bytes], …]` | `set_file_attachments_field` / `file_attachments` (single-file helpers: `set_file_attachment_field` / `first_file_attachment`) |
 +| `FIELD_AUDIO` (`0x07`) | `[mode, bytes]` | `set_audio_field` / `audio_field` |
 +
- In the 1.4 API, construct `LxMessageDraft` and set `include_ticket` before
- calling `LxmRouter::prepare_outbound`. Persist the returned ticket intent before
- signing; a pending intent blocks signing. Signing consumes the draft, and
+ Construct `LxMessageDraft` and set `include_ticket` before calling
+ `LxmRouter::prepare_outbound`; any reply ticket it adds is already in the
+ router's state store when the call returns. Signing consumes the draft, and
 diff --git a/crates/lxmf-core/src/message.rs b/crates/lxmf-core/src/message.rs
-index 1e8c8ec..19729cb 100644
+index 57539d0..40a07ca 100644
 --- a/crates/lxmf-core/src/message.rs
 +++ b/crates/lxmf-core/src/message.rs
-@@ -498,21 +498,32 @@ impl LxMessage {
+@@ -541,21 +541,32 @@ impl LxMessage {
      /// from this message. The filename is copied into a string; it has no
      /// separate length limit beyond the enclosing message's decode limits.
      pub fn first_file_attachment(&self) -> Result<Option<(String, &[u8])>, MessageError> {
@@ -65,7 +65,7 @@ index 1e8c8ec..19729cb 100644
      }
  
      /// Decode the native LXMF image field while borrowing its image bytes
-@@ -1364,12 +1375,11 @@ impl serde::Serialize for AudioFieldRef<'_> {
+@@ -1519,12 +1530,11 @@ impl serde::Serialize for AudioFieldRef<'_> {
      }
  }
  
@@ -81,7 +81,7 @@ index 1e8c8ec..19729cb 100644
      fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
          use serde::ser::{SerializeSeq, SerializeTuple};
  
-@@ -1387,11 +1397,10 @@ impl serde::Serialize for FileAttachmentsFieldRef<'_> {
+@@ -1542,11 +1552,10 @@ impl serde::Serialize for FileAttachmentsFieldRef<'_> {
              }
          }
  
@@ -98,10 +98,10 @@ index 1e8c8ec..19729cb 100644
      }
  }
 diff --git a/crates/lxmf-core/src/message/draft.rs b/crates/lxmf-core/src/message/draft.rs
-index 8a2efdb..be2a87b 100644
+index 7427014..e256355 100644
 --- a/crates/lxmf-core/src/message/draft.rs
 +++ b/crates/lxmf-core/src/message/draft.rs
-@@ -227,14 +227,28 @@ impl LxMessageDraft {
+@@ -216,14 +216,28 @@ impl LxMessageDraft {
          let encoded = rmp_serde::to_vec(&AudioFieldRef { mode, bytes }).map_err(packed)?;
          self.set_msgpack_field(FIELD_AUDIO, encoded)
      }
@@ -134,10 +134,10 @@ index 8a2efdb..be2a87b 100644
      }
      /// Exact unsigned payload, for diagnostics; it is not a transmittable message.
 diff --git a/crates/lxmf-core/src/message/tests.rs b/crates/lxmf-core/src/message/tests.rs
-index b116adc..d74368b 100644
+index 717fd52..bcbff42 100644
 --- a/crates/lxmf-core/src/message/tests.rs
 +++ b/crates/lxmf-core/src/message/tests.rs
-@@ -441,6 +441,38 @@ fn native_attachments_borrow_exact_image_and_clone() {
+@@ -438,6 +438,38 @@ fn native_attachments_borrow_exact_image_and_clone() {
      );
  }
  #[test]

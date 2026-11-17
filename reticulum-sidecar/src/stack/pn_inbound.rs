@@ -674,6 +674,7 @@ mod tests {
             static_sequential: false,
             max_inbound_syncs: 4,
             from_static_only: false,
+            invalid_stamp_throttle: PnInboundAdmissionConfig::default().invalid_stamp_throttle,
         };
         PnInboundRuntime::new(config, None, 64 * 1024)
     }

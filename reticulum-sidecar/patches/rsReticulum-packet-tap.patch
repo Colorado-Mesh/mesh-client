@@ -1,8 +1,8 @@
 diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
-index 3946e64..dc36d9c 100644
+index e1c176b..906646c 100644
 --- a/crates/rns-runtime/src/reticulum.rs
 +++ b/crates/rns-runtime/src/reticulum.rs
-@@ -1648,6 +1648,17 @@ impl ReticulumHandle {
+@@ -1800,6 +1800,17 @@ impl ReticulumHandle {
          result
      }
  
@@ -18,13 +18,13 @@ index 3946e64..dc36d9c 100644
 +    }
 +
      /// Read identity and announce metadata from this process's transport cache
-     /// without extending its lifetime. This remains a local lookup in Client
-     /// mode, even when the shared owner knows more.
+     /// and mark the destination used, like Python's `Identity.recall`. The
+     /// lookup stays local in Client mode; the use mark goes to the shared owner
 diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
-index da5cdda..e37ab00 100644
+index 4944a82..708d318 100644
 --- a/crates/rns-transport/src/actor/inbound.rs
 +++ b/crates/rns-transport/src/actor/inbound.rs
-@@ -145,6 +145,16 @@ impl TransportActor {
+@@ -210,6 +210,16 @@ impl TransportActor {
              return;
          }
  
@@ -42,28 +42,28 @@ index da5cdda..e37ab00 100644
              Ok((header, offset)) => (header, offset),
              Err(e) => {
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index 3fd32af..ec939a3 100644
+index 6fcbf2f..9fbe74d 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
-@@ -285,6 +285,9 @@ pub struct TransportActor {
+@@ -335,6 +335,9 @@ pub struct TransportActor {
      /// checks. Only the `mobile-throttle` feature changes the background tick
      /// period to 2 seconds; neither transition guarantees completed disk writes.
-     pub is_foreground: Arc<AtomicBool>,
+     pub(crate) is_foreground: Arc<AtomicBool>,
 +
 +    /// Optional wire packet tap — emits RX/TX frames for sniffer UIs.
 +    packet_tap: Option<tokio::sync::broadcast::Sender<crate::messages::PacketTapEvent>>,
  }
  
  /// Cached announce metadata used by diagnostics and path/identity lookups.
-@@ -478,6 +481,7 @@ impl TransportActor {
-             announce_handlers: Vec::new(),
-             next_announce_handler_id: 0,
-             is_foreground: Arc::new(AtomicBool::new(true)),
+@@ -605,6 +608,7 @@ impl TransportActor {
+             is_foreground: options
+                 .is_foreground
+                 .unwrap_or_else(|| Arc::new(AtomicBool::new(true))),
 +            packet_tap: None,
          };
  
          (actor, tx)
-@@ -1236,6 +1240,9 @@ impl TransportActor {
+@@ -1396,6 +1400,9 @@ impl TransportActor {
                      debug!(dest = hex::encode(dest), "registered path waiter");
                  }
              }
@@ -73,7 +73,7 @@ index 3fd32af..ec939a3 100644
              TransportMessage::Shutdown => unreachable!(),
          }
          self.process_background_starts();
-@@ -1724,6 +1731,35 @@ impl TransportActor {
+@@ -1932,6 +1939,35 @@ impl TransportActor {
      ///
      /// `try_send` failures: `Full` bumps `tx_drops`; `Closed` auto-deregisters
      /// (zombie interface — receiver dropped without DeregisterInterface).
@@ -109,16 +109,16 @@ index 3fd32af..ec939a3 100644
      #[tracing::instrument(
          level = "trace",
          name = "actor.send_to_interface",
-@@ -1806,7 +1842,7 @@ impl TransportActor {
+@@ -2006,7 +2042,7 @@ impl TransportActor {
          } else {
              Bytes::copy_from_slice(raw)
          };
 -        match entry.tx.try_send(data) {
 +        let outcome = match entry.tx.try_send(data.clone()) {
              Ok(()) => {
-                 if let Some((link_id, _)) = request_owner {
-                     self.pending_local_link_requests
-@@ -1817,9 +1853,21 @@ impl TransportActor {
+                 self.count_tx_packet();
+                 // Python counts every transmitted announce (Transport.py).
+@@ -2036,9 +2072,21 @@ impl TransportActor {
                  }
                  InterfaceSendOutcome::Sent
              }
@@ -141,10 +141,10 @@ index 3fd32af..ec939a3 100644
  
      fn send_to_interface(&mut self, id: InterfaceId, raw: &[u8]) -> bool {
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 167a1f2..3b61fd1 100644
+index 303a708..19d6a08 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -517,6 +517,71 @@ pub struct PathRequestOptions {
+@@ -651,6 +651,71 @@ pub struct PathRequestOptions {
      pub recursive: bool,
  }
  
@@ -216,7 +216,7 @@ index 167a1f2..3b61fd1 100644
  /// Commands accepted by the transport actor. Some require a current
  /// producer-bound `InterfaceEvent`; others are trusted application operations.
  /// A mailbox send is not an operation acknowledgment. Unless a variant says
-@@ -777,6 +842,10 @@ pub enum TransportMessage {
+@@ -933,6 +998,10 @@ pub enum TransportMessage {
          dest: [u8; 16],
          reply: tokio::sync::oneshot::Sender<bool>,
      },
@@ -227,7 +227,7 @@ index 167a1f2..3b61fd1 100644
      /// Request actor shutdown and its synchronous state-save path. There is no
      /// completion reply, and this is not a durability acknowledgment.
      Shutdown,
-@@ -825,6 +894,7 @@ pub fn msg_variant_name(msg: &TransportMessage) -> &'static str {
+@@ -984,6 +1053,7 @@ pub fn msg_variant_name(msg: &TransportMessage) -> &'static str {
          TransportMessage::RegisterLink { .. } => "RegisterLink",
          TransportMessage::ActivateLink { .. } => "ActivateLink",
          TransportMessage::AwaitPath { .. } => "AwaitPath",
@@ -235,7 +235,7 @@ index 167a1f2..3b61fd1 100644
          TransportMessage::Shutdown => "Shutdown",
      }
  }
-@@ -1390,6 +1460,7 @@ impl std::fmt::Debug for TransportMessage {
+@@ -1706,6 +1776,7 @@ impl std::fmt::Debug for TransportMessage {
              Self::AwaitPath { dest, .. } => {
                  f.debug_struct("AwaitPath").field("dest", dest).finish()
              }

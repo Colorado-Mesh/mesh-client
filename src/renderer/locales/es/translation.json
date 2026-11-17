@@ -3608,7 +3608,17 @@
       "autoconnectUnverifiedHint": "Desactivado de forma predeterminada. Habilítelo al emparejar con rsRNS u otros anuncios de Backbone que no sean de Python que no anuncien una implementación verificada de Python Reticulum.",
       "interfaceStatsTitle": "Contadores de interfaz en vivo",
       "interfaceStatsLine": "Caída TX {{txDropped}} B · protocolo {{protocol}} · IFAC {{ifac}} · filtro {{filter}}",
-      "autoconnectUnverifiedRestartRequired": "Guardado. Reinicie la pila Reticulum para que la conexión automática no verificada surta efecto."
+      "autoconnectUnverifiedRestartRequired": "Guardado. Reinicie la pila Reticulum para que la conexión automática no verificada surta efecto.",
+      "enableStamping": "Anuncios de sellado y solicitudes de ruta",
+      "enableStampingAria": "Sellar los anuncios salientes y las solicitudes de ruta",
+      "enableStampingHint": "Desactivado de forma predeterminada (Reticulum 1.6.0). Actívelo pronto para que los nodos de transporte que requieren sellos le reenvíen; prepárese para la emisión activada por defecto en la versión 1.6.1. Los pares más antiguos ignoran los sellos.",
+      "enforceStamps": "Solicitar sellos a otras personas",
+      "enforceStampsAria": "Requerir sellos de red válidos de los pares",
+      "enforceStampsHint": "Desactivado de forma predeterminada (Reticulum 1.6.0). Refuerce un hub privado o abierto contra el spam sin sello. Advertencia: los pares más antiguos desaparecen, incluida la llamada LXST a Ratspeak sin sello. La versión 1.6.2 de Upstream activa esto de forma predeterminada.",
+      "linkMtuDiscovery": "Detección de la MTU del enlace",
+      "linkMtuDiscoveryAria": "Negociar el tamaño de paquete más grande que admite cada enlace",
+      "linkMtuDiscoveryHint": "Activado de forma predeterminada. Déjelo activado para conseguir transferencias más rápidas en conexiones de buena calidad. Desactívelo si los paquetes grandes funcionan mal en una ruta.",
+      "stampMtuRestartRequired": "Guardado. Reinicie la pila Reticulum para que se apliquen los cambios en el sello de red y en el MTU del enlace."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",

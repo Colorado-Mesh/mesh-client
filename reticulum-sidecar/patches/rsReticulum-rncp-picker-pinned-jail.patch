@@ -1,22 +1,11 @@
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
+index 73ded13..7a8b892 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
-@@ -154,6 +154,9 @@
+@@ -327,6 +327,78 @@ fn escapes_jail(path: &str, jail: &str) -> bool {
      }
-     match jail {
-         Some(jail_dir) => {
-+            if is_picker_pinned_path(jail_dir) {
-+                return resolve_under_picker_pin(jail_dir, path_str);
-+            }
-             let jail_canonical =
-                 std::fs::canonicalize(jail_dir).map_err(|e| format!("jail canonicalize: {e}"))?;
-             // canonicalize resolves symlinks (macOS `/var` → `/private/var`)
-@@ -173,6 +176,52 @@
-         }
-         None => std::fs::canonicalize(path_str).map_err(|e| format!("not found: {e}")),
-     }
-+}
-+
+ }
+ 
 +/// Handle-derived roots (`/proc/self/fd` on Linux and `/.vol` on macOS) must
 +/// remain in the returned path. Canonicalizing one turns it back into the
 +/// mutable pathname that the native picker was intended to replace.
@@ -38,60 +27,103 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 +    }
 +}
 +
-+fn resolve_under_picker_pin(jail: &Path, requested: &str) -> Result<PathBuf, String> {
++/// Why a fetch request names no servable path.
++#[derive(Debug, PartialEq, Eq)]
++enum FetchPathError {
++    /// Refused by the jail; the reason is reported as `FetchDenied`.
++    Outside(&'static str),
++    NotFound,
++}
++
++/// Resolve a request under a picker-pinned jail component by component,
++/// refusing absolute paths, traversal and symlinks, so the final read stays
++/// rooted at the directory handle rather than its current pathname.
++fn resolve_under_picker_pin(jail: &Path, requested: &str) -> Result<String, FetchPathError> {
 +    use std::path::Component;
 +
 +    let requested = Path::new(requested);
 +    if requested.is_absolute() {
-+        return Err("outside fetch jail".into());
++        return Err(FetchPathError::Outside("outside fetch jail"));
 +    }
 +    let mut resolved = jail.to_path_buf();
 +    for component in requested.components() {
 +        let Component::Normal(name) = component else {
-+            return Err("outside fetch jail".into());
++            return Err(FetchPathError::Outside("outside fetch jail"));
 +        };
 +        resolved.push(name);
 +        let metadata =
-+            std::fs::symlink_metadata(&resolved).map_err(|error| format!("not found: {error}"))?;
++            std::fs::symlink_metadata(&resolved).map_err(|_| FetchPathError::NotFound)?;
 +        if metadata.file_type().is_symlink() {
-+            return Err("outside fetch jail".into());
++            return Err(FetchPathError::Outside("resolves outside fetch jail"));
 +        }
 +    }
-+    if !resolved.is_file() {
-+        return Err("not found: requested path is not a file".into());
-+    }
-+    Ok(resolved)
- }
- 
- /// Listener policy and file locations. Defaults generate a fresh identity,
-@@ -1594,6 +1643,21 @@
- #[cfg(test)]
- mod tests {
-     use super::*;
++    Ok(resolved.to_string_lossy().into_owned())
++}
 +
++/// The local path a fetch request names under the listener's jail policy.
++fn resolve_fetch_request(jail: Option<&str>, data: &str) -> Result<String, FetchPathError> {
++    if let Some(jail) = jail
++        && is_picker_pinned_path(Path::new(jail))
++    {
++        return resolve_under_picker_pin(Path::new(jail), data);
++    }
++    let path =
++        host_fetch_request_path(jail, data).ok_or(FetchPathError::Outside("outside fetch jail"))?;
++    if let Some(jail) = jail
++        && Path::new(&path).exists()
++        && escapes_jail(&path, jail)
++    {
++        return Err(FetchPathError::Outside("resolves outside fetch jail"));
++    }
++    Ok(path)
++}
++
+ // rncp's paths follow the host's `os.path`: `ntpath` on Windows, where the
+ // POSIX string handling cannot name a drive and refuses every jailed fetch.
+ 
+@@ -655,15 +727,13 @@ fn serve_fetch(
+         RequestOutcome::ReplyValue(FetchReply::NotAllowed.packed())
+     };
+     let data = String::from_utf8_lossy(&request.data);
+-    let Some(path) = host_fetch_request_path(jail, &data) else {
+-        return deny("outside fetch jail".into());
++    let path = match resolve_fetch_request(jail, &data) {
++        Ok(path) => path,
++        Err(FetchPathError::Outside(reason)) => return deny(reason.into()),
++        Err(FetchPathError::NotFound) => {
++            return RequestOutcome::ReplyValue(FetchReply::NotFound.packed());
++        }
+     };
+-    if let Some(jail) = jail
+-        && Path::new(&path).exists()
+-        && escapes_jail(&path, jail)
+-    {
+-        return deny("resolves outside fetch jail".into());
+-    }
+     if !Path::new(&path).is_file() {
+         return RequestOutcome::ReplyValue(FetchReply::NotFound.packed());
+     }
+@@ -2331,6 +2401,72 @@ mod tests {
+         let _ = std::fs::remove_dir_all(&base);
+     }
+ 
 +    #[cfg(target_os = "linux")]
-+    fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
++    fn pinned_dir_alias(handle: &std::fs::File) -> PathBuf {
 +        use std::os::fd::AsRawFd;
-+        let _ = dir;
 +        PathBuf::from(format!("/proc/self/fd/{}", handle.as_raw_fd()))
 +    }
 +
 +    #[cfg(target_os = "macos")]
-+    fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
++    fn pinned_dir_alias(handle: &std::fs::File) -> PathBuf {
 +        use std::os::unix::fs::MetadataExt;
-+        let _ = dir;
 +        let metadata = handle.metadata().unwrap();
 +        PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
 +    }
- 
-     #[test]
-     fn metadata_roundtrip() {
-@@ -1687,4 +1751,32 @@
-     fn successful_rncp_send_retains_python_receiver_settlement_window() {
-         assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
-     }
--}
 +
++    /// A native picker hands the listener a handle-derived jail
++    /// (`/proc/self/fd/N` on Linux, `/.vol/<dev>/<ino>` on macOS). The served
++    /// file must come from the directory the handle pins even after the
++    /// user-visible pathname is replaced before the read.
 +    #[cfg(any(target_os = "linux", target_os = "macos"))]
 +    #[test]
 +    fn fetch_sink_keeps_handle_alias_after_selected_root_is_replaced() {
@@ -109,14 +141,38 @@ diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
 +        std::fs::create_dir(&selected).unwrap();
 +        std::fs::write(selected.join("served.txt"), b"picked").unwrap();
 +        let handle = std::fs::File::open(&selected).unwrap();
-+        let alias = pinned_dir_alias(&selected, &handle);
++        let jail = host_jail(&pinned_dir_alias(&handle).to_string_lossy());
 +
 +        std::fs::rename(&selected, &moved).unwrap();
 +        std::fs::create_dir(&selected).unwrap();
 +        std::fs::write(selected.join("served.txt"), b"replacement").unwrap();
 +
-+        let resolved = resolve_fetch_path(Some(&alias), b"served.txt").unwrap();
-+        assert_eq!(std::fs::read(resolved).unwrap(), b"picked");
++        let path = resolve_fetch_request(Some(&jail), "served.txt").unwrap();
++        assert!(
++            path.starts_with(&jail),
++            "{path} left the pinned jail {jail}"
++        );
++        assert_eq!(std::fs::read(&path).unwrap(), b"picked");
++        assert_eq!(
++            resolve_fetch_request(Some(&jail), "../selected/served.txt"),
++            Err(FetchPathError::Outside("outside fetch jail"))
++        );
++        assert_eq!(
++            resolve_fetch_request(Some(&jail), "/etc/hosts"),
++            Err(FetchPathError::Outside("outside fetch jail"))
++        );
++        assert_eq!(
++            resolve_fetch_request(Some(&jail), "missing.txt"),
++            Err(FetchPathError::NotFound)
++        );
++        std::os::unix::fs::symlink(selected.join("served.txt"), moved.join("link.txt")).unwrap();
++        assert_eq!(
++            resolve_fetch_request(Some(&jail), "link.txt"),
++            Err(FetchPathError::Outside("resolves outside fetch jail"))
++        );
 +        std::fs::remove_dir_all(&dir).unwrap();
 +    }
-+}
++
+     #[test]
+     fn default_app_name_matches_python() {
+         assert_eq!(default_rncp_app_name(), "rncp.receive");
