@@ -8,6 +8,7 @@ import {
   registerChatMarkdownToolbarTarget,
   resetChatMarkdownToolbarTargetForTests,
 } from '@/renderer/lib/chatMarkdownToolbarTarget';
+import { applyFontScale, resetFontScale } from '@/renderer/lib/fontScale';
 
 describe('ChatMarkdownToolbar', () => {
   beforeEach(() => {
@@ -17,6 +18,7 @@ describe('ChatMarkdownToolbar', () => {
   afterEach(() => {
     cleanup();
     resetChatMarkdownToolbarTargetForTests();
+    resetFontScale();
   });
 
   it('stays disabled until a composer registers, then wraps via icons', () => {
@@ -53,6 +55,19 @@ describe('ChatMarkdownToolbar', () => {
   it('disables buttons when onWrap is set and disabled', () => {
     render(<ChatMarkdownToolbar onWrap={vi.fn()} disabled />);
     expect(screen.getByRole('button', { name: 'Bold' })).toBeDisabled();
+  });
+
+  it('uses compact rem h-6 hit targets so Appearance text size scales them', () => {
+    render(<ChatMarkdownToolbar onWrap={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Bold' }).className).toContain('h-6');
+  });
+
+  it('scales Lucide icon size with Appearance text size', () => {
+    applyFontScale(1.5);
+    render(<ChatMarkdownToolbar onWrap={vi.fn()} />);
+    const svg = screen.getByRole('button', { name: 'Bold' }).querySelector('svg');
+    expect(svg).toHaveAttribute('width', '21');
+    expect(svg).toHaveAttribute('height', '21');
   });
 
   it('has no axe violations', async () => {
