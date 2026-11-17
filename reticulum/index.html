@@ -1936,6 +1936,8 @@
       
         
       
+        
+      
     
     
     
@@ -2164,6 +2166,34 @@
     
   
     Service Announcements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests & Interoperability
   
 
     
@@ -2419,7 +2449,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2441,14 +2471,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7_14" id="__nav_7_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_7_15" id="__nav_7_15_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_14">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4115,7 +4145,7 @@
 <tr>
 <td>Minimum stamp</td>
 <td><code>required_discovery_value</code></td>
-<td><code>16</code></td>
+<td><code>16</code> (fractional OK)</td>
 </tr>
 <tr>
 <td>Trusted sources</td>
@@ -4129,6 +4159,34 @@
 </tr>
 </tbody>
 </table>
+<p><strong>Network stamps &amp; Link MTU (Network → Stack settings):</strong> Match Ratspeak 1.1.0 / Reticulum <strong>1.6.0</strong> defaults (emit off, enforce off, MTU discovery on). Saving any of these requires a stack soft-restart (same pattern as unverified Auto implementations).</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Config / InitOptions</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stamp announces and path requests</td>
+<td><code>[stamps]</code> <code>stamp_destinations</code> + <code>stamp_prs</code> <strong>and</strong> <code>InitOptions.enable_stamping</code></td>
+<td>off</td>
+</tr>
+<tr>
+<td>Require stamps from others</td>
+<td><code>[stamps]</code> <code>enforce_stamps</code> <strong>and</strong> <code>InitOptions.enforce_stamps</code></td>
+<td>off</td>
+</tr>
+<tr>
+<td>Link MTU discovery</td>
+<td><code>[reticulum]</code> <code>link_mtu_discovery</code></td>
+<td>on</td>
+</tr>
+</tbody>
+</table>
+<p>Phased upstream loadout: <strong>1.6.0</strong> primitives with emit/enforce off (mesh-client defaults); <strong>1.6.1</strong> emit on by default; <strong>1.6.2</strong> enforce on by default. Turning on <strong>Require stamps</strong> hides unstamped / older peers (including LXST Call to unstamped Ratspeak). Raw stamp cost floats stay INI-only.</p>
 <p><strong><code>bootstrap_only</code>:</strong> Per-interface checkbox on Connection → Interfaces. When set, rsReticulum tears the interface down once the autoconnect quota is filled (useful for an expensive LoRa/TCP bridge). Requires autoconnect limit &gt; 0.</p>
 <p><strong>Upstream library gaps (do not reimplement in mesh-client):</strong> <code>autoconnect_interface_mode</code> and <code>autoconnect_announces_to_internal</code> are documented in the Reticulum Discovering Interfaces chapter but are <strong>not</strong> implemented in rsReticulum yet (autoconnect mode is derived from <code>enable_transport</code>). Track in Ratspeak/rsReticulum; mesh-client only writes keys the library already honors.</p>
 <p><strong>UI:</strong> Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.</p>
@@ -4517,11 +4575,12 @@
 <p>Wire interop and smoke scenarios: <a href="../reticulum-development/#remote-rnsh--rncp-interop-smoke">Reticulum development — Remote (rnsh / rncp)</a>.</p>
 <hr />
 <h2 id="lxst-voice-calls">LXST voice calls<a class="headerlink" href="#lxst-voice-calls" title="Permanent link">&para;</a></h2>
-<p><strong>Call</strong> on Peers rows and Chat DM starts live <strong>LXST</strong> telephony (rsLXST in the sidecar) — not an LXMF voice memo clip. There is no separate Voice tab.</p>
+<p><strong>Call</strong> on Peers rows and Chat DM starts live <strong>LXST</strong> telephony (rsLXST <strong>0.4</strong> / LXST 0.6.0 in the sidecar) — not an LXMF voice memo clip. There is no separate Voice tab.</p>
 <ul>
 <li>Requires a live Reticulum stack built with LXST (<code>hasLxstVoice</code>); the renderer owns mic/speaker (<code>getUserMedia</code> / Web Audio).</li>
-<li>Media starts only after the call is established; hang up / reject ends the session.</li>
-<li>Live interop with Ratspeak / Python LXST should be verified on a real mesh. Voice memos stay under <a href="#chat-lxmf">Chat (LXMF)</a>.</li>
+<li>Dial uses full-duplex (<code>TelephonyControl::Call { mode: None }</code>); media starts only after establish / <code>audio_started</code>; hang up / reject ends the session.</li>
+<li>Calls honor Network stamp / Link MTU settings — keep stamp emit/enforce aligned with the peer (Require stamps alone can block Call to older unstamped Ratspeak).</li>
+<li>Automated: mesh-client ↔ mesh-client signalling (dual-sidecar TCP). Manual gold: mesh-client ↔ Ratspeak 1.1.0 Call (audio + stamp off/on). Voice memos stay under <a href="#chat-lxmf">Chat (LXMF)</a>.</li>
 </ul>
 <hr />
 <h2 id="games">Games<a class="headerlink" href="#games" title="Permanent link">&para;</a></h2>
@@ -4746,7 +4805,7 @@ page creates a new controller even when the page source is byte-for-byte identic
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 18:55:57 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 00:48:39 UTC">November 17, 2026</span>
   </span>
 
     

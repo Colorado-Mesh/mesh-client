@@ -1521,6 +1521,8 @@
       
         
       
+        
+      
     
     
     
@@ -1752,6 +1754,34 @@
     
   
     Service Announcements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests & Interoperability
   
 
     
@@ -2239,7 +2269,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2261,14 +2291,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7_14" id="__nav_7_14_label" tabindex="">
+              <label class="md-nav__link " for="__nav_7_15" id="__nav_7_15_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_14">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3721,13 +3751,13 @@ default destination and listener disable do not carry a local path and therefore
 <td>GET</td>
 <td><code>/api/v1/stack/settings</code></td>
 <td></td>
-<td><code>{ enable_transport, share_instance, loglevel, announce_interval_sec, autoconnect_discovered_interfaces, required_discovery_value, interface_discovery_sources, network_identity }</code> — <code>announce_interval_sec</code> defaults to <strong>3600</strong> (1 h) when absent from config; consume knobs default to <code>0</code> / <code>16</code> / <code>""</code> / <code>""</code></td>
+<td><code>{ enable_transport, share_instance, loglevel, announce_interval_sec, autoconnect_discovered_interfaces, required_discovery_value, interface_discovery_sources, network_identity, enable_stamping, enforce_stamps, link_mtu_discovery, … }</code> — <code>announce_interval_sec</code> defaults to <strong>3600</strong> (1 h) when absent; consume knobs default to <code>0</code> / <code>16</code> / <code>""</code> / <code>""</code>; stamp/MTU defaults <strong>false</strong> / <strong>false</strong> / <strong>true</strong> (RNS 1.6.0). <code>required_discovery_value</code> is <code>f64</code> (fractional OK). <code>enable_stamping</code> maps to <code>[stamps]</code> <code>stamp_destinations</code>+<code>stamp_prs</code> and <code>InitOptions.enable_stamping</code>; <code>enforce_stamps</code> to <code>[stamps]</code> + <code>InitOptions</code>; <code>link_mtu_discovery</code> to <code>[reticulum]</code></td>
 </tr>
 <tr>
 <td>PUT</td>
 <td><code>/api/v1/stack/settings</code></td>
 <td>Partial <code>StackSettings</code> JSON — omitted fields keep on-disk values (atomic merge under sidecar lock)</td>
-<td><code>{ ok }</code> — send only fields to change; do <strong>not</strong> GET→merge→PUT from the client</td>
+<td><code>{ ok }</code> — send only fields to change; do <strong>not</strong> GET→merge→PUT from the client. Stamp / MTU toggles require soft-restart</td>
 </tr>
 <tr>
 <td>POST</td>
@@ -4745,7 +4775,7 @@ default destination and listener disable do not carry a local path and therefore
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 02:02:44 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 00:48:39 UTC">November 17, 2026</span>
   </span>
 
     
