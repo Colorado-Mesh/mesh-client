@@ -291,16 +291,21 @@ export function prunePositionHistoryPerNode(
 export function deleteMeshcoreMessagesForRoomServerIds(
   d: NodeSqliteDB,
   roomServerIds: readonly number[],
+  legacyDmShaped = false,
 ): number {
   if (roomServerIds.length === 0) return 0;
   let deleted = 0;
-  const byRoomServerId = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
-  const legacyDmShaped = d.prepareOnce(
-    'DELETE FROM meshcore_messages WHERE room_server_id IS NULL AND (sender_id = ? OR to_node = ?)',
-  );
+  const stmt = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
   for (const id of roomServerIds) {
-    deleted += Number(byRoomServerId.run(id).changes);
-    deleted += Number(legacyDmShaped.run(id, id).changes);
+    deleted += Number(stmt.run(id).changes);
+  }
+  if (legacyDmShaped) {
+    const legacy = d.prepareOnce(
+      'DELETE FROM meshcore_messages WHERE room_server_id IS NULL AND (sender_id = ? OR to_node = ?)',
+    );
+    for (const id of roomServerIds) {
+      deleted += Number(legacy.run(id, id).changes);
+    }
   }
   return deleted;
 }
@@ -328,7 +333,14 @@ export function deleteOrphanMeshcoreRoomMessages(): number {
  */
 export function deleteMeshcoreContactOn(d: NodeSqliteDB, nodeId: number): { changes: number } {
   return d.transaction(() => {
-    deleteMeshcoreMessagesForRoomServerIds(d, [nodeId]);
+    const row = d
+      .prepareOnce('SELECT contact_type FROM meshcore_contacts WHERE node_id=?')
+      .get(nodeId) as { contact_type: number } | undefined;
+    deleteMeshcoreMessagesForRoomServerIds(
+      d,
+      [nodeId],
+      row?.contact_type === MESHCORE_CONTACT_TYPE_ROOM,
+    );
     const result = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(nodeId);
     deleteOrphanMeshcoreRoomMessagesOn(d);
     return { changes: Number(result.changes) };
@@ -347,7 +359,7 @@ function deleteMeshcoreContactsWithRoomMessageCascade(
   deleteContacts: () => number,
 ): number {
   return d.transaction(() => {
-    deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
+    deleteMeshcoreMessagesForRoomServerIds(d, roomIds, true);
     const deleted = deleteContacts();
     deleteOrphanMeshcoreRoomMessagesOn(d);
     return deleted;

@@ -79,6 +79,9 @@ describe('meshcoreSendTextMessageWithErrCode', () => {
         new Uint8Array(32).fill(5),
         'c',
       );
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conn.sendTextMessage).toHaveBeenCalledTimes(1);
       releaseFirst();
       await vi.runAllTimersAsync();
       await expect(first).resolves.toEqual({ expectedAckCrc: 1 });
