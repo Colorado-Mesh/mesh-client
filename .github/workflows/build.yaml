@@ -261,13 +261,13 @@ jobs:
             artifact: test-mesh-client-windows-${{ github.sha }}
             smoke_run: >-
               node scripts/assert-update-yml-artifacts.mjs --require latest.yml
-              && node scripts/test-win-nsis-install.mjs --arch x64
+              && node scripts/test-win-nsis-install.mjs --arch x64 --launch
           - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
             artifact: test-mesh-client-windows-${{ github.sha }}
             smoke_run: >-
               node scripts/assert-update-yml-artifacts.mjs --require latest.yml
-              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z --launch
     steps:
       - name: Checkout code
         # actions/checkout v6.1.0
@@ -284,6 +284,7 @@ jobs:
         run: bash scripts/ci-install-linux-appimage-smoke-deps.sh
 
       - name: Run packaging smoke test
+        timeout-minutes: 15
         run: ${{ matrix.smoke_run }}
 
       # Proves the packaged AppImage actually boots (native arch), not just that its
@@ -301,6 +302,7 @@ jobs:
           name: mesh-client-win-x64-install-logs-${{ github.sha }}
           path: |
             ${{ runner.temp }}/mesh-client-install-x64.log
+            ${{ runner.temp }}/mesh-client-win-x64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7
 
@@ -313,5 +315,6 @@ jobs:
           path: |
             ${{ runner.temp }}/mesh-client-install-arm64.log
             ${{ runner.temp }}/mesh-client-7z-probe/**
+            ${{ runner.temp }}/mesh-client-win-arm64-launch-diagnostics/**
           if-no-files-found: ignore
           retention-days: 7
