@@ -4655,11 +4655,14 @@ function ChatPanel({
                   nextMsg.sender_id === msg.sender_id &&
                   !daySeparatorIndices.has(i + 1);
                 const isFollowedByContinuation = compactMode && nextIsSameSender;
+                // A pause in arrivals, or a stamp that jumps (a clock that is off), shows the time.
                 const showContinuationTime =
                   isContinuation &&
                   prevMsg !== null &&
-                  chatReceivedAtMs(msg) - chatReceivedAtMs(prevMsg) >=
-                    CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+                  (chatReceivedAtMs(msg) - chatReceivedAtMs(prevMsg) >=
+                    CHAT_COMPACT_CONTINUATION_TIME_GAP_MS ||
+                    Math.abs(msg.timestamp - prevMsg.timestamp) >=
+                      CHAT_COMPACT_CONTINUATION_TIME_GAP_MS);
 
                 /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
                 const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);

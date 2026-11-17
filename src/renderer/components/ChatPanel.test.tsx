@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
-import { formatIsoDate } from '@/shared/formatIsoDate';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
@@ -1205,6 +1205,68 @@ describe('ChatPanel compact mode', () => {
     expect(secondBubble).not.toBeNull();
     expect(firstBubble).toHaveClass('border-b-0');
     expect(secondBubble).toHaveClass('border-t-0');
+  });
+
+  describe('continuation time', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    const MINUTE = 60_000;
+
+    function renderPair(second: { timestamp: number; receivedAt: number }) {
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'JCR2',
+                payload: 'first line',
+                channel: 0,
+                timestamp: base,
+                receivedAt: base,
+                status: 'acked',
+              },
+              {
+                sender_id: 2,
+                sender_name: 'JCR2',
+                payload: 'second line',
+                channel: 0,
+                timestamp: second.timestamp,
+                receivedAt: second.receivedAt,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      // One sender header: the second line renders as a continuation.
+      expect(screen.getAllByRole('button', { name: 'JCR2' })).toHaveLength(1);
+      const row = screen.getByText('second line').closest('[data-chat-message-key]');
+      expect(row).not.toBeNull();
+      return row!.querySelector(`[title="${formatIsoDateTime(second.timestamp)}"]`);
+    }
+
+    it('shows the time when the line arrived five or more minutes after the one above', () => {
+      const label = renderPair({ timestamp: base + MINUTE, receivedAt: base + 6 * MINUTE });
+      expect(label).not.toBeNull();
+    });
+
+    it('shows the time when the stamp jumps five or more minutes, even if it arrived soon after', () => {
+      const label = renderPair({ timestamp: base + 10 * MINUTE, receivedAt: base + MINUTE });
+      expect(label).not.toBeNull();
+    });
+
+    it('shows the sender date on a continuation stamped two days before it arrived', () => {
+      const stamped = base - 2 * 86_400_000;
+      const label = renderPair({ timestamp: stamped, receivedAt: base + MINUTE });
+      expect(label).not.toBeNull();
+      expect(label?.textContent?.startsWith(`${formatIsoDate(stamped)} `)).toBe(true);
+    });
+
+    it('hides the time when both the stamps and the arrivals are close', () => {
+      const label = renderPair({ timestamp: base + MINUTE, receivedAt: base + MINUTE });
+      expect(label).toBeNull();
+    });
   });
 });
 
