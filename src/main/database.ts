@@ -367,6 +367,25 @@ const NO_STORED_ROOM_POSTS_SQL =
   ' OR NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id IS NULL' +
   ' AND (meshcore_messages.sender_id = meshcore_contacts.node_id OR meshcore_messages.to_node = meshcore_contacts.node_id))))';
 
+/** Bulk-clear non-favorited Room contacts and their BBS message rows (IPC `db:clearMeshcoreRooms`). */
+export function clearMeshcoreRoomsOn(d: NodeSqliteDB): { changes: number } {
+  const roomIds = selectRoomContactIdsMatching(
+    d,
+    `SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND COALESCE(favorited, 0) = 0`,
+    [MESHCORE_CONTACT_TYPE_ROOM],
+  );
+  const changes = deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
+    Number(
+      d
+        .prepareOnce(
+          `DELETE FROM meshcore_contacts WHERE contact_type = ? AND COALESCE(favorited, 0) = 0`,
+        )
+        .run(MESHCORE_CONTACT_TYPE_ROOM).changes,
+    ),
+  );
+  return { changes };
+}
+
 export function deleteMeshcoreContactsNeverAdvertisedOn(d: NodeSqliteDB): number {
   const roomIds = selectRoomContactIdsMatching(
     d,

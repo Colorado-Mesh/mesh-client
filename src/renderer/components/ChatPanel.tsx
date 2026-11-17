@@ -835,6 +835,8 @@ export interface ChatPanelProps {
   /** MeshCore: stop waiting for a DM ACK and mark the send failed (cancels in-flight UI retry wait). */
   onCancelPendingDmAck?: (packetId: number) => boolean;
   onNodeClick: (nodeNum: number) => void;
+  /** MeshCore: starred room BBS posts open the Rooms panel for that server. */
+  onOpenRoom?: (nodeId: number) => void;
   /** Reticulum: open peer detail by destination hash (Peers-panel path). */
   onPeerClick?: (destinationHash: string) => void;
   isConnected: boolean;
@@ -936,6 +938,7 @@ function ChatPanel({
   onResend,
   onCancelPendingDmAck,
   onNodeClick,
+  onOpenRoom,
   onPeerClick,
   isConnected,
   isMqttOnly,
@@ -4484,7 +4487,9 @@ function ChatPanel({
                           type="button"
                           onClick={() => {
                             const [type, raw] = s.viewKey.split(':');
-                            if (type === 'dm' && raw) {
+                            if (type === 'room' && raw) {
+                              onOpenRoom?.(Number(raw));
+                            } else if (type === 'dm' && raw) {
                               openDmTo(Number(raw));
                             } else {
                               if (raw !== undefined) selectChannel(Number(raw));

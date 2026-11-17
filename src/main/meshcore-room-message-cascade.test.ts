@@ -10,6 +10,7 @@ import {
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_DM_MESSAGE_CHANNEL } from '../shared/meshcoreMessageChannel';
 import {
+  clearMeshcoreRoomsOn,
   deleteMeshcoreContactOn,
   deleteMeshcoreContactsByAgeOn,
   deleteMeshcoreContactsNeverAdvertisedOn,
@@ -107,6 +108,41 @@ describe('meshcore room message cascade SQL', () => {
     expect(
       (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_contacts').get() as { c: number }).c,
     ).toBe(0);
+    expect(
+      (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages').get() as { c: number }).c,
+    ).toBe(0);
+
+    db.close();
+  });
+
+  it('clearMeshcoreRoomsOn cascades BBS rows for all cleared rooms', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-clear-rooms-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const keptPubkey = 'cc'.repeat(32);
+    const insertContact = db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, favorited, on_radio)
+       VALUES (?, ?, ?, ?, ?, 0)`,
+    );
+    insertContact.run(0x1001, ROOM_PUBKEY, MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 0);
+    insertContact.run(0x1002, 'dd'.repeat(32), MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 1);
+    insertContact.run(0x2002, OTHER_PUBKEY, 1, 1_700_000_000, 0);
+    insertContact.run(0x3003, keptPubkey, MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 0);
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?)`,
+    ).run(0x4004, 'Alice', 'room a', MESHCORE_ROOM_MESSAGE_CHANNEL, 1_700_000_100_000, 0x1001);
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?)`,
+    ).run(0x4004, 'Alice', 'room c', MESHCORE_ROOM_MESSAGE_CHANNEL, 1_700_000_200_000, 0x3003);
+
+    expect(clearMeshcoreRoomsOn(db).changes).toBe(2);
+    expect(
+      (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_contacts').get() as { c: number }).c,
+    ).toBe(2);
     expect(
       (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages').get() as { c: number }).c,
     ).toBe(0);

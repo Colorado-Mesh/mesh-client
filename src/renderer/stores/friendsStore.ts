@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import {
+  canonicalizeReticulumChatDmNodeId,
+  reticulumChatDmNodeIdsEquivalent,
+} from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import type { MeshProtocol } from '@/renderer/lib/types';
 
 import { omitRecordKey } from './storeUtils';
@@ -53,21 +57,24 @@ export const useFriendsStore = create<FriendsState>()(
       addFriend: (identityId, nodeId) => {
         const id = sanitizeNodeId(nodeId);
         if (!identityId.trim() || id == null) return;
+        const canonical = canonicalizeReticulumChatDmNodeId(id);
         set((s) => {
           const prev = s.byIdentity[identityId] ?? [];
-          if (prev.includes(id)) return s;
+          if (prev.some((peer) => reticulumChatDmNodeIdsEquivalent(peer, canonical))) return s;
           return {
-            byIdentity: { ...s.byIdentity, [identityId]: [...prev, id] },
+            byIdentity: { ...s.byIdentity, [identityId]: [...prev, canonical] },
           };
         });
       },
       removeFriend: (identityId, nodeId) => {
         const id = sanitizeNodeId(nodeId);
         if (!identityId.trim() || id == null) return;
+        const canonical = canonicalizeReticulumChatDmNodeId(id);
         set((s) => {
           const prev = s.byIdentity[identityId];
-          if (!prev?.includes(id)) return s;
-          const next = prev.filter((n) => n !== id);
+          if (!prev?.length) return s;
+          const next = prev.filter((n) => !reticulumChatDmNodeIdsEquivalent(n, canonical));
+          if (next.length === prev.length) return s;
           if (next.length === 0) {
             return { byIdentity: omitRecordKey(s.byIdentity, identityId) };
           }
@@ -77,7 +84,10 @@ export const useFriendsStore = create<FriendsState>()(
       isFriend: (identityId, nodeId) => {
         const id = sanitizeNodeId(nodeId);
         if (!identityId.trim() || id == null) return false;
-        return (get().byIdentity[identityId] ?? []).includes(id);
+        const canonical = canonicalizeReticulumChatDmNodeId(id);
+        return (get().byIdentity[identityId] ?? []).some((peer) =>
+          reticulumChatDmNodeIdsEquivalent(peer, canonical),
+        );
       },
       listFriends: (identityId) => {
         if (!identityId.trim()) return [];

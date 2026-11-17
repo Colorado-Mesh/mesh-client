@@ -104,6 +104,7 @@ import { outboxIdentityIdForInsert } from './chatOutboxIdentity';
 import { showCrashReportDialog } from './crash-report-dialog';
 import {
   addContactToGroup,
+  clearMeshcoreRoomsOn,
   closeDatabase,
   createContactGroup,
   deleteAllMeshcorePathHistory,
@@ -6049,11 +6050,7 @@ ipcMain.handle('db:clearMeshcoreRooms', (event) => {
   try {
     const db = getDbForIpc('db:clearMeshcoreRooms');
     if (!db) return { changes: 0 };
-    return db
-      .prepareOnce(
-        'DELETE FROM meshcore_contacts WHERE contact_type = 3 AND COALESCE(favorited, 0) = 0',
-      )
-      .run();
+    return clearMeshcoreRoomsOn(db);
   } catch (err) {
     finishDbIpcHandler('db:clearMeshcoreRooms', err);
   }

@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MESHCORE_RADIO_ERR_NOT_FOUND, MeshcoreRadioRejectedError } from '../meshcoreRadioErr';
-import { meshcoreSendTextMessageWithErrCode } from './meshcoreDmSend';
+import {
+  MESHCORE_SEND_PRIOR_IN_FLIGHT,
+  meshcoreSendTextMessageWithErrCode,
+} from './meshcoreDmSend';
 
 describe('meshcoreSendTextMessageWithErrCode', () => {
   beforeEach(() => {
@@ -40,6 +43,43 @@ describe('meshcoreSendTextMessageWithErrCode', () => {
     await expect(
       meshcoreSendTextMessageWithErrCode(conn as never, new Uint8Array(32).fill(1), 'hello'),
     ).rejects.toBeInstanceOf(MeshcoreRadioRejectedError);
+  });
+
+  it('rejects a second send while the first never settles', async () => {
+    vi.useFakeTimers();
+    try {
+      let releaseFirst!: () => void;
+      const firstGate = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      const conn = {
+        once: vi.fn(),
+        off: vi.fn(),
+        sendTextMessage: vi.fn(async () => {
+          await firstGate;
+          return { expectedAckCrc: 1 };
+        }),
+      };
+
+      const first = meshcoreSendTextMessageWithErrCode(
+        conn as never,
+        new Uint8Array(32).fill(3),
+        'a',
+      );
+      const second = meshcoreSendTextMessageWithErrCode(
+        conn as never,
+        new Uint8Array(32).fill(4),
+        'b',
+      );
+      const secondRejected = expect(second).rejects.toThrow(MESHCORE_SEND_PRIOR_IN_FLIGHT);
+      await vi.advanceTimersByTimeAsync(45_000);
+      await secondRejected;
+      releaseFirst();
+      await vi.runAllTimersAsync();
+      await expect(first).resolves.toEqual({ expectedAckCrc: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('returns Sent payload on success', async () => {

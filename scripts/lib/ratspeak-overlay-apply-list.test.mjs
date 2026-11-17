@@ -45,6 +45,7 @@ describe('ratspeak overlay apply list', () => {
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
     expect(list).toContain('apply-rsLXMF-propagation-client-link-hops.sh');
     expect(list).toContain('apply-rsNomad-picker-pinned-roots.sh');
+    expect(list).toContain('apply-rsNomad-request-outcome-reply-value.sh');
   });
 
   it('does not ship sunset pathless-link, announce-RF, or request-Resource overlays', () => {

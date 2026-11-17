@@ -195,6 +195,17 @@ describe('formatting', () => {
     expect(messageStarId(msg({ id: undefined, timestamp: 9, packetId: 3 }))).toBe('9-3');
     expect(inboxItemKey('meshtastic', msg({ id: undefined, timestamp: 9 }))).toBe('meshtastic:9-x');
   });
+
+  it('uses room post star ids shared with Rooms panel', () => {
+    const roomMsg = msg({
+      id: 99,
+      roomServerId: 0x2000,
+      timestamp: 1_700_000_123_456,
+      sender_id: 0x11,
+      payload: 'post body',
+    });
+    expect(messageStarId(roomMsg)).toBe('room:8192:1700000123:17:post body');
+  });
 });
 
 describe('dismissed persistence', () => {

@@ -5443,6 +5443,9 @@ function AppContent() {
                                         : undefined
                                     }
                                     onNodeClick={setSelectedNodeId}
+                                    onOpenRoom={
+                                      chatProtocol === 'meshcore' ? handleOpenRoom : undefined
+                                    }
                                     onPeerClick={setSelectedPeerHash}
                                     isConnected={
                                       chatOperational ||

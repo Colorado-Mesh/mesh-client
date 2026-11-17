@@ -1,5 +1,6 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import { roomPostRowKey } from './chatScrollUtils';
 import { errLikeToLogString } from './errLikeToLogString';
 import type { GlobalMessageSearchHit } from './globalMessageSearch';
 import type { ChatMessage } from './types';
@@ -26,9 +27,15 @@ export interface UnifiedInboxItem {
   isDirectMessage: boolean;
 }
 
-/** Same derivation as ChatPanel `msgStarId` so inbox stars and chat stars dedupe. */
+/** Same derivation as ChatPanel / Rooms so inbox and room BBS stars dedupe. */
 export function messageStarId(msg: ChatMessage): string {
+  if (msg.roomServerId != null) return roomPostRowKey(msg);
   return msg.id != null ? String(msg.id) : `${msg.timestamp}-${msg.packetId ?? 'x'}`;
+}
+
+function inboxViewKey(msg: ChatMessage, isDirectMessage: boolean): string {
+  if (msg.roomServerId != null) return `room:${msg.roomServerId}`;
+  return isDirectMessage ? `dm:${msg.sender_id}` : `ch:${msg.channel}`;
 }
 
 export function inboxItemKey(protocol: MeshProtocol, msg: ChatMessage): string {
@@ -78,7 +85,7 @@ export function buildUnifiedInboxItems(opts: BuildUnifiedInboxOptions): UnifiedI
         key,
         protocol,
         starId: messageStarId(msg),
-        viewKey: isDirectMessage ? `dm:${msg.sender_id}` : `ch:${msg.channel}`,
+        viewKey: inboxViewKey(msg, isDirectMessage),
         message: msg,
         isDirectMessage,
       });

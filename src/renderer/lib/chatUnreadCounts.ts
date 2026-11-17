@@ -11,7 +11,10 @@ import {
   findParentMessageForReply,
 } from '@/renderer/lib/replyPreview';
 import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
-import { canonicalizeReticulumChatDmNodeId } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
+import {
+  canonicalizeReticulumChatDmNodeId,
+  reticulumChatDmNodeIdsEquivalent,
+} from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import { reactionParentKeyFromChatMessage } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
@@ -319,7 +322,16 @@ export function partitionDmUnreadByFriends(
   let friendsUnread = 0;
   let otherDmUnread = 0;
   for (const [peer, n] of dmCounts) {
-    if (friendNodeIds.has(peer)) friendsUnread += n;
+    let isFriend = friendNodeIds.has(peer);
+    if (!isFriend) {
+      for (const friendId of friendNodeIds) {
+        if (reticulumChatDmNodeIdsEquivalent(friendId, peer)) {
+          isFriend = true;
+          break;
+        }
+      }
+    }
+    if (isFriend) friendsUnread += n;
     else otherDmUnread += n;
   }
   return { friendsUnread, otherDmUnread };
