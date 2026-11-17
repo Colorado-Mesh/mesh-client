@@ -359,7 +359,9 @@ export function profileDurationSec(profile: SoundProfile): number {
     const repeatGap = profile.repeatGap ?? 0.15;
     const one =
       profile.freqs.length * profile.dur + Math.max(0, profile.freqs.length - 1) * profile.gap;
-    return repeats * one + Math.max(0, repeats - 1) * repeatGap;
+    // scheduleProfile advances `t` by `gap` after every pulse, including the last pulse of each
+    // non-final repeat (then adds repeatGap). Include that trailing gap per additional repeat.
+    return repeats * one + Math.max(0, repeats - 1) * (repeatGap + profile.gap);
   }
   if (profile.kind === 'shortLong') {
     return (
@@ -394,6 +396,8 @@ const audioBuffers = new Map<
 >();
 let previewVersion = 0;
 let previewPlayback: Playback | null = null;
+/** Preview-owned native (SoundPlayer) stop; never wired into incoming-alert playback. */
+let previewNativeStop: (() => void) | null = null;
 
 export function clearNotificationSoundCache(event: ChatNotificationType): void {
   audioBuffers.delete(event);
@@ -578,6 +582,9 @@ export function stopNotificationSoundPreview(): void {
   previewVersion++;
   previewPlayback?.stop();
   previewPlayback = null;
+  const stopNative = previewNativeStop;
+  previewNativeStop = null;
+  stopNative?.();
 }
 
 export async function previewNotificationSound(
@@ -603,7 +610,21 @@ export async function previewNotificationSound(
       }
     }
     if (version !== previewVersion) return;
-    await playNativeNotificationSound(event, setting, buffer);
+    const wav = await renderNotificationWav(event, setting, buffer);
+    // Recheck after OfflineAudioContext rendering — Stop may have fired while WAV was building.
+    if (version !== previewVersion) return;
+    const stopNative = (): void => {
+      void window.electronAPI.notificationSounds.stopWav();
+    };
+    previewNativeStop = stopNative;
+    try {
+      await window.electronAPI.notificationSounds.playWav(wav);
+    } catch (error) {
+      if (version !== previewVersion) return;
+      throw error;
+    } finally {
+      if (previewNativeStop === stopNative) previewNativeStop = null;
+    }
     return;
   }
 

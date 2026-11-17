@@ -655,10 +655,14 @@ describe('Linux Web Bluetooth device selection', () => {
   });
 
   it('disables Chromium out-of-process audio on win32 for WASAPI session reliability (#1487)', () => {
-    expect(INDEX_SOURCE).toContain("process.platform === 'win32'");
-    expect(INDEX_SOURCE).toContain(
-      "appendSwitch('disable-features', 'AudioServiceOutOfProcess,AudioServiceSandbox')",
-    );
+    const switchCall =
+      "appendSwitch('disable-features', 'AudioServiceOutOfProcess,AudioServiceSandbox')";
+    const switchIdx = INDEX_SOURCE.indexOf(switchCall);
+    expect(switchIdx).toBeGreaterThan(-1);
+    const guardIdx = INDEX_SOURCE.lastIndexOf("if (process.platform === 'win32')", switchIdx);
+    expect(guardIdx).toBeGreaterThan(-1);
+    const between = INDEX_SOURCE.slice(guardIdx, switchIdx);
+    expect(between).not.toMatch(/^}/m);
   });
 });
 

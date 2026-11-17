@@ -1406,6 +1406,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('notificationSounds:read', event, id),
     playWav: (dataBase64: string): Promise<void> =>
       ipcRenderer.invoke('notificationSounds:playWav', dataBase64),
+    stopWav: (): Promise<void> => ipcRenderer.invoke('notificationSounds:stopWav'),
   },
 
   // ─── Main-owned secure secret storage ──────────────────────────

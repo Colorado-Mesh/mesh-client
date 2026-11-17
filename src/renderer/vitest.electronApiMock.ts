@@ -569,6 +569,7 @@ export function createElectronAPIMock(): ElectronAPI {
       save: vi.fn().mockResolvedValue({ id: 'a'.repeat(64), name: 'tone.wav' }),
       read: vi.fn().mockResolvedValue(null),
       playWav: vi.fn().mockResolvedValue(undefined),
+      stopWav: vi.fn().mockResolvedValue(undefined),
     },
     appSettings: {
       getLoginItem: vi.fn().mockResolvedValue({ openAtLogin: false }),

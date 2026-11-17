@@ -265,6 +265,34 @@ describe('playMessageNotification', () => {
     expect(oscillatorCount).toBe(0);
     warn.mockRestore();
   });
+
+  it('profileDurationSec matches the scheduled final stop for single- and multi-repeat triples', async () => {
+    const single = {
+      kind: 'triple' as const,
+      freqs: [784, 988, 1175] as [number, number, number],
+      dur: 0.12,
+      gap: 0.06,
+      repeats: 1,
+    };
+    playMessageNotification('diagnosticError');
+    await expectOscillators(3);
+    expect(profileDurationSec(single)).toBeCloseTo(Math.max(...oscillatorStops), 5);
+
+    oscillatorCount = 0;
+    oscillatorStarts.length = 0;
+    oscillatorStops.length = 0;
+    const repeated = {
+      kind: 'triple' as const,
+      freqs: [784, 988, 1175] as [number, number, number],
+      dur: 0.12,
+      gap: 0.05,
+      repeats: 2,
+      repeatGap: 0.18,
+    };
+    playMessageNotification('mecp');
+    await expectOscillators(6);
+    expect(profileDurationSec(repeated)).toBeCloseTo(Math.max(...oscillatorStops), 5);
+  });
 });
 
 describe('profileDurationSec', () => {
@@ -279,16 +307,6 @@ describe('profileDurationSec', () => {
         gap: 0.035,
       }),
     ).toBeCloseTo(0.135);
-    expect(
-      profileDurationSec({
-        kind: 'triple',
-        freqs: [1, 2, 3],
-        dur: 0.12,
-        gap: 0.05,
-        repeats: 2,
-        repeatGap: 0.18,
-      }),
-    ).toBeCloseTo(0.12 * 3 + 0.05 * 2 + 0.18 + 0.12 * 3 + 0.05 * 2);
     expect(
       profileDurationSec({
         kind: 'siren',

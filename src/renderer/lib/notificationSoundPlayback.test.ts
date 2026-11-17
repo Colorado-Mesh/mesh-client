@@ -54,6 +54,9 @@ describe('configured notification playback', () => {
     vi.mocked(window.electronAPI.notificationSounds.playWav)
       .mockReset()
       .mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.notificationSounds.stopWav)
+      .mockReset()
+      .mockResolvedValue(undefined);
     vi.stubGlobal(
       'URL',
       class extends URL {
@@ -351,10 +354,86 @@ describe('configured notification playback', () => {
     const wav = vi.mocked(window.electronAPI.notificationSounds.playWav).mock.calls[0]?.[0] ?? '';
     expect(wav.length).toBeGreaterThan(0);
     expect(atob(wav).slice(0, 4)).toBe('RIFF');
+    // Incoming alerts must not register the preview-owned stopWav handle.
+    expect(window.electronAPI.notificationSounds.stopWav).not.toHaveBeenCalled();
 
     vi.mocked(window.electronAPI.notificationSounds.playWav).mockClear();
     const preview = previewNotificationSound('dm', { sound: 'chime', volume: 80 });
     await preview;
     expect(window.electronAPI.notificationSounds.playWav).toHaveBeenCalledOnce();
+  });
+
+  it('cancels Windows preview after render completes and stops in-flight native play', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    let finishRender!: (value: {
+      length: number;
+      numberOfChannels: number;
+      sampleRate: number;
+      getChannelData: () => Float32Array;
+      duration: number;
+    }) => void;
+    const startRendering = vi.fn(
+      () =>
+        new Promise<Parameters<typeof finishRender>[0]>((resolve) => {
+          finishRender = resolve;
+        }),
+    );
+    let finishPlay!: () => void;
+    vi.mocked(window.electronAPI.notificationSounds.playWav).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishPlay = resolve;
+        }),
+    );
+    vi.stubGlobal(
+      'OfflineAudioContext',
+      class {
+        currentTime = 0;
+        destination = {};
+        createOscillator = createOscillator;
+        createBufferSource = createBufferSource;
+        createGain() {
+          return {
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+            gain: {
+              setValueAtTime: vi.fn(),
+              exponentialRampToValueAtTime: vi.fn(),
+            },
+          };
+        }
+        startRendering = startRendering;
+      },
+    );
+
+    const rendered = {
+      length: 8,
+      numberOfChannels: 1,
+      sampleRate: 44_100,
+      getChannelData: () => new Float32Array(8),
+      duration: 8 / 44_100,
+    };
+
+    const cancelledDuringRender = previewNotificationSound('dm', { sound: 'chime', volume: 80 });
+    await vi.waitFor(() => {
+      expect(startRendering).toHaveBeenCalledOnce();
+    });
+    stopNotificationSoundPreview();
+    finishRender(rendered);
+    await cancelledDuringRender;
+    expect(window.electronAPI.notificationSounds.playWav).not.toHaveBeenCalled();
+
+    const playing = previewNotificationSound('channel', { sound: 'bell', volume: 100 });
+    await vi.waitFor(() => {
+      expect(startRendering).toHaveBeenCalledTimes(2);
+    });
+    finishRender(rendered);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.notificationSounds.playWav).toHaveBeenCalledOnce();
+    });
+    stopNotificationSoundPreview();
+    expect(window.electronAPI.notificationSounds.stopWav).toHaveBeenCalledOnce();
+    finishPlay();
+    await playing;
   });
 });

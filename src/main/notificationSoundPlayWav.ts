@@ -1,8 +1,7 @@
-import { execFile } from 'node:child_process';
+import { type ChildProcess, execFile } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -10,8 +9,21 @@ import { MAX_NOTIFICATION_SOUND_BYTES } from '../shared/notificationSounds';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
 import { createIpcRateLimiter } from './ipcRateLimit';
 
-const execFileAsync = promisify(execFile);
 const MAX_BASE64_SOUND_CHARS = Math.ceil(MAX_NOTIFICATION_SOUND_BYTES / 3) * 4;
+
+/** Active SoundPlayer children so preview Stop can kill in-flight PlaySync. */
+const activeWavPlays = new Set<ChildProcess>();
+
+/**
+ * OS-specific (#1487): stop any in-flight Windows SoundPlayer child started by
+ * {@link playNotificationSoundWav}. Preview-owned; incoming alerts do not call this.
+ */
+export function stopNotificationSoundWav(): void {
+  for (const child of activeWavPlays) {
+    if (!child.killed) child.kill();
+  }
+  activeWavPlays.clear();
+}
 
 /**
  * OS-specific (#1487): play a PCM WAV through Windows System.Media.SoundPlayer so
@@ -46,21 +58,47 @@ export async function playNotificationSoundWav(dataBase64: unknown): Promise<voi
   const wavPath = path.join(directory, 'tone.wav');
   try {
     await writeFile(wavPath, bytes, { mode: 0o600 });
-    await execFileAsync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        "$ErrorActionPreference = 'Stop'; $p = New-Object System.Media.SoundPlayer -ArgumentList $env:MESH_NOTIF_WAV; $p.PlaySync()",
-      ],
-      {
-        timeout: timeoutMs,
-        windowsHide: true,
-        env: { ...process.env, MESH_NOTIF_WAV: wavPath },
-        maxBuffer: 64 * 1024,
-      },
-    );
+    await new Promise<void>((resolve, reject) => {
+      const child = execFile(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          "$ErrorActionPreference = 'Stop'; $p = New-Object System.Media.SoundPlayer -ArgumentList $env:MESH_NOTIF_WAV; $p.PlaySync()",
+        ],
+        {
+          timeout: timeoutMs,
+          windowsHide: true,
+          env: { ...process.env, MESH_NOTIF_WAV: wavPath },
+          maxBuffer: 64 * 1024,
+        },
+      );
+      activeWavPlays.add(child);
+      const settle = (error?: Error | null): void => {
+        activeWavPlays.delete(child);
+        if (!error) {
+          resolve();
+          return;
+        }
+        // Preview Stop kills the child — treat as a quiet cancel, not a playback failure.
+        if (child.killed || error.message.includes('killed')) {
+          resolve();
+          return;
+        }
+        reject(error);
+      };
+      child.once('error', (error) => {
+        settle(error);
+      });
+      child.once('close', (code, signal) => {
+        if (signal || child.killed || code === 0 || code === null) {
+          settle(null);
+          return;
+        }
+        settle(new Error(`SoundPlayer exited with code ${String(code)}`));
+      });
+    });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -71,16 +109,26 @@ export interface NotificationSoundPlayWavIpcDeps {
   assertIpcSender: (event: IpcMainInvokeEvent, channel: string) => void;
 }
 
-/** Register playWav IPC in the sibling chunk (out of measured index.js). */
+/** Register playWav / stopWav IPC in the sibling chunk (out of measured index.js). */
 export function registerNotificationSoundPlayWavIpc(deps: NotificationSoundPlayWavIpcDeps): void {
   const plays = createIpcRateLimiter({
     max: 60,
     windowMs: MS_PER_MINUTE,
     label: 'notificationSounds:playWav',
   });
+  const stops = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'notificationSounds:stopWav',
+  });
   deps.ipcMain.handle('notificationSounds:playWav', async (event, dataBase64: unknown) => {
     deps.assertIpcSender(event, 'notificationSounds:playWav');
     plays.checkOrThrow();
     await playNotificationSoundWav(dataBase64);
+  });
+  deps.ipcMain.handle('notificationSounds:stopWav', (event) => {
+    deps.assertIpcSender(event, 'notificationSounds:stopWav');
+    stops.checkOrThrow();
+    stopNotificationSoundWav();
   });
 }
