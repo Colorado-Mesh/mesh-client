@@ -2480,6 +2480,8 @@
       
         
       
+        
+      
     
     
     
@@ -2605,6 +2607,34 @@
     
   
     Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer performance
   
 
     
@@ -3974,10 +4004,17 @@
 <li>MeshCore Giphy GIF send appears only when <strong>MeshCore Open compatibility</strong> is enabled under <strong>Radio</strong>. See <a href="../meshcore-meshtastic-parity/">MeshCore / Meshtastic parity</a>.</li>
 </ul>
 <h3 id="f1f12-macros">F1–F12 macros<a class="headerlink" href="#f1f12-macros" title="Permanent link">&para;</a></h3>
-<p>Every composer has twelve text macros. The bar is collapsed by default: use <strong>Show macros</strong> to open it and <strong>Edit macros</strong> to set each slot's label and message text (changes save automatically).</p>
+<p>Every composer has twelve macros. The bar is collapsed by default: use <strong>Show macros</strong> to open it and <strong>Edit macros</strong> to configure each slot (changes save automatically).</p>
+<p>Each slot has an <strong>Action</strong>:</p>
 <ul>
-<li><strong>When used</strong> chooses <strong>Put in message box</strong> (the default) or <strong>Send now</strong>. <strong>Send now</strong> only fires when the box is empty, so a half-written draft is never sent or lost.</li>
-<li>Press a plain <strong>F1</strong>–<strong>F12</strong> (no modifier) to use that slot. The key goes to the composer you are looking at.</li>
+<li><strong>Message</strong> — inserts or sends the message text in the composer you are looking at.</li>
+<li><strong>Jump to room</strong> — switches to a MeshCore room, a chat channel, or an RRC room you pick. Optionally add a message; after the jump, that text is put in the destination message box or sent (per <strong>When used</strong>). Leave the message blank to jump only.</li>
+</ul>
+<p>Shared options:</p>
+<ul>
+<li><strong>When used</strong> chooses <strong>Put in message box</strong> (the default) or <strong>Send now</strong>. <strong>Send now</strong> only fires when the destination box is empty, so a half-written draft is never sent or lost. For Jump to room slots with a message, this applies after the jump.</li>
+<li>Press a plain <strong>F1</strong>–<strong>F12</strong> (no modifier) to use that slot. Message macros go to the composer you are looking at; Jump to room macros work from any tab.</li>
+<li>MeshCore rooms: if you are not logged in yet, the optional message waits until the room composer appears after login.</li>
 <li><strong>Size</strong> offers Small, Medium, and Large; touchscreens default to Large.</li>
 <li>Your operating system may keep some F-keys for itself.</li>
 </ul>
@@ -4249,7 +4286,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 13, 2026 00:38:31 UTC">November 13, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 19:20:53 UTC">November 17, 2026</span>
   </span>
 
     
