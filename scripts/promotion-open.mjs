@@ -35,6 +35,7 @@ import {
   buildPromotionBody,
   buildReleaseNotes,
   isBookkeepingSubject,
+  PROMOTION_TITLE_PREFIX,
   promotionTitle,
   riskCallouts,
 } from './promotionNotes.mjs';
@@ -352,11 +353,17 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
     stagingSha: stagingTip,
   });
   const resultVersion = release ? version : null;
+  // Refresh the promotion that is already open, on its own branch, even when the version (and so
+  // the branch name this run would pick) changed; a second promotion would stay open beside it.
+  const promotions = openPromotions(gh);
+  const current = promotions.find((pr) => pr.headRefName === branch) ?? promotions[0] ?? null;
+  const target = current ? current.headRefName : branch;
   if (dryRun) {
     return {
       status: 'dry-run',
       version: resultVersion,
-      branch,
+      branch: target,
+      pr: current ? current.number : null,
       title,
       body,
       backport: backport.status,
@@ -364,59 +371,107 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
   }
 
   if (stagingTip !== stagingSha) pushBranch(cwd, remote, 'staging', stagingTip, stagingSha);
-  const currentBranch = remoteBranches(cwd, remote, [branch])[branch] ?? '';
-  pushBranch(cwd, remote, branch, promotionSha, currentBranch);
+  const currentBranch = remoteBranches(cwd, remote, [target])[target] ?? '';
+  pushBranch(cwd, remote, target, promotionSha, currentBranch);
 
-  const open = JSON.parse(
+  let status;
+  let url;
+  if (current) {
+    gh(['pr', 'edit', String(current.number), '--title', title, '--body-file', '-'], body);
+    status = 'updated';
+    url = current.url;
+  } else {
+    const createArgs = [
+      'pr',
+      'create',
+      '--base',
+      'main',
+      '--head',
+      target,
+      '--title',
+      title,
+      '--body-file',
+      '-',
+    ];
+    if (draft) createArgs.push('--draft');
+    status = 'opened';
+    url = gh(createArgs, body).trim();
+  }
+  const superseded = promotions.filter((pr) => pr !== current);
+  for (const pr of superseded) {
+    gh([
+      'pr',
+      'close',
+      String(pr.number),
+      '--comment',
+      `Superseded by ${url}, which promotes the current staging.`,
+    ]);
+  }
+  return {
+    status,
+    version: resultVersion,
+    branch: target,
+    title,
+    body,
+    url,
+    superseded: superseded.map((pr) => pr.number),
+  };
+}
+
+/**
+ * Open promotion pull requests to main from this repository, newest first.
+ * @param {(args: string[], input?: string) => string} gh
+ * @returns {{ number: number, url: string, headRefName: string }[]}
+ */
+function openPromotions(gh) {
+  const listed = JSON.parse(
     gh([
       'pr',
       'list',
       '--base',
       'main',
-      '--head',
-      branch,
       '--state',
       'open',
       '--json',
-      'number,url',
+      'number,url,headRefName,title,isCrossRepository',
     ]),
   );
-  if (open.length > 0) {
-    gh(['pr', 'edit', String(open[0].number), '--title', title, '--body-file', '-'], body);
-    return { status: 'updated', version: resultVersion, branch, title, body, url: open[0].url };
-  }
-  const createArgs = [
-    'pr',
-    'create',
-    '--base',
-    'main',
-    '--head',
-    branch,
-    '--title',
-    title,
-    '--body-file',
-    '-',
-  ];
-  if (draft) createArgs.push('--draft');
-  const url = gh(createArgs, body).trim();
-  return { status: 'opened', version: resultVersion, branch, title, body, url };
+  const prefix = PROMOTION_TITLE_PREFIX.toLowerCase();
+  return listed
+    .filter((pr) => !pr.isCrossRepository && pr.title.trim().toLowerCase().startsWith(prefix))
+    .sort((a, b) => b.number - a.number);
+}
+
+/**
+ * @param {{ branch: string, title: string, pr: number | null }} result
+ * @returns {string}
+ */
+export function dryRunLine({ branch, title, pr }) {
+  return pr
+    ? `Dry run: would push ${branch} and update #${pr} to "${title}".`
+    : `Dry run: would push ${branch} and open "${title}".`;
 }
 
 /**
  * What to do after a promotion pull request was opened or updated. A release still needs the
  * maintainer's approval in Cut release before it is tagged; a promotion without a release tags
  * nothing.
- * @param {{ status: 'opened' | 'updated', version: string | null, url: string }} result
+ * @param {{ status: 'opened' | 'updated', version: string | null, url: string, superseded?: number[] }} result
  * @returns {string[]}
  */
 export function nextSteps(result) {
-  return [
-    `${result.status === 'opened' ? 'Opened' : 'Updated'} ${result.url}`,
+  const lines = [`${result.status === 'opened' ? 'Opened' : 'Updated'} ${result.url}`];
+  if (result.superseded?.length) {
+    const numbers = result.superseded.map((number) => `#${number}`).join(' and ');
+    lines.push(`Closed ${numbers} as superseded by this one.`);
+  }
+  lines.push(
     'Next: wait for the Promotion Doctor and CI on that pull request, get a review, and merge it with a merge commit.',
     result.version
       ? `Merging starts Cut release: approve its Tag release job (release-cut environment) to tag v${result.version}, then check the draft release once its artifacts are attached and publish it.`
       : 'This promotion keeps the current version, so merging it tags no release.',
-  ];
+  );
+  return lines;
 }
 
 /**
@@ -498,7 +553,7 @@ async function main() {
       process.exit(1);
       break;
     case 'dry-run':
-      console.info(`Dry run: would push ${result.branch} and open "${result.title}".\n`);
+      console.info(`${dryRunLine(result)}\n`);
       console.info(result.body);
       break;
     default:

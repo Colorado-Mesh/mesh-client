@@ -71,7 +71,7 @@ It works against `origin` and takes these steps:
 4. Picks the version. The commit titles since the last `vX.Y.Z` tag on `main` decide the bump (see [Version naming](#version-naming)) unless `--bump` overrides it.
 5. Commits `chore: release vX.Y.Z` to `staging`: the `package.json` version and a new top entry in the Flatpak MetaInfo release list. When `staging` already carries that version from an earlier run, it reuses that commit instead of bumping again.
 6. Builds the promotion commit. Its tree is exactly the `staging` tip's tree, and its parents are the `main` tip and the `staging` tip.
-7. Pushes it to `release/vX.Y.Z` (`release/promote-staging-YYYY-MM-DD` when nothing releases) and opens the pull request to `main`, or updates the one already open.
+7. Pushes it to `release/vX.Y.Z` (`release/promote-staging-YYYY-MM-DD` when nothing releases) and opens the pull request to `main`. When a promotion is already open, it updates that pull request instead, on its existing branch, even if the version changed, and closes any other open promotion as superseded.
 
 The pull request body is generated in these sections:
 

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   backportLines,
   backportMainIntoStaging,
+  dryRunLine,
   nextSteps,
   openPromotion,
   parseArgs,
@@ -27,16 +28,68 @@ const parentsOf = (remote, ref) =>
   remoteGit(remote, ['rev-list', '--parents', '-n', '1', ref]).split(' ').slice(1);
 const subjectOf = (remote, ref) => remoteGit(remote, ['log', '-1', '--format=%s', ref]);
 
-function fakeGh({ existing = null } = {}) {
+/**
+ * A stand-in for `gh` that keeps its pull requests and filters `pr list` by base, head and state
+ * the way GitHub does, so a lookup that relies on the wrong filter fails here as it would there.
+ * Created pull requests are numbered from 42.
+ */
+function fakeGh({ prs = [] } = {}) {
   const calls = [];
+  const pulls = prs.map((pr) => ({
+    baseRefName: 'main',
+    state: 'OPEN',
+    isCrossRepository: false,
+    ...pr,
+  }));
+  let nextNumber = 42;
+  const flag = (args, name) => {
+    const at = args.indexOf(name);
+    return at === -1 ? undefined : args[at + 1];
+  };
+  const byNumber = (value) => pulls.find((pr) => pr.number === Number(value));
   const gh = (args, input) => {
     calls.push({ args, input });
-    if (args[0] === 'pr' && args[1] === 'list') return JSON.stringify(existing ? [existing] : []);
-    if (args[0] === 'pr' && args[1] === 'create') return 'https://example.test/pull/42\n';
-    if (args[0] === 'pr' && args[1] === 'edit') return '';
+    const [noun, verb, target] = args;
+    if (noun === 'pr' && verb === 'list') {
+      const base = flag(args, '--base');
+      const head = flag(args, '--head');
+      const state = (flag(args, '--state') ?? 'open').toUpperCase();
+      const fields = (flag(args, '--json') ?? '').split(',');
+      const listed = pulls.filter(
+        (pr) =>
+          (!base || pr.baseRefName === base) &&
+          (!head || pr.headRefName === head) &&
+          pr.state === state,
+      );
+      return JSON.stringify(
+        listed.map((pr) => Object.fromEntries(fields.map((field) => [field, pr[field]]))),
+      );
+    }
+    if (noun === 'pr' && verb === 'create') {
+      const number = nextNumber++;
+      const url = `https://example.test/pull/${number}`;
+      pulls.push({
+        number,
+        url,
+        baseRefName: flag(args, '--base'),
+        headRefName: flag(args, '--head'),
+        title: flag(args, '--title'),
+        state: 'OPEN',
+        isCrossRepository: false,
+      });
+      return `${url}\n`;
+    }
+    if (noun === 'pr' && verb === 'edit') {
+      byNumber(target).title = flag(args, '--title');
+      return '';
+    }
+    if (noun === 'pr' && verb === 'close') {
+      byNumber(target).state = 'CLOSED';
+      return '';
+    }
     throw new Error(`unexpected gh call: ${args.join(' ')}`);
   };
-  return { gh, calls };
+  return { gh, calls, pulls };
 }
 
 const HOTFIX_PACKAGE = (version) =>
@@ -144,7 +197,29 @@ describe('backportLines', () => {
   });
 });
 
+describe('dryRunLine', () => {
+  it('says which pull request a dry run would update or open', () => {
+    const title = 'Promote staging to main (v1.1.0)';
+    expect(dryRunLine({ branch: 'release/v1.0.1', title, pr: 42 })).toBe(
+      'Dry run: would push release/v1.0.1 and update #42 to "Promote staging to main (v1.1.0)".',
+    );
+    expect(dryRunLine({ branch: 'release/v1.1.0', title, pr: null })).toBe(
+      'Dry run: would push release/v1.1.0 and open "Promote staging to main (v1.1.0)".',
+    );
+  });
+});
+
 describe('nextSteps', () => {
+  it('names the promotions it closed as superseded', () => {
+    const url = 'https://github.com/o/r/pull/41';
+    expect(nextSteps({ status: 'updated', version: '1.1.0', url, superseded: [40] })).toContain(
+      'Closed #40 as superseded by this one.',
+    );
+    expect(nextSteps({ status: 'updated', version: '1.1.0', url, superseded: [40, 37] })).toContain(
+      'Closed #40 and #37 as superseded by this one.',
+    );
+  });
+
   const merge =
     'Next: wait for the Promotion Doctor and CI on that pull request, get a review, and merge it with a merge commit.';
 
@@ -249,9 +324,9 @@ describe('openPromotion', { timeout: 60_000 }, () => {
   it('does not double-bump when run again after staging moves', async () => {
     const { remote, seed, user } = released();
     land(seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
-    await open(user, fakeGh().gh);
+    const { gh, calls } = fakeGh();
+    await open(user, gh);
     land(seed, 'staging', { 'b.txt': 'b\n' }, 'fix: b (#2)');
-    const { gh, calls } = fakeGh({ existing: { number: 42, url: 'https://example.test/pull/42' } });
 
     const result = await open(user, gh);
 
@@ -278,6 +353,80 @@ describe('openPromotion', { timeout: 60_000 }, () => {
     expect(edit.input).toContain('- fix: b (#2)');
   });
 
+  it('updates the open promotion in place when the version changes', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'a.txt': 'a\n' }, 'fix: a (#1)');
+    const fake = fakeGh();
+    expect(await open(user, fake.gh)).toMatchObject({ status: 'opened', version: '1.0.1' });
+    land(seed, 'staging', { 'b.txt': 'b\n' }, 'feat: b (#2)');
+
+    const result = await open(user, fake.gh);
+
+    expect(result).toMatchObject({
+      status: 'updated',
+      version: '1.1.0',
+      branch: 'release/v1.0.1',
+      url: 'https://example.test/pull/42',
+    });
+    expect(fake.pulls.map((pr) => [pr.number, pr.state, pr.title])).toEqual([
+      [42, 'OPEN', 'Promote staging to main (v1.1.0)'],
+    ]);
+    expect(parentsOf(remote, 'release/v1.0.1')).toEqual([
+      remoteSha(remote, 'main'),
+      remoteSha(remote, 'staging'),
+    ]);
+    expect(remoteGit(remote, ['branch', '--list', 'release/v1.1.0'])).toBe('');
+  });
+
+  it('closes other open promotions as superseded and leaves forks and hotfixes alone', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'b.txt': 'b\n' }, 'feat: b (#2)');
+    const pull = (number, headRefName, title, extra = {}) => ({
+      number,
+      url: `https://example.test/pull/${number}`,
+      headRefName,
+      title,
+      ...extra,
+    });
+    const fake = fakeGh({
+      prs: [
+        pull(38, 'hotfix/x', 'fix: x'),
+        pull(39, 'release/v9.9.9', 'Promote staging to main (v9.9.9)', {
+          isCrossRepository: true,
+        }),
+        pull(40, 'release/v1.0.1', 'Promote staging to main (v1.0.1)'),
+        pull(41, 'release/promote-staging-2026-11-19', 'Promote staging to main (no release)'),
+      ],
+    });
+
+    const result = await open(user, fake.gh);
+
+    expect(result).toMatchObject({
+      status: 'updated',
+      version: '1.1.0',
+      branch: 'release/promote-staging-2026-11-19',
+      url: 'https://example.test/pull/41',
+      superseded: [40],
+    });
+    expect(fake.pulls.map((pr) => [pr.number, pr.state])).toEqual([
+      [38, 'OPEN'],
+      [39, 'OPEN'],
+      [40, 'CLOSED'],
+      [41, 'OPEN'],
+    ]);
+    expect(fake.calls.find((call) => call.args[1] === 'close').args).toEqual([
+      'pr',
+      'close',
+      '40',
+      '--comment',
+      'Superseded by https://example.test/pull/41, which promotes the current staging.',
+    ]);
+    expect(parentsOf(remote, 'release/promote-staging-2026-11-19')).toEqual([
+      remoteSha(remote, 'main'),
+      remoteSha(remote, 'staging'),
+    ]);
+  });
+
   it('back-ports a hotfix as a merge commit before bumping', async () => {
     const { remote, seed, user } = released();
     land(seed, 'main', { 'hot.txt': 'fixed\n' }, 'fix: hotfix (#3)');
@@ -299,13 +448,11 @@ describe('openPromotion', { timeout: 60_000 }, () => {
   it('keeps one bump when main released a hotfix after the promotion opened', async () => {
     const { remote, seed, user } = released();
     land(seed, 'staging', { 'f.txt': 'f\n' }, 'feat: f (#4)');
-    await open(user, fakeGh().gh);
+    const { gh } = fakeGh();
+    await open(user, gh);
     releaseHotfix(seed);
 
-    const result = await open(
-      user,
-      fakeGh({ existing: { number: 42, url: 'https://example.test/pull/42' } }).gh,
-    );
+    const result = await open(user, gh);
 
     expect(result).toMatchObject({ status: 'updated', version: '1.1.0' });
     const subjects = remoteGit(remote, ['log', '--format=%s', 'staging']).split('\n');
@@ -376,10 +523,37 @@ describe('openPromotion', { timeout: 60_000 }, () => {
 
     const result = await open(user, gh, { dryRun: true });
 
-    expect(result).toMatchObject({ status: 'dry-run', version: '1.1.0', branch: 'release/v1.1.0' });
+    expect(result).toMatchObject({
+      status: 'dry-run',
+      version: '1.1.0',
+      branch: 'release/v1.1.0',
+      pr: null,
+    });
     expect(result.body).toContain('- feat: maps (#1)');
     expect(remoteRefs(remote)).toBe(before);
-    expect(calls).toEqual([]);
+    expect(calls.map((call) => call.args[1])).toEqual(['list']);
+  });
+
+  it('names the open promotion a dry run would update, and changes nothing', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    const before = remoteRefs(remote);
+    const { gh, calls } = fakeGh({
+      prs: [
+        {
+          number: 40,
+          url: 'https://example.test/pull/40',
+          headRefName: 'release/v1.0.1',
+          title: 'Promote staging to main (v1.0.1)',
+        },
+      ],
+    });
+
+    const result = await open(user, gh, { dryRun: true });
+
+    expect(result).toMatchObject({ status: 'dry-run', branch: 'release/v1.0.1', pr: 40 });
+    expect(remoteRefs(remote)).toBe(before);
+    expect(calls.map((call) => call.args[1])).toEqual(['list']);
   });
 
   it('opens a draft pull request with --draft', async () => {
