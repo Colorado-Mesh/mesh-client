@@ -182,6 +182,7 @@ Work merges into `staging`; `main` only takes promotions and `hotfix/*` pull req
 The required **Promotion Doctor** check on every pull request to `main`. It runs [`scripts/promotion-doctor.mjs`](../scripts/promotion-doctor.mjs):
 
 - **Trigger and trust:** `pull_request_target` on `main` (`opened`, `reopened`, `synchronize`, `edited`, `ready_for_review`); a newer run cancels the older one for the same pull request. It checks out the trusted base commit with `persist-credentials: false`, fetches the pull request head as data only, installs nothing, and runs with read-only permissions (`contents`, `pull-requests`, `checks`, `statuses`) and no secrets. Because the workflow comes from the base branch, a change to the Doctor takes effect only after it merges into `main`.
+- **Trigger policy:** from December 2, 2026, GitHub's default Actions event policy blocks `pull_request_target` in public repositories, which would leave this required check unreported. The repository policy in [`.github/actions-policies/promotion-doctor.json`](../.github/actions-policies/promotion-doctor.json) allows that event for this workflow only (rollout step 2 in the [Release Process](release-process.md#switching-to-staging-one-time-rollout)). Its event rule is an allowlist, so a trigger added to the workflow must be added to the policy too; `scripts/branch-rulesets.test.mjs` checks that they match.
 - **What it checks:** before `staging` exists it passes with a note. A title starting with `Promote staging to main` gets the promotion checks: a head from this repository that is not a draft; two parents, the live `main` tip and a `staging` snapshot that `main` lacks; the same tree as that snapshot; a version that is unchanged (no release) or new and untagged, with a matching Flatpak MetaInfo entry; every shipped pull request listed under `## Release notes`; a schema change named under `## Database schema`. A `hotfix/*` branch gets the hotfix checks: built on the current `main`, no commits that are only on `staging`, and the MetaInfo entry and release notes when it changes the version. Anything else fails and asks for a retarget to `staging`.
 - **Waiting:** it then waits for every other check run and commit status on the head, polling every 30 seconds for up to 150 minutes (the job itself times out at 170), and fails if one fails or the time runs out. That includes the 3-OS E2E, the release preflight, CodeQL and CodeRabbit. Afterwards it reads `main` again and fails if `main` moved meanwhile. Editing the pull request body runs it again.
 - **Local, read-only:** `pnpm run promotion:doctor -- --pr <number>` prints the same report using your `gh` token. Add `--require-green-checks` to include the other checks, and `--wait-for-checks` to wait for pending ones.
@@ -466,7 +467,19 @@ gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
   --input .github/rulesets/staging-merge-queue.json
 ```
 
-First-time setup (creating `staging` and its ruleset, allowing merge commits, switching the default branch) is the [rollout in the Release Process](release-process.md#switching-to-staging-one-time-rollout).
+The Promotion Doctor's Actions policy lives in `.github/actions-policies/promotion-doctor.json`. After changing it, update the live policy the same way:
+
+```bash
+POLICY_ID="$(gh api repos/Colorado-Mesh/mesh-client/actions/policies \
+  -H "X-GitHub-Api-Version: 2026-03-10" \
+  --jq '.policies[]
+    | select(.name == "Allow the Promotion Doctor trigger") | .id')"
+gh api "repos/Colorado-Mesh/mesh-client/actions/policies/${POLICY_ID}" \
+  --method PUT -H "X-GitHub-Api-Version: 2026-03-10" \
+  --input .github/actions-policies/promotion-doctor.json
+```
+
+First-time setup (allowing the Doctor's trigger, creating `staging` and its ruleset, allowing merge commits, switching the default branch) is the [rollout in the Release Process](release-process.md#switching-to-staging-one-time-rollout).
 
 `gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 

@@ -150,3 +150,36 @@ describe('main-promotions.json', () => {
     expect(contexts).toContain(DOCTOR_CHECK_NAME);
   });
 });
+
+// GitHub's default Actions event policy blocks pull_request_target in public repositories from
+// 2026-12-02. This repository policy allows it again for the Promotion Doctor workflow alone.
+describe('actions-policies/promotion-doctor.json', () => {
+  const policy = readJson('.github/actions-policies/promotion-doctor.json');
+
+  it('allows pull_request_target for the Promotion Doctor workflow and nothing else', () => {
+    expect(policy).toEqual({
+      name: 'Allow the Promotion Doctor trigger',
+      enforcement: 'active',
+      conditions: {
+        workflow_path: { include: ['.github/workflows/promotion-doctor.yaml'], exclude: [] },
+      },
+      rules: [
+        {
+          type: 'restrict_action_events',
+          parameters: { allowed_events: ['pull_request_target'] },
+        },
+      ],
+    });
+  });
+
+  it('allows every event the Promotion Doctor workflow listens to', () => {
+    // The event rule is an allowlist for the targeted workflow, so a trigger added to the
+    // workflow without this policy would be blocked.
+    const workflow = /** @type {{ on: Record<string, unknown> }} */ (
+      yaml.load(
+        fs.readFileSync(path.join(ROOT, policy.conditions.workflow_path.include[0]), 'utf8'),
+      )
+    );
+    expect(Object.keys(workflow.on)).toEqual(policy.rules[0].parameters.allowed_events);
+  });
+});
