@@ -1,6 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from './appSettingsStorage';
+import { deserializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import {
+  MESHCORE_RADIO_ERR_BAD_STATE,
+  MESHCORE_RADIO_ERR_NOT_FOUND,
+  MESHCORE_RADIO_ERR_TABLE_FULL,
+} from './meshcoreRadioErr';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import {
   getMeshcoreRoomAutoLoginFailure,
   setMeshcoreRoomAutoLoginFailure,
@@ -10,6 +17,7 @@ import {
   getMeshcoreRoomCredential,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
+import { MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE } from './meshcoreRoomLoginRpc';
 import {
   applyMeshcoreRoomLoginFailure,
   disableMeshcoreRoomAutoLogin,
@@ -19,12 +27,24 @@ import {
   meshcoreRoomRememberedCredential,
   saveMeshcoreRoomSessionPasswordIfUnsaved,
 } from './meshcoreRoomSavedSecrets';
-import { meshcoreApplyRoomSession, meshcoreClearRoomSession } from './meshcoreRoomSession';
+import {
+  meshcoreApplyRoomSession,
+  meshcoreClearAllRoomSessions,
+  meshcoreClearRoomSession,
+  meshcoreRoomLogin,
+  meshcoreRoomLoginErrorIsAuthFailure,
+} from './meshcoreRoomSession';
 import {
   getMeshcoreRoomSyncConfig,
   meshcoreRoomSyncSettingForNode,
   setMeshcoreRoomSyncConfig,
 } from './meshcoreRoomSyncStorage';
+import {
+  MC_CMD_SEND_LOGIN,
+  MC_PUSH_LOGIN_FAIL,
+  MC_RESP_ERR,
+  MC_RESP_SENT,
+} from './meshcoreWireCodes';
 
 describe('meshcoreRoomSavedSecrets', () => {
   beforeEach(() => {
@@ -185,5 +205,149 @@ describe('meshcoreRoomSavedSecrets', () => {
     expect(cfg.autoLoginOnConnect).toBe(false);
     expect(cfg.intervalMinutes).toBe(90);
     expect(getMeshcoreRoomAutoLoginFailure(0x13)).toContain('rejected');
+  });
+});
+
+const REFUSAL_ROOM_ID = 0x2a;
+
+function refusalRoomKey(): Uint8Array {
+  const key = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) key[i] = (0x40 + i) & 0xff;
+  return key;
+}
+
+type SendLoginReply = 'err-not-found' | 'err-table-full' | 'err-bad-state' | 'login-fail';
+
+/** Companion stub: every SendLogin is answered the way `reply` says. */
+function stubRoomRadio(reply: SendLoginReply): MeshcoreRadioConnection {
+  const handlers = new Map<string | number, Set<(payload?: unknown) => void>>();
+  const listen = (event: string | number, cb: (payload?: unknown) => void) => {
+    let set = handlers.get(event);
+    if (!set) {
+      set = new Set();
+      handlers.set(event, set);
+    }
+    set.add(cb);
+  };
+  const emit = (event: number, payload?: unknown) => {
+    for (const cb of [...(handlers.get(event) ?? [])]) cb(payload);
+  };
+  return {
+    on: listen,
+    off(event, cb) {
+      handlers.get(event)?.delete(cb);
+    },
+    once(event, cb) {
+      const wrapped = (payload?: unknown) => {
+        handlers.get(event)?.delete(wrapped);
+        cb(payload);
+      };
+      listen(event, wrapped);
+    },
+    sendToRadioFrame(frame) {
+      if (frame[0] === MC_CMD_SEND_LOGIN) {
+        const prefix = frame.slice(1, 7);
+        setTimeout(() => {
+          if (reply === 'err-not-found') {
+            emit(MC_RESP_ERR, { errCode: MESHCORE_RADIO_ERR_NOT_FOUND });
+          } else if (reply === 'err-table-full') {
+            emit(MC_RESP_ERR, { errCode: MESHCORE_RADIO_ERR_TABLE_FULL });
+          } else if (reply === 'err-bad-state') {
+            emit(MC_RESP_ERR, { errCode: MESHCORE_RADIO_ERR_BAD_STATE });
+          } else {
+            emit(MC_RESP_SENT, { estTimeout: 1_000 });
+            emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: prefix });
+          }
+        }, 10);
+      }
+      return Promise.resolve();
+    },
+  };
+}
+
+/** The error `meshcoreRoomLogin` throws after its retries, as connect auto-login receives it. */
+async function roomLoginError(reply: SendLoginReply): Promise<unknown> {
+  const pending = meshcoreRoomLogin(
+    stubRoomRadio(reply),
+    REFUSAL_ROOM_ID,
+    refusalRoomKey(),
+    'hello',
+    {
+      guestPassword: 'hello',
+    },
+  ).then(
+    () => undefined,
+    (e: unknown) => e,
+  );
+  await vi.runAllTimersAsync();
+  return pending;
+}
+
+describe('room login failures that reach connect auto-login', () => {
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    meshcoreClearAllRoomSessions();
+    await setMeshcoreRoomCredential(REFUSAL_ROOM_ID, { guestPassword: 'hello' });
+    await setMeshcoreRoomSyncConfig(REFUSAL_ROOM_ID, {
+      enabled: true,
+      intervalMinutes: 60,
+      autoLoginOnConnect: true,
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ['err-not-found', 'meshcore.errors.radioContactMissing'],
+    ['err-table-full', 'meshcore.errors.radioContactTableFull'],
+    ['err-bad-state', 'meshcore.errors.roomLogin.failed'],
+  ] as const)(
+    'keeps auto-login and auto-sync on when the radio refuses SendLogin (%s)',
+    async (reply, messageKey) => {
+      const error = await roomLoginError(reply);
+      expect(error).toBeInstanceOf(Error);
+      expect(deserializeMeshcoreUserMessage((error as Error).message)).toEqual({
+        key: messageKey,
+      });
+      expect(meshcoreRoomLoginErrorIsAuthFailure(error)).toBe(false);
+
+      await applyMeshcoreRoomLoginFailure(REFUSAL_ROOM_ID, error, 'test');
+
+      const cfg = getMeshcoreRoomSyncConfig(REFUSAL_ROOM_ID);
+      expect(cfg.autoLoginOnConnect).toBe(true);
+      expect(cfg.enabled).toBe(true);
+      expect(shouldSkipMeshcoreRoomAutoLogin(REFUSAL_ROOM_ID)).toBe(false);
+      expect(getMeshcoreRoomAutoLoginFailure(REFUSAL_ROOM_ID)).toBeDefined();
+    },
+  );
+
+  it('still turns auto-login and auto-sync off when the room answers LoginFail', async () => {
+    const error = await roomLoginError('login-fail');
+    expect(meshcoreRoomLoginErrorIsAuthFailure(error)).toBe(true);
+
+    await applyMeshcoreRoomLoginFailure(REFUSAL_ROOM_ID, error, 'test');
+
+    const cfg = getMeshcoreRoomSyncConfig(REFUSAL_ROOM_ID);
+    expect(cfg.autoLoginOnConnect).toBe(false);
+    expect(cfg.enabled).toBe(false);
+    expect(shouldSkipMeshcoreRoomAutoLogin(REFUSAL_ROOM_ID)).toBe(true);
+  });
+
+  it.each([
+    ['a route programming refusal', new Error('radio rejected request')],
+    ['a path hash refusal', new Error('radio rejected path hash mode')],
+    ['an unrelated error that says rejected', new Error('Promise rejected')],
+  ])('does not treat %s before SendLogin as a wrong password', async (_label, error) => {
+    expect(meshcoreRoomLoginErrorIsAuthFailure(error)).toBe(false);
+    await applyMeshcoreRoomLoginFailure(REFUSAL_ROOM_ID, error, 'test');
+    expect(getMeshcoreRoomSyncConfig(REFUSAL_ROOM_ID).autoLoginOnConnect).toBe(true);
+  });
+
+  it('recognises the LoginFail message on its own', () => {
+    expect(
+      meshcoreRoomLoginErrorIsAuthFailure(new Error(MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE)),
+    ).toBe(true);
   });
 });

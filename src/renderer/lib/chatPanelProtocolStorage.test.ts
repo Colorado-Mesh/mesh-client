@@ -361,6 +361,28 @@ describe('loadStarred / saveStarred', () => {
     expect(loadStarred('meshcore')).toEqual([]);
   });
 
+  // A room star id once had no text (room, second, sender), so two posts by one author in the
+  // same second shared it. The saved payload is the starred post's text, which ends the new id.
+  it('gives a room star saved without its text the id that ends with it', () => {
+    const legacy = makeStarred({
+      starId: 'room:4242:1700000000:17',
+      viewKey: 'room:4242',
+      payload: 'Re: 12:30 meet',
+    });
+    const current = makeStarred({
+      starId: 'room:4242:1700000000:17:already here',
+      viewKey: 'room:4242',
+      payload: 'already here',
+    });
+    const chat = makeStarred({ starId: '42', viewKey: 'ch:0', payload: 'chat star' });
+    saveStarred('meshcore', [legacy, current, chat]);
+    expect(loadStarred('meshcore').map((s) => s.starId)).toEqual([
+      'room:4242:1700000000:17:Re: 12:30 meet',
+      'room:4242:1700000000:17:already here',
+      '42',
+    ]);
+  });
+
   it('returns empty array for corrupt JSON', () => {
     localStorage.setItem('mesh-client:starred:meshtastic', 'not json{');
     expect(loadStarred('meshtastic')).toEqual([]);

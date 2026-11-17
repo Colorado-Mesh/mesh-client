@@ -1,4 +1,5 @@
 import { runMeshcoreCompanionRequest } from './meshcoreCompanionRequestQueue';
+import { MeshcoreRadioRejectedError } from './meshcoreRadioErr';
 import {
   buildSendLoginFrame,
   type MeshcoreRadioConnection,
@@ -23,6 +24,13 @@ import {
 
 /** DOMException.message when user cancels an in-flight room login. */
 export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
+
+/**
+ * Error.message for a LoginFail push from the room server: the only room login failure that
+ * means the password or ACL was refused. A companion RESP_ERR is a {@link MeshcoreRadioRejectedError}.
+ */
+export const MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE =
+  'room login rejected (wrong password or ACL denied)';
 
 export interface MeshcoreRoomLoginResponse {
   reserved?: number;
@@ -173,7 +181,7 @@ function performRoomLogin(
         return;
       }
       console.debug(`[meshcoreRoomLoginRpc] LoginFail prefix=${prefixToHex(prefix)}`);
-      fail(new Error('room login rejected (wrong password or ACL denied)'));
+      fail(new Error(MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE));
     };
 
     const onSent = (response: unknown): void => {
@@ -194,13 +202,21 @@ function performRoomLogin(
       startResponseTimer();
     };
 
-    const onErr = (): void => {
+    // The companion refused the command (contact missing, table full, busy, ...). It never checks
+    // the room password, so this is not a wrong-password result.
+    const onErr = (response?: unknown): void => {
       if (!acceptSentErr) return;
       if (sentWaitTimer !== undefined) {
         clearTimeout(sentWaitTimer);
         sentWaitTimer = undefined;
       }
-      fail(new Error('radio rejected room login'));
+      const errCode = (response as { errCode?: unknown } | undefined)?.errCode;
+      fail(
+        new MeshcoreRadioRejectedError(
+          'radio rejected room login',
+          typeof errCode === 'number' ? errCode : undefined,
+        ),
+      );
     };
 
     conn.on(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);

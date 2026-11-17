@@ -11,7 +11,7 @@ import {
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { useMessageStore } from '../../stores/messageStore';
+import { deleteMessage, useMessageStore } from '../../stores/messageStore';
 import {
   type NodeRecord,
   patchMeshcoreNodeLastHeardAt,
@@ -42,6 +42,7 @@ import {
   resolveMeshcoreIngestRxHops,
 } from '../meshcoreRawPacketCorrelate';
 import {
+  isMeshcoreRoomOwnLine,
   isMeshcoreRoomServerHwModel,
   meshcoreRoomPostBodyFromWire,
   meshcoreRoomWireLooksLikeRoom,
@@ -297,12 +298,21 @@ function handleTextMessage(
   // See `meshcoreRoomMessageRouting.ts` for wire vs chat and protocol-alignment notes.
   if (isRoomEvent) {
     const prefixMap = buildPrefixToNodeIdMap(identityId);
-    const { authorId, payload } = meshcoreRoomPostBodyFromWire(
+    const { authorId: prefixAuthorId, payload } = meshcoreRoomPostBodyFromWire(
       event.payload.payload,
       event.payload.txtType,
       prefixMap,
       { isKnownRoomNode },
     );
+    // A line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
+    // room server itself, so the room is its author.
+    const authorId = isMeshcoreRoomOwnLine(
+      event.payload.payload,
+      event.payload.txtType,
+      isKnownRoomNode,
+    )
+      ? roomServerId
+      : prefixAuthorId;
     const authorNode =
       authorId !== 0
         ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
@@ -321,6 +331,16 @@ function handleTextMessage(
       receivedVia: record.receivedVia ?? 'rf',
       rxHops: hopCount,
     });
+    // PacketRouter has just stored this event's raw copy under its id. A record there with no
+    // status was written only by the router (ingested, reloaded and own sending rows all carry
+    // one), so it is this post, not an earlier one: drop it, or the dedup below takes a line whose
+    // raw text is already its body (a PLAIN line) for a repeat of itself and never saves it.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+    const routerCopy = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
+    if (routerCopy != null && routerCopy.status == null) {
+      deleteMessage(identityId, event.payload.id);
+    }
     const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
       identityId,
       merged,

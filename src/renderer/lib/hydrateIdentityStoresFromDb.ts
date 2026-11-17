@@ -86,7 +86,9 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
  */
 export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
+  savedRows: readonly Pick<MeshcoreMessageDbRow, 'id' | 'sender_id' | 'payload'>[] = [],
 ) {
+  const savedById = new Map(savedRows.map((row) => [row.id, row]));
   const usedIds = new Set<string>();
   return messages.map((msg) => {
     const record = chatMessageToMessageRecord(msg);
@@ -95,8 +97,19 @@ export function meshcoreHydratedMessageRecords(
       msg.channel >= 0 ||
       (msg.channel === -1 && msg.packetId == null)
     ) {
-      let id = msg.storeId ?? meshcoreMessageStoreId(msg);
-      // Same sender + UTC second share one meshcoreMessageStoreId; keep later DB rows distinct.
+      // A room post's id ends with its text. Build it from the text and author as saved, which
+      // is what the live post's id was built from, not as the reload repairs show them (they can
+      // re-strip a body that starts with a non-ASCII letter), so a post the room resends after a
+      // restart lands on this row.
+      const saved =
+        isMeshcoreRoomChatMessage(msg) && msg.id != null ? savedById.get(msg.id) : undefined;
+      let id =
+        msg.storeId ??
+        meshcoreMessageStoreId(
+          saved ? { ...msg, payload: saved.payload, sender_id: saved.sender_id ?? 0 } : msg,
+        );
+      // Rows can share a meshcoreMessageStoreId (same sender and UTC second, and for a room post
+      // the same text); keep later DB rows distinct.
       if (usedIds.has(id) && msg.id != null) {
         id = `${id}:${msg.id}`;
       }
@@ -325,7 +338,7 @@ function applyMeshcoreMessagesFromSnapshot(
     );
   });
   const trimmed = trimMeshcoreChatMessages(mapped);
-  const records = meshcoreHydratedMessageRecords(trimmed);
+  const records = meshcoreHydratedMessageRecords(trimmed, dbMsgs);
   if (messagesMode === 'replace') {
     replaceMessageRecordsForIdentity(identityId, records);
     rebuildMeshcoreDedupeIndex(

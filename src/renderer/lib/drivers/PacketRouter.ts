@@ -277,11 +277,23 @@ class PacketRouter {
           existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
             ? ('both' as const)
             : ('rf' as const);
+        // A room post's `from` is the room server and its text still carries the author prefix.
+        // When the same post arrives again (the waiting-queue drain and the protocol both dispatch
+        // it, and rooms resend history), keep the author and body meshcoreIngest already stored;
+        // otherwise its merge prefers the room's name over an author it could not resolve. A room
+        // post id ends with the post's body (`meshcoreRoomMessageId`), so a stored row under this
+        // id is this post.
+        const storedRoomPost =
+          event.payload.roomServerId != null &&
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
+          existingRecord != null
+            ? existingRecord
+            : undefined;
         upsertMessage(identityId, {
           id: event.payload.id,
-          from: event.payload.from,
+          from: storedRoomPost ? storedRoomPost.from : event.payload.from,
           to: event.payload.to,
-          payload: event.payload.payload,
+          payload: storedRoomPost ? storedRoomPost.payload : event.payload.payload,
           channelIndex: event.payload.channelIndex,
           timestamp: event.payload.timestamp,
           ...(protocolType === 'meshcore' && event.payload.channelIndex === -1
@@ -296,7 +308,7 @@ class PacketRouter {
           ...(event.payload.roomServerId != null
             ? { roomServerId: event.payload.roomServerId }
             : {}),
-          ...(senderName ? { senderName } : {}),
+          ...(senderName && !storedRoomPost ? { senderName } : {}),
         });
         break;
       }

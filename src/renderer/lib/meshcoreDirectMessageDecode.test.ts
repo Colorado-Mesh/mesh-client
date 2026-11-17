@@ -9,6 +9,7 @@ import { registerMeshcorePubKey } from './meshcore/meshcorePubKeyRegistry';
 import {
   MESHCORE_TXT_TYPE_CLI_COMMAND,
   MESHCORE_TXT_TYPE_CLI_DATA,
+  MESHCORE_TXT_TYPE_PLAIN,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
 } from './meshcoreChannelText';
 import {
@@ -117,8 +118,47 @@ describe('decodeMeshcoreDirectMessageEvents', () => {
 
     const text = events.find((e) => e.type === 'text_message');
     expect(text?.type === 'text_message' && text.payload.id).toBe(
-      meshcoreRoomMessageId(roomId, 1_700_000_100, authorId),
+      meshcoreRoomMessageId(roomId, 1_700_000_100, authorId, 'Hello room'),
     );
+  });
+
+  describe('room post id matches the id a reload builds', () => {
+    const roomPubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 60);
+    const roomId = pubkeyToNodeId(roomPubKey);
+    const roomPrefixHex = Array.from(roomPubKey.slice(0, 4))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    function decodeRoomLine(text: string, txtType: number, senderTimestamp: number) {
+      registerMeshcorePubKey(roomId, roomPubKey);
+      const events = decodeMeshcoreDirectMessageEvents(
+        { pubKeyPrefix: roomPubKey.slice(0, 6), text, senderTimestamp, txtType },
+        new Map<string, number>([[roomPrefixHex, roomId]]),
+        new Set<number>([roomId]),
+      );
+      const message = events.find((e) => e.type === 'text_message');
+      return message?.type === 'text_message' ? message.payload.id : undefined;
+    }
+
+    // Ingest stores a room line with no author prefix under the room server as its author, so a
+    // reload keys it `room:<room>:<room>:<second>:<body>`; the live id must be the same.
+    it.each(['Bot Stats (24h): 3 posts', 'Hi'])('keys the room own line %j by the room', (line) => {
+      expect(decodeRoomLine(line, MESHCORE_TXT_TYPE_PLAIN, 1_700_000_200)).toBe(
+        meshcoreRoomMessageId(roomId, 1_700_000_200, roomId, line),
+      );
+    });
+
+    it('leaves an unresolved signed author out of the id', () => {
+      // A four-byte author prefix that no known node has.
+      const stranger = String.fromCharCode(1, 2, 3, 4);
+      expect(
+        decodeRoomLine(
+          `${stranger}post from a stranger`,
+          MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+          1_700_000_300,
+        ),
+      ).toBe(meshcoreRoomMessageId(roomId, 1_700_000_300, undefined, 'post from a stranger'));
+    });
   });
 
   it('sets hopCount from companion pathLen on DM decode', () => {
@@ -224,7 +264,7 @@ describe('dispatchMeshcoreWaitingContactMessage', () => {
     );
     detach();
 
-    const storeId = meshcoreRoomMessageId(roomId, 1_700_000_200, authorId);
+    const storeId = meshcoreRoomMessageId(roomId, 1_700_000_200, authorId, 'Sync replay post');
     expect(useMessageStore.getState().messages[ID][storeId].payload).toBe('Sync replay post');
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -288,7 +328,7 @@ describe('dispatchMeshcoreWaitingContactMessage', () => {
     );
     detach();
 
-    const storeId = meshcoreRoomMessageId(roomId, 1_700_000_300, authorId);
+    const storeId = meshcoreRoomMessageId(roomId, 1_700_000_300, authorId, 'From og app backlog');
     expect(useMessageStore.getState().messages[ID][storeId].payload).toBe('From og app backlog');
   });
 

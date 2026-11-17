@@ -63,6 +63,25 @@ describe('meshcoreRoomPostBodyFromWire', () => {
     expect(parsed.authorId).toBe(0xdeadbeef);
   });
 
+  it.each([
+    ['an accented first letter', String.fromCodePoint(0xc9) + 'quipe ready'],
+    ['Cyrillic', String.fromCodePoint(0x41f, 0x440, 0x438, 0x432, 0x435, 0x442) + ' all'],
+    ['a short first line', 'Hi' + String.fromCharCode(10) + 'there all'],
+  ])('keeps a PLAIN line from a known room that starts with %s whole', (_label, wire) => {
+    expect(looksLikeSignedPlainWirePrefix(wire)).toBe(false);
+    const parsed = meshcoreRoomPostBodyFromWire(wire, MESHCORE_TXT_TYPE_PLAIN, new Map(), {
+      isKnownRoomNode: true,
+    });
+    expect(parsed.payload).toBe(wire);
+  });
+
+  it('still strips 4 characters from a SignedPlain post whose body starts with an accented letter', () => {
+    const body = String.fromCodePoint(0xc9) + 'quipe ready';
+    const wire = String.fromCharCode(0x41, 0x42, 0xc9, 0x44) + body;
+    const parsed = meshcoreRoomPostBodyFromWire(wire, MESHCORE_TXT_TYPE_SIGNED_PLAIN, new Map());
+    expect(parsed.payload).toBe(body);
+  });
+
   it('preserves Bot Stats system line on PLAIN txtType', () => {
     const body = 'Bot Stats (24h):';
     const parsed = meshcoreRoomPostBodyFromWire(body, MESHCORE_TXT_TYPE_PLAIN, new Map(), {

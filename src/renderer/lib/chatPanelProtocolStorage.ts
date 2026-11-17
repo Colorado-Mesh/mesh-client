@@ -500,12 +500,25 @@ function isStarredMessage(value: unknown): value is StarredMessage {
 
 const STARRED_LIMIT = 200;
 
+/** A room star id saved before it ended with the post's text: `room:<room>:<second>:<sender>`. */
+const LEGACY_ROOM_STAR_ID = /^room:[0-9]+:[0-9]+:-?[0-9]+$/;
+
+/**
+ * A room star id ends with the post's text (`roomPostRowKey`), so two posts by one author in the
+ * same second keep separate stars. A star saved before that has no text in its id; its saved
+ * `payload` is the starred post's text, so appending it gives the id that post has now.
+ */
+function withCurrentRoomStarId(star: StarredMessage): StarredMessage {
+  if (!LEGACY_ROOM_STAR_ID.test(star.starId)) return star;
+  return { ...star, starId: `${star.starId}:${star.payload}` };
+}
+
 /** Parse a stored starred document (the `mesh-client:starred:<protocol>` value) already read. */
 export function parseStarred(raw: string | null): StarredMessage[] {
   if (!raw) return [];
   try {
     const parsed = parseStoredJson<unknown>(raw, 'ChatPanel starred');
-    if (Array.isArray(parsed)) return parsed.filter(isStarredMessage);
+    if (Array.isArray(parsed)) return parsed.filter(isStarredMessage).map(withCurrentRoomStarId);
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] parseStarred failed ' + errLikeToLogString(e));
   }

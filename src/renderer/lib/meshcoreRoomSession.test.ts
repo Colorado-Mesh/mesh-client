@@ -30,6 +30,7 @@ import {
 
 vi.mock('./meshcoreRoomLoginRpc', () => ({
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE: 'Room login cancelled',
+  MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE: 'room login rejected (wrong password or ACL denied)',
   runMeshcoreRoomLogin: vi.fn(),
 }));
 
@@ -37,7 +38,7 @@ vi.mock('./meshcoreRoomLogoutRpc', () => ({
   runMeshcoreRoomLogout: vi.fn(),
 }));
 
-import { runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
+import { MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE, runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
 import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 
 const mockRunMeshcoreRoomLogin = vi.mocked(runMeshcoreRoomLogin);
@@ -540,7 +541,7 @@ describe('meshcoreRoomSession', () => {
       adminPassword: '',
       role: 'readonly',
     });
-    mockRunMeshcoreRoomLogin.mockRejectedValue(new Error('Login rejected'));
+    mockRunMeshcoreRoomLogin.mockRejectedValue(new Error(MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE));
     const conn = {
       on: vi.fn(),
       off: vi.fn(),
@@ -568,8 +569,8 @@ describe('meshcoreRoomSession', () => {
       role: 'readonly',
     });
     mockRunMeshcoreRoomLogin
-      .mockRejectedValueOnce(new Error('Login rejected'))
-      .mockRejectedValueOnce(new Error('Login rejected'))
+      .mockRejectedValueOnce(new Error(MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE))
+      .mockRejectedValueOnce(new Error(MESHCORE_ROOM_LOGIN_REJECTED_MESSAGE))
       .mockResolvedValue({ permissions: 2 });
     const conn = {
       on: vi.fn(),

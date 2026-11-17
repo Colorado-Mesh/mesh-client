@@ -1,5 +1,5 @@
 diff --git a/src/buffer_reader.js b/src/buffer_reader.js
-index 9142fbc..2f8cf2d 100644
+index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9ad89545d4 100644
 --- a/src/buffer_reader.js
 +++ b/src/buffer_reader.js
 @@ -24,7 +24,10 @@ class BufferReader {
@@ -15,7 +15,7 @@ index 9142fbc..2f8cf2d 100644
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index 18f5f37..de6d147 100644
+index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a3693a80b 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -161,7 +161,41 @@ index 18f5f37..de6d147 100644
          });
      }
  
-@@ -820,10 +890,10 @@ class Connection extends EventEmitter {
+@@ -757,12 +827,28 @@ class Connection extends EventEmitter {
+             var reserved2 = bufferReader.readByte();
+         }
+ 
++        const pubKeyPrefix = bufferReader.readBytes(6);
++        const pathLen = bufferReader.readByte();
++        const txtType = bufferReader.readByte();
++        const senderTimestamp = bufferReader.readUInt32LE();
++
++        // TXT_TYPE_SIGNED_PLAIN (room posts): the text starts with the author's 4-byte public key
++        // prefix, raw key bytes rather than UTF-8. Keep each byte as one char (code 0-255) and
++        // decode only the body, so the prefix survives bytes >= 0x80 and 0x00.
++        let text;
++        if(txtType === 2 && bufferReader.getRemainingBytesCount() >= 4){
++            const authorPrefix = bufferReader.readBytes(4);
++            text = String.fromCharCode(...authorPrefix) + bufferReader.readString();
++        } else {
++            text = bufferReader.readString();
++        }
++
+         this.emit(Constants.ResponseCodes.ContactMsgRecv, {
+-            pubKeyPrefix: bufferReader.readBytes(6),
+-            pathLen: bufferReader.readByte(),
+-            txtType: bufferReader.readByte(),
+-            senderTimestamp: bufferReader.readUInt32LE(),
+-            text: bufferReader.readString(),
++            pubKeyPrefix: pubKeyPrefix,
++            pathLen: pathLen,
++            txtType: txtType,
++            senderTimestamp: senderTimestamp,
++            text: text,
+             snr: snr,
+         });
+ 
+@@ -820,10 +906,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -174,7 +208,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -859,10 +929,10 @@ class Connection extends EventEmitter {
+@@ -859,10 +945,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -187,7 +221,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -890,10 +960,10 @@ class Connection extends EventEmitter {
+@@ -890,10 +976,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -200,7 +234,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -921,10 +991,10 @@ class Connection extends EventEmitter {
+@@ -921,10 +1007,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -213,7 +247,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -952,10 +1022,10 @@ class Connection extends EventEmitter {
+@@ -952,10 +1038,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -226,7 +260,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1068,10 +1138,10 @@ class Connection extends EventEmitter {
+@@ -1068,10 +1154,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -239,7 +273,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1212,10 +1282,10 @@ class Connection extends EventEmitter {
+@@ -1212,10 +1298,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -252,7 +286,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1247,10 +1317,10 @@ class Connection extends EventEmitter {
+@@ -1247,10 +1333,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -265,7 +299,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1309,10 +1379,10 @@ class Connection extends EventEmitter {
+@@ -1309,10 +1395,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -278,7 +312,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1340,10 +1410,10 @@ class Connection extends EventEmitter {
+@@ -1340,10 +1426,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -291,7 +325,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1371,10 +1441,10 @@ class Connection extends EventEmitter {
+@@ -1371,10 +1457,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -304,7 +338,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1428,10 +1498,10 @@ class Connection extends EventEmitter {
+@@ -1428,10 +1514,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -317,7 +351,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -1932,10 +2002,10 @@ class Connection extends EventEmitter {
+@@ -1932,10 +2018,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -330,7 +364,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -2013,10 +2083,10 @@ class Connection extends EventEmitter {
+@@ -2013,10 +2099,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -343,7 +377,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -2079,10 +2149,10 @@ class Connection extends EventEmitter {
+@@ -2079,10 +2165,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -356,7 +390,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -2318,10 +2388,10 @@ class Connection extends EventEmitter {
+@@ -2318,10 +2404,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -369,7 +403,7 @@ index 18f5f37..de6d147 100644
                  }
  
                  // listen for events
-@@ -2337,6 +2407,33 @@ class Connection extends EventEmitter {
+@@ -2337,6 +2423,33 @@ class Connection extends EventEmitter {
          });
      }
  

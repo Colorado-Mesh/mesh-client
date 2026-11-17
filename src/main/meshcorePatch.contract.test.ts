@@ -40,4 +40,14 @@ describe('meshcore.js patch — firmware-ahead push codes', () => {
     const matches = PATCH.match(/\+\s+reject\(response\); \/\/ \{ errCode \}/g) ?? [];
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('keeps the SignedPlain room post author prefix as raw bytes', () => {
+    // Room authors are matched on these 4 key bytes; UTF-8 decoding them loses most authors.
+    expect(PATCH).toMatch(
+      /\+\s+if\(txtType === 2 && bufferReader\.getRemainingBytesCount\(\) >= 4\)\{/,
+    );
+    expect(PATCH).toMatch(
+      /\+\s+text = String\.fromCharCode\(\.\.\.authorPrefix\) \+ bufferReader\.readString\(\);/,
+    );
+  });
 });

@@ -10,7 +10,12 @@ import {
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
-import { meshcoreRoomMessageId, meshcoreRoomWireLooksLikeRoom } from './meshcoreRoomMessageRouting';
+import {
+  isMeshcoreRoomOwnLine,
+  meshcoreRoomMessageId,
+  meshcoreRoomPostBodyFromWire,
+  meshcoreRoomWireLooksLikeRoom,
+} from './meshcoreRoomMessageRouting';
 import {
   isMeshcoreTransportStatusChatLine,
   meshcoreCompanionRxPathLenToHopCount,
@@ -120,9 +125,24 @@ export function decodeMeshcoreDirectMessageEvents(
     isKnownRoomNode,
   });
   const roomServerId = isRoomWire && senderId !== 0 ? senderId : undefined;
-  const authorIdForId =
+  // A room post id carries the author and body meshcoreIngest will store (the room itself for its
+  // own lines), so a reload builds the same id.
+  const roomPostId =
     roomServerId != null
-      ? resolveRoomAuthorIdForMessageId(raw.text, raw.txtType, isKnownRoomNode, nodeIdByPrefix)
+      ? meshcoreRoomMessageId(
+          roomServerId,
+          raw.senderTimestamp,
+          isMeshcoreRoomOwnLine(raw.text, raw.txtType, isKnownRoomNode)
+            ? roomServerId
+            : resolveRoomAuthorIdForMessageId(
+                raw.text,
+                raw.txtType,
+                isKnownRoomNode,
+                nodeIdByPrefix,
+              ),
+          meshcoreRoomPostBodyFromWire(raw.text, raw.txtType, nodeIdByPrefix, { isKnownRoomNode })
+            .payload,
+        )
       : undefined;
   const hopCount = meshcoreCompanionRxPathLenToHopCount(raw.pathLen);
   return [
@@ -131,10 +151,7 @@ export function decodeMeshcoreDirectMessageEvents(
       payload: {
         // A DM id carries the wire text, as a channel id does, so two different DMs from one
         // contact in the same second stay two rows; a repeat delivery of the same DM keeps its id.
-        id:
-          roomServerId != null
-            ? meshcoreRoomMessageId(roomServerId, raw.senderTimestamp, authorIdForId)
-            : `${senderId}:${raw.senderTimestamp}:${raw.text}`,
+        id: roomPostId ?? `${senderId}:${raw.senderTimestamp}:${raw.text}`,
         from: senderId,
         to: 0,
         payload: raw.text,

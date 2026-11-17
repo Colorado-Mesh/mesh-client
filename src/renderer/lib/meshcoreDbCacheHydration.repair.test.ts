@@ -77,6 +77,49 @@ describe('repairMeshcoreRoomStoredPostPayloads', () => {
     const [fixed] = repairMeshcoreHydratedMessages([garbled], new Set([roomId]));
     expect(fixed.payload).toBe('Persisted post');
   });
+
+  // Text in any script is text: only characters a decoded raw key byte leaves behind (U+FFFD,
+  // control characters) mark a stored prefix. App.tsx runs this repair on every post it shows.
+  it.each([
+    ['an accented first letter', String.fromCodePoint(0xc9) + 'quipe ready'],
+    ['Cyrillic', String.fromCodePoint(0x41f, 0x440, 0x438, 0x432, 0x435, 0x442) + ' all'],
+    ['CJK', String.fromCodePoint(0x4f60, 0x597d, 0x4e16, 0x754c, 0xff01)],
+    ['a short first line', 'Hi' + String.fromCharCode(10) + 'there all'],
+  ])('keeps a stored room post that starts with %s whole', (_label, payload) => {
+    const roomId = 0xac200e59;
+    const post: ChatMessage = {
+      sender_id: 0x11,
+      sender_name: 'Author',
+      payload,
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1_700_000_000,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    expect(repairMeshcoreHydratedMessages([post], new Set([roomId]))[0].payload).toBe(payload);
+  });
+
+  it.each([
+    [
+      'a UTF-8 decoded key (replacement characters)',
+      String.fromCodePoint(0xfffd, 0x6c, 0xfffd, 0x49),
+    ],
+    ['a key with a control byte', String.fromCharCode(0x41, 0x01, 0x42, 0x43)],
+  ])('still strips a stored prefix left by %s', (_label, prefix) => {
+    const roomId = 0xac200e59;
+    const garbled: ChatMessage = {
+      sender_id: 0,
+      sender_name: 'Unknown',
+      payload: `${prefix}Old post`,
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1_700_000_000,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    expect(repairMeshcoreHydratedMessages([garbled], new Set([roomId]))[0].payload).toBe(
+      'Old post',
+    );
+  });
 });
 
 describe('repairMeshcoreRoomUnknownSenderNames', () => {

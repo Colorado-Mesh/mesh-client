@@ -1,8 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MeshcoreMessageDbRow } from '../../hooks/meshcore/meshcoreHookPreamble';
+import {
+  mapMeshcoreDbRowsToChatMessages,
+  messageToDbRow,
+} from '../../hooks/meshcore/meshcoreHookPreamble';
 import { setConnection, useConnectionStore } from '../../stores/connectionStore';
 import { addIdentity } from '../../stores/identityStore';
-import { upsertMessage, useMessageStore } from '../../stores/messageStore';
+import {
+  upsertMessage,
+  upsertMessageRecordsForIdentity,
+  useMessageStore,
+} from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import {
   getTakChannels,
@@ -15,8 +24,22 @@ import { setTakSinkActive } from '../../stores/takSinkStore';
 import { clearTakTrackerFixes, useTakTrackerStore } from '../../stores/takTrackerStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import {
+  hydrateMeshcoreMessagesFromDb,
+  meshcoreHydratedMessageRecords,
+} from '../hydrateIdentityStoresFromDb';
+import {
+  clearMeshcorePubKeyRegistry,
+  registerMeshcorePubKey,
+} from '../meshcore/meshcorePubKeyRegistry';
+import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
+import { repairMeshcoreHydratedMessages } from '../meshcoreDbCacheHydration';
+import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecode';
+import { clearMeshcoreDedupeIndex } from '../meshcoreMessageDedupeIndex';
+import { upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
+import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
+  pubKeyPrefixHex,
   pubkeyToNodeId,
 } from '../meshcoreUtils';
 import { getNodeStatus } from '../nodeStatus';
@@ -428,6 +451,534 @@ describe('attachMeshcoreIngest', () => {
     const row = useMessageStore.getState().messages[ID][msgId];
     expect(row.payload).toBe('Posted early');
     expect(row.roomServerId).toBe(roomId);
+  });
+
+  describe('room posts dispatched through PacketRouter', () => {
+    const roomId = 0x52f00d11;
+    const roomPubKey = Uint8Array.from({ length: 32 }, (_, i) => 0x90 + i);
+    const knownAuthorId = 0x41424344;
+    const myNodeNum = 0x6d650001;
+    const postSec = 1_700_000_500;
+    const ACCENTED_E = String.fromCodePoint(0xc9);
+    const CYRILLIC_WORD = String.fromCodePoint(0x41f, 0x440, 0x438, 0x432, 0x435, 0x442);
+    const WAVE = String.fromCodePoint(0x1f44b);
+    // A PLAIN line the room server writes itself is the room's own post: the room is its sender,
+    // under its full name (not PacketRouter's 7-character short name).
+    const PLAIN_SYSTEM_LINE_ROW = {
+      sender_id: roomId,
+      sender_name: 'Test Room',
+      payload: 'Bot Stats (24h):',
+    };
+
+    afterEach(() => {
+      clearMeshcorePubKeyRegistry();
+      clearMeshcoreDedupeIndex(ID);
+      useConnectionStore.setState({ connections: {} });
+    });
+
+    function pubKeyStartingWith(first4: readonly number[]): Uint8Array {
+      const key = new Uint8Array(32);
+      key.set(first4, 0);
+      return key;
+    }
+
+    // A contact the app knows: in the node store (read by meshcoreIngest) and in the public key
+    // registry (read by the decoder to find a room post's author).
+    function addContact(nodeId: number, longName: string, publicKey: Uint8Array): void {
+      registerMeshcorePubKey(nodeId, publicKey);
+      useNodeStore.setState((s) => ({
+        nodes: {
+          ...s.nodes,
+          [ID]: {
+            ...s.nodes[ID],
+            [nodeId]: { nodeId, longName, hwModel: 'Chat', publicKey },
+          },
+        },
+      }));
+    }
+
+    function seedRoomAndKnownAuthor(): void {
+      clearMeshcorePubKeyRegistry();
+      registerMeshcorePubKey(roomId, roomPubKey);
+      useNodeStore.setState({
+        nodes: {
+          [ID]: {
+            [roomId]: {
+              nodeId: roomId,
+              longName: 'Test Room',
+              hwModel: 'Room',
+              publicKey: roomPubKey,
+            },
+          },
+        },
+        traceRoutes: {},
+        waypoints: {},
+        neighborInfo: {},
+      });
+      addContact(knownAuthorId, 'Bob Ascii', pubKeyStartingWith([0x41, 0x42, 0x43, 0x44]));
+    }
+
+    function addMe(): void {
+      addContact(myNodeNum, 'Me Node', pubKeyStartingWith([0x6d, 0x65, 0x6d, 0x65]));
+      setConnection(ID, { myNodeNum, status: 'connected' });
+    }
+
+    // The event the app builds for a room post (`decodeMeshcoreDirectMessageEvents`, used by the
+    // protocol subscriber and the waiting-queue drain alike), sent through PacketRouter, so the
+    // post gets the id the app gives it. Returns that id.
+    function deliverRoomPost(
+      wire: string,
+      txtType: number = MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+    ): string {
+      const events = decodeMeshcoreDirectMessageEvents(
+        { pubKeyPrefix: roomPubKey.slice(0, 6), text: wire, senderTimestamp: postSec, txtType },
+        new Map([[pubKeyPrefixHex(roomPubKey), roomId]]),
+        new Set([roomId]),
+      );
+      let id = '';
+      for (const event of events) {
+        if (event.type === 'text_message') id = event.payload.id;
+        packetRouter.dispatch(event, ID);
+      }
+      expect(id).not.toBe('');
+      return id;
+    }
+
+    function sendingOwnPost(text: string): void {
+      upsertMeshcoreMessageWithDedup(ID, {
+        sender_id: myNodeNum,
+        sender_name: 'Me Node',
+        payload: text,
+        meshcoreDedupeKey: text,
+        channel: -2,
+        timestamp: postSec * 1000,
+        status: 'sending',
+        roomServerId: roomId,
+        to: roomId,
+      });
+    }
+
+    function roomRows(): { sender_id: number; sender_name: string; payload: string }[] {
+      return Object.values(useMessageStore.getState().messages[ID])
+        .filter((r) => r.roomServerId === roomId)
+        .map((r) => {
+          const m = messageRecordToChatMessage(r);
+          return { sender_id: m.sender_id, sender_name: m.sender_name, payload: m.payload };
+        });
+    }
+
+    function savedRoomRows(): { sender_id: unknown; sender_name: unknown; payload: unknown }[] {
+      return saveMeshcoreMessage.mock.calls
+        .map((call) => call[0] as Record<string, unknown>)
+        .filter((row) => row.room_server_id === roomId)
+        .map((row) => ({
+          sender_id: row.sender_id,
+          sender_name: row.sender_name,
+          payload: row.payload,
+        }));
+    }
+
+    // What a restart does: the store and the dedupe index start empty, and the saved rows are
+    // read back the way the runtime does at launch (`reloadMeshcoreNodesFromDb`: map, repair,
+    // `meshcoreHydratedMessageRecords`).
+    function restartFromSavedRows(): void {
+      const rows = saveMeshcoreMessage.mock.calls.map(
+        (call, index) => ({ ...(call[0] as object), id: index + 1 }) as MeshcoreMessageDbRow,
+      );
+      useMessageStore.setState({ messages: {} });
+      clearMeshcoreDedupeIndex(ID);
+      const { connections } = useConnectionStore.getState();
+      const mapped = repairMeshcoreHydratedMessages(
+        mapMeshcoreDbRowsToChatMessages(rows),
+        new Set([roomId]),
+        ID in connections ? connections[ID].myNodeNum : undefined,
+      );
+      upsertMessageRecordsForIdentity(ID, meshcoreHydratedMessageRecords(mapped, rows));
+    }
+
+    it('labels a live post by an unknown author Unknown, not with the room name', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxwhello from a stranger');
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: 0, sender_name: 'Unknown', payload: 'hello from a stranger' },
+      ]);
+    });
+
+    it('keeps Unknown when the same unknown-author post is delivered twice', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxwhello from a stranger');
+      deliverRoomPost('zyxwhello from a stranger');
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: 0, sender_name: 'Unknown', payload: 'hello from a stranger' },
+      ]);
+    });
+
+    it('leaves the author and body of a stored room post alone when the router sees it again', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      const id = deliverRoomPost('zyxwhello from a stranger');
+      detach();
+      expect(deliverRoomPost('zyxwhello from a stranger')).toBe(id);
+      const row = useMessageStore.getState().messages[ID][id];
+      expect({ from: row.from, senderName: row.senderName, payload: row.payload }).toEqual({
+        from: 0,
+        senderName: 'Unknown',
+        payload: 'hello from a stranger',
+      });
+    });
+
+    it('keeps the contact name on a live post by a known author', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('ABCDhello from bob');
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'hello from bob' },
+      ]);
+    });
+
+    it('keeps the contact name when a known-author post is delivered twice', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('ABCDhello from bob');
+      deliverRoomPost('ABCDhello from bob');
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'hello from bob' },
+      ]);
+    });
+
+    it('names an Unknown post once the author contact is known and the post comes again', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      const lateAuthorId = 0x7a797877;
+      const unknownId = deliverRoomPost('zyxwhello from a stranger');
+      addContact(lateAuthorId, 'Zed Late', pubKeyStartingWith([0x7a, 0x79, 0x78, 0x77]));
+      // Once the prefix resolves, the decoder gives the post an id that carries the author.
+      expect(deliverRoomPost('zyxwhello from a stranger')).not.toBe(unknownId);
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: lateAuthorId, sender_name: 'Zed Late', payload: 'hello from a stranger' },
+      ]);
+    });
+
+    it('keeps the local node as the author of its own post echoed by the room', () => {
+      seedRoomAndKnownAuthor();
+      addMe();
+      sendingOwnPost('my own post');
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('mememy own post');
+      deliverRoomPost('mememy own post');
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: myNodeNum, sender_name: 'Me Node', payload: 'my own post' },
+      ]);
+    });
+
+    it('keeps Unknown when a post whose wire text ends in padding is delivered twice', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      const wire = 'zyxwhello padded' + String.fromCharCode(0x7f);
+      deliverRoomPost(wire);
+      deliverRoomPost(wire);
+      detach();
+      expect(roomRows()).toEqual([
+        { sender_id: 0, sender_name: 'Unknown', payload: 'hello padded' },
+      ]);
+    });
+
+    it('keeps two different posts by an unknown author in one second as two rows', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxwfirst from a stranger');
+      deliverRoomPost('zyxwsecond from a stranger');
+      detach();
+      expect({ rows: roomRows(), saved: savedRoomRows() }).toEqual({
+        rows: [
+          { sender_id: 0, sender_name: 'Unknown', payload: 'first from a stranger' },
+          { sender_id: 0, sender_name: 'Unknown', payload: 'second from a stranger' },
+        ],
+        saved: [
+          { sender_id: null, sender_name: 'Unknown', payload: 'first from a stranger' },
+          { sender_id: null, sender_name: 'Unknown', payload: 'second from a stranger' },
+        ],
+      });
+    });
+
+    it('keeps two different posts by a known author in one second as two rows', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('ABCDfirst from bob');
+      deliverRoomPost('ABCDsecond from bob');
+      detach();
+      expect({ rows: roomRows(), saved: savedRoomRows() }).toEqual({
+        rows: [
+          { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'first from bob' },
+          { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'second from bob' },
+        ],
+        saved: [
+          { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'first from bob' },
+          { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'second from bob' },
+        ],
+      });
+    });
+
+    it('keeps two own posts sent in one second as two sent rows once the room echoes both', () => {
+      seedRoomAndKnownAuthor();
+      addMe();
+      sendingOwnPost('first own post');
+      sendingOwnPost('second own post');
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('memefirst own post');
+      deliverRoomPost('memesecond own post');
+      detach();
+      const rows = Object.values(useMessageStore.getState().messages[ID])
+        .filter((r) => r.roomServerId === roomId)
+        .map((r) => ({ payload: r.payload, status: r.status }));
+      expect(rows).toEqual([
+        { payload: 'first own post', status: 'acked' },
+        { payload: 'second own post', status: 'acked' },
+      ]);
+    });
+
+    it.each([
+      [
+        'an unknown author',
+        'zyxwhello from a stranger',
+        { sender_id: 0, sender_name: 'Unknown', payload: 'hello from a stranger' },
+      ],
+      [
+        'a known author',
+        'ABCDhello from bob',
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'hello from bob' },
+      ],
+      [
+        'a wire ending in padding',
+        'zyxwhello padded' + String.fromCharCode(0x7f),
+        { sender_id: 0, sender_name: 'Unknown', payload: 'hello padded' },
+      ],
+      [
+        'a known author whose body starts with an emoji',
+        'ABCD' + WAVE + ' hi there',
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: WAVE + ' hi there' },
+      ],
+      [
+        'a known author whose body reads like Name: text',
+        'ABCDFieldteam: we are here',
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: 'Fieldteam: we are here' },
+      ],
+      [
+        'an unknown author whose body starts with a mention',
+        'zyxw@[Bob Ascii] thanks',
+        { sender_id: 0, sender_name: 'Unknown', payload: '@[Bob Ascii] thanks' },
+      ],
+      [
+        'a known author whose body starts with an accented letter',
+        'ABCD' + ACCENTED_E + 'quipe ready',
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: ACCENTED_E + 'quipe ready' },
+      ],
+      [
+        'an unknown author whose body starts with an accented letter',
+        'zyxw' + ACCENTED_E + 'quipe ready',
+        { sender_id: 0, sender_name: 'Unknown', payload: ACCENTED_E + 'quipe ready' },
+      ],
+      [
+        'a known author whose body is Cyrillic',
+        'ABCD' + CYRILLIC_WORD + ' all',
+        { sender_id: knownAuthorId, sender_name: 'Bob Ascii', payload: CYRILLIC_WORD + ' all' },
+      ],
+    ])('merges a resent post by %s into its row after a restart', (_label, wire, row) => {
+      seedRoomAndKnownAuthor();
+      let detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(wire);
+      detach();
+      restartFromSavedRows();
+      const reloaded = roomRows();
+      detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(wire);
+      detach();
+      expect({ reloaded, rows: roomRows(), saves: saveMeshcoreMessage.mock.calls.length }).toEqual({
+        reloaded: [row],
+        rows: [row],
+        saves: 1,
+      });
+    });
+
+    // Reload shows this post differently from the live copy, which predates this change: an
+    // unknown author's `Name: text` reads as a post by that name (`meshcoreDbMessageDisplay`).
+    // The reloaded row still has the live post's id, so when the room resends the post the live
+    // copy replaces it instead of adding a second row.
+    const NAME_TEXT_WIRE = 'zyxwFieldteam: we are here';
+    const NAME_TEXT_ROW = {
+      sender_id: 0,
+      sender_name: 'Unknown',
+      payload: 'Fieldteam: we are here',
+    };
+
+    it('keeps one row when the room resends a post that reload shows differently', () => {
+      seedRoomAndKnownAuthor();
+      let detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(NAME_TEXT_WIRE);
+      detach();
+      restartFromSavedRows();
+      const reloaded = roomRows();
+      detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(NAME_TEXT_WIRE);
+      detach();
+      expect({ reloaded, rows: roomRows() }).toEqual({
+        reloaded: [
+          {
+            sender_id: meshcoreChatStubNodeIdFromDisplayName('Fieldteam'),
+            sender_name: 'Fieldteam',
+            payload: 'we are here',
+          },
+        ],
+        rows: [NAME_TEXT_ROW],
+      });
+    });
+
+    it('keeps one row when the room resends a post after the post-prune reload', async () => {
+      seedRoomAndKnownAuthor();
+      const wire = NAME_TEXT_WIRE;
+      let detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(wire);
+      detach();
+      const rows = saveMeshcoreMessage.mock.calls.map((call, index) => ({
+        ...(call[0] as object),
+        id: index + 1,
+      }));
+      vi.spyOn(window.electronAPI.db, 'getMeshcoreIdentityHydration').mockResolvedValue({
+        contacts: [],
+        nodes: [],
+        hopHistory: [],
+        messages: rows,
+      });
+      useMessageStore.setState({ messages: {} });
+      clearMeshcoreDedupeIndex(ID);
+      await hydrateMeshcoreMessagesFromDb(ID, 'upsert');
+      const reloaded = roomRows().map((r) => r.payload);
+      detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(wire);
+      detach();
+      expect({ reloaded, rows: roomRows() }).toEqual({
+        reloaded: ['we are here'],
+        rows: [NAME_TEXT_ROW],
+      });
+    });
+
+    it('merges the room echo of an own post into its row after a restart', () => {
+      seedRoomAndKnownAuthor();
+      addMe();
+      void window.electronAPI.db.saveMeshcoreMessage(
+        messageToDbRow(
+          {
+            sender_id: myNodeNum,
+            sender_name: 'Me Node',
+            payload: 'my own post',
+            channel: -2,
+            timestamp: postSec * 1000,
+            status: 'acked',
+            roomServerId: roomId,
+            to: roomId,
+          },
+          myNodeNum,
+        ),
+      );
+      restartFromSavedRows();
+      const reloaded = roomRows();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('mememy own post');
+      detach();
+      const own = { sender_id: myNodeNum, sender_name: 'Me Node', payload: 'my own post' };
+      expect({ reloaded, rows: roomRows() }).toEqual({ reloaded: [own], rows: [own] });
+    });
+
+    it('keeps both posts from one second after a restart and adds no row when they come again', () => {
+      seedRoomAndKnownAuthor();
+      let detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxwfirst from a stranger');
+      deliverRoomPost('zyxwsecond from a stranger');
+      detach();
+      restartFromSavedRows();
+      detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxwfirst from a stranger');
+      deliverRoomPost('zyxwsecond from a stranger');
+      detach();
+      expect({ rows: roomRows(), saves: saveMeshcoreMessage.mock.calls.length }).toEqual({
+        rows: [
+          { sender_id: 0, sender_name: 'Unknown', payload: 'first from a stranger' },
+          { sender_id: 0, sender_name: 'Unknown', payload: 'second from a stranger' },
+        ],
+        saves: 2,
+      });
+    });
+
+    // PacketRouter writes each line's raw copy before meshcoreIngest runs; that copy is the line
+    // itself, not an earlier post, so the ingest still stores and saves the line.
+    it('saves a PLAIN system line from the room server once, also when it comes twice', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('Bot Stats (24h):', 0);
+      const once = roomRows();
+      deliverRoomPost('Bot Stats (24h):', 0);
+      detach();
+      expect({ once, rows: roomRows(), saved: savedRoomRows() }).toEqual({
+        once: [PLAIN_SYSTEM_LINE_ROW],
+        rows: [PLAIN_SYSTEM_LINE_ROW],
+        saved: [PLAIN_SYSTEM_LINE_ROW],
+      });
+    });
+
+    it('keeps and saves two different PLAIN lines from the room server in one second', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('Bot Stats (24h):', 0);
+      deliverRoomPost('Uptime: 3d', 0);
+      detach();
+      const uptime = { sender_id: roomId, sender_name: 'Test Room', payload: 'Uptime: 3d' };
+      expect({ rows: roomRows(), saved: savedRoomRows() }).toEqual({
+        rows: [PLAIN_SYSTEM_LINE_ROW, uptime],
+        saved: [PLAIN_SYSTEM_LINE_ROW, uptime],
+      });
+    });
+
+    it('keeps a PLAIN system line after a restart and does not save it again when resent', () => {
+      seedRoomAndKnownAuthor();
+      let detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('Bot Stats (24h):', 0);
+      detach();
+      restartFromSavedRows();
+      const reloaded = roomRows();
+      detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('Bot Stats (24h):', 0);
+      detach();
+      expect({ reloaded, rows: roomRows(), saves: saveMeshcoreMessage.mock.calls.length }).toEqual({
+        reloaded: [PLAIN_SYSTEM_LINE_ROW],
+        rows: [PLAIN_SYSTEM_LINE_ROW],
+        saves: 1,
+      });
+    });
+
+    it('does not take a SignedPlain post with no body for a line by the room', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost('zyxw');
+      detach();
+      expect(roomRows()).toEqual([{ sender_id: 0, sender_name: 'Unknown', payload: 'zyxw' }]);
+    });
+
+    it('saves a PLAIN line in Cyrillic from the room server whole', () => {
+      seedRoomAndKnownAuthor();
+      const detach = attachMeshcoreIngest(ID);
+      deliverRoomPost(CYRILLIC_WORD + ' all', 0);
+      detach();
+      const row = { sender_id: roomId, sender_name: 'Test Room', payload: CYRILLIC_WORD + ' all' };
+      expect({ rows: roomRows(), saved: savedRoomRows() }).toEqual({ rows: [row], saved: [row] });
+    });
   });
 
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {

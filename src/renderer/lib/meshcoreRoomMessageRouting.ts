@@ -45,22 +45,33 @@ export function looksLikeRoomPlainSystemLine(wireText: string): boolean {
   return true;
 }
 
+const TAB = 0x09;
+const LINE_FEED = 0x0a;
+const CARRIAGE_RETURN = 0x0d;
+const DELETE = 0x7f;
+const C1_CONTROL_MAX = 0x9f;
+
 /**
- * SignedPlain author prefixes are raw pubkey bytes — often non-printable or U+FFFD.
- * Do not treat UTF-16 surrogates (emoji in already-decoded bodies like `@[🛜 …]`) as binary:
- * those are valid chat text and must not be stripped on hydration.
+ * True when one of the first four characters can only be a raw author key byte. A SignedPlain
+ * prefix that arrives without txtType 2 has been UTF-8 decoded, so its bytes show as U+FFFD or
+ * as control characters (tab, line feed and carriage return excepted), and real text never
+ * starts with those. Letters in any script, emoji and a short first line are text.
  */
 export function looksLikeSignedPlainWirePrefix(wireText: string): boolean {
   if (wireText.length <= 4) return false;
   for (let i = 0; i < 4; i++) {
-    const code = wireText.charCodeAt(i);
-    // UTF-16 surrogates are non-BMP text (emoji), not raw pubkey byte values 0x00–0xFF.
-    if (code >= 0xd800 && code <= 0xdfff) continue;
-    if (code === REPLACEMENT_CHAR || code < PRINTABLE_ASCII_MIN || code > PRINTABLE_ASCII_MAX) {
-      return true;
-    }
+    if (isRawKeyByteChar(wireText.charCodeAt(i))) return true;
   }
   return false;
+}
+
+function isRawKeyByteChar(code: number): boolean {
+  if (code === TAB || code === LINE_FEED || code === CARRIAGE_RETURN) return false;
+  return (
+    code === REPLACEMENT_CHAR ||
+    code < PRINTABLE_ASCII_MIN ||
+    (code >= DELETE && code <= C1_CONTROL_MAX)
+  );
 }
 
 export function shouldStripRoomPostAuthorPrefix(
@@ -73,6 +84,22 @@ export function shouldStripRoomPostAuthorPrefix(
   if (looksLikeRoomPlainSystemLine(wireText)) return false;
   if (isKnownRoomNode && looksLikeSignedPlainWirePrefix(wireText)) return true;
   return false;
+}
+
+/**
+ * A room line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
+ * room server itself, so the room is its author. Ingest stores it that way and the live decoder
+ * keys it the same way, so a reload builds the same id.
+ */
+export function isMeshcoreRoomOwnLine(
+  wireText: string,
+  txtType: number | undefined,
+  isKnownRoomNode?: boolean,
+): boolean {
+  return (
+    txtType !== MESHCORE_TXT_TYPE_SIGNED_PLAIN &&
+    !shouldStripRoomPostAuthorPrefix(wireText, txtType, isKnownRoomNode)
+  );
 }
 
 export function isMeshcoreRoomServerHwModel(hwModel: string | undefined): boolean {
@@ -112,13 +139,20 @@ export function meshcoreRoomPostBodyFromWire(
   return { authorId: 0, payload: sanitizeMeshcoreChatWireText(wireText) };
 }
 
+/**
+ * Store id of a room post, for live posts, own posts and rows read back from SQLite alike. It
+ * ends with the post's body as stored (author prefix removed, wire padding cleaned), so two
+ * different posts in the same second keep two rows, while the same post delivered again (the
+ * waiting-queue drain, a room resending its history, after a restart) keeps one id.
+ */
 export function meshcoreRoomMessageId(
   roomServerId: number,
   senderTimestampSec: number,
-  authorId?: number,
+  authorId: number | undefined,
+  body: string,
 ): string {
   if (authorId != null && authorId !== 0) {
-    return `room:${roomServerId}:${authorId}:${senderTimestampSec}`;
+    return `room:${roomServerId}:${authorId}:${senderTimestampSec}:${body}`;
   }
-  return `room:${roomServerId}:${senderTimestampSec}`;
+  return `room:${roomServerId}:${senderTimestampSec}:${body}`;
 }
