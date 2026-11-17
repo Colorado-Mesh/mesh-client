@@ -1,5 +1,6 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import { compareChatReceiveOrder } from './chatReceiveOrder';
 import { roomPostRowKey } from './chatScrollUtils';
 import { errLikeToLogString } from './errLikeToLogString';
 import type { GlobalMessageSearchHit } from './globalMessageSearch';
@@ -92,7 +93,9 @@ export function buildUnifiedInboxItems(opts: BuildUnifiedInboxOptions): UnifiedI
     }
   }
 
-  items.sort((a, b) => b.message.timestamp - a.message.timestamp);
+  // Newest arrival first, like the Chat panel; a sender clock that runs behind must not push a
+  // message that just arrived down the feed or out of the newest-`limit` window.
+  items.sort((a, b) => compareChatReceiveOrder(b.message, a.message));
   return items.slice(0, limit);
 }
 

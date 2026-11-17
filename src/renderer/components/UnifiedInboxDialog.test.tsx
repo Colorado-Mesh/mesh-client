@@ -6,7 +6,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { loadStarred } from '@/renderer/lib/chatPanelProtocolStorage';
 import type { ChatMessage } from '@/renderer/lib/types';
-import { loadDismissedInboxKeys } from '@/renderer/lib/unifiedInbox';
+import { buildUnifiedInboxItems, loadDismissedInboxKeys } from '@/renderer/lib/unifiedInbox';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import { UnifiedInboxDialog, type UnifiedInboxDialogProps } from './UnifiedInboxDialog';
@@ -66,6 +66,36 @@ describe('UnifiedInboxDialog', () => {
     expect(rows[0]).toHaveTextContent('payload 4');
     expect(rows[3]).toHaveTextContent('payload 1');
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('puts the message that arrived last on top, even when its sender clock is behind', () => {
+    const arrived = 1_700_000_100_000;
+    renderInbox({
+      messagesByProtocol: {
+        meshtastic: [msg(1, { receivedAt: arrived })],
+        meshcore: [msg(3, { timestamp: arrived - 2 * 3_600_000, receivedAt: arrived + 60_000 })],
+        reticulum: [],
+      },
+    });
+    const rows = within(screen.getByRole('list', { name: 'Inbox messages' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows[0]).toHaveTextContent('payload 3');
+    expect(rows[1]).toHaveTextContent('payload 1');
+  });
+
+  it('keeps a just-arrived message with an old stamp inside the newest-messages window', () => {
+    const arrived = 1_700_000_100_000;
+    const items = buildUnifiedInboxItems({
+      messagesByProtocol: {
+        meshtastic: [msg(1, { receivedAt: arrived })],
+        meshcore: [msg(3, { timestamp: arrived - 2 * 3_600_000, receivedAt: arrived + 60_000 })],
+        reticulum: [],
+      },
+      enabledProtocols: ALL,
+      limit: 1,
+    });
+    expect(items.map((item) => item.message.payload)).toEqual(['payload 3']);
   });
 
   it('jumps to the source conversation and closes when a row is clicked', async () => {
