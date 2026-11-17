@@ -536,7 +536,7 @@ async function main() {
   switch (result.status) {
     case 'no-staging':
       console.error(
-        `${options.remote} has no staging branch yet. Finish the rollout steps in docs/release-process.md first.`,
+        `${options.remote} has no staging branch yet, so there is nothing to promote. Switch the repository to the staging flow first (docs/ci-cd.md, Merge queue and rulesets).`,
       );
       process.exit(1);
       break;

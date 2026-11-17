@@ -29,7 +29,7 @@ The two build workflows the tag starts:
 
 Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main`, so the published docs follow the released app.
 
-Setting this flow up for the first time: see [Switching to staging](#switching-to-staging-one-time-rollout).
+The branch rulesets and the Promotion Doctor's Actions policy that this flow relies on are described in [CI/CD: Merge queue and rulesets](ci-cd.md#merge-queue-and-rulesets).
 
 ### Database schema upgrades
 
@@ -512,66 +512,6 @@ pnpm run dist:mac # or dist:linux / dist:win on the target OS
 ```
 
 Upload outputs from `release/` to a manually created GitHub Release. This bypasses CI smoke tests — use only as a last resort.
-
----
-
-## Switching to staging (one-time rollout)
-
-These steps move the repository to this flow. Run them in order, as a repository admin, each one only after the previous one succeeded. Until step 3 the Promotion Doctor passes every pull request (there is no `staging` yet) and Cut release tags only a new version, so merging to `main` works as before. The 3-OS E2E and the release preflight do start running on every pull request to `main` from step 1, so keep the time between steps 1 and 9 short.
-
-1. Merge the pull request that adds this flow into `main` through today's merge queue.
-2. Allow the Promotion Doctor's `pull_request_target` trigger. From December 2, 2026, GitHub's default Actions event policy blocks that trigger in public repositories, which would leave the required check unreported. The repository policy in `.github/actions-policies/promotion-doctor.json` allows it for the Doctor's workflow only (**Settings > Actions > Policies**, or the command below). If the policy already exists, GitHub refuses the command with `Name must be unique`; go on to step 3.
-3. Create `staging` from `main`.
-4. Create the `staging` ruleset from its canonical JSON.
-5. Allow merge commits. Squash stays allowed; each branch's ruleset limits its own merge methods.
-6. Make `main` promotion-only: merge commits, no merge queue, `Promotion Doctor` required.
-7. Make `staging` the default branch.
-8. Let license automation run on `staging` instead of `main` (**Settings > Environments > license-automation**, deployment branches, or the commands below).
-9. Retarget open pull requests from `main` to `staging`.
-10. Open the first promotion with `pnpm run promotion:open`.
-
-Steps 2 to 9 as commands. Run them in one shell, one step at a time, from the root of a checkout of `main` taken after step 1 (steps 2, 4 and 6 read files from it):
-
-```bash
-REPO=Colorado-Mesh/mesh-client
-
-# 2. Allow the Promotion Doctor trigger
-gh api "repos/${REPO}/actions/policies" --method POST \
-  -H "X-GitHub-Api-Version: 2026-03-10" \
-  --input .github/actions-policies/promotion-doctor.json
-
-# 3. Create staging from main
-MAIN_SHA="$(gh api "repos/${REPO}/git/ref/heads/main" --jq .object.sha)"
-gh api "repos/${REPO}/git/refs" --method POST \
-  -f ref=refs/heads/staging -f sha="${MAIN_SHA}"
-
-# 4. Create the staging ruleset
-gh api "repos/${REPO}/rulesets" --method POST \
-  --input .github/rulesets/staging-merge-queue.json
-
-# 5. Allow merge commits
-gh api "repos/${REPO}" --method PATCH -F allow_merge_commit=true
-
-# 6. Make main promotion-only
-gh api "repos/${REPO}/rulesets/20821455" --method PUT \
-  --input .github/rulesets/main-promotions.json
-
-# 7. Make staging the default branch
-gh api "repos/${REPO}" --method PATCH -f default_branch=staging
-
-# 8. License automation deploys from staging instead of main
-POLICIES="repos/${REPO}/environments/license-automation"
-POLICIES="${POLICIES}/deployment-branch-policies"
-gh api "${POLICIES}" --method POST -f name=staging -f type=branch
-MAIN_POLICY="$(gh api "${POLICIES}" \
-  --jq '.branch_policies[] | select(.name == "main") | .id')"
-gh api "${POLICIES}/${MAIN_POLICY}" --method DELETE
-
-# 9. Retarget open pull requests to staging
-gh pr list --repo "${REPO}" --base main --state open \
-  --json number --jq '.[].number' \
-  | xargs -I{} gh pr edit {} --repo "${REPO}" --base staging
-```
 
 ---
 
