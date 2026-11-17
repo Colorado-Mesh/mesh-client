@@ -842,35 +842,45 @@ describe('runDoctor green-check gate', { timeout: 60_000 }, () => {
     expect(detailOf(result, 'Checks')).toBe('Not started: Release preflight.');
   });
 
-  it('names each operating system that has no Electron E2E run', async () => {
-    const { fixture, pr } = await canonical();
-    let clock = 0;
-    const api = apiFor(fixture.remote, pr, {
-      checkRuns: [
-        [
-          job('completed', 'success'),
-          checkRun('Electron E2E (ubuntu-24.04)', 'completed', 'success'),
-          checkRun('Release preflight', 'completed', 'success'),
+  it.each([
+    {
+      legs: ['ubuntu-24.04'],
+      detail: 'Not started: Electron E2E on macOS, Electron E2E on Windows.',
+    },
+    {
+      legs: ['ubuntu-24.04', 'macos-latest'],
+      detail: 'Not started: Electron E2E on Windows.',
+    },
+  ])(
+    'names each operating system without an Electron E2E run ($legs)',
+    async ({ legs, detail }) => {
+      const { fixture, pr } = await canonical();
+      let clock = 0;
+      const api = apiFor(fixture.remote, pr, {
+        checkRuns: [
+          [
+            job('completed', 'success'),
+            ...legs.map((os) => checkRun(`Electron E2E (${os})`, 'completed', 'success')),
+            checkRun('Release preflight', 'completed', 'success'),
+          ],
         ],
-      ],
-    });
+      });
 
-    const result = await doctor(fixture, api, {
-      requireGreenChecks: true,
-      waitForChecks: true,
-      timeoutMs: 1000,
-      pollMs: 10,
-      now: () => clock,
-      sleep: async () => {
-        clock += 600;
-      },
-    });
+      const result = await doctor(fixture, api, {
+        requireGreenChecks: true,
+        waitForChecks: true,
+        timeoutMs: 1000,
+        pollMs: 10,
+        now: () => clock,
+        sleep: async () => {
+          clock += 600;
+        },
+      });
 
-    expect(result.ok).toBe(false);
-    expect(detailOf(result, 'Checks')).toBe(
-      'Not started: Electron E2E on macOS, Electron E2E on Windows.',
-    );
-  });
+      expect(result.ok).toBe(false);
+      expect(detailOf(result, 'Checks')).toBe(detail);
+    },
+  );
 
   it('does not count a skipped gate as passed', async () => {
     const { fixture, pr } = await canonical();
