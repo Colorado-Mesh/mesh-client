@@ -74,9 +74,16 @@ describe('meshcoreSendTextMessageWithErrCode', () => {
       const secondRejected = expect(second).rejects.toThrow(MESHCORE_SEND_PRIOR_IN_FLIGHT);
       await vi.advanceTimersByTimeAsync(45_000);
       await secondRejected;
+      const third = meshcoreSendTextMessageWithErrCode(
+        conn as never,
+        new Uint8Array(32).fill(5),
+        'c',
+      );
       releaseFirst();
       await vi.runAllTimersAsync();
       await expect(first).resolves.toEqual({ expectedAckCrc: 1 });
+      await expect(third).resolves.toEqual({ expectedAckCrc: 1 });
+      expect(conn.sendTextMessage).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
     }

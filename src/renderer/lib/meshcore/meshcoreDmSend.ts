@@ -101,6 +101,10 @@ async function runExclusivePerConnection<T>(conn: object, work: () => Promise<T>
   // Queue depth is runtime-dependent; the linter cannot see concurrent sends on one conn.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- prior may outlive the wait bound
   if (queueWaitTimedOut && !priorSettled) {
+    // Skipped send: open this gate only after the prior send's queue slot settles so C cannot bypass A.
+    void prevTracked.finally(() => {
+      release();
+    });
     throw new Error(MESHCORE_SEND_PRIOR_IN_FLIGHT);
   }
 

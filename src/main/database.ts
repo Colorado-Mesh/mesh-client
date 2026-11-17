@@ -294,9 +294,13 @@ export function deleteMeshcoreMessagesForRoomServerIds(
 ): number {
   if (roomServerIds.length === 0) return 0;
   let deleted = 0;
-  const stmt = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
+  const byRoomServerId = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
+  const legacyDmShaped = d.prepareOnce(
+    'DELETE FROM meshcore_messages WHERE room_server_id IS NULL AND (sender_id = ? OR to_node = ?)',
+  );
   for (const id of roomServerIds) {
-    deleted += Number(stmt.run(id).changes);
+    deleted += Number(byRoomServerId.run(id).changes);
+    deleted += Number(legacyDmShaped.run(id, id).changes);
   }
   return deleted;
 }
