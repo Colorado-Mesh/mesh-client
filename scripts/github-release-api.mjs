@@ -424,6 +424,14 @@ export async function repairReleaseTagAndCleanupOrphan(
   return updated;
 }
 
+/**
+ * Body a draft starts with; the release-notes patch replaces it with the promotion's notes.
+ * @param {string} tag
+ */
+export function draftPlaceholderBody(tag) {
+  return `Draft release for ${tag}. CI is uploading platform artifacts.`;
+}
+
 export async function createDraftRelease(tag, token, targetCommitish) {
   const version = versionFromTag(tag);
   /** @type {Record<string, unknown>} */
@@ -432,7 +440,7 @@ export async function createDraftRelease(tag, token, targetCommitish) {
     name: version,
     draft: true,
     generate_release_notes: false,
-    body: `Draft release for ${tag}. CI is uploading platform artifacts.`,
+    body: draftPlaceholderBody(tag),
   };
   // Omit target_commitish when unset so an existing annotated v* tag is bound as-is.
   if (typeof targetCommitish === 'string' && targetCommitish) {
