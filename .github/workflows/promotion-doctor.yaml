@@ -1,0 +1,58 @@
+name: Promotion Doctor
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# Required check on main (see .github/rulesets/main-promotions.json and docs/release-process.md).
+# pull_request_target runs this workflow and scripts/promotion-doctor.mjs from the trusted base
+# branch, so a pull request cannot change the rules it is checked against. The pull request's
+# commits are fetched as data and read with git; they are never checked out or executed, and
+# the job holds read-only permissions and no secrets.
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promotion-doctor-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  doctor:
+    name: Promotion Doctor
+    runs-on: ubuntu-latest
+    # The Doctor waits up to 150 minutes for the other checks (3-OS E2E, release preflight).
+    timeout-minutes: 170
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+      statuses: read
+    steps:
+      - name: Checkout trusted base
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        # actions/setup-node v6.5.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      # Uses only Node built-ins: no dependency install, so nothing from the pull request runs.
+      - name: Run Promotion Doctor
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: >-
+          node scripts/promotion-doctor.mjs --pr "$PR_NUMBER"
+          --require-green-checks --wait-for-checks
+          --timeout-minutes 150 --poll-seconds 30

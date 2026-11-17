@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
@@ -182,6 +182,25 @@ describe('privileged workflow boundaries', () => {
       'persist-credentials': false,
     });
     expect(source).not.toContain('pull_request.head.sha');
+  });
+
+  it('limits pull_request_target to the read-only Promotion Doctor on trusted base code', () => {
+    const targetWorkflows = readdirSync('.github/workflows')
+      .filter((file) => /\.ya?ml$/.test(file))
+      .filter((file) => yaml.load(read(`.github/workflows/${file}`))?.on?.pull_request_target);
+    expect(targetWorkflows).toEqual(['promotion-doctor.yaml']);
+    const doctor = loadWorkflow('promotion-doctor');
+    const source = read('.github/workflows/promotion-doctor.yaml');
+    const permissions = [doctor.permissions, doctor.jobs.doctor.permissions];
+    for (const block of permissions) {
+      expect(Object.values(block).every((level) => level === 'read')).toBe(true);
+    }
+    const checkout = doctor.jobs.doctor.steps.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout.with.ref).toBe('${{ github.event.pull_request.base.sha }}');
+    expect(checkout.with['persist-credentials']).toBe(false);
+    expect(source).not.toMatch(/secrets\.[A-Za-z_]/);
   });
 
   it('keeps the completed one-time secret migration removed', () => {
