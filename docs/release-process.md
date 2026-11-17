@@ -1,23 +1,35 @@
 # Release Process
 
-This document describes how maintainers create releases for Mesh-Client.
+This document describes how changes reach `main` and how maintainers release Mesh-Client.
 
 ---
 
 ## Overview
 
-Cut releases from **Actions → Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)), which bumps/tags `main`. Pushing an annotated version tag (`v*`) then triggers:
+Work lands on `staging`. A promotion pull request carries a tested `staging` snapshot to `main`, and merging a promotion that raises the version releases it.
+
+- **`staging`** holds the next release and is the default branch. It receives feature and fix pull requests (squashed through the merge queue), the version bump, and back-ports from `main`.
+- **`main`** holds released code: every promotion and hotfix that has merged. It receives promotion pull requests and `hotfix/*` pull requests, merged with a merge commit only.
+
+From a pull request to a published release:
+
+1. Contributors open pull requests against `staging`. They merge through its squash merge queue.
+2. A maintainer runs `pnpm run promotion:open`. It picks the next version from the commit titles since the last release, commits the version bump to `staging`, and opens a pull request titled `Promote staging to main (vX.Y.Z)` with generated release notes.
+3. CI, the 3-OS Electron E2E, the release preflight and the **Promotion Doctor** run on that pull request. A maintainer reviews it and merges it with a merge commit.
+4. **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)) sees the new version on `main`. After a maintainer approves the `release-cut` environment, it tags the merged commit `vX.Y.Z`, with the release notes as the tag message.
+5. The tag starts the two build workflows below. They attach the artifacts to a **draft** GitHub Release, which opens with the release notes.
+6. A maintainer reviews the draft and publishes it by hand.
 
 | Workflow                                            | Purpose                                                                                              |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [`release.yaml`](../.github/workflows/release.yaml) | Build macOS/Linux/Windows via `electron-builder` (`--publish never`) and attach to the prepare draft |
 | [`flatpak.yaml`](../.github/workflows/flatpak.yaml) | Build Reticulum sidecar + Flatpak bundles (x86_64 and aarch64) and attach them to the same draft     |
 
-Both workflows upload to a **draft** GitHub Release. A maintainer reviews artifacts and publishes manually when ready.
-
 `prepare-github-release` is the **only** job that creates the draft (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`). Matrix builds and Flatpak attach with `ci-upload-release-assets.mjs` by `release_id` so parallel jobs cannot fork duplicate drafts. `electron-builder.yml` still sets `releaseType: draft` for local `dist:*:publish` use.
 
-Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main` (including the version-bump commit from `pnpm run release`).
+Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main`, so the published docs follow the released app.
+
+Setting this flow up for the first time: see [Switching to staging](#switching-to-staging-one-time-rollout).
 
 ### Database schema upgrades
 
@@ -32,34 +44,114 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 ## Prerequisites
 
-- Maintainer access to the repository
-- On branch **`main`**, up to date with `origin/main`
-- Clean working directory (no uncommitted changes)
-- For `pnpm run release` pre-flight: **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint via pip/brew — see [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible))
-- For `pnpm run release` pre-flight: **flatpak-node-generator** on `PATH` (same pin as Flatpak CI — see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) / `pnpm run check:flatpak-offline-pnpm` install hint)
+- Repository admin access. `pnpm run promotion:open` and `pnpm run promotion:backport` push the version bump and back-ports straight to `staging`, which only admins may do (they bypass its ruleset).
+- The GitHub CLI signed in (`gh auth status`): the promotion commands open and update pull requests with it.
+- A clone whose `origin` remote is `Colorado-Mesh/mesh-client`. Any branch works and the working tree need not be clean: the promotion commands build commits with git plumbing and never touch your checkout or index.
+- For the [emergency `pnpm run release` path](#emergency-fallback-pnpm-run-release) only: **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint with pip or Homebrew; see the [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible)), and **flatpak-node-generator** on `PATH` (same pin as Flatpak CI; see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) and the `pnpm run check:flatpak-offline-pnpm` install hint)
 
 ---
 
-## Recommended: Cut release from GitHub Actions
+## Recommended: promote staging to main
 
-**Preferred path:** Actions → **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)).
+### Open the promotion
 
-1. Confirm the latest **Release preflight** job in the daily **E2E** run ([`e2e.yaml`](../.github/workflows/e2e.yaml)) on `main` is green, or dispatch E2E. The job runs the full `release.sh` pre-flight (`--preflight-only`) on a fresh runner using the same composites as Cut release (`setup-node-pnpm`, `setup-release-toolchain`), so release-only breakage surfaces without burning a cut. It is not a PR gate, so check it after merging release-plumbing changes. Locally: `pnpm run release --preflight-only` (any branch; no pull, dep update, bump, tag, or push).
-2. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.). Dry run only previews the version; it does not run pre-flight.
-3. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
-4. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
-5. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). It validates, bumps, commits, and tags with `--prepare-only` while no push credential is present, then exposes the admin token only to a final `--push-only` step. Checkout never persists credentials.
-6. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
+```bash
+pnpm run promotion:open -- --dry-run    # plan and body only; pushes nothing
+pnpm run promotion:open                 # release the next version
+pnpm run promotion:open -- --bump minor # or patch, major, or an exact X.Y.Z
+pnpm run promotion:open -- --bump none  # promote without releasing
+pnpm run promotion:open -- --draft      # open the pull request as a draft
+```
 
-**Protected boundary:** `cut-release.yaml` runs only from `main` in the `release-cut` environment and uses its `RELEASE_CUT_TOKEN`. Use a fine-grained PAT (or GitHub App installation token) owned by a repo **admin**, with **contents: write** and **workflows: write**. Plain `GITHUB_TOKEN` cannot trigger the tag workflows or push past the merge-queue ruleset. A required environment reviewer must approve the real cut; dry runs do not receive the admin token.
+It works against `origin` and takes these steps:
 
-Version detection lives in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (handles scoped Conventional Commits such as `feat(rrc): …`). Do not set `MESH_CLIENT_RELEASE_PARSE_ONLY` in Actions (test-only hook; Cut release clears it).
+1. Fetches `main`, `staging` and the release tags.
+2. Stops if `staging` has nothing that `main` lacks.
+3. If `main` has a change that `staging` lacks (a hotfix), back-ports it first, as `pnpm run promotion:backport` does (see [Hotfixes](#hotfixes)).
+4. Picks the version. The commit titles since the last `vX.Y.Z` tag on `main` decide the bump (see [Version naming](#version-naming)) unless `--bump` overrides it.
+5. Commits `chore: release vX.Y.Z` to `staging`: the `package.json` version and a new top entry in the Flatpak MetaInfo release list. When `staging` already carries that version from an earlier run, it reuses that commit instead of bumping again.
+6. Builds the promotion commit. Its tree is exactly the `staging` tip's tree, and its parents are the `main` tip and the `staging` tip.
+7. Pushes it to `release/vX.Y.Z` (`release/promote-staging-YYYY-MM-DD` when nothing releases) and opens the pull request to `main`, or updates the one already open.
+
+The pull request body is generated in these sections:
+
+- `## Release notes`: breaking changes, features, fixes and other changes from the commit titles, one line per pull request. This section becomes the tag message and the top of the draft release. Edit it freely, but keep every pull request number: the Promotion Doctor checks that each shipped pull request is listed.
+- `## Version`: the previous and next version, and why.
+- `## Database schema`: whether `CURRENT_SCHEMA_VERSION` changes. A schema upgrade is one-way, so it must be called out here.
+- `## Risk callouts`: changed workflows, dependencies, Reticulum sidecar, native helpers, database code, Flatpak packaging, and release or packaging configuration.
+- `## Promotion`: the `main` and `staging` commits it was built from.
+
+### Review and merge
+
+- Pull requests to `main` require the five CI checks and `Promotion Doctor` (see [CI/CD: Merge queue and rulesets](ci-cd.md#merge-queue-and-rulesets)). The 3-OS Electron E2E and the **Release preflight** (`release.sh --preflight-only` on the exact tree that will be tagged) also run on every pull request to `main`. They are not required by name, but the Doctor waits for every other check on the pull request and fails if one of them fails.
+- Merge with **Create a merge commit**, the only method `main` allows. Never squash or rebase a promotion.
+- Do not press **Update branch** on a promotion. It puts a new merge commit on top, so the head is no longer a promotion commit and the Doctor fails. When `main` has moved (a hotfix merged), run `pnpm run promotion:open` again: it back-ports the hotfix into `staging`, rebuilds the promotion on the new `main`, and updates the same pull request.
+- `staging` may move on while the promotion is in review. The promotion still ships the snapshot it was built from, which is the tree its checks ran on; newer `staging` commits wait for the next promotion. Run `pnpm run promotion:open` again to include them.
+
+### Approve the release tag
+
+Merging starts **Cut release** on `main`:
+
+1. **Plan release tag** (no secrets) tags only when `package.json` holds a version newer than the latest release, `vX.Y.Z` does not exist yet, and the Flatpak MetaInfo top entry matches. Other pushes to `main` stop here, with no approval prompt. The job summary says which case applied.
+2. **Tag release** waits for approval in the `release-cut` environment. It then creates the annotated tag `vX.Y.Z` on the merged commit, with the promotion's release notes as the message, and pushes it with `RELEASE_CUT_TOKEN`.
+
+If the approval was declined or the job failed, start it again: **Actions > Cut release > Run workflow** on `main` checks the current `main` commit. Do not run `pnpm run release` to recover, because it would bump the version again.
+
+**Protected boundary:** `RELEASE_CUT_TOKEN` lives only in the `release-cut` environment, which accepts only `main` and requires a maintainer's approval. Use a fine-grained PAT (or GitHub App installation token) owned by a repository **admin**, with **contents: write** and **workflows: write**: only admins may create `v*` tags (the release tags ruleset), and a tag pushed with the default `GITHUB_TOKEN` would not start the build workflows. Only the tag job receives the token; it installs nothing and runs no project script.
+
+### Publish
+
+Wait for `release.yaml` and `flatpak.yaml` to attach the artifacts, check the draft ([Verify the draft release](#verify-the-draft-release)), then click **Publish release**.
 
 ---
 
-## Local fallback: `pnpm run release`
+## Hotfixes
 
-Local `scripts/release.sh` remains for emergencies when Actions is unavailable. It:
+A fix for released code that cannot wait for the next promotion goes straight to `main`:
+
+1. Branch from `main` in this repository (not a fork), with a `hotfix/` prefix.
+2. Commit the fix. To release it, also bump the version with `pnpm run release:bump` and commit the two files the bump changes.
+3. Open a pull request to `main`. When it releases, give its body a `## Release notes` section: it becomes the tag message and the draft release notes.
+4. The Promotion Doctor checks that the branch contains the current `main` and carries no commits that are only on `staging`. When the version changes, it also checks the MetaInfo entry and the release notes. It waits for the same checks as a promotion, including the 3-OS E2E and the release preflight, so even an urgent hotfix takes as long as those runs. In a real emergency, a repository admin can merge past the ruleset.
+5. Merge with a merge commit. When the version changed, Cut release tags it as described above.
+6. Bring the fix into `staging` with `pnpm run promotion:backport`. It merges `main` into `staging` as a real merge commit. A squashed back-port would leave `main`'s commits outside `staging`'s history and make every later promotion conflict. If you forget, the next `pnpm run promotion:open` back-ports first.
+
+```bash
+# 1. Branch from main
+git fetch origin
+git switch -c hotfix/describe-the-fix origin/main
+
+# 2. To release the fix: bump, then commit the two files
+pnpm run release:bump -- patch # or minor, major, or an exact X.Y.Z
+git add package.json flatpak/org.coloradomesh.MeshClient.metainfo.xml
+git commit -m "chore: release vX.Y.Z"
+
+# 6. After the merge: bring the fix into staging
+pnpm run promotion:backport -- --dry-run # show what it would do
+pnpm run promotion:backport
+```
+
+When `main` does not merge cleanly into `staging`, the back-port changes nothing and lists the conflicting paths. Merge it by hand and push the merge commit to `staging` as an admin (a pull request would be squashed by the merge queue):
+
+```bash
+git fetch origin
+git switch -c backport/main origin/staging
+git merge origin/main -m "chore: back-port main into staging"
+# Resolve the conflicts and run git commit, then:
+git push origin HEAD:staging
+```
+
+---
+
+## Emergency fallback: `pnpm run release`
+
+`scripts/release.sh` still runs a complete local release when the promotion flow cannot. It releases **`main` as it is**, straight to `main`, without `staging`, a promotion or the Promotion Doctor, so keep it for emergencies:
+
+- Run it only when the version on `main` equals the latest release. It bumps from `package.json`, so on a promotion that merged but was never tagged it would skip a version: re-run Cut release for that case (see [Approve the release tag](#approve-the-release-tag)) or [tag it by hand](#tag-a-merged-release-by-hand).
+- Pass `--skip-dep-update`, so the emergency release does not also update dependencies on `main`.
+- Afterwards, run `pnpm run promotion:backport` so `staging` gets the release commit. Cut release also runs for the push to `main`; it finds the tag already there and stops at its plan job (if it asks for approval anyway, decline it).
+
+The script:
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
@@ -72,8 +164,10 @@ Local `scripts/release.sh` remains for emergencies when Actions is unavailable. 
 9. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
 
 ```bash
-git checkout main
+git switch main
 git pull origin main
+pnpm run release --yes --skip-dep-update patch # emergency release of main as it is
+pnpm run promotion:backport                    # afterwards: back-port into staging
 pnpm run release                               # auto-detect bump from commits since last tag
 pnpm run release minor                         # force minor
 pnpm run release 5.21.0                        # force exact version
@@ -92,7 +186,7 @@ The script prompts twice by default (start pre-flight, then confirm after checks
 
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit and pull-request CI may run affected subsets for speed; release matches protected merge-queue CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
-If pre-flight fails, fix the issue on `main` and cut again — do not tag manually until checks pass.
+If pre-flight fails, fix the issue on `main` (as a [hotfix](#hotfixes)) and run it again. Do not tag by hand until the checks pass. Do not set `MESH_CLIENT_RELEASE_PARSE_ONLY` outside tests (a test-only hook; the CI preflight job clears it).
 
 ### Mid-release MetaInfo failure
 
@@ -114,12 +208,12 @@ Official macOS release artifacts require **Developer ID signing** and **notariza
 
 Configure secrets under the named **Settings → Environments** boundary, not at repository scope:
 
-| Environment              | Secret(s)                                                                                  | Allowed ref / approval                                               |
-| ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; no reviewer (the approved cut is the gate)       |
-| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts                |
-| **`license-automation`** | Required `LICENSE_PR_TOKEN` (repo-admin PAT; Contents + PRs write; unattended admin-merge) | `main`; license-document maintenance only, with no release authority |
-| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                 |
+| Environment              | Secret(s)                                                                                  | Allowed ref / approval                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; no reviewer (the approved cut is the gate)          |
+| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval before each release tag            |
+| **`license-automation`** | Required `LICENSE_PR_TOKEN` (repo-admin PAT; Contents + PRs write; unattended admin-merge) | `staging`; license-document maintenance only, with no release authority |
+| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                    |
 
 `release.yaml` alone receives the Apple/CSC credentials, and only its **`macos-latest`** matrix leg uses them. `build.yaml` never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. A one-time migration moved these credentials into the protected environments and deleted the legacy repository-wide secrets. No release credential should remain repository-scoped.
 
@@ -188,22 +282,20 @@ For parity with CI packaging smoke tests after a local dist build, see [CI/CD �
 
 ---
 
-## Manual version bump (fallback)
+## Tag a merged release by hand
 
-Only if `pnpm run release` cannot be used:
+If Cut release cannot tag a merged promotion (for example, `RELEASE_CUT_TOKEN` has expired), a repository admin can tag it. The tag push starts the same build workflows:
 
 ```bash
-# Edit package.json version, then:
-git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
-# If electron changed: node scripts/sync-flatpak-electron.mjs
-# If the electron/pnpm/Node.js major changed: bump electron_N / pnpm_N / nodejs_N in flake.nix
-# Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/org.coloradomesh.MeshClient.metainfo.xml
-git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
-git commit -m "chore: release vX.Y.Z"
-git tag -a vX.Y.Z -m "Release X.Y.Z"
-git push origin main
+git fetch origin main --tags
+# origin/main must be the promotion's merge commit:
+git log -1 --format='%H %s' origin/main
+# notes.md: the promotion's release notes section, without its heading
+git tag -a vX.Y.Z --cleanup=verbatim -F notes.md origin/main
 git push origin vX.Y.Z
 ```
+
+`--cleanup=verbatim` keeps the notes' `###` headings, which git would otherwise strip as comments. The draft release then opens with those notes.
 
 ---
 
@@ -261,7 +353,7 @@ Both tag-triggered workflows must complete before the release is fully populated
 | Windows x64   | `Mesh-client-Setup-{version}.exe`                                                                                                                |
 | Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)                                                              |
 
-1. Paste or edit release notes (use the block printed by `pnpm run release`, or GitHub’s generated notes)
+1. Read the release notes at the top of the draft. They come from the tag message, which Cut release wrote from the promotion's `## Release notes` section; edit them in the draft if needed. A tag from the emergency `pnpm run release` path carries no notes, so paste the block that script printed.
 2. Optionally smoke-test downloads on one platform per family
 
 Until you click **Publish release**, the tag exists but the release stays hidden from the public Releases page.
@@ -300,7 +392,7 @@ When artifacts and notes look correct:
 
 ## Version naming
 
-Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `release.sh` / Cut release):
+Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `pnpm run promotion:open`, the Promotion Doctor and `release.sh`; it handles scoped Conventional Commits such as `feat(rrc):`):
 
 - **Major (X.0.0):** `type!:` / `type(scope)!:`, or a line-anchored `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer in a commit body
 - **Minor (0.X.0):** New features (`feat:` or `feat(scope):`), backward compatible
@@ -316,7 +408,8 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 - [ ] Packaging-smoke jobs green in Actions
 - [ ] Test download and install on at least one platform
 - [ ] **Publish** the draft on GitHub
-- [ ] Confirm docs site updated after the version commit landed on `main` ([docs workflow](ci-cd.md#docs-docsyml))
+- [ ] Confirm the docs site updated after the promotion merged into `main` ([docs workflow](ci-cd.md#docs-docsyml))
+- [ ] After a hotfix or an emergency release, `staging` has the back-port (`pnpm run promotion:backport`)
 - [ ] Announce (Discord `#mesh-client-help`, etc.)
 - [ ] Close milestone if used
 
@@ -324,11 +417,32 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 
 ## Troubleshooting
 
+### Promotion Doctor fails
+
+The Doctor's job summary lists each result. Common failures:
+
+| Result                                                                                                 | What to do                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Pull request target`                                                                                  | Only promotions and `hotfix/*` branches may target `main`. Retarget the pull request to `staging`.                                                                                                            |
+| `Promotion commit`, `Built on current main`, `Staging snapshot`, `Same files as staging`, `Main moved` | `main` moved, or the head was changed by hand. Run `pnpm run promotion:open` again; never press **Update branch**.                                                                                            |
+| `Release version`, `Flatpak MetaInfo`                                                                  | The version is already tagged, or `package.json` and the MetaInfo top entry disagree. Run `pnpm run promotion:open` again (with `--bump` to choose another version).                                          |
+| `Release notes`                                                                                        | The body lost its `## Release notes` section or a shipped pull request number. Put it back; editing the body runs the Doctor again.                                                                           |
+| `Database schema`                                                                                      | The schema changes. Name both schema versions under `## Database schema`.                                                                                                                                     |
+| `Checks`                                                                                               | Another check failed, or one was still pending after 150 minutes. The Doctor counts every check on the head, including CodeQL and CodeRabbit. Fix or re-run that check, then re-run the Promotion Doctor job. |
+| `Ready for review`, `Head repository`                                                                  | Mark the draft ready for review. Promotions and hotfixes must come from a branch in this repository, not a fork.                                                                                              |
+| `Up to date with main`, `No staging work`                                                              | A hotfix must start from the current `main` and carry no commits that are only on `staging`. Update it from `main`, or cut it again from `main`.                                                              |
+
+`Version choice` is a warning only: the commit titles suggest another version than the promotion releases (for example after `--bump`).
+
+### Cut release did not tag
+
+The **Plan release tag** job summary gives the reason: the version is already tagged, `package.json` is not newer than the latest release, or the MetaInfo top entry does not match `package.json`. A push that does not change the version never tags. After a declined approval or a failed tag job, run **Actions > Cut release > Run workflow** on `main`.
+
 ### Release workflow fails on one platform
 
 - Inspect the failed job log in Actions
 - Platform failures are often native-module or packaging related
-- Fix on `main`, then cut a new patch release (`pnpm run release patch`)
+- Fix it on `staging` and promote it, or as a [hotfix](#hotfixes) when it cannot wait
 
 ### Upload to draft release fails
 
@@ -355,7 +469,7 @@ To re-cut the same version (only before wide distribution):
 git tag -d vX.Y.Z
 git push origin :refs/tags/vX.Y.Z
 # Delete the GitHub release if created
-# Fix issue, then pnpm run release again or re-tag manually
+# Fix it on main as a hotfix (no bump), then re-run Cut release on main
 ```
 
 ### Build fails due to native modules
@@ -396,6 +510,60 @@ pnpm run dist:mac # or dist:linux / dist:win on the target OS
 ```
 
 Upload outputs from `release/` to a manually created GitHub Release. This bypasses CI smoke tests — use only as a last resort.
+
+---
+
+## Switching to staging (one-time rollout)
+
+These steps move the repository to this flow. Run them in order, as a repository admin, each one only after the previous one succeeded. Until step 2 the Promotion Doctor passes every pull request (there is no `staging` yet) and Cut release tags only a new version, so merging to `main` works as before. The 3-OS E2E and the release preflight do start running on every pull request to `main` from step 1, so keep the time between steps 1 and 8 short.
+
+1. Merge the pull request that adds this flow into `main` through today's merge queue.
+2. Create `staging` from `main`.
+3. Create the `staging` ruleset from its canonical JSON.
+4. Allow merge commits. Squash stays allowed; each branch's ruleset limits its own merge methods.
+5. Make `main` promotion-only: merge commits, no merge queue, `Promotion Doctor` required.
+6. Make `staging` the default branch.
+7. Let license automation run on `staging` instead of `main` (**Settings > Environments > license-automation**, deployment branches, or the commands below).
+8. Retarget open pull requests from `main` to `staging`.
+9. Open the first promotion with `pnpm run promotion:open`.
+
+Steps 2 to 8 as commands. Run them in one shell, one step at a time, from the root of a checkout of `main` taken after step 1 (steps 3 and 5 read the ruleset files from it):
+
+```bash
+REPO=Colorado-Mesh/mesh-client
+
+# 2. Create staging from main
+MAIN_SHA="$(gh api "repos/${REPO}/git/ref/heads/main" --jq .object.sha)"
+gh api "repos/${REPO}/git/refs" --method POST \
+  -f ref=refs/heads/staging -f sha="${MAIN_SHA}"
+
+# 3. Create the staging ruleset
+gh api "repos/${REPO}/rulesets" --method POST \
+  --input .github/rulesets/staging-merge-queue.json
+
+# 4. Allow merge commits
+gh api "repos/${REPO}" --method PATCH -F allow_merge_commit=true
+
+# 5. Make main promotion-only
+gh api "repos/${REPO}/rulesets/20821455" --method PUT \
+  --input .github/rulesets/main-promotions.json
+
+# 6. Make staging the default branch
+gh api "repos/${REPO}" --method PATCH -f default_branch=staging
+
+# 7. License automation deploys from staging instead of main
+POLICIES="repos/${REPO}/environments/license-automation"
+POLICIES="${POLICIES}/deployment-branch-policies"
+gh api "${POLICIES}" --method POST -f name=staging -f type=branch
+MAIN_POLICY="$(gh api "${POLICIES}" \
+  --jq '.branch_policies[] | select(.name == "main") | .id')"
+gh api "${POLICIES}/${MAIN_POLICY}" --method DELETE
+
+# 8. Retarget open pull requests to staging
+gh pr list --repo "${REPO}" --base main --state open \
+  --json number --jq '.[].number' \
+  | xargs -I{} gh pr edit {} --repo "${REPO}" --base staging
+```
 
 ---
 

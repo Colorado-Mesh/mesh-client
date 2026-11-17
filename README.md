@@ -536,9 +536,11 @@ yay -S mesh-client # or: paru -S mesh-client
 **Nix (NixOS, other Linux, Apple-silicon macOS):** the repo root ships a `flake.nix` that builds the app and the Reticulum sidecar from source for `x86_64-linux`, `aarch64-linux`, and `aarch64-darwin` (Intel Macs are not supported). This is the easiest route on NixOS, where the prebuilt Electron binaries do not run. It is a source build, not a signed release artifact, so the first run compiles everything locally and can take a while.
 
 ```bash
-nix run github:Colorado-Mesh/mesh-client               # build and launch
-nix build github:Colorado-Mesh/mesh-client#mesh-client # or from a clone: nix run / nix build
+nix run github:Colorado-Mesh/mesh-client/main               # build and launch
+nix build github:Colorado-Mesh/mesh-client/main#mesh-client # build only
 ```
+
+The `/main` in the reference builds the released branch. Without it, Nix builds the default branch, `staging`, which holds work that has not been released yet. From a clone, plain `nix run` or `nix build` builds the checked-out branch.
 
 Install Nix using the [Determinate installation guide](https://docs.determinate.systems/) if you do not have it. Flake developer shells: [Development Guide — Nix](docs/development-environment.md#nix-nixos-and-macos).
 

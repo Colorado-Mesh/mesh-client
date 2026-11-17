@@ -8,27 +8,28 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                      | Trigger                                                        | Purpose                                                                                    |
 | ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `ci.yaml`                     | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
-| `tests.yaml`                  | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
-| `bundle-size.yaml`            | All PRs; main push/`merge_group`/manual                        | Independent production main bundle size regression                                         |
+| `ci.yaml`                     | Push/PR (`staging`, `main`)/`merge_group`/`workflow_dispatch`  | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
+| `tests.yaml`                  | Push/PR (`staging`, `main`)/`merge_group`/`workflow_dispatch`  | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
+| `bundle-size.yaml`            | All PRs; `staging`/`main` push, `merge_group`, manual          | Independent production main bundle size regression                                         |
 | `codeql.yaml`                 | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
-| `buttonmash.yaml`             | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
-| `e2e.yaml`                    | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
-| `e2e-meshcore-repeaters.yaml` | Path-filtered PR to `main` + manual `workflow_dispatch`        | MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required     |
-| `e2e-panels.yaml`             | Path-filtered PR to `main` + manual `workflow_dispatch`        | Per-protocol panel matrix Electron E2E (Linux); not required                               |
+| `buttonmash.yaml`             | PR (`staging`, `main`)/`merge_group`/`workflow_dispatch`       | Browser-based chaos testing of the Vite renderer                                           |
+| `e2e.yaml`                    | Every PR to `main`, daily on the default branch, manual        | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; the Doctor waits     |
+| `e2e-meshcore-repeaters.yaml` | Path-filtered PR to `staging` or `main` + manual dispatch      | MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required     |
+| `e2e-panels.yaml`             | Path-filtered PR to `staging` or `main` + manual dispatch      | Per-protocol panel matrix Electron E2E (Linux); not required                               |
 | `build.yaml`                  | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
-| `reticulum-sidecar.yaml`      | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
+| `reticulum-sidecar.yaml`      | Path-filtered PR; push to `staging`, `main`, `v*` tags         | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
+| `promotion-doctor.yaml`       | PR to `main` (`pull_request_target`)                           | Required **Promotion Doctor** check for promotions and hotfixes                            |
+| `cut-release.yaml`            | Push to `main`; manual re-run                                  | Tag `vX.Y.Z` when `main` holds a new version, after `release-cut` approval                 |
 | `release.yaml`                | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
 | `flatpak.yaml`                | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
-| `cut-release.yaml`            | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
-| `docs.yml`                    | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
-| `third-party-licenses.yaml`   | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
+| `docs.yml`                    | Push to `main`; PRs that touch docs                            | Deploy MkDocs to GitHub Pages (strict build on PRs)                                        |
+| `third-party-licenses.yaml`   | Path-filtered push to `staging`                                | Regenerate licenses and open a documentation PR using license-only automation              |
 
 ---
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`). Independent lanes start concurrently; only Flatpak waits for change detection:
+Runs on every push, pull request, and merge-queue `merge_group` for `staging` and `main` (and `workflow_dispatch`). Independent lanes start concurrently; only Flatpak waits for change detection:
 
 - **Code quality:** format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint
 - **ESLint:** full repository lint, split over four parallel shards (`ESLint (1/4)` to `ESLint (4/4)`). `scripts/ci-eslint-shard.mjs` deals every Git-visible file to exactly one shard and runs ESLint on that list with two workers, using `eslint.ci.config.mjs` to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled on every shard. Local development uses the default ESLint config via `pnpm run lint` (single process, raised heap). CI runs the sharded `eslint.ci.config.mjs` pass; release preflight runs `pnpm run lint --concurrency 2 --config eslint.ci.config.mjs` from `scripts/release.sh`. To change the shard count, edit the `shard` list in `ci.yaml`.
@@ -66,12 +67,12 @@ budgets live in
 
 ## Tests (`tests.yaml`)
 
-Runs on every push, pull request, and merge-queue `merge_group` for `main`:
+Runs on every push, pull request, and merge-queue `merge_group` for `staging` and `main`:
 
 1. **Detect scope:** compare a pull request head with its true merge base and reuse the local staged-test planner to select related paths and Vitest projects.
 2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Shared contracts select all projects. Any Vitest test that names a changed file by its whole repo path (for example `scripts/bundle-size-workflow.test.mjs`, which copies `scripts/esbuild-main-build.mjs`, or a workflow test that reads its YAML) is added with its project, because `vitest related` follows imports only and cannot reach it. Docs-only changes skip Vitest unless such a test names one of the changed files. Paths a test builds from segments are not found; protected events still run the full suite.
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
-4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
+4. **Protected events:** `merge_group`, pushes to `staging` or `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
 5. **Sharding:** `renderer-ui` runs in four shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
 6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds, then append a coverage hotspot summary (`pnpm run coverage:hotspots --md`) to the job step summary.
 7. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
@@ -87,8 +88,8 @@ Test results are available as a downloadable artifact from the workflow run.
 
 The independent **Main bundle size** check runs on every pull request, including docs-only,
 draft, fork and stacked PRs targeting any branch. It runs on opening, new commits, reopening,
-edits (including retargeting), and draft/ready transitions, plus main pushes, merge queues
-and manual dispatches. It has no path filter or dependency on related-test selection.
+edits (including retargeting), and draft/ready transitions, plus `staging` and `main` pushes,
+merge queues and manual dispatches. It has no path filter or dependency on related-test selection.
 
 It uses the shared pinned Node/pnpm setup and frozen install, then runs
 `pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs --coverage.enabled=false --reporter=default`.
@@ -111,7 +112,7 @@ The workflow does not change repository security settings. Existing global cover
 
 ### Electron E2E (`e2e.yaml`)
 
-Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manual** `workflow_dispatch`:
+Runs on every **pull request to `main`** (promotions and hotfixes), on a **daily schedule** (default branch only, so `staging` once it is the default) and on **manual** `workflow_dispatch`. It is not a required check by name, but the [Promotion Doctor](#promotion-doctor-promotion-doctoryaml) waits for it, so a promotion or hotfix cannot merge until it passes. Feature pull requests to `staging` do not run it:
 
 1. Checkout (`persist-credentials: false`), setup pnpm + Node 22, `node scripts/check-environment.mjs --skip-node-modules`, `pnpm install --frozen-lockfile`, then `pnpm run check:environment` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
 2. Linux (`ubuntu-24.04`): install Electron runtime libraries (`libatk-bridge2.0-0t64`, `libgtk-3-0t64`, `libasound2t64`, …) + `xvfb`
@@ -119,13 +120,13 @@ Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manua
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
 
-A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
+A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the `setup-node-pnpm` + `setup-release-toolchain` composites, stopping before any bump, tag, or push. On a promotion it checks the exact tree that merging will tag; daily it catches release-only breakage that a warm local checkout hides. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner.
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 
 ### MeshCore repeater E2E (`e2e-meshcore-repeaters.yaml`)
 
-Runs `e2e/meshcore-repeater-admin.spec.ts` (repeater Ping, Status, Neighbors and login against the fake MeshCore radio in `e2e/fixtures/meshcore-repeater-radio.ts`) on pull requests to `main` that touch MeshCore ping or repeater code, so a change that breaks pings fails on its own PR instead of in the next daily run.
+Runs `e2e/meshcore-repeater-admin.spec.ts` (repeater Ping, Status, Neighbors and login against the fake MeshCore radio in `e2e/fixtures/meshcore-repeater-radio.ts`) on pull requests to `staging` or `main` that touch MeshCore ping or repeater code, so a change that breaks pings fails on its own PR instead of in the next daily run.
 
 - **Paths:** `useMeshcoreRuntime.ts`, `src/renderer/lib/meshcore*.ts`, `src/renderer/lib/meshcore/**`, `src/renderer/hooks/meshcore/**`, `RepeatersPanel.tsx`, `src/shared/meshcorePathHash.ts`, the meshcore.js patch, the spec, its fixture, `e2e/electronApp.ts`, `playwright.config.ts` and the workflow. Changes to unit test files alone do not trigger it.
 - **Steps:** Linux only (`ubuntu-24.04`): the shared `setup-node-pnpm` action, the same Electron runtime libraries as the Linux leg of `e2e.yaml`, `pnpm run build`, then the spec under `xvfb-run -a`. Playwright artifacts are uploaded on failure.
@@ -134,7 +135,7 @@ Runs `e2e/meshcore-repeater-admin.spec.ts` (repeater Ping, Status, Neighbors and
 
 ### Panel matrix E2E (`e2e-panels.yaml`)
 
-Runs `e2e/panelMatrix.spec.ts` (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum, plus a connected MeshCore leg) on pull requests to `main` that touch renderer shell or panel wiring, so a panel that throws on mount fails on its own PR instead of in the next daily run.
+Runs `e2e/panelMatrix.spec.ts` (every rail section and sub-tab for Meshtastic, MeshCore and Reticulum, plus a connected MeshCore leg) on pull requests to `staging` or `main` that touch renderer shell or panel wiring, so a panel that throws on mount fails on its own PR instead of in the next daily run.
 
 - **Paths:** `App.tsx`, lazy panel registries, `src/renderer/components/**`, `appTabMappings.ts` / `navSections.ts` / `panelLauncher.ts` / `tabSlotIds.ts`, the matrix spec and anchors, `e2e/electronApp.ts`, the MeshCore radio fixture, `playwright.config.ts` and the workflow. Changes to unit test files alone do not trigger it.
 - **Steps:** Linux only (`ubuntu-24.04`): same setup and Electron libraries as the repeater workflow, `pnpm run build`, then the matrix under `xvfb-run -a`. Playwright artifacts are uploaded on failure.
@@ -160,10 +161,39 @@ Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulu
 
 PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.coderabbit.yaml`](../.coderabbit.yaml) (quiet profile, path filters, auto-pause after two reviewed commits).
 
+- It reviews pull requests to the default branch and to `staging` (`reviews.auto_review.base_branches`). Once `staging` is the default branch, promotion pull requests to `main`, which repeat reviewed work, are not reviewed again.
 - Prefer opening as a **draft** until the feature diff is ready, then mark ready for review.
 - Free plan: about **1 PR review per developer per hour**; each auto-incremental push counts. After auto-pause, request another pass with `@coderabbitai review`.
 - Batch actionable findings via the **Prompt for AI Agents** block into one local commit (Autofix requires Pro).
 - Check remaining allowance with `@coderabbitai rate limit`.
+
+---
+
+## Promotions (`pnpm run promotion:open`)
+
+Work merges into `staging`; `main` only takes promotions and `hotfix/*` pull requests. The maintainer flow (opening a promotion, hotfixes, back-ports, the release tag) is in the [Release Process](release-process.md#recommended-promote-staging-to-main). What CI sees:
+
+- A promotion pull request's head is a merge commit whose parents are the `main` tip and a `staging` snapshot, and whose tree is exactly that snapshot's. Its branch is `release/vX.Y.Z` (or `release/promote-staging-YYYY-MM-DD` when nothing releases) and its title starts with `Promote staging to main`.
+- Pull requests to `main` run `ci.yaml`, `tests.yaml`, `codeql.yaml`, `buttonmash.yaml`, `bundle-size.yaml`, the 3-OS `e2e.yaml` with its release preflight, and the Promotion Doctor.
+- `main` accepts merge commits only, so a promotion keeps both parents when it merges and the next promotion starts from the snapshot it shipped.
+
+### Promotion Doctor (`promotion-doctor.yaml`)
+
+The required **Promotion Doctor** check on every pull request to `main`. It runs [`scripts/promotion-doctor.mjs`](../scripts/promotion-doctor.mjs):
+
+- **Trigger and trust:** `pull_request_target` on `main` (`opened`, `reopened`, `synchronize`, `edited`, `ready_for_review`); a newer run cancels the older one for the same pull request. It checks out the trusted base commit with `persist-credentials: false`, fetches the pull request head as data only, installs nothing, and runs with read-only permissions (`contents`, `pull-requests`, `checks`, `statuses`) and no secrets. Because the workflow comes from the base branch, a change to the Doctor takes effect only after it merges into `main`.
+- **What it checks:** before `staging` exists it passes with a note. A title starting with `Promote staging to main` gets the promotion checks: a head from this repository that is not a draft; two parents, the live `main` tip and a `staging` snapshot that `main` lacks; the same tree as that snapshot; a version that is unchanged (no release) or new and untagged, with a matching Flatpak MetaInfo entry; every shipped pull request listed under `## Release notes`; a schema change named under `## Database schema`. A `hotfix/*` branch gets the hotfix checks: built on the current `main`, no commits that are only on `staging`, and the MetaInfo entry and release notes when it changes the version. Anything else fails and asks for a retarget to `staging`.
+- **Waiting:** it then waits for every other check run and commit status on the head, polling every 30 seconds for up to 150 minutes (the job itself times out at 170), and fails if one fails or the time runs out. That includes the 3-OS E2E, the release preflight, CodeQL and CodeRabbit. Afterwards it reads `main` again and fails if `main` moved meanwhile. Editing the pull request body runs it again.
+- **Local, read-only:** `pnpm run promotion:doctor -- --pr <number>` prints the same report using your `gh` token. Add `--require-green-checks` to include the other checks, and `--wait-for-checks` to wait for pending ones.
+
+### Cut release (`cut-release.yaml`)
+
+Runs on every push to `main` and on manual dispatch:
+
+1. **Plan release tag** (`contents: read`, `pull-requests: read`, no secrets) runs [`scripts/release-tag-plan.mjs`](../scripts/release-tag-plan.mjs). It tags only when `package.json` holds a version newer than the latest `vX.Y.Z` tag, that tag does not exist yet, and the Flatpak MetaInfo top entry matches. The notes are the `## Release notes` section of the pull request whose merge produced the commit, or are generated from commit titles when there is none.
+2. **Tag release** runs only when the plan says so, in the `release-cut` environment (maintainer approval). It creates the annotated tag with the notes as its message (`--cleanup=verbatim`, so markdown headings survive) and pushes only the tag, with `RELEASE_CUT_TOKEN` through a temporary askpass helper. It installs nothing.
+
+Ordinary pushes to `main` end at the plan job without an approval prompt. Manual dispatch checks the current `main` commit again, for example after a declined approval. The tag push starts `release.yaml` and `flatpak.yaml`.
 
 ---
 
@@ -172,7 +202,7 @@ PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.co
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
 1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release (paginated Releases API; highest semver among non-draft/non-prerelease rows; recovers `vX.Y.Z` from release **name** only when `tag_name` is missing or `untagged-*`), writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
-2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the protected tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id` (reconstructed from validated digits before `GITHUB_OUTPUT` — CodeQL `js/http-to-file-access`), then prepends the schema compare note (via `RELEASE_ID`, not List Releases). The tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
+2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the protected tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id` (reconstructed from validated digits before `GITHUB_OUTPUT` — CodeQL `js/http-to-file-access`), then prepends the schema compare note (via `RELEASE_ID`, not List Releases) and, above it, the release notes from the tag's annotation (written by Cut release from the promotion's `## Release notes`), replacing the draft's placeholder line. The tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
 3. Installs Linux build dependencies (`libudev-dev`, `rpm`, …) on `ubuntu-latest` runners
 4. Rebuilds native dependencies (`pnpm run rebuild`)
 5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
@@ -210,7 +240,7 @@ On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestat
 
 ## Third-party licenses (`third-party-licenses.yaml`)
 
-After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow:
+After merges to `staging` that change `package.json`, `pnpm-lock.yaml`, the Reticulum sidecar's Cargo files or Ratspeak pins, the generator script, or this workflow (dependency changes land on `staging`, so the regenerated document ships with the next promotion):
 
 1. Checkout with `persist-credentials: false` (avoids Duplicate Authorization with create-pull-request)
 2. Setup pnpm + Node 22
@@ -220,13 +250,13 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
 7. Admin-merge that docs-only PR with `LICENSE_PR_TOKEN` (no maintainer review)
 
-**Authority:** the `license-automation` environment accepts only `main` and has no required reviewers. It has no release, signing, or release-cut credentials. Direct pushes to `main` remain blocked by the merge-queue ruleset, so the job opens a PR restricted to `docs/third-party-licenses.md` and admin-merges it. Environment secret **`LICENSE_PR_TOKEN` is required** for that path: a repo-admin fine-grained PAT (Contents + Pull requests write). Falling back to `GITHUB_TOKEN` leaves PRs stuck on the merge-queue review / unattributed-change gate (see #1311). The file is already validated in-job (`check:licenses`, `docs:licenses`, Rust stub refuse) before merge.
+**Authority:** the `license-automation` environment accepts only `staging` and has no required reviewers. It has no release, signing, or release-cut credentials. Direct pushes to `staging` remain blocked by its merge-queue ruleset, so the job opens a PR to `staging` restricted to `docs/third-party-licenses.md` and admin-merges it. Environment secret **`LICENSE_PR_TOKEN` is required** for that path: a repo-admin fine-grained PAT (Contents + Pull requests write). Falling back to `GITHUB_TOKEN` leaves PRs stuck on the merge-queue review / unattributed-change gate (see #1311). The file is already validated in-job (`check:licenses`, `docs:licenses`, Rust stub refuse) before merge.
 
 ---
 
 ## Docs (`docs.yml`)
 
-Builds the documentation site with `mkdocs build --strict` on pull requests that touch `docs/**`, `README.md`, `CONTRIBUTING.md`, `mkdocs.yml`, or the MkDocs scripts. On every push to `main` it builds the site the same way and deploys it to GitHub Pages:
+Builds the documentation site with `mkdocs build --strict` on pull requests to any branch that touch `docs/**`, `README.md`, `CONTRIBUTING.md`, `mkdocs.yml`, or the MkDocs scripts. On every push to `main` it builds the site the same way and deploys it to GitHub Pages, so the published docs follow the released app rather than `staging`:
 
 1. Check out the code with full history (`fetch-depth: 0`) so the git-revision-date plugin can show "last updated" dates
 2. Set up Node 22 and Python 3.14 (pinned, not `3.x`: `pyyaml==6.0.3` in `docs/requirements.txt` has no Python 3.15 wheel and the install is `--only-binary`)
@@ -243,6 +273,7 @@ The landing page `docs/index.md` is written by hand and is not copied from the R
 
 Automated dependency updates are configured in `.github/dependabot.yml`:
 
+- **Branch:** Dependabot follows the default branch, so after the switch it scans and targets `staging`. `dependabot.yml` sets no `target-branch`.
 - **Schedule:** Weekly on Saturdays
 - **npm dependencies:** Grouped PRs (Electron separate, all other deps together)
 - **GitHub Actions:** Grouped into one PR
@@ -367,69 +398,79 @@ Note: The test results artifact upload step is automatically skipped when runnin
 | PR lint / typecheck / build / tests              | Done (`ci.yaml`, `tests.yaml`)                                                       |
 | CodeQL / CodeRabbit                              | Done (CodeQL default setup until [advanced activation](../.github/codeql/README.md)) |
 | Tag → draft multi-OS + Flatpak + packaging smoke | Done (`release.yaml`, `flatpak.yaml`, `build.yaml`)                                  |
-| `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)                             |
+| Promotion + release tag on merge                 | Done (`pnpm run promotion:open`, Promotion Doctor, `cut-release.yaml`)               |
+| Emergency local release                          | `scripts/release.sh` (`--yes` for non-interactive)                                   |
 | Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                                              |
 | Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                                  |
-| Merge queue + required status checks             | Done (ruleset **20821455** on `main`; see below)                                     |
-| E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate                              |
+| Merge queue + required status checks             | Done (`staging` merge queue; `main` promotions ruleset **20821455**; see below)      |
+| E2E                                              | Every PR to `main`, daily, manual; the Promotion Doctor waits for it                 |
 
 ---
 
 ## Merge queue and rulesets
 
-`main` is protected by a **repository ruleset** (not classic branch protection) that:
+Two **repository rulesets** (not classic branch protection) protect the long-lived branches. Both require a pull request with **at least one approving review**, require **strict** status checks (they must pass on an up-to-date head, or on the merge group), block force-pushes and branch deletion, and let repository admins bypass them.
 
-1. Requires a pull request before merging
-2. Requires **at least one approving review** before the merge queue
-3. Requires a **merge queue**
-4. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
-5. Blocks force-pushes and branch deletion on `main`
+- **`staging`**: ruleset `staging merge queue` ([`staging-merge-queue.json`](../.github/rulesets/staging-merge-queue.json)). Pull requests merge by squash (or rebase) through the merge queue and require the five checks below.
+- **`main`**: ruleset `main promotions` ([`main-promotions.json`](../.github/rulesets/main-promotions.json)), live id **20821455**. Pull requests merge with a merge commit only, with no merge queue, and require the five checks below plus `Promotion Doctor`.
+
+`main` has no merge queue. A promotion must land as the exact two-parent commit its checks ran on, and `Promotion Doctor` runs on `pull_request_target`, never on `merge_group`, so a queue would wait for it forever.
 
 ### Required check names (always-on)
 
-Only checks that report on every PR and every `merge_group` run are required:
+Only checks that report on every pull request (and, on `staging`, every `merge_group` run) are required:
 
-| Check name                  | Workflow     |
-| --------------------------- | ------------ |
-| `Build & Test`              | `ci.yaml`    |
-| `Coverage (renderer-ui)`    | `tests.yaml` |
-| `Coverage (renderer-logic)` | `tests.yaml` |
-| `Coverage (main)`           | `tests.yaml` |
-| `Merge coverage`            | `tests.yaml` |
+| Check name                       | Workflow                |
+| -------------------------------- | ----------------------- |
+| `Build & Test`                   | `ci.yaml`               |
+| `Coverage (renderer-ui)`         | `tests.yaml`            |
+| `Coverage (renderer-logic)`      | `tests.yaml`            |
+| `Coverage (main)`                | `tests.yaml`            |
+| `Merge coverage`                 | `tests.yaml`            |
+| `Promotion Doctor` (`main` only) | `promotion-doctor.yaml` |
 
-Each required check is pinned with `integration_id` **15368** (GitHub Actions) in [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
+Each required check is pinned with `integration_id` **15368** (GitHub Actions) in both ruleset files. `Promotion Doctor` reports on the pull request head from its `pull_request_target` run, under the same GitHub Actions app.
 
 **Do not** add these as required (they skip or are not PR/`merge_group` gates and would stall the queue):
 
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
 - CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
-- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`)
+- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`). On pull requests to `main`, the Promotion Doctor already waits for the 3-OS E2E and the release preflight.
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
 
 ### Bypass actors
 
-- **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
+- **Repository admins** (`RepositoryRole` id 5): the version bump and back-port pushes to `staging` (`pnpm run promotion:open`, `pnpm run promotion:backport`), emergency merges, and the local `pnpm run release` fallback (a direct push of the release commit and tag to `main`)
 
-GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a documentation PR through the separate, main-only `license-automation` environment instead of pushing to `main` or using release credentials.
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a documentation PR through the separate, staging-only `license-automation` environment instead of pushing to `staging` or using release credentials.
 
 **Pull request gate:** one approving review, **dismiss stale reviews on push**, and **require last push approval** so an approved PR cannot enter the merge queue after unreviewed follow-up commits.
 
-### Applying / updating the ruleset
+### Applying / updating the rulesets
 
-Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json) (live ruleset id **20821455**). Vitest contract: `scripts/main-merge-queue-ruleset.test.mjs` (pinned checks + review gates). After changing the JSON, **PUT the live ruleset** or drift will remain until someone syncs:
+Canonical JSON lives in `.github/rulesets/`. Vitest contract: `scripts/branch-rulesets.test.mjs` (merge methods, pinned checks, review gates, and the `Promotion Doctor` name matching its workflow job). After changing a file, **PUT the live ruleset** or drift will remain until someone syncs:
 
 ```bash
-# Update live ruleset from canonical JSON
+# main: existing ruleset 20821455
 gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
   --method PUT \
-  --input .github/rulesets/main-merge-queue.json
+  --input .github/rulesets/main-promotions.json
+
+# staging: look the id up by name
+RULESET_ID="$(gh api repos/Colorado-Mesh/mesh-client/rulesets \
+  --jq '.[] | select(.name == "staging merge queue") | .id')"
+gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
+  --method PUT \
+  --input .github/rulesets/staging-merge-queue.json
 ```
+
+First-time setup (creating `staging` and its ruleset, allowing merge commits, switching the default branch) is the [rollout in the Release Process](release-process.md#switching-to-staging-one-time-rollout).
 
 `gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 
-The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
+The `staging` merge queue depends on the `merge_group` triggers in `ci.yaml` and `tests.yaml`. Keep them: a queue without them leaves its required checks pending forever.
 
 Release tags have a separate active **`release tags`** ruleset. Its canonical JSON is [`.github/rulesets/release-tags.json`](../.github/rulesets/release-tags.json): only repository administrators may create, update, or delete `v*` tags, and `release.yaml` rejects any tag whose ref is not protected. Keep the live ruleset synchronized after editing the JSON:
 
@@ -441,18 +482,18 @@ gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
   --input .github/rulesets/release-tags.json
 ```
 
-Privileged workflows are additionally restricted by protected environments: `release` accepts only protected `v*` tags (the release tags ruleset limits tag creation to admins, so the approved cut is the human gate); `release-cut` accepts `main`, requires maintainer approval, and contains `RELEASE_CUT_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. Release credentials live only in these environments; none are repository-scoped.
+Privileged workflows are additionally restricted by protected environments: `release` accepts only protected `v*` tags (the release tags ruleset limits tag creation to admins, so the approved tag job is the human gate); `release-cut` accepts `main`, requires maintainer approval, and contains `RELEASE_CUT_TOKEN`; `release-repair` accepts `main` and requires maintainer approval; `license-automation` accepts `staging` and holds only `LICENSE_PR_TOKEN`. Release credentials live only in these environments; none are repository-scoped.
 
 ---
 
 ## Required Status Checks
 
-All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
+Pull requests and merge-queue groups for `staging`, and pull requests to `main`, must pass the **required check names** listed above (`main` also requires `Promotion Doctor`). Those jobs cover:
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
 - Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
-- Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
+- Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `staging` and `main` pushes, and manual runs
 
 ---
 

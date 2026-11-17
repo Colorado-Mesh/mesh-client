@@ -588,7 +588,7 @@ Worker counts are derived in [`vitest.harness.mts`](../vitest.harness.mts) via `
 
 By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On memory-constrained hosts, set `VITEST_SEQUENTIAL_PROJECTS=1` to run `renderer-ui` first, then `renderer-logic` + `main` together (legacy behavior).
 
-Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, `main`, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
+Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, `staging` and `main` pushes, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
 
 #### Playwright Electron E2E
 
@@ -604,7 +604,7 @@ Constraints:
 
 - **`workers: 1`** — main uses `requestSingleInstanceLock()`; parallel launches flake.
 - **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` for direct `pnpm run test:e2e`, or wrap with `xvfb-run -a` (`pnpm run check:environment` warns when `DISPLAY` is unset).
-- **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml). Path-filtered PR job: [`e2e-panels.yaml`](../.github/workflows/e2e-panels.yaml) runs the panel matrix on Linux when renderer shell/panel code changes (not required).
+- **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Pull requests to `main`, daily and manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml). Path-filtered PR job: [`e2e-panels.yaml`](../.github/workflows/e2e-panels.yaml) runs the panel matrix on Linux when renderer shell/panel code changes (not required).
 
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
 
@@ -719,7 +719,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
+**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `staging` and `main` pushes, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 

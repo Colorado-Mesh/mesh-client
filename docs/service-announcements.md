@@ -4,7 +4,7 @@ Maintainers can show a short notice to every running mesh-client (maintenance wi
 
 Each client fetches the file from `https://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/announcements/announcements.json` 10 seconds after launch, every 6 hours, and 60 seconds after the network comes back. Notices appear in a dismissible strip at the top of the window, one at a time with a `1 of N` control. Dismissal is remembered per announcement `id`.
 
-Anyone who can merge to `main` can put text in front of every user. Review feed PRs like a release note.
+Clients read the file only from `main`, so an edit reaches users when it reaches `main`: with the next promotion from `staging`, or sooner as a hotfix. Anyone who can merge a promotion or a hotfix into `main` can put text in front of every user. Review feed PRs like a release note.
 
 ## Authoring
 
@@ -43,10 +43,10 @@ The feed holds at most 20 entries. Text renders as plain text only, and a link o
 
 ## Publishing and retracting
 
-1. Edit `announcements/announcements.json` in a PR to `main`.
+1. Edit `announcements/announcements.json` in a PR to `staging`. Users see it once the next promotion merges into `main`. For a notice that cannot wait, open it as a hotfix instead: a `hotfix/<name>` branch cut from `main` with a PR to `main`, then `pnpm run promotion:backport` (see [Hotfixes](release-process.md#hotfixes)). A hotfix waits for the same checks as a promotion, including the 3-OS Electron E2E, so it is not instant.
 2. Pre-commit runs `check:service-announcements`, which prints a prominent warning listing added, changed, and removed ids (it does not block). Malformed JSON or a wrong top-level shape blocks the commit. Pre-commit also runs `src/shared/serviceAnnouncementFeed.file.test.ts`, which fails if any row would be dropped by clients.
-3. After merge, raw.githubusercontent.com may cache for about 5 minutes; clients pick it up on their next check (up to 6 hours, or on next launch).
-4. To retract, remove the entry (or set `expiresAt` in the past) and merge. A failed fetch never retracts; only a successful fetch does.
+3. After the change reaches `main`, raw.githubusercontent.com may cache for about 5 minutes; clients pick it up on their next check (up to 6 hours, or on next launch).
+4. To retract, remove the entry (or set `expiresAt` in the past) and get that change to `main` the same way (as a hotfix when it must disappear now). A failed fetch never retracts; only a successful fetch does.
 
 ## Failure behavior
 

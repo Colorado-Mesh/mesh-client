@@ -8,6 +8,7 @@ Thank you for your interest in contributing.
 | Code style, testing, architecture, security (AI assistants)   | [AGENTS.md](AGENTS.md)                                             |
 | Protocol additions (RF mesh only)                             | [Protocol scope](#protocol-scope)                                  |
 | PR flow and contribution expectations                         | [CONTRIBUTING.md](CONTRIBUTING.md#pr-process)                      |
+| Branches, promotions, and releases                            | [docs/release-process.md](docs/release-process.md)                 |
 
 ## Code style & standards
 
@@ -32,9 +33,16 @@ See [Test harness setup and local quality checks](docs/development-environment.m
 
 Mesh-Client focuses on **RF mesh** networking (LoRa and related radio meshes). Additional protocols are in scope when they support that kind of RF mesh path. Internet-only messaging is out of scope. Ham protocols are welcome under the same RF-mesh criteria; Mesh-Client is for everyone, everywhere, and is not gated or targeted specifically at people with a ham radio license. Protocols that already ship may still use internet transports _alongside_ RF. Product framing: [README — Why](README.md#why).
 
+## Branches
+
+- **`staging`** is the default branch and holds the next release. Branch from it and open your pull request against it. Pull requests merge through a squash merge queue after review and the required checks.
+- **`main`** holds released code. Maintainers move `staging` to `main` with a promotion pull request (`pnpm run promotion:open`); merging a promotion that bumps the version tags and builds the release. Do not open feature pull requests against `main`: its required **Promotion Doctor** check fails them.
+- An urgent fix for released code goes to `main` on a `hotfix/<name>` branch cut from `main`, and maintainers merge it back into `staging` afterwards. See the [Release Process](docs/release-process.md#hotfixes).
+- Never bump the version in a feature pull request; promotions do it.
+
 ## PR process
 
-1. Describe your changes and what you tested
+1. Open the pull request against `staging`, and describe your changes and what you tested
 2. Update docs if needed. **New user-facing pages** need all three: a README feature bullet (when the change is user-visible), a section or link in the matching top-level user guide under `docs/`, and a `mkdocs.yml` nav entry (plus `src/shared/docsSite.ts` when in-app doc links apply). Prefer editing an existing guide over adding a new top-level page. Developer notes go under `docs/development/` and a matching row in [`AGENTS.md` §8](AGENTS.md#8-subsystem-quick-reference) / [`docs/development/index.md`](docs/development/index.md).
 3. Run the checks you need before review — at minimum the [local quality checks](docs/development-environment.md#4-test-harness-setup-and-local-quality-checks) and what the [pre-commit hook](docs/development-environment.md#6-git-hooks-and-pre-commit-behavior) runs
 4. Keep PR scope tight
