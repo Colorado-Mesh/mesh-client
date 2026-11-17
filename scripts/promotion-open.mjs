@@ -419,7 +419,9 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
 }
 
 /**
- * Open promotion pull requests to main from this repository, newest first.
+ * Open promotion pull requests to main from this repository, newest first. Only `release/`
+ * branches count, the ones this command creates: it force-pushes to the one it refreshes, so a
+ * promotion-titled pull request from anyone's other branch is never touched.
  * @param {(args: string[], input?: string) => string} gh
  * @returns {{ number: number, url: string, headRefName: string }[]}
  */
@@ -438,7 +440,12 @@ function openPromotions(gh) {
   );
   const prefix = PROMOTION_TITLE_PREFIX.toLowerCase();
   return listed
-    .filter((pr) => !pr.isCrossRepository && pr.title.trim().toLowerCase().startsWith(prefix))
+    .filter(
+      (pr) =>
+        !pr.isCrossRepository &&
+        pr.headRefName.startsWith('release/') &&
+        pr.title.trim().toLowerCase().startsWith(prefix),
+    )
     .sort((a, b) => b.number - a.number);
 }
 

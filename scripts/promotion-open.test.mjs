@@ -378,6 +378,35 @@ describe('openPromotion', { timeout: 60_000 }, () => {
     expect(remoteGit(remote, ['branch', '--list', 'release/v1.1.0'])).toBe('');
   });
 
+  it('never writes to a promotion-titled pull request outside release/ branches', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'b.txt': 'b\n' }, 'feat: b (#2)');
+    const fake = fakeGh({
+      prs: [
+        {
+          number: 41,
+          url: 'https://example.test/pull/41',
+          headRefName: 'feature/someones-work',
+          title: 'Promote staging to main (v9.9.9)',
+        },
+      ],
+    });
+
+    const result = await open(user, fake.gh);
+
+    expect(result).toMatchObject({
+      status: 'opened',
+      branch: 'release/v1.1.0',
+      url: 'https://example.test/pull/42',
+      superseded: [],
+    });
+    expect(fake.pulls.map((pr) => [pr.number, pr.state, pr.title])).toEqual([
+      [41, 'OPEN', 'Promote staging to main (v9.9.9)'],
+      [42, 'OPEN', 'Promote staging to main (v1.1.0)'],
+    ]);
+    expect(remoteGit(remote, ['branch', '--list', 'feature/someones-work'])).toBe('');
+  });
+
   it('closes other open promotions as superseded and leaves forks and hotfixes alone', async () => {
     const { remote, seed, user } = released();
     land(seed, 'staging', { 'b.txt': 'b\n' }, 'feat: b (#2)');
