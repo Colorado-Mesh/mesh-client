@@ -7558,7 +7558,6 @@
     "footerClose": "Fechar",
     "footerOsKeys": "Seu sistema operacional pode manter algumas teclas F",
     "footerAutoSave": "Salva automaticamente",
-    "whenUsedTextOnly": "Aplica-se apenas a macros de mensagens.",
     "actionLabel": "Ação",
     "actionText": "Mensagem",
     "actionRoom": "Ir para a sala",
@@ -7569,7 +7568,10 @@
     "roomGroupRrc": "Salas do RRC",
     "roomGroupSaved": "Salva",
     "jumpToRoomAria": "{{key}}: pular para {{label}}",
-    "roomGroupChatChannels": "Canais de chat"
+    "roomGroupChatChannels": "Canais de chat",
+    "whenUsedRoomHelp": "Para os espaços de Ir para a sala, uma mensagem opcional é colocada na caixa ou enviada após o salto.",
+    "roomTextPlaceholder": "Mensagem opcional após o salto",
+    "roomTextAria": "{{key}} mensagem opcional após o salto"
   },
   "weatherForecast": {
     "areaAria": "Previsão para {{place}}, {{period}}: {{temp}}",

@@ -7558,7 +7558,6 @@
     "footerClose": "Tutup",
     "footerOsKeys": "OS Anda mungkin menyimpan beberapa tombol F",
     "footerAutoSave": "Simpan secara otomatis",
-    "whenUsedTextOnly": "Berlaku untuk makro pesan saja.",
     "actionLabel": "Tindakan",
     "actionText": "Pesan",
     "actionRoom": "Beralih ke ruangan",
@@ -7569,7 +7568,10 @@
     "roomGroupRrc": "Ruangan RRC",
     "roomGroupSaved": "Disimpan",
     "jumpToRoomAria": "{{key}}: lompat ke {{label}}",
-    "roomGroupChatChannels": "Saluran obrolan"
+    "roomGroupChatChannels": "Saluran obrolan",
+    "whenUsedRoomHelp": "Untuk slot Lompat ke ruangan, pesan opsional dimasukkan ke dalam kotak atau dikirim setelah lompatan.",
+    "roomTextPlaceholder": "Pesan opsional setelah lompatan",
+    "roomTextAria": "{{key}} pesan opsional setelah lompatan"
   },
   "weatherForecast": {
     "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",

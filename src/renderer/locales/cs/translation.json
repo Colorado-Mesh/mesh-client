@@ -7626,7 +7626,6 @@
     "footerClose": "Zavřít",
     "footerOsKeys": "Váš operační systém si může ponechat některé klávesy F-key",
     "footerAutoSave": "PIN se ukládá automaticky.",
-    "whenUsedTextOnly": "Vztahuje se pouze na makra zpráv.",
     "actionLabel": "Akce",
     "actionText": "Zpráva",
     "actionRoom": "Přejít do místnosti",
@@ -7637,7 +7636,10 @@
     "roomGroupRrc": "Místnosti RRC",
     "roomGroupSaved": "Uloženo",
     "jumpToRoomAria": "{{key}}: přejít na {{label}}",
-    "roomGroupChatChannels": "Chatovací kanály"
+    "roomGroupChatChannels": "Chatovací kanály",
+    "whenUsedRoomHelp": "U políček Přeskočit na místnost se do pole vloží volitelná zpráva nebo se odešle po přeskočení.",
+    "roomTextPlaceholder": "Volitelná zpráva po přeskočení",
+    "roomTextAria": "{{key}} volitelná zpráva po přesměrování"
   },
   "weatherForecast": {
     "areaAria": "Předpověď pro {{place}}, {{period}}: {{temp}}",

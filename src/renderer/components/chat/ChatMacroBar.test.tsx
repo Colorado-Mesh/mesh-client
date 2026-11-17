@@ -7,8 +7,11 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { resetMacroComposerRegistryForTests } from '@/renderer/lib/chatMacroKeys';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import {
+  peekPendingRoomMacroTextApply,
   registerRoomMacroNavigator,
   resetRoomMacroNavigatorForTests,
+  resetRoomMacroTextApplyForTests,
+  takePendingRoomMacroTextApplyIfMatch,
 } from '@/renderer/lib/roomMacros';
 import {
   CHAT_MACRO_LABEL_MAX,
@@ -113,6 +116,7 @@ describe('ChatMacroBar', () => {
     resetChatMacrosStoreForTests();
     resetMacroComposerRegistryForTests();
     resetRoomMacroNavigatorForTests();
+    resetRoomMacroTextApplyForTests();
     resetMeshcoreSendRateForTests();
     // jsdom has no layout, so treat the composer textarea as on screen.
     Element.prototype.checkVisibility = () => true;
@@ -123,7 +127,7 @@ describe('ChatMacroBar', () => {
     globalThis.ResizeObserver = originalResizeObserver;
   });
 
-  it('room macro button jumps via navigator and does not insert text', () => {
+  it('room macro button jumps via navigator and does not insert text when message is blank', () => {
     const nav = vi.fn(() => true);
     registerRoomMacroNavigator(nav);
     useChatMacrosStore.getState().setCollapsed(false);
@@ -148,7 +152,73 @@ describe('ChatMacroBar', () => {
       },
       0,
     );
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
     expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('room macro with text jumps and queues pending apply for the destination', () => {
+    const nav = vi.fn(() => true);
+    registerRoomMacroNavigator(nav);
+    useChatMacrosStore.getState().setCollapsed(false);
+    useChatMacrosStore.getState().setSlotLabel(0, 'Test');
+    useChatMacrosStore.getState().setSlotText(0, 'Test');
+    useChatMacrosStore.getState().setSlotAction(0, 'room');
+    useChatMacrosStore.getState().setSlotRoom(0, {
+      kind: 'rrc-room',
+      hubDestHash: 'aabb',
+      room: '#test',
+      label: 'Test room',
+    });
+    // Source composer does not match the destination plan, so text stays queued.
+    renderComposer();
+    fireEvent.click(screen.getByRole('button', { name: 'F1: jump to Test' }));
+    expect(nav).toHaveBeenCalled();
+    expect(peekPendingRoomMacroTextApply()).toEqual({
+      slotIndex: 0,
+      plan: {
+        kind: 'rrc-room',
+        protocol: 'reticulum',
+        hubDestHash: 'aabb',
+        room: '#test',
+      },
+    });
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('destination composer consumes pending room-macro text after jump', async () => {
+    const nav = vi.fn(() => true);
+    registerRoomMacroNavigator(nav);
+    useChatMacrosStore.getState().setCollapsed(false);
+    useChatMacrosStore.getState().setSlotLabel(0, 'Test');
+    useChatMacrosStore.getState().setSlotText(0, 'Test');
+    useChatMacrosStore.getState().setSlotAction(0, 'room');
+    useChatMacrosStore.getState().setSlotRoom(0, {
+      kind: 'rrc-room',
+      hubDestHash: 'aabb',
+      room: '#test',
+      label: 'Test room',
+    });
+    render(
+      <>
+        <ShortcutHost />
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="rrc:aabb:#test"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          roomMacroMatch={(plan) =>
+            plan.kind === 'rrc-room' && plan.hubDestHash === 'aabb' && plan.room === '#test'
+          }
+        />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'F1: jump to Test' }));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toHaveValue('Test');
+    });
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
+    expect(takePendingRoomMacroTextApplyIfMatch(() => true)).toBeNull();
   });
 
   it('macroDisplayLabel prefers room.label over retained text when custom label is empty', () => {

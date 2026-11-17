@@ -7676,7 +7676,6 @@
     "footerClose": "Закрыть",
     "footerOsKeys": "Ваша ОС может сохранить некоторые клавиши F",
     "footerAutoSave": "PIN сохраняется автоматически.",
-    "whenUsedTextOnly": "Применяется только к макросам сообщений.",
     "actionLabel": "Мероприятия",
     "actionText": "message",
     "actionRoom": "Перейти в комнату",
@@ -7687,7 +7686,10 @@
     "roomGroupRrc": "Комнаты RRC",
     "roomGroupSaved": "Сохранено",
     "jumpToRoomAria": "{{key}}: перейти к {{label}}",
-    "roomGroupChatChannels": "Каналы чата"
+    "roomGroupChatChannels": "Каналы чата",
+    "whenUsedRoomHelp": "Для слотов «Перейти в комнату» в поле вводится необязательное сообщение или оно отправляется после перехода.",
+    "roomTextPlaceholder": "Дополнительное сообщение после перехода",
+    "roomTextAria": "{{key}} необязательное сообщение после перехода"
   },
   "weatherForecast": {
     "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",

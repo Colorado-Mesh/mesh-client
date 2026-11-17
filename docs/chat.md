@@ -122,10 +122,18 @@ Conversation tools include **Mark unread** (sets the read watermark just before 
 
 ### F1–F12 macros
 
-Every composer has twelve text macros. The bar is collapsed by default: use **Show macros** to open it and **Edit macros** to set each slot's label and message text (changes save automatically).
+Every composer has twelve macros. The bar is collapsed by default: use **Show macros** to open it and **Edit macros** to configure each slot (changes save automatically).
 
-- **When used** chooses **Put in message box** (the default) or **Send now**. **Send now** only fires when the box is empty, so a half-written draft is never sent or lost.
-- Press a plain **F1**–**F12** (no modifier) to use that slot. The key goes to the composer you are looking at.
+Each slot has an **Action**:
+
+- **Message** — inserts or sends the message text in the composer you are looking at.
+- **Jump to room** — switches to a MeshCore room, a chat channel, or an RRC room you pick. Optionally add a message; after the jump, that text is put in the destination message box or sent (per **When used**). Leave the message blank to jump only.
+
+Shared options:
+
+- **When used** chooses **Put in message box** (the default) or **Send now**. **Send now** only fires when the destination box is empty, so a half-written draft is never sent or lost. For Jump to room slots with a message, this applies after the jump.
+- Press a plain **F1**–**F12** (no modifier) to use that slot. Message macros go to the composer you are looking at; Jump to room macros work from any tab.
+- MeshCore rooms: if you are not logged in yet, the optional message waits until the room composer appears after login.
 - **Size** offers Small, Medium, and Large; touchscreens default to Large.
 - Your operating system may keep some F-keys for itself.
 

@@ -2925,6 +2925,11 @@ export default function RoomsPanel({
                 sendingButtonLabel={t('roomsPanel.posting')}
                 mentionNodes={mentionNodes}
                 onSendChunk={handleSendChunk}
+                roomMacroMatch={(plan) =>
+                  plan.kind === 'meshcore-room' &&
+                  selectedRoomId != null &&
+                  plan.roomNodeId === selectedRoomId
+                }
               />
             )}
           </div>

@@ -7558,7 +7558,6 @@
     "footerClose": "Kapat",
     "footerOsKeys": "İşletim sisteminizde bazı F - tuşları olabilir",
     "footerAutoSave": "PIN otomatik olarak kaydeder.",
-    "whenUsedTextOnly": "Yalnızca mesaj makroları için geçerlidir.",
     "actionLabel": "Eylem",
     "actionText": "Mesaj",
     "actionRoom": "Odaya geç",
@@ -7569,7 +7568,10 @@
     "roomGroupRrc": "RRC odaları",
     "roomGroupSaved": "Kaydedildi",
     "jumpToRoomAria": "{{key}}: {{label}} bölümüne atla",
-    "roomGroupChatChannels": "Sohbet kanalları"
+    "roomGroupChatChannels": "Sohbet kanalları",
+    "whenUsedRoomHelp": "Oda bölümlerine atlama için kutuya isteğe bağlı bir mesaj konur veya atlamadan sonra gönderilir.",
+    "roomTextPlaceholder": "Atlamadan sonra isteğe bağlı mesaj",
+    "roomTextAria": "{{key}} yönlendirmeden sonra isteğe bağlı mesaj"
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",

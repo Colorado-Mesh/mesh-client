@@ -1,18 +1,30 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resolveMeshcoreRoomNodeId } from '@/renderer/lib/meshcoreRoomNodeLookup';
 import {
   navigateRoomMacro,
+  navigateRoomMacroAndMaybeQueueText,
+  peekPendingRoomMacroTextApply,
+  queueRoomMacroTextApply,
   registerRoomMacroNavigator,
   resetRoomMacroNavigatorForTests,
+  resetRoomMacroTextApplyForTests,
   resolveRoomMacroPlan,
   type RoomMacroPlan,
+  subscribeRoomMacroTextApply,
+  takePendingRoomMacroTextApplyIfMatch,
 } from '@/renderer/lib/roomMacros';
+import {
+  resetChatMacrosStoreForTests,
+  useChatMacrosStore,
+} from '@/renderer/stores/chatMacrosStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 
 describe('roomMacros registry', () => {
   beforeEach(() => {
     resetRoomMacroNavigatorForTests();
+    resetRoomMacroTextApplyForTests();
+    resetChatMacrosStoreForTests();
   });
 
   it('register → navigate returns true; unregister → false', () => {
@@ -31,6 +43,72 @@ describe('roomMacros registry', () => {
     expect(seen).toEqual([plan]);
     unregister();
     expect(navigateRoomMacro(plan, 1)).toBe(false);
+  });
+});
+
+describe('roomMacro pending text apply', () => {
+  const plan: RoomMacroPlan = {
+    kind: 'rrc-room',
+    protocol: 'reticulum',
+    hubDestHash: 'aabb',
+    room: '#weather',
+  };
+
+  beforeEach(() => {
+    resetRoomMacroNavigatorForTests();
+    resetRoomMacroTextApplyForTests();
+    resetChatMacrosStoreForTests();
+  });
+
+  it('queue is a no-op when slot text is blank', () => {
+    queueRoomMacroTextApply(0, plan);
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
+  });
+
+  it('queue / takeIfMatch / replace / notify listeners', () => {
+    useChatMacrosStore.getState().setSlotText(0, 'Test');
+    useChatMacrosStore.getState().setSlotText(1, 'Other');
+    const listener = vi.fn();
+    const unsub = subscribeRoomMacroTextApply(listener);
+
+    queueRoomMacroTextApply(0, plan);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(peekPendingRoomMacroTextApply()).toEqual({ slotIndex: 0, plan });
+
+    expect(
+      takePendingRoomMacroTextApplyIfMatch((p) => p.kind === 'meshcore-room' && p.roomNodeId === 1),
+    ).toBeNull();
+    expect(peekPendingRoomMacroTextApply()?.slotIndex).toBe(0);
+
+    const channelPlan: RoomMacroPlan = {
+      kind: 'meshcore-channel',
+      protocol: 'meshcore',
+      identityId: 'mc1',
+      channelIndex: 2,
+    };
+    queueRoomMacroTextApply(1, channelPlan);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(peekPendingRoomMacroTextApply()).toEqual({ slotIndex: 1, plan: channelPlan });
+
+    expect(
+      takePendingRoomMacroTextApplyIfMatch(
+        (p) => p.kind === 'meshcore-channel' && p.channelIndex === 2,
+      ),
+    ).toBe(1);
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
+    unsub();
+  });
+
+  it('navigateRoomMacroAndMaybeQueueText queues only when navigate succeeds and text is set', () => {
+    useChatMacrosStore.getState().setSlotText(3, 'Ping');
+    registerRoomMacroNavigator(() => true);
+    expect(navigateRoomMacroAndMaybeQueueText(plan, 3)).toBe(true);
+    expect(peekPendingRoomMacroTextApply()?.slotIndex).toBe(3);
+
+    resetRoomMacroTextApplyForTests();
+    resetRoomMacroNavigatorForTests();
+    expect(navigateRoomMacroAndMaybeQueueText(plan, 3)).toBe(false);
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
   });
 });
 

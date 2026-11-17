@@ -8,8 +8,10 @@ import {
   resetMacroComposerRegistryForTests,
 } from '@/renderer/lib/chatMacroKeys';
 import {
+  peekPendingRoomMacroTextApply,
   registerRoomMacroNavigator,
   resetRoomMacroNavigatorForTests,
+  resetRoomMacroTextApplyForTests,
 } from '@/renderer/lib/roomMacros';
 import {
   resetChatMacrosStoreForTests,
@@ -28,6 +30,7 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
   beforeEach(() => {
     resetMacroComposerRegistryForTests();
     resetRoomMacroNavigatorForTests();
+    resetRoomMacroTextApplyForTests();
     resetChatMacrosStoreForTests();
     localStorage.clear();
     vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
@@ -213,6 +216,33 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
     );
     expect(e.defaultPrevented).toBe(true);
     expect(useChatMacrosStore.getState().lastUsedIndex).toBe(2);
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
+  });
+
+  it('room slot with message text queues a pending apply after navigate', () => {
+    const nav = vi.fn(() => true);
+    registerRoomMacroNavigator(nav);
+    useChatMacrosStore.getState().setSlotText(2, 'Test');
+    useChatMacrosStore.getState().setSlotAction(2, 'room');
+    useChatMacrosStore.getState().setSlotRoom(2, {
+      kind: 'rrc-room',
+      hubDestHash: 'aabb',
+      room: '#weather',
+      label: 'Weather',
+    });
+    renderHook(() => {
+      useChatMacroShortcuts();
+    });
+    expect(press('F3').defaultPrevented).toBe(true);
+    expect(peekPendingRoomMacroTextApply()).toEqual({
+      slotIndex: 2,
+      plan: {
+        kind: 'rrc-room',
+        protocol: 'reticulum',
+        hubDestHash: 'aabb',
+        room: '#weather',
+      },
+    });
   });
 
   it('room slot with unresolved MeshCore pubkey does not claim the key', () => {

@@ -6,7 +6,7 @@ import {
   type MacroComposerTarget,
 } from '@/renderer/lib/chatMacroKeys';
 import {
-  navigateRoomMacro,
+  navigateRoomMacroAndMaybeQueueText,
   resolveMeshcoreRoomNodeIdDefault,
   resolveRoomMacroPlan,
 } from '@/renderer/lib/roomMacros';
@@ -62,11 +62,12 @@ export function useChatMacroShortcuts(): void {
         const plan = resolveRoomMacroPlan(slot.room, {
           resolveMeshcoreRoomNodeId: resolveMeshcoreRoomNodeIdDefault,
         });
-        if (plan && navigateRoomMacro(plan, index)) {
+        if (plan && navigateRoomMacroAndMaybeQueueText(plan, index)) {
           useChatMacrosStore.getState().markUsed(index);
           e.preventDefault();
         }
-        // Room slots never fall through to composer text handling.
+        // Room slots never fall through to the source composer; optional text is
+        // applied later by the destination composer via the pending-text queue.
         return;
       }
 

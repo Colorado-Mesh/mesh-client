@@ -7558,7 +7558,6 @@
     "footerClose": "Cerrar",
     "footerOsKeys": "Su sistema operativo puede mantener algunas teclas F",
     "footerAutoSave": "El juego se guarda automáticamente",
-    "whenUsedTextOnly": "Se aplica únicamente a las macros de mensajes.",
     "actionLabel": "Acción",
     "actionText": "Mensaje",
     "actionRoom": "Ir a la sala",
@@ -7569,7 +7568,10 @@
     "roomGroupRrc": "Salas RRC",
     "roomGroupSaved": "Guardado",
     "jumpToRoomAria": "{{key}}: saltar a {{label}}",
-    "roomGroupChatChannels": "Canales de chat."
+    "roomGroupChatChannels": "Canales de chat.",
+    "whenUsedRoomHelp": "En el caso de los espacios «Saltar a la sala», se incluye un mensaje opcional en el cuadro o se envía después del salto.",
+    "roomTextPlaceholder": "Mensaje opcional después del salto",
+    "roomTextAria": "{{key}} mensaje opcional después del salto"
   },
   "weatherForecast": {
     "areaAria": "Pronóstico para {{place}}, {{period}}: {{temp}}",

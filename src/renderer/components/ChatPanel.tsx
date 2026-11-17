@@ -5625,6 +5625,14 @@ function ChatPanel({
           onSendSuccess={() => {
             setUnreadDividerTimestamp(0);
           }}
+          roomMacroMatch={
+            channelViewActive
+              ? (plan) =>
+                  (plan.kind === 'meshcore-channel' || plan.kind === 'meshtastic-channel') &&
+                  plan.protocol === protocol &&
+                  plan.channelIndex === channel
+              : undefined
+          }
           textareaRef={composerInputRef}
           actionSlot={
             <>
