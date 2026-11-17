@@ -267,10 +267,10 @@ describe('privileged workflow boundaries', () => {
     ]);
   });
 
-  it('records an active main merge queue ruleset with admin bypass', () => {
-    const ruleset = JSON.parse(read('.github/rulesets/main-merge-queue.json'));
+  it('records an active main promotions ruleset with admin bypass', () => {
+    const ruleset = JSON.parse(read('.github/rulesets/main-promotions.json'));
     expect(ruleset).toMatchObject({
-      name: 'main merge queue',
+      name: 'main promotions',
       target: 'branch',
       enforcement: 'active',
       conditions: { ref_name: { include: ['refs/heads/main'], exclude: [] } },
