@@ -114,6 +114,8 @@
     "lint:fix": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --fix --max-warnings 0 --concurrency=4",
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "prepare": "git config core.hooksPath .githooks",
+    "promotion:backport": "node scripts/promotion-open.mjs --backport-only",
+    "promotion:open": "node scripts/promotion-open.mjs",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
     "release:bump": "node scripts/release-bump.mjs",
