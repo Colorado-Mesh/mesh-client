@@ -299,7 +299,10 @@ import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
-import { resolveRoomAdminPassword } from '../lib/meshcoreInfraAdminSecrets';
+import {
+  hasResolvableAdminPassword,
+  resolveRoomAdminPassword,
+} from '../lib/meshcoreInfraAdminSecrets';
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import {
   clearMeshcoreLocallyDeletedContact,
@@ -313,6 +316,11 @@ import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentit
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
+import {
+  type MeshcoreOwnerInfoEntry,
+  meshcoreOwnerInfoSupported,
+  readMeshcoreOwnerInfo,
+} from '../lib/meshcoreOwnerInfo';
 import {
   parsePathHashModeFromDeviceQuery,
   resolveMeshcoreCompanionPathHashMode,
@@ -748,6 +756,7 @@ export function useMeshcoreRuntime() {
   >([]);
   /** True once a contacts dump from the connected radio has been applied this session. */
   const [meshcoreRadioContactsLoaded, setMeshcoreRadioContactsLoaded] = useState(false);
+  const meshcoreRadioContactsLoadedRef = useRef(false);
   const [meshcorePubKeyHexByNodeId, setMeshcorePubKeyHexByNodeId] = useState<Map<number, string>>(
     new Map(),
   );
@@ -780,6 +789,13 @@ export function useMeshcoreRuntime() {
     new Map(),
   );
   const [meshcoreNeighborErrors, setMeshcoreNeighborErrors] = useState<Map<number, string>>(
+    new Map(),
+  );
+  const [meshcoreOwnerInfo, setMeshcoreOwnerInfo] = useState<Map<number, MeshcoreOwnerInfoEntry>>(
+    new Map(),
+  );
+  const meshcoreOwnerInfoRef = useRef<Map<number, MeshcoreOwnerInfoEntry>>(new Map());
+  const meshcoreOwnerInfoInFlightRef = useRef<Map<number, Promise<MeshcoreOwnerInfoEntry>>>(
     new Map(),
   );
   const [meshcoreCliHistories, setMeshcoreCliHistories] = useState<Map<number, CliHistoryEntry[]>>(
@@ -1250,6 +1266,14 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     meshcoreTraceResultsRef.current = meshcoreTraceResults;
   }, [meshcoreTraceResults]);
+
+  useEffect(() => {
+    meshcoreOwnerInfoRef.current = meshcoreOwnerInfo;
+  }, [meshcoreOwnerInfo]);
+
+  useEffect(() => {
+    meshcoreRadioContactsLoadedRef.current = meshcoreRadioContactsLoaded;
+  }, [meshcoreRadioContactsLoaded]);
 
   useEffect(() => {
     waitingMessagesCountRef.current = waitingMessagesCount;
@@ -3807,6 +3831,9 @@ export function useMeshcoreRuntime() {
       setMeshcoreNodeTelemetry(new Map());
       setMeshcoreTelemetryErrors(new Map());
       setMeshcoreNeighbors(new Map());
+      setMeshcoreOwnerInfo(new Map());
+      meshcoreOwnerInfoRef.current.clear();
+      meshcoreOwnerInfoInFlightRef.current.clear();
       setMeshcoreCliHistories(new Map());
       setMeshcoreCliErrors(new Map());
       meshcoreClearAllRoomSessions();
@@ -7986,6 +8013,67 @@ export function useMeshcoreRuntime() {
 
   const companionRemote = useMeshcoreCompanionRemote({ connRef, sendRepeaterCliCommand });
 
+  const setOwnerInfoEntry = useCallback((nodeId: number, entry: MeshcoreOwnerInfoEntry) => {
+    setMeshcoreOwnerInfo((prev) => {
+      const next = new Map(prev);
+      next.set(nodeId, entry);
+      return next;
+    });
+  }, []);
+
+  const requestNodeOwnerInfo = useCallback(
+    async (nodeId: number, opts?: { force?: boolean }): Promise<MeshcoreOwnerInfoEntry | null> => {
+      if (!connRef.current) return null;
+      if (!meshcoreRadioContactsLoadedRef.current) return null;
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+      const hwModel = node?.hw_model;
+      if (!meshcoreOwnerInfoSupported(hwModel)) return null;
+
+      if (!opts?.force) {
+        const cached = meshcoreOwnerInfoRef.current.get(nodeId);
+        if (cached) return cached;
+        const inFlight = meshcoreOwnerInfoInFlightRef.current.get(nodeId);
+        if (inFlight) return inFlight;
+      }
+
+      if (!hasResolvableAdminPassword(nodeId, hwModel)) {
+        const entry: MeshcoreOwnerInfoEntry = {
+          status: 'needs-password',
+          fetchedAt: Date.now(),
+        };
+        setOwnerInfoEntry(nodeId, entry);
+        return entry;
+      }
+
+      // CLI cancels an in-flight Room BBS login. Do not hijack that: skip and let Refresh try later.
+      if (hwModel === 'Room' && meshcoreIsRoomLoginQueued(nodeId)) return null;
+
+      const identityAtRequest = meshcoreIdentityIdRef.current;
+      const generationAtRequest = meshcoreSetupGenerationRef.current;
+      const run = (async (): Promise<MeshcoreOwnerInfoEntry> => {
+        try {
+          const entry = await readMeshcoreOwnerInfo({
+            hwModel,
+            hasAdminPassword: true,
+            send: (command) => sendRepeaterCliCommand(nodeId, command),
+          });
+          if (
+            meshcoreIdentityIdRef.current === identityAtRequest &&
+            meshcoreSetupGenerationRef.current === generationAtRequest
+          ) {
+            setOwnerInfoEntry(nodeId, entry);
+          }
+          return entry;
+        } finally {
+          meshcoreOwnerInfoInFlightRef.current.delete(nodeId);
+        }
+      })();
+      meshcoreOwnerInfoInFlightRef.current.set(nodeId, run);
+      return run;
+    },
+    [sendRepeaterCliCommand, setOwnerInfoEntry],
+  );
+
   const resolveRoomLoginHopsForNode = useCallback((nodeId: number): number => {
     return resolveMeshcoreRoomLoginHopsAway(
       getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
@@ -10198,6 +10286,8 @@ export function useMeshcoreRuntime() {
       meshcoreRepeaterRpcPending,
       meshcoreNeighbors,
       meshcoreNeighborErrors,
+      meshcoreOwnerInfo,
+      requestNodeOwnerInfo,
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,
@@ -10359,6 +10449,8 @@ export function useMeshcoreRuntime() {
       meshcoreRepeaterRpcPending,
       meshcoreNeighbors,
       meshcoreNeighborErrors,
+      meshcoreOwnerInfo,
+      requestNodeOwnerInfo,
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,

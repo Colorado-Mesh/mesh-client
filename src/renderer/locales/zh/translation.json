@@ -3916,7 +3916,16 @@
     "forgetAdvert": "忘记上一则通告",
     "forgetAdvertAria": "清除此联系人的上一个通告时间戳",
     "forgetAdvertDone": "已清除上次通告时间戳。",
-    "forgetAdvertFailed": "无法清除上一个通告的时间戳。"
+    "forgetAdvertFailed": "无法清除上一个通告的时间戳。",
+    "ownerInfoHeading": "车主信息",
+    "ownerInfoRefresh": "刷新车主信息",
+    "ownerInfoLoading": "正在读取车主信息……",
+    "ownerInfoReadAt": "在{{time}}阅读",
+    "ownerInfoEmpty": "此节点上未设置所有者信息。",
+    "ownerInfoUnsupported": "此固件不支持所有者信息。",
+    "ownerInfoNeedsPassword": "所有者信息需要管理员密码。在下方保存一个密码以读取信息。",
+    "ownerInfoNeedsRoomPassword": "所有者信息需要管理员密码。请在“中继器和房间”→“配置”中设置。",
+    "ownerInfoReadFailed": "无法读取所有者信息。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

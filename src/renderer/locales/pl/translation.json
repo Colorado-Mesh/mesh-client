@@ -3978,7 +3978,16 @@
     "forgetAdvert": "Zapomnij o ostatnim advert",
     "forgetAdvertAria": "Usuń ostatni znacznik czasu advert dla tego kontaktu",
     "forgetAdvertDone": "Usunięto znacznik czasu ostatniego advert.",
-    "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert."
+    "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert.",
+    "ownerInfoHeading": "Pokaż informację o właścicielu",
+    "ownerInfoRefresh": "Odśwież informacje o właścicielu",
+    "ownerInfoLoading": "Odczytywanie informacji o właścicielu…",
+    "ownerInfoReadAt": "Przeczytaj w {{time}}",
+    "ownerInfoEmpty": "W tym węźle nie ustawiono informacji o właścicielu.",
+    "ownerInfoUnsupported": "To oprogramowanie sprzętowe nie obsługuje informacji o właścicielu.",
+    "ownerInfoNeedsPassword": "Informacje o właścicielu wymagają hasła administratora. Zapisz jedno z haseł poniżej, aby móc je odczytać.",
+    "ownerInfoNeedsRoomPassword": "Informacje o właścicielu wymagają hasła administratora. Ustaw to w sekcji Wzmacniacze sygnału i pokoje → Konfiguruj.",
+    "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

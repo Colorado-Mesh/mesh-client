@@ -3916,7 +3916,16 @@
     "forgetAdvert": "Esquecer o último anúncio",
     "forgetAdvertAria": "Limpar o carimbo de data/hora do último anúncio para este contato",
     "forgetAdvertDone": "O registro de data e hora do último anúncio foi apagado.",
-    "forgetAdvertFailed": "Não foi possível limpar o carimbo de data/hora do último anúncio."
+    "forgetAdvertFailed": "Não foi possível limpar o carimbo de data/hora do último anúncio.",
+    "ownerInfoHeading": "Informações do Dono",
+    "ownerInfoRefresh": "Atualizar informações do proprietário",
+    "ownerInfoLoading": "Lendo as informações do proprietário…",
+    "ownerInfoReadAt": "Ler em {{time}}",
+    "ownerInfoEmpty": "Nenhuma informação de proprietário definida neste nó.",
+    "ownerInfoUnsupported": "Este firmware não oferece suporte a informações do proprietário.",
+    "ownerInfoNeedsPassword": "As informações do proprietário precisam de uma senha de administrador. Salve uma abaixo para lê-la.",
+    "ownerInfoNeedsRoomPassword": "As informações do proprietário precisam de uma senha de administrador. Defina-a em Repetidores e salas → Configurar.",
+    "ownerInfoReadFailed": "Não foi possível ler as informações do proprietário."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

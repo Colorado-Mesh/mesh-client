@@ -3916,7 +3916,16 @@
     "forgetAdvert": "마지막 advert 잊기",
     "forgetAdvertAria": "이 연락처의 마지막 advert 타임스탬프 지우기",
     "forgetAdvertDone": "마지막 advert 타임스탬프가 삭제되었습니다.",
-    "forgetAdvertFailed": "마지막 advert 타임스탬프를 지울 수 없습니다."
+    "forgetAdvertFailed": "마지막 advert 타임스탬프를 지울 수 없습니다.",
+    "ownerInfoHeading": "계약자 정보",
+    "ownerInfoRefresh": "소유자 정보 새로 고침",
+    "ownerInfoLoading": "소유자 정보 읽는 중…",
+    "ownerInfoReadAt": "{{time}}에 읽기",
+    "ownerInfoEmpty": "이 노드에 설정된 소유자 정보가 없습니다.",
+    "ownerInfoUnsupported": "이 펌웨어는 소유자 정보를 지원하지 않습니다.",
+    "ownerInfoNeedsPassword": "소유자 정보를 확인하려면 관리자 비밀번호가 필요합니다. 아래에 하나를 저장하여 읽으세요.",
+    "ownerInfoNeedsRoomPassword": "소유자 정보에는 관리자 비밀번호가 필요합니다. '리피터 및 공간 → 구성'에서 설정하세요.",
+    "ownerInfoReadFailed": "소유자 정보를 읽을 수 없습니다."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",

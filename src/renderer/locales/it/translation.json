@@ -3916,7 +3916,16 @@
     "forgetAdvert": "Dimentica l'ultimo annuncio",
     "forgetAdvertAria": "Cancella l'ultima data e ora dell'annuncio per questo contatto",
     "forgetAdvertDone": "Data e ora dell'ultimo annuncio cancellate.",
-    "forgetAdvertFailed": "Impossibile cancellare l'ultima marca temporale dell'annuncio."
+    "forgetAdvertFailed": "Impossibile cancellare l'ultima marca temporale dell'annuncio.",
+    "ownerInfoHeading": "INFORMATIONI PROPRIETARIO",
+    "ownerInfoRefresh": "Aggiorna le informazioni sul proprietario",
+    "ownerInfoLoading": "Lettura delle informazioni sul proprietario in corso…",
+    "ownerInfoReadAt": "Leggi su {{time}}",
+    "ownerInfoEmpty": "Nessuna informazione sul proprietario impostata su questo nodo.",
+    "ownerInfoUnsupported": "Questo firmware non supporta le informazioni sul proprietario.",
+    "ownerInfoNeedsPassword": "Le informazioni sul proprietario richiedono una password di amministratore. Salvala qui sotto per leggerla.",
+    "ownerInfoNeedsRoomPassword": "Le informazioni sul proprietario richiedono una password di amministratore. Impostala in Ripetitori e stanze → Configura.",
+    "ownerInfoReadFailed": "Impossibile leggere le informazioni sul proprietario."
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",

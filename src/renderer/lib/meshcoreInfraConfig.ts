@@ -110,7 +110,7 @@ function assertCurrent(isCurrent: InfraConfigIsCurrent): void {
   if (!isCurrent()) throw configError('infraConfig.sessionChanged');
 }
 
-function isUnsupported(response: string): boolean {
+export function isInfraConfigUnsupportedReply(response: string): boolean {
   return /^(?:\?\?:|err - \?\?|unknown (?:command|config)|error[: ,]+unsupported)/i.test(
     response.trim(),
   );
@@ -181,7 +181,7 @@ export async function readInfraConfig(
     assertCurrent(isCurrent);
     const response = await send(read.command, isCurrent);
     assertCurrent(isCurrent);
-    if (isUnsupported(response)) unavailable.push(...read.keys);
+    if (isInfraConfigUnsupportedReply(response)) unavailable.push(...read.keys);
     else Object.assign(values, parseRead(read, response));
   }
   return { values, unavailable };

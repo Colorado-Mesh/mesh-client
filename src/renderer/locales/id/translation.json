@@ -3916,7 +3916,16 @@
     "forgetAdvert": "Lupakan advert terakhir",
     "forgetAdvertAria": "Hapus stempel waktu advert terakhir untuk kontak ini",
     "forgetAdvertDone": "Stempel waktu advert terakhir dihapus.",
-    "forgetAdvertFailed": "Tidak dapat menghapus stempel waktu advert terakhir."
+    "forgetAdvertFailed": "Tidak dapat menghapus stempel waktu advert terakhir.",
+    "ownerInfoHeading": "Informasi pemilik",
+    "ownerInfoRefresh": "Muat ulang informasi pemilik",
+    "ownerInfoLoading": "Membaca informasi pemilik…",
+    "ownerInfoReadAt": "Baca di {{time}}",
+    "ownerInfoEmpty": "Tidak ada informasi pemilik yang ditetapkan pada node ini.",
+    "ownerInfoUnsupported": "Firmware ini tidak mendukung informasi pemilik.",
+    "ownerInfoNeedsPassword": "Informasi pemilik memerlukan kata sandi admin. Simpan satu di bawah ini untuk membacanya.",
+    "ownerInfoNeedsRoomPassword": "Informasi pemilik memerlukan kata sandi admin. Atur di Repeater & Ruangan → Konfigurasi.",
+    "ownerInfoReadFailed": "Tidak dapat membaca informasi pemilik."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

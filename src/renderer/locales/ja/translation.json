@@ -3916,7 +3916,16 @@
     "forgetAdvert": "最後のadvertを忘れる",
     "forgetAdvertAria": "この連絡先の最後のadvertタイムスタンプを消去する",
     "forgetAdvertDone": "最後のadvertのタイムスタンプが消去されました。",
-    "forgetAdvertFailed": "最後のadvertのタイムスタンプを消去できませんでした。"
+    "forgetAdvertFailed": "最後のadvertのタイムスタンプを消去できませんでした。",
+    "ownerInfoHeading": "所有者情報",
+    "ownerInfoRefresh": "オーナー情報を更新する",
+    "ownerInfoLoading": "所有者情報を読み込んでいます…",
+    "ownerInfoReadAt": "{{time}}で読む",
+    "ownerInfoEmpty": "このノードにオーナー情報が設定されていません。",
+    "ownerInfoUnsupported": "このファームウェアは所有者情報をサポートしていません。",
+    "ownerInfoNeedsPassword": "所有者情報には管理者パスワードが必要です。以下に1つ保存して読んでください。",
+    "ownerInfoNeedsRoomPassword": "オーナー情報には管理者パスワードが必要です。「リピーターとルーム」→「設定」で設定してください。",
+    "ownerInfoReadFailed": "所有者情報を読み取れませんでした。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

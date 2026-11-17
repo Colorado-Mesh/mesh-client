@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -790,6 +790,175 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(screen.getByText('motion detected')).toBeInTheDocument();
     expect(screen.getByText(/Range Test/)).toBeInTheDocument();
     expect(screen.getByLabelText('Range test packet log')).toBeInTheDocument();
+  });
+});
+
+describe('NodeDetailModal MeshCore owner information', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearAllMeshcoreRepeaterEphemeralPasswords();
+    ensureOfflineProtocolIdentities();
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue(null);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(1);
+    vi.mocked(window.electronAPI.db.getNodeNote).mockResolvedValue(null);
+    useNodeStore.setState({ nodes: {} });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders cached owner info lines and a Refresh control', () => {
+    renderMeshcoreModal({
+      meshcoreOwnerInfo: {
+        status: 'ok',
+        text: 'Operator|Grid: 14',
+        fetchedAt: 1_700_000_000_000,
+      },
+      onRequestMeshcoreOwnerInfo: vi.fn().mockResolvedValue(null),
+    });
+    expect(screen.getByText('Operator')).toBeInTheDocument();
+    expect(screen.getByText('Grid: 14')).toBeInTheDocument();
+    expect(screen.getByText(/Read at/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh owner information' })).toBeInTheDocument();
+  });
+
+  it('requests owner info once on open when nothing is cached', async () => {
+    const onRequest = vi.fn().mockResolvedValue({
+      status: 'needs-password',
+      fetchedAt: Date.now(),
+    });
+    const { rerender } = renderMeshcoreModal({
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(onRequest).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id, { force: false });
+
+    rerender(
+      <NodeDetailModal
+        node={meshcoreRepeaterNode}
+        protocol="meshcore"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        onRequestRepeaterStatus={vi.fn().mockResolvedValue(undefined)}
+        onMessageNode={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        meshcoreOwnerInfo={{ status: 'needs-password', fetchedAt: Date.now() }}
+        onRequestMeshcoreOwnerInfo={onRequest}
+      />,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not request when a non-error entry is already cached', async () => {
+    const onRequest = vi.fn().mockResolvedValue(null);
+    renderMeshcoreModal({
+      meshcoreOwnerInfo: { status: 'ok', text: 'Cached', fetchedAt: Date.now() },
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).not.toHaveBeenCalled();
+  });
+
+  it('hides the section for Chat contacts and our own node', async () => {
+    const onRequest = vi.fn().mockResolvedValue(null);
+    const { unmount } = renderMeshcoreModal({
+      node: { ...meshcoreRepeaterNode, hw_model: 'Chat' },
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    expect(screen.queryByText('Owner information')).not.toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).not.toHaveBeenCalled();
+    unmount();
+
+    renderMeshcoreModal({
+      homeNode: meshcoreRepeaterNode,
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    expect(screen.queryByText('Owner information')).not.toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).not.toHaveBeenCalled();
+  });
+
+  it('shows needs-password and unsupported hints', () => {
+    const { unmount } = renderMeshcoreModal({
+      meshcoreOwnerInfo: { status: 'needs-password', fetchedAt: Date.now() },
+      onRequestMeshcoreOwnerInfo: vi.fn(),
+    });
+    expect(
+      screen.getByText(/Owner information needs an admin password\. Save one below/),
+    ).toBeInTheDocument();
+    unmount();
+
+    renderMeshcoreModal({
+      meshcoreOwnerInfo: { status: 'unsupported', fetchedAt: Date.now() },
+      onRequestMeshcoreOwnerInfo: vi.fn(),
+    });
+    expect(
+      screen.getByText('This firmware does not support owner information.'),
+    ).toBeInTheDocument();
+  });
+
+  it('Refresh forces a re-read', async () => {
+    const onRequest = vi.fn().mockResolvedValue({
+      status: 'ok',
+      text: 'Operator',
+      fetchedAt: Date.now(),
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderMeshcoreModal({
+      meshcoreOwnerInfo: { status: 'ok', text: 'Operator', fetchedAt: Date.now() },
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    await user.click(screen.getByRole('button', { name: 'Refresh owner information' }));
+    expect(onRequest).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id, { force: true });
+  });
+
+  it('re-reads with force when a password is saved in the modal', async () => {
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
+      available: true,
+      persistent: true,
+      verified: true,
+    });
+    const onRequest = vi.fn().mockResolvedValue({
+      status: 'ok',
+      text: 'Operator',
+      fetchedAt: Date.now(),
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderMeshcoreModal({
+      meshcoreOwnerInfo: { status: 'needs-password', fetchedAt: Date.now() },
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    onRequest.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Save password' }));
+    await user.type(screen.getByLabelText('Admin password (optional)'), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id, { force: true });
   });
 });
 

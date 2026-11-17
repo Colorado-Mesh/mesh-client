@@ -3916,7 +3916,16 @@
     "forgetAdvert": "Olvidar el último anuncio",
     "forgetAdvertAria": "Borrar la última marca de tiempo del anuncio para este contacto",
     "forgetAdvertDone": "Se ha borrado la marca de tiempo del último anuncio.",
-    "forgetAdvertFailed": "No se ha podido borrar la marca de tiempo del último anuncio."
+    "forgetAdvertFailed": "No se ha podido borrar la marca de tiempo del último anuncio.",
+    "ownerInfoHeading": "Información del propietario",
+    "ownerInfoRefresh": "Actualizar la información del propietario",
+    "ownerInfoLoading": "Leyendo la información del propietario...",
+    "ownerInfoReadAt": "Leer en {{time}}",
+    "ownerInfoEmpty": "No se ha establecido ninguna información del propietario en este nodo.",
+    "ownerInfoUnsupported": "Este firmware no admite información del propietario.",
+    "ownerInfoNeedsPassword": "La información del propietario requiere una contraseña de administrador. Guarda una a continuación para leerla.",
+    "ownerInfoNeedsRoomPassword": "La información del propietario requiere una contraseña de administrador. Establézcala en Repetidores y salas → Configurar.",
+    "ownerInfoReadFailed": "No se ha podido leer la información del propietario."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",

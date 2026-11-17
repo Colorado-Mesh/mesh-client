@@ -3916,7 +3916,16 @@
     "forgetAdvert": "Laatste advert vergeten",
     "forgetAdvertAria": "De tijdstempel van de laatste advert voor deze contactpersoon wissen",
     "forgetAdvertDone": "Tijdstempel van laatste advert gewist.",
-    "forgetAdvertFailed": "Kon het tijdstempel van de laatste advert niet wissen."
+    "forgetAdvertFailed": "Kon het tijdstempel van de laatste advert niet wissen.",
+    "ownerInfoHeading": "Eigenaarsinformatie",
+    "ownerInfoRefresh": "Informatie over de eigenaar vernieuwen",
+    "ownerInfoLoading": "Informatie over de eigenaar wordt gelezen...",
+    "ownerInfoReadAt": "Lezen op {{time}}",
+    "ownerInfoEmpty": "Er is geen eigenaarsinformatie ingesteld op deze node.",
+    "ownerInfoUnsupported": "Deze firmware ondersteunt geen eigenaarsinformatie.",
+    "ownerInfoNeedsPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord vereist. Sla er hieronder een op om het te lezen.",
+    "ownerInfoNeedsRoomPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord nodig. Stel dit in via Repeaters en ruimtes → Configureren.",
+    "ownerInfoReadFailed": "Kon de eigenaarsinformatie niet lezen."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
