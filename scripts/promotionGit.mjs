@@ -186,6 +186,26 @@ export function changedPaths(cwd, from, to) {
 }
 
 /**
+ * The paths each non-merge commit in a range changes, with its subject, so a caller can leave
+ * out commits the tooling made (a release bump) when judging what the range ships.
+ * @param {string} cwd
+ * @param {string} range - for example `origin/main..origin/staging`
+ * @returns {Array<{ subject: string, paths: string[] }>}
+ */
+export function commitPathsInRange(cwd, range) {
+  const args = ['log', '--no-merges', '--format=%x1e%s', '--name-only', range, '--'];
+  const result = runGit(cwd, args);
+  if (result.status !== 0) throw gitFailure(args, result);
+  return result.stdout
+    .split(RECORD_SEPARATOR)
+    .filter(Boolean)
+    .map((record) => {
+      const [subject, ...files] = record.split('\n');
+      return { subject, paths: files.filter(Boolean) };
+    });
+}
+
+/**
  * Git config through the environment, so a token never appears in a process argument list.
  * @param {string | undefined} token
  * @returns {Record<string, string>}

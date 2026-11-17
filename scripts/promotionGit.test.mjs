@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   authEnv,
   changedPaths,
+  commitPathsInRange,
   commitsInRange,
   commitTree,
   fetchRefs,
@@ -172,6 +173,24 @@ describe('history readers', () => {
     expect(isAncestor(repo, second, first)).toBe(false);
     expect(treeOf(repo, second)).toBe(run(repo, ['rev-parse', `${second}^{tree}`]));
     expect(changedPaths(repo, first, second)).toEqual(['a.txt', 'b.txt']);
+  });
+
+  it('lists the paths each non-merge commit in a range changes', () => {
+    const repo = newRepo();
+    const base = commitFiles(repo, { 'a.txt': '1\n' }, 'base');
+    run(repo, ['checkout', '-q', '-b', 'side']);
+    commitFiles(repo, { 'b.txt': '1\n', 'c.txt': '1\n' }, 'feat: side (#7)');
+    run(repo, ['checkout', '-q', 'main']);
+    commitFiles(repo, { 'a.txt': '2\n' }, 'chore: release v1.1.0');
+    run(repo, ['merge', '-q', '--no-ff', '-m', 'Merge branch side', 'side']);
+
+    const bySubject = Object.fromEntries(
+      commitPathsInRange(repo, `${base}..HEAD`).map((commit) => [commit.subject, commit.paths]),
+    );
+    expect(bySubject).toEqual({
+      'feat: side (#7)': ['b.txt', 'c.txt'],
+      'chore: release v1.1.0': ['a.txt'],
+    });
   });
 });
 

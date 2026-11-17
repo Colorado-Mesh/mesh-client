@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { backportMainIntoStaging, openPromotion, parseArgs } from './promotion-open.mjs';
+import { extractSection } from './promotionNotes.mjs';
 import {
   cleanupRepos,
   FIXTURE_METAINFO as METAINFO,
@@ -122,6 +123,38 @@ describe('openPromotion', { timeout: 60_000 }, () => {
     expect(create.input).toContain('## Release notes');
     expect(create.input).toContain('- feat: maps (#1)');
     expect(create.input).toContain('1.0.0 -> 1.1.0 (minor, detected from commit titles)');
+  });
+
+  it('leaves its own version bump out of the risk callouts', async () => {
+    const { seed, user } = released();
+    land(seed, 'staging', { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    const { gh, calls } = fakeGh();
+
+    await open(user, gh);
+
+    const create = calls.find((call) => call.args[1] === 'create');
+    expect(extractSection(create.input, '## Risk callouts')).toBe('None detected.');
+  });
+
+  it('still calls out a shipped package.json change', async () => {
+    const { seed, user } = released();
+    land(
+      seed,
+      'staging',
+      {
+        'package.json':
+          '{\n  "name": "fixture",\n  "version": "1.0.0",\n  "dependencies": { "left-pad": "1.3.0" }\n}\n',
+      },
+      'fix: pin left-pad (#2)',
+    );
+    const { gh, calls } = fakeGh();
+
+    await open(user, gh);
+
+    const create = calls.find((call) => call.args[1] === 'create');
+    expect(extractSection(create.input, '## Risk callouts')).toBe(
+      '- Dependencies changed (package.json, lockfile or patches)',
+    );
   });
 
   it('does not double-bump when run again after staging moves', async () => {

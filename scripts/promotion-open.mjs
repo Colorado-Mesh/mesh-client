@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 
 import { detectReleaseBump } from './detectReleaseBump.mjs';
 import {
-  changedPaths,
+  commitPathsInRange,
   commitsInRange,
   commitTree,
   fetchRefs,
@@ -174,6 +174,22 @@ function bumpReason(bump, detected) {
 }
 
 /**
+ * Paths changed by the commits a promotion ships. The tooling's own release bump and back-port
+ * commits are left out, so the bump's package.json and MetaInfo edits raise no risk callout.
+ * @param {string} cwd
+ * @param {string} range
+ * @returns {string[]}
+ */
+function shippedPaths(cwd, range) {
+  const paths = new Set();
+  for (const commit of commitPathsInRange(cwd, range)) {
+    if (isBookkeepingSubject(commit.subject)) continue;
+    for (const file of commit.paths) paths.add(file);
+  }
+  return [...paths].sort();
+}
+
+/**
  * @param {{
  *   cwd: string,
  *   remote: string,
@@ -250,7 +266,7 @@ export async function openPromotion({ cwd, remote, bump, dryRun, draft, today, g
     bumpReason: bumpReason(bump, detected),
     schemaMain: parseSchemaVersion(showFile(cwd, mainSha, SCHEMA_SOURCE_PATH)),
     schemaHead: parseSchemaVersion(showFile(cwd, stagingTip, SCHEMA_SOURCE_PATH)),
-    risks: riskCallouts(changedPaths(cwd, mainSha, stagingTip)),
+    risks: riskCallouts(shippedPaths(cwd, `${mainSha}..${stagingTip}`)),
     mainSha,
     stagingSha: stagingTip,
   });
