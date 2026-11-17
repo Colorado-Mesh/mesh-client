@@ -115,6 +115,7 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "prepare": "git config core.hooksPath .githooks",
     "promotion:backport": "node scripts/promotion-open.mjs --backport-only",
+    "promotion:doctor": "node scripts/promotion-doctor.mjs",
     "promotion:open": "node scripts/promotion-open.mjs",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
