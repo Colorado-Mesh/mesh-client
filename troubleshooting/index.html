@@ -2292,6 +2292,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#windows-preview-silent-and-mesh-client-missing-from-volume-mixer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: Preview silent and Mesh-client missing from Volume mixer
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5040,6 +5051,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#windows-preview-silent-and-mesh-client-missing-from-volume-mixer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: Preview silent and Mesh-client missing from Volume mixer
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6202,6 +6224,22 @@ allocations as <code>mainLiveness</code>.</p>
 <li>Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (<code>mesh-client:notifMuted</code> in localStorage clears when you re-enable sounds in UI).</li>
 </ul>
 <p><strong>Chat desktop notifications</strong> appear for Meshtastic, MeshCore, Reticulum LXMF Chat and RRC, but only while the app window is inactive. They are visual-only (<code>silent: true</code>) and follow the same mutes as the sound. Typed sounds come from the app’s Web Audio path. The main process session permission handlers must allow <code>notifications</code>; otherwise the renderer's <code>Notification.permission</code> reads <code>denied</code> and nothing is shown (the log prints <code>[permissions] checkHandler: notifications → denied</code>). If the log shows <code>granted</code> and still nothing appears, check that the OS allows notifications for Mesh-Client.</p>
+<h3 id="windows-preview-silent-and-mesh-client-missing-from-volume-mixer">Windows: Preview silent and Mesh-client missing from Volume mixer<a class="headerlink" href="#windows-preview-silent-and-mesh-client-missing-from-volume-mixer" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li><strong>App → Notifications → Preview</strong> is silent for every tone (presets and imported WAV).</li>
+<li>No Preview error in the UI; no <code>[notificationSounds] … failed</code> lines in the log.</li>
+<li>Mesh-client never appears under Windows <strong>Volume mixer</strong> while other apps play fine on the same output (including USB speakers).</li>
+</ul>
+<p><strong>Cause</strong></p>
+<ul>
+<li>Chromium’s out-of-process / sandboxed audio service sometimes never opens a WASAPI session on Windows 11 (especially with certain USB outputs). Web Audio can schedule oscillators successfully while no hardware stream exists (<a href="https://github.com/Colorado-Mesh/mesh-client/issues/1487">#1487</a>).</li>
+</ul>
+<p><strong>Fix</strong></p>
+<ul>
+<li>Use a build that disables <code>AudioServiceOutOfProcess</code> / <code>AudioServiceSandbox</code> on win32 and plays notification tones through Windows <code>System.Media.SoundPlayer</code> (rendered WAV), not only through live Web Audio.</li>
+<li>Confirm system volume and the default output device; then retry Preview. The app should appear in the mixer (or SoundPlayer briefly occupies an audio session) when a tone plays.</li>
+</ul>
 <h2 id="diagnostics-and-map">Diagnostics and map<a class="headerlink" href="#diagnostics-and-map" title="Permanent link">&para;</a></h2>
 <h3 id="diagnostics-panel-restored-from-last-session-banner">Diagnostics panel: "restored from last session" banner<a class="headerlink" href="#diagnostics-panel-restored-from-last-session-banner" title="Permanent link">&para;</a></h3>
 <p><strong>Cause</strong>: Diagnostic rows (routing + RF) are snapshotted to <code>localStorage</code> so a restart doesn't wipe the table.</p>
@@ -6349,7 +6387,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 16, 2026 00:05:15 UTC">November 16, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 22:45:36 UTC">November 17, 2026</span>
   </span>
 
     
