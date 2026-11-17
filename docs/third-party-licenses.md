@@ -41,7 +41,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.6          | 7.8.6             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.22        | 5.33.22           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.23        | 5.33.23           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.12.4         | 8.12.4            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.23.0            | git+https://github.com/websockets/ws.git                                       |
 
@@ -61,7 +61,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
-| @testing-library/user-event           | MIT             | ^14.6.10        | 14.6.10           | git+https://github.com/testing-library/user-event.git                                |
+| @testing-library/user-event           | MIT             | ^14.6.12        | 14.6.12           | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node                           | MIT             | ^25.9.9         | 25.9.9            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -75,7 +75,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^45.3.2         | 45.3.2            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^45.3.2         | 45.3.3            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
@@ -112,7 +112,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 
 ## Rust sidecar dependencies
 
-Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
+Licenses for all 397 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
 
 | License                                             | Crates |
 | --------------------------------------------------- | ------ |
@@ -122,7 +122,7 @@ Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | MIT/Apache-2.0                                      | 12     |
 | LicenseRef-Reticulum                                | 10     |
 | BSD-3-Clause                                        | 7      |
-| Apache-2.0                                          | 5      |
+| Apache-2.0                                          | 6      |
 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 5      |
 | Apache-2.0/MIT                                      | 5      |
 | MIT OR Apache-2.0 OR Zlib                           | 5      |
@@ -159,18 +159,18 @@ Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | Crate          | Version | License                                | Source                                                 |
 | -------------- | ------- | -------------------------------------- | ------------------------------------------------------ |
 | lrgp           | 0.4.1   | MIT                                    | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)         |
-| lxmf-core      | 1.4.0   | LicenseRef-Reticulum                   | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
-| lxst-codec2    | 0.3.1   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-core      | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-rns       | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
-| lxst-telephony | 0.3.1   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxmf-core      | 1.5.0   | LicenseRef-Reticulum                   | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
+| lxst-codec2    | 0.4.0   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-core      | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-rns       | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-telephony | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | nomad-core     | 0.1.0   | AGPL-3.0-or-later                      | [rsNomad](https://github.com/ratspeak/rsNomad)         |
-| rns-crypto     | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-identity   | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-interface  | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-link       | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-protocol   | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-ratkey     | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-runtime    | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-transport  | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-wire       | 1.4.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-crypto     | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-identity   | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-interface  | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-link       | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-protocol   | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-ratkey     | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-runtime    | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-transport  | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-wire       | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
