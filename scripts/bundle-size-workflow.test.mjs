@@ -265,6 +265,17 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const notificationSoundPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/notificationSoundPlayWav.ts'),
+            [
+              'export async function playNotificationSoundWav() {}',
+              'export function registerNotificationSoundPlayWavIpc() {',
+              `  return 'MESH_NOTIF_WAV ${notificationSoundPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

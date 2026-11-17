@@ -1209,6 +1209,10 @@ app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 }
+// OS-specific (#1487): Chromium audio utility can open no WASAPI session on some Win11 USB outs.
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('disable-features', 'AudioServiceOutOfProcess,AudioServiceSandbox');
+}
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
 /**

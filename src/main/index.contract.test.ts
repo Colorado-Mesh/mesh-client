@@ -1210,6 +1210,9 @@ describe('notification sound preferences', () => {
     expect(INDEX_SOURCE).toContain('const APP_SETTINGS_MAX_VALUE_LENGTH = 256;');
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:choose')");
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:read', event, id)");
+    expect(PRELOAD_SOURCE).toContain(
+      "ipcRenderer.invoke('notificationSounds:playWav', dataBase64)",
+    );
   });
 });
 

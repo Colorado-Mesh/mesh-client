@@ -5,6 +5,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 
 import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { createIpcRateLimiter } from '../ipcRateLimit';
+import { loadRegisterNotificationSoundPlayWavIpc } from '../loadNotificationSoundPlayWav';
 import {
   importNotificationSound,
   readNotificationSound,
@@ -77,4 +78,6 @@ export function registerNotificationSoundHandlers(): void {
     reads.checkOrThrow();
     return readNotificationSound(directory(), kind, id);
   });
+  // OS-specific (#1487): SoundPlayer IPC lives in the sibling chunk.
+  loadRegisterNotificationSoundPlayWavIpc()({ ipcMain, assertIpcSender });
 }

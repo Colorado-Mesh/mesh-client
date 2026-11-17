@@ -30,8 +30,11 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * (not in index.js).
  * MQTT publishWaypoint arg validation (2.8 geofence fields) ships as sibling
  * `mqtt-publish-waypoint-validation.js` (not in index.js).
+ * Windows notification SoundPlayer (#1487) ships as sibling
+ * `notification-sound-play-wav.js`; index.js keeps Chromium audio-service flags plus a
+ * thin sync loader (~+1 KiB).
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 810 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 811 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
@@ -49,7 +52,7 @@ export function formatMainBundleOverBudgetMessage(size) {
     '1. Move bulky or new main-process code into a sibling esbuild entry in scripts/esbuild-main-build.mjs',
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
     '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
-    '   environment-telemetry-handlers.js) so it is NOT counted',
+    '   environment-telemetry-handlers.js, notification-sound-play-wav.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
@@ -215,11 +218,23 @@ describe('esbuild-main-build', () => {
         'validateMqttPublishWaypointArgs',
       );
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain('geofenceRadius');
+      const notificationSoundPlayWavBytes = fs.readFileSync(
+        path.join(tempDir, 'notification-sound-play-wav.js'),
+      );
+      expect(notificationSoundPlayWavBytes.length).toBeGreaterThan(200);
+      expect(notificationSoundPlayWavBytes.toString('utf8')).toContain('playNotificationSoundWav');
+      expect(notificationSoundPlayWavBytes.toString('utf8')).toContain(
+        'registerNotificationSoundPlayWavIpc',
+      );
+      expect(notificationSoundPlayWavBytes.toString('utf8')).toContain('MESH_NOTIF_WAV');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
         'waypoint.geofenceRadius invalid',
       );
+      // Windows SoundPlayer path lives in the sibling chunk, not measured index.js.
+      expect(indexSource).not.toContain('MESH_NOTIF_WAV');
+      expect(indexSource).not.toContain('mesh-notif-sound-');
       // Team roster DDL lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');
       expect(teamRosterBytes.toString('utf8')).toContain('CREATE TABLE IF NOT EXISTS team_members');
