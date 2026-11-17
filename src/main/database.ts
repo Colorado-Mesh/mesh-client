@@ -291,12 +291,21 @@ export function prunePositionHistoryPerNode(
 export function deleteMeshcoreMessagesForRoomServerIds(
   d: NodeSqliteDB,
   roomServerIds: readonly number[],
+  legacyDmShaped = false,
 ): number {
   if (roomServerIds.length === 0) return 0;
   let deleted = 0;
   const stmt = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
   for (const id of roomServerIds) {
     deleted += Number(stmt.run(id).changes);
+  }
+  if (legacyDmShaped) {
+    const legacy = d.prepareOnce(
+      'DELETE FROM meshcore_messages WHERE room_server_id IS NULL AND (sender_id = ? OR to_node = ?)',
+    );
+    for (const id of roomServerIds) {
+      deleted += Number(legacy.run(id, id).changes);
+    }
   }
   return deleted;
 }
@@ -324,7 +333,14 @@ export function deleteOrphanMeshcoreRoomMessages(): number {
  */
 export function deleteMeshcoreContactOn(d: NodeSqliteDB, nodeId: number): { changes: number } {
   return d.transaction(() => {
-    deleteMeshcoreMessagesForRoomServerIds(d, [nodeId]);
+    const row = d
+      .prepareOnce('SELECT contact_type FROM meshcore_contacts WHERE node_id=?')
+      .get(nodeId) as { contact_type: number } | undefined;
+    deleteMeshcoreMessagesForRoomServerIds(
+      d,
+      [nodeId],
+      row?.contact_type === MESHCORE_CONTACT_TYPE_ROOM,
+    );
     const result = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(nodeId);
     deleteOrphanMeshcoreRoomMessagesOn(d);
     return { changes: Number(result.changes) };
@@ -343,7 +359,7 @@ function deleteMeshcoreContactsWithRoomMessageCascade(
   deleteContacts: () => number,
 ): number {
   return d.transaction(() => {
-    deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
+    deleteMeshcoreMessagesForRoomServerIds(d, roomIds, true);
     const deleted = deleteContacts();
     deleteOrphanMeshcoreRoomMessagesOn(d);
     return deleted;
@@ -366,6 +382,25 @@ const NO_STORED_ROOM_POSTS_SQL =
   ` AND (meshcore_contacts.contact_type IS NOT ${MESHCORE_CONTACT_TYPE_ROOM}` +
   ' OR NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id IS NULL' +
   ' AND (meshcore_messages.sender_id = meshcore_contacts.node_id OR meshcore_messages.to_node = meshcore_contacts.node_id))))';
+
+/** Bulk-clear non-favorited Room contacts and their BBS message rows (IPC `db:clearMeshcoreRooms`). */
+export function clearMeshcoreRoomsOn(d: NodeSqliteDB): { changes: number } {
+  const roomIds = selectRoomContactIdsMatching(
+    d,
+    `SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND COALESCE(favorited, 0) = 0`,
+    [MESHCORE_CONTACT_TYPE_ROOM],
+  );
+  const changes = deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
+    Number(
+      d
+        .prepareOnce(
+          `DELETE FROM meshcore_contacts WHERE contact_type = ? AND COALESCE(favorited, 0) = 0`,
+        )
+        .run(MESHCORE_CONTACT_TYPE_ROOM).changes,
+    ),
+  );
+  return { changes };
+}
 
 export function deleteMeshcoreContactsNeverAdvertisedOn(d: NodeSqliteDB): number {
   const roomIds = selectRoomContactIdsMatching(

@@ -191,14 +191,24 @@ describe('precommit-tests service announcements feed', () => {
 });
 
 describe('precommit-tests flake stack pins guard', () => {
-  it.each([
-    'flake.nix',
-    'reticulum-sidecar/ratspeak-stack-pins.env',
-    'scripts/lib/ratspeak-overlay-apply-list.sh',
-  ])('runs the flake guard for a %s-only commit', (staged) => {
-    const plan = planPrecommitTests([staged]);
+  it.each(['flake.nix', 'reticulum-sidecar/ratspeak-stack-pins.env'])(
+    'runs the flake guard for a %s-only commit',
+    (staged) => {
+      const plan = planPrecommitTests([staged]);
+      expect(plan.mode).toBe('related');
+      expect(plan.relatedPaths).toEqual([FLAKE_STACK_PINS_TEST_PATH]);
+      expect(plan.projects).toEqual(['main']);
+    },
+  );
+
+  it('runs flake and overlay apply-list guards for overlay list only', () => {
+    const plan = planPrecommitTests(['scripts/lib/ratspeak-overlay-apply-list.sh']);
     expect(plan.mode).toBe('related');
-    expect(plan.relatedPaths).toEqual([FLAKE_STACK_PINS_TEST_PATH]);
+    expect(plan.relatedPaths).toEqual([
+      'scripts/ensure-rsReticulum-patches.test.mjs',
+      FLAKE_STACK_PINS_TEST_PATH,
+      'scripts/lib/ratspeak-overlay-apply-list.test.mjs',
+    ]);
     expect(plan.projects).toEqual(['main']);
   });
 

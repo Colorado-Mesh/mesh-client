@@ -10,6 +10,7 @@ import {
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_DM_MESSAGE_CHANNEL } from '../shared/meshcoreMessageChannel';
 import {
+  clearMeshcoreRoomsOn,
   deleteMeshcoreContactOn,
   deleteMeshcoreContactsByAgeOn,
   deleteMeshcoreContactsNeverAdvertisedOn,
@@ -110,6 +111,123 @@ describe('meshcore room message cascade SQL', () => {
     expect(
       (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages').get() as { c: number }).c,
     ).toBe(0);
+
+    db.close();
+  });
+
+  it('clearMeshcoreRoomsOn cascades BBS rows for all cleared rooms', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-clear-rooms-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const keptPubkey = 'cc'.repeat(32);
+    const insertContact = db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, favorited, on_radio)
+       VALUES (?, ?, ?, ?, ?, 0)`,
+    );
+    insertContact.run(0x1001, ROOM_PUBKEY, MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 0);
+    insertContact.run(0x1002, 'dd'.repeat(32), MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 1);
+    insertContact.run(0x2002, OTHER_PUBKEY, 1, 1_700_000_000, 0);
+    insertContact.run(0x3003, keptPubkey, MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000, 0);
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?)`,
+    ).run(0x4004, 'Alice', 'room a', MESHCORE_ROOM_MESSAGE_CHANNEL, 1_700_000_100_000, 0x1001);
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?)`,
+    ).run(0x4004, 'Alice', 'room c', MESHCORE_ROOM_MESSAGE_CHANNEL, 1_700_000_200_000, 0x3003);
+
+    expect(clearMeshcoreRoomsOn(db).changes).toBe(2);
+    expect(
+      (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_contacts').get() as { c: number }).c,
+    ).toBe(2);
+    expect(
+      (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages').get() as { c: number }).c,
+    ).toBe(0);
+
+    db.close();
+  });
+
+  it('clearMeshcoreRoomsOn removes legacy DM-shaped room rows for cleared room ids', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-clear-legacy-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+    const ROOM = 0x1001;
+    const CHAT_PEER = 0x2002;
+    const SELF = 0x3003;
+    db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, favorited, on_radio)
+       VALUES (?, ?, ?, ?, 0, 0)`,
+    ).run(ROOM, ROOM_PUBKEY, MESHCORE_CONTACT_TYPE_ROOM, 1_700_000_000);
+    db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, favorited, on_radio)
+       VALUES (?, ?, ?, ?, 0, 0)`,
+    ).run(CHAT_PEER, OTHER_PUBKEY, 1, 1_700_000_000);
+    const insertMessage = db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id, to_node)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?, ?)`,
+    );
+    insertMessage.run(
+      SELF,
+      'Me',
+      'legacy room post',
+      MESHCORE_DM_MESSAGE_CHANNEL,
+      1_700_000_100_000,
+      null,
+      ROOM,
+    );
+    insertMessage.run(
+      CHAT_PEER,
+      'Bob',
+      'hello',
+      MESHCORE_DM_MESSAGE_CHANNEL,
+      1_700_000_200_000,
+      null,
+      SELF,
+    );
+
+    expect(clearMeshcoreRoomsOn(db).changes).toBe(1);
+    expect(
+      (
+        db
+          .prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages WHERE to_node = ?')
+          .get(ROOM) as { c: number }
+      ).c,
+    ).toBe(0);
+    expect(
+      (
+        db
+          .prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages WHERE to_node = ?')
+          .get(SELF) as { c: number }
+      ).c,
+    ).toBe(1);
+
+    db.close();
+  });
+
+  it('deleteMeshcoreContactOn keeps ordinary DMs when removing a Chat contact', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-contact-chat-dm-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+    const CHAT_PEER = 0x2002;
+    const SELF = 0x3003;
+    db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, favorited, on_radio)
+       VALUES (?, ?, ?, ?, 0, 0)`,
+    ).run(CHAT_PEER, OTHER_PUBKEY, 1, 1_700_000_000);
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status, room_server_id, to_node)
+       VALUES (?, ?, ?, ?, ?, 'acked', ?, ?)`,
+    ).run(CHAT_PEER, 'Bob', 'hello', MESHCORE_DM_MESSAGE_CHANNEL, 1_700_000_200_000, null, SELF);
+
+    expect(deleteMeshcoreContactOn(db, CHAT_PEER).changes).toBe(1);
+    expect(
+      (db.prepareOnce('SELECT COUNT(*) as c FROM meshcore_messages').get() as { c: number }).c,
+    ).toBe(1);
 
     db.close();
   });

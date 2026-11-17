@@ -177,6 +177,7 @@ import {
   armMeshcoreDmAckPending,
   syncMeshcoreDmAckToMessageStore,
 } from '../lib/meshcore/meshcoreDmAckRuntime';
+import { meshcoreSendTextMessageWithNotFoundRestore } from '../lib/meshcore/meshcoreDmSend';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -4687,7 +4688,28 @@ export function useMeshcoreRuntime() {
         const hopsAway = destNode?.hops_away ?? 0;
 
         try {
-          const result = await connRef.current.sendTextMessage(pubKey, textToSend);
+          const liveConn = connRef.current;
+          const result = await meshcoreSendTextMessageWithNotFoundRestore(
+            liveConn as unknown as Connection,
+            pubKey,
+            textToSend,
+            async () => {
+              const nodeForRadio = destNode ?? {
+                node_id: destNodeId,
+                long_name: '',
+                hw_model: '',
+                last_heard: 0,
+                latitude: null,
+                longitude: null,
+              };
+              await addMeshcoreNodeContactToRadio(
+                liveConn,
+                pubKey,
+                nodeForRadio,
+                repeaterRemoteRpcRef.current,
+              );
+            },
+          );
           markMeshcoreCompanionTx();
           void fetchAndUpdateLocalStats().catch((e: unknown) => {
             console.warn(
@@ -9276,7 +9298,28 @@ export function useMeshcoreRuntime() {
         await runMeshcoreUserTxWithLiveTcp(async () => {
           const liveConn = connRef.current;
           if (!liveConn) throw new Error('Not connected to radio');
-          const work = liveConn.sendTextMessage(pubKey, tapbackText);
+          const peerNode = getIdentityNode(meshcoreIdentityIdRef.current, peerNodeId);
+          const work = meshcoreSendTextMessageWithNotFoundRestore(
+            liveConn as unknown as Connection,
+            pubKey,
+            tapbackText,
+            async () => {
+              const nodeForRadio = peerNode ?? {
+                node_id: peerNodeId,
+                long_name: '',
+                hw_model: '',
+                last_heard: 0,
+                latitude: null,
+                longitude: null,
+              };
+              await addMeshcoreNodeContactToRadio(
+                liveConn,
+                pubKey,
+                nodeForRadio,
+                repeaterRemoteRpcRef.current,
+              );
+            },
+          );
           if (
             isMeshcoreTcpOpenHopDeadAccepted() ||
             meshcoreOpenHopUserTxReopenInFlightRef.current

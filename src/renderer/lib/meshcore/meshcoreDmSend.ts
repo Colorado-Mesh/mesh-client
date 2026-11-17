@@ -6,7 +6,11 @@ import type { Connection } from '@liamcottle/meshcore.js';
 
 import { resolveMeshcoreNodePubKey } from '../../hooks/meshcore/meshcoreHookPreamble';
 import type { NodeRecord } from '../../stores/nodeStore';
-import { MESHCORE_RADIO_ERR_NOT_FOUND, MeshcoreRadioRejectedError } from '../meshcoreRadioErr';
+import {
+  isMeshcoreNotFoundError,
+  MESHCORE_RADIO_ERR_NOT_FOUND,
+  MeshcoreRadioRejectedError,
+} from '../meshcoreRadioErr';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import { tryGetMeshcoreSession } from '../sessions/meshcoreSession';
 import { MS_PER_SECOND } from '../timeConstants';
@@ -17,6 +21,10 @@ const RESPONSE_CODE_ERR = 1; // meshcore.js Constants.ResponseCodes.Err
 
 /** Bound wait so a hung send cannot block later calls on the same connection forever. */
 const MESHCORE_SEND_ERR_CODE_QUEUE_WAIT_MS = 45 * MS_PER_SECOND;
+
+/** Thrown when a prior send is still in flight after the queue wait bound. */
+export const MESHCORE_SEND_PRIOR_IN_FLIGHT =
+  'MeshCore send blocked: prior send still in flight on this connection';
 
 const sendErrCodeQueues = new WeakMap<object, Promise<unknown>>();
 
@@ -64,24 +72,41 @@ export async function resolveMeshcoreDmDestinationPubKeyAsync(
 
 async function runExclusivePerConnection<T>(conn: object, work: () => Promise<T>): Promise<T> {
   const prev = sendErrCodeQueues.get(conn) ?? Promise.resolve();
+  let priorSettled = false;
+  let queueWaitTimedOut = false;
+  const prevTracked = prev.finally(() => {
+    priorSettled = true;
+  });
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const queued = prev
+  const queued = prevTracked
     .catch(() => {
       // catch-no-log-ok prior send failure must not block the queue
     })
     .then(() => gate);
   sendErrCodeQueues.set(conn, queued);
 
-  const waitBounded = Promise.race([
-    prev.catch(() => undefined),
+  await Promise.race([
+    prevTracked,
     new Promise<void>((resolve) => {
-      setTimeout(resolve, MESHCORE_SEND_ERR_CODE_QUEUE_WAIT_MS);
+      setTimeout(() => {
+        queueWaitTimedOut = true;
+        resolve();
+      }, MESHCORE_SEND_ERR_CODE_QUEUE_WAIT_MS);
     }),
   ]);
-  await waitBounded;
+
+  // Queue depth is runtime-dependent; the linter cannot see concurrent sends on one conn.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- prior may outlive the wait bound
+  if (queueWaitTimedOut && !priorSettled) {
+    // Skipped send: open this gate only after the prior send's queue slot settles so C cannot bypass A.
+    void prevTracked.finally(() => {
+      release();
+    });
+    throw new Error(MESHCORE_SEND_PRIOR_IN_FLIGHT);
+  }
 
   try {
     return await work();
@@ -131,4 +156,22 @@ export async function meshcoreSendTextMessageWithErrCode(
       }
     }
   });
+}
+
+/** Companion SendTxtMsg with one NOT_FOUND contact restore retry (matches `sendChatOnIdentity`). */
+export async function meshcoreSendTextMessageWithNotFoundRestore(
+  conn: Connection,
+  destinationPubKey: Uint8Array,
+  text: string,
+  restoreContact: () => Promise<void>,
+): Promise<{ expectedAckCrc?: number; estTimeout?: number }> {
+  try {
+    return await meshcoreSendTextMessageWithErrCode(conn, destinationPubKey, text);
+  } catch (e: unknown) {
+    if (!isMeshcoreNotFoundError(e)) {
+      throw e;
+    }
+    await restoreContact();
+    return await meshcoreSendTextMessageWithErrCode(conn, destinationPubKey, text);
+  }
 }

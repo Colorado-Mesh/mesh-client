@@ -52,6 +52,12 @@ const FLAKE_STACK_PINS_INPUTS = new Set([
   'scripts/lib/ratspeak-overlay-apply-list.sh',
 ]);
 
+/** Overlay list tests read apply scripts via path.join — not visible to ci path-reader scan. */
+export const RATSPEAK_OVERLAY_APPLY_LIST_TEST_PATH =
+  'scripts/lib/ratspeak-overlay-apply-list.test.mjs';
+export const ENSURE_RSRETICULUM_PATCHES_TEST_PATH = 'scripts/ensure-rsReticulum-patches.test.mjs';
+const RATSPEAK_OVERLAY_APPLY_LIST_INPUTS = new Set(['scripts/lib/ratspeak-overlay-apply-list.sh']);
+
 /**
  * Settings-search guards read component sources as text (anchors, swept `t()` keys) and check
  * label keys against the English locale, so `vitest related` cannot reach them from those inputs.
@@ -242,6 +248,24 @@ export function appendFlakeStackPinsTestIfNeeded(stagedPaths, relatedPaths) {
 }
 
 /**
+ * Append overlay-list inventory tests when `ratspeak-overlay-apply-list.sh` is staged.
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendRatspeakOverlayApplyListTestsIfNeeded(stagedPaths, relatedPaths) {
+  const needsGuard = stagedPaths.some((p) =>
+    RATSPEAK_OVERLAY_APPLY_LIST_INPUTS.has(p.replace(/\\/g, '/')),
+  );
+  const out = new Set(relatedPaths.map((p) => p.replace(/\\/g, '/')));
+  if (needsGuard) {
+    out.add(RATSPEAK_OVERLAY_APPLY_LIST_TEST_PATH);
+    out.add(ENSURE_RSRETICULUM_PATCHES_TEST_PATH);
+  }
+  return [...out].sort();
+}
+
+/**
  * Append the settings-search guards when a component or the English locale is staged.
  * @param {string[]} stagedPaths
  * @param {string[]} relatedPaths
@@ -363,17 +387,20 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendFlakeStackPinsTestIfNeeded(
+  const relatedPaths = appendRatspeakOverlayApplyListTestsIfNeeded(
     stagedPaths,
-    appendSettingsSearchEntriesLoaderTestIfNeeded(
+    appendFlakeStackPinsTestIfNeeded(
       stagedPaths,
-      appendSettingsSearchGuardTestsIfNeeded(
+      appendSettingsSearchEntriesLoaderTestIfNeeded(
         stagedPaths,
-        appendServiceAnnouncementFeedTestIfNeeded(
+        appendSettingsSearchGuardTestsIfNeeded(
           stagedPaths,
-          appendSidecarRouteDocsTestIfNeeded(
+          appendServiceAnnouncementFeedTestIfNeeded(
             stagedPaths,
-            appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+            appendSidecarRouteDocsTestIfNeeded(
+              stagedPaths,
+              appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+            ),
           ),
         ),
       ),
