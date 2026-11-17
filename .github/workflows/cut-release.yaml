@@ -1,16 +1,19 @@
-# Primary maintainer path: cut a release from Actions.
+# Release on merge: when a promotion (or a releasing hotfix) lands on main with a new package
+# version, tag that commit vX.Y.Z. The tag push starts release.yaml and flatpak.yaml, which build
+# the draft release; a maintainer reviews the artifacts and clicks Publish.
 #
-# Requires protected-environment secret RELEASE_CUT_TOKEN — a PAT (or GitHub App token)
-# owned by a repo **admin** (so the main merge-queue ruleset bypass applies)
-# with contents:write + workflows:write. Default GITHUB_TOKEN will not trigger
-# release.yaml / flatpak.yaml on the tag push (GitHub recursion guard).
+# The version bump was made on staging by `pnpm run promotion:open` and checked before merge by
+# the Promotion Doctor and the promotion's release preflight (e2e.yaml), so this workflow only
+# decides and tags. Ordinary pushes to main end at the plan job with no approval prompt.
 #
-# Does NOT publish the GitHub Release draft — review artifacts, then Publish.
+# The tag job runs in the protected `release-cut` environment (maintainer approval) and pushes
+# with RELEASE_CUT_TOKEN, a PAT (or GitHub App token) owned by a repo **admin** with
+# contents:write + workflows:write: only admins may create v* tags (release tags ruleset), and a
+# tag pushed with the default GITHUB_TOKEN would not start release.yaml / flatpak.yaml (GitHub
+# recursion guard). That job runs no Node and installs nothing.
 #
-# Version bump: default `auto` uses scripts/detectReleaseBump.mjs (scoped
-# Conventional Commits: feat(scope): → minor). Override with patch|minor|major
-# or an exact X.Y.Z. Dep bumps stay on separate PRs (`pnpm run update`); this
-# workflow defaults to --skip-dep-update.
+# Manual dispatch on main re-checks the current main commit, for example after a declined
+# approval.
 
 name: Cut release
 
@@ -18,32 +21,50 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Version bump (auto, patch, minor, major, or exact X.Y.Z)'
-        required: false
-        default: auto
-        type: string
-      dry_run:
-        description: 'Preview auto/computed version only — do not bump, tag, or push'
-        required: false
-        default: false
-        type: boolean
-      skip_dep_update:
-        description: 'Skip pnpm update/dedupe (recommended; bump deps in a prior PR)'
-        required: false
-        default: true
-        type: boolean
 
 concurrency:
   group: cut-release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Cut release
+  plan:
+    name: Plan release tag
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should_tag: ${{ steps.plan.outputs.should_tag }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      notes: ${{ steps.plan.outputs.notes }}
+    steps:
+      - name: Checkout main
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          # Release tags are needed to find the previous release.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node, pnpm, and dependencies
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Decide whether this commit releases
+        id: plan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release-tag-plan.mjs --sha "$GITHUB_SHA"
+
+  tag:
+    name: Tag release
+    needs: plan
+    if: needs.plan.outputs.should_tag == 'true'
     runs-on: ubuntu-latest
     environment: release-cut
     permissions:
@@ -53,129 +74,27 @@ jobs:
         # actions/checkout v6.1.0
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: main
-          fetch-depth: 0
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      # dry_run only needs the detect script + package.json; still install so
-      # node_modules layout matches (detect has no deps beyond node builtins).
-      - name: Setup Node, pnpm, and dependencies
-        uses: ./.github/actions/setup-node-pnpm
-
-      - name: Preview version bump
-        id: preview
+      # --cleanup=verbatim keeps the notes' markdown headings, which git's default cleanup
+      # strips as comments. release.yaml copies this message into the draft release body.
+      - name: Create annotated tag
         env:
-          BUMP_INPUT: ${{ inputs.bump }}
-          DRY_RUN_INPUT: ${{ inputs.dry_run }}
-          SKIP_DEP_UPDATE_INPUT: ${{ inputs.skip_dep_update }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          RELEASE_NOTES: ${{ needs.plan.outputs.notes }}
         run: |
           set -euo pipefail
-          LAST_TAG=$(git describe --tags --abbrev=0)
-          CURRENT=$(node -p "require('./package.json').version")
-          case "${BUMP_INPUT}" in
-            auto|'')
-              JSON=$(node scripts/detectReleaseBump.mjs --since "$LAST_TAG" --current "$CURRENT")
-              BUMP=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).bump)" "$JSON")
-              NEXT=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).nextVersion)" "$JSON")
-              SUBJECTS=$(node -e "process.stdout.write(String(JSON.parse(process.argv[1]).subjectCount))" "$JSON")
-              MODE=auto
-              ;;
-            patch|minor|major)
-              BUMP=$BUMP_INPUT
-              NEXT=$(node --input-type=module -e "
-                import { previewNextVersion } from './scripts/detectReleaseBump.mjs';
-                process.stdout.write(previewNextVersion(process.argv[1], process.argv[2]));
-              " "$CURRENT" "$BUMP")
-              SUBJECTS=$(git log "$LAST_TAG"..HEAD --oneline | wc -l | tr -d ' ')
-              MODE=manual
-              ;;
-            *)
-              if [[ "$BUMP_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                BUMP=$BUMP_INPUT
-                NEXT=$BUMP_INPUT
-                SUBJECTS=$(git log "$LAST_TAG"..HEAD --oneline | wc -l | tr -d ' ')
-                MODE=exact
-              else
-                echo "::error::Invalid bump input: ${BUMP_INPUT}"
-                exit 1
-              fi
-              ;;
-          esac
-          {
-            echo "## Cut release preview"
-            echo ""
-            echo "| | |"
-            echo "| --- | --- |"
-            echo "| Last tag | \`$LAST_TAG\` |"
-            echo "| Current package.json | \`$CURRENT\` |"
-            echo "| Mode | \`$MODE\` (input=\`$BUMP_INPUT\`) |"
-            echo "| Detected / chosen bump | \`$BUMP\` |"
-            echo "| Next version | **\`v$NEXT\`** |"
-            echo "| Commits since tag | $SUBJECTS |"
-            echo "| dry_run | \`$DRY_RUN_INPUT\` |"
-            echo "| skip_dep_update | \`$SKIP_DEP_UPDATE_INPUT\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
-          {
-            echo "bump=$BUMP"
-            echo "next=$NEXT"
-            echo "last_tag=$LAST_TAG"
-          } >> "$GITHUB_OUTPUT"
-          echo "Preview: $LAST_TAG → v$NEXT (bump=$BUMP, mode=$MODE)"
-
-      - name: Stop after dry-run preview
-        if: ${{ inputs.dry_run == true || inputs.dry_run == 'true' }}
-        env:
-          NEXT_VERSION: ${{ steps.preview.outputs.next }}
-        run: |
-          echo "dry_run=true — not bumping or tagging."
-          echo "Re-run with dry_run unchecked to cut v${NEXT_VERSION}."
-
-      # Same composite as the e2e.yaml Release preflight job — keep release tooling there, not inline.
-      - name: Setup release toolchain
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        uses: ./.github/actions/setup-release-toolchain
-
-      - name: Configure git identity
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: |
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+          printf '%s\n' "${RELEASE_NOTES}" > "${notes_file}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "${RELEASE_TAG}" --cleanup=verbatim -F "${notes_file}" "${GITHUB_SHA}"
 
-      - name: Prepare release without push credentials
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
+      - name: Push release tag
         env:
-          MESH_CLIENT_RELEASE_YES: '1'
-          # Never inherit a repo/org PARSE_ONLY var — that would green-exit with no tag.
-          MESH_CLIENT_RELEASE_PARSE_ONLY: ''
-          RELEASE_BUMP: ${{ steps.preview.outputs.bump }}
-          SKIP_DEP_UPDATE: ${{ inputs.skip_dep_update }}
-        run: |
-          set -euo pipefail
-          EXTRA=()
-          if [ "${SKIP_DEP_UPDATE}" = 'true' ]; then
-            EXTRA+=(--skip-dep-update)
-          fi
-          case "${RELEASE_BUMP}" in
-            patch|minor|major)
-              pnpm run release -- "${RELEASE_BUMP}" --prepare-only "${EXTRA[@]}"
-              ;;
-            *)
-              # Exact X.Y.Z from preview (auto resolves to patch|minor|major already)
-              if [[ "${RELEASE_BUMP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                pnpm run release -- "${RELEASE_BUMP}" --prepare-only "${EXTRA[@]}"
-              else
-                echo "::error::Unexpected bump from preview: ${RELEASE_BUMP}"
-                exit 1
-              fi
-              ;;
-          esac
-      - name: Push prepared release
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        env:
-          # Approved main and reviewed dependencies are trusted here. Keep the
-          # admin credential out of installation and release preparation steps.
           RELEASE_CUT_TOKEN: ${{ secrets.RELEASE_CUT_TOKEN }}
-          MESH_CLIENT_RELEASE_PARSE_ONLY: ''
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
         run: |
           set -euo pipefail
           if [ -z "${RELEASE_CUT_TOKEN}" ]; then
@@ -202,14 +121,14 @@ jobs:
           export GIT_ASKPASS="${ASKPASS}"
           export GIT_TERMINAL_PROMPT=0
 
-          pnpm run release -- --push-only
+          git push origin "refs/tags/${RELEASE_TAG}"
 
           {
             echo "## Next steps"
             echo ""
-            echo "1. Wait for **Build/Release Electron App** (\`release.yaml\`) to finish,"
-            echo "   including **Verify draft release tag_name**."
+            echo "1. Wait for **Build/Release Electron App** (\`release.yaml\`) and **Build Flatpak**"
+            echo "   to finish, including **Verify draft release tag_name**."
             echo "2. Open the draft on GitHub Releases and confirm the tag is"
-            echo "   \`v${{ steps.preview.outputs.next }}\` — **not** \`untagged-*\`."
+            echo "   \`${RELEASE_TAG}\`, **not** \`untagged-*\`, and that the notes came through."
             echo "3. Only then click **Publish release**."
           } >> "$GITHUB_STEP_SUMMARY"

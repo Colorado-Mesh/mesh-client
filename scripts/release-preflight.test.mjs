@@ -15,11 +15,12 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(e2e).not.toMatch(/^\s*pull_request:/m);
   });
 
-  it('shares the Node/pnpm and release toolchain composites with Cut release', () => {
-    for (const workflow of [cutRelease, preflightJob]) {
-      expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
-      expect(workflow).toContain('uses: ./.github/actions/setup-release-toolchain');
-    }
+  it('runs the release tooling in the preflight job; Cut release only tags', () => {
+    expect(preflightJob).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(preflightJob).toContain('uses: ./.github/actions/setup-release-toolchain');
+    expect(cutRelease).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(cutRelease).not.toContain('setup-release-toolchain');
+    expect(cutRelease).not.toContain('pnpm run release');
   });
 
   it('keeps release tooling in the composite, not inline in Cut release', () => {
@@ -49,18 +50,21 @@ describe('Release preflight (e2e.yaml job)', () => {
     );
   });
 
-  it('keeps the admin token out of checkout and release preparation', () => {
+  it('keeps the admin token out of checkout, planning and tag creation', () => {
     expect(cutRelease).toMatch(/persist-credentials: false/);
     expect(cutRelease).not.toMatch(/^\s*token:\s*>-/m);
-    expect(cutRelease).toContain('Prepare release without push credentials');
-    expect(cutRelease).toContain('--prepare-only');
-    expect(cutRelease).toContain('Push prepared release');
-    expect(cutRelease).toContain('--push-only');
 
-    const prepare = cutRelease.slice(
-      cutRelease.indexOf('- name: Prepare release without push credentials'),
-      cutRelease.indexOf('- name: Push prepared release'),
+    const planJob = cutRelease.slice(
+      cutRelease.indexOf('\n  plan:'),
+      cutRelease.indexOf('\n  tag:'),
     );
+    const prepare = cutRelease.slice(
+      cutRelease.indexOf('\n  tag:'),
+      cutRelease.indexOf('- name: Push release tag'),
+    );
+    expect(planJob).toContain('node scripts/release-tag-plan.mjs');
+    expect(planJob).not.toContain('RELEASE_CUT_TOKEN');
+    expect(prepare).toContain('- name: Create annotated tag');
     expect(prepare).not.toContain('RELEASE_CUT_TOKEN');
     expect(cutRelease).not.toContain('RELEASE_PUSH_TOKEN');
 
