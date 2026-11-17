@@ -32,6 +32,10 @@ Channels appear as chips across the top, and direct messages in their own strip 
 
 Unread counts stay on a conversation chip even while it is selected until you have actually read to the bottom. If the conversation holds an unread MECP report, the chip shows a shield icon colored by the most severe one (see [EMCOMM](emcomm.md)). A **New messages** divider marks where unread begins, and **Jump to Unread** / **Jump to Latest** scroll to either end.
 
+### Message order and times
+
+Messages appear in the order this computer received or sent them, not by the time written on each message. That time comes from whichever clock stamped the message, usually the sender's, so a node with a wrong clock does not push its messages up or down the history. Each bubble still shows the stamped time, with the date in front of it when it falls on a different day from the arrival. Day separators, **Jump to date**, and the unified inbox follow the arrival order. Messages saved by app versions that did not record an arrival time keep their stamped order.
+
 ### Mute
 
 The bell on a conversation (**Mute this conversation** / **Unmute this conversation**) silences ordinary chat sounds and desktop notifications for that one conversation. It does not silence emergency (MECP) alerts, which follow their own rules. The global mute and notification-mode settings are in [Notification sounds](notification-sounds.md) and **App → Notifications**.
@@ -177,7 +181,7 @@ Star a message from its action row (**Star message** / **Unstar message**). **St
 
 Press **Ctrl+Shift+U** (**Cmd+Shift+U** on macOS) to open the **Unified inbox**. You can also open it from the global search dialog.
 
-The inbox lists **received** messages from every enabled protocol, newest first, capped at 200. It leaves out your own sends and reaction rows.
+The inbox lists **received** messages from every enabled protocol, most recently received first, capped at 200. It leaves out your own sends and reaction rows.
 
 - **Protocol** and **Filter** (text or sender) narrow the list.
 - Click a row to open its conversation at that message. Tick rows (or **Select all messages**) for batch actions.
