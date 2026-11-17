@@ -23,6 +23,9 @@ import { tmpdir } from 'os';
 import path, { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { EM_AARCH64, EM_X86_64, readElfMachine } from './binary-arch.mjs';
+
+export { EM_AARCH64, EM_X86_64, readElfMachine, readElfMachineFromHeader } from './binary-arch.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -39,10 +42,6 @@ function isArm64Name(name) {
   return /arm64|aarch64/i.test(name);
 }
 
-/** ELF e_machine values for Linux AppImage runtimes we ship. */
-export const EM_X86_64 = 62;
-export const EM_AARCH64 = 183;
-
 const SQUASHFS_MAGIC = Buffer.from('hsqs');
 /** Squashfs major version we ship inside AppImages (v4). */
 const SQUASHFS_MAJOR_VERSION = 4;
@@ -57,26 +56,6 @@ export function isSquashfsV4Superblock(filePath, offset) {
   const buf = readBytes(filePath, offset, 30);
   if (buf.length < 30 || !buf.subarray(0, 4).equals(SQUASHFS_MAGIC)) return false;
   return buf.readUInt16LE(28) === SQUASHFS_MAJOR_VERSION;
-}
-
-/** @param {Buffer} header At least 20 bytes from the start of an ELF file. */
-export function readElfMachineFromHeader(header) {
-  if (
-    header.length < 20 ||
-    header[0] !== 0x7f ||
-    header[1] !== 0x45 ||
-    header[2] !== 0x4c ||
-    header[3] !== 0x46
-  ) {
-    return null;
-  }
-  return header.readUInt16LE(18);
-}
-
-/** @param {string} appImagePath */
-export function readElfMachine(appImagePath) {
-  const header = readBytes(appImagePath, 0, 20);
-  return readElfMachineFromHeader(header);
 }
 
 /** @param {string} [hostArch=process.arch] */
@@ -325,6 +304,7 @@ function assertSidecarInAppImage(arch, appImagePath, expectedVersion) {
       platform: 'linux',
       bundleRoot: payloadRoot,
       fail,
+      expectedArch: arch,
     });
     assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, `${arch} AppImage`);
   } finally {
