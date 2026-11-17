@@ -131,13 +131,15 @@ pnpm run promotion:backport -- --dry-run # show what it would do
 pnpm run promotion:backport
 ```
 
-When `main` does not merge cleanly into `staging`, the back-port changes nothing and lists the conflicting paths. Merge it by hand and push the merge commit to `staging` as an admin (a pull request would be squashed by the merge queue):
+The back-port resolves one kind of conflict itself. When a hotfix releases while `staging` carries an unreleased version bump, both sides changed the version files: `package.json` keeps the higher version, and the MetaInfo keeps `main`'s released entries below `staging`'s unreleased one. Its output names the files it resolved.
+
+Any other conflict stops the back-port: it changes nothing and lists the conflicting paths. Merge it by hand and push the merge commit to `staging` as an admin (a pull request would be squashed by the merge queue):
 
 ```bash
 git fetch origin
 git switch -c backport/main origin/staging
 git merge origin/main -m "chore: back-port main into staging"
-# Resolve the conflicts and run git commit, then:
+# Resolve the conflicts (version files as above), git commit, then:
 git push origin HEAD:staging
 ```
 

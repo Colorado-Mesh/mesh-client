@@ -23,6 +23,7 @@ import {
   git,
   isAncestor,
   latestReleaseTag,
+  mergeText,
   mergeTree,
   revParse,
   showFile,
@@ -38,13 +39,17 @@ import {
   riskCallouts,
 } from './promotionNotes.mjs';
 import {
+  compareVersions,
   METAINFO_PATH,
+  metainfoReleaseVersions,
   PACKAGE_JSON_PATH,
   parseSchemaVersion,
   readPackageVersion,
   resolveNextVersion,
+  restoreMetainfoRelease,
   SCHEMA_SOURCE_PATH,
   setPackageVersion,
+  takeTopMetainfoRelease,
   upsertMetainfoRelease,
 } from './releaseVersion.mjs';
 
@@ -135,21 +140,97 @@ function pushBranch(cwd, remote, branch, sha, expected) {
   ]);
 }
 
+const VERSION_FILES = new Set([PACKAGE_JSON_PATH, METAINFO_PATH]);
+
+/**
+ * package.json when both sides moved the version: merge the rest of the file, then keep the
+ * higher version.
+ * @param {string} cwd
+ * @param {{ base: string, ours: string, theirs: string }} texts
+ * @returns {string | null} null when other lines conflict too
+ */
+function resolvePackageJson(cwd, { base, ours, theirs }) {
+  const baseVersion = readPackageVersion(base);
+  const oursVersion = readPackageVersion(ours);
+  const theirsVersion = readPackageVersion(theirs);
+  const merged = mergeText(cwd, {
+    ours: setPackageVersion(ours, baseVersion),
+    base,
+    theirs: setPackageVersion(theirs, baseVersion),
+  });
+  if (!merged.clean) return null;
+  const version = compareVersions(oursVersion, theirsVersion) >= 0 ? oursVersion : theirsVersion;
+  return setPackageVersion(merged.text, version);
+}
+
+/**
+ * MetaInfo when staging's unreleased entry and main's released one both went on top: merge
+ * without staging's entry, so main's released entries stay, then put staging's entry back on top
+ * if it is still the newest.
+ * @param {string} cwd
+ * @param {{ base: string, ours: string, theirs: string }} texts
+ * @returns {string | null} null when other lines conflict too
+ */
+function resolveMetainfo(cwd, { base, ours, theirs }) {
+  const known = new Set(metainfoReleaseVersions(base));
+  const top = takeTopMetainfoRelease(ours);
+  const unreleased = top && !known.has(top.version) ? top : null;
+  const merged = mergeText(cwd, { ours: unreleased ? unreleased.xml : ours, base, theirs });
+  if (!merged.clean) return null;
+  return unreleased ? restoreMetainfoRelease(merged.text, unreleased) : merged.text;
+}
+
+/**
+ * A back-port meets conflicts in the version files when `main` released a hotfix while `staging`
+ * carries an unreleased version bump. Resolve exactly those; anything else stays a conflict.
+ * @param {string} cwd
+ * @param {{ stagingSha: string, mainSha: string, conflicts: string[] }} merge
+ * @returns {Record<string, string> | null} resolved contents by path, or null to stop
+ */
+function resolveVersionFiles(cwd, { stagingSha, mainSha, conflicts }) {
+  if (!conflicts.every((file) => VERSION_FILES.has(file))) return null;
+  const base = git(cwd, ['merge-base', stagingSha, mainSha]);
+  const resolved = {};
+  for (const file of conflicts) {
+    const texts = {
+      base: showFile(cwd, base, file),
+      ours: showFile(cwd, stagingSha, file),
+      theirs: showFile(cwd, mainSha, file),
+    };
+    const text =
+      file === PACKAGE_JSON_PATH ? resolvePackageJson(cwd, texts) : resolveMetainfo(cwd, texts);
+    if (text === null) return null;
+    resolved[file] = text;
+  }
+  return resolved;
+}
+
 /**
  * Plan the back-port of `main` into `staging` without pushing.
- * @returns {{ status: 'not-needed' } | { status: 'conflict', conflicts: string[] } | { status: 'merged', sha: string }}
+ * @returns {{ status: 'not-needed' } | { status: 'conflict', conflicts: string[] } | { status: 'merged', sha: string, resolved?: string[] }}
  */
 function planBackport(cwd, mainSha, stagingSha) {
   if (isAncestor(cwd, mainSha, stagingSha)) return { status: 'not-needed' };
   const merged = mergeTree(cwd, stagingSha, mainSha);
-  if (!merged.clean) return { status: 'conflict', conflicts: merged.conflicts };
-  if (merged.tree === treeOf(cwd, stagingSha)) return { status: 'not-needed' };
+  let tree = merged.tree;
+  let resolved = [];
+  if (!merged.clean) {
+    const files = resolveVersionFiles(cwd, {
+      stagingSha,
+      mainSha,
+      conflicts: merged.conflicts,
+    });
+    if (!files) return { status: 'conflict', conflicts: merged.conflicts };
+    tree = treeWithFiles(cwd, merged.tree, files);
+    resolved = Object.keys(files);
+  }
+  if (tree === treeOf(cwd, stagingSha)) return { status: 'not-needed' };
   const sha = commitTree(cwd, {
-    tree: merged.tree,
+    tree,
     parents: [stagingSha, mainSha],
     message: `${BACKPORT_SUBJECT}\n`,
   });
-  return { status: 'merged', sha };
+  return resolved.length > 0 ? { status: 'merged', sha, resolved } : { status: 'merged', sha };
 }
 
 /**
@@ -338,6 +419,27 @@ export function nextSteps(result) {
   ];
 }
 
+/**
+ * What promotion:backport did.
+ * @param {{ status: string, sha?: string, resolved?: string[] }} result
+ * @param {{ dryRun: boolean }} options
+ * @returns {string[]}
+ */
+export function backportLines(result, { dryRun }) {
+  if (result.status !== 'merged' || !result.sha) {
+    return ['staging already has everything main has; nothing to back-port.'];
+  }
+  const lines = [
+    `${dryRun ? 'Would push' : 'Pushed'} back-port merge ${result.sha.slice(0, 7)} to staging.`,
+  ];
+  if (result.resolved?.length) {
+    lines.push(
+      `Resolved ${result.resolved.join(' and ')}: the higher version wins, and main's released MetaInfo entries stay below staging's unreleased one.`,
+    );
+  }
+  return lines;
+}
+
 function ghRunner(cwd) {
   return (args, input) =>
     execFileSync('gh', args, { cwd, encoding: 'utf8', input, stdio: ['pipe', 'pipe', 'inherit'] });
@@ -363,11 +465,7 @@ async function main() {
       );
       process.exit(1);
     }
-    console.info(
-      result.status === 'merged'
-        ? `${options.dryRun ? 'Would push' : 'Pushed'} back-port merge ${result.sha.slice(0, 7)} to staging.`
-        : 'staging already has everything main has; nothing to back-port.',
-    );
+    for (const line of backportLines(result, { dryRun: options.dryRun })) console.info(line);
     return;
   }
 

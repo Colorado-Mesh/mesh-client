@@ -4,7 +4,7 @@
  * index, so the caller's checkout can be dirty or on any branch.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -89,6 +89,32 @@ export function mergeTree(cwd, ours, theirs) {
   if (result.status !== 0 && result.status !== 1) throw gitFailure(args, result);
   const [tree, ...rest] = result.stdout.split('\n').filter(Boolean);
   return { clean: result.status === 0, tree, conflicts: [...new Set(rest)] };
+}
+
+/**
+ * Three-way merge of one file's text, as `git merge-file` does, without touching the repository.
+ * @param {string} cwd
+ * @param {{ ours: string, base: string, theirs: string }} texts
+ * @returns {{ clean: boolean, text: string }}
+ */
+export function mergeText(cwd, { ours, base, theirs }) {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-promotion-merge-'));
+  try {
+    const files = { ours, base, theirs };
+    for (const [name, text] of Object.entries(files)) writeFileSync(path.join(dir, name), text);
+    const args = [
+      'merge-file',
+      '-p',
+      ...['ours', 'base', 'theirs'].map((name) => path.join(dir, name)),
+    ];
+    const result = runGit(cwd, args);
+    if (result.status === null || result.status < 0 || result.status > 127) {
+      throw gitFailure(args, result);
+    }
+    return { clean: result.status === 0, text: result.stdout };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 /**

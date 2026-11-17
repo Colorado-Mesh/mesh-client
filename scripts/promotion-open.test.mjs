@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { backportMainIntoStaging, nextSteps, openPromotion, parseArgs } from './promotion-open.mjs';
+import {
+  backportLines,
+  backportMainIntoStaging,
+  nextSteps,
+  openPromotion,
+  parseArgs,
+} from './promotion-open.mjs';
 import { extractSection } from './promotionNotes.mjs';
 import {
   cleanupRepos,
@@ -32,6 +38,41 @@ function fakeGh({ existing = null } = {}) {
   };
   return { gh, calls };
 }
+
+const HOTFIX_PACKAGE = (version) =>
+  `{\n  "name": "fixture",\n  "description": "hotfixed",\n  "version": "${version}"\n}\n`;
+
+/** Release v1.0.1 from main as a hotfix would: the fix, then its version bump, then the tag. */
+function releaseHotfix(seed) {
+  land(
+    seed,
+    'main',
+    { 'hot.txt': 'fixed\n', 'package.json': HOTFIX_PACKAGE('1.0.0') },
+    'fix: hotfix (#3)',
+  );
+  land(
+    seed,
+    'main',
+    {
+      'package.json': HOTFIX_PACKAGE('1.0.1'),
+      [METAINFO]:
+        '<component>\n  <releases>\n    <release version="1.0.1" date="2026-11-19"/>\n    <release version="1.0.0" date="2026-01-01"/>\n  </releases>\n</component>\n',
+    },
+    'chore: release v1.0.1',
+  );
+  run(seed, ['tag', '-a', 'v1.0.1', '-m', 'Release 1.0.1']);
+  run(seed, ['push', '-q', 'origin', 'v1.0.1']);
+}
+
+const MERGED_METAINFO = [
+  '<component>',
+  '  <releases>',
+  `    <release version="1.1.0" date="${TODAY}"/>`,
+  '    <release version="1.0.1" date="2026-11-19"/>',
+  '    <release version="1.0.0" date="2026-01-01"/>',
+  '  </releases>',
+  '</component>',
+].join('\n');
 
 const open = (user, gh, overrides = {}) =>
   openPromotion({
@@ -77,6 +118,29 @@ describe('parseArgs', () => {
   it('refuses unknown flags and bump values', () => {
     expect(() => parseArgs(['--bump', 'huge'])).toThrow(/Usage/);
     expect(() => parseArgs(['--force'])).toThrow(/Usage/);
+  });
+});
+
+describe('backportLines', () => {
+  it('names the version files it resolved', () => {
+    expect(
+      backportLines(
+        { status: 'merged', sha: 'abcdef1234567', resolved: [METAINFO, 'package.json'] },
+        { dryRun: false },
+      ),
+    ).toEqual([
+      'Pushed back-port merge abcdef1 to staging.',
+      `Resolved ${METAINFO} and package.json: the higher version wins, and main's released MetaInfo entries stay below staging's unreleased one.`,
+    ]);
+  });
+
+  it('reports a plain back-port, a dry run and nothing to do', () => {
+    expect(backportLines({ status: 'merged', sha: 'abcdef1234567' }, { dryRun: true })).toEqual([
+      'Would push back-port merge abcdef1 to staging.',
+    ]);
+    expect(backportLines({ status: 'not-needed' }, { dryRun: false })).toEqual([
+      'staging already has everything main has; nothing to back-port.',
+    ]);
   });
 });
 
@@ -232,6 +296,28 @@ describe('openPromotion', { timeout: 60_000 }, () => {
     expect(remoteSha(remote, 'release/v1.1.0^{tree}')).toBe(remoteSha(remote, 'staging^{tree}'));
   });
 
+  it('keeps one bump when main released a hotfix after the promotion opened', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'f.txt': 'f\n' }, 'feat: f (#4)');
+    await open(user, fakeGh().gh);
+    releaseHotfix(seed);
+
+    const result = await open(
+      user,
+      fakeGh({ existing: { number: 42, url: 'https://example.test/pull/42' } }).gh,
+    );
+
+    expect(result).toMatchObject({ status: 'updated', version: '1.1.0' });
+    const subjects = remoteGit(remote, ['log', '--format=%s', 'staging']).split('\n');
+    expect(subjects.filter((subject) => subject === 'chore: release v1.1.0')).toHaveLength(1);
+    expect(subjects[0]).toBe('chore: back-port main into staging');
+    expect(remoteGit(remote, ['show', `staging:${METAINFO}`])).toBe(MERGED_METAINFO);
+    expect(parentsOf(remote, 'release/v1.1.0')).toEqual([
+      remoteSha(remote, 'main'),
+      remoteSha(remote, 'staging'),
+    ]);
+  });
+
   it('stops on a conflicting back-port without pushing anything', async () => {
     const { remote, seed, user } = released();
     land(seed, 'main', { 'README.md': 'main\n' }, 'fix: readme on main (#5)');
@@ -340,6 +426,53 @@ describe('backportMainIntoStaging', { timeout: 60_000 }, () => {
     expect(backportMainIntoStaging({ cwd: user, remote: 'origin', dryRun: false })).toEqual({
       status: 'conflict',
       conflicts: ['README.md'],
+    });
+    expect(remoteRefs(remote)).toBe(before);
+  });
+
+  it('resolves the version files when main released a hotfix over an unreleased bump', async () => {
+    const { remote, seed, user } = released();
+    land(seed, 'staging', { 'f.txt': 'f\n' }, 'feat: f (#4)');
+    await open(user, fakeGh().gh);
+    releaseHotfix(seed);
+    const mainSha = remoteSha(remote, 'main');
+    const oldStaging = remoteSha(remote, 'staging');
+
+    const result = backportMainIntoStaging({ cwd: user, remote: 'origin', dryRun: false });
+
+    expect(result).toMatchObject({ status: 'merged', resolved: [METAINFO, 'package.json'] });
+    expect(parentsOf(remote, 'staging')).toEqual([oldStaging, mainSha]);
+    expect(remoteGit(remote, ['show', 'staging:hot.txt'])).toBe('fixed');
+    expect(remoteGit(remote, ['show', 'staging:package.json'])).toBe(
+      HOTFIX_PACKAGE('1.1.0').trim(),
+    );
+    expect(remoteGit(remote, ['show', `staging:${METAINFO}`])).toBe(MERGED_METAINFO);
+  });
+
+  it('still stops when the version files also conflict on other lines', async () => {
+    const { remote, seed, user } = released();
+    land(
+      seed,
+      'staging',
+      { 'package.json': '{\n  "name": "fixture-staging",\n  "version": "1.0.0"\n}\n' },
+      'feat: rename on staging (#4)',
+    );
+    await open(user, fakeGh().gh);
+    releaseHotfix(seed);
+    land(
+      seed,
+      'main',
+      {
+        'package.json':
+          '{\n  "name": "fixture-main",\n  "description": "hotfixed",\n  "version": "1.0.1"\n}\n',
+      },
+      'fix: rename on main (#5)',
+    );
+    const before = remoteRefs(remote);
+
+    expect(backportMainIntoStaging({ cwd: user, remote: 'origin', dryRun: false })).toEqual({
+      status: 'conflict',
+      conflicts: [METAINFO, 'package.json'],
     });
     expect(remoteRefs(remote)).toBe(before);
   });

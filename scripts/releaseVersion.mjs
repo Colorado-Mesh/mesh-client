@@ -19,6 +19,9 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TOP_LEVEL_VERSION_LINE = /^ {2}"version": "[^"]*"(,?)$/gm;
 const SCHEMA_DECLARATION = /^export const CURRENT_SCHEMA_VERSION = (\d+);$/gm;
 const FIRST_SELF_CLOSING_RELEASE = /<release\s+version="([^"]*)"[^>]*\/>/;
+const RELEASE_VERSION_ATTRIBUTE = /<release\s+version="([^"]*)"/g;
+/** One release entry as `prependMetainfoRelease` writes it, with the line break before it. */
+const TOOL_RELEASE_LINE = /\n {4}<release version="([^"]*)" date="([^"]*)"\/>/;
 
 /**
  * @param {string} version
@@ -123,6 +126,43 @@ export function upsertMetainfoRelease(xml, { version, date, latestVersion }) {
     const replacement = `<release version="${version}" date="${date}"/>`;
     return xml.slice(0, element.index) + replacement + xml.slice(element.index + element[0].length);
   }
+  return prependMetainfoRelease(xml, version, date);
+}
+
+/**
+ * @param {string} xml
+ * @returns {string[]} every release version the MetaInfo lists, top first
+ */
+export function metainfoReleaseVersions(xml) {
+  return [...xml.matchAll(RELEASE_VERSION_ATTRIBUTE)].map((match) => match[1]);
+}
+
+/**
+ * Split off the top release entry when it has the exact shape `prependMetainfoRelease` writes,
+ * restoring the text as it was before that entry was added.
+ * @param {string} xml
+ * @returns {{ version: string, date: string, xml: string } | null} null for any other shape
+ */
+export function takeTopMetainfoRelease(xml) {
+  const match = TOOL_RELEASE_LINE.exec(xml);
+  if (!match) return null;
+  const [line, version, date] = match;
+  const firstRelease = xml.search(/<release\s/);
+  if (match.index + line.indexOf('<release') !== firstRelease) return null;
+  if (!isValidReleaseSemver(version) || !DATE_PATTERN.test(date)) return null;
+  return { version, date, xml: xml.slice(0, match.index) + xml.slice(match.index + line.length) };
+}
+
+/**
+ * Put an unreleased entry back on top of a MetaInfo after a merge, unless the merged list
+ * already reaches that version (a hotfix released it, or something newer).
+ * @param {string} xml
+ * @param {{ version: string, date: string }} release
+ * @returns {string}
+ */
+export function restoreMetainfoRelease(xml, { version, date }) {
+  const top = parseTopReleaseVersion(xml);
+  if (top && isValidReleaseSemver(top) && compareVersions(version, top) <= 0) return xml;
   return prependMetainfoRelease(xml, version, date);
 }
 

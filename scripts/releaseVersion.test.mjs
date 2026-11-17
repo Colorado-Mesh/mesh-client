@@ -8,12 +8,15 @@ import { describe, expect, it } from 'vitest';
 import {
   compareVersions,
   METAINFO_PATH,
+  metainfoReleaseVersions,
   PACKAGE_JSON_PATH,
   parseSchemaVersion,
   readPackageVersion,
   resolveNextVersion,
+  restoreMetainfoRelease,
   SCHEMA_SOURCE_PATH,
   setPackageVersion,
+  takeTopMetainfoRelease,
   upsertMetainfoRelease,
 } from './releaseVersion.mjs';
 
@@ -144,6 +147,45 @@ describe('upsertMetainfoRelease', () => {
     expect(
       upsertMetainfoRelease(once, { version: '99.0.0', date: '2030-01-01', latestVersion: latest }),
     ).toBe(once);
+  });
+});
+
+describe('back-port MetaInfo helpers', () => {
+  const realXml = readRepoFile(METAINFO_PATH);
+  const latest = /<release version="(\d+\.\d+\.\d+)"/.exec(realXml)[1];
+  const bumped = upsertMetainfoRelease(realXml, {
+    version: '99.0.0',
+    date: '2026-11-20',
+    latestVersion: latest,
+  });
+
+  it('splits off the entry a bump added and gives back the file it started from', () => {
+    expect(takeTopMetainfoRelease(bumped)).toEqual({
+      version: '99.0.0',
+      date: '2026-11-20',
+      xml: realXml,
+    });
+  });
+
+  it('refuses a top entry in any other shape, even when a later entry has the bump shape', () => {
+    const described = bumped.replace(
+      '<release version="99.0.0" date="2026-11-20"/>',
+      '<release version="99.0.0" date="2026-11-20">\n      <description><p>Notes</p></description>\n    </release>',
+    );
+    expect(takeTopMetainfoRelease(described)).toBeNull();
+  });
+
+  it('puts an unreleased entry back on top of a merged list', () => {
+    expect(restoreMetainfoRelease(realXml, { version: '99.0.0', date: '2026-11-20' })).toBe(bumped);
+  });
+
+  it('adds nothing when the merged list already reaches that version', () => {
+    expect(restoreMetainfoRelease(bumped, { version: '98.0.0', date: '2026-11-19' })).toBe(bumped);
+    expect(restoreMetainfoRelease(bumped, { version: '99.0.0', date: '2026-11-19' })).toBe(bumped);
+  });
+
+  it('lists every release version, top first', () => {
+    expect(metainfoReleaseVersions(bumped).slice(0, 2)).toEqual(['99.0.0', latest]);
   });
 });
 
