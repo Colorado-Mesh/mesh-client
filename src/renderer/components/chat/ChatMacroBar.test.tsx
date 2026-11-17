@@ -173,15 +173,15 @@ describe('ChatMacroBar', () => {
     renderComposer();
     fireEvent.click(screen.getByRole('button', { name: 'F1: jump to Test' }));
     expect(nav).toHaveBeenCalled();
-    expect(peekPendingRoomMacroTextApply()).toEqual({
+    expect(peekPendingRoomMacroTextApply()).toMatchObject({
       slotIndex: 0,
+      text: 'Test',
       plan: {
         kind: 'rrc-room',
         protocol: 'reticulum',
         hubDestHash: 'aabb',
         room: '#test',
       },
-      createdAtMs: expect.any(Number),
     });
     expect(screen.getByRole('textbox')).toHaveValue('');
   });

@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Sohbet kanalları",
     "whenUsedRoomHelp": "Oda bölümlerine atlama için kutuya isteğe bağlı bir mesaj konur veya atlamadan sonra gönderilir.",
     "roomTextPlaceholder": "Atlamadan sonra isteğe bağlı mesaj",
-    "roomTextAria": "{{key}} yönlendirmeden sonra isteğe bağlı mesaj"
+    "roomTextAria": "{{key}} yönlendirmeden sonra isteğe bağlı mesaj",
+    "roomTextApplyFailed": "Odaya geçtikten sonra makro mesajı uygulanamadı."
   },
   "weatherForecast": {
     "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",

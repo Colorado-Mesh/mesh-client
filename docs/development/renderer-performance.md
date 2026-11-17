@@ -32,7 +32,7 @@ Disable with `localStorage.removeItem('mesh-client:perf')` and reload.
 ## Vitest micro-benchmark (not CI)
 
 ```bash
-MESH_PERF=1 pnpm exec vitest run --project renderer \
+MESH_PERF=1 pnpm exec vitest run --project renderer-logic \
   src/renderer/lib/replyPreview.bench.test.ts --coverage.enabled=false
 ```
 

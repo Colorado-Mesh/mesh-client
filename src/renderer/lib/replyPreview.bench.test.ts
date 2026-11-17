@@ -2,7 +2,7 @@
  * Opt-in micro-benchmark for Meshtastic reply-preview repair cost.
  * Never runs in CI — enable with MESH_PERF=1.
  *
- *   MESH_PERF=1 pnpm exec vitest run --project renderer \
+ *   MESH_PERF=1 pnpm exec vitest run --project renderer-logic \
  *     src/renderer/lib/replyPreview.bench.test.ts --coverage.enabled=false
  */
 import { describe, expect, it } from 'vitest';

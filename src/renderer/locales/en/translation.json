@@ -625,6 +625,7 @@
     "roomGroupRrc": "RRC rooms",
     "roomGroupSaved": "Saved",
     "jumpToRoomAria": "{{key}}: jump to {{label}}",
+    "roomTextApplyFailed": "Could not apply the macro message after jumping to the room.",
     "size": "Size",
     "sizeSmall": "Small",
     "sizeMedium": "Medium",

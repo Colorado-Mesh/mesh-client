@@ -178,7 +178,6 @@ import { BottomNav } from './components/shell/BottomNav';
 import { QuitButton } from './components/shell/QuitButton';
 import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
-import { TeamMessagesByProtocol } from './components/teamRoster/TeamMessagesByProtocol';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
@@ -4993,10 +4992,7 @@ function AppContent() {
       <InactiveProtocolNotifier
         activeProtocol={protocol}
         ownNodeIdsByProtocol={ownNodeIdsByProtocol}
-        identityIdByProtocol={identityIdByProtocol}
-        meshtasticRemap={meshtasticRemapCtx}
-        meshcoreRemap={meshcoreRemapCtx}
-        meshcoreSelfNodeId={meshcoreRuntime.selfNodeId}
+        messagesByProtocol={uiMessagesByProtocol}
         enabledProtocols={enabledProtocols}
       />
       {capabilities.hasRemoteAdmin && (
@@ -6763,20 +6759,11 @@ function AppContent() {
                         {activePanelIndex === TEAM_CONTACTS_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <TeamMessagesByProtocol
-                                identityIdByProtocol={identityIdByProtocol}
-                                meshtasticRemap={meshtasticRemapCtx}
-                                meshcoreRemap={meshcoreRemapCtx}
-                                meshcoreSelfNodeId={meshcoreRuntime.selfNodeId}
-                              >
-                                {(messagesByProtocol) => (
-                                  <TeamContactsPanel
-                                    messagesByProtocol={messagesByProtocol}
-                                    onOpenChat={openChatFromNotification}
-                                    onSendDm={handleTeamRosterSendDm}
-                                  />
-                                )}
-                              </TeamMessagesByProtocol>
+                              <TeamContactsPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -6791,20 +6778,11 @@ function AppContent() {
                         {activePanelIndex === TEAM_ROSTER_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <TeamMessagesByProtocol
-                                identityIdByProtocol={identityIdByProtocol}
-                                meshtasticRemap={meshtasticRemapCtx}
-                                meshcoreRemap={meshcoreRemapCtx}
-                                meshcoreSelfNodeId={meshcoreRuntime.selfNodeId}
-                              >
-                                {(messagesByProtocol) => (
-                                  <TeamRosterPanel
-                                    messagesByProtocol={messagesByProtocol}
-                                    onOpenChat={openChatFromNotification}
-                                    onSendDm={handleTeamRosterSendDm}
-                                  />
-                                )}
-                              </TeamMessagesByProtocol>
+                              <TeamRosterPanel
+                                messagesByProtocol={uiMessagesByProtocol}
+                                onOpenChat={openChatFromNotification}
+                                onSendDm={handleTeamRosterSendDm}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -7444,27 +7422,18 @@ function AppContent() {
           }
         >
           {(UnifiedInboxDialog) => (
-            <TeamMessagesByProtocol
-              identityIdByProtocol={identityIdByProtocol}
-              meshtasticRemap={meshtasticRemapCtx}
-              meshcoreRemap={meshcoreRemapCtx}
-              meshcoreSelfNodeId={meshcoreRuntime.selfNodeId}
-            >
-              {(messagesByProtocol) => (
-                <UnifiedInboxDialog
-                  open
-                  onClose={() => {
-                    setUnifiedInboxOpen(false);
-                  }}
-                  enabledProtocols={enabledProtocols}
-                  messagesByProtocol={messagesByProtocol}
-                  ownNodeIdsByProtocol={ownNodeIdsByProtocol}
-                  ownReticulumHashes={ownReticulumHashes}
-                  reticulumIdentityId={reticulumIdentityId}
-                  onSelectItem={handleGlobalMessageSearchHit}
-                />
-              )}
-            </TeamMessagesByProtocol>
+            <UnifiedInboxDialog
+              open
+              onClose={() => {
+                setUnifiedInboxOpen(false);
+              }}
+              enabledProtocols={enabledProtocols}
+              messagesByProtocol={uiMessagesByProtocol}
+              ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+              ownReticulumHashes={ownReticulumHashes}
+              reticulumIdentityId={reticulumIdentityId}
+              onSelectItem={handleGlobalMessageSearchHit}
+            />
           )}
         </RetryableLazy>
       ) : null}

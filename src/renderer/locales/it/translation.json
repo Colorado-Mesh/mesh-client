@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Canali di chat",
     "whenUsedRoomHelp": "Per gli slot Vai alla stanza, un messaggio facoltativo viene inserito nella casella o inviato dopo il passaggio.",
     "roomTextPlaceholder": "Messaggio facoltativo dopo il salto",
-    "roomTextAria": "{{key}} messaggio facoltativo dopo il salto"
+    "roomTextAria": "{{key}} messaggio facoltativo dopo il salto",
+    "roomTextApplyFailed": "Impossibile applicare il messaggio macro dopo essere passati alla stanza."
   },
   "weatherForecast": {
     "areaAria": "Previsione per {{place}}, {{period}}: {{temp}}",

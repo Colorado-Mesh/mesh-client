@@ -10,11 +10,11 @@ import {
   resetRoomMacroNavigatorForTests,
   resetRoomMacroTextApplyForTests,
   resolveRoomMacroPlan,
+  ROOM_MACRO_TEXT_APPLY_TTL_MS,
   type RoomMacroPlan,
   subscribeRoomMacroTextApply,
   takePendingRoomMacroTextApplyIfMatch,
 } from '@/renderer/lib/roomMacros';
-import { ROOM_MACRO_TEXT_APPLY_TTL_MS } from '@/renderer/lib/timeConstants';
 import {
   resetChatMacrosStoreForTests,
   useChatMacrosStore,
@@ -78,11 +78,10 @@ describe('roomMacro pending text apply', () => {
 
     queueRoomMacroTextApply(0, plan);
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(peekPendingRoomMacroTextApply()).toEqual({
-      slotIndex: 0,
-      plan,
-      createdAtMs: expect.any(Number),
-    });
+    const first = peekPendingRoomMacroTextApply();
+    expect(first).toMatchObject({ slotIndex: 0, plan, text: 'Test' });
+    expect(first?.jumpId).toEqual(expect.any(Number));
+    expect(first?.expiresAt).toBeGreaterThan(Date.now());
 
     expect(
       takePendingRoomMacroTextApplyIfMatch((p) => p.kind === 'meshcore-room' && p.roomNodeId === 1),
@@ -97,26 +96,41 @@ describe('roomMacro pending text apply', () => {
     };
     queueRoomMacroTextApply(1, channelPlan);
     expect(listener).toHaveBeenCalledTimes(2);
-    expect(peekPendingRoomMacroTextApply()).toEqual({
+    expect(peekPendingRoomMacroTextApply()).toMatchObject({
       slotIndex: 1,
       plan: channelPlan,
-      createdAtMs: expect.any(Number),
+      text: 'Other',
     });
 
-    expect(
-      takePendingRoomMacroTextApplyIfMatch(
-        (p) => p.kind === 'meshcore-channel' && p.channelIndex === 2,
-      ),
-    ).toBe(1);
+    const taken = takePendingRoomMacroTextApplyIfMatch(
+      (p) => p.kind === 'meshcore-channel' && p.channelIndex === 2,
+    );
+    expect(taken).toMatchObject({ slotIndex: 1, text: 'Other', plan: channelPlan });
     expect(peekPendingRoomMacroTextApply()).toBeNull();
     unsub();
+  });
+
+  it('captures text at queue time so later slot edits do not change the apply', () => {
+    useChatMacrosStore.getState().setSlotText(0, 'Original');
+    queueRoomMacroTextApply(0, plan);
+    useChatMacrosStore.getState().setSlotText(0, 'Edited');
+    const taken = takePendingRoomMacroTextApplyIfMatch((p) => p.kind === 'rrc-room');
+    expect(taken?.text).toBe('Original');
+  });
+
+  it('clears pending text when a new room navigation starts', () => {
+    useChatMacrosStore.getState().setSlotText(0, 'Stale');
+    queueRoomMacroTextApply(0, plan);
+    registerRoomMacroNavigator(() => true);
+    expect(navigateRoomMacro(plan, 1)).toBe(true);
+    expect(peekPendingRoomMacroTextApply()).toBeNull();
   });
 
   it('navigateRoomMacroAndMaybeQueueText queues only when navigate succeeds and text is set', () => {
     useChatMacrosStore.getState().setSlotText(3, 'Ping');
     registerRoomMacroNavigator(() => true);
     expect(navigateRoomMacroAndMaybeQueueText(plan, 3)).toBe(true);
-    expect(peekPendingRoomMacroTextApply()?.slotIndex).toBe(3);
+    expect(peekPendingRoomMacroTextApply()).toMatchObject({ slotIndex: 3, text: 'Ping' });
 
     resetRoomMacroTextApplyForTests();
     resetRoomMacroNavigatorForTests();

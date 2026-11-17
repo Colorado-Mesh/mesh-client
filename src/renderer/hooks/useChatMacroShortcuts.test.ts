@@ -234,15 +234,15 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
       useChatMacroShortcuts();
     });
     expect(press('F3').defaultPrevented).toBe(true);
-    expect(peekPendingRoomMacroTextApply()).toEqual({
+    expect(peekPendingRoomMacroTextApply()).toMatchObject({
       slotIndex: 2,
+      text: 'Test',
       plan: {
         kind: 'rrc-room',
         protocol: 'reticulum',
         hubDestHash: 'aabb',
         room: '#weather',
       },
-      createdAtMs: expect.any(Number),
     });
   });
 

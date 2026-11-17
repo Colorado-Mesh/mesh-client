@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Saluran obrolan",
     "whenUsedRoomHelp": "Untuk slot Lompat ke ruangan, pesan opsional dimasukkan ke dalam kotak atau dikirim setelah lompatan.",
     "roomTextPlaceholder": "Pesan opsional setelah lompatan",
-    "roomTextAria": "{{key}} pesan opsional setelah lompatan"
+    "roomTextAria": "{{key}} pesan opsional setelah lompatan",
+    "roomTextApplyFailed": "Tidak dapat menerapkan pesan makro setelah berpindah ke ruang."
   },
   "weatherForecast": {
     "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",

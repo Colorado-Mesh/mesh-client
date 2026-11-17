@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "Canaux de discussion",
     "whenUsedRoomHelp": "Pour les créneaux Accéder à la salle, un message facultatif est placé dans la boîte ou envoyé après l'accès.",
     "roomTextPlaceholder": "Message facultatif après le saut",
-    "roomTextAria": "{{key}} message facultatif après le saut"
+    "roomTextAria": "{{key}} message facultatif après le saut",
+    "roomTextApplyFailed": "Impossible d'appliquer le message macro après avoir accédé à la salle."
   },
   "weatherForecast": {
     "areaAria": "Prévisions pour {{place}}, {{period}} : {{temp}}",

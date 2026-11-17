@@ -7571,7 +7571,8 @@
     "roomGroupChatChannels": "チャットチャンネル",
     "whenUsedRoomHelp": "「ルームに移動」のスロットの場合、オプションのメッセージがボックスに入力されるか、移動後に送信されます。",
     "roomTextPlaceholder": "ジャンプ後のオプションメッセージ",
-    "roomTextAria": "{{key}} ジャンプ後のオプションメッセージ"
+    "roomTextAria": "{{key}} ジャンプ後のオプションメッセージ",
+    "roomTextApplyFailed": "ルームに移動した後、マクロメッセージを適用できませんでした。"
   },
   "weatherForecast": {
     "areaAria": "{{place}}、{{period}}の予測： {{temp}}",
