@@ -327,6 +327,66 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_status).toBe('sending');
   });
 
+  it('saveReticulumMessage stores the first receipt and keeps it on later saves', () => {
+    const identityId = 'id-rt-received';
+    const messageHash = 'e5'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    const message = {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Peer',
+      payload: 'late clock',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'delivered',
+    };
+    save?.(event, { ...message, received_at: 1_700_007_200_000 });
+    save?.(event, { ...message, received_at: 1_700_009_000_000 });
+    const rows = db!
+      .prepareOnce('SELECT received_at FROM reticulum_messages WHERE identity_id = ?')
+      .all(identityId);
+    expect(rows).toEqual([{ received_at: 1_700_007_200_000 }]);
+  });
+
+  it('saveReticulumMessage stores no receipt for one that is not a non-negative integer', () => {
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: 'id-rt-received-invalid',
+      sender_id: 'cc'.repeat(16),
+      payload: 'bad receipt',
+      timestamp: 1_700_000_000_000,
+      received_at: -1,
+    });
+    const rows = db!
+      .prepareOnce('SELECT payload, received_at FROM reticulum_messages WHERE identity_id = ?')
+      .all('id-rt-received-invalid');
+    expect(rows).toEqual([{ payload: 'bad receipt', received_at: null }]);
+  });
+
+  it('getReticulumMessages loads the most recently stored rows, whatever their sender clock', () => {
+    const identityId = 'id-rt-load-window';
+    const save = handlers.get('db:saveReticulumMessage');
+    const sentAt = [1_700_000_000_000, 1_700_000_060_000, 1_699_992_800_000];
+    sentAt.forEach((timestamp, index) => {
+      save?.(event, {
+        identity_id: identityId,
+        sender_id: 'cc'.repeat(16),
+        sender_name: 'Peer',
+        payload: `message ${index + 1}`,
+        timestamp,
+        message_hash: `${index + 1}`.repeat(64),
+        delivery_status: 'delivered',
+        received_at: 1_700_000_000_000 + index * 60_000,
+      });
+    });
+    const load = handlers.get('db:getReticulumMessages');
+    const rows = load?.(event, identityId, 2) as { payload: string; received_at: number }[];
+    expect(rows.map((row) => [row.payload, row.received_at])).toEqual([
+      ['message 2', 1_700_000_060_000],
+      ['message 3', 1_700_000_120_000],
+    ]);
+  });
+
   it('saveReticulumMessage coalesces attachment_path onto an existing Completes row', () => {
     const identityId = 'id-rt-attach-coalesce';
     const messageHash = 'a1'.repeat(32);

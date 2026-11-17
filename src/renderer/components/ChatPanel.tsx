@@ -197,6 +197,7 @@ import {
   savePersistedLastRead,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
+import { chatReceivedAtMs, chatSentOnAnotherDay } from '../lib/chatReceiveOrder';
 import {
   CHAT_SCROLL_END_THRESHOLD,
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
@@ -3089,6 +3090,12 @@ function ChatPanel({
     return formatDisplayTime(ts, { use24Hour: use24HourTime });
   }
 
+  /** The sender's time; with the sender's date when that differs from the arrival day. */
+  function formatBubbleTime(msg: ChatMessage): string {
+    const time = formatTime(msg.timestamp);
+    return chatSentOnAnotherDay(msg) ? `${formatIsoDate(msg.timestamp)} ${time}` : time;
+  }
+
   function formatFullTimestamp(ts: number): string {
     return formatIsoDateTime(ts);
   }
@@ -3115,12 +3122,13 @@ function ChatPanel({
     return rows;
   }
 
-  // Pre-compute day separator indices (avoids mutable variable during render)
+  // Pre-compute day separator indices (avoids mutable variable during render). Rows are in arrival
+  // order, so separators follow the arrival day; a bubble from another sender day shows its date.
   const daySeparatorIndices = useMemo(() => {
     const indices = new Set<number>();
     let prevDayKey = '';
     for (let i = 0; i < filteredMessages.length; i++) {
-      const dayKey = getChatDayKey(filteredMessages[i].timestamp);
+      const dayKey = getChatDayKey(chatReceivedAtMs(filteredMessages[i]));
       if (dayKey !== prevDayKey) {
         indices.add(i);
         prevDayKey = dayKey;
@@ -4627,7 +4635,7 @@ function ChatPanel({
                   <div className="flex items-center gap-3 py-2">
                     <div className="border-ink-800 flex-1 border-t" />
                     <span className="text-muted shrink-0 text-xs font-medium">
-                      {formatDayLabel(msg.timestamp, t)}
+                      {formatDayLabel(chatReceivedAtMs(msg), t)}
                     </span>
                     <div className="border-ink-800 flex-1 border-t" />
                   </div>
@@ -4650,7 +4658,8 @@ function ChatPanel({
                 const showContinuationTime =
                   isContinuation &&
                   prevMsg !== null &&
-                  msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+                  chatReceivedAtMs(msg) - chatReceivedAtMs(prevMsg) >=
+                    CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
 
                 /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
                 const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
@@ -4683,7 +4692,7 @@ function ChatPanel({
                       <div
                         className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                         data-chat-message-key={messageRowKey}
-                        data-chat-day-key={getChatDayKey(msg.timestamp)}
+                        data-chat-day-key={getChatDayKey(chatReceivedAtMs(msg))}
                         {...(messageFocusFlashIndex === i ? { 'data-chat-message-flash': '' } : {})}
                       >
                         {/* Bubble row */}
@@ -4852,7 +4861,7 @@ function ChatPanel({
                                       className="text-muted text-2xs shrink-0 font-mono whitespace-nowrap tabular-nums"
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
-                                      {formatTime(msg.timestamp)}
+                                      {formatBubbleTime(msg)}
                                     </span>
                                     {channels.length > 1 && !isDm && (
                                       <span className="text-muted text-2xs font-mono">
@@ -4874,7 +4883,7 @@ function ChatPanel({
                                   className="text-muted text-2xs"
                                   title={formatFullTimestamp(msg.timestamp)}
                                 >
-                                  {formatTime(msg.timestamp)}
+                                  {formatBubbleTime(msg)}
                                 </span>
                               </div>
                             )}

@@ -386,7 +386,24 @@ export interface MeshcoreStoreUpsertResult {
  * Upsert a MeshCore chat row into Zustand with exact-key and cross-transport dedup
  * against the store (not hook-local state).
  */
+/**
+ * Dedup-aware MeshCore store write. The returned message carries the receipt the store kept
+ * (`chatReceiveOrder.ts`), so callers that persist it save the first local receipt.
+ */
 export function upsertMeshcoreMessageWithDedup(
+  identityId: IdentityId,
+  msg: ChatMessage,
+  preferredId?: string,
+): MeshcoreStoreUpsertResult {
+  const result = upsertMeshcoreMessageWithDedupInStore(identityId, msg, preferredId);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const stored = useMessageStore.getState().messages[identityId]?.[result.canonicalId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Row may have been trimmed away.
+  if (stored == null || stored.receivedAt === result.message.receivedAt) return result;
+  return { ...result, message: { ...result.message, receivedAt: stored.receivedAt } };
+}
+
+function upsertMeshcoreMessageWithDedupInStore(
   identityId: IdentityId,
   msg: ChatMessage,
   preferredId?: string,

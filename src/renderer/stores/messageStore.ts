@@ -6,6 +6,11 @@ import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
 import {
+  compareChatReceiveOrder,
+  earliestChatReceivedAt,
+  nextChatReceivedAt,
+} from '../lib/chatReceiveOrder';
+import {
   clearHeardRepeatWindowIfMessage,
   renameHeardRepeatWindowMessageId,
 } from '../lib/meshcore/heardRepeatTracker';
@@ -48,6 +53,12 @@ export interface MessageRecord {
   timestamp: number;
   /** First local observation order for MeshCore same-second DM display. */
   localOrder?: number;
+  /**
+   * When this app first received (or sent) the message, in ms; chat rows are ordered by it while
+   * `timestamp` stays the sender's time. Live writers stamp it on first sight and keep the earliest
+   * after that; rows saved before receipt times were kept have none (see `chatReceiveOrder.ts`).
+   */
+  receivedAt?: number;
   rxSnr?: number;
   rxRssi?: number;
   rxRadioTransport?: 'rf' | 'ble';
@@ -149,6 +160,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'channelIndex',
   'timestamp',
   'localOrder',
+  'receivedAt',
   'rxSnr',
   'rxRssi',
   'rxRadioTransport',
@@ -238,6 +250,36 @@ function stampLiveChannelIdentity(identityId: IdentityId, message: MessageRecord
   };
 }
 
+/**
+ * Live writers: a first sighting is stamped now, and after that the earliest receipt is kept, so
+ * a re-delivery never moves a row down. A row loaded from SQLite without one (saved before
+ * receipt times were kept) stays without, so a re-delivery of old history keeps its place too.
+ */
+function liveReceivedAt(
+  existing: MessageRecord | undefined,
+  incoming: MessageRecord,
+): number | undefined {
+  if (!existing) return incoming.receivedAt ?? nextChatReceivedAt();
+  if (existing.receivedAt == null) return undefined;
+  return earliestChatReceivedAt(existing.receivedAt, incoming.receivedAt);
+}
+
+/**
+ * Bulk (SQLite) writers never stamp. A stored row without a receipt is old history and wins over a
+ * live stamp from a re-delivery; otherwise the earliest receipt is kept.
+ */
+function storedReceivedAt(
+  existing: MessageRecord | undefined,
+  incoming: MessageRecord,
+): number | undefined {
+  if (incoming.receivedAt == null) return undefined;
+  return earliestChatReceivedAt(existing?.receivedAt, incoming.receivedAt);
+}
+
+function withReceivedAt(message: MessageRecord, receivedAt: number | undefined): MessageRecord {
+  return message.receivedAt === receivedAt ? message : { ...message, receivedAt };
+}
+
 /** A full-record replace keeps the channel identity the existing row already carried. */
 function carryChannelIdentity(existing: MessageRecord, incoming: MessageRecord): MessageRecord {
   if (
@@ -265,12 +307,14 @@ function resolveLiveMessageCap(identityId: IdentityId): number {
   return MAX_IN_MEMORY_CHAT_MESSAGES;
 }
 
+/** Oldest receipt first, so the cap never drops a message that just arrived with an old clock. */
 function compareMessageRecordsForTrim(a: MessageRecord, b: MessageRecord): number {
-  if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
-  const aOrder = a.localOrder ?? 0;
-  const bOrder = b.localOrder ?? 0;
-  if (aOrder !== bOrder) return aOrder - bOrder;
-  return a.id.localeCompare(b.id);
+  return compareChatReceiveOrder(a, b, (x, y) => {
+    const xOrder = x.localOrder ?? 0;
+    const yOrder = y.localOrder ?? 0;
+    if (xOrder !== yOrder) return xOrder - yOrder;
+    return x.id.localeCompare(y.id);
+  });
 }
 
 function isProtectedFromLiveTrim(message: MessageRecord): boolean {
@@ -326,6 +370,7 @@ function trimMeshcoreIdentityBucket(
     values,
     (message) => ({
       timestamp: message.timestamp,
+      receivedAt: message.receivedAt,
       localOrder: message.localOrder,
       channelIndex: message.channelIndex,
       to: message.to,
@@ -363,9 +408,12 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[incoming.id];
-    const message = existing
-      ? carryChannelIdentity(existing, incoming)
-      : stampLiveChannelIdentity(identityId, incoming);
+    const message = withReceivedAt(
+      existing
+        ? carryChannelIdentity(existing, incoming)
+        : stampLiveChannelIdentity(identityId, incoming),
+      liveReceivedAt(existing, incoming),
+    );
     if (existing === message || (existing && messageRecordFieldsEqual(existing, message))) {
       return s;
     }
@@ -399,9 +447,10 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
-    const merged = existing
-      ? { ...existing, ...message }
-      : stampLiveChannelIdentity(identityId, message);
+    const merged = withReceivedAt(
+      existing ? { ...existing, ...message } : stampLiveChannelIdentity(identityId, message),
+      liveReceivedAt(existing, message),
+    );
     if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
     if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
       merged.to = existing.to;
@@ -463,7 +512,9 @@ export function upsertMessageRecordsForIdentity(
     let changed = false;
     for (const message of records) {
       const existing = byIdentity[message.id];
-      const merged = existing ? { ...existing, ...message } : message;
+      const merged = existing
+        ? { ...existing, ...message, receivedAt: storedReceivedAt(existing, message) }
+        : message;
       if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
       if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
         merged.to = existing.to;
@@ -537,9 +588,10 @@ export function mergeMessageRecordsFromDbForIdentity(
         changed = true;
         continue;
       }
-      if (!messageRecordFieldsEqual(existing, message)) {
-        markBulkLoaded(existing, message);
-        byIdentity[message.id] = message;
+      const stored = withReceivedAt(message, storedReceivedAt(existing, message));
+      if (!messageRecordFieldsEqual(existing, stored)) {
+        markBulkLoaded(existing, stored);
+        byIdentity[message.id] = stored;
         changed = true;
       }
     }
@@ -600,6 +652,11 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
       // optimistic row (voice memos cache Ogg before the LXMF hash is known).
       const merged: MessageRecord = {
         ...target,
+        // Both rows are this message; it keeps its first receipt (old history keeps none).
+        receivedAt:
+          target.receivedAt == null
+            ? undefined
+            : earliestChatReceivedAt(target.receivedAt, existing.receivedAt),
         ...(existing.reticulumAttachmentPath && !target.reticulumAttachmentPath
           ? {
               reticulumAttachmentPath: existing.reticulumAttachmentPath,

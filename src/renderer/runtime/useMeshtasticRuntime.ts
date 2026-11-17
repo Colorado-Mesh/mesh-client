@@ -115,6 +115,7 @@ import {
 import { verifyGattRfLink } from '../lib/bleReconnectHelper';
 import { withMeshtasticChannelIdentity } from '../lib/channelIdentity';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
+import { nextChatReceivedAt } from '../lib/chatReceiveOrder';
 import {
   getBlePeripheralIdFromMeshTransport,
   getSerialPortFromMeshTransport,
@@ -1744,17 +1745,20 @@ export function useMeshtasticRuntime() {
         m.channel === mqttWithPreviews.channel &&
         (m.to ?? undefined) === (mqttWithPreviews.to ?? undefined);
       const alreadyStored = dedupSource.some(isSameMqttMessage);
+      // Ordered by when it reached this app, not by the gateway radio's clock; a copy already in
+      // the store keeps its earlier receipt, and SQLite keeps the first saved row.
+      const mqttReceived: ChatMessage = { ...mqttWithPreviews, receivedAt: nextChatReceivedAt() };
       setMessages((prev) => {
         if (prev.some(isSameMqttMessage)) return prev;
-        return trimChatMessagesToMax([...prev, mqttWithPreviews], MAX_IN_MEMORY_CHAT_MESSAGES);
+        return trimChatMessagesToMax([...prev, mqttReceived], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
       if (storeId) {
-        upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
+        upsertMessage(storeId, chatMessageToMessageRecord(mqttReceived));
         if (!mqttTreatAsBacklog && !alreadyStored) {
           relayMeshtasticChatToTak(storeId, mqttWithPreviews);
         }
       }
-      persistMeshtasticMessage(mqttWithPreviews);
+      persistMeshtasticMessage(mqttReceived);
     });
 
     const unsubBrokerRaw = window.electronAPI.mqtt.onBrokerRaw((payload) => {

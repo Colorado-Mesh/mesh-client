@@ -66,6 +66,46 @@ describe('rrcRoomHistory', () => {
     expect(window.electronAPI.db.listRrcMessages).not.toHaveBeenCalled();
   });
 
+  it('reloads history in the order it arrived, whatever the senders clocks said', async () => {
+    useRrcSessionStore.getState().applyStatus('active', HUB, 'Hub');
+    const line = (id: string, body: string, timestamp: number, receivedAt: number) => ({
+      message_id: id,
+      hub_hash: HUB,
+      room: 'lobby',
+      sender_hash: null,
+      nickname: id,
+      kind: 'msg',
+      body,
+      timestamp,
+      received_at: receivedAt,
+    });
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValueOnce([
+      line('first', 'first in', 1_700_000_000_000, 1_700_000_000_000),
+      // Sent by a client whose clock runs two hours behind, received a minute later.
+      line('second', 'second in', 1_699_992_800_000, 1_700_000_060_000),
+    ]);
+
+    await hydrateRrcRoomMessages(HUB, 'lobby');
+    const list = useRrcSessionStore.getState().messages.get(`${HUB}::lobby`)!;
+    expect(list.map((m) => m.body)).toEqual(['first in', 'second in']);
+    expect(list.map((m) => m.timestamp)).toEqual([1_700_000_000_000, 1_699_992_800_000]);
+  });
+
+  it('saves a live line with the time it arrived', () => {
+    useRrcSessionStore.getState().applyStatus('active', HUB, 'Hub');
+    useRrcSessionStore.getState().addMessage({
+      id: 'late-clock',
+      room: 'lobby',
+      kind: 'msg',
+      body: 'late clock',
+      timestamp: 1_699_992_800_000,
+    });
+    const saved = vi.mocked(window.electronAPI.db.insertRrcMessage).mock.calls.map(([m]) => m);
+    expect(saved.map((m) => [m.timestamp, typeof m.received_at])).toEqual([
+      [1_699_992_800_000, 'number'],
+    ]);
+  });
+
   it('passes RRC_ROOM_HISTORY_LOAD_COUNT as listRrcMessages third arg', async () => {
     await hydrateRrcRoomMessages(HUB, 'lobby');
     expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalledWith(

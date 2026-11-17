@@ -44,6 +44,7 @@ import { buildUnifiedInboxItems } from '@/renderer/lib/unifiedInbox';
 import { starInboxItems } from '@/renderer/lib/unifiedInboxActions';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
@@ -2577,5 +2578,52 @@ describe('Room translation actions', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'chatTranslation.translate' }));
     expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
     expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
+  });
+});
+
+describe('RoomsPanel receive order', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    meshcoreClearAllRoomSessions();
+  });
+
+  it('lists posts in the order they arrived, under the day they arrived', async () => {
+    const room = makeRoom(0x1101, 'Order Room');
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    // A room server whose clock runs two days behind.
+    const serverTime = arrivedMs - 2 * 86_400_000;
+    const post = (authorId: number, authorName: string, rawText: string, timestamp: number) =>
+      buildMeshcoreRoomIncomingMessage({
+        roomServerId: room.node_id,
+        authorId,
+        authorName,
+        rawText,
+        timestamp,
+        receivedVia: 'rf',
+      });
+    renderRoomsPanel(new Map([[room.node_id, room]]), {
+      initialRoomTarget: room.node_id,
+      isActive: true,
+      messages: [
+        { ...post(3, 'Bob', 'second in', serverTime), receivedAt: arrivedMs + 60_000 },
+        { ...post(2, 'Alice', 'first in', arrivedMs), receivedAt: arrivedMs },
+      ],
+    });
+
+    const first = await screen.findByText('first in');
+    const second = screen.getByText('second in');
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // One separator for the day both arrived, none for the server's day; the post still shows
+    // the server's date and time.
+    expect(screen.getAllByText('chatPanel.dayToday')).toHaveLength(1);
+    expect(screen.queryByText(formatIsoDate(serverTime))).not.toBeInTheDocument();
+    expect(screen.getAllByText(formatIsoDateTime(serverTime)).length).toBeGreaterThan(0);
   });
 });

@@ -204,6 +204,19 @@ describe('findFirstMessageIndexByDayKey', () => {
     ];
     expect(findFirstMessageIndexByDayKey(messages, day)).toBe(1);
   });
+
+  it('finds a message by the day it arrived, not the day its sender clock gave it', () => {
+    const arrivalDay = getChatDayKey(new Date(2026, 0, 10, 12).getTime());
+    const messages = [
+      makeMsg({ timestamp: new Date(2026, 0, 9, 8).getTime() }),
+      makeMsg({
+        timestamp: new Date(2026, 0, 7, 9).getTime(),
+        receivedAt: new Date(2026, 0, 10, 9).getTime(),
+      }),
+    ];
+    expect(findFirstMessageIndexByDayKey(messages, arrivalDay)).toBe(1);
+    expect(findFirstMessageIndexByDayKey(messages, getChatDayKey(messages[1].timestamp))).toBe(-1);
+  });
 });
 
 describe('findIndexByRowKey', () => {

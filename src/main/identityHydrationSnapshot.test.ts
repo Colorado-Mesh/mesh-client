@@ -6,6 +6,7 @@ import { runSchemaUpgrade } from './db-schema-sync';
 import {
   readMeshcoreIdentityHydration,
   readMeshtasticIdentityHydration,
+  readMeshtasticMessages,
 } from './identityHydrationSnapshot';
 
 describe('identityHydrationSnapshot', () => {
@@ -40,6 +41,39 @@ describe('identityHydrationSnapshot', () => {
     expect(snap.nodes).toHaveLength(1);
     expect(snap.meshcoreContacts).toHaveLength(1);
     expect(snap.messages).toHaveLength(1);
+  });
+
+  it('loads the most recently stored Meshtastic rows with their receipt, whatever their radio time', () => {
+    const d = openDb();
+    const insert = d.prepareOnce(
+      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, received_at)
+       VALUES (1, 'A', ?, 0, ?, ?)`,
+    );
+    insert.run('first in', 1_700_000_000_000, 1_700_000_000_000);
+    insert.run('second in', 1_700_000_060_000, 1_700_000_060_000);
+    // A Store & Forward replay heard by another radio two hours earlier, stored last.
+    insert.run('replayed', 1_699_992_800_000, 1_700_000_120_000);
+    const snap = readMeshtasticIdentityHydration(d, 2);
+    const rows = snap.messages as { payload: string; receivedAt: number }[];
+    expect(rows.map((row) => [row.payload, row.receivedAt]).sort()).toEqual([
+      ['replayed', 1_700_000_120_000],
+      ['second in', 1_700_000_060_000],
+    ]);
+  });
+
+  it('keeps rows copied in by a database merge out of the newest window', () => {
+    const d = openDb();
+    d.prepareOnce(
+      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, received_at)
+       VALUES (1, 'A', 'received today', 0, ?, ?)`,
+    ).run(1_700_000_000_000, 1_700_000_000_000);
+    // A merge inserts old rows without receipts after newer ones (`mergeDatabase`).
+    d.prepareOnce(
+      `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp)
+       VALUES (2, 'B', 'merged from last year', 0, ?)`,
+    ).run(1_670_000_000_000);
+    const rows = readMeshtasticMessages(d, undefined, 1) as { payload: string }[];
+    expect(rows.map((row) => row.payload)).toEqual(['received today']);
   });
 
   it('reads MeshCore contacts + hops + messages in one snapshot', () => {

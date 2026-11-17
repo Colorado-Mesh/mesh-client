@@ -786,8 +786,10 @@ describe('IPC sender validation on high-value handlers (source contract)', () =>
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('db:saveMessage'[\s\S]*?validateIpcSender\(event\)/,
     );
-    expect(INDEX_SOURCE).toMatch(
-      /ipcMain\.handle\('db:getMessages'[\s\S]*?validateIpcSender\(event\)/,
+    // Registered from the `identity-hydration.js` sibling with the injected sender check.
+    const hydrationSource = readFileSync(join(__dirname, 'identityHydrationSnapshot.ts'), 'utf-8');
+    expect(hydrationSource).toMatch(
+      /ipcMain\.handle\('db:getMessages'[\s\S]*?assertIpcSender\(event, 'db:getMessages'\)/,
     );
   });
 

@@ -626,9 +626,69 @@ describe('messageStore live trim keeps sending rows', () => {
     const unsubscribe = subscribeMessageStoreEvents((event) => {
       events.push(event);
     });
-    addMessage(TRIM_ID, { ...sampleRecord('ancient'), timestamp: 1 });
+    // A record that arrives already carrying an older receipt is the oldest row, so the cap drops it.
+    addMessage(TRIM_ID, { ...sampleRecord('ancient'), timestamp: 1, receivedAt: 1 });
     unsubscribe();
     expect(useMessageStore.getState().messages[TRIM_ID]?.ancient).toBeUndefined();
     expect(events.filter((event) => event.type === 'added')).toEqual([]);
+  });
+
+  it('keeps a message that just arrived with an old sender clock and drops the oldest receipt', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('b'), timestamp: 3 });
+    addMessage(TRIM_ID, { ...sampleRecord('late clock'), timestamp: 1 });
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(bucket).sort()).toEqual(['b', 'late clock']);
+  });
+});
+
+describe('messageStore receipt times', () => {
+  const ID = 'identity-receipts';
+  const stored = (id: string) => useMessageStore.getState().messages[ID]?.[id];
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+  });
+
+  it('stamps a first sighting and keeps that receipt when the message arrives again', () => {
+    upsertMessage(ID, sampleRecord('m'));
+    const first = stored('m')?.receivedAt;
+    expect(typeof first).toBe('number');
+    upsertMessage(ID, { ...sampleRecord('m'), receivedAt: first! + 5_000 });
+    addMessage(ID, { ...sampleRecord('m'), payload: 'edited', receivedAt: first! + 9_000 });
+    expect(stored('m')?.receivedAt).toBe(first);
+  });
+
+  it('takes an earlier receipt carried by a merged copy of the same message', () => {
+    upsertMessage(ID, sampleRecord('m'));
+    upsertMessage(ID, { ...sampleRecord('m'), receivedAt: 42 });
+    expect(stored('m')?.receivedAt).toBe(42);
+  });
+
+  it('leaves a row loaded without a receipt without one when the message arrives again', () => {
+    replaceMessageRecordsForIdentity(ID, [sampleRecord('old')]);
+    upsertMessage(ID, sampleRecord('old'));
+    addMessage(ID, { ...sampleRecord('old'), payload: 'again' });
+    expect(stored('old')?.receivedAt).toBeUndefined();
+  });
+
+  it('lets a stored row without a receipt win over a live stamp, and keeps an earlier stored one', () => {
+    upsertMessage(ID, sampleRecord('replayed old'));
+    upsertMessage(ID, { ...sampleRecord('kept'), receivedAt: 500 });
+    mergeMessageRecordsFromDbForIdentity(ID, [
+      { ...sampleRecord('replayed old'), status: 'acked' },
+      { ...sampleRecord('kept'), receivedAt: 900, status: 'acked' },
+    ]);
+    expect(stored('replayed old')?.receivedAt).toBeUndefined();
+    expect(stored('kept')?.receivedAt).toBe(500);
+    upsertMessageRecordsForIdentity(ID, [{ ...sampleRecord('kept'), receivedAt: 300 }]);
+    expect(stored('kept')?.receivedAt).toBe(300);
+  });
+
+  it('keeps the first receipt when a sent row is renamed onto its delivered copy', () => {
+    upsertMessage(ID, { ...sampleRecord('pending'), receivedAt: 100, status: 'sending' });
+    upsertMessage(ID, { ...sampleRecord('hash'), receivedAt: 200, status: 'acked' });
+    renameMessageId(ID, 'pending', 'hash');
+    expect(stored('hash')?.receivedAt).toBe(100);
   });
 });

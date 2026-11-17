@@ -53,7 +53,13 @@ export interface RrcChatMessage {
   body: string;
   sender_hash?: string | null;
   nickname?: string | null;
+  /** Envelope `K_TS`: the sender's clock, shown on the line. */
   timestamp: number;
+  /**
+   * When this app first received (or sent) the line, in ms; reloaded history is ordered by it.
+   * Absent on lines saved before it was kept (`src/renderer/lib/chatReceiveOrder.ts`).
+   */
+  receivedAt?: number;
   /** Present on direct NOTICE (K_DST) whispers. */
   dst_hash?: string | null;
   /**

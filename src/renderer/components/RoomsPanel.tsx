@@ -55,6 +55,7 @@ import {
   savePersistedRoomsLastRead,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { chatReceivedAtMs, compareChatReceiveOrder } from '@/renderer/lib/chatReceiveOrder';
 import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -476,9 +477,10 @@ export default function RoomsPanel({
 
   const roomPosts = useMemo(() => {
     if (selectedRoomId == null) return [];
+    // Arrival order (`chatReceiveOrder.ts`): the room server's clock stays on each post.
     const posts = messages
       .filter((m) => m.roomServerId === selectedRoomId)
-      .sort((a, b) => a.timestamp - b.timestamp);
+      .sort((a, b) => compareChatReceiveOrder(a, b));
     const nameByNodeId = new Map<number, string>();
     for (const [id, node] of nodes) {
       const name = node.long_name?.trim();
@@ -542,7 +544,7 @@ export default function RoomsPanel({
     const indices = new Set<number>();
     let prevDayKey = '';
     for (let i = 0; i < filteredRoomPosts.length; i++) {
-      const dayKey = getChatDayKey(filteredRoomPosts[i].timestamp);
+      const dayKey = getChatDayKey(chatReceivedAtMs(filteredRoomPosts[i]));
       if (dayKey !== prevDayKey) {
         indices.add(i);
         prevDayKey = dayKey;
@@ -2622,7 +2624,7 @@ export default function RoomsPanel({
                       <div className="flex items-center gap-3 py-2">
                         <div className="border-ink-700 flex-1 border-t" />
                         <span className="text-muted shrink-0 text-xs font-medium">
-                          {formatDayLabel(m.timestamp, t)}
+                          {formatDayLabel(chatReceivedAtMs(m), t)}
                         </span>
                         <div className="border-ink-700 flex-1 border-t" />
                       </div>

@@ -1,4 +1,5 @@
 import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
+import { compareChatReceiveOrder } from './chatReceiveOrder';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import { orderMeshcoreDmsWithinSecond } from './meshcoreMessageOrder';
 import {
@@ -321,16 +322,20 @@ export interface MeshcoreDisplayRepairOpts {
   selfNodeId?: number | null;
 }
 
-/** Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest). */
+/**
+ * Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest).
+ * Rows go in the order this app received them, not by the sender's clock (`chatReceiveOrder.ts`).
+ */
 export function meshcoreChatMessagesForDisplay(
   messages: readonly ChatMessage[],
   opts: MeshcoreDisplayRepairOpts = {},
 ): ChatMessage[] {
-  const sorted = [...messages].sort(
-    (a, b) =>
-      a.timestamp - b.timestamp ||
-      (a.packetId ?? 0) - (b.packetId ?? 0) ||
-      a.sender_id - b.sender_id,
+  const sorted = [...messages].sort((a, b) =>
+    compareChatReceiveOrder(
+      a,
+      b,
+      (x, y) => (x.packetId ?? 0) - (y.packetId ?? 0) || x.sender_id - y.sender_id,
+    ),
   );
   return repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(sorted), opts);
 }

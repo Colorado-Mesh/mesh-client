@@ -134,7 +134,10 @@ import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulum
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
 import { registerRoomMacroNavigator, type RoomMacroPlan } from '@/renderer/lib/roomMacros';
-import { resolveInactiveRrcNotification } from '@/renderer/lib/rrcInactiveNotifications';
+import {
+  newestRrcMessagesByArrival,
+  resolveInactiveRrcNotification,
+} from '@/renderer/lib/rrcInactiveNotifications';
 import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
@@ -4177,9 +4180,8 @@ function AppContent() {
     }
     const delta = count - prevRrcMsgCountRef.current;
     prevRrcMsgCountRef.current = count;
-    // Flat map order is room-keyed, not append order — use newest by timestamp.
-    const sorted = [...rrcMsgsRef.current].sort((a, b) => a.timestamp - b.timestamp);
-    const newMsgs = sorted.slice(-delta);
+    // Flat map order is room-keyed, not append order, so take the newest by arrival.
+    const newMsgs = newestRrcMessagesByArrival(rrcMsgsRef.current, delta);
 
     const onRrcPanel =
       protocolRef.current === 'reticulum' && activePanelIndexRef.current === RRC_PANEL_INDEX;

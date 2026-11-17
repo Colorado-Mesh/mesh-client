@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { IpcMain } from 'electron';
 
 import { isValidBlockedContactHash, normalizeBlockedHash } from '../../shared/blockedContactHash';
+import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import { isMeshProtocol } from '../../shared/meshProtocol';
 import type {
@@ -141,9 +142,11 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const safeLimit = clampQueryLimit(limit, { default: 500, max: 10000 });
       const db = getDbForIpc('db:getReticulumMessages');
       if (!db) return [];
+      // Newest by receipt (`received_at`), not by the LXMF sender's clock: a message from a peer
+      // whose clock runs behind must not fall out of the window it arrived in.
       const rows = db
         .prepareOnce(
-          'SELECT * FROM reticulum_messages WHERE identity_id = ? ORDER BY timestamp DESC LIMIT ?',
+          'SELECT * FROM reticulum_messages WHERE identity_id = ? ORDER BY COALESCE(received_at, timestamp) DESC, id DESC LIMIT ?',
         )
         .all(identityId, safeLimit) as Record<string, unknown>[];
       rows.reverse();
@@ -275,9 +278,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           }
         }
 
+        // `received_at` is written here only; the update above never moves a stored row.
         db.prepareOnce(
-          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, attachments_json, delivery_method, audio_mode, audio_duration_sec)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, attachments_json, delivery_method, audio_mode, audio_duration_sec, received_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           identityId,
           senderId,
@@ -296,6 +300,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           deliveryMethod,
           audioMode,
           audioDurationSec,
+          chatReceivedAtForDb(m.received_at),
         );
         return { changes: 1 };
       });

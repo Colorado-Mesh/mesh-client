@@ -212,6 +212,7 @@ export function savedMessageToChatMessage(m: SavedMessage): ChatMessage {
     rxHops: m.rxHops ?? undefined,
     ...(isChannelIdentityKey(m.channelKey) ? { channelKey: m.channelKey } : {}),
     ...(m.radioNodeId != null && m.radioNodeId > 0 ? { radioNodeId: m.radioNodeId } : {}),
+    ...(m.receivedAt != null ? { receivedAt: m.receivedAt } : {}),
   };
 }
 

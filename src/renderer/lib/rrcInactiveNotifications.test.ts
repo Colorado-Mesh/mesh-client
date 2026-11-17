@@ -1,9 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  newestRrcMessagesByArrival,
   resolveInactiveRrcNotification,
   resolveInactiveRrcNotificationType,
 } from './rrcInactiveNotifications';
+
+describe('newestRrcMessagesByArrival', () => {
+  it('picks the lines that arrived last, even when a sender clock put one far back', () => {
+    const line = (id: string, timestamp: number, receivedAt: number) => ({
+      id,
+      room: '#lobby',
+      kind: 'msg' as const,
+      body: id,
+      timestamp,
+      receivedAt,
+    });
+    const newest = newestRrcMessagesByArrival(
+      [line('late clock', 1_000, 9_000), line('older', 8_000, 8_000), line('oldest', 7_000, 7_000)],
+      1,
+    );
+    expect(newest.map((m) => m.id)).toEqual(['late clock']);
+  });
+});
 
 describe('resolveInactiveRrcNotification', () => {
   it('returns the winning line and its room for the desktop notification', () => {

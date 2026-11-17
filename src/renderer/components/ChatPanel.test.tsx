@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
+import { formatIsoDate } from '@/shared/formatIsoDate';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
@@ -8123,5 +8124,61 @@ describe('Signal report quick replies', () => {
       clearReticulumHashRegistry();
       useReticulumIdentityActivityStore.setState({ byDestination: new Map() });
     }
+  });
+});
+
+describe('ChatPanel receive order', () => {
+  const defaultProps = {
+    messages: [],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 0,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+  };
+
+  it('dates rows by arrival and shows the sender date on a message that arrived on another day', async () => {
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    const sentTwoDaysEarlier = arrivedMs - 2 * 86_400_000;
+    const senderDate = formatIsoDate(sentTwoDaysEarlier);
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'first in',
+              channel: 0,
+              timestamp: arrivedMs,
+              receivedAt: arrivedMs,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'B',
+              payload: 'late clock',
+              channel: 0,
+              timestamp: sentTwoDaysEarlier,
+              receivedAt: arrivedMs + 60_000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('late clock');
+    // One day separator for the day both arrived, none for the sender's day.
+    expect(screen.getAllByText('Today')).toHaveLength(1);
+    expect(screen.queryByText(senderDate)).not.toBeInTheDocument();
+    // The late bubble still shows the sender's time, with the sender's date in front of it.
+    expect(screen.getByText((content) => content.startsWith(`${senderDate} `))).toBeInTheDocument();
   });
 });

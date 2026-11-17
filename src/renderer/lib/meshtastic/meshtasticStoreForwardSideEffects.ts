@@ -15,6 +15,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import { addMessage } from '../../stores/messageStore';
 import { withMeshtasticChannelIdentity } from '../channelIdentity';
+import { nextChatReceivedAt } from '../chatReceiveOrder';
 import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
@@ -88,8 +89,13 @@ function shouldRequestAutoHistory(gate: AutoHistoryGate, serverNodeId: number, n
   return true;
 }
 
-function appendReplayedHistoryText(identityId: IdentityId, chat: ChatMessage): void {
-  if (isDuplicateHistoryMessage(getIdentityChatMessages(identityId), chat)) return;
+function appendReplayedHistoryText(identityId: IdentityId, replayed: ChatMessage): void {
+  if (isDuplicateHistoryMessage(getIdentityChatMessages(identityId), replayed)) return;
+  // A replay reaches this app now; it is ordered by that receipt and saved with it.
+  const chat: ChatMessage = {
+    ...replayed,
+    receivedAt: replayed.receivedAt ?? nextChatReceivedAt(),
+  };
   addMessage(identityId, chatMessageToMessageRecord(chat));
   persistDbWrite('Meshtastic Store & Forward message', async () => {
     try {

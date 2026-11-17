@@ -15,6 +15,7 @@ import {
 } from '@/shared/meshcoreMessageHydration';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES } from './chatInMemoryBuffer';
+import { chatReceivedAtMs } from './chatReceiveOrder';
 import type { ChatMessage } from './types';
 
 /** Radio slots 0–39 plus DM and room, with a little slack for legacy indexes. */
@@ -22,6 +23,8 @@ export const MAX_MESHCORE_MEMORY_CHANNELS = 48;
 
 export interface MeshcoreMemoryWindowFields {
   timestamp: number;
+  /** First local receipt; "newest" means received last, whatever the sender's clock said. */
+  receivedAt?: number;
   localOrder?: number;
   channelIndex: number;
   to: number;
@@ -37,8 +40,11 @@ function floorForLogicalChannel(logical: number): number {
     : MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT;
 }
 
-/** Newest first, then higher local order, then id. */
+/** Newest receipt first, then newest wire time, then higher local order, then id. */
 function compareNewestFirst(a: MeshcoreMemoryWindowFields, b: MeshcoreMemoryWindowFields): number {
+  const aReceived = chatReceivedAtMs(a);
+  const bReceived = chatReceivedAtMs(b);
+  if (aReceived !== bReceived) return bReceived - aReceived;
   if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
   const aOrder = a.localOrder ?? 0;
   const bOrder = b.localOrder ?? 0;
@@ -46,14 +52,14 @@ function compareNewestFirst(a: MeshcoreMemoryWindowFields, b: MeshcoreMemoryWind
   return b.trimId.localeCompare(a.trimId);
 }
 
-/** Latest timestamp in a channel group, used only to rank extra channels. */
+/** Latest receipt in a channel group, used only to rank extra channels. */
 function newestTimestamp<T>(
   items: readonly T[],
   fieldsOf: (item: T) => MeshcoreMemoryWindowFields,
 ): number {
   let best = Number.NEGATIVE_INFINITY;
   for (const item of items) {
-    const ts = fieldsOf(item).timestamp;
+    const ts = chatReceivedAtMs(fieldsOf(item));
     if (ts > best) best = ts;
   }
   return best;
@@ -125,6 +131,7 @@ export function trimMeshcoreMemoryWindow<T>(
 export function meshcoreChatMessageWindowFields(message: ChatMessage): MeshcoreMemoryWindowFields {
   return {
     timestamp: message.timestamp,
+    receivedAt: message.receivedAt,
     localOrder: message.localOrder,
     channelIndex: message.channel,
     to: message.to ?? 0,
