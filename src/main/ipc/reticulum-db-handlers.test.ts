@@ -348,6 +348,41 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(rows).toEqual([{ received_at: 1_700_007_200_000 }]);
   });
 
+  it('saveReticulumMessage leaves a row saved before receipt times without one when it is saved again', () => {
+    const identityId = 'id-rt-received-legacy';
+    const messageHash = 'e6'.repeat(32);
+    const message = {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Peer',
+      payload: 'saved before receipts',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'delivered',
+    };
+    db!
+      .prepareOnce(
+        'INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, message_hash, delivery_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      )
+      .run(
+        message.identity_id,
+        message.sender_id,
+        message.sender_name,
+        message.payload,
+        message.timestamp,
+        message.message_hash,
+        message.delivery_status,
+      );
+    handlers.get('db:saveReticulumMessage')?.(event, {
+      ...message,
+      received_at: 1_700_007_200_000,
+    });
+    const rows = db!
+      .prepareOnce('SELECT received_at FROM reticulum_messages WHERE identity_id = ?')
+      .all(identityId);
+    expect(rows).toEqual([{ received_at: null }]);
+  });
+
   it('saveReticulumMessage stores no receipt for one that is not a non-negative integer', () => {
     const save = handlers.get('db:saveReticulumMessage');
     save?.(event, {
