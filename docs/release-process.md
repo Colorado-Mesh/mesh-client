@@ -20,10 +20,10 @@ From a pull request to a published release:
 5. The tag starts the two build workflows below. They attach the artifacts to a **draft** GitHub Release, which opens with the release notes.
 6. A maintainer reviews the draft and publishes it by hand.
 
-| Workflow                                            | Purpose                                                                                              |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [`release.yaml`](../.github/workflows/release.yaml) | Build macOS/Linux/Windows via `electron-builder` (`--publish never`) and attach to the prepare draft |
-| [`flatpak.yaml`](../.github/workflows/flatpak.yaml) | Build Reticulum sidecar + Flatpak bundles (x86_64 and aarch64) and attach them to the same draft     |
+The two build workflows the tag starts:
+
+- [`release.yaml`](../.github/workflows/release.yaml) builds macOS, Linux and Windows with `electron-builder` (`--publish never`) and attaches them to the prepare draft.
+- [`flatpak.yaml`](../.github/workflows/flatpak.yaml) builds the Reticulum sidecar and the Flatpak bundles (x86_64 and aarch64) and attaches them to the same draft.
 
 `prepare-github-release` is the **only** job that creates the draft (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`). Matrix builds and Flatpak attach with `ci-upload-release-assets.mjs` by `release_id` so parallel jobs cannot fork duplicate drafts. `electron-builder.yml` still sets `releaseType: draft` for local `dist:*:publish` use.
 
