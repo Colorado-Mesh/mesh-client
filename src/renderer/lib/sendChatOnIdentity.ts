@@ -12,6 +12,7 @@ import {
 import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { isMeshcoreOpenWireCompatEnabled } from './appSettingsStorage';
 import { withMeshtasticChannelIdentity } from './channelIdentity';
+import { nextChatReceivedAt } from './chatReceiveOrder';
 import { connectionDriver } from './drivers/ConnectionDriver';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
@@ -288,6 +289,9 @@ export function sendChatOnIdentity(
     channelIndex: isMeshcoreDm ? -1 : channelIndex,
     ...(isMeshcoreDm ? { localOrder: nextMeshcoreMessageLocalOrder() } : {}),
     timestamp: Date.now(),
+    // Taken here, not by the store, so every save of this row carries the receipt the live row
+    // holds; it can run ahead of the stamp (a same-millisecond backlog, or a clock set back).
+    receivedAt: nextChatReceivedAt(),
     status: 'sending' as const,
     replyTo,
   };

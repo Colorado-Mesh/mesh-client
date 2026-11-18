@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from '../lib/appSettingsStorage';
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from '../lib/chatReceiveOrder';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { packetRouter } from '../lib/drivers/PacketRouter';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
@@ -1390,5 +1391,111 @@ describe('useSendMessage', () => {
       undefined,
     );
     saveReticulum.mockRestore();
+  });
+});
+
+describe('own MeshCore sends save their receipt', () => {
+  const HOUR = 3_600_000;
+
+  beforeEach(() => {
+    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    useMessageStore.setState({ messages: {} });
+    useNodeStore.setState({ nodes: {} });
+    setMeshcoreDmAckPendingImpl(() => undefined);
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockResolvedValue(undefined);
+    // Receipts run ahead of the wall clock after a set-back (or a same-millisecond backlog), so
+    // a saved stamp of Date.now() would not hold the place the live row has.
+    nextChatReceivedAt(Date.now() + HOUR);
+  });
+
+  afterEach(() => {
+    resetChatReceiptClockForTests();
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+  });
+
+  function storedReceipt(identityId: string, payload: string): number | undefined {
+    return Object.values(useMessageStore.getState().messages[identityId] ?? {}).find(
+      (m) => m.payload === payload,
+    )?.receivedAt;
+  }
+
+  function savedReceipts(payload: string, status: string): unknown[] {
+    return vi
+      .mocked(window.electronAPI.db.saveMeshcoreMessage)
+      .mock.calls.map(([row]) => row)
+      .filter((row) => row.payload === payload && row.status === status)
+      .map((row) => row.received_at);
+  }
+
+  it('saves a channel send with the receipt the live row holds', async () => {
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    try {
+      addIdentity({
+        id: ID_MC,
+        protocol: meshcoreProtocol,
+        signature: 'sig-mc',
+        transports: [],
+        createdAt: 1,
+        lastSeenAt: 1,
+      });
+      setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+      const { result } = renderHook(() => useSendMessage(ID_MC));
+      result.current('receipt channel', 3);
+      await vi.waitFor(() => {
+        expect(savedReceipts('receipt channel', 'acked')).toHaveLength(1);
+      });
+      const live = storedReceipt(ID_MC, 'receipt channel');
+      expect(live).toBeGreaterThan(Date.now());
+      expect(savedReceipts('receipt channel', 'acked')).toEqual([live]);
+    } finally {
+      sendSpy.mockRestore();
+    }
+  });
+
+  it('saves a pending DM with the receipt the live row holds', async () => {
+    const sendSpy = vi
+      .spyOn(meshcoreProtocol, 'sendMessage')
+      .mockResolvedValue({ packetId: 0x5151, estTimeoutMs: 5_000 });
+    try {
+      seedMeshcoreDmSender(ID_MC_DM, 0x22);
+      const { result } = renderHook(() => useSendMessage(ID_MC_DM));
+      result.current('receipt dm', -1, 0x22);
+      await vi.waitFor(() => {
+        expect(savedReceipts('receipt dm', 'sending')).toHaveLength(1);
+      });
+      const live = storedReceipt(ID_MC_DM, 'receipt dm');
+      expect(live).toBeGreaterThan(Date.now());
+      expect(savedReceipts('receipt dm', 'sending')).toEqual([live]);
+    } finally {
+      sendSpy.mockRestore();
+    }
+  });
+
+  it('saves a failed send with the receipt the live row holds', async () => {
+    const sendSpy = vi
+      .spyOn(meshcoreProtocol, 'sendMessage')
+      .mockImplementation(() => Promise.reject(new Error('rf down')));
+    try {
+      addIdentity({
+        id: ID_MC_FAIL,
+        protocol: meshcoreProtocol,
+        signature: 'sig-mc-fail',
+        transports: [],
+        createdAt: 1,
+        lastSeenAt: 1,
+      });
+      setConnection(ID_MC_FAIL, { status: 'configured', myNodeNum: 7 });
+      const { result } = renderHook(() => useSendMessage(ID_MC_FAIL));
+      result.current('receipt failed', 0);
+      await vi.waitFor(() => {
+        expect(savedReceipts('receipt failed', 'failed')).toHaveLength(1);
+      });
+      const live = storedReceipt(ID_MC_FAIL, 'receipt failed');
+      expect(live).toBeGreaterThan(Date.now());
+      expect(savedReceipts('receipt failed', 'failed')).toEqual([live]);
+    } finally {
+      sendSpy.mockRestore();
+    }
   });
 });

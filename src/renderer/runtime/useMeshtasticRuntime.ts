@@ -3347,6 +3347,8 @@ export function useMeshtasticRuntime() {
           payload: text,
           channel,
           timestamp: Date.now(),
+          // Taken before the save so the saved row keeps the receipt the live row holds.
+          receivedAt: nextChatReceivedAt(),
           packetId: tempId,
           receivedVia: deviceRef.current ? ('rf' as const) : ('mqtt' as const),
           status: deviceRef.current ? ('sending' as const) : undefined,
