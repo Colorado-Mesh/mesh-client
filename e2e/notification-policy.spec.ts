@@ -19,8 +19,11 @@ async function probe(page: Page) {
       permissions: 0,
     };
     Object.assign(window, { notificationProbe: state });
-    const create = AudioContext.prototype.createOscillator;
-    AudioContext.prototype.createOscillator = function () {
+    // Count tones from both contexts: Windows renders the tone in an OfflineAudioContext and plays
+    // the WAV over IPC (#1487), other platforms play it through the shared AudioContext. Both
+    // inherit createOscillator from BaseAudioContext.
+    const create = BaseAudioContext.prototype.createOscillator;
+    BaseAudioContext.prototype.createOscillator = function (this: BaseAudioContext) {
       state.sounds++;
       return create.call(this);
     };
@@ -89,7 +92,9 @@ test('mentions, mute/unmute and previews through a synthetic TCP radio, with res
     expect((await counts(page)).previews).toHaveLength(0);
     radio.receiveChannel(0, 'Other: @[Test Radio] check in', timestamp + 2);
     await expect.poll(async () => (await counts(page)).previews.length).toBe(1);
-    expect((await counts(page)).sounds).toBe(1);
+    // The first tone waits for the audio context to resume and to bind the default output, so it
+    // can start a little after the preview appears.
+    await expect.poll(async () => (await counts(page)).sounds).toBe(1);
     radio.receiveChannel(0, 'Other: @[Test Radio] check in', timestamp + 2);
     await expect.poll(async () => page.getByText('check in', { exact: false }).count()).toBe(1);
     expect((await counts(page)).previews).toHaveLength(1);
