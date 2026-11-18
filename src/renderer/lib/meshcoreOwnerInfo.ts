@@ -1,10 +1,10 @@
 import { isInfraConfigUnsupportedReply } from './meshcoreInfraConfig';
+import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
+
+export { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
 
 /** Contact types whose firmware runs CommonCLI, so `get owner.info` exists. */
 const SUPPORTED_HW_MODELS = new Set(['Repeater', 'Room', 'Sensor']);
-
-/** MeshCore firmware stores owner.info in a 32-byte UTF-8 field (CommonCLI). */
-export const MESHCORE_OWNER_INFO_MAX_BYTES = 32;
 
 export function truncateMeshcoreOwnerInfoText(text: string): string {
   const bytes = new TextEncoder().encode(text);

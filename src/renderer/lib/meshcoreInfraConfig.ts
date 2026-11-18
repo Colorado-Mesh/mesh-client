@@ -1,5 +1,5 @@
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
-import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfo';
+import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
 
 export type InfraConfigSection = 'identity' | 'radio' | 'routing' | 'scope' | 'room';
 export type InfraConfigValues = Partial<Record<InfraConfigKey, string>>;
