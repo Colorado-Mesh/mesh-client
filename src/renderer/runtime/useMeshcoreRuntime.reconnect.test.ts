@@ -784,6 +784,10 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
       /rawPacketsRef\.current = computeNextRawPacketLog\([\s\S]*?meshcoreRawPacketAppenderFor\(deps\)\.append\(rxEntry\)/,
     );
     expect(RF_RX_RUNTIME_SOURCE).toContain('syncBeforeCommit:');
+    // Commit must not clobber a ref that eager appends already advanced past this batch.
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
+      /syncBeforeCommit:\s*\(next\)\s*=>\s*\{[\s\S]*?cur\.length > next\.length/,
+    );
   });
 });
 

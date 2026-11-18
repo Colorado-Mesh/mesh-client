@@ -4,6 +4,8 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { NodeSqliteDB } from './db-compat';
+
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-save-nodes-batch-'));
 
 vi.mock('electron', () => ({
@@ -96,5 +98,71 @@ describe('saveNodesBatch (disk-backed)', () => {
     expect(row.hops_away).toBe(1);
     expect(row.snr).toBe(2);
     expect(row.long_name).toBe('Node 1');
+  });
+
+  it('rethrows SQLITE_FULL / SQLITE_IOERR from saveNodesBatchOn so the batch can retry', async () => {
+    const { isSqliteOperationalWriteError, saveNodesBatchOn } = await import('./nodeUpsert');
+    expect(
+      isSqliteOperationalWriteError(
+        Object.assign(new Error('database or disk is full'), {
+          errcode: 13,
+          code: 'ERR_SQLITE_ERROR',
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isSqliteOperationalWriteError(
+        Object.assign(new Error('disk I/O error'), { errcode: 10, code: 'ERR_SQLITE_ERROR' }),
+      ),
+    ).toBe(true);
+    expect(
+      isSqliteOperationalWriteError(
+        Object.assign(new Error('NOT NULL constraint failed: nodes.long_name'), {
+          errcode: 1299,
+          errstr: 'constraint failed',
+          code: 'ERR_SQLITE_ERROR',
+        }),
+      ),
+    ).toBe(false);
+
+    const run = vi.fn().mockImplementationOnce(() => {
+      throw Object.assign(new Error('database or disk is full'), { errcode: 13 });
+    });
+    const db = {
+      prepareOnce: () => ({ run }),
+      transaction: (fn: () => void) => fn,
+    } as unknown as NodeSqliteDB;
+
+    expect(() =>
+      saveNodesBatchOn(db, [
+        {
+          node_id: 1,
+          long_name: 'A',
+          short_name: 'A',
+          hw_model: 'T',
+          snr: 1,
+          rssi: null,
+          battery: 1,
+          last_heard: 1,
+          latitude: null,
+          longitude: null,
+          role: null,
+          hops_away: 1,
+          via_mqtt: null,
+          voltage: null,
+          channel_utilization: null,
+          air_util_tx: null,
+          altitude: null,
+          source: 'rf',
+          num_packets_rx_bad: null,
+          num_rx_dupe: null,
+          num_packets_rx: null,
+          num_packets_tx: null,
+          hops: null,
+          path: null,
+          public_key: null,
+        },
+      ]),
+    ).toThrow(/database or disk is full/);
   });
 });

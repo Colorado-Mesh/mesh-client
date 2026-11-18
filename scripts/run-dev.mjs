@@ -54,7 +54,7 @@ export function buildDevConcurrentlyArgs() {
   const notificationSoundPlayWavBuild =
     'esbuild src/main/notificationSoundPlayWav.ts --bundle --platform=node --outfile=dist-electron/main/notification-sound-play-wav.js --format=cjs --watch';
   const nodeUpsertBuild =
-    'esbuild src/main/nodeUpsert.ts --bundle --platform=node --outfile=dist-electron/main/node-upsert.js --format=cjs --watch';
+    'esbuild src/main/nodeUpsert.ts --bundle --platform=node --outfile=dist-electron/main/node-upsert.js --external:electron --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 

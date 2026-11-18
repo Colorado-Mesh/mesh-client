@@ -131,6 +131,30 @@ describe('coalescedNodeWrites', () => {
     expect(order).toEqual(['a', 'b']);
   });
 
+  it('keeps drained records readable until flushSnapshot applies them', async () => {
+    let releaseSave!: () => void;
+    const saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    window.electronAPI.db.saveNodes = vi.fn().mockImplementation(async () => {
+      await saveGate;
+      return { saved: 1, dropped: 0 };
+    });
+    enqueueNodeWrite(ID_A, record(55, { snr: 7, longName: 'Draining' }));
+    const flushPromise = flushNodeWrites();
+    // Pending was swapped out, but read-through must still see the in-flight record.
+    expect(peekPendingNodeRecord(ID_A, 55)?.snr).toBe(7);
+    expect(getIdentityNode(ID_A, 55)?.snr).toBe(7);
+    // Newer enqueue while flush is blocked must win over the drained snapshot.
+    enqueueNodeWrite(ID_A, record(55, { snr: 8, longName: 'Newer' }));
+    expect(peekPendingNodeRecord(ID_A, 55)?.snr).toBe(8);
+    releaseSave();
+    await flushPromise;
+    await flushNodeWrites();
+    expect(getIdentityNode(ID_A, 55)?.snr).toBe(8);
+    expect(peekPendingNodeRecord(ID_A, 55)).toBeUndefined();
+  });
+
   it('applies in-memory state even when saveNodes fails (retry queue)', async () => {
     window.electronAPI.db.saveNodes = vi.fn().mockRejectedValue(new Error('db down'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

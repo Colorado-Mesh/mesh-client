@@ -17,6 +17,7 @@ export interface BatchedRingBufferAppenderOptions<T> {
 export class BatchedRingBufferAppender<T> {
   private pending: T[] = [];
   private rafId: number | null = null;
+  private timeoutId: ReturnType<typeof setTimeout> | null = null;
   private readonly syncBeforeCommit?: (next: T[]) => void;
   private readonly mergeBatch?: (prev: T[], batch: T[]) => T[];
 
@@ -31,6 +32,10 @@ export class BatchedRingBufferAppender<T> {
 
   append(entry: T): void {
     this.pending.push(entry);
+    // Bound pending at append time — RAF does not run while the window is hidden.
+    if (this.pending.length > this.maxEntries) {
+      this.pending.splice(0, this.pending.length - this.maxEntries);
+    }
     this.scheduleFlush();
   }
 
@@ -59,7 +64,16 @@ export class BatchedRingBufferAppender<T> {
   }
 
   private scheduleFlush(): void {
-    if (this.rafId != null) return;
+    if (this.rafId != null || this.timeoutId != null) return;
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    if (hidden || typeof requestAnimationFrame !== 'function') {
+      // Drain without waiting for a frame that may never come while backgrounded.
+      this.timeoutId = setTimeout(() => {
+        this.timeoutId = null;
+        this.flush();
+      }, 0);
+      return;
+    }
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
       this.flush();
@@ -67,8 +81,13 @@ export class BatchedRingBufferAppender<T> {
   }
 
   private cancelScheduledFlush(): void {
-    if (this.rafId == null) return;
-    cancelAnimationFrame(this.rafId);
-    this.rafId = null;
+    if (this.rafId != null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.timeoutId != null) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
   }
 }

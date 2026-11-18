@@ -94,7 +94,7 @@ describe('basemapRegistry', () => {
       'https://a.tile.openstreetmap.fr/hot/14/1/2.png',
     );
     expect(buildRemoteTileUrl('cyclosm', 14, 1, 2)).toBe(
-      'https://a.tile.openstreetmap.fr/cyclosm/14/1/2.png',
+      'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/14/1/2.png',
     );
     expect(BASEMAP_ATTRIBUTIONS.hot).toContain('Humanitarian OpenStreetMap Team');
     expect(BASEMAP_ATTRIBUTIONS.cyclosm).toContain('CyclOSM');

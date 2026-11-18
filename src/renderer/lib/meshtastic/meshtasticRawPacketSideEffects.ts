@@ -133,18 +133,15 @@ function applySignalAndHops(
     via_mqtt: payload.viaMqtt,
   };
   perfSpanSync('rf:meshtastic:nodeStore', () => {
-    enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), {
-      persist: true,
-      onFlushNode: (flushed) => {
-        perfSpanSync('rf:meshtastic:diagnostics', () => {
-          processMeshtasticNodeDiagnostics(
-            flushed,
-            myNodeNum,
-            getIdentityNode(identityId, myNodeNum) ?? null,
-          );
-        });
-      },
-    });
+    enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), { persist: true });
+  });
+  // Per-packet observation (hop history / packet counts); analysis stays debounced in the store.
+  perfSpanSync('rf:meshtastic:diagnostics', () => {
+    processMeshtasticNodeDiagnostics(
+      node,
+      myNodeNum,
+      getIdentityNode(identityId, myNodeNum) ?? null,
+    );
   });
 }
 

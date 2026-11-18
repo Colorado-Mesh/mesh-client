@@ -103,16 +103,12 @@ function saveNode(
   node: MeshNode,
   diagnostics?: { myNodeNum: number; homeNode: MeshNode | null },
 ): void {
-  enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), {
-    persist: true,
-    ...(diagnostics
-      ? {
-          onFlushNode: (flushed: MeshNode) => {
-            processMeshtasticNodeDiagnostics(flushed, diagnostics.myNodeNum, diagnostics.homeNode);
-          },
-        }
-      : {}),
-  });
+  // Persist stays coalesced; record hop/CU/packet observations per event so coalescing
+  // cannot drop intermediate samples (expensive analysis remains debounced in the store).
+  enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), { persist: true });
+  if (diagnostics) {
+    processMeshtasticNodeDiagnostics(node, diagnostics.myNodeNum, diagnostics.homeNode);
+  }
 }
 
 /** Self stays at hopsAway (default 0); stale peers clear hops; live peers keep packet or prior. */

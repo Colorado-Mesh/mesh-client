@@ -125,7 +125,7 @@ export function buildRemoteTileUrl(
     return `https://${tileSubdomain(x, y)}.tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`;
   }
   if (basemapId === 'cyclosm') {
-    return `https://${tileSubdomain(x, y)}.tile.openstreetmap.fr/cyclosm/${z}/${x}/${y}.png`;
+    return `https://${tileSubdomain(x, y)}.tile-cyclosm.openstreetmap.fr/cyclosm/${z}/${x}/${y}.png`;
   }
   if (basemapId === 'oepnv') {
     return `https://tile.memomaps.de/tilegen/${z}/${x}/${y}.png`;

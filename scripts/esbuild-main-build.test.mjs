@@ -237,6 +237,10 @@ describe('esbuild-main-build', () => {
       expect(nodeUpsertBytes.toString('utf8')).toContain(
         "nodes.source = 'mqtt' AND excluded.source = 'rf'",
       );
+      // electron must stay external — bundling the npm launcher breaks db:saveNodes in packaged main.
+      expect(nodeUpsertBytes.toString('utf8')).not.toContain('path.txt');
+      expect(nodeUpsertBytes.toString('utf8')).not.toContain('Downloading Electron');
+      expect(nodeUpsertBytes.toString('utf8')).not.toContain('install.js');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(

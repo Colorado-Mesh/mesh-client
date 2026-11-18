@@ -37,6 +37,8 @@ interface IdentityPending {
 }
 
 const pendingByIdentity = new Map<IdentityId, IdentityPending>();
+/** Drained buckets still applying to the store / DB — readable until flushSnapshot finishes. */
+const inFlightByIdentity = new Map<IdentityId, IdentityPending>();
 let coalesceTimer: ReturnTimeout | undefined;
 let flushing = false;
 let capWarned = false;
@@ -105,17 +107,57 @@ export function enqueueNodeWrite(
   armTimer();
 }
 
-/** Pending record for read-through, or undefined. */
+/** Pending record for read-through, or undefined. Newer pending beats in-flight drained. */
 export function peekPendingNodeRecord(
   identityId: IdentityId,
   nodeId: number,
 ): NodeRecord | undefined {
-  return pendingByIdentity.get(identityId)?.records.get(nodeId);
+  return (
+    pendingByIdentity.get(identityId)?.records.get(nodeId) ??
+    inFlightByIdentity.get(identityId)?.records.get(nodeId)
+  );
 }
 
-/** True when a persist flush is already queued for this node. */
+/** True when a persist flush is queued or still applying for this node. */
 export function hasPendingNodePersist(identityId: IdentityId, nodeId: number): boolean {
-  return pendingByIdentity.get(identityId)?.persistTodos.has(nodeId) === true;
+  return (
+    pendingByIdentity.get(identityId)?.persistTodos.has(nodeId) === true ||
+    inFlightByIdentity.get(identityId)?.persistTodos.has(nodeId) === true
+  );
+}
+
+function mergeIntoInFlight(drained: Map<IdentityId, IdentityPending>): void {
+  for (const [identityId, bucket] of drained) {
+    const existing = inFlightByIdentity.get(identityId);
+    if (!existing) {
+      inFlightByIdentity.set(identityId, {
+        records: new Map(bucket.records),
+        persistTodos: new Set(bucket.persistTodos),
+        onFlushByNode: new Map(bucket.onFlushByNode),
+      });
+      continue;
+    }
+    for (const [nodeId, record] of bucket.records) existing.records.set(nodeId, record);
+    for (const nodeId of bucket.persistTodos) existing.persistTodos.add(nodeId);
+    for (const [nodeId, onFlush] of bucket.onFlushByNode)
+      existing.onFlushByNode.set(nodeId, onFlush);
+  }
+}
+
+function clearDrainedFromInFlight(drained: Map<IdentityId, IdentityPending>): void {
+  for (const [identityId, bucket] of drained) {
+    const inflight = inFlightByIdentity.get(identityId);
+    if (!inflight) continue;
+    for (const [nodeId, record] of bucket.records) {
+      // Drop only if still the same drained snapshot (newer enqueues replace the ref).
+      if (inflight.records.get(nodeId) === record) {
+        inflight.records.delete(nodeId);
+        inflight.persistTodos.delete(nodeId);
+        inflight.onFlushByNode.delete(nodeId);
+      }
+    }
+    if (inflight.records.size === 0) inFlightByIdentity.delete(identityId);
+  }
 }
 
 async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
@@ -173,12 +215,14 @@ export function flushNodeWrites(): Promise<void> {
   // Swap pending maps so re-entrant enqueues during flush are not lost.
   const drained = new Map(pendingByIdentity);
   pendingByIdentity.clear();
+  mergeIntoInFlight(drained);
 
   flushChain = flushChain.then(async () => {
     flushing = true;
     try {
       await flushSnapshot(drained);
     } finally {
+      clearDrainedFromInFlight(drained);
       flushing = false;
       if (pendingByIdentity.size > 0 && coalesceTimer == null) {
         armTimer();
@@ -192,6 +236,7 @@ export function flushNodeWrites(): Promise<void> {
 export function resetCoalescedNodeWritesForTests(): void {
   clearTimer();
   pendingByIdentity.clear();
+  inFlightByIdentity.clear();
   flushing = false;
   capWarned = false;
   flushChain = Promise.resolve();

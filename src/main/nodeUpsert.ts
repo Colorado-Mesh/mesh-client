@@ -106,8 +106,37 @@ export function saveNodeRowOn(db: NodeSqliteDB, params: NodeUpsertParams): unkno
 }
 
 /**
+ * True for whole-DB / media failures that must abort the batch so the transaction
+ * rolls back and {@link persistDbWrite} can retry. Row-binding and constraint errors
+ * stay drop-not-abort.
+ */
+export function isSqliteOperationalWriteError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const errcode = 'errcode' in err && typeof err.errcode === 'number' ? err.errcode : null;
+  if (errcode != null) {
+    // SQLite primary result codes (extended codes keep the base in the low byte).
+    const base = errcode & 0xff;
+    // SQLITE_NOMEM=7, SQLITE_READONLY=8, SQLITE_IOERR=10, SQLITE_CORRUPT=11, SQLITE_FULL=13
+    if (base === 7 || base === 8 || base === 10 || base === 11 || base === 13) return true;
+  }
+  const message =
+    err instanceof Error
+      ? err.message
+      : typeof err === 'string'
+        ? err
+        : 'message' in err && typeof err.message === 'string'
+          ? err.message
+          : '';
+  return /SQLITE_(FULL|IOERR|NOMEM|READONLY|CORRUPT)|database or disk is full|disk I\/O error/i.test(
+    message,
+  );
+}
+
+/**
  * Persist many nodes in one transaction (WiFi NodeDB / reconnect burst).
  * Drop-not-abort: one bad row does not lose the rest of the dump.
+ * Operational write errors (SQLITE_FULL / SQLITE_IOERR / …) rethrow so the
+ * transaction rolls back and callers can retry the batch.
  */
 export function saveNodesBatchOn(
   db: NodeSqliteDB,
@@ -120,7 +149,8 @@ export function saveNodesBatchOn(
     for (const n of nodes) {
       try {
         stmt.run(n);
-      } catch {
+      } catch (err) {
+        if (isSqliteOperationalWriteError(err)) throw err;
         // catch-no-log-ok: drop-not-abort so one bad row cannot lose a 1000-node dump
         dropped++;
       }

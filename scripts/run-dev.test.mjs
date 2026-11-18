@@ -51,7 +51,12 @@ describe('run-dev', () => {
     expect(args.some((arg) => arg.startsWith('esbuild src/main/notificationSoundPlayWav.ts'))).toBe(
       true,
     );
-    expect(args.some((arg) => arg.startsWith('esbuild src/main/nodeUpsert.ts'))).toBe(true);
+    expect(
+      args.some(
+        (arg) =>
+          arg.startsWith('esbuild src/main/nodeUpsert.ts') && arg.includes('--external:electron'),
+      ),
+    ).toBe(true);
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);

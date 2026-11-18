@@ -231,6 +231,8 @@ export async function buildMainProcess(opts = {}) {
     logLevel: 'info',
   });
   // Shared nodes upsert SQL + batch helpers — keep out of measured main `index.js`.
+  // Externalize electron: meshtasticNodeRenumber → log-service imports `app`; bundling the
+  // npm launcher into this sibling makes require() run install.js / throw in packaged main.
   await esbuild.build({
     absWorkingDir,
     entryPoints: ['src/main/nodeUpsert.ts'],
@@ -238,6 +240,7 @@ export async function buildMainProcess(opts = {}) {
     platform: 'node',
     format: 'cjs',
     outfile: path.join(path.dirname(outfile), 'node-upsert.js'),
+    external: ['electron'],
     minify,
     logLevel: 'info',
   });

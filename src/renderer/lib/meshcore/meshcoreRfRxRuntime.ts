@@ -461,8 +461,14 @@ function applyMeshcoreRfAdvertToStore(
     publicKey,
   });
 
-  const afterMesh = getIdentityNode(identityId, nodeId);
-  if (!afterMesh) return;
+  // Pending hops-away may still sit ahead of the store upsert; keep advert identity fields.
+  const pendingOrStored = getIdentityNode(identityId, nodeId);
+  if (!pendingOrStored) return;
+  const afterMesh: MeshNode = {
+    ...pendingOrStored,
+    long_name: name || pendingOrStored.long_name,
+    hw_model: hwModel,
+  };
   const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(ctx.hopCount, afterMesh.hops_away, 0);
   enqueueNodeWrite(
     identityId,
@@ -536,6 +542,10 @@ function meshcoreRawPacketAppenderFor(
   if (!appender) {
     appender = new BatchedRingBufferAppender(deps.setRawPackets, MAX_RAW_PACKET_LOG_ENTRIES, {
       syncBeforeCommit: (next) => {
+        // Eager pushMeshcoreRfRawPacketLog may have advanced the ref past this commit
+        // (same-tick hop correlation). Do not replace with an older snapshot.
+        const cur = deps.rawPacketsRef.current;
+        if (cur.length > next.length) return;
         deps.rawPacketsRef.current = next;
       },
       mergeBatch: (prev, batch) => {
