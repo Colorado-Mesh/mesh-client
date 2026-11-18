@@ -227,6 +227,39 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
     expect(stampHistoryPeer).toHaveBeenCalled();
   });
 
+  // Every sidecar payload carries `timestamp`; one without it must still give the stored row and
+  // the saved row one time, so both get one hash and the saved row keeps the store's receipt.
+  it('gives a payload without a timestamp one time for the stored and the saved row', () => {
+    let clock = 1_700_000_000_000;
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 7));
+    upsertMessage.mockImplementation((identityId: string, record: MessageRecord) => {
+      messagesState[identityId] = {
+        ...messagesState[identityId],
+        [record.id]: { ...record, receivedAt: 4_242 },
+      };
+    });
+    try {
+      const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
+        sender_hash: 'allowedhash1234567890allowedhash12',
+        sender_name: 'Alice',
+        text: 'no stamp',
+        direction: 'inbound',
+      });
+      expect(ingested).toBe(true);
+      const stored = upsertMessage.mock.calls[0]?.[1] as MessageRecord;
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message_hash: stored.id,
+          timestamp: stored.timestamp,
+          received_at: 4_242,
+        }),
+      );
+    } finally {
+      now.mockRestore();
+      upsertMessage.mockReset();
+    }
+  });
+
   it('passes replacesMessageHash through to saveReticulumMessage as replaces_message_hash', async () => {
     const selfHash = 'deadbeef'.repeat(4);
     const peerHash = 'cafebabe'.repeat(4);

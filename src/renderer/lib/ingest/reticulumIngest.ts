@@ -384,9 +384,12 @@ export async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): 
 
 export function ingestReticulumLxmfPayloadWithSideEffects(
   identityId: IdentityId,
-  p: ReticulumLxmfPayload,
+  payload: ReticulumLxmfPayload,
   ctx: ReticulumIngestMergeContext = {},
 ): boolean {
+  // The sidecar always sends `timestamp`. A payload without one gets a single time here, so the
+  // stored row and the saved row share one hash and the store's receipt.
+  const p = payload.timestamp == null ? { ...payload, timestamp: Date.now() } : payload;
   void persistReticulumIconFromPayload(p);
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
