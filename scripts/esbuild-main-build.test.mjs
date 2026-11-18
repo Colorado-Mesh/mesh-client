@@ -33,6 +33,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows notification SoundPlayer (#1487) ships as sibling
  * `notification-sound-play-wav.js`; index.js keeps Chromium audio-service flags plus a
  * thin sync loader (~+1 KiB).
+ * Coalesced `db:saveNodes` / shared nodes upsert SQL ships as sibling `node-upsert.js`
+ * (not in index.js).
  * Transient MQTT errno codes `EADDRNOTAVAIL` / `EHOSTDOWN` (macOS interface address loss)
  * tipped the minified main past 811 KiB (~+14 B); budget +1 KiB.
  */
@@ -54,7 +56,7 @@ export function formatMainBundleOverBudgetMessage(size) {
     '1. Move bulky or new main-process code into a sibling esbuild entry in scripts/esbuild-main-build.mjs',
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
     '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
-    '   environment-telemetry-handlers.js, notification-sound-play-wav.js) so it is NOT counted',
+    '   environment-telemetry-handlers.js, notification-sound-play-wav.js, node-upsert.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
@@ -229,6 +231,12 @@ describe('esbuild-main-build', () => {
         'registerNotificationSoundPlayWavIpc',
       );
       expect(notificationSoundPlayWavBytes.toString('utf8')).toContain('MESH_NOTIF_WAV');
+      const nodeUpsertBytes = fs.readFileSync(path.join(tempDir, 'node-upsert.js'));
+      expect(nodeUpsertBytes.length).toBeGreaterThan(200);
+      expect(nodeUpsertBytes.toString('utf8')).toContain('saveNodesBatchOn');
+      expect(nodeUpsertBytes.toString('utf8')).toContain(
+        "nodes.source = 'mqtt' AND excluded.source = 'rf'",
+      );
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
@@ -247,6 +255,11 @@ describe('esbuild-main-build', () => {
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS scheduled_broadcasts');
       expect(scheduledBroadcastsRebuildBytes.toString('utf8')).toContain(
         'CREATE TABLE IF NOT EXISTS scheduled_broadcasts',
+      );
+      // Nodes upsert SQL lives in the sibling chunk, not measured index.js.
+      expect(indexSource).not.toContain("nodes.source = 'mqtt' AND excluded.source = 'rf'");
+      expect(nodeUpsertBytes.toString('utf8')).toContain(
+        "nodes.source = 'mqtt' AND excluded.source = 'rf'",
       );
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');
