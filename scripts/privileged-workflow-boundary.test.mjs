@@ -62,11 +62,13 @@ describe('privileged workflow boundaries', () => {
     const { plan, tag } = cut.jobs;
     expect(plan.if).toBe("github.ref == 'refs/heads/main'");
     expect(plan.environment).toBeUndefined();
-    // checks: read lets the plan see whether the release gates passed on the tree it tags.
+    // checks: read lets the plan see whether the release gates passed on the tree it tags, and
+    // actions: read which workflow made each of those check runs.
     expect(plan.permissions).toEqual({
       contents: 'read',
       'pull-requests': 'read',
       checks: 'read',
+      actions: 'read',
     });
     expect(JSON.stringify(plan)).not.toMatch(/secrets\.[A-Za-z_]/);
 

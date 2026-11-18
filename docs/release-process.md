@@ -79,7 +79,7 @@ Until then every push to `main` fails the same way, because `main` carries a ver
 
 A hotfix is an ordinary pull request to `main`. Once it merges, run `pnpm run release:open -- --bump patch` and release it like any other version.
 
-**Protected boundary:** the Plan release tag job holds no secrets (it reads contents, pull requests and check runs). The Tag release job runs in the `release-cut` environment, installs nothing, and is the only place `RELEASE_CUT_TOKEN` appears, for the one `git push` of the tag. Use a fine-grained PAT (or GitHub App installation token) owned by a repo **admin**, with **contents: write** and **workflows: write**: only admins may create `v*` tags (release tags ruleset), and a tag pushed with plain `GITHUB_TOKEN` would not start the tag workflows. Cut release runs one at a time and in order (`queue: max`), so a run waiting for approval never drops a later one.
+**Protected boundary:** the Plan release tag job holds no secrets (it reads contents, pull requests, check runs and workflow runs). The Tag release job runs in the `release-cut` environment, installs nothing, and is the only place `RELEASE_CUT_TOKEN` appears, for the one `git push` of the tag. Use a fine-grained PAT (or GitHub App installation token) owned by a repo **admin**, with **contents: write** and **workflows: write**: only admins may create `v*` tags (release tags ruleset), and a tag pushed with plain `GITHUB_TOKEN` would not start the tag workflows. Cut release runs one at a time and in order (`queue: max`), so a run waiting for approval never drops a later one.
 
 ---
 

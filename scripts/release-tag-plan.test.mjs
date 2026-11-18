@@ -43,11 +43,15 @@ const GATE_NAMES = [
   'Release preflight',
 ];
 
+/** Check suite ids: GitHub Actions makes one per workflow run. */
+const E2E_SUITE = 1;
+const OTHER_SUITE = 2;
+
 /**
  * Check runs as e2e.yaml reports them on a commit where every gate passed. GitHub numbers check
  * runs in order, so a run made later (E2E started on main by hand) gets a larger `firstId`.
  */
-const passedOn = (sha, firstId = 1) =>
+const passedOn = (sha, firstId = 1, suite = E2E_SUITE) =>
   GATE_NAMES.map((name, index) => ({
     id: firstId + index,
     name,
@@ -55,6 +59,7 @@ const passedOn = (sha, firstId = 1) =>
     status: 'completed',
     conclusion: 'success',
     app: { id: 15368 },
+    check_suite: { id: suite },
   }));
 
 /** The same gates as a merge group reports them: skipped, under the unexpanded matrix name. */
@@ -66,14 +71,21 @@ const skippedOn = (sha) =>
     status: 'completed',
     conclusion: name === 'Release gates' ? 'success' : 'skipped',
     app: { id: 15368 },
+    check_suite: { id: E2E_SUITE },
   }));
 
 /**
  * Fake GitHub API over the bare remote: trees come from the remote, `pulls` answers
- * commits/{sha}/pulls and `checks` maps a commit to its check runs.
+ * commits/{sha}/pulls, `checks` maps a commit to its check runs, and check suite 2 belongs to a
+ * workflow other than e2e.yaml.
  */
 function apiFor(remote, { pulls = [], checks = {} } = {}) {
+  const suites = {
+    [E2E_SUITE]: '.github/workflows/e2e.yaml',
+    [OTHER_SUITE]: '.github/workflows/other.yaml',
+  };
   return {
+    workflowPathForCheckSuite: async (id) => suites[id] ?? null,
     tagExists: async (tag) => {
       try {
         run(remote, ['rev-parse', '--verify', `refs/tags/${tag}`]);
@@ -218,6 +230,19 @@ describe('planReleaseTag', { timeout: 60_000 }, () => {
 
     expect(plan).toMatchObject({ shouldTag: false, blocked: true });
     expect(plan.reason).toContain('Release preflight (failure)');
+  });
+
+  it('ignores gate-named check runs that another workflow made', async () => {
+    const { fixture, head, sha, pull } = await mergedRelease();
+    const api = apiFor(fixture.remote, {
+      pulls: [pull],
+      checks: { [sha]: skippedOn(sha), [head]: passedOn(head, 1, OTHER_SUITE) },
+    });
+
+    const plan = await planReleaseTag({ cwd: fixture.user, sha, api });
+
+    expect(plan).toMatchObject({ shouldTag: false, blocked: true });
+    expect(plan.reason).toContain('Release preflight (no run)');
   });
 
   it('blocks a later push while the release is untagged and its gates have not passed', async () => {

@@ -68,6 +68,20 @@ describe('createGithubApi', () => {
     await expect(api.pullsForCommit('b00m')).rejects.toThrow(/500/);
   });
 
+  it('names the workflow file behind a check suite, or null when no workflow made it', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${base}/actions/runs?check_suite_id=77`]: [
+        200,
+        { total_count: 1, workflow_runs: [{ path: '.github/workflows/e2e.yaml' }] },
+      ],
+      [`${base}/actions/runs?check_suite_id=78`]: [200, { total_count: 0, workflow_runs: [] }],
+    });
+    const api = createGithubApi({ token: 't', repo: 'Colorado-Mesh/mesh-client', fetchImpl });
+
+    expect(await api.workflowPathForCheckSuite(77)).toBe('.github/workflows/e2e.yaml');
+    expect(await api.workflowPathForCheckSuite(78)).toBeNull();
+  });
+
   it('reads the tree a commit points at', async () => {
     const { fetchImpl } = fakeFetch({
       [`${base}/git/commits/c0mm1t`]: [200, { sha: 'c0mm1t', tree: { sha: 'tr33' } }],

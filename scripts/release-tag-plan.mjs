@@ -7,12 +7,12 @@
  * A commit releases when its package.json version is newer than the latest release tag, has no
  * tag yet, and matches the Flatpak MetaInfo top entry. It is tagged only when the release gates
  * (scripts/releaseGates.mjs) passed on its exact tree: on the commit itself, or on the head of
- * the release pull request merged as it when that head holds the same tree. A pull request's
- * checks ran before the merge, so when anything else reached main first the trees differ and the
- * plan blocks (exit 1) until the gates pass on main. The release notes come from the
- * "## Release notes" section of the merged pull request, or from conventional commit titles when
- * no pull request matches. Writes `should_tag`, `version`, `tag` and (when tagging) multi-line
- * `notes` to GITHUB_OUTPUT.
+ * the release pull request merged as it when that head holds the same tree. Only check runs that
+ * GitHub Actions made for e2e.yaml count. A pull request's checks ran before the merge, so when
+ * anything else reached main first the trees differ and the plan blocks (exit 1) until the gates
+ * pass on main. The release notes come from the "## Release notes" section of the merged release
+ * pull request, or from conventional commit titles otherwise. Writes `should_tag`, `version`,
+ * `tag` and (when tagging) multi-line `notes` to GITHUB_OUTPUT.
  */
 import { randomBytes } from 'node:crypto';
 import { appendFileSync, writeFileSync } from 'node:fs';
@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 
 import { parseTopReleaseVersion } from './metainfoRelease.mjs';
 import { commitsInRange, latestReleaseTag, showFile } from './releaseGit.mjs';
-import { evaluateGates } from './releaseGates.mjs';
+import { evaluateGates, gateMatchesName, REQUIRED_GATES } from './releaseGates.mjs';
 import { createGithubApi, resolveRepo, resolveToken } from './releaseGithub.mjs';
 import {
   buildReleaseNotes,
@@ -48,12 +48,14 @@ const SHA_PATTERN = /^[0-9a-f]{40}$/;
  *   }>>,
  *   commitTreeSha: (sha: string) => Promise<string>,
  *   listCheckRuns: (sha: string) => Promise<import('./releaseGates.mjs').CheckRun[]>,
+ *   workflowPathForCheckSuite: (checkSuiteId: number) => Promise<string | null>,
  * }} PlanApi
  */
 
 /**
  * The release gates on the tree of `sha`, read from the commit itself and from the merged pull
- * request's head when that head holds the same tree.
+ * request's head when that head holds the same tree. Each gate-named check run is matched to the
+ * workflow file behind its check suite (one lookup per suite), so only e2e.yaml's runs count.
  * @param {{ sha: string, head: string | undefined, api: PlanApi }} input
  * @returns {Promise<{ ok: boolean, notPassed: string[] }>}
  */
@@ -63,8 +65,19 @@ async function gatesOnTree({ sha, head, api }) {
     const [tree, headTree] = await Promise.all([api.commitTreeSha(sha), api.commitTreeSha(head)]);
     if (headTree === tree) commits.push(head);
   }
-  const runs = await Promise.all(commits.map((commit) => api.listCheckRuns(commit)));
-  return evaluateGates(runs.flat());
+  const runs = (await Promise.all(commits.map((commit) => api.listCheckRuns(commit)))).flat();
+  const gateRuns = runs.filter((run) =>
+    REQUIRED_GATES.some((gate) => gateMatchesName(gate, run.name)),
+  );
+  const suites = [
+    ...new Set(gateRuns.map((run) => run.check_suite?.id).filter((id) => id != null)),
+  ];
+  const paths = new Map(
+    await Promise.all(suites.map(async (id) => [id, await api.workflowPathForCheckSuite(id)])),
+  );
+  return evaluateGates(
+    gateRuns.map((run) => ({ ...run, workflowPath: paths.get(run.check_suite?.id) ?? null })),
+  );
 }
 
 /**

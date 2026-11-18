@@ -94,6 +94,14 @@ export function createGithubApi({ token, repo, fetchImpl = fetch }) {
     listCheckRuns: (sha) => paginate(`/commits/${sha}/check-runs?filter=latest`, 'check_runs'),
     /** @param {string} sha @returns {Promise<string>} the tree the commit points at */
     commitTreeSha: async (sha) => (await request(`/git/commits/${sha}`)).tree.sha,
+    /**
+     * @param {number} checkSuiteId
+     * @returns {Promise<string | null>} the workflow file (`.github/workflows/...`) whose run made
+     *   the check suite, or null when no Actions workflow run did
+     */
+    workflowPathForCheckSuite: async (checkSuiteId) =>
+      (await request(`/actions/runs?check_suite_id=${checkSuiteId}`))?.workflow_runs?.[0]?.path ??
+      null,
     /** @param {string} tag @returns {Promise<boolean>} */
     tagExists: async (tag) => (await ref(`tags/${tag}`)) !== null,
     /** @param {string} sha */

@@ -45,8 +45,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      # The release gates' check runs on the commit and on the release pull request's head.
+      # The release gates' check runs on the commit and on the release pull request's head, and
+      # the workflow behind each one (only e2e.yaml's runs count).
       checks: read
+      actions: read
     outputs:
       should_tag: ${{ steps.plan.outputs.should_tag }}
       version: ${{ steps.plan.outputs.version }}

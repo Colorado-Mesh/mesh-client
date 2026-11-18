@@ -5,8 +5,10 @@ import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 import {
+  E2E_WORKFLOW_PATH,
   evaluateGates,
   gateMatchesName,
+  GITHUB_ACTIONS_APP_ID,
   RELEASE_GATES_CHECK,
   REQUIRED_GATES,
 } from './releaseGates.mjs';
@@ -15,13 +17,24 @@ const HEAD = 'h'.repeat(40);
 const MERGED = 'm'.repeat(40);
 
 let nextId = 1;
-const check = (name, conclusion, { sha = HEAD, status = 'completed', id } = {}) => ({
+const check = (
+  name,
+  conclusion,
+  {
+    sha = HEAD,
+    status = 'completed',
+    id,
+    appId = GITHUB_ACTIONS_APP_ID,
+    workflowPath = E2E_WORKFLOW_PATH,
+  } = {},
+) => ({
   id: id ?? nextId++,
   name,
   head_sha: sha,
   status,
   conclusion: status === 'completed' ? conclusion : null,
-  app: { id: 15368 },
+  app: { id: appId },
+  workflowPath,
 });
 
 const allGreen = (sha = HEAD) => [
@@ -101,6 +114,34 @@ describe('evaluateGates', () => {
       ok: false,
       notPassed: ['Electron E2E on Linux (failure)', 'Electron E2E on Windows (in_progress)'],
     });
+  });
+
+  it('counts only GitHub Actions runs from e2e.yaml, so a same-named check elsewhere passes nothing', () => {
+    const others = [
+      check('Release preflight', 'success', { appId: 99 }),
+      check('Electron E2E (ubuntu-24.04)', 'success', {
+        workflowPath: '.github/workflows/other.yaml',
+      }),
+      check('Electron E2E (macos-latest)', 'success', { workflowPath: null }),
+    ];
+    expect(evaluateGates(others).notPassed).toEqual([
+      'Electron E2E on Linux (no run)',
+      'Electron E2E on macOS (no run)',
+      'Electron E2E on Windows (no run)',
+      'Release preflight (no run)',
+    ]);
+  });
+
+  it('never lets a newer same-named check from elsewhere hide a real failure', () => {
+    const runs = [
+      ...allGreen().filter((run) => run.name !== 'Release preflight'),
+      check('Release preflight', 'failure', { id: 500 }),
+      check('Release preflight', 'success', {
+        id: 501,
+        workflowPath: '.github/workflows/other.yaml',
+      }),
+    ];
+    expect(evaluateGates(runs)).toEqual({ ok: false, notPassed: ['Release preflight (failure)'] });
   });
 
   it('reads the newest attempt of a re-run check', () => {
