@@ -70,6 +70,9 @@ describe('OfflineMapsSection', () => {
       ).toBeDisabled();
       expect(screen.getByRole('checkbox')).toBeDisabled();
       expect(screen.getByRole('checkbox')).not.toBeChecked();
+      expect(
+        screen.getByText(/No OpenStreetMap account is needed[\s\S]*USGS Topo[\s\S]*MBTiles/i),
+      ).toBeInTheDocument();
       expect(window.electronAPI.offlineMaps.estimate).not.toHaveBeenCalled();
       expect(window.electronAPI.offlineMaps.download).not.toHaveBeenCalled();
     },

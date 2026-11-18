@@ -24,6 +24,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
+  isMeshtasticAttachSupersededError,
+  MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE,
+} from '@/renderer/lib/meshtastic/meshtasticAttachSuperseded';
+import {
   clearMeshtasticLockdownStatus,
   encodeMeshtasticLockdownAuth,
   type MeshtasticLockdownAuthRequest,
@@ -2949,7 +2953,7 @@ export function useMeshtasticRuntime() {
       });
 
       if (reconnectGenerationRef.current !== generation) {
-        throw new Error('Attach superseded during configure');
+        throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
       }
     },
     [applyMeshtasticNodesToUi, markPacketSeen, wireSubscriptions],
@@ -3069,6 +3073,21 @@ export function useMeshtasticRuntime() {
       pushMqttChannelKeys,
     ],
   );
+  const cleanupStaleOpenedOnAttachSuperseded = useCallback(
+    async (opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined) => {
+      if (!opened) return;
+      // A newer attach already owns deviceRef — never identity-wide disconnect (shared
+      // offline-* identity would tear down the live slot too).
+      if (deviceRef.current === opened.device) return;
+      await safeDisconnect(opened.device).catch((e: unknown) => {
+        console.debug(
+          '[useMeshtasticRuntime] superseded attach stale safeDisconnect ' + errLikeToLogString(e),
+        );
+      });
+    },
+    [],
+  );
+
   const connect = useCallback(
     async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
       const serialPortId = type === 'serial' ? loadLastSerialPortId() : undefined;
@@ -3085,6 +3104,15 @@ export function useMeshtasticRuntime() {
         await attachRfSession(opened.driverIdentityId, type, opened.device);
         connectSucceeded = true;
       } catch (err) {
+        if (isMeshtasticAttachSupersededError(err)) {
+          console.debug(
+            '[useMeshtasticRuntime] connect abandoned — attach superseded by a newer session',
+          );
+          await cleanupStaleOpenedOnAttachSuperseded(opened);
+          // Treat as settled success so deferred BLE reconnect does not tear down the live session.
+          connectSucceeded = true;
+          return;
+        }
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       } finally {
@@ -3102,7 +3130,13 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
+    [
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      openMeshtasticTransport,
+      cleanupStaleOpenedOnAttachSuperseded,
+    ],
   );
 
   /**
@@ -3151,6 +3185,15 @@ export function useMeshtasticRuntime() {
         }
         connectSucceeded = true;
       } catch (err) {
+        if (isMeshtasticAttachSupersededError(err)) {
+          console.debug(
+            '[useMeshtasticRuntime] connectAutomatic abandoned — attach superseded by a newer session',
+          );
+          await cleanupStaleOpenedOnAttachSuperseded(opened);
+          // Treat as settled success so deferred BLE reconnect does not tear down the live session.
+          connectSucceeded = true;
+          return;
+        }
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       } finally {
@@ -3168,7 +3211,13 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
+    [
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      openMeshtasticTransport,
+      cleanupStaleOpenedOnAttachSuperseded,
+    ],
   );
 
   const disconnect = useCallback(async () => {

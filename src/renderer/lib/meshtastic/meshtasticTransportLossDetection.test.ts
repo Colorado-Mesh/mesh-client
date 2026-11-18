@@ -22,6 +22,12 @@ describe('meshtasticTransportLossDetection', () => {
     expect(isMeshtasticTransportLostError(new Error('Not connected'))).toBe(true);
   });
 
+  it('detects Chromium CLOSED writable stream TypeError from teardown races', () => {
+    expect(
+      isMeshtasticTransportLostError(new TypeError('Cannot write to a CLOSED writable stream')),
+    ).toBe(true);
+  });
+
   it('does not treat an already-open port as transport loss', () => {
     expect(isMeshtasticTransportLostError(new Error('Port is open'))).toBe(false);
   });

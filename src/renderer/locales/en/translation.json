@@ -3206,7 +3206,7 @@
       "clear": "Clear tile cache",
       "clearAria": "Clear offline map tile cache",
       "cleared": "Tile cache cleared.",
-      "viewCacheOnly": "Viewed tiles are cached automatically. Region downloads are available with USGS Topo; OpenStreetMap does not allow prefetching.",
+      "viewCacheOnly": "No OpenStreetMap account is needed. Tiles you view are cached automatically. For a bulk offline region, switch the basemap to USGS Topo (US only) and use Download current view; for packaged offline maps, import an MBTiles file below. openstreetmap.org Export is unrelated.",
       "viewCacheOnlyCustom": "Custom sources are cached only for tiles you view; bulk region download is not available. Import an MBTiles package for offline use."
     },
     "customSources": {
@@ -3250,7 +3250,7 @@
         "credentials": "URLs with a username or password are not allowed.",
         "host": "The host must be a public domain name (no IP addresses, localhost or local network names).",
         "port": "Custom ports are not allowed.",
-        "osm": "OpenStreetMap tiles are available as a built-in basemap; use that instead.",
+        "osm": "OpenStreetMap tile hosts cannot be added as a custom source. Use the built-in OpenStreetMap basemap, or import an MBTiles package for offline use — not openstreetmap.org Export.",
         "invalid": "That is not a valid tile URL.",
         "not_confirmed": "Confirm that you may use this source first.",
         "name": "Enter a name (up to 60 characters).",
