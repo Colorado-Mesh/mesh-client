@@ -525,6 +525,7 @@ export default function RoomsPanel({
       unreadDividerTimestamp ||
       (selectedRoomId != null ? persistedRoomsLastRead[selectedRoomId] : 0) ||
       0,
+    watermarkClock: 'arrival',
     messages: summaryMessages,
     available: selectedRoomId != null,
     history:

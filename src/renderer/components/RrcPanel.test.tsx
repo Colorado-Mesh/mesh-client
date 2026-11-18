@@ -28,9 +28,11 @@ import {
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
+import { rrcReadKey, savePersistedRrcLastRead } from '@/renderer/lib/rrcReadWatermark';
 import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
 import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
+import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   resetRrcRememberedRoomForTests,
@@ -584,6 +586,60 @@ describe('RrcPanel', () => {
     // Shown once, under the composer, not again in the panel banner.
     expect(screen.getByRole('alert')).toHaveTextContent('notice rejected by hub');
     expect(screen.getAllByText('notice rejected by hub')).toHaveLength(1);
+  });
+
+  // The RRC read mark is a stamped time, so Catch up "since last read" asks saved history by
+  // stamp: a line stamped before the mark stays out even when it was saved here after it.
+  it('catches up on saved room history by the stamped read mark', async () => {
+    const now = Date.now();
+    const mark = now - 60_000;
+    savePersistedRrcLastRead({ [rrcReadKey(hubA, '#general')]: mark });
+    const saved = [
+      { id: 1, at: mark - 10_000, receivedAt: now - 5_000, sender: 'Ann', body: 'Read earlier' },
+      { id: 2, at: mark + 10_000, receivedAt: mark + 11_000, sender: 'Ben', body: 'New line' },
+    ];
+    // Stands in for the main-process query: range and `order` follow the key the request asks for.
+    vi.mocked(window.electronAPI.ai.getHistory).mockImplementationOnce((query) => {
+      const key = (row: (typeof saved)[number]) => (query.byArrival ? row.receivedAt : row.at);
+      return Promise.resolve(
+        saved
+          .filter((row) => key(row) >= query.sinceMs && key(row) <= query.untilMs)
+          .map(({ receivedAt, ...row }) => (query.byArrival ? { ...row, order: receivedAt } : row)),
+      );
+    });
+    vi.mocked(window.electronAPI.ai.summarize).mockClear();
+    useAiSummaryStore.getState().setStatus({
+      ...(await window.electronAPI.ai.getStatus()),
+      enabled: true,
+      engine: 'local',
+      model: 'test',
+      baseUrl: 'http://127.0.0.1:1234',
+    });
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#general', []);
+    store.setActiveRoom('#general');
+    const user = userEvent.setup();
+    const { unmount } = render(<RrcPanel isActive />);
+    try {
+      await user.click(screen.getByRole('button', { name: 'Catch up' }));
+      await waitFor(() => {
+        expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ surface: 'rrc', hubHash: hubA, room: '#general', sinceMs: mark }),
+      );
+      expect(vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0].byArrival).toBe(
+        undefined,
+      );
+      const request = vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0];
+      expect(request.messages.map((message) => message.body)).toEqual(['New line']);
+    } finally {
+      unmount();
+      disposeAiSummaries();
+      useAiSummaryStore.setState({ status: null, cachedEnabled: false });
+      savePersistedRrcLastRead({});
+    }
   });
 
   it('shows why a /msg failed when the user switched rooms while it was sending', async () => {

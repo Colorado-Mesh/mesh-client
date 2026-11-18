@@ -211,6 +211,10 @@ describe('RoomsPanel', () => {
           'aiSummary.error.noMessages',
         );
       });
+      // Rooms read marks are arrival times, so their history is asked for by arrival.
+      expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ surface: 'room', byArrival: true }),
+      );
       expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
     } finally {
       dist.mockRestore();

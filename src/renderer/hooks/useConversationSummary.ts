@@ -34,8 +34,14 @@ export interface ConversationSummaryInput {
   protocol: AiSummaryRequest['protocol'];
   surface: AiSummaryRequest['surface'];
   messages: AiSummaryLiveMessage[];
-  /** Read mark (arrival time of the last message read); "since last read" compares `order`. */
+  /** Read mark: the time of the last message read, on the clock `watermarkClock` names. */
   watermark: number;
+  /**
+   * Chat and Rooms marks are arrival times, so "since last read" reads history by arrival and
+   * compares `order`. RRC marks are stamped times (`rrcReadWatermark.ts`), so its history is read
+   * and compared by stamp.
+   */
+  watermarkClock: 'arrival' | 'stamp';
   history: Omit<AiHistoryQuery, 'sinceMs' | 'untilMs'> | null;
   includeHistoryMessage?: (message: AiHistoryMessage) => boolean;
   available?: boolean;
@@ -151,9 +157,11 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       let ceilingTruncated = false;
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
+        // "Since last read" reads history on the read mark's clock: by arrival for an arrival
+        // mark, by stamp (as the hour ranges do) for a stamped one.
+        const byArrival = scope.kind === 'unread' && input.watermarkClock === 'arrival';
         const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
-          // The read mark is an arrival time, so "since last read" reads history by arrival.
-          scope.kind === 'unread' ? { ...input.history, byArrival: true } : input.history,
+          byArrival ? { ...input.history, byArrival: true } : input.history,
           Math.max(0, sinceMs),
           now,
           maxCollected,
