@@ -19,8 +19,11 @@ async function probe(page: Page) {
       permissions: 0,
     };
     Object.assign(window, { notificationProbe: state });
-    const create = AudioContext.prototype.createOscillator;
-    AudioContext.prototype.createOscillator = function () {
+    // Count tones from both contexts: Windows renders the tone in an OfflineAudioContext and plays
+    // the WAV over IPC (#1487), other platforms play it through the shared AudioContext. Both
+    // inherit createOscillator from BaseAudioContext.
+    const create = BaseAudioContext.prototype.createOscillator;
+    BaseAudioContext.prototype.createOscillator = function (this: BaseAudioContext) {
       state.sounds++;
       return create.call(this);
     };
