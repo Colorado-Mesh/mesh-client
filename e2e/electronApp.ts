@@ -316,6 +316,12 @@ export async function closeElectronApplication(
     );
   }
 
+  if (forceKilled) {
+    console.warn(
+      '[e2e] closeElectronApplication: Electron did not exit cleanly; used force-kill fallback',
+    );
+  }
+
   return { forceKilled };
 }
 

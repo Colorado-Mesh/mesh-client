@@ -3924,7 +3924,7 @@
     "forgetAdvertAria": "Cancella l'ultima data e ora dell'annuncio per questo contatto",
     "forgetAdvertDone": "Data e ora dell'ultimo annuncio cancellate.",
     "forgetAdvertFailed": "Impossibile cancellare l'ultima marca temporale dell'annuncio.",
-    "ownerInfoHeading": "INFORMATIONI PROPRIETARIO",
+    "ownerInfoHeading": "Informazioni sul proprietario",
     "ownerInfoRefresh": "Aggiorna le informazioni sul proprietario",
     "ownerInfoLoading": "Lettura delle informazioni sul proprietario in corso…",
     "ownerInfoReadAt": "Leggi su {{time}}",

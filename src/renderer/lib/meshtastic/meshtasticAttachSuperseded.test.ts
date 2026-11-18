@@ -9,6 +9,7 @@ import {
   cleanupSupersededStaleOpenedDevice,
   isMeshtasticAttachSupersededError,
   MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE,
+  resolveSupersededAttemptLiveOwner,
   supersededStaleDeviceCleanupMode,
 } from './meshtasticAttachSuperseded';
 
@@ -111,9 +112,32 @@ describe('supersededStaleDeviceCleanupMode', () => {
   });
 });
 
+describe('resolveSupersededAttemptLiveOwner', () => {
+  it('treats equal refs as no live owner so shared transports retire on supersession', () => {
+    const device = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    expect(resolveSupersededAttemptLiveOwner(device, device)).toBe(null);
+    expect(resolveSupersededAttemptLiveOwner(null, device)).toBe(null);
+  });
+
+  it('returns the live device when a newer session owns deviceRef', () => {
+    const live = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    const stale = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    expect(resolveSupersededAttemptLiveOwner(live, stale)).toBe(live);
+  });
+});
+
 describe('cleanupSupersededStaleOpenedDevice', () => {
   beforeEach(() => {
     vi.mocked(safeDisconnect).mockClear();
+  });
+
+  it('soft-retires GATT/TCP/HTTP when refs match but supersession cleared live owner to null', async () => {
+    const gatt = fakeSidecarGattTransport();
+    const stale = { transport: gatt, complete: vi.fn() } as unknown as MeshDevice;
+    const liveOwner = resolveSupersededAttemptLiveOwner(stale, stale);
+    await cleanupSupersededStaleOpenedDevice(liveOwner, stale);
+    expect(gatt.retireInbound).toHaveBeenCalledTimes(1);
+    expect(safeDisconnect).not.toHaveBeenCalled();
   });
 
   it('does not disconnect when the opened device still owns the connection', async () => {

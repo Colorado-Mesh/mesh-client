@@ -77,6 +77,14 @@ export function attachConfigureFailureAction(
   return currentGeneration !== attemptGeneration ? 'superseded' : 'propagate';
 }
 
+/** Live owner for superseded-attach cleanup — equal refs mean the attempt is stale (#B-001). */
+export function resolveSupersededAttemptLiveOwner(
+  deviceRef: MeshDevice | null,
+  attemptDevice: MeshDevice,
+): MeshDevice | null {
+  return deviceRef != null && deviceRef !== attemptDevice ? deviceRef : null;
+}
+
 /**
  * Retire local SDK / inbound listeners without session-level disconnect
  * (GATT / TCP / HTTP IPC, or a SerialPort still owned by the live device).

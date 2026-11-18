@@ -3924,7 +3924,7 @@
     "forgetAdvertAria": "이 연락처의 마지막 advert 타임스탬프 지우기",
     "forgetAdvertDone": "마지막 advert 타임스탬프가 삭제되었습니다.",
     "forgetAdvertFailed": "마지막 advert 타임스탬프를 지울 수 없습니다.",
-    "ownerInfoHeading": "계약자 정보",
+    "ownerInfoHeading": "소유자 정보",
     "ownerInfoRefresh": "소유자 정보 새로 고침",
     "ownerInfoLoading": "소유자 정보 읽는 중…",
     "ownerInfoReadAt": "{{time}}에 읽기",

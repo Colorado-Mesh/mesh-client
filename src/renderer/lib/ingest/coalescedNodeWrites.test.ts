@@ -1,8 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { NodeRecord } from '../../stores/nodeStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { getIdentityNode } from '../identityStoreReads';
 import {
   enqueueNodeWrite,
@@ -28,7 +27,11 @@ describe('coalescedNodeWrites', () => {
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
     window.electronAPI = {
       db: {
-        saveNodes: vi.fn().mockResolvedValue({ saved: 0, dropped: 0 }),
+        saveNodes: vi
+          .fn()
+          .mockImplementation((nodes: unknown[]) =>
+            Promise.resolve({ saved: nodes.length, dropped: 0 }),
+          ),
         saveNode: vi.fn().mockResolvedValue(undefined),
       },
     } as unknown as typeof window.electronAPI;
@@ -162,5 +165,27 @@ describe('coalescedNodeWrites', () => {
     await flushNodeWrites();
     expect(getIdentityNode(ID_A, 44)?.snr).toBe(9);
     warn.mockRestore();
+  });
+
+  it('queues persistDbWrite when saveNodes reports dropped rows', async () => {
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    window.electronAPI.db.saveNodes = vi
+      .fn()
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValue({ saved: 1, dropped: 0 });
+    enqueueNodeWrite(ID_A, record(90, { snr: 3 }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await flushNodeWrites();
+    expect(warn).toHaveBeenCalled();
+    expect(retrySpy).toHaveBeenCalled();
+    warn.mockRestore();
+    retrySpy.mockRestore();
+  });
+
+  it('keeps newer direct upsert lastHeardAt when flushing an older pending coalesced snapshot', async () => {
+    enqueueNodeWrite(ID_A, record(12, { lastHeardAt: 100 }));
+    upsertNodeRecord(ID_A, { nodeId: 12, lastHeardAt: 500 });
+    await flushNodeWrites();
+    expect(getIdentityNode(ID_A, 12)?.last_heard).toBe(500);
   });
 });

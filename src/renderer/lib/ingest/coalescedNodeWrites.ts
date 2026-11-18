@@ -10,7 +10,11 @@
  * preserves integrity for the pending window.
  */
 
-import { type NodeRecord, upsertNodeRecordsForIdentity } from '../../stores/nodeStore';
+import {
+  type NodeRecord,
+  upsertNodeRecordsForIdentity,
+  useNodeStore,
+} from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { nodeRecordToMeshNode } from '../storeRecordAdapters';
 import type { IdentityId, MeshNode } from '../types';
@@ -160,12 +164,35 @@ function clearDrainedFromInFlight(drained: Map<IdentityId, IdentityPending>): vo
   }
 }
 
+let persistDropWarned = false;
+
+function reconcilePendingRecordWithStore(identityId: IdentityId, pending: NodeRecord): NodeRecord {
+  const byId = useNodeStore.getState().nodes[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- identity bucket may be absent at runtime
+  if (!byId?.[pending.nodeId]) return pending;
+  const live = byId[pending.nodeId];
+  const liveLh = live.lastHeardAt ?? 0;
+  const pendingLh = pending.lastHeardAt ?? 0;
+  if (liveLh <= pendingLh) return pending;
+  return { ...pending, lastHeardAt: liveLh };
+}
+
 async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
   if (nodes.length === 0) return;
   const saveNodes = window.electronAPI.db.saveNodes;
   if (typeof saveNodes === 'function') {
     try {
-      await saveNodes(nodes);
+      const result = await saveNodes(nodes);
+      const dropped = result.dropped;
+      if (dropped > 0) {
+        if (!persistDropWarned) {
+          persistDropWarned = true;
+          console.warn(
+            `[coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
+          );
+        }
+        persistDbWrite(label, () => saveNodes(nodes));
+      }
       return;
     } catch {
       // catch-no-log-ok: persistDbWrite queues retry / degraded warn
@@ -182,7 +209,9 @@ async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
 async function flushSnapshot(snapshot: Map<IdentityId, IdentityPending>): Promise<void> {
   // Sequential per identity — avoid stacking sync SQLite transactions from dual/triple radios.
   for (const [identityId, bucket] of snapshot) {
-    const records = [...bucket.records.values()];
+    const records = [...bucket.records.values()].map((r) =>
+      reconcilePendingRecordWithStore(identityId, r),
+    );
     if (records.length > 0) {
       upsertNodeRecordsForIdentity(identityId, records);
     }
@@ -239,6 +268,7 @@ export function resetCoalescedNodeWritesForTests(): void {
   inFlightByIdentity.clear();
   flushing = false;
   capWarned = false;
+  persistDropWarned = false;
   flushChain = Promise.resolve();
 }
 

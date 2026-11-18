@@ -4120,7 +4120,10 @@ ipcMain.handle('db:saveNodes', (event, nodes) => {
     if (nodes.length > MAX_SAVE_NODES_BATCH) {
       throw new Error(`db:saveNodes: array exceeds ${MAX_SAVE_NODES_BATCH} rows`);
     }
-    if (!getDbForIpc('db:saveNodes')) return { saved: 0, dropped: 0 };
+    if (!getDbForIpc('db:saveNodes')) {
+      if (nodes.length > 0) throw new Error('db:saveNodes: database unavailable');
+      return { saved: 0, dropped: 0 };
+    }
     const params = [];
     let dropped = 0;
     for (const node of nodes) {

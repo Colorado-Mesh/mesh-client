@@ -28,6 +28,7 @@ import {
   cleanupSupersededStaleOpenedDevice,
   isMeshtasticAttachSupersededError,
   MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE,
+  resolveSupersededAttemptLiveOwner,
 } from '@/renderer/lib/meshtastic/meshtasticAttachSuperseded';
 import {
   clearMeshtasticLockdownStatus,
@@ -2861,6 +2862,18 @@ export function useMeshtasticRuntime() {
     [],
   );
 
+  const cleanupSupersededAttachAttempt = useCallback(async (attemptDevice: MeshDevice) => {
+    const liveOwner = resolveSupersededAttemptLiveOwner(deviceRef.current, attemptDevice);
+    await cleanupSupersededStaleOpenedDevice(liveOwner, attemptDevice).catch((e: unknown) => {
+      console.debug(
+        '[useMeshtasticRuntime] superseded attach attempt cleanup ' + errLikeToLogString(e),
+      );
+    });
+    if (deviceRef.current === attemptDevice) {
+      deviceRef.current = null;
+    }
+  }, []);
+
   const attachRfSession = useCallback(
     async (
       driverIdentityId: string,
@@ -2882,14 +2895,7 @@ export function useMeshtasticRuntime() {
       }
       if (reconnectGenerationRef.current !== generation) {
         // Retire only this attempt's local transport — never identity-wide driver disconnect.
-        await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
-          (e: unknown) => {
-            console.debug(
-              '[useMeshtasticRuntime] attachRfSession pre-wire superseded cleanup ' +
-                errLikeToLogString(e),
-            );
-          },
-        );
+        await cleanupSupersededAttachAttempt(activeDevice);
         throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
       }
       deviceRef.current = activeDevice;
@@ -2981,32 +2987,18 @@ export function useMeshtasticRuntime() {
         if (
           attachConfigureFailureAction(reconnectGenerationRef.current, generation) === 'superseded'
         ) {
-          await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
-            (e: unknown) => {
-              console.debug(
-                '[useMeshtasticRuntime] attachRfSession superseded configure cleanup ' +
-                  errLikeToLogString(e),
-              );
-            },
-          );
+          await cleanupSupersededAttachAttempt(activeDevice);
           throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
         }
         throw err;
       }
 
       if (reconnectGenerationRef.current !== generation) {
-        await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
-          (e: unknown) => {
-            console.debug(
-              '[useMeshtasticRuntime] attachRfSession superseded post-configure cleanup ' +
-                errLikeToLogString(e),
-            );
-          },
-        );
+        await cleanupSupersededAttachAttempt(activeDevice);
         throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
       }
     },
-    [applyMeshtasticNodesToUi, markPacketSeen, wireSubscriptions],
+    [applyMeshtasticNodesToUi, cleanupSupersededAttachAttempt, markPacketSeen, wireSubscriptions],
   );
 
   const handleRfConnectFailure = useCallback(
@@ -3128,15 +3120,9 @@ export function useMeshtasticRuntime() {
       if (!opened) return;
       // Ownership-aware: soft-retire shared GATT when a newer device owns the session;
       // never identity-wide disconnect (shared offline-* identity would tear down the live slot).
-      await cleanupSupersededStaleOpenedDevice(deviceRef.current, opened.device).catch(
-        (e: unknown) => {
-          console.debug(
-            '[useMeshtasticRuntime] superseded attach stale cleanup ' + errLikeToLogString(e),
-          );
-        },
-      );
+      await cleanupSupersededAttachAttempt(opened.device);
     },
-    [],
+    [cleanupSupersededAttachAttempt],
   );
 
   const connect = useCallback(

@@ -3986,7 +3986,7 @@
     "forgetAdvertAria": "Usuń ostatni znacznik czasu advert dla tego kontaktu",
     "forgetAdvertDone": "Usunięto znacznik czasu ostatniego advert.",
     "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert.",
-    "ownerInfoHeading": "Pokaż informację o właścicielu",
+    "ownerInfoHeading": "Informacje o właścicielu",
     "ownerInfoRefresh": "Odśwież informacje o właścicielu",
     "ownerInfoLoading": "Odczytywanie informacji o właścicielu…",
     "ownerInfoReadAt": "Przeczytaj w {{time}}",
