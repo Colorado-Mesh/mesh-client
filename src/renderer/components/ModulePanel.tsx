@@ -153,6 +153,11 @@ const INPUT_EVENT_VALUES = [0, 10, 17, 18, 19, 20, 27, 24] as const;
 
 const SERIAL_MODE_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
+/** Modes present in the protobuf enum but not implemented by firmware (verified
+ *  v2.7.26.54e0d8d and master, 2026-11-18: SerialModule.cpp handleReceived has no
+ *  LOG/LOGTEXT branch and console override is disallowed for them). */
+const SERIAL_MODES_UNIMPLEMENTED_BY_FIRMWARE = new Set([9 /* LOG */, 10 /* LOGTEXT */]);
+
 const TAK_TEAM_COLOR_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
 
 const TAK_TEAM_ROLE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -1065,6 +1070,11 @@ export default function ModulePanel({
           options={serialModeOptions}
           description={t('modulePanel.fields.serialModeDesc')}
         />
+        {SERIAL_MODES_UNIMPLEMENTED_BY_FIRMWARE.has(serialMode) ? (
+          <p className="text-xs text-orange-300" role="note">
+            {t('modulePanel.hints.serialLogModeUnsupported')}
+          </p>
+        ) : null}
         <ConfigToggle
           label={t('modulePanel.fields.serialOverrideConsole')}
           checked={serialOverrideConsole}

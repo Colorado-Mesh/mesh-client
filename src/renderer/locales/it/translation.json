@@ -3284,13 +3284,10 @@
       "serialModuleEnabledDesc": "Abilita l'inoltro dei dati sulla porta seriale tramite mesh.",
       "serialEchoDesc": "Echo ha ricevuto i dati seriali al mittente.",
       "serialRxd": "RX pin",
-      "serialRxdDesc": "Numero pin GPIO per seriale RX. 0 = utilizzare predefinito.",
       "serialTxd": "TX pin",
-      "serialTxdDesc": "Numero PIN GPIO per TX. seriale 0 = utilizzare predefinito.",
       "serialTimeout": "Timeout",
       "serialTimeoutDesc": "Millisecondi di attesa prima di inviare un pacchetto. 0 = usa predefinito.",
       "serialMode": "modalità seriale.",
-      "serialModeDesc": "Modalità di funzionamento del modulo seriale.",
       "serialOverrideConsole": "Sostituisci la porta seriale della console",
       "serialOverrideConsoleDesc": "Utilizzare la porta seriale primaria (console) per il modulo seriale anziché una porta secondaria.",
       "sfEnabledDesc": "Messaggi buffer per i nodi che si ricongiungono alla mesh.",
@@ -3365,7 +3362,10 @@
         "channelIndexRange": "L'indice del canale deve essere compreso tra 0 e 7.",
         "channelNotConfigured": "Quel canale non è configurato su questa radio.",
         "frequencySlot": "Lo slot di frequenza deve essere 1 o superiore oppure 0 per ricavarlo."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO per RX seriale. 0 = non impostato. È necessario impostare sia RXD che TXD (oppure utilizzare l'override della console con NMEA, CalTopo o la configurazione MeshSolar); in caso contrario, il dispositivo disabilita il modulo seriale.",
+      "serialTxdDesc": "Pin GPIO per TX seriale. 0 = non impostato. È necessario impostare sia TXD che RXD (oppure utilizzare l'override della console); in caso contrario, il dispositivo disabilita il modulo seriale.",
+      "serialModeDesc": "Modalità operativa per il modulo seriale. Non tutte le versioni del firmware implementano tutte le modalità."
     },
     "applySection": "Applica {{section}}",
     "applyingButton": "Applicazione...",
@@ -3389,7 +3389,7 @@
       "mqttDefaultServerTls": "Il broker MQTT Meshtastic pubblico non supporta TLS. Disattiva TLS o utilizza un indirizzo broker personalizzato.",
       "mqttDefaultServerPort": "Non includere una porta nell'indirizzo pubblico del broker MQTT Meshtastic (utilizzare mqtt.meshtastic.org senza :port).",
       "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy al client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo.",
-      "serialOverrideRequiresMode": "L'override della console seriale è abilitato sul dispositivo. Impostare una modalità seriale valida sulla radio prima di abilitare il modulo seriale qui."
+      "serialOverrideRequiresMode": "La sostituzione della console seriale è supportata solo nelle modalità di configurazione NMEA, CalTopo e MeshSolar. Scegli una di queste modalità o disattiva l'override della console."
     },
     "remoteHardwareConfirmEnableTitle": "Abilitare l'hardware remoto?",
     "remoteHardwareConfirmEnableMessage": "I nodi remoti saranno in grado di leggere e scrivere i pin GPIO su questo dispositivo sulla mesh. Abilita solo se ti fidi dei tuoi utenti mesh e hai configurato l'accesso pin.",
@@ -3571,6 +3571,9 @@
       "joined": "Iscrizione al canale {{name}}.",
       "radioApplied": "Impostazioni radio inviate.",
       "joinFailed": "Partecipazione non riuscita: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Il firmware Meshtastic attualmente non emette output seriale in questa modalità (la radio memorizza l'impostazione ma non scrive nulla). Utilizzare la modalità Messaggio di testo per il testo del canale/DM o la modalità Semplice per il passthrough non elaborato. Anche le modalità LOG non possono utilizzare l'override della console."
     }
   },
   "networkPanel": {

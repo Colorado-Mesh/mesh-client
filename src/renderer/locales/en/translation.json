@@ -3725,7 +3725,10 @@
       "mqttDefaultServerTls": "The public Meshtastic MQTT broker does not support TLS. Turn off TLS or use a custom broker address.",
       "mqttDefaultServerPort": "Do not include a port in the public Meshtastic MQTT broker address (use mqtt.meshtastic.org with no :port).",
       "mqttProxyRequired": "This radio has no Wi-Fi. Enable “Proxy to client” so the app forwards MQTT, or use LoRa “OK to MQTT” instead of device-side MQTT.",
-      "serialOverrideRequiresMode": "Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here."
+      "serialOverrideRequiresMode": "Serial console override is only supported in NMEA, CalTopo, and MeshSolar config modes. Pick one of those modes, or turn console override off."
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Meshtastic firmware currently does not emit serial output in this mode (the radio stores the setting but writes nothing). Use Text message mode for channel/DM text, or Simple for raw passthrough. LOG modes also cannot use console override."
     },
     "cannedMessagesApplied": "Canned Messages applied.",
     "rtttlSaved": "RTTTL ringtone saved.",
@@ -3930,13 +3933,13 @@
       "serialModuleEnabledDesc": "Enable serial port data forwarding via the mesh.",
       "serialEchoDesc": "Echo received serial data back to sender.",
       "serialRxd": "RX pin",
-      "serialRxdDesc": "GPIO pin number for serial RX. 0 = use default.",
+      "serialRxdDesc": "GPIO pin for serial RX. 0 = unset. Both RXD and TXD must be set (or use console override with NMEA, CalTopo, or MeshSolar config); otherwise the device disables the serial module.",
       "serialTxd": "TX pin",
-      "serialTxdDesc": "GPIO pin number for serial TX. 0 = use default.",
+      "serialTxdDesc": "GPIO pin for serial TX. 0 = unset. Both TXD and RXD must be set (or use console override); otherwise the device disables the serial module.",
       "serialTimeout": "Timeout",
       "serialTimeoutDesc": "Milliseconds to wait before sending a packet. 0 = use default.",
       "serialMode": "Serial mode",
-      "serialModeDesc": "Operating mode for the serial module.",
+      "serialModeDesc": "Operating mode for the serial module. Not every mode is implemented by every firmware version.",
       "serialOverrideConsole": "Override console serial port",
       "serialOverrideConsoleDesc": "Use the primary serial port (console) for the serial module instead of a secondary port.",
       "sfEnabledDesc": "Buffer messages for nodes that rejoin the mesh.",

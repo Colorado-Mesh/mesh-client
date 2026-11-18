@@ -411,7 +411,7 @@ describe('ModulePanel', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          'Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here.',
+          'Serial console override is only supported in NMEA, CalTopo, and MeshSolar config modes. Pick one of those modes, or turn console override off.',
         ),
       ).toBeInTheDocument();
     });
@@ -431,7 +431,7 @@ describe('ModulePanel', () => {
             enabled: false,
             echo: true,
             baud: 115200,
-            mode: 2,
+            mode: 4,
             overrideConsoleSerialPort: true,
           },
         }}
@@ -459,12 +459,75 @@ describe('ModulePanel', () => {
             enabled: true,
             echo: true,
             baud: 115200,
-            mode: 2,
+            mode: 4,
             overrideConsoleSerialPort: true,
           }),
         },
       });
     });
+  });
+
+  it('shows unsupported note when serial mode is LOG', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 9,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent(
+      /Meshtastic firmware currently does not emit serial output in this mode/i,
+    );
+  });
+
+  it('hides unsupported note when serial mode is NMEA', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    expect(
+      screen.queryByText(/Meshtastic firmware currently does not emit serial output in this mode/i),
+    ).not.toBeInTheDocument();
   });
 
   it('shows readable message for routing BAD_REQUEST from device', async () => {
