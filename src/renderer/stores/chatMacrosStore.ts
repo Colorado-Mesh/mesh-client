@@ -53,7 +53,11 @@ export interface ChatMacroSlot {
   text: string;
   /** Missing in persisted v1 data → treated as 'text'. */
   action?: ChatMacroAction;
-  /** Present only when action === 'room'. */
+  /**
+   * Jump target when action === 'room'. May also remain under action === 'text' as a
+   * dormant restore value so Message ↔ Jump to room does not wipe the picker selection.
+   * Ignored for jumps while action is 'text'; only setSlotRoom(null) clears it.
+   */
   room?: RoomMacroTarget;
 }
 
@@ -158,9 +162,13 @@ function sanitizeSlot(raw: unknown): ChatMacroSlot {
   const r = raw as { label?: unknown; text?: unknown; action?: unknown; room?: unknown };
   const label = typeof r.label === 'string' ? r.label.slice(0, CHAT_MACRO_LABEL_MAX) : '';
   const text = typeof r.text === 'string' ? r.text.slice(0, CHAT_MACRO_TEXT_MAX) : '';
-  const room = r.action === 'room' ? sanitizeRoomTarget(r.room) : undefined;
+  const room = sanitizeRoomTarget(r.room);
   if (r.action === 'room' && room) {
     return { label, text, action: 'room', room };
+  }
+  // Keep a valid dormant room under Message so toggling back restores the picker.
+  if (room) {
+    return { label, text, action: 'text', room };
   }
   return { label, text, action: 'text' };
 }
@@ -237,8 +245,14 @@ export const useChatMacrosStore = create<ChatMacrosState>()(
               slots: s.slots.map((row, i) => (i === index ? next : row)),
             };
           }
-          // Drop room from the object so it is not persisted while action is text.
-          const next: ChatMacroSlot = { label: slot.label, text: slot.text, action: 'text' };
+          // Keep dormant room under Message; jumps ignore it until action is 'room' again.
+          // Only setSlotRoom(null) clears the target.
+          const next: ChatMacroSlot = {
+            label: slot.label,
+            text: slot.text,
+            action: 'text',
+            ...(slot.room ? { room: slot.room } : {}),
+          };
           return {
             slots: s.slots.map((row, i) => (i === index ? next : row)),
           };
