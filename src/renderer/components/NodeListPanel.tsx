@@ -56,6 +56,7 @@ import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
+import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../lib/meshcoreContactGroupUtils';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -153,7 +154,11 @@ function stubDmHistoryNode(nodeId: number, lastMessageAt: number, mode: MeshProt
 }
 
 const BUILTIN_TYPE_FILTERS = [
-  { group_id: -1, typeKey: 'nodeListPanel.meshcoreTypeChat' as const, hw_model: 'Chat' },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
+    typeKey: 'nodeListPanel.meshcoreTypeChat' as const,
+    hw_model: 'Chat',
+  },
   { group_id: -2, typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const, hw_model: 'Repeater' },
   { group_id: -3, typeKey: 'nodeListPanel.meshcoreTypeRoom' as const, hw_model: 'Room' },
 ] as const;

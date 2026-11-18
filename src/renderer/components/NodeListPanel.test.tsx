@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../lib/meshcoreContactGroupUtils';
 import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
@@ -381,6 +382,33 @@ describe('NodeListPanel import contacts', () => {
       expect(onImportContactFromQr).toHaveBeenCalled();
     });
     expect(addToastMock).toHaveBeenCalledWith('MeshCore contact added from QR', 'success');
+  });
+
+  it('filters MeshCore contacts by Chat type built-in group', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', hw_model: 'Chat' })],
+      [2, makeNode({ node_id: 2, long_name: 'ChatPeer', hw_model: 'Chat' })],
+      [3, makeNode({ node_id: 3, long_name: 'RepeaterPeer', hw_model: 'Repeater' })],
+      [4, makeNode({ node_id: 4, long_name: 'RoomPeer', hw_model: 'Room' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        selectedGroupId={MESHCORE_BUILTIN_CONTACT_TYPE_CHAT}
+        onGroupChange={vi.fn()}
+        onManageGroups={vi.fn()}
+        groups={[]}
+        groupMemberIds={new Set()}
+      />,
+    );
+    expect(screen.getByText('ChatPeer')).toBeInTheDocument();
+    expect(screen.queryByText('RepeaterPeer')).not.toBeInTheDocument();
+    expect(screen.queryByText('RoomPeer')).not.toBeInTheDocument();
   });
 
   it('filters Meshtastic nodes by GPS built-in group', () => {

@@ -19,12 +19,19 @@ export interface UseContactGroupsResult {
   reloadGroups: () => Promise<void>;
 }
 
-export function useContactGroups(selfNodeId: number | null): UseContactGroupsResult {
+export function useContactGroups(
+  selfNodeId: number | null,
+  defaultSelectedGroupId: number | null = null,
+): UseContactGroupsResult {
   const [groups, setGroups] = useState<ContactGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupIdState] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupIdState] = useState<number | null>(
+    defaultSelectedGroupId,
+  );
   const [groupMemberIds, setGroupMemberIds] = useState<Set<number>>(new Set());
   const selfNodeIdRef = useRef(selfNodeId);
   selfNodeIdRef.current = selfNodeId;
+  const defaultSelectedGroupIdRef = useRef(defaultSelectedGroupId);
+  defaultSelectedGroupIdRef.current = defaultSelectedGroupId;
   const loadedGroupIdRef = useRef<number | null>(null);
   const pendingGroupIdRef = useRef<number | null>(null);
 
@@ -44,11 +51,11 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
 
   useEffect(() => {
     setGroups([]);
-    setSelectedGroupIdState(null);
+    setSelectedGroupIdState(defaultSelectedGroupId);
     setGroupMemberIds(new Set());
     void reloadGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selfNodeId]);
+  }, [selfNodeId, defaultSelectedGroupId]);
 
   const setSelectedGroupId = useCallback((id: number | null) => {
     setSelectedGroupIdState(id);
@@ -101,7 +108,7 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
       setSelectedGroupIdState((prev) => {
         if (prev === groupId) {
           setGroupMemberIds(new Set());
-          return null;
+          return defaultSelectedGroupIdRef.current;
         }
         return prev;
       });

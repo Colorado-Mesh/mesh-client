@@ -19,7 +19,7 @@ Where Meshtastic uses **Nodes** and **Modules**, MeshCore uses **Contacts** and 
 1. Select **MC** (MeshCore, cyan) on the rail.
 2. **Device → Connection**: pick **Bluetooth**, **USB Serial**, or **TCP**, then **Connect** (or configure MQTT for receive/uplink without a radio).
 3. Wait for contacts and channels to finish loading. The header may show queued-message sync (**Fetching queued messages…** / **Sync now**).
-4. **Chat** shows channels and DMs. **Contacts** lists chat users, repeaters, rooms, and sensors the radio knows.
+4. **Chat** shows channels and DMs. **Contacts** defaults to chat users; use **All contacts** (or Repeaters / Rooms tabs) for other types.
 5. Open **Device → Radio** for name/position advert, channels, and regional flood scope before you transmit on a new mesh.
 
 Optional: enable auto-connect on the Connection tab so the same radio reconnects on launch.
@@ -49,9 +49,10 @@ Notes:
 
 **Contacts** is the MeshCore node list. Contact types include **Chat**, **Repeater**, **Room**, and **Sensor** (plus placeholders the UI labels **None** / **Unknown**).
 
+- The list defaults to **Type: Chat** (chat users only) because Repeaters and Rooms have their own Network tabs. Choose **All contacts** to see every type, or filter by **Type: Repeater** / **Type: Room**.
 - Contacts arrive from heard **adverts**, radio contact sync after connect, optional MQTT stubs, and manual import / share.
 - **Favourites** are exempt from age-based prune. Stars are stored with the contact.
-- Built-in type filters: **Type: Chat**, **Type: Repeater**, **Type: Room**. Custom **Contact Groups** work the same as on Meshtastic — see [Settings — Contact groups](settings.md#contact-groups).
+- Built-in type filters: **Type: Chat** (default), **Type: Repeater**, **Type: Room**. Custom **Contact Groups** work the same as on Meshtastic — see [Settings — Contact groups](settings.md#contact-groups).
 - **Radio →** contact management controls how the companion auto-adds adverts (**Auto add all** / **Auto add selected**, overwrite oldest non-favourites, max hops). Offload frees slots when the radio table is full (~350) while keeping rows in the app database.
 - Deleting a contact removes local DB rows (and that room’s BBS messages). If the radio still has the contact, it may return on the next dump.
 

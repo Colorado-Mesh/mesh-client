@@ -359,6 +359,7 @@ import type {
 } from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { hydrateLoraBlocklists } from './lib/loraBlocklist';
+import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from './lib/meshcoreContactGroupUtils';
 import { meshcoreRoomServerIdsFromNodes } from './lib/meshcoreDbCacheHydration';
 import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
 import {
@@ -1451,7 +1452,10 @@ function AppContent() {
   const activeChannelPills = asChannelIndexPills(activeRuntime.channels);
   const contactGroupsSelfId =
     typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
-  const contactGroups = useContactGroups(contactGroupsSelfId);
+  const contactGroups = useContactGroups(
+    contactGroupsSelfId,
+    protocol === 'meshcore' ? MESHCORE_BUILTIN_CONTACT_TYPE_CHAT : null,
+  );
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);
   const activeTabRef = useRef(activeTab);
