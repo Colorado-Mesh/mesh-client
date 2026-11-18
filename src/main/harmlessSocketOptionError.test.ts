@@ -88,6 +88,15 @@ describe('isHarmlessStdioBrokenPipeError', () => {
     expect(isHarmlessStdioBrokenPipeError(err)).toBe(false);
   });
 
+  it('rejects when console.error appears only in the error message header', () => {
+    const err = errnoError(
+      'EPIPE',
+      'write EPIPE via console.error',
+      'Error: write EPIPE via console.error\n    at Socket._write (node:net:1:1)\n    at someTcpWrite',
+    );
+    expect(isHarmlessStdioBrokenPipeError(err)).toBe(false);
+  });
+
   it('rejects non-EPIPE codes even with a console stack', () => {
     const err = errnoError(
       'EIO',

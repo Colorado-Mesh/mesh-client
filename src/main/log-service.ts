@@ -439,10 +439,10 @@ export function patchMainConsole(): void {
         throw e;
       }
     };
-    // Async EPIPE without a listener → uncaughtException; stay silent (no console.*).
-    stream.on('error', (err: Error) => {
-      if (!isStdioEpipe(err)) throw err;
-    });
+    // Electron 45.3.x / Node 24.22.x: no default stdio 'error' listeners, so any
+    // 'error' (EPIPE or otherwise) with zero listeners → uncaughtException.
+    // A no-op listener suppresses that; disk logging remains the source of truth.
+    stream.on('error', () => {});
   };
   patchStream(process.stdout, 'log', 'stdout');
   patchStream(process.stderr, 'warn', 'stderr');

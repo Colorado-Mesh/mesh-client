@@ -26,6 +26,7 @@ export function isHarmlessSocketOptionError(err: unknown): boolean {
 /**
  * Narrow global filter for console→stdio EPIPE (#1492). Requires EPIPE plus a
  * console/stdio stack frame so unhandled TCP/TAK write EPIPE still reports.
+ * Inspects only stack-frame lines (skips V8's `Error: …` header).
  */
 export function isHarmlessStdioBrokenPipeError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -34,5 +35,10 @@ export function isHarmlessStdioBrokenPipeError(err: unknown): boolean {
     code === 'EPIPE' ||
     ((code === undefined || code === '') &&
       (err.message === 'write EPIPE' || err.message.startsWith('write EPIPE')));
-  return epipe && /WriteToConsole|console\.(?:log|info|warn|error|debug)/.test(err.stack ?? '');
+  if (!epipe) return false;
+  const stack = err.stack ?? '';
+  const nl = stack.indexOf('\n');
+  return (
+    nl !== -1 && /WriteToConsole|console\.(?:log|info|warn|error|debug)/.test(stack.slice(nl + 1))
+  );
 }

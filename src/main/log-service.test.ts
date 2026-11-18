@@ -506,6 +506,36 @@ describe('patchMainConsole stderr capture', () => {
       process.stderr.write = saved.stderrWrite;
     }
   });
+
+  it('ignores async non-EPIPE stderr errors without throwing (#1492)', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    try {
+      vi.resetModules();
+      const { patchMainConsole } = await import('./log-service');
+      patchMainConsole();
+
+      const err = Object.assign(new Error('write EINVAL'), { code: 'EINVAL' });
+      expect(() => {
+        process.stderr.emit('error', err);
+      }).not.toThrow();
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
+  });
 });
 
 describe('isDroppableMeshtasticSdkLogLine', () => {
