@@ -390,9 +390,135 @@ export function nextSteps(result) {
   return lines;
 }
 
-function ghRunner(cwd) {
+const GITHUB_HOSTS = new Set(['github.com', 'ssh.github.com']);
+const SSH_PROTOCOLS = new Set(['ssh:', 'git+ssh:', 'ssh+git:']);
+const URL_PROTOCOLS = new Set(['https:', 'http:', 'git:', ...SSH_PROTOCOLS]);
+const REPO_NAME = /^[A-Za-z0-9_.-]+$/;
+const SSH_HOST = /^[A-Za-z0-9][A-Za-z0-9.-]*$/;
+
+/**
+ * The real hostname ssh uses for `host`, from `ssh -G` (which only prints the configuration), so a
+ * host alias in ~/.ssh/config resolves the way gh resolves it.
+ * @param {string} host
+ * @param {typeof execFileSync} [runFile] runs a program with an argument array, never a shell
+ * @returns {string | null}
+ */
+export function sshHostname(host, runFile = execFileSync) {
+  if (!SSH_HOST.test(host)) return null;
+  try {
+    const config = String(
+      runFile('ssh', ['-G', host], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }),
+    );
+    const line = config.split('\n').find((entry) => entry.startsWith('hostname '));
+    return line ? line.slice('hostname '.length).trim().toLowerCase() : null;
+  } catch {
+    // catch-no-log-ok ssh is missing or rejects the host; the caller then refuses the remote.
+    return null;
+  }
+}
+
+/** @param {string} path @returns {string | null} `owner/repo` */
+function ownerRepoFromPath(path) {
+  let trimmed = path.replace(/^[/]+/, '').replace(/[/]+$/, '');
+  if (trimmed.endsWith('.git')) trimmed = trimmed.slice(0, -'.git'.length);
+  const parts = trimmed.split('/');
+  const valid = parts.every((part) => REPO_NAME.test(part) && part !== '.' && part !== '..');
+  return parts.length === 2 && valid ? `${parts[0]}/${parts[1]}` : null;
+}
+
+/**
+ * The `owner/repo` of a remote URL on github.com, or null for any other host, a local path or a
+ * URL that names no single repository. An ssh host other than github.com counts when
+ * `resolveSshHost` maps it there (an alias in ~/.ssh/config).
+ * @param {string} url
+ * @param {(host: string) => string | null} [resolveSshHost]
+ * @returns {string | null}
+ */
+export function githubRepoFromRemoteUrl(url, resolveSshHost = sshHostname) {
+  const value = url.trim();
+  let host;
+  let path;
+  let ssh;
+  if (value.includes('://')) {
+    let parsed;
+    try {
+      parsed = new URL(value);
+    } catch {
+      // catch-no-log-ok not a URL; the caller refuses the remote.
+      return null;
+    }
+    if (!URL_PROTOCOLS.has(parsed.protocol)) return null;
+    host = parsed.hostname.toLowerCase();
+    path = parsed.pathname;
+    ssh = SSH_PROTOCOLS.has(parsed.protocol);
+  } else {
+    // scp-like [user@]host:path; git reads a value with a slash before the first colon as a path.
+    const colon = value.indexOf(':');
+    const slash = value.indexOf('/');
+    if (colon <= 0 || (slash !== -1 && slash < colon)) return null;
+    const userHost = value.slice(0, colon);
+    host = userHost.slice(userHost.lastIndexOf('@') + 1).toLowerCase();
+    path = value.slice(colon + 1);
+    ssh = true;
+  }
+  const repo = ownerRepoFromPath(path);
+  // A one-letter host is a Windows drive letter, never a server.
+  if (!repo || host.length < 2) return null;
+  if (GITHUB_HOSTS.has(host)) return repo;
+  if (!ssh) return null;
+  const resolved = resolveSshHost(host);
+  return resolved && GITHUB_HOSTS.has(resolved) ? repo : null;
+}
+
+/**
+ * The github.com repository `remote` pushes to, read before anything is fetched or pushed, so the
+ * pull request goes where the branch goes whatever gh's default repository is. Refusals name the
+ * remote and never its URL, which can carry a token.
+ * @param {string} cwd
+ * @param {string} remote
+ * @param {(host: string) => string | null} [resolveSshHost]
+ * @returns {string} `owner/repo`
+ */
+export function remoteRepository(cwd, remote, resolveSshHost = sshHostname) {
+  const fetchRepo = githubRepoFromRemoteUrl(
+    git(cwd, ['remote', 'get-url', remote]),
+    resolveSshHost,
+  );
+  const pushRepo = githubRepoFromRemoteUrl(
+    git(cwd, ['remote', 'get-url', '--push', remote]),
+    resolveSshHost,
+  );
+  if (!fetchRepo || !pushRepo) {
+    throw new Error(
+      `Remote ${remote} is not a github.com repository. release:open opens the release pull request in the repository it pushes to; pass --remote with a remote on github.com.`,
+    );
+  }
+  if (fetchRepo !== pushRepo) {
+    throw new Error(
+      `Remote ${remote} fetches from ${fetchRepo} but pushes to ${pushRepo}; release:open needs one repository.`,
+    );
+  }
+  return pushRepo;
+}
+
+/**
+ * Runs gh for one repository: every call gets `--repo`, so pull request operations never follow
+ * gh's own default repository.
+ * @param {string} cwd
+ * @param {string} repo `owner/repo`
+ * @param {typeof execFileSync} [runFile] runs a program with an argument array, never a shell
+ * @returns {(args: string[], input?: string) => string}
+ */
+export function ghRunner(cwd, repo, runFile = execFileSync) {
   return (args, input) =>
-    execFileSync('gh', args, { cwd, encoding: 'utf8', input, stdio: ['pipe', 'pipe', 'inherit'] });
+    String(
+      runFile('gh', [...args, '--repo', repo], {
+        cwd,
+        encoding: 'utf8',
+        input,
+        stdio: ['pipe', 'pipe', 'inherit'],
+      }),
+    );
 }
 
 async function main() {
@@ -404,6 +530,8 @@ async function main() {
     process.exit(2);
   }
   const cwd = process.cwd();
+  const repo = remoteRepository(cwd, options.remote);
+  console.info(`Repository: ${repo} (remote ${options.remote})`);
   const result = await openRelease({
     cwd,
     remote: options.remote,
@@ -411,7 +539,7 @@ async function main() {
     dryRun: options.dryRun,
     draft: options.draft,
     today: new Date().toISOString().slice(0, 10),
-    gh: ghRunner(cwd),
+    gh: ghRunner(cwd, repo),
   });
   if (result.status === 'nothing-to-release') {
     console.info(`main has nothing new since v${result.version}; there is nothing to release.`);

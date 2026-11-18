@@ -33,7 +33,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 ## Prerequisites
 
 - Maintainer access to the repository, and `gh` signed in (`gh auth status`)
-- For `pnpm run release:open`: a clone with `origin` pointing at this repository. The command fetches `main` itself and never touches your checkout, so any branch and a dirty tree are fine.
+- For `pnpm run release:open`: a clone with `origin` pointing at this repository (or `-- --remote <name>` for another remote that does). The command pushes the release branch to that remote and opens the pull request in the same repository, whatever `gh repo set-default` names, and stops before fetching anything if the remote is not on github.com. It fetches `main` itself and never touches your checkout, so any branch and a dirty tree are fine.
 - For the emergency `pnpm run release`: on branch **`main`**, up to date with `origin/main`, with a clean working directory, plus **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint via pip/brew, see [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible)) and **flatpak-node-generator** on `PATH` (same pin as Flatpak CI, see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) / `pnpm run check:flatpak-offline-pnpm` install hint)
 
 ---

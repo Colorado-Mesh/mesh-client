@@ -1,7 +1,16 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { dryRunLine, nextSteps, openRelease, parseArgs } from './release-open.mjs';
+import {
+  dryRunLine,
+  ghRunner,
+  githubRepoFromRemoteUrl,
+  nextSteps,
+  openRelease,
+  parseArgs,
+  remoteRepository,
+  sshHostname,
+} from './release-open.mjs';
 import { extractSection } from './releaseNotes.mjs';
 import {
   cleanupRepos,
@@ -187,6 +196,151 @@ describe('nextSteps', () => {
       'Closed #40 and #37 as superseded by this one.',
       gates,
       tag,
+    ]);
+  });
+});
+
+describe('githubRepoFromRemoteUrl', () => {
+  const noSsh = () => {
+    throw new Error('no ssh lookup expected');
+  };
+
+  it.each([
+    'https://github.com/Owner/repo.git',
+    'https://github.com/Owner/repo',
+    'https://github.com/Owner/repo/',
+    'https://someone:token@github.com/Owner/repo.git',
+    'http://github.com/Owner/repo.git',
+    'git@github.com:Owner/repo.git',
+    'github.com:Owner/repo',
+    'ssh://git@github.com/Owner/repo.git',
+    'ssh://git@ssh.github.com:443/Owner/repo.git',
+    'git+ssh://git@github.com/Owner/repo.git',
+  ])('reads Owner/repo from %s', (url) => {
+    expect(githubRepoFromRemoteUrl(url, noSsh)).toBe('Owner/repo');
+  });
+
+  it('follows an ssh host alias to github.com, and refuses one that leads elsewhere', () => {
+    /** @type {Record<string, string>} */
+    const hosts = { 'github-work': 'github.com', mirror: 'git.example.com' };
+    const lookup = (/** @type {string} */ host) => hosts[host] ?? null;
+    expect(githubRepoFromRemoteUrl('git@github-work:Owner/repo.git', lookup)).toBe('Owner/repo');
+    expect(githubRepoFromRemoteUrl('ssh://git@github-work/Owner/repo.git', lookup)).toBe(
+      'Owner/repo',
+    );
+    expect(githubRepoFromRemoteUrl('git@mirror:Owner/repo.git', lookup)).toBeNull();
+  });
+
+  it.each([
+    'https://gitlab.com/Owner/repo.git',
+    'https://github.example.com/Owner/repo.git',
+    'https://github.com/Owner',
+    'https://github.com/Owner/repo/extra',
+    'file:///srv/repo.git',
+    '/srv/remote.git',
+    '../remote.git',
+    'C:/Owner/repo',
+  ])('refuses %s without an ssh lookup', (url) => {
+    expect(githubRepoFromRemoteUrl(url, noSsh)).toBeNull();
+  });
+});
+
+describe('sshHostname', () => {
+  it('reads the hostname ssh -G resolves for a host alias', () => {
+    /** @type {string[][]} */
+    const calls = [];
+    const exec = (/** @type {string} */ file, /** @type {string[]} */ args) => {
+      calls.push([file, ...args]);
+      return 'user git\nhostname github.com\nport 22\n';
+    };
+    expect(sshHostname('github-work', exec)).toBe('github.com');
+    expect(calls).toEqual([['ssh', '-G', 'github-work']]);
+  });
+
+  it('never runs ssh for a host that could read as an option, and gives null when ssh fails', () => {
+    const unexpected = () => {
+      throw new Error('ssh must not run');
+    };
+    expect(sshHostname('-oProxyCommand=true', unexpected)).toBeNull();
+    const failing = () => {
+      throw new Error('ssh: command not found');
+    };
+    expect(sshHostname('github-work', failing)).toBeNull();
+  });
+});
+
+describe('remoteRepository', () => {
+  afterEach(() => cleanupRepos());
+
+  /** @param {() => unknown} action @returns {string} */
+  const failureOf = (action) => {
+    try {
+      action();
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+    throw new Error('expected a refusal');
+  };
+
+  it('reads the repository a remote pushes to, with insteadOf applied', () => {
+    const { user } = released();
+    run(user, ['remote', 'add', 'hub', 'https://github.com/Owner/repo.git']);
+    run(user, ['config', 'url.https://github.com/.insteadOf', 'gh:']);
+    run(user, ['remote', 'add', 'short', 'gh:Owner/short.git']);
+    expect(remoteRepository(user, 'hub')).toBe('Owner/repo');
+    expect(remoteRepository(user, 'short')).toBe('Owner/short');
+  });
+
+  it('refuses a remote that is not on github.com and never prints its URL', () => {
+    const { user } = released();
+    run(user, ['remote', 'add', 'other', 'https://someone:secret-value@git.example.com/o/r.git']);
+    for (const remote of ['origin', 'other']) {
+      const message = failureOf(() => remoteRepository(user, remote));
+      expect(message).toContain(`Remote ${remote} is not a github.com repository`);
+      expect(message).not.toContain('remote.git');
+      expect(message).not.toContain('secret-value');
+      expect(message).not.toContain('example.com');
+    }
+  });
+
+  it('refuses a remote that fetches from one repository and pushes to another', () => {
+    const { user } = released();
+    run(user, ['remote', 'add', 'split', 'https://github.com/Owner/repo.git']);
+    run(user, ['config', 'remote.split.pushurl', 'git@github.com:Fork/repo.git']);
+    expect(failureOf(() => remoteRepository(user, 'split'))).toContain(
+      'Remote split fetches from Owner/repo but pushes to Fork/repo',
+    );
+  });
+});
+
+describe('ghRunner', () => {
+  it('binds every gh call to the repository and passes its input on', () => {
+    /** @type {Array<{ file: string, args: string[], cwd: string, input: unknown }>} */
+    const calls = [];
+    const exec = (
+      /** @type {string} */ file,
+      /** @type {string[]} */ args,
+      /** @type {{ cwd: string, input?: string }} */ options,
+    ) => {
+      calls.push({ file, args, cwd: options.cwd, input: options.input });
+      return 'out';
+    };
+    const gh = ghRunner('/work', 'Owner/repo', exec);
+    expect(gh(['pr', 'list', '--base', 'main'])).toBe('out');
+    gh(['pr', 'edit', '7', '--body-file', '-'], 'body text');
+    expect(calls).toEqual([
+      {
+        file: 'gh',
+        args: ['pr', 'list', '--base', 'main', '--repo', 'Owner/repo'],
+        cwd: '/work',
+        input: undefined,
+      },
+      {
+        file: 'gh',
+        args: ['pr', 'edit', '7', '--body-file', '-', '--repo', 'Owner/repo'],
+        cwd: '/work',
+        input: 'body text',
+      },
     ]);
   });
 });
