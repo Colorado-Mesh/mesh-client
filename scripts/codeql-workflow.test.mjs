@@ -110,6 +110,12 @@ describe('CodeQL advanced workflow', () => {
     expect(job.steps.filter((step) => step.uses?.includes('/autobuild@'))).toHaveLength(1);
   });
 
+  it('gives the Swift autobuild 60 minutes and every other language 30', () => {
+    // The Swift autobuild compiles native/ai/mlx and its MLX dependencies (up to about 30 minutes
+    // on a hosted macOS runner), so a shared 30-minute limit cancelled it on most finished runs.
+    expect(job['timeout-minutes']).toBe("${{ matrix.language == 'swift' && 60 || 30 }}");
+  });
+
   it('clones every sidecar path dependency into the folder CodeQL ignores', () => {
     const manifest = fs.readFileSync(path.join(root, 'reticulum-sidecar/Cargo.toml'), 'utf8');
     const dependencyPaths = [...manifest.matchAll(/^path = "(\.\.\/[^"]+)"$/gm)].map(
