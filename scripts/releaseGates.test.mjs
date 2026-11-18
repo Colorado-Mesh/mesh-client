@@ -132,6 +132,15 @@ describe('evaluateGates', () => {
     ]);
   });
 
+  it('counts nothing from an e2e.yaml in another repository', () => {
+    const elsewhere = allGreen().map((run) => ({
+      ...run,
+      workflowPath: 'octocat/octo-repo/.github/workflows/e2e.yaml',
+    }));
+    expect(evaluateGates(elsewhere).ok).toBe(false);
+    expect(evaluateGates(elsewhere).notPassed).toHaveLength(REQUIRED_GATES.length);
+  });
+
   it('never lets a newer same-named check from elsewhere hide a real failure', () => {
     const runs = [
       ...allGreen().filter((run) => run.name !== 'Release preflight'),

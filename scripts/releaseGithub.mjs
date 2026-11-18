@@ -97,11 +97,15 @@ export function createGithubApi({ token, repo, fetchImpl = fetch }) {
     /**
      * @param {number} checkSuiteId
      * @returns {Promise<string | null>} the workflow file (`.github/workflows/...`) whose run made
-     *   the check suite, or null when no Actions workflow run did
+     *   the check suite, without the `@<ref>` the API may append (its schema example is
+     *   `octocat/octo-repo/.github/workflows/ci.yml@main`), or null when no Actions workflow run
+     *   did. A repository prefix stays, so another repository's workflow never reads as this one's.
      */
-    workflowPathForCheckSuite: async (checkSuiteId) =>
-      (await request(`/actions/runs?check_suite_id=${checkSuiteId}`))?.workflow_runs?.[0]?.path ??
-      null,
+    workflowPathForCheckSuite: async (checkSuiteId) => {
+      const path = (await request(`/actions/runs?check_suite_id=${checkSuiteId}`))
+        ?.workflow_runs?.[0]?.path;
+      return typeof path === 'string' ? path.split('@', 1)[0] : null;
+    },
     /** @param {string} tag @returns {Promise<boolean>} */
     tagExists: async (tag) => (await ref(`tags/${tag}`)) !== null,
     /** @param {string} sha */

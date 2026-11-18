@@ -82,6 +82,29 @@ describe('createGithubApi', () => {
     expect(await api.workflowPathForCheckSuite(78)).toBeNull();
   });
 
+  it('drops the ref GitHub may append to a workflow path, and keeps a repository prefix', async () => {
+    // The REST schema's example for a workflow run path is "octocat/octo-repo/.github/workflows/ci.yml@main".
+    const { fetchImpl } = fakeFetch({
+      [`${base}/actions/runs?check_suite_id=79`]: [
+        200,
+        { total_count: 1, workflow_runs: [{ path: '.github/workflows/e2e.yaml@refs/heads/main' }] },
+      ],
+      [`${base}/actions/runs?check_suite_id=80`]: [
+        200,
+        {
+          total_count: 1,
+          workflow_runs: [{ path: 'octocat/octo-repo/.github/workflows/e2e.yaml@main' }],
+        },
+      ],
+    });
+    const api = createGithubApi({ token: 't', repo: 'Colorado-Mesh/mesh-client', fetchImpl });
+
+    expect(await api.workflowPathForCheckSuite(79)).toBe('.github/workflows/e2e.yaml');
+    expect(await api.workflowPathForCheckSuite(80)).toBe(
+      'octocat/octo-repo/.github/workflows/e2e.yaml',
+    );
+  });
+
   it('reads the tree a commit points at', async () => {
     const { fetchImpl } = fakeFetch({
       [`${base}/git/commits/c0mm1t`]: [200, { sha: 'c0mm1t', tree: { sha: 'tr33' } }],
