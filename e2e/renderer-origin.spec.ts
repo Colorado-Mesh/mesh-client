@@ -59,9 +59,9 @@ function defineRendererOriginMigrationTests(packaged: boolean): void {
   }
 
   async function stop(): Promise<void> {
-    const current = app;
+    if (!app) return;
+    await closeElectronApplication(app);
     app = undefined;
-    if (current) await closeElectronApplication(current);
   }
 
   test.beforeEach(() => {

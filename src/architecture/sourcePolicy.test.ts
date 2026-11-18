@@ -191,6 +191,30 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
     });
   });
 
+  describe('e2e-no-bare-app-close', () => {
+    const rule = SOURCE_POLICY_RULES.find((r) => r.id === 'e2e-no-bare-app-close');
+    const isFlagged = (source: string) => {
+      if (!rule?.forbid) throw new Error('e2e-no-bare-app-close rule missing');
+      return rule.forbid.test(source);
+    };
+
+    it.each([
+      'await closeElectronApplication(app)',
+      'await closeApp(launched)',
+      'await teardownApp(launched)',
+      'await radio.close()',
+    ])('accepts %s', (source) => {
+      expect(isFlagged(source)).toBe(false);
+    });
+
+    it.each(['await app.close()', 'await app?.close()', 'await app!.close()'])(
+      'rejects %s',
+      (source) => {
+        expect(isFlagged(source)).toBe(true);
+      },
+    );
+  });
+
   /** Repo-wide gate: every `SOURCE_POLICY_RULES` include under src/ stays clean. */
   it('reports no violations against the current tree', () => {
     const violations = collectSourcePolicyViolations();

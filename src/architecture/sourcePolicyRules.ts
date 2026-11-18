@@ -185,7 +185,7 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     id: 'e2e-no-bare-app-close',
     include: ['e2e/**/*.ts'],
     exclude: ['e2e/electronApp.ts'],
-    forbid: /\bapp\.close\s*\(/,
+    forbid: /\bapp(?:\?\.|!\.|\.)close\s*\(/,
     message:
       'Use closeElectronApplication / closeApp / teardownApp so hung Electron cannot burn the Playwright test/worker timeout (macOS E2E flake)',
   },

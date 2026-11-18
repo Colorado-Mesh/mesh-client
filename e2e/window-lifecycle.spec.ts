@@ -36,7 +36,8 @@ test.describe('window lifecycle', () => {
     expect(unexpected, `unexpected console.error: ${unexpected.join(' | ')}`).toEqual([]);
 
     await page.close();
-    await closeElectronApplication(app);
+    const { forceKilled } = await closeElectronApplication(app);
+    expect(forceKilled).toBe(false);
     expect(launched.crashed).toBe(false);
   });
 });

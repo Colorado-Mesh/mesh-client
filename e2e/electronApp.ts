@@ -262,6 +262,12 @@ export function forceKillElectronProcess(proc: ChildProcess | undefined): void {
   }
 }
 
+/** Outcome of {@link closeElectronApplication}. */
+export interface CloseElectronApplicationResult {
+  /** True when graceful close did not exit the process and a force-kill was used. */
+  forceKilled: boolean;
+}
+
 /**
  * Close an ElectronApplication with a hard timeout. A hung or rejected `app.close()`
  * (before-quit handlers, CDP sessions, stray children) previously burned the full
@@ -272,7 +278,9 @@ export function forceKillElectronProcess(proc: ChildProcess | undefined): void {
  * out or settles while the process is still live; throws if it remains alive after
  * the force-kill wait so callers do not delete a still-locked profile.
  */
-export async function closeElectronApplication(app: ElectronApplication): Promise<void> {
+export async function closeElectronApplication(
+  app: ElectronApplication,
+): Promise<CloseElectronApplicationResult> {
   let proc: ChildProcess | undefined;
   try {
     proc = app.process();
@@ -290,7 +298,9 @@ export async function closeElectronApplication(app: ElectronApplication): Promis
     sleepMs(CLOSE_APP_TIMEOUT_MS).then(() => true as const),
   ]);
 
+  let forceKilled = false;
   if (!hasProcessExited(proc)) {
+    forceKilled = true;
     forceKillElectronProcess(proc);
     // Always wait the budget — a settled closePromise must not skip the kill settle time.
     if (!hasProcessExited(proc)) {
@@ -305,6 +315,8 @@ export async function closeElectronApplication(app: ElectronApplication): Promis
         : 'Electron process still running after close/force-kill',
     );
   }
+
+  return { forceKilled };
 }
 
 /** Close a launched E2E app with the bounded force-kill close path. */
