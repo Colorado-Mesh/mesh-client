@@ -33,8 +33,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows notification SoundPlayer (#1487) ships as sibling
  * `notification-sound-play-wav.js`; index.js keeps Chromium audio-service flags plus a
  * thin sync loader (~+1 KiB).
+ * Transient MQTT errno codes `EADDRNOTAVAIL` / `EHOSTDOWN` (macOS interface address loss)
+ * tipped the minified main past 811 KiB (~+14 B); budget +1 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 811 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 812 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
