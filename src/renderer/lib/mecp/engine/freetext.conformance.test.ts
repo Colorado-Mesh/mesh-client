@@ -1,5 +1,5 @@
 /**
- * MECP 1.3.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
+ * MECP 1.4.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
  * against vendored freetext/tests.json and patterns.json.
  */
 import { readFileSync } from 'node:fs';
@@ -53,7 +53,7 @@ function conventionResult(
   }
 }
 
-describe('MECP 1.3.0 freetext patterns fixture', () => {
+describe('MECP 1.4.0 freetext patterns fixture', () => {
   it('keeps every pattern string loadable from patterns.json', () => {
     expect(typeof patterns.message.decode).toBe('string');
     expect(MESSAGE_ENVELOPE_RE.test('MECP/1/T05')).toBe(true);
@@ -66,9 +66,18 @@ describe('MECP 1.3.0 freetext patterns fixture', () => {
     const raw = readFileSync(join(ROOT, 'freetext/tests.json'), 'utf8');
     expect(JSON.parse(raw)).toEqual(tests);
   });
+
+  it('drops seconds from duration encode patterns (1.4.0)', () => {
+    for (const pat of patterns.duration.encode) {
+      expect(pat).not.toMatch(/\[Ss\]/);
+      expect(pat).not.toMatch(/\)s$/);
+    }
+    expect(patterns.duration.encode).toHaveLength(3);
+    expect(patterns.duration.decode).toHaveLength(5);
+  });
 });
 
-describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
+describe('MECP 1.4.0 freetext conformance (upstream tests.json)', () => {
   it.each(CASES)('$convention — $input', (t) => {
     if (t.convention === 'message') {
       const got = { valid: matchMessageEnvelope(t.input) != null };
@@ -81,7 +90,7 @@ describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
     expect(got).toEqual(t.expect);
   });
 
-  it('uses strict duration encode patterns without spaces before units (1.3.0)', () => {
+  it('uses strict duration encode patterns without spaces before units', () => {
     for (const pat of patterns.duration.encode) {
       expect(pat).not.toMatch(/ \?/);
       expect(pat).not.toContain(' ?');
@@ -95,17 +104,24 @@ describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
 
   it('decode() surfaces the same duration/callsign/reference extractions', () => {
     const duration = decode('MECP/2/R03 45min');
+    expect(duration.valid).toBe(true);
     expect(duration.extracted.duration).toBe(45);
     expect(duration.extracted.durationToken).toBe('45min');
     expect(decode('MECP/3/L06 45min').extracted.duration).toBeNull();
 
-    // #28: any SI unit, no 1440-minute upper bound
+    // Any positive min/h/d total, no 1440-minute upper bound
     expect(decode('MECP/2/R03 2d').extracted.duration).toBe(2880);
     expect(decode('MECP/2/R03 48h').extracted.duration).toBe(2880);
     expect(decode('MECP/2/R03 2880min').extracted.duration).toBe(2880);
 
+    // First by position; seconds are not a duration unit
+    expect(decode('MECP/2/R03 2d 45min').extracted.duration).toBe(2880);
+    expect(decode('MECP/2/R03 30s').extracted.duration).toBeNull();
+    expect(decode('MECP/2/R03 30s 45min').extracted.duration).toBe(45);
+
     const cs = decode('MECP/3/L20 ~DL/OK1ABC');
     expect(cs.extracted.callsign).toBe('DL/OK1ABC');
+    expect(decode('MECP/3/L20 ~W1AW-9').extracted.callsign).toBeNull();
 
     const ref = decode('MECP/2/C08 #base-camp,');
     expect(ref.extracted.reference).toBe('base-camp');
@@ -114,17 +130,10 @@ describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
     expect(ts.extracted.timestamp).toBe('14:00');
   });
 
-  it('rejects 0s so a later positive seconds duration can match', () => {
-    const parsed = decode('MECP/2/R03 0s 7200s');
-    expect(parsed.extracted.duration).toBe(120);
-    expect(parsed.extracted.durationToken).toBe('7200s');
-  });
-
-  it('treats * and / as §6.1 boundaries for pax and duration', () => {
-    expect(decode('MECP/1/S01 *3pax*').extracted.count).toBe(3);
-    const slash = decode('MECP/2/C01 R03 3pax/45min');
-    expect(slash.extracted.count).toBe(3);
-    expect(slash.extracted.duration).toBe(45);
-    expect(slash.extracted.durationToken).toBe('45min');
+  it('decode() strips one trailing CR/LF and rejects interior breaks', () => {
+    expect(decode('MECP/1/T05 T05 damaged\n').valid).toBe(true);
+    expect(decode('MECP/1/T05 T05 damaged\r\n').valid).toBe(true);
+    expect(decode('MECP/1/T05 foo\nbar').valid).toBe(false);
+    expect(decode('MECP/1/T05 ').valid).toBe(false);
   });
 });

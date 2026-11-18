@@ -35,8 +35,53 @@
     "expect": { "reference": "tag" }
   },
   {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut\u3000ok",
+    "expect": { "reference": "hut" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut\u060Cok",
+    "expect": { "reference": "hut" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut\u201Dok",
+    "expect": { "reference": "hut" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut\u3001ok",
+    "expect": { "reference": "hut" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut\uFF0Cok",
+    "expect": { "reference": "hut" }
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/2/C08 #hut2/basecamp",
+    "expect": {}
+  },
+  {
+    "convention": "reference",
+    "input": "MECP/3/L06 see https://example.org/#notes",
+    "expect": {}
+  },
+  {
     "convention": "pax",
     "input": "MECP/1/S01 3paxmore",
+    "expect": {}
+  },
+  {
+    "convention": "pax",
+    "input": "MECP/1/S01 3pax*",
+    "expect": {}
+  },
+  {
+    "convention": "timestamp",
+    "input": "MECP/3/L06 eta=@1430",
     "expect": {}
   },
   {
@@ -68,6 +113,16 @@
     "convention": "callsign",
     "input": "MECP/3/L20 ~ABCDEFGHIJKLM ~OK1ABC",
     "expect": { "callsign": "OK1ABC" }
+  },
+  {
+    "convention": "callsign",
+    "input": "MECP/3/L20 ~W1AW-9",
+    "expect": {}
+  },
+  {
+    "convention": "message",
+    "input": "MECP/3/L20 ~W1AW-9",
+    "expect": { "valid": true }
   },
   {
     "convention": "language",
@@ -120,6 +175,56 @@
     "expect": {}
   },
   {
+    "convention": "duration",
+    "input": "MECP/2/R03 30s",
+    "expect": {}
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 30s 45min",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 47.3769,12.1048",
+    "expect": {}
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45.",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45 0h",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45 2h",
+    "expect": { "duration": 120 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 2d 45min",
+    "expect": { "duration": 2880 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 45min 2h",
+    "expect": { "duration": 45 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 1h 30min",
+    "expect": { "duration": 90 }
+  },
+  {
+    "convention": "duration",
+    "input": "MECP/2/R03 2 h",
+    "expect": { "duration": 120 }
+  },
+  {
     "convention": "message",
     "input": "MECP/1/T05 ",
     "expect": { "valid": false }
@@ -132,6 +237,41 @@
   {
     "convention": "message",
     "input": "MECP/1/T05 T05 damaged",
+    "expect": { "valid": true }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 T05 damaged\n",
+    "expect": { "valid": true }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 T05 damaged\r\n",
+    "expect": { "valid": true }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 T05 damaged\r",
+    "expect": { "valid": true }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 foo\nbar",
+    "expect": { "valid": false }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 foo\u2028bar",
+    "expect": { "valid": false }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/1/T05 foo\fbar",
+    "expect": { "valid": false }
+  },
+  {
+    "convention": "message",
+    "input": "MECP/0/M01 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
     "expect": { "valid": true }
   }
 ]

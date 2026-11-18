@@ -1,5 +1,5 @@
 /**
- * MECP 1.3.0 §6.1 freetext convention extraction.
+ * MECP 1.4.0 §6.1 freetext convention extraction.
  * Patterns and semantics from https://github.com/mecp-org/MECP (freetext/patterns.json,
  * scripts/check-freetext.mjs). Additional Validation failures are ignored; freetext is preserved.
  */
@@ -7,13 +7,13 @@
 import patternsJson from './freetext/patterns.json';
 
 /**
- * Boundary class B from §6.1 rule 4: ASCII whitespace/punctuation except sigils
- * `@ # ~ +` and `- _`, plus listed Unicode. Includes `*` and `/` so forms like
- * `*3pax*` and `3pax/45min` bound correctly; `/` inside callsign still matches
- * because it is part of that convention's pattern.
+ * Boundary class B from §6.1 rule 4: `\t \n \f \r`, space, and the explicit ASCII
+ * punctuation list, plus listed Unicode. Sigils `@ # ~` and `+ - _` are not
+ * boundaries. Decoders MAY treat other non-ASCII space/punctuation as boundaries;
+ * this harness sticks to the listed set (no `*` or `/`).
  */
 const B_CLASS =
-  '[\\t\\n\\f\\r ,.;:!?\'"()\\[\\]{}*/\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000\\u060C\\u061B\\u061F\\u06D4\\u00AB\\u00BB\\u2013\\u2014\\u2018-\\u201D\\u2026\\u3001\\u3002\\u300C-\\u300F\\u3010\\u3011\\uFF01\\uFF08\\uFF09\\uFF0C\\uFF0E\\uFF1A\\uFF1B\\uFF1F]';
+  '[\\t\\n\\f\\r ,.;:!?\'"()\\[\\]{}\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000\\u060C\\u061B\\u061F\\u06D4\\u00AB\\u00BB\\u2013\\u2014\\u2018-\\u201D\\u2026\\u3001\\u3002\\u300C-\\u300F\\u3010\\u3011\\uFF01\\uFF08\\uFF09\\uFF0C\\uFF0E\\uFF1A\\uFF1B\\uFF1F]';
 const B_ONE = new RegExp(`^${B_CLASS}$`);
 
 const PATTERNS = patternsJson;
@@ -36,6 +36,8 @@ interface BoundedMatch {
   match: RegExpMatch;
   /** Match excluding one-code-point boundary on each side, when present. */
   token: string;
+  /** Absolute start index of the full match (including left boundary). */
+  index: number;
 }
 
 function validateGps(m: RegExpMatch): boolean {
@@ -57,6 +59,7 @@ function validateCallsign(m: RegExpMatch): boolean {
 
 function toMinutes(kind: string, m: RegExpMatch): number {
   const a = Number(m[1]);
+  // Optional capture may be absent at runtime; RegExpMatchArray indexes are typed as string.
   const b = m[2] ? Number(m[2]) : 0;
   switch (kind) {
     case 'hm':
@@ -68,18 +71,9 @@ function toMinutes(kind: string, m: RegExpMatch): number {
       return a;
     case 'd':
       return a * 1440;
-    case 's':
-      // Ceiling only — do not clamp to 1. `0s` stays 0 so Additional Validation
-      // rejects it and matching can continue to a later valid duration (e.g. 7200s).
-      return Math.ceil(a / 60);
     default:
       return Number.NaN;
   }
-}
-
-/** MECP #28 / PR #29: any positive total is valid in any SI unit (no 1440-minute cap). */
-function validateDurationMinutes(mins: number): boolean {
-  return Number.isFinite(mins) && mins >= 1;
 }
 
 /**
@@ -113,11 +107,16 @@ function firstValidMatch(
       pos = Math.max(tokenEnd, abs + 1);
       continue;
     }
-    return { match: m, token: freetext.slice(tokenStart, tokenEnd) };
+    return { match: m, token: freetext.slice(tokenStart, tokenEnd), index: abs };
   }
   return null;
 }
 
+/**
+ * R03 Duration: first unit-bearing match by position wins; pattern order breaks
+ * ties at the same index. Bare number is a fallback only when no unit-bearing
+ * value matches; a decimal group fails Additional Validation (no match).
+ */
 function decodeDuration(
   freetext: string,
   codes: readonly string[],
@@ -125,29 +124,30 @@ function decodeDuration(
   const spec = PATTERNS.duration;
   if (spec.scope && !codes.includes(spec.scope)) return null;
   const decodeList = spec.decode;
-  const kinds = ['hm', 'h', 'min', 'd', 's', 'bare'] as const;
+  const kinds = ['hm', 'h', 'min', 'd', 'bare'] as const;
+
+  let best: { minutes: number; token: string; index: number } | null = null;
 
   for (let i = 0; i < decodeList.length; i++) {
     const kind = kinds[i];
     const pat = decodeList[i];
-    if (kind === 'bare') {
-      // B_CLASS is a fixed protocol boundary class literal interpolated into the pattern.
-      const re = new RegExp(`^(?:[Ee][Tt][Aa] ?)?([0-9]+)(?:${B_CLASS}|$)`);
-      const m = re.exec(freetext);
-      if (!m) continue;
-      const mins = toMinutes('bare', m);
-      if (!validateDurationMinutes(mins)) continue;
-      const full = m[0];
-      const usedRightB = full.length > 0 && B_ONE.test(full[full.length - 1]);
-      const token = usedRightB ? full.slice(0, -1) : full;
-      return { minutes: mins, token };
+    // Bare number is only used when no unit-bearing value matched.
+    if (best && kind === 'bare') break;
+
+    const found = firstValidMatch(pat, freetext, (mm) => {
+      const mins = toMinutes(kind, mm);
+      // Bare Additional Validation: reject when the optional decimal group matched.
+      return mins > 0 && (kind !== 'bare' || !mm[2]);
+    });
+    if (found && (!best || found.index < best.index)) {
+      best = {
+        minutes: toMinutes(kind, found.match),
+        token: found.token,
+        index: found.index,
+      };
     }
-    const found = firstValidMatch(pat, freetext, (mm) =>
-      validateDurationMinutes(toMinutes(kind, mm)),
-    );
-    if (found) return { minutes: toMinutes(kind, found.match), token: found.token };
   }
-  return null;
+  return best ? { minutes: best.minutes, token: best.token } : null;
 }
 
 function decodePax(freetext: string): number | null {
@@ -215,6 +215,13 @@ export function extractFreetextConventions(
   };
 }
 
+/** §6.1 decoder preprocessing: remove at most one trailing `\n`, `\r`, or `\r\n`. */
+export function stripTrailingLineEnding(input: string): string {
+  if (input.endsWith('\r\n')) return input.slice(0, -2);
+  if (input.endsWith('\n') || input.endsWith('\r')) return input.slice(0, -1);
+  return input;
+}
+
 /** Envelope pattern from patterns.json `message.decode` (trailing space → invalid). */
 // eslint-disable-next-line security/detect-non-literal-regexp -- pattern from vendored MECP patterns.json
 export const MESSAGE_ENVELOPE_RE = new RegExp(PATTERNS.message.decode);
@@ -222,7 +229,7 @@ export const MESSAGE_ENVELOPE_RE = new RegExp(PATTERNS.message.decode);
 export function matchMessageEnvelope(
   input: string,
 ): { severity: string; codes: string[]; freetext: string } | null {
-  const m = MESSAGE_ENVELOPE_RE.exec(input);
+  const m = MESSAGE_ENVELOPE_RE.exec(stripTrailingLineEnding(input));
   if (!m) return null;
   return { severity: m[1], codes: m[2].split(' '), freetext: m[3] || '' };
 }

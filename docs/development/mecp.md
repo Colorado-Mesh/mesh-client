@@ -8,12 +8,12 @@ Developer reference for MECP compose, alerts, audit log, ALERT_APP ingest, or cr
 MECP/<severity>/<codes> [freetext]
 ```
 
-- Protocol adherence: **MECP 1.3.0** (`MECP_PROTOCOL_VERSION`)
+- Protocol adherence: **MECP 1.4.0** (`MECP_PROTOCOL_VERSION`)
 - Severity: `0` MAYDAY, `1` URGENT, `2` SAFETY, `3` ROUTINE
 - Codes: letter + two digits (`M01`, `M16` medical supply drop, …); drill `D01`/`D02` set `isDrill` (suppresses alerts). Labels come from vendored language packs under `languages/`
 - Max **200** UTF-8 bytes (`MAX_MESSAGE_BYTES`)
-- Freetext conventions (pax, GPS, Duration/`R03`, `#tag`, `@lang`, `@HHMM`, `~callsign`) follow [mecp-org/MECP](https://github.com/mecp-org/MECP) §6.1 patterns vendored under [`engine/freetext/`](../../src/renderer/lib/mecp/engine/freetext/). R03 Duration accepts any positive total in any SI unit (`s`/`min`/`h`/`d`) with no 1440-minute cap ([#28](https://github.com/mecp-org/MECP/issues/28))
-- Vendored engine: [`src/renderer/lib/mecp/engine/`](../../src/renderer/lib/mecp/engine/) adapted from [mecp-org/mecp-app](https://github.com/mecp-org/mecp-app) (GPLv3); freetext decode follows MECP 1.3.0 §6.1 (`freetext/patterns.json` from [mecp-org/MECP v1.3.0](https://github.com/mecp-org/MECP/releases/tag/v1.3.0) — strict duration **encode** without spaces; decode still accepts spaced inbound tokens)
+- Freetext conventions (pax, GPS, Duration/`R03`, `#tag`, `@lang`, `@HHMM`, `~callsign`) follow [mecp-org/MECP](https://github.com/mecp-org/MECP) §6.1 patterns vendored under [`engine/freetext/`](../../src/renderer/lib/mecp/engine/freetext/). R03 Duration uses `min`/`h`/`d` only (`30s` is freetext); any positive total with no 1440-minute cap; first unit-bearing match by position wins. `@HHMM` is the sender's local time (display as sent; no zone on the wire)
+- Vendored engine: [`src/renderer/lib/mecp/engine/`](../../src/renderer/lib/mecp/engine/) adapted from [mecp-org/mecp-app](https://github.com/mecp-org/mecp-app) (GPLv3); freetext decode follows MECP 1.4.0 §6.1 (`freetext/patterns.json` from [mecp-org/MECP v1.4.0](https://github.com/mecp-org/MECP/releases/tag/v1.4.0) — strict duration **encode** without spaces; decode still accepts spaced inbound tokens; decoders strip one trailing CR/LF)
 - Language packs: [`src/renderer/lib/mecp/languages/`](../../src/renderer/lib/mecp/languages/) from [mecp-org/MECP](https://github.com/mecp-org/MECP) (CC BY 4.0). Shipped packs are those reachable from `mecpLanguageForAppLocale` (Greek `el` and other upstream packs without an app UI locale are omitted until a locale is added)
 - Overview / video: [mecp.radio](https://mecp.radio/)
 - App wrappers: `mecpMessages.ts` (`MECP_REGEX`, `tryParseMecp`), `mecpAlert.ts`, `mecpRebroadcast.ts`
