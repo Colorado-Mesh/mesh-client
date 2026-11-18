@@ -3377,7 +3377,7 @@
 <li>Select <strong>MC</strong> (MeshCore, cyan) on the rail.</li>
 <li><strong>Device → Connection</strong>: pick <strong>Bluetooth</strong>, <strong>USB Serial</strong>, or <strong>TCP</strong>, then <strong>Connect</strong> (or configure MQTT for receive/uplink without a radio).</li>
 <li>Wait for contacts and channels to finish loading. The header may show queued-message sync (<strong>Fetching queued messages…</strong> / <strong>Sync now</strong>).</li>
-<li><strong>Chat</strong> shows channels and DMs. <strong>Contacts</strong> lists chat users, repeaters, rooms, and sensors the radio knows.</li>
+<li><strong>Chat</strong> shows channels and DMs. Discover rooms under <strong>Network → Room servers</strong>; joined or engaged rooms appear under <strong>Chat → Rooms</strong>. <strong>Contacts</strong> defaults to chat users; use <strong>All contacts</strong> for every contact type (including Sensors), or the Repeaters / Rooms Network tabs for those types.</li>
 <li>Open <strong>Device → Radio</strong> for name/position advert, channels, and regional flood scope before you transmit on a new mesh.</li>
 </ol>
 <p>Optional: enable auto-connect on the Connection tab so the same radio reconnects on launch.</p>
@@ -3421,9 +3421,10 @@
 <h2 id="contacts">Contacts<a class="headerlink" href="#contacts" title="Permanent link">&para;</a></h2>
 <p><strong>Contacts</strong> is the MeshCore node list. Contact types include <strong>Chat</strong>, <strong>Repeater</strong>, <strong>Room</strong>, and <strong>Sensor</strong> (plus placeholders the UI labels <strong>None</strong> / <strong>Unknown</strong>).</p>
 <ul>
+<li>The list defaults to <strong>Type: Chat</strong> (chat users only) because Repeaters and Rooms have their own Network tabs. Choose <strong>All contacts</strong> to see every type, or filter by <strong>Type: Repeater</strong> / <strong>Type: Room</strong>.</li>
 <li>Contacts arrive from heard <strong>adverts</strong>, radio contact sync after connect, optional MQTT stubs, and manual import / share.</li>
 <li><strong>Favourites</strong> are exempt from age-based prune. Stars are stored with the contact.</li>
-<li>Built-in type filters: <strong>Type: Chat</strong>, <strong>Type: Repeater</strong>, <strong>Type: Room</strong>. Custom <strong>Contact Groups</strong> work the same as on Meshtastic — see <a href="../settings/#contact-groups">Settings — Contact groups</a>.</li>
+<li>Built-in type filters: <strong>Type: Chat</strong> (default), <strong>Type: Repeater</strong>, <strong>Type: Room</strong>. Custom <strong>Contact Groups</strong> work the same as on Meshtastic — see <a href="../settings/#contact-groups">Settings — Contact groups</a>.</li>
 <li><strong>Radio →</strong> contact management controls how the companion auto-adds adverts (<strong>Auto add all</strong> / <strong>Auto add selected</strong>, overwrite oldest non-favourites, max hops). Offload frees slots when the radio table is full (~350) while keeping rows in the app database.</li>
 <li>Deleting a contact removes local DB rows (and that room’s BBS messages). If the radio still has the contact, it may return on the next dump.</li>
 </ul>
@@ -3544,7 +3545,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 6, 2026 14:17:57 UTC">November 6, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 18, 2026 16:19:04 UTC">November 18, 2026</span>
   </span>
 
     
