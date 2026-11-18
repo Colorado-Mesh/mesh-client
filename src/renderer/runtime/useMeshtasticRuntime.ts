@@ -2863,7 +2863,7 @@ export function useMeshtasticRuntime() {
   );
 
   const cleanupSupersededAttachAttempt = useCallback(async (attemptDevice: MeshDevice) => {
-    const liveOwner = resolveSupersededAttemptLiveOwner(deviceRef.current, attemptDevice);
+    const liveOwner = resolveSupersededAttemptLiveOwner(deviceRef.current, attemptDevice, true);
     await cleanupSupersededStaleOpenedDevice(liveOwner, attemptDevice).catch((e: unknown) => {
       console.debug(
         '[useMeshtasticRuntime] superseded attach attempt cleanup ' + errLikeToLogString(e),

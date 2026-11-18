@@ -63,6 +63,27 @@ export function runLicenseReportMarkdown(only) {
 export const RUST_SECTION_UNAVAILABLE_NOTE =
   'Rust crate licenses are gated by `pnpm run check:rust-licenses` (requires Cargo); run it locally to view this table.';
 
+/** Present in a full Ratspeak stack license table generated from `.rsstack/`. */
+export const LRGP_STACK_ROW_MARKER = '| lrgp |';
+
+/**
+ * Refuse to overwrite a committed Rust stack table with a shrunk or placeholder section.
+ *
+ * @param {string | null} rustSection
+ * @param {string} existingMarkdown
+ * @returns {string | null} refusal reason, or null when safe to proceed
+ */
+export function refuseShrinkingRustSection(rustSection, existingMarkdown) {
+  if (!existingMarkdown.includes(LRGP_STACK_ROW_MARKER)) return null;
+  if (rustSection == null) {
+    return 'docs:licenses: Rust sidecar metadata unavailable; refusing to shrink committed stack table';
+  }
+  if (!rustSection.includes(LRGP_STACK_ROW_MARKER)) {
+    return 'docs:licenses: incomplete Ratspeak stack metadata (missing lrgp); refusing to overwrite';
+  }
+  return null;
+}
+
 /**
  * GitHub repo for a Ratspeak stack crate checked out under `.rsstack/<repo>/`, or null.
  *
@@ -259,6 +280,14 @@ export function generateThirdPartyLicenses(options = {}) {
 
   process.stderr.write('docs:licenses: cargo metadata (Rust sidecar)\n');
   const rustSection = loadRustSection();
+  const existingMarkdown = fsModule.existsSync(targetPath)
+    ? fsModule.readFileSync(targetPath, 'utf8')
+    : '';
+  const rustRefusal = refuseShrinkingRustSection(rustSection, existingMarkdown);
+  if (rustRefusal) {
+    process.stderr.write(`${rustRefusal}\n`);
+    return 1;
+  }
   const markdown = buildThirdPartyLicensesMarkdown({ prodTable, devTable, rustSection });
   try {
     writeFormattedMarkdownAtomically(targetPath, markdown, formatMarkdownFile, fsModule);

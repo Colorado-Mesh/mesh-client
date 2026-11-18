@@ -77,12 +77,19 @@ export function attachConfigureFailureAction(
   return currentGeneration !== attemptGeneration ? 'superseded' : 'propagate';
 }
 
-/** Live owner for superseded-attach cleanup — equal refs mean the attempt is stale (#B-001). */
+/**
+ * Live owner passed to {@link cleanupSupersededStaleOpenedDevice}.
+ * When the attempt is not superseded and deviceRef still points at it, retain noop-current-owner.
+ * Superseded attempts always pass `attemptSuperseded: true` so equal refs still soft-retire.
+ */
 export function resolveSupersededAttemptLiveOwner(
   deviceRef: MeshDevice | null,
   attemptDevice: MeshDevice,
+  attemptSuperseded: boolean,
 ): MeshDevice | null {
-  return deviceRef != null && deviceRef !== attemptDevice ? deviceRef : null;
+  if (!attemptSuperseded && deviceRef === attemptDevice) return deviceRef;
+  if (deviceRef != null && deviceRef !== attemptDevice) return deviceRef;
+  return null;
 }
 
 /**

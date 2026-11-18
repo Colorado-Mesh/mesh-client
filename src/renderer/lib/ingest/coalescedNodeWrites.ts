@@ -177,11 +177,36 @@ function reconcilePendingRecordWithStore(identityId: IdentityId, pending: NodeRe
   return { ...pending, lastHeardAt: liveLh };
 }
 
-async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
-  if (nodes.length === 0) return;
+function buildPersistMeshNodes(identityId: IdentityId, nodeIds: readonly number[]): MeshNode[] {
+  const meshNodes: MeshNode[] = [];
+  for (const nodeId of nodeIds) {
+    const pending = peekPendingNodeRecord(identityId, nodeId);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- identity bucket may be absent at runtime
+    const storeRecord = useNodeStore.getState().nodes[identityId]?.[nodeId];
+    const base = pending ?? storeRecord;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- pending/in-flight may clear before async retry
+    if (!base) continue;
+    meshNodes.push(nodeRecordToMeshNode(reconcilePendingRecordWithStore(identityId, base)));
+  }
+  return meshNodes;
+}
+
+async function persistChunk(
+  label: string,
+  identityId: IdentityId,
+  nodeIds: readonly number[],
+): Promise<void> {
+  if (nodeIds.length === 0) return;
   const saveNodes = window.electronAPI.db.saveNodes;
+  const persistBatch = () => {
+    const nodes = buildPersistMeshNodes(identityId, nodeIds);
+    if (nodes.length === 0) return Promise.resolve({ saved: 0, dropped: 0 });
+    return saveNodes(nodes);
+  };
   if (typeof saveNodes === 'function') {
     try {
+      const nodes = buildPersistMeshNodes(identityId, nodeIds);
+      if (nodes.length === 0) return;
       const result = await saveNodes(nodes);
       const dropped = result.dropped;
       if (dropped > 0) {
@@ -191,17 +216,17 @@ async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
             `[coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
           );
         }
-        persistDbWrite(label, () => saveNodes(nodes));
+        persistDbWrite(label, persistBatch);
       }
       return;
     } catch {
       // catch-no-log-ok: persistDbWrite queues retry / degraded warn
-      persistDbWrite(label, () => saveNodes(nodes));
+      persistDbWrite(label, persistBatch);
       return;
     }
   }
   // Fallback when batch IPC is unavailable (older preload / tests).
-  for (const node of nodes) {
+  for (const node of buildPersistMeshNodes(identityId, nodeIds)) {
     persistDbWrite(label, () => window.electronAPI.db.saveNode(node));
   }
 }
@@ -209,29 +234,26 @@ async function persistChunk(label: string, nodes: MeshNode[]): Promise<void> {
 async function flushSnapshot(snapshot: Map<IdentityId, IdentityPending>): Promise<void> {
   // Sequential per identity — avoid stacking sync SQLite transactions from dual/triple radios.
   for (const [identityId, bucket] of snapshot) {
-    const records = [...bucket.records.values()].map((r) =>
-      reconcilePendingRecordWithStore(identityId, r),
-    );
+    const reconciledByNode = new Map<number, NodeRecord>();
+    for (const record of bucket.records.values()) {
+      reconciledByNode.set(record.nodeId, reconcilePendingRecordWithStore(identityId, record));
+    }
+    const records = [...reconciledByNode.values()];
     if (records.length > 0) {
       upsertNodeRecordsForIdentity(identityId, records);
     }
 
     for (const [nodeId, onFlush] of bucket.onFlushByNode) {
-      const record = bucket.records.get(nodeId);
+      const record = reconciledByNode.get(nodeId);
       if (!record) continue;
       onFlush(nodeRecordToMeshNode(record));
     }
 
     const persistIds = [...bucket.persistTodos];
     if (persistIds.length === 0) continue;
-    const meshNodes: MeshNode[] = [];
-    for (const nodeId of persistIds) {
-      const record = bucket.records.get(nodeId);
-      if (record) meshNodes.push(nodeRecordToMeshNode(record));
-    }
-    for (let i = 0; i < meshNodes.length; i += NODE_BATCH_IPC_CHUNK_ROWS) {
-      const chunk = meshNodes.slice(i, i + NODE_BATCH_IPC_CHUNK_ROWS);
-      await persistChunk(`coalesced node batch ${identityId}`, chunk);
+    for (let i = 0; i < persistIds.length; i += NODE_BATCH_IPC_CHUNK_ROWS) {
+      const chunkIds = persistIds.slice(i, i + NODE_BATCH_IPC_CHUNK_ROWS);
+      await persistChunk(`coalesced node batch ${identityId}`, identityId, chunkIds);
     }
   }
 }

@@ -34,6 +34,7 @@ import { useMessages } from '../hooks/useMessages';
 import { useNowMs } from '../hooks/useNowMs';
 import {
   buildChatDmPeerIndex,
+  buildParkedChatDmPeerIndex,
   type ChatDmPeerDbRow,
   type ChatDmPeerIndexEntry,
   mergeChatDmPeerDbRows,
@@ -246,8 +247,6 @@ export interface NodeListPanelProps {
   active?: boolean;
 }
 
-const EMPTY_DM_PEER_INDEX = new Map<number, ChatDmPeerIndexEntry>();
-
 function NodeListPanel({
   nodes,
   myNodeNum,
@@ -354,7 +353,13 @@ function NodeListPanel({
   }, [mode, myNodeNum, dbHydrationRevision]);
 
   const dmPeerIndex = useMemo(() => {
-    if (!active) return EMPTY_DM_PEER_INDEX;
+    if (!active) {
+      return buildParkedChatDmPeerIndex(
+        dbDmPeers,
+        [...sessionDmPeersRef.current.values()],
+        meshcoreExcludedDmPeerIds ?? undefined,
+      );
+    }
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     for (const [peerId, entry] of fromMemory) {

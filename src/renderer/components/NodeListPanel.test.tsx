@@ -1188,6 +1188,32 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('NeverMessaged')).not.toBeInTheDocument();
   });
 
+  it('merges SQLite DM peers into History while the panel is inactive', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([
+      { node_id: 9, last_message_at: 1_700_000_100_000 },
+    ]);
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me' })],
+      [9, makeNode({ node_id: 9, long_name: 'FromDb' })],
+    ]);
+    render(
+      <NodeListPanel
+        active={false}
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('radio', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('FromDb')).toBeInTheDocument();
+    });
+  });
+
   it('merges SQLite DM peers into History when not in the message window', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([

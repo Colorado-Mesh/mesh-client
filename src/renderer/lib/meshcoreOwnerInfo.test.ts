@@ -5,9 +5,18 @@ import {
   meshcoreOwnerInfoSupported,
   parseMeshcoreOwnerInfoReply,
   readMeshcoreOwnerInfo,
+  truncateMeshcoreOwnerInfoText,
 } from './meshcoreOwnerInfo';
 
 describe('meshcoreOwnerInfo', () => {
+  it('truncates owner info longer than 32 UTF-8 bytes on read', () => {
+    const long = 'a'.repeat(40);
+    const entry = parseMeshcoreOwnerInfoReply(`> ${long}`, 1);
+    expect(entry.status).toBe('ok');
+    expect(new TextEncoder().encode(entry.text ?? '').length).toBeLessThanOrEqual(32);
+    expect(entry.text).toBe(truncateMeshcoreOwnerInfoText(long));
+  });
+
   it('parses an ok reply', () => {
     const entry = parseMeshcoreOwnerInfoReply('> Operator', 1_700_000_000_000);
     expect(entry).toEqual({ status: 'ok', text: 'Operator', fetchedAt: 1_700_000_000_000 });

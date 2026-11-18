@@ -93,6 +93,29 @@ describe('playNotificationSoundWav', () => {
     ).toEqual(before);
   });
 
+  it('stops the prior SoundPlayer child when a new tone starts', async () => {
+    vi.stubGlobal('process', { ...process, platform: 'win32', env: process.env });
+    const children: ChildProcess[] = [];
+    vi.mocked(execFile).mockImplementation(() => {
+      const child = mockChild();
+      children.push(child);
+      if (children.length === 1) return child;
+      queueMicrotask(() => {
+        child.emit('close', 0, null);
+      });
+      return child;
+    });
+    const first = playNotificationSoundWav(sound('one'));
+    await vi.waitFor(() => {
+      expect(children).toHaveLength(1);
+    });
+    const second = playNotificationSoundWav(sound('two'));
+    expect(children[0]?.kill).toHaveBeenCalled();
+    await first;
+    await second;
+    expect(execFile).toHaveBeenCalledTimes(2);
+  });
+
   it('stopNotificationSoundWav kills an in-flight SoundPlayer child', async () => {
     vi.stubGlobal('process', { ...process, platform: 'win32', env: process.env });
     const child = mockChild();

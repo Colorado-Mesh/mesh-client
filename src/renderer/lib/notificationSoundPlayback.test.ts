@@ -354,8 +354,8 @@ describe('configured notification playback', () => {
     const wav = vi.mocked(window.electronAPI.notificationSounds.playWav).mock.calls[0]?.[0] ?? '';
     expect(wav.length).toBeGreaterThan(0);
     expect(atob(wav).slice(0, 4)).toBe('RIFF');
-    // Incoming alerts must not register the preview-owned stopWav handle.
-    expect(window.electronAPI.notificationSounds.stopWav).not.toHaveBeenCalled();
+    // Incoming alerts supersede prior native playback; preview still uses previewNativeStop only.
+    expect(window.electronAPI.notificationSounds.stopWav).toHaveBeenCalledOnce();
 
     vi.mocked(window.electronAPI.notificationSounds.playWav).mockClear();
     const preview = previewNotificationSound('dm', { sound: 'chime', volume: 80 });

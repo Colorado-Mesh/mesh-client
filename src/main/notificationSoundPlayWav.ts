@@ -36,6 +36,8 @@ export async function playNotificationSoundWav(dataBase64: unknown): Promise<voi
   if (process.platform !== 'win32') {
     throw new Error('Native notification playback is only available on Windows');
   }
+  // Supersede any in-flight alert so consecutive notifications do not overlap (#C-UNC-002).
+  stopNotificationSoundWav();
   if (
     typeof dataBase64 !== 'string' ||
     dataBase64.length === 0 ||

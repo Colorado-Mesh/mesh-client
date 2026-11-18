@@ -50,6 +50,7 @@ describe('playMessageNotification', () => {
             oscillatorTypes[idx] = v;
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
           frequency: {
             set value(v: number) {
               frequency.value = v;
@@ -72,6 +73,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: {
             setValueAtTime: vi.fn(),
             exponentialRampToValueAtTime: vi.fn(),
@@ -102,6 +104,7 @@ describe('playMessageNotification', () => {
     playMessageNotification();
     await expectOscillators(2);
     expect(constructCount).toBe(1);
+    expect(oscillatorStops[0]).toBeDefined();
   });
 
   it('plays a single 880 Hz pulse for channel notifications', async () => {
@@ -183,6 +186,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: {
             setValueAtTime: (v: number) => {
               gainLevels.push(v);
@@ -240,6 +244,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
         };
       }

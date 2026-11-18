@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildChatDmPeerIndex,
+  buildParkedChatDmPeerIndex,
   chatDmPeerMessageCounts,
   mergeChatDmPeerDbRows,
 } from './chatDmPeerIndex';
@@ -77,6 +78,15 @@ describe('buildChatDmPeerIndex', () => {
     ];
     const counts = chatDmPeerMessageCounts(messages, OWN, 'meshtastic');
     expect(counts.get(2)).toBe(2);
+  });
+
+  it('buildParkedChatDmPeerIndex merges session and SQLite rows without chat scans', () => {
+    const index = buildParkedChatDmPeerIndex(
+      [{ node_id: 9, last_message_at: 5000 }],
+      [{ node_id: 7, last_message_at: 8000 }],
+    );
+    expect([...index.keys()].sort((a, b) => a - b)).toEqual([7, 9]);
+    expect(index.get(9)?.lastMessageAt).toBe(5000);
   });
 
   it('mergeChatDmPeerDbRows keeps newer lastMessageAt and existing counts', () => {

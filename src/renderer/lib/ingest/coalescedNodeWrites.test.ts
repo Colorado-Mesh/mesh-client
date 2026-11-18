@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { getIdentityNode } from '../identityStoreReads';
+import type { MeshNode } from '../types';
 import {
   enqueueNodeWrite,
   flushNodeWrites,
@@ -187,5 +188,39 @@ describe('coalescedNodeWrites', () => {
     upsertNodeRecord(ID_A, { nodeId: 12, lastHeardAt: 500 });
     await flushNodeWrites();
     expect(getIdentityNode(ID_A, 12)?.last_heard).toBe(500);
+  });
+
+  it('reconciles onFlush callbacks with the same lastHeardAt as saveNodes', async () => {
+    const flushed: MeshNode[] = [];
+    enqueueNodeWrite(ID_A, record(77, { lastHeardAt: 100, snr: 2 }), {
+      onFlushNode: (node) => {
+        flushed.push(node);
+      },
+    });
+    upsertNodeRecord(ID_A, { nodeId: 77, lastHeardAt: 900 });
+    await flushNodeWrites();
+    expect(flushed).toHaveLength(1);
+    expect(flushed[0]?.last_heard).toBe(900);
+    const saveArg = vi.mocked(window.electronAPI.db.saveNodes).mock.calls.at(-1)?.[0];
+    expect(saveArg?.[0]?.last_heard).toBe(900);
+  });
+
+  it('rebuilds retry payload from current store when saveNodes rejects', async () => {
+    const saveNodes = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockImplementation((nodes: { last_heard: number }[]) =>
+        Promise.resolve({ saved: nodes.length, dropped: 0 }),
+      );
+    window.electronAPI.db.saveNodes = saveNodes;
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    enqueueNodeWrite(ID_A, record(88, { lastHeardAt: 100 }));
+    await flushNodeWrites();
+    upsertNodeRecord(ID_A, { nodeId: 88, lastHeardAt: 800 });
+    const retryWrite = retrySpy.mock.calls[0]?.[1];
+    expect(retryWrite).toBeTypeOf('function');
+    await retryWrite();
+    const saveArg = saveNodes.mock.calls.at(-1)?.[0];
+    expect(saveArg?.[0]?.last_heard).toBe(800);
   });
 });

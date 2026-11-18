@@ -60,6 +60,7 @@ export function resetChatNotificationAudioContextForTests(): void {
   defaultSinkBound = false;
   audioBuffers.clear();
   stopNotificationSoundPreview();
+  stopActiveAlertPlayback();
 }
 
 export type ChatNotificationType =
@@ -396,6 +397,16 @@ const audioBuffers = new Map<
 >();
 let previewVersion = 0;
 let previewPlayback: Playback | null = null;
+/** Stops when a newer message notification replaces the previous tone (Web Audio path). */
+let activeAlertPlayback: Playback | null = null;
+
+function stopActiveAlertPlayback(): void {
+  activeAlertPlayback?.stop();
+  activeAlertPlayback = null;
+  if (usesNativeNotificationPlayback()) {
+    void window.electronAPI.notificationSounds.stopWav();
+  }
+}
 /** Preview-owned native (SoundPlayer) stop; never wired into incoming-alert playback. */
 let previewNativeStop: (() => void) | null = null;
 
@@ -546,6 +557,8 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   const setting = getNotificationSoundSettings()[type];
   if (setting.volume === 0) return;
 
+  stopActiveAlertPlayback();
+
   // OS-specific: Windows SoundPlayer bypass when Chromium never opens a WASAPI session (#1487).
   if (usesNativeNotificationPlayback()) {
     void (async () => {
@@ -566,7 +579,11 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   const run = async () => {
     await ensureAudioContextReady(ctx);
     const buffer = await loadOptionalCustomSound(ctx, type, setting);
-    scheduleSelected(ctx, type, setting, buffer);
+    const playback = scheduleSelected(ctx, type, setting, buffer);
+    activeAlertPlayback = playback;
+    void playback.finished.finally(() => {
+      if (activeAlertPlayback === playback) activeAlertPlayback = null;
+    });
   };
   void run().catch((error: unknown) => {
     console.warn(
