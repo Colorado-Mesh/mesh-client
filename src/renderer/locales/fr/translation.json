@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "Ce micrologiciel ne prend pas en charge les informations sur le propriétaire.",
     "ownerInfoNeedsPassword": "Les informations sur le propriétaire nécessitent un mot de passe administrateur. Enregistrez-en un ci-dessous pour le lire.",
     "ownerInfoNeedsRoomPassword": "Les informations du propriétaire nécessitent un mot de passe administrateur. Définissez-le dans Répéteurs et pièces → Configurer.",
-    "ownerInfoReadFailed": "Impossible de lire les informations sur le propriétaire."
+    "ownerInfoReadFailed": "Impossible de lire les informations sur le propriétaire.",
+    "ownerInfoDeferred": "Les informations sur le propriétaire sont en attente de la radio. Utilisez Actualiser pour réessayer."
   },
   "nodeInfoBody": {
     "longName": "Nom long",

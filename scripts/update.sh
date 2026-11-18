@@ -626,8 +626,8 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 # MECP 1.4.0 §6.1 patterns (v1.4.0 R03/duration + envelope); bump the engine pin when re-syncing from mecp-app.
 MECP_UPSTREAM_WATCH_ENTRIES=(
   'mecp-org/mecp-app||MECP engine (vendored in renderer)|file:engine/src@59090c8d157754216261018aba1bdae61c28184d'
-  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@dd4b741e7e884078eca88e85f790f5c9310105c5'
-  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@70c23d67b24e0719e1f25199a2367822c93d213f'
+  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@2d43243a9f201a01ae8c9717fcfe85d0c6818f09'
+  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@60b62b2b3cbdcdee5593ab4588e5108003fc9c0b'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.

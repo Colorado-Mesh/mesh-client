@@ -343,8 +343,13 @@ export default function NodeDetailModal({
     setRepeaterSecretsEpoch((n) => n + 1);
   }, []);
   const [ownerInfoRefreshing, setOwnerInfoRefreshing] = useState(false);
-  const ownerInfoRequestKeyRef = useRef<string | null>(null);
+  /** Debounce key for an in-flight scheduled fetch (cleared if the timer is cancelled). */
+  const ownerInfoScheduledKeyRef = useRef<string | null>(null);
+  /** Connection-scoped dedupe for completed reads (preserved for cached non-error results). */
+  const ownerInfoCompletedKeyRef = useRef<string | null>(null);
   const ownerInfoSecretsEpochRef = useRef(repeaterSecretsEpoch);
+  /** True when a deferred request returned null (e.g. Room login busy) — show Refresh, not spinner. */
+  const [ownerInfoDeferred, setOwnerInfoDeferred] = useState(false);
   const meshcoreIdentityId = protocol === 'meshcore' ? getIdentityIdForProtocol('meshcore') : null;
   const storeContactPublicKey = useNodeStore((s) => {
     if (!meshcoreIdentityId || node == null) return undefined;
@@ -639,22 +644,55 @@ export default function NodeDetailModal({
     meshcoreOwnerInfoSupported(node.hw_model);
 
   useEffect(() => {
-    if (!ownerInfoSupported || !isConnected || !onRequestMeshcoreOwnerInfo || node == null) return;
+    if (!isConnected) {
+      // Reset connection-scoped dedupe on disconnect; preserve nothing across sessions.
+      ownerInfoScheduledKeyRef.current = null;
+      ownerInfoCompletedKeyRef.current = null;
+      setOwnerInfoDeferred(false);
+      return;
+    }
+    if (!ownerInfoSupported || !onRequestMeshcoreOwnerInfo || node == null) return;
     const secretsChanged = ownerInfoSecretsEpochRef.current !== repeaterSecretsEpoch;
     ownerInfoSecretsEpochRef.current = repeaterSecretsEpoch;
 
     const key = `${node.node_id}:${repeaterSecretsEpoch}`;
-    if (ownerInfoRequestKeyRef.current === key) return;
-    if (!secretsChanged && meshcoreOwnerInfo && meshcoreOwnerInfo.status !== 'error') return;
-    ownerInfoRequestKeyRef.current = key;
+    if (ownerInfoScheduledKeyRef.current === key) return;
+    if (ownerInfoCompletedKeyRef.current === key && !secretsChanged) return;
+    if (!secretsChanged && meshcoreOwnerInfo && meshcoreOwnerInfo.status !== 'error') {
+      ownerInfoCompletedKeyRef.current = key;
+      setOwnerInfoDeferred(false);
+      return;
+    }
+    ownerInfoScheduledKeyRef.current = key;
+    setOwnerInfoDeferred(false);
 
     const timer = setTimeout(() => {
-      void onRequestMeshcoreOwnerInfo(node.node_id, { force: secretsChanged }).catch(() => {
-        // catch-no-log-ok the runtime already logged the failure and stores an error state
-      });
+      void onRequestMeshcoreOwnerInfo(node.node_id, { force: secretsChanged })
+        .then((entry) => {
+          if (ownerInfoScheduledKeyRef.current !== key) return;
+          ownerInfoScheduledKeyRef.current = null;
+          if (entry == null) {
+            // Deferred (e.g. Room login queued): leave completed unset so Refresh can retry.
+            setOwnerInfoDeferred(true);
+            return;
+          }
+          ownerInfoCompletedKeyRef.current = key;
+          setOwnerInfoDeferred(false);
+        })
+        .catch(() => {
+          // catch-no-log-ok the runtime already logged the failure and stores an error state
+          if (ownerInfoScheduledKeyRef.current === key) {
+            ownerInfoScheduledKeyRef.current = null;
+            ownerInfoCompletedKeyRef.current = key;
+          }
+        });
     }, MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
+      // Cancelled before fire — allow a later effect to reschedule the same key.
+      if (ownerInfoScheduledKeyRef.current === key) {
+        ownerInfoScheduledKeyRef.current = null;
+      }
     };
   }, [
     ownerInfoSupported,
@@ -668,7 +706,17 @@ export default function NodeDetailModal({
   const refreshOwnerInfo = () => {
     if (!onRequestMeshcoreOwnerInfo || node == null) return;
     setOwnerInfoRefreshing(true);
+    setOwnerInfoDeferred(false);
+    ownerInfoScheduledKeyRef.current = null;
     void onRequestMeshcoreOwnerInfo(node.node_id, { force: true })
+      .then((entry) => {
+        if (entry == null) {
+          setOwnerInfoDeferred(true);
+          return;
+        }
+        ownerInfoCompletedKeyRef.current = `${node.node_id}:${repeaterSecretsEpoch}`;
+        setOwnerInfoDeferred(false);
+      })
       .catch(() => {
         // catch-no-log-ok runtime logs and stores the error entry
       })
@@ -1520,7 +1568,11 @@ export default function NodeDetailModal({
                 </button>
               </div>
               {meshcoreOwnerInfo == null ? (
-                <p className="text-muted text-xs">{t('nodeDetailModal.ownerInfoLoading')}</p>
+                <p className="text-muted text-xs">
+                  {ownerInfoDeferred
+                    ? t('nodeDetailModal.ownerInfoDeferred')
+                    : t('nodeDetailModal.ownerInfoLoading')}
+                </p>
               ) : meshcoreOwnerInfo.status === 'ok' && meshcoreOwnerInfo.text != null ? (
                 <div className="space-y-1">
                   {meshcoreOwnerInfoLines(meshcoreOwnerInfo.text).map((line, index) => (

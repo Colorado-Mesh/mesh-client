@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "Diese Firmware unterstützt keine Angaben zum Eigentümer.",
     "ownerInfoNeedsPassword": "Für die Informationen zum Eigentümer ist ein Administratorpasswort erforderlich. Speichern Sie unten eines, um es zu lesen.",
     "ownerInfoNeedsRoomPassword": "Für die Eigentümerinformationen ist ein Administratorpasswort erforderlich. Stellen Sie es unter Repeater & Räume → Konfigurieren ein.",
-    "ownerInfoReadFailed": "Die Informationen zum Eigentümer konnten nicht gelesen werden."
+    "ownerInfoReadFailed": "Die Informationen zum Eigentümer konnten nicht gelesen werden.",
+    "ownerInfoDeferred": "Die Informationen zum Eigentümer warten auf das Radio. Verwenden Sie „Aktualisieren“, um es erneut zu versuchen."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

@@ -3987,7 +3987,8 @@
     "ownerInfoUnsupported": "To oprogramowanie sprzętowe nie obsługuje informacji o właścicielu.",
     "ownerInfoNeedsPassword": "Informacje o właścicielu wymagają hasła administratora. Zapisz jedno z haseł poniżej, aby móc je odczytać.",
     "ownerInfoNeedsRoomPassword": "Informacje o właścicielu wymagają hasła administratora. Ustaw to w sekcji Wzmacniacze sygnału i pokoje → Konfiguruj.",
-    "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu."
+    "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu.",
+    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

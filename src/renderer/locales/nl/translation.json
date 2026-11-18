@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "Deze firmware ondersteunt geen eigenaarsinformatie.",
     "ownerInfoNeedsPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord vereist. Sla er hieronder een op om het te lezen.",
     "ownerInfoNeedsRoomPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord nodig. Stel dit in via Repeaters en ruimtes → Configureren.",
-    "ownerInfoReadFailed": "Kon de eigenaarsinformatie niet lezen."
+    "ownerInfoReadFailed": "Kon de eigenaarsinformatie niet lezen.",
+    "ownerInfoDeferred": "Eigenaarsinformatie wacht op de radio. Gebruik Vernieuwen om het opnieuw te proberen."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

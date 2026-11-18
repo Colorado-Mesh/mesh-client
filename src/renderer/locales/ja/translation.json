@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "このファームウェアは所有者情報をサポートしていません。",
     "ownerInfoNeedsPassword": "所有者情報には管理者パスワードが必要です。以下に1つ保存して読んでください。",
     "ownerInfoNeedsRoomPassword": "オーナー情報には管理者パスワードが必要です。「リピーターとルーム」→「設定」で設定してください。",
-    "ownerInfoReadFailed": "所有者情報を読み取れませんでした。"
+    "ownerInfoReadFailed": "所有者情報を読み取れませんでした。",
+    "ownerInfoDeferred": "オーナー情報はラジオを待っています。[更新] を使用して、もう一度お試しください。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

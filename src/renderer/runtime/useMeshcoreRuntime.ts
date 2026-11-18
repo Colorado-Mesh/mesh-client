@@ -798,6 +798,9 @@ export function useMeshcoreRuntime() {
   const meshcoreOwnerInfoInFlightRef = useRef<Map<number, Promise<MeshcoreOwnerInfoEntry>>>(
     new Map(),
   );
+  /** Setup generation / identity that minted the current owner-info cache (invalid across reconnect). */
+  const meshcoreOwnerInfoCacheGenRef = useRef(-1);
+  const meshcoreOwnerInfoCacheIdentityRef = useRef<string | null>(null);
   const [meshcoreCliHistories, setMeshcoreCliHistories] = useState<Map<number, CliHistoryEntry[]>>(
     new Map(),
   );
@@ -3534,6 +3537,12 @@ export function useMeshcoreRuntime() {
       setMeshcoreRepeaterRpcPending(new Map());
       repeaterCommandServiceRef.current?.clear();
       resetMeshcoreRoomAutoLoginSingleFlight();
+      // Owner-info cache is connection-scoped; a new prepare replaces the session.
+      setMeshcoreOwnerInfo(new Map());
+      meshcoreOwnerInfoRef.current.clear();
+      meshcoreOwnerInfoInFlightRef.current.clear();
+      meshcoreOwnerInfoCacheGenRef.current = -1;
+      meshcoreOwnerInfoCacheIdentityRef.current = null;
       // Drop prior radio's session GPS before opening a (possibly different) transport.
       clearRadioSelfPosition('meshcore');
       refreshOurPositionGenerationRef.current += 1;
@@ -3834,6 +3843,8 @@ export function useMeshcoreRuntime() {
       setMeshcoreOwnerInfo(new Map());
       meshcoreOwnerInfoRef.current.clear();
       meshcoreOwnerInfoInFlightRef.current.clear();
+      meshcoreOwnerInfoCacheGenRef.current = -1;
+      meshcoreOwnerInfoCacheIdentityRef.current = null;
       setMeshcoreCliHistories(new Map());
       setMeshcoreCliErrors(new Map());
       meshcoreClearAllRoomSessions();
@@ -4159,6 +4170,12 @@ export function useMeshcoreRuntime() {
     setMeshcoreRepeaterRpcPending(new Map());
     repeaterCommandServiceRef.current?.clear();
     resetMeshcoreRoomAutoLoginSingleFlight();
+    // Connection-lost reconnect replaces the session — drop owner-info cache (not only finalize).
+    setMeshcoreOwnerInfo(new Map());
+    meshcoreOwnerInfoRef.current.clear();
+    meshcoreOwnerInfoInFlightRef.current.clear();
+    meshcoreOwnerInfoCacheGenRef.current = -1;
+    meshcoreOwnerInfoCacheIdentityRef.current = null;
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -8014,6 +8031,8 @@ export function useMeshcoreRuntime() {
   const companionRemote = useMeshcoreCompanionRemote({ connRef, sendRepeaterCliCommand });
 
   const setOwnerInfoEntry = useCallback((nodeId: number, entry: MeshcoreOwnerInfoEntry) => {
+    meshcoreOwnerInfoCacheGenRef.current = meshcoreSetupGenerationRef.current;
+    meshcoreOwnerInfoCacheIdentityRef.current = meshcoreIdentityIdRef.current;
     setMeshcoreOwnerInfo((prev) => {
       const next = new Map(prev);
       next.set(nodeId, entry);
@@ -8030,10 +8049,18 @@ export function useMeshcoreRuntime() {
       if (!meshcoreOwnerInfoSupported(hwModel)) return null;
 
       if (!opts?.force) {
-        const cached = meshcoreOwnerInfoRef.current.get(nodeId);
-        if (cached) return cached;
-        const inFlight = meshcoreOwnerInfoInFlightRef.current.get(nodeId);
-        if (inFlight) return inFlight;
+        const cacheMatchesSession =
+          meshcoreOwnerInfoCacheGenRef.current === meshcoreSetupGenerationRef.current &&
+          meshcoreOwnerInfoCacheIdentityRef.current === meshcoreIdentityIdRef.current;
+        if (!cacheMatchesSession) {
+          meshcoreOwnerInfoRef.current.clear();
+          meshcoreOwnerInfoInFlightRef.current.clear();
+        } else {
+          const cached = meshcoreOwnerInfoRef.current.get(nodeId);
+          if (cached) return cached;
+          const inFlight = meshcoreOwnerInfoInFlightRef.current.get(nodeId);
+          if (inFlight) return inFlight;
+        }
       }
 
       if (!hasResolvableAdminPassword(nodeId, hwModel)) {

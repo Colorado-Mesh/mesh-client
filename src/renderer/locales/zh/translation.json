@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "此固件不支持所有者信息。",
     "ownerInfoNeedsPassword": "所有者信息需要管理员密码。在下方保存一个密码以读取信息。",
     "ownerInfoNeedsRoomPassword": "所有者信息需要管理员密码。请在“中继器和房间”→“配置”中设置。",
-    "ownerInfoReadFailed": "无法读取所有者信息。"
+    "ownerInfoReadFailed": "无法读取所有者信息。",
+    "ownerInfoDeferred": "车主信息正在等待无线电信号。请使用“刷新”重试。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

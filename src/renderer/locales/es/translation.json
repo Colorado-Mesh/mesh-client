@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "Este firmware no admite información del propietario.",
     "ownerInfoNeedsPassword": "La información del propietario requiere una contraseña de administrador. Guarda una a continuación para leerla.",
     "ownerInfoNeedsRoomPassword": "La información del propietario requiere una contraseña de administrador. Establézcala en Repetidores y salas → Configurar.",
-    "ownerInfoReadFailed": "No se ha podido leer la información del propietario."
+    "ownerInfoReadFailed": "No se ha podido leer la información del propietario.",
+    "ownerInfoDeferred": "La información del propietario está esperando a la radio. Use «Actualizar» para intentarlo de nuevo."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",

@@ -4401,6 +4401,7 @@
     "ownerInfoHeading": "Owner information",
     "ownerInfoRefresh": "Refresh owner information",
     "ownerInfoLoading": "Reading owner information…",
+    "ownerInfoDeferred": "Owner information is waiting for the radio. Use Refresh to try again.",
     "ownerInfoReadAt": "Read at {{time}}",
     "ownerInfoEmpty": "No owner information set on this node.",
     "ownerInfoUnsupported": "This firmware does not support owner information.",

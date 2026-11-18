@@ -3925,7 +3925,8 @@
     "ownerInfoUnsupported": "Firmware ini tidak mendukung informasi pemilik.",
     "ownerInfoNeedsPassword": "Informasi pemilik memerlukan kata sandi admin. Simpan satu di bawah ini untuk membacanya.",
     "ownerInfoNeedsRoomPassword": "Informasi pemilik memerlukan kata sandi admin. Atur di Repeater & Ruangan → Konfigurasi.",
-    "ownerInfoReadFailed": "Tidak dapat membaca informasi pemilik."
+    "ownerInfoReadFailed": "Tidak dapat membaca informasi pemilik.",
+    "ownerInfoDeferred": "Informasi pemilik sedang menunggu radio. Gunakan Muat Ulang untuk mencoba lagi."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

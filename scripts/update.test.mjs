@@ -128,8 +128,8 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('MECP_UPSTREAM_WATCH_ENTRIES:');
     expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
     expect(result.stdout).toContain('file:engine/src@59090c8d1577');
-    expect(result.stdout).toContain('file:languages@dd4b741e7e88');
-    expect(result.stdout).toContain('file:freetext@70c23d67b24e');
+    expect(result.stdout).toContain('file:languages@2d43243a9f20');
+    expect(result.stdout).toContain('file:freetext@60b62b2b3cbd');
     expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
   });
 

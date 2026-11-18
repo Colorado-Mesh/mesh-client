@@ -931,6 +931,22 @@ describe('NodeDetailModal MeshCore owner information', () => {
     expect(onRequest).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id, { force: true });
   });
 
+  it('shows a deferred hint (not loading) when the request returns null', async () => {
+    const onRequest = vi.fn().mockResolvedValue(null);
+    renderMeshcoreModal({
+      onRequestMeshcoreOwnerInfo: onRequest,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText(/Owner information is waiting for the radio\. Use Refresh to try again/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Reading owner information…')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh owner information' })).toBeEnabled();
+  });
+
   it('re-reads with force when a password is saved in the modal', async () => {
     vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
       available: true,

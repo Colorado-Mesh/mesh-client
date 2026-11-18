@@ -3960,7 +3960,8 @@
     "ownerInfoUnsupported": "Tento firmware nepodporuje informace o majiteli.",
     "ownerInfoNeedsPassword": "Informace o majiteli vyžadují heslo správce. Uložte jedno níže, abyste si ho mohli přečíst.",
     "ownerInfoNeedsRoomPassword": "Informace o majiteli vyžadují heslo správce. Nastavte jej v části Opakovače a místnosti → Konfigurovat.",
-    "ownerInfoReadFailed": "Informace o majiteli se nepodařilo načíst."
+    "ownerInfoReadFailed": "Informace o majiteli se nepodařilo načíst.",
+    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
