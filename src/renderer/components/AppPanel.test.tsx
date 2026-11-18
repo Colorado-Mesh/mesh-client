@@ -284,9 +284,17 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 4000 messages/i);
+    // Prefer the stable id over findByLabelText: AccName walks the whole AppPanel and can
+    // exceed the default 5s test timeout on loaded CI shards (same pattern as the hydrate test).
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshtastic-count')).toHaveValue(
+        4000,
+      );
+    });
+    const input = document.getElementById('apppanel-message-retention-meshtastic-count');
+    expect(input).toBeInstanceOf(HTMLInputElement);
 
-    fireEvent.change(input, { target: { value: '6000' } });
+    fireEvent.change(input as HTMLInputElement, { target: { value: '6000' } });
     expect(window.electronAPI.appSettings.set).not.toHaveBeenCalledWith(
       MESSAGE_RETENTION_KEYS.meshtasticCount,
       expect.anything(),
@@ -338,8 +346,17 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 4000 messages/i);
-    expect(input.id).toBe('apppanel-message-retention-meshcore-count');
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshcore-count')).toHaveValue(
+        4000,
+      );
+    });
+    const input = document.getElementById('apppanel-message-retention-meshcore-count');
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(input).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/Cap stored messages, keep newest 4000 messages/i),
+    );
   });
 });
 
