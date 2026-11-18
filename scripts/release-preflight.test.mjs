@@ -40,6 +40,19 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(e2eWorkflow.jobs['release-preflight'].if).toBe(GATE_RUNS);
   });
 
+  it('tests the pull request head commit in both gate jobs, the tree Cut release credits', () => {
+    // By default a pull_request run checks out GitHub's merge of the head into main, whose tree
+    // can differ from the head commit the check runs report on.
+    for (const name of ['e2e', 'release-preflight']) {
+      const checkouts = e2eWorkflow.jobs[name].steps.filter((step) =>
+        step.uses?.startsWith('actions/checkout@'),
+      );
+      expect(checkouts).toHaveLength(1);
+      expect(e2eWorkflow.jobs[name].steps[0]).toBe(checkouts[0]);
+      expect(checkouts[0].with.ref).toBe('${{ github.event.pull_request.head.sha }}');
+    }
+  });
+
   it('runs the release tooling in the preflight job; Cut release only tags', () => {
     expect(preflightJob).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(preflightJob).toContain('uses: ./.github/actions/setup-release-toolchain');

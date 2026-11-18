@@ -54,7 +54,9 @@ const SHA_PATTERN = /^[0-9a-f]{40}$/;
 
 /**
  * The release gates on the tree of `sha`, read from the commit itself and from the merged pull
- * request's head when that head holds the same tree. Each gate-named check run is matched to the
+ * request's head when that head holds the same tree. A run on the head tested the head's tree
+ * because e2e.yaml checks out the pull request's head commit rather than GitHub's merge commit
+ * (scripts/release-preflight.test.mjs pins that). Each gate-named check run is matched to the
  * workflow file behind its check suite (one lookup per suite), so only e2e.yaml's runs count.
  * @param {{ sha: string, head: string | undefined, api: PlanApi }} input
  * @returns {Promise<{ ok: boolean, notPassed: string[] }>}
