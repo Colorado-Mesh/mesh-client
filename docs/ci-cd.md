@@ -13,14 +13,14 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `bundle-size.yaml`            | All PRs; main push/`merge_group`/manual                        | Independent production main bundle size regression                                         |
 | `codeql.yaml`                 | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
 | `buttonmash.yaml`             | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
-| `e2e.yaml`                    | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
+| `e2e.yaml`                    | PR to `main`/`merge_group`; daily on `main`; manual            | Electron E2E (3-OS) + Release preflight on release PRs; required `Release gates` check     |
 | `e2e-meshcore-repeaters.yaml` | Path-filtered PR to `main` + manual `workflow_dispatch`        | MeshCore repeater ping/admin Electron E2E (Linux) against the fake radio; not required     |
 | `e2e-panels.yaml`             | Path-filtered PR to `main` + manual `workflow_dispatch`        | Per-protocol panel matrix Electron E2E (Linux); not required                               |
 | `build.yaml`                  | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
 | `reticulum-sidecar.yaml`      | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
 | `release.yaml`                | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
 | `flatpak.yaml`                | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
-| `cut-release.yaml`            | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
+| `cut-release.yaml`            | Push to `main` + manual `workflow_dispatch`                    | Plans the release tag; tags after `release-cut` approval with `RELEASE_CUT_TOKEN`          |
 | `docs.yml`                    | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
 | `third-party-licenses.yaml`   | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
 
@@ -111,7 +111,7 @@ The workflow does not change repository security settings. Existing global cover
 
 ### Electron E2E (`e2e.yaml`)
 
-Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manual** `workflow_dispatch`:
+The release gates. The workflow runs for every pull request to `main`, every merge group, a **daily schedule** (default branch only) and **manual** `workflow_dispatch`, but the Electron E2E legs and the Release preflight run only on **release pull requests** (`release/*` branches from this repository, opened by `pnpm run release:open`), daily on `main` and by hand. Every other pull request and merge group skips them. Each E2E leg:
 
 1. Checkout (`persist-credentials: false`), setup pnpm + Node 22, `node scripts/check-environment.mjs --skip-node-modules`, `pnpm install --frozen-lockfile`, then `pnpm run check:environment` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
 2. Linux (`ubuntu-24.04`): install Electron runtime libraries (`libatk-bridge2.0-0t64`, `libgtk-3-0t64`, `libasound2t64`, …) + `xvfb`
@@ -119,7 +119,11 @@ Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manua
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
 
-A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
+A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the `setup-node-pnpm` + `setup-release-toolchain` composites, stopping before any bump, tag, or push. On a release pull request it checks the exact tree that will be tagged. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner.
+
+The **Release gates** job is the one check from this workflow that the `main` ruleset requires. It is not a matrix job, so its name is the same whether or not the gates ran (a matrix job skipped by its `if` does not report its per-OS names). It runs with plain `always()`: a cancelled run fails it, because GitHub counts a skipped required check as passed. On a release pull request it passes only when every E2E leg and the preflight passed; on anything that skipped them (other pull requests, merge groups) it passes at once. [`scripts/release-preflight.test.mjs`](../scripts/release-preflight.test.mjs) runs its script for each combination of results and pins the release pull request condition shared by the three jobs.
+
+Cut release ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)) never reads Release gates, because merge groups report it green without running E2E. Its plan job ([`scripts/release-tag-plan.mjs`](../scripts/release-tag-plan.mjs)) reads the four gates themselves ([`scripts/releaseGates.mjs`](../scripts/releaseGates.mjs)) on the commit to tag and on the merged release pull request's head when that head holds the same tree. Skipped runs are no evidence and any failure blocks; when the gates have not passed on that tree the plan fails and says to run E2E on `main`, then Cut release on `main`. See [Release process](release-process.md#when-main-moves-before-the-release-merges).
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 
@@ -396,17 +400,18 @@ Only checks that report on every PR and every `merge_group` run are required:
 | `Coverage (renderer-logic)` | `tests.yaml` |
 | `Coverage (main)`           | `tests.yaml` |
 | `Merge coverage`            | `tests.yaml` |
+| `Release gates`             | `e2e.yaml`   |
 
-Each required check is pinned with `integration_id` **15368** (GitHub Actions) in [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
+Each required check is pinned with `integration_id` **15368** (GitHub Actions) in [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json). `Release gates` stands for Electron E2E and the release preflight: it passes at once on pull requests that are not releases and in merge groups, and fails a release pull request until every gate passed (see [Electron E2E](#electron-e2e-e2eyaml)).
 
 **Do not** add these as required (they skip or are not PR/`merge_group` gates and would stall the queue):
 
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
 - CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
-- E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`)
+- The `Electron E2E (*)` legs and `Release preflight` themselves (they skip on most pull requests; `Release gates` stands for them), packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`)
 
-`ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
+`ci.yaml`, `tests.yaml` and `e2e.yaml` all listen for `merge_group` so the queue’s temporary ref reports the same required checks.
 
 ### Bypass actors
 
@@ -429,7 +434,9 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 
 `gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 
-The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
+The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml` / `e2e.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
+
+Adding a required check changes what every open pull request needs, so apply it only after the workflow that reports it is on `main` and has reported it where the queue will look. For `Release gates`: merge the change that adds it, confirm a merge group on `main` reported `Release gates` as passed, and only then PUT the ruleset. Pull requests opened before the workflow change report `Release gates` only after their next push (or a close and reopen).
 
 Release tags have a separate active **`release tags`** ruleset. Its canonical JSON is [`.github/rulesets/release-tags.json`](../.github/rulesets/release-tags.json): only repository administrators may create, update, or delete `v*` tags, and `release.yaml` rejects any tag whose ref is not protected. Keep the live ruleset synchronized after editing the JSON:
 

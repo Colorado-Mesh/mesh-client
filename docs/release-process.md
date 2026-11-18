@@ -6,18 +6,18 @@ This document describes how maintainers create releases for Mesh-Client.
 
 ## Overview
 
-Cut releases from **Actions → Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)), which bumps/tags `main`. Pushing an annotated version tag (`v*`) then triggers:
+A release is a pull request to `main`. `pnpm run release:open` opens it with the version bump and generated release notes; Electron E2E on three operating systems and the release preflight run on it; it merges through the merge queue like any other pull request; and **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)) tags the merged commit after a maintainer approves. Pushing that annotated version tag (`v*`) then triggers:
 
 | Workflow                                            | Purpose                                                                                              |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [`release.yaml`](../.github/workflows/release.yaml) | Build macOS/Linux/Windows via `electron-builder` (`--publish never`) and attach to the prepare draft |
 | [`flatpak.yaml`](../.github/workflows/flatpak.yaml) | Build Reticulum sidecar + Flatpak bundles (x86_64 and aarch64) and attach them to the same draft     |
 
-Both workflows upload to a **draft** GitHub Release. A maintainer reviews artifacts and publishes manually when ready.
+Both workflows upload to a **draft** GitHub Release, with the release notes from the tag at the top of its body. A maintainer reviews artifacts and publishes manually when ready.
 
 `prepare-github-release` is the **only** job that creates the draft (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`). Matrix builds and Flatpak attach with `ci-upload-release-assets.mjs` by `release_id` so parallel jobs cannot fork duplicate drafts. `electron-builder.yml` still sets `releaseType: draft` for local `dist:*:publish` use.
 
-Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main` (including the version-bump commit from `pnpm run release`).
+Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main` (including the release commit).
 
 ### Database schema upgrades
 
@@ -32,34 +32,58 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 ## Prerequisites
 
-- Maintainer access to the repository
-- On branch **`main`**, up to date with `origin/main`
-- Clean working directory (no uncommitted changes)
-- For `pnpm run release` pre-flight: **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint via pip/brew — see [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible))
-- For `pnpm run release` pre-flight: **flatpak-node-generator** on `PATH` (same pin as Flatpak CI — see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) / `pnpm run check:flatpak-offline-pnpm` install hint)
+- Maintainer access to the repository, and `gh` signed in (`gh auth status`)
+- For `pnpm run release:open`: a clone with `origin` pointing at this repository. The command fetches `main` itself and never touches your checkout, so any branch and a dirty tree are fine.
+- For the emergency `pnpm run release`: on branch **`main`**, up to date with `origin/main`, with a clean working directory, plus **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint via pip/brew, see [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible)) and **flatpak-node-generator** on `PATH` (same pin as Flatpak CI, see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) / `pnpm run check:flatpak-offline-pnpm` install hint)
 
 ---
 
-## Recommended: Cut release from GitHub Actions
+## Release pull requests (recommended)
 
-**Preferred path:** Actions → **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)).
+### 1. Open the release pull request
 
-1. Confirm the latest **Release preflight** job in the daily **E2E** run ([`e2e.yaml`](../.github/workflows/e2e.yaml)) on `main` is green, or dispatch E2E. The job runs the full `release.sh` pre-flight (`--preflight-only`) on a fresh runner using the same composites as Cut release (`setup-node-pnpm`, `setup-release-toolchain`), so release-only breakage surfaces without burning a cut. It is not a PR gate, so check it after merging release-plumbing changes. Locally: `pnpm run release --preflight-only` (any branch; no pull, dep update, bump, tag, or push).
-2. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.). Dry run only previews the version; it does not run pre-flight.
-3. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
-4. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
-5. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). It validates, bumps, commits, and tags with `--prepare-only` while no push credential is present, then exposes the admin token only to a final `--push-only` step. Checkout never persists credentials.
-6. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
+```bash
+pnpm run release:open                 # bump detected from commit titles since the last release
+pnpm run release:open -- --dry-run    # print the version, branch and body; push nothing
+pnpm run release:open -- --bump patch # or minor, major, or an exact X.Y.Z
+pnpm run release:open -- --draft      # open it as a draft pull request
+```
 
-**Protected boundary:** `cut-release.yaml` runs only from `main` in the `release-cut` environment and uses its `RELEASE_CUT_TOKEN`. Use a fine-grained PAT (or GitHub App installation token) owned by a repo **admin**, with **contents: write** and **workflows: write**. Plain `GITHUB_TOKEN` cannot trigger the tag workflows or push past the merge-queue ruleset. A required environment reviewer must approve the real cut; dry runs do not receive the admin token.
+`release:open` counts the next version from the commit titles on `main` since the latest release tag ([`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs): a `!` after the type, as in `feat!:`, or a `BREAKING CHANGE:` footer is major, `feat:` or `feat(scope):` is minor, anything else patch). It builds one commit on the tip of `main`, `chore: release vX.Y.Z`, that changes only `package.json` and the Flatpak MetaInfo, pushes it as `release/vX.Y.Z` and opens the pull request. The body has the release notes (grouped by breaking, features, fixes, other), the version change and why, the database schema change, and risk callouts for workflows, dependencies, the Reticulum sidecar, native helpers, database code, Flatpak packaging and release configuration.
 
-Version detection lives in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (handles scoped Conventional Commits such as `feat(rrc): …`). Do not set `MESH_CLIENT_RELEASE_PARSE_ONLY` in Actions (test-only hook; Cut release clears it).
+Run it again whenever `main` has moved: it rebuilds the same pull request on the newer `main` (still one bump commit) and closes any other open release pull request as superseded. When the branch already holds exactly the commit it would build, it pushes nothing and only refreshes the text, so the checks keep their results. When nothing has merged since the last release, it says so and opens nothing.
+
+While a merged release still waits for its tag (the Cut release approval is pending), the next version counts from `main`'s version, and the notes start after that release.
+
+### 2. Let the release gates run
+
+On a release pull request (a `release/*` branch from this repository), [`e2e.yaml`](../.github/workflows/e2e.yaml) runs Electron E2E on Linux, macOS and Windows and the **Release preflight** (the full `release.sh` pre-flight, `--preflight-only`, on a fresh runner). The **Release gates** job sums them up: it is a required check on `main`, and it passes on a release pull request only when all four passed. Other pull requests and merge groups skip E2E, and Release gates passes on them at once. Locally, `pnpm run release --preflight-only` runs the same pre-flight (any branch; no pull, dep update, bump, tag, or push).
+
+Edit the release notes in the pull request body if they need it: Cut release reads the `## Release notes` section when it tags. Get a review, then add the pull request to the merge queue.
+
+### 3. Approve the tag
+
+Every push to `main` runs **Cut release**. Its **Plan release tag** job decides whether the commit releases: the `package.json` version is newer than the latest tag, has no tag yet and matches the MetaInfo. For the release commit it then checks that Electron E2E and the release preflight passed on that exact tree, and the **Tag release** job waits for a maintainer's approval in the `release-cut` environment. Approve it to create the annotated tag `vX.Y.Z` with the release notes. Ordinary pushes end at the plan job with no approval prompt.
+
+Then wait for `release.yaml` + `flatpak.yaml` to attach the draft artifacts, check the draft (see [Verify the draft release](#verify-the-draft-release)) and **Publish** it.
+
+### When `main` moves before the release merges
+
+A pull request's checks run before it merges, so they cover the release's tree only while nothing else reaches `main` between `release:open` and the merge. Merge the release pull request soon after its gates pass, and if something else merges first, run `pnpm run release:open` again before merging: the rebuilt pull request runs the gates again on the new tree.
+
+If the release merges anyway after `main` moved, Cut release fails at **Plan release tag** and names the gates that have not passed on the merged tree. Recover with one E2E run on `main`: run **Actions → E2E → Run workflow** on `main`, and when it passes, **Actions → Cut release → Run workflow** on `main` before anything else merges, so both runs see the same commit. Until then every push to `main` fails the same way, because `main` carries a version with no tag.
+
+### Hotfixes
+
+A hotfix is an ordinary pull request to `main`. Once it merges, run `pnpm run release:open -- --bump patch` and release it like any other version.
+
+**Protected boundary:** the Plan release tag job holds no secrets (it reads contents, pull requests and check runs). The Tag release job runs in the `release-cut` environment, installs nothing, and is the only place `RELEASE_CUT_TOKEN` appears, for the one `git push` of the tag. Use a fine-grained PAT (or GitHub App installation token) owned by a repo **admin**, with **contents: write** and **workflows: write**: only admins may create `v*` tags (release tags ruleset), and a tag pushed with plain `GITHUB_TOKEN` would not start the tag workflows. Cut release runs one at a time and in order (`queue: max`), so a run waiting for approval never drops a later one.
 
 ---
 
-## Local fallback: `pnpm run release`
+## Emergency fallback: `pnpm run release`
 
-Local `scripts/release.sh` remains for emergencies when Actions is unavailable. It:
+Local `scripts/release.sh` remains for emergencies when Actions is unavailable. It skips the release pull request and its gates and pushes the bump commit and tag straight to `main`, which needs the repository admin bypass. It:
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
@@ -190,7 +214,7 @@ For parity with CI packaging smoke tests after a local dist build, see [CI/CD �
 
 ## Manual version bump (fallback)
 
-Only if `pnpm run release` cannot be used:
+Only if neither `pnpm run release:open` nor `pnpm run release` can be used:
 
 ```bash
 # Edit package.json version, then:
@@ -261,7 +285,7 @@ Both tag-triggered workflows must complete before the release is fully populated
 | Windows x64   | `Mesh-client-Setup-{version}.exe`                                                                                                                |
 | Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)                                                              |
 
-1. Paste or edit release notes (use the block printed by `pnpm run release`, or GitHub’s generated notes)
+1. Check the release notes at the top of the draft body (they come from the release pull request through the tag), and edit them there if needed. A release cut with the emergency `pnpm run release` has no notes in its tag: paste the block it printed, or GitHub’s generated notes.
 2. Optionally smoke-test downloads on one platform per family
 
 Until you click **Publish release**, the tag exists but the release stays hidden from the public Releases page.
@@ -300,7 +324,7 @@ When artifacts and notes look correct:
 
 ## Version naming
 
-Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `release.sh` / Cut release):
+Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `pnpm run release:open` and `release.sh`):
 
 - **Major (X.0.0):** `type!:` / `type(scope)!:`, or a line-anchored `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer in a commit body
 - **Minor (0.X.0):** New features (`feat:` or `feat(scope):`), backward compatible
@@ -328,7 +352,7 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 
 - Inspect the failed job log in Actions
 - Platform failures are often native-module or packaging related
-- Fix on `main`, then cut a new patch release (`pnpm run release patch`)
+- Fix on `main`, then release a new patch version (`pnpm run release:open -- --bump patch`)
 
 ### Upload to draft release fails
 
@@ -355,8 +379,12 @@ To re-cut the same version (only before wide distribution):
 git tag -d vX.Y.Z
 git push origin :refs/tags/vX.Y.Z
 # Delete the GitHub release if created
-# Fix issue, then pnpm run release again or re-tag manually
+# Fix issue, then run Cut release on main (Actions, Cut release, Run workflow) or re-tag manually
 ```
+
+### Cut release fails at Plan release tag
+
+The plan names the gates that have not passed on the commit's tree, for example `Electron E2E on macOS (no run)`. That happens when a gate failed on the release pull request, or when something else reached `main` between the release pull request's checks and its merge. Run **Actions → E2E → Run workflow** on `main`; when it passes, run **Actions → Cut release → Run workflow** on `main` before anything else merges. See [When `main` moves before the release merges](#when-main-moves-before-the-release-merges).
 
 ### Build fails due to native modules
 
