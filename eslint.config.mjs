@@ -97,6 +97,11 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-enum-comparison': 'error',
+      // Off: Electron / Meshtastic SDK factory returns (BrowserWindow.getFocusedWindow,
+      // Menu.buildFromTemplate, fromWebContents, EventSystem) are real class instances that
+      // this typescript-eslint 8.73 strictTypeChecked rule cannot prove. Keep off until the
+      // rule can treat known factories as constructed, or call sites are reshaped.
+      '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
       '@typescript-eslint/unbound-method': 'off',
       // React event handlers often return Promise<void>; void-return check is too strict for JSX attrs.
@@ -145,6 +150,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
       // Shared/lib tests inherit no-unnecessary-condition; leave it on for logic tests.
     },
   },
