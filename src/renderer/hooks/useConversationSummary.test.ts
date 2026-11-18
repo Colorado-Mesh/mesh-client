@@ -39,6 +39,7 @@ const input = {
   surface: 'channel' as const,
   messages: [],
   watermark: 0,
+  watermarkClock: 'arrival' as const,
   history: { protocol: 'meshcore' as const, surface: 'channel' as const, channel: 0 },
 };
 beforeEach(() => {
@@ -410,6 +411,46 @@ describe('conversation summary async boundaries', () => {
     } finally {
       resetChatReceiptClockForTests();
     }
+  });
+
+  // An RRC read mark is a stamped time (rrcReadWatermark.ts), so its "since last read" history is
+  // bounded and picked by stamp: a line read before the mark that this computer saved later
+  // (history fetched after reading it elsewhere) must stay out.
+  it('asks for unread history by stamp when the read mark is a stamped time', async () => {
+    const saved = [
+      { id: 1, at: 150, receivedAt: 300, sender: 'Ann', body: 'read before the mark' },
+      { id: 2, at: 250, receivedAt: 260, sender: 'Ben', body: 'unread after the mark' },
+    ];
+    // Stands in for the main-process query: range and `order` follow the key the request asks for.
+    vi.mocked(window.electronAPI.ai.getHistory).mockImplementationOnce((query) => {
+      const key = (row: (typeof saved)[number]) => (query.byArrival ? row.receivedAt : row.at);
+      return Promise.resolve(
+        saved
+          .filter((row) => key(row) >= query.sinceMs && key(row) <= query.untilMs)
+          .map(({ receivedAt, ...row }) => (query.byArrival ? { ...row, order: receivedAt } : row)),
+      );
+    });
+    const { result } = renderHook(() =>
+      useConversationSummary({
+        ...input,
+        protocol: 'reticulum',
+        surface: 'rrc',
+        watermark: 200,
+        watermarkClock: 'stamp',
+        history: { protocol: 'reticulum', surface: 'rrc', hubHash: 'aa', room: '#ops' },
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+    expect(request).toMatchObject({ sinceMs: 200 });
+    expect(request?.byArrival).toBeUndefined();
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [{ at: 250, sender: 'Ben', body: 'unread after the mark' }],
+      }),
+    );
   });
 
   it('pages unread history by its arrival key', async () => {

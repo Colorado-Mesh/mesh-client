@@ -2528,8 +2528,9 @@ describe('ChatPanel unread watermarks', () => {
       await waitFor(() => {
         expect(screen.getByRole('status')).toHaveTextContent('No messages in this range');
       });
+      // Chat read marks are arrival times, so their history is asked for by arrival.
       expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
-        expect.objectContaining({ sinceMs: ts }),
+        expect.objectContaining({ sinceMs: ts, byArrival: true }),
       );
       expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
     },

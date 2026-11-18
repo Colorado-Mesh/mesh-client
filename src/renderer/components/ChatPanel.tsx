@@ -3227,6 +3227,7 @@ function ChatPanel({
             )
         : undefined,
     watermark: unreadDividerTimestamp || persistedLastRead[readKey] || 0,
+    watermarkClock: 'arrival',
     available: viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null),
     history: {
       protocol,
