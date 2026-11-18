@@ -159,13 +159,13 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
         // "Since last read" reads history on the read mark's clock: by arrival for an arrival
-        // mark, by stamp (as the hour ranges do) for a stamped one. Unread history ends at the
-        // read clock: after a set-back of this clock new receipts run ahead of it.
+        // mark, up to the read clock (after a set-back of this clock new receipts run ahead of
+        // it); by stamp up to this clock, as the hour ranges do, for a stamped one.
         const byArrival = scope.kind === 'unread' && input.watermarkClock === 'arrival';
         const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
           byArrival ? { ...input.history, byArrival: true } : input.history,
           Math.max(0, sinceMs),
-          scope.kind === 'unread' ? chatReadClockMs(now) : now,
+          byArrival ? chatReadClockMs(now) : now,
           maxCollected,
         );
         truncated = historyTruncated;

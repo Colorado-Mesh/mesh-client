@@ -413,6 +413,26 @@ describe('conversation summary async boundaries', () => {
     }
   });
 
+  // Stamps come from the senders' clocks, so the receipt clock running ahead after a set-back does
+  // not widen a stamped mark's range: it ends at this clock, as the hour ranges do.
+  it('asks history for a stamped read mark up to this clock after a set-back', async () => {
+    try {
+      const receivedAfterSetBack = nextChatReceivedAt(Date.now() + 60 * 60_000);
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([]);
+      const { result } = renderHook(() =>
+        useConversationSummary({ ...input, watermark: 200, watermarkClock: 'stamp' }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+      expect(request?.byArrival).toBeUndefined();
+      expect(request?.untilMs).toBeLessThan(receivedAfterSetBack);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
+  });
+
   // An RRC read mark is a stamped time (rrcReadWatermark.ts), so its "since last read" history is
   // bounded and picked by stamp: a line read before the mark that this computer saved later
   // (history fetched after reading it elsewhere) must stay out.
