@@ -17,7 +17,7 @@ import { build } from 'esbuild';
 import type { ElectronAPI } from '../src/shared/electron-api.types';
 import type { EmergencyIncident } from '../src/shared/incidentTypes';
 import type { RendererStorageDeletionState } from '../src/shared/rendererStorageIntent';
-import { openAppTab, openPanel, repoRoot } from './electronApp';
+import { closeElectronApplication, openAppTab, openPanel, repoRoot } from './electronApp';
 import reportedPreferences from './fixtures/renderer-preferences.json';
 
 const executablePath = process.env.MESH_PACKAGED_EXECUTABLE;
@@ -28,14 +28,20 @@ test.describe('actual packaged renderer artifact', () => {
   let profile: string;
   let launchCount = 0;
   let discardBootstrapPreferences = false;
+
+  async function stop(): Promise<void> {
+    const current = app;
+    app = undefined;
+    if (current) await closeElectronApplication(current);
+  }
+
   test.beforeEach(() => {
     profile = realpathSync(mkdtempSync(path.join(tmpdir(), 'mesh-artifact-e2e-')));
     launchCount = 0;
     discardBootstrapPreferences = false;
   });
   test.afterEach(async () => {
-    await app?.close();
-    app = undefined;
+    await stop();
     rmSync(profile, { recursive: true, force: true });
   });
 
@@ -280,8 +286,7 @@ test.describe('actual packaged renderer artifact', () => {
       });
     }, at);
     await seedLegacyStorage(page, entries);
-    await app!.close();
-    app = undefined;
+    await stop();
 
     // Reproduce an older install: the forced-file bootstrap above uses current code and
     // initializes empty durable rows. Remove only these new domains after it exits, keeping
@@ -442,8 +447,7 @@ test.describe('actual packaged renderer artifact', () => {
         return JSON.parse(settings.takRelayPrefs);
       }),
     ).toEqual(takPrefs);
-    await app!.close();
-    app = undefined;
+    await stop();
 
     page = await launch();
     await expectProfileInUi(page, true);
@@ -478,8 +482,7 @@ test.describe('actual packaged renderer artifact', () => {
       [storageKey]: JSON.stringify({ type: 'ble', bleDeviceName: 'Old synthetic connection' }),
       [markerKey]: JSON.stringify(importedIntent),
     });
-    await app!.close();
-    app = undefined;
+    await stop();
 
     page = await launch();
     expect(page.url()).toBe('mesh-client://renderer/index.html');
@@ -537,8 +540,7 @@ test.describe('actual packaged renderer artifact', () => {
       imported: { 'file:': importedIntent.id },
       applied: { 'file:': 'artifact-newer-file-edit' },
     });
-    await app!.close();
-    app = undefined;
+    await stop();
 
     page = await launch({ MESH_CLIENT_FORCE_FILE_ORIGIN: '1' });
     expect(page.url()).toMatch(/^file:/);
@@ -548,8 +550,7 @@ test.describe('actual packaged renderer artifact', () => {
       .poll(() => page.evaluate((key) => localStorage.getItem(key), markerKey))
       .toBeNull();
     expect(await readCanonical(page)).toEqual(recreatedState);
-    await app!.close();
-    app = undefined;
+    await stop();
 
     page = await launch();
     expect(page.url()).toBe('mesh-client://renderer/index.html');
@@ -581,7 +582,7 @@ test.describe('actual packaged renderer artifact', () => {
           version: 1,
         }),
       });
-      await app!.close();
+      await stop();
       page = await launch();
       await openPanel(page, 'Chat');
       await page.getByRole('button', { name: 'Edit macros', exact: true }).click();
@@ -598,8 +599,7 @@ test.describe('actual packaged renderer artifact', () => {
         localStorage.removeItem('legacy-only-setting');
         localStorage.removeItem('mesh-client:renderer-origin-migration');
       });
-      await app!.close();
-      app = undefined;
+      await stop();
       const exportPath = path.join(profile, 'migration/legacy-file-origin-web-storage-v1.json');
       const originalExport = readFileSync(exportPath, 'utf8');
       unlinkSync(path.join(profile, 'migration/renderer-origin-migration.json'));
@@ -626,7 +626,7 @@ test.describe('actual packaged renderer artifact', () => {
       await expect(macros.getByLabel('F1 message text')).toHaveValue('Existing custom body');
       await macros.getByLabel('F1 message text').fill('Edited after repair');
       await macros.getByRole('button', { name: 'Close', exact: true }).click();
-      await app!.close();
+      await stop();
       page = await launch();
       expect(page.url()).toBe('mesh-client://renderer/index.html');
       await openPanel(page, 'Chat');
@@ -655,8 +655,7 @@ test.describe('actual packaged renderer artifact', () => {
         }),
       );
     });
-    await app!.close();
-    app = undefined;
+    await stop();
     page = await launch();
     expect(page.url()).toBe('mesh-client://renderer/index.html');
     expect(
@@ -768,8 +767,7 @@ test.describe('actual packaged renderer artifact', () => {
     await page.evaluate(() => {
       localStorage.removeItem('mesh-client:chatMacros');
     });
-    await app!.close();
-    app = undefined;
+    await stop();
     page = await launch();
     expect(await page.evaluate(() => localStorage.getItem('mesh-client:chatMacros'))).toContain(
       'COI upgrade test',
@@ -778,8 +776,7 @@ test.describe('actual packaged renderer artifact', () => {
       'reticulum',
     );
     expect(readFileSync(exportPath, 'utf8')).toBe(originalExport);
-    await app!.close();
-    app = undefined;
+    await stop();
     page = await launch({ MESH_CLIENT_FORCE_FILE_ORIGIN: '1' });
     expect(page.url()).toMatch(/^file:/);
     expect(await page.evaluate(() => crossOriginIsolated)).toBe(false);

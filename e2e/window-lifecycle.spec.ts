@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  closeElectronApplication,
   filterUnexpectedConsoleErrors,
   launchApp,
   type LaunchedApp,
@@ -35,7 +36,7 @@ test.describe('window lifecycle', () => {
     expect(unexpected, `unexpected console.error: ${unexpected.join(' | ')}`).toEqual([]);
 
     await page.close();
-    await app.close();
+    await closeElectronApplication(app);
     expect(launched.crashed).toBe(false);
   });
 });

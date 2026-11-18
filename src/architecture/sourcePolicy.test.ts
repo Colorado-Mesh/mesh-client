@@ -152,6 +152,7 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
         'chat-export-incremental-cap',
         'axe-tests-hydrate-theme-colors',
         'meshcore-cli-received-single-writer',
+        'e2e-no-bare-app-close',
       ]),
     );
   });
