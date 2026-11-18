@@ -59,7 +59,7 @@ While a merged release still waits for its tag (the Cut release approval is pend
 
 On a release pull request (a `release/*` branch from this repository), [`e2e.yaml`](../.github/workflows/e2e.yaml) runs Electron E2E on Linux, macOS and Windows and the **Release preflight** (the full `release.sh` pre-flight, `--preflight-only`, on a fresh runner). The **Release gates** job sums them up: it is a required check on `main`, and it passes on a release pull request only when all four passed. Other pull requests and merge groups skip E2E, and Release gates passes on them at once. Locally, `pnpm run release --preflight-only` runs the same pre-flight (any branch; no pull, dep update, bump, tag, or push).
 
-Edit the release notes in the pull request body if they need it: Cut release reads the `## Release notes` section when it tags. Get a review, then add the pull request to the merge queue.
+Edit the release notes in the pull request body if they need it: Cut release reads the `## Release notes` section when it tags. The `main` ruleset needs an approval of the last push from someone other than the person who made it, so whoever ran `release:open` last cannot approve the release, and each refresh dismisses earlier approvals. Once approved, add the pull request to the merge queue when nothing else is queued ahead of it: anything ahead of it lands on `main` first, and the release then takes the recovery path below.
 
 ### 3. Approve the tag
 
