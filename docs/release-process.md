@@ -43,10 +43,10 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 ### 1. Open the release pull request
 
 ```bash
-pnpm run release:open                 # bump detected from commit titles since the last release
-pnpm run release:open -- --dry-run    # print the version, branch and body; push nothing
-pnpm run release:open -- --bump patch # or minor, major, or an exact X.Y.Z
-pnpm run release:open -- --draft      # open it as a draft pull request
+pnpm run release:open                 # bump from the commit titles
+pnpm run release:open -- --dry-run    # print it all; push nothing
+pnpm run release:open -- --bump patch # or minor, major, an exact X.Y.Z
+pnpm run release:open -- --draft      # open a draft pull request
 ```
 
 `release:open` counts the next version from the commit titles on `main` since the latest release tag ([`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs): a `!` after the type, as in `feat!:`, or a `BREAKING CHANGE:` footer is major, `feat:` or `feat(scope):` is minor, anything else patch). It builds one commit on the tip of `main`, `chore: release vX.Y.Z`, that changes only `package.json` and the Flatpak MetaInfo, pushes it as `release/vX.Y.Z` and opens the pull request. The body has the release notes (grouped by breaking, features, fixes, other), the version change and why, the database schema change, and risk callouts for workflows, dependencies, the Reticulum sidecar, native helpers, database code, Flatpak packaging and release configuration.
@@ -71,7 +71,9 @@ Then wait for `release.yaml` + `flatpak.yaml` to attach the draft artifacts, che
 
 A pull request's checks run before it merges, so they cover the release's tree only while nothing else reaches `main` between `release:open` and the merge. Merge the release pull request soon after its gates pass, and if something else merges first, run `pnpm run release:open` again before merging: the rebuilt pull request runs the gates again on the new tree.
 
-If the release merges anyway after `main` moved, Cut release fails at **Plan release tag** and names the gates that have not passed on the merged tree. Recover with one E2E run on `main`: run **Actions → E2E → Run workflow** on `main`, and when it passes, **Actions → Cut release → Run workflow** on `main` before anything else merges, so both runs see the same commit. Until then every push to `main` fails the same way, because `main` carries a version with no tag. A tag on the release commit still takes its notes from the release pull request, which was written before the other changes merged, so add those to the notes when you check the draft. (A tag on a later commit builds its notes from the commit titles instead.)
+If the release merges anyway after `main` moved, Cut release fails at **Plan release tag** and names the gates that have not passed on the merged tree. Recover with one E2E run on `main`: run **Actions → E2E → Run workflow** on `main`, and when it passes, **Actions → Cut release → Run workflow** on `main` before anything else merges, so both runs see the same commit.
+
+Until then every push to `main` fails the same way, because `main` carries a version with no tag. A tag on the release commit still takes its notes from the release pull request, which was written before the other changes merged, so add those to the notes when you check the draft. (A tag on a later commit builds its notes from the commit titles instead.)
 
 ### Hotfixes
 
