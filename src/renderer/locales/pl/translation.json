@@ -3340,13 +3340,10 @@
       "serialModuleEnabledDesc": "Włącz przekazywanie danych portu szeregowego przez siatkę.",
       "serialEchoDesc": "Echo odebrało dane szeregowe z powrotem do nadawcy.",
       "serialRxd": "PIN RX",
-      "serialRxdDesc": "Numer PIN GPIO dla szeregowego RX. 0 = użyj domyślnego.",
       "serialTxd": "TX PIN",
-      "serialTxdDesc": "Numer PIN GPIO dla TX szeregowego. 0 = użyj domyślnego.",
       "serialTimeout": "Limit czasu",
       "serialTimeoutDesc": "Milisekundy na odczekanie przed wysłaniem pakietu. 0 = użyj wartości domyślnej.",
       "serialMode": "Tryb szeregowy",
-      "serialModeDesc": "Tryb pracy modułu szeregowego.",
       "serialOverrideConsole": "Zastąp port szeregowy konsoli",
       "serialOverrideConsoleDesc": "Użyj głównego portu szeregowego (konsoli) dla modułu szeregowego zamiast portu pomocniczego.",
       "sfEnabledDesc": "Buforuje komunikaty dla węzłów, które ponownie przyłączają się do siatki.",
@@ -3421,7 +3418,10 @@
         "channelIndexRange": "Indeks kanału musi mieścić się w przedziale od 0 do 7.",
         "channelNotConfigured": "Ten kanał nie jest skonfigurowany w tym radiu.",
         "frequencySlot": "Szczelina częstotliwości musi mieć wartość 1 lub wyższą albo 0, aby ją wyprowadzić."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO dla szeregowego RX. 0 = nieskonfigurowany. Należy ustawić zarówno RXD, jak i TXD (lub użyć zastąpienia konsoli za pomocą konfiguracji NMEA, CalTopo lub MeshSolar); w przeciwnym razie urządzenie wyłączy moduł szeregowy.",
+      "serialTxdDesc": "Pin GPIO dla szeregowego TX. 0 = nieskonfigurowany. Należy ustawić zarówno TXD, jak i RXD (lub użyć funkcji zastępowania ustawień przez konsolę); w przeciwnym razie urządzenie wyłączy moduł szeregowy.",
+      "serialModeDesc": "Tryb pracy modułu szeregowego. Nie każdy tryb jest zaimplementowany w każdej wersji oprogramowania sprzętowego."
     },
     "applySection": "Zastosuj {{section}}",
     "applyingButton": "Stosowanie...",
@@ -3445,7 +3445,7 @@
       "mqttDefaultServerTls": "Publiczny broker Meshtastic MQTT nie obsługuje TLS. Wyłącz TLS lub użyj niestandardowego adresu brokera.",
       "mqttDefaultServerPort": "Nie umieszczaj portu w publicznym adresie brokera Meshtastic MQTT (użyj mqtt.meshtastic.org z nr :port).",
       "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała MQTT, lub użyj LoRa „OK to MQTT” zamiast MQTT po stronie urządzenia.",
-      "serialOverrideRequiresMode": "W urządzeniu włączone jest nadpisywanie konsoli szeregowej. Ustaw prawidłowy tryb szeregowy w radiu przed włączeniem modułu szeregowego tutaj."
+      "serialOverrideRequiresMode": "Zastępowanie konsoli szeregowej jest obsługiwane tylko w trybach konfiguracji NMEA, CalTopo i MeshSolar. Wybierz jeden z tych trybów lub wyłącz zastępowanie konsoli."
     },
     "remoteHardwareConfirmEnableTitle": "Włączyć zdalny sprzęt?",
     "remoteHardwareConfirmEnableMessage": "Zdalne węzły będą mogły odczytywać i zapisywać piny GPIO na tym urządzeniu przez siatkę. Włącz tylko wtedy, gdy ufasz użytkownikom siatki i masz skonfigurowany dostęp PIN.",
@@ -3629,6 +3629,9 @@
       "joined": "Dołączono do kanału {{name}}.",
       "radioApplied": "Ustawienia radia wysłane.",
       "joinFailed": "Dołączenie nie powiodło się: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Oprogramowanie sprzętowe Meshtastic obecnie nie generuje wyjścia szeregowego w tym trybie (radio zapisuje ustawienie, ale nic nie zapisuje). Użyj trybu wiadomości tekstowych dla tekstu kanału/wiadomości bezpośrednich lub trybu prostego dla surowego przekazywania. W trybach LOG nie można również korzystać z funkcji zastępowania konsoli."
     }
   },
   "networkPanel": {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type * as Recharts from 'recharts';
 import { describe, expect, it, vi } from 'vitest';
@@ -140,6 +140,64 @@ describe('TelemetryPanel', () => {
         );
       });
     }
+  });
+
+  it('bounds the legend in All nodes mode so the plot keeps its space', async () => {
+    const { useEnvironmentTelemetryStore } = await import('../stores/environmentTelemetryStore');
+    const { useIdentityStore, addIdentity, setActiveIdentity } =
+      await import('../stores/identityStore');
+    const { meshcoreProtocol } = await import('../lib/protocols/MeshCoreProtocol');
+    const { MESHCORE_CAPABILITIES: caps } = await import('../lib/radio/BaseRadioProvider');
+    useEnvironmentTelemetryStore.setState({ history: new Map() });
+    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    addIdentity({
+      id: 'id-mc-all',
+      protocol: meshcoreProtocol,
+      signature: 'test-all',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setActiveIdentity('id-mc-all');
+    const store = useEnvironmentTelemetryStore.getState();
+    for (let i = 0; i < 6; i++) {
+      const nodeId = 0x1000 + i;
+      store.recordReading(
+        'meshcore',
+        'id-mc-all',
+        nodeId,
+        { temperature: 20 + i, relativeHumidity: 40 + i },
+        'rpc',
+      );
+      store.recordReading(
+        'meshcore',
+        'id-mc-all',
+        nodeId,
+        { temperature: 21 + i, relativeHumidity: 41 + i },
+        'rpc',
+      );
+    }
+    const { container } = render(
+      <TelemetryPanel
+        telemetry={[]}
+        signalTelemetry={[]}
+        environmentTelemetry={[]}
+        useFahrenheit={false}
+        onToggleFahrenheit={() => {}}
+        onRefresh={async () => {}}
+        isConnected
+        capabilities={caps}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox', { name: /Sensor node/i }), {
+      target: { value: 'all' },
+    });
+    const wrappers = container.querySelectorAll('.recharts-legend-wrapper');
+    expect(wrappers.length).toBeGreaterThan(0);
+    for (const w of wrappers) {
+      expect(w).toHaveStyle({ maxHeight: '64px', overflowY: 'auto' });
+    }
+    expect(container.querySelector('.recharts-cartesian-grid')).not.toBeNull();
   });
 
   it('shows MeshCore flood send percent with raw flood/direct counts', () => {

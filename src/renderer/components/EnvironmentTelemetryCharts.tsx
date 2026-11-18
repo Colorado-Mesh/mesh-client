@@ -81,6 +81,14 @@ interface MetricSeries {
   stroke: string;
 }
 
+/**
+ * Recharts measures the legend wrapper and reserves that height inside the fixed
+ * 250px ResponsiveContainer. "All nodes" expands each metric into one series per
+ * node (up to ENVIRONMENT_CHART_ALL_NODES_MAX_OVERLAY), so an unbounded legend can
+ * consume the whole card. Clamping keeps the plot area visible and scrolls entries.
+ */
+const ENV_CHART_LEGEND_WRAPPER_STYLE = { maxHeight: 64, overflowY: 'auto' } as const;
+
 function expandMetricSeries(
   field: string,
   name: string,
@@ -455,7 +463,7 @@ export default function EnvironmentTelemetryCharts({
               }}
               labelFormatter={labelFmt}
             />
-            <Legend />
+            <Legend wrapperStyle={ENV_CHART_LEGEND_WRAPPER_STYLE} />
             {visibleLines(
               metric(
                 'temperature',
@@ -592,7 +600,7 @@ export default function EnvironmentTelemetryCharts({
               }}
               labelFormatter={labelFmt}
             />
-            <Legend />
+            <Legend wrapperStyle={ENV_CHART_LEGEND_WRAPPER_STYLE} />
             {visibleLines(metric('iaq', t('telemetryPanel.seriesIaq'), '#34d399')).map((s) => (
               <Line
                 key={s.key}
@@ -657,7 +665,7 @@ export default function EnvironmentTelemetryCharts({
               }}
               labelFormatter={labelFmt}
             />
-            <Legend />
+            <Legend wrapperStyle={ENV_CHART_LEGEND_WRAPPER_STYLE} />
             {(
               [
                 ['pm10Standard', t('telemetryPanel.seriesPm10'), '#c4b5fd'],
@@ -871,7 +879,7 @@ function MultiKeyCard({
           }}
           labelFormatter={labelFmt}
         />
-        <Legend />
+        <Legend wrapperStyle={ENV_CHART_LEGEND_WRAPPER_STYLE} />
         {visible.map((s) => (
           <Line
             key={s.key}
