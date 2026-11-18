@@ -10,6 +10,7 @@
  */
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+import { peekPendingNodeRecord } from './ingest/coalescedNodeWrites';
 import {
   messageRecordsToChatMessages,
   nodeRecordsToMeshNodeMap,
@@ -32,12 +33,17 @@ export function getIdentityNodeMap(identityId: string | null | undefined): Map<n
   return nodeRecordsToMeshNodeMap(Object.values(byId));
 }
 
-/** Single node lookup — avoids converting the whole bucket on hot packet paths. */
+/**
+ * Single node lookup — avoids converting the whole bucket on hot packet paths.
+ * Pending coalesced writes are visible before flush (see coalescedNodeWrites).
+ */
 export function getIdentityNode(
   identityId: string | null | undefined,
   nodeId: number,
 ): MeshNode | undefined {
   if (!identityId || !nodeId) return undefined;
+  const pending = peekPendingNodeRecord(identityId, nodeId);
+  if (pending) return nodeRecordToMeshNode(pending);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.

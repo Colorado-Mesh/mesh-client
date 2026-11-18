@@ -72,6 +72,11 @@ export function perfReport(): void {
     }))
     .sort((a, b) => b.totalMs - a.totalMs);
   console.table(rows);
+  // Lazy import keeps lag probe out of the cold path when tracing is off at module load.
+  void import('./mainThreadLagProbe').then(({ mainThreadLagSnapshot, startMainThreadLagProbe }) => {
+    startMainThreadLagProbe();
+    console.debug('[perf] mainThreadLag', mainThreadLagSnapshot());
+  });
 }
 
 /** Clear accumulated stats (tests / between bursts). */

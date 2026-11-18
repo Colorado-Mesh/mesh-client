@@ -21,6 +21,7 @@ import {
 } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import i18n from '@/renderer/lib/i18n';
+import { flushNodeWrites } from '@/renderer/lib/ingest/coalescedNodeWrites';
 import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
@@ -213,12 +214,7 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../stores/messageStore';
-import {
-  type NodeRecord,
-  upsertNodeRecord,
-  upsertNodeRecordsForIdentity,
-  useNodeStore,
-} from '../stores/nodeStore';
+import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useNomadPageViewerStore } from '../stores/nomadPageViewerStore';
 import {
@@ -419,18 +415,25 @@ export function useReticulumRuntime(): ProtocolRuntime {
     for (const contact of contacts.values()) consider(contact, true);
     for (const contact of history.values()) consider(contact, false);
 
-    // Drop path-table peers previously synced into nodeStore; keep self + History/Contacts.
+    // One setState: drop stale path-table peers and merge Contacts/History (avoids a double AppContent render).
     useNodeStore.setState((s) => {
       const prior = s.nodes[identityId] ?? {};
-      const next = Object.fromEntries(
-        Object.entries(prior).filter(([key, rec]) => {
-          const nodeId = Number(key);
-          return !rec.reticulumDestinationHash || keepNodeIds.has(nodeId);
-        }),
-      );
+      const next: Record<number, NodeRecord> = {};
+      for (const [key, rec] of Object.entries(prior)) {
+        const nodeId = Number(key);
+        if (!rec.reticulumDestinationHash || keepNodeIds.has(nodeId)) {
+          next[nodeId] = rec;
+        }
+      }
+      for (const record of records) {
+        const { nodeId, ...patch } = record;
+        const definedPatch = Object.fromEntries(
+          Object.entries(patch).filter(([, value]) => value !== undefined),
+        ) as Partial<NodeRecord>;
+        next[nodeId] = { ...(next[nodeId] ?? { nodeId }), ...definedPatch, nodeId };
+      }
       return { nodes: { ...s.nodes, [identityId]: next } };
     });
-    upsertNodeRecordsForIdentity(identityId, records);
   }, [identityId, selfNodeId]);
 
   const refreshContactsFromSidecar = useCallback(
@@ -2092,6 +2095,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     suppressReconnectRef.current = true;
     // Invalidate in-flight connect hydrate / configured apply across stop paths.
     resumeGenerationRef.current += 1;
+    await flushNodeWrites();
     // Same latch as Stop button — covers any disconnect path (panel, protocol facade, etc.).
     setReticulumManualStackStopSuppress(true);
     if (peerRefreshDebounceRef.current) {

@@ -29,6 +29,7 @@ import {
 } from '../storeRecordAdapters';
 import { relayMeshtasticChatToTak } from '../tak/takChannelRelay';
 import type { IdentityId } from '../types';
+import { hasPendingNodePersist, peekPendingNodeRecord } from './coalescedNodeWrites';
 
 const SEEN_PACKET_TTL_MS = 10 * 60 * 1000;
 
@@ -69,10 +70,13 @@ function listChatMessages(identityId: IdentityId) {
 }
 
 function persistNode(identityId: IdentityId, nodeId: number): void {
+  const pending = peekPendingNodeRecord(identityId, nodeId);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-  const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  const record = pending ?? useNodeStore.getState().nodes[identityId]?.[nodeId];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
+  // Coalesce window already queued a persist for this node — avoid a duplicate write.
+  if (pending && hasPendingNodePersist(identityId, nodeId)) return;
   const meshNode = nodeRecordToMeshNode(record);
   if (meshcoreHwModelIsContactTypeLabel(meshNode.hw_model)) return;
   persistDbWrite('meshtastic ingest node', () => window.electronAPI.db.saveNode(meshNode));

@@ -334,6 +334,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:listMeshtasticDmPeers', ownNodeId, limit),
 
     saveNode: (node: MeshNode) => ipcRenderer.invoke('db:saveNode', node),
+    saveNodes: (nodes: MeshNode[]) => ipcRenderer.invoke('db:saveNodes', nodes),
 
     saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) =>
       ipcRenderer.invoke('db:saveNodePath', nodeId, lastHeard, buffer),

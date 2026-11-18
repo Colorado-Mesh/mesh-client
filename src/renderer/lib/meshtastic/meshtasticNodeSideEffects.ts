@@ -23,14 +23,13 @@ import {
   preferNonEmptyTrimmedString,
 } from '../../../shared/nodeNameUtils';
 import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
-import { upsertNodeRecord } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { validateCoords } from '../coordUtils';
-import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
 import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
 import { getIdentityNode } from '../identityStoreReads';
+import { enqueueNodeWrite } from '../ingest/coalescedNodeWrites';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import {
   computeNodeInfoLastHeardMs,
@@ -99,9 +98,21 @@ function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefin
     .join('');
 }
 
-function saveNode(identityId: IdentityId, node: MeshNode): void {
-  upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
-  persistDbWrite('meshtastic node', () => window.electronAPI.db.saveNode(node));
+function saveNode(
+  identityId: IdentityId,
+  node: MeshNode,
+  diagnostics?: { myNodeNum: number; homeNode: MeshNode | null },
+): void {
+  enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), {
+    persist: true,
+    ...(diagnostics
+      ? {
+          onFlushNode: (flushed: MeshNode) => {
+            processMeshtasticNodeDiagnostics(flushed, diagnostics.myNodeNum, diagnostics.homeNode);
+          },
+        }
+      : {}),
+  });
 }
 
 /** Self stays at hopsAway (default 0); stale peers clear hops; live peers keep packet or prior. */
@@ -304,7 +315,10 @@ function handleNodeDbNodeInfo(
     source: 'rf',
     lastPositionWarning: positionPatch.lastPositionWarning,
   };
-  saveNode(identityId, node);
+  saveNode(identityId, node, {
+    myNodeNum,
+    homeNode: isSelf ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
+  });
   maybeMigrateRenumberedMeshtasticNode(identityId, nodeNum, node.public_key_hex, node.last_heard);
   if (isSelf) recordOwnMeshtasticNodeNum(node.public_key_hex, nodeNum);
 
@@ -316,11 +330,6 @@ function handleNodeDbNodeInfo(
       '[meshtasticNodeSideEffects] Device role is Client Mute — position reports to device suppressed',
     );
   }
-  processMeshtasticNodeDiagnostics(
-    node,
-    myNodeNum,
-    isSelf ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
-  );
   if (positionCoords && validateCoords(positionCoords.latitude, positionCoords.longitude).valid) {
     usePositionHistoryStore
       .getState()
@@ -399,8 +408,7 @@ function handlePosition(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
-  saveNode(identityId, node);
-  processMeshtasticNodeDiagnostics(node, myNodeNum, homeNode);
+  saveNode(identityId, node, { myNodeNum, homeNode });
   usePositionHistoryStore.getState().recordPosition(nodeNum, position.latitude, position.longitude);
   deps.maybeRequestNodeInfoForNode(nodeNum);
 }
@@ -506,8 +514,7 @@ function handleLocalStatsTelemetry(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
-  saveNode(identityId, node);
-  processMeshtasticNodeDiagnostics(node, myNodeNum, node);
+  saveNode(identityId, node, { myNodeNum, homeNode: node });
 }
 
 /** Device metrics (and any other variant): battery chart point plus node battery. */
@@ -541,12 +548,10 @@ function handleDeviceMetricsTelemetry(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
-  saveNode(identityId, node);
-  processMeshtasticNodeDiagnostics(
-    node,
+  saveNode(identityId, node, {
     myNodeNum,
-    nodeNum === myNodeNum ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
-  );
+    homeNode: nodeNum === myNodeNum ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
+  });
   deps.maybeRequestNodeInfoForNode(nodeNum);
   if (nodeNum === myNodeNum) {
     deps.applyOwnNodeBatteryFromDeviceMetrics(telemetry.batteryLevel);

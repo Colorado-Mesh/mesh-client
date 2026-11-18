@@ -32,6 +32,20 @@ describe('database shutdown guard', () => {
   });
 });
 
+describe('saveNodesBatch / NODE_UPSERT_SQL', () => {
+  it('exports shared upsert SQL and batch helper', () => {
+    expect(DB_SOURCE).toContain('export const NODE_UPSERT_SQL');
+    expect(DB_SOURCE).toContain('export function saveNodesBatch');
+    expect(DB_SOURCE).toContain('export function toNodeUpsertParams');
+    expect(DB_SOURCE).toContain('export const MAX_SAVE_NODES_BATCH = 8000');
+  });
+
+  it('keeps hops_away min and mqtt source preserve merge rules', () => {
+    expect(DB_SOURCE).toMatch(/excluded\.hops_away < nodes\.hops_away/);
+    expect(DB_SOURCE).toMatch(/nodes\.source = 'mqtt' AND excluded\.source = 'rf'/);
+  });
+});
+
 describe('deleteNodesWithoutLongname SQL', () => {
   it('deletes NULL long_name', () => {
     expect(DB_SOURCE).toMatch(/DELETE FROM nodes.*long_name IS NULL/s);
@@ -197,62 +211,61 @@ describe('meshcore_trace_history schema and retention', () => {
  * instead of overwriting with null/empty values.
  */
 describe('saveNode UPSERT COALESCE preservation', () => {
-  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
-
+  // Shared SQL lives in database.ts (`NODE_UPSERT_SQL`) for single + batch writes.
   it('uses COALESCE for long_name to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /long_name = COALESCE\(NULLIF\(excluded\.long_name, ''\), nodes\.long_name\)/,
     );
   });
 
   it('uses COALESCE for short_name to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /short_name = COALESCE\(NULLIF\(excluded\.short_name, ''\), nodes\.short_name\)/,
     );
   });
 
   it('uses COALESCE for hw_model to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /hw_model = COALESCE\(NULLIF\(excluded\.hw_model, ''\), nodes\.hw_model\)/,
     );
   });
 
   it('uses COALESCE for snr to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/snr = COALESCE\(excluded\.snr, nodes\.snr\)/);
+    expect(DB_SOURCE).toMatch(/snr = COALESCE\(excluded\.snr, nodes\.snr\)/);
   });
 
   it('uses COALESCE for rssi to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/rssi = COALESCE\(excluded\.rssi, nodes\.rssi\)/);
+    expect(DB_SOURCE).toMatch(/rssi = COALESCE\(excluded\.rssi, nodes\.rssi\)/);
   });
 
   it('uses COALESCE for battery to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/battery = COALESCE\(excluded\.battery, nodes\.battery\)/);
+    expect(DB_SOURCE).toMatch(/battery = COALESCE\(excluded\.battery, nodes\.battery\)/);
   });
 
   it('uses CASE for last_heard to only update when positive', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /last_heard = CASE WHEN excluded\.last_heard IS NOT NULL AND excluded\.last_heard > 0/,
     );
   });
 
   it('uses CASE for latitude to only update when non-zero', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /latitude = CASE WHEN excluded\.latitude IS NOT NULL AND excluded\.latitude != 0/,
     );
   });
 
   it('uses CASE for longitude to only update when non-zero', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(DB_SOURCE).toMatch(
       /longitude = CASE WHEN excluded\.longitude IS NOT NULL AND excluded\.longitude != 0/,
     );
   });
 
   it('uses COALESCE for voltage to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/voltage = COALESCE\(excluded\.voltage, nodes\.voltage\)/);
+    expect(DB_SOURCE).toMatch(/voltage = COALESCE\(excluded\.voltage, nodes\.voltage\)/);
   });
 
   it('uses COALESCE for altitude to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/altitude = COALESCE\(excluded\.altitude, nodes\.altitude\)/);
+    expect(DB_SOURCE).toMatch(/altitude = COALESCE\(excluded\.altitude, nodes\.altitude\)/);
   });
 });
 
