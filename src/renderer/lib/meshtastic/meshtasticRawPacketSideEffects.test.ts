@@ -10,6 +10,7 @@ import {
 import { packetRouter } from '../drivers/PacketRouter';
 import { syncNodesMapToIdentityStore } from '../hydrateIdentityStoresFromDb';
 import { getIdentityNode } from '../identityStoreReads';
+import { flushNodeWrites, resetCoalescedNodeWritesForTests } from '../ingest/coalescedNodeWrites';
 import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
 import type { MeshNode } from '../types';
@@ -56,20 +57,39 @@ function makeDeps(overrides: Partial<MeshtasticRawPacketSideEffectsDeps> = {}) {
 }
 
 describe('attachMeshtasticRawPacketSideEffects', () => {
+  let rafCallbacks: FrameRequestCallback[];
+
   beforeEach(() => {
     useNodeStore.setState({ nodes: {} });
     resetConnectedMeshcoreBleMacForTests();
+    resetCoalescedNodeWritesForTests();
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshtastic');
+    rafCallbacks = [];
+    globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    };
+    globalThis.cancelAnimationFrame = () => {};
     window.electronAPI = {
-      db: { saveNode: vi.fn().mockResolvedValue(undefined) },
+      db: {
+        saveNode: vi.fn().mockResolvedValue(undefined),
+        saveNodes: vi.fn().mockResolvedValue({ saved: 0, dropped: 0 }),
+      },
     } as unknown as typeof window.electronAPI;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     resetConnectedMeshcoreBleMacForTests();
+    resetCoalescedNodeWritesForTests();
     localStorage.clear();
   });
+
+  function flushRaf(): void {
+    const callbacks = [...rafCallbacks];
+    rafCallbacks = [];
+    for (const cb of callbacks) cb(0);
+  }
 
   it('appends a sniffer log entry and records noise/path diagnostics', () => {
     const { deps } = makeDeps();
@@ -95,6 +115,7 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
       IDENTITY,
     );
     expect(deps.touchLastData).toHaveBeenCalled();
+    flushRaf();
     expect(deps.setRawPackets).toHaveBeenCalled();
     expect(deps.setSignalTelemetry).toHaveBeenCalled();
     expect(recordNoisePort).toHaveBeenCalledWith(PEER, 1);
@@ -124,6 +145,7 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
       IDENTITY,
     );
     packetRouter.dispatch({ type: 'raw_packet', payload: base }, IDENTITY);
+    flushRaf();
     const updaters = vi.mocked(deps.setRawPackets).mock.calls.map(([update]) => update);
     const entries = updaters.reduce<MeshtasticRawPacketEntry[]>(
       (prev, update) => (typeof update === 'function' ? update(prev) : update),
@@ -136,7 +158,7 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     detach();
   });
 
-  it('patches SNR/hops and invokes processNodeUpdate for RF mesh packets', () => {
+  it('patches SNR/hops and invokes processNodeUpdate for RF mesh packets', async () => {
     const { deps } = makeDeps();
     const processNodeUpdate = vi
       .spyOn(useDiagnosticsStore.getState(), 'processNodeUpdate')
@@ -163,7 +185,8 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     expect(node?.snr).toBe(9.25);
     expect(node?.rssi).toBe(-80);
     expect(node?.hops_away).toBe(1);
-    expect(window.electronAPI.db.saveNode).toHaveBeenCalled();
+    await flushNodeWrites();
+    expect(window.electronAPI.db.saveNodes).toHaveBeenCalled();
     expect(processNodeUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ node_id: PEER, snr: 9.25, hops_away: 1 }),
       null,
@@ -329,6 +352,7 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     expect(node?.last_heard).toBe(staleHeard);
     expect(node?.snr).toBe(1);
     expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+    expect(window.electronAPI.db.saveNodes).not.toHaveBeenCalled();
     expect(deps.setRawPackets).not.toHaveBeenCalled();
     expect(deps.setSignalTelemetry).not.toHaveBeenCalled();
     expect(recordNoisePort).not.toHaveBeenCalledWith(BLUE_NODE, expect.anything());

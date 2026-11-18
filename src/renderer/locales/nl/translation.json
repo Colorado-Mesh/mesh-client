@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Begrenzingsvak moet west < oost en zuid < noord hebben",
     "waypointNotifyOnEnter": "Melden bij invoeren",
     "waypointNotifyOnExit": "Melden bij afsluiten",
-    "waypointNotifyFavoritesOnly": "Alleen meldingen voor favorieten"
+    "waypointNotifyFavoritesOnly": "Alleen meldingen voor favorieten",
+    "basemapOpentopo": "OpenTopoMap (terrein)",
+    "basemapHot": "Humanitair (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (openbaar vervoer)"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Lokaal live verkeer houdt observaties gedurende één minuut bij. Oudere opnames blijven in Monitor → Sniffer.",
     "emptyFeedQuiet": "Geen observaties in de laatste minuut. Oudere pakketten blijven in Monitor → Sniffer.",
     "hopTones": "Hoptonen",
-    "hopTonesHint": "Speel een zachte toon af voor elke geanimeerde sprong. Kortere hops klinken hoger; langere hops klinken lager. Elke noot duurt even lang als de vlucht van die hop op de kaart. Werkt voor lokaal verkeer, Beacon-verkeer en CoreScope-verkeer."
+    "hopTonesHint": "Speel een zachte toon af voor elke geanimeerde sprong. Kortere hops klinken hoger; langere hops klinken lager. Elke noot duurt even lang als de vlucht van die hop op de kaart. Werkt voor lokaal verkeer, Beacon-verkeer en CoreScope-verkeer.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitair!",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Instellingen van begeleidende apparaten",

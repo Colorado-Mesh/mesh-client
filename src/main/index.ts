@@ -107,6 +107,7 @@ import {
   clearMeshcoreRoomsOn,
   closeDatabase,
   createContactGroup,
+  DB_SAVE_NODE_PATH_MAX_BYTES,
   deleteAllMeshcorePathHistory,
   deleteContactGroup,
   deleteMeshcoreContactOn,
@@ -128,6 +129,7 @@ import {
   initDatabase,
   isDatabaseSchemaTooNewError,
   isDatabaseSchemaUpgradeDeclinedError,
+  MAX_SAVE_NODES_BATCH,
   mergeDatabase,
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
@@ -142,8 +144,11 @@ import {
   saveMeshcoreContactsBatch,
   saveMeshcoreHopHistory,
   saveMeshcoreTraceHistory,
+  saveNodeRow,
+  saveNodesBatch,
   searchMeshcoreMessages,
   searchMessages,
+  toNodeUpsertParams,
   updateContactGroup,
   upsertMeshcorePathHistory,
   upsertNodePath,
@@ -223,10 +228,7 @@ import {
   selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
-import {
-  meshtasticNodePublicKeyHexOrNull,
-  migrateMeshtasticNodeNumInDb,
-} from './meshtasticNodeRenumber';
+import { migrateMeshtasticNodeNumInDb } from './meshtasticNodeRenumber';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
@@ -4104,73 +4106,43 @@ ipcMain.handle('db:saveNode', (event, node) => {
         throw new Error('db:saveNode: path too large');
       }
     }
-    const db = getDbForIpc('db:saveNode');
-    if (!db) return { changes: 0 };
-    const stmt = db.prepareOnce(`
-      INSERT INTO nodes (node_id, long_name, short_name, hw_model, snr, rssi, battery, last_heard, latitude, longitude, role, hops_away, via_mqtt, voltage, channel_utilization, air_util_tx, altitude, favorited, source, num_packets_rx_bad, num_rx_dupe, num_packets_rx, num_packets_tx, hops, path, public_key)
-      VALUES (@node_id, @long_name, @short_name, @hw_model, @snr, @rssi, @battery, @last_heard, @latitude, @longitude, @role, @hops_away, @via_mqtt, @voltage, @channel_utilization, @air_util_tx, @altitude,
-        COALESCE((SELECT favorited FROM nodes WHERE node_id = @node_id), 0),
-        @source, @num_packets_rx_bad, @num_rx_dupe, @num_packets_rx, @num_packets_tx, @hops, @path, @public_key)
-      ON CONFLICT(node_id) DO UPDATE SET
-        long_name = COALESCE(NULLIF(excluded.long_name, ''), nodes.long_name),
-        short_name = COALESCE(NULLIF(excluded.short_name, ''), nodes.short_name),
-        hw_model = COALESCE(NULLIF(excluded.hw_model, ''), nodes.hw_model),
-        snr = COALESCE(excluded.snr, nodes.snr),
-        rssi = COALESCE(excluded.rssi, nodes.rssi),
-        battery = COALESCE(excluded.battery, nodes.battery),
-        last_heard = CASE WHEN excluded.last_heard IS NOT NULL AND excluded.last_heard > 0 THEN excluded.last_heard ELSE nodes.last_heard END,
-        latitude = CASE WHEN excluded.latitude IS NOT NULL AND excluded.latitude != 0 THEN excluded.latitude ELSE nodes.latitude END,
-        longitude = CASE WHEN excluded.longitude IS NOT NULL AND excluded.longitude != 0 THEN excluded.longitude ELSE nodes.longitude END,
-        role = COALESCE(excluded.role, nodes.role),
-        hops_away = CASE
-          WHEN excluded.hops_away IS NOT NULL AND (nodes.hops_away IS NULL OR excluded.hops_away < nodes.hops_away) THEN excluded.hops_away
-          ELSE nodes.hops_away
-        END,
-        via_mqtt = COALESCE(excluded.via_mqtt, nodes.via_mqtt),
-        voltage = COALESCE(excluded.voltage, nodes.voltage),
-        channel_utilization = COALESCE(excluded.channel_utilization, nodes.channel_utilization),
-        air_util_tx = COALESCE(excluded.air_util_tx, nodes.air_util_tx),
-        altitude = COALESCE(excluded.altitude, nodes.altitude),
-        source = CASE
-          WHEN nodes.source = 'mqtt' AND excluded.source = 'rf' AND COALESCE(excluded.via_mqtt, 0) = 1 THEN 'mqtt'
-          ELSE COALESCE(excluded.source, nodes.source, 'rf')
-        END,
-        num_packets_rx_bad = COALESCE(excluded.num_packets_rx_bad, num_packets_rx_bad),
-        num_rx_dupe = COALESCE(excluded.num_rx_dupe, num_rx_dupe),
-        num_packets_rx = COALESCE(excluded.num_packets_rx, num_packets_rx),
-        num_packets_tx = COALESCE(excluded.num_packets_tx, num_packets_tx),
-        hops = CASE
-          WHEN excluded.hops IS NOT NULL AND (nodes.hops IS NULL OR excluded.hops < nodes.hops) THEN excluded.hops
-          ELSE nodes.hops
-        END,
-        path = COALESCE(excluded.path, nodes.path),
-        public_key = COALESCE(excluded.public_key, nodes.public_key)
-    `);
-    return stmt.run({
-      role: null,
-      hops_away: node.hops_away ?? null,
-      rssi: null,
-      voltage: null,
-      channel_utilization: null,
-      air_util_tx: null,
-      altitude: null,
-      source: 'rf',
-      num_packets_rx_bad: null,
-      num_rx_dupe: null,
-      num_packets_rx: null,
-      num_packets_tx: null,
-      ...node,
-      last_heard:
-        node.last_heard != null && Number(node.last_heard) > 0
-          ? normalizeLastHeardToUnixSec(Number(node.last_heard))
-          : node.last_heard,
-      via_mqtt: node.via_mqtt != null ? (node.via_mqtt ? 1 : 0) : null,
-      hops: node.hops ?? node.hops_away ?? null,
-      path: node.path != null ? JSON.stringify(node.path) : null,
-      public_key: meshtasticNodePublicKeyHexOrNull(node.public_key_hex),
-    });
+    if (!getDbForIpc('db:saveNode')) return { changes: 0 };
+    return saveNodeRow(toNodeUpsertParams(node));
   } catch (err) {
     finishDbIpcHandler('db:saveNode', err);
+  }
+});
+
+ipcMain.handle('db:saveNodes', (event, nodes) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveNodes: unauthorized sender');
+  try {
+    if (!Array.isArray(nodes)) throw new Error('db:saveNodes: nodes must be an array');
+    if (nodes.length > MAX_SAVE_NODES_BATCH) {
+      throw new Error(`db:saveNodes: array exceeds ${MAX_SAVE_NODES_BATCH} rows`);
+    }
+    if (!getDbForIpc('db:saveNodes')) return { saved: 0, dropped: 0 };
+    const params = [];
+    let dropped = 0;
+    for (const node of nodes) {
+      try {
+        validateSaveNode(node);
+        if (node.path != null) {
+          const pathJson = JSON.stringify(node.path);
+          if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
+            dropped++;
+            continue;
+          }
+        }
+        params.push(toNodeUpsertParams(node));
+      } catch {
+        // catch-no-log-ok: drop-not-abort invalid rows in a burst dump
+        dropped++;
+      }
+    }
+    const result = saveNodesBatch(params);
+    return { saved: result.saved, dropped: result.dropped + dropped };
+  } catch (err) {
+    finishDbIpcHandler('db:saveNodes', err);
   }
 });
 
@@ -6722,7 +6694,6 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   return merged.buffer;
 }
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
-const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
 const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024;
 const MAX_HOST_LENGTH = 253;

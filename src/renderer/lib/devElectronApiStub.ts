@@ -155,6 +155,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       }),
       listMeshtasticDmPeers: async () => [],
       saveNode: noopAsync,
+      saveNodes: async () => ({ saved: 0, dropped: 0 }),
       saveNodePath: noopAsync,
       getNodes: async () => [],
       clearMessages: noopAsync,

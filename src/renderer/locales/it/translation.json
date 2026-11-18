@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Il riquadro di delimitazione deve avere ovest < est e sud < nord",
     "waypointNotifyOnEnter": "Notifica all'accesso",
     "waypointNotifyOnExit": "Notifica all'uscita",
-    "waypointNotifyFavoritesOnly": "Notifica solo per i preferiti"
+    "waypointNotifyFavoritesOnly": "Notifica solo per i preferiti",
+    "basemapOpentopo": "OpenTopoMap (terreno)",
+    "basemapHot": "Umanitario (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (trasporto pubblico)"
   },
   "meshCongestion": {
     "blockTitle": "Perché vedi traffico duplicato",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Il traffico locale in tempo reale mantiene le osservazioni per un minuto. Le acquisizioni più vecchie rimangono nel Monitor → Sniffer.",
     "emptyFeedQuiet": "Nessuna osservazione all'ultimo minuto. I pacchetti più vecchi rimangono nel Monitor → Sniffer.",
     "hopTones": "Tonalità dei salti",
-    "hopTonesHint": "Riproduci un suono delicato per ogni salto animato. Gli hop più brevi hanno un suono più acuto; gli hop più lunghi hanno un suono più grave. Ogni nota dura per tutta la durata del volo di quel salto sulla mappa. Funziona per il traffico locale, Beacon e CoreScope."
+    "hopTonesHint": "Riproduci un suono delicato per ogni salto animato. Gli hop più brevi hanno un suono più acuto; gli hop più lunghi hanno un suono più grave. Ogni nota dura per tutta la durata del volo di quel salto sulla mappa. Funziona per il traffico locale, Beacon e CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Filantropo",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Tessera per i trasporti pubblici"
   },
   "meshcoreCompanionCli": {
     "summary": "Impostazioni del dispositivo Companion",

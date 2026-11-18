@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Kotak pembatas harus memiliki barat < timur dan selatan < utara",
     "waypointNotifyOnEnter": "Beri tahu saat masuk",
     "waypointNotifyOnExit": "Beri tahu saat keluar",
-    "waypointNotifyFavoritesOnly": "Beri tahu hanya untuk favorit"
+    "waypointNotifyFavoritesOnly": "Beri tahu hanya untuk favorit",
+    "basemapOpentopo": "OpenTopoMap (medan)",
+    "basemapHot": "Kemanusiaan (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transportasi umum)"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Lalu lintas langsung lokal menyimpan pengamatan selama satu menit. Tangkapan yang lebih lama tetap berada di Monitor → Sniffer.",
     "emptyFeedQuiet": "Tidak ada pengamatan di menit terakhir. Paket yang lebih tua tetap berada di Monitor → Sniffer.",
     "hopTones": "Nada hop",
-    "hopTonesHint": "Putar nada lembut untuk setiap lompatan animasi. Hop yang lebih pendek terdengar lebih tinggi; hop yang lebih panjang terdengar lebih rendah. Setiap nada berdurasi selama perjalanan hop tersebut di peta. Berfungsi untuk lalu lintas lokal, Beacon, dan CoreScope."
+    "hopTonesHint": "Putar nada lembut untuk setiap lompatan animasi. Hop yang lebih pendek terdengar lebih tinggi; hop yang lebih panjang terdengar lebih rendah. Setiap nada berdurasi selama perjalanan hop tersebut di peta. Berfungsi untuk lalu lintas lokal, Beacon, dan CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanifer",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Pengaturan perangkat pendamping",

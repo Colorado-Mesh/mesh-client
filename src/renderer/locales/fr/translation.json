@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Le cadre de délimitation doit respecter les conditions suivantes : ouest < est et sud < nord",
     "waypointNotifyOnEnter": "Notifier à l'entrée",
     "waypointNotifyOnExit": "Notifier à la sortie",
-    "waypointNotifyFavoritesOnly": "Notifier uniquement pour les favoris"
+    "waypointNotifyFavoritesOnly": "Notifier uniquement pour les favoris",
+    "basemapOpentopo": "OpenTopoMap (relief)",
+    "basemapHot": "Humanitaire (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transports en commun)"
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Le trafic local en direct conserve les observations pendant une minute. Les anciennes captures restent dans Monitor → Sniffer.",
     "emptyFeedQuiet": "Aucune observation à la dernière minute. Les paquets plus anciens restent dans Monitor → Sniffer.",
     "hopTones": "Tonalités de saut",
-    "hopTonesHint": "Faites retentir une note douce pour chaque saut animé. Les sauts plus courts ont un son plus aigu ; les sauts plus longs ont un son plus grave. Chaque note dure pendant le trajet de ce saut sur la carte. Fonctionne pour le trafic local, Beacon et CoreScope."
+    "hopTonesHint": "Faites retentir une note douce pour chaque saut animé. Les sauts plus courts ont un son plus aigu ; les sauts plus longs ont un son plus grave. Chaque note dure pendant le trajet de ce saut sur la carte. Fonctionne pour le trafic local, Beacon et CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitaire",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Öpnvkarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Paramètres de l'appareil compagnon",

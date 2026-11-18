@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Der Begrenzungsrahmen muss westlich < östlich und südlich < nördlich sein",
     "waypointNotifyOnEnter": "Bei Betreten benachrichtigen",
     "waypointNotifyOnExit": "Beim Beenden benachrichtigen",
-    "waypointNotifyFavoritesOnly": "Nur bei Favoriten benachrichtigen"
+    "waypointNotifyFavoritesOnly": "Nur bei Favoriten benachrichtigen",
+    "basemapOpentopo": "OpenTopoMap (Gelände)",
+    "basemapHot": "Humanitär (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNV-Karte (ÖPNV)"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Der lokale Live-Verkehr speichert Beobachtungen für eine Minute. Ältere Captures verbleiben im → Monitor-Sniffer.",
     "emptyFeedQuiet": "Keine Beobachtungen in letzter Minute. Ältere Pakete bleiben im → Monitor-Sniffer.",
     "hopTones": "Hop-Töne",
-    "hopTonesHint": "Spielen Sie für jeden animierten Hop einen leisen Ton ab. Kürzere Hops klingen höher; längere Hops klingen tiefer. Jeder Ton dauert so lange wie der Flug dieses Hops auf der Karte. Funktioniert für lokalen Verkehr sowie für Beacon- und CoreScope-Verkehr."
+    "hopTonesHint": "Spielen Sie für jeden animierten Hop einen leisen Ton ab. Kürzere Hops klingen höher; längere Hops klingen tiefer. Jeder Ton dauert so lange wie der Flug dieses Hops auf der Karte. Funktioniert für lokalen Verkehr sowie für Beacon- und CoreScope-Verkehr.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitär",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Öpnvkarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Companion-Geräteeinstellungen",

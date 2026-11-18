@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Sınır kutusunda batı < doğu ve güney < kuzey olmalıdır",
     "waypointNotifyOnEnter": "Giriş yapıldığında bildir",
     "waypointNotifyOnExit": "Çıkışta bildir",
-    "waypointNotifyFavoritesOnly": "Yalnızca favoriler için bildirim gönder"
+    "waypointNotifyFavoritesOnly": "Yalnızca favoriler için bildirim gönder",
+    "basemapOpentopo": "OpenTopoMap (arazi)",
+    "basemapHot": "İnsani Yardım (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (toplu taşıma)"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -7934,7 +7938,11 @@
     "retentionHint": "Yerel canlı trafik gözlemleri bir dakika tutar. Eski yakalamalar Monitör Koklayıcısında → kalır.",
     "emptyFeedQuiet": "Son dakikada gözlem yok. Eski paketler Monitor Sniffer'da → kalır.",
     "hopTones": "Hop tonları",
-    "hopTonesHint": "Her animasyonlu atlama için yumuşak bir ses çalın. Daha kısa atlamalar daha yüksek, daha uzun atlamalar daha alçak ses çıkarır. Her nota, harita üzerindeki ilgili atlamanın süresi boyunca çalar. Yerel, Beacon ve CoreScope trafiği için çalışır."
+    "hopTonesHint": "Her animasyonlu atlama için yumuşak bir ses çalın. Daha kısa atlamalar daha yüksek, daha uzun atlamalar daha alçak ses çıkarır. Her nota, harita üzerindeki ilgili atlamanın süresi boyunca çalar. Yerel, Beacon ve CoreScope trafiği için çalışır.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "İnsani",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Refakatçi cihaz ayarları",

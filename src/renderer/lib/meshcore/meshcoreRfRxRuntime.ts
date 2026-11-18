@@ -17,8 +17,9 @@ import {
 import { meshCorePayloadTypeNibble } from '../../../shared/meshcoreRfPath';
 import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { upsertNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { upsertNode, useNodeStore } from '../../stores/nodeStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
+import { BatchedRingBufferAppender } from '../batchedRingBufferAppender';
 import {
   classifyPayload,
   classifyProximity,
@@ -26,6 +27,8 @@ import {
   meshtasticSenderIdForRawLogFallback,
   type PacketClass,
 } from '../foreignLoraDetection';
+import { getIdentityNode } from '../identityStoreReads';
+import { enqueueNodeWrite } from '../ingest/coalescedNodeWrites';
 import {
   applyMeshcoreLateRfHopEnrichment,
   decodeMeshcoreLateHopGroupText,
@@ -51,6 +54,7 @@ import {
   pubkeyToNodeId,
 } from '../meshcoreUtils';
 import { getMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
+import { perfSpanSync } from '../perfTrace';
 import type { DomainEvent } from '../protocols/Protocol';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
@@ -163,6 +167,11 @@ function persistMeshcoreContactLastRf(
     });
 }
 
+/** Min interval between hop-history DB samples per node (burst throttle). */
+export const MESHCORE_HOP_HISTORY_MIN_INTERVAL_MS = 30_000;
+
+const lastHopHistoryWriteByNode = new Map<number, number>();
+
 function persistMeshcoreRfHopHistory(
   nodeId: number,
   now: number,
@@ -170,12 +179,20 @@ function persistMeshcoreRfHopHistory(
   snr: number,
   rssi: number,
 ): void {
+  const last = lastHopHistoryWriteByNode.get(nodeId) ?? 0;
+  if (now - last < MESHCORE_HOP_HISTORY_MIN_INTERVAL_MS) return;
+  lastHopHistoryWriteByNode.set(nodeId, now);
   void useDiagnosticsStore
     .getState()
     .saveMeshcoreHopHistory(nodeId, now, hopsAway, snr, rssi)
     .catch((e: unknown) => {
       console.warn('[meshcoreRfRxRuntime] saveMeshcoreHopHistory error ' + errLikeToLogString(e));
     });
+}
+
+/** Test-only: clear hop-history throttle map. */
+export function resetMeshcoreRfHopHistoryThrottleForTests(): void {
+  lastHopHistoryWriteByNode.clear();
 }
 
 function updateKnownMeshtasticSenderNode(
@@ -186,15 +203,16 @@ function updateKnownMeshtasticSenderNode(
   deps: MeshcoreRfRxNodeLookupDeps,
 ): void {
   if (senderId === deps.myNodeNumRef.current) return;
-  const existing = deps.readNodes().get(senderId);
   const storeId = deps.meshcoreIdentityIdRef.current;
-  if (!existing || !storeId) return;
+  if (!storeId) return;
+  const existing = getIdentityNode(storeId, senderId) ?? deps.readNodes().get(senderId);
+  if (!existing) return;
   const nowSec = Math.floor(now / 1000);
   const nextLastHeard = Math.max(existing.last_heard, nowSec);
   if (existing.last_heard === nextLastHeard && existing.snr === snr && existing.rssi === rssi) {
     return;
   }
-  upsertNodeRecord(
+  enqueueNodeWrite(
     storeId,
     meshNodeToNodeRecord({
       ...existing,
@@ -202,6 +220,7 @@ function updateKnownMeshtasticSenderNode(
       snr,
       rssi,
     }),
+    { persist: true },
   );
 }
 
@@ -340,9 +359,10 @@ export function applyMeshcoreRfHopsAwayUpdate(
   pathHashSizeBytes?: 1 | 2 | 3,
 ): void {
   if (fromNodeId === null || fromNodeId === deps.myNodeNumRef.current) return;
-  const existing = deps.readNodes().get(fromNodeId);
   const storeId = deps.meshcoreIdentityIdRef.current;
-  if (!existing || !storeId) return;
+  if (!storeId) return;
+  const existing = getIdentityNode(storeId, fromNodeId) ?? deps.readNodes().get(fromNodeId);
+  if (!existing) return;
 
   const nowSec = Math.floor(now / 1000);
   const mergedHopsAway = meshcoreMergeContactHopsAwayFromPrevious(hopCount, existing.hops_away, 0);
@@ -385,11 +405,12 @@ export function applyMeshcoreRfHopsAwayUpdate(
     existing.via_mqtt === updated.via_mqtt;
   if (unchanged) return;
 
-  upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
+  perfSpanSync('rf:meshcore:nodeStore', () => {
+    enqueueNodeWrite(storeId, meshNodeToNodeRecord(updated), { persist: true });
+  });
   persistMeshcoreContactLastRf(fromNodeId, snr, rssi, mergedHopsAway ?? hopCount, nowSec);
   persistMeshcoreRfHopHistory(fromNodeId, now, mergedHopsAway ?? hopCount, snr, rssi);
 }
-
 /**
  * Companion push 128 is pubkey-only. Apply the on-air ADVERT name + device role so the contact
  * list / Rooms tab show the advertised identity instead of `Node-XXXXXXXX`.
@@ -440,19 +461,29 @@ function applyMeshcoreRfAdvertToStore(
     publicKey,
   });
 
-  const after = useNodeStore.getState().nodes[identityId][nodeId];
-  const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(ctx.hopCount, after.hopsAway, 0);
-  upsertNodeRecord(identityId, {
-    ...after,
-    hopsAway: mergedHops ?? ctx.hopCount,
-    snr,
-    rssi,
-    source: 'rf',
-    heardViaMqttOnly: false,
-    viaMqtt: false,
-  });
+  // Pending hops-away may still sit ahead of the store upsert; keep advert identity fields.
+  const pendingOrStored = getIdentityNode(identityId, nodeId);
+  if (!pendingOrStored) return;
+  const afterMesh: MeshNode = {
+    ...pendingOrStored,
+    long_name: name || pendingOrStored.long_name,
+    hw_model: hwModel,
+  };
+  const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(ctx.hopCount, afterMesh.hops_away, 0);
+  enqueueNodeWrite(
+    identityId,
+    meshNodeToNodeRecord({
+      ...afterMesh,
+      hops_away: mergedHops ?? ctx.hopCount,
+      snr,
+      rssi,
+      source: 'rf',
+      heard_via_mqtt_only: false,
+      via_mqtt: false,
+    }),
+    { persist: true },
+  );
 }
-
 function buildMeshcoreRfRawPacketEntry(
   ctx: MeshcoreRfParseContext,
   effectiveFromNodeId: number | null,
@@ -499,16 +530,48 @@ function computeNextRawPacketLog(
     : next;
 }
 
+const meshcoreRawPacketAppenders = new WeakMap<
+  Dispatch<SetStateAction<RxPacketEntry[]>>,
+  BatchedRingBufferAppender<RxPacketEntry>
+>();
+
+function meshcoreRawPacketAppenderFor(
+  deps: Pick<MeshcoreRfRxDeps, 'setRawPackets' | 'rawPacketsRef' | 'myNodeNumRef'>,
+): BatchedRingBufferAppender<RxPacketEntry> {
+  let appender = meshcoreRawPacketAppenders.get(deps.setRawPackets);
+  if (!appender) {
+    appender = new BatchedRingBufferAppender(deps.setRawPackets, MAX_RAW_PACKET_LOG_ENTRIES, {
+      syncBeforeCommit: (next) => {
+        // Eager pushMeshcoreRfRawPacketLog may have advanced the ref past this commit
+        // (same-tick hop correlation). Do not replace with an older snapshot.
+        const cur = deps.rawPacketsRef.current;
+        if (cur.length > next.length) return;
+        deps.rawPacketsRef.current = next;
+      },
+      mergeBatch: (prev, batch) => {
+        let next = prev;
+        for (const entry of batch) {
+          next = computeNextRawPacketLog(next, entry, deps.myNodeNumRef.current);
+        }
+        return next;
+      },
+    });
+    meshcoreRawPacketAppenders.set(deps.setRawPackets, appender);
+  }
+  return appender;
+}
+
 function pushMeshcoreRfRawPacketLog(
   deps: Pick<MeshcoreRfRxDeps, 'setRawPackets' | 'rawPacketsRef' | 'myNodeNumRef'>,
   rxEntry: RxPacketEntry,
 ): void {
-  deps.setRawPackets((prev) => {
-    const trimmed = computeNextRawPacketLog(prev, rxEntry, deps.myNodeNumRef.current);
-    // Sync before React commit so same-tick chat ingest sees this row.
-    deps.rawPacketsRef.current = trimmed;
-    return trimmed;
-  });
+  // Eager ref update so same-tick hop correlation sees the packet before rAF React flush.
+  deps.rawPacketsRef.current = computeNextRawPacketLog(
+    deps.rawPacketsRef.current,
+    rxEntry,
+    deps.myNodeNumRef.current,
+  );
+  meshcoreRawPacketAppenderFor(deps).append(rxEntry);
 }
 
 function buildMeshcoreRfMqttPacketLogFields(
@@ -830,6 +893,12 @@ function applyMeshcoreHeardRepeatFromRfRx(
  * skips the generic fingerprinting pass and the MQTT publish below it.
  */
 export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreRfRxDeps): void {
+  perfSpanSync('rf:meshcore:rfRx', () => {
+    handleMeshcoreRfRxInner(payload, deps);
+  });
+}
+
+function handleMeshcoreRfRxInner(payload: MeshcoreRfRxPayload, deps: MeshcoreRfRxDeps): void {
   const { lastSnr: snr, lastRssi: rssi, raw: rawU8 } = payload;
   const now = Date.now();
   const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
