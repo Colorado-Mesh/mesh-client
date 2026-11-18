@@ -888,6 +888,15 @@ export function mergeHwModelOnContactUpdate(
   existingHwModel: string | undefined,
   incomingHwModel: string,
 ): string {
+  // Preserve Chat (and other meaningful types) over a later device "None" placeholder.
+  if (
+    incomingHwModel === 'None' &&
+    existingHwModel &&
+    existingHwModel !== 'None' &&
+    existingHwModel !== 'Unknown'
+  ) {
+    return existingHwModel;
+  }
   if (
     existingHwModel &&
     existingHwModel !== 'None' &&

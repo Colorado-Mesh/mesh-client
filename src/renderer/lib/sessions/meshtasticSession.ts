@@ -1,14 +1,22 @@
+import type { MeshDevice } from '@meshtastic/core';
+
 import type { ConnectionType } from '../types';
 
 /** RF session lifecycle API registered by the Meshtastic runtime mount ([#375]/[#377]). */
 export interface MeshtasticSessionApi {
+  /** Returns the reconnect generation captured for this connect attempt. */
   prepareRfConnect: (
     type: ConnectionType,
     httpAddress?: string,
     blePeripheralId?: string,
     lastSerialPortId?: string | null,
+  ) => Promise<number>;
+  attachRfSession: (
+    driverIdentityId: string,
+    type: ConnectionType,
+    device?: MeshDevice,
+    attemptGeneration?: number,
   ) => Promise<void>;
-  attachRfSession: (driverIdentityId: string, type: ConnectionType) => Promise<void>;
   handleRfConnectFailure: (driverIdentityId?: string, reason?: unknown) => Promise<void>;
   finalizeDriverDisconnect: (opts?: { disconnectDriver?: boolean }) => Promise<void>;
   /**

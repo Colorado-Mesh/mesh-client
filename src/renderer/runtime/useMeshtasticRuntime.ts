@@ -24,6 +24,12 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
+  attachConfigureFailureAction,
+  cleanupSupersededStaleOpenedDevice,
+  isMeshtasticAttachSupersededError,
+  MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE,
+} from '@/renderer/lib/meshtastic/meshtasticAttachSuperseded';
+import {
   clearMeshtasticLockdownStatus,
   encodeMeshtasticLockdownAuth,
   type MeshtasticLockdownAuthRequest,
@@ -2782,7 +2788,7 @@ export function useMeshtasticRuntime() {
       httpAddress?: string,
       blePeripheralId?: string,
       lastSerialPortId?: string | null,
-    ): Promise<void> => {
+    ): Promise<number> => {
       clearConfigureTimeout();
       clearPostCommitRebootRecovery();
       deviceConfiguredRef.current = false;
@@ -2821,6 +2827,7 @@ export function useMeshtasticRuntime() {
       // Supersede any in-flight reconnect open so configure-timeout gating does not stick.
       reconnectConnectInFlightRef.current = false;
       reconnectGenerationRef.current++;
+      const attemptGeneration = reconnectGenerationRef.current;
       meshtasticRfReconnectRef.current.cancel();
       meshtasticBleReconnectExhaustedRef.current.clear();
       if (type === 'ble') {
@@ -2836,6 +2843,7 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
+      return attemptGeneration;
     },
     [
       clearConfigureTimeout,
@@ -2854,8 +2862,15 @@ export function useMeshtasticRuntime() {
   );
 
   const attachRfSession = useCallback(
-    async (driverIdentityId: string, type: ConnectionType, device?: MeshDevice): Promise<void> => {
-      const generation = reconnectGenerationRef.current;
+    async (
+      driverIdentityId: string,
+      type: ConnectionType,
+      device?: MeshDevice,
+      attemptGeneration?: number,
+    ): Promise<void> => {
+      // Prefer the generation captured at prepareRfConnect — re-reading here would adopt a
+      // newer connect's generation if prepare raced between open and attach.
+      const generation = attemptGeneration ?? reconnectGenerationRef.current;
       meshtasticDriverConnectedRef.current = true;
       meshtasticPendingDriverIdentityRef.current = driverIdentityId;
       const activeDevice =
@@ -2864,6 +2879,18 @@ export function useMeshtasticRuntime() {
         throw new Error(
           '[useMeshtasticRuntime] attachRfSession: ConnectionDriver returned no handle',
         );
+      }
+      if (reconnectGenerationRef.current !== generation) {
+        // Retire only this attempt's local transport — never identity-wide driver disconnect.
+        await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
+          (e: unknown) => {
+            console.debug(
+              '[useMeshtasticRuntime] attachRfSession pre-wire superseded cleanup ' +
+                errLikeToLogString(e),
+            );
+          },
+        );
+        throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
       }
       deviceRef.current = activeDevice;
       if (type === 'ble') {
@@ -2944,12 +2971,39 @@ export function useMeshtasticRuntime() {
         }
       })();
 
-      await configureMeshtasticDeviceWithRetry(activeDevice, {
-        logTag: 'useMeshtasticRuntime attachRfSession',
-      });
+      try {
+        await configureMeshtasticDeviceWithRetry(activeDevice, {
+          logTag: 'useMeshtasticRuntime attachRfSession',
+        });
+      } catch (err) {
+        // Configure failed after a newer connect bumped generation — surface as superseded so
+        // callers clean up only this opened device and skip handleRfConnectFailure.
+        if (
+          attachConfigureFailureAction(reconnectGenerationRef.current, generation) === 'superseded'
+        ) {
+          await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
+            (e: unknown) => {
+              console.debug(
+                '[useMeshtasticRuntime] attachRfSession superseded configure cleanup ' +
+                  errLikeToLogString(e),
+              );
+            },
+          );
+          throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
+        }
+        throw err;
+      }
 
       if (reconnectGenerationRef.current !== generation) {
-        throw new Error('Attach superseded during configure');
+        await cleanupSupersededStaleOpenedDevice(deviceRef.current, activeDevice).catch(
+          (e: unknown) => {
+            console.debug(
+              '[useMeshtasticRuntime] attachRfSession superseded post-configure cleanup ' +
+                errLikeToLogString(e),
+            );
+          },
+        );
+        throw new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE);
       }
     },
     [applyMeshtasticNodesToUi, markPacketSeen, wireSubscriptions],
@@ -3069,12 +3123,36 @@ export function useMeshtasticRuntime() {
       pushMqttChannelKeys,
     ],
   );
+  const cleanupStaleOpenedOnAttachSuperseded = useCallback(
+    async (opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined) => {
+      if (!opened) return;
+      // Ownership-aware: soft-retire shared GATT when a newer device owns the session;
+      // never identity-wide disconnect (shared offline-* identity would tear down the live slot).
+      await cleanupSupersededStaleOpenedDevice(deviceRef.current, opened.device).catch(
+        (e: unknown) => {
+          console.debug(
+            '[useMeshtasticRuntime] superseded attach stale cleanup ' + errLikeToLogString(e),
+          );
+        },
+      );
+    },
+    [],
+  );
+
   const connect = useCallback(
     async (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => {
       const serialPortId = type === 'serial' ? loadLastSerialPortId() : undefined;
-      await prepareRfConnect(type, httpAddress, blePeripheralId, serialPortId);
+      const attemptGeneration = await prepareRfConnect(
+        type,
+        httpAddress,
+        blePeripheralId,
+        serialPortId,
+      );
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       let connectSucceeded = false;
+      // handleRfConnectFailure bumps reconnectGenerationRef — do not use generation equality
+      // alone in finally, or a failed owner would skip deferred reconnect settlement.
+      let settleBleSideEffects = true;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
         opened = await openMeshtasticTransport(type, {
@@ -3082,13 +3160,22 @@ export function useMeshtasticRuntime() {
           blePeripheralId,
           lastSerialPortId: serialPortId,
         });
-        await attachRfSession(opened.driverIdentityId, type, opened.device);
+        await attachRfSession(opened.driverIdentityId, type, opened.device, attemptGeneration);
         connectSucceeded = true;
       } catch (err) {
+        if (isMeshtasticAttachSupersededError(err)) {
+          console.debug(
+            '[useMeshtasticRuntime] connect abandoned — attach superseded by a newer session',
+          );
+          await cleanupStaleOpenedOnAttachSuperseded(opened);
+          // Newer attempt owns deferred BLE reconnect / bleConnectInProgress.
+          settleBleSideEffects = false;
+          return;
+        }
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       } finally {
-        if (type === 'ble') {
+        if (type === 'ble' && settleBleSideEffects) {
           bleConnectInProgressRef.current = false;
           if (meshtasticDeferredReconnectRef.current) {
             meshtasticDeferredReconnectRef.current = false;
@@ -3102,7 +3189,13 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
+    [
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      openMeshtasticTransport,
+      cleanupStaleOpenedOnAttachSuperseded,
+    ],
   );
 
   /**
@@ -3117,16 +3210,22 @@ export function useMeshtasticRuntime() {
       lastSerialPortId?: string | null,
       blePeripheralId?: string,
     ) => {
-      await prepareRfConnect(type, httpAddress, blePeripheralId, lastSerialPortId);
+      const attemptGeneration = await prepareRfConnect(
+        type,
+        httpAddress,
+        blePeripheralId,
+        lastSerialPortId,
+      );
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       let connectSucceeded = false;
+      let settleBleSideEffects = true;
       const openAndAttach = async () => {
         opened = await openMeshtasticTransport(type, {
           httpAddress,
           blePeripheralId,
           lastSerialPortId,
         });
-        await attachRfSession(opened.driverIdentityId, type, opened.device);
+        await attachRfSession(opened.driverIdentityId, type, opened.device, attemptGeneration);
       };
       try {
         console.debug(
@@ -3151,10 +3250,18 @@ export function useMeshtasticRuntime() {
         }
         connectSucceeded = true;
       } catch (err) {
+        if (isMeshtasticAttachSupersededError(err)) {
+          console.debug(
+            '[useMeshtasticRuntime] connectAutomatic abandoned — attach superseded by a newer session',
+          );
+          await cleanupStaleOpenedOnAttachSuperseded(opened);
+          settleBleSideEffects = false;
+          return;
+        }
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       } finally {
-        if (type === 'ble') {
+        if (type === 'ble' && settleBleSideEffects) {
           bleConnectInProgressRef.current = false;
           if (meshtasticDeferredReconnectRef.current) {
             meshtasticDeferredReconnectRef.current = false;
@@ -3168,7 +3275,13 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
+    [
+      prepareRfConnect,
+      attachRfSession,
+      handleRfConnectFailure,
+      openMeshtasticTransport,
+      cleanupStaleOpenedOnAttachSuperseded,
+    ],
   );
 
   const disconnect = useCallback(async () => {
