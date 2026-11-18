@@ -89,7 +89,9 @@ test('mentions, mute/unmute and previews through a synthetic TCP radio, with res
     expect((await counts(page)).previews).toHaveLength(0);
     radio.receiveChannel(0, 'Other: @[Test Radio] check in', timestamp + 2);
     await expect.poll(async () => (await counts(page)).previews.length).toBe(1);
-    expect((await counts(page)).sounds).toBe(1);
+    // The first tone waits for the audio context to resume and to bind the default output, so it
+    // can start a little after the preview appears.
+    await expect.poll(async () => (await counts(page)).sounds).toBe(1);
     radio.receiveChannel(0, 'Other: @[Test Radio] check in', timestamp + 2);
     await expect.poll(async () => page.getByText('check in', { exact: false }).count()).toBe(1);
     expect((await counts(page)).previews).toHaveLength(1);
