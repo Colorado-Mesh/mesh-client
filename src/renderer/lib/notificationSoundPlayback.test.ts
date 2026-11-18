@@ -151,11 +151,11 @@ describe('configured notification playback', () => {
     playMessageNotification('dm');
     playMessageNotification('dm');
     await vi.waitFor(() => {
-      expect(createBufferSource).toHaveBeenCalledTimes(2);
+      expect(createBufferSource).toHaveBeenCalledTimes(1);
     });
     expect(window.electronAPI.notificationSounds.read).toHaveBeenCalledOnce();
     expect(decode).toHaveBeenCalledOnce();
-    expect(levels).toEqual([0.4, 0.4]);
+    expect(levels).toEqual([0.4]);
   });
 
   it('falls back to the original emergency sound when custom audio is missing', async () => {

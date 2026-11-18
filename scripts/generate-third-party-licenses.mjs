@@ -66,6 +66,13 @@ export const RUST_SECTION_UNAVAILABLE_NOTE =
 /** Present in a full Ratspeak stack license table generated from `.rsstack/`. */
 export const LRGP_STACK_ROW_MARKER = '| lrgp |';
 
+/** Stack table rows may pad the crate name column with spaces or tabs. */
+const LRGP_STACK_ROW_RE = /\|\s*lrgp\s*\|/i;
+
+export function markdownHasLrgpStackRow(markdown) {
+  return typeof markdown === 'string' && LRGP_STACK_ROW_RE.test(markdown);
+}
+
 /**
  * Refuse to overwrite a committed Rust stack table with a shrunk or placeholder section.
  *
@@ -74,11 +81,11 @@ export const LRGP_STACK_ROW_MARKER = '| lrgp |';
  * @returns {string | null} refusal reason, or null when safe to proceed
  */
 export function refuseShrinkingRustSection(rustSection, existingMarkdown) {
-  if (!existingMarkdown.includes(LRGP_STACK_ROW_MARKER)) return null;
+  if (!markdownHasLrgpStackRow(existingMarkdown)) return null;
   if (rustSection == null) {
     return 'docs:licenses: Rust sidecar metadata unavailable; refusing to shrink committed stack table';
   }
-  if (!rustSection.includes(LRGP_STACK_ROW_MARKER)) {
+  if (!markdownHasLrgpStackRow(rustSection)) {
     return 'docs:licenses: incomplete Ratspeak stack metadata (missing lrgp); refusing to overwrite';
   }
   return null;

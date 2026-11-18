@@ -101,10 +101,37 @@ describe('playMessageNotification', () => {
 
   it('reuses a single AudioContext across consecutive notifications', async () => {
     playMessageNotification();
+    await expectOscillators(1);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 400);
+    });
     playMessageNotification();
     await expectOscillators(2);
     expect(constructCount).toBe(1);
-    expect(oscillatorStops[0]).toBeDefined();
+    expect(oscillatorStops.length).toBeGreaterThan(0);
+  });
+
+  it('does not schedule a superseded alert after resume completes', async () => {
+    mockState = 'suspended';
+    let resumeStallsLeft = 1;
+    let releaseStalledResume!: () => void;
+    resumeMock = vi.fn(() => {
+      if (resumeStallsLeft > 0) {
+        resumeStallsLeft -= 1;
+        return new Promise<void>((resolve) => {
+          releaseStalledResume = () => {
+            mockState = 'running';
+            resolve();
+          };
+        });
+      }
+      mockState = 'running';
+      return Promise.resolve();
+    });
+    playMessageNotification('channel');
+    playMessageNotification('dm');
+    releaseStalledResume();
+    await expectOscillators(2, [587.33, 783.99]);
   });
 
   it('plays a single 880 Hz pulse for channel notifications', async () => {

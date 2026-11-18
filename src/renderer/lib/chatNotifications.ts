@@ -399,8 +399,10 @@ let previewVersion = 0;
 let previewPlayback: Playback | null = null;
 /** Stops when a newer message notification replaces the previous tone (Web Audio path). */
 let activeAlertPlayback: Playback | null = null;
+let alertPlaybackGeneration = 0;
 
 function stopActiveAlertPlayback(): void {
+  alertPlaybackGeneration++;
   activeAlertPlayback?.stop();
   activeAlertPlayback = null;
   if (usesNativeNotificationPlayback()) {
@@ -534,8 +536,10 @@ async function playNativeNotificationSound(
   event: ChatNotificationType,
   setting: NotificationSoundSetting,
   buffer?: AudioBuffer,
+  requestGen?: number,
 ): Promise<void> {
   const wav = await renderNotificationWav(event, setting, buffer);
+  if (requestGen != null && requestGen !== alertPlaybackGeneration) return;
   await window.electronAPI.notificationSounds.playWav(wav);
 }
 
@@ -558,6 +562,7 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   if (setting.volume === 0) return;
 
   stopActiveAlertPlayback();
+  const requestGen = alertPlaybackGeneration;
 
   // OS-specific: Windows SoundPlayer bypass when Chromium never opens a WASAPI session (#1487).
   if (usesNativeNotificationPlayback()) {
@@ -567,7 +572,8 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
       if (ctx && typeof setting.sound === 'object') {
         buffer = await loadOptionalCustomSound(ctx, type, setting);
       }
-      await playNativeNotificationSound(type, setting, buffer);
+      if (requestGen !== alertPlaybackGeneration) return;
+      await playNativeNotificationSound(type, setting, buffer, requestGen);
     })().catch((error: unknown) => {
       console.warn('[notificationSounds] playback failed', error);
     });
@@ -579,6 +585,7 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   const run = async () => {
     await ensureAudioContextReady(ctx);
     const buffer = await loadOptionalCustomSound(ctx, type, setting);
+    if (requestGen !== alertPlaybackGeneration) return;
     const playback = scheduleSelected(ctx, type, setting, buffer);
     activeAlertPlayback = playback;
     void playback.finished.finally(() => {

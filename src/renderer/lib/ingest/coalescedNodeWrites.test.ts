@@ -183,6 +183,23 @@ describe('coalescedNodeWrites', () => {
     retrySpy.mockRestore();
   });
 
+  it('rejects consecutive dropped-row saves through persistBatch', async () => {
+    const saveNodes = vi
+      .fn()
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValue({ saved: 1, dropped: 0 });
+    window.electronAPI.db.saveNodes = saveNodes;
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    enqueueNodeWrite(ID_A, record(91, { snr: 4 }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await flushNodeWrites();
+    expect(saveNodes).toHaveBeenCalledTimes(2);
+    expect(retrySpy).toHaveBeenCalled();
+    warn.mockRestore();
+    retrySpy.mockRestore();
+  });
+
   it('keeps newer direct upsert lastHeardAt when flushing an older pending coalesced snapshot', async () => {
     enqueueNodeWrite(ID_A, record(12, { lastHeardAt: 100 }));
     upsertNodeRecord(ID_A, { nodeId: 12, lastHeardAt: 500 });

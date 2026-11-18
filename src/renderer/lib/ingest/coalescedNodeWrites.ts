@@ -198,32 +198,32 @@ async function persistChunk(
 ): Promise<void> {
   if (nodeIds.length === 0) return;
   const saveNodes = window.electronAPI.db.saveNodes;
-  const persistBatch = () => {
+  const persistBatch = async (): Promise<void> => {
     const nodes = buildPersistMeshNodes(identityId, nodeIds);
-    if (nodes.length === 0) return Promise.resolve({ saved: 0, dropped: 0 });
-    return saveNodes(nodes);
+    if (nodes.length === 0) return;
+    const result = await saveNodes(nodes);
+    const dropped = result.dropped;
+    const saved = result.saved;
+    if (dropped > 0 || saved < nodes.length) {
+      if (dropped > 0 && !persistDropWarned) {
+        persistDropWarned = true;
+        console.warn(
+          `[coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
+        );
+      }
+      throw new Error(
+        `[coalescedNodeWrites] ${label}: saveNodes incomplete (saved=${saved}, dropped=${dropped}, expected=${nodes.length})`,
+      );
+    }
   };
   if (typeof saveNodes === 'function') {
     try {
-      const nodes = buildPersistMeshNodes(identityId, nodeIds);
-      if (nodes.length === 0) return;
-      const result = await saveNodes(nodes);
-      const dropped = result.dropped;
-      if (dropped > 0) {
-        if (!persistDropWarned) {
-          persistDropWarned = true;
-          console.warn(
-            `[coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
-          );
-        }
-        persistDbWrite(label, persistBatch);
-      }
-      return;
+      await persistBatch();
     } catch {
       // catch-no-log-ok: persistDbWrite queues retry / degraded warn
       persistDbWrite(label, persistBatch);
-      return;
     }
+    return;
   }
   // Fallback when batch IPC is unavailable (older preload / tests).
   for (const node of buildPersistMeshNodes(identityId, nodeIds)) {
