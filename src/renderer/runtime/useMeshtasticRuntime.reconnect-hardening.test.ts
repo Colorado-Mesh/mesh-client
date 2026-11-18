@@ -372,10 +372,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('guards attachRfSession configure against reconnect generation supersession', () => {
+  it('guards attachRfSession against reconnect generation supersession before wire', () => {
     const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
     expect(attachBody).toMatch(
-      /reconnectGenerationRef\.current !== generation[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE/,
+      /attemptGeneration \?\? reconnectGenerationRef\.current[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?cleanupSupersededStaleOpenedDevice[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE[\s\S]*?deviceRef\.current = activeDevice/,
     );
   });
 
@@ -384,28 +384,30 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('cleanupStaleOpenedOnAttachSuperseded');
     expect(SOURCE).toContain('cleanupSupersededStaleOpenedDevice');
     const connectBody = extractUseCallbackBody(SOURCE, 'connect');
-    expect(connectBody).toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?return;/,
-    );
+    const connectSuperseded =
+      /if \(isMeshtasticAttachSupersededError\(err\)\) \{[\s\S]*?\n {8}\}/.exec(connectBody)?.[0];
+    expect(connectSuperseded).toBeTruthy();
+    expect(connectSuperseded).toContain('cleanupStaleOpenedOnAttachSuperseded(opened)');
+    expect(connectSuperseded).toContain('settleBleSideEffects = false');
+    expect(connectSuperseded).toContain('return;');
+    expect(connectSuperseded).not.toContain('handleRfConnectFailure');
+    expect(connectSuperseded).not.toContain('connectSucceeded = true');
+    expect(connectBody).toMatch(/type === 'ble' && settleBleSideEffects/);
     expect(connectBody).not.toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?connectSucceeded = true/,
-    );
-    expect(connectBody).toMatch(
-      /attemptGeneration[\s\S]*?reconnectGenerationRef\.current === attemptGeneration/,
+      /type === 'ble' \|\| reconnectGenerationRef\.current === attemptGeneration/,
     );
     expect(connectBody).toMatch(
       /isMeshtasticAttachSupersededError\(err\)[\s\S]*?return;[\s\S]*?handleRfConnectFailure/,
     );
     const autoBody = extractUseCallbackBody(SOURCE, 'connectAutomatic');
-    expect(autoBody).toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?return;/,
-    );
-    expect(autoBody).not.toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?connectSucceeded = true/,
-    );
-    expect(autoBody).toMatch(
-      /attemptGeneration[\s\S]*?reconnectGenerationRef\.current === attemptGeneration/,
-    );
+    const autoSuperseded =
+      /if \(isMeshtasticAttachSupersededError\(err\)\) \{[\s\S]*?\n {8}\}/.exec(autoBody)?.[0];
+    expect(autoSuperseded).toBeTruthy();
+    expect(autoSuperseded).toContain('cleanupStaleOpenedOnAttachSuperseded(opened)');
+    expect(autoSuperseded).toContain('settleBleSideEffects = false');
+    expect(autoSuperseded).toContain('return;');
+    expect(autoSuperseded).not.toContain('handleRfConnectFailure');
+    expect(autoBody).toMatch(/type === 'ble' && settleBleSideEffects/);
     expect(autoBody).toMatch(
       /isMeshtasticAttachSupersededError\(err\)[\s\S]*?return;[\s\S]*?handleRfConnectFailure/,
     );
@@ -416,11 +418,16 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(staleCleanup).not.toContain('connectionDriver.disconnect');
   });
 
-  it('attachRfSession maps configure failure to superseded when generation changed', () => {
+  it('attachRfSession maps configure failure to superseded only in the configure catch', () => {
     const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
-    expect(attachBody).toMatch(
-      /configureMeshtasticDeviceWithRetry[\s\S]*?catch \(err\)[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE/,
-    );
+    const configureCatch =
+      /await configureMeshtasticDeviceWithRetry\([\s\S]*?catch \(err\) \{[\s\S]*?\n {6}\}/.exec(
+        attachBody,
+      )?.[0];
+    expect(configureCatch).toBeTruthy();
+    expect(configureCatch).toContain('attachConfigureFailureAction');
+    expect(configureCatch).toContain('MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE');
+    expect(configureCatch).toContain('throw err');
   });
 
   it('attachRfSession configures outside the node-hydrate IIFE (#895)', () => {
@@ -540,7 +547,7 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
     // its resolved device id onto a different, newer session's connectionParamsRef.
     const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
     const generationCaptureIdx = attachBody.indexOf(
-      'const generation = reconnectGenerationRef.current',
+      'const generation = attemptGeneration ?? reconnectGenerationRef.current',
     );
     const guardIdx = attachBody.indexOf('reconnectGenerationRef.current === generation');
     const backfillIdx = attachBody.indexOf(

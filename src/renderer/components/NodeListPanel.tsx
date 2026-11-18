@@ -734,7 +734,7 @@ function NodeListPanel({
         }));
 
   const filterStatus = useMemo(() => {
-    if (!locationFilter.enabled) return null;
+    if (listTab === 'history' || !locationFilter.enabled) return null;
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
     const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
     if (!homeCoords) return 'no-gps';
@@ -751,7 +751,7 @@ function NodeListPanel({
       return d > maxKm;
     }).length;
     return { hidden };
-  }, [locationFilter, myNodeNum, nodes, ourPositionReference]);
+  }, [listTab, locationFilter, myNodeNum, nodes, ourPositionReference]);
   const totalNodeCount = listTab === 'history' ? dmPeerIndex.size : nodes.size;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =

@@ -1,15 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { BuiltinContactGroupFilterId } from '@/renderer/lib/contactGroupFilterIds';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 
-/**
- * Built-in contact-type filter IDs only — custom group IDs are not valid defaults.
- * Keep in sync with MeshCore (-1/-2/-3) and Meshtastic (-10/-11/-12) builtins.
- */
-export type BuiltinContactGroupFilterId = -1 | -2 | -3 | -10 | -11 | -12;
+export type { BuiltinContactGroupFilterId };
 
 export interface UseContactGroupsResult {
   groups: ContactGroup[];
@@ -59,6 +56,8 @@ export function useContactGroups(
     setGroups([]);
     setSelectedGroupIdState(defaultSelectedGroupId);
     setGroupMemberIds(new Set());
+    // Drop in-flight member loads so a late response cannot repopulate after reset.
+    pendingGroupIdRef.current = null;
     void reloadGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selfNodeId, defaultSelectedGroupId]);

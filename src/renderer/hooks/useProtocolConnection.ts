@@ -80,11 +80,15 @@ export function useProtocolConnect(): (
         rfConnectionTransportOpts(type, { httpAddress, blePeripheralId }),
       );
       const meshtastic = getMeshtasticSession();
-      await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
+      const attemptGeneration = await meshtastic.prepareRfConnect(
+        type,
+        httpAddress,
+        blePeripheralId,
+      );
       let driverIdentityId: string | undefined;
       try {
         driverIdentityId = await driverConnect('meshtastic', params);
-        await meshtastic.attachRfSession(driverIdentityId, type);
+        await meshtastic.attachRfSession(driverIdentityId, type, undefined, attemptGeneration);
       } catch (err) {
         if (isMeshtasticAttachSupersededError(err)) {
           // Match connect/connectAutomatic: stale attach must not report failure or tear down

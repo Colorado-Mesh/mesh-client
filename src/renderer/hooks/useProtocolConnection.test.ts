@@ -30,7 +30,7 @@ vi.mock('./useConnect', () => ({
 
 function createMeshtasticSessionStub(): MeshtasticSessionApi {
   return {
-    prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+    prepareRfConnect: vi.fn().mockResolvedValue(1),
     attachRfSession: vi.fn().mockResolvedValue(undefined),
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
     finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
@@ -65,7 +65,12 @@ describe('useProtocolConnect (driver-first)', () => {
     await result.current('meshtastic', 'serial', undefined, undefined);
 
     expect(meshtastic.prepareRfConnect).toHaveBeenCalledWith('serial', undefined, undefined);
-    expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'serial');
+    expect(meshtastic.attachRfSession).toHaveBeenCalledWith(
+      'id-meshtastic-driver',
+      'serial',
+      undefined,
+      1,
+    );
   });
 
   it('calls handleRfConnectFailure with driver id when attach fails', async () => {
@@ -221,7 +226,12 @@ describe('useProtocolConnectionActions', () => {
     await result.current.connect('serial', undefined, undefined);
 
     expect(meshtastic.prepareRfConnect).toHaveBeenCalledWith('serial', undefined, undefined);
-    expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'serial');
+    expect(meshtastic.attachRfSession).toHaveBeenCalledWith(
+      'id-meshtastic-driver',
+      'serial',
+      undefined,
+      1,
+    );
   });
 
   it('maps http to tcp via session.connect for meshcore (UI Connect path)', async () => {

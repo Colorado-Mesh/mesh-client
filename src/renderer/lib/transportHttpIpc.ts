@@ -60,6 +60,14 @@ export class TransportHttpIpc implements Types.Transport {
 
   async disconnect(): Promise<void> {
     await window.electronAPI.http.disconnect();
+    this.retireInbound();
+  }
+
+  /**
+   * Stop inbound HTTP delivery without disconnecting the shared main-process session.
+   * Used when a superseded MeshDevice must retire while a newer owner keeps the link.
+   */
+  retireInbound(): void {
     if (this._fromRadioUnsub) {
       this._fromRadioUnsub();
       this._fromRadioUnsub = null;

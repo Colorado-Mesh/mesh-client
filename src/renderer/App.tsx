@@ -187,7 +187,7 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useBotSenderDetection } from './hooks/useBotSenderDetection';
 import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
 import { useConnectionView } from './hooks/useConnectionView';
-import { type BuiltinContactGroupFilterId, useContactGroups } from './hooks/useContactGroups';
+import { useContactGroups } from './hooks/useContactGroups';
 import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useDiagnosticSeverityAlerts } from './hooks/useDiagnosticSeverityAlerts';
@@ -1453,7 +1453,7 @@ function AppContent() {
     typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
   const contactGroups = useContactGroups(
     contactGroupsSelfId,
-    activeProtocolCapabilities.defaultContactsGroupFilterId as BuiltinContactGroupFilterId | null,
+    activeProtocolCapabilities.defaultContactsGroupFilterId,
   );
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);

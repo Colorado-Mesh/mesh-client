@@ -52,8 +52,11 @@ export class TransportSidecarGatt implements Types.Transport {
     }
   }
 
-  async disconnect(): Promise<void> {
-    await window.electronAPI.disconnectGatt(this.sessionId);
+  /**
+   * Stop inbound GATT delivery and close the fromDevice pipe without disconnectGatt.
+   * Used when a superseded MeshDevice must retire while a newer owner keeps the session.
+   */
+  retireInbound(): void {
     this.unsubscribeFromRadio();
     if (this._fromDeviceController) {
       try {
@@ -63,5 +66,10 @@ export class TransportSidecarGatt implements Types.Transport {
       }
       this._fromDeviceController = null;
     }
+  }
+
+  async disconnect(): Promise<void> {
+    await window.electronAPI.disconnectGatt(this.sessionId);
+    this.retireInbound();
   }
 }

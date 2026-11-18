@@ -1,6 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_DAY, MS_PER_HOUR } from '@/shared/timeConstants';
 
+import type { BuiltinContactGroupFilterId } from '../contactGroupFilterIds';
 import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../meshcoreContactGroupUtils';
 
 /**
@@ -70,10 +71,10 @@ export interface ProtocolCapabilities {
   /** User-defined contact groups + built-in filters on the Nodes/Contacts list */
   hasUserManagedContactGroups: boolean;
   /**
-   * Default Contacts list built-in filter (MeshCore Chat = -1). Null = All contacts /
-   * no built-in type filter (Meshtastic, Reticulum).
+   * Default Contacts list built-in filter (MeshCore Chat). Null = All contacts /
+   * no built-in type filter (Meshtastic, Reticulum). Custom group IDs are not allowed.
    */
-  defaultContactsGroupFilterId: number | null;
+  defaultContactsGroupFilterId: BuiltinContactGroupFilterId | null;
   /** MeshCore companion: contact auto-add / manual mode and related Radio UI */
   hasCompanionContactManagementConfig: boolean;
   /** MeshCore companion: telemetry request / location / environment privacy (NodePrefs telemetry modes) */
