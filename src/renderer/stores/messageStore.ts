@@ -276,6 +276,22 @@ function storedReceivedAt(
   return earliestChatReceivedAt(existing?.receivedAt, incoming.receivedAt);
 }
 
+/**
+ * A duplicate merge that rewrites a stored row (`receiptOf`), possibly under another id: the row
+ * keeps its own receipt, or none when it was loaded without one, so a later copy never moves it.
+ */
+function movedReceivedAt(
+  receiptOf: Pick<MessageRecord, 'receivedAt'>,
+  existing: MessageRecord | undefined,
+  incoming: MessageRecord,
+): number | undefined {
+  if (receiptOf.receivedAt == null) return undefined;
+  return earliestChatReceivedAt(
+    receiptOf.receivedAt,
+    earliestChatReceivedAt(existing?.receivedAt, incoming.receivedAt),
+  );
+}
+
 function withReceivedAt(message: MessageRecord, receivedAt: number | undefined): MessageRecord {
   return message.receivedAt === receivedAt ? message : { ...message, receivedAt };
 }
@@ -440,8 +456,15 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
  * Replace-or-insert. Used by PacketRouter to dedupe outbound echo: when the
  * radio reports the just-sent packet with its real id, this overwrites the
  * optimistic row instead of creating a duplicate.
+ *
+ * `receiptOf`: the stored row a duplicate merge rewrites; the written row keeps that row's receipt
+ * (or none) even when it lands under another id.
  */
-export function upsertMessage(identityId: IdentityId, message: MessageRecord): void {
+export function upsertMessage(
+  identityId: IdentityId,
+  message: MessageRecord,
+  receiptOf?: Pick<MessageRecord, 'receivedAt'>,
+): void {
   let inserted = null as MessageRecord | null;
   let evictedIds: string[] = [];
   useMessageStore.setState((s) => {
@@ -449,7 +472,7 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const existing = byIdentity[message.id];
     const merged = withReceivedAt(
       existing ? { ...existing, ...message } : stampLiveChannelIdentity(identityId, message),
-      liveReceivedAt(existing, message),
+      receiptOf ? movedReceivedAt(receiptOf, existing, message) : liveReceivedAt(existing, message),
     );
     if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
     if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {

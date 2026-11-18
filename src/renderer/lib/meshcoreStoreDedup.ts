@@ -363,7 +363,7 @@ function applyRoomPostDuplicateMerge(
   const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
   const record = chatMessageToMessageRecord(merged);
   record.id = canonicalId;
-  upsertMessage(identityId, record);
+  upsertMessage(identityId, record, roomDup);
   persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
   removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
     preferredId,
@@ -475,7 +475,7 @@ function upsertMeshcoreMessageWithDedupInStore(
     const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
-    upsertMessage(identityId, record);
+    upsertMessage(identityId, record, tapbackDup);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
       preferredId,
@@ -526,7 +526,7 @@ function upsertMeshcoreMessageWithDedupInStore(
     const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
-    upsertMessage(identityId, record);
+    upsertMessage(identityId, record, crossDup);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
       preferredId,
@@ -549,7 +549,7 @@ function upsertMeshcoreMessageWithDedupInStore(
     const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
-    upsertMessage(identityId, record);
+    upsertMessage(identityId, record, dmRfDup);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
       preferredId,
@@ -572,7 +572,7 @@ function upsertMeshcoreMessageWithDedupInStore(
     const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
-    upsertMessage(identityId, record);
+    upsertMessage(identityId, record, channelRfDup);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
       preferredId,

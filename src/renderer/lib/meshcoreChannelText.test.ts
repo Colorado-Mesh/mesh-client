@@ -1006,6 +1006,82 @@ describe('repairMeshcoreDisplayMessages', () => {
     expect(repairedLegacy).not.toHaveProperty('receivedAt');
   });
 
+  // A parent can reach this app after its reply (another path, a later relay). The repair still
+  // finds it, and the rows stay in the order they arrived.
+  it.each([
+    ['channel', { channel: 8 }],
+    ['direct message', { channel: -1, to: 100 }],
+  ] as const)('finds the parent of a %s reply that arrived before it', (_kind, where) => {
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Ann',
+      payload: 'morning',
+      timestamp: 3_000_000,
+      receivedAt: 9_000_500,
+      status: 'acked',
+      packetId: 77,
+      ...where,
+    };
+    const withPreview: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: 'agreed',
+      timestamp: 3_000_001,
+      receivedAt: 9_000_000,
+      status: 'acked',
+      replyId: 77,
+      replyPreviewText: 'morning',
+      replyPreviewSender: 'Ann',
+      ...where,
+    };
+    const withoutPreview: ChatMessage = {
+      sender_id: 3,
+      sender_name: 'Cy',
+      payload: 'same here',
+      timestamp: 3_000_002,
+      receivedAt: 9_000_100,
+      status: 'acked',
+      replyId: 77,
+      ...where,
+    };
+    const out = meshcoreChatMessagesForDisplay([parent, withPreview, withoutPreview], {
+      selfNodeId: 100,
+    });
+    expect(out.map((m) => m.payload)).toEqual(['agreed', 'same here', 'morning']);
+    for (const reply of out.slice(0, 2)) {
+      expect(reply.replyPreviewSender).toBe('Ann');
+      expect(reply.replyPreviewText).toBe('morning');
+    }
+  });
+
+  // Old DMs (saved before receipt times) within one wire second keep the order this app saw them
+  // in for the repair too, so a bare `@[]` reply never points at a line that came after it.
+  it('repairs old same-second DMs in the order this app saw them', () => {
+    const reply: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: '@[] ok',
+      channel: -1,
+      to: 100,
+      timestamp: 5_000_500,
+      localOrder: 1,
+      status: 'acked',
+    };
+    const later: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Ann',
+      payload: 'question',
+      channel: -1,
+      to: 100,
+      timestamp: 5_000_200,
+      localOrder: 2,
+      status: 'acked',
+    };
+    const out = meshcoreChatMessagesForDisplay([later, reply], { selfNodeId: 100 });
+    expect(out.map((m) => m.payload)).toEqual(['ok', 'question']);
+    expect(out[0]?.replyId).toBeUndefined();
+  });
+
   it('promotes emoji-only reply rows to tapbacks after repair', () => {
     const parent: ChatMessage = {
       sender_id: 1,

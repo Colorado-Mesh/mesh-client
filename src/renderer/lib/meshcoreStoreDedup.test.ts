@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
-import { upsertMessage, useMessageStore } from '../stores/messageStore';
+import {
+  upsertMessage,
+  upsertMessageRecordsForIdentity,
+  useMessageStore,
+} from '../stores/messageStore';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreRoomIncomingMessage,
@@ -920,4 +924,221 @@ describe('meshcoreStoreDedup', () => {
     expect(rows).toHaveLength(3);
     expect(rows.filter((r) => r.senderName === 'Unknown' || r.from === 0)).toHaveLength(1);
   });
+});
+
+describe('meshcoreStoreDedup receipts when a duplicate moves a row to a new id', () => {
+  afterEach(() => {
+    useMessageStore.setState({ messages: {} });
+  });
+
+  const roomId = 0xac200e59;
+  const authorId = 0x11;
+  const storedTsMs = 1_700_000_000_000;
+  const repeatTsMs = storedTsMs + 30_000;
+  const text = 'Testing receipts';
+
+  function storedRoomPost(receivedAt: number | undefined) {
+    const post = buildMeshcoreRoomIncomingMessage({
+      rawText: text,
+      roomServerId: roomId,
+      authorId,
+      authorName: 'NV0N 01',
+      timestamp: storedTsMs,
+      receivedVia: 'rf',
+    });
+    const record = chatMessageToMessageRecord({ ...post, status: 'acked' });
+    record.id = meshcoreRoomMessageId(roomId, storedTsMs / 1000, authorId, text);
+    if (receivedAt == null) {
+      // Loaded from SQLite, saved before receipt times were kept.
+      upsertMessageRecordsForIdentity(ID, [record]);
+    } else {
+      upsertMessage(ID, { ...record, receivedAt });
+    }
+    return record.id;
+  }
+
+  function repeatedRoomPost() {
+    const repeat = buildMeshcoreRoomIncomingMessage({
+      rawText: text,
+      roomServerId: roomId,
+      authorId,
+      authorName: 'NV0N 01',
+      timestamp: repeatTsMs,
+      receivedVia: 'rf',
+    });
+    const preferredId = meshcoreRoomMessageId(roomId, repeatTsMs / 1000, authorId, text);
+    return upsertMeshcoreMessageWithDedup(ID, { ...repeat, receivedAt: 9_000 }, preferredId);
+  }
+
+  it('keeps the stored room post receipt when a repeat merges under its router id', () => {
+    const storedId = storedRoomPost(5_000);
+    const result = repeatedRoomPost();
+
+    expect(result.inserted).toBe(false);
+    expect(result.canonicalId).not.toBe(storedId);
+    expect(result.message.receivedAt).toBe(5_000);
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.receivedAt).toBe(5_000);
+  });
+
+  it('keeps a room post saved without a receipt without one when a repeat merges', () => {
+    storedRoomPost(undefined);
+    const result = repeatedRoomPost();
+
+    expect(result.inserted).toBe(false);
+    expect(result.message.receivedAt).toBeUndefined();
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.receivedAt).toBeUndefined();
+  });
+
+  it('keeps a channel row saved without a receipt without one when an MQTT copy merges', () => {
+    const tsSec = 1_700_000_010;
+    upsertMessageRecordsForIdentity(ID, [
+      {
+        id: meshcoreChannelMessageStoreId(0, tsSec, 0xabcd1234),
+        from: 0xabcd1234,
+        senderName: 'Alice',
+        to: 0xffffffff,
+        payload: 'hello mesh',
+        channelIndex: 0,
+        timestamp: tsSec * 1000,
+        receivedVia: 'rf',
+      },
+    ]);
+    const mqttCopy = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: hello mesh',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsSec * 1000 + 500,
+      receivedVia: 'mqtt',
+    });
+
+    const result = upsertMeshcoreMessageWithDedup(
+      ID,
+      { ...mqttCopy, receivedAt: 9_000 },
+      'router-mqtt-copy',
+    );
+
+    expect(result.inserted).toBe(false);
+    expect(result.canonicalId).toBe('router-mqtt-copy');
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.receivedAt).toBeUndefined();
+  });
+
+  const thumbsUp = String.fromCodePoint(0x1f44d);
+  const tapbackReplay: ChatMessage = {
+    sender_id: 100,
+    sender_name: 'Me',
+    payload: thumbsUp,
+    channel: 0,
+    timestamp: 1_700_000_000_000,
+    status: 'acked',
+    emoji: 0x1f44d,
+    replyId: 42,
+    receivedVia: 'rf',
+  };
+  const dmLine: ChatMessage = {
+    sender_id: 0x22,
+    sender_name: 'Bob',
+    payload: 'see you there',
+    channel: -1,
+    to: 0x99,
+    timestamp: 1_700_000_100_000,
+    status: 'acked',
+    receivedVia: 'rf',
+  };
+  const repeatCases: [string, ChatMessage, ChatMessage][] = [
+    [
+      'a channel RF repeat',
+      buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: hello again',
+        senderId: 0xabcd1234,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: 1_700_000_020_000,
+        receivedVia: 'rf',
+      }),
+      buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: hello again',
+        senderId: 0xabcd1234,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: 1_700_000_080_000,
+        receivedVia: 'rf',
+      }),
+    ],
+    [
+      'a tapback RF echo',
+      {
+        sender_id: 100,
+        sender_name: 'Me',
+        payload: thumbsUp,
+        channel: 25,
+        timestamp: 1_780_240_708_234,
+        status: 'acked',
+        emoji: 0x1f44d,
+        replyId: 1_719_000_000_000,
+      },
+      {
+        sender_id: 100,
+        sender_name: 'Me',
+        payload: thumbsUp,
+        channel: 25,
+        timestamp: 1_780_240_600_000,
+        status: 'acked',
+        emoji: 0x1f44d,
+        replyId: 1_719_000_000_000,
+        receivedVia: 'rf',
+        meshcoreDedupeKey: 'Me: @[durk] ' + thumbsUp,
+      },
+    ],
+    ['a tapback RF replay', tapbackReplay, { ...tapbackReplay, timestamp: 1_700_000_045_000 }],
+    ['a DM RF repeat', dmLine, { ...dmLine, timestamp: 1_700_000_130_000 }],
+  ];
+
+  it.each(repeatCases)(
+    'keeps a row saved without a receipt without one when %s merges under a new id',
+    (_name, first, repeat) => {
+      const record = chatMessageToMessageRecord(first);
+      record.id = meshcoreMessageStoreId(first);
+      upsertMessageRecordsForIdentity(ID, [record]);
+
+      const result = upsertMeshcoreMessageWithDedup(
+        ID,
+        { ...repeat, receivedAt: 9_000 },
+        'router-repeat',
+      );
+
+      expect(result.inserted).toBe(false);
+      expect(result.canonicalId).toBe('router-repeat');
+      const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.receivedAt).toBeUndefined();
+    },
+  );
+
+  it.each(repeatCases)(
+    'keeps the stored receipt when %s merges under a new id',
+    (_name, first, repeat) => {
+      const record = chatMessageToMessageRecord(first);
+      record.id = meshcoreMessageStoreId(first);
+      upsertMessage(ID, { ...record, receivedAt: 5_000 });
+
+      const result = upsertMeshcoreMessageWithDedup(
+        ID,
+        { ...repeat, receivedAt: 9_000 },
+        'router-repeat',
+      );
+
+      expect(result.canonicalId).toBe('router-repeat');
+      expect(result.message.receivedAt).toBe(5_000);
+      const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.receivedAt).toBe(5_000);
+    },
+  );
 });
