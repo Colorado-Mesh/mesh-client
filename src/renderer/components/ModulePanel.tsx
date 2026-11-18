@@ -603,6 +603,7 @@ export default function ModulePanel({
     setSerialEnabled(cfgBool(cfg.enabled, false));
     setSerialEcho(cfgBool(cfg.echo, false));
     setSerialBaud(cfgNum(cfg.baud, 38400));
+    setSerialMode(cfgNum(cfg.mode, 0));
   });
 
   useSyncFormFromConfig(moduleConfigs.rangeTest, (cfg) => {

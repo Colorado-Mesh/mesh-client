@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '../lib/timeConstants';
 import ModulePanel from './ModulePanel';
+import { ToastProvider } from './Toast';
 
 const baseProps = {
   moduleConfigs: {
@@ -528,6 +529,61 @@ describe('ModulePanel', () => {
     expect(
       screen.queryByText(/Meshtastic firmware currently does not emit serial output in this mode/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows LOG unsupported note after serial mode 9 arrives post-mount', async () => {
+    const user = userEvent.setup();
+
+    const { rerender } = renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+    expect(
+      screen.queryByText(/Meshtastic firmware currently does not emit serial output in this mode/i),
+    ).not.toBeInTheDocument();
+
+    // Keep ToastProvider as the root so ModulePanel updates in place (sync path), not remount.
+    rerender(
+      <ToastProvider>
+        <ModulePanel
+          {...baseProps}
+          moduleConfigs={{
+            ...baseProps.moduleConfigs,
+            serial: {
+              enabled: true,
+              echo: false,
+              baud: 115200,
+              mode: 9,
+              overrideConsoleSerialPort: false,
+            },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('note')).toHaveTextContent(
+        /Meshtastic firmware currently does not emit serial output in this mode/i,
+      );
+    });
   });
 
   it('shows readable message for routing BAD_REQUEST from device', async () => {
