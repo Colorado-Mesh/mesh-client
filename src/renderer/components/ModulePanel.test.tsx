@@ -531,6 +531,75 @@ describe('ModulePanel', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('applies refreshed serial mode and console override after post-mount sync', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    const { rerender } = renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: true,
+            baud: 115200,
+            mode: 2,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    // Keep ToastProvider as the root so ModulePanel updates in place (sync path), not remount.
+    rerender(
+      <ToastProvider>
+        <ModulePanel
+          {...baseProps}
+          moduleConfigs={{
+            ...baseProps.moduleConfigs,
+            serial: {
+              enabled: true,
+              echo: true,
+              baud: 115200,
+              mode: 4,
+              overrideConsoleSerialPort: true,
+            },
+          }}
+          onSetModuleConfig={onSetModuleConfig}
+          onCommit={onCommit}
+        />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Apply Serial Module' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'serial',
+          value: expect.objectContaining({
+            enabled: true,
+            echo: true,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: true,
+          }),
+        },
+      });
+    });
+  });
+
   it('shows LOG unsupported note after serial mode 9 arrives post-mount', async () => {
     const user = userEvent.setup();
 
