@@ -59,6 +59,21 @@ export function chatDmPeerMessageCounts(
   return counts;
 }
 
+/** Cheap DM-peer index while a panel is parked (SQLite + session cache only). */
+export function buildParkedChatDmPeerIndex(
+  dbRows: readonly ChatDmPeerDbRow[],
+  sessionRows: readonly ChatDmPeerDbRow[],
+  meshcoreExcludedDmPeerIds?: ReadonlySet<number>,
+): Map<number, ChatDmPeerIndexEntry> {
+  let merged = mergeChatDmPeerDbRows(new Map(), sessionRows);
+  merged = mergeChatDmPeerDbRows(merged, dbRows);
+  if (!meshcoreExcludedDmPeerIds || meshcoreExcludedDmPeerIds.size === 0) return merged;
+  for (const peer of [...merged.keys()]) {
+    if (meshcoreExcludedDmPeerIds.has(peer)) merged.delete(peer);
+  }
+  return merged;
+}
+
 /** Merge SQLite DM-peer rows into an in-memory index (keeps the newer lastMessageAt). */
 export function mergeChatDmPeerDbRows(
   index: Map<number, ChatDmPeerIndexEntry>,

@@ -34,6 +34,7 @@ import { useMessages } from '../hooks/useMessages';
 import { useNowMs } from '../hooks/useNowMs';
 import {
   buildChatDmPeerIndex,
+  buildParkedChatDmPeerIndex,
   type ChatDmPeerDbRow,
   type ChatDmPeerIndexEntry,
   mergeChatDmPeerDbRows,
@@ -246,8 +247,6 @@ export interface NodeListPanelProps {
   active?: boolean;
 }
 
-const EMPTY_DM_PEER_INDEX = new Map<number, ChatDmPeerIndexEntry>();
-
 function NodeListPanel({
   nodes,
   myNodeNum,
@@ -353,8 +352,18 @@ function NodeListPanel({
     };
   }, [mode, myNodeNum, dbHydrationRevision]);
 
-  const dmPeerIndex = useMemo(() => {
-    if (!active) return EMPTY_DM_PEER_INDEX;
+  const parkedDmPeerIndex = useMemo(
+    () =>
+      buildParkedChatDmPeerIndex(
+        dbDmPeers,
+        [...sessionDmPeersRef.current.values()],
+        meshcoreExcludedDmPeerIds ?? undefined,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- active: resnapshot session peers when the tab parks
+    [active, dbDmPeers, meshcoreExcludedDmPeerIds],
+  );
+
+  const activeDmPeerIndex = useMemo(() => {
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     for (const [peerId, entry] of fromMemory) {
@@ -377,7 +386,6 @@ function NodeListPanel({
     }
     return merged;
   }, [
-    active,
     chatUnreadDmOptions,
     dbDmPeers,
     identityMessages,
@@ -385,6 +393,8 @@ function NodeListPanel({
     mode,
     ownNodeIdSet,
   ]);
+
+  const dmPeerIndex = active ? activeDmPeerIndex : parkedDmPeerIndex;
   const {
     contactCount,
     loading: offloadLoading,

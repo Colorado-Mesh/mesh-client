@@ -50,6 +50,7 @@ describe('playMessageNotification', () => {
             oscillatorTypes[idx] = v;
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
           frequency: {
             set value(v: number) {
               frequency.value = v;
@@ -72,6 +73,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: {
             setValueAtTime: vi.fn(),
             exponentialRampToValueAtTime: vi.fn(),
@@ -99,9 +101,37 @@ describe('playMessageNotification', () => {
 
   it('reuses a single AudioContext across consecutive notifications', async () => {
     playMessageNotification();
+    await expectOscillators(1);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 400);
+    });
     playMessageNotification();
     await expectOscillators(2);
     expect(constructCount).toBe(1);
+    expect(oscillatorStops.length).toBeGreaterThan(0);
+  });
+
+  it('does not schedule a superseded alert after resume completes', async () => {
+    mockState = 'suspended';
+    let resumeStallsLeft = 1;
+    let releaseStalledResume!: () => void;
+    resumeMock = vi.fn(() => {
+      if (resumeStallsLeft > 0) {
+        resumeStallsLeft -= 1;
+        return new Promise<void>((resolve) => {
+          releaseStalledResume = () => {
+            mockState = 'running';
+            resolve();
+          };
+        });
+      }
+      mockState = 'running';
+      return Promise.resolve();
+    });
+    playMessageNotification('channel');
+    playMessageNotification('dm');
+    releaseStalledResume();
+    await expectOscillators(2, [587.33, 783.99]);
   });
 
   it('plays a single 880 Hz pulse for channel notifications', async () => {
@@ -183,6 +213,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: {
             setValueAtTime: (v: number) => {
               gainLevels.push(v);
@@ -240,6 +271,7 @@ describe('playMessageNotification', () => {
       createGain() {
         return {
           connect: vi.fn(),
+          disconnect: vi.fn(),
           gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
         };
       }

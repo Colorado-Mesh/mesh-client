@@ -3924,7 +3924,7 @@
     "forgetAdvertAria": "清除此联系人的上一个通告时间戳",
     "forgetAdvertDone": "已清除上次通告时间戳。",
     "forgetAdvertFailed": "无法清除上一个通告的时间戳。",
-    "ownerInfoHeading": "车主信息",
+    "ownerInfoHeading": "节点所有者信息",
     "ownerInfoRefresh": "刷新车主信息",
     "ownerInfoLoading": "正在读取车主信息……",
     "ownerInfoReadAt": "在{{time}}阅读",

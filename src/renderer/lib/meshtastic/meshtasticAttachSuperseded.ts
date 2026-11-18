@@ -78,6 +78,21 @@ export function attachConfigureFailureAction(
 }
 
 /**
+ * Live owner passed to {@link cleanupSupersededStaleOpenedDevice}.
+ * When the attempt is not superseded and deviceRef still points at it, retain noop-current-owner.
+ * Superseded attempts always pass `attemptSuperseded: true` so equal refs still soft-retire.
+ */
+export function resolveSupersededAttemptLiveOwner(
+  deviceRef: MeshDevice | null,
+  attemptDevice: MeshDevice,
+  attemptSuperseded: boolean,
+): MeshDevice | null {
+  if (!attemptSuperseded && deviceRef === attemptDevice) return deviceRef;
+  if (deviceRef != null && deviceRef !== attemptDevice) return deviceRef;
+  return null;
+}
+
+/**
  * Retire local SDK / inbound listeners without session-level disconnect
  * (GATT / TCP / HTTP IPC, or a SerialPort still owned by the live device).
  */

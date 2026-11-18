@@ -141,9 +141,4 @@ patchedDependencies:
   mqtt-packet@9.0.2: patches/mqtt-packet@9.0.2.patch
   readable-stream@4.8.0: patches/readable-stream@4.8.0.patch
 auditConfig:
-  ignoreGhsas:
-    # picomatch GHSA-fc5q-39xc-vjpf (<=4.0.7, no patched release): ReDoS via single-branch
-    # repeated extglobs in lib/parse.js. Reachable only through markdownlint-cli2 / vitest /
-    # globby tooling paths with developer-controlled globs — not app runtime input. Upstream
-    # fix is open as micromatch/picomatch#194; remove once a patched release lands.
-    - GHSA-fc5q-39xc-vjpf
+  ignoreGhsas: []

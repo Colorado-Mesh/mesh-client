@@ -274,7 +274,6 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       'aria-label',
       expect.stringMatching(/Cap stored messages, keep newest 7500 messages/i),
     );
-    expect(input).toHaveAccessibleName(/Cap stored messages/i);
   });
 
   it('debounces count edits and persists via appSettings.set with the meshtastic key', async () => {

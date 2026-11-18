@@ -9,6 +9,7 @@ import {
   cleanupSupersededStaleOpenedDevice,
   isMeshtasticAttachSupersededError,
   MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE,
+  resolveSupersededAttemptLiveOwner,
   supersededStaleDeviceCleanupMode,
 } from './meshtasticAttachSuperseded';
 
@@ -111,9 +112,37 @@ describe('supersededStaleDeviceCleanupMode', () => {
   });
 });
 
+describe('resolveSupersededAttemptLiveOwner', () => {
+  it('keeps noop-current-owner when refs match and the attempt is still live', () => {
+    const device = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    expect(resolveSupersededAttemptLiveOwner(device, device, false)).toBe(device);
+  });
+
+  it('treats equal refs as no live owner when the attempt is superseded', () => {
+    const device = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    expect(resolveSupersededAttemptLiveOwner(device, device, true)).toBe(null);
+    expect(resolveSupersededAttemptLiveOwner(null, device, true)).toBe(null);
+  });
+
+  it('returns the live device when a newer session owns deviceRef', () => {
+    const live = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    const stale = { transport: fakeSidecarGattTransport() } as unknown as MeshDevice;
+    expect(resolveSupersededAttemptLiveOwner(live, stale, true)).toBe(live);
+  });
+});
+
 describe('cleanupSupersededStaleOpenedDevice', () => {
   beforeEach(() => {
     vi.mocked(safeDisconnect).mockClear();
+  });
+
+  it('soft-retires GATT/TCP/HTTP when refs match but supersession cleared live owner to null', async () => {
+    const gatt = fakeSidecarGattTransport();
+    const stale = { transport: gatt, complete: vi.fn() } as unknown as MeshDevice;
+    const liveOwner = resolveSupersededAttemptLiveOwner(stale, stale, true);
+    await cleanupSupersededStaleOpenedDevice(liveOwner, stale);
+    expect(gatt.retireInbound).toHaveBeenCalledTimes(1);
+    expect(safeDisconnect).not.toHaveBeenCalled();
   });
 
   it('does not disconnect when the opened device still owns the connection', async () => {

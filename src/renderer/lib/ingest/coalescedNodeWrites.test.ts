@@ -1,9 +1,9 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { NodeRecord } from '../../stores/nodeStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { getIdentityNode } from '../identityStoreReads';
+import type { MeshNode } from '../types';
 import {
   enqueueNodeWrite,
   flushNodeWrites,
@@ -28,7 +28,11 @@ describe('coalescedNodeWrites', () => {
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
     window.electronAPI = {
       db: {
-        saveNodes: vi.fn().mockResolvedValue({ saved: 0, dropped: 0 }),
+        saveNodes: vi
+          .fn()
+          .mockImplementation((nodes: unknown[]) =>
+            Promise.resolve({ saved: nodes.length, dropped: 0 }),
+          ),
         saveNode: vi.fn().mockResolvedValue(undefined),
       },
     } as unknown as typeof window.electronAPI;
@@ -162,5 +166,78 @@ describe('coalescedNodeWrites', () => {
     await flushNodeWrites();
     expect(getIdentityNode(ID_A, 44)?.snr).toBe(9);
     warn.mockRestore();
+  });
+
+  it('queues persistDbWrite when saveNodes reports dropped rows', async () => {
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    window.electronAPI.db.saveNodes = vi
+      .fn()
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValue({ saved: 1, dropped: 0 });
+    enqueueNodeWrite(ID_A, record(90, { snr: 3 }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await flushNodeWrites();
+    expect(warn).toHaveBeenCalled();
+    expect(retrySpy).toHaveBeenCalled();
+    warn.mockRestore();
+    retrySpy.mockRestore();
+  });
+
+  it('rejects consecutive dropped-row saves through persistBatch', async () => {
+    const saveNodes = vi
+      .fn()
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValueOnce({ saved: 0, dropped: 1 })
+      .mockResolvedValue({ saved: 1, dropped: 0 });
+    window.electronAPI.db.saveNodes = saveNodes;
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    enqueueNodeWrite(ID_A, record(91, { snr: 4 }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await flushNodeWrites();
+    expect(saveNodes).toHaveBeenCalledTimes(2);
+    expect(retrySpy).toHaveBeenCalled();
+    warn.mockRestore();
+    retrySpy.mockRestore();
+  });
+
+  it('keeps newer direct upsert lastHeardAt when flushing an older pending coalesced snapshot', async () => {
+    enqueueNodeWrite(ID_A, record(12, { lastHeardAt: 100 }));
+    upsertNodeRecord(ID_A, { nodeId: 12, lastHeardAt: 500 });
+    await flushNodeWrites();
+    expect(getIdentityNode(ID_A, 12)?.last_heard).toBe(500);
+  });
+
+  it('reconciles onFlush callbacks with the same lastHeardAt as saveNodes', async () => {
+    const flushed: MeshNode[] = [];
+    enqueueNodeWrite(ID_A, record(77, { lastHeardAt: 100, snr: 2 }), {
+      onFlushNode: (node) => {
+        flushed.push(node);
+      },
+    });
+    upsertNodeRecord(ID_A, { nodeId: 77, lastHeardAt: 900 });
+    await flushNodeWrites();
+    expect(flushed).toHaveLength(1);
+    expect(flushed[0]?.last_heard).toBe(900);
+    const saveArg = vi.mocked(window.electronAPI.db.saveNodes).mock.calls.at(-1)?.[0];
+    expect(saveArg?.[0]?.last_heard).toBe(900);
+  });
+
+  it('rebuilds retry payload from current store when saveNodes rejects', async () => {
+    const saveNodes = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockImplementation((nodes: { last_heard: number }[]) =>
+        Promise.resolve({ saved: nodes.length, dropped: 0 }),
+      );
+    window.electronAPI.db.saveNodes = saveNodes;
+    const retrySpy = vi.spyOn(await import('../dbPersistRetry'), 'persistDbWrite');
+    enqueueNodeWrite(ID_A, record(88, { lastHeardAt: 100 }));
+    await flushNodeWrites();
+    upsertNodeRecord(ID_A, { nodeId: 88, lastHeardAt: 800 });
+    const retryWrite = retrySpy.mock.calls[0]?.[1];
+    expect(retryWrite).toBeTypeOf('function');
+    await retryWrite();
+    const saveArg = saveNodes.mock.calls.at(-1)?.[0];
+    expect(saveArg?.[0]?.last_heard).toBe(800);
   });
 });

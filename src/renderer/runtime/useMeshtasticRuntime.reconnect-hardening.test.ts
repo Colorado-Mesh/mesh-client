@@ -375,14 +375,15 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('guards attachRfSession against reconnect generation supersession before wire', () => {
     const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
     expect(attachBody).toMatch(
-      /attemptGeneration \?\? reconnectGenerationRef\.current[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?cleanupSupersededStaleOpenedDevice[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE[\s\S]*?deviceRef\.current = activeDevice/,
+      /attemptGeneration \?\? reconnectGenerationRef\.current[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?cleanupSupersededAttachAttempt\(activeDevice\)[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE[\s\S]*?deviceRef\.current = activeDevice/,
     );
   });
 
   it('connect and connectAutomatic skip full failure teardown when attach is superseded', () => {
     expect(SOURCE).toContain('isMeshtasticAttachSupersededError');
     expect(SOURCE).toContain('cleanupStaleOpenedOnAttachSuperseded');
-    expect(SOURCE).toContain('cleanupSupersededStaleOpenedDevice');
+    expect(SOURCE).toContain('cleanupSupersededAttachAttempt');
+    expect(SOURCE).toContain('resolveSupersededAttemptLiveOwner');
     const connectBody = extractUseCallbackBody(SOURCE, 'connect');
     const connectSuperseded =
       /if \(isMeshtasticAttachSupersededError\(err\)\) \{[\s\S]*?\n {8}\}/.exec(connectBody)?.[0];
@@ -412,10 +413,16 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
       /isMeshtasticAttachSupersededError\(err\)[\s\S]*?return;[\s\S]*?handleRfConnectFailure/,
     );
     const staleCleanup = extractUseCallbackBody(SOURCE, 'cleanupStaleOpenedOnAttachSuperseded');
-    expect(staleCleanup).toContain(
-      'cleanupSupersededStaleOpenedDevice(deviceRef.current, opened.device)',
-    );
+    expect(staleCleanup).toContain('cleanupSupersededAttachAttempt(opened.device)');
     expect(staleCleanup).not.toContain('connectionDriver.disconnect');
+    const attachAttemptCleanup = extractUseCallbackBody(SOURCE, 'cleanupSupersededAttachAttempt');
+    expect(attachAttemptCleanup).toMatch(
+      /resolveSupersededAttemptLiveOwner\(deviceRef\.current, attemptDevice, true\)/,
+    );
+    expect(attachAttemptCleanup).toContain(
+      'cleanupSupersededStaleOpenedDevice(liveOwner, attemptDevice)',
+    );
+    expect(attachAttemptCleanup).toMatch(/deviceRef\.current === attemptDevice/);
   });
 
   it('attachRfSession maps configure failure to superseded only in the configure catch', () => {

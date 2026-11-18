@@ -1,7 +1,18 @@
 import { isInfraConfigUnsupportedReply } from './meshcoreInfraConfig';
+import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
+
+export { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
 
 /** Contact types whose firmware runs CommonCLI, so `get owner.info` exists. */
 const SUPPORTED_HW_MODELS = new Set(['Repeater', 'Room', 'Sensor']);
+
+export function truncateMeshcoreOwnerInfoText(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length <= MESHCORE_OWNER_INFO_MAX_BYTES) return text;
+  let end = MESHCORE_OWNER_INFO_MAX_BYTES;
+  while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--;
+  return new TextDecoder().decode(bytes.subarray(0, end));
+}
 
 export type MeshcoreOwnerInfoStatus = 'ok' | 'empty' | 'unsupported' | 'needs-password' | 'error';
 
@@ -26,8 +37,9 @@ export function parseMeshcoreOwnerInfoReply(
   const trimmed = reply.trim();
   if (isInfraConfigUnsupportedReply(trimmed)) return { status: 'unsupported', fetchedAt };
   if (!trimmed.startsWith('>')) return { status: 'error', fetchedAt, reason: 'invalid-reply' };
-  const text = trimmed.startsWith('> ') ? trimmed.slice(2) : trimmed.slice(1);
-  return text.trim() ? { status: 'ok', text, fetchedAt } : { status: 'empty', fetchedAt };
+  const raw = trimmed.startsWith('> ') ? trimmed.slice(2) : trimmed.slice(1);
+  const text = truncateMeshcoreOwnerInfoText(raw.trim());
+  return text ? { status: 'ok', text, fetchedAt } : { status: 'empty', fetchedAt };
 }
 
 /** `|` and stray newlines both become line breaks; interior blanks are kept. */
