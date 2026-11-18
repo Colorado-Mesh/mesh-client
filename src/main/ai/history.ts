@@ -46,6 +46,8 @@ export function validateHistoryQuery(value: unknown): AiHistoryQuery {
       q.beforeId < 0)
   )
     throw new Error('Invalid AI history cursor');
+  if (q.byArrival !== undefined && typeof q.byArrival !== 'boolean')
+    throw new Error('Invalid AI history order');
   return q;
 }
 export function querySummaryHistory(
@@ -123,12 +125,15 @@ export function querySummaryHistory(
   // changing the insertion-order semantics of existing unbounded chat history APIs.
   const senderId =
     q.protocol === 'meshtastic' || q.protocol === 'meshcore' ? ', sender_id AS senderId' : '';
+  // "Since last read" bounds and pages by arrival, the clock its read mark comes from; rows saved
+  // before receipt times were kept fall back to their (normalized) stamp, as in the chat list.
+  const key = q.byArrival ? 'COALESCE(received_at, at)' : 'at';
   const cursor =
     q.beforeAt !== undefined && q.beforeId !== undefined
-      ? ' AND (at < ? OR (at = ? AND id < ?))'
+      ? ` AND (${key} < ? OR (${key} = ? AND id < ?))`
       : '';
   const page = q.limit ?? AI_MAX_MESSAGES;
-  const sql = `SELECT at, sender, body, id${senderId ? ', senderId' : ''} FROM (SELECT ${timestamp} AS at, ${sender} AS sender, ${body} AS body, id${senderId} FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE at >= ? AND at <= ?${cursor} ORDER BY at DESC, id DESC LIMIT ?`;
+  const sql = `SELECT at${q.byArrival ? `, ${key} AS "order"` : ''}, sender, body, id${senderId ? ', senderId' : ''} FROM (SELECT ${timestamp} AS at, received_at, ${sender} AS sender, ${body} AS body, id${senderId} FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE ${key} >= ? AND ${key} <= ?${cursor} ORDER BY ${key} DESC, id DESC LIMIT ?`;
   const bound =
     q.beforeAt !== undefined && q.beforeId !== undefined
       ? [...args, q.sinceMs, q.untilMs, q.beforeAt, q.beforeAt, q.beforeId, page + 1]

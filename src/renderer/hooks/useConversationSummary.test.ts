@@ -363,6 +363,58 @@ describe('conversation summary async boundaries', () => {
     });
   });
 
+  // "Since last read" compares the read mark, an arrival time, so saved history is asked for and
+  // picked by arrival too: a sender's clock can run behind or ahead of this one.
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'asks for unread %s history by arrival and picks it by its arrival key',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+        { id: 1, at: 900, order: 200, sender: 'Fast', senderId: 1, body: 'read, clock ahead' },
+        { id: 2, at: 50, order: 300, sender: 'Slow', senderId: 2, body: 'unread, clock behind' },
+      ]);
+      const { result } = renderHook(() =>
+        useConversationSummary({
+          ...input,
+          protocol,
+          watermark: 200,
+          history: { ...input.history, protocol },
+        }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ byArrival: true, sinceMs: 200 }),
+      );
+      expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: [{ at: 50, sender: 'Slow', body: 'unread, clock behind' }],
+        }),
+      );
+    },
+  );
+
+  it('pages unread history by its arrival key', async () => {
+    const history = Array.from({ length: AI_MAX_MESSAGES + 1 }, (_, index) => ({
+      id: index + 1,
+      at: index + 1,
+      order: 1_000 + index,
+      sender: 'Alice',
+      body: `Message ${index + 1}`,
+    }));
+    vi.mocked(window.electronAPI.ai.getHistory)
+      .mockResolvedValueOnce(history)
+      .mockResolvedValueOnce([history[0]]);
+    const { result } = renderHook(() => useConversationSummary(input));
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.getHistory).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ byArrival: true, beforeAt: 1_001, beforeId: 2 }),
+    );
+  });
+
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'keeps older eligible %s messages when the newest exceeds the renderer limit',
     async (protocol) => {

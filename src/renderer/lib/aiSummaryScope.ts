@@ -4,7 +4,8 @@ import { MS_PER_HOUR } from '@/shared/timeConstants';
 /**
  * A loaded message for Catch up. `order` is its arrival time (or its stamp for rows saved before
  * arrival times were kept), which the "since last read" choice compares with the read mark.
- * Rows read back from the database carry none and are compared by `at`.
+ * Rows read back from the database carry it when they were asked for by arrival; otherwise they
+ * are compared by `at`.
  */
 export interface AiSummaryLiveMessage extends AiSummaryMessage {
   order?: number;
@@ -12,10 +13,10 @@ export interface AiSummaryLiveMessage extends AiSummaryMessage {
 
 /**
  * Remove overlapping history/live copies without collapsing distinct repeated messages. An
- * overlapping pair keeps the live copy in the history copy's place, since it carries `order`.
+ * overlapping pair keeps the live copy in the history copy's place.
  */
 export function mergeSummaryMessages(
-  history: readonly AiSummaryMessage[],
+  history: readonly AiSummaryLiveMessage[],
   live: readonly AiSummaryLiveMessage[],
 ): AiSummaryLiveMessage[] {
   const keyFor = (message: AiSummaryMessage) =>

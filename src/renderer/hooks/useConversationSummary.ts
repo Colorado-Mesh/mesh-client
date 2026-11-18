@@ -78,7 +78,7 @@ async function fetchHistoryPages(
     if (!hasMore || newestFirst.length >= maxCollected) break;
     const oldest = usable[0];
     if (oldest?.id == null) break;
-    beforeAt = oldest.at;
+    beforeAt = base.byArrival ? (oldest.order ?? oldest.at) : oldest.at;
     beforeId = oldest.id;
   }
   if (newestFirst.length > maxCollected) {
@@ -152,7 +152,8 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
         const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
-          input.history,
+          // The read mark is an arrival time, so "since last read" reads history by arrival.
+          scope.kind === 'unread' ? { ...input.history, byArrival: true } : input.history,
           Math.max(0, sinceMs),
           now,
           maxCollected,
@@ -171,6 +172,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
                   sender: display.sender_name,
                   body: display.payload,
                   senderId: display.sender_id,
+                  ...(message.order != null ? { order: message.order } : {}),
                 };
               })
             : history;
@@ -178,7 +180,9 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           ? normalized.filter(input.includeHistoryMessage)
           : normalized;
         messages = mergeSummaryMessages(
-          visible.map(({ at, sender, body }) => ({ at, sender, body })),
+          visible.map(({ at, sender, body, order }) =>
+            order != null ? { at, sender, body, order } : { at, sender, body },
+          ),
           messages,
         );
       }
