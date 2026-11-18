@@ -3916,7 +3916,17 @@
     "forgetAdvert": "Oublier la dernière publicité",
     "forgetAdvertAria": "Effacer l'horodatage de la dernière publicité pour ce contact",
     "forgetAdvertDone": "Horodatage de la dernière publicité effacé.",
-    "forgetAdvertFailed": "Impossible d'effacer l'horodatage de la dernière publicité."
+    "forgetAdvertFailed": "Impossible d'effacer l'horodatage de la dernière publicité.",
+    "ownerInfoHeading": "Informations sur le propriétaire",
+    "ownerInfoRefresh": "Actualiser les informations sur le propriétaire",
+    "ownerInfoLoading": "Lecture des informations sur le propriétaire…",
+    "ownerInfoReadAt": "Lire à {{time}}",
+    "ownerInfoEmpty": "Aucune information sur le propriétaire n’est définie sur ce nœud.",
+    "ownerInfoUnsupported": "Ce micrologiciel ne prend pas en charge les informations sur le propriétaire.",
+    "ownerInfoNeedsPassword": "Les informations sur le propriétaire nécessitent un mot de passe administrateur. Enregistrez-en un ci-dessous pour le lire.",
+    "ownerInfoNeedsRoomPassword": "Les informations du propriétaire nécessitent un mot de passe administrateur. Définissez-le dans Répéteurs et pièces → Configurer.",
+    "ownerInfoReadFailed": "Impossible de lire les informations sur le propriétaire.",
+    "ownerInfoDeferred": "Les informations sur le propriétaire sont en attente de la radio. Utilisez Actualiser pour réessayer."
   },
   "nodeInfoBody": {
     "longName": "Nom long",

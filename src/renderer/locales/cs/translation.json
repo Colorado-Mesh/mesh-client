@@ -3951,7 +3951,17 @@
     "forgetAdvert": "Zapomenout poslední advert",
     "forgetAdvertAria": "Vymazat časové razítko posledního advertu pro tento kontakt",
     "forgetAdvertDone": "Časové razítko posledního advertu bylo vymazáno.",
-    "forgetAdvertFailed": "Nepodařilo se vymazat časové razítko posledního advertu."
+    "forgetAdvertFailed": "Nepodařilo se vymazat časové razítko posledního advertu.",
+    "ownerInfoHeading": "Informace o MAJITELI ZVÍŘETE",
+    "ownerInfoRefresh": "Obnovit informace o majiteli",
+    "ownerInfoLoading": "Načítání informací o majiteli…",
+    "ownerInfoReadAt": "Přečteno v {{time}}",
+    "ownerInfoEmpty": "Na tomto uzlu nejsou nastaveny žádné informace o vlastníkovi.",
+    "ownerInfoUnsupported": "Tento firmware nepodporuje informace o majiteli.",
+    "ownerInfoNeedsPassword": "Informace o majiteli vyžadují heslo správce. Uložte jedno níže, abyste si ho mohli přečíst.",
+    "ownerInfoNeedsRoomPassword": "Informace o majiteli vyžadují heslo správce. Nastavte jej v části Opakovače a místnosti → Konfigurovat.",
+    "ownerInfoReadFailed": "Informace o majiteli se nepodařilo načíst.",
+    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

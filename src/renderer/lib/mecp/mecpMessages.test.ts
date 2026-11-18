@@ -15,8 +15,8 @@ import {
 } from './mecpMessages';
 
 describe('MECP_PROTOCOL_VERSION', () => {
-  it('claims MECP 1.3.0 adherence', () => {
-    expect(MECP_PROTOCOL_VERSION).toBe('1.3.0');
+  it('claims MECP 1.4.0 adherence', () => {
+    expect(MECP_PROTOCOL_VERSION).toBe('1.4.0');
   });
 });
 

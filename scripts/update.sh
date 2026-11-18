@@ -623,11 +623,11 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 # Protocol + language packs: https://github.com/mecp-org/MECP (default branch main).
 # Reference engine lives in https://github.com/mecp-org/mecp-app — mesh-client's
 # freetext decode is intentionally ahead of mecp-app until that engine implements
-# MECP 1.3.0 §6.1 patterns (v1.3.0 strict duration encode); bump the engine pin when re-syncing from mecp-app.
+# MECP 1.4.0 §6.1 patterns (v1.4.0 R03/duration + envelope); bump the engine pin when re-syncing from mecp-app.
 MECP_UPSTREAM_WATCH_ENTRIES=(
   'mecp-org/mecp-app||MECP engine (vendored in renderer)|file:engine/src@59090c8d157754216261018aba1bdae61c28184d'
-  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@f274b8e96e59382d4c5174db45cf2a2555220c78'
-  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@b9fdceba64570aa65182c7e8444287b3483ede75'
+  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@2d43243a9f201a01ae8c9717fcfe85d0c6818f09'
+  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@60b62b2b3cbdcdee5593ab4588e5108003fc9c0b'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.

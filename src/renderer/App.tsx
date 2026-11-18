@@ -4929,6 +4929,14 @@ function AppContent() {
             ? meshcoreRuntime.meshcoreNeighborErrors.get(selectedNode.node_id)
             : undefined
         }
+        meshcoreOwnerInfo={
+          detailModalProtocol === 'meshcore' && selectedNode != null
+            ? meshcoreRuntime.meshcoreOwnerInfo.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestMeshcoreOwnerInfo={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeOwnerInfo : undefined
+        }
         paxCounterData={
           detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined
         }

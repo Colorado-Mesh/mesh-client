@@ -117,6 +117,7 @@ describe('MECP language pack contract', () => {
     expect(english.categories.M.name).toBe('Medical');
     expect(english.codes.M01).toBe('Injury');
     expect(english.codes.M16).toBe('Medical supply drop needed');
+    expect(english.codes.R03).toBe('ETA [time]');
 
     for (const key of loaderKeys) {
       const loaded = await loadMecpLanguage(key);

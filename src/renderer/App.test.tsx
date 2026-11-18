@@ -234,6 +234,8 @@ const {
     meshcorePingErrors: new Map(),
     meshcoreNeighbors: new Map(),
     meshcoreNeighborErrors: new Map(),
+    meshcoreOwnerInfo: new Map(),
+    requestNodeOwnerInfo: vi.fn(),
     meshcoreNodeTelemetry: new Map(),
     meshcoreTelemetryErrors: new Map(),
     meshcoreCliHistories: new Map(),

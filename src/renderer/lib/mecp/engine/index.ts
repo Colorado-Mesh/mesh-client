@@ -1,5 +1,5 @@
 // Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
-// follow MECP 1.3.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
+// follow MECP 1.4.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Engine — Mesh Emergency Communication Protocol

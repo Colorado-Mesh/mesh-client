@@ -3916,7 +3916,17 @@
     "forgetAdvert": "Son adverti unut",
     "forgetAdvertAria": "Bu kişi için son advert zaman damgasını silin",
     "forgetAdvertDone": "Son advert zaman damgası silindi.",
-    "forgetAdvertFailed": "Son advert zaman damgası silinemedi."
+    "forgetAdvertFailed": "Son advert zaman damgası silinemedi.",
+    "ownerInfoHeading": "Malik bilgileri",
+    "ownerInfoRefresh": "Sahip bilgilerini yenileyin",
+    "ownerInfoLoading": "Sahip bilgileri okunuyor…",
+    "ownerInfoReadAt": "{{time}} adresinde okuyun",
+    "ownerInfoEmpty": "Bu düğümde hiçbir sahip bilgisi ayarlanmamış.",
+    "ownerInfoUnsupported": "Bu ürün yazılımı, sahip bilgilerini desteklemiyor.",
+    "ownerInfoNeedsPassword": "Sahip bilgilerini görüntülemek için yönetici şifresi gerekir. Okumak için aşağıdakilerden birini kaydedin.",
+    "ownerInfoNeedsRoomPassword": "Sahip bilgileri için yönetici parolası gerekiyor. Yineleyiciler ve Odalar → Yapılandır bölümünden ayarlayın.",
+    "ownerInfoReadFailed": "Sahip bilgileri okunamadı.",
+    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
