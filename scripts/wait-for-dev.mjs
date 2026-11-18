@@ -39,6 +39,11 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
     projectRoot,
     'dist-electron/main/mqtt-publish-waypoint-validation.js',
   ),
+  notificationSoundPlayWav: path.join(
+    projectRoot,
+    'dist-electron/main/notification-sound-play-wav.js',
+  ),
+  nodeUpsert: path.join(projectRoot, 'dist-electron/main/node-upsert.js'),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */

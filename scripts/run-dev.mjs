@@ -51,6 +51,10 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/scheduledBroadcastsIntervalRebuild.ts --bundle --platform=node --outfile=dist-electron/main/scheduled-broadcasts-interval-rebuild.js --format=cjs --watch';
   const mqttWaypointValidationBuild =
     'esbuild src/main/mqttPublishWaypointValidation.ts --bundle --platform=node --outfile=dist-electron/main/mqtt-publish-waypoint-validation.js --format=cjs --watch';
+  const notificationSoundPlayWavBuild =
+    'esbuild src/main/notificationSoundPlayWav.ts --bundle --platform=node --outfile=dist-electron/main/notification-sound-play-wav.js --format=cjs --watch';
+  const nodeUpsertBuild =
+    'esbuild src/main/nodeUpsert.ts --bundle --platform=node --outfile=dist-electron/main/node-upsert.js --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -59,7 +63,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,notifwav,nodeupsert,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -75,6 +79,8 @@ export function buildDevConcurrentlyArgs() {
     trayUnreadDotBuild,
     scheduledBroadcastsRebuildBuild,
     mqttWaypointValidationBuild,
+    notificationSoundPlayWavBuild,
+    nodeUpsertBuild,
     'vite',
     electronLaunch,
   ];
