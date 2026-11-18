@@ -47,16 +47,17 @@ jobs:
             # The PR files API caps its response at 3,000 files; never trust a truncated list.
             all:
               - '**'
+            # Swift sources and their Swift package manifests, the helper build script, and this
+            # analysis's own workflow and config. The helper's dependencies are Swift packages under
+            # native/ai, so pnpm manifests and other workflows do not trigger the macOS build.
             swift:
               - '**/*.swift'
               - '**/Package.resolved'
               - 'native/ai/**'
               - 'scripts/build-ai-helper*'
               - 'scripts/*codeql*'
-              - '.github/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
+              - '.github/workflows/codeql.yaml'
+              - '.github/codeql/**'
       # matrix is not a job-level context, so drop the Swift cell before the
       # runner is chosen. A false SWIFT value means the paths filter succeeded
       # and Swift inputs did not change.

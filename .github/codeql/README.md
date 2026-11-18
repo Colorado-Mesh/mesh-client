@@ -3,9 +3,12 @@
 ## Faster advanced workflow and activation
 
 [`.github/workflows/codeql.yaml`](../workflows/codeql.yaml) avoids rebuilding unchanged Swift code on
-pull requests. Swift analysis runs whenever Swift source, native AI helpers, helper build scripts,
-dependency manifests, or analysis configuration changes. Every `main` push, merge group, weekly
-scan and manual run still analyzes Swift. A failed or ambiguous PR path detector scans Swift.
+pull requests. Swift analysis runs whenever Swift source or a `Package.resolved`, the native AI
+helpers under `native/ai`, the helper build script, or this analysis's own workflow or config
+(`.github/workflows/codeql.yaml`, `.github/codeql/`, `scripts/*codeql*`) changes. The helper's
+dependencies are Swift packages under `native/ai`, so pnpm manifests and other workflows do not
+start the macOS build. Every `main` push, merge group, weekly scan and manual run still analyzes
+Swift. A failed or ambiguous PR path detector scans Swift.
 It retains the six
 languages currently scanned by default setup (Actions, C#, JavaScript/TypeScript, Python, Rust,
 and Swift), the `security-extended` suite, the remote threat model, and the existing model-pack files.

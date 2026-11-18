@@ -166,19 +166,27 @@ describe('CodeQL advanced workflow', () => {
     'scripts/codeql-workflow.test.mjs',
     '.github/workflows/codeql.yaml',
     '.github/codeql/codeql-config.yml',
-    'package.json',
-    'pnpm-lock.yaml',
-    'pnpm-workspace.yaml',
+    '.github/codeql/README.md',
   ])('scans Swift when its source, build or analysis input changes: %s', (file) => {
     expect(selectsSwift(file)).toBe(true);
   });
 
-  it.each(['README.md', 'docs/ci-cd.md', 'src/renderer/App.tsx', 'src/main/database.ts'])(
-    'avoids a redundant Swift PR build for %s',
-    (file) => {
-      expect(selectsSwift(file)).toBe(false);
-    },
-  );
+  // The Swift helper's dependencies are Swift packages under native/ai, not pnpm packages, and
+  // other workflows do not feed the Swift build, so CI and dependency PRs skip the macOS build.
+  it.each([
+    'README.md',
+    'docs/ci-cd.md',
+    'src/renderer/App.tsx',
+    'src/main/database.ts',
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    '.github/workflows/tests.yaml',
+    '.github/workflows/release.yaml',
+    '.github/dependabot.yml',
+  ])('avoids a redundant Swift PR build for %s', (file) => {
+    expect(selectsSwift(file)).toBe(false);
+  });
 
   it('validates PRs and dispatches without uploading until the explicit migration switch', () => {
     const enabled =
