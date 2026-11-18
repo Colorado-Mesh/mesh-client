@@ -711,6 +711,9 @@ function mergeRepairedMeshcoreMessage(existing: ChatMessage, rebuilt: ChatMessag
     isHistory: existing.isHistory ?? rebuilt.isHistory,
     meshcoreDedupeKey: existing.meshcoreDedupeKey ?? rebuilt.meshcoreDedupeKey,
     status: existing.status ?? rebuilt.status,
+    // The rebuild keeps when the row arrived here (`chatReceiveOrder.ts`); a row saved before
+    // receipt times were kept stays without one.
+    ...(existing.receivedAt != null ? { receivedAt: existing.receivedAt } : {}),
   };
 }
 

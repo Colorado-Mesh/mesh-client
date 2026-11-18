@@ -965,6 +965,47 @@ describe('repairMeshcoreDisplayMessages', () => {
     expect(out[1]?.replyPreviewSender).toBe('🛩️ W0STR 01');
   });
 
+  // The repair rebuilds such a row from its text; the rebuilt row must keep when it arrived here,
+  // or it falls back to the sender's time for order and read state.
+  it.each([
+    ['channel', { channel: 8 }],
+    ['direct message', { channel: -1, to: 100 }],
+  ] as const)('keeps the receipt of a %s row repaired from @[Name] text', (_kind, where) => {
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Ann',
+      payload: 'morning',
+      timestamp: 3_000_000,
+      status: 'acked',
+      packetId: 77,
+      ...where,
+    };
+    const stamped: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: '@[Ann] agreed',
+      timestamp: 3_000_001,
+      receivedAt: 9_000_000,
+      status: 'acked',
+      ...where,
+    };
+    const legacy: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: '@[Ann] noted',
+      timestamp: 3_000_002,
+      status: 'acked',
+      ...where,
+    };
+    const out = meshcoreChatMessagesForDisplay([parent, stamped, legacy], { selfNodeId: 100 });
+    const repaired = out.find((m) => m.timestamp === 3_000_001);
+    expect(repaired?.payload).toBe('agreed');
+    expect(repaired?.receivedAt).toBe(9_000_000);
+    const repairedLegacy = out.find((m) => m.timestamp === 3_000_002);
+    expect(repairedLegacy?.payload).toBe('noted');
+    expect(repairedLegacy).not.toHaveProperty('receivedAt');
+  });
+
   it('promotes emoji-only reply rows to tapbacks after repair', () => {
     const parent: ChatMessage = {
       sender_id: 1,
