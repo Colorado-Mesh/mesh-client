@@ -124,7 +124,10 @@ These budgets are shared via `aiSummaryPromptBudget` so App → AI capacity copy
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
 inclusive time bounds and exact conversation filters **before** each page’s limit (default 500,
 plus one overflow row). Optional `beforeAt`/`beforeId` cursors page older history until the user’s
-`maxCollectedMessages` ceiling. Channels follow keyed identities across slot/radio changes; unkeyed
+`maxCollectedMessages` ceiling. Catch up "since last read" sets `byArrival`: the bounds, the order
+and the cursor then use `COALESCE(received_at, <stamp>)`, the clock its read mark comes from, and
+each row carries that key as `order`; time-range scopes keep the stamp. Channels follow keyed
+identities across slot/radio changes; unkeyed
 legacy rows use the existing current/null-radio fallback. DMs and rooms use peer/server and radio
 filters; Reticulum uses identity plus full destination hash; RRC uses canonical hub/room and prose
 kinds. MeshCore skew normalization occurs before range filtering. `idx_mc_msgs_room_ts` is additive
