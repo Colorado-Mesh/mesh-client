@@ -122,8 +122,41 @@ async function mergedRelease({ moveMainFirst = false } = {}) {
   const head = await openedRelease(fixture);
   if (moveMainFirst) land(fixture.seed, { 'late.txt': 'late\n' }, 'fix: landed late (#8)');
   const sha = squashRelease(fixture, head);
-  const pull = { number: 7, merge_commit_sha: sha, body: NOTES_BODY, head: { sha: head } };
+  const pull = {
+    number: 7,
+    title: 'chore: release v1.1.0',
+    merge_commit_sha: sha,
+    body: NOTES_BODY,
+    head: { sha: head },
+  };
   return { fixture, head, sha, pull };
+}
+
+/**
+ * An ordinary pull request merged after the release, before anything tagged it. Its head was up
+ * to date with main, so it holds the same tree as the squash commit (and, like every pull request
+ * that is not a release, reports no gate runs).
+ */
+function laterMerge(fixture) {
+  const sha = land(fixture.seed, { 'later.txt': 'later\n' }, 'feat: later (#9)');
+  const head = run(fixture.seed, [
+    'commit-tree',
+    `${sha}^{tree}`,
+    '-p',
+    `${sha}~1`,
+    '-m',
+    'feat: later',
+  ]);
+  run(fixture.seed, ['push', '-q', 'origin', `${head}:refs/heads/feature/later`]);
+  run(fixture.user, ['fetch', '-q', 'origin']);
+  const pull = {
+    number: 9,
+    title: 'feat: later',
+    merge_commit_sha: sha,
+    body: '## Release notes\n\nThis pull request carries its own section.',
+    head: { sha: head },
+  };
+  return { sha, pull };
 }
 
 describe('planReleaseTag', { timeout: 60_000 }, () => {
@@ -185,6 +218,44 @@ describe('planReleaseTag', { timeout: 60_000 }, () => {
 
     expect(plan).toMatchObject({ shouldTag: false, blocked: true });
     expect(plan.reason).toContain('Release preflight (failure)');
+  });
+
+  it('blocks a later push while the release is untagged and its gates have not passed', async () => {
+    const { fixture } = await mergedRelease({ moveMainFirst: true });
+    const later = laterMerge(fixture);
+    const api = apiFor(fixture.remote, {
+      pulls: [later.pull],
+      checks: { [later.sha]: skippedOn(later.sha) },
+    });
+
+    const plan = await planReleaseTag({ cwd: fixture.user, sha: later.sha, api });
+
+    expect(plan).toMatchObject({ shouldTag: false, blocked: true, tag: 'v1.1.0' });
+  });
+
+  it('tags a later commit once E2E passed on it, with notes from commit titles', async () => {
+    const { fixture } = await mergedRelease({ moveMainFirst: true });
+    const later = laterMerge(fixture);
+    const api = apiFor(fixture.remote, {
+      pulls: [later.pull],
+      checks: { [later.sha]: [...skippedOn(later.sha), ...passedOn(later.sha, 200)] },
+    });
+
+    const plan = await planReleaseTag({ cwd: fixture.user, sha: later.sha, api });
+
+    expect(plan).toMatchObject({ shouldTag: true, tag: 'v1.1.0' });
+    expect(plan.notes).toBe(
+      [
+        '### Features',
+        '',
+        '- feat: later (#9)',
+        '- feat: maps (#1)',
+        '',
+        '### Fixes',
+        '',
+        '- fix: landed late (#8)',
+      ].join('\n'),
+    );
   });
 
   it('falls back to notes from commit titles when no pull request matches', async () => {
@@ -321,7 +392,7 @@ describe('runCli', { timeout: 60_000 }, () => {
     const printed = errors.mock.calls.map((call) => call.join(' ')).join('\n');
     expect(printed).toContain('Electron E2E on Linux (no run)');
     expect(printed).toContain('Run the E2E workflow on main');
-    expect(printed).toContain('re-run this Cut release run');
+    expect(printed).toContain('run Cut release on main');
     expect(readFileSync(files.summary, 'utf8')).toContain('Blocked');
   });
 });

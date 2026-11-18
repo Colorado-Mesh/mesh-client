@@ -22,7 +22,12 @@ import { parseTopReleaseVersion } from './metainfoRelease.mjs';
 import { commitsInRange, latestReleaseTag, showFile } from './releaseGit.mjs';
 import { evaluateGates } from './releaseGates.mjs';
 import { createGithubApi, resolveRepo, resolveToken } from './releaseGithub.mjs';
-import { buildReleaseNotes, extractSection, RELEASE_NOTES_HEADING } from './releaseNotes.mjs';
+import {
+  buildReleaseNotes,
+  extractSection,
+  RELEASE_NOTES_HEADING,
+  releaseTitle,
+} from './releaseNotes.mjs';
 import {
   compareVersions,
   METAINFO_PATH,
@@ -36,6 +41,7 @@ const SHA_PATTERN = /^[0-9a-f]{40}$/;
  * @typedef {{
  *   tagExists: (tag: string) => Promise<boolean>,
  *   pullsForCommit: (sha: string) => Promise<Array<{
+ *     title?: string | null,
  *     merge_commit_sha?: string | null,
  *     body?: string | null,
  *     head?: { sha?: string } | null,
@@ -106,7 +112,12 @@ export async function planReleaseTag({ cwd, sha, api }) {
       notes: '',
     };
   }
-  const fromPull = merged ? extractSection(merged.body ?? '', RELEASE_NOTES_HEADING) : null;
+  // Only the release pull request's notes describe this release. When the tag lands on a later
+  // commit (E2E run on main after a miss), that commit's pull request is an ordinary one.
+  const releasePull = merged?.title?.trim() === releaseTitle(version) ? merged : undefined;
+  const fromPull = releasePull
+    ? extractSection(releasePull.body ?? '', RELEASE_NOTES_HEADING)
+    : null;
   const notes =
     fromPull || buildReleaseNotes(commitsInRange(cwd, `${latestTag}..${sha}`, { noMerges: true }));
   return {
@@ -182,7 +193,7 @@ export async function runCli({ argv, env = process.env, cwd = process.cwd(), api
       "This happens when a gate failed, or when something else reached main after the release pull request's checks ran.",
     );
     console.error(
-      'Run the E2E workflow on main (Actions, E2E, Run workflow). When it passes, re-run this Cut release run if main has not moved since; otherwise re-run the Cut release run of the commit that E2E tested.',
+      'Run the E2E workflow on main (Actions, E2E, Run workflow). When it passes, run Cut release on main (Actions, Cut release, Run workflow) before anything else merges, so both runs see the same commit.',
     );
     return 1;
   }
