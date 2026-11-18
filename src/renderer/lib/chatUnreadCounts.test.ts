@@ -4,6 +4,11 @@ import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumId
 import { useWordFilterStore } from '@/renderer/stores/wordFilterStore';
 
 import {
+  latestChatReadMs,
+  nextChatReceivedAt,
+  resetChatReceiptClockForTests,
+} from './chatReceiveOrder';
+import {
   buildProtocolSwitcherUnreadByProtocol,
   chatViewKeyForMessage,
   computeChannelUnreadCounts,
@@ -910,4 +915,61 @@ describe('unread by arrival', () => {
     );
     expect(channels.get(0)).toBe(1);
   });
+});
+
+describe('unread after this clock is set back', () => {
+  const now = 1_700_000_000_000;
+  const back = now - 3_600_000;
+
+  afterEach(() => {
+    resetChatReceiptClockForTests();
+  });
+
+  /** A line read before the set-back, and one received after it (its receipt runs ahead). */
+  function setBackLines(overrides: Partial<ChatMessage> & Pick<ChatMessage, 'channel'>) {
+    const readBefore = nextChatReceivedAt(now);
+    const arrivedAfter = nextChatReceivedAt(back);
+    return {
+      read: msg({ ...overrides, timestamp: now, receivedAt: readBefore }),
+      fresh: msg({ ...overrides, timestamp: back, receivedAt: arrivedAfter }),
+      readBefore,
+    };
+  }
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'counts a %s channel line received after the set-back, and clears it once read',
+    (protocol) => {
+      const { read, fresh, readBefore } = setBackLines({ channel: 0 });
+      const lines = [read, fresh];
+      expect(
+        computeChannelUnreadCounts(lines, { 'ch:0': readBefore }, ownNodes, protocol, back).get(0),
+      ).toBe(1);
+      const mark = latestChatReadMs(lines, back);
+      expect(
+        computeChannelUnreadCounts(lines, { 'ch:0': mark }, ownNodes, protocol, back).size,
+      ).toBe(0);
+    },
+  );
+
+  it.each(['meshcore', 'meshtastic', 'reticulum'] as const)(
+    'counts a %s DM received after the set-back, and clears it once read',
+    (protocol) => {
+      const { read, fresh, readBefore } = setBackLines({ channel: 0, to: 1 });
+      const lines = [read, fresh];
+      expect(
+        computeDmUnreadCounts(
+          lines,
+          { 'dm:2': readBefore },
+          ownNodes,
+          protocol,
+          undefined,
+          back,
+        ).get(2),
+      ).toBe(1);
+      const mark = latestChatReadMs(lines, back);
+      expect(
+        computeDmUnreadCounts(lines, { 'dm:2': mark }, ownNodes, protocol, undefined, back).size,
+      ).toBe(0);
+    },
+  );
 });

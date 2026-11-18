@@ -1,8 +1,11 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
-import { chatReadOrderMs, isChatReadOrderPoisoned } from '@/renderer/lib/chatReceiveOrder';
+import {
+  chatReadOrderMs,
+  clampChatReadMarkMs,
+  isChatReadOrderPoisoned,
+} from '@/renderer/lib/chatReceiveOrder';
 import { isMecpMessage, type Severity, tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
-import { clampReadWatermarkMs } from '@/renderer/lib/nodeStatus';
 import {
   buildMeshtasticReplyParentIndex,
   findMeshtasticParentMessageForReply,
@@ -185,7 +188,7 @@ function unreadChannelIndex(
   if (isChatReadOrderPoisoned(msg, nowMs)) return undefined;
   if (isHiddenWeatherPost(msg, protocol)) return undefined;
   if (isHiddenByWordFilter(msg, protocol)) return undefined;
-  const lastRead = clampReadWatermarkMs(persistedLastRead[`ch:${msg.channel}`] ?? 0, nowMs);
+  const lastRead = clampChatReadMarkMs(persistedLastRead[`ch:${msg.channel}`] ?? 0, nowMs);
   return chatReadOrderMs(msg, nowMs) > lastRead ? msg.channel : undefined;
 }
 
@@ -204,7 +207,7 @@ function unreadDmPeer(
   if (ownNodeIds.has(msg.sender_id)) return undefined;
   if (isChatReadOrderPoisoned(msg, nowMs)) return undefined;
   if (isHiddenByWordFilter(msg, protocol, `${protocol}:dm:${peer}`)) return undefined;
-  const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
+  const lr = clampChatReadMarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
   return chatReadOrderMs(msg, nowMs) > lr ? peer : undefined;
 }
 

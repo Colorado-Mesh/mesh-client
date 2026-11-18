@@ -10,6 +10,7 @@ import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTranspor
 
 import type { MessageRecord, MessageTransport } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
+import { observeSavedChatReceivedAt } from './chatReceiveOrder';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
 import {
   firstGraphemeCluster,
@@ -544,6 +545,7 @@ export function reticulumDbRowToMessageRecord(row: {
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
   registerReticulumDestinationHash(from, row.sender_id);
+  observeSavedChatReceivedAt(row.received_at);
   const messageHash =
     row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
   const isTapback = isReticulumTapbackDbRow(row);

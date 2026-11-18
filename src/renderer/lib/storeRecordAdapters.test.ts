@@ -4,6 +4,7 @@ import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
 
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from './chatReceiveOrder';
 import {
   chatMessageToMessageRecord,
   groupChatReactionsByParentKey,
@@ -337,6 +338,23 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.status).toBe('acked');
     expect(record.reticulumDeliveryMethod).toBe('propagated');
     expect(messageRecordToChatMessage(record).reticulumDeliveryMethod).toBe('propagated');
+  });
+
+  it('resumes the receipt clock after a saved Reticulum receipt that runs ahead of this clock', () => {
+    try {
+      const savedAhead = Date.now() + 60 * 60_000;
+      const record = reticulumDbRowToMessageRecord({
+        sender_id: 'aa'.repeat(16),
+        payload: 'saved before a set-back',
+        timestamp: savedAhead,
+        message_hash: 'ee'.repeat(16),
+        received_at: savedAhead,
+      });
+      expect(record.receivedAt).toBe(savedAhead);
+      expect(nextChatReceivedAt()).toBe(savedAhead + 1);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
   });
 
   it('rehydrates paper received_via and delivery_method from DB', () => {

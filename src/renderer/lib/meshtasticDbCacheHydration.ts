@@ -5,6 +5,7 @@ import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../../shared/meshtasticOrph
 import { meshtasticShortNameAfterClearingDefault } from '../../shared/nodeNameUtils';
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
+import { observeSavedChatReceivedAt } from './chatReceiveOrder';
 import { meshtasticHwModelName } from './hardwareModels';
 import { meshcoreHwModelIsContactTypeLabel } from './meshcoreUtils';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
@@ -193,6 +194,7 @@ export function mergeMeshtasticDbHydrationWithLive(
 }
 
 export function savedMessageToChatMessage(m: SavedMessage): ChatMessage {
+  observeSavedChatReceivedAt(m.receivedAt);
   return {
     id: m.id,
     sender_id: m.sender_id,

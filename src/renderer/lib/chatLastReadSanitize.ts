@@ -1,6 +1,6 @@
 import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 
-import { chatReadOrderMs } from './chatReceiveOrder';
+import { chatReadClockMs, chatReadOrderMs } from './chatReceiveOrder';
 import { clampReadWatermarkMs } from './nodeStatus';
 import type { ChatMessage } from './types';
 
@@ -59,21 +59,23 @@ export function maxRoomPostTimestampByServerId(
 
 /**
  * Shared clamp loop for `ch:`/`dm:` string-keyed last-read watermarks: drop any watermark
- * past the client clock or past the newest known message for that view key (legacy pre-#490
- * `Date.now()` bumps suppressed sidebar badges across all three protocols).
+ * past the read clock (`chatReadClockMs`: this clock, or a newer receipt after a set-back) or
+ * past the newest known message for that view key (legacy pre-#490 `Date.now()` bumps
+ * suppressed sidebar badges across all three protocols).
  */
 export function sanitizeViewKeyLastRead(
   persisted: Readonly<Record<string, number>>,
   maxByKey: Readonly<Record<string, number>>,
   now: number = Date.now(),
 ): Record<string, number> {
+  const readNow = chatReadClockMs(now);
   let changed = false;
   const next: Record<string, number> = { ...persisted };
   for (const [key, watermark] of Object.entries(persisted)) {
     if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
     const maxMsg = maxByKey[key] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
+    let clamped = clampReadWatermarkMs(watermark, readNow);
+    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
     if (clamped !== watermark) {
       next[key] = clamped;
       changed = true;
@@ -88,14 +90,15 @@ export function sanitizeNumericKeyLastRead(
   maxById: Readonly<Record<number, number>>,
   now: number = Date.now(),
 ): Record<number, number> {
+  const readNow = chatReadClockMs(now);
   let changed = false;
   const next: Record<number, number> = { ...persisted };
   for (const [k, watermark] of Object.entries(persisted)) {
     const nodeId = Number(k) >>> 0;
     if (!Number.isFinite(nodeId)) continue;
     const maxMsg = maxById[nodeId] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
+    let clamped = clampReadWatermarkMs(watermark, readNow);
+    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
     if (clamped !== watermark) {
       next[nodeId] = clamped;
       changed = true;

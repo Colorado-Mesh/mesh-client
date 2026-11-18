@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   maxMessageTimestampByViewKey,
@@ -6,6 +6,7 @@ import {
   sanitizeNumericKeyLastRead,
   sanitizeViewKeyLastRead,
 } from './chatLastReadSanitize';
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from './chatReceiveOrder';
 
 describe('sanitizeViewKeyLastRead', () => {
   it('clamps a future watermark down to the newest known message for that key', () => {
@@ -104,5 +105,52 @@ describe('read marks taken by arrival', () => {
     expect(maxById[0xabc]).toBe(now - 1_000);
     const persisted = { [0xabc]: now - 1_000 };
     expect(sanitizeNumericKeyLastRead(persisted, maxById, now)).toBe(persisted);
+  });
+});
+
+describe('read marks after this clock is set back', () => {
+  const now = 1_700_000_000_000;
+  const back = now - 3_600_000;
+
+  afterEach(() => {
+    resetChatReceiptClockForTests();
+  });
+
+  it('keeps a chat mark taken after the set-back, so the next line stays unread', () => {
+    nextChatReceivedAt(now);
+    const readAt = nextChatReceivedAt(back);
+    const nextAt = nextChatReceivedAt(back + 1_000);
+    const persisted = { 'ch:0': readAt, 'dm:9': readAt };
+    const maxByKey = maxMessageTimestampByViewKey([
+      { channel: 0, timestamp: back, receivedAt: readAt },
+      { channel: 0, timestamp: back + 1_000, receivedAt: nextAt },
+      { channel: 0, to: 9, timestamp: back, receivedAt: nextAt },
+    ]);
+    expect(maxByKey['ch:0']).toBe(nextAt);
+    expect(sanitizeViewKeyLastRead(persisted, maxByKey, back)).toBe(persisted);
+  });
+
+  it('keeps a room mark taken after the set-back', () => {
+    nextChatReceivedAt(now);
+    const readAt = nextChatReceivedAt(back);
+    const nextAt = nextChatReceivedAt(back + 1_000);
+    const persisted = { [0xabc]: readAt };
+    const maxById = maxRoomPostTimestampByServerId([
+      { roomServerId: 0xabc, timestamp: back, receivedAt: readAt },
+      { roomServerId: 0xabc, timestamp: back + 1_000, receivedAt: nextAt },
+    ]);
+    expect(sanitizeNumericKeyLastRead(persisted, maxById, back)).toBe(persisted);
+  });
+
+  it('still lowers a mark past the receipt clock to the newest line', () => {
+    nextChatReceivedAt(now);
+    const readAt = nextChatReceivedAt(back);
+    const maxByKey = maxMessageTimestampByViewKey([
+      { channel: 0, timestamp: back, receivedAt: readAt },
+    ]);
+    expect(sanitizeViewKeyLastRead({ 'ch:0': readAt + 60_000 }, maxByKey, back)['ch:0']).toBe(
+      readAt,
+    );
+    expect(sanitizeNumericKeyLastRead({ 1: readAt + 60_000 }, { 1: readAt }, back)[1]).toBe(readAt);
   });
 });

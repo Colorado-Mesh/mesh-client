@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RRC_ROOM_HISTORY_LOAD_COUNT } from '@/renderer/lib/sessionMemoryCaps';
 
 import { useRrcSessionStore } from '../stores/rrcSessionStore';
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from './chatReceiveOrder';
 import {
   clearRrcRoomHistory,
   hydrateRrcRoomMessages,
@@ -89,6 +90,30 @@ describe('rrcRoomHistory', () => {
     const list = useRrcSessionStore.getState().messages.get(`${HUB}::lobby`)!;
     expect(list.map((m) => m.body)).toEqual(['first in', 'second in']);
     expect(list.map((m) => m.timestamp)).toEqual([1_700_000_000_000, 1_699_992_800_000]);
+  });
+
+  it('resumes the receipt clock after a saved receipt that runs ahead of this clock', async () => {
+    try {
+      useRrcSessionStore.getState().applyStatus('active', HUB, 'Hub');
+      const savedAhead = Date.now() + 60 * 60_000;
+      vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValueOnce([
+        {
+          message_id: 'ahead',
+          hub_hash: HUB,
+          room: 'lobby',
+          sender_hash: null,
+          nickname: 'ahead',
+          kind: 'msg',
+          body: 'saved before a set-back',
+          timestamp: savedAhead,
+          received_at: savedAhead,
+        },
+      ]);
+      await hydrateRrcRoomMessages(HUB, 'lobby');
+      expect(nextChatReceivedAt()).toBe(savedAhead + 1);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
   });
 
   it('saves a live line with the time it arrived', () => {

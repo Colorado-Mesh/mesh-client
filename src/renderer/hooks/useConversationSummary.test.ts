@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from '@/renderer/lib/chatReceiveOrder';
 import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import { isWeatherPost } from '@/renderer/lib/weatherPosts';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
@@ -393,6 +394,23 @@ describe('conversation summary async boundaries', () => {
       );
     },
   );
+
+  it('asks for unread history up to the receipt clock after this clock was set back', async () => {
+    try {
+      // Receipts keep counting up after a set-back, so the newest one runs ahead of this clock.
+      const receivedAfterSetBack = nextChatReceivedAt(Date.now() + 60 * 60_000);
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([]);
+      const { result } = renderHook(() => useConversationSummary({ ...input, watermark: 200 }));
+      await act(async () => {
+        await result.current.run();
+      });
+      const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+      expect(request).toMatchObject({ byArrival: true, sinceMs: 200 });
+      expect(request?.untilMs).toBeGreaterThanOrEqual(receivedAfterSetBack);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
+  });
 
   it('pages unread history by its arrival key', async () => {
     const history = Array.from({ length: AI_MAX_MESSAGES + 1 }, (_, index) => ({

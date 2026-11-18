@@ -13,6 +13,8 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/shared/messageTimestampSkew';
 
+import { CHAT_RECEIPT_SEED_MAX_LEAD_MS } from './timeConstants';
+
 let lastReceivedAt = 0;
 
 /**
@@ -22,6 +24,40 @@ let lastReceivedAt = 0;
 export function nextChatReceivedAt(nowMs = Date.now()): number {
   lastReceivedAt = Math.max(lastReceivedAt + 1, nowMs);
   return lastReceivedAt;
+}
+
+/**
+ * The clock read keys and marks are judged against: this clock, or the newest receipt when that
+ * ran ahead of it. Receipts keep counting up when this clock is set back, so after a set-back they
+ * are ahead of it; judged against the wall clock alone they would read as broken (never unread,
+ * never a mark) until the clock caught up.
+ */
+export function chatReadClockMs(nowMs = Date.now()): number {
+  return Math.max(nowMs, lastReceivedAt);
+}
+
+/**
+ * A receipt read back from storage. After a restart the receipt clock resumes after the newest
+ * one, so lines that arrive while this clock is still set back sort after the lines saved before
+ * it, as they would have in the same session. A receipt more than
+ * {@link CHAT_RECEIPT_SEED_MAX_LEAD_MS} ahead is ignored: new lines then take this clock.
+ */
+export function observeSavedChatReceivedAt(
+  receivedAt: number | null | undefined,
+  nowMs = Date.now(),
+): void {
+  if (receivedAt == null || !Number.isFinite(receivedAt) || receivedAt <= 0) return;
+  if (receivedAt > nowMs + CHAT_RECEIPT_SEED_MAX_LEAD_MS) return;
+  if (receivedAt > lastReceivedAt) lastReceivedAt = receivedAt;
+}
+
+/** Cap a read mark like any mark, measured from the read clock. */
+export function clampChatReadMarkMs(markMs: number, nowMs = Date.now()): number {
+  return clampReadWatermarkMs(markMs, chatReadClockMs(nowMs));
+}
+
+export function resetChatReceiptClockForTests(): void {
+  lastReceivedAt = 0;
 }
 
 export interface ChatReceiveOrderFields {
@@ -62,22 +98,23 @@ export function earliestChatReceivedAt(
 
 /**
  * The key read marks use (unread counts, the unread divider, Mark unread and the mark itself): the
- * order key, treated like a wire time, so a key far ahead of this clock reads as now.
+ * order key, treated like a wire time, so a key far ahead of the read clock reads as now.
  */
 export function chatReadOrderMs(message: ChatReceiveOrderFields, nowMs = Date.now()): number {
-  return effectiveMessageTimestampMs(chatReceivedAtMs(message), nowMs);
+  return effectiveMessageTimestampMs(chatReceivedAtMs(message), chatReadClockMs(nowMs));
 }
 
 /**
- * True when the order key is too far ahead of this clock to trust: a saved stamp from a fast
- * clock, or a receipt taken before this clock was set back. Such a row never counts as unread and
- * never sets a read mark.
+ * True when the order key is too far ahead of the read clock to trust: a saved stamp from a fast
+ * clock, or a receipt saved before this clock was set back by more than a day (see
+ * {@link observeSavedChatReceivedAt}). Such a row never counts as unread and never sets a read
+ * mark.
  */
 export function isChatReadOrderPoisoned(
   message: ChatReceiveOrderFields,
   nowMs = Date.now(),
 ): boolean {
-  return isUnreasonablyFutureMessageTimestampMs(chatReceivedAtMs(message), nowMs);
+  return isUnreasonablyFutureMessageTimestampMs(chatReceivedAtMs(message), chatReadClockMs(nowMs));
 }
 
 /** Read mark for a conversation: its newest usable read key, capped like any mark; 0 when none. */
@@ -85,13 +122,14 @@ export function latestChatReadMs(
   messages: readonly ChatReceiveOrderFields[],
   nowMs = Date.now(),
 ): number {
+  const readNow = chatReadClockMs(nowMs);
   let latest = 0;
   for (const message of messages) {
-    if (isChatReadOrderPoisoned(message, nowMs)) continue;
-    const at = chatReadOrderMs(message, nowMs);
+    if (isChatReadOrderPoisoned(message, readNow)) continue;
+    const at = chatReadOrderMs(message, readNow);
     if (at > latest) latest = at;
   }
-  return clampReadWatermarkMs(latest, nowMs);
+  return clampReadWatermarkMs(latest, readNow);
 }
 
 /** Ascending receipt order; ties fall back to the wire time, then to `tieBreak`. */

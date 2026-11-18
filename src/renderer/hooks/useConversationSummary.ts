@@ -6,6 +6,7 @@ import {
   mergeSummaryMessages,
   selectSummaryMessages,
 } from '@/renderer/lib/aiSummaryScope';
+import { chatReadClockMs } from '@/renderer/lib/chatReceiveOrder';
 import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
@@ -152,10 +153,11 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
         const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
-          // The read mark is an arrival time, so "since last read" reads history by arrival.
+          // The read mark is an arrival time, so "since last read" reads history by arrival, up
+          // to the read clock: after a set-back of this clock new receipts run ahead of it.
           scope.kind === 'unread' ? { ...input.history, byArrival: true } : input.history,
           Math.max(0, sinceMs),
-          now,
+          scope.kind === 'unread' ? chatReadClockMs(now) : now,
           maxCollected,
         );
         truncated = historyTruncated;

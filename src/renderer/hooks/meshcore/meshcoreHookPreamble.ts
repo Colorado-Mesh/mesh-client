@@ -6,6 +6,7 @@ import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { withTimeout } from '../../../shared/withTimeout';
 import { resolveChannelKeyForPersist } from '../../lib/channelIdentity';
+import { observeSavedChatReceivedAt } from '../../lib/chatReceiveOrder';
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import { hasStoredStaticGps, overlayStoredStaticGpsOnSelfNode } from '../../lib/gpsSource';
 import type {
@@ -1154,6 +1155,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
     } = meshcoreDbMessageDisplay(r);
     const localOrder = r.local_order ?? r.id;
     observeMeshcoreMessageLocalOrder(localOrder);
+    observeSavedChatReceivedAt(r.received_at);
     mapped.push({
       id: r.id,
       sender_id: senderId,

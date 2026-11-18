@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  latestChatReadMs,
+  nextChatReceivedAt,
+  resetChatReceiptClockForTests,
+} from './chatReceiveOrder';
 import { buildMeshcoreRoomIncomingMessage } from './meshcoreChannelText';
 import { computeRoomUnreadCounts, totalRoomsUnreadCount } from './meshcoreRoomsUnread';
 
@@ -162,6 +167,31 @@ describe('meshcoreRoomsUnread', () => {
         now,
       );
       expect(counts.size).toBe(0);
+    });
+
+    it('counts a post received after this clock was set back, and clears it once read', () => {
+      try {
+        nextChatReceivedAt(now);
+        const back = now - HOUR;
+        const fresh = post(back, nextChatReceivedAt(back));
+        expect(
+          computeRoomUnreadCounts(
+            [fresh],
+            { 0x200: now },
+            ownNodes,
+            undefined,
+            undefined,
+            back,
+          ).get(0x200),
+        ).toBe(1);
+        const mark = latestChatReadMs([fresh], back);
+        expect(
+          computeRoomUnreadCounts([fresh], { 0x200: mark }, ownNodes, undefined, undefined, back)
+            .size,
+        ).toBe(0);
+      } finally {
+        resetChatReceiptClockForTests();
+      }
     });
 
     it('does not count a post whose arrival time is far ahead of this clock', () => {
