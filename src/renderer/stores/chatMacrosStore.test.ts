@@ -161,6 +161,64 @@ describe('chatMacrosStore', () => {
     });
   });
 
+  it('keeps a dormant room under Message so Jump to room can restore it', () => {
+    const room = {
+      kind: 'meshcore-room' as const,
+      identityId: 'mc1',
+      roomPubKeyHex: 'cd'.repeat(32),
+      label: 'Ops',
+    };
+    const { setSlotRoom, setSlotAction } = useChatMacrosStore.getState();
+    setSlotRoom(0, room);
+    expect(useChatMacrosStore.getState().slots[0]?.action).toBe('room');
+    expect(useChatMacrosStore.getState().slots[0]?.room).toEqual(room);
+
+    setSlotAction(0, 'text');
+    expect(useChatMacrosStore.getState().slots[0]?.action).toBe('text');
+    expect(useChatMacrosStore.getState().slots[0]?.room).toEqual(room);
+
+    setSlotAction(0, 'room');
+    expect(useChatMacrosStore.getState().slots[0]?.action).toBe('room');
+    expect(useChatMacrosStore.getState().slots[0]?.room).toEqual(room);
+  });
+
+  it('clears the room target only via setSlotRoom(null)', () => {
+    const room = {
+      kind: 'rrc-room' as const,
+      hubDestHash: 'aabbccdd',
+      room: '#weather',
+      label: 'weather',
+    };
+    const { setSlotRoom, setSlotAction } = useChatMacrosStore.getState();
+    setSlotRoom(0, room);
+    setSlotAction(0, 'text');
+    expect(useChatMacrosStore.getState().slots[0]?.room).toEqual(room);
+
+    setSlotRoom(0, null);
+    const slot = useChatMacrosStore.getState().slots[0];
+    expect(slot?.room).toBeUndefined();
+    expect(slot?.action).toBe('text');
+  });
+
+  it('preserves a dormant room under text action through sanitize', () => {
+    const room = {
+      kind: 'meshtastic-channel' as const,
+      identityId: 'mt1',
+      channelIndex: 1,
+      channelKey: 'deadbeef',
+      label: '#LongFast',
+    };
+    const out = sanitizeChatMacrosPersisted({
+      slots: [{ label: 'LF', text: 'ping', action: 'text', room }],
+    });
+    expect(out.slots[0]).toEqual({
+      label: 'LF',
+      text: 'ping',
+      action: 'text',
+      room,
+    });
+  });
+
   it('isChatMacroSlotEmpty handles room vs text slots', () => {
     expect(isChatMacroSlotEmpty(undefined)).toBe(true);
     expect(isChatMacroSlotEmpty({ label: '', text: '', action: 'text' })).toBe(true);
