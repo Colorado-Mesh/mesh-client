@@ -894,6 +894,10 @@ export default function LiveTrafficPanel({
             >
               <option value="dark">{t('liveTraffic.darkMap')}</option>
               <option value="osm">{t('liveTraffic.streetMap')}</option>
+              {localTiles && <option value="opentopo">{t('liveTraffic.opentopoMap')}</option>}
+              {localTiles && <option value="hot">{t('liveTraffic.hotMap')}</option>}
+              {localTiles && <option value="cyclosm">{t('liveTraffic.cyclosmMap')}</option>}
+              {localTiles && <option value="oepnv">{t('liveTraffic.oepnvMap')}</option>}
               {localTiles && <option value="usgs-topo">{t('liveTraffic.topographicMap')}</option>}
               {localTiles &&
                 customMapSources?.map((source) => (

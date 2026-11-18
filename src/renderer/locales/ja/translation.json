@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "境界ボックスは、西<東、南<北でなければなりません",
     "waypointNotifyOnEnter": "Enterキーを押したときに通知する",
     "waypointNotifyOnExit": "終了時に通知する",
-    "waypointNotifyFavoritesOnly": "お気に入りのみ通知する"
+    "waypointNotifyFavoritesOnly": "お気に入りのみ通知する",
+    "basemapOpentopo": "OpenTopoMap（地形）",
+    "basemapHot": "人道的（HOT）",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte（公共交通機関）"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -7934,7 +7938,11 @@
     "retentionHint": "ローカルのライブトラフィックは、1分間観測を保持します。古いキャプチャはモニタースニッファーに→残ります。",
     "emptyFeedQuiet": "直前の観察はありません。古いパケットはMonitor → Snifferに残ります。",
     "hopTones": "ホップトーン",
-    "hopTonesHint": "アニメーション化された各ホップに対して柔らかな音を鳴らします。短いホップは高い音で、長いホップは低い音で鳴ります。各音符は、マップ上のそのホップの飛行時間と同じ長さです。ローカル、Beacon、およびCoreScopeのトラフィックで動作します。"
+    "hopTonesHint": "アニメーション化された各ホップに対して柔らかな音を鳴らします。短いホップは高い音で、長いホップは低い音で鳴ります。各音符は、マップ上のそのホップの飛行時間と同じ長さです。ローカル、Beacon、およびCoreScopeのトラフィックで動作します。",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "人道主義者",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVカード"
   },
   "meshcoreCompanionCli": {
     "summary": "コンパニオンデバイスの設定",

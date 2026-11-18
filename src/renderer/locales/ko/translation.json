@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "경계 상자는 서쪽 < 동쪽 및 남쪽 < 북쪽이어야 합니다.",
     "waypointNotifyOnEnter": "입력 시 알림",
     "waypointNotifyOnExit": "종료 시 알림",
-    "waypointNotifyFavoritesOnly": "즐겨찾기에 대해서만 알림"
+    "waypointNotifyFavoritesOnly": "즐겨찾기에 대해서만 알림",
+    "basemapOpentopo": "OpenTopoMap(지형)",
+    "basemapHot": "인도주의(HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte(대중교통)"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -7934,7 +7938,11 @@
     "retentionHint": "현지 실시간 트래픽은 1분 동안 관찰을 유지합니다. 이전 캡처는 모니터 스니퍼에 남아 → 있습니다.",
     "emptyFeedQuiet": "마지막 순간에 관찰이 없습니다. 이전 패킷은 모니터 스니퍼에 남아 → 있습니다.",
     "hopTones": "홉 톤",
-    "hopTonesHint": "애니메이션으로 표시되는 각 홉마다 부드러운 음을 재생합니다. 홉이 짧을수록 소리가 높고, 홉이 길수록 소리가 낮습니다. 각 음은 지도에서 해당 홉의 이동 거리에 해당하는 시간 동안 지속됩니다. 로컬, Beacon 및 CoreScope 트래픽에 적용됩니다."
+    "hopTonesHint": "애니메이션으로 표시되는 각 홉마다 부드러운 음을 재생합니다. 홉이 짧을수록 소리가 높고, 홉이 길수록 소리가 낮습니다. 각 음은 지도에서 해당 홉의 이동 거리에 해당하는 시간 동안 지속됩니다. 로컬, Beacon 및 CoreScope 트래픽에 적용됩니다.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "인도주의",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "도우미 장치 설정",

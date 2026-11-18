@@ -2948,7 +2948,11 @@
     "waypointBoundingBoxInvalid": "Ohraničující rámeček musí mít západ < východ a jih < sever",
     "waypointNotifyOnEnter": "Upozornit při vstupu",
     "waypointNotifyOnExit": "Upozornit při ukončení",
-    "waypointNotifyFavoritesOnly": "Upozorňovat pouze na oblíbené"
+    "waypointNotifyFavoritesOnly": "Upozorňovat pouze na oblíbené",
+    "basemapOpentopo": "OpenTopoMap (terén)",
+    "basemapHot": "Humanitární (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (veřejná doprava)"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -8011,7 +8015,11 @@
     "retentionHint": "Místní živý provoz udržuje pozorování po dobu jedné minuty. Starší snímky zůstávají v nástroji Monitor → Sniffer.",
     "emptyFeedQuiet": "Žádné připomínky na poslední chvíli. Starší pakety zůstávají v nástroji Monitor → Sniffer.",
     "hopTones": "Tóny skoků",
-    "hopTonesHint": "Přehrát jemný tón pro každý animovaný skok. Kratší skoky zní výš; delší skoky zní níž. Každý tón trvá po dobu letu daného skoku na mapě. Funguje pro místní provoz, provoz Beacon a provoz CoreScope."
+    "hopTonesHint": "Přehrát jemný tón pro každý animovaný skok. Kratší skoky zní výš; delší skoky zní níž. Každý tón trvá po dobu letu daného skoku na mapě. Funguje pro místní provoz, provoz Beacon a provoz CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitární",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Öpnvkarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Nastavení doprovodného zařízení",

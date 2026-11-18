@@ -28,6 +28,10 @@ describe('mapBasemapUtils', () => {
     expect(MAP_BASEMAPS.osm.url).toBe('mesh-tiles://osm/{z}/{x}/{y}.png');
     expect(MAP_BASEMAPS.dark.url).toBe('mesh-tiles://dark/{z}/{x}/{y}.png?source=osm-v1');
     expect(MAP_BASEMAPS['usgs-topo'].url).toBe('mesh-tiles://usgs-topo/{z}/{x}/{y}.png');
+    expect(MAP_BASEMAPS.opentopo.url).toBe('mesh-tiles://opentopo/{z}/{x}/{y}.png');
+    expect(MAP_BASEMAPS.hot.url).toBe('mesh-tiles://hot/{z}/{x}/{y}.png');
+    expect(MAP_BASEMAPS.cyclosm.url).toBe('mesh-tiles://cyclosm/{z}/{x}/{y}.png');
+    expect(MAP_BASEMAPS.oepnv.url).toBe('mesh-tiles://oepnv/{z}/{x}/{y}.png');
   });
 
   it('defines light USGS topo basemap with attribution and native zoom cap', () => {
@@ -37,9 +41,26 @@ describe('mapBasemapUtils', () => {
     expect(usgs.maxNativeZoom).toBe(16);
   });
 
+  it('defines community OSM style basemaps as light with attributions', () => {
+    expect(MAP_BASEMAPS.opentopo.isDark).toBe(false);
+    expect(MAP_BASEMAPS.opentopo.maxNativeZoom).toBe(17);
+    expect(MAP_BASEMAPS.opentopo.attribution).toContain('OpenTopoMap');
+    expect(MAP_BASEMAPS.hot.isDark).toBe(false);
+    expect(MAP_BASEMAPS.hot.attribution).toContain('Humanitarian OpenStreetMap Team');
+    expect(MAP_BASEMAPS.hot.maxNativeZoom).toBeUndefined();
+    expect(MAP_BASEMAPS.cyclosm.isDark).toBe(false);
+    expect(MAP_BASEMAPS.cyclosm.attribution).toContain('CyclOSM');
+    expect(MAP_BASEMAPS.oepnv.isDark).toBe(false);
+    expect(MAP_BASEMAPS.oepnv.attribution).toContain('ÖPNVKarte');
+  });
+
   it('validates persisted basemap ids', () => {
     expect(isValidMapBasemapId('usgs-topo')).toBe(true);
     expect(isValidMapBasemapId('osm')).toBe(true);
+    expect(isValidMapBasemapId('opentopo')).toBe(true);
+    expect(isValidMapBasemapId('hot')).toBe(true);
+    expect(isValidMapBasemapId('cyclosm')).toBe(true);
+    expect(isValidMapBasemapId('oepnv')).toBe(true);
     expect(isValidMapBasemapId('esri')).toBe(false);
     expect(isValidMapBasemapId(undefined)).toBe(false);
   });

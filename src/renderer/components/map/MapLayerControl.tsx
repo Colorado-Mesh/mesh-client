@@ -137,6 +137,10 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
             >
               <option value="dark">{t('mapPanel.basemapDark')}</option>
               <option value="osm">{t('mapPanel.basemapOsm')}</option>
+              <option value="opentopo">{t('mapPanel.basemapOpentopo')}</option>
+              <option value="hot">{t('mapPanel.basemapHot')}</option>
+              <option value="cyclosm">{t('mapPanel.basemapCyclosm')}</option>
+              <option value="oepnv">{t('mapPanel.basemapOepnv')}</option>
               <option value="usgs-topo">{t('mapPanel.basemapUsgsTopo')}</option>
               {customSources?.map((source) => (
                 <option key={source.id} value={source.id}>
