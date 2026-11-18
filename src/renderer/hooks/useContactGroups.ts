@@ -5,6 +5,12 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 
+/**
+ * Built-in contact-type filter IDs only — custom group IDs are not valid defaults.
+ * Keep in sync with MeshCore (-1/-2/-3) and Meshtastic (-10/-11/-12) builtins.
+ */
+export type BuiltinContactGroupFilterId = -1 | -2 | -3 | -10 | -11 | -12;
+
 export interface UseContactGroupsResult {
   groups: ContactGroup[];
   selectedGroupId: number | null;
@@ -21,7 +27,7 @@ export interface UseContactGroupsResult {
 
 export function useContactGroups(
   selfNodeId: number | null,
-  defaultSelectedGroupId: number | null = null,
+  defaultSelectedGroupId: BuiltinContactGroupFilterId | null = null,
 ): UseContactGroupsResult {
   const [groups, setGroups] = useState<ContactGroup[]>([]);
   const [selectedGroupId, setSelectedGroupIdState] = useState<number | null>(

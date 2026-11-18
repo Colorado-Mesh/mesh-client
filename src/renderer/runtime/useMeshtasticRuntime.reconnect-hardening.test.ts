@@ -373,32 +373,54 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('guards attachRfSession configure against reconnect generation supersession', () => {
-    expect(SOURCE).toMatch(
-      /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE/,
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody).toMatch(
+      /reconnectGenerationRef\.current !== generation[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE/,
     );
   });
 
   it('connect and connectAutomatic skip full failure teardown when attach is superseded', () => {
     expect(SOURCE).toContain('isMeshtasticAttachSupersededError');
     expect(SOURCE).toContain('cleanupStaleOpenedOnAttachSuperseded');
+    expect(SOURCE).toContain('cleanupSupersededStaleOpenedDevice');
     const connectBody = extractUseCallbackBody(SOURCE, 'connect');
     expect(connectBody).toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?connectSucceeded = true[\s\S]*?return;/,
+      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?return;/,
+    );
+    expect(connectBody).not.toMatch(
+      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?connectSucceeded = true/,
+    );
+    expect(connectBody).toMatch(
+      /attemptGeneration[\s\S]*?reconnectGenerationRef\.current === attemptGeneration/,
     );
     expect(connectBody).toMatch(
       /isMeshtasticAttachSupersededError\(err\)[\s\S]*?return;[\s\S]*?handleRfConnectFailure/,
     );
     const autoBody = extractUseCallbackBody(SOURCE, 'connectAutomatic');
     expect(autoBody).toMatch(
-      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?connectSucceeded = true[\s\S]*?return;/,
+      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?cleanupStaleOpenedOnAttachSuperseded\(opened\)[\s\S]*?return;/,
+    );
+    expect(autoBody).not.toMatch(
+      /isMeshtasticAttachSupersededError\(err\)[\s\S]*?connectSucceeded = true/,
+    );
+    expect(autoBody).toMatch(
+      /attemptGeneration[\s\S]*?reconnectGenerationRef\.current === attemptGeneration/,
     );
     expect(autoBody).toMatch(
       /isMeshtasticAttachSupersededError\(err\)[\s\S]*?return;[\s\S]*?handleRfConnectFailure/,
     );
     const staleCleanup = extractUseCallbackBody(SOURCE, 'cleanupStaleOpenedOnAttachSuperseded');
-    expect(staleCleanup).toContain('deviceRef.current === opened.device');
-    expect(staleCleanup).toContain('safeDisconnect(opened.device)');
+    expect(staleCleanup).toContain(
+      'cleanupSupersededStaleOpenedDevice(deviceRef.current, opened.device)',
+    );
     expect(staleCleanup).not.toContain('connectionDriver.disconnect');
+  });
+
+  it('attachRfSession maps configure failure to superseded when generation changed', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody).toMatch(
+      /configureMeshtasticDeviceWithRetry[\s\S]*?catch \(err\)[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE/,
+    );
   });
 
   it('attachRfSession configures outside the node-hydrate IIFE (#895)', () => {

@@ -185,9 +185,11 @@ export function attachMeshtasticTransportLossWatch(
 
   const cleanups: (() => void)[] = [];
   let notified = false;
+  /** Detach invalidates the watcher so late write/pipe errors cannot trigger recovery. */
+  let active = true;
 
   const notify = (source: string, err?: unknown) => {
-    if (notified) return;
+    if (!active || notified) return;
     notified = true;
     console.warn(
       `[meshtasticTransportLoss] ${type} link lost (${source})` +
@@ -283,6 +285,7 @@ export function attachMeshtasticTransportLossWatch(
   }
 
   return () => {
+    active = false;
     for (const cleanup of cleanups) cleanup();
   };
 }

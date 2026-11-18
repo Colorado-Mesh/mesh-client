@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../lib/meshcoreContactGroupUtils';
-import { useContactGroups } from './useContactGroups';
+import { type BuiltinContactGroupFilterId, useContactGroups } from './useContactGroups';
 
 describe('useContactGroups', () => {
   beforeEach(() => {
@@ -26,8 +26,13 @@ describe('useContactGroups', () => {
 
   it('resets to defaultSelectedGroupId when selfNodeId changes', async () => {
     const { result, rerender } = renderHook(
-      ({ selfId, defaultId }: { selfId: number | null; defaultId: number | null }) =>
-        useContactGroups(selfId, defaultId),
+      ({
+        selfId,
+        defaultId,
+      }: {
+        selfId: number | null;
+        defaultId: BuiltinContactGroupFilterId | null;
+      }) => useContactGroups(selfId, defaultId),
       {
         initialProps: {
           selfId: 1,
@@ -50,7 +55,7 @@ describe('useContactGroups', () => {
   it('resets to defaultSelectedGroupId when protocol default changes', async () => {
     interface Props {
       selfId: number | null;
-      defaultId: number | null;
+      defaultId: BuiltinContactGroupFilterId | null;
     }
     const initialProps: Props = {
       selfId: 1,

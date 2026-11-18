@@ -19,7 +19,7 @@ Where Meshtastic uses **Nodes** and **Modules**, MeshCore uses **Contacts** and 
 1. Select **MC** (MeshCore, cyan) on the rail.
 2. **Device → Connection**: pick **Bluetooth**, **USB Serial**, or **TCP**, then **Connect** (or configure MQTT for receive/uplink without a radio).
 3. Wait for contacts and channels to finish loading. The header may show queued-message sync (**Fetching queued messages…** / **Sync now**).
-4. **Chat** shows channels and DMs. **Contacts** defaults to chat users; use **All contacts** (or Repeaters / Rooms tabs) for other types.
+4. **Chat** shows channels and DMs. Discover rooms under **Network → Room servers**; joined or engaged rooms appear under **Chat → Rooms**. **Contacts** defaults to chat users; use **All contacts** for every contact type (including Sensors), or the Repeaters / Rooms Network tabs for those types.
 5. Open **Device → Radio** for name/position advert, channels, and regional flood scope before you transmit on a new mesh.
 
 Optional: enable auto-connect on the Connection tab so the same radio reconnects on launch.

@@ -187,7 +187,7 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useBotSenderDetection } from './hooks/useBotSenderDetection';
 import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
 import { useConnectionView } from './hooks/useConnectionView';
-import { useContactGroups } from './hooks/useContactGroups';
+import { type BuiltinContactGroupFilterId, useContactGroups } from './hooks/useContactGroups';
 import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useDiagnosticSeverityAlerts } from './hooks/useDiagnosticSeverityAlerts';
@@ -359,7 +359,6 @@ import type {
 } from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { hydrateLoraBlocklists } from './lib/loraBlocklist';
-import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from './lib/meshcoreContactGroupUtils';
 import { meshcoreRoomServerIdsFromNodes } from './lib/meshcoreDbCacheHydration';
 import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
 import {
@@ -1454,7 +1453,7 @@ function AppContent() {
     typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
   const contactGroups = useContactGroups(
     contactGroupsSelfId,
-    protocol === 'meshcore' ? MESHCORE_BUILTIN_CONTACT_TYPE_CHAT : null,
+    activeProtocolCapabilities.defaultContactsGroupFilterId as BuiltinContactGroupFilterId | null,
   );
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);

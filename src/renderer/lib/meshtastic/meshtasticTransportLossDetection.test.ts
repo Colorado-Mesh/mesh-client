@@ -241,6 +241,27 @@ describe('meshtasticTransportLossDetection', () => {
     expect(device.onFromDevicePipeError).toBeUndefined();
   });
 
+  it('ignores write and pipe errors after detach invalidates the watcher', async () => {
+    const onLost = vi.fn();
+    const inner = new WritableStream<Uint8Array>({
+      write() {
+        throw new DOMException('The device has been lost.', 'NetworkError');
+      },
+    });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
+
+    const detach = attachMeshtasticTransportLossWatch(device, 'serial', onLost);
+    const wrappedWriter = device.transport.toDevice.getWriter();
+    const pipeHook = device.onFromDevicePipeError!;
+    detach();
+
+    await expect(wrappedWriter.write(new Uint8Array([1]))).rejects.toBeInstanceOf(DOMException);
+    pipeHook(new TypeError('Cannot write to a CLOSED writable stream'));
+    expect(onLost).not.toHaveBeenCalled();
+  });
+
   it('restores previous onFromDevicePipeError hook on cleanup', () => {
     const previous = vi.fn();
     const inner = new WritableStream<Uint8Array>({ write: vi.fn() });

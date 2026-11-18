@@ -56,7 +56,11 @@ import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
-import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../lib/meshcoreContactGroupUtils';
+import {
+  MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
+  MESHCORE_BUILTIN_CONTACT_TYPE_REPEATER,
+  MESHCORE_BUILTIN_CONTACT_TYPE_ROOM,
+} from '../lib/meshcoreContactGroupUtils';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -159,8 +163,16 @@ const BUILTIN_TYPE_FILTERS = [
     typeKey: 'nodeListPanel.meshcoreTypeChat' as const,
     hw_model: 'Chat',
   },
-  { group_id: -2, typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const, hw_model: 'Repeater' },
-  { group_id: -3, typeKey: 'nodeListPanel.meshcoreTypeRoom' as const, hw_model: 'Room' },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_REPEATER,
+    typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const,
+    hw_model: 'Repeater',
+  },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_ROOM,
+    typeKey: 'nodeListPanel.meshcoreTypeRoom' as const,
+    hw_model: 'Room',
+  },
 ] as const;
 
 function meshcoreContactTypeLabel(
@@ -726,14 +738,20 @@ function NodeListPanel({
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
     const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
     if (!homeCoords) return 'no-gps';
-    const totalWithGps = Array.from(nodes.values()).filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
-    ).length;
-    const visibleWithGps = baseNodeList.filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
-    ).length;
-    return { hidden: totalWithGps - visibleWithGps };
-  }, [locationFilter, myNodeNum, nodes, baseNodeList, ourPositionReference]);
+    // Count only distance rejections (same predicate as the list), before type/group filters,
+    // so nearby nodes excluded only by type contribute zero.
+    const maxKm =
+      locationFilter.unit === 'miles'
+        ? locationFilter.maxDistance * 1.60934
+        : locationFilter.maxDistance;
+    const hidden = Array.from(nodes.values()).filter((n) => {
+      if (n.node_id === myNodeNum) return false;
+      if (n.latitude == null || n.longitude == null) return false;
+      const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
+      return d > maxKm;
+    }).length;
+    return { hidden };
+  }, [locationFilter, myNodeNum, nodes, ourPositionReference]);
   const totalNodeCount = listTab === 'history' ? dmPeerIndex.size : nodes.size;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =

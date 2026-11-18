@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE } from '../lib/meshtastic/meshtasticAttachSuperseded';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { type MeshcoreSessionApi, registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import {
@@ -81,6 +82,22 @@ describe('useProtocolConnect (driver-first)', () => {
       'id-meshtastic-driver',
       expect.objectContaining({ message: 'configure failed' }),
     );
+    expect(meshtastic.attachRfSession).toHaveBeenCalled();
+  });
+
+  it('skips handleRfConnectFailure when attach is superseded', async () => {
+    const meshtastic = createMeshtasticSessionStub();
+    meshtastic.attachRfSession = vi
+      .fn()
+      .mockRejectedValue(new Error(MESHTASTIC_ATTACH_SUPERSEDED_MESSAGE));
+    registerMeshtasticSession(meshtastic);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await expect(
+      result.current('meshtastic', 'serial', undefined, undefined),
+    ).resolves.toBeUndefined();
+
+    expect(meshtastic.handleRfConnectFailure).not.toHaveBeenCalled();
     expect(meshtastic.attachRfSession).toHaveBeenCalled();
   });
 
