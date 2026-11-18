@@ -105,6 +105,33 @@ describe('createGithubApi', () => {
     );
   });
 
+  it('never reads a workflow file with an @ in its own name as e2e.yaml', async () => {
+    // A file named e2e.yaml@other.yaml is another workflow; only a trailing ref is dropped.
+    const { fetchImpl } = fakeFetch({
+      [`${base}/actions/runs?check_suite_id=81`]: [
+        200,
+        { total_count: 1, workflow_runs: [{ path: '.github/workflows/e2e.yaml@other.yaml' }] },
+      ],
+      [`${base}/actions/runs?check_suite_id=82`]: [
+        200,
+        {
+          total_count: 1,
+          workflow_runs: [{ path: '.github/workflows/e2e.yaml@other.yaml@refs/heads/main' }],
+        },
+      ],
+      // GitHub's own dynamic workflows (code scanning) report a path with no file name and no ref.
+      [`${base}/actions/runs?check_suite_id=83`]: [
+        200,
+        { total_count: 1, workflow_runs: [{ path: 'dynamic/github-code-scanning/codeql' }] },
+      ],
+    });
+    const api = createGithubApi({ token: 't', repo: 'Colorado-Mesh/mesh-client', fetchImpl });
+
+    expect(await api.workflowPathForCheckSuite(81)).toBe('.github/workflows/e2e.yaml@other.yaml');
+    expect(await api.workflowPathForCheckSuite(82)).toBe('.github/workflows/e2e.yaml@other.yaml');
+    expect(await api.workflowPathForCheckSuite(83)).toBe('dynamic/github-code-scanning/codeql');
+  });
+
   it('reads the tree a commit points at', async () => {
     const { fetchImpl } = fakeFetch({
       [`${base}/git/commits/c0mm1t`]: [200, { sha: 'c0mm1t', tree: { sha: 'tr33' } }],

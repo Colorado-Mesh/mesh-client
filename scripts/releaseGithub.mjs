@@ -10,6 +10,20 @@ const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const ORIGIN_PATTERN = /github\.com[:/]([^/\s]+\/[^/\s]+?)(?:\.git)?\/?$/;
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50;
+const WORKFLOW_FILE_END = /\.ya?ml$/;
+
+/**
+ * Drops the `@<ref>` GitHub may append to a workflow run's path, and nothing else. A file name can
+ * hold an `@` too, so only the last segment goes, and only when the path does not already end in a
+ * workflow file name: `e2e.yaml@other.yaml` is another workflow and stays whole. A ref that itself
+ * ends in `.yml` or `.yaml` is kept as well, so such a run counts for nothing rather than passing.
+ * @param {string} path
+ */
+function withoutTrailingRef(path) {
+  const at = path.lastIndexOf('@');
+  if (at <= 0 || WORKFLOW_FILE_END.test(path)) return path;
+  return path.slice(0, at);
+}
 
 /**
  * @param {{ env?: Record<string, string | undefined>, argRepo?: string, cwd: string }} options
@@ -104,7 +118,7 @@ export function createGithubApi({ token, repo, fetchImpl = fetch }) {
     workflowPathForCheckSuite: async (checkSuiteId) => {
       const path = (await request(`/actions/runs?check_suite_id=${checkSuiteId}`))
         ?.workflow_runs?.[0]?.path;
-      return typeof path === 'string' ? path.split('@', 1)[0] : null;
+      return typeof path === 'string' ? withoutTrailingRef(path) : null;
     },
     /** @param {string} tag @returns {Promise<boolean>} */
     tagExists: async (tag) => (await ref(`tags/${tag}`)) !== null,
