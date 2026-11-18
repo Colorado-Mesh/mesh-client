@@ -71,7 +71,7 @@ Then wait for `release.yaml` + `flatpak.yaml` to attach the draft artifacts, che
 
 A pull request's checks run before it merges, so they cover the release's tree only while nothing else reaches `main` between `release:open` and the merge. Merge the release pull request soon after its gates pass, and if something else merges first, run `pnpm run release:open` again before merging: the rebuilt pull request runs the gates again on the new tree.
 
-If the release merges anyway after `main` moved, Cut release fails at **Plan release tag** and names the gates that have not passed on the merged tree. Recover with one E2E run on `main`: run **Actions → E2E → Run workflow** on `main`, and when it passes, **Actions → Cut release → Run workflow** on `main` before anything else merges, so both runs see the same commit. Until then every push to `main` fails the same way, because `main` carries a version with no tag.
+If the release merges anyway after `main` moved, Cut release fails at **Plan release tag** and names the gates that have not passed on the merged tree. Recover with one E2E run on `main`: run **Actions → E2E → Run workflow** on `main`, and when it passes, **Actions → Cut release → Run workflow** on `main` before anything else merges, so both runs see the same commit. Until then every push to `main` fails the same way, because `main` carries a version with no tag. A tag on the release commit still takes its notes from the release pull request, which was written before the other changes merged, so add those to the notes when you check the draft. (A tag on a later commit builds its notes from the commit titles instead.)
 
 ### Hotfixes
 
