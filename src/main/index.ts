@@ -159,7 +159,10 @@ import {
 } from './gatt-sidecar-proxy';
 import { writeGattToRadio } from './gattIpcWrite';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
-import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
+import {
+  isHarmlessSocketOptionError,
+  isHarmlessStdioBrokenPipeError,
+} from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { seedIncidentsOn } from './incident-database';
@@ -729,6 +732,11 @@ process.on('uncaughtException', (error) => {
     );
     return;
   }
+  if (isHarmlessStdioBrokenPipeError(error)) {
+    // Terminal echo lost its pipe (GUI/AppImage); disk log still works (#1492).
+    console.warn('[main] Ignoring broken stdout/stderr pipe:', sanitizeLogMessage(error.message));
+    return;
+  }
   console.error(
     '[main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
@@ -743,6 +751,13 @@ process.on('unhandledRejection', (reason) => {
   if (isHarmlessSocketOptionError(reason)) {
     console.warn(
       '[main] Ignoring best-effort socket QoS failure:',
+      sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
+    );
+    return;
+  }
+  if (isHarmlessStdioBrokenPipeError(reason)) {
+    console.warn(
+      '[main] Ignoring broken stdout/stderr pipe:',
       sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
     );
     return;

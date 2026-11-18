@@ -361,6 +361,11 @@ function echoToOriginal(fn: (msg: string) => void, msg: string): void {
   }
 }
 
+/** Closed stdout/stderr pipe (#1492 AppImage). */
+function isStdioEpipe(err: unknown): boolean {
+  return err instanceof Error && (err as NodeJS.ErrnoException).code === 'EPIPE';
+}
+
 function resolveMainSource(): 'sdk' | 'main' {
   const stack = new Error().stack ?? '';
   return stack.includes('node_modules/@meshtastic') ? 'sdk' : 'main';
@@ -427,8 +432,17 @@ export function patchMainConsole(): void {
       } catch (e) {
         debugLogService('[log-service] patchStream write hook', e);
       }
-      return origWrite.apply(this, args as Parameters<typeof origWrite>);
+      try {
+        return origWrite.apply(this, args as Parameters<typeof origWrite>);
+      } catch (e) {
+        if (isStdioEpipe(e)) return false;
+        throw e;
+      }
     };
+    // Electron 45.3.x / Node 24.22.x: no default stdio 'error' listeners, so any
+    // 'error' (EPIPE or otherwise) with zero listeners → uncaughtException.
+    // A no-op listener suppresses that; disk logging remains the source of truth.
+    stream.on('error', () => {});
   };
   patchStream(process.stdout, 'log', 'stdout');
   patchStream(process.stderr, 'warn', 'stderr');
