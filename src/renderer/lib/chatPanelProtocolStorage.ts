@@ -838,6 +838,67 @@ export function ensureReticulumChatLastReadSanitized(
   return sanitized;
 }
 
+/** Set once the marks below were converted; a browser preference, so SQLite keeps it too. */
+const READ_MARKS_BY_ARRIVAL_KEY = 'mesh-client:readMarksByArrival';
+
+function lowerMarksAhead<K extends string | number>(
+  marks: Readonly<Record<K, number>>,
+  nowMs: number,
+): Record<K, number> | null {
+  let lowered: Record<K, number> | null = null;
+  for (const [key, mark] of Object.entries(marks) as [K, number][]) {
+    if (typeof mark !== 'number' || !(mark > nowMs)) continue;
+    lowered ??= { ...marks };
+    lowered[key] = nowMs;
+  }
+  return lowered;
+}
+
+/**
+ * Read marks saved before reads went by arrival were the newest read stamp, up to 300 s ahead of
+ * the clock (`MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC`). Arrivals after an upgrade inside that window
+ * would count as read, so at the first start of this version every Chat and Rooms mark ahead of
+ * the start drops to the start. A line read just before the upgrade whose stamp ran ahead can show
+ * as unread once; that is preferred to hiding a new line. Runs once: later marks come from
+ * receipts, which can sit ahead of this clock after a set-back. Call after durable hydration and
+ * before panels read marks; returns false when it did nothing (already done, or not hydrated).
+ */
+export function convertSavedReadMarksOnce(nowMs = Date.now()): boolean {
+  try {
+    if (localStorage.getItem(READ_MARKS_BY_ARRIVAL_KEY) === '1') return false;
+  } catch {
+    // catch-no-log-ok storage unavailable: try again at the next start
+    return false;
+  }
+  // Never write over a namespace that was not read from the database: an unreadable one keeps its
+  // saved value (its marks cannot be read anyway). With none read, the next start tries again.
+  const protocols = (['meshtastic', 'meshcore', 'reticulum'] as const).filter((protocol) =>
+    chatLastReadPersistence[protocol].isHydrated(),
+  );
+  const roomsHydrated = roomsLastReadPersistence.isHydrated();
+  if (protocols.length === 0 && !roomsHydrated) return false;
+  for (const protocol of protocols) {
+    const lowered = lowerMarksAhead(loadPersistedLastReadInitial(protocol), nowMs);
+    if (lowered) {
+      savePersistedLastRead(protocol, lowered);
+      notifyPersistedLastReadChanged(protocol);
+    }
+  }
+  const rooms = roomsHydrated ? lowerMarksAhead(loadPersistedRoomsLastRead(), nowMs) : null;
+  if (rooms) {
+    savePersistedRoomsLastRead(rooms);
+    notifyPersistedRoomsLastReadChanged();
+  }
+  try {
+    localStorage.setItem(READ_MARKS_BY_ARRIVAL_KEY, '1');
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] set read-mark conversion flag failed ' + errLikeToLogString(e),
+    );
+  }
+  return true;
+}
+
 /** Clamp MeshCore room last-read watermarks that exceed post times or client clock. */
 export function sanitizeMeshcoreRoomsLastRead(
   persisted: Readonly<Record<number, number>>,

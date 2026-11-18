@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { SecureSecretsStartup } from './components/SecureSecretsStartup';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import { installBundledEmojiData } from './lib/bundledEmojiData';
+import { convertSavedReadMarksOnce } from './lib/chatPanelProtocolStorage';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import { hydrateDurableRendererSettings } from './lib/hydrateDurableRendererSettings';
 import i18n from './lib/i18n';
@@ -71,6 +72,8 @@ async function finishRendererStorage(): Promise<void> {
     }
   }
   stopPreferencePersistence ??= installRendererPreferencePersistence();
+  // After the write-through (its flag must reach SQLite) and before App reads any read mark.
+  convertSavedReadMarksOnce();
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();
   // Own chunk (not App): avoids deliver/store edges reshuffling the App entry past 1000 kB.

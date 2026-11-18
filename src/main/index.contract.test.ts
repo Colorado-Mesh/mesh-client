@@ -72,6 +72,14 @@ describe('renderer origin cutover (source contract)', () => {
       renderer.indexOf('async function finishRendererStorage()'),
     );
     expect(finalization).toBeLessThan(renderer.indexOf('installRendererPreferencePersistence();'));
+    // Saved read marks are converted once, after the write-through (so the done flag reaches
+    // SQLite) and before App mounts (finishRendererStorage runs before SecureSecretsStartup's
+    // children render).
+    const markConversion = renderer.indexOf('convertSavedReadMarksOnce();');
+    expect(markConversion).toBeGreaterThan(
+      renderer.indexOf('installRendererPreferencePersistence();'),
+    );
+    expect(markConversion).toBeLessThan(renderer.indexOf('if (import.meta.env.DEV)'));
     expect(renderer.indexOf('<SecureSecretsStartup prepare=')).toBeLessThan(
       renderer.indexOf('<App />'),
     );
