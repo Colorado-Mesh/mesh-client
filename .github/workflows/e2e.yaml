@@ -4,11 +4,18 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
+# The 3-OS Electron E2E and the release preflight are the release gates. They run on release
+# pull requests to main (release/* branches from `pnpm run release:open`), daily on main and by
+# hand; Cut release tags only a tree they passed on. Every other pull request and merge group
+# skips them, and the Release gates job at the end reports the one check the main ruleset requires.
 # Schedules only run on the default branch (main). workflow_dispatch can run from any branch.
 on:
   schedule:
-    # Daily 09:00 UTC — restricted to main via job `if` below as defense in depth.
+    # Daily 09:00 UTC, restricted to main via the job `if` below as defense in depth.
     - cron: '0 9 * * *'
+  pull_request:
+    branches: [main]
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +25,12 @@ concurrency:
 jobs:
   e2e:
     name: Electron E2E (${{ matrix.os }})
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    # Same condition on release-preflight; the release pull request part also sets RELEASE_PR in
+    # release-gates. scripts/release-preflight.test.mjs pins all three.
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
     runs-on: ${{ matrix.os }}
@@ -105,12 +117,15 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # scripts/release.sh pre-flight on a fresh runner with the same composites as
-  # cut-release.yaml, stopping before any bump, tag, or push. Catches release-only
-  # breakage a warm local checkout hides (e.g. a check that needs .rsstack/).
+  # scripts/release.sh pre-flight on a fresh runner, stopping before any bump, tag, or push.
+  # On a release pull request it checks the exact tree that will be tagged; daily it catches
+  # release-only breakage a warm local checkout hides (e.g. a check that needs .rsstack/).
   release-preflight:
     name: Release preflight
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -134,3 +149,38 @@ jobs:
           MESH_CLIENT_RELEASE_YES: '1'
           MESH_CLIENT_RELEASE_PARSE_ONLY: ''
         run: pnpm run release -- --preflight-only
+
+  # The one check the main ruleset requires from this workflow. It is not a matrix job, so its
+  # name is the same whether or not the gates ran (a skipped matrix job does not report its
+  # expanded names). Plain always(): a cancelled run must fail here, because GitHub counts a
+  # skipped required check as passed. A release pull request passes only when every gate passed;
+  # anything else that skipped the gates passes at once. Cut release reads the gates themselves.
+  release-gates:
+    name: Release gates
+    needs: [e2e, release-preflight]
+    if: always()
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the release gates
+        env:
+          RELEASE_PR: >-
+            ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/') &&
+            github.event.pull_request.head.repo.full_name == github.repository }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          PREFLIGHT_RESULT: ${{ needs['release-preflight'].result }}
+        run: |
+          set -euo pipefail
+          if [ "${E2E_RESULT}" = success ] && [ "${PREFLIGHT_RESULT}" = success ]; then
+            echo 'Electron E2E on every operating system and the release preflight passed.'
+            exit 0
+          fi
+          if [ "${RELEASE_PR}" != true ] && [ "${E2E_RESULT}" = skipped ] &&
+            [ "${PREFLIGHT_RESULT}" = skipped ]; then
+            echo 'Not a release pull request: the gates run on release pull requests, daily and by hand.'
+            exit 0
+          fi
+          echo "::error::Release gates did not pass" \
+            "(Electron E2E: ${E2E_RESULT}, release preflight: ${PREFLIGHT_RESULT})."
+          exit 1

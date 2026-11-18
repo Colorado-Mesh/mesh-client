@@ -1,7 +1,15 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
+
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
-import { evaluateGates, gateMatchesName, REQUIRED_GATES } from './releaseGates.mjs';
+import {
+  evaluateGates,
+  gateMatchesName,
+  RELEASE_GATES_CHECK,
+  REQUIRED_GATES,
+} from './releaseGates.mjs';
 
 const HEAD = 'h'.repeat(40);
 const MERGED = 'm'.repeat(40);
@@ -22,6 +30,32 @@ const allGreen = (sha = HEAD) => [
   check('Electron E2E (windows-latest)', 'success', { sha }),
   check('Release preflight', 'success', { sha }),
 ];
+
+describe('e2e.yaml', () => {
+  const workflow = yaml.load(readFileSync('.github/workflows/e2e.yaml', 'utf8'));
+
+  it('reports each E2E gate from exactly one matrix leg and the preflight by its job name', () => {
+    const legs = workflow.jobs.e2e.strategy.matrix.os.map((os) =>
+      workflow.jobs.e2e.name.replace('${{ matrix.os }}', os),
+    );
+    expect(legs).toEqual([
+      'Electron E2E (ubuntu-24.04)',
+      'Electron E2E (macos-latest)',
+      'Electron E2E (windows-latest)',
+    ]);
+    const names = [...legs, workflow.jobs['release-preflight'].name];
+    for (const gate of REQUIRED_GATES) {
+      expect(
+        names.filter((name) => gateMatchesName(gate, name)),
+        gate.label,
+      ).toHaveLength(1);
+    }
+  });
+
+  it('names the job that sums the gates up as the ruleset requires it', () => {
+    expect(workflow.jobs['release-gates'].name).toBe(RELEASE_GATES_CHECK);
+  });
+});
 
 describe('REQUIRED_GATES', () => {
   it('matches each E2E leg by its runner prefix and the preflight by name', () => {
