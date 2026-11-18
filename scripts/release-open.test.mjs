@@ -311,6 +311,38 @@ describe('remoteRepository', () => {
       'Remote split fetches from Owner/repo but pushes to Fork/repo',
     );
   });
+
+  it('checks every URL git pushes to, not only the first', () => {
+    const { user } = released();
+    const addPush = (/** @type {string} */ remote, /** @type {string} */ url) =>
+      run(user, ['remote', 'set-url', '--add', '--push', remote, url]);
+    // Two push URLs: git push sends to both.
+    run(user, ['remote', 'add', 'twin', 'https://github.com/Owner/repo.git']);
+    addPush('twin', 'https://github.com/Owner/repo.git');
+    addPush('twin', 'git@github.com:Other/mirror.git');
+    expect(failureOf(() => remoteRepository(user, 'twin'))).toContain(
+      'Remote twin fetches from Owner/repo but pushes to Other/mirror',
+    );
+    // Two URLs and no push URL: git push sends to both URLs.
+    run(user, ['remote', 'add', 'pair', 'https://github.com/Owner/repo.git']);
+    run(user, ['remote', 'set-url', '--add', 'pair', 'https://github.com/Other/second.git']);
+    expect(failureOf(() => remoteRepository(user, 'pair'))).toContain(
+      'Remote pair fetches from Owner/repo but pushes to Other/second',
+    );
+    // A second push URL off github.com: refused, and its URL is never printed.
+    run(user, ['remote', 'add', 'mixed', 'https://github.com/Owner/repo.git']);
+    addPush('mixed', 'https://github.com/Owner/repo.git');
+    addPush('mixed', 'https://someone:secret-value@git.example.com/o/r.git');
+    const mixed = failureOf(() => remoteRepository(user, 'mixed'));
+    expect(mixed).toContain('Remote mixed is not a github.com repository');
+    expect(mixed).not.toContain('secret-value');
+    expect(mixed).not.toContain('example.com');
+    // Every push URL naming the fetch repository is fine, in any URL form.
+    run(user, ['remote', 'add', 'same', 'https://github.com/Owner/repo.git']);
+    addPush('same', 'https://github.com/Owner/repo.git');
+    addPush('same', 'git@github.com:Owner/repo.git');
+    expect(remoteRepository(user, 'same')).toBe('Owner/repo');
+  });
 });
 
 describe('ghRunner', () => {

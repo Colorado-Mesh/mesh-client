@@ -484,21 +484,23 @@ export function remoteRepository(cwd, remote, resolveSshHost = sshHostname) {
     git(cwd, ['remote', 'get-url', remote]),
     resolveSshHost,
   );
-  const pushRepo = githubRepoFromRemoteUrl(
-    git(cwd, ['remote', 'get-url', '--push', remote]),
-    resolveSshHost,
-  );
-  if (!fetchRepo || !pushRepo) {
+  // git push sends to every push URL (or to every URL when none is set), so each one is checked.
+  const pushRepos = git(cwd, ['remote', 'get-url', '--push', '--all', remote])
+    .split('\n')
+    .filter(Boolean)
+    .map((url) => githubRepoFromRemoteUrl(url, resolveSshHost));
+  if (!fetchRepo || pushRepos.some((repo) => !repo)) {
     throw new Error(
       `Remote ${remote} is not a github.com repository. release:open opens the release pull request in the repository it pushes to; pass --remote with a remote on github.com.`,
     );
   }
-  if (fetchRepo !== pushRepo) {
+  const elsewhere = pushRepos.find((repo) => repo !== fetchRepo);
+  if (elsewhere) {
     throw new Error(
-      `Remote ${remote} fetches from ${fetchRepo} but pushes to ${pushRepo}; release:open needs one repository.`,
+      `Remote ${remote} fetches from ${fetchRepo} but pushes to ${elsewhere}; release:open needs one repository.`,
     );
   }
-  return pushRepo;
+  return fetchRepo;
 }
 
 /**
