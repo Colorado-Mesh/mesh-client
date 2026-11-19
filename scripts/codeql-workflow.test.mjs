@@ -138,7 +138,7 @@ describe('CodeQL advanced workflow', () => {
     expect(filter['continue-on-error']).toBe(true);
     expect(filter.uses).toMatch(/^dorny\/paths-filter@[a-f0-9]{40}$/);
     expect(scope.permissions).toEqual({ contents: 'read', 'pull-requests': 'read' });
-    expect(scope.steps).toHaveLength(2);
+    expect(scope.steps).toHaveLength(3);
     expect(scope.outputs.matrix).toBe('${{ steps.matrix.outputs.matrix }}');
     expect(filters.all).toEqual(['**']);
     for (const file of ['README.md', 'native/ai/apple/main.swift']) {
@@ -150,9 +150,27 @@ describe('CodeQL advanced workflow', () => {
     )) {
       expect(step.if).toBe(selected);
     }
-    expect(job.steps.find((step) => step.name === 'Record unchanged Swift inputs').if).toBe(
-      "matrix.language == 'swift' && needs.scope.outputs.swift != 'true'",
+    const swiftSkipNote = scope.steps.find((step) => step.name === 'Record unchanged Swift inputs');
+    expect(swiftSkipNote.if).toBe(
+      "github.event_name == 'pull_request' && steps.filter.outcome == 'success' && " +
+        "steps.filter.outputs.all_count != '' && steps.filter.outputs.all_count < 3000 && " +
+        "steps.filter.outputs.swift == 'false'",
     );
+    expect(job.steps.find((step) => step.name === 'Record unchanged Swift inputs')).toBeUndefined();
+  });
+
+  it('does not record unchanged Swift inputs when the PR file list is truncated', () => {
+    const truncatedNoteIf =
+      "github.event_name == 'pull_request' && steps.filter.outcome == 'success' && " +
+      "steps.filter.outputs.all_count != '' && steps.filter.outputs.all_count < 3000 && " +
+      "steps.filter.outputs.swift == 'false'";
+    const swiftSkipNote = scope.steps.find((step) => step.name === 'Record unchanged Swift inputs');
+    expect(swiftSkipNote.if).toBe(truncatedNoteIf);
+    expect(scope.outputs.swift).toContain("steps.filter.outputs.all_count >= 3000");
+    const matrixStep = scope.steps.find((step) => step.id === 'matrix');
+    expect(matrixStep.run).toContain("process.env.SWIFT === 'true'");
+    const withSwiftWhenListTruncated = matrixFromStep(matrixStep.run, 'true');
+    expect(withSwiftWhenListTruncated.some((row) => row.language === 'swift')).toBe(true);
   });
 
   it.each([

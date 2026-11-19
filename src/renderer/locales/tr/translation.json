@@ -5807,7 +5807,7 @@
     "noiseFloorTitle": "Yerel gürültü seviyesi",
     "noiseFloorSourceRadio": "Bu telsizin alıcısı tarafından ölçülmüştür.",
     "noiseFloorValueDbm": "{{value}} dBm",
-    "noiseFloorElevated": "Kotuna getirilmiş",
+    "noiseFloorElevated": "Yükselmiş",
     "noiseFloorHistoryAria": "Gürültü tabanı min. {{min}} dBm, maks. {{max}} dBm, son {{last}} dBm",
     "noiseFloorMin": "Min",
     "noiseFloorMax": "Maks",

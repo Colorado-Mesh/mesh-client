@@ -1,8 +1,3 @@
-import {
-  MESHCORE_DB_MESSAGE_LOAD_LIMIT,
-  MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
-  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
-} from '../shared/meshcoreMessageHydration';
 import type { NodeSqliteDB } from './db-compat';
 
 /** Matches the shared classifier without rewriting legacy rows or colliding with dedup indexes. */
@@ -10,58 +5,6 @@ export const MESHCORE_MESSAGE_CHANNEL_SQL = `CASE
   WHEN room_server_id IS NOT NULL OR channel_idx = -2 THEN -2
   WHEN to_node > 0 AND to_node != 4294967295 THEN -1
   ELSE channel_idx END`;
-
-export interface MeshcoreHydrationLoadLimits {
-  globalLimit?: number;
-  perChannelLimit?: number;
-  roomLimit?: number;
-}
-
-/**
- * Fair MeshCore chat hydration: newest `globalLimit` rows by insert id, plus the newest
- * `perChannelLimit` (or `roomLimit` for logical channel -2) per logical channel so quiet
- * group slots are not crowded out by Public traffic.
- *
- * Returns oldest-first within the selected set (same order as `db:getMeshcoreMessages`).
- */
-export function selectMeshcoreMessagesForHydration(
-  db: NodeSqliteDB,
-  limits: MeshcoreHydrationLoadLimits = {},
-): Record<string, unknown>[] {
-  const globalLimit = Math.max(1, Math.trunc(limits.globalLimit ?? MESHCORE_DB_MESSAGE_LOAD_LIMIT));
-  const perChannelLimit = Math.max(
-    1,
-    Math.trunc(limits.perChannelLimit ?? MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT),
-  );
-  const roomLimit = Math.max(
-    1,
-    Math.trunc(limits.roomLimit ?? MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT),
-  );
-  // Embed MESHCORE_MESSAGE_CHANNEL_SQL once (CTE) to keep the main bundle lean.
-  return db
-    .prepareOnce(
-      `WITH base AS (
-         SELECT id, (${MESHCORE_MESSAGE_CHANNEL_SQL}) AS logical_channel
-         FROM meshcore_messages
-       ),
-       ranked AS (
-         SELECT id, logical_channel,
-           ROW_NUMBER() OVER (PARTITION BY logical_channel ORDER BY id DESC) AS channel_rn,
-           ROW_NUMBER() OVER (ORDER BY id DESC) AS global_rn
-         FROM base
-       )
-       SELECT m.*
-       FROM meshcore_messages m
-       WHERE m.id IN (
-         SELECT id FROM ranked
-         WHERE global_rn <= ?
-            OR (logical_channel = -2 AND channel_rn <= ?)
-            OR (logical_channel != -2 AND channel_rn <= ?)
-       )
-       ORDER BY m.id ASC`,
-    )
-    .all(globalLimit, roomLimit, perChannelLimit) as Record<string, unknown>[];
-}
 
 /**
  * Delete one channel's messages for this radio.
@@ -154,7 +97,8 @@ export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessage
           'reply_preview_sender = COALESCE(@reply_preview_sender, reply_preview_sender), ' +
           'rx_hops = COALESCE(@rx_hops, rx_hops), ' +
           'room_server_id = COALESCE(@room_server_id, room_server_id), ' +
-          'channel_key = COALESCE(channel_key, @channel_key) ' +
+          'channel_key = COALESCE(channel_key, @channel_key), ' +
+          'received_at = COALESCE(received_at, @received_at) ' +
           // A missing recipient may be repaired only on that same DM observation.
           `WHERE (sender_id = @sender_id OR (@sender_id IS NULL AND sender_id IS NULL AND ${sameObservationSql})) ` +
           `AND (to_node IS @to_node OR (@channel_idx = -1 AND (to_node IS NULL OR to_node = 0) ` +

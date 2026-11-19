@@ -127,6 +127,9 @@ ensure_repo() {
   fi
   ENSURE_REPO_SELECTED_REF=''
   if [[ ! -d "${dir}/.git" ]]; then
+    if [[ -e "${dir}" ]]; then
+      rm -rf -- "${dir}"
+    fi
     git clone "${expected_origin}" "${dir}"
   fi
   local actual_origin
@@ -207,8 +210,16 @@ ensure_repo() {
 }
 
 # Allow tests to `source` this script and call ensure_repo without cloning remotes.
+# Windows Git Bash can run `bash path/to/script.sh` with $0 still `bash` while
+# BASH_SOURCE[0] is the script — same as `source` on Unix, so only return early
+# when sourced (BASH_SOURCE[0] != $0) and not that direct-invocation pattern.
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
-  return 0
+  if [[ "${MESH_CLIENT_RATSPEAK_STACK_DEFINITIONS_ONLY:-}" == '1' ]]; then
+    return 0
+  fi
+  if [[ "$(basename -- "${0}")" != 'bash' ]]; then
+    return 0
+  fi
 fi
 
 echo "Preparing Ratspeak stack from latest-release resolved SHAs..."
@@ -246,6 +257,10 @@ lxmf_sha="$(git -C "${LXMF_DIR}" rev-parse HEAD)"
 nomad_sha="$(git -C "${NOMAD_DIR}" rev-parse HEAD)"
 lxst_sha="$(git -C "${LXST_DIR}" rev-parse HEAD)"
 lrgp_sha="$(git -C "${LRGP_DIR}" rev-parse HEAD)"
+if [[ ! -f "${LRGP_DIR}/Cargo.toml" ]]; then
+  echo "error: lrgp-rs checkout is missing Cargo.toml at ${LRGP_DIR}" >&2
+  exit 1
+fi
 echo "Ratspeak stack ready: rsReticulum @ ${rns_sha:0:12} (${rns_mode}), rsLXMF @ ${lxmf_sha:0:12} (${lxmf_mode}), rsNomad @ ${nomad_sha:0:12} (${nomad_mode}), rsLXST @ ${lxst_sha:0:12} (${lxst_mode}), lrgp-rs @ ${lrgp_sha:0:12} (${lrgp_mode})"
 echo "Ratspeak stack SHAs (full): rsReticulum=${rns_sha} rsLXMF=${lxmf_sha} rsNomad=${nomad_sha} rsLXST=${lxst_sha} lrgp-rs=${lrgp_sha}"
 # Record the verified SHAs alongside every packaged artifact.

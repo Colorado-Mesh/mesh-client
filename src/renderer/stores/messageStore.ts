@@ -6,7 +6,7 @@ import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
 import {
-  compareChatReceiveOrder,
+  compareChatReceiveOrderLocalIdTie,
   earliestChatReceivedAt,
   nextChatReceivedAt,
 } from '../lib/chatReceiveOrder';
@@ -325,12 +325,7 @@ function resolveLiveMessageCap(identityId: IdentityId): number {
 
 /** Oldest receipt first, so the cap never drops a message that just arrived with an old clock. */
 function compareMessageRecordsForTrim(a: MessageRecord, b: MessageRecord): number {
-  return compareChatReceiveOrder(a, b, (x, y) => {
-    const xOrder = x.localOrder ?? 0;
-    const yOrder = y.localOrder ?? 0;
-    if (xOrder !== yOrder) return xOrder - yOrder;
-    return x.id.localeCompare(y.id);
-  });
+  return compareChatReceiveOrderLocalIdTie(a, b);
 }
 
 function isProtectedFromLiveTrim(message: MessageRecord): boolean {

@@ -59,14 +59,18 @@ describe('persistMeshtasticMessage', () => {
     ]);
   });
 
-  it('leaves a row saved before receipt times without one when the same packet is saved again', () => {
+  it('backfills receipt when a legacy row had none and never overwrites an existing one', () => {
     const d = openDb();
     d.prepareOnce(
       'INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id) VALUES (?, ?, ?, ?, ?, ?)',
     ).run(row.sender_id, row.sender_name, row.payload, row.channel, row.timestamp, row.packet_id);
-    expect(persistMeshtasticMessage(d, row).changes).toBe(0);
+    expect(persistMeshtasticMessage(d, row).changes).toBe(1);
     expect(d.prepareOnce('SELECT received_at FROM messages').all()).toEqual([
-      { received_at: null },
+      { received_at: row.received_at },
+    ]);
+    expect(persistMeshtasticMessage(d, { ...row, received_at: 1_800_000_000_000 }).changes).toBe(0);
+    expect(d.prepareOnce('SELECT received_at FROM messages').all()).toEqual([
+      { received_at: row.received_at },
     ]);
   });
 });

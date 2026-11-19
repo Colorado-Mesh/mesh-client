@@ -5893,7 +5893,7 @@
     "noiseFloorValueDbm": "{{value}} дБм",
     "noiseFloorElevated": "Підвищена",
     "noiseFloorHistoryAria": "Мінімальний рівень шуму {{min}} дБм, максимальний рівень шуму {{max}} дБм, останній рівень шуму {{last}} дБм",
-    "noiseFloorMin": "Менше",
+    "noiseFloorMin": "Мін.",
     "noiseFloorMax": "Макс.",
     "noiseFloorLast": "Остання",
     "noiseFloorCollecting": "Збір зразків для міні-діаграми…",

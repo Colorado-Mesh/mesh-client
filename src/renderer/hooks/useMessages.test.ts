@@ -119,6 +119,65 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('useMessages tie-breaking', () => {
+  const ID = 'receive-order-tie';
+
+  beforeEach(() => {
+    registerIdentity(ID, meshtasticProtocol);
+  });
+
+  it('keeps relative order when two tied rows share receipt and wire time and one is updated', () => {
+    const shared = {
+      from: 1,
+      to: 0xffffffff,
+      channelIndex: 0,
+      timestamp: RECEIVED,
+      receivedAt: RECEIVED,
+      status: 'acked' as const,
+    };
+    replaceMessageRecordsForIdentity(ID, [
+      { id: 'alpha', payload: 'first', ...shared },
+      { id: 'beta', payload: 'second', ...shared },
+    ]);
+    expect(shownRows(ID).map((m) => m.payload)).toEqual(['first', 'second']);
+
+    upsertMessage(ID, { id: 'alpha', payload: 'first (updated)', ...shared });
+    expect(shownRows(ID).map((m) => m.payload)).toEqual(['first (updated)', 'second']);
+  });
+
+  it('breaks receipt ties by stable id when localOrder is absent', () => {
+    const shared = {
+      from: 1,
+      to: 0xffffffff,
+      channelIndex: 0,
+      timestamp: RECEIVED,
+      receivedAt: RECEIVED,
+      status: 'acked' as const,
+    };
+    replaceMessageRecordsForIdentity(ID, [
+      { id: 'beta', payload: 'second', ...shared },
+      { id: 'alpha', payload: 'first', ...shared },
+    ]);
+    expect(shownRows(ID).map((m) => m.payload)).toEqual(['first', 'second']);
+  });
+
+  it('breaks receipt ties by localOrder before id', () => {
+    const shared = {
+      from: 1,
+      to: 0xffffffff,
+      channelIndex: 0,
+      timestamp: RECEIVED,
+      receivedAt: RECEIVED,
+      status: 'acked' as const,
+    };
+    replaceMessageRecordsForIdentity(ID, [
+      { id: 'alpha', payload: 'first', localOrder: 2, ...shared },
+      { id: 'beta', payload: 'second', localOrder: 1, ...shared },
+    ]);
+    expect(shownRows(ID).map((m) => m.payload)).toEqual(['second', 'first']);
+  });
+});
+
 describe('MeshCore chat order', () => {
   const ID = 'receive-order-meshcore';
 

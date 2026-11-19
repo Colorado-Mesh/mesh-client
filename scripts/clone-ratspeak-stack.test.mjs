@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -105,6 +105,7 @@ function runEnsureRepo({
         ...fixtureEnv(),
         // Host shells often export RS_STACK_DISCARD_DIRTY=1 while debugging clones.
         RS_STACK_DISCARD_DIRTY: '',
+        MESH_CLIENT_RATSPEAK_STACK_DEFINITIONS_ONLY: '1',
         ...env,
       },
     },
@@ -125,6 +126,7 @@ function sourceCloneScript(env = {}) {
         GITHUB_ACTIONS: '',
         MESH_CLIENT_BUILD_CHANNEL: '',
         MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE: '',
+        MESH_CLIENT_RATSPEAK_STACK_DEFINITIONS_ONLY: '1',
         RS_LXST_REF: '',
         ...env,
       },
@@ -173,6 +175,11 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(cloneScript).toContain('RS_NOMAD_REF="$(select_ref RS_NOMAD_REF "${RS_NOMAD_PIN}"');
     expect(cloneScript).toContain('Colorado-Mesh/rsNomad.git');
     expect(cloneScript).toContain('"${RS_NOMAD_REF}" \'rsNomad\' "${RS_NOMAD_PIN}"');
+  });
+
+  it('skips clone when sourced with MESH_CLIENT_RATSPEAK_STACK_DEFINITIONS_ONLY', () => {
+    expect(cloneScript).toContain('MESH_CLIENT_RATSPEAK_STACK_DEFINITIONS_ONLY');
+    expect(cloneScript).toContain('basename -- "${0}"');
   });
 
   it('requires explicit local opt-in and rejects ref overrides in CI', () => {
@@ -374,6 +381,17 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(() =>
       runEnsureRepo({ remoteUrl: remote, destDir: dest, pinRef: '', reviewedPin: '' }),
     ).toThrow(/immutable source ref is required/);
+  });
+
+  it('ensure_repo replaces a stale non-git destination directory', () => {
+    const { remote, tipSha } = createLocalRemote({ defaultBranch: 'main' });
+    const dest = join(makeTempDir('workspace-'), 'lrgp-rs');
+    mkdirSync(dest, { recursive: true });
+    writeFileSync(join(dest, 'stale-marker'), 'not-a-clone', 'utf8');
+    const out = runEnsureRepo({ remoteUrl: remote, destDir: dest, pinRef: tipSha, label: 'lrgp-rs' });
+    expect(out).toContain(`SELECTED=${tipSha}`);
+    expect(existsSync(join(dest, '.git'))).toBe(true);
+    expect(existsSync(join(dest, 'stale-marker'))).toBe(false);
   });
 
   it('ensure_repo pins RS_LXST_REF and reports pinned mode + checkout SHA', () => {
