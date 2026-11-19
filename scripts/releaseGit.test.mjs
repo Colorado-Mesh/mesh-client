@@ -115,6 +115,39 @@ describe('history readers', () => {
     expect(latestReleaseTag(repo, 'HEAD')).toBeNull();
   });
 
+  it('skips a nearer pre-release tag such as v1.1.0-rc.1', () => {
+    const repo = newRepo();
+    commitFiles(repo, { 'a.txt': '1\n' }, 'one');
+    run(repo, ['tag', '-a', 'v1.0.0', '-m', 'Release 1.0.0']);
+    commitFiles(repo, { 'a.txt': '2\n' }, 'two');
+    run(repo, ['tag', '-a', 'v1.1.0-rc.1', '-m', 'Release candidate 1.1.0-rc.1']);
+    commitFiles(repo, { 'a.txt': '3\n' }, 'three');
+
+    expect(latestReleaseTag(repo, 'HEAD')).toBe('v1.0.0');
+  });
+
+  it('skips several nearer pre-release tags', () => {
+    const repo = newRepo();
+    commitFiles(repo, { 'a.txt': '1\n' }, 'one');
+    run(repo, ['tag', '-a', 'v1.0.0', '-m', 'Release 1.0.0']);
+    commitFiles(repo, { 'a.txt': '2\n' }, 'two');
+    run(repo, ['tag', '-a', 'v1.1.0-rc.1', '-m', 'Release candidate 1.1.0-rc.1']);
+    commitFiles(repo, { 'a.txt': '3\n' }, 'three');
+    run(repo, ['tag', '-a', 'v1.1.0-rc.2', '-m', 'Release candidate 1.1.0-rc.2']);
+    commitFiles(repo, { 'a.txt': '4\n' }, 'four');
+
+    expect(latestReleaseTag(repo, 'HEAD')).toBe('v1.0.0');
+  });
+
+  it('returns null when only a pre-release tag is reachable', () => {
+    const repo = newRepo();
+    commitFiles(repo, { 'a.txt': '1\n' }, 'one');
+    run(repo, ['tag', '-a', 'v1.1.0-rc.1', '-m', 'Release candidate 1.1.0-rc.1']);
+    commitFiles(repo, { 'a.txt': '2\n' }, 'two');
+
+    expect(latestReleaseTag(repo, 'HEAD')).toBeNull();
+  });
+
   it('lists commits with bodies and can skip merge commits', () => {
     const repo = newRepo();
     const base = commitFiles(repo, { 'a.txt': '1\n' }, 'base');

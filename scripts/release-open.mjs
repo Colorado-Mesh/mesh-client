@@ -194,7 +194,8 @@ function currentReleaseCommit({ cwd, remote, branch, sha, mainSha, tree, title }
 /**
  * Open release pull requests to main from this repository, newest first. Only `release/`
  * branches count, the ones this command creates: it force-pushes to the one it refreshes, so a
- * release-titled pull request from anyone's other branch or fork is never touched.
+ * release-titled pull request from anyone's other branch or fork is never touched. gh lists only
+ * the 30 newest by default, and the filter runs after that cut, so the limit is raised.
  * @param {(args: string[], input?: string) => string} gh
  * @returns {{ number: number, url: string, headRefName: string }[]}
  */
@@ -207,6 +208,8 @@ function openReleasePulls(gh) {
       'main',
       '--state',
       'open',
+      '--limit',
+      '1000',
       '--json',
       'number,url,headRefName,title,isCrossRepository',
     ]),

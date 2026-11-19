@@ -210,6 +210,10 @@ export async function runCli({ argv, env = process.env, cwd = process.cwd(), api
     console.error(
       'Run the E2E workflow on main (Actions, E2E, Run workflow). When it passes, run Cut release on main (Actions, Cut release, Run workflow) before anything else merges, so both runs see the same commit.',
     );
+    // A run on the head counts while the head holds the merged tree, so its failure still blocks.
+    console.error(
+      "If nothing else reached main since the release pull request merged, a failed or cancelled gate on that pull request's head still counts and an E2E run on main does not replace it: re-run the failed jobs of that pull request's E2E run (Actions, E2E, that pull request's run, Re-run failed jobs), then run Cut release on main.",
+    );
     return 1;
   }
   console.info(decision);

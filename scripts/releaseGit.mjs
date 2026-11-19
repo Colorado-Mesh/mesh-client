@@ -11,8 +11,13 @@ import path from 'node:path';
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 const UNIT_SEPARATOR = String.fromCharCode(0x1f);
 const RECORD_SEPARATOR = String.fromCharCode(0x1e);
-/** Release tags look like v6.8.0; the glob keeps other v-prefixed tags out of describe. */
+/**
+ * Release tags look like v6.8.0. The glob keeps most other tags out of describe, but its `*` also
+ * matches suffixed tags such as v1.1.0-rc.1, so a describe result is checked against the exact
+ * pattern too.
+ */
 const RELEASE_TAG_GLOB = 'v[0-9]*.[0-9]*.[0-9]*';
+const RELEASE_TAG = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 /**
  * @param {string} cwd
@@ -126,16 +131,31 @@ export function showFile(cwd, rev, file) {
 }
 
 /**
+ * Asks describe again with each suffixed tag it returns excluded, until it returns an exact
+ * vX.Y.Z tag or finds none. A tag name cannot hold `*`, `?` or `[`, so as an --exclude glob it
+ * matches only itself.
  * @param {string} cwd
  * @param {string} rev
- * @returns {string | null} nearest vX.Y.Z tag reachable from `rev`
+ * @returns {string | null} nearest tag reachable from `rev` that is exactly vX.Y.Z
  */
 export function latestReleaseTag(cwd, rev) {
-  const args = ['describe', '--tags', '--abbrev=0', '--match', RELEASE_TAG_GLOB, rev];
-  const result = runGit(cwd, args);
-  if (result.status === 0) return result.stdout.trim();
-  if (/No names found|No tags can describe|cannot describe/i.test(result.stderr)) return null;
-  throw gitFailure(args, result);
+  const excluded = [];
+  for (;;) {
+    const args = ['describe', '--tags', '--abbrev=0', '--match', RELEASE_TAG_GLOB];
+    for (const tag of excluded) args.push('--exclude', tag);
+    args.push(rev);
+    const result = runGit(cwd, args);
+    if (result.status !== 0) {
+      if (/No names found|No tags can describe|cannot describe/i.test(result.stderr)) return null;
+      throw gitFailure(args, result);
+    }
+    const tag = result.stdout.trim();
+    if (RELEASE_TAG.test(tag)) return tag;
+    if (excluded.includes(tag)) {
+      throw new Error(`git describe returned ${tag} although it was excluded`);
+    }
+    excluded.push(tag);
+  }
 }
 
 /**

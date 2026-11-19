@@ -420,6 +420,36 @@ describe('runCli', { timeout: 60_000 }, () => {
     expect(printed).toContain('run Cut release on main');
     expect(readFileSync(files.summary, 'utf8')).toContain('Blocked');
   });
+
+  it('says to re-run the pull request run when its failed gate still blocks a passing main', async () => {
+    const { fixture, head, sha, pull } = await mergedRelease();
+    const failed = passedOn(head).map((check) =>
+      check.name === 'Release preflight' ? { ...check, conclusion: 'failure' } : check,
+    );
+    const files = outputs();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const code = await runCli({
+      argv: ['--sha', sha],
+      env: { GITHUB_OUTPUT: files.output, GITHUB_STEP_SUMMARY: files.summary },
+      cwd: fixture.user,
+      api: apiFor(fixture.remote, {
+        pulls: [pull],
+        checks: { [sha]: [...skippedOn(sha), ...passedOn(sha, 200)], [head]: failed },
+      }),
+    });
+
+    expect(code).toBe(1);
+    const printed = errors.mock.calls.map((call) => call.join(' ')).join('\n');
+    expect(printed).toContain('Release preflight (failure)');
+    expect(printed).toContain(
+      "If nothing else reached main since the release pull request merged, a failed or cancelled gate on that pull request's head still counts",
+    );
+    expect(printed).toContain(
+      "re-run the failed jobs of that pull request's E2E run (Actions, E2E, that pull request's run, Re-run failed jobs), then run Cut release on main",
+    );
+  });
 });
 
 describe('annotated tag message', () => {

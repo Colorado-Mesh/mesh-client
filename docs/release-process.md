@@ -388,6 +388,8 @@ git push origin :refs/tags/vX.Y.Z
 
 The plan names the gates that have not passed on the commit's tree, for example `Electron E2E on macOS (no run)`. That happens when a gate failed on the release pull request, or when something else reached `main` between the release pull request's checks and its merge. Run **Actions → E2E → Run workflow** on `main`; when it passes, run **Actions → Cut release → Run workflow** on `main` before anything else merges. See [When `main` moves before the release merges](#when-main-moves-before-the-release-merges).
 
+That E2E run on `main` is for when `main` moved. If nothing else reached `main` since the release pull request merged, a failed or cancelled gate on that pull request's head still counts, and an E2E run on `main` does not replace it. Re-run the failed jobs of the release pull request's E2E run (**Actions, E2E**, that pull request's run, **Re-run failed jobs**); when they pass, run **Cut release** on `main` (Actions, Cut release, Run workflow).
+
 ### Build fails due to native modules
 
 ```bash

@@ -33,6 +33,7 @@ const subjectOf = (remote, ref) => remoteGit(remote, ['log', '-1', '--format=%s'
 /**
  * A stand-in for `gh` that keeps its pull requests and filters `pr list` by base, head and state
  * the way GitHub does, so a lookup that relies on the wrong filter fails here as it would there.
+ * Like gh, `pr list` returns the newest first and at most `--limit` of them (30 by default).
  * Created pull requests are numbered from 42.
  */
 function fakeGh({ prs = [] } = {}) {
@@ -57,12 +58,16 @@ function fakeGh({ prs = [] } = {}) {
       const head = flag(args, '--head');
       const state = (flag(args, '--state') ?? 'open').toUpperCase();
       const fields = (flag(args, '--json') ?? '').split(',');
-      const listed = pulls.filter(
-        (pr) =>
-          (!base || pr.baseRefName === base) &&
-          (!head || pr.headRefName === head) &&
-          pr.state === state,
-      );
+      const limit = Number(flag(args, '--limit') ?? 30);
+      const listed = pulls
+        .filter(
+          (pr) =>
+            (!base || pr.baseRefName === base) &&
+            (!head || pr.headRefName === head) &&
+            pr.state === state,
+        )
+        .sort((a, b) => b.number - a.number)
+        .slice(0, limit);
       return JSON.stringify(
         listed.map((pr) => Object.fromEntries(fields.map((field) => [field, pr[field]]))),
       );
@@ -571,6 +576,35 @@ describe('openRelease', { timeout: 60_000 }, () => {
       [40, 'CLOSED'],
       [41, 'OPEN'],
     ]);
+  });
+
+  it('finds an older release pull request behind more than 30 newer open ones', async () => {
+    const { seed, user } = released();
+    land(seed, { 'maps.txt': 'maps\n' }, 'feat: maps (#1)');
+    const ordinary = Array.from({ length: 30 }, (_, index) => {
+      const number = 11 + index;
+      return { number, headRefName: `feature/change-${number}`, title: `fix: change ${number}` };
+    });
+    const fake = fakeGh({
+      prs: [
+        {
+          number: 10,
+          headRefName: 'release/v1.0.1',
+          title: 'chore: release v1.0.1',
+          url: 'https://example.test/pull/10',
+        },
+        ...ordinary,
+      ],
+    });
+
+    const result = await open(user, fake.gh);
+
+    expect(result).toMatchObject({ status: 'updated', branch: 'release/v1.0.1', superseded: [] });
+    expect(fake.calls.filter((call) => call.args[1] === 'create')).toEqual([]);
+    expect(fake.pulls.find((pr) => pr.number === 10)).toMatchObject({
+      title: 'chore: release v1.1.0',
+      state: 'OPEN',
+    });
   });
 
   it('counts the next version from main while a merged release waits for its tag', async () => {
