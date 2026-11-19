@@ -58,6 +58,7 @@ import {
 import {
   chatReadOrderMs,
   chatReceivedAtMs,
+  chatSummaryOrderMs,
   compareChatReceiveOrder,
   isChatReadOrderPoisoned,
   latestChatReadMs,
@@ -512,8 +513,9 @@ export default function RoomsPanel({
       aiEnabled
         ? roomPosts.map((m) => ({
             at: m.timestamp,
-            // Catch up picks "since last read" posts by arrival, like the read mark.
-            order: chatReceivedAtMs(m),
+            // Catch up picks "since last read" posts by arrival, like the read mark, and skips the
+            // posts the unread counts skip.
+            order: chatSummaryOrderMs(m),
             sender: m.sender_name.slice(0, 120),
             body: m.payload,
           }))

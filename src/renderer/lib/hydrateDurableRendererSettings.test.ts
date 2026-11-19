@@ -512,6 +512,7 @@ describe('read marks saved before reads went by arrival', () => {
     }
     // A later start while this clock is set back: receipts, and marks taken from them, run ahead.
     database[KEYS.chatLastRead.meshcore] = JSON.stringify({ 'ch:0': start + 3_600_000 });
+    database[KEYS.roomsLastRead] = JSON.stringify({ 512: start + 1_800_000 });
     const later = await launch();
     try {
       expect(localStorage.getItem('mesh-client:readMarksByArrival')).toBe('1');
@@ -519,6 +520,49 @@ describe('read marks saved before reads went by arrival', () => {
       expect(later.chat.loadPersistedLastReadInitial('meshcore')).toEqual({
         'ch:0': start + 3_600_000,
       });
+      // The receipt clock resumes above the saved marks, so the first line that arrives while the
+      // clock is still set back lands above them and counts as unread.
+      later.chat.observeSavedReadMarks(start);
+      const { nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(nextChatReceivedAt(start)).toBeGreaterThan(start + 3_600_000);
+    } finally {
+      later.stop();
+    }
+  });
+
+  it('starts the receipt clock above a converted mark when the clock is later set back', async () => {
+    database[KEYS.roomsLastRead] = JSON.stringify({ 512: start + 200_000 });
+    const { chat, stop } = await launch();
+    try {
+      expect(chat.convertSavedReadMarksOnce(start)).toBe(true);
+      expect(chat.loadPersistedRoomsLastRead()).toEqual({ 512: start });
+      // Clock set back an hour before the next line arrives.
+      const back = start - 3_600_000;
+      chat.observeSavedReadMarks(back);
+      const { nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(nextChatReceivedAt(back)).toBeGreaterThan(start);
+    } finally {
+      stop();
+    }
+  });
+
+  // The same one-day bound as a saved receipt: a mark further ahead is broken, so it must not move
+  // the receipt clock, or it would hold every new line under it and pass its own sanitizer.
+  it('ignores a saved mark more than a day ahead of the clock', async () => {
+    const first = await launch();
+    try {
+      expect(first.chat.convertSavedReadMarksOnce(start)).toBe(true);
+      await first.preferences.flushRendererPreferences();
+    } finally {
+      first.stop();
+    }
+    database[KEYS.chatLastRead.meshtastic] = JSON.stringify({ 'dm:9': start + 2 * 86_400_000 });
+    const later = await launch();
+    try {
+      later.chat.observeSavedReadMarks(start);
+      const { chatReadClockMs, nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(chatReadClockMs(start)).toBe(start);
+      expect(nextChatReceivedAt(start)).toBe(start);
     } finally {
       later.stop();
     }

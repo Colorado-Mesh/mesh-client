@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from 'vitest';
+import type { IpcMain } from 'electron';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
@@ -7,7 +8,51 @@ import {
   readMeshcoreIdentityHydration,
   readMeshtasticIdentityHydration,
   readMeshtasticMessages,
+  registerIdentityHydrationIpcHandlers,
 } from './identityHydrationSnapshot';
+
+describe('identity hydration IPC handlers', () => {
+  const CHANNELS = [
+    'db:getMessages',
+    'db:getMeshtasticIdentityHydration',
+    'db:getMeshcoreIdentityHydration',
+  ] as const;
+
+  function register() {
+    const handlers = new Map<string, (event: unknown, ...args: unknown[]) => unknown>();
+    const ipcMain = {
+      handle: (channel: string, handler: (event: unknown, ...args: unknown[]) => unknown) => {
+        handlers.set(channel, handler);
+      },
+    } as unknown as IpcMain;
+    const refused = new Error('untrusted sender');
+    const assertIpcSender = vi.fn((event: unknown) => {
+      if (event !== 'trusted') throw refused;
+    });
+    const getDbForIpc = vi.fn(() => null);
+    const finishDbIpcHandler = vi.fn();
+    registerIdentityHydrationIpcHandlers({
+      ipcMain,
+      assertIpcSender,
+      getDbForIpc,
+      finishDbIpcHandler,
+    });
+    return { handlers, refused, assertIpcSender, getDbForIpc, finishDbIpcHandler };
+  }
+
+  it.each(CHANNELS)('%s checks the sender before it opens the database', (channel) => {
+    const { handlers, refused, assertIpcSender, getDbForIpc, finishDbIpcHandler } = register();
+    const handler = handlers.get(channel);
+    expect(handler).toBeDefined();
+    handler?.('untrusted');
+    expect(assertIpcSender).toHaveBeenCalledWith('untrusted', channel);
+    expect(getDbForIpc).not.toHaveBeenCalled();
+    expect(finishDbIpcHandler).toHaveBeenCalledWith(channel, refused);
+    // A trusted sender reaches the database.
+    handler?.('trusted');
+    expect(getDbForIpc).toHaveBeenCalledWith(channel);
+  });
+});
 
 describe('identityHydrationSnapshot', () => {
   let db: NodeSqliteDB | undefined;

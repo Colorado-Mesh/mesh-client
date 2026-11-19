@@ -154,3 +154,22 @@ describe('read marks after this clock is set back', () => {
     expect(sanitizeNumericKeyLastRead({ 1: readAt + 60_000 }, { 1: readAt }, back)[1]).toBe(readAt);
   });
 });
+
+// A row saved before receipts were kept, stamped by a clock 2 min fast, is the newest key; a
+// mark 1 min ahead of this clock is lowered, never raised to that stamp.
+describe('lowering a mark never raises it', () => {
+  const now = 1_700_000_000_000;
+
+  it('caps a view-key mark at the read clock when the newest key is past both', () => {
+    const maxByKey = maxMessageTimestampByViewKey([{ channel: 0, timestamp: now + 120_000 }]);
+    expect(maxByKey['ch:0']).toBe(now + 120_000);
+    expect(sanitizeViewKeyLastRead({ 'ch:0': now + 60_000 }, maxByKey, now)['ch:0']).toBe(now);
+  });
+
+  it('caps a room mark at the read clock when the newest key is past both', () => {
+    const maxById = maxRoomPostTimestampByServerId([
+      { roomServerId: 0xabc, timestamp: now + 120_000 },
+    ]);
+    expect(sanitizeNumericKeyLastRead({ 0xabc: now + 60_000 }, maxById, now)[0xabc]).toBe(now);
+  });
+});

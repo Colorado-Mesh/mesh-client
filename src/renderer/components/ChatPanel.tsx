@@ -196,6 +196,7 @@ import {
   chatReadOrderMs,
   chatReceivedAtMs,
   chatSentOnAnotherDay,
+  chatSummaryOrderMs,
   isChatReadOrderPoisoned,
   latestChatReadMs,
 } from '../lib/chatReceiveOrder';
@@ -3204,8 +3205,9 @@ function ChatPanel({
       aiEnabled
         ? viewMessages.map((m) => ({
             at: m.timestamp,
-            // Catch up picks "since last read" lines by arrival, like the read mark.
-            order: chatReceivedAtMs(m),
+            // Catch up picks "since last read" lines by arrival, like the read mark, and skips the
+            // rows the unread counts skip.
+            order: chatSummaryOrderMs(m),
             sender: m.sender_name.slice(0, 120),
             body: m.payload,
           }))
@@ -4649,14 +4651,16 @@ function ChatPanel({
                   nextMsg.sender_id === msg.sender_id &&
                   !daySeparatorIndices.has(i + 1);
                 const isFollowedByContinuation = compactMode && nextIsSameSender;
-                // A pause in arrivals, or a stamp that jumps (a clock that is off), shows the time.
+                // A pause in arrivals, a stamp that jumps (a clock that is off), or a stamp on
+                // another day than the arrival day under the day separator shows the time.
                 const showContinuationTime =
                   isContinuation &&
                   prevMsg !== null &&
                   (chatReceivedAtMs(msg) - chatReceivedAtMs(prevMsg) >=
                     CHAT_COMPACT_CONTINUATION_TIME_GAP_MS ||
                     Math.abs(msg.timestamp - prevMsg.timestamp) >=
-                      CHAT_COMPACT_CONTINUATION_TIME_GAP_MS);
+                      CHAT_COMPACT_CONTINUATION_TIME_GAP_MS ||
+                    chatSentOnAnotherDay(msg));
 
                 /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
                 const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);

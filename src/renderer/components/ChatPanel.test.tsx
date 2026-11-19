@@ -1211,7 +1211,10 @@ describe('ChatPanel compact mode', () => {
     const base = new Date('2026-05-09T12:00:00').getTime();
     const MINUTE = 60_000;
 
-    function renderPair(second: { timestamp: number; receivedAt: number }) {
+    function renderPair(
+      second: { timestamp: number; receivedAt: number },
+      first: { timestamp: number; receivedAt: number } = { timestamp: base, receivedAt: base },
+    ) {
       render(
         <ToastProvider>
           <ChatPanel
@@ -1222,8 +1225,8 @@ describe('ChatPanel compact mode', () => {
                 sender_name: 'JCR2',
                 payload: 'first line',
                 channel: 0,
-                timestamp: base,
-                receivedAt: base,
+                timestamp: first.timestamp,
+                receivedAt: first.receivedAt,
                 status: 'acked',
               },
               {
@@ -1261,6 +1264,18 @@ describe('ChatPanel compact mode', () => {
       const label = renderPair({ timestamp: stamped, receivedAt: base + MINUTE });
       expect(label).not.toBeNull();
       expect(label?.textContent?.startsWith(`${formatIsoDate(stamped)} `)).toBe(true);
+    });
+
+    // Both lines arrived just after midnight, a minute apart, stamped just before it: the gaps are
+    // small, but the day separator above says today, so the line shows yesterday's date.
+    it('shows the sender date on a close continuation stamped the day before it arrived', () => {
+      const midnight = new Date('2026-05-10T00:00:00').getTime();
+      const label = renderPair(
+        { timestamp: midnight - MINUTE, receivedAt: midnight + MINUTE },
+        { timestamp: midnight - 2 * MINUTE, receivedAt: midnight + 30_000 },
+      );
+      expect(label).not.toBeNull();
+      expect(label?.textContent?.startsWith(`${formatIsoDate(midnight - MINUTE)} `)).toBe(true);
     });
 
     it('hides the time when both the stamps and the arrivals are close', () => {

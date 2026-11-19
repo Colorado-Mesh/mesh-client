@@ -640,6 +640,28 @@ describe('conversation summary async boundaries', () => {
       }),
     );
   });
+  // History returns rows from the mark on, so the last line read comes back too. Matched to an
+  // unread live line with the same stamp, sender and text, it let the saved unread copy through
+  // as well and the line went to the model twice.
+  it('sends an unread line once when a read saved line has the same stamp, sender and text', async () => {
+    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+      { at: 5_000, order: 10_000, sender: 'Alice', body: 'ok' },
+      { at: 5_000, order: 11_000, sender: 'Alice', body: 'ok' },
+    ]);
+    const { result } = renderHook(() =>
+      useConversationSummary({
+        ...input,
+        watermark: 10_000,
+        messages: [{ at: 5_000, order: 11_000, sender: 'Alice', body: 'ok' }],
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({ messages: [{ at: 5_000, sender: 'Alice', body: 'ok' }] }),
+    );
+  });
   it('cancels history loading promptly and ignores a late failure after dismiss', async () => {
     let reject!: (error: Error) => void;
     vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(

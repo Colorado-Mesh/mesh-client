@@ -105,16 +105,32 @@ export function chatReadOrderMs(message: ChatReceiveOrderFields, nowMs = Date.no
 }
 
 /**
- * True when the order key is too far ahead of the read clock to trust: a saved stamp from a fast
- * clock, or a receipt saved before this clock was set back by more than a day (see
- * {@link observeSavedChatReceivedAt}). Such a row never counts as unread and never sets a read
- * mark.
+ * True when the order key is too far ahead to trust. Such a row never counts as unread and never
+ * sets a read mark.
+ * - A receipt is this app's own clock, so any receipt above the read clock is broken: one saved
+ *   before this clock was set back by more than a day (see {@link observeSavedChatReceivedAt}).
+ * - A sender stamp (rows saved before receipts were kept) gets the usual five minutes over this
+ *   clock, and is also usable up to the read clock; it never gets five minutes over receipts that
+ *   ran ahead, or it would set a mark above the next receipt.
+ * `nowMs` is this clock, never the read clock.
  */
 export function isChatReadOrderPoisoned(
   message: ChatReceiveOrderFields,
   nowMs = Date.now(),
 ): boolean {
-  return isUnreasonablyFutureMessageTimestampMs(chatReceivedAtMs(message), chatReadClockMs(nowMs));
+  const readNow = chatReadClockMs(nowMs);
+  if (message.receivedAt != null) return message.receivedAt > readNow;
+  return (
+    isUnreasonablyFutureMessageTimestampMs(message.timestamp, nowMs) && message.timestamp > readNow
+  );
+}
+
+/**
+ * Catch up's "since last read" key for a loaded line: its read key, or 0 for a row the unread
+ * counts and the divider skip, so it is never summarized as unread either.
+ */
+export function chatSummaryOrderMs(message: ChatReceiveOrderFields, nowMs = Date.now()): number {
+  return isChatReadOrderPoisoned(message, nowMs) ? 0 : chatReadOrderMs(message, nowMs);
 }
 
 /** Read mark for a conversation: its newest usable read key, capped like any mark; 0 when none. */
@@ -122,14 +138,13 @@ export function latestChatReadMs(
   messages: readonly ChatReceiveOrderFields[],
   nowMs = Date.now(),
 ): number {
-  const readNow = chatReadClockMs(nowMs);
   let latest = 0;
   for (const message of messages) {
-    if (isChatReadOrderPoisoned(message, readNow)) continue;
-    const at = chatReadOrderMs(message, readNow);
+    if (isChatReadOrderPoisoned(message, nowMs)) continue;
+    const at = chatReadOrderMs(message, nowMs);
     if (at > latest) latest = at;
   }
-  return clampReadWatermarkMs(latest, readNow);
+  return clampChatReadMarkMs(latest, nowMs);
 }
 
 /** Ascending receipt order; ties fall back to the wire time, then to `tieBreak`. */

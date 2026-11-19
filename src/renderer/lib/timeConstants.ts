@@ -282,9 +282,10 @@ export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 /** Chat screen-reader announcements: at most one per window; bursts collapse to a count. */
 export const CHAT_SR_ANNOUNCE_WINDOW_MS = MS_PER_SECOND;
 /**
- * A saved chat receipt at most this far ahead of the clock resumes the receipt clock after a
- * restart (this clock was set back since). Further ahead it is treated as broken and ignored, so
- * new arrivals are never stamped more than a day past real time (`chatReceiveOrder.ts`).
+ * Seed limit: a saved chat receipt or read mark at most this far ahead of the clock (inclusive)
+ * resumes the receipt clock after a restart (this clock was set back since). Further ahead it is
+ * treated as broken and ignored (`chatReceiveOrder.ts`). New receipts still count up from the
+ * seed, so they can run a little more than this past the clock.
  */
 export const CHAT_RECEIPT_SEED_MAX_LEAD_MS = MS_PER_DAY;
 /** Debounce repeated companion CONTACTS_FULL (0x90) alarm toasts. */

@@ -75,7 +75,10 @@ export function sanitizeViewKeyLastRead(
     if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
     const maxMsg = maxByKey[key] ?? 0;
     let clamped = clampReadWatermarkMs(watermark, readNow);
-    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
+    // Lowering only: the newest key can be a stamp ahead of the read clock (and of the mark).
+    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) {
+      clamped = Math.min(maxMsg, readNow, watermark);
+    }
     if (clamped !== watermark) {
       next[key] = clamped;
       changed = true;
@@ -98,7 +101,10 @@ export function sanitizeNumericKeyLastRead(
     if (!Number.isFinite(nodeId)) continue;
     const maxMsg = maxById[nodeId] ?? 0;
     let clamped = clampReadWatermarkMs(watermark, readNow);
-    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
+    // Lowering only: the newest key can be a stamp ahead of the read clock (and of the mark).
+    if (watermark > readNow || (maxMsg > 0 && clamped > maxMsg)) {
+      clamped = Math.min(maxMsg, readNow, watermark);
+    }
     if (clamped !== watermark) {
       next[nodeId] = clamped;
       changed = true;

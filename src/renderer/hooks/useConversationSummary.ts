@@ -189,11 +189,20 @@ export function useConversationSummary(input: ConversationSummaryInput) {
         const visible = input.includeHistoryMessage
           ? normalized.filter(input.includeHistoryMessage)
           : normalized;
+        // History returns rows from the mark on, the last line read included; "since last read"
+        // drops read lines on both sides first, so a read saved line is never matched to an unread
+        // live line with the same stamp, sender and text (and the saved copy let through too).
+        const inScope = <T extends AiSummaryLiveMessage>(rows: T[]): T[] =>
+          scope.kind === 'unread'
+            ? selectSummaryMessages({ messages: rows, scope, watermark: input.watermark, now })
+            : rows;
         messages = mergeSummaryMessages(
-          visible.map(({ at, sender, body, order }) =>
-            order != null ? { at, sender, body, order } : { at, sender, body },
+          inScope(
+            visible.map(({ at, sender, body, order }) =>
+              order != null ? { at, sender, body, order } : { at, sender, body },
+            ),
           ),
-          messages,
+          inScope(messages),
         );
       }
       if (!isCurrent()) return;
