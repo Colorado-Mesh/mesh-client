@@ -2258,6 +2258,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#always-on-support-timings-renderertimings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-on Support timings (rendererTimings)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#vitest-micro-benchmark-not-ci" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3091,6 +3102,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#always-on-support-timings-renderertimings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-on Support timings (rendererTimings)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#vitest-micro-benchmark-not-ci" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3157,8 +3179,54 @@
 <ul>
 <li><code>store-&gt;chat:meshtastic</code> / <code>store-&gt;chat:meshcore</code> / <code>store-&gt;chat:reticulum</code> — store→<code>ChatMessage[]</code> pipeline (repair + remap where applicable)</li>
 <li><code>repairMeshtasticReplyPreviews</code> — Meshtastic reply-parent repair only</li>
+<li><code>protocol-switch</code> — opt-in span around the protocol transition commit body</li>
 </ul>
 <p>Disable with <code>localStorage.removeItem('mesh-client:perf')</code> and reload.</p>
+<h2 id="always-on-support-timings-renderertimings">Always-on Support timings (<code>rendererTimings</code>)<a class="headerlink" href="#always-on-support-timings-renderertimings" title="Permanent link">&para;</a></h2>
+<p><code>startLongTaskProbe()</code> runs from <code>main.tsx</code> (no perf flag). Samples export in Support / debug snapshots as <code>rendererTimings</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>longTask</code></td>
+<td>Browser Long Task ≥ 200 ms</td>
+</tr>
+<tr>
+<td><code>protocolSwitch:urgent</code></td>
+<td>Click → sync rail / handler return</td>
+</tr>
+<tr>
+<td><code>protocolSwitch:commit</code></td>
+<td>Click → transition body ran</td>
+</tr>
+<tr>
+<td><code>protocolSwitch:paint</code></td>
+<td>Click → double-rAF after paint</td>
+</tr>
+<tr>
+<td><code>reticulumRefresh:peers</code></td>
+<td>Full peer/contact sidecar refresh</td>
+</tr>
+<tr>
+<td><code>reticulumApplyContacts</code></td>
+<td>Contact/history → node-store merge</td>
+</tr>
+<tr>
+<td><code>reticulumPoll:interfaces</code></td>
+<td>Local interface health poll tick</td>
+</tr>
+<tr>
+<td><code>reticulumRefresh:diagnostics</code></td>
+<td>Diagnostics sync from sidecar</td>
+</tr>
+</tbody>
+</table>
+<p>Long tasks over 1 s also emit a rate-limited <code>console.debug</code> so they appear in normal logs.</p>
 <h2 id="vitest-micro-benchmark-not-ci">Vitest micro-benchmark (not CI)<a class="headerlink" href="#vitest-micro-benchmark-not-ci" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">MESH_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pnpm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>vitest<span class="w"> </span>run<span class="w"> </span>--project<span class="w"> </span>renderer-logic<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>src/renderer/lib/replyPreview.bench.test.ts<span class="w"> </span>--coverage.enabled<span class="o">=</span><span class="nb">false</span>
@@ -3167,6 +3235,10 @@
 <h2 id="related-code">Related code<a class="headerlink" href="#related-code" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>src/renderer/lib/perfTrace.ts</code> — opt-in spans</li>
+<li><code>src/renderer/lib/rendererTimings.ts</code> — Support timing ring</li>
+<li><code>src/renderer/lib/longTaskProbe.ts</code> — always-on Long Task → <code>rendererTimings</code></li>
+<li><code>src/renderer/lib/protocolSwitchTiming.ts</code> — protocol-switch urgent/commit/paint breadcrumbs</li>
+<li><code>src/renderer/lib/mainThreadLagProbe.ts</code> — opt-in 100 ms event-loop lag probe</li>
 <li><code>src/renderer/lib/replyPreview.ts</code> — Meshtastic reply parent index / repair</li>
 <li><code>src/renderer/hooks/useProtocolChatMessages.ts</code> — per-protocol store→UI pipeline</li>
 <li><code>src/renderer/components/ChatSurface.tsx</code> — Chat panel owns its message list via the hook</li>
@@ -3194,7 +3266,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 19:20:53 UTC">November 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 18:48:22 UTC">November 19, 2026</span>
   </span>
 
     
