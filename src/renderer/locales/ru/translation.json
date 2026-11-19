@@ -5887,7 +5887,22 @@
     "rssiTitle": "Распределение RSSI",
     "rssiAxis": "RSSI (дБм)",
     "hopTitle": "Распределение количества прыжков",
-    "hopAxis": "Хопы"
+    "hopAxis": "Хопы",
+    "noiseFloorTitle": "Локальный уровень шума",
+    "noiseFloorSourceRadio": "Измерено приемником этого радиоприемника.",
+    "noiseFloorValueDbm": "{{value}} дБм",
+    "noiseFloorElevated": "Превознесенное",
+    "noiseFloorHistoryAria": "Минимальный уровень шума {{min}} дБм, максимальный {{max}} дБм, последний {{last}} дБм",
+    "noiseFloorMin": "Мин.",
+    "noiseFloorMax": "Макс.",
+    "noiseFloorLast": "Фамилия",
+    "noiseFloorCollecting": "Сбор образцов для спарк-линии…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} дБм",
+    "noiseFloorEstimatedHint": "Оценено по RSSI − SNR для {{count}} узлов. Прошивка этого радиомодуля не сообщает о минимальном уровне шума.",
+    "noiseFloorEmpty": "Пока нет данных об уровне шума. Эта радиостанция или прошивка не сообщает о шумовом пороге приемника.",
+    "noiseFloorEstimatedTitle": "Расчетное распределение уровня шума",
+    "noiseFloorEstimatedSubtitle": "{{count}} узлов вносят свой вклад (RSSI − SNR последнего принятого пакета)",
+    "noiseFloorAxis": "Расчетный уровень шума (дБм)"
   },
   "roleInfo": {
     "placeholderDash": "-",

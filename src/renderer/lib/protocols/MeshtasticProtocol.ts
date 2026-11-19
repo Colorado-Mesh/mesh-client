@@ -1000,13 +1000,15 @@ export class MeshtasticProtocol implements Protocol {
       const values = Array.from({ length: 8 }, (_, ch) => num(`${prefix}Ch${ch}`));
       return values.some((v) => v !== undefined) ? values : undefined;
     };
+    const variantCase =
+      p.data.variant?.case ?? (p.data.deviceMetrics ? 'deviceMetrics' : undefined);
     return [
       {
         type: 'telemetry',
         payload: {
           nodeId: p.from,
           timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
-          variantCase: p.data.variant?.case ?? (p.data.deviceMetrics ? 'deviceMetrics' : undefined),
+          variantCase,
           batteryLevel: num('batteryLevel'),
           voltage: num('voltage'),
           channelUtilization: num('channelUtilization'),
@@ -1042,6 +1044,7 @@ export class MeshtasticProtocol implements Protocol {
           numRxDupe: num('numRxDupe'),
           numPacketsRx: num('numPacketsRx'),
           numPacketsTx: num('numPacketsTx'),
+          noiseFloor: num('noiseFloor'),
         },
       },
     ];

@@ -245,7 +245,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     expect(getStatsPacketsMock).toHaveBeenCalled();
   });
 
-  it('still hydrates queueStatus when getStatsRadio/getStatsPackets fail after getStatsCore succeeds', async () => {
+  it('still hydrates queueStatus when getStatsRadio fails after getStatsCore succeeds', async () => {
     getStatsRadioMock.mockRejectedValue(new Error('radio stats timeout'));
     getStatsPacketsMock.mockRejectedValue(new Error('packet stats timeout'));
 
@@ -269,7 +269,59 @@ describe('useMeshcoreRuntime stats parsing', () => {
     });
 
     expect(getStatsRadioMock).toHaveBeenCalled();
-    expect(getStatsPacketsMock).toHaveBeenCalled();
+  });
+
+  it('awaits getStatsRadio before getStatsPackets (meshcore.js once(Stats) demux)', async () => {
+    const radioGate = deferred<{
+      type: number;
+      raw: Uint8Array;
+      data: {
+        noiseFloor: number;
+        lastRssi: number;
+        lastSnr: number;
+        txAirSecs: number;
+        rxAirSecs: number;
+      };
+    }>();
+    getStatsRadioMock.mockReturnValueOnce(radioGate.promise);
+    getStatsPacketsMock.mockClear();
+
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(getStatsRadioMock).toHaveBeenCalled();
+    });
+    expect(getStatsPacketsMock).not.toHaveBeenCalled();
+
+    act(() => {
+      radioGate.resolve({
+        type: 1,
+        raw: new Uint8Array([1]),
+        data: {
+          noiseFloor: -110,
+          lastRssi: -89,
+          lastSnr: 6.5,
+          txAirSecs: 12,
+          rxAirSecs: 34,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(getStatsPacketsMock).toHaveBeenCalled();
+    });
   });
 
   it('serial awaits channel hydration after contacts before connect resolves', async () => {

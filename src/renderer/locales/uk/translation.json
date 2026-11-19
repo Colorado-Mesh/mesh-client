@@ -5887,7 +5887,22 @@
     "rssiTitle": "Розподіл RSSI",
     "rssiAxis": "Індикатор інтенсивності прийнятого сигналу (-дБм)",
     "hopTitle": "Розподіл кількості хопів",
-    "hopAxis": "Хопи"
+    "hopAxis": "Хопи",
+    "noiseFloorTitle": "Локальний рівень шуму",
+    "noiseFloorSourceRadio": "Вимірюється приймачем цієї радіостанції.",
+    "noiseFloorValueDbm": "{{value}} дБм",
+    "noiseFloorElevated": "Підвищена",
+    "noiseFloorHistoryAria": "Мінімальний рівень шуму {{min}} дБм, максимальний рівень шуму {{max}} дБм, останній рівень шуму {{last}} дБм",
+    "noiseFloorMin": "Менше",
+    "noiseFloorMax": "Макс.",
+    "noiseFloorLast": "Остання",
+    "noiseFloorCollecting": "Збір зразків для міні-діаграми…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} дБм",
+    "noiseFloorEstimatedHint": "Оцінено на основі RSSI − SNR для {{count}} вузлів. Прошивка цього радіомодуля не повідомляє про рівень шуму.",
+    "noiseFloorEmpty": "Поки що немає даних про рівень шуму. Це радіо або мікропрограмне забезпечення не повідомляє про рівень шуму приймача.",
+    "noiseFloorEstimatedTitle": "Розрахунковий розподіл рівня шуму",
+    "noiseFloorEstimatedSubtitle": "{{count}} вузлів роблять внесок (RSSI − SNR останнього почутого пакета)",
+    "noiseFloorAxis": "Розрахунковий рівень шуму (дБм)"
   },
   "roleInfo": {
     "placeholderDash": "-",

@@ -116,8 +116,9 @@ function applySignalAndHops(
       MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
   const node: MeshNode = {
     ...existing,
-    ...(payload.snr ? { snr: payload.snr } : {}),
-    ...(payload.rssi ? { rssi: payload.rssi } : {}),
+    // MQTT gateways often attach gateway-local snr/rssi; keep node RF signal RF-only.
+    ...(!payload.viaMqtt && payload.snr ? { snr: payload.snr } : {}),
+    ...(!payload.viaMqtt && payload.rssi ? { rssi: payload.rssi } : {}),
     ...(hasSignal
       ? {
           last_heard: mergeMeshtasticLivePacketLastHeard(

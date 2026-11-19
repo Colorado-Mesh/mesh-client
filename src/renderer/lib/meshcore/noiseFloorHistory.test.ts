@@ -34,17 +34,14 @@ describe('noiseFloorHistory', () => {
     });
   });
 
-  it('appends, dedupes identical consecutive samples, and caps length', () => {
+  it('appends, dedupes same observation identity, keeps distinct reports, and caps length', () => {
     const first = appendNoiseFloorSample([], { t: 1_000, noiseFloor: -110 });
     expect(first).toHaveLength(1);
-    expect(
-      appendNoiseFloorSample(first!, {
-        t: 1_000 + NOISE_FLOOR_SAMPLE_DEDUP_MS - 1,
-        noiseFloor: -110,
-      }),
-    ).toBeNull();
+    // Same observation id (remount) — rejected even when value matches.
+    expect(appendNoiseFloorSample(first!, { t: 1_000, noiseFloor: -110 })).toBeNull();
+    // Distinct report with the same dBm — accepted.
     const second = appendNoiseFloorSample(first!, {
-      t: 1_000 + NOISE_FLOOR_SAMPLE_DEDUP_MS,
+      t: 1_000 + NOISE_FLOOR_SAMPLE_DEDUP_MS - 1,
       noiseFloor: -110,
     });
     expect(second).toHaveLength(2);

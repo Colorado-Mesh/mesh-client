@@ -5803,7 +5803,22 @@
     "rssiTitle": "Distribution RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribution du nombre de sauts",
-    "hopAxis": "Sauts"
+    "hopAxis": "Sauts",
+    "noiseFloorTitle": "Bruit de fond local",
+    "noiseFloorSourceRadio": "Mesuré par le récepteur de cette radio.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Élevé",
+    "noiseFloorHistoryAria": "Bruit de fond min. {{min}} dBm, max. {{max}} dBm, dernier {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Max",
+    "noiseFloorLast": "Dernier",
+    "noiseFloorCollecting": "Collecte d’échantillons pour le graphique sparkline…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Estimé à partir de RSSI − SNR sur {{count}} nœuds. Le micrologiciel de cette radio ne signale pas de bruit de fond.",
+    "noiseFloorEmpty": "Aucune donnée de bruit de fond pour l’instant. Cette radio ou ce micrologiciel ne signale pas de bruit de fond du récepteur.",
+    "noiseFloorEstimatedTitle": "Distribution estimée du bruit de fond",
+    "noiseFloorEstimatedSubtitle": "{{count}} nœuds contribuent (RSSI − SNR du dernier paquet entendu)",
+    "noiseFloorAxis": "Bruit de fond estimé (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

@@ -5803,7 +5803,22 @@
     "rssiTitle": "Distribución RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribución del recuento de saltos",
-    "hopAxis": "Saltos"
+    "hopAxis": "Saltos",
+    "noiseFloorTitle": "Nivel de ruido local",
+    "noiseFloorSourceRadio": "Medido por el receptor de esta radio.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Elevado",
+    "noiseFloorHistoryAria": "Nivel de ruido mín. {{min}} dBm, máx. {{max}} dBm, último {{last}} dBm",
+    "noiseFloorMin": "min",
+    "noiseFloorMax": "Máx",
+    "noiseFloorLast": "Apellido",
+    "noiseFloorCollecting": "Recopilando muestras para el minigráfico...",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Estimado a partir de RSSI − SNR en {{count}} nodos. El firmware de esta radio no informa de un nivel de ruido de fondo.",
+    "noiseFloorEmpty": "Aún no hay datos del nivel de ruido de fondo. Esta radio o este firmware no informa del nivel de ruido de fondo del receptor.",
+    "noiseFloorEstimatedTitle": "Distribución estimada del nivel de ruido",
+    "noiseFloorEstimatedSubtitle": "{{count}} nodos contribuyen (RSSI − SNR del último paquete escuchado)",
+    "noiseFloorAxis": "Nivel de ruido estimado (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

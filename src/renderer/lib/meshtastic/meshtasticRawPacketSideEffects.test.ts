@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
   resetConnectedMeshcoreBleMacForTests,
   setConnectedMeshcoreBleMac,
@@ -13,6 +13,7 @@ import { getIdentityNode } from '../identityStoreReads';
 import { flushNodeWrites, resetCoalescedNodeWritesForTests } from '../ingest/coalescedNodeWrites';
 import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
+import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode } from '../types';
 import {
   attachMeshtasticRawPacketSideEffects,
@@ -123,6 +124,42 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
       12345,
       PEER,
       expect.objectContaining({ transport: 'rf', snr: 7.5, rssi: -90 }),
+    );
+    detach();
+  });
+
+  it('does not overwrite node snr/rssi from viaMqtt packets', async () => {
+    const { deps } = makeDeps();
+    upsertNodeRecord(
+      IDENTITY,
+      meshNodeToNodeRecord({
+        ...emptyNode(PEER),
+        snr: 4.2,
+        rssi: -95,
+      }),
+    );
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'raw_packet',
+        payload: {
+          ts: Date.now(),
+          snr: 12,
+          rssi: -40,
+          raw: new Uint8Array([0x01]),
+          fromNodeId: PEER,
+          portLabel: 'TEXT_MESSAGE_APP',
+          viaMqtt: true,
+          hopsAway: 1,
+          packetId: 99,
+          portnum: 1,
+        },
+      },
+      IDENTITY,
+    );
+    await flushNodeWrites();
+    expect(getIdentityNode(IDENTITY, PEER)).toEqual(
+      expect.objectContaining({ snr: 4.2, rssi: -95, via_mqtt: true }),
     );
     detach();
   });

@@ -1033,6 +1033,12 @@ export function useMeshcoreRuntime() {
   const prevStatsTimestampRef = useRef<number | null>(null);
   /** Periodic poll for local radio stats ({@link MESHCORE_STATS_POLL_MS}). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /**
+   * Connection that currently owns the in-flight stats poll. Concurrent getStats* on the same
+   * conn share one Stats event and hang; a newer conn supersedes so reconnect is not blocked by
+   * a retired promise, and late finally from the retired fetch cannot clear the new owner.
+   */
+  const meshcoreStatsInFlightConnRef = useRef<MeshCoreConnection | null>(null);
   const requestRepeaterStatusRef = useRef<((nodeId: number) => Promise<unknown>) | null>(null);
   const postRebootStatusSchedulerRef = useRef<RepeaterPostRebootStatusScheduler | null>(null);
   postRebootStatusSchedulerRef.current ??= createRepeaterPostRebootStatusScheduler(
@@ -1068,124 +1074,146 @@ export function useMeshcoreRuntime() {
     if (meshcoreTcpBridgeDeadRef.current) {
       return;
     }
-    let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
+    // meshcore.js getStats uses once(Stats)+type filter; overlapping polls / Promise.all drop waiters.
+    // Same connection: skip. Different/retired owner: supersede so reconnect can poll.
+    if (meshcoreStatsInFlightConnRef.current === conn) return;
+    meshcoreStatsInFlightConnRef.current = conn;
     try {
-      coreStats = await conn.getStatsCore();
-    } catch {
-      // catch-no-log-ok getStatsCore optional on some transports
-      return;
-    }
+      let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
+      try {
+        coreStats = await conn.getStatsCore();
+      } catch {
+        // catch-no-log-ok getStatsCore optional on some transports
+        return;
+      }
+      // Retired after reconnect — do not write into the active session.
+      if (connRef.current !== conn) return;
 
-    const core = coreStats.data;
-    // STATS CORE queue_len = PacketManager outbound total (MeshCore stats_binary_frames.md).
-    // Do not merge conn.getStatus(self): companion CMD_SEND_STATUS_REQ resolves the pubkey via
-    // lookupContactByPubKey; self is often not a contact row, so the request fails with NOT_FOUND.
-    const queueLenCapped = Math.min(
-      queueLenFromMeshCoreCoreStatsRaw(coreStats.raw, core.queueLen),
-      256,
-    );
-    if (queueLenCapped >= 250) {
-      const raw = coreStats.raw;
-      const rawHex =
-        raw != null && raw.length > 0
-          ? Array.from(raw)
-              .map((b) => b.toString(16).padStart(2, '0'))
-              .join('')
-          : 'none';
-      console.debug(
-        `[useMeshcoreRuntime] high queue depth=${queueLenCapped} meshcoreJsParsed=${core.queueLen} rawLen=${raw?.length ?? 0} rawHex=${rawHex}`,
+      const core = coreStats.data;
+      // STATS CORE queue_len = PacketManager outbound total (MeshCore stats_binary_frames.md).
+      // Do not merge conn.getStatus(self): companion CMD_SEND_STATUS_REQ resolves the pubkey via
+      // lookupContactByPubKey; self is often not a contact row, so the request fails with NOT_FOUND.
+      const queueLenCapped = Math.min(
+        queueLenFromMeshCoreCoreStatsRaw(coreStats.raw, core.queueLen),
+        256,
       );
-    }
-    setQueueStatus({ free: 256 - queueLenCapped, maxlen: 256, res: 0 });
-    const now = Date.now();
-    setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
+      if (queueLenCapped >= 250) {
+        const raw = coreStats.raw;
+        const rawHex =
+          raw != null && raw.length > 0
+            ? Array.from(raw)
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('')
+            : 'none';
+        console.debug(
+          `[useMeshcoreRuntime] high queue depth=${queueLenCapped} meshcoreJsParsed=${core.queueLen} rawLen=${raw?.length ?? 0} rawHex=${rawHex}`,
+        );
+      }
+      setQueueStatus({ free: 256 - queueLenCapped, maxlen: 256, res: 0 });
+      const now = Date.now();
+      setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts: core.batteryMilliVolts } : prev));
 
-    if (core.batteryMilliVolts > 0) {
-      const batteryLevel = meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts);
-      const voltage = core.batteryMilliVolts / 1000;
-      setTelemetry((prev) =>
-        [...prev, { timestamp: now, voltage, batteryLevel }].slice(-MAX_TELEMETRY_POINTS),
-      );
-    }
+      if (core.batteryMilliVolts > 0) {
+        const batteryLevel = meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts);
+        const voltage = core.batteryMilliVolts / 1000;
+        setTelemetry((prev) =>
+          [...prev, { timestamp: now, voltage, batteryLevel }].slice(-MAX_TELEMETRY_POINTS),
+        );
+      }
 
-    let radioStats: Awaited<ReturnType<MeshCoreConnection['getStatsRadio']>>;
-    let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
-    try {
-      [radioStats, packetStats] = await Promise.all([conn.getStatsRadio(), conn.getStatsPackets()]);
-    } catch {
-      // catch-no-log-ok getStatsRadio/getStatsPackets optional
-      return;
-    }
+      let radioStats: Awaited<ReturnType<MeshCoreConnection['getStatsRadio']>>;
+      let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
+      // Sequential: meshcore.js once(Stats) + type filter drops a parallel waiter on the first reply.
+      try {
+        radioStats = await conn.getStatsRadio();
+      } catch {
+        // catch-no-log-ok getStatsRadio optional
+        return;
+      }
+      if (connRef.current !== conn) return;
 
-    const radio = radioStats.data;
-    const packet = packetStats.data;
+      try {
+        packetStats = await conn.getStatsPackets();
+      } catch {
+        // catch-no-log-ok getStatsPackets optional
+        return;
+      }
+      if (connRef.current !== conn) return;
 
-    let channelUtilization: number | undefined;
-    let airUtilTx: number | undefined;
+      const radio = radioStats.data;
+      const packet = packetStats.data;
 
-    if (prevTxAirSecsRef.current !== null && prevStatsTimestampRef.current !== null) {
-      const deltaTxAirSecs = radio.txAirSecs - prevTxAirSecsRef.current;
-      const deltaTimeSecs = (now - prevStatsTimestampRef.current) / 1000;
-      if (deltaTimeSecs > 0 && deltaTxAirSecs >= 0) {
-        airUtilTx = (deltaTxAirSecs / deltaTimeSecs) * 100;
-        channelUtilization = airUtilTx;
+      let channelUtilization: number | undefined;
+      let airUtilTx: number | undefined;
+
+      if (prevTxAirSecsRef.current !== null && prevStatsTimestampRef.current !== null) {
+        const deltaTxAirSecs = radio.txAirSecs - prevTxAirSecsRef.current;
+        const deltaTimeSecs = (now - prevStatsTimestampRef.current) / 1000;
+        if (deltaTimeSecs > 0 && deltaTxAirSecs >= 0) {
+          airUtilTx = (deltaTxAirSecs / deltaTimeSecs) * 100;
+          channelUtilization = airUtilTx;
+        }
+      }
+
+      prevTxAirSecsRef.current = radio.txAirSecs;
+      prevStatsTimestampRef.current = now;
+
+      const localStats: MeshCoreLocalStats = {
+        batteryMilliVolts: core.batteryMilliVolts,
+        uptimeSecs: core.uptimeSecs,
+        queueLen: queueLenCapped,
+        noiseFloor: radio.noiseFloor,
+        lastRssi: radio.lastRssi,
+        lastSnr: radio.lastSnr,
+        txAirSecs: radio.txAirSecs,
+        rxAirSecs: radio.rxAirSecs,
+        recv: packet.recv,
+        sent: packet.sent,
+        nSentFlood: packet.nSentFlood,
+        nSentDirect: packet.nSentDirect,
+        nRecvFlood: packet.nRecvFlood,
+        nRecvDirect: packet.nRecvDirect,
+        nRecvErrors: packet.nRecvErrors ?? undefined,
+        channelUtilization,
+        airUtilTx,
+        fetchedAt: now,
+      };
+
+      const myNodeId = myNodeNumRef.current || state.myNodeNum;
+      if (myNodeId > 0) {
+        setNodes((prev) => {
+          const updated = new Map(prev);
+          const node = prev.get(myNodeId);
+          const fallbackName =
+            selfInfoRef.current?.name?.trim() || `Node-${myNodeId.toString(16).toUpperCase()}`;
+          updated.set(myNodeId, {
+            ...(node ?? {
+              node_id: myNodeId,
+              long_name: fallbackName,
+              short_name: '',
+              hw_model: 'Unknown',
+              battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts) ?? 0,
+              snr: radio.lastSnr,
+              rssi: radio.lastRssi,
+              last_heard: Math.floor(now / 1000),
+              latitude: null,
+              longitude: null,
+              hops_away: 0,
+            }),
+            voltage: core.batteryMilliVolts / 1000,
+            channel_utilization: channelUtilization ?? node?.channel_utilization,
+            air_util_tx: airUtilTx ?? node?.air_util_tx,
+            meshcore_local_stats: localStats,
+          });
+          return updated;
+        });
+      }
+      meshcoreLastDataReceivedRef.current = Date.now();
+    } finally {
+      if (meshcoreStatsInFlightConnRef.current === conn) {
+        meshcoreStatsInFlightConnRef.current = null;
       }
     }
-
-    prevTxAirSecsRef.current = radio.txAirSecs;
-    prevStatsTimestampRef.current = now;
-
-    const localStats: MeshCoreLocalStats = {
-      batteryMilliVolts: core.batteryMilliVolts,
-      uptimeSecs: core.uptimeSecs,
-      queueLen: queueLenCapped,
-      noiseFloor: radio.noiseFloor,
-      lastRssi: radio.lastRssi,
-      lastSnr: radio.lastSnr,
-      txAirSecs: radio.txAirSecs,
-      rxAirSecs: radio.rxAirSecs,
-      recv: packet.recv,
-      sent: packet.sent,
-      nSentFlood: packet.nSentFlood,
-      nSentDirect: packet.nSentDirect,
-      nRecvFlood: packet.nRecvFlood,
-      nRecvDirect: packet.nRecvDirect,
-      nRecvErrors: packet.nRecvErrors ?? undefined,
-      channelUtilization,
-      airUtilTx,
-      fetchedAt: now,
-    };
-
-    const myNodeId = myNodeNumRef.current || state.myNodeNum;
-    if (myNodeId > 0) {
-      setNodes((prev) => {
-        const updated = new Map(prev);
-        const node = prev.get(myNodeId);
-        const fallbackName =
-          selfInfoRef.current?.name?.trim() || `Node-${myNodeId.toString(16).toUpperCase()}`;
-        updated.set(myNodeId, {
-          ...(node ?? {
-            node_id: myNodeId,
-            long_name: fallbackName,
-            short_name: '',
-            hw_model: 'Unknown',
-            battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts) ?? 0,
-            snr: radio.lastSnr,
-            rssi: radio.lastRssi,
-            last_heard: Math.floor(now / 1000),
-            latitude: null,
-            longitude: null,
-            hops_away: 0,
-          }),
-          voltage: core.batteryMilliVolts / 1000,
-          channel_utilization: channelUtilization ?? node?.channel_utilization,
-          air_util_tx: airUtilTx ?? node?.air_util_tx,
-          meshcore_local_stats: localStats,
-        });
-        return updated;
-      });
-    }
-    meshcoreLastDataReceivedRef.current = Date.now();
   }, [state.myNodeNum]);
 
   const buildNodesFromContactsRef = useRef<
