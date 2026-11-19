@@ -26,12 +26,21 @@ describe('mergeDisplayedRoomPostChunks', () => {
     expect(merged[0]?.payload).toBe('hello world');
   });
 
-  // The assembled post is read once its last chunk has arrived, so it carries that chunk's
-  // receipt: the read mark, the unread divider and Catch up all compare receipts.
-  it('gives the assembled post the receipt of its last chunk', () => {
+  // Read mark / unread divider / Catch up compare receipts; the assembled post must keep
+  // the newest observation across chunks (not merely the last chunk index).
+  it('gives the assembled post the newest receipt across its chunks', () => {
     const merged = mergeDisplayedRoomPostChunks([
       { ...roomPost('[1/2] hello ', 1), receivedAt: 10 },
       { ...roomPost('[2/2] world', 2), receivedAt: 20 },
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.receivedAt).toBe(20);
+  });
+
+  it('keeps the newest receipt when later chunk indexes have older receipts', () => {
+    const merged = mergeDisplayedRoomPostChunks([
+      { ...roomPost('[1/2] hello ', 1), receivedAt: 20 },
+      { ...roomPost('[2/2] world', 2), receivedAt: 10 },
     ]);
     expect(merged).toHaveLength(1);
     expect(merged[0]?.receivedAt).toBe(20);

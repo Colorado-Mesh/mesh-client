@@ -61,12 +61,21 @@ export function mergeDisplayedRoomPostChunks(posts: readonly ChatMessage[]): Cha
       if (chunk.index === chunk.total) flushPending();
       continue;
     }
+    // Newest receipt across chunks: RoomsPanel may re-order out-of-order arrivals by
+    // chunk index, so the last index is not always the last observation.
+    const previousReceivedAt: number | undefined = pending.receivedAt;
+    const incomingReceivedAt: number | undefined = msg.receivedAt;
+    const nextReceivedAt: number | undefined =
+      previousReceivedAt == null
+        ? incomingReceivedAt
+        : incomingReceivedAt == null
+          ? previousReceivedAt
+          : Math.max(previousReceivedAt, incomingReceivedAt);
     pending = {
       ...pending,
       payload: pending.payload + chunk.body,
       timestamp: msg.timestamp,
-      // Read once the last chunk is here, so the post takes that chunk's receipt.
-      ...(msg.receivedAt != null ? { receivedAt: msg.receivedAt } : {}),
+      ...(nextReceivedAt != null ? { receivedAt: nextReceivedAt } : {}),
     };
     pendingReceived = chunk.index;
     if (chunk.index === chunk.total) flushPending();
