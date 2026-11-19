@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  maxQueryableChatReceiptMs,
-  SQL_CHAT_RECEIPT_ORDER_MS,
-} from '../shared/chatReceiptDbOrder';
+import { maxQueryableChatReceiptMs, SQL_CHAT_RECEIPT_ORDER_MS } from '../shared/chatReceiptDbOrder';
 import { CHAT_RECEIPT_SEED_MAX_LEAD_MS } from '../shared/timeConstants';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';

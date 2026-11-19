@@ -1,7 +1,4 @@
-import {
-  maxQueryableChatReceiptMs,
-  SQL_CHAT_RECEIPT_ORDER_MS,
-} from '../shared/chatReceiptDbOrder';
+import { maxQueryableChatReceiptMs, SQL_CHAT_RECEIPT_ORDER_MS } from '../shared/chatReceiptDbOrder';
 import {
   MESHCORE_DB_MESSAGE_LOAD_LIMIT,
   MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
