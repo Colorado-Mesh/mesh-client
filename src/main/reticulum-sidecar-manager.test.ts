@@ -934,6 +934,58 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
+  it('retry after failed start succeeds without stop() clearing prior exit error', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const failing = mockSidecarProc(1001);
+    failing.kill.mockImplementation(() => {
+      failing.emit('exit', 0, null);
+    });
+    const healthy = mockSidecarProc(1002);
+    healthy.kill.mockImplementation(() => {
+      healthy.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValueOnce(failing).mockReturnValueOnce(healthy);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })),
+    );
+
+    const manager = new ReticulumSidecarManager();
+    const first = manager.start();
+    await vi.waitFor(() => {
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    });
+    failing.emit('exit', 1, null);
+    await expect(first).rejects.toThrow(/^exit 1/);
+    expect(manager.getStatus().lastError).toMatch(/^exit 1/);
+
+    // Re-stub a healthy poll for the retry (beforeEach mock was replaced above).
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            status: 'ok',
+            version: '0.1.0',
+            rns_ready: false,
+            lxmf_ready: false,
+          }),
+      }),
+    );
+
+    await expect(manager.start()).resolves.toMatchObject({ running: true, pid: 1002 });
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(manager.getStatus().lastError).toBeUndefined();
+
+    await manager.stop();
+    warnSpy.mockRestore();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
   it('preferSidecarExitErrorOverFetch keeps exit reasons and details undici causes', () => {
     expect(preferSidecarExitErrorOverFetch('exit 1: boom', new TypeError('fetch failed'))).toBe(
       'exit 1: boom',

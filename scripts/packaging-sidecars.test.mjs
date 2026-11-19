@@ -126,6 +126,17 @@ describe('packaging sidecar workflow gates', () => {
     expect(steps[zigbuild].if).toBe("matrix.platform == 'linux'");
   });
 
+  it('runs staged sidecar HTTP smoke under bash so Windows expands env vars', () => {
+    const workflow = yaml.load(sidecars);
+    const smoke = workflow.jobs.build.steps.find(
+      (step) => step.name === 'Smoke-test staged sidecar HTTP',
+    );
+    expect(smoke).toBeDefined();
+    expect(smoke.shell).toBe('bash');
+    expect(smoke.if).toBe('matrix.run_tests');
+    expect(smoke.run).toContain('smoke-reticulum-sidecar-http.mjs');
+  });
+
   it('downloads only this run’s staged Reticulum binaries and requires both architectures', () => {
     expect(download).toContain('pattern: ci-reticulum-staged-${{ inputs.platform }}-*');
     expect(download).toContain('merge-multiple: true');

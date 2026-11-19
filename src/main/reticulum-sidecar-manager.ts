@@ -696,6 +696,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
     this.recentSidecarOutput = [];
+    // Prior start failures leave lastError set; clear so a retry without stop()
+    // does not treat the previous child's exit as this child's during health poll.
+    let spawnedExitError: string | undefined;
+    if (this._status.lastError) {
+      this._status = { ...this._status, lastError: undefined };
+    }
 
     // tracing-subscriber fmt() writes stderr (no with_writer). validate-config JSON
     // owns stdout, so both pipes share this line filter and the TCP read-error dedupe.
@@ -751,6 +757,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     bindOutputLines(proc.stderr);
     proc.on('exit', (code, signal) => {
       const lastError = this.formatExitLastError(code, signal);
+      spawnedExitError = lastError ?? undefined;
       const abnormal = lastError != null;
       const exitSummary = `exited code=${code ?? 'null'} signal=${signal ?? 'null'}`;
       if (abnormal) {
@@ -785,10 +792,10 @@ export class ReticulumSidecarManager extends EventEmitter {
     try {
       await pollSidecarHealth(port, authToken, {
         isAlive: () => this.proc === proc,
-        getExitError: () => this._status.lastError,
+        getExitError: () => spawnedExitError,
       });
     } catch (err) {
-      const msg = preferSidecarExitErrorOverFetch(this._status.lastError, err);
+      const msg = preferSidecarExitErrorOverFetch(spawnedExitError, err);
       await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);

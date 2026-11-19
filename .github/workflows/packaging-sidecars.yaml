@@ -89,8 +89,10 @@ jobs:
           SIDECAR_DIR: resources/reticulum-sidecar/staged/${{ matrix.platform }}-${{ matrix.arch }}
         run: node scripts/check-reticulum-sidecar-glibc.mjs "$SIDECAR_DIR/mesh-client-reticulum"
       # Native-arch only: exec the staged binary, auth stdin, poll /api/v1/status.
+      # shell: bash so $SIDECAR_* expand on Windows runners (default PowerShell).
       - name: Smoke-test staged sidecar HTTP
         if: matrix.run_tests
+        shell: bash
         env:
           SIDECAR_DIR: resources/reticulum-sidecar/staged/${{ matrix.platform }}-${{ matrix.arch }}
           SIDECAR_BIN: ${{ matrix.platform == 'win32' && 'mesh-client-reticulum.exe' || 'mesh-client-reticulum' }}
