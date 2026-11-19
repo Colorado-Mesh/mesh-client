@@ -5236,13 +5236,15 @@
 <hr />
 <h2 id="14-rf-histograms-panel">14. RF Histograms Panel<a class="headerlink" href="#14-rf-histograms-panel" title="Permanent link">&para;</a></h2>
 <p>Open it from Monitor &gt; RF.</p>
-<p>Three bar charts built from live node data across both protocols:</p>
+<p>A <strong>Local noise floor</strong> card plus bar charts built from live node data (Meshtastic and MeshCore; Reticulum has no RF tab):</p>
 <ul>
+<li><strong>Local noise floor</strong>: measured receiver floor from Meshtastic <code>LocalStats.noise_floor</code> (protobuf field 15) or MeshCore companion radio stats (<code>meshcore_local_stats.noiseFloor</code>). Session-only; values outside −140…−20 dBm (including firmware default <code>0</code>) are treated as not reported. When the radio does not report a floor, the card falls back to a labelled median estimate from per-node <code>RSSI − SNR</code> (≥3 peers) or an explicit empty state.</li>
 <li><strong>SNR histogram</strong>: distribution of last-heard SNR values in 5 dB buckets</li>
 <li><strong>RSSI histogram</strong>: distribution of last-heard RSSI values in 10 dBm buckets</li>
+<li><strong>Estimated noise floor histogram</strong>: distribution of per-node <code>RSSI − SNR</code> estimates in 10 dBm buckets</li>
 <li><strong>Hop count histogram</strong>: distribution of <code>hops_away</code> values (0–5+)</li>
 </ul>
-<p>Data is read directly from the node store; no additional telemetry required.</p>
+<p>Data is read directly from the node store; no additional telemetry poll is started for this panel. The MeshCore <strong>Elevated Noise Floor</strong> diagnostics finding (connected node, &gt; −95 dBm) remains MeshCore-only; see §3.</p>
 <hr />
 <h2 id="15-peer-graph-panel">15. Peer Graph Panel<a class="headerlink" href="#15-peer-graph-panel" title="Permanent link">&para;</a></h2>
 <p>Open it from Network &gt; Graph.</p>
@@ -5703,7 +5705,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 04:16:27 UTC">November 19, 2026</span>
   </span>
 
     
