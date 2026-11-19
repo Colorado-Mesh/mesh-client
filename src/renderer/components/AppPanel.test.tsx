@@ -1148,7 +1148,11 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
       </ToastProvider>,
     );
     fireEvent.click(screen.getByText('Destructive actions'));
-    await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
+    // Prefer the stable id over findByLabelText: AccName walks the whole AppPanel and can
+    // exceed the default 5s test timeout on loaded CI shards.
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toHaveValue(90);
+    });
   });
 
   it('hydrates the age input from persisted AppSettings', async () => {
@@ -1160,8 +1164,9 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
     );
 
     fireEvent.click(screen.getByText('Destructive actions'));
-    const input = await screen.findByLabelText(/Delete nodes last heard more than 10 days/i);
-    expect(input).toHaveValue(10);
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toHaveValue(10);
+    });
   });
 
   it('persists age changes to AppSettings localStorage', async () => {
@@ -1172,8 +1177,12 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
     );
 
     fireEvent.click(screen.getByText('Destructive actions'));
-    const input = await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
-    fireEvent.change(input, { target: { value: '15' } });
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toBeInstanceOf(HTMLInputElement);
+    });
+    const input = document.getElementById('apppanel-delete-age-days');
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    fireEvent.change(input as HTMLInputElement, { target: { value: '15' } });
 
     await waitFor(() => {
       const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
