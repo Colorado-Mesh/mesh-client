@@ -808,6 +808,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#message-order-and-times" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message order and times
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mute" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3463,6 +3474,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#message-order-and-times" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message order and times
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mute" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3905,6 +3927,8 @@
 <li>On Reticulum, DM chips wrap like channel chips; long peer names wrap, and avatars, unread badges, mute, and close stay on each chip.</li>
 </ul>
 <p>Unread counts stay on a conversation chip even while it is selected until you have actually read to the bottom. If the conversation holds an unread MECP report, the chip shows a shield icon colored by the most severe one (see <a href="../emcomm/">EMCOMM</a>). A <strong>New messages</strong> divider marks where unread begins, and <strong>Jump to Unread</strong> / <strong>Jump to Latest</strong> scroll to either end.</p>
+<h3 id="message-order-and-times">Message order and times<a class="headerlink" href="#message-order-and-times" title="Permanent link">&para;</a></h3>
+<p>Messages appear in the order this computer received or sent them, not by the time written on each message. That time comes from whichever clock stamped the message, usually the sender's, so a node with a wrong clock does not push its messages up or down the history. Each bubble still shows the stamped time, with the date in front of it when it falls on a different day from the arrival. Day separators, <strong>Jump to date</strong>, the unified inbox and global search follow the arrival order. Unread counts, the <strong>New messages</strong> divider, <strong>Mark unread</strong> and <strong>Catch up</strong> since last read go by arrival as well, so a message from a clock that runs behind still counts as unread when it arrives after you read the conversation. If this computer's clock is set back, new messages still go at the bottom and count as unread; their arrival times run ahead of the clock until it catches up. After a restart the order and unread counts still hold for a set-back of up to a day; with a larger one, new messages sort above the ones received before it and do not count as unread until the clock catches up. After such a restart, a MeshCore message whose own time is ahead of the clock (one received before the set-back) shows the restart time instead, and can appear twice, until the clock catches up. Catch up since last read applies this to older messages it reads from storage too; its time-range choices go by the stamped time. RRC rooms are the exception: their read mark is the stamped time of the last line read, so the <strong>New messages</strong> divider and Catch up since last read there, older stored lines included, go by the stamped time. The same holds for Rooms (its <strong>Last post</strong> time is the stamp of the post that arrived last) and for the DM order on the Nodes <strong>History</strong> tab. Messages saved by app versions that did not record an arrival time keep their stamped order.</p>
 <h3 id="mute">Mute<a class="headerlink" href="#mute" title="Permanent link">&para;</a></h3>
 <p>The bell on a conversation (<strong>Mute this conversation</strong> / <strong>Unmute this conversation</strong>) silences ordinary chat sounds and desktop notifications for that one conversation. It does not silence emergency (MECP) alerts, which follow their own rules. The global mute and notification-mode settings are in <a href="../notification-sounds/">Notification sounds</a> and <strong>App → Notifications</strong>.</p>
 <h3 id="pin-and-archive">Pin and archive<a class="headerlink" href="#pin-and-archive" title="Permanent link">&para;</a></h3>
@@ -3994,7 +4018,7 @@
 <h3 id="word-filter">Word filter<a class="headerlink" href="#word-filter" title="Permanent link">&para;</a></h3>
 <p>Chat can hide messages whose text matches a blocked-word list (case-insensitive substring). MECP / MAYDAY / URGENT lines never filter. Per-conversation disable and <strong>Show N filtered</strong> reveal stay local. Filtered messages do not count toward unread badges or notification beeps.</p>
 <h3 id="mark-unread-and-delete">Mark unread and delete<a class="headerlink" href="#mark-unread-and-delete" title="Permanent link">&para;</a></h3>
-<p>Conversation tools include <strong>Mark unread</strong> (sets the read watermark just before the newest inbound message; does not re-notify). Message action bars offer <strong>Delete locally</strong> with a confirm (removes the row from this device’s in-memory store only).</p>
+<p>Conversation tools include <strong>Mark unread</strong> (sets the read watermark just before the inbound message that arrived last; does not re-notify). Message action bars offer <strong>Delete locally</strong> with a confirm (removes the row from this device’s in-memory store only).</p>
 <h3 id="spellcheck-emoji-and-extras">Spellcheck, emoji, and extras<a class="headerlink" href="#spellcheck-emoji-and-extras" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Spellcheck is on. Right-click a misspelled word for replacements.</li>
@@ -4028,7 +4052,7 @@
 <p>Press <strong>Ctrl+Shift+F</strong> (<strong>Cmd+Shift+F</strong> on macOS) to open <strong>Search all messages</strong>, or use <strong>Search all conversations</strong> in the Chat toolbar. It searches saved history for every enabled protocol at once.</p>
 <ul>
 <li>Narrow results with <strong>Protocol</strong>, <strong>Direction</strong> (<strong>All</strong>, <strong>Received</strong>, <strong>Sent</strong>), and <strong>Sender</strong> (a name or id).</li>
-<li>Each protocol returns at most 50 matches per query, merged newest first.</li>
+<li>Each protocol returns at most 50 matches per query, merged with the most recently received first.</li>
 <li>Picking a result opens that conversation and scrolls to the message.</li>
 <li>Direction needs to know which messages are yours. If your own node or hash is not known yet, <strong>Received</strong> and <strong>Sent</strong> return nothing for that protocol.</li>
 <li>Search covers what is stored locally, not what is still on a radio.</li>
@@ -4042,7 +4066,7 @@
 <hr />
 <h2 id="unified-inbox">Unified inbox<a class="headerlink" href="#unified-inbox" title="Permanent link">&para;</a></h2>
 <p>Press <strong>Ctrl+Shift+U</strong> (<strong>Cmd+Shift+U</strong> on macOS) to open the <strong>Unified inbox</strong>. You can also open it from the global search dialog.</p>
-<p>The inbox lists <strong>received</strong> messages from every enabled protocol, newest first, capped at 200. It leaves out your own sends and reaction rows.</p>
+<p>The inbox lists <strong>received</strong> messages from every enabled protocol, most recently received first, capped at 200. It leaves out your own sends and reaction rows.</p>
 <ul>
 <li><strong>Protocol</strong> and <strong>Filter</strong> (text or sender) narrow the list.</li>
 <li>Click a row to open its conversation at that message. Tick rows (or <strong>Select all messages</strong>) for batch actions.</li>
@@ -4286,7 +4310,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 19:20:53 UTC">November 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 19:28:34 UTC">November 19, 2026</span>
   </span>
 
     
