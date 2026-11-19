@@ -166,6 +166,10 @@ function clearDrainedFromInFlight(drained: Map<IdentityId, IdentityPending>): vo
 
 let persistDropWarned = false;
 
+function definedNodeRecordFields(record: NodeRecord): Partial<NodeRecord> {
+  return Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
+}
+
 function reconcilePendingRecordWithStore(identityId: IdentityId, pending: NodeRecord): NodeRecord {
   const byId = useNodeStore.getState().nodes[identityId];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- identity bucket may be absent at runtime
@@ -173,8 +177,15 @@ function reconcilePendingRecordWithStore(identityId: IdentityId, pending: NodeRe
   const live = byId[pending.nodeId];
   const liveLh = live.lastHeardAt ?? 0;
   const pendingLh = pending.lastHeardAt ?? 0;
-  if (liveLh <= pendingLh) return pending;
-  return { ...pending, lastHeardAt: liveLh };
+  // Merge defined pending onto live so session-only store fields (noiseFloor) survive a
+  // coalesced write that omitted them (updateTelemetry bypasses the pending queue).
+  const merged: NodeRecord = {
+    ...live,
+    ...definedNodeRecordFields(pending),
+    nodeId: pending.nodeId,
+    lastHeardAt: liveLh > pendingLh ? liveLh : (pending.lastHeardAt ?? live.lastHeardAt),
+  };
+  return merged;
 }
 
 function buildPersistMeshNodes(identityId: IdentityId, nodeIds: readonly number[]): MeshNode[] {

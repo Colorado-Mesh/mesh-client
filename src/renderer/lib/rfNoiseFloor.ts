@@ -16,7 +16,10 @@ export const NOISE_FLOOR_MIN_ESTIMATE_SAMPLES = 3;
 export interface LocalNoiseFloorReading {
   /** dBm */
   value: number;
-  /** Observation time when the source reports one (MeshCore radio stats `fetchedAt`). */
+  /**
+   * Stable observation identity from the source report (Meshtastic telemetry timestamp or
+   * MeshCore radio stats `fetchedAt`). Remounts of the same report reuse this value.
+   */
   observedAt?: number;
 }
 
@@ -55,7 +58,12 @@ export function isElevatedNoiseFloor(value: number): boolean {
  */
 export function readLocalNoiseFloor(node: MeshNode | undefined): LocalNoiseFloorReading | null {
   if (!node) return null;
-  if (isPlausibleNoiseFloorDbm(node.noise_floor)) return { value: node.noise_floor };
+  if (isPlausibleNoiseFloorDbm(node.noise_floor)) {
+    return {
+      value: node.noise_floor,
+      ...(node.noise_floor_observed_at != null ? { observedAt: node.noise_floor_observed_at } : {}),
+    };
+  }
   const stats = node.meshcore_local_stats;
   if (stats && isPlausibleNoiseFloorDbm(stats.noiseFloor)) {
     return { value: stats.noiseFloor, observedAt: stats.fetchedAt };

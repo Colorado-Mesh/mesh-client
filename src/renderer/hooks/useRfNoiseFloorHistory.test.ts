@@ -96,4 +96,39 @@ describe('useRfNoiseFloorHistory', () => {
     ]);
     vi.useRealTimers();
   });
+
+  it('remount with the same observedAt does not duplicate; a new report id does', () => {
+    const { unmount } = renderHook(() => {
+      useRfNoiseFloorHistory({
+        enabled: true,
+        nodeId: 11,
+        noiseFloor: -106,
+        observedAt: 50_000,
+      });
+    });
+    expect(selectNoiseFloorSeries(useNoiseFloorHistoryStore.getState(), 11)).toHaveLength(1);
+    unmount();
+    renderHook(() => {
+      useRfNoiseFloorHistory({
+        enabled: true,
+        nodeId: 11,
+        noiseFloor: -106,
+        observedAt: 50_000,
+      });
+    });
+    expect(selectNoiseFloorSeries(useNoiseFloorHistoryStore.getState(), 11)).toHaveLength(1);
+
+    renderHook(() => {
+      useRfNoiseFloorHistory({
+        enabled: true,
+        nodeId: 11,
+        noiseFloor: -106,
+        observedAt: 60_000,
+      });
+    });
+    expect(selectNoiseFloorSeries(useNoiseFloorHistoryStore.getState(), 11)).toEqual([
+      { t: 50_000, noiseFloor: -106 },
+      { t: 60_000, noiseFloor: -106 },
+    ]);
+  });
 });

@@ -27,6 +27,7 @@ import type {
   TraceRouteEvent,
   WaypointEvent,
 } from '../lib/protocols/Protocol';
+import { isPlausibleNoiseFloorDbm } from '../lib/rfNoiseFloor';
 import {
   MAX_MESHCORE_CLI_HISTORY_ENTRIES,
   MAX_TRACE_ROUTES_PER_IDENTITY,
@@ -110,6 +111,8 @@ export interface NodeRecord {
   meshcoreLocalStats?: MeshCoreLocalStats;
   /** Session-only radio noise floor (dBm); see MeshNode.noise_floor. */
   noiseFloor?: number;
+  /** Session-only observation identity for {@link noiseFloor} (telemetry timestamp ms). */
+  noiseFloorObservedAt?: number;
   publicKey?: Uint8Array;
   /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
   publicKeyHex?: string;
@@ -506,6 +509,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
     maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
+    const plausibleNoise = isPlausibleNoiseFloorDbm(noiseFloor);
     return {
       nodes: {
         ...s.nodes,
@@ -521,7 +525,8 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
             relativeHumidity,
             barometricPressure,
             iaq,
-            noiseFloor,
+            // Never write protobuf default 0 — that would wipe a prior LocalStats reading.
+            ...(plausibleNoise ? { noiseFloor, noiseFloorObservedAt: timestamp } : {}),
             telemetryTimestamp: timestamp,
             ...(lastHeardAt != null ? { lastHeardAt } : {}),
           }),

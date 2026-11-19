@@ -69,8 +69,11 @@ describe('rfNoiseFloor', () => {
   });
 
   it('readLocalNoiseFloor prefers MeshNode.noise_floor over meshcore_local_stats', () => {
-    expect(readLocalNoiseFloor(node({ node_id: 1, noise_floor: -108 }))).toEqual({
+    expect(
+      readLocalNoiseFloor(node({ node_id: 1, noise_floor: -108, noise_floor_observed_at: 9_001 })),
+    ).toEqual({
       value: -108,
+      observedAt: 9_001,
     });
     expect(
       readLocalNoiseFloor(
@@ -120,7 +123,7 @@ describe('rfNoiseFloor', () => {
           },
         }),
       ),
-    ).toEqual({ value: -108 });
+    ).toEqual({ value: -108 }); // no observedAt when Meshtastic field omits it
   });
 
   it('estimateNoiseFloorDbm rejects zero / missing inputs', () => {

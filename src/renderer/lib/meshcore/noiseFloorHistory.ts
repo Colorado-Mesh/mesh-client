@@ -30,7 +30,10 @@ export const NOISE_FLOOR_HISTORY_MAX_POINTS = 120;
 /** Cap distinct nodes retained in the in-memory store. */
 export const NOISE_FLOOR_HISTORY_MAX_NODES = 64;
 
-/** Drop identical consecutive readings inside this window (runtime + UI double-ingest). */
+/**
+ * Legacy alias — observation identity is `sample.t`; identical `t` is rejected.
+ * Kept so callers/tests that imported the constant continue to typecheck.
+ */
 export const NOISE_FLOOR_SAMPLE_DEDUP_MS = 5_000;
 
 export function isValidNoiseFloorReading(value: unknown): value is number {
@@ -40,6 +43,8 @@ export function isValidNoiseFloorReading(value: unknown): value is number {
 /**
  * Append a sample, pruning by retention window and per-node cap.
  * Returns the next series, or `null` when the sample was rejected / deduped.
+ * Dedup is by observation identity (`sample.t`): remounts of the same report are ignored,
+ * while distinct reports with the same dBm still append.
  */
 export function appendNoiseFloorSample(
   existing: readonly NoiseFloorSample[],
@@ -48,20 +53,17 @@ export function appendNoiseFloorSample(
     nowMs?: number;
     windowMs?: number;
     maxPoints?: number;
-    dedupMs?: number;
   },
 ): readonly NoiseFloorSample[] | null {
   if (!isValidNoiseFloorReading(sample.noiseFloor) || !Number.isFinite(sample.t)) return null;
   const nowMs = options?.nowMs ?? sample.t;
   const windowMs = options?.windowMs ?? NOISE_FLOOR_HISTORY_WINDOW_MS;
   const maxPoints = options?.maxPoints ?? NOISE_FLOOR_HISTORY_MAX_POINTS;
-  const dedupMs = options?.dedupMs ?? NOISE_FLOOR_SAMPLE_DEDUP_MS;
 
   const last = existing.at(-1);
-  if (last?.noiseFloor === sample.noiseFloor) {
-    if (sample.t - last.t >= 0 && sample.t - last.t < dedupMs) {
-      return null;
-    }
+  // Same observation identity (telemetry timestamp / fetchedAt) — remount / double-ingest.
+  if (last?.t === sample.t) {
+    return null;
   }
 
   const cutoff = nowMs - windowMs;

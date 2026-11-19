@@ -210,6 +210,11 @@ export interface MeshNode {
    * persisted to SQLite (no `nodes` column; see `src/main/nodeUpsert.ts`).
    */
   noise_floor?: number;
+  /**
+   * Stable observation identity for {@link noise_floor} (Meshtastic telemetry `timestamp`).
+   * Session-only; used so RF history records one sample per report, not per remount.
+   */
+  noise_floor_observed_at?: number;
   // MeshCore local stats (connected node only, from getStats*())
   meshcore_local_stats?: MeshCoreLocalStats;
   // Environmental sensor data (session-only, last received reading)
