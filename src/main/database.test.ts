@@ -19,6 +19,7 @@ import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
  */
 
 const DB_SOURCE = readFileSync(join(__dirname, 'database.ts'), 'utf-8');
+const NODE_UPSERT_SOURCE = readFileSync(join(__dirname, 'nodeUpsert.ts'), 'utf-8');
 const SCHEMA_SYNC_SOURCE = readFileSync(join(__dirname, 'db-schema-sync.ts'), 'utf-8');
 
 describe('database shutdown guard', () => {
@@ -29,6 +30,23 @@ describe('database shutdown guard', () => {
     expect(DB_SOURCE).toContain('export function getDatabaseIfOpen()');
     expect(DB_SOURCE).toMatch(/if \(dbClosed\)[\s\S]*DATABASE_CLOSED_MESSAGE/);
     expect(DB_SOURCE).toMatch(/closeDatabase[\s\S]*dbClosed = true/);
+  });
+});
+
+describe('saveNodesBatch / NODE_UPSERT_SQL', () => {
+  it('exports shared upsert SQL and batch helper via sibling + thin database wrappers', () => {
+    expect(NODE_UPSERT_SOURCE).toContain('export const NODE_UPSERT_SQL');
+    expect(NODE_UPSERT_SOURCE).toContain('export function saveNodesBatchOn');
+    expect(NODE_UPSERT_SOURCE).toContain('export function toNodeUpsertParams');
+    expect(DB_SOURCE).toContain('export function saveNodesBatch');
+    expect(DB_SOURCE).toContain('export function toNodeUpsertParams');
+    expect(DB_SOURCE).toContain('export const MAX_SAVE_NODES_BATCH = 8000');
+    expect(DB_SOURCE).toContain('saveNodesBatchViaSibling');
+  });
+
+  it('keeps hops_away min and mqtt source preserve merge rules', () => {
+    expect(NODE_UPSERT_SOURCE).toMatch(/excluded\.hops_away < nodes\.hops_away/);
+    expect(NODE_UPSERT_SOURCE).toMatch(/nodes\.source = 'mqtt' AND excluded\.source = 'rf'/);
   });
 });
 
@@ -197,62 +215,63 @@ describe('meshcore_trace_history schema and retention', () => {
  * instead of overwriting with null/empty values.
  */
 describe('saveNode UPSERT COALESCE preservation', () => {
-  const INDEX_SOURCE = readFileSync(join(__dirname, '../main/index.ts'), 'utf-8');
-
+  // Shared SQL lives in nodeUpsert.ts (`NODE_UPSERT_SQL`) for single + batch writes.
   it('uses COALESCE for long_name to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /long_name = COALESCE\(NULLIF\(excluded\.long_name, ''\), nodes\.long_name\)/,
     );
   });
 
   it('uses COALESCE for short_name to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /short_name = COALESCE\(NULLIF\(excluded\.short_name, ''\), nodes\.short_name\)/,
     );
   });
 
   it('uses COALESCE for hw_model to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /hw_model = COALESCE\(NULLIF\(excluded\.hw_model, ''\), nodes\.hw_model\)/,
     );
   });
 
   it('uses COALESCE for snr to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/snr = COALESCE\(excluded\.snr, nodes\.snr\)/);
+    expect(NODE_UPSERT_SOURCE).toMatch(/snr = COALESCE\(excluded\.snr, nodes\.snr\)/);
   });
 
   it('uses COALESCE for rssi to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/rssi = COALESCE\(excluded\.rssi, nodes\.rssi\)/);
+    expect(NODE_UPSERT_SOURCE).toMatch(/rssi = COALESCE\(excluded\.rssi, nodes\.rssi\)/);
   });
 
   it('uses COALESCE for battery to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/battery = COALESCE\(excluded\.battery, nodes\.battery\)/);
+    expect(NODE_UPSERT_SOURCE).toMatch(/battery = COALESCE\(excluded\.battery, nodes\.battery\)/);
   });
 
   it('uses CASE for last_heard to only update when positive', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /last_heard = CASE WHEN excluded\.last_heard IS NOT NULL AND excluded\.last_heard > 0/,
     );
   });
 
   it('uses CASE for latitude to only update when non-zero', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /latitude = CASE WHEN excluded\.latitude IS NOT NULL AND excluded\.latitude != 0/,
     );
   });
 
   it('uses CASE for longitude to only update when non-zero', () => {
-    expect(INDEX_SOURCE).toMatch(
+    expect(NODE_UPSERT_SOURCE).toMatch(
       /longitude = CASE WHEN excluded\.longitude IS NOT NULL AND excluded\.longitude != 0/,
     );
   });
 
   it('uses COALESCE for voltage to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/voltage = COALESCE\(excluded\.voltage, nodes\.voltage\)/);
+    expect(NODE_UPSERT_SOURCE).toMatch(/voltage = COALESCE\(excluded\.voltage, nodes\.voltage\)/);
   });
 
   it('uses COALESCE for altitude to preserve existing values', () => {
-    expect(INDEX_SOURCE).toMatch(/altitude = COALESCE\(excluded\.altitude, nodes\.altitude\)/);
+    expect(NODE_UPSERT_SOURCE).toMatch(
+      /altitude = COALESCE\(excluded\.altitude, nodes\.altitude\)/,
+    );
   });
 });
 

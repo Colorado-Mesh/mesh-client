@@ -30,6 +30,10 @@ export function formatBytes(n: number): string {
 const BUILTIN_LABEL_KEYS: Record<OfflineMapBasemapId, string> = {
   dark: 'mapPanel.basemapDark',
   osm: 'mapPanel.basemapOsm',
+  opentopo: 'mapPanel.basemapOpentopo',
+  hot: 'mapPanel.basemapHot',
+  cyclosm: 'mapPanel.basemapCyclosm',
+  oepnv: 'mapPanel.basemapOepnv',
   'usgs-topo': 'mapPanel.basemapUsgsTopo',
 };
 

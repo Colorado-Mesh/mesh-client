@@ -7,6 +7,7 @@ import { _electron as electron, type ElectronApplication, expect, test } from '@
 import type { ElectronAPI } from '../src/shared/electron-api.types';
 import {
   authorizeE2eProfile,
+  closeElectronApplication,
   disposeUserData,
   loadResolveLocalElectronBin,
   repoRoot,
@@ -44,6 +45,9 @@ function defineRendererOriginMigrationTests(packaged: boolean): void {
       path.join(repoRoot, 'e2e/fixtures/origin-migration.cjs'),
       `--user-data-dir=${userDataDir}`,
     ];
+    // OS-specific: disposable macOS E2E profiles must not wait for or access the user's Keychain.
+    if (process.platform === 'darwin') args.push('--use-mock-keychain');
+    // OS-specific: Chromium setuid sandbox is unreliable in headless/CI Linux; match launchApp.
     if (process.platform === 'linux') args.push('--disable-setuid-sandbox', '--disable-gpu');
     app = await electron.launch({
       executablePath: resolveBin(),
@@ -55,7 +59,8 @@ function defineRendererOriginMigrationTests(packaged: boolean): void {
   }
 
   async function stop(): Promise<void> {
-    if (app) await app.close();
+    if (!app) return;
+    await closeElectronApplication(app);
     app = undefined;
   }
 

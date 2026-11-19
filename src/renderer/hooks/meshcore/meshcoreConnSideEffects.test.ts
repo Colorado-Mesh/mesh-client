@@ -292,7 +292,7 @@ describe('attachMeshcoreConnSideEffects', () => {
 
     expect(h.deviceLogs.at(-1)?.message).toContain('SNR=7.50dB RSSI=-60dBm');
     expect(h.signal.at(-1)).toMatchObject({ snr: 7.5, rssi: -60 });
-    expect(h.rawPackets).toHaveLength(1);
+    // Eager rawPacketsRef update (hop correlation); React setState flushes on rAF.
     expect(h.ctx.rawPacketsRef.current).toHaveLength(1);
   });
 
@@ -303,7 +303,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     dispatch({ type: 'meshcore_rf_rx', payload: { lastSnr: 0, lastRssi: 0, raw: null } });
 
     expect(h.deviceLogs).toHaveLength(1);
-    expect(h.rawPackets).toHaveLength(0);
+    expect(h.ctx.rawPacketsRef.current).toHaveLength(0);
   });
 
   it('resolves a pending DM ack and persists the new status', () => {

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '../lib/timeConstants';
 import ModulePanel from './ModulePanel';
+import { ToastProvider } from './Toast';
 
 const baseProps = {
   moduleConfigs: {
@@ -411,7 +412,7 @@ describe('ModulePanel', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          'Serial console override is enabled on the device. Set a valid serial mode on the radio before enabling the serial module here.',
+          'Serial console override is only supported in NMEA, CalTopo, and MeshSolar config modes. Pick one of those modes, or turn console override off.',
         ),
       ).toBeInTheDocument();
     });
@@ -431,7 +432,7 @@ describe('ModulePanel', () => {
             enabled: false,
             echo: true,
             baud: 115200,
-            mode: 2,
+            mode: 4,
             overrideConsoleSerialPort: true,
           },
         }}
@@ -459,11 +460,198 @@ describe('ModulePanel', () => {
             enabled: true,
             echo: true,
             baud: 115200,
-            mode: 2,
+            mode: 4,
             overrideConsoleSerialPort: true,
           }),
         },
       });
+    });
+  });
+
+  it('shows unsupported note when serial mode is LOG', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 9,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent(
+      /Meshtastic firmware currently does not emit serial output in this mode/i,
+    );
+  });
+
+  it('hides unsupported note when serial mode is NMEA', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    expect(
+      screen.queryByText(/Meshtastic firmware currently does not emit serial output in this mode/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('applies refreshed serial mode and console override after post-mount sync', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    const { rerender } = renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: true,
+            baud: 115200,
+            mode: 2,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+
+    // Keep ToastProvider as the root so ModulePanel updates in place (sync path), not remount.
+    rerender(
+      <ToastProvider>
+        <ModulePanel
+          {...baseProps}
+          moduleConfigs={{
+            ...baseProps.moduleConfigs,
+            serial: {
+              enabled: true,
+              echo: true,
+              baud: 115200,
+              mode: 4,
+              overrideConsoleSerialPort: true,
+            },
+          }}
+          onSetModuleConfig={onSetModuleConfig}
+          onCommit={onCommit}
+        />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Apply Serial Module' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'serial',
+          value: expect.objectContaining({
+            enabled: true,
+            echo: true,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: true,
+          }),
+        },
+      });
+    });
+  });
+
+  it('shows LOG unsupported note after serial mode 9 arrives post-mount', async () => {
+    const user = userEvent.setup();
+
+    const { rerender } = renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          serial: {
+            enabled: true,
+            echo: false,
+            baud: 115200,
+            mode: 4,
+            overrideConsoleSerialPort: false,
+          },
+        }}
+      />,
+    );
+
+    const serialDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Serial Module';
+    });
+    expect(serialDetails).toBeDefined();
+    await user.click(serialDetails!.querySelector('summary')!);
+    expect(
+      screen.queryByText(/Meshtastic firmware currently does not emit serial output in this mode/i),
+    ).not.toBeInTheDocument();
+
+    // Keep ToastProvider as the root so ModulePanel updates in place (sync path), not remount.
+    rerender(
+      <ToastProvider>
+        <ModulePanel
+          {...baseProps}
+          moduleConfigs={{
+            ...baseProps.moduleConfigs,
+            serial: {
+              enabled: true,
+              echo: false,
+              baud: 115200,
+              mode: 9,
+              overrideConsoleSerialPort: false,
+            },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('note')).toHaveTextContent(
+        /Meshtastic firmware currently does not emit serial output in this mode/i,
+      );
     });
   });
 

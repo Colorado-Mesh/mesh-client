@@ -3,9 +3,13 @@
 ## Faster advanced workflow and activation
 
 [`.github/workflows/codeql.yaml`](../workflows/codeql.yaml) avoids rebuilding unchanged Swift code on
-pull requests. Swift analysis runs whenever Swift source, native AI helpers, helper build scripts,
-dependency manifests, or analysis configuration changes. Every `main` push, merge group, weekly
-scan and manual run still analyzes Swift. A failed or ambiguous PR path detector scans Swift.
+pull requests. Swift analysis runs whenever Swift source or a `Package.resolved`, the native AI
+helpers under `native/ai`, the helper build script, or this analysis's own workflow or config
+(`.github/workflows/codeql.yaml`, `.github/codeql/`, `scripts/*codeql*`) changes. The helper's
+dependencies are Swift packages under `native/ai`, so pnpm manifests and other workflows do not
+start the macOS build. Manual runs analyze Swift. `main` pushes, merge groups and weekly scans run
+this workflow, and so analyze Swift, only when the repository Actions variable
+`CODEQL_ADVANCED_ENABLED` is `true`. A failed or ambiguous PR path detector scans Swift.
 It retains the six
 languages currently scanned by default setup (Actions, C#, JavaScript/TypeScript, Python, Rust,
 and Swift), the `security-extended` suite, the remote threat model, and the existing model-pack files.
@@ -64,6 +68,11 @@ Swift keeps the existing default-setup autobuild through the root `Package.swift
 `native/ai/apple/main.swift`. Production packaging continues using its existing optimized
 `swiftc` + `lipo` two-architecture build (`scripts/build-ai-helper.mjs`).
 
+The autobuild log shows it resolving and compiling the MLX helper package `native/ai/mlx`
+(mlx-swift-lm, swift-huggingface and swift-transformers, resolved fresh on each run because the
+package has no `Package.resolved`). That build is most of the Swift job, so the Swift cell has a
+60-minute limit and every other language keeps 30 (see the timing note below).
+
 Only unrelated PRs skip Swift. The PR files API handles additions, deletions and renames; no PR
 checkout or dependency installation is needed for scope detection. A successful explicit `false`
 is required to skip. Missing file counts and responses reaching the API's 3,000-file limit also
@@ -112,6 +121,14 @@ The first hosted four-shard run passed all tests and merged coverage. Renderer U
 from 2m 49s to 4m 5s, compared with the baseline 4m 27s to 5m 14s. Compare future hosted job/step
 timings on equivalent scopes. The extra shard trades one runner setup for less wall time; it is
 not a claim of reduced total runner minutes. SARIF upload processing remains unverified until activation.
+
+Swift timing after `native/ai/mlx` joined the build (#1408): in pull request runs from 2026-11-07
+until 06:00 UTC on 2026-11-18, the Swift job ended 68 times. 11 passed, in 14m 29s to 29m 38s; 22
+were cancelled at the 30-minute limit, 20 during autobuild and 2 during analysis; 35 were cancelled
+earlier. In the slowest pass, autobuild took 27m 42s (about 7 minutes with no output, then package
+resolution, then a 1,217 s `native/ai/mlx` build) and analysis 73s
+([run](https://github.com/Colorado-Mesh/mesh-client/actions/runs/44182081091)). Hence the
+Swift-only 60-minute limit.
 
 ## `js/insecure-temporary-file` (tests and scripts)
 

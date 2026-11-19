@@ -110,6 +110,12 @@ describe('CodeQL advanced workflow', () => {
     expect(job.steps.filter((step) => step.uses?.includes('/autobuild@'))).toHaveLength(1);
   });
 
+  it('gives the Swift autobuild 60 minutes and every other language 30', () => {
+    // The Swift autobuild compiles native/ai/mlx and its MLX dependencies (up to about 30 minutes
+    // on a hosted macOS runner), so a shared 30-minute limit cancelled it on most finished runs.
+    expect(job['timeout-minutes']).toBe("${{ matrix.language == 'swift' && 60 || 30 }}");
+  });
+
   it('clones every sidecar path dependency into the folder CodeQL ignores', () => {
     const manifest = fs.readFileSync(path.join(root, 'reticulum-sidecar/Cargo.toml'), 'utf8');
     const dependencyPaths = [...manifest.matchAll(/^path = "(\.\.\/[^"]+)"$/gm)].map(
@@ -160,19 +166,27 @@ describe('CodeQL advanced workflow', () => {
     'scripts/codeql-workflow.test.mjs',
     '.github/workflows/codeql.yaml',
     '.github/codeql/codeql-config.yml',
-    'package.json',
-    'pnpm-lock.yaml',
-    'pnpm-workspace.yaml',
+    '.github/codeql/README.md',
   ])('scans Swift when its source, build or analysis input changes: %s', (file) => {
     expect(selectsSwift(file)).toBe(true);
   });
 
-  it.each(['README.md', 'docs/ci-cd.md', 'src/renderer/App.tsx', 'src/main/database.ts'])(
-    'avoids a redundant Swift PR build for %s',
-    (file) => {
-      expect(selectsSwift(file)).toBe(false);
-    },
-  );
+  // The Swift helper's dependencies are Swift packages under native/ai, not pnpm packages, and
+  // other workflows do not feed the Swift build, so CI and dependency PRs skip the macOS build.
+  it.each([
+    'README.md',
+    'docs/ci-cd.md',
+    'src/renderer/App.tsx',
+    'src/main/database.ts',
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    '.github/workflows/tests.yaml',
+    '.github/workflows/release.yaml',
+    '.github/dependabot.yml',
+  ])('avoids a redundant Swift PR build for %s', (file) => {
+    expect(selectsSwift(file)).toBe(false);
+  });
 
   it('validates PRs and dispatches without uploading until the explicit migration switch', () => {
     const enabled =

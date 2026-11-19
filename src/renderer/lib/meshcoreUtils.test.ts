@@ -872,6 +872,10 @@ describe('mergeHwModelOnContactUpdate', () => {
     expect(mergeHwModelOnContactUpdate('Repeater', 'None')).toBe('Repeater');
   });
 
+  it('preserves Chat hw_model when device pushes type None', () => {
+    expect(mergeHwModelOnContactUpdate('Chat', 'None')).toBe('Chat');
+  });
+
   it('preserves Repeater hw_model when device pushes type Chat', () => {
     expect(mergeHwModelOnContactUpdate('Repeater', 'Chat')).toBe('Repeater');
   });

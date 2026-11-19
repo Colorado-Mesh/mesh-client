@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "경계 상자는 서쪽 < 동쪽 및 남쪽 < 북쪽이어야 합니다.",
     "waypointNotifyOnEnter": "입력 시 알림",
     "waypointNotifyOnExit": "종료 시 알림",
-    "waypointNotifyFavoritesOnly": "즐겨찾기에 대해서만 알림"
+    "waypointNotifyFavoritesOnly": "즐겨찾기에 대해서만 알림",
+    "basemapOpentopo": "OpenTopoMap(지형)",
+    "basemapHot": "인도주의(HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte(대중교통)"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "메시를 통해 직렬 포트 데이터 전달을 활성화합니다.",
       "serialEchoDesc": "Echo는 보낸 사람에게 직렬 데이터를 다시 받았습니다.",
       "serialRxd": "RX 핀",
-      "serialRxdDesc": "직렬 RX용 GPIO 핀 번호입니다. 0 = 기본값을 사용합니다.",
       "serialTxd": "TX 핀",
-      "serialTxdDesc": "직렬 TX의 GPIO 핀 번호입니다. 0 = 기본값을 사용합니다.",
       "serialTimeout": "시간 초과",
       "serialTimeoutDesc": "패킷을 보내기 전에 기다리는 시간(밀리초)입니다. 0 = 기본값을 사용합니다.",
       "serialMode": "직렬 모드",
-      "serialModeDesc": "직렬 모듈의 작동 모드입니다.",
       "serialOverrideConsole": "콘솔 직렬 포트 재정의",
       "serialOverrideConsoleDesc": "직렬 모듈에는 보조 포트 대신 기본 직렬 포트(콘솔)를 사용하십시오.",
       "sfEnabledDesc": "메시에 다시 합류하는 노드에 대한 버퍼 메시지입니다.",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "채널 색인은 0에서 7 사이여야 합니다.",
         "channelNotConfigured": "이 라디오에는 해당 채널이 구성되어 있지 않습니다.",
         "frequencySlot": "주파수 슬롯은 1 이상이거나 0이어야 파생됩니다."
-      }
+      },
+      "serialRxdDesc": "직렬 RX용 GPIO 핀. 0 = 설정 해제. RXD와 TXD를 모두 설정해야 합니다(또는 NMEA, CalTopo 또는 MeshSolar 구성으로 콘솔 재정의를 사용). 그렇지 않으면 장치가 직렬 모듈을 비활성화합니다.",
+      "serialTxdDesc": "직렬 TX용 GPIO 핀. 0 = 설정 해제. TXD와 RXD를 모두 설정해야 합니다(또는 콘솔 재정의 사용). 그렇지 않으면 장치가 직렬 모듈을 비활성화합니다.",
+      "serialModeDesc": "직렬 모듈의 작동 모드. 모든 펌웨어 버전에서 모든 모드가 구현되는 것은 아닙니다."
     },
     "applySection": "{{section}} 적용",
     "applyingButton": "신청 중...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "공개 Meshtastic MQTT 브로커는 TLS를 지원하지 않습니다. TLS를 끄거나 사용자 정의 브로커 주소를 사용하십시오.",
       "mqttDefaultServerPort": "공용 Meshtastic MQTT 브로커 주소에 포트를 포함하지 마십시오 (: port가 없는 mqtt.meshtastic.org 사용).",
       "mqttProxyRequired": "이 라디오에는 Wi-Fi가 없습니다. 앱이 MQTT를 전달하도록 \"클라이언트에 프록시\" 를 활성화하거나 장치 측 MQTT 대신 LoRa \"MQTT에 확인\" 을 사용하십시오.",
-      "serialOverrideRequiresMode": "장치에서 직렬 콘솔 재정의가 활성화되어 있습니다. 여기에서 직렬 모듈을 활성화하기 전에 라디오에서 유효한 직렬 모드를 설정하십시오."
+      "serialOverrideRequiresMode": "직렬 콘솔 재정의는 NMEA, CalTopo 및 MeshSolar 구성 모드에서만 지원됩니다. 해당 모드 중 하나를 선택하거나 콘솔 재정의를 해제하세요."
     },
     "remoteHardwareConfirmEnableTitle": "원격 하드웨어를 활성화하시겠습니까?",
     "remoteHardwareConfirmEnableMessage": "원격 노드는 메시를 통해 이 장치에서 GPIO 핀을 읽고 쓸 수 있습니다. 메시 사용자를 신뢰하고 PIN 액세스를 구성한 경우에만 활성화하십시오.",
@@ -3567,6 +3571,9 @@
       "joined": "{{name}} 채널에 가입했습니다.",
       "radioApplied": "라디오 설정이 전송되었습니다.",
       "joinFailed": "가입 실패: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Meshtastic 펌웨어는 현재 이 모드에서 직렬 출력을 내보내지 않습니다(무전기는 설정을 저장하지만 아무것도 쓰지 않음). 채널/DM 텍스트에는 텍스트 메시지 모드를 사용하고, 원시 패스스루에는 단순 모드를 사용하세요. LOG 모드에서도 콘솔 재정의를 사용할 수 없습니다."
     }
   },
   "networkPanel": {
@@ -3917,7 +3924,7 @@
     "forgetAdvertAria": "이 연락처의 마지막 advert 타임스탬프 지우기",
     "forgetAdvertDone": "마지막 advert 타임스탬프가 삭제되었습니다.",
     "forgetAdvertFailed": "마지막 advert 타임스탬프를 지울 수 없습니다.",
-    "ownerInfoHeading": "계약자 정보",
+    "ownerInfoHeading": "소유자 정보",
     "ownerInfoRefresh": "소유자 정보 새로 고침",
     "ownerInfoLoading": "소유자 정보 읽는 중…",
     "ownerInfoReadAt": "{{time}}에 읽기",
@@ -7934,7 +7941,11 @@
     "retentionHint": "현지 실시간 트래픽은 1분 동안 관찰을 유지합니다. 이전 캡처는 모니터 스니퍼에 남아 → 있습니다.",
     "emptyFeedQuiet": "마지막 순간에 관찰이 없습니다. 이전 패킷은 모니터 스니퍼에 남아 → 있습니다.",
     "hopTones": "홉 톤",
-    "hopTonesHint": "애니메이션으로 표시되는 각 홉마다 부드러운 음을 재생합니다. 홉이 짧을수록 소리가 높고, 홉이 길수록 소리가 낮습니다. 각 음은 지도에서 해당 홉의 이동 거리에 해당하는 시간 동안 지속됩니다. 로컬, Beacon 및 CoreScope 트래픽에 적용됩니다."
+    "hopTonesHint": "애니메이션으로 표시되는 각 홉마다 부드러운 음을 재생합니다. 홉이 짧을수록 소리가 높고, 홉이 길수록 소리가 낮습니다. 각 음은 지도에서 해당 홉의 이동 거리에 해당하는 시간 동안 지속됩니다. 로컬, Beacon 및 CoreScope 트래픽에 적용됩니다.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "인도주의",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "도우미 장치 설정",

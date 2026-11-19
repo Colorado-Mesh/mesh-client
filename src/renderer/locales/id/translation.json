@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Kotak pembatas harus memiliki barat < timur dan selatan < utara",
     "waypointNotifyOnEnter": "Beri tahu saat masuk",
     "waypointNotifyOnExit": "Beri tahu saat keluar",
-    "waypointNotifyFavoritesOnly": "Beri tahu hanya untuk favorit"
+    "waypointNotifyFavoritesOnly": "Beri tahu hanya untuk favorit",
+    "basemapOpentopo": "OpenTopoMap (medan)",
+    "basemapHot": "Kemanusiaan (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transportasi umum)"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "Aktifkan penerusan data port serial melalui mesh.",
       "serialEchoDesc": "Echo menerima data serial kembali ke pengirim.",
       "serialRxd": "pin RX",
-      "serialRxdDesc": "Nomor pin GPIO untuk serial RX. 0 = gunakan bawaan.",
       "serialTxd": "pin TX",
-      "serialTxdDesc": "Nomor pin GPIO untuk serial TX. 0 = gunakan bawaan.",
       "serialTimeout": "Batas waktu",
       "serialTimeoutDesc": "Milidetik untuk menunggu sebelum mengirim paket. 0 = gunakan bawaan.",
       "serialMode": "Modus serial",
-      "serialModeDesc": "Mode pengoperasian untuk modul serial.",
       "serialOverrideConsole": "Ganti port serial konsol",
       "serialOverrideConsoleDesc": "Gunakan port serial utama (konsol) untuk modul serial, bukan port sekunder.",
       "sfEnabledDesc": "Pesan buffer untuk node yang bergabung kembali dengan mesh.",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "Indeks saluran harus antara 0 dan 7.",
         "channelNotConfigured": "Saluran tersebut tidak dikonfigurasi di radio ini.",
         "frequencySlot": "Slot frekuensi harus 1 atau lebih tinggi, atau 0 untuk memperolehnya."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO untuk RX serial. 0 = tidak disetel. Baik RXD maupun TXD harus diatur (atau gunakan penggantian konsol dengan NMEA, CalTopo, atau konfigurasi MeshSolar); jika tidak, perangkat akan menonaktifkan modul serial.",
+      "serialTxdDesc": "Pin GPIO untuk TX serial. 0 = tidak diatur. Baik TXD maupun RXD harus diatur (atau gunakan penggantian konsol); jika tidak, perangkat akan menonaktifkan modul serial.",
+      "serialModeDesc": "Mode operasi untuk modul serial. Tidak semua mode diimplementasikan oleh setiap versi firmware."
     },
     "applySection": "Terapkan {{section}}",
     "applyingButton": "Melamar...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "Broker MQTT Meshtastic publik tidak mendukung TLS. Nonaktifkan TLS atau gunakan alamat broker khusus.",
       "mqttDefaultServerPort": "Jangan sertakan port di alamat broker Meshtastic MQTT publik (gunakan mqtt.meshtastic.org tanpa :port).",
       "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat.",
-      "serialOverrideRequiresMode": "Penimpaan konsol serial diaktifkan pada perangkat. Atur mode serial yang valid di radio sebelum mengaktifkan modul serial di sini."
+      "serialOverrideRequiresMode": "Penggantian konsol serial hanya didukung dalam mode konfigurasi NMEA, CalTopo, dan MeshSolar. Pilih salah satu mode tersebut, atau nonaktifkan penggantian konsol."
     },
     "remoteHardwareConfirmEnableTitle": "Aktifkan Perangkat Keras Jarak Jauh?",
     "remoteHardwareConfirmEnableMessage": "Node jarak jauh akan dapat membaca dan menulis pin GPIO pada perangkat ini melalui mesh. Hanya aktifkan jika Anda mempercayai pengguna mesh Anda dan telah mengonfigurasi akses PIN.",
@@ -3567,6 +3571,9 @@
       "joined": "Bergabung dengan saluran {{name}}.",
       "radioApplied": "Pengaturan radio terkirim.",
       "joinFailed": "Gagal bergabung: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Firmware Meshtastic saat ini tidak mengeluarkan output serial dalam mode ini (radio menyimpan pengaturan tetapi tidak menulis apa pun). Gunakan mode Pesan teks untuk teks saluran/DM, atau Sederhana untuk penerusan mentah. Mode LOG juga tidak dapat menggunakan penggantian konsol."
     }
   },
   "networkPanel": {
@@ -7934,7 +7941,11 @@
     "retentionHint": "Lalu lintas langsung lokal menyimpan pengamatan selama satu menit. Tangkapan yang lebih lama tetap berada di Monitor → Sniffer.",
     "emptyFeedQuiet": "Tidak ada pengamatan di menit terakhir. Paket yang lebih tua tetap berada di Monitor → Sniffer.",
     "hopTones": "Nada hop",
-    "hopTonesHint": "Putar nada lembut untuk setiap lompatan animasi. Hop yang lebih pendek terdengar lebih tinggi; hop yang lebih panjang terdengar lebih rendah. Setiap nada berdurasi selama perjalanan hop tersebut di peta. Berfungsi untuk lalu lintas lokal, Beacon, dan CoreScope."
+    "hopTonesHint": "Putar nada lembut untuk setiap lompatan animasi. Hop yang lebih pendek terdengar lebih tinggi; hop yang lebih panjang terdengar lebih rendah. Setiap nada berdurasi selama perjalanan hop tersebut di peta. Berfungsi untuk lalu lintas lokal, Beacon, dan CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanifer",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Pengaturan perangkat pendamping",

@@ -15,6 +15,7 @@ import {
 import { clearMessageIdentity } from '../../stores/messageStore';
 import { clearNodeIdentity } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { flushNodeWrites } from '../ingest/coalescedNodeWrites';
 import { mergeOfflineStoreIntoIdentity } from '../mergeOfflineIdentityStore';
 import { tryReuseOfflineProtocolIdentity } from '../offlineProtocolIdentities';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
@@ -279,6 +280,8 @@ export class ConnectionDriver {
 
   async disconnect(identityId: IdentityId): Promise<void> {
     await this.withLifecycle(async () => {
+      // Drain coalesced node writes before tearing down so a mid-burst quit keeps integrity.
+      await flushNodeWrites();
       const slotsToRemove = [...this.slots.values()].filter((s) => s.identityId === identityId);
       for (const slot of slotsToRemove) {
         try {
@@ -299,6 +302,7 @@ export class ConnectionDriver {
   /** "Forget this device": disconnects + clears every per-identity store slice. */
   async removeIdentity(identityId: IdentityId): Promise<void> {
     await this.disconnect(identityId);
+    await flushNodeWrites();
     removeIdentityFromStore(identityId);
     removeConnection(identityId);
     clearMessageIdentity(identityId);

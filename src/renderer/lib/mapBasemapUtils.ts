@@ -1,7 +1,9 @@
 import {
   BASEMAP_ATTRIBUTIONS,
+  isOfflineMapBasemapId,
   MESH_TILES_URL_TEMPLATES,
   type OfflineMapBasemapId,
+  OPENTOPO_MAX_NATIVE_ZOOM,
   USGS_TOPO_MAX_NATIVE_ZOOM,
 } from '@/shared/offlineMaps/basemapRegistry';
 import {
@@ -47,6 +49,31 @@ export const MAP_BASEMAPS: Record<OfflineMapBasemapId, MapBasemapConfig> = {
     isDark: false,
     maxNativeZoom: USGS_TOPO_MAX_NATIVE_ZOOM,
   },
+  opentopo: {
+    id: 'opentopo',
+    url: MESH_TILES_URL_TEMPLATES.opentopo,
+    attribution: BASEMAP_ATTRIBUTIONS.opentopo,
+    isDark: false,
+    maxNativeZoom: OPENTOPO_MAX_NATIVE_ZOOM,
+  },
+  hot: {
+    id: 'hot',
+    url: MESH_TILES_URL_TEMPLATES.hot,
+    attribution: BASEMAP_ATTRIBUTIONS.hot,
+    isDark: false,
+  },
+  cyclosm: {
+    id: 'cyclosm',
+    url: MESH_TILES_URL_TEMPLATES.cyclosm,
+    attribution: BASEMAP_ATTRIBUTIONS.cyclosm,
+    isDark: false,
+  },
+  oepnv: {
+    id: 'oepnv',
+    url: MESH_TILES_URL_TEMPLATES.oepnv,
+    attribution: BASEMAP_ATTRIBUTIONS.oepnv,
+    isDark: false,
+  },
 };
 
 export const DEFAULT_MAP_BASEMAP_ID: OfflineMapBasemapId = 'osm';
@@ -67,9 +94,8 @@ export function meshTilesAvailable(): boolean {
 }
 
 export function isValidMapBasemapId(value: unknown): value is MapBasemapId {
-  return value === 'dark' || value === 'osm' || value === 'usgs-topo' || isCustomMapSourceId(value);
+  return isOfflineMapBasemapId(value) || isCustomMapSourceId(value);
 }
-
 /** Leaflet config for a user-confirmed custom source (attribution escaped: plain text → HTML). */
 export function buildCustomBasemapConfig(info: CustomMapSourceInfo): MapBasemapConfig {
   return {

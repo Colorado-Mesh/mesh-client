@@ -12,6 +12,10 @@ Open **Layers** on the Map tab and choose under **Basemap**:
 | ------------------------- | ------------------------------------------------------------------------------------------------------- |
 | **OpenStreetMap (light)** | Default. Viewed tiles are cached; OpenStreetMap does not allow bulk prefetch or region download.        |
 | **Dark (OpenStreetMap)**  | Same OSM raster tiles with a local CSS filter — no API key. Same view-cache rules as the light basemap. |
+| **OpenTopoMap (terrain)** | Global OSM-based topo with contours and hillshade. View-cache only; native zoom stops at 17.            |
+| **Humanitarian (HOT)**    | High-contrast humanitarian style (OSM France). View-cache only.                                         |
+| **CyclOSM**               | Paths and outdoor detail. View-cache only.                                                              |
+| **ÖPNVKarte (transit)**   | Transit-focused style (MeMO Maps). View-cache only.                                                     |
 | **USGS Topo (US only)**   | United States coverage from the National Map. Native zoom stops at 16 (Leaflet overzooms above that).   |
 
 Basemap choice is remembered. Built-in remotes always go through the privileged `mesh-tiles:` protocol; the renderer never supplies a host for them.
@@ -96,12 +100,12 @@ Vector MBTiles are rejected. Remove a source or **Clear cache** per source from 
 
 Viewed tiles for built-in and custom sources are written under the app **userData** `tile-cache/` directory (about **1 GiB** LRU across sources). Without internet, uncached areas look blank; cached tiles and overlays still render.
 
-| Control                   | When it applies                                                    |
-| ------------------------- | ------------------------------------------------------------------ |
-| **Download current view** | **USGS Topo** only — estimate → confirm tile count/size → download |
-| **Auto-cache when idle**  | **USGS Topo** only                                                 |
-| **Clear tile cache**      | Frees the shared disk cache                                        |
-| View-cache only           | OpenStreetMap light/dark and all custom XYZ (no region prefetch)   |
+| Control                   | When it applies                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| **Download current view** | **USGS Topo** only — estimate → confirm tile count/size → download                        |
+| **Auto-cache when idle**  | **USGS Topo** only                                                                        |
+| **Clear tile cache**      | Frees the shared disk cache                                                               |
+| View-cache only           | OSM light/dark, OpenTopoMap, HOT, CyclOSM, ÖPNVKarte, and custom XYZ (no region prefetch) |
 
 USGS downloads pause when the network drops and resume after about 60 seconds of stable online. A single job is capped so a finished region is not immediately evicted by the LRU. Cancel stops the job. Outside the United States, USGS Topo is blank by design.
 

@@ -281,6 +281,7 @@ export const modulesSurface: SettingsSearchSurface = {
       'confirmation dialog copy for the remote hardware toggles',
     'modulePanel.telemetryDeviceMetrics*': 'help text for the indexed device metrics interval',
     'modulePanel.*Hint': 'help text under a section; the section is indexed',
+    'modulePanel.hints.*': 'inline limitation note under an indexed control; not a setting itself',
     'modulePanel.*Failed': 'error toast, not a control',
     'modulePanel.failed': 'error toast, not a control',
     'modulePanel.errors.*': 'apply/error toast copy, not a control',

@@ -75,7 +75,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^45.3.2         | 45.3.3            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^45.3.4         | 45.3.4            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
@@ -100,7 +100,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react                                 | MIT             | ^19.3.1         | 19.3.1            | git+https://github.com/react/react.git                                               |
 | react-dom                             | MIT             | ^19.3.1         | 19.3.1            | git+https://github.com/react/react.git                                               |
 | react-leaflet                         | Hippocratic-2.1 | ^5.0.0          | 5.0.0             | git+https://github.com/PaulLeCam/react-leaflet.git                                   |
-| recharts                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/recharts/recharts.git                                         |
+| recharts                              | MIT             | ^3.11.0         | 3.11.0            | git+https://github.com/recharts/recharts.git                                         |
 | sort-package-json                     | MIT             | ^3.7.1          | 3.7.1             | git+ssh://git@github.com/keithamus/sort-package-json.git                             |
 | tailwindcss                           | MIT             | ^4.3.5          | 4.3.5             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |

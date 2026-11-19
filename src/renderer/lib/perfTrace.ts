@@ -72,6 +72,11 @@ export function perfReport(): void {
     }))
     .sort((a, b) => b.totalMs - a.totalMs);
   console.table(rows);
+  // Lazy import keeps lag probe out of the cold path when tracing is off at module load.
+  void import('./mainThreadLagProbe').then(({ mainThreadLagSnapshot, startMainThreadLagProbe }) => {
+    startMainThreadLagProbe();
+    console.debug('[perf] mainThreadLag', mainThreadLagSnapshot());
+  });
 }
 
 /** Clear accumulated stats (tests / between bursts). */
@@ -85,4 +90,12 @@ declare global {
 
 if (import.meta.env.DEV || PERF_TRACE_ENABLED) {
   globalThis.__meshPerf = perfReport;
+}
+
+// Start the lag probe at init (before reconnect work) so the first report has samples.
+// Lazy import: tracing-disabled startup does not load the probe module.
+if (PERF_TRACE_ENABLED) {
+  void import('./mainThreadLagProbe').then(({ startMainThreadLagProbe }) => {
+    startMainThreadLagProbe();
+  });
 }

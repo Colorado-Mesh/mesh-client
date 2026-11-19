@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "A caixa delimitadora deve ter oeste < leste e sul < norte",
     "waypointNotifyOnEnter": "Notificar ao entrar",
     "waypointNotifyOnExit": "Notificar ao sair",
-    "waypointNotifyFavoritesOnly": "Notificar apenas para favoritos"
+    "waypointNotifyFavoritesOnly": "Notificar apenas para favoritos",
+    "basemapOpentopo": "OpenTopoMap (terreno)",
+    "basemapHot": "Humanitário (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transporte público)"
   },
   "meshCongestion": {
     "blockTitle": "Por que você está vendo tráfego duplicado",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "Habilite o encaminhamento de dados da porta serial por meio da malha.",
       "serialEchoDesc": "Echo recebeu dados seriais de volta ao remetente.",
       "serialRxd": "Pino RX",
-      "serialRxdDesc": "Número PIN GPIO para RX serial. 0 = usar padrão.",
       "serialTxd": "Pino TX",
-      "serialTxdDesc": "Número PIN GPIO para TX serial. 0 = usar padrão.",
       "serialTimeout": "Tempo Esgotado",
       "serialTimeoutDesc": "Milissegundos para esperar antes de enviar um pacote. 0 = usar padrão.",
       "serialMode": "Número de série",
-      "serialModeDesc": "Modo de operação para o módulo serial.",
       "serialOverrideConsole": "Substituir porta serial do console",
       "serialOverrideConsoleDesc": "Use a porta serial primária (console) para o módulo serial em vez de uma porta secundária.",
       "sfEnabledDesc": "Mensagens de buffer para nós que se juntam novamente à malha.",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "O índice do canal deve estar entre 0 e 7.",
         "channelNotConfigured": "Esse canal não está configurado neste rádio.",
         "frequencySlot": "O slot de frequência deve ser 1 ou superior ou 0 para derivá-lo."
-      }
+      },
+      "serialRxdDesc": "Pino GPIO para RX serial. 0 = não definido. Tanto o RXD quanto o TXD devem ser definidos (ou use a substituição do console com a configuração NMEA, CalTopo ou MeshSolar); caso contrário, o dispositivo desativará o módulo serial.",
+      "serialTxdDesc": "Pino GPIO para TX serial. 0 = não definido. Tanto o TXD quanto o RXD devem ser definidos (ou use a substituição do console); caso contrário, o dispositivo desativará o módulo serial.",
+      "serialModeDesc": "Modo de operação do módulo serial. Nem todos os modos são implementados por todas as versões de firmware."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "A corretora pública Meshtastic MQTT não suporta TLS. Desative o TLS ou use um endereço de corretor personalizado.",
       "mqttDefaultServerPort": "Não inclua uma porta no endereço público do broker MQTT Meshtastic (use mqtt.meshtastic.org sem :port).",
       "mqttProxyRequired": "Este rádio não tem Wi-Fi. Ative \"Proxy para cliente\" para que o aplicativo encaminhe o MQTT ou use o LoRa \"OK para MQTT\" em vez do MQTT do lado do dispositivo.",
-      "serialOverrideRequiresMode": "A substituição do console serial está ativada no dispositivo. Defina um modo serial válido no rádio antes de ativar o módulo serial aqui."
+      "serialOverrideRequiresMode": "A substituição do console serial só é compatível com os modos de configuração NMEA, CalTopo e MeshSolar. Escolha um desses modos ou desative a substituição do console."
     },
     "remoteHardwareConfirmEnableTitle": "Ativar Hardware Remoto?",
     "remoteHardwareConfirmEnableMessage": "Os nós remotos poderão ler e gravar pinos GPIO neste dispositivo sobre a malha. Ative apenas se você confiar em seus usuários de malha e tiver configurado o acesso por PIN.",
@@ -3567,6 +3571,9 @@
       "joined": "Entrou no canal {{name}}.",
       "radioApplied": "Configurações de rádio enviadas.",
       "joinFailed": "Falha na adesão: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "No momento, o firmware Meshtastic não emite saída serial neste modo (o rádio armazena a configuração, mas não grava nada). Use o modo de mensagem de texto para texto de canal/DM ou o modo Simples para passagem direta bruta. Os modos de LOG também não podem usar a substituição do console."
     }
   },
   "networkPanel": {
@@ -7934,7 +7941,11 @@
     "retentionHint": "O tráfego local em tempo real mantém as observações por um minuto. As capturas mais antigas permanecem no Monitor → Sniffer.",
     "emptyFeedQuiet": "Nenhuma observação no último minuto. Pacotes mais antigos permanecem no Monitor → Sniffer.",
     "hopTones": "Tons de salto",
-    "hopTonesHint": "Reproduza um tom suave para cada salto animado. Saltos mais curtos têm um som mais agudo; saltos mais longos têm um som mais grave. Cada nota dura o tempo de deslocamento desse salto no mapa. Funciona para tráfego local, Beacon e CoreScope."
+    "hopTonesHint": "Reproduza um tom suave para cada salto animado. Saltos mais curtos têm um som mais agudo; saltos mais longos têm um som mais grave. Cada nota dura o tempo de deslocamento desse salto no mapa. Funciona para tráfego local, Beacon e CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitarian",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Configurações do dispositivo complementar",

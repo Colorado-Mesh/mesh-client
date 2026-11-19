@@ -27,6 +27,9 @@ describe('logProtocolScope registry', () => {
     expect(resolveLogProtocol(line('[meshtasticTransportLoss] serial link lost'))).toBe(
       'meshtastic',
     );
+    expect(resolveLogProtocol(line('[meshtasticAttachSuperseded] soft-retire complete'))).toBe(
+      'meshtastic',
+    );
     expect(resolveLogProtocol(line('[meshcoreSerialTransportLoss] link lost'))).toBe('meshcore');
     expect(resolveLogProtocol(line('[ReticulumSidecar] WARN decrypt failed'))).toBe('reticulum');
     expect(resolveLogProtocol(line('[MeshCore MQTT] PINGRESP'))).toBe('meshcore');

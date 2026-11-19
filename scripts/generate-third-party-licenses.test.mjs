@@ -10,6 +10,8 @@ import {
   buildThirdPartyLicensesMarkdown,
   generateThirdPartyLicenses,
   loadRustSidecarSection,
+  LRGP_STACK_ROW_MARKER,
+  refuseShrinkingRustSection,
   rsstackRepoUrl,
 } from './generate-third-party-licenses.mjs';
 
@@ -41,6 +43,32 @@ const RUST_METADATA = {
     },
   ],
 };
+
+describe('refuseShrinkingRustSection', () => {
+  const fullExisting = `## Rust sidecar dependencies\n\n${RUST_METADATA.packages
+    .map((p) => p.name)
+    .join(' ')}\n${LRGP_STACK_ROW_MARKER} 0.2.0 | MIT |`;
+
+  it('allows writes when there is no committed stack table', () => {
+    expect(refuseShrinkingRustSection(null, '# Third-party licenses')).toBeNull();
+  });
+
+  it('refuses when metadata is missing but the committed file had lrgp', () => {
+    expect(refuseShrinkingRustSection(null, fullExisting)).toMatch(/unavailable/);
+  });
+
+  it('refuses when the new section drops lrgp rows', () => {
+    expect(refuseShrinkingRustSection('no lrgp here', fullExisting)).toMatch(/incomplete/);
+  });
+
+  it('detects a committed stack table when the lrgp cell is padded with spaces', () => {
+    const paddedExisting = `# Third-party licenses\n\n## Rust sidecar dependencies\n\n| \t lrgp \t | 0.2.0 | MIT |`;
+    expect(refuseShrinkingRustSection(null, paddedExisting)).toMatch(/unavailable/);
+    expect(refuseShrinkingRustSection('| serde | 1.0 | MIT |', paddedExisting)).toMatch(
+      /incomplete/,
+    );
+  });
+});
 
 describe('buildThirdPartyLicensesMarkdown', () => {
   it('wraps prod and dev tables with a generated-file header', () => {
@@ -183,6 +211,36 @@ describe('generateThirdPartyLicenses', () => {
     expect(fs.readFileSync(targetPath, 'utf8')).toMatch(
       /## Rust sidecar dependencies\n\nRUST-BODY\n$/,
     );
+  });
+
+  it('returns 1 and leaves the target unchanged when Rust metadata would shrink a committed stack table', () => {
+    const { targetPath } = makeExistingTarget();
+    const fullStack = `# Third-party licenses\n\n## Rust sidecar dependencies\n\n${LRGP_STACK_ROW_MARKER} 0.2.0 | MIT |`;
+    fs.writeFileSync(targetPath, fullStack);
+    const code = generateThirdPartyLicenses({
+      targetPath,
+      checkLicenses: () => {},
+      loadReportTables: () => ({ prodTable: '| a |', devTable: '| b |' }),
+      loadRustSection: () => null,
+      formatMarkdownFile: () => {},
+    });
+    expect(code).toBe(1);
+    expect(fs.readFileSync(targetPath, 'utf8')).toBe(fullStack);
+  });
+
+  it('returns 1 when padded lrgp rows would be overwritten without stack metadata', () => {
+    const { targetPath } = makeExistingTarget();
+    const paddedStack = `# Third-party licenses\n\n## Rust sidecar dependencies\n\n|  lrgp  | 0.2.0 | MIT |`;
+    fs.writeFileSync(targetPath, paddedStack);
+    const code = generateThirdPartyLicenses({
+      targetPath,
+      checkLicenses: () => {},
+      loadReportTables: () => ({ prodTable: '| a |', devTable: '| b |' }),
+      loadRustSection: () => null,
+      formatMarkdownFile: () => {},
+    });
+    expect(code).toBe(1);
+    expect(fs.readFileSync(targetPath, 'utf8')).toBe(paddedStack);
   });
 
   it('writes the unavailable note when the loader returns null', () => {

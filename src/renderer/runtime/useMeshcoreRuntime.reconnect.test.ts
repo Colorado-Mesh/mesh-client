@@ -779,9 +779,14 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(/isMeshcoreSyncNextMessageTimeoutError\(e\)[\s\S]*?break;/);
   });
 
-  it('syncs rawPacketsRef inside event 136 setRawPackets updater (same-tick hop correlation)', () => {
+  it('eagerly syncs rawPacketsRef on RF RX before batched setRawPackets (same-tick hop correlation)', () => {
     expect(RF_RX_RUNTIME_SOURCE).toMatch(
-      /setRawPackets\(\(prev\) => \{[\s\S]*?rawPacketsRef\.current = trimmed;[\s\S]*?return trimmed;/,
+      /rawPacketsRef\.current = computeNextRawPacketLog\([\s\S]*?meshcoreRawPacketAppenderFor\(deps\)\.append\(rxEntry\)/,
+    );
+    expect(RF_RX_RUNTIME_SOURCE).toContain('syncBeforeCommit:');
+    // Commit must not clobber a ref that eager appends already advanced past this batch.
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
+      /syncBeforeCommit:\s*\(next\)\s*=>\s*\{[\s\S]*?cur\.length > next\.length/,
     );
   });
 });

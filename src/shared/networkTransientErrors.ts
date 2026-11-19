@@ -7,6 +7,10 @@ export const TRANSIENT_NETWORK_ERROR_CODES = new Set([
   'ENETDOWN',
   'ENETUNREACH',
   'EHOSTUNREACH',
+  // macOS local-interface address loss (os error 49) / host-down flaps — must not
+  // terminal-error Meshtastic MQTT or close will skipReconnect.
+  'EADDRNOTAVAIL',
+  'EHOSTDOWN',
 ]);
 
 export function isTransientNetworkErrorCode(code: unknown): boolean {

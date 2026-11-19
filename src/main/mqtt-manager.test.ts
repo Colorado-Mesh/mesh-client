@@ -3617,6 +3617,20 @@ describe('MQTTManager reconnect backoff + connect watchdog', () => {
     expect(manager.getStatus()).not.toBe('error');
   });
 
+  it('does not set terminal error for EADDRNOTAVAIL and still reconnects on close', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const manager = new MQTTManager();
+    manager.connect(settings);
+    const client = getLastMockMqttClient();
+    const eaddr = Object.assign(new Error('read EADDRNOTAVAIL'), { code: 'EADDRNOTAVAIL' });
+    lastHandler(client, 'error')(eaddr);
+    expect(manager.getStatus()).not.toBe('error');
+    lastHandler(client, 'close')();
+    expect(manager.getStatus()).toBe('disconnected');
+    vi.advanceTimersByTime(60_000);
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledTimes(2);
+  });
+
   it.each([MQTT_PACKET_TOO_LARGE_ERROR_CODE, MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE])(
     'force-ends and permanently stops reconnecting after %s',
     (code) => {

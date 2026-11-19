@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "边界框必须满足西 < 东和南 < 北",
     "waypointNotifyOnEnter": "在进入时通知",
     "waypointNotifyOnExit": "退出时通知",
-    "waypointNotifyFavoritesOnly": "仅通知收藏夹"
+    "waypointNotifyFavoritesOnly": "仅通知收藏夹",
+    "basemapOpentopo": "OpenTopoMap（地形）",
+    "basemapHot": "人道主义（HOT）",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte（公共交通卡）"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "通过网状网络启用串行端口数据转发。",
       "serialEchoDesc": "Echo 接收到的串行数据返回给发送者。",
       "serialRxd": "RX PIN",
-      "serialRxdDesc": "串行接收机的GPIO引脚编号。0 =使用默认值。",
       "serialTxd": "TX PIN",
-      "serialTxdDesc": "串行TX的GPIO引脚号。0 =使用默认值。",
       "serialTimeout": "时间已超时",
       "serialTimeoutDesc": "发送数据包之前等待的毫秒数。0 =使用默认值。",
       "serialMode": "串行模式",
-      "serialModeDesc": "串行模块的工作模式。",
       "serialOverrideConsole": "覆盖控制台串行端口",
       "serialOverrideConsoleDesc": "将主串行端口（控制台）用于串行模块，而不是辅助端口。",
       "sfEnabledDesc": "为重新加入网格的节点缓冲消息。",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "通道索引必须介于 0 和 7 之间。",
         "channelNotConfigured": "此无线电上未配置该频道。",
         "frequencySlot": "频率槽必须为 1 或更高，或者为 0 才能导出它。"
-      }
+      },
+      "serialRxdDesc": "GPIO引脚用于串行RX。0 = 未设置。必须同时设置RXD和TXD（或使用NMEA、CalTopo或MeshSolar配置的控制台覆盖）；否则，设备将禁用串行模块。",
+      "serialTxdDesc": "用于串行TX的GPIO引脚。0 = 未设置。TXD和RXD都必须设置（或使用控制台覆盖）；否则，设备将禁用串行模块。",
+      "serialModeDesc": "串行模块的操作模式。并非每个固件版本都实现了所有模式。"
     },
     "applySection": "申请 {{section}}",
     "applyingButton": "正在申请...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "公共Meshtastic MQTT代理不支持TLS。关闭TLS或使用自定义代理地址。",
       "mqttDefaultServerPort": "不要在公共Meshtastic MQTT代理地址中包含端口（使用mqtt.meshtastic.org ，不带： port ）。",
       "mqttProxyRequired": "这台收音机没有无线网络。启用“代理到客户端” ，以便应用程序转发MQTT ，或使用LoRa “OK to MQTT”而不是设备端MQTT。",
-      "serialOverrideRequiresMode": "设备上启用了串行控制台覆盖。在此处启用串行模块之前，请在收音机上设置有效的串行模式。"
+      "serialOverrideRequiresMode": "仅在 NMEA、CalTopo 和 MeshSolar 配置模式下支持串行控制台覆盖。请选择其中一种模式，或关闭控制台覆盖。"
     },
     "remoteHardwareConfirmEnableTitle": "启用远程硬件？",
     "remoteHardwareConfirmEnableMessage": "远程节点将能够在此设备上通过网格读取和写入GPIO引脚。仅当您信任网格用户并已配置PIN访问权限时才启用。",
@@ -3567,6 +3571,9 @@
       "joined": "已加入频道 {{name}}。",
       "radioApplied": "已发送无线电设置。",
       "joinFailed": "加入失败：{{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Meshtastic固件目前在此模式下不发出串行输出（无线电存储设置，但不写入任何内容）。对于频道/DM文本，请使用“文本消息”模式；对于原始透传，请使用“简单”模式。日志模式也不能使用控制台覆盖。"
     }
   },
   "networkPanel": {
@@ -3917,7 +3924,7 @@
     "forgetAdvertAria": "清除此联系人的上一个通告时间戳",
     "forgetAdvertDone": "已清除上次通告时间戳。",
     "forgetAdvertFailed": "无法清除上一个通告的时间戳。",
-    "ownerInfoHeading": "车主信息",
+    "ownerInfoHeading": "节点所有者信息",
     "ownerInfoRefresh": "刷新车主信息",
     "ownerInfoLoading": "正在读取车主信息……",
     "ownerInfoReadAt": "在{{time}}阅读",
@@ -7934,7 +7941,11 @@
     "retentionHint": "本地实时交通保持观察一分钟。较早的捕获保留在监视器→嗅探器中。",
     "emptyFeedQuiet": "在最后一分钟没有观察到任何东西。较旧的数据包保留在监视器→嗅探器中。",
     "hopTones": "跳跃音调",
-    "hopTonesHint": "为每个动画跳跃播放一个柔和的音调。跳数越少，音调越高；跳数越多，音调越低。每个音符的持续时间与该跳跃在地图上的飞行时间相同。适用于本地、Beacon 和 CoreScope 流量。"
+    "hopTonesHint": "为每个动画跳跃播放一个柔和的音调。跳数越少，音调越高；跳数越多，音调越低。每个音符的持续时间与该跳跃在地图上的飞行时间相同。适用于本地、Beacon 和 CoreScope 流量。",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "人道主义",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "公共交通卡"
   },
   "meshcoreCompanionCli": {
     "summary": "配套设备设置",

@@ -47,16 +47,17 @@ jobs:
             # The PR files API caps its response at 3,000 files; never trust a truncated list.
             all:
               - '**'
+            # Swift sources and their Swift package manifests, the helper build script, and this
+            # analysis's own workflow and config. The helper's dependencies are Swift packages under
+            # native/ai, so pnpm manifests and other workflows do not trigger the macOS build.
             swift:
               - '**/*.swift'
               - '**/Package.resolved'
               - 'native/ai/**'
               - 'scripts/build-ai-helper*'
               - 'scripts/*codeql*'
-              - '.github/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
+              - '.github/workflows/codeql.yaml'
+              - '.github/codeql/**'
       # matrix is not a job-level context, so drop the Swift cell before the
       # runner is chosen. A false SWIFT value means the paths filter succeeded
       # and Swift inputs did not change.
@@ -95,7 +96,10 @@ jobs:
       contents: read
       security-events: write
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # The Swift autobuild compiles native/ai/mlx and its MLX dependencies, up to about 30 minutes
+    # on a hosted macOS runner. The other languages took at most 23 minutes (JS/TS) in the 234
+    # pull request runs from 2026-11-07 to 2026-11-18, so they keep 30.
+    timeout-minutes: ${{ matrix.language == 'swift' && 60 || 30 }}
     strategy:
       fail-fast: false
       matrix:

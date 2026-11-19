@@ -214,7 +214,7 @@ describe('closeElectronApplication', () => {
 
     const done = closeElectronApplication(app as never);
     await vi.runAllTimersAsync();
-    await done;
+    await expect(done).resolves.toEqual({ forceKilled: false });
 
     expect(close).toHaveBeenCalledTimes(1);
     expect(killSpy).not.toHaveBeenCalled();
@@ -242,7 +242,7 @@ describe('closeElectronApplication', () => {
     const done = closeElectronApplication(app as never);
     await vi.advanceTimersByTimeAsync(10_000);
     await vi.advanceTimersByTimeAsync(2_000);
-    await done;
+    await expect(done).resolves.toEqual({ forceKilled: true });
 
     expect(killSpy).toHaveBeenCalledWith(1234, 'SIGKILL');
     killSpy.mockRestore();
@@ -269,7 +269,7 @@ describe('closeElectronApplication', () => {
 
     const done = closeElectronApplication(app as never);
     await vi.runAllTimersAsync();
-    await done;
+    await expect(done).resolves.toEqual({ forceKilled: true });
 
     expect(killSpy).toHaveBeenCalledWith(5678, 'SIGKILL');
     killSpy.mockRestore();

@@ -34,6 +34,7 @@ import { useMessages } from '../hooks/useMessages';
 import { useNowMs } from '../hooks/useNowMs';
 import {
   buildChatDmPeerIndex,
+  buildParkedChatDmPeerIndex,
   type ChatDmPeerDbRow,
   type ChatDmPeerIndexEntry,
   mergeChatDmPeerDbRows,
@@ -56,6 +57,11 @@ import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
+import {
+  MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
+  MESHCORE_BUILTIN_CONTACT_TYPE_REPEATER,
+  MESHCORE_BUILTIN_CONTACT_TYPE_ROOM,
+} from '../lib/meshcoreContactGroupUtils';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -153,9 +159,21 @@ function stubDmHistoryNode(nodeId: number, lastMessageAt: number, mode: MeshProt
 }
 
 const BUILTIN_TYPE_FILTERS = [
-  { group_id: -1, typeKey: 'nodeListPanel.meshcoreTypeChat' as const, hw_model: 'Chat' },
-  { group_id: -2, typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const, hw_model: 'Repeater' },
-  { group_id: -3, typeKey: 'nodeListPanel.meshcoreTypeRoom' as const, hw_model: 'Room' },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
+    typeKey: 'nodeListPanel.meshcoreTypeChat' as const,
+    hw_model: 'Chat',
+  },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_REPEATER,
+    typeKey: 'nodeListPanel.meshcoreTypeRepeater' as const,
+    hw_model: 'Repeater',
+  },
+  {
+    group_id: MESHCORE_BUILTIN_CONTACT_TYPE_ROOM,
+    typeKey: 'nodeListPanel.meshcoreTypeRoom' as const,
+    hw_model: 'Room',
+  },
 ] as const;
 
 function meshcoreContactTypeLabel(
@@ -228,8 +246,6 @@ export interface NodeListPanelProps {
   /** When false (parked after visit), skip heavy DM-peer derivation. */
   active?: boolean;
 }
-
-const EMPTY_DM_PEER_INDEX = new Map<number, ChatDmPeerIndexEntry>();
 
 function NodeListPanel({
   nodes,
@@ -336,8 +352,18 @@ function NodeListPanel({
     };
   }, [mode, myNodeNum, dbHydrationRevision]);
 
-  const dmPeerIndex = useMemo(() => {
-    if (!active) return EMPTY_DM_PEER_INDEX;
+  const parkedDmPeerIndex = useMemo(
+    () =>
+      buildParkedChatDmPeerIndex(
+        dbDmPeers,
+        [...sessionDmPeersRef.current.values()],
+        meshcoreExcludedDmPeerIds ?? undefined,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- active: resnapshot session peers when the tab parks
+    [active, dbDmPeers, meshcoreExcludedDmPeerIds],
+  );
+
+  const activeDmPeerIndex = useMemo(() => {
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     for (const [peerId, entry] of fromMemory) {
@@ -360,7 +386,6 @@ function NodeListPanel({
     }
     return merged;
   }, [
-    active,
     chatUnreadDmOptions,
     dbDmPeers,
     identityMessages,
@@ -368,6 +393,8 @@ function NodeListPanel({
     mode,
     ownNodeIdSet,
   ]);
+
+  const dmPeerIndex = active ? activeDmPeerIndex : parkedDmPeerIndex;
   const {
     contactCount,
     loading: offloadLoading,
@@ -717,18 +744,24 @@ function NodeListPanel({
         }));
 
   const filterStatus = useMemo(() => {
-    if (!locationFilter.enabled) return null;
+    if (listTab === 'history' || !locationFilter.enabled) return null;
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
     const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
     if (!homeCoords) return 'no-gps';
-    const totalWithGps = Array.from(nodes.values()).filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
-    ).length;
-    const visibleWithGps = baseNodeList.filter(
-      (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
-    ).length;
-    return { hidden: totalWithGps - visibleWithGps };
-  }, [locationFilter, myNodeNum, nodes, baseNodeList, ourPositionReference]);
+    // Count only distance rejections (same predicate as the list), before type/group filters,
+    // so nearby nodes excluded only by type contribute zero.
+    const maxKm =
+      locationFilter.unit === 'miles'
+        ? locationFilter.maxDistance * 1.60934
+        : locationFilter.maxDistance;
+    const hidden = Array.from(nodes.values()).filter((n) => {
+      if (n.node_id === myNodeNum) return false;
+      if (n.latitude == null || n.longitude == null) return false;
+      const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
+      return d > maxKm;
+    }).length;
+    return { hidden };
+  }, [listTab, locationFilter, myNodeNum, nodes, ourPositionReference]);
   const totalNodeCount = listTab === 'history' ? dmPeerIndex.size : nodes.size;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =

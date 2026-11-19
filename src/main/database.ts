@@ -24,9 +24,22 @@ import {
   runSchemaUpgrade,
 } from './db-schema-sync';
 import { confirmDatabaseSchemaUpgrade } from './fatal-startup-dialog';
+import {
+  saveNodeRowViaSibling,
+  saveNodesBatchViaSibling,
+  toNodeUpsertParamsViaSibling,
+} from './loadNodeUpsert';
 import { sanitizeLogMessage } from './log-service';
 import { MESHCORE_MESSAGE_CHANNEL_SQL } from './meshcoreMessageChannel';
 import { buildFtsMatchQuery, isMessageFtsReady } from './messageFts';
+import type { NodeUpsertParams } from './nodeUpsert';
+
+/** Cap for a single `nodes.path` JSON blob on `db:saveNode(s)`. */
+export const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
+/** Hard cap for one `db:saveNodes` transaction (3×1000 + RF headroom). */
+export const MAX_SAVE_NODES_BATCH = 8000;
+
+export type { NodeUpsertParams };
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
 export { CURRENT_SCHEMA_VERSION, DatabaseSchemaTooNewError, isDatabaseSchemaTooNewError };
@@ -579,6 +592,24 @@ export function saveMeshcoreContactsBatch(
   });
   run();
   return contacts.length;
+}
+
+/** Map a MeshNode-shaped IPC payload via sibling `node-upsert.js` (out of measured index.js). */
+export function toNodeUpsertParams(node: Record<string, unknown>): NodeUpsertParams {
+  return toNodeUpsertParamsViaSibling(node);
+}
+
+/** Single-row nodes upsert (node:sqlite sync) via sibling chunk. */
+export function saveNodeRow(params: NodeUpsertParams): unknown {
+  return saveNodeRowViaSibling(getDatabase(), params);
+}
+
+/**
+ * Persist many nodes in one transaction (WiFi NodeDB / reconnect burst).
+ * Drop-not-abort: one bad row does not lose the rest of the dump.
+ */
+export function saveNodesBatch(nodes: NodeUpsertParams[]): { saved: number; dropped: number } {
+  return saveNodesBatchViaSibling(getDatabase(), nodes);
 }
 
 function createBaseTables(): void {

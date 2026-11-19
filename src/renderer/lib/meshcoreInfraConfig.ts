@@ -1,4 +1,5 @@
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
 
 export type InfraConfigSection = 'identity' | 'radio' | 'routing' | 'scope' | 'room';
 export type InfraConfigValues = Partial<Record<InfraConfigKey, string>>;
@@ -35,7 +36,12 @@ export interface InfraConfigField {
 export const INFRA_CONFIG_FIELDS: Record<InfraConfigSection, InfraConfigField[]> = {
   identity: [
     { key: 'name', label: 'infraConfig.name', type: 'text', maxBytes: 31 },
-    { key: 'owner.info', label: 'infraConfig.ownerInfo', type: 'text', maxBytes: 119 },
+    {
+      key: 'owner.info',
+      label: 'infraConfig.ownerInfo',
+      type: 'text',
+      maxBytes: MESHCORE_OWNER_INFO_MAX_BYTES,
+    },
     { key: 'lat', label: 'infraConfig.latitude', type: 'number', min: -90, max: 90 },
     { key: 'lon', label: 'infraConfig.longitude', type: 'number', min: -180, max: 180 },
   ],

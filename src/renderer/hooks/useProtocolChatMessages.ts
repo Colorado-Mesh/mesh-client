@@ -24,8 +24,8 @@ export interface UseProtocolChatMessagesOptions {
 
 /**
  * Store → ChatMessage[] for one protocol, including reply repair and channel-slot remap.
- * Mount inside the consumer (ChatSurface / notifier / badges), so a message insert can
- * re-render only the surface that shows messages — not the App shell.
+ * Mount from App for chat UI maps and from Team Roster / notifiers; ChatSurface receives
+ * the derived list so the pipeline runs once per protocol.
  */
 export function useProtocolChatMessages(
   protocol: MeshProtocol,

@@ -2948,7 +2948,11 @@
     "waypointBoundingBoxInvalid": "Ohraničující rámeček musí mít západ < východ a jih < sever",
     "waypointNotifyOnEnter": "Upozornit při vstupu",
     "waypointNotifyOnExit": "Upozornit při ukončení",
-    "waypointNotifyFavoritesOnly": "Upozorňovat pouze na oblíbené"
+    "waypointNotifyFavoritesOnly": "Upozorňovat pouze na oblíbené",
+    "basemapOpentopo": "OpenTopoMap (terén)",
+    "basemapHot": "Humanitární (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (veřejná doprava)"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -3312,13 +3316,10 @@
       "serialModuleEnabledDesc": "Povolit předávání dat sériového portu přes síť.",
       "serialEchoDesc": "Echo přijalo sériová data zpět k odesílateli.",
       "serialRxd": "RX PIN",
-      "serialRxdDesc": "Číslo PIN GPIO pro sériové RX. 0 = použijte výchozí.",
       "serialTxd": "TX PIN",
-      "serialTxdDesc": "Číslo PIN GPIO pro sériový TX. 0 = použijte výchozí.",
       "serialTimeout": "Čas.limit",
       "serialTimeoutDesc": "Milisekundy čekání před odesláním paketu. 0 = použít výchozí.",
       "serialMode": "Sériový režim",
-      "serialModeDesc": "Provozní režim pro sériový modul.",
       "serialOverrideConsole": "Přepsat sériový port konzole",
       "serialOverrideConsoleDesc": "Použijte primární sériový port (konzoli) pro sériový modul namísto sekundárního portu.",
       "sfEnabledDesc": "Ukládat zprávy pro uzly, které se znovu připojí k síti.",
@@ -3393,7 +3394,10 @@
         "channelIndexRange": "Index kanálu musí být mezi 0 a 7.",
         "channelNotConfigured": "Tento kanál není na tomto rádiu nakonfigurován.",
         "frequencySlot": "Frekvenční slot musí být 1 nebo vyšší, nebo 0, aby bylo možné jej odvodit."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO pro sériový RX. 0 = nenastaveno. Musí být nastaveny jak RXD, tak TXD (nebo použijte potlačení konzole s konfigurací NMEA, CalTopo nebo MeshSolar); v opačném případě zařízení deaktivuje sériový modul.",
+      "serialTxdDesc": "Pin GPIO pro sériové TX. 0 = nenastaveno. Musí být nastaveny jak TXD, tak RXD (nebo použijte potlačení konzole); v opačném případě zařízení deaktivuje sériový modul.",
+      "serialModeDesc": "Provozní režim sériového modulu. Ne každý režim je implementován v každé verzi firmwaru."
     },
     "applySection": "Použít {{section}}",
     "applyingButton": "Aplikace...",
@@ -3417,7 +3421,7 @@
       "mqttDefaultServerTls": "Veřejný Meshtastic MQTT broker nepodporuje TLS. Vypněte TLS nebo použijte vlastní adresu makléře.",
       "mqttDefaultServerPort": "Nezahrnujte port do veřejné adresy makléře Meshtastic MQTT (použijte mqtt.meshtastic.org bez :port).",
       "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy ke klientovi“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení.",
-      "serialOverrideRequiresMode": "Na zařízení je povoleno přepsání sériové konzoly. Před povolením sériového modulu zde nastavte platný sériový režim v rádiu."
+      "serialOverrideRequiresMode": "Přepsání sériové konzole je podporováno pouze v konfiguračních režimech NMEA, CalTopo a MeshSolar. Vyberte jeden z těchto režimů nebo vypněte potlačení konzole."
     },
     "remoteHardwareConfirmEnableTitle": "Povolit vzdálený hardware?",
     "remoteHardwareConfirmEnableMessage": "Vzdálené uzly budou moci číst a zapisovat piny GPIO na tomto zařízení přes síť. Povolit pouze v případě, že důvěřujete uživatelům mesh a máte nakonfigurovaný přístup PIN.",
@@ -3600,6 +3604,9 @@
       "joined": "Připojil se ke kanálu {{name}}.",
       "radioApplied": "Nastavení rádia odesláno.",
       "joinFailed": "Připojení se nezdařilo: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Firmware Meshtastic v tomto režimu aktuálně nevysílá sériový výstup (rádio nastavení uloží, ale nic nezapíše). Pro text kanálu/DM použijte režim Textové zprávy nebo pro nezpracovaný průchod použijte režim Jednoduchý. Režimy LOG také nemohou používat potlačení konzole."
     }
   },
   "networkPanel": {
@@ -3952,7 +3959,7 @@
     "forgetAdvertAria": "Vymazat časové razítko posledního advertu pro tento kontakt",
     "forgetAdvertDone": "Časové razítko posledního advertu bylo vymazáno.",
     "forgetAdvertFailed": "Nepodařilo se vymazat časové razítko posledního advertu.",
-    "ownerInfoHeading": "Informace o MAJITELI ZVÍŘETE",
+    "ownerInfoHeading": "Informace o vlastníkovi",
     "ownerInfoRefresh": "Obnovit informace o majiteli",
     "ownerInfoLoading": "Načítání informací o majiteli…",
     "ownerInfoReadAt": "Přečteno v {{time}}",
@@ -7707,7 +7714,7 @@
     "permissions": "Oprávnění místnosti",
     "advanced": "Advanced",
     "name": "Jméno",
-    "ownerInfo": "Informace o MAJITELI ZVÍŘETE",
+    "ownerInfo": "Informace o vlastníkovi",
     "latitude": "Zeměpisná šířka",
     "longitude": "Zeměpisná délka",
     "frequency": "Kmitočet (MHz)",
@@ -8011,7 +8018,11 @@
     "retentionHint": "Místní živý provoz udržuje pozorování po dobu jedné minuty. Starší snímky zůstávají v nástroji Monitor → Sniffer.",
     "emptyFeedQuiet": "Žádné připomínky na poslední chvíli. Starší pakety zůstávají v nástroji Monitor → Sniffer.",
     "hopTones": "Tóny skoků",
-    "hopTonesHint": "Přehrát jemný tón pro každý animovaný skok. Kratší skoky zní výš; delší skoky zní níž. Každý tón trvá po dobu letu daného skoku na mapě. Funguje pro místní provoz, provoz Beacon a provoz CoreScope."
+    "hopTonesHint": "Přehrát jemný tón pro každý animovaný skok. Kratší skoky zní výš; delší skoky zní níž. Každý tón trvá po dobu letu daného skoku na mapě. Funguje pro místní provoz, provoz Beacon a provoz CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitární",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Öpnvkarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Nastavení doprovodného zařízení",

@@ -274,7 +274,6 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       'aria-label',
       expect.stringMatching(/Cap stored messages, keep newest 7500 messages/i),
     );
-    expect(input).toHaveAccessibleName(/Cap stored messages/i);
   });
 
   it('debounces count edits and persists via appSettings.set with the meshtastic key', async () => {
@@ -284,9 +283,17 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 4000 messages/i);
+    // Prefer the stable id over findByLabelText: AccName walks the whole AppPanel and can
+    // exceed the default 5s test timeout on loaded CI shards (same pattern as the hydrate test).
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshtastic-count')).toHaveValue(
+        4000,
+      );
+    });
+    const input = document.getElementById('apppanel-message-retention-meshtastic-count');
+    expect(input).toBeInstanceOf(HTMLInputElement);
 
-    fireEvent.change(input, { target: { value: '6000' } });
+    fireEvent.change(input as HTMLInputElement, { target: { value: '6000' } });
     expect(window.electronAPI.appSettings.set).not.toHaveBeenCalledWith(
       MESSAGE_RETENTION_KEYS.meshtasticCount,
       expect.anything(),
@@ -338,8 +345,17 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 4000 messages/i);
-    expect(input.id).toBe('apppanel-message-retention-meshcore-count');
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshcore-count')).toHaveValue(
+        4000,
+      );
+    });
+    const input = document.getElementById('apppanel-message-retention-meshcore-count');
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(input).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/Cap stored messages, keep newest 4000 messages/i),
+    );
   });
 });
 
@@ -1132,7 +1148,11 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
       </ToastProvider>,
     );
     fireEvent.click(screen.getByText('Destructive actions'));
-    await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
+    // Prefer the stable id over findByLabelText: AccName walks the whole AppPanel and can
+    // exceed the default 5s test timeout on loaded CI shards.
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toHaveValue(90);
+    });
   });
 
   it('hydrates the age input from persisted AppSettings', async () => {
@@ -1144,8 +1164,9 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
     );
 
     fireEvent.click(screen.getByText('Destructive actions'));
-    const input = await screen.findByLabelText(/Delete nodes last heard more than 10 days/i);
-    expect(input).toHaveValue(10);
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toHaveValue(10);
+    });
   });
 
   it('persists age changes to AppSettings localStorage', async () => {
@@ -1156,8 +1177,12 @@ describe('AppPanel: Danger Zone delete-nodes age', () => {
     );
 
     fireEvent.click(screen.getByText('Destructive actions'));
-    const input = await screen.findByLabelText(/Delete nodes last heard more than 90 days/i);
-    fireEvent.change(input, { target: { value: '15' } });
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-delete-age-days')).toBeInstanceOf(HTMLInputElement);
+    });
+    const input = document.getElementById('apppanel-delete-age-days');
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    fireEvent.change(input as HTMLInputElement, { target: { value: '15' } });
 
     await waitFor(() => {
       const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);

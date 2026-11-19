@@ -146,6 +146,7 @@ function main() {
       platform: 'linux',
       bundleRoot,
       fail,
+      expectedArch: label === 'arm64' ? 'arm64' : 'x64',
     });
   }
 
