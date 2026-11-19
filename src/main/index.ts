@@ -226,7 +226,6 @@ import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
   persistMeshcoreMessage,
-  selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
 import { persistMeshtasticMessage } from './meshtasticMessageRow';
@@ -5444,15 +5443,12 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
     const safeLimit = clampQueryLimit(limit, { default: 200, max: 10000 });
     const db = getDbForIpc('db:getMeshcoreMessages');
     if (!db) return [];
-    // Order by row id (insert order at this client), not `timestamp`:
-    // outgoing messages use Date.now() while RF inbound uses the radio's clock; if the device
-    // time lags, ORDER BY timestamp DESC kept "recent" sends but dropped inbound rows from the
-    // LIMIT window. Reversed DESC→ASC yields oldest-first within the N most recently stored rows.
+    const order = 'ORDER BY COALESCE(received_at, timestamp) DESC, id DESC LIMIT ?';
     if (channelIdx != null) {
       const ch = typeof channelIdx === 'number' ? Math.trunc(channelIdx) : 0;
       const rows = db
         .prepareOnce(
-          `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? ORDER BY id DESC LIMIT ?`,
+          `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? ${order}`,
         )
         .all(ch, safeLimit) as Record<string, unknown>[];
       rows.reverse();
@@ -5462,7 +5458,7 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
       }));
     }
     const rows = db
-      .prepareOnce('SELECT * FROM meshcore_messages ORDER BY id DESC LIMIT ?')
+      .prepareOnce(`SELECT * FROM meshcore_messages ${order}`)
       .all(safeLimit) as Record<string, unknown>[];
     rows.reverse();
     return rows.map((row) => ({
@@ -5476,7 +5472,7 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
 
 ipcMain.handle(
   'db:getMeshcoreMessagesForHydration',
-  (
+  async (
     event,
     limits?: {
       globalLimit?: number;
@@ -5488,6 +5484,29 @@ ipcMain.handle(
       assertIpcSender(event, 'db:getMeshcoreMessagesForHydration');
       const db = getDbForIpc('db:getMeshcoreMessagesForHydration');
       if (!db) return [];
+      const mod: unknown = process.env.VITEST
+        ? await import('./meshcoreHydrationSelect')
+        : await import(pathToFileURL(path.join(__dirname, 'identity-hydration.js')).href);
+      if (
+        typeof mod !== 'object' ||
+        mod == null ||
+        !('selectMeshcoreMessagesForHydration' in mod) ||
+        typeof mod.selectMeshcoreMessagesForHydration !== 'function'
+      ) {
+        throw new Error(
+          'db:getMeshcoreMessagesForHydration: missing selectMeshcoreMessagesForHydration',
+        );
+      }
+      const { selectMeshcoreMessagesForHydration } = mod as {
+        selectMeshcoreMessagesForHydration: (
+          database: NonNullable<ReturnType<typeof getDbForIpc>>,
+          loadLimits?: {
+            globalLimit?: number;
+            perChannelLimit?: number;
+            roomLimit?: number;
+          },
+        ) => Record<string, unknown>[];
+      };
       // Defaults match src/shared/meshcoreMessageHydration.ts (500 / 100 / 200).
       const rows = selectMeshcoreMessagesForHydration(db, {
         globalLimit: clampQueryLimit(limits?.globalLimit, { default: 500, max: 10000 }),

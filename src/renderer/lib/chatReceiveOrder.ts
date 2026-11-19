@@ -65,6 +65,24 @@ export interface ChatReceiveOrderFields {
   timestamp: number;
 }
 
+/** Stable tie-break for in-memory chat rows (`localOrder`, then `id`). */
+export interface ChatReceiveOrderLocalTieFields extends ChatReceiveOrderFields {
+  id: string;
+  localOrder?: number;
+}
+
+export function compareChatReceiveOrderLocalIdTie<T extends ChatReceiveOrderLocalTieFields>(
+  a: T,
+  b: T,
+): number {
+  return compareChatReceiveOrder(a, b, (x, y) => {
+    const xOrder = x.localOrder ?? 0;
+    const yOrder = y.localOrder ?? 0;
+    if (xOrder !== yOrder) return xOrder - yOrder;
+    return x.id.localeCompare(y.id);
+  });
+}
+
 /** The order key: local receipt time, or the wire time for rows saved before receipts were kept. */
 export function chatReceivedAtMs(message: ChatReceiveOrderFields): number {
   return message.receivedAt ?? message.timestamp;

@@ -138,7 +138,7 @@ describe('CodeQL advanced workflow', () => {
     expect(filter['continue-on-error']).toBe(true);
     expect(filter.uses).toMatch(/^dorny\/paths-filter@[a-f0-9]{40}$/);
     expect(scope.permissions).toEqual({ contents: 'read', 'pull-requests': 'read' });
-    expect(scope.steps).toHaveLength(2);
+    expect(scope.steps).toHaveLength(3);
     expect(scope.outputs.matrix).toBe('${{ steps.matrix.outputs.matrix }}');
     expect(filters.all).toEqual(['**']);
     for (const file of ['README.md', 'native/ai/apple/main.swift']) {
@@ -150,9 +150,11 @@ describe('CodeQL advanced workflow', () => {
     )) {
       expect(step.if).toBe(selected);
     }
-    expect(job.steps.find((step) => step.name === 'Record unchanged Swift inputs').if).toBe(
-      "matrix.language == 'swift' && needs.scope.outputs.swift != 'true'",
+    const swiftSkipNote = scope.steps.find((step) => step.name === 'Record unchanged Swift inputs');
+    expect(swiftSkipNote.if).toBe(
+      "github.event_name == 'pull_request' && steps.filter.outcome == 'success' && steps.filter.outputs.swift == 'false'",
     );
+    expect(job.steps.find((step) => step.name === 'Record unchanged Swift inputs')).toBeUndefined();
   });
 
   it.each([

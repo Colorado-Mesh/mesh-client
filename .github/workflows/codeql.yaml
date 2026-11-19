@@ -82,6 +82,14 @@ jobs:
           process.stdout.write(`matrix=${JSON.stringify(rows)}\n`);
           EOF
 
+      - name: Record unchanged Swift inputs
+        if: >-
+          github.event_name == 'pull_request' && steps.filter.outcome == 'success' &&
+          steps.filter.outputs.swift == 'false'
+        run: >-
+          echo 'Swift inputs unchanged; full Swift scans still run on protected events.'
+          >> "$GITHUB_STEP_SUMMARY"
+
   analyze:
     name: Analyze (${{ matrix.language }})
     needs: scope
@@ -157,7 +165,3 @@ jobs:
           path: ${{ runner.temp }}/codeql-results
           retention-days: 7
           if-no-files-found: warn
-
-      - name: Record unchanged Swift inputs
-        if: matrix.language == 'swift' && needs.scope.outputs.swift != 'true'
-        run: echo 'Swift inputs unchanged; full Swift scans still run on protected events.' >> "$GITHUB_STEP_SUMMARY"

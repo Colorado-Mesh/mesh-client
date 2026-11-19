@@ -9,7 +9,12 @@ import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { NodeSqliteDB } from './db-compat';
-import { selectMeshcoreMessagesForHydration } from './meshcoreMessageChannel';
+import {
+  type MeshcoreHydrationLoadLimits,
+  selectMeshcoreMessagesForHydration,
+} from './meshcoreHydrationSelect';
+
+export { type MeshcoreHydrationLoadLimits, selectMeshcoreMessagesForHydration };
 
 const MESHTASTIC_MESSAGE_COLUMNS = `id, sender_id, sender_name, payload, channel, timestamp,
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,

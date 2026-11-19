@@ -4,12 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { meshcoreMessageChannelIndex } from '../shared/meshcoreMessageChannel';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
+import { selectMeshcoreMessagesForHydration } from './meshcoreHydrationSelect';
 import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
   type MeshcoreMessageRowParams,
   persistMeshcoreMessage,
-  selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
 
@@ -460,7 +460,7 @@ describe('MeshCore message receipt time', () => {
     }
   });
 
-  it('leaves a row saved before receipt times without one when it is saved again', () => {
+  it('backfills receipt when a legacy row had none and keeps an existing receipt', () => {
     const db = new NodeSqliteDB(':memory:');
     runSchemaUpgrade(db);
     try {
@@ -468,8 +468,14 @@ describe('MeshCore message receipt time', () => {
         'INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp) VALUES (7, ?, ?, 0, ?)',
       ).run('Peer', 'late clock', row.timestamp);
       expect(persistMeshcoreMessage(db, { ...row, rx_hops: 2 }).changes).toBe(1);
-      expect(db.prepareOnce('SELECT received_at FROM meshcore_messages').all()).toEqual([
-        { received_at: null },
+      expect(db.prepareOnce('SELECT received_at, rx_hops FROM meshcore_messages').all()).toEqual([
+        { received_at: row.received_at, rx_hops: 2 },
+      ]);
+      expect(
+        persistMeshcoreMessage(db, { ...row, received_at: 1_800_000_000_000, rx_hops: 3 }).changes,
+      ).toBe(1);
+      expect(db.prepareOnce('SELECT received_at, rx_hops FROM meshcore_messages').all()).toEqual([
+        { received_at: row.received_at, rx_hops: 3 },
       ]);
     } finally {
       db.close();
@@ -478,6 +484,28 @@ describe('MeshCore message receipt time', () => {
 });
 
 describe('selectMeshcoreMessagesForHydration', () => {
+  it('ranks the global window by receipt time, not row id alone', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp, received_at) VALUES (1, ?, 0, 1000, 9000)',
+      ).run('older-id-newer-receipt');
+      db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp, received_at) VALUES (1, ?, 0, 5000, 1000)',
+      ).run('newer-id-older-receipt');
+
+      const rows = selectMeshcoreMessagesForHydration(db, {
+        globalLimit: 1,
+        perChannelLimit: 1,
+        roomLimit: 1,
+      });
+      expect(rows.map((row) => String(row.payload))).toEqual(['older-id-newer-receipt']);
+    } finally {
+      db.close();
+    }
+  });
+
   it('keeps quiet channel rows outside the global newest window', () => {
     const db = new NodeSqliteDB(':memory:');
     runSchemaUpgrade(db);
