@@ -7,6 +7,8 @@
 import { existsSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { readElfMachine } from './binary-arch.mjs';
+import { assertSidecarGlibcFloor } from './check-reticulum-sidecar-glibc.mjs';
 import {
   MIN_SIDECAR_BYTES,
   PLATFORM_TARGETS,
@@ -49,7 +51,19 @@ function main() {
     if (size < MIN_SIDECAR_BYTES) {
       fail(`Staged sidecar too small for ${platform}-${archKey} (${size} bytes): ${sidecarPath}`);
     }
-    console.debug(`[verify-reticulum-sidecar-staged] OK ${platform}-${archKey} (${size} bytes)`);
+    // Skip glibc floor on non-ELF placeholders used by packaging unit fixtures.
+    if (platform === 'linux' && readElfMachine(sidecarPath) != null) {
+      try {
+        const { maxRequired } = assertSidecarGlibcFloor(sidecarPath);
+        console.debug(
+          `[verify-reticulum-sidecar-staged] OK ${platform}-${archKey} glibc<=${maxRequired} (${size} bytes)`,
+        );
+      } catch (err) {
+        fail(err instanceof Error ? err.message : String(err));
+      }
+    } else {
+      console.debug(`[verify-reticulum-sidecar-staged] OK ${platform}-${archKey} (${size} bytes)`);
+    }
   }
 
   console.debug(

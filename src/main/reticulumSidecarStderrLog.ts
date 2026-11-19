@@ -53,16 +53,43 @@ function splitSidecarTracingFields(text: string): { fields: string[]; index: num
   return { fields, index };
 }
 
+/** Known tracing-subscriber severity tokens (case-sensitive, as emitted with NO_COLOR=1). */
+const TRACING_SEVERITIES = new Set(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR']);
+
 /** Tracing severity token (`INFO`, `WARN`, …) after the optional timestamp, or `''`. */
 export function reticulumSidecarLineSeverity(text: string): string {
   const { fields, index } = splitSidecarTracingFields(text);
   return fields[index] ?? '';
 }
 
+/**
+ * True for dynamic-linker / panic / other non-tracing lines that explain an instant exit
+ * (e.g. `GLIBC_2.39 not found`, `error while loading shared libraries`).
+ */
+export function isReticulumSidecarRawFatalOutput(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('shared libraries') ||
+    lower.includes('glibc_') ||
+    lower.includes('not found') ||
+    lower.includes('panic') ||
+    lower.includes('fatal') ||
+    lower.includes('abort') ||
+    lower.includes('segmentation fault') ||
+    lower.includes('cannot open shared object')
+  );
+}
+
 export function shouldForwardReticulumSidecarStdout(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
   const { fields, index } = splitSidecarTracingFields(text);
   const severity = fields[index] ?? '';
   if (severity === 'WARN' || severity === 'ERROR') {
+    return true;
+  }
+  // Dynamic linker / panic / other non-tracing stderr — never drop these from mesh-client.log.
+  if (!TRACING_SEVERITIES.has(severity)) {
     return true;
   }
   // INFO for PN / RRC / GATT triage only (matches SIDECAR_DEFAULT_RUST_LOG targets).

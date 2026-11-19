@@ -16,6 +16,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { parseBuildArgs } from './build-reticulum-sidecar-release.mjs';
 import { PLATFORM_TARGETS, stagedSidecarPath } from './reticulum-sidecar-staging.mjs';
+import { linuxZigbuildTarget } from './check-reticulum-sidecar-glibc.mjs';
 
 const fixtures = [];
 afterEach(() => {
@@ -28,7 +29,11 @@ function fixture() {
   for (const dir of ['scripts', 'reticulum-sidecar', 'bin']) {
     mkdirSync(path.join(root, dir));
   }
-  for (const file of ['build-reticulum-sidecar-release.mjs', 'reticulum-sidecar-staging.mjs']) {
+  for (const file of [
+    'build-reticulum-sidecar-release.mjs',
+    'reticulum-sidecar-staging.mjs',
+    'check-reticulum-sidecar-glibc.mjs',
+  ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
   writeFileSync(path.join(root, 'scripts/clone-ratspeak-stack.sh'), 'exit "${FAIL_CLONE:-0}"\n');
@@ -40,9 +45,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.CARGO_CALLS, JSON.stringify(args) + '\\n');
+if (args[0] === 'zigbuild' && args[1] === '--help') process.exit(0);
 if (process.env.FAIL_CARGO === args[0]) process.exit(42);
-if (args[0] === 'build' && process.env.BINARY_MODE !== 'missing') {
-  const target = args[args.indexOf('--target') + 1];
+if ((args[0] === 'build' || args[0] === 'zigbuild') && process.env.BINARY_MODE !== 'missing') {
+  const rawTarget = args[args.indexOf('--target') + 1];
+  const target = String(rawTarget).replace(/\\.\\d+(?:\\.\\d+)*$/, '');
   const dir = path.join('target', target, 'release');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'mesh-client-reticulum' + (target.includes('windows') ? '.exe' : '')),
@@ -51,6 +58,9 @@ if (args[0] === 'build' && process.env.BINARY_MODE !== 'missing') {
 `,
   );
   chmodSync(cargo, 0o755);
+  const zig = path.join(root, 'bin/zig');
+  writeFileSync(zig, '#!/bin/sh\necho 0.14.1\n');
+  chmodSync(zig, 0o755);
   return root;
 }
 
@@ -79,6 +89,28 @@ function calls(root) {
         .split('\n')
         .map((line) => JSON.parse(line))
     : [];
+}
+
+/** @param {string} platform */
+function releaseBuildArgs(platform, cargoTarget) {
+  if (platform === 'linux') {
+    return [
+      'zigbuild',
+      '--release',
+      '--target',
+      linuxZigbuildTarget(cargoTarget),
+      '--features',
+      'rns-stack,rns-ble,rns-rnode-tcp',
+    ];
+  }
+  return [
+    'build',
+    '--release',
+    '--target',
+    cargoTarget,
+    '--features',
+    'rns-stack,rns-ble,rns-rnode-tcp',
+  ];
 }
 
 describe('sidecar release target selection', () => {
@@ -134,7 +166,13 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
 
       const result = build(root, ['--platform', platform, '--arch', target.archKey]);
       expect(result.status, result.stderr).toBe(0);
-      expect(calls(root).map(([command]) => command)).toEqual(['test', 'build']);
+      const recorded = calls(root).filter(
+        (args) => !(args[0] === 'zigbuild' && args[1] === '--help'),
+      );
+      expect(recorded.map(([command]) => command)).toEqual([
+        'test',
+        platform === 'linux' ? 'zigbuild' : 'build',
+      ]);
       const staged = readFileSync(stagedSidecarPath(root, platform, target.archKey));
       expect(staged.equals(Buffer.alloc(1024 * 1024))).toBe(true);
     },
@@ -144,16 +182,14 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
     const root = fixture();
     const result = build(root, ['--platform', platform]);
     expect(result.status, result.stderr).toBe(0);
-    expect(calls(root)).toEqual([
+    const recorded = calls(root).filter(
+      (args) => !(args[0] === 'zigbuild' && args[1] === '--help'),
+    );
+    expect(recorded).toEqual([
       ['test', '--features', 'rns-stack,rns-ble,rns-rnode-tcp', '--', '--test-threads=1'],
-      ...PLATFORM_TARGETS[platform].map(({ cargoTarget }) => [
-        'build',
-        '--release',
-        '--target',
-        cargoTarget,
-        '--features',
-        'rns-stack,rns-ble,rns-rnode-tcp',
-      ]),
+      ...PLATFORM_TARGETS[platform].map(({ cargoTarget }) =>
+        releaseBuildArgs(platform, cargoTarget),
+      ),
     ]);
     for (const { archKey } of PLATFORM_TARGETS[platform]) {
       const staged = stagedSidecarPath(root, platform, archKey);
@@ -180,17 +216,31 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
     expect(existsSync(stagedSidecarPath(root, 'win32', 'arm64'))).toBe(true);
   });
 
+  it('requires zig + cargo-zigbuild for Linux release builds', () => {
+    const root = fixture();
+    // Shadow host zig: fixture bin is first on PATH; a nonzero stub makes zigOnPath fail.
+    writeFileSync(path.join(root, 'bin/zig'), '#!/bin/sh\nexit 1\n');
+    chmodSync(path.join(root, 'bin/zig'), 0o755);
+    const result = build(root, ['--platform', 'linux', '--arch', 'x64', '--skip-tests']);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('docs/ci-cd.md#linux-sidecar-glibc');
+  });
+
   it.each([
     [{ FAIL_CLONE: '19' }, 0],
     [{ FAIL_CARGO: 'test' }, 1],
-    [{ FAIL_CARGO: 'build' }, 2],
+    [{ FAIL_CARGO: 'zigbuild' }, 2],
     [{ BINARY_MODE: 'missing' }, 2],
     [{ BINARY_MODE: 'small' }, 2],
   ])('fails before staging on %j', (env, count) => {
     const root = fixture();
     const result = build(root, ['--platform', 'linux'], env);
     expect(result.status).not.toBe(0);
-    expect(calls(root)).toHaveLength(count);
+    // cargo zigbuild --help probe may append one call before the failing zigbuild.
+    const recorded = calls(root).filter(
+      (args) => !(args[0] === 'zigbuild' && args[1] === '--help'),
+    );
+    expect(recorded).toHaveLength(count);
     expect(existsSync(stagedSidecarPath(root, 'linux', 'x64'))).toBe(false);
   });
 });

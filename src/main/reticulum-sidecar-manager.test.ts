@@ -74,7 +74,11 @@ import {
   RETICULUM_PROXY_MAX_RESPONSE_BYTES,
   RETICULUM_WS_MAX_MESSAGE_BYTES,
 } from '../shared/reticulumProxyLimits';
-import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
+import {
+  preferSidecarExitErrorOverFetch,
+  ReticulumSidecarManager,
+  sidecarChildEnv,
+} from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
 import { SIDECAR_DEFAULT_RUST_LOG } from './reticulumSidecarStderrLog';
 import * as sidecarWatchdog from './reticulumSidecarWatchdog';
@@ -97,11 +101,32 @@ function mockSidecarProc(pid = 4242): EventEmitter & {
     stderr: EventEmitter;
   };
   proc.pid = pid;
-  proc.kill = vi.fn();
+  proc.kill = vi.fn((signal?: NodeJS.Signals | number) => {
+    // Mirror real ChildProcess: exit then close once stdio is done (mocks have no pipes).
+    const code = typeof signal === 'number' ? signal : 0;
+    const sig = typeof signal === 'string' ? signal : null;
+    proc.emit('exit', code, sig);
+    proc.emit('close', code, sig);
+    return true;
+  });
   proc.stdin = Object.assign(new EventEmitter(), { end: vi.fn() });
   proc.stdout = new EventEmitter();
   proc.stderr = new EventEmitter();
   return proc;
+}
+
+/** Emit exit then close so child-local exit diagnostics finalize (stdio drain). */
+function emitProcExit(
+  proc: EventEmitter,
+  code: number | null = 0,
+  signal: NodeJS.Signals | null = null,
+): void {
+  const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
+  const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+  proc.emit('exit', code, signal);
+  stdout.emit('end');
+  stderr.emit('end');
+  proc.emit('close', code, signal);
 }
 
 describe('ReticulumSidecarManager', () => {
@@ -888,6 +913,146 @@ describe('ReticulumSidecarManager', () => {
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
+  });
+
+  it('prefers child exit reason over fetch failed when health poll loses the process', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    spawnMock.mockReturnValue(proc);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })),
+    );
+
+    const manager = new ReticulumSidecarManager();
+    const startPromise = manager.start();
+    await vi.waitFor(() => {
+      expect(spawnMock).toHaveBeenCalled();
+    });
+    const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+    stderr.emit(
+      'data',
+      Buffer.from(
+        "mesh-client-reticulum: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.39' not found\n",
+      ),
+    );
+    emitProcExit(proc, 1, null);
+
+    await expect(startPromise).rejects.toThrow(/exit 1.*GLIBC_2\.39/);
+    expect(manager.getStatus().lastError).toMatch(/exit 1.*GLIBC_2\.39/);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[ReticulumSidecar]',
+      expect.stringMatching(/exited code=1.*GLIBC_2\.39/),
+    );
+
+    warnSpy.mockRestore();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('includes an unterminated stderr line in the exit diagnostic after drain', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    spawnMock.mockReturnValue(proc);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })),
+    );
+
+    const manager = new ReticulumSidecarManager();
+    const startPromise = manager.start();
+    await vi.waitFor(() => {
+      expect(spawnMock).toHaveBeenCalled();
+    });
+    const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+    stderr.emit(
+      'data',
+      Buffer.from(
+        "mesh-client-reticulum: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.43' not found",
+      ),
+    );
+    emitProcExit(proc, 1, null);
+
+    await expect(startPromise).rejects.toThrow(/exit 1.*GLIBC_2\.43/);
+    expect(manager.getStatus().lastError).toMatch(/exit 1.*GLIBC_2\.43/);
+
+    warnSpy.mockRestore();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('retry start after a failed child does not reuse the prior exit error', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const failing = mockSidecarProc(1111);
+    const healthy = mockSidecarProc(2222);
+    spawnMock.mockReturnValueOnce(failing).mockReturnValueOnce(healthy);
+
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } }))
+      .mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ status: 'ok', version: 'test', rns_ready: true, lxmf_ready: true }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    const first = manager.start();
+    await vi.waitFor(() => {
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    });
+    const failStderr = (failing as unknown as { stderr: EventEmitter }).stderr;
+    failStderr.emit('data', Buffer.from('first-child-loader-error\n'));
+    emitProcExit(failing, 1, null);
+    await expect(first).rejects.toThrow(/exit 1.*first-child-loader-error/);
+
+    // No manager.stop() between attempts — child-local exit error must not poison retry.
+    const status = await manager.start();
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(status.running).toBe(true);
+    expect(status.pid).toBe(2222);
+    expect(status.lastError).toBeUndefined();
+
+    await manager.stop();
+    warnSpy.mockRestore();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('preferSidecarExitErrorOverFetch keeps exit reasons and details undici causes', () => {
+    expect(preferSidecarExitErrorOverFetch('exit 1: boom', new TypeError('fetch failed'))).toBe(
+      'exit 1: boom',
+    );
+    expect(
+      preferSidecarExitErrorOverFetch(
+        undefined,
+        new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } }),
+      ),
+    ).toMatch(/fetch failed.*ECONNREFUSED/);
+    expect(preferSidecarExitErrorOverFetch(undefined, new Error('status 503'))).toBe('status 503');
+  });
+
+  it('sidecarChildEnv forwards Linux BlueZ session bus vars', () => {
+    vi.stubEnv('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/tmp/dbus-test');
+    vi.stubEnv('XDG_RUNTIME_DIR', '/run/user/1000');
+    const prevPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    try {
+      const env = sidecarChildEnv();
+      expect(env.DBUS_SESSION_BUS_ADDRESS).toBe('unix:path=/tmp/dbus-test');
+      expect(env.XDG_RUNTIME_DIR).toBe('/run/user/1000');
+      expect(env.NO_COLOR).toBe('1');
+    } finally {
+      if (prevPlatform) Object.defineProperty(process, 'platform', prevPlatform);
+    }
   });
 
   describe('BLE-only process promotion', () => {
