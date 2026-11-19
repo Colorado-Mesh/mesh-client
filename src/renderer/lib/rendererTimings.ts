@@ -12,6 +12,11 @@ export type RendererTimingName =
   | 'mapRender'
   | 'reactCommit'
   | 'encodeMessage'
+  | 'protocolSwitch'
+  | 'longTask'
+  | 'reticulumRefresh'
+  | 'reticulumApplyContacts'
+  | 'reticulumPoll'
   | 'other';
 
 export interface RendererTimingSample {

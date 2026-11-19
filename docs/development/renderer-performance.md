@@ -26,8 +26,26 @@ Spans of interest:
 
 - `store->chat:meshtastic` / `store->chat:meshcore` / `store->chat:reticulum` — store→`ChatMessage[]` pipeline (repair + remap where applicable)
 - `repairMeshtasticReplyPreviews` — Meshtastic reply-parent repair only
+- `protocol-switch` — opt-in span around the protocol transition commit body
 
 Disable with `localStorage.removeItem('mesh-client:perf')` and reload.
+
+## Always-on Support timings (`rendererTimings`)
+
+`startLongTaskProbe()` runs from `main.tsx` (no perf flag). Samples export in Support / debug snapshots as `rendererTimings`:
+
+| Name                           | Meaning                            |
+| ------------------------------ | ---------------------------------- |
+| `longTask`                     | Browser Long Task ≥ 200 ms         |
+| `protocolSwitch:urgent`        | Click → sync rail / handler return |
+| `protocolSwitch:commit`        | Click → transition body ran        |
+| `protocolSwitch:paint`         | Click → double-rAF after paint     |
+| `reticulumRefresh:peers`       | Full peer/contact sidecar refresh  |
+| `reticulumApplyContacts`       | Contact/history → node-store merge |
+| `reticulumPoll:interfaces`     | Local interface health poll tick   |
+| `reticulumRefresh:diagnostics` | Diagnostics sync from sidecar      |
+
+Long tasks over 1 s also emit a rate-limited `console.debug` so they appear in normal logs.
 
 ## Vitest micro-benchmark (not CI)
 
@@ -41,6 +59,10 @@ Records average repair cost at 1k / 2k / 5k / 10k synthetic rows. Live in-memory
 ## Related code
 
 - `src/renderer/lib/perfTrace.ts` — opt-in spans
+- `src/renderer/lib/rendererTimings.ts` — Support timing ring
+- `src/renderer/lib/longTaskProbe.ts` — always-on Long Task → `rendererTimings`
+- `src/renderer/lib/protocolSwitchTiming.ts` — protocol-switch urgent/commit/paint breadcrumbs
+- `src/renderer/lib/mainThreadLagProbe.ts` — opt-in 100 ms event-loop lag probe
 - `src/renderer/lib/replyPreview.ts` — Meshtastic reply parent index / repair
 - `src/renderer/hooks/useProtocolChatMessages.ts` — per-protocol store→UI pipeline
 - `src/renderer/components/ChatSurface.tsx` — Chat panel owns its message list via the hook

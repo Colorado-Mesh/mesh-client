@@ -87,6 +87,22 @@ describe('rendererTimings', () => {
     expect(getRendererTimingsSnapshot().samples.filter((s) => s.durationMs === 9)).toHaveLength(0);
   });
 
+  it('keeps newest samples including unknown and protocol-switch names', () => {
+    recordRendererTiming('longTask', 210);
+    recordRendererTiming('protocolSwitch:urgent', 2);
+    recordRendererTiming('reticulumRefresh:peers', 45);
+    recordRendererTiming('customBreadcrumb', 9);
+    const names = getRendererTimingsSnapshot().samples.map((s) => s.name);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'longTask',
+        'protocolSwitch:urgent',
+        'reticulumRefresh:peers',
+        'customBreadcrumb',
+      ]),
+    );
+  });
+
   it('ignores non-finite or negative durations', () => {
     const ring = createRendererTimingRing({
       now: () => 0,

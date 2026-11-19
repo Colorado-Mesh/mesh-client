@@ -32,6 +32,7 @@ import {
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
 import { scheduleRrcSessionStatusReconcile } from '@/renderer/lib/reconcileRrcSessionsFromSnapshot';
+import { measureRendererTiming, measureRendererTimingAsync } from '@/renderer/lib/rendererTimings';
 import { announceDestinationHashes } from '@/renderer/lib/reticulum/announceDestinationHashes';
 import {
   applyReticulumOutboundDeliveryStatus,
@@ -54,6 +55,7 @@ import {
   markStaleReticulumOutboundMessages,
   RETICULUM_STALE_OUTBOUND_MS,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { queueStatusEqual } from '@/renderer/lib/reticulum/queueStatusEqual';
 import { resendFailedReticulumForDestination } from '@/renderer/lib/reticulum/resendFailedReticulumForDestination';
 import {
   getHotReticulumPeerInterface,
@@ -61,6 +63,11 @@ import {
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachments } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
+import {
+  RETICULUM_BACKGROUND_RESUME_COALESCE_MS,
+  scaleReticulumBackgroundIntervalMs,
+  shouldRunReticulumExpensiveBackgroundWork,
+} from '@/renderer/lib/reticulum/reticulumBackgroundPollGate';
 import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   prepareReticulumBleRnodeConnect,
@@ -72,6 +79,10 @@ import {
 } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
+import {
+  buildReticulumContactNodeSlice,
+  contactNodeSliceUnchanged,
+} from '@/renderer/lib/reticulum/reticulumContactNodeSlice';
 import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
 import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import {
@@ -174,15 +185,15 @@ import {
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
 import {
+  getVisibleMeshProtocol,
+  subscribeVisibleMeshProtocol,
+} from '@/renderer/lib/visibleMeshProtocolStore';
+import {
   type ReticulumIdentityStatus,
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
-import type {
-  ReticulumContact,
-  ReticulumSidecarEvent,
-  ReticulumWirePacketRow,
-} from '@/shared/reticulum-types';
+import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
 import {
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
@@ -214,7 +225,7 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../stores/messageStore';
-import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useNomadPageViewerStore } from '../stores/nomadPageViewerStore';
 import {
@@ -233,7 +244,6 @@ import {
   applyReticulumPeersUpdatedPatches,
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
-  reticulumContactToNodeRecordPreservingLabel,
   reticulumHashForNodeId,
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
@@ -296,7 +306,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useReticulumPropagationAutoSync(state.status === 'configured');
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const [rawPackets, setRawPackets] = useState<ReticulumRawPacketEntry[]>([]);
-  const [queueStatus, setQueueStatus] = useState<ProtocolRuntime['queueStatus']>(null);
+  const [queueStatus, setQueueStatusState] = useState<ProtocolRuntime['queueStatus']>(null);
+  const lastQueueStatusRef = useRef<ProtocolRuntime['queueStatus']>(null);
+  const setQueueStatus = useCallback((next: ProtocolRuntime['queueStatus']) => {
+    if (queueStatusEqual(lastQueueStatusRef.current, next)) return;
+    lastQueueStatusRef.current = next;
+    setQueueStatusState(next);
+  }, []);
   const rawPacketAppenderRef = useRef<BatchedRingBufferAppender<ReticulumRawPacketEntry> | null>(
     null,
   );
@@ -393,52 +409,31 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const applyContactNodesFromStore = useCallback(() => {
     if (!identityId) return;
-    const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-    const { contacts, history } = useReticulumPeerStore.getState();
-    const priorNodes = useNodeStore.getState().nodes[identityId] ?? {};
-    const records: NodeRecord[] = [];
-    const keepNodeIds = new Set<number>();
-    const seenHashes = new Set<string>();
-    if (selfNodeId != null) keepNodeIds.add(selfNodeId);
-
-    const consider = (contact: ReticulumContact, skipIfDismissed: boolean) => {
-      const hash = contact.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-      if (seenHashes.has(hash)) return;
-      if (skipIfDismissed && dismissed.has(hash)) return;
-      seenHashes.add(hash);
-      const nodeId = reticulumHashToNodeId(contact.destination_hash);
-      records.push(reticulumContactToNodeRecordPreservingLabel(contact, priorNodes[nodeId]));
-      keepNodeIds.add(nodeId);
-    };
-
-    // Contacts first (saved labels win), then History so messaged peers keep Chat/nodeStore rows.
-    for (const contact of contacts.values()) consider(contact, true);
-    for (const contact of history.values()) consider(contact, false);
-
-    // One setState: drop stale path-table peers and merge Contacts/History (avoids a double AppContent render).
-    useNodeStore.setState((s) => {
-      const prior = s.nodes[identityId] ?? {};
-      const next: Record<number, NodeRecord> = {};
-      for (const [key, rec] of Object.entries(prior)) {
-        const nodeId = Number(key);
-        if (!rec.reticulumDestinationHash || keepNodeIds.has(nodeId)) {
-          next[nodeId] = rec;
-        }
-      }
-      for (const record of records) {
-        const { nodeId, ...patch } = record;
-        const definedPatch = Object.fromEntries(
-          Object.entries(patch).filter(([, value]) => value !== undefined),
-        ) as Partial<NodeRecord>;
-        next[nodeId] = { ...(next[nodeId] ?? { nodeId }), ...definedPatch, nodeId };
-      }
-      return { nodes: { ...s.nodes, [identityId]: next } };
+    measureRendererTiming('reticulumApplyContacts', () => {
+      const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
+      const { contacts, history } = useReticulumPeerStore.getState();
+      const priorNodes = useNodeStore.getState().nodes[identityId] ?? {};
+      const nextSlice = buildReticulumContactNodeSlice({
+        contacts: contacts.values(),
+        history: history.values(),
+        dismissed,
+        prior: priorNodes,
+        selfNodeId,
+      });
+      // One setState: drop stale path-table peers and merge Contacts/History (avoids a double AppContent render).
+      useNodeStore.setState((s) => {
+        const prior = s.nodes[identityId] ?? {};
+        if (contactNodeSliceUnchanged(prior, nextSlice)) return s;
+        return { nodes: { ...s.nodes, [identityId]: nextSlice } };
+      });
     });
   }, [identityId, selfNodeId]);
 
   const refreshContactsFromSidecar = useCallback(
     async (opts?: { forceRefresh?: boolean; skipNomad?: boolean }) => {
-      await refreshReticulumPeersFromSidecar(opts);
+      await measureRendererTimingAsync('reticulumRefresh:peers', () =>
+        refreshReticulumPeersFromSidecar(opts),
+      );
       applyContactNodesFromStore();
     },
     [applyContactNodesFromStore],
@@ -534,64 +529,66 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
     return { interfaces, osSerialPorts };
-  }, []);
+  }, [setQueueStatus]);
 
   const syncDiagnosticsFromSidecar = useCallback(
     async (prefetchedHealth?: Awaited<ReturnType<typeof refreshLocalInterfacesFromSidecar>>) => {
-      try {
-        const [snapshot, health, auditIssues, sidecarStatus, stackRaw] = await Promise.all([
-          window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
-            Parameters<typeof buildReticulumDiagnosticRows>[0]
-          >,
-          prefetchedHealth
-            ? Promise.resolve(prefetchedHealth)
-            : refreshLocalInterfacesFromSidecar(),
-          fetchReticulumConfigAudit().catch((e: unknown) => {
-            console.debug('[useReticulumRuntime] config audit failed ' + String(e));
-            return [];
-          }),
-          window.electronAPI.reticulum.getStatus(),
-          window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => {
-            // catch-no-log-ok optional stack settings
-            return null;
-          }),
-        ]);
-        const { interfaces, osSerialPorts } = health;
-        const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
-        const shareInstanceEnabled =
-          stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
-        const propState = useReticulumPropagationStore.getState();
-        const inboundLxmf = getReticulumInboundLxmfDiagnostics();
-        const announcePressure = shouldEmitAnnounceBusPressure(snapshot.announce_ws, inboundLxmf);
-        setReticulumAnnounceBusPressureActive(announcePressure);
-        const rows = buildReticulumDiagnosticRows(snapshot, {
-          selfNodeId,
-          interfaces,
-          osSerialPorts,
-          auditIssues,
-          autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
-          interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
-          stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
-          shareInstanceEnabled,
-          sidecarRunning: sidecarStatus.running,
-          sidecarHealthy: sidecarStatus.healthy,
-          sidecarUnhealthySince: sidecarStatus.unhealthySince,
-          inboundLxmf,
-          hotPeerInterface: getHotReticulumPeerInterface(),
-          propagation: {
-            syncActive: propState.sync.active,
-            syncProgress: propState.sync.progress,
-            lastSyncError: propState.lastSyncError,
-            lastAttemptAt:
-              propState.activePropagationSyncAttemptAt ?? propState.lastPropagationSyncAttemptAt,
-          },
-        });
-        useDiagnosticsStore.setState((s) => ({
-          diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
-        }));
-      } catch (e) {
-        console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
-      }
+      await measureRendererTimingAsync('reticulumRefresh:diagnostics', async () => {
+        try {
+          const [snapshot, health, auditIssues, sidecarStatus, stackRaw] = await Promise.all([
+            window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
+              Parameters<typeof buildReticulumDiagnosticRows>[0]
+            >,
+            prefetchedHealth
+              ? Promise.resolve(prefetchedHealth)
+              : refreshLocalInterfacesFromSidecar(),
+            fetchReticulumConfigAudit().catch((e: unknown) => {
+              console.debug('[useReticulumRuntime] config audit failed ' + String(e));
+              return [];
+            }),
+            window.electronAPI.reticulum.getStatus(),
+            window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => {
+              // catch-no-log-ok optional stack settings
+              return null;
+            }),
+          ]);
+          const { interfaces, osSerialPorts } = health;
+          const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
+          const shareInstanceEnabled =
+            stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
+          const propState = useReticulumPropagationStore.getState();
+          const inboundLxmf = getReticulumInboundLxmfDiagnostics();
+          const announcePressure = shouldEmitAnnounceBusPressure(snapshot.announce_ws, inboundLxmf);
+          setReticulumAnnounceBusPressureActive(announcePressure);
+          const rows = buildReticulumDiagnosticRows(snapshot, {
+            selfNodeId,
+            interfaces,
+            osSerialPorts,
+            auditIssues,
+            autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
+            interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
+            stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+            shareInstanceEnabled,
+            sidecarRunning: sidecarStatus.running,
+            sidecarHealthy: sidecarStatus.healthy,
+            sidecarUnhealthySince: sidecarStatus.unhealthySince,
+            inboundLxmf,
+            hotPeerInterface: getHotReticulumPeerInterface(),
+            propagation: {
+              syncActive: propState.sync.active,
+              syncProgress: propState.sync.progress,
+              lastSyncError: propState.lastSyncError,
+              lastAttemptAt:
+                propState.activePropagationSyncAttemptAt ?? propState.lastPropagationSyncAttemptAt,
+            },
+          });
+          useDiagnosticsStore.setState((s) => ({
+            diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
+          }));
+        } catch (e) {
+          console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
+        }
+      });
     },
     [refreshLocalInterfacesFromSidecar, selfLxmfHash],
   );
@@ -626,6 +623,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
 
   const scheduleDebouncedDiagnosticsRefresh = useCallback(() => {
+    // Off-protocol / hidden: skip; resume coalesce refreshes diagnostics once.
+    if (!shouldRunReticulumExpensiveBackgroundWork()) return;
+    if (getVisibleMeshProtocol() != null && getVisibleMeshProtocol() !== 'reticulum') return;
     if (diagnosticsRefreshDebounceRef.current) {
       clearTimeout(diagnosticsRefreshDebounceRef.current);
     }
@@ -1770,7 +1770,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
-  }, [syncConnectionStore]);
+  }, [setQueueStatus, syncConnectionStore]);
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
@@ -2131,7 +2131,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
-  }, [syncConnectionStore]);
+  }, [setQueueStatus, syncConnectionStore]);
 
   const restartStackOnce = useCallback(async () => {
     const generation = resumeGenerationRef.current;
@@ -2257,18 +2257,25 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
       return;
     }
-    void refreshContactsFromSidecar().catch(() => {
-      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
-    });
-    void refreshSelfNodeDisplayNameFromSidecar();
+    if (shouldRunReticulumExpensiveBackgroundWork()) {
+      void refreshContactsFromSidecar().catch(() => {
+        // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+      });
+      void refreshSelfNodeDisplayNameFromSidecar();
+    }
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const scheduleNext = () => {
       const peerCount = useReticulumPeerStore.getState().peers.size;
-      const ms =
+      const baseMs =
         peerCount > LARGE_MESH_NODE_THRESHOLD
           ? RETICULUM_PEER_REFRESH_LARGE_MS
           : RETICULUM_PEER_REFRESH_MS;
+      const ms = scaleReticulumBackgroundIntervalMs(baseMs);
       timeoutId = setTimeout(() => {
+        if (!shouldRunReticulumExpensiveBackgroundWork()) {
+          scheduleNext();
+          return;
+        }
         const store = useReticulumPeerStore.getState();
         const count = store.peers.size;
         const lastRefreshAt = store.lastRefreshAt ?? 0;
@@ -2371,42 +2378,52 @@ export function useReticulumRuntime(): ProtocolRuntime {
     };
 
     const tick = async () => {
-      try {
-        // Propagate rate-limit so we can back off; other refreshLocalInterfaces
-        // callers keep the cached-fallback default.
-        const generation = queueRefreshGenerationRef.current;
-        const [interfaces, osSerialPorts] = await Promise.all([
-          fetchReticulumInterfaces({ propagateRateLimit: true }),
-          fetchReticulumSerialPorts({ propagateRateLimit: true }),
-        ]);
-        if (cancelled || generation !== queueRefreshGenerationRef.current) {
-          return;
-        }
-        localInterfacesRef.current = interfaces;
-        const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
-        if (newlyOnlineBle.length > 0) {
-          void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
-        }
-        const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
-        setQueueStatus(queueAgg);
-        const health = { interfaces, osSerialPorts };
-        const peerCount = useReticulumPeerStore.getState().peers.size;
-        // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
-        // diagnostics bundle with every interface health tick.
-        if (peerCount <= LARGE_MESH_NODE_THRESHOLD) {
-          void syncDiagnosticsFromSidecar(health);
-        }
-        scheduleNextPoll(pickReticulumLocalHealthPollMs(health.interfaces, health.osSerialPorts));
-      } catch (e) {
-        if (cancelled) return;
-        if (isReticulumSidecarRateLimitError(e)) {
-          console.debug('[useReticulumRuntime] local interface poll rate-limited — backing off');
-          scheduleNextPoll(RETICULUM_LOCAL_HEALTH_POLL_MS);
-          return;
-        }
-        console.debug('[useReticulumRuntime] local interface poll ' + errLikeToLogString(e));
-        scheduleNextPoll(RETICULUM_LOCAL_HEALTH_POLL_MS);
+      if (!shouldRunReticulumExpensiveBackgroundWork()) {
+        scheduleNextPoll(scaleReticulumBackgroundIntervalMs(RETICULUM_LOCAL_HEALTH_POLL_MS));
+        return;
       }
+      await measureRendererTimingAsync('reticulumPoll:interfaces', async () => {
+        try {
+          // Propagate rate-limit so we can back off; other refreshLocalInterfaces
+          // callers keep the cached-fallback default.
+          const generation = queueRefreshGenerationRef.current;
+          const [interfaces, osSerialPorts] = await Promise.all([
+            fetchReticulumInterfaces({ propagateRateLimit: true }),
+            fetchReticulumSerialPorts({ propagateRateLimit: true }),
+          ]);
+          if (cancelled || generation !== queueRefreshGenerationRef.current) {
+            return;
+          }
+          localInterfacesRef.current = interfaces;
+          const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+          if (newlyOnlineBle.length > 0) {
+            void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+          }
+          const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
+          setQueueStatus(queueAgg);
+          const health = { interfaces, osSerialPorts };
+          const peerCount = useReticulumPeerStore.getState().peers.size;
+          // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
+          // diagnostics bundle with every interface health tick.
+          if (peerCount <= LARGE_MESH_NODE_THRESHOLD) {
+            void syncDiagnosticsFromSidecar(health);
+          }
+          scheduleNextPoll(
+            scaleReticulumBackgroundIntervalMs(
+              pickReticulumLocalHealthPollMs(health.interfaces, health.osSerialPorts),
+            ),
+          );
+        } catch (e) {
+          if (cancelled) return;
+          if (isReticulumSidecarRateLimitError(e)) {
+            console.debug('[useReticulumRuntime] local interface poll rate-limited — backing off');
+            scheduleNextPoll(scaleReticulumBackgroundIntervalMs(RETICULUM_LOCAL_HEALTH_POLL_MS));
+            return;
+          }
+          console.debug('[useReticulumRuntime] local interface poll ' + errLikeToLogString(e));
+          scheduleNextPoll(scaleReticulumBackgroundIntervalMs(RETICULUM_LOCAL_HEALTH_POLL_MS));
+        }
+      });
     };
 
     void tick();
@@ -2420,7 +2437,43 @@ export function useReticulumRuntime(): ProtocolRuntime {
       localInterfaceBurstCancelRef.current?.();
       localInterfaceBurstCancelRef.current = null;
     };
-  }, [state.status, syncDiagnosticsFromSidecar]);
+  }, [setQueueStatus, state.status, syncDiagnosticsFromSidecar]);
+
+  /** One coalesced full refresh when the window becomes visible or Reticulum becomes the active protocol. */
+  useEffect(() => {
+    if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
+      return;
+    }
+    const onResumeBackground = () => {
+      if (!shouldRunReticulumExpensiveBackgroundWork()) return;
+      scheduleTrailingOnlyRefresh({
+        timerRef: peerRefreshDebounceRef,
+        onRefresh: () => {
+          void refreshContactsFromSidecar().catch(() => {
+            // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+          });
+          void syncDiagnosticsFromSidecar();
+        },
+        coalesceMs: RETICULUM_BACKGROUND_RESUME_COALESCE_MS,
+      });
+    };
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) onResumeBackground();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    let previousVisible = getVisibleMeshProtocol();
+    const unsubVisible = subscribeVisibleMeshProtocol(() => {
+      const next = getVisibleMeshProtocol();
+      if (previousVisible !== 'reticulum' && next === 'reticulum') {
+        onResumeBackground();
+      }
+      previousVisible = next;
+    });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      unsubVisible();
+    };
+  }, [state.status, refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();

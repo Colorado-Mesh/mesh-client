@@ -21,6 +21,11 @@ import {
 } from './lib/offlineProtocolIdentities';
 import { writeLauncherPins } from './lib/panelLauncher';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
+import * as protocolSwitchUiStore from './lib/protocolSwitchUiStore';
+import {
+  getPendingProtocolSelection,
+  resetProtocolSwitchUiForTests,
+} from './lib/protocolSwitchUiStore';
 import {
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
@@ -42,6 +47,7 @@ import {
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import { TAB_SLOT_IDS } from './lib/tabSlotIds';
 import type { ChatMessage } from './lib/types';
+import { resetVisibleMeshProtocolForTests } from './lib/visibleMeshProtocolStore';
 import { mockConsoleWarn } from './lib/vitestConsoleMock';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
@@ -334,6 +340,8 @@ const {
 beforeEach(() => {
   resetStartupDbPruneForTests();
   resetReticulumVacuumScheduleForTests();
+  resetProtocolSwitchUiForTests();
+  resetVisibleMeshProtocolForTests();
   localStorage.clear();
   Object.defineProperty(document, 'hidden', { value: false, configurable: true });
   getStoredMeshProtocolMock.mockReset();
@@ -911,6 +919,21 @@ describe('App shell layout', () => {
     const statusBar = screen.getByRole('contentinfo');
     expect(within(statusBar).getByRole('button', { name: /^Radio: / })).toBeInTheDocument();
     expect(within(statusBar).getByText(/messages/)).toBeInTheDocument();
+  });
+
+  it('sets pending selection when switching protocols so the rail can follow the store', async () => {
+    const setPending = vi.spyOn(protocolSwitchUiStore, 'setPendingProtocolSelection');
+    renderApp();
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to Reticulum' }));
+    expect(setPending).toHaveBeenCalledWith('reticulum');
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to Reticulum' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+    });
+    expect(getPendingProtocolSelection()).toBeNull();
+    setPending.mockRestore();
   });
 
   it('drops disabled protocols from the switcher and hides it with one left (#1124)', async () => {

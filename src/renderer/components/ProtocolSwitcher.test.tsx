@@ -1,13 +1,20 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import {
+  resetProtocolSwitchUiForTests,
+  setPendingProtocolSelection,
+} from '@/renderer/lib/protocolSwitchUiStore';
 
 import { ProtocolSwitcher } from './ProtocolSwitcher';
 
 describe('ProtocolSwitcher', () => {
+  beforeEach(() => {
+    resetProtocolSwitchUiForTests();
+  });
   it('renders a pill per registered protocol and switches on click', async () => {
     const user = userEvent.setup();
     const onProtocolChange = vi.fn();
@@ -141,5 +148,38 @@ describe('ProtocolSwitcher', () => {
     hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('followPendingSelection highlights the store pending protocol without changing the prop', () => {
+    render(
+      <ProtocolSwitcher
+        followPendingSelection
+        protocol="meshtastic"
+        unreadByProtocol={{ meshtastic: 0, meshcore: 0, reticulum: 0 }}
+        onProtocolChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    act(() => {
+      setPendingProtocolSelection('reticulum');
+    });
+    expect(screen.getByRole('radio', { name: 'Switch to Reticulum' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    act(() => {
+      setPendingProtocolSelection(null);
+    });
+    expect(screen.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 });

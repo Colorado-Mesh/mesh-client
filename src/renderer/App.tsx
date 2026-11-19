@@ -407,6 +407,11 @@ import {
   type ProtocolVisitFlags,
   visitFlagsForProtocolCommit,
 } from './lib/protocolSwitchCommit';
+import { beginProtocolSwitchTiming } from './lib/protocolSwitchTiming';
+import {
+  getPendingProtocolSelection,
+  setPendingProtocolSelection,
+} from './lib/protocolSwitchUiStore';
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
@@ -444,6 +449,7 @@ import type {
 } from './lib/types';
 import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
 import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
+import { setVisibleMeshProtocol } from './lib/visibleMeshProtocolStore';
 import { isSupportedLocale } from './locales/languages';
 import {
   ProtocolRuntimeProvider,
@@ -932,11 +938,9 @@ function AppContent() {
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
   const [protocolSwitchPending, startProtocolTransition] = useTransition();
-  /** Immediate rail selection while `setProtocol` is still in a transition commit. */
-  const [pendingProtocolSelection, setPendingProtocolSelection] = useState<MeshProtocol | null>(
-    null,
-  );
-  const switcherProtocol = pendingProtocolSelection ?? protocol;
+  useEffect(() => {
+    setVisibleMeshProtocol(protocol);
+  }, [protocol]);
   /** Per-protocol Chat keep-alive (like Map) — not cleared on protocol switch. */
   const [visitedChatProtocols, setVisitedChatProtocols] = useState<ReadonlySet<MeshProtocol>>(
     () => new Set(),
@@ -976,11 +980,6 @@ function AppContent() {
     roomsTabVisited,
     rrcTabVisited,
   ]);
-  useEffect(() => {
-    if (pendingProtocolSelection == null || pendingProtocolSelection !== protocol) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic rail once protocol commits
-    setPendingProtocolSelection(null);
-  }, [protocol, pendingProtocolSelection]);
   const previousCommittedProtocolRef = useRef(protocol);
   useEffect(() => {
     const previous = previousCommittedProtocolRef.current;
@@ -2669,13 +2668,16 @@ function AppContent() {
       protocolChanged: boolean;
       enablePeers: boolean;
     }) => {
+      const timing = beginProtocolSwitchTiming();
       const id = beginProtocolSwitch();
       // Rail updates immediately. Visit flags, the tab, and setProtocol wait
       // until this commit is still the latest one. Storage and diagnostics
       // follow the committed protocol, not this transition id.
       setPendingProtocolSelection(input.pending);
+      timing.markUrgent();
       startProtocolTransition(() => {
         if (!isCurrentProtocolSwitch(id)) return;
+        timing.markCommit();
         const flags = visitFlagsForProtocolCommit(
           visitFlagsRef.current,
           input.destinationPanel,
@@ -2691,6 +2693,8 @@ function AppContent() {
         setAppTabVisited(flags.app);
         setActiveTab(input.nextTab);
         setProtocol(input.nextProtocol);
+        // Clear after commit so the rail does not flicker (committed === pending).
+        setPendingProtocolSelection(null);
       });
     },
     [startProtocolTransition],
@@ -2698,12 +2702,13 @@ function AppContent() {
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
-      if (newProtocol === pendingProtocolSelection) return;
+      const pending = getPendingProtocolSelection();
+      if (newProtocol === pending) return;
 
       // Clicking the already-active protocol while a switch is in flight must
       // cancel that pending transition (otherwise it still commits later).
       if (newProtocol === protocol) {
-        if (pendingProtocolSelection == null) return;
+        if (pending == null) return;
         scheduleProtocolCommit({
           pending: null,
           nextProtocol: protocol,
@@ -2740,7 +2745,6 @@ function AppContent() {
     },
     [
       protocol,
-      pendingProtocolSelection,
       activeTab,
       activePanelIndex,
       tabsByProtocol,
@@ -2751,11 +2755,11 @@ function AppContent() {
 
   useEffect(() => {
     const fallback = enabledProtocols[0];
-    const effectiveProtocol = pendingProtocolSelection ?? protocol;
+    const effectiveProtocol = getPendingProtocolSelection() ?? protocol;
     if (!fallback || enabledProtocols.includes(effectiveProtocol)) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop hidden active/pending protocol onto first enabled
+
     handleProtocolChange(fallback);
-  }, [enabledProtocols, protocol, pendingProtocolSelection, handleProtocolChange]);
+  }, [enabledProtocols, protocol, handleProtocolChange]);
 
   // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
   // whose commit can block for hundreds of ms after time away. Rendering the
@@ -3299,7 +3303,7 @@ function AppContent() {
           selectByProtocol(tabsByProtocol, 'reticulum'),
           GAMES_PANEL_INDEX,
         );
-        if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+        if (protocol === 'reticulum' && getPendingProtocolSelection() == null) {
           if (gamesTabIndex >= 0) {
             setActiveTab(gamesTabIndex);
             setGamesTabVisited(true);
@@ -3324,7 +3328,6 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
-      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasLrgpGames,
       reticulumCapabilities.hasReticulumPeersList,
@@ -3359,7 +3362,7 @@ function AppContent() {
         selectByProtocol(tabsByProtocol, 'reticulum'),
         NOMAD_NETWORK_PANEL_INDEX,
       );
-      if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+      if (protocol === 'reticulum' && getPendingProtocolSelection() == null) {
         if (nomadTabIndex >= 0) {
           setActiveTab(nomadTabIndex);
           setNomadTabVisited(true);
@@ -3383,7 +3386,6 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
-      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasNomadNetworkPanel,
       reticulumCapabilities.hasReticulumPeersList,
@@ -3417,7 +3419,7 @@ function AppContent() {
       selectByProtocol(tabsByProtocol, 'reticulum'),
       RRC_PANEL_INDEX,
     );
-    if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+    if (protocol === 'reticulum' && getPendingProtocolSelection() == null) {
       if (rrcTabIndex >= 0) {
         setActiveTab(rrcTabIndex);
         setRrcTabVisited(true);
@@ -3439,7 +3441,6 @@ function AppContent() {
   }, [
     activePanelIndex,
     activeTab,
-    pendingProtocolSelection,
     protocol,
     reticulumCapabilities.hasReticulumPeersList,
     reticulumCapabilities.hasRrcPanel,
@@ -3462,7 +3463,7 @@ function AppContent() {
         selectByProtocol(tabsByProtocol, targetProtocol),
         destinationPanelIndex,
       );
-      if (protocol === targetProtocol && pendingProtocolSelection == null) {
+      if (protocol === targetProtocol && getPendingProtocolSelection() == null) {
         if (tabIndex >= 0) setActiveTab(tabIndex);
         if (target.kind === 'rrc') setRrcTabVisited(true);
         else {
@@ -3498,7 +3499,6 @@ function AppContent() {
       activeTab,
       capabilitiesByProtocol,
       enabledProtocols,
-      pendingProtocolSelection,
       protocol,
       scheduleProtocolCommit,
       tabsByProtocol,
@@ -4458,7 +4458,7 @@ function AppContent() {
       if (plan.kind === 'meshtastic-channel' && plan.identityId !== meshtasticIdentityId) {
         setActiveIdentity(plan.identityId);
       }
-      if (protocol === targetProtocol && pendingProtocolSelection == null) {
+      if (protocol === targetProtocol && getPendingProtocolSelection() == null) {
         setActiveTab(tabIndex);
         if (plan.kind === 'meshcore-room') setRoomsTabVisited(true);
         else if (plan.kind === 'rrc-room') setRrcTabVisited(true);
@@ -4506,7 +4506,6 @@ function AppContent() {
       enabledProtocols,
       meshcoreIdentityId,
       meshtasticIdentityId,
-      pendingProtocolSelection,
       protocol,
       scheduleProtocolCommit,
       tabsByProtocol,
@@ -5032,7 +5031,8 @@ function AppContent() {
               header={
                 enabledProtocols.length > 1 ? (
                   <ProtocolSwitcher
-                    protocol={switcherProtocol}
+                    protocol={protocol}
+                    followPendingSelection
                     protocols={enabledProtocols}
                     unreadByProtocol={protocolSwitcherUnreadByProtocol}
                     onProtocolChange={handleProtocolChange}
@@ -7303,7 +7303,8 @@ function AppContent() {
                 shellCompact && enabledProtocols.length > 1 ? (
                   <ProtocolSwitcher
                     orientation="horizontal"
-                    protocol={switcherProtocol}
+                    protocol={protocol}
+                    followPendingSelection
                     protocols={enabledProtocols}
                     unreadByProtocol={protocolSwitcherUnreadByProtocol}
                     onProtocolChange={handleProtocolChange}

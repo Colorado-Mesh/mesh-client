@@ -99,12 +99,13 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(start).toBeGreaterThan(-1);
     const end = SOURCE.indexOf('const handleTabSelect', start);
     const body = SOURCE.slice(start, end > start ? end : start + 8000);
-    expect(body).toContain('if (newProtocol === pendingProtocolSelection) return;');
+    expect(body).toContain('const pending = getPendingProtocolSelection();');
+    expect(body).toContain('if (newProtocol === pending) return;');
     const sameProtocolBranch = body.indexOf('if (newProtocol === protocol)');
     expect(sameProtocolBranch).toBeGreaterThan(-1);
     const nextSibling = body.indexOf('\n      const savedPanel', sameProtocolBranch);
     const branch = body.slice(sameProtocolBranch, nextSibling);
-    expect(branch).toContain('if (pendingProtocolSelection == null) return;');
+    expect(branch).toContain('if (pending == null) return;');
     expect(branch).toContain('pending: null');
     expect(branch).toContain('protocolChanged: false');
     expect(branch).toContain('scheduleProtocolCommit(');
