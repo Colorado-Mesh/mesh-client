@@ -6834,7 +6834,22 @@
     "rssiTitle": "RSSI Distribution",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Count Distribution",
-    "hopAxis": "Hops"
+    "hopAxis": "Hops",
+    "noiseFloorTitle": "Local noise floor",
+    "noiseFloorSourceRadio": "Measured by this radio's receiver.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Elevated",
+    "noiseFloorHistoryAria": "Noise floor min {{min}} dBm, max {{max}} dBm, last {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Max",
+    "noiseFloorLast": "Last",
+    "noiseFloorCollecting": "Collecting samples for the sparkline…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Estimated from RSSI − SNR across {{count}} nodes. This radio's firmware does not report a noise floor.",
+    "noiseFloorEmpty": "No noise floor data yet. This radio or firmware does not report a receiver noise floor.",
+    "noiseFloorEstimatedTitle": "Estimated Noise Floor Distribution",
+    "noiseFloorEstimatedSubtitle": "{{count}} nodes contribute (RSSI − SNR of the last packet heard)",
+    "noiseFloorAxis": "Estimated noise floor (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

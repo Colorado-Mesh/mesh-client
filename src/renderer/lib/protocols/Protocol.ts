@@ -261,6 +261,11 @@ export interface TelemetryEvent {
   numRxDupe?: number;
   numPacketsRx?: number;
   numPacketsTx?: number;
+  /**
+   * Meshtastic `LocalStats.noise_floor` (dBm, protobuf field 15). Absent/0 on firmware builds
+   * that do not report it — treat 0 as "not reported".
+   */
+  noiseFloor?: number;
 }
 
 export interface TraceRouteEvent {

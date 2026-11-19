@@ -5803,7 +5803,22 @@
     "rssiTitle": "RSSI Dağılımı",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
-    "hopAxis": "Hop"
+    "hopAxis": "Hop",
+    "noiseFloorTitle": "Yerel gürültü seviyesi",
+    "noiseFloorSourceRadio": "Bu telsizin alıcısı tarafından ölçülmüştür.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Kotuna getirilmiş",
+    "noiseFloorHistoryAria": "Gürültü tabanı min. {{min}} dBm, maks. {{max}} dBm, son {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Maks",
+    "noiseFloorLast": "Son",
+    "noiseFloorCollecting": "Mini grafik için örnekler toplanıyor…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "{{count}} düğümde RSSI − SNR'den tahmin edilmiştir. Bu radyonun ürün yazılımı bir gürültü tabanı bildirmez.",
+    "noiseFloorEmpty": "Henüz gürültü tabanı verisi yok. Bu telsiz veya ürün yazılımı bir alıcı gürültü tabanı bildirmez.",
+    "noiseFloorEstimatedTitle": "Tahmini Gürültü Tabanı Dağılımı",
+    "noiseFloorEstimatedSubtitle": "{{count}} düğüm katkıda bulunuyor (duyulan son paketin RSSI − SNR'si)",
+    "noiseFloorAxis": "Tahmini gürültü tabanı (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

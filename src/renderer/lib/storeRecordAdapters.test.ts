@@ -141,6 +141,7 @@ describe('store record adapters (merge precedence)', () => {
       numRxDupe: 5,
       numPacketsRx: 6,
       numPacketsTx: 7,
+      noiseFloor: -110,
       publicKeyHex: 'ab'.repeat(32),
       temperature: 20,
       relativeHumidity: 40,
@@ -162,6 +163,7 @@ describe('store record adapters (merge precedence)', () => {
         num_rx_dupe: 5,
         num_packets_rx: 6,
         num_packets_tx: 7,
+        noise_floor: -110,
         public_key_hex: 'ab'.repeat(32),
         env_temperature: 20,
         env_humidity: 40,
@@ -198,6 +200,7 @@ describe('store record adapters (merge precedence)', () => {
         numRxDupe: 5,
         numPacketsRx: 6,
         numPacketsTx: 7,
+        noiseFloor: -110,
         publicKeyHex: 'ab'.repeat(32),
         temperature: 20,
         relativeHumidity: 40,
@@ -490,6 +493,7 @@ describe('nodeRecordsToMeshNodeMap cache invalidation', () => {
     ['co2', { co2: 640 }],
     ['keyManuallyVerified', { keyManuallyVerified: true }],
     ['hasXeddsaSigned', { hasXeddsaSigned: true }],
+    ['noiseFloor', { noiseFloor: -110 }],
   ];
 
   it.each(fieldUpdates)('re-exports the node when %s changes', (_field, update) => {

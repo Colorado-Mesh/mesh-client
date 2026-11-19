@@ -5803,7 +5803,22 @@
     "rssiTitle": "RSSI 배포",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "홉 수 분포",
-    "hopAxis": "홉"
+    "hopAxis": "홉",
+    "noiseFloorTitle": "현지 노이즈 플로어",
+    "noiseFloorSourceRadio": "이 라디오의 수신기로 측정되었습니다.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "높음",
+    "noiseFloorHistoryAria": "노이즈 플로어 최소 {{min}}dBm, 최대 {{max}}dBm, 마지막 {{last}}dBm",
+    "noiseFloorMin": "최소",
+    "noiseFloorMax": "최대",
+    "noiseFloorLast": "마지막",
+    "noiseFloorCollecting": "스파크라인을 위한 샘플 수집 중...",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "{{count}} 노드 전반에 걸친 RSSI − SNR에서 추정. 이 무선의 펌웨어는 노이즈 플로어를 보고하지 않습니다.",
+    "noiseFloorEmpty": "아직 노이즈 플로어 데이터가 없습니다. 이 무선 장치 또는 펌웨어는 수신기 노이즈 플로어를 보고하지 않습니다.",
+    "noiseFloorEstimatedTitle": "예상 노이즈 플로어 분포",
+    "noiseFloorEstimatedSubtitle": "{{count}} 노드가 기여(마지막으로 수신한 패킷의 RSSI - SNR)",
+    "noiseFloorAxis": "예상 노이즈 플로어(dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

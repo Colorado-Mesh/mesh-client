@@ -704,6 +704,28 @@ describe('MeshtasticProtocol Date-shaped rxTime', () => {
     teardown();
   });
 
+  it('decodes LocalStats noiseFloor', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onTelemetryPacket', {
+      from: 42,
+      data: {
+        variant: {
+          case: 'localStats',
+          value: { noiseFloor: -107, numPacketsRx: 10 },
+        },
+      },
+    });
+    const telemetry = events.find((e) => e.type === 'telemetry');
+    expect(telemetry?.type === 'telemetry' && telemetry.payload).toMatchObject({
+      variantCase: 'localStats',
+      noiseFloor: -107,
+      numPacketsRx: 10,
+    });
+    teardown();
+  });
+
   it('maps traceroute rxTime Date to epoch ms', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];

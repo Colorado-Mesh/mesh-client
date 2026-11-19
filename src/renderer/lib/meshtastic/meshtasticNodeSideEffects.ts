@@ -506,6 +506,7 @@ function handleLocalStatsTelemetry(
     num_rx_dupe: telemetry.numRxDupe ?? existing.num_rx_dupe,
     num_packets_rx: telemetry.numPacketsRx ?? existing.num_packets_rx,
     num_packets_tx: telemetry.numPacketsTx ?? existing.num_packets_tx,
+    noise_floor: telemetry.noiseFloor ?? existing.noise_floor,
     source: 'rf',
     heard_via_mqtt_only: false,
     via_mqtt: false,

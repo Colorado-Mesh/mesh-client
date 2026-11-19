@@ -5887,7 +5887,22 @@
     "rssiTitle": "Dystrybucja RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Dystrybucja liczby przeskoków",
-    "hopAxis": "Skoki"
+    "hopAxis": "Skoki",
+    "noiseFloorTitle": "Lokalny poziom szumów",
+    "noiseFloorSourceRadio": "Mierzone przez odbiornik tego radia.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Podniesione",
+    "noiseFloorHistoryAria": "Poziom szumu min. {{min}} dBm, maks. {{max}} dBm, ostatni {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Maks.",
+    "noiseFloorLast": "Ostatni",
+    "noiseFloorCollecting": "Pobieranie próbek do wykresu przebiegu…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Oszacowano na podstawie RSSI − SNR na {{count}} węzłach. Oprogramowanie sprzętowe tego radia nie zgłasza poziomu szumów.",
+    "noiseFloorEmpty": "Brak danych dotyczących poziomu szumów. To radio lub oprogramowanie sprzętowe nie zgłasza poziomu szumów odbiornika.",
+    "noiseFloorEstimatedTitle": "Szacunkowy rozkład poziomu szumów",
+    "noiseFloorEstimatedSubtitle": "{{count}} węzły wnoszą wkład (RSSI – SNR ostatniego odebranego pakietu)",
+    "noiseFloorAxis": "Szacowany poziom szumu (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

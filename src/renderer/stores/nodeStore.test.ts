@@ -256,6 +256,7 @@ describe('nodeStore Meshtastic packet operations', () => {
       relativeHumidity: 40,
       barometricPressure: 850,
       iaq: 12,
+      noiseFloor: -105,
     });
 
     expect(useNodeStore.getState().nodes[ID][NODE]).toEqual(
@@ -272,8 +273,17 @@ describe('nodeStore Meshtastic packet operations', () => {
         relativeHumidity: 40,
         barometricPressure: 850,
         iaq: 12,
+        noiseFloor: -105,
       }),
     );
+
+    updateTelemetry(ID, {
+      nodeId: NODE,
+      timestamp: 3000,
+      variantCase: 'deviceMetrics',
+      batteryLevel: 87,
+    });
+    expect(useNodeStore.getState().nodes[ID][NODE].noiseFloor).toBe(-105);
   });
 
   it('upserts full and batched records without replacing unrelated nodes', () => {

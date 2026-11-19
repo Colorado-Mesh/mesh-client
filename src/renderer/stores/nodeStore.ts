@@ -108,6 +108,8 @@ export interface NodeRecord {
   detectionText?: string;
   neighbors?: MeshNeighbor[];
   meshcoreLocalStats?: MeshCoreLocalStats;
+  /** Session-only radio noise floor (dBm); see MeshNode.noise_floor. */
+  noiseFloor?: number;
   publicKey?: Uint8Array;
   /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
   publicKeyHex?: string;
@@ -499,6 +501,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
       relativeHumidity,
       barometricPressure,
       iaq,
+      noiseFloor,
     } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
@@ -518,6 +521,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
             relativeHumidity,
             barometricPressure,
             iaq,
+            noiseFloor,
             telemetryTimestamp: timestamp,
             ...(lastHeardAt != null ? { lastHeardAt } : {}),
           }),

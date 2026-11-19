@@ -5849,7 +5849,22 @@
     "rssiTitle": "Distribuce RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuce počtu skoků",
-    "hopAxis": "Skoky"
+    "hopAxis": "Skoky",
+    "noiseFloorTitle": "Místní hladina šumu",
+    "noiseFloorSourceRadio": "Měřeno přijímačem tohoto rádia.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Mírně vysoká",
+    "noiseFloorHistoryAria": "Minimální úroveň šumu {{min}} dBm, maximální {{max}} dBm, poslední {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Max.",
+    "noiseFloorLast": "Poslední",
+    "noiseFloorCollecting": "Probíhá shromažďování vzorků pro minigraf…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Odhadováno z RSSI − SNR napříč {{count}} uzly. Firmware tohoto rádia nehlásí hladinu šumu.",
+    "noiseFloorEmpty": "Zatím nejsou k dispozici žádné údaje o šumové podlaze. Toto rádio nebo firmware nehlásí šumové dno přijímače.",
+    "noiseFloorEstimatedTitle": "Odhadované rozložení hladiny šumu",
+    "noiseFloorEstimatedSubtitle": "Uzly {{count}} přispívají (RSSI − SNR posledního přijatého paketu)",
+    "noiseFloorAxis": "Odhadovaná úroveň šumu (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

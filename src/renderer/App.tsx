@@ -7049,7 +7049,7 @@ function AppContent() {
                         {activePanelIndex === RF_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <RFHistogramsPanel nodes={nodesForUi} />
+                              <RFHistogramsPanel nodes={nodesForUi} myNodeId={activeSelfNodeNum} />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

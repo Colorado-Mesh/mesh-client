@@ -1042,6 +1042,7 @@ export class MeshtasticProtocol implements Protocol {
           numRxDupe: num('numRxDupe'),
           numPacketsRx: num('numPacketsRx'),
           numPacketsTx: num('numPacketsTx'),
+          noiseFloor: num('noiseFloor'),
         },
       },
     ];
