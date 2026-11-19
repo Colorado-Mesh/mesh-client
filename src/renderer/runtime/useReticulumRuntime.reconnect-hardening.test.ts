@@ -274,17 +274,18 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 });
 
 describe('useReticulumRuntime background resume refresh', () => {
-  it('re-checks eligibility inside deferred onRefresh and rearms the interface poll', () => {
+  it('re-checks eligibility inside deferred onRefresh and rearms the interface poll without duplicate diagnostics', () => {
     expect(SOURCE).toContain('rearmLocalInterfacePollRef');
     const resumeStart = SOURCE.indexOf(
       'One coalesced full refresh when the window becomes visible',
     );
     expect(resumeStart).toBeGreaterThan(-1);
-    const resumeBody = SOURCE.slice(resumeStart, resumeStart + 1800);
+    const resumeBody = SOURCE.slice(resumeStart, resumeStart + 2000);
     expect(resumeBody).toMatch(
       /onRefresh:\s*\(\)\s*=>\s*\{[\s\S]*?shouldRunReticulumExpensiveBackgroundWork\(\)/,
     );
-    expect(resumeBody).toContain('rearmLocalInterfacePollRef.current?.()');
+    expect(resumeBody).toContain('rearmLocalInterfacePollRef.current?.({ skipDiagnostics: true })');
+    expect(SOURCE).toContain('!opts?.skipDiagnostics');
   });
 });
 

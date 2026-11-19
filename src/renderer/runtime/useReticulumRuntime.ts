@@ -361,8 +361,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
   const localInterfacePollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Replaces any pending interface poll with an immediate tick (resume path). */
-  const rearmLocalInterfacePollRef = useRef<(() => void) | null>(null);
+  /**
+   * Replaces any pending interface poll with an immediate tick (resume path).
+   * Pass `skipDiagnostics` when the resume refresh already ran diagnostics.
+   */
+  const rearmLocalInterfacePollRef = useRef<
+    ((opts?: { skipDiagnostics?: boolean }) => void) | null
+  >(null);
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
@@ -2372,17 +2377,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
     let cancelled = false;
 
-    const scheduleNextPoll = (delayMs: number) => {
+    let pendingTickOpts: { skipDiagnostics?: boolean } | undefined;
+
+    const scheduleNextPoll = (delayMs: number, opts?: { skipDiagnostics?: boolean }) => {
       if (cancelled) return;
       if (localInterfacePollTimeoutRef.current != null) {
         clearTimeout(localInterfacePollTimeoutRef.current);
       }
+      pendingTickOpts = opts;
       localInterfacePollTimeoutRef.current = setTimeout(() => {
-        void tick();
+        const tickOpts = pendingTickOpts;
+        pendingTickOpts = undefined;
+        void tick(tickOpts);
       }, delayMs);
     };
 
-    const tick = async () => {
+    const tick = async (opts?: { skipDiagnostics?: boolean }) => {
       if (!shouldRunReticulumExpensiveBackgroundWork()) {
         scheduleNextPoll(scaleReticulumBackgroundIntervalMs(RETICULUM_LOCAL_HEALTH_POLL_MS));
         return;
@@ -2410,7 +2420,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const peerCount = useReticulumPeerStore.getState().peers.size;
           // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
           // diagnostics bundle with every interface health tick.
-          if (peerCount <= LARGE_MESH_NODE_THRESHOLD) {
+          // Resume re-arm passes skipDiagnostics when diagnostics just ran.
+          if (peerCount <= LARGE_MESH_NODE_THRESHOLD && !opts?.skipDiagnostics) {
             void syncDiagnosticsFromSidecar(health);
           }
           scheduleNextPoll(
@@ -2431,8 +2442,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       });
     };
 
-    rearmLocalInterfacePollRef.current = () => {
-      scheduleNextPoll(0);
+    rearmLocalInterfacePollRef.current = (opts) => {
+      scheduleNextPoll(0, opts);
     };
     void tick();
 
@@ -2467,7 +2478,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
               syncDiagnosticsFromSidecar(),
             ]);
             if (!shouldRunReticulumExpensiveBackgroundWork()) return;
-            rearmLocalInterfacePollRef.current?.();
+            // Diagnostics already refreshed above — skip duplicate work on the rearmed tick.
+            rearmLocalInterfacePollRef.current?.({ skipDiagnostics: true });
           })();
         },
         coalesceMs: RETICULUM_BACKGROUND_RESUME_COALESCE_MS,

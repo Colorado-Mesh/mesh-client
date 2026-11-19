@@ -111,16 +111,16 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(branch).toContain('scheduleProtocolCommit(');
   });
 
-  it('clears pending selection only when it still matches the committed target', () => {
+  it('clears pending selection only after committed protocol matches pending', () => {
     const helper = SOURCE.slice(
       SOURCE.indexOf('const scheduleProtocolCommit'),
-      SOURCE.indexOf('const handleProtocolChange'),
+      SOURCE.indexOf('// Clear optimistic rail pending'),
     );
     expect(helper).toContain('timing.markCommit(() => {');
-    expect(helper).toContain('if (getPendingProtocolSelection() === input.pending)');
-    expect(helper).toContain('setPendingProtocolSelection(null)');
-    expect(helper).not.toMatch(
-      /setProtocol\(input\.nextProtocol\);\s*setPendingProtocolSelection\(null\)/,
+    expect(helper).toContain('setProtocol(input.nextProtocol)');
+    expect(helper).not.toContain('setPendingProtocolSelection(null)');
+    expect(SOURCE).toMatch(
+      /useEffect\(\(\) => \{\s*const pending = getPendingProtocolSelection\(\);\s*if \(pending == null \|\| pending !== protocol\) return;\s*setPendingProtocolSelection\(null\);/,
     );
   });
 });

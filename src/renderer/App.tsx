@@ -2693,15 +2693,19 @@ function AppContent() {
           setAppTabVisited(flags.app);
           setActiveTab(input.nextTab);
           setProtocol(input.nextProtocol);
-          // Clear only when pending still matches this commit — preserve a newer click target.
-          if (getPendingProtocolSelection() === input.pending) {
-            setPendingProtocolSelection(null);
-          }
         });
       });
     },
     [startProtocolTransition],
   );
+
+  // Clear optimistic rail pending only after the committed protocol lands — and only when
+  // pending still matches (preserve a newer click target).
+  useEffect(() => {
+    const pending = getPendingProtocolSelection();
+    if (pending == null || pending !== protocol) return;
+    setPendingProtocolSelection(null);
+  }, [protocol]);
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
