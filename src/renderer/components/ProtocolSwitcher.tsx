@@ -1,7 +1,11 @@
 import type { KeyboardEvent } from 'react';
-import { useRef } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  getPendingProtocolSelection,
+  subscribePendingProtocolSelection,
+} from '@/renderer/lib/protocolSwitchUiStore';
 import { PROTOCOL_THEME, RAIL_PROTOCOL_INACTIVE_CLASS } from '@/renderer/lib/protocolTheme';
 import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '@/renderer/lib/types';
 
@@ -16,6 +20,11 @@ export interface ProtocolSwitcherProps {
   protocols?: readonly MeshProtocol[];
   /** `vertical` at the top of the rail; `horizontal` in the phone More sheet. */
   orientation?: 'vertical' | 'horizontal';
+  /**
+   * When true, highlight follows {@link getPendingProtocolSelection} so the rail can paint
+   * without waiting for AppContent to re-render the committed protocol.
+   */
+  followPendingSelection?: boolean;
 }
 
 /**
@@ -30,10 +39,17 @@ export function ProtocolSwitcher({
   onProtocolChange,
   protocols = REGISTERED_MESH_PROTOCOLS,
   orientation = 'vertical',
+  followPendingSelection = false,
 }: ProtocolSwitcherProps) {
   const { t } = useTranslation();
   const vertical = orientation === 'vertical';
   const refs = useRef<Partial<Record<MeshProtocol, HTMLButtonElement | null>>>({});
+  const pending = useSyncExternalStore(
+    followPendingSelection ? subscribePendingProtocolSelection : () => () => {},
+    followPendingSelection ? getPendingProtocolSelection : () => null,
+    () => null,
+  );
+  const effectiveProtocol = followPendingSelection ? (pending ?? protocol) : protocol;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const count = protocols.length;
@@ -50,7 +66,7 @@ export function ProtocolSwitcher({
     refs.current[target]?.focus();
   };
 
-  const activeTheme = PROTOCOL_THEME[protocol];
+  const activeTheme = PROTOCOL_THEME[effectiveProtocol];
 
   return (
     <div className="flex shrink-0 flex-col items-center gap-1.5">
@@ -64,7 +80,7 @@ export function ProtocolSwitcher({
       >
         {protocols.map((proto, index) => {
           const theme = PROTOCOL_THEME[proto];
-          const isActive = protocol === proto;
+          const isActive = effectiveProtocol === proto;
           const unread = unreadByProtocol[proto] ?? 0;
           const showUnread = unread > 0 && !isActive;
           return (
