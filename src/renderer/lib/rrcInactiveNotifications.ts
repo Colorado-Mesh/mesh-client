@@ -3,6 +3,7 @@ import { isRrcRoomMuted, resolveRrcAlertType, type RrcNotifyMode } from '@/rende
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import { getChatNotificationMode } from './chatNotificationPolicy';
+import { compareChatReceiveOrder } from './chatReceiveOrder';
 
 export interface ResolveInactiveRrcNotificationTypeArgs {
   newMessages: readonly RrcChatMessage[];
@@ -41,6 +42,26 @@ export interface RrcNotification {
   message: RrcChatMessage;
   /** Trimmed room name, `[hub]` for hub-level lines. */
   room: string;
+}
+
+/**
+ * The `count` lines that reached this app last, oldest first. A line's `timestamp` is its
+ * sender's clock, so "newest" goes by arrival (`chatReceiveOrder.ts`). A line without a receipt
+ * was saved before receipt times were kept, so it came before every line that has one, whatever
+ * its sender's clock says.
+ */
+export function newestRrcMessagesByArrival(
+  messages: readonly RrcChatMessage[],
+  count: number,
+): RrcChatMessage[] {
+  if (count <= 0) return [];
+  return [...messages]
+    .sort(
+      (a, b) =>
+        Number(a.receivedAt != null) - Number(b.receivedAt != null) ||
+        compareChatReceiveOrder(a, b),
+    )
+    .slice(-count);
 }
 
 /** Same priority as {@link resolveInactiveRrcNotificationType}, plus the triggering line. */

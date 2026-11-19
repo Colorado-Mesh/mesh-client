@@ -1,5 +1,6 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import { chatReceivedAtMs, compareChatReceiveOrder } from './chatReceiveOrder';
 import { reticulumHashToNodeId } from './reticulum/destHash';
 import type { ChatMessage } from './types';
 
@@ -33,7 +34,10 @@ export interface GlobalMessageSearchHit {
   protocol: MeshProtocol;
   /** Database row id when available. */
   dbId: number | null;
+  /** Stamped time, as the bubble shows it. */
   timestamp: number;
+  /** When this app received the row, if saved with it; hits are ordered and dated by it. */
+  receivedAt?: number;
   senderId: number | null;
   senderName: string;
   payload: string;
@@ -59,6 +63,7 @@ interface MeshtasticSearchRow {
   payload?: string;
   channel?: number;
   timestamp?: number;
+  received_at?: number | null;
   to_node?: number | null;
   to?: number | null;
   packetId?: number | null;
@@ -72,6 +77,7 @@ interface MeshcoreSearchRow {
   payload?: string;
   channel_idx?: number;
   timestamp?: number;
+  received_at?: number | null;
   to_node?: number | null;
 }
 
@@ -81,8 +87,15 @@ interface ReticulumSearchRow {
   sender_name?: string | null;
   payload?: string;
   timestamp?: number;
+  received_at?: number | null;
   to_hash?: string | null;
   message_hash?: string | null;
+}
+
+/** The saved arrival time, when the row has one. */
+function arrivalOf(row: { received_at?: number | null }): { receivedAt?: number } {
+  const receivedAt = asNumber(row.received_at);
+  return receivedAt != null ? { receivedAt } : {};
 }
 
 function asNumber(value: unknown): number | null {
@@ -124,6 +137,7 @@ export function normalizeMeshtasticSearchRow(
     protocol: 'meshtastic',
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
+    ...arrivalOf(row),
     senderId,
     senderName: asString(row.sender_name),
     payload: asString(row.payload),
@@ -148,6 +162,7 @@ export function normalizeMeshcoreSearchRow(
     protocol: 'meshcore',
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
+    ...arrivalOf(row),
     senderId,
     senderName: asString(row.sender_name),
     payload: asString(row.payload),
@@ -171,6 +186,7 @@ export function normalizeReticulumSearchRow(
     protocol: 'reticulum',
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
+    ...arrivalOf(row),
     senderId: null,
     senderName: asString(row.sender_name),
     payload: asString(row.payload),
@@ -242,8 +258,10 @@ export function filterGlobalMessageSearchHits(
   const toTs = filters.toTs;
   return hits.filter((hit) => {
     if (filters.protocol !== 'all' && hit.protocol !== filters.protocol) return false;
-    if (fromTs != null && hit.timestamp < fromTs) return false;
-    if (toTs != null && hit.timestamp > toTs) return false;
+    // Dates mean the day a message arrived here, like the day separators in Chat.
+    const arrivedAt = chatReceivedAtMs(hit);
+    if (fromTs != null && arrivedAt < fromTs) return false;
+    if (toTs != null && arrivedAt > toTs) return false;
     if (!matchesSender(hit, filters.senderQuery)) return false;
     if (!matchesConversation(hit, filters.conversation)) return false;
     if (!matchesDirection(hit, filters)) return false;
@@ -262,7 +280,7 @@ export interface GlobalMessageSearchApi {
 }
 
 /**
- * Run FTS across enabled protocols and return filtered, timestamp-desc hits.
+ * Run FTS across enabled protocols and return filtered hits, newest arrival first.
  */
 export async function runGlobalMessageSearch(opts: {
   query: string;
@@ -314,7 +332,7 @@ export async function runGlobalMessageSearch(opts: {
   const nested = await Promise.all(tasks);
   const merged = nested.flat();
   const filtered = filterGlobalMessageSearchHits(merged, opts.filters);
-  filtered.sort((a, b) => b.timestamp - a.timestamp);
+  filtered.sort((a, b) => compareChatReceiveOrder(b, a));
   return filtered.slice(0, limit * 3);
 }
 
@@ -360,6 +378,7 @@ export function chatMessageFromSearchHit(hit: GlobalMessageSearchHit): ChatMessa
     channel: dm ? (hit.protocol === 'meshcore' ? -1 : 0) : (hit.channel ?? 0),
     to,
     timestamp: hit.timestamp,
+    ...(hit.receivedAt != null ? { receivedAt: hit.receivedAt } : {}),
     packetId: hit.packetId ?? undefined,
     reticulum_message_hash: hit.reticulumMessageHash ?? undefined,
     reticulum_sender_hash: hit.reticulumSenderHash ?? undefined,

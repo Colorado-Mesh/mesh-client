@@ -55,6 +55,14 @@ import {
   savePersistedRoomsLastRead,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import {
+  chatReadOrderMs,
+  chatReceivedAtMs,
+  chatSummaryOrderMs,
+  compareChatReceiveOrder,
+  isChatReadOrderPoisoned,
+  latestChatReadMs,
+} from '@/renderer/lib/chatReceiveOrder';
 import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -112,7 +120,6 @@ import {
   setMeshcoreRoomSyncConfig,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
-import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
@@ -258,7 +265,10 @@ function canDmMeshcorePoster(
 interface RecognizedPoster {
   senderId: number;
   senderName: string;
+  /** Stamped time of the poster's latest post (shown, like the post itself). */
   lastPostAt: number;
+  /** When that post arrived here; the list is ordered by it. */
+  lastArrivedAt: number;
   node?: MeshNode;
 }
 
@@ -270,17 +280,19 @@ function buildRecognizedPosters(
   const byId = new Map<number, RecognizedPoster>();
   for (const m of roomPosts) {
     if (m.sender_id === 0) continue;
+    const arrivedAt = chatReceivedAtMs(m);
     const existing = byId.get(m.sender_id);
-    if (!existing || m.timestamp > existing.lastPostAt) {
+    if (!existing || arrivedAt > existing.lastArrivedAt) {
       byId.set(m.sender_id, {
         senderId: m.sender_id,
         senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || unknownLabel,
         lastPostAt: m.timestamp,
+        lastArrivedAt: arrivedAt,
         node: nodes.get(m.sender_id),
       });
     }
   }
-  return [...byId.values()].sort((a, b) => b.lastPostAt - a.lastPostAt);
+  return [...byId.values()].sort((a, b) => b.lastArrivedAt - a.lastArrivedAt);
 }
 
 export default function RoomsPanel({
@@ -476,16 +488,21 @@ export default function RoomsPanel({
 
   const roomPosts = useMemo(() => {
     if (selectedRoomId == null) return [];
-    const posts = messages
-      .filter((m) => m.roomServerId === selectedRoomId)
-      .sort((a, b) => a.timestamp - b.timestamp);
+    // Chunks of a long post are stamped one after another by the room server, but our own post
+    // (stamped by this computer) can arrive between them, so assemble chunks in stamp order.
+    // Then list posts in arrival order (`chatReceiveOrder.ts`); each keeps the server's clock.
+    const posts = mergeDisplayedRoomPostChunks(
+      messages
+        .filter((m) => m.roomServerId === selectedRoomId)
+        .sort((a, b) => a.timestamp - b.timestamp || compareChatReceiveOrder(a, b)),
+    ).sort((a, b) => compareChatReceiveOrder(a, b));
     const nameByNodeId = new Map<number, string>();
     for (const [id, node] of nodes) {
       const name = node.long_name?.trim();
       if (name) nameByNodeId.set(id, name);
     }
     return repairMeshcoreRoomUnknownSenderNames(
-      repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts)),
+      repairMeshcoreHydrationStaleRoomSends(posts),
       nameByNodeId,
     );
   }, [messages, nodes, selectedRoomId]);
@@ -496,6 +513,9 @@ export default function RoomsPanel({
       aiEnabled
         ? roomPosts.map((m) => ({
             at: m.timestamp,
+            // Catch up picks "since last read" posts by arrival, like the read mark, and skips the
+            // posts the unread counts skip.
+            order: chatSummaryOrderMs(m),
             sender: m.sender_name.slice(0, 120),
             body: m.payload,
           }))
@@ -511,6 +531,7 @@ export default function RoomsPanel({
       unreadDividerTimestamp ||
       (selectedRoomId != null ? persistedRoomsLastRead[selectedRoomId] : 0) ||
       0,
+    watermarkClock: 'arrival',
     messages: summaryMessages,
     available: selectedRoomId != null,
     history:
@@ -542,7 +563,7 @@ export default function RoomsPanel({
     const indices = new Set<number>();
     let prevDayKey = '';
     for (let i = 0; i < filteredRoomPosts.length; i++) {
-      const dayKey = getChatDayKey(filteredRoomPosts[i].timestamp);
+      const dayKey = getChatDayKey(chatReceivedAtMs(filteredRoomPosts[i]));
       if (dayKey !== prevDayKey) {
         indices.add(i);
         prevDayKey = dayKey;
@@ -554,7 +575,9 @@ export default function RoomsPanel({
   const unreadStartIndex = useMemo(() => {
     if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredRoomPosts.length; i++) {
-      if (filteredRoomPosts[i].timestamp > unreadDividerTimestamp) return i;
+      const post = filteredRoomPosts[i];
+      if (isChatReadOrderPoisoned(post)) continue;
+      if (chatReadOrderMs(post) > unreadDividerTimestamp) return i;
     }
     return -1;
   }, [filteredRoomPosts, searchQuery, unreadDividerTimestamp]);
@@ -631,7 +654,8 @@ export default function RoomsPanel({
       if (selectedRoomId == null) return null;
       return getMeshcoreRoomLastPostAt(selectedRoomId);
     }
-    return Math.max(...roomPosts.map((m) => m.timestamp));
+    // Posts are in arrival order: show the stamped time of the one that arrived last.
+    return roomPosts[roomPosts.length - 1].timestamp;
   }, [roomPosts, selectedRoomId]);
 
   const lastSyncAt =
@@ -659,11 +683,7 @@ export default function RoomsPanel({
 
   const markSelectedRoomRead = useCallback(() => {
     if (selectedRoomId == null || roomPosts.length === 0) return;
-    const nowMs = Date.now();
-    const latest = clampReadWatermarkMs(
-      Math.max(...roomPosts.map((m) => effectiveMessageTimestampMs(m.timestamp, nowMs))),
-      nowMs,
-    );
+    const latest = latestChatReadMs(roomPosts);
     setPersistedRoomsLastRead((prev) => mergeRoomLastReadWatermark(prev, selectedRoomId, latest));
   }, [roomPosts, selectedRoomId]);
 
@@ -2622,7 +2642,7 @@ export default function RoomsPanel({
                       <div className="flex items-center gap-3 py-2">
                         <div className="border-ink-700 flex-1 border-t" />
                         <span className="text-muted shrink-0 text-xs font-medium">
-                          {formatDayLabel(m.timestamp, t)}
+                          {formatDayLabel(chatReceivedAtMs(m), t)}
                         </span>
                         <div className="border-ink-700 flex-1 border-t" />
                       </div>

@@ -69,6 +69,35 @@ describe('AI summary scope and RRC read boundaries', () => {
     const second = { at: 1, sender: 'Alice', body: ' Bob:Morning' };
     expect(mergeSummaryMessages([first], [second])).toEqual([first, second]);
   });
+  it('picks unread lines by arrival when a live copy carries it', () => {
+    // The read mark is the arrival time of the last line read.
+    const watermark = 10_000;
+    const live = [
+      // Stamped ahead by a fast clock, but it arrived before the mark: already read.
+      { at: 12_000, order: 9_000, sender: 'A', body: 'read fast clock' },
+      // Stamped long ago by a slow clock, but it arrived after the mark: unread.
+      { at: 1_000, order: 11_000, sender: 'B', body: 'unread slow clock' },
+    ];
+    expect(
+      selectSummaryMessages({ messages: live, scope: { kind: 'unread' }, watermark }).map(
+        (m) => m.body,
+      ),
+    ).toEqual(['unread slow clock']);
+  });
+
+  it('keeps the live copy of a line also loaded from history, so its arrival counts', () => {
+    const history = [
+      { at: 12_000, sender: 'A', body: 'read fast clock' },
+      { at: 500, sender: 'C', body: 'only in history' },
+    ];
+    const live = [{ at: 12_000, order: 9_000, sender: 'A', body: 'read fast clock' }];
+    const merged = mergeSummaryMessages(history, live);
+    expect(merged).toEqual([live[0], history[1]]);
+    expect(
+      selectSummaryMessages({ messages: merged, scope: { kind: 'unread' }, watermark: 10_000 }),
+    ).toEqual([]);
+  });
+
   it('keeps unread exclusive, hour range inclusive and loaded unfiltered', () => {
     expect(selectSummaryMessages({ messages, scope: { kind: 'unread' }, watermark: 1 })).toEqual([
       messages[1],

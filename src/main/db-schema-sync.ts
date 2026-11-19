@@ -471,6 +471,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     via_store_forward: 'INTEGER DEFAULT 0',
     radio_node_id: 'INTEGER',
     channel_key: 'TEXT',
+    received_at: 'INTEGER',
   },
   nodes: {
     long_name: 'TEXT',
@@ -537,6 +538,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     room_server_id: 'INTEGER',
     radio_node_id: 'INTEGER',
     channel_key: 'TEXT',
+    received_at: 'INTEGER',
   },
   reticulum_messages: {
     identity_id: 'TEXT NOT NULL',
@@ -557,6 +559,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     attachments_json: 'TEXT',
     audio_mode: 'INTEGER',
     audio_duration_sec: 'REAL',
+    received_at: 'INTEGER',
   },
   rrc_messages: {
     message_id: 'TEXT NOT NULL',
@@ -569,6 +572,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     timestamp: 'INTEGER NOT NULL',
     react_to: 'TEXT',
     react_op: 'INTEGER',
+    received_at: 'INTEGER',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',

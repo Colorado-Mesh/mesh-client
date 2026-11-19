@@ -32,6 +32,10 @@ Channels appear as chips across the top, and direct messages in their own strip 
 
 Unread counts stay on a conversation chip even while it is selected until you have actually read to the bottom. If the conversation holds an unread MECP report, the chip shows a shield icon colored by the most severe one (see [EMCOMM](emcomm.md)). A **New messages** divider marks where unread begins, and **Jump to Unread** / **Jump to Latest** scroll to either end.
 
+### Message order and times
+
+Messages appear in the order this computer received or sent them, not by the time written on each message. That time comes from whichever clock stamped the message, usually the sender's, so a node with a wrong clock does not push its messages up or down the history. Each bubble still shows the stamped time, with the date in front of it when it falls on a different day from the arrival. Day separators, **Jump to date**, the unified inbox and global search follow the arrival order. Unread counts, the **New messages** divider, **Mark unread** and **Catch up** since last read go by arrival as well, so a message from a clock that runs behind still counts as unread when it arrives after you read the conversation. If this computer's clock is set back, new messages still go at the bottom and count as unread; their arrival times run ahead of the clock until it catches up. After a restart the order and unread counts still hold for a set-back of up to a day; with a larger one, new messages sort above the ones received before it and do not count as unread until the clock catches up. After such a restart, a MeshCore message whose own time is ahead of the clock (one received before the set-back) shows the restart time instead, and can appear twice, until the clock catches up. Catch up since last read applies this to older messages it reads from storage too; its time-range choices go by the stamped time. RRC rooms are the exception: their read mark is the stamped time of the last line read, so the **New messages** divider and Catch up since last read there, older stored lines included, go by the stamped time. The same holds for Rooms (its **Last post** time is the stamp of the post that arrived last) and for the DM order on the Nodes **History** tab. Messages saved by app versions that did not record an arrival time keep their stamped order.
+
 ### Mute
 
 The bell on a conversation (**Mute this conversation** / **Unmute this conversation**) silences ordinary chat sounds and desktop notifications for that one conversation. It does not silence emergency (MECP) alerts, which follow their own rules. The global mute and notification-mode settings are in [Notification sounds](notification-sounds.md) and **App → Notifications**.
@@ -110,7 +114,7 @@ Chat can hide messages whose text matches a blocked-word list (case-insensitive 
 
 ### Mark unread and delete
 
-Conversation tools include **Mark unread** (sets the read watermark just before the newest inbound message; does not re-notify). Message action bars offer **Delete locally** with a confirm (removes the row from this device’s in-memory store only).
+Conversation tools include **Mark unread** (sets the read watermark just before the inbound message that arrived last; does not re-notify). Message action bars offer **Delete locally** with a confirm (removes the row from this device’s in-memory store only).
 
 ### Spellcheck, emoji, and extras
 
@@ -154,7 +158,7 @@ Emergency reports are off in the composer until you enable **App → MECP → Sh
 Press **Ctrl+Shift+F** (**Cmd+Shift+F** on macOS) to open **Search all messages**, or use **Search all conversations** in the Chat toolbar. It searches saved history for every enabled protocol at once.
 
 - Narrow results with **Protocol**, **Direction** (**All**, **Received**, **Sent**), and **Sender** (a name or id).
-- Each protocol returns at most 50 matches per query, merged newest first.
+- Each protocol returns at most 50 matches per query, merged with the most recently received first.
 - Picking a result opens that conversation and scrolls to the message.
 - Direction needs to know which messages are yours. If your own node or hash is not known yet, **Received** and **Sent** return nothing for that protocol.
 - Search covers what is stored locally, not what is still on a radio.
@@ -177,7 +181,7 @@ Star a message from its action row (**Star message** / **Unstar message**). **St
 
 Press **Ctrl+Shift+U** (**Cmd+Shift+U** on macOS) to open the **Unified inbox**. You can also open it from the global search dialog.
 
-The inbox lists **received** messages from every enabled protocol, newest first, capped at 200. It leaves out your own sends and reaction rows.
+The inbox lists **received** messages from every enabled protocol, most recently received first, capped at 200. It leaves out your own sends and reaction rows.
 
 - **Protocol** and **Filter** (text or sender) narrow the list.
 - Click a row to open its conversation at that message. Tick rows (or **Select all messages**) for batch actions.

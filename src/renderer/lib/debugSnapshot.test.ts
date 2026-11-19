@@ -540,6 +540,9 @@ describe('buildDebugSnapshot', () => {
       payload: 'path update',
       channelIndex: 4,
       timestamp: botTs,
+      // Arrived when stamped. Without it the store takes the next arrival time from a counter
+      // that earlier tests left on the real clock, years after this test's fake one.
+      receivedAt: botTs,
       to: 0,
       status: 'acked',
     });
@@ -550,6 +553,46 @@ describe('buildDebugSnapshot', () => {
     expect(ch4?.watermarkAheadOfNewestInboundMs).toBeGreaterThan(0);
     expect(ch4?.unreadEstimate).toBe(0);
     expect(snap.warnings.some((w) => w.code === 'lastReadSuppressesChannelUnread')).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('reads channel last-read triage by arrival time', () => {
+    ensureOfflineProtocolIdentities();
+    vi.useFakeTimers();
+    const nowMs = 1_700_000_000_000;
+    vi.setSystemTime(nowMs);
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
+    localStorage.setItem(
+      lastReadStorageKey('meshcore'),
+      JSON.stringify({ 'ch:4': nowMs - 60_000 }),
+    );
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      mqttStatus: 'disconnected',
+      connectionType: 'ble',
+      myNodeNum: 279817148,
+      connectionLoss: false,
+    });
+    // The bot's clock runs two hours behind; its line arrived after the read mark.
+    upsertMessage(OFFLINE_MESHCORE_IDENTITY_ID, {
+      id: 'mc-bot-slow',
+      from: 2706664648,
+      senderName: 'RunrBot',
+      payload: 'path update',
+      channelIndex: 4,
+      timestamp: nowMs - 2 * 3_600_000,
+      receivedAt: nowMs - 30_000,
+      to: 0,
+      status: 'acked',
+    });
+
+    const snap = buildDebugSnapshot();
+    const ch4 = snap.meshcore.channelLastReadTriage.find((r) => r.channelIndex === 4);
+    expect(ch4?.newestInboundEffectiveTs).toBe(nowMs - 30_000);
+    expect(ch4?.lastReadWatermarkEffective).toBe(nowMs - 60_000);
+    expect(ch4?.watermarkAheadOfNewestInboundMs).toBeNull();
+    expect(ch4?.unreadEstimate).toBe(1);
+    expect(snap.warnings.some((w) => w.code === 'lastReadSuppressesChannelUnread')).toBe(false);
     vi.useRealTimers();
   });
 });

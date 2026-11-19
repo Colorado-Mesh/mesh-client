@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessageRecordsForIdentity, useMessageStore } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
+import { chatReadClockMs, resetChatReceiptClockForTests } from './chatReceiveOrder';
 import { totalUnreadCount } from './chatUnreadCounts';
 import {
   hydrateIdentityStoresFromDb,
@@ -153,6 +154,38 @@ describe('hydrateIdentityStoresFromDb', () => {
     await hydrateMeshcoreNodesFromDb(ID_MC, 'replace');
 
     expect(useNodeStore.getState().nodes[ID_MC]).toEqual({});
+  });
+
+  // Mapping saved rows resumes the receipt clock; a run for an identity that is no longer current
+  // returns before it maps anything.
+  it('hydrateMeshcoreNodesFromDb maps nothing for an identity that is no longer current', async () => {
+    resetChatReceiptClockForTests();
+    const now = Date.now();
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreIdentityHydration').mockResolvedValue({
+      contacts: [],
+      nodes: [],
+      hopHistory: [],
+      messages: [
+        {
+          id: 8,
+          sender_id: 0xdef,
+          sender_name: 'Alice',
+          payload: 'saved ahead',
+          channel_idx: 1,
+          timestamp: now,
+          received_at: now + 3_600_000,
+          status: 'acked',
+        },
+      ],
+    });
+    try {
+      await hydrateMeshcoreNodesFromDb(ID_MC, 'upsert', () => false);
+      expect(chatReadClockMs(now)).toBe(now);
+      await hydrateMeshcoreNodesFromDb(ID_MC, 'upsert', () => true);
+      expect(chatReadClockMs(now)).toBe(now + 3_600_000);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
   });
 
   it('drops a stale empty node replace when a newer hydration finishes first', async () => {

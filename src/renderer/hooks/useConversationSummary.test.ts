@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from '@/renderer/lib/chatReceiveOrder';
 import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import { isWeatherPost } from '@/renderer/lib/weatherPosts';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
@@ -38,6 +39,7 @@ const input = {
   surface: 'channel' as const,
   messages: [],
   watermark: 0,
+  watermarkClock: 'arrival' as const,
   history: { protocol: 'meshcore' as const, surface: 'channel' as const, channel: 0 },
 };
 beforeEach(() => {
@@ -363,6 +365,135 @@ describe('conversation summary async boundaries', () => {
     });
   });
 
+  // "Since last read" compares the read mark, an arrival time, so saved history is asked for and
+  // picked by arrival too: a sender's clock can run behind or ahead of this one.
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'asks for unread %s history by arrival and picks it by its arrival key',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+        { id: 1, at: 900, order: 200, sender: 'Fast', senderId: 1, body: 'read, clock ahead' },
+        { id: 2, at: 50, order: 300, sender: 'Slow', senderId: 2, body: 'unread, clock behind' },
+      ]);
+      const { result } = renderHook(() =>
+        useConversationSummary({
+          ...input,
+          protocol,
+          watermark: 200,
+          history: { ...input.history, protocol },
+        }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ byArrival: true, sinceMs: 200 }),
+      );
+      expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: [{ at: 50, sender: 'Slow', body: 'unread, clock behind' }],
+        }),
+      );
+    },
+  );
+
+  it('asks for unread history up to the receipt clock after this clock was set back', async () => {
+    try {
+      // Receipts keep counting up after a set-back, so the newest one runs ahead of this clock.
+      const receivedAfterSetBack = nextChatReceivedAt(Date.now() + 60 * 60_000);
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([]);
+      const { result } = renderHook(() => useConversationSummary({ ...input, watermark: 200 }));
+      await act(async () => {
+        await result.current.run();
+      });
+      const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+      expect(request).toMatchObject({ byArrival: true, sinceMs: 200 });
+      expect(request?.untilMs).toBeGreaterThanOrEqual(receivedAfterSetBack);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
+  });
+
+  // Stamps come from the senders' clocks, so the receipt clock running ahead after a set-back does
+  // not widen a stamped mark's range: it ends at this clock, as the hour ranges do.
+  it('asks history for a stamped read mark up to this clock after a set-back', async () => {
+    try {
+      const receivedAfterSetBack = nextChatReceivedAt(Date.now() + 60 * 60_000);
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([]);
+      const { result } = renderHook(() =>
+        useConversationSummary({ ...input, watermark: 200, watermarkClock: 'stamp' }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+      expect(request?.byArrival).toBeUndefined();
+      expect(request?.untilMs).toBeLessThan(receivedAfterSetBack);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
+  });
+
+  // An RRC read mark is a stamped time (rrcReadWatermark.ts), so its "since last read" history is
+  // bounded and picked by stamp: a line read before the mark that this computer saved later
+  // (history fetched after reading it elsewhere) must stay out.
+  it('asks for unread history by stamp when the read mark is a stamped time', async () => {
+    const saved = [
+      { id: 1, at: 150, receivedAt: 300, sender: 'Ann', body: 'read before the mark' },
+      { id: 2, at: 250, receivedAt: 260, sender: 'Ben', body: 'unread after the mark' },
+    ];
+    // Stands in for the main-process query: range and `order` follow the key the request asks for.
+    vi.mocked(window.electronAPI.ai.getHistory).mockImplementationOnce((query) => {
+      const key = (row: (typeof saved)[number]) => (query.byArrival ? row.receivedAt : row.at);
+      return Promise.resolve(
+        saved
+          .filter((row) => key(row) >= query.sinceMs && key(row) <= query.untilMs)
+          .map(({ receivedAt, ...row }) => (query.byArrival ? { ...row, order: receivedAt } : row)),
+      );
+    });
+    const { result } = renderHook(() =>
+      useConversationSummary({
+        ...input,
+        protocol: 'reticulum',
+        surface: 'rrc',
+        watermark: 200,
+        watermarkClock: 'stamp',
+        history: { protocol: 'reticulum', surface: 'rrc', hubHash: 'aa', room: '#ops' },
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    const request = vi.mocked(window.electronAPI.ai.getHistory).mock.calls[0]?.[0];
+    expect(request).toMatchObject({ sinceMs: 200 });
+    expect(request?.byArrival).toBeUndefined();
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [{ at: 250, sender: 'Ben', body: 'unread after the mark' }],
+      }),
+    );
+  });
+
+  it('pages unread history by its arrival key', async () => {
+    const history = Array.from({ length: AI_MAX_MESSAGES + 1 }, (_, index) => ({
+      id: index + 1,
+      at: index + 1,
+      order: 1_000 + index,
+      sender: 'Alice',
+      body: `Message ${index + 1}`,
+    }));
+    vi.mocked(window.electronAPI.ai.getHistory)
+      .mockResolvedValueOnce(history)
+      .mockResolvedValueOnce([history[0]]);
+    const { result } = renderHook(() => useConversationSummary(input));
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.getHistory).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ byArrival: true, beforeAt: 1_001, beforeId: 2 }),
+    );
+  });
+
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'keeps older eligible %s messages when the newest exceeds the renderer limit',
     async (protocol) => {
@@ -509,6 +640,28 @@ describe('conversation summary async boundaries', () => {
       }),
     );
   });
+  // History returns rows from the mark on, so the last line read comes back too. Matched to an
+  // unread live line with the same stamp, sender and text, it let the saved unread copy through
+  // as well and the line went to the model twice.
+  it('sends an unread line once when a read saved line has the same stamp, sender and text', async () => {
+    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+      { at: 5_000, order: 10_000, sender: 'Alice', body: 'ok' },
+      { at: 5_000, order: 11_000, sender: 'Alice', body: 'ok' },
+    ]);
+    const { result } = renderHook(() =>
+      useConversationSummary({
+        ...input,
+        watermark: 10_000,
+        messages: [{ at: 5_000, order: 11_000, sender: 'Alice', body: 'ok' }],
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({ messages: [{ at: 5_000, sender: 'Alice', body: 'ok' }] }),
+    );
+  });
   it('cancels history loading promptly and ignores a late failure after dismiss', async () => {
     let reject!: (error: Error) => void;
     vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(
@@ -599,6 +752,29 @@ it.each(['linux', 'darwin', 'win32'] as const)(
     }
   },
 );
+
+it('catches up on lines that arrived after the read mark and sends only their text and stamp', async () => {
+  const { result } = renderHook(() =>
+    useConversationSummary({
+      ...input,
+      history: null,
+      // The read mark is the arrival time of the last line read.
+      watermark: 10_000,
+      messages: [
+        { at: 12_000, order: 9_000, sender: 'Alice', body: 'Read fast clock line' },
+        { at: 1_000, order: 11_000, sender: 'Bob', body: 'Unread slow clock line' },
+      ],
+    }),
+  );
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(window.electronAPI.ai.summarize).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      messages: [{ at: 1_000, sender: 'Bob', body: 'Unread slow clock line' }],
+    }),
+  );
+});
 
 it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
   'keeps a newest window under the %s renderer budget instead of reintroducing an answered question',

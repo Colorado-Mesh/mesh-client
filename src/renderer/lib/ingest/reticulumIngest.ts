@@ -249,6 +249,11 @@ export async function persistReticulumMessageToDb(
 ): Promise<void> {
   if (!p.text || !p.sender_hash) return;
   const timestamp = p.timestamp ?? Date.now();
+  const messageHash =
+    p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text);
+  // The receipt the store kept for this message; SQLite only writes it with a new row.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const receivedAt = useMessageStore.getState().messages[identityId]?.[messageHash]?.receivedAt;
   try {
     await window.electronAPI.db.saveReticulumMessage({
       identity_id: identityId,
@@ -258,7 +263,8 @@ export async function persistReticulumMessageToDb(
       timestamp,
       to_hash: p.to_hash ?? null,
       reply_to_hash: p.reply_to_hash ?? p.reaction_target ?? null,
-      message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
+      message_hash: messageHash,
+      received_at: receivedAt ?? null,
       ...(replacesMessageHash ? { replaces_message_hash: replacesMessageHash } : {}),
       received_via: resolvePayloadTransport(p) ?? null,
       delivery_status: resolvePersistedDeliveryStatus(p),
@@ -378,9 +384,12 @@ export async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): 
 
 export function ingestReticulumLxmfPayloadWithSideEffects(
   identityId: IdentityId,
-  p: ReticulumLxmfPayload,
+  payload: ReticulumLxmfPayload,
   ctx: ReticulumIngestMergeContext = {},
 ): boolean {
+  // The sidecar always sends `timestamp`. A payload without one gets a single time here, so the
+  // stored row and the saved row share one hash and the store's receipt.
+  const p = payload.timestamp == null ? { ...payload, timestamp: Date.now() } : payload;
   void persistReticulumIconFromPayload(p);
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
@@ -431,6 +440,11 @@ export function persistReticulumOutboundRecord(
   replacesMessageHash?: string | null,
 ): void {
   const deliveryStatus = mapMessageStatusToDeliveryStatus(status);
+  // A pending row is built before addMessage stamps its receipt, so take the store's copy.
+  const receivedAt =
+    record.receivedAt ??
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+    useMessageStore.getState().messages[identityId]?.[record.id]?.receivedAt;
   void window.electronAPI.db
     .saveReticulumMessage({
       identity_id: identityId,
@@ -438,6 +452,7 @@ export function persistReticulumOutboundRecord(
       sender_name: senderName,
       payload: record.payload,
       timestamp: record.timestamp,
+      received_at: receivedAt ?? null,
       to_hash: toHash,
       reply_to_hash: record.reticulumReplyToHash ?? null,
       message_hash: record.reticulumMessageHash ?? record.id,

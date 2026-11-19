@@ -163,6 +163,53 @@ describe('rrc-db-handlers with real DB', () => {
     expect(list(event, HUB, 'lobby')).toHaveLength(1);
   });
 
+  it('keeps the first receipt and lists the most recently stored lines, whatever their sender clock', () => {
+    const insert = handlers.get('db:insertRrcMessage')!;
+    const list = handlers.get('db:listRrcMessages')!;
+    const sentAt = [1_700_000_000_000, 1_700_000_060_000, 1_699_992_800_000];
+    sentAt.forEach((timestamp, index) => {
+      insert(event, {
+        message_id: `line-${index + 1}`,
+        hub_hash: HUB,
+        room: 'lobby',
+        kind: 'msg',
+        body: `line ${index + 1}`,
+        timestamp,
+        received_at: 1_700_000_000_000 + index * 60_000,
+      });
+    });
+    insert(event, {
+      message_id: 'line-3',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: 'line 3',
+      timestamp: sentAt[2],
+      received_at: 1_700_000_900_000,
+    });
+    const rows = list(event, HUB, 'lobby', 2) as { body: string; received_at: number }[];
+    expect(rows.map((row) => [row.body, row.received_at])).toEqual([
+      ['line 2', 1_700_000_060_000],
+      ['line 3', 1_700_000_120_000],
+    ]);
+  });
+
+  it('stores no receipt for one that is not a non-negative integer', () => {
+    const insert = handlers.get('db:insertRrcMessage')!;
+    const list = handlers.get('db:listRrcMessages')!;
+    insert(event, {
+      message_id: 'bad-receipt',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: 'bad',
+      timestamp: Date.now(),
+      received_at: 1.5,
+    });
+    const rows = list(event, HUB, 'lobby') as { body: string; received_at: number | null }[];
+    expect(rows.map((row) => [row.body, row.received_at])).toEqual([['bad', null]]);
+  });
+
   it('round-trips reaction target and op, lowercasing the target', () => {
     const insert = handlers.get('db:insertRrcMessage')!;
     const list = handlers.get('db:listRrcMessages')!;

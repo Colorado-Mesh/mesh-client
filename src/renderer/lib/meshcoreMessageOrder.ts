@@ -17,12 +17,17 @@ export function nextMeshcoreMessageLocalOrder(): number {
   return lastLocalOrder;
 }
 
-/** Reorder only DM slots within a wire second; leave channel/room rows and other seconds alone. */
+/**
+ * Reorder only DM slots within a wire second; leave channel/room rows and other seconds alone.
+ * Rows with a `receivedAt` are already in receipt order (`chatReceiveOrder.ts`), so this only
+ * reorders history saved before receipt times were kept.
+ */
 export function orderMeshcoreDmsWithinSecond(sorted: ChatMessage[]): ChatMessage[] {
   const buckets = new Map<number, { indices: number[]; messages: ChatMessage[] }>();
   sorted.forEach((message, index) => {
     if (
       message.localOrder == null ||
+      message.receivedAt != null ||
       meshcoreMessageChannelIndex(message.channel, message.to, message.roomServerId) !==
         MESHCORE_DM_MESSAGE_CHANNEL
     ) {

@@ -13,6 +13,7 @@ import {
   loadPersistedLastReadInitial,
   loadPersistedRoomsLastRead,
 } from './chatPanelProtocolStorage';
+import { chatReadOrderMs, isChatReadOrderPoisoned } from './chatReceiveOrder';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
 import { type CoiMemorySnapshot, getCoiMemorySnapshot } from './coiMemorySampler';
 import {
@@ -39,7 +40,6 @@ import {
 import { meshcoreRoomServerIdsFromNodes } from './meshcoreDbCacheHydration';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { totalRoomsUnreadCount } from './meshcoreRoomsUnread';
-import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
 import { getProtocolRegistration } from './protocols/protocolRegistry';
@@ -285,11 +285,11 @@ function buildChannelLastReadTriage(
       if (ownNodeIds.has(msg.sender_id)) continue;
       if (msg.to) continue;
       if (msg.isHistory) continue;
-      if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) {
+      if (isChatReadOrderPoisoned(msg, nowMs)) {
         hasFuturePoisonInbound = true;
         continue;
       }
-      const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
+      const ts = chatReadOrderMs(msg, nowMs);
       if (newestInboundEffectiveTs == null || ts > newestInboundEffectiveTs) {
         newestInboundEffectiveTs = ts;
       }

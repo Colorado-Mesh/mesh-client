@@ -9,6 +9,7 @@ import {
   isReticulumHashPrefixAlias,
   persistReticulumContactFromPayload,
   persistReticulumHistoryFromPayload,
+  persistReticulumOutboundRecord,
   reticulumContactDisplayNameFromPayload,
 } from './reticulumIngest';
 
@@ -227,6 +228,39 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
     expect(stampHistoryPeer).toHaveBeenCalled();
   });
 
+  // Every sidecar payload carries `timestamp`; one without it must still give the stored row and
+  // the saved row one time, so both get one hash and the saved row keeps the store's receipt.
+  it('gives a payload without a timestamp one time for the stored and the saved row', () => {
+    let clock = 1_700_000_000_000;
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 7));
+    upsertMessage.mockImplementation((identityId: string, record: MessageRecord) => {
+      messagesState[identityId] = {
+        ...messagesState[identityId],
+        [record.id]: { ...record, receivedAt: 4_242 },
+      };
+    });
+    try {
+      const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
+        sender_hash: 'allowedhash1234567890allowedhash12',
+        sender_name: 'Alice',
+        text: 'no stamp',
+        direction: 'inbound',
+      });
+      expect(ingested).toBe(true);
+      const stored = upsertMessage.mock.calls[0]?.[1] as MessageRecord;
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message_hash: stored.id,
+          timestamp: stored.timestamp,
+          received_at: 4_242,
+        }),
+      );
+    } finally {
+      now.mockRestore();
+      upsertMessage.mockReset();
+    }
+  });
+
   it('passes replacesMessageHash through to saveReticulumMessage as replaces_message_hash', async () => {
     const selfHash = 'deadbeef'.repeat(4);
     const peerHash = 'cafebabe'.repeat(4);
@@ -252,6 +286,54 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
     const saveArg = saveReticulumMessage.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(saveArg.message_hash).toBe(messageHash);
     expect(saveArg.replaces_message_hash).toBe(pendingId);
+  });
+
+  // The senders build the pending row, hand it to addMessage (which stamps the receipt in the
+  // store) and save the row they built, which has no receipt; the save must take the store's.
+  it('saves a pending send with the receipt the store gave it', async () => {
+    const pending: MessageRecord = {
+      id: 'reticulum-pending-77',
+      from: 1,
+      to: 2,
+      payload: 'pending send',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'sending',
+    };
+    messagesState['id-1'] = { [pending.id]: { ...pending, receivedAt: 4_242 } };
+    persistReticulumOutboundRecord(
+      'id-1',
+      pending,
+      'aa'.repeat(16),
+      'Me',
+      'bb'.repeat(16),
+      'sending',
+    );
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ message_hash: pending.id, received_at: 4_242 }),
+      );
+    });
+  });
+
+  it('keeps the receipt a row already carries over the store copy', async () => {
+    const row: MessageRecord = {
+      id: 'reticulum-pending-78',
+      from: 1,
+      to: 2,
+      payload: 'own receipt',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      receivedAt: 5_555,
+    };
+    messagesState['id-1'] = { [row.id]: { ...row, receivedAt: 4_242 } };
+    persistReticulumOutboundRecord('id-1', row, 'aa'.repeat(16), 'Me', 'bb'.repeat(16), 'acked');
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ message_hash: row.id, received_at: 5_555 }),
+      );
+    });
   });
 
   it('omits replaces_message_hash when replacesMessageHash is absent', async () => {

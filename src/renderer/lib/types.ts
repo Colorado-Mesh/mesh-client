@@ -440,6 +440,12 @@ export interface ChatMessage {
   timestamp: number;
   /** First local observation order, independent of packet/ACK IDs. */
   localOrder?: number;
+  /**
+   * When this app first received (or sent) the message, in ms; chat rows are ordered by it.
+   * `timestamp` stays the sender's time shown on the bubble. Absent on rows saved before receipt
+   * times were kept (see `chatReceiveOrder.ts`).
+   */
+  receivedAt?: number;
   // Delivery status tracking
   packetId?: number;
   status?: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked'; // device (RF) transport; queued/blocked for outbox

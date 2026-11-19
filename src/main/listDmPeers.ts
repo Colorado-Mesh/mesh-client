@@ -13,8 +13,9 @@ export function clampDmPeerLimit(limit: unknown): number {
 }
 
 /**
- * Distinct Meshtastic DM peers for `ownNodeId` (sender or recipient of a directed message).
- * Broadcast `to_node` is excluded.
+ * Distinct Meshtastic DM peers for `ownNodeId` (sender or recipient of a directed message),
+ * newest arrival first. `last_message_at` is the latest arrival time, or the stamp for rows saved
+ * before arrival times were kept. Broadcast `to_node` is excluded.
  */
 export function listMeshtasticDmPeersFromDb(
   db: NodeSqliteDB,
@@ -26,14 +27,14 @@ export function listMeshtasticDmPeersFromDb(
   const broadcast = MESHTASTIC_BROADCAST_NODE_NUM >>> 0;
   const rows = db
     .prepare(
-      `SELECT peer_id AS node_id, MAX(timestamp) AS last_message_at
+      `SELECT peer_id AS node_id, MAX(at) AS last_message_at
        FROM (
          SELECT
            CASE
              WHEN sender_id = ? THEN to_node
              ELSE sender_id
            END AS peer_id,
-           timestamp
+           COALESCE(received_at, timestamp) AS at
          FROM messages
          WHERE to_node IS NOT NULL
            AND to_node != ?
@@ -57,8 +58,8 @@ export function listMeshtasticDmPeersFromDb(
 }
 
 /**
- * Distinct MeshCore DM peers (`channel_idx = -1`) for `ownNodeId`.
- * Room-server posts (`channel_idx = -2`) are not included.
+ * Distinct MeshCore DM peers (`channel_idx = -1`) for `ownNodeId`, newest arrival first (as for
+ * Meshtastic above). Room-server posts (`channel_idx = -2`) are not included.
  */
 export function listMeshcoreDmPeersFromDb(
   db: NodeSqliteDB,
@@ -69,7 +70,7 @@ export function listMeshcoreDmPeersFromDb(
   const safeLimit = clampDmPeerLimit(limit);
   const rows = db
     .prepare(
-      `SELECT peer_id AS node_id, MAX(timestamp) AS last_message_at
+      `SELECT peer_id AS node_id, MAX(at) AS last_message_at
        FROM (
          SELECT
            CASE
@@ -78,7 +79,7 @@ export function listMeshcoreDmPeersFromDb(
              WHEN to_node IS NULL AND sender_id IS NOT NULL AND sender_id != ? THEN sender_id
              ELSE NULL
            END AS peer_id,
-           timestamp
+           COALESCE(received_at, timestamp) AS at
          FROM meshcore_messages
          WHERE channel_idx = -1
            AND (sender_id = ? OR to_node = ? OR (to_node IS NULL AND sender_id IS NOT NULL))

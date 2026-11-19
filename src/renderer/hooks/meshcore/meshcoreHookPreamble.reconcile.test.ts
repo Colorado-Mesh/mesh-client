@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from '../../lib/chatReceiveOrder';
 import { MESHCORE_UNKNOWN_SENDER_STUB_ID } from '../../lib/meshcoreUtils';
 import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../../lib/timeConstants';
 import type { ChatMessage } from '../../lib/types';
@@ -174,6 +175,27 @@ describe('meshcoreReconcileRoomSenderIds', () => {
 });
 
 describe('mapMeshcoreDbRowsToChatMessages', () => {
+  it('resumes the receipt clock after a saved receipt that runs ahead of this clock', () => {
+    try {
+      const savedAhead = Date.now() + 60 * 60_000;
+      const mapped = mapMeshcoreDbRowsToChatMessages([
+        row({ id: 300, sender_id: 0x1234, sender_name: 'Ann', payload: 'Ann: hi' }),
+        row({
+          id: 301,
+          sender_id: 0x1234,
+          sender_name: 'Ann',
+          payload: 'Ann: saved before a set-back',
+          timestamp: savedAhead,
+          received_at: savedAhead,
+        }),
+      ]);
+      expect(mapped.map((m) => m.receivedAt)).toContain(savedAhead);
+      expect(nextChatReceivedAt()).toBe(savedAhead + 1);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
+  });
+
   it('does not reconcile shared long phrases like "good morning!" across different speakers', () => {
     const mapped = mapMeshcoreDbRowsToChatMessages([
       row({ id: 100, sender_id: MESHCORE_UNKNOWN_SENDER_STUB_ID, payload: 'good morning!' }),

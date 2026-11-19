@@ -6,6 +6,7 @@ import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { withTimeout } from '../../../shared/withTimeout';
 import { resolveChannelKeyForPersist } from '../../lib/channelIdentity';
+import { observeSavedChatReceivedAt } from '../../lib/chatReceiveOrder';
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import { hasStoredStaticGps, overlayStoredStaticGpsOnSelfNode } from '../../lib/gpsSource';
 import type {
@@ -165,6 +166,7 @@ export function messageToDbRow(
     payload: msg.payload,
     channel_idx,
     local_order: msg.localOrder ?? null,
+    received_at: msg.receivedAt ?? null,
     timestamp: effectiveMessageTimestampMs(msg.timestamp),
     status: msg.status ?? 'acked',
     packet_id: msg.packetId ?? null,
@@ -880,6 +882,8 @@ export function buildMeshcoreNodeMapFromDb(
 export interface MeshcoreMessageDbRow {
   id: number;
   local_order?: number | null;
+  /** First local receipt in ms; null on rows saved before it was kept (`chatReceiveOrder.ts`). */
+  received_at?: number | null;
   sender_id: number | null;
   sender_name: string | null;
   payload: string;
@@ -1151,6 +1155,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
     } = meshcoreDbMessageDisplay(r);
     const localOrder = r.local_order ?? r.id;
     observeMeshcoreMessageLocalOrder(localOrder);
+    observeSavedChatReceivedAt(r.received_at);
     mapped.push({
       id: r.id,
       sender_id: senderId,
@@ -1158,6 +1163,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       payload: displayPayload,
       channel: meshcoreMessageChannelIndex(r.channel_idx, r.to_node, r.room_server_id),
       localOrder,
+      ...(r.received_at != null ? { receivedAt: r.received_at } : {}),
       timestamp: effectiveMessageTimestampMs(r.timestamp),
       status: (r.status as ChatMessage['status']) ?? 'acked',
       packetId: r.packet_id ?? undefined,

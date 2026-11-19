@@ -1,4 +1,5 @@
 import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
+import { compareChatReceiveOrder } from './chatReceiveOrder';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import { orderMeshcoreDmsWithinSecond } from './meshcoreMessageOrder';
 import {
@@ -321,18 +322,27 @@ export interface MeshcoreDisplayRepairOpts {
   selfNodeId?: number | null;
 }
 
-/** Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest). */
+/**
+ * Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest).
+ * Rows go in the order this app received them, not by the sender's clock (`chatReceiveOrder.ts`).
+ * The repair looks each reply's parent up among the rows before it, so it runs in the senders'
+ * order: a parent that reached this app after its reply still comes first there.
+ */
 export function meshcoreChatMessagesForDisplay(
   messages: readonly ChatMessage[],
   opts: MeshcoreDisplayRepairOpts = {},
 ): ChatMessage[] {
-  const sorted = [...messages].sort(
-    (a, b) =>
-      a.timestamp - b.timestamp ||
-      (a.packetId ?? 0) - (b.packetId ?? 0) ||
-      a.sender_id - b.sender_id,
+  const bySenderTime = [...messages].sort(
+    (a, b) => a.timestamp - b.timestamp || compareMeshcoreDisplayTie(a, b),
   );
-  return repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(sorted), opts);
+  const repaired = repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(bySenderTime), opts);
+  return orderMeshcoreDmsWithinSecond(
+    repaired.sort((a, b) => compareChatReceiveOrder(a, b, compareMeshcoreDisplayTie)),
+  );
+}
+
+function compareMeshcoreDisplayTie(a: ChatMessage, b: ChatMessage): number {
+  return (a.packetId ?? 0) - (b.packetId ?? 0) || a.sender_id - b.sender_id;
 }
 
 /**
@@ -706,6 +716,9 @@ function mergeRepairedMeshcoreMessage(existing: ChatMessage, rebuilt: ChatMessag
     isHistory: existing.isHistory ?? rebuilt.isHistory,
     meshcoreDedupeKey: existing.meshcoreDedupeKey ?? rebuilt.meshcoreDedupeKey,
     status: existing.status ?? rebuilt.status,
+    // The rebuild keeps when the row arrived here (`chatReceiveOrder.ts`); a row saved before
+    // receipt times were kept stays without one.
+    ...(existing.receivedAt != null ? { receivedAt: existing.receivedAt } : {}),
   };
 }
 

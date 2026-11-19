@@ -2,6 +2,7 @@ import type { VirtualItem, Virtualizer } from '@tanstack/react-virtual';
 import type { RefObject } from 'react';
 
 import { parseChatMentionSegments } from './chatMentionSegments';
+import { chatReceivedAtMs } from './chatReceiveOrder';
 import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
 import {
   normalizeReticulumMessageHash,
@@ -233,13 +234,13 @@ export function findMessageIndexByReticulumHash(
   return -1;
 }
 
-/** First message index matching a calendar day key. */
+/** First message index whose arrival falls on a calendar day key (rows are in arrival order). */
 export function findFirstMessageIndexByDayKey(
   messages: readonly ChatMessage[],
   dayKey: string,
 ): number {
   for (let i = 0; i < messages.length; i++) {
-    if (getChatDayKey(messages[i].timestamp) === dayKey) return i;
+    if (getChatDayKey(chatReceivedAtMs(messages[i])) === dayKey) return i;
   }
   return -1;
 }

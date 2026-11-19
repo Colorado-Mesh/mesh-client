@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { chatMessageFromSearchHit } from './globalMessageSearch';
 import type { ChatMessage } from './types';
 import {
   buildUnifiedInboxItems,
@@ -169,6 +170,19 @@ describe('inboxItemToJumpTarget', () => {
     );
     expect(outboundRet.reticulumPeerHash).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
     expect(outboundRet.reticulumSenderHash).toBe('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+  });
+
+  it('carries the arrival time, so a row loaded into the open thread keeps its place', () => {
+    const items = buildUnifiedInboxItems({
+      enabledProtocols: ['meshtastic', 'meshcore', 'reticulum'],
+      messagesByProtocol: {
+        meshtastic: [msg({ id: 1, timestamp: 3, channel: 2, receivedAt: 30 })],
+        meshcore: [msg({ id: 2, timestamp: 2, channel: 1, receivedAt: 20 })],
+        reticulum: [msg({ id: 3, timestamp: 1, reticulum_sender_hash: 'ab', receivedAt: 10 })],
+      },
+    });
+    expect(items.map((item) => inboxItemToJumpTarget(item).receivedAt)).toEqual([30, 20, 10]);
+    expect(chatMessageFromSearchHit(inboxItemToJumpTarget(items[0])).receivedAt).toBe(30);
   });
 });
 

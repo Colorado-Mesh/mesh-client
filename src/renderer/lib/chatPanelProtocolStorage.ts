@@ -10,6 +10,7 @@ import {
   sanitizeNumericKeyLastRead,
   sanitizeViewKeyLastRead,
 } from './chatLastReadSanitize';
+import { observeSavedChatReceivedAt } from './chatReceiveOrder';
 import { projectConversationMutes } from './conversationMuteStorage';
 import { createDurableRendererSetting } from './durableRendererSetting';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
@@ -838,17 +839,99 @@ export function ensureReticulumChatLastReadSanitized(
   return sanitized;
 }
 
+/** Set once the marks below were converted; a browser preference, so SQLite keeps it too. */
+const READ_MARKS_BY_ARRIVAL_KEY = 'mesh-client:readMarksByArrival';
+
+function lowerMarksAhead<K extends string | number>(
+  marks: Readonly<Record<K, number>>,
+  nowMs: number,
+): Record<K, number> | null {
+  let lowered: Record<K, number> | null = null;
+  for (const [key, mark] of Object.entries(marks) as [K, number][]) {
+    if (typeof mark !== 'number' || !(mark > nowMs)) continue;
+    lowered ??= { ...marks };
+    lowered[key] = nowMs;
+  }
+  return lowered;
+}
+
+/**
+ * Read marks saved before reads went by arrival were the newest read stamp, up to 300 s ahead of
+ * the clock (`MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC`). Arrivals after an upgrade inside that window
+ * would count as read, so at the first start of this version every Chat and Rooms mark ahead of
+ * the start drops to the start. A line read just before the upgrade whose stamp ran ahead can show
+ * as unread once; that is preferred to hiding a new line. Runs once: later marks come from
+ * receipts, which can sit ahead of this clock after a set-back. Call after durable hydration and
+ * before panels read marks; returns false when it did nothing (already done, or not hydrated).
+ */
+export function convertSavedReadMarksOnce(nowMs = Date.now()): boolean {
+  try {
+    if (localStorage.getItem(READ_MARKS_BY_ARRIVAL_KEY) === '1') return false;
+  } catch {
+    // catch-no-log-ok storage unavailable: try again at the next start
+    return false;
+  }
+  // Never write over a namespace that was not read from the database: an unreadable one keeps its
+  // saved value (its marks cannot be read anyway). With none read, the next start tries again.
+  const protocols = (['meshtastic', 'meshcore', 'reticulum'] as const).filter((protocol) =>
+    chatLastReadPersistence[protocol].isHydrated(),
+  );
+  const roomsHydrated = roomsLastReadPersistence.isHydrated();
+  if (protocols.length === 0 && !roomsHydrated) return false;
+  for (const protocol of protocols) {
+    const lowered = lowerMarksAhead(loadPersistedLastReadInitial(protocol), nowMs);
+    if (lowered) {
+      savePersistedLastRead(protocol, lowered);
+      notifyPersistedLastReadChanged(protocol);
+    }
+  }
+  const rooms = roomsHydrated ? lowerMarksAhead(loadPersistedRoomsLastRead(), nowMs) : null;
+  if (rooms) {
+    savePersistedRoomsLastRead(rooms);
+    notifyPersistedRoomsLastReadChanged();
+  }
+  try {
+    localStorage.setItem(READ_MARKS_BY_ARRIVAL_KEY, '1');
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] set read-mark conversion flag failed ' + errLikeToLogString(e),
+    );
+  }
+  return true;
+}
+
+/**
+ * Chat and Rooms read marks are receipt times, so at every start the receipt clock resumes above
+ * the newest saved one, as it does above the newest saved receipt: a line that arrives while this
+ * clock is set back then lands above the mark and counts as unread, even when the rows that set
+ * the mark are not loaded (a converted mark, or a conversation with no rows in memory). A mark
+ * more than a day ahead is ignored, like such a receipt (`observeSavedChatReceivedAt`). RRC marks
+ * are stamped times and stay out. Call after durable hydration, before panels read marks.
+ */
+export function observeSavedReadMarks(nowMs = Date.now()): void {
+  for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+    if (!chatLastReadPersistence[protocol].isHydrated()) continue;
+    for (const [key, mark] of Object.entries(loadPersistedLastReadInitial(protocol))) {
+      if (key.startsWith('ch:') || key.startsWith('dm:')) observeSavedChatReceivedAt(mark, nowMs);
+    }
+  }
+  if (!roomsLastReadPersistence.isHydrated()) return;
+  for (const mark of Object.values(loadPersistedRoomsLastRead())) {
+    observeSavedChatReceivedAt(mark, nowMs);
+  }
+}
+
 /** Clamp MeshCore room last-read watermarks that exceed post times or client clock. */
 export function sanitizeMeshcoreRoomsLastRead(
   persisted: Readonly<Record<number, number>>,
-  messages: readonly { roomServerId?: number; timestamp: number }[],
+  messages: readonly { roomServerId?: number; timestamp: number; receivedAt?: number }[],
 ): Record<number, number> {
   const maxById = maxRoomPostTimestampByServerId(messages);
   return sanitizeNumericKeyLastRead(persisted, maxById);
 }
 
 export function getSanitizedMeshcoreRoomsLastRead(
-  messages: readonly { roomServerId?: number; timestamp: number }[],
+  messages: readonly { roomServerId?: number; timestamp: number; receivedAt?: number }[],
 ): Record<number, number> {
   return sanitizeMeshcoreRoomsLastRead(loadPersistedRoomsLastRead(), messages);
 }

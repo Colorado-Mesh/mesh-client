@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
@@ -1204,6 +1205,83 @@ describe('ChatPanel compact mode', () => {
     expect(secondBubble).not.toBeNull();
     expect(firstBubble).toHaveClass('border-b-0');
     expect(secondBubble).toHaveClass('border-t-0');
+  });
+
+  describe('continuation time', () => {
+    const base = new Date('2026-05-09T12:00:00').getTime();
+    const MINUTE = 60_000;
+
+    function renderPair(
+      second: { timestamp: number; receivedAt: number },
+      first: { timestamp: number; receivedAt: number } = { timestamp: base, receivedAt: base },
+    ) {
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'JCR2',
+                payload: 'first line',
+                channel: 0,
+                timestamp: first.timestamp,
+                receivedAt: first.receivedAt,
+                status: 'acked',
+              },
+              {
+                sender_id: 2,
+                sender_name: 'JCR2',
+                payload: 'second line',
+                channel: 0,
+                timestamp: second.timestamp,
+                receivedAt: second.receivedAt,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      // One sender header: the second line renders as a continuation.
+      expect(screen.getAllByRole('button', { name: 'JCR2' })).toHaveLength(1);
+      const row = screen.getByText('second line').closest('[data-chat-message-key]');
+      expect(row).not.toBeNull();
+      return row!.querySelector(`[title="${formatIsoDateTime(second.timestamp)}"]`);
+    }
+
+    it('shows the time when the line arrived five or more minutes after the one above', () => {
+      const label = renderPair({ timestamp: base + MINUTE, receivedAt: base + 6 * MINUTE });
+      expect(label).not.toBeNull();
+    });
+
+    it('shows the time when the stamp jumps five or more minutes, even if it arrived soon after', () => {
+      const label = renderPair({ timestamp: base + 10 * MINUTE, receivedAt: base + MINUTE });
+      expect(label).not.toBeNull();
+    });
+
+    it('shows the sender date on a continuation stamped two days before it arrived', () => {
+      const stamped = base - 2 * 86_400_000;
+      const label = renderPair({ timestamp: stamped, receivedAt: base + MINUTE });
+      expect(label).not.toBeNull();
+      expect(label?.textContent?.startsWith(`${formatIsoDate(stamped)} `)).toBe(true);
+    });
+
+    // Both lines arrived just after midnight, a minute apart, stamped just before it: the gaps are
+    // small, but the day separator above says today, so the line shows yesterday's date.
+    it('shows the sender date on a close continuation stamped the day before it arrived', () => {
+      const midnight = new Date('2026-05-10T00:00:00').getTime();
+      const label = renderPair(
+        { timestamp: midnight - MINUTE, receivedAt: midnight + MINUTE },
+        { timestamp: midnight - 2 * MINUTE, receivedAt: midnight + 30_000 },
+      );
+      expect(label).not.toBeNull();
+      expect(label?.textContent?.startsWith(`${formatIsoDate(midnight - MINUTE)} `)).toBe(true);
+    });
+
+    it('hides the time when both the stamps and the arrivals are close', () => {
+      const label = renderPair({ timestamp: base + MINUTE, receivedAt: base + MINUTE });
+      expect(label).toBeNull();
+    });
   });
 });
 
@@ -2465,8 +2543,9 @@ describe('ChatPanel unread watermarks', () => {
       await waitFor(() => {
         expect(screen.getByRole('status')).toHaveTextContent('No messages in this range');
       });
+      // Chat read marks are arrival times, so their history is asked for by arrival.
       expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
-        expect.objectContaining({ sinceMs: ts }),
+        expect.objectContaining({ sinceMs: ts, byArrival: true }),
       );
       expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
     },
@@ -3057,6 +3136,190 @@ describe('ChatPanel unread watermarks', () => {
       ) as Record<string, number>;
       expect(stored['ch:0']).toBe(ts);
     });
+  });
+
+  describe('read marks by arrival', () => {
+    const HOUR = 3_600_000;
+    const storedMarks = () =>
+      JSON.parse(localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}') as Record<
+        string,
+        number
+      >;
+
+    it('puts the unread divider above a slow-clock line that arrived after the read mark', async () => {
+      mockIsAtEnd = false;
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Read line',
+                channel: 0,
+                timestamp: ts - 6000,
+                receivedAt: ts - 6000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts - 1000,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      const divider = await screen.findByText('New messages');
+      expect(
+        screen.getByText('Read line').compareDocumentPosition(divider) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        divider.compareDocumentPosition(screen.getByText('Slow clock line')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('stores the newest arrival as the read mark when the view is read', async () => {
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 3000 }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Read line',
+                channel: 0,
+                timestamp: ts - 4000,
+                receivedAt: ts - 4000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      await waitFor(() => {
+        expect(storedMarks()['ch:0']).toBe(ts);
+      });
+    });
+
+    it('Mark unread leaves the newest arrival unread', async () => {
+      mockIsAtEnd = false;
+      const ts = Date.now();
+      localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'On time line',
+                channel: 0,
+                timestamp: ts - 6000,
+                receivedAt: ts - 6000,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: 'Slow clock line',
+                channel: 0,
+                timestamp: ts - 2 * HOUR,
+                receivedAt: ts - 1000,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Mark unread' }));
+      await waitFor(() => {
+        expect(storedMarks()['ch:0']).toBe(ts - 1001);
+      });
+    });
+
+    it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+      'catches up %s lines that arrived after the read mark, whatever their stamps',
+      async (protocol) => {
+        useAiSummaryStore.getState().setStatus({
+          ...(await window.electronAPI.ai.getStatus()),
+          enabled: true,
+          engine: 'local',
+          model: 'test',
+          baseUrl: 'http://127.0.0.1:1234',
+        });
+        vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue([]);
+        vi.mocked(window.electronAPI.ai.summarize).mockClear();
+        mockIsAtEnd = false;
+        const ts = Date.now();
+        localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ 'ch:0': ts - 5000 }));
+        const { unmount } = render(
+          <ToastProvider>
+            <ChatPanel
+              {...baseProps}
+              protocol={protocol}
+              messages={[
+                {
+                  sender_id: 2,
+                  sender_name: 'Alice',
+                  payload: 'Read fast clock line',
+                  channel: 0,
+                  timestamp: ts + 2 * 60_000,
+                  receivedAt: ts - 6000,
+                  status: 'acked',
+                },
+                {
+                  sender_id: 3,
+                  sender_name: 'Bob',
+                  payload: 'Unread slow clock line',
+                  channel: 0,
+                  timestamp: ts - 2 * HOUR,
+                  receivedAt: ts - 1000,
+                  status: 'acked',
+                },
+              ]}
+            />
+          </ToastProvider>,
+        );
+        try {
+          fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+          await waitFor(() => {
+            expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+          });
+          const request = vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0];
+          expect(request.messages.map((message) => message.body)).toEqual([
+            'Unread slow clock line',
+          ]);
+        } finally {
+          unmount();
+        }
+      },
+    );
   });
 
   it('marks MeshCore DM read when opened with all messages visible', async () => {
@@ -8123,5 +8386,95 @@ describe('Signal report quick replies', () => {
       clearReticulumHashRegistry();
       useReticulumIdentityActivityStore.setState({ byDestination: new Map() });
     }
+  });
+});
+
+describe('ChatPanel receive order', () => {
+  const defaultProps = {
+    messages: [],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 0,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+  };
+
+  it('dates rows by arrival and shows the sender date on a message that arrived on another day', async () => {
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    const sentTwoDaysEarlier = arrivedMs - 2 * 86_400_000;
+    const senderDate = formatIsoDate(sentTwoDaysEarlier);
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'first in',
+              channel: 0,
+              timestamp: arrivedMs,
+              receivedAt: arrivedMs,
+              status: 'acked',
+            },
+            {
+              sender_id: 2,
+              sender_name: 'B',
+              payload: 'late clock',
+              channel: 0,
+              timestamp: sentTwoDaysEarlier,
+              receivedAt: arrivedMs + 60_000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('late clock');
+    // One day separator for the day both arrived, none for the sender's day.
+    expect(screen.getAllByText('Today')).toHaveLength(1);
+    expect(screen.queryByText(senderDate)).not.toBeInTheDocument();
+    // The late bubble still shows the sender's time, with the sender's date in front of it.
+    expect(screen.getByText((content) => content.startsWith(`${senderDate} `))).toBeInTheDocument();
+  });
+
+  it('lets a bubble header wrap so a dated time cannot squeeze out the sender name', async () => {
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    const sentTwoDaysEarlier = arrivedMs - 2 * 86_400_000;
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Pat',
+              payload: 'late clock',
+              channel: 0,
+              timestamp: sentTwoDaysEarlier,
+              receivedAt: arrivedMs,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('late clock');
+
+    const timeLabel = screen.getByText((content) =>
+      content.startsWith(`${formatIsoDate(sentTwoDaysEarlier)} `),
+    );
+    // Narrow bubbles (tablet, phone) have no room for the dated time beside the name on one line.
+    expect(timeLabel.parentElement).toHaveClass('flex-wrap');
+    // On a phone the dated time is wider than the bubble by itself, so it may break after the date.
+    expect(timeLabel).not.toHaveClass('whitespace-nowrap');
   });
 });

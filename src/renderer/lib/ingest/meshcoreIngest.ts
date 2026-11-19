@@ -343,7 +343,8 @@ function handleTextMessage(
     }
     const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
       identityId,
-      merged,
+      // The router copy was this post's first sighting; the rebuilt row keeps its receipt.
+      { ...merged, receivedAt: record.receivedAt },
       event.payload.id,
     );
     const isEcho = myNodeNum > 0 && authorId === myNodeNum;
@@ -412,6 +413,7 @@ function handleTextMessage(
     rxSnr: record.rxSnr,
     rxRssi: record.rxRssi,
     localOrder: record.localOrder,
+    receivedAt: record.receivedAt,
     status: record.status ?? parsedRaw.status,
     receivedVia: record.receivedVia ?? parsedRaw.receivedVia,
   };

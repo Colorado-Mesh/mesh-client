@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { mergeSummaryMessages, selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
+import {
+  type AiSummaryLiveMessage,
+  mergeSummaryMessages,
+  selectSummaryMessages,
+} from '@/renderer/lib/aiSummaryScope';
+import { chatReadClockMs } from '@/renderer/lib/chatReceiveOrder';
 import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
@@ -29,8 +34,15 @@ export interface ConversationSummaryInput {
   label: string;
   protocol: AiSummaryRequest['protocol'];
   surface: AiSummaryRequest['surface'];
-  messages: AiSummaryMessage[];
+  messages: AiSummaryLiveMessage[];
+  /** Read mark: the time of the last message read, on the clock `watermarkClock` names. */
   watermark: number;
+  /**
+   * Chat and Rooms marks are arrival times, so "since last read" reads history by arrival and
+   * compares `order`. RRC marks are stamped times (`rrcReadWatermark.ts`), so its history is read
+   * and compared by stamp.
+   */
+  watermarkClock: 'arrival' | 'stamp';
   history: Omit<AiHistoryQuery, 'sinceMs' | 'untilMs'> | null;
   includeHistoryMessage?: (message: AiHistoryMessage) => boolean;
   available?: boolean;
@@ -73,7 +85,7 @@ async function fetchHistoryPages(
     if (!hasMore || newestFirst.length >= maxCollected) break;
     const oldest = usable[0];
     if (oldest?.id == null) break;
-    beforeAt = oldest.at;
+    beforeAt = base.byArrival ? (oldest.order ?? oldest.at) : oldest.at;
     beforeId = oldest.id;
   }
   if (newestFirst.length > maxCollected) {
@@ -146,10 +158,14 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       let ceilingTruncated = false;
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
+        // "Since last read" reads history on the read mark's clock: by arrival for an arrival
+        // mark, up to the read clock (after a set-back of this clock new receipts run ahead of
+        // it); by stamp up to this clock, as the hour ranges do, for a stamped one.
+        const byArrival = scope.kind === 'unread' && input.watermarkClock === 'arrival';
         const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
-          input.history,
+          byArrival ? { ...input.history, byArrival: true } : input.history,
           Math.max(0, sinceMs),
-          now,
+          byArrival ? chatReadClockMs(now) : now,
           maxCollected,
         );
         truncated = historyTruncated;
@@ -166,15 +182,27 @@ export function useConversationSummary(input: ConversationSummaryInput) {
                   sender: display.sender_name,
                   body: display.payload,
                   senderId: display.sender_id,
+                  ...(message.order != null ? { order: message.order } : {}),
                 };
               })
             : history;
         const visible = input.includeHistoryMessage
           ? normalized.filter(input.includeHistoryMessage)
           : normalized;
+        // History returns rows from the mark on, the last line read included; "since last read"
+        // drops read lines on both sides first, so a read saved line is never matched to an unread
+        // live line with the same stamp, sender and text (and the saved copy let through too).
+        const inScope = <T extends AiSummaryLiveMessage>(rows: T[]): T[] =>
+          scope.kind === 'unread'
+            ? selectSummaryMessages({ messages: rows, scope, watermark: input.watermark, now })
+            : rows;
         messages = mergeSummaryMessages(
-          visible.map(({ at, sender, body }) => ({ at, sender, body })),
-          messages,
+          inScope(
+            visible.map(({ at, sender, body, order }) =>
+              order != null ? { at, sender, body, order } : { at, sender, body },
+            ),
+          ),
+          inScope(messages),
         );
       }
       if (!isCurrent()) return;
@@ -194,7 +222,8 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           if (message.body.length > AI_MAX_TOTAL_CHARS) continue;
           break;
         }
-        bounded.push(message);
+        // The model gets the stamp, sender and text only.
+        bounded.push({ at: message.at, sender: message.sender, body: message.body });
         chars += message.body.length;
       }
       await runSummary(

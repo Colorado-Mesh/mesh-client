@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  latestChatReadMs,
+  nextChatReceivedAt,
+  resetChatReceiptClockForTests,
+} from './chatReceiveOrder';
 import { buildMeshcoreRoomIncomingMessage } from './meshcoreChannelText';
 import { computeRoomUnreadCounts, totalRoomsUnreadCount } from './meshcoreRoomsUnread';
 
@@ -122,5 +127,83 @@ describe('meshcoreRoomsUnread', () => {
     const knownIds = new Set([0x200]);
     expect(totalRoomsUnreadCount([orphan, known], {}, ownNodes, undefined, knownIds)).toBe(1);
     expect(totalRoomsUnreadCount([orphan], {}, ownNodes, undefined, new Set())).toBe(0);
+  });
+
+  describe('by arrival', () => {
+    const now = 1_700_000_000_000;
+    const HOUR = 3_600_000;
+    const readAt = now - 10 * 60_000;
+    const post = (timestamp: number, receivedAt: number) => ({
+      ...buildMeshcoreRoomIncomingMessage({
+        rawText: 'Room post',
+        roomServerId: 0x200,
+        authorId: 0x300,
+        authorName: 'Alice',
+        timestamp,
+        receivedVia: 'rf',
+      }),
+      receivedAt,
+    });
+
+    it('counts a post stamped by a slow room clock that arrived after the read mark', () => {
+      const counts = computeRoomUnreadCounts(
+        [post(now - 3 * HOUR, now - 60_000)],
+        { 0x200: readAt },
+        ownNodes,
+        undefined,
+        undefined,
+        now,
+      );
+      expect(counts.get(0x200)).toBe(1);
+    });
+
+    it('does not count a fast-clock post that arrived before the read mark', () => {
+      const counts = computeRoomUnreadCounts(
+        [post(readAt + 3 * 60_000, readAt - 60_000)],
+        { 0x200: readAt },
+        ownNodes,
+        undefined,
+        undefined,
+        now,
+      );
+      expect(counts.size).toBe(0);
+    });
+
+    it('counts a post received after this clock was set back, and clears it once read', () => {
+      try {
+        nextChatReceivedAt(now);
+        const back = now - HOUR;
+        const fresh = post(back, nextChatReceivedAt(back));
+        expect(
+          computeRoomUnreadCounts(
+            [fresh],
+            { 0x200: now },
+            ownNodes,
+            undefined,
+            undefined,
+            back,
+          ).get(0x200),
+        ).toBe(1);
+        const mark = latestChatReadMs([fresh], back);
+        expect(
+          computeRoomUnreadCounts([fresh], { 0x200: mark }, ownNodes, undefined, undefined, back)
+            .size,
+        ).toBe(0);
+      } finally {
+        resetChatReceiptClockForTests();
+      }
+    });
+
+    it('does not count a post whose arrival time is far ahead of this clock', () => {
+      const counts = computeRoomUnreadCounts(
+        [post(now - 60_000, now + HOUR)],
+        { 0x200: readAt },
+        ownNodes,
+        undefined,
+        undefined,
+        now,
+      );
+      expect(counts.size).toBe(0);
+    });
   });
 });

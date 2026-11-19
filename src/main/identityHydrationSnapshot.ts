@@ -16,7 +16,7 @@ const MESHTASTIC_MESSAGE_COLUMNS = `id, sender_id, sender_name, payload, channel
          mqtt_status AS mqttStatus, received_via AS receivedVia,
          reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
          rx_hops AS rxHops, via_store_forward AS viaStoreForward,
-         radio_node_id AS radioNodeId, channel_key AS channelKey`;
+         radio_node_id AS radioNodeId, channel_key AS channelKey, received_at AS receivedAt`;
 
 function mapMeshtasticMessageRow(r: Record<string, unknown>): Record<string, unknown> {
   const { to_node, emoji: emojiRaw, viaStoreForward: viaSfRaw, ...rest } = r;
@@ -31,6 +31,34 @@ function mapMeshtasticMessageRow(r: Record<string, unknown>): Record<string, unk
   };
 }
 
+/**
+ * Newest Meshtastic chat rows, newest first. "Newest" is by receipt (`received_at`), not by a
+ * radio's `timestamp`: a packet stamped by another radio's clock (MQTT gateway, Store & Forward)
+ * must not fall out of the window it arrived in. Rows saved before receipt times were kept, and
+ * rows copied in by a database merge, keep their `timestamp` as the key.
+ */
+export function readMeshtasticMessages(
+  db: NodeSqliteDB,
+  channel?: unknown,
+  limit?: unknown,
+): Record<string, unknown>[] {
+  const safeLimit = clampQueryLimit(limit, { default: 1000, max: 10000 });
+  const order = 'ORDER BY COALESCE(received_at, timestamp) DESC, id DESC LIMIT ?';
+  let rows: Record<string, unknown>[];
+  if (channel != null) {
+    const ch = Number(channel);
+    if (!Number.isFinite(ch) || ch < 0) throw new Error('Invalid non-negative integer');
+    rows = db
+      .prepareOnce(`SELECT ${MESHTASTIC_MESSAGE_COLUMNS} FROM messages WHERE channel = ? ${order}`)
+      .all(ch >>> 0, safeLimit) as Record<string, unknown>[];
+  } else {
+    rows = db
+      .prepareOnce(`SELECT ${MESHTASTIC_MESSAGE_COLUMNS} FROM messages ${order}`)
+      .all(safeLimit) as Record<string, unknown>[];
+  }
+  return rows.map(mapMeshtasticMessageRow);
+}
+
 /** One-shot Meshtastic cold hydrate: nodes + MeshCore contact hops + newest messages. */
 export function readMeshtasticIdentityHydration(
   db: NodeSqliteDB,
@@ -40,15 +68,9 @@ export function readMeshtasticIdentityHydration(
   meshcoreContacts: unknown[];
   messages: unknown[];
 } {
-  const safeLimit = clampQueryLimit(messageLimit, { default: 1000, max: 10000 });
   const nodes = db.prepareOnce('SELECT * FROM nodes ORDER BY last_heard DESC').all();
   const meshcoreContacts = db.prepareOnce('SELECT * FROM meshcore_contacts').all();
-  const rows = db
-    .prepareOnce(
-      `SELECT ${MESHTASTIC_MESSAGE_COLUMNS} FROM messages ORDER BY timestamp DESC LIMIT ?`,
-    )
-    .all(safeLimit) as Record<string, unknown>[];
-  return { nodes, meshcoreContacts, messages: rows.map(mapMeshtasticMessageRow) };
+  return { nodes, meshcoreContacts, messages: readMeshtasticMessages(db, undefined, messageLimit) };
 }
 
 /** One-shot MeshCore cold hydrate: contacts + nodes + hop history + fair message window. */
@@ -94,6 +116,17 @@ export interface IdentityHydrationIpcDeps {
 /** Register batched identity-hydration IPC (called from main after sibling load). */
 export function registerIdentityHydrationIpcHandlers(deps: IdentityHydrationIpcDeps): void {
   const { ipcMain, assertIpcSender, getDbForIpc, finishDbIpcHandler } = deps;
+
+  ipcMain.handle('db:getMessages', (event, channel?: unknown, limit: unknown = 200) => {
+    try {
+      assertIpcSender(event, 'db:getMessages');
+      const db = getDbForIpc('db:getMessages');
+      if (!db) return [];
+      return readMeshtasticMessages(db, channel, limit);
+    } catch (err) {
+      finishDbIpcHandler('db:getMessages', err);
+    }
+  });
 
   ipcMain.handle('db:getMeshtasticIdentityHydration', (event, messageLimit?: number) => {
     try {

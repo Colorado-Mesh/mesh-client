@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { nextChatReceivedAt, resetChatReceiptClockForTests } from './chatReceiveOrder';
 import {
   buildMeshtasticNodeMapFromDbRows,
   dedupeMeshtasticHydrationOrphanSends,
@@ -143,5 +144,24 @@ describe('savedMessageToChatMessage', () => {
     } as never);
     expect(chat.rxHops).toBe(2);
     expect(chat.viaStoreForward).toBe(true);
+  });
+
+  it('resumes the receipt clock after a saved receipt that runs ahead of this clock', () => {
+    try {
+      const savedAhead = Date.now() + 60 * 60_000;
+      const chat = savedMessageToChatMessage({
+        id: 2,
+        sender_id: 42,
+        sender_name: 'Node',
+        payload: 'saved before a set-back',
+        channel: 0,
+        timestamp: savedAhead,
+        receivedAt: savedAhead,
+      } as never);
+      expect(chat.receivedAt).toBe(savedAhead);
+      expect(nextChatReceivedAt()).toBe(savedAhead + 1);
+    } finally {
+      resetChatReceiptClockForTests();
+    }
   });
 });

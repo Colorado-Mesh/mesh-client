@@ -1,5 +1,6 @@
 import type { IpcMain } from 'electron';
 
+import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import type { RrcChatMessageKind } from '../../shared/rrc-types';
@@ -40,6 +41,8 @@ interface ValidatedRrcInsert {
   nickname: string | null;
   reactTo: string | null;
   reactOp: number | null;
+  /** First local receipt in ms (`src/shared/chatReceivedAt.ts`). */
+  receivedAt: number | null;
 }
 
 const REACT_TO_RE = /^[0-9a-f]{16}$/;
@@ -102,6 +105,7 @@ function validateRrcInsertMessage(message: unknown): ValidatedRrcInsert {
     nickname,
     reactTo,
     reactOp,
+    receivedAt: chatReceivedAtForDb(m.received_at),
   };
 }
 
@@ -119,13 +123,14 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
       const safeLimit = clampQueryLimit(limit, { default: 500, max: 10_000 });
       const db = getDbForIpc('db:listRrcMessages');
       if (!db) return [];
+      // Newest by receipt (`received_at`), not by the senders' clocks.
       const rows = db
         .prepareOnce(
           `SELECT message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp,
-                  react_to, react_op
+                  react_to, react_op, received_at
              FROM rrc_messages
              WHERE hub_hash = ? AND room = ?
-             ORDER BY timestamp DESC, id DESC
+             ORDER BY COALESCE(received_at, timestamp) DESC, id DESC
              LIMIT ?`,
         )
         .all(hub, roomKey, safeLimit) as Record<string, unknown>[];
@@ -146,8 +151,8 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
         .prepareOnce(
           `INSERT OR IGNORE INTO rrc_messages
             (message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp,
-             react_to, react_op)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             react_to, react_op, received_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           v.messageId,
@@ -160,6 +165,7 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
           Math.floor(v.timestamp),
           v.reactTo,
           v.reactOp,
+          v.receivedAt,
         );
       return { changes: Number(result.changes) };
     } catch (err) {

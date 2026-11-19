@@ -38,6 +38,7 @@ import {
 } from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { isChannelIdentityKey } from '../shared/channelIdentityKey';
+import { chatReceivedAtForDb } from '../shared/chatReceivedAt';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import {
   CLOSE_TO_TRAY_SETTING_KEY,
@@ -228,6 +229,7 @@ import {
   selectMeshcoreMessagesForHydration,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
+import { persistMeshtasticMessage } from './meshtasticMessageRow';
 import { migrateMeshtasticNodeNumInDb } from './meshtasticNodeRenumber';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
@@ -3988,13 +3990,9 @@ ipcMain.handle('db:saveMessage', (event, message) => {
     validateSaveMessage(message);
     const db = getDbForIpc('db:saveMessage');
     if (!db) return { changes: 0 };
-    const stmt = db.prepareOnce(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops, via_store_forward, radio_node_id, channel_key)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops, @via_store_forward, @radio_node_id, @channel_key)
-    `);
     const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
     const validReceivedVia = ['rf', 'mqtt', 'both'];
-    return stmt.run({
+    return persistMeshtasticMessage(db, {
       sender_id: safeNonNegativeInt(message.sender_id),
       sender_name: message.sender_name,
       payload: message.payload,
@@ -4011,8 +4009,10 @@ ipcMain.handle('db:saveMessage', (event, message) => {
         message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
           ? message.receivedVia
           : null,
-      reply_preview_text: message.replyPreviewText ?? null,
-      reply_preview_sender: message.replyPreviewSender ?? null,
+      reply_preview_text:
+        typeof message.replyPreviewText === 'string' ? message.replyPreviewText : null,
+      reply_preview_sender:
+        typeof message.replyPreviewSender === 'string' ? message.replyPreviewSender : null,
       rx_hops:
         message.rxHops != null &&
         typeof message.rxHops === 'number' &&
@@ -4022,55 +4022,15 @@ ipcMain.handle('db:saveMessage', (event, message) => {
       via_store_forward: message.viaStoreForward ? 1 : 0,
       radio_node_id: radioNodeId > 0 ? radioNodeId : null,
       channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
+      received_at: chatReceivedAtForDb(message.receivedAt),
     });
   } catch (err) {
     finishDbIpcHandler('db:saveMessage', err);
   }
 });
 
-ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
-  if (!validateIpcSender(event)) throw new Error('db:getMessages: unauthorized sender');
-  try {
-    const safeLimit = clampQueryLimit(limit, { default: 1000, max: 10000 });
-    const db = getDbForIpc('db:getMessages');
-    if (!db) return [];
-    const columns = `id, sender_id, sender_name, payload, channel, timestamp,
-         packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
-         mqtt_status AS mqttStatus, received_via AS receivedVia,
-         reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
-         rx_hops AS rxHops, via_store_forward AS viaStoreForward,
-         radio_node_id AS radioNodeId, channel_key AS channelKey`;
-    let rows: Record<string, unknown>[];
-    if (channel != null) {
-      const ch = safeNonNegativeInt(channel);
-      rows = db
-        .prepareOnce(
-          `SELECT ${columns} FROM messages WHERE channel = ? ORDER BY timestamp DESC LIMIT ?`,
-        )
-        .all(ch, safeLimit) as Record<string, unknown>[];
-    } else {
-      rows = db
-        .prepareOnce(`SELECT ${columns} FROM messages ORDER BY timestamp DESC LIMIT ?`)
-        .all(safeLimit) as Record<string, unknown>[];
-    }
-
-    // Map to_node back to `to` for the renderer; drop invalid reaction scalars from legacy rows
-    return rows.map((r) => {
-      const { to_node, emoji: emojiRaw, viaStoreForward: viaSfRaw, ...rest } = r;
-      const emoji =
-        emojiRaw != null ? (sanitizeUnicodeReactionScalar(emojiRaw) ?? undefined) : undefined;
-      const viaStoreForward = viaSfRaw === 1 || viaSfRaw === true;
-      return {
-        ...rest,
-        emoji,
-        to: to_node ?? undefined,
-        ...(viaStoreForward ? { viaStoreForward: true } : {}),
-      };
-    });
-  } catch (err) {
-    finishDbIpcHandler('db:getMessages', err);
-  }
-});
+// `db:getMessages` lives in `identity-hydration.js` beside the Meshtastic cold-hydrate query
+// it shares columns and load order with (out of the measured main bundle).
 
 ipcMain.handle('db:listMeshtasticDmPeers', (event, ownNodeId: unknown, limit?: unknown) => {
   try {
@@ -5662,6 +5622,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
         return radio > 0 ? radio : null;
       })(),
       channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
+      received_at: chatReceivedAtForDb(m.received_at),
     };
 
     return persistMeshcoreMessage(db, rowParams);

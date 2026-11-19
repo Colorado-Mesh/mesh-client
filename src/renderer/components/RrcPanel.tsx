@@ -1404,6 +1404,8 @@ export default function RrcPanel({
       (hubDestHash && activeRoom
         ? (loadPersistedRrcLastRead()[rrcReadKey(hubDestHash, activeRoom)] ?? 0)
         : 0),
+    // RRC read marks are stamped times, not arrival times (rrcReadWatermark.ts).
+    watermarkClock: 'stamp',
     available: !!hubDestHash && !!activeRoom,
     history:
       hubDestHash && activeRoom

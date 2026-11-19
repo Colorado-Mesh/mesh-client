@@ -1,3 +1,4 @@
+import { observeSavedChatReceivedAt } from '@/renderer/lib/chatReceiveOrder';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   isRrcKind,
@@ -49,6 +50,7 @@ export async function hydrateRrcRoomMessages(
     for (const row of rows) {
       if (typeof row.message_id !== 'string' || typeof row.body !== 'string') continue;
       if (!isRrcKind(row.kind)) continue;
+      observeSavedChatReceivedAt(row.received_at);
       mapped.push({
         id: row.message_id,
         room: roomKey,
@@ -57,6 +59,7 @@ export async function hydrateRrcRoomMessages(
         sender_hash: row.sender_hash ?? null,
         nickname: row.nickname ?? null,
         timestamp: Number.isFinite(row.timestamp) ? row.timestamp : 0,
+        ...(typeof row.received_at === 'number' ? { receivedAt: row.received_at } : {}),
         ...(typeof row.react_to === 'string'
           ? { react_to: row.react_to, react_op: row.react_op ?? null }
           : {}),

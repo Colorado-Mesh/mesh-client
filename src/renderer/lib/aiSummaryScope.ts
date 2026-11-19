@@ -1,39 +1,57 @@
 import type { AiSummaryMessage, AiSummaryScope } from '@/shared/ai-types';
 import { MS_PER_HOUR } from '@/shared/timeConstants';
 
-/** Remove overlapping history/live copies without collapsing distinct repeated messages. */
+/**
+ * A loaded message for Catch up. `order` is its arrival time (or its stamp for rows saved before
+ * arrival times were kept), which the "since last read" choice compares with the read mark.
+ * Rows read back from the database carry it when they were asked for by arrival; otherwise they
+ * are compared by `at`.
+ */
+export interface AiSummaryLiveMessage extends AiSummaryMessage {
+  order?: number;
+}
+
+/**
+ * Remove overlapping history/live copies without collapsing distinct repeated messages. An
+ * overlapping pair keeps the live copy in the history copy's place.
+ */
 export function mergeSummaryMessages(
-  history: readonly AiSummaryMessage[],
-  live: readonly AiSummaryMessage[],
-): AiSummaryMessage[] {
+  history: readonly AiSummaryLiveMessage[],
+  live: readonly AiSummaryLiveMessage[],
+): AiSummaryLiveMessage[] {
   const keyFor = (message: AiSummaryMessage) =>
     JSON.stringify([message.at, message.sender, message.body]);
-  const overlap = new Map<string, number>();
-  for (const message of history) {
+  const liveIndexes = new Map<string, number[]>();
+  live.forEach((message, index) => {
     const key = keyFor(message);
-    overlap.set(key, (overlap.get(key) ?? 0) + 1);
-  }
-  const merged = [...history];
-  for (const message of live) {
-    const key = keyFor(message);
-    const remaining = overlap.get(key) ?? 0;
-    if (remaining > 0) overlap.set(key, remaining - 1);
-    else merged.push(message);
-  }
+    const indexes = liveIndexes.get(key);
+    if (indexes) indexes.push(index);
+    else liveIndexes.set(key, [index]);
+  });
+  const used = live.map(() => false);
+  const merged: AiSummaryLiveMessage[] = history.map((message) => {
+    const index = liveIndexes.get(keyFor(message))?.shift();
+    if (index === undefined) return message;
+    used[index] = true;
+    return live[index];
+  });
+  live.forEach((message, index) => {
+    if (!used[index]) merged.push(message);
+  });
   return merged;
 }
 
-export function selectSummaryMessages(input: {
-  messages: AiSummaryMessage[];
+export function selectSummaryMessages<T extends AiSummaryLiveMessage>(input: {
+  messages: T[];
   scope: AiSummaryScope;
   watermark?: number;
   now?: number;
-}): AiSummaryMessage[] {
+}): T[] {
   return input.messages.filter(
     (message) =>
       input.scope.kind === 'loaded' ||
       (input.scope.kind === 'unread'
-        ? message.at > (input.watermark ?? 0)
+        ? (message.order ?? message.at) > (input.watermark ?? 0)
         : message.at >= (input.now ?? Date.now()) - input.scope.hours * MS_PER_HOUR),
   );
 }

@@ -422,6 +422,61 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
   });
 });
 
+describe('MeshCore message receipt time', () => {
+  const row: MeshcoreMessageRowParams = {
+    sender_id: 7,
+    sender_name: 'Peer',
+    payload: 'late clock',
+    channel_idx: 0,
+    timestamp: 1_700_000_000_000,
+    local_order: null,
+    status: 'acked',
+    packet_id: null,
+    emoji: null,
+    reply_id: null,
+    to_node: null,
+    received_via: 'rf',
+    rx_packet_fingerprint: null,
+    reply_preview_text: null,
+    reply_preview_sender: null,
+    rx_hops: null,
+    room_server_id: null,
+    received_at: 1_700_007_200_000,
+  };
+
+  it('stores the first receipt and keeps it when the same row is saved again', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      expect(persistMeshcoreMessage(db, row).changes).toBe(1);
+      expect(
+        persistMeshcoreMessage(db, { ...row, rx_hops: 2, received_at: 1_700_009_000_000 }).changes,
+      ).toBe(1);
+      expect(db.prepareOnce('SELECT received_at, rx_hops FROM meshcore_messages').all()).toEqual([
+        { received_at: 1_700_007_200_000, rx_hops: 2 },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('leaves a row saved before receipt times without one when it is saved again', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp) VALUES (7, ?, ?, 0, ?)',
+      ).run('Peer', 'late clock', row.timestamp);
+      expect(persistMeshcoreMessage(db, { ...row, rx_hops: 2 }).changes).toBe(1);
+      expect(db.prepareOnce('SELECT received_at FROM meshcore_messages').all()).toEqual([
+        { received_at: null },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+});
+
 describe('selectMeshcoreMessagesForHydration', () => {
   it('keeps quiet channel rows outside the global newest window', () => {
     const db = new NodeSqliteDB(':memory:');

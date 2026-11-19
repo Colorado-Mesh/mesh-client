@@ -19,6 +19,7 @@ describe('rrcMessagePersist', () => {
       kind: 'msg',
       body: 'hello',
       timestamp: 123,
+      receivedAt: 456,
     });
     await vi.waitFor(() => {
       expect(window.electronAPI.db.insertRrcMessage).toHaveBeenCalledWith({
@@ -30,6 +31,7 @@ describe('rrcMessagePersist', () => {
         kind: 'msg',
         body: 'hello',
         timestamp: 123,
+        received_at: 456,
       });
     });
   });

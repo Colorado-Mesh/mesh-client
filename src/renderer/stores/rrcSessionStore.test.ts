@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
 import { clearRrcActiveRoom, loadRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
+import { newestRrcMessagesByArrival } from '@/renderer/lib/rrcInactiveNotifications';
 import {
   migrateLegacyWhispersForHub,
   resetRrcLegacyWhispersMigrateForTests,
@@ -964,6 +965,74 @@ describe('rrcSessionStore', () => {
     const list = useRrcSessionStore.getState().messages.get(`${hub}::lobby`)!;
     expect(list.map((m) => m.id)).toEqual(['hist-1', 'live-1']);
     expect(list[1]?.body).toBe('live');
+  });
+
+  // A hub can deliver a saved line again before its history loads; the live copy then took a new
+  // receipt. The saved row is the same line, so its receipt (or none, for a line saved before
+  // receipt times were kept) wins and the line goes back to its place.
+  it('takes the saved receipt for a live copy when its history row loads', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    for (const [id, body, timestamp, receivedAt] of [
+      ['early', 'first', 100, 1_000],
+      ['again', 'seen again', 150, 5_000],
+      ['old', 'saved before receipts', 90, 6_000],
+    ] as const)
+      store.addMessage({ id, room: '#lobby', kind: 'msg', body, timestamp, receivedAt });
+
+    store.mergeHistoryMessages(hub, 'lobby', [
+      {
+        id: 'again',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'seen again',
+        timestamp: 150,
+        receivedAt: 500,
+      },
+      { id: 'old', room: 'lobby', kind: 'msg', body: 'saved before receipts', timestamp: 90 },
+    ]);
+
+    const list = useRrcSessionStore.getState().messages.get(`${hub}::lobby`)!;
+    expect(list.map((m) => m.id)).toEqual(['old', 'again', 'early']);
+    expect(list.map((m) => m.receivedAt)).toEqual([undefined, 500, 1_000]);
+  });
+
+  // The inactive-panel notification takes the newest lines by arrival. A line without a receipt
+  // reached this app before every line that has one, whatever its sender's clock says.
+  it('never lets a line without a receipt take the newest-arrival notification slot', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    const fastClock = Date.now() + 3_600_000;
+    // An old line from a fast-clock sender, delivered again before its history row loads.
+    store.addMessage({
+      id: 'old',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'fast clock',
+      timestamp: fastClock,
+      receivedAt: 1_000,
+    });
+    store.addMessage({
+      id: 'new',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'new mention',
+      timestamp: 100,
+      receivedAt: 2_000,
+    });
+    store.mergeHistoryMessages(hub, 'lobby', [
+      { id: 'old', room: 'lobby', kind: 'msg', body: 'fast clock', timestamp: fastClock },
+    ]);
+
+    const list = useRrcSessionStore.getState().messages.get(`${hub}::lobby`)!;
+    expect(list.find((m) => m.id === 'old')?.receivedAt).toBeUndefined();
+    expect(newestRrcMessagesByArrival(list, 1).map((m) => m.id)).toEqual(['new']);
+    expect(newestRrcMessagesByArrival(list, 2).map((m) => m.id)).toEqual(['old', 'new']);
   });
 
   it('shows the first /who NOTICE and suppresses later snapshots while updating roster', () => {

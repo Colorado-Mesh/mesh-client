@@ -116,10 +116,16 @@ export interface MeshcoreMessageRowParams {
   radio_node_id?: number | null;
   /** Channel identity key (see `src/shared/channelIdentityKey.ts`); null for DMs/rooms or unknown. */
   channel_key?: string | null;
+  /** First local receipt in ms (`src/shared/chatReceivedAt.ts`); written on insert only. */
+  received_at?: number | null;
 }
 
 export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessageRowParams) {
-  const rowParams = { ...params, channel_key: params.channel_key ?? null };
+  const rowParams = {
+    ...params,
+    channel_key: params.channel_key ?? null,
+    received_at: params.received_at ?? null,
+  };
   // idx_mc_msg_dedup is a partial UNIQUE index (sender_id IS NOT NULL); SQLite cannot
   // target it with INSERT ON CONFLICT(columns). Update by natural key, then insert.
   const senderId = rowParams.sender_id;
@@ -166,8 +172,8 @@ export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessage
   return db
     .prepareOnce(
       'INSERT OR IGNORE INTO meshcore_messages ' +
-        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id, radio_node_id, channel_key) ' +
-        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id, @radio_node_id, @channel_key)',
+        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id, radio_node_id, channel_key, received_at) ' +
+        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id, @radio_node_id, @channel_key, @received_at)',
     )
     .run({ ...rowParams, radio_node_id: radioNodeId });
 }

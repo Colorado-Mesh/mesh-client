@@ -158,11 +158,6 @@ import { getLiveChannelKey } from '@/renderer/stores/liveChannelKeyStore';
 import { CHAT_DOCS_URL } from '@/shared/docsSite';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
-import {
-  clampReadWatermarkMs,
-  effectiveMessageTimestampMs,
-  isUnreasonablyFutureMessageTimestampMs,
-} from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 import { touch } from '@/shared/touch';
@@ -197,6 +192,14 @@ import {
   savePersistedLastRead,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
+import {
+  chatReadOrderMs,
+  chatReceivedAtMs,
+  chatSentOnAnotherDay,
+  chatSummaryOrderMs,
+  isChatReadOrderPoisoned,
+  latestChatReadMs,
+} from '../lib/chatReceiveOrder';
 import {
   CHAT_SCROLL_END_THRESHOLD,
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
@@ -764,16 +767,6 @@ function isDismissedDmConversation(
   const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
   const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
   return dmCount > 0 && dismissedCount >= dmCount;
-}
-
-function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
-  let latest = 0;
-  for (const msg of messages) {
-    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
-    const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
-    if (ts > latest) latest = ts;
-  }
-  return clampReadWatermarkMs(latest, nowMs);
 }
 
 function mergeReadWatermarks(
@@ -2047,13 +2040,15 @@ function ChatPanel({
     wordFilterConversationKey,
   ]);
 
-  // Index of first message from another node newer than unreadDividerTimestamp.
+  // Index of the first message from another node that arrived after unreadDividerTimestamp
+  // (the read mark when the view opened), by the same key as the unread counts.
   // Returns -1 when: search active, timestamp=0, or no qualifying messages.
   const unreadStartIndex = useMemo(() => {
     if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
     for (let i = 0; i < filteredMessages.length; i++) {
       const msg = filteredMessages[i];
-      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
+      if (isOwnNode(msg.sender_id) || isChatReadOrderPoisoned(msg)) continue;
+      if (chatReadOrderMs(msg) > unreadDividerTimestamp) return i;
     }
     return -1;
   }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
@@ -2374,7 +2369,7 @@ function ChatPanel({
     if (viewMode === 'starred') return;
     if (viewMode === 'dm' && activeDmNode == null) return;
 
-    const latest = latestMessageTimestamp(viewMessages);
+    const latest = latestChatReadMs(viewMessages);
     if (latest === 0) return;
     setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[readKey, latest]]));
   }, [activeDmNode, readKey, viewMessages, viewMode]);
@@ -3016,7 +3011,7 @@ function ChatPanel({
             (m.sender_id === nodeNum && isOwnNode(m.to ?? 0))
           );
         });
-        const latest = latestMessageTimestamp(peerMessages);
+        const latest = latestChatReadMs(peerMessages);
         if (dmOnlyChat && latest > 0) {
           setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[dmViewKey, latest]]));
         }
@@ -3089,6 +3084,12 @@ function ChatPanel({
     return formatDisplayTime(ts, { use24Hour: use24HourTime });
   }
 
+  /** The sender's time; with the sender's date when that differs from the arrival day. */
+  function formatBubbleTime(msg: ChatMessage): string {
+    const time = formatTime(msg.timestamp);
+    return chatSentOnAnotherDay(msg) ? `${formatIsoDate(msg.timestamp)} ${time}` : time;
+  }
+
   function formatFullTimestamp(ts: number): string {
     return formatIsoDateTime(ts);
   }
@@ -3115,12 +3116,13 @@ function ChatPanel({
     return rows;
   }
 
-  // Pre-compute day separator indices (avoids mutable variable during render)
+  // Pre-compute day separator indices (avoids mutable variable during render). Rows are in arrival
+  // order, so separators follow the arrival day; a bubble from another sender day shows its date.
   const daySeparatorIndices = useMemo(() => {
     const indices = new Set<number>();
     let prevDayKey = '';
     for (let i = 0; i < filteredMessages.length; i++) {
-      const dayKey = getChatDayKey(filteredMessages[i].timestamp);
+      const dayKey = getChatDayKey(chatReceivedAtMs(filteredMessages[i]));
       if (dayKey !== prevDayKey) {
         indices.add(i);
         prevDayKey = dayKey;
@@ -3203,6 +3205,9 @@ function ChatPanel({
       aiEnabled
         ? viewMessages.map((m) => ({
             at: m.timestamp,
+            // Catch up picks "since last read" lines by arrival, like the read mark, and skips the
+            // rows the unread counts skip.
+            order: chatSummaryOrderMs(m),
             sender: m.sender_name.slice(0, 120),
             body: m.payload,
           }))
@@ -3224,6 +3229,7 @@ function ChatPanel({
             )
         : undefined,
     watermark: unreadDividerTimestamp || persistedLastRead[readKey] || 0,
+    watermarkClock: 'arrival',
     available: viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null),
     history: {
       protocol,
@@ -3905,15 +3911,13 @@ function ChatPanel({
                   tooltip={t('chatPanel.markUnread')}
                   aria-label={t('chatPanel.markUnread')}
                   onClick={() => {
-                    // Set watermark just before newest inbound so it and newer stay unread.
-                    // Watermark changes alone do not fire notification beeps.
-                    let newestInboundTs = 0;
-                    for (const m of viewMessages) {
-                      if (isOwnNode(m.sender_id)) continue;
-                      if ((m.timestamp ?? 0) > newestInboundTs) newestInboundTs = m.timestamp ?? 0;
-                    }
-                    if (newestInboundTs <= 0) return;
-                    const before = Math.max(0, newestInboundTs - 1);
+                    // Set watermark just before the newest inbound arrival so it and newer stay
+                    // unread. Watermark changes alone do not fire notification beeps.
+                    const newestInbound = latestChatReadMs(
+                      viewMessages.filter((m) => !isOwnNode(m.sender_id)),
+                    );
+                    if (newestInbound <= 0) return;
+                    const before = newestInbound - 1;
                     // Replace (do not merge-up): mark-unread must lower an existing watermark.
                     setPersistedLastRead((prev) => {
                       if (prev[readKey] === before) return prev;
@@ -4627,7 +4631,7 @@ function ChatPanel({
                   <div className="flex items-center gap-3 py-2">
                     <div className="border-ink-800 flex-1 border-t" />
                     <span className="text-muted shrink-0 text-xs font-medium">
-                      {formatDayLabel(msg.timestamp, t)}
+                      {formatDayLabel(chatReceivedAtMs(msg), t)}
                     </span>
                     <div className="border-ink-800 flex-1 border-t" />
                   </div>
@@ -4647,10 +4651,16 @@ function ChatPanel({
                   nextMsg.sender_id === msg.sender_id &&
                   !daySeparatorIndices.has(i + 1);
                 const isFollowedByContinuation = compactMode && nextIsSameSender;
+                // A pause in arrivals, a stamp that jumps (a clock that is off), or a stamp on
+                // another day than the arrival day under the day separator shows the time.
                 const showContinuationTime =
                   isContinuation &&
                   prevMsg !== null &&
-                  msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+                  (chatReceivedAtMs(msg) - chatReceivedAtMs(prevMsg) >=
+                    CHAT_COMPACT_CONTINUATION_TIME_GAP_MS ||
+                    Math.abs(msg.timestamp - prevMsg.timestamp) >=
+                      CHAT_COMPACT_CONTINUATION_TIME_GAP_MS ||
+                    chatSentOnAnotherDay(msg));
 
                 /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
                 const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
@@ -4683,7 +4693,7 @@ function ChatPanel({
                       <div
                         className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                         data-chat-message-key={messageRowKey}
-                        data-chat-day-key={getChatDayKey(msg.timestamp)}
+                        data-chat-day-key={getChatDayKey(chatReceivedAtMs(msg))}
                         {...(messageFocusFlashIndex === i ? { 'data-chat-message-flash': '' } : {})}
                       >
                         {/* Bubble row */}
@@ -4739,7 +4749,9 @@ function ChatPanel({
                             {!isContinuation &&
                               (() => {
                                 return (
-                                  <div className="mb-0.5 flex items-center gap-2">
+                                  // Wraps so a narrow bubble moves the time below the name
+                                  // instead of shrinking the name away.
+                                  <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                     {isOwn && senderFaceHash ? (
                                       <ReticulumProfileIconSlot
                                         iconName={senderAppearance?.icon_name}
@@ -4849,10 +4861,15 @@ function ChatPanel({
                                       <span className="text-muted text-2xs font-medium">DM</span>
                                     )}
                                     <span
-                                      className="text-muted text-2xs shrink-0 font-mono whitespace-nowrap tabular-nums"
+                                      className={`text-muted text-2xs font-mono tabular-nums ${
+                                        // A dated time may break after the date in a phone-width bubble.
+                                        chatSentOnAnotherDay(msg)
+                                          ? 'min-w-0'
+                                          : 'shrink-0 whitespace-nowrap'
+                                      }`}
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
-                                      {formatTime(msg.timestamp)}
+                                      {formatBubbleTime(msg)}
                                     </span>
                                     {channels.length > 1 && !isDm && (
                                       <span className="text-muted text-2xs font-mono">
@@ -4874,7 +4891,7 @@ function ChatPanel({
                                   className="text-muted text-2xs"
                                   title={formatFullTimestamp(msg.timestamp)}
                                 >
-                                  {formatTime(msg.timestamp)}
+                                  {formatBubbleTime(msg)}
                                 </span>
                               </div>
                             )}

@@ -400,3 +400,216 @@ describe('durable renderer startup hydration', () => {
     warn.restore();
   });
 });
+
+// Marks saved before reads went by arrival were the newest read stamp, up to 300 s ahead of the
+// clock; a receipt taken after the upgrade inside that window would count as read.
+/** A prototype-backed Storage, so the preference write-through (a Storage.prototype patch) runs. */
+class TestStorage implements Storage {
+  private readonly values = new Map<string, string>();
+  get length() {
+    return this.values.size;
+  }
+  key(index: number) {
+    return [...this.values.keys()][index] ?? null;
+  }
+  getItem(key: string) {
+    return this.values.get(key) ?? null;
+  }
+  setItem(key: string, value: string) {
+    this.values.set(key, value);
+  }
+  removeItem(key: string) {
+    this.values.delete(key);
+  }
+  clear() {
+    this.values.clear();
+  }
+}
+
+describe('read marks saved before reads went by arrival', () => {
+  const start = 1_800_000_000_000;
+  let database: Record<string, string>;
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubGlobal('localStorage', new TestStorage());
+    localStorage.clear();
+    database = {};
+    vi.spyOn(window.electronAPI.appSettings, 'getAll').mockImplementation(() =>
+      Promise.resolve({ ...database }),
+    );
+    vi.spyOn(window.electronAPI.appSettings, 'set').mockImplementation((key, value) => {
+      database[key] = value;
+      return Promise.resolve({ changes: 1 });
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Hydrate as startup does, with the preference write-through installed afterwards. */
+  async function launch() {
+    vi.resetModules();
+    localStorage.clear();
+    const startup = await import('./hydrateDurableRendererSettings');
+    const chat = await import('./chatPanelProtocolStorage');
+    const preferences = await import('./rendererPreferences');
+    await startup.hydrateDurableRendererSettings();
+    const stop = preferences.installRendererPreferencePersistence();
+    return { chat, preferences, stop };
+  }
+
+  it('lowers chat and room marks ahead of the first start to the start, once', async () => {
+    for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+      database[KEYS.chatLastRead[protocol]] = JSON.stringify({
+        'ch:0': start + 120_000,
+        'dm:7': start - 5_000,
+      });
+    }
+    database[KEYS.roomsLastRead] = JSON.stringify({ 512: start + 200_000, 513: start - 1 });
+    const { chat, preferences, stop } = await launch();
+    try {
+      expect(chat.convertSavedReadMarksOnce(start)).toBe(true);
+      for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+        expect(chat.loadPersistedLastReadInitial(protocol)).toEqual({
+          'ch:0': start,
+          'dm:7': start - 5_000,
+        });
+        await vi.waitFor(() => {
+          expect(JSON.parse(database[KEYS.chatLastRead[protocol]])).toEqual({
+            'ch:0': start,
+            'dm:7': start - 5_000,
+          });
+        });
+      }
+      expect(chat.loadPersistedRoomsLastRead()).toEqual({ 512: start, 513: start - 1 });
+      await vi.waitFor(() => {
+        expect(JSON.parse(database[KEYS.roomsLastRead])).toEqual({
+          '512': start,
+          '513': start - 1,
+        });
+      });
+      // The flag is a browser preference, so it reaches SQLite beside the marks.
+      await preferences.flushRendererPreferences();
+      expect(JSON.parse(database[KEYS.preferences]).values).toMatchObject({
+        'mesh-client:readMarksByArrival': '1',
+      });
+      expect(chat.convertSavedReadMarksOnce(start)).toBe(false);
+    } finally {
+      stop();
+    }
+  });
+
+  it('leaves marks alone on later starts, even ahead of the clock', async () => {
+    database[KEYS.chatLastRead.meshcore] = JSON.stringify({ 'ch:0': start + 120_000 });
+    const first = await launch();
+    try {
+      expect(first.chat.convertSavedReadMarksOnce(start)).toBe(true);
+      await first.preferences.flushRendererPreferences();
+    } finally {
+      first.stop();
+    }
+    // A later start while this clock is set back: receipts, and marks taken from them, run ahead.
+    database[KEYS.chatLastRead.meshcore] = JSON.stringify({ 'ch:0': start + 3_600_000 });
+    database[KEYS.roomsLastRead] = JSON.stringify({ 512: start + 1_800_000 });
+    const later = await launch();
+    try {
+      expect(localStorage.getItem('mesh-client:readMarksByArrival')).toBe('1');
+      expect(later.chat.convertSavedReadMarksOnce(start)).toBe(false);
+      expect(later.chat.loadPersistedLastReadInitial('meshcore')).toEqual({
+        'ch:0': start + 3_600_000,
+      });
+      // The receipt clock resumes above the saved marks, so the first line that arrives while the
+      // clock is still set back lands above them and counts as unread.
+      later.chat.observeSavedReadMarks(start);
+      const { nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(nextChatReceivedAt(start)).toBeGreaterThan(start + 3_600_000);
+    } finally {
+      later.stop();
+    }
+  });
+
+  it('starts the receipt clock above a converted mark when the clock is later set back', async () => {
+    database[KEYS.roomsLastRead] = JSON.stringify({ 512: start + 200_000 });
+    const { chat, stop } = await launch();
+    try {
+      expect(chat.convertSavedReadMarksOnce(start)).toBe(true);
+      expect(chat.loadPersistedRoomsLastRead()).toEqual({ 512: start });
+      // Clock set back an hour before the next line arrives.
+      const back = start - 3_600_000;
+      chat.observeSavedReadMarks(back);
+      const { nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(nextChatReceivedAt(back)).toBeGreaterThan(start);
+    } finally {
+      stop();
+    }
+  });
+
+  // The same one-day bound as a saved receipt: a mark further ahead is broken, so it must not move
+  // the receipt clock, or it would hold every new line under it and pass its own sanitizer.
+  it('ignores a saved mark more than a day ahead of the clock', async () => {
+    const first = await launch();
+    try {
+      expect(first.chat.convertSavedReadMarksOnce(start)).toBe(true);
+      await first.preferences.flushRendererPreferences();
+    } finally {
+      first.stop();
+    }
+    database[KEYS.chatLastRead.meshtastic] = JSON.stringify({ 'dm:9': start + 2 * 86_400_000 });
+    const later = await launch();
+    try {
+      later.chat.observeSavedReadMarks(start);
+      const { chatReadClockMs, nextChatReceivedAt } = await import('./chatReceiveOrder');
+      expect(chatReadClockMs(start)).toBe(start);
+      expect(nextChatReceivedAt(start)).toBe(start);
+    } finally {
+      later.stop();
+    }
+  });
+
+  it('writes nothing over a namespace whose saved marks do not parse', async () => {
+    const warn = mockConsoleWarn();
+    database[KEYS.chatLastRead.meshtastic] = 'broken';
+    database[KEYS.chatLastRead.meshcore] = JSON.stringify({ 'ch:0': start + 60_000 });
+    const { chat, stop } = await launch();
+    try {
+      expect(chat.convertSavedReadMarksOnce(start)).toBe(true);
+      expect(chat.loadPersistedLastReadInitial('meshcore')).toEqual({ 'ch:0': start });
+      expect(database[KEYS.chatLastRead.meshtastic]).toBe('broken');
+    } finally {
+      stop();
+      warn.restore();
+    }
+  });
+
+  it('accepts that a fast-clock line read just before the upgrade can show as unread again', async () => {
+    database[KEYS.chatLastRead.meshcore] = JSON.stringify({ 'ch:0': start + 120_000 });
+    const { chat, stop } = await launch();
+    try {
+      chat.convertSavedReadMarksOnce(start);
+      const { computeChannelUnreadCounts } = await import('./chatUnreadCounts');
+      // Saved before receipts were kept, stamped by a clock 2 min fast, and read: its stamp is
+      // past the lowered mark. One stale unread is the cost of never hiding a new line.
+      const fastLine = {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'hi',
+        channel: 0,
+        timestamp: start + 60_000,
+        status: 'acked' as const,
+      };
+      expect(
+        computeChannelUnreadCounts(
+          [fastLine],
+          chat.loadPersistedLastReadInitial('meshcore'),
+          new Set([1]),
+          'meshcore',
+          start,
+        ).get(0),
+      ).toBe(1);
+    } finally {
+      stop();
+    }
+  });
+});

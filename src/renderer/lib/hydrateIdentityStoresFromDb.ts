@@ -270,9 +270,10 @@ export async function hydrateMeshcoreNodesFromDb(
   isCurrent?: () => boolean,
 ): Promise<void> {
   const snap = await loadMeshcoreIdentityHydrationSnapshot();
+  // Before mapping: mapping saved rows resumes the receipt clock.
+  if (isCurrent && !isCurrent()) return;
   const mapped = mapMeshcoreDbRowsToChatMessages(snap.messages);
   const nodeMap = buildMeshcoreNodeMapFromDb(snap.contacts, snap.savedNodes, mapped);
-  if (isCurrent && !isCurrent()) return;
   if (nodesMode === 'replace') {
     replaceNodesMapInIdentityStore(identityId, nodeMap);
   } else {

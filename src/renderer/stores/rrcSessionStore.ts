@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
+  compareChatReceiveOrder,
+  earliestChatReceivedAt,
+  nextChatReceivedAt,
+} from '@/renderer/lib/chatReceiveOrder';
+import {
   clearRrcActiveRoom,
   loadRrcActiveRoom,
   saveRrcActiveRoom,
@@ -1244,7 +1249,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       ) {
         return {};
       }
-      const stored: RrcChatMessage = { ...msg, room: roomKey };
+      // Live lines append in arrival order; the receipt keeps that order after a reload.
+      const stored: RrcChatMessage = {
+        ...msg,
+        room: roomKey,
+        receivedAt: msg.receivedAt ?? nextChatReceivedAt(),
+      };
       const list = [...existing, stored].slice(-MAX_MESSAGES_PER_ROOM);
       messages.set(key, list);
       toPersist.push({ hub, msg: stored });
@@ -1294,14 +1304,30 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const roomKey = roomStorageKey(room);
       const key = msgKey(hub, roomKey);
       const messages = new Map(s.messages);
-      const existing = messages.get(key) ?? [];
+      // A line the hub delivered again before its history loaded took a new receipt. Its saved
+      // row is the same line: the earlier receipt wins, and a row saved without one (before
+      // receipt times were kept) clears it, as bulk loads do (`messageStore.ts`).
+      const savedById = new Map(history.filter((m) => m.id).map((m) => [m.id, m]));
+      let receiptsChanged = false;
+      const existing = (messages.get(key) ?? []).map((m) => {
+        const saved = m.id ? savedById.get(m.id) : undefined;
+        if (!saved) return m;
+        const receivedAt =
+          saved.receivedAt == null
+            ? undefined
+            : earliestChatReceivedAt(m.receivedAt, saved.receivedAt);
+        if (receivedAt === m.receivedAt) return m;
+        receiptsChanged = true;
+        return { ...m, receivedAt };
+      });
       const seen = new Set(existing.map((m) => m.id).filter(Boolean));
       const incoming = history
         .filter((m) => m.id && !seen.has(m.id))
         .map((m) => ({ ...m, room: roomKey }));
-      if (incoming.length === 0) return {};
+      if (incoming.length === 0 && !receiptsChanged) return {};
+      // Arrival order, not the senders' clocks (`chatReceiveOrder.ts`).
       const merged = [...incoming, ...existing]
-        .sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id))
+        .sort((a, b) => compareChatReceiveOrder(a, b, (x, y) => x.id.localeCompare(y.id)))
         .slice(-MAX_MESSAGES_PER_ROOM);
       messages.set(key, merged);
       return { messages };

@@ -281,6 +281,13 @@ export const MESHCORE_NOISE_FLOOR_TREND_POLL_MS = 60_000;
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 /** Chat screen-reader announcements: at most one per window; bursts collapse to a count. */
 export const CHAT_SR_ANNOUNCE_WINDOW_MS = MS_PER_SECOND;
+/**
+ * Seed limit: a saved chat receipt or read mark at most this far ahead of the clock (inclusive)
+ * resumes the receipt clock after a restart (this clock was set back since). Further ahead it is
+ * treated as broken and ignored (`chatReceiveOrder.ts`). New receipts still count up from the
+ * seed, so they can run a little more than this past the clock.
+ */
+export const CHAT_RECEIPT_SEED_MAX_LEAD_MS = MS_PER_DAY;
 /** Debounce repeated companion CONTACTS_FULL (0x90) alarm toasts. */
 export const MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS = 60 * MS_PER_SECOND;
 /** When silent-bulk circuit is open, stretch scheduled drain / poll intervals by this factor. */

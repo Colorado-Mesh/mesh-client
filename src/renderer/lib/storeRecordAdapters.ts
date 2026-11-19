@@ -10,6 +10,7 @@ import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTranspor
 
 import type { MessageRecord, MessageTransport } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
+import { observeSavedChatReceivedAt } from './chatReceiveOrder';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
 import {
   firstGraphemeCluster,
@@ -131,6 +132,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     channel: record.channelIndex,
     timestamp: record.timestamp,
     localOrder: record.localOrder,
+    receivedAt: record.receivedAt,
     packetId,
     status: record.status,
     mqttStatus: record.mqttStatus,
@@ -502,6 +504,7 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     channelIndex: msg.channel,
     timestamp: msg.timestamp,
     localOrder: msg.localOrder,
+    receivedAt: msg.receivedAt,
     status: msg.status === 'queued' || msg.status === 'blocked' ? undefined : msg.status,
     mqttStatus: msg.mqttStatus,
     receivedVia: msg.receivedVia,
@@ -543,9 +546,12 @@ export function reticulumDbRowToMessageRecord(row: {
   attachments_json?: string | null;
   audio_mode?: number | null;
   audio_duration_sec?: number | null;
+  /** First local receipt in ms; null on rows saved before it was kept (`chatReceiveOrder.ts`). */
+  received_at?: number | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
   registerReticulumDestinationHash(from, row.sender_id);
+  observeSavedChatReceivedAt(row.received_at);
   const messageHash =
     row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
   const isTapback = isReticulumTapbackDbRow(row);
@@ -570,6 +576,7 @@ export function reticulumDbRowToMessageRecord(row: {
     payload: row.payload,
     channelIndex: 0,
     timestamp: row.timestamp,
+    ...(row.received_at != null ? { receivedAt: row.received_at } : {}),
     status,
     reticulumMessageHash: messageHash,
     reticulumSenderHash: row.sender_id,

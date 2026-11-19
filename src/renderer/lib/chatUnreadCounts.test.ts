@@ -4,6 +4,11 @@ import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumId
 import { useWordFilterStore } from '@/renderer/stores/wordFilterStore';
 
 import {
+  latestChatReadMs,
+  nextChatReceivedAt,
+  resetChatReceiptClockForTests,
+} from './chatReceiveOrder';
+import {
   buildProtocolSwitcherUnreadByProtocol,
   chatViewKeyForMessage,
   computeChannelUnreadCounts,
@@ -816,4 +821,155 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       reticulum: 7,
     });
   });
+});
+
+describe('unread by arrival', () => {
+  const now = 1_700_000_000_000;
+  const HOUR = 3_600_000;
+  // The read mark is the arrival time of the last line the user read.
+  const readAt = now - 10 * 60_000;
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'counts a %s channel line from a slow clock that arrived after the read mark',
+    (protocol) => {
+      const counts = computeChannelUnreadCounts(
+        [msg({ channel: 0, timestamp: now - 2 * HOUR, receivedAt: now - 60_000 })],
+        { 'ch:0': readAt },
+        ownNodes,
+        protocol,
+        now,
+      );
+      expect(counts.get(0)).toBe(1);
+    },
+  );
+
+  it('does not count a fast-clock line that arrived before the read mark', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: readAt + 3 * 60_000, receivedAt: readAt - 60_000 })],
+      { 'ch:0': readAt },
+      ownNodes,
+      'meshcore',
+      now,
+    );
+    expect(counts.get(0)).toBeUndefined();
+  });
+
+  it('counts a line stamped far in the future once it has a sane arrival time', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: now + 365 * 24 * HOUR, receivedAt: now - 60_000 })],
+      { 'ch:0': readAt },
+      ownNodes,
+      'meshcore',
+      now,
+    );
+    expect(counts.get(0)).toBe(1);
+  });
+
+  it('does not count a line whose arrival time is far ahead of this clock', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: now - 60_000, receivedAt: now + HOUR })],
+      { 'ch:0': readAt },
+      ownNodes,
+      'meshcore',
+      now,
+    );
+    expect(counts.get(0)).toBeUndefined();
+  });
+
+  it('counts a slow-clock DM that arrived after the DM was read', () => {
+    const counts = computeDmUnreadCounts(
+      [
+        msg({
+          channel: 0,
+          to: 1,
+          sender_id: 7,
+          timestamp: now - 2 * HOUR,
+          receivedAt: now - 60_000,
+        }),
+      ],
+      { 'dm:7': readAt },
+      ownNodes,
+      'meshtastic',
+      undefined,
+      now,
+    );
+    expect(counts.get(7)).toBe(1);
+  });
+
+  it('keeps an unread MECP marker for a slow-clock line that arrived after the read mark', () => {
+    const { channels } = computeUnreadMecpSeverityByView(
+      [
+        msg({
+          channel: 0,
+          payload: 'MECP/1/T04',
+          timestamp: now - 2 * HOUR,
+          receivedAt: now - 60_000,
+        }),
+      ],
+      { 'ch:0': readAt },
+      ownNodes,
+      'meshtastic',
+      undefined,
+      undefined,
+      now,
+    );
+    expect(channels.get(0)).toBe(1);
+  });
+});
+
+describe('unread after this clock is set back', () => {
+  const now = 1_700_000_000_000;
+  const back = now - 3_600_000;
+
+  afterEach(() => {
+    resetChatReceiptClockForTests();
+  });
+
+  /** A line read before the set-back, and one received after it (its receipt runs ahead). */
+  function setBackLines(overrides: Partial<ChatMessage> & Pick<ChatMessage, 'channel'>) {
+    const readBefore = nextChatReceivedAt(now);
+    const arrivedAfter = nextChatReceivedAt(back);
+    return {
+      read: msg({ ...overrides, timestamp: now, receivedAt: readBefore }),
+      fresh: msg({ ...overrides, timestamp: back, receivedAt: arrivedAfter }),
+      readBefore,
+    };
+  }
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'counts a %s channel line received after the set-back, and clears it once read',
+    (protocol) => {
+      const { read, fresh, readBefore } = setBackLines({ channel: 0 });
+      const lines = [read, fresh];
+      expect(
+        computeChannelUnreadCounts(lines, { 'ch:0': readBefore }, ownNodes, protocol, back).get(0),
+      ).toBe(1);
+      const mark = latestChatReadMs(lines, back);
+      expect(
+        computeChannelUnreadCounts(lines, { 'ch:0': mark }, ownNodes, protocol, back).size,
+      ).toBe(0);
+    },
+  );
+
+  it.each(['meshcore', 'meshtastic', 'reticulum'] as const)(
+    'counts a %s DM received after the set-back, and clears it once read',
+    (protocol) => {
+      const { read, fresh, readBefore } = setBackLines({ channel: 0, to: 1 });
+      const lines = [read, fresh];
+      expect(
+        computeDmUnreadCounts(
+          lines,
+          { 'dm:2': readBefore },
+          ownNodes,
+          protocol,
+          undefined,
+          back,
+        ).get(2),
+      ).toBe(1);
+      const mark = latestChatReadMs(lines, back);
+      expect(
+        computeDmUnreadCounts(lines, { 'dm:2': mark }, ownNodes, protocol, undefined, back).size,
+      ).toBe(0);
+    },
+  );
 });

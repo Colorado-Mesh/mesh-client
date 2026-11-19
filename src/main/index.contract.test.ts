@@ -72,6 +72,18 @@ describe('renderer origin cutover (source contract)', () => {
       renderer.indexOf('async function finishRendererStorage()'),
     );
     expect(finalization).toBeLessThan(renderer.indexOf('installRendererPreferencePersistence();'));
+    // Saved read marks are converted once, after the write-through (so the done flag reaches
+    // SQLite) and before App mounts (finishRendererStorage runs before SecureSecretsStartup's
+    // children render).
+    const persistence = renderer.indexOf('installRendererPreferencePersistence();');
+    expect(persistence).toBeGreaterThan(-1);
+    const markConversion = renderer.indexOf('convertSavedReadMarksOnce();');
+    expect(markConversion).toBeGreaterThan(persistence);
+    // The receipt clock resumes above the saved marks after the conversion lowers them, at every
+    // start, before App reads a mark.
+    const markSeed = renderer.indexOf('observeSavedReadMarks();');
+    expect(markSeed).toBeGreaterThan(markConversion);
+    expect(markSeed).toBeLessThan(renderer.indexOf('if (import.meta.env.DEV)'));
     expect(renderer.indexOf('<SecureSecretsStartup prepare=')).toBeLessThan(
       renderer.indexOf('<App />'),
     );
@@ -786,8 +798,20 @@ describe('IPC sender validation on high-value handlers (source contract)', () =>
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('db:saveMessage'[\s\S]*?validateIpcSender\(event\)/,
     );
+    // Registered from the `identity-hydration.js` sibling with the injected sender check, which
+    // must run inside the handler before the database is opened (behaviour in
+    // identityHydrationSnapshot.test.ts).
+    const hydrationSource = readFileSync(join(__dirname, 'identityHydrationSnapshot.ts'), 'utf-8');
+    const start = hydrationSource.indexOf("ipcMain.handle('db:getMessages'");
+    expect(start).toBeGreaterThan(-1);
+    const next = hydrationSource.indexOf('ipcMain.handle(', start + 1);
+    const handler = hydrationSource.slice(start, next > start ? next : undefined);
+    const senderCheck = handler.indexOf("assertIpcSender(event, 'db:getMessages')");
+    expect(senderCheck).toBeGreaterThan(-1);
+    expect(senderCheck).toBeLessThan(handler.indexOf("getDbForIpc('db:getMessages')"));
+    // index.ts hands its own sender check to the sibling.
     expect(INDEX_SOURCE).toMatch(
-      /ipcMain\.handle\('db:getMessages'[\s\S]*?validateIpcSender\(event\)/,
+      /registerIdentityHydrationIpcHandlers\(\{[\s\S]*?assertIpcSender,[\s\S]*?\}\)/,
     );
   });
 

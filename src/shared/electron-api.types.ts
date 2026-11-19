@@ -219,6 +219,8 @@ export interface SavedMessage {
   radioNodeId?: number | null;
   /** Channel identity key (`channelIdentityKey.ts`); null for DMs or unkeyed history. */
   channelKey?: string | null;
+  /** First local receipt in ms (`chatReceivedAt.ts`); null for rows saved before it was kept. */
+  receivedAt?: number | null;
 }
 
 export interface SavedNode {
@@ -491,6 +493,8 @@ export interface ElectronAPI {
       rxHops?: number;
       radioNodeId?: number;
       channelKey?: string;
+      /** First local receipt in ms; stored on the first save only. */
+      receivedAt?: number;
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
@@ -550,6 +554,8 @@ export interface ElectronAPI {
         timestamp: number;
         react_to?: string | null;
         react_op?: number | null;
+        /** First local receipt in ms; null on lines saved before it was kept. */
+        received_at?: number | null;
       }[]
     >;
     insertRrcMessage: (message: {
@@ -564,6 +570,8 @@ export interface ElectronAPI {
       /** rrc-extensions.md `K_REACT_TO` target id (16 hex). */
       react_to?: string | null;
       react_op?: number | null;
+      /** First local receipt in ms; stored on the first insert only. */
+      received_at?: number | null;
     }) => Promise<{ changes: number }>;
     /**
      * Nick cache for one hub. Survives transcript clears / retention pruning, so
@@ -734,6 +742,8 @@ export interface ElectronAPI {
       attachments_json?: string | null;
       audio_mode?: number | null;
       audio_duration_sec?: number | null;
+      /** First local receipt in ms; stored when the row is first inserted only. */
+      received_at?: number | null;
     }) => Promise<void>;
     markStaleReticulumOutbound: (
       identityId: string,
@@ -841,6 +851,8 @@ export interface ElectronAPI {
       room_server_id?: number | null;
       radio_node_id?: number | null;
       channel_key?: string | null;
+      /** First local receipt in ms; stored when the row is first inserted only. */
+      received_at?: number | null;
     }) => Promise<void>;
     saveMeshcoreContact: (contact: {
       node_id: number;

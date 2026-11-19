@@ -44,6 +44,7 @@ import { buildUnifiedInboxItems } from '@/renderer/lib/unifiedInbox';
 import { starInboxItems } from '@/renderer/lib/unifiedInboxActions';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
@@ -210,6 +211,10 @@ describe('RoomsPanel', () => {
           'aiSummary.error.noMessages',
         );
       });
+      // Rooms read marks are arrival times, so their history is asked for by arrival.
+      expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ surface: 'room', byArrival: true }),
+      );
       expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
     } finally {
       dist.mockRestore();
@@ -2577,5 +2582,263 @@ describe('Room translation actions', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'chatTranslation.translate' }));
     expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
     expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
+  });
+});
+
+describe('RoomsPanel receive order', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    meshcoreClearAllRoomSessions();
+  });
+
+  it('lists posts in the order they arrived, under the day they arrived', async () => {
+    const room = makeRoom(0x1101, 'Order Room');
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const arrived = new Date();
+    arrived.setHours(10, 0, 0, 0);
+    const arrivedMs = arrived.getTime();
+    // A room server whose clock runs two days behind.
+    const serverTime = arrivedMs - 2 * 86_400_000;
+    const post = (authorId: number, authorName: string, rawText: string, timestamp: number) =>
+      buildMeshcoreRoomIncomingMessage({
+        roomServerId: room.node_id,
+        authorId,
+        authorName,
+        rawText,
+        timestamp,
+        receivedVia: 'rf',
+      });
+    renderRoomsPanel(new Map([[room.node_id, room]]), {
+      initialRoomTarget: room.node_id,
+      isActive: true,
+      messages: [
+        { ...post(3, 'Bob', 'second in', serverTime), receivedAt: arrivedMs + 60_000 },
+        { ...post(2, 'Alice', 'first in', arrivedMs), receivedAt: arrivedMs },
+      ],
+    });
+
+    const first = await screen.findByText('first in');
+    const second = screen.getByText('second in');
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // One separator for the day both arrived, none for the server's day; the post still shows
+    // the server's date and time.
+    expect(screen.getAllByText('chatPanel.dayToday')).toHaveLength(1);
+    expect(screen.queryByText(formatIsoDate(serverTime))).not.toBeInTheDocument();
+    expect(screen.getAllByText(formatIsoDateTime(serverTime)).length).toBeGreaterThan(0);
+  });
+
+  describe('read marks and times', () => {
+    const HOUR = 3_600_000;
+    const readStored = () =>
+      JSON.parse(localStorage.getItem('mesh-client:roomsLastRead:meshcore') ?? '{}') as Record<
+        string,
+        number
+      >;
+    const joinRoom = (nodeId: number, name: string) => {
+      const room = makeRoom(nodeId, name);
+      meshcoreApplyRoomSession(room.node_id, {
+        guestPassword: 'hello',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+      return room;
+    };
+    const roomPost = (
+      room: MeshNode,
+      rawText: string,
+      authorId: number,
+      authorName: string,
+      timestamp: number,
+      receivedAt: number,
+    ): ChatMessage => ({
+      ...buildMeshcoreRoomIncomingMessage({
+        rawText,
+        roomServerId: room.node_id,
+        authorId,
+        authorName,
+        timestamp,
+        receivedVia: 'rf',
+      }),
+      receivedAt,
+    });
+
+    beforeEach(() => {
+      mockIsAtEnd = false;
+      disposeAiSummaries();
+      useAiSummaryStore.setState({ status: null });
+    });
+
+    it('puts the unread divider above a slow-clock post that arrived after the read mark', async () => {
+      const now = Date.now();
+      const unreadRoom = joinRoom(0x1102, 'Unread Room');
+      const currentRoom = joinRoom(0x1103, 'Current Room');
+      savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, unreadRoom.node_id, now - 5000));
+      const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
+      try {
+        renderRoomsPanel(
+          new Map([
+            [unreadRoom.node_id, unreadRoom],
+            [currentRoom.node_id, currentRoom],
+          ]),
+          {
+            initialRoomTarget: currentRoom.node_id,
+            isActive: true,
+            messages: [
+              roomPost(unreadRoom, 'Read post', 0x200, 'Alice', now - 6000, now - 6000),
+              roomPost(unreadRoom, 'Slow clock post', 0x201, 'Bob', now - 3 * HOUR, now - 1000),
+            ],
+          },
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /Unread Room/i }));
+        const divider = await screen.findByText('roomsPanel.newMessagesDivider');
+        expect(
+          screen.getByText('Read post').compareDocumentPosition(divider) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(
+          divider.compareDocumentPosition(screen.getByText('Slow clock post')) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      } finally {
+        distSpy.mockRestore();
+      }
+    });
+
+    it('stores the newest arrival as the room read mark', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1104, 'Read Room');
+      savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, now - 5000));
+      const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(0);
+      const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      try {
+        renderRoomsPanel(new Map([[room.node_id, room]]), {
+          initialRoomTarget: room.node_id,
+          isActive: true,
+          messages: [
+            roomPost(room, 'Read post', 0x200, 'Alice', now - 6000, now - 6000),
+            roomPost(room, 'Slow clock post', 0x201, 'Bob', now - 3 * HOUR, now),
+          ],
+        });
+
+        await waitFor(() => {
+          expect(readStored()[String(room.node_id)]).toBe(now);
+        });
+      } finally {
+        distSpy.mockRestore();
+        hasFocusSpy.mockRestore();
+      }
+    });
+
+    it('stores the receipt of the last chunk of a multipart post as the read mark', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1107, 'Chunk Room');
+      savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, now - 5000));
+      const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(0);
+      const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      try {
+        renderRoomsPanel(new Map([[room.node_id, room]]), {
+          initialRoomTarget: room.node_id,
+          isActive: true,
+          messages: [
+            roomPost(room, '[1/2] hello ', 0x200, 'Alice', now - 3000, now - 3000),
+            roomPost(room, '[2/2] world', 0x200, 'Alice', now - 2000, now - 1000),
+          ],
+        });
+
+        await screen.findByText('hello world');
+        await waitFor(() => {
+          expect(readStored()[String(room.node_id)]).toBe(now - 1000);
+        });
+      } finally {
+        distSpy.mockRestore();
+        hasFocusSpy.mockRestore();
+      }
+    });
+
+    // The room server stamps other people's posts in the order it stores them, but our own post
+    // carries this computer's clock and can arrive between two chunks of someone else's post.
+    it('assembles a multipart post when an own post arrived between its chunks', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1108, 'Interleave Room');
+      renderRoomsPanel(new Map([[room.node_id, room]]), {
+        initialRoomTarget: room.node_id,
+        isActive: true,
+        messages: [
+          roomPost(room, '[1/2] hello ', 0x200, 'Alice', now - 20_000, now - 10_000),
+          {
+            ...roomPost(room, 'my reply', 1, 'Me', now - 5000, now - 9000),
+            status: 'acked',
+          },
+          roomPost(room, '[2/2] world', 0x200, 'Alice', now - 19_000, now - 8000),
+        ],
+      });
+
+      const assembled = await screen.findByText('hello world');
+      const reply = screen.getByText('my reply');
+      // The assembled post sorts at its last chunk's arrival, after the reply.
+      expect(
+        reply.compareDocumentPosition(assembled) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('catches up on posts that arrived after the read mark, whatever their stamps', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1106, 'Catch Up Room');
+      savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, now - 5000));
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue([]);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
+      try {
+        renderRoomsPanel(new Map([[room.node_id, room]]), {
+          initialRoomTarget: room.node_id,
+          isActive: true,
+          messages: [
+            roomPost(room, 'Read fast clock post', 0x200, 'Alice', now + 2 * 60_000, now - 6000),
+            roomPost(room, 'Unread slow clock post', 0x201, 'Bob', now - 3 * HOUR, now - 1000),
+          ],
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'aiSummary.catchUp' }));
+        await waitFor(() => {
+          expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+        });
+        const request = vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0];
+        expect(request.messages.map((message) => message.body)).toEqual(['Unread slow clock post']);
+      } finally {
+        distSpy.mockRestore();
+      }
+    });
+
+    it('shows the newest arrival as the last post and lists posters by latest arrival', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1105, 'Header Room');
+      const slowStamp = now - 3 * HOUR;
+      renderRoomsPanel(new Map([[room.node_id, room]]), {
+        initialRoomTarget: room.node_id,
+        messages: [
+          roomPost(room, 'On time post', 0x200, 'Alice', now - 60_000, now - 60_000),
+          roomPost(room, 'Slow clock post', 0x201, 'Bob', slowStamp, now - 1000),
+        ],
+      });
+
+      expect(
+        await screen.findByText(`roomsPanel.lastPost: ${formatIsoDateTime(slowStamp)}`),
+      ).toBeInTheDocument();
+      const members = screen.getByRole('region', { name: 'roomsPanel.membersHeadingWithCount' });
+      const posters = within(members).getAllByRole('listitem');
+      expect(posters.map((li) => li.querySelector('span')?.textContent)).toEqual(['Bob', 'Alice']);
+      expect(within(posters[0]).getByText(formatIsoDateTime(slowStamp))).toBeInTheDocument();
+    });
   });
 });
