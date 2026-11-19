@@ -1033,8 +1033,12 @@ export function useMeshcoreRuntime() {
   const prevStatsTimestampRef = useRef<number | null>(null);
   /** Periodic poll for local radio stats ({@link MESHCORE_STATS_POLL_MS}). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  /** Skip overlapping stats polls — concurrent getStats* share one Stats event and hang. */
-  const meshcoreStatsInFlightRef = useRef(false);
+  /**
+   * Connection that currently owns the in-flight stats poll. Concurrent getStats* on the same
+   * conn share one Stats event and hang; a newer conn supersedes so reconnect is not blocked by
+   * a retired promise, and late finally from the retired fetch cannot clear the new owner.
+   */
+  const meshcoreStatsInFlightConnRef = useRef<MeshCoreConnection | null>(null);
   const requestRepeaterStatusRef = useRef<((nodeId: number) => Promise<unknown>) | null>(null);
   const postRebootStatusSchedulerRef = useRef<RepeaterPostRebootStatusScheduler | null>(null);
   postRebootStatusSchedulerRef.current ??= createRepeaterPostRebootStatusScheduler(
@@ -1071,8 +1075,9 @@ export function useMeshcoreRuntime() {
       return;
     }
     // meshcore.js getStats uses once(Stats)+type filter; overlapping polls / Promise.all drop waiters.
-    if (meshcoreStatsInFlightRef.current) return;
-    meshcoreStatsInFlightRef.current = true;
+    // Same connection: skip. Different/retired owner: supersede so reconnect can poll.
+    if (meshcoreStatsInFlightConnRef.current === conn) return;
+    meshcoreStatsInFlightConnRef.current = conn;
     try {
       let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
       try {
@@ -1081,6 +1086,8 @@ export function useMeshcoreRuntime() {
         // catch-no-log-ok getStatsCore optional on some transports
         return;
       }
+      // Retired after reconnect — do not write into the active session.
+      if (connRef.current !== conn) return;
 
       const core = coreStats.data;
       // STATS CORE queue_len = PacketManager outbound total (MeshCore stats_binary_frames.md).
@@ -1123,6 +1130,7 @@ export function useMeshcoreRuntime() {
         // catch-no-log-ok getStatsRadio optional
         return;
       }
+      if (connRef.current !== conn) return;
 
       try {
         packetStats = await conn.getStatsPackets();
@@ -1130,6 +1138,7 @@ export function useMeshcoreRuntime() {
         // catch-no-log-ok getStatsPackets optional
         return;
       }
+      if (connRef.current !== conn) return;
 
       const radio = radioStats.data;
       const packet = packetStats.data;
@@ -1201,7 +1210,9 @@ export function useMeshcoreRuntime() {
       }
       meshcoreLastDataReceivedRef.current = Date.now();
     } finally {
-      meshcoreStatsInFlightRef.current = false;
+      if (meshcoreStatsInFlightConnRef.current === conn) {
+        meshcoreStatsInFlightConnRef.current = null;
+      }
     }
   }, [state.myNodeNum]);
 

@@ -9,8 +9,8 @@
  * callers fall back to their own defaults.
  */
 import { useMessageStore } from '../stores/messageStore';
-import { type NodeRecord, useNodeStore } from '../stores/nodeStore';
-import { peekPendingNodeRecord } from './ingest/coalescedNodeWrites';
+import { useNodeStore } from '../stores/nodeStore';
+import { peekPendingNodeRecord, pendingNodeRecordMergeFields } from './ingest/coalescedNodeWrites';
 import {
   messageRecordsToChatMessages,
   nodeRecordsToMeshNodeMap,
@@ -37,10 +37,6 @@ export function getIdentityNodeMap(identityId: string | null | undefined): Map<n
  * Single node lookup — avoids converting the whole bucket on hot packet paths.
  * Pending coalesced writes are visible before flush (see coalescedNodeWrites).
  */
-function definedNodeRecordFields(record: NodeRecord): Partial<NodeRecord> {
-  return Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
-}
-
 export function getIdentityNode(
   identityId: string | null | undefined,
   nodeId: number,
@@ -51,10 +47,10 @@ export function getIdentityNode(
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
   if (pending) {
     // Pending is a full snapshot that may omit session-only fields (noiseFloor) written
-    // directly via updateTelemetry; merge defined pending keys onto the live store row.
+    // directly via updateTelemetry; merge pending keys onto the live store row.
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- bucket/node may be absent at runtime
     if (record) {
-      return nodeRecordToMeshNode({ ...record, ...definedNodeRecordFields(pending), nodeId });
+      return nodeRecordToMeshNode({ ...record, ...pendingNodeRecordMergeFields(pending), nodeId });
     }
     return nodeRecordToMeshNode(pending);
   }
