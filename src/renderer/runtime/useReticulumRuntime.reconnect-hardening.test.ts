@@ -85,7 +85,7 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
 
   it('disconnect sets suppressReconnect before stopping sidecar', () => {
     const disconnectRe =
-      /const disconnect = useCallback\(async \(\) => \{[\s\S]*?\}, \[syncConnectionStore\]\);/;
+      /const disconnect = useCallback\(async \(\) => \{[\s\S]*?\}, \[[^\]]*syncConnectionStore[^\]]*\]\);/;
     const disconnectBody = disconnectRe.exec(SOURCE)?.[0];
     expect(disconnectBody).toBeDefined();
     expect(disconnectBody).toContain('suppressReconnectRef.current = true');
@@ -225,7 +225,7 @@ describe('useReticulumRuntime RMAP discovery map', () => {
   it('clears discovery map and peer store on disconnect and sidecar stop', () => {
     expect(SOURCE).toContain('clearReticulumSessionStores()');
     const tearDownRe =
-      /const tearDownFromSidecarStop = useCallback\([\s\S]*?\}, \[syncConnectionStore\]\);/;
+      /const tearDownFromSidecarStop = useCallback\([\s\S]*?\}, \[[^\]]*syncConnectionStore[^\]]*\]\);/;
     const tearDownBody = tearDownRe.exec(SOURCE)?.[0];
     expect(tearDownBody).toMatch(/clearReticulumSessionStores\(\)/);
   });
@@ -265,17 +265,27 @@ describe('useReticulumRuntime peer refresh WS routing', () => {
 });
 
 describe('useReticulumRuntime contact → nodeStore label preservation', () => {
-  it('wires reticulumContactToNodeRecordPreservingLabel with prior node rows', () => {
-    expect(SOURCE).toContain('reticulumContactToNodeRecordPreservingLabel');
-    expect(SOURCE).toMatch(
-      /reticulumContactToNodeRecordPreservingLabel\(contact,\s*priorNodes\[nodeId\]\)/,
-    );
-    expect(SOURCE).not.toMatch(/records\.push\(reticulumContactToNodeRecord\(contact\)\)/);
+  it('applies contact nodes via buildReticulumContactNodeSlice with unchanged bail', () => {
+    expect(SOURCE).toContain('buildReticulumContactNodeSlice');
+    expect(SOURCE).toContain('contactNodeSliceUnchanged');
+    expect(SOURCE).toMatch(/history:\s*history\.values\(\)/);
+    expect(SOURCE).toMatch(/if \(contactNodeSliceUnchanged\(prior,\s*nextSlice\)\) return s/);
   });
+});
 
-  it('applyContactNodesFromStore keeps History peers in nodeStore', () => {
-    expect(SOURCE).toMatch(/for \(const contact of history\.values\(\)\)/);
-    expect(SOURCE).toMatch(/keepNodeIds\.has\(nodeId\)/);
+describe('useReticulumRuntime background resume refresh', () => {
+  it('re-checks eligibility inside deferred onRefresh and rearms the interface poll without duplicate diagnostics', () => {
+    expect(SOURCE).toContain('rearmLocalInterfacePollRef');
+    const resumeStart = SOURCE.indexOf(
+      'One coalesced full refresh when the window becomes visible',
+    );
+    expect(resumeStart).toBeGreaterThan(-1);
+    const resumeBody = SOURCE.slice(resumeStart, resumeStart + 2000);
+    expect(resumeBody).toMatch(
+      /onRefresh:\s*\(\)\s*=>\s*\{[\s\S]*?shouldRunReticulumExpensiveBackgroundWork\(\)/,
+    );
+    expect(resumeBody).toContain('rearmLocalInterfacePollRef.current?.({ skipDiagnostics: true })');
+    expect(SOURCE).toContain('!opts?.skipDiagnostics');
   });
 });
 

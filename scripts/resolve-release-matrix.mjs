@@ -57,6 +57,8 @@ if (selected.length === 0) {
 const matrix = args.includes('--sidecars')
   ? selected.flatMap((row) =>
       PLATFORM_TARGETS[row.sidecar_platform].map(({ cargoTarget, archKey }) => ({
+        // Linux sidecars build on ubuntu-latest with cargo-zigbuild (glibc 2.35 ABI).
+        // See docs/ci-cd.md#linux-sidecar-glibc — do not pin the runner to raise/lower ABI.
         os: row.os,
         platform: row.sidecar_platform,
         arch: archKey,

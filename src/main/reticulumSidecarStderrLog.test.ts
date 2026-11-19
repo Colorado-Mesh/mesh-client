@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  isReticulumSidecarRawFatalOutput,
   logReticulumSidecarStderrLine,
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
@@ -35,11 +36,13 @@ describe('shouldForwardReticulumSidecarStdout', () => {
         ),
       ),
     ).toBe(true);
+    // CSI-mangled lines no longer parse as tracing severity — still forward so loader /
+    // panic text is not dropped when callers forget to normalize first.
     expect(
       shouldForwardReticulumSidecarStdout(
         '2026-07-30T11:23:18Z \u001b[33m WARN \u001b[0m auto: failed to select multicast',
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(shouldForwardReticulumSidecarStdout('ERROR panic in link_manager')).toBe(true);
   });
 
@@ -114,6 +117,18 @@ describe('shouldForwardReticulumSidecarStdout', () => {
       ),
     ).toBe(false);
   });
+
+  it('forwards dynamic-linker and other non-tracing fatal lines', () => {
+    const glibc =
+      "mesh-client-reticulum: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.39' not found";
+    const shared =
+      'mesh-client-reticulum: error while loading shared libraries: libdbus-1.so.3: cannot open shared object file';
+    expect(shouldForwardReticulumSidecarStdout(glibc)).toBe(true);
+    expect(shouldForwardReticulumSidecarStdout(shared)).toBe(true);
+    expect(isReticulumSidecarRawFatalOutput(glibc)).toBe(true);
+    expect(isReticulumSidecarRawFatalOutput(shared)).toBe(true);
+    expect(shouldForwardReticulumSidecarStdout('DEBUG still filtered')).toBe(false);
+  });
 });
 
 describe('normalizeReticulumSidecarOutputLine', () => {
@@ -134,9 +149,13 @@ describe('normalizeReticulumSidecarOutputLine', () => {
     ).toBe(true);
   });
 
-  it('sanitizing alone (old path) hides the level from the forward filter', () => {
+  it('sanitizing alone (old path) leaves a non-tracing line that is still forwarded', () => {
     const sanitizedOnly = coloredWarn.replace(/[\x00-\x1F\x7F]+/g, ' '); // eslint-disable-line no-control-regex
-    expect(shouldForwardReticulumSidecarStdout(sanitizedOnly)).toBe(false);
+    // Prefer leaking a mangled WARN over dropping dynamic-linker / panic stderr.
+    expect(shouldForwardReticulumSidecarStdout(sanitizedOnly)).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(normalizeReticulumSidecarOutputLine(coloredWarn)),
+    ).toBe(true);
   });
 
   it('still strips control characters and newlines', () => {

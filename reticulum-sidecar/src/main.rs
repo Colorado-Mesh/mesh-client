@@ -25,6 +25,7 @@ mod ble;
 mod gatt;
 mod stack;
 
+use std::io::{self, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -38,6 +39,13 @@ use tracing::{error, info};
 
 use crate::stack::StackHandle;
 use crate::stack::config_audit::validate_config_offline;
+
+/// Flush stderr before early exit so Electron's pipe capture sees tracing `error!` lines
+/// (stderr is block-buffered when not a TTY).
+fn exit_with_error() -> ExitCode {
+    let _ = io::stderr().flush();
+    ExitCode::from(1)
+}
 
 #[derive(Parser, Debug)]
 #[command(name = "mesh-client-reticulum")]
@@ -189,7 +197,7 @@ async fn main() -> ExitCode {
         Ok(addr) => addr,
         Err(e) => {
             error!(host = %cli.host, port = cli.port, error = %e, "invalid listen address");
-            return ExitCode::from(1);
+            return exit_with_error();
         }
     };
 
@@ -197,7 +205,7 @@ async fn main() -> ExitCode {
         Ok(bootstrap) => bootstrap,
         Err(e) => {
             error!(error = %e, "sidecar authentication bootstrap failed");
-            return ExitCode::from(1);
+            return exit_with_error();
         }
     };
 
@@ -225,7 +233,7 @@ async fn main() -> ExitCode {
         Ok(app) => app,
         Err(e) => {
             error!(error = %e, "sidecar authentication bootstrap rejected");
-            return ExitCode::from(1);
+            return exit_with_error();
         }
     };
     info!(%addr, "listening");
@@ -233,7 +241,7 @@ async fn main() -> ExitCode {
         Ok(listener) => listener,
         Err(e) => {
             error!(%addr, error = %e, "failed to bind listen address");
-            return ExitCode::from(1);
+            return exit_with_error();
         }
     };
 

@@ -16,6 +16,7 @@ import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { installKeyboardOwnerGuard } from './lib/keyboardOwnerLayer';
 import { ensureLocaleLoaded } from './lib/localeResources';
+import { startLongTaskProbe } from './lib/longTaskProbe';
 import { parseStoredJson } from './lib/parseStoredJson';
 import {
   initReduceMotionDefaultIfAbsent,
@@ -102,6 +103,8 @@ if (import.meta.env.DEV) {
 }
 
 installRendererUnhandledRejectionLogger();
+// Always-on: long tasks land in Support rendererTimings without mesh-client:perf.
+startLongTaskProbe();
 // Linux emoji picker reads vendored data instead of cdn.jsdelivr.net (works offline).
 installBundledEmojiData();
 // Before the first render, so it runs ahead of every modal's own key listener.

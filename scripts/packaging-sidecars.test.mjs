@@ -100,7 +100,45 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).toContain('targets: ${{ matrix.target }}');
     expect(sidecars).toContain('--platform ${{ matrix.platform }} --arch ${{ matrix.arch }}');
     expect(sidecars).toContain("${{ !matrix.run_tests && '--skip-tests' || '' }}");
+    expect(sidecars).toContain('Smoke-test staged sidecar HTTP');
+    expect(sidecars).toContain('node scripts/smoke-reticulum-sidecar-http.mjs');
+    expect(sidecars).toContain('Assert Linux sidecar glibc floor');
+    expect(sidecars).toContain('node scripts/check-reticulum-sidecar-glibc.mjs');
+    expect(sidecars).toContain('Setup Zig');
+    expect(sidecars).toContain('mlugg/setup-zig@');
+    expect(sidecars).toContain('version: 0.14.1');
+    expect(sidecars).toContain('Install cargo-zigbuild');
+    expect(sidecars).toContain('cargo install cargo-zigbuild --version 0.24.1 --locked');
+    expect(sidecars).toContain('docs/ci-cd.md#linux-sidecar-glibc');
     expect(sidecars).not.toMatch(/continue-on-error:/);
+    const smoke = yaml
+      .load(sidecars)
+      .jobs.build.steps.find((step) => step.name === 'Smoke-test staged sidecar HTTP');
+    expect(smoke?.shell).toBe('bash');
+  });
+
+  it('keeps Zig + cargo-zigbuild before the Linux release build', () => {
+    const workflow = yaml.load(sidecars);
+    const steps = workflow.jobs.build.steps;
+    const zig = steps.findIndex((step) => step.name === 'Setup Zig');
+    const zigbuild = steps.findIndex((step) => step.name === 'Install cargo-zigbuild');
+    const build = steps.findIndex((step) => step.name === 'Build and stage sidecar');
+    expect(zig).toBeGreaterThanOrEqual(0);
+    expect(zigbuild).toBeGreaterThan(zig);
+    expect(build).toBeGreaterThan(zigbuild);
+    expect(steps[zig].if).toBe("matrix.platform == 'linux'");
+    expect(steps[zigbuild].if).toBe("matrix.platform == 'linux'");
+  });
+
+  it('runs staged sidecar HTTP smoke under bash so Windows expands env vars', () => {
+    const workflow = yaml.load(sidecars);
+    const smoke = workflow.jobs.build.steps.find(
+      (step) => step.name === 'Smoke-test staged sidecar HTTP',
+    );
+    expect(smoke).toBeDefined();
+    expect(smoke.shell).toBe('bash');
+    expect(smoke.if).toBe('matrix.run_tests');
+    expect(smoke.run).toContain('smoke-reticulum-sidecar-http.mjs');
   });
 
   it('downloads only this run’s staged Reticulum binaries and requires both architectures', () => {
@@ -146,6 +184,8 @@ function fixture() {
     'verify-reticulum-sidecar-staged.mjs',
     'reticulum-sidecar-staging.mjs',
     'resolve-release-matrix.mjs',
+    'check-reticulum-sidecar-glibc.mjs',
+    'binary-arch.mjs',
   ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
