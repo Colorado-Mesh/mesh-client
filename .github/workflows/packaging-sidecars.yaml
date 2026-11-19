@@ -72,6 +72,19 @@ jobs:
           node scripts/build-reticulum-sidecar-release.mjs
           --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
           ${{ !matrix.run_tests && '--skip-tests' || '' }}
+      # Fail closed if a Linux sidecar needs glibc newer than Ubuntu 22.04 (instant AppImage crash).
+      - name: Assert Linux sidecar glibc floor
+        if: matrix.platform == 'linux'
+        env:
+          SIDECAR_DIR: resources/reticulum-sidecar/staged/${{ matrix.platform }}-${{ matrix.arch }}
+        run: node scripts/check-reticulum-sidecar-glibc.mjs "$SIDECAR_DIR/mesh-client-reticulum"
+      # Native-arch only: exec the staged binary, auth stdin, poll /api/v1/status.
+      - name: Smoke-test staged sidecar HTTP
+        if: matrix.run_tests
+        env:
+          SIDECAR_DIR: resources/reticulum-sidecar/staged/${{ matrix.platform }}-${{ matrix.arch }}
+          SIDECAR_BIN: ${{ matrix.platform == 'win32' && 'mesh-client-reticulum.exe' || 'mesh-client-reticulum' }}
+        run: node scripts/smoke-reticulum-sidecar-http.mjs "$SIDECAR_DIR/$SIDECAR_BIN"
       - name: Archive sidecar and source revisions
         shell: bash
         env:

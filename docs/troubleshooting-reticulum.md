@@ -56,8 +56,17 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` starts the authenticated standalone process. For app-managed instances, use the Connection panel or diagnostics to confirm `status: ok`; the raw localhost API rejects unauthenticated requests. `rns_ready`/`lxmf_ready` may still be `false` briefly.
 3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client-Setup-{version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
 4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
-5. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
-6. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
+5. **Linux AppImage — sidecar exits immediately / `gatt:start-scan` shows `fetch failed`**: LoRa BLE and Reticulum share the sidecar HTTP process. If logs show `[ReticulumSidecar] exited code=1` within milliseconds of Start / Connect, the binary never stayed up (often a dynamic-linker / glibc mismatch). Self-check:
+   ```bash
+   chmod +x Mesh-client-*.AppImage
+   ./Mesh-client-*.AppImage --appimage-extract
+   # From the extract directory:
+   ldd squashfs-root/resources/reticulum-sidecar/mesh-client-reticulum
+   ./squashfs-root/resources/reticulum-sidecar/mesh-client-reticulum --help
+   ```
+   Look for `GLIBC_… not found` or `error while loading shared libraries`. Enable **debug** in the Log panel (or read `~/.config/mesh-client/mesh-client.log`) — current builds forward loader stderr and prefer `exit N: …` over a bare undici `fetch failed`. Flatpak / `.deb` / `.rpm` from the same release may work if only the AppImage mount path is broken; prefer a release built against an older glibc floor if `ldd` reports missing symbols.
+6. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
+7. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 

@@ -100,6 +100,10 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).toContain('targets: ${{ matrix.target }}');
     expect(sidecars).toContain('--platform ${{ matrix.platform }} --arch ${{ matrix.arch }}');
     expect(sidecars).toContain("${{ !matrix.run_tests && '--skip-tests' || '' }}");
+    expect(sidecars).toContain('Smoke-test staged sidecar HTTP');
+    expect(sidecars).toContain('node scripts/smoke-reticulum-sidecar-http.mjs');
+    expect(sidecars).toContain('Assert Linux sidecar glibc floor');
+    expect(sidecars).toContain('node scripts/check-reticulum-sidecar-glibc.mjs');
     expect(sidecars).not.toMatch(/continue-on-error:/);
   });
 
@@ -146,6 +150,8 @@ function fixture() {
     'verify-reticulum-sidecar-staged.mjs',
     'reticulum-sidecar-staging.mjs',
     'resolve-release-matrix.mjs',
+    'check-reticulum-sidecar-glibc.mjs',
+    'binary-arch.mjs',
   ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }

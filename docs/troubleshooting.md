@@ -481,6 +481,7 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 **Linux-specific:**
 
 - LoRa BLE uses the reticulum-sidecar **btleplug** stack (same as macOS/Windows), not Web Bluetooth. You still need a working Bluetooth stack (`systemctl status bluetooth` / `rfkill list`).
+- **AppImage `gatt:start-scan` / `Error: fetch failed`:** usually the shared reticulum sidecar exited before HTTP came up (not BlueZ). Check logs for `[ReticulumSidecar] exited code=1` and follow [Reticulum sidecar won't start](troubleshooting-reticulum.md#reticulum-sidecar-wont-start-or-health-poll-times-out) (AppImage `ldd` / extract self-check).
 - **Flatpak:** The package allows Bluetooth (`--allow=bluetooth` + `--system-talk-name=org.bluez`). In-app PIN pairing uses BlueZ D-Bus directly (no `bluetoothctl` in the sandbox). If pairing still fails, confirm `bluetoothd` is running on the host, or pair in system Bluetooth settings / host `bluetoothctl`, then Connect again from Flatpak. AppImage/`.deb`/`.rpm` remain alternatives.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
 - If device pairing fails with `pairing_required` / connection attempt failed, try **"Remove & Re-pair Device"** in the app, or manually remove via `bluetoothctl`:

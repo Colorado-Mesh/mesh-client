@@ -18,6 +18,7 @@ import {
   RETICULUM_WS_MAX_MESSAGE_BYTES,
 } from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
+import { fetchErrorDetail } from './gatt-sidecar-proxy';
 import { sanitizeLogMessage } from './log-service';
 import { disableDecommissionedReticulumHubsInConfigDir } from './reticulum-decommissioned-hubs';
 import {
@@ -44,6 +45,8 @@ import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
+/** Keep recent sidecar stdout/stderr for exit diagnostics (loader / panic lines). */
+const SIDECAR_OUTPUT_RING_MAX = 20;
 /** Bound normal Stop's state flush and BLE detach before SIGTERM. */
 const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
 /** Large state files need more time to serialize and synchronize during Quit. */
@@ -97,7 +100,32 @@ export function sidecarChildEnv(): NodeJS.ProcessEnv {
     env.USERPROFILE = process.env.USERPROFILE;
     env.LOCALAPPDATA = process.env.LOCALAPPDATA;
   }
+  // BlueZ / btleplug talk to the session bus; without these the HTTP shell may still
+  // start but GATT adapter discovery fails on Linux desktop sessions.
+  if (process.platform === 'linux') {
+    if (process.env.DBUS_SESSION_BUS_ADDRESS) {
+      env.DBUS_SESSION_BUS_ADDRESS = process.env.DBUS_SESSION_BUS_ADDRESS;
+    }
+    if (process.env.XDG_RUNTIME_DIR) {
+      env.XDG_RUNTIME_DIR = process.env.XDG_RUNTIME_DIR;
+    }
+  }
   return env;
+}
+
+/** Prefer a prior child-exit reason over a bare undici "fetch failed" health-poll message. */
+export function preferSidecarExitErrorOverFetch(
+  exitLastError: string | undefined,
+  pollError: unknown,
+): string {
+  if (exitLastError && /^(exit |signal )/.test(exitLastError)) {
+    return exitLastError;
+  }
+  const pollMsg = pollError instanceof Error ? pollError.message : String(pollError);
+  if (pollMsg === 'fetch failed' || pollMsg.includes('fetch failed')) {
+    return fetchErrorDetail(pollError);
+  }
+  return pollMsg;
 }
 
 function assertProxyBodySize(body: unknown): void {
@@ -176,12 +204,23 @@ async function findFreePort(host = '127.0.0.1'): Promise<number> {
 async function pollSidecarHealth(
   port: number,
   authToken: string,
+  opts?: {
+    isAlive?: () => boolean;
+    getExitError?: () => string | undefined;
+  },
 ): Promise<ReticulumStatusResponse> {
   const url = `http://127.0.0.1:${port}/api/v1/status`;
   const deadline = Date.now() + HEALTH_POLL_TIMEOUT_MS;
   let lastError = 'health poll timeout';
 
   while (Date.now() < deadline) {
+    const exitError = opts?.getExitError?.();
+    if (exitError && /^(exit |signal )/.test(exitError)) {
+      throw new Error(exitError);
+    }
+    if (opts?.isAlive && !opts.isAlive()) {
+      throw new Error(exitError ?? 'sidecar process exited during health poll');
+    }
     try {
       const res = await fetch(url, {
         headers: sidecarAuthorizationHeaders(authToken),
@@ -198,7 +237,12 @@ async function pollSidecarHealth(
       }
     } catch (err) {
       // catch-no-log-ok: health poll retries until deadline; lastError surfaces on timeout
-      lastError = err instanceof Error ? err.message : String(err);
+      lastError =
+        err instanceof Error && err.message === 'fetch failed'
+          ? fetchErrorDetail(err)
+          : err instanceof Error
+            ? err.message
+            : String(err);
     }
     await new Promise((r) => setTimeout(r, HEALTH_POLL_INTERVAL_MS));
   }
@@ -250,12 +294,40 @@ export class ReticulumSidecarManager extends EventEmitter {
   );
   private lastIssueStatusEmitAt = 0;
   private watchdogStop: (() => void) | null = null;
+  /** Recent normalized stdout/stderr lines from the current child (ring buffer). */
+  private recentSidecarOutput: string[] = [];
   private _status: ReticulumSidecarStatus = {
     running: false,
     port: 0,
     pid: null,
     healthy: true,
   };
+
+  private pushSidecarOutputLine(text: string): void {
+    this.recentSidecarOutput.push(text);
+    if (this.recentSidecarOutput.length > SIDECAR_OUTPUT_RING_MAX) {
+      this.recentSidecarOutput.shift();
+    }
+  }
+
+  private formatRecentSidecarOutput(): string {
+    return this.recentSidecarOutput.join(' | ');
+  }
+
+  private formatExitLastError(
+    code: number | null,
+    signal: NodeJS.Signals | null,
+  ): string | undefined {
+    if (signal) {
+      const tail = this.formatRecentSidecarOutput();
+      return tail ? `signal ${signal}: ${tail}` : `signal ${signal}`;
+    }
+    if (code != null && code !== 0) {
+      const tail = this.formatRecentSidecarOutput();
+      return tail ? `exit ${code}: ${tail}` : `exit ${code}`;
+    }
+    return undefined;
+  }
 
   resolveBinaryPath(): string {
     return resolveSidecarBinaryPath();
@@ -623,12 +695,14 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.proc = proc;
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
+    this.recentSidecarOutput = [];
 
     // tracing-subscriber fmt() writes stderr (no with_writer). validate-config JSON
     // owns stdout, so both pipes share this line filter and the TCP read-error dedupe.
     const processOutputLine = (line: string): void => {
       const text = normalizeReticulumSidecarOutputLine(line);
       if (!text) return;
+      this.pushSidecarOutputLine(text);
       this.recordSidecarOutputLine(text);
       if (isReticulumSidecarAutoBeaconTxFailure(text)) {
         logReticulumSidecarStderrLine(
@@ -676,7 +750,18 @@ export class ReticulumSidecarManager extends EventEmitter {
     bindOutputLines(proc.stdout);
     bindOutputLines(proc.stderr);
     proc.on('exit', (code, signal) => {
-      console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
+      const lastError = this.formatExitLastError(code, signal);
+      const abnormal = lastError != null;
+      const exitSummary = `exited code=${code ?? 'null'} signal=${signal ?? 'null'}`;
+      if (abnormal) {
+        const tail = this.formatRecentSidecarOutput();
+        console.warn(
+          '[ReticulumSidecar]',
+          tail ? `${exitSummary}; last output: ${tail}` : exitSummary,
+        );
+      } else {
+        console.debug(`[ReticulumSidecar] ${exitSummary}`);
+      }
       this.teardownWs();
       // The watchdog no-ops once proc is null, but leaving it armed leaks its interval
       // across the next spawn.
@@ -692,15 +777,18 @@ export class ReticulumSidecarManager extends EventEmitter {
         running: false,
         port: this._status.port,
         pid: null,
-        lastError: code != null && code !== 0 ? `exit ${code}` : undefined,
+        lastError,
       };
       this.emit('status', this.getStatus());
     });
 
     try {
-      await pollSidecarHealth(port, authToken);
+      await pollSidecarHealth(port, authToken, {
+        isAlive: () => this.proc === proc,
+        getExitError: () => this._status.lastError,
+      });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = preferSidecarExitErrorOverFetch(this._status.lastError, err);
       await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);

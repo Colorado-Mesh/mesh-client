@@ -22,8 +22,13 @@ import {
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import {
+  assertBundledReticulumSidecarInBundle,
+  resolveBundledSidecarPath,
+} from './assert-bundled-reticulum-sidecar.mjs';
 import { EM_AARCH64, EM_X86_64, readElfMachine } from './binary-arch.mjs';
+import { assertSidecarGlibcFloor } from './check-reticulum-sidecar-glibc.mjs';
+import { smokeReticulumSidecarHttp } from './smoke-reticulum-sidecar-http.mjs';
 
 export { EM_AARCH64, EM_X86_64, readElfMachine, readElfMachineFromHeader } from './binary-arch.mjs';
 
@@ -294,8 +299,13 @@ function extractAppImage(appImagePath, extractDir) {
   return payloadRoot;
 }
 
-/** @param {'x64' | 'arm64'} arch @param {string} appImagePath @param {string} expectedVersion */
-function assertSidecarInAppImage(arch, appImagePath, expectedVersion) {
+/**
+ * @param {'x64' | 'arm64'} arch
+ * @param {string} appImagePath
+ * @param {string} expectedVersion
+ * @param {{ smokeHttp?: boolean }} [opts]
+ */
+async function assertSidecarInAppImage(arch, appImagePath, expectedVersion, opts = {}) {
   const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-appimage-${arch}-`));
   try {
     const payloadRoot = extractAppImage(appImagePath, extractDir);
@@ -307,6 +317,30 @@ function assertSidecarInAppImage(arch, appImagePath, expectedVersion) {
       expectedArch: arch,
     });
     assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, `${arch} AppImage`);
+    const sidecarPath = resolveBundledSidecarPath('linux', payloadRoot);
+    try {
+      assertSidecarGlibcFloor(sidecarPath);
+    } catch (err) {
+      fail(
+        `${arch} AppImage sidecar glibc floor failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+    if (opts.smokeHttp) {
+      try {
+        await smokeReticulumSidecarHttp(sidecarPath);
+        console.debug(
+          `[test-linux-appimage-reticulum-sidecar] OK — HTTP smoke for ${arch} sidecar`,
+        );
+      } catch (err) {
+        fail(
+          `${arch} AppImage sidecar HTTP smoke failed: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
   } finally {
     rmSync(extractDir, { recursive: true, force: true });
   }
@@ -315,7 +349,7 @@ function assertSidecarInAppImage(arch, appImagePath, expectedVersion) {
   );
 }
 
-function main() {
+async function main() {
   if (process.platform !== 'linux') {
     console.debug('[test-linux-appimage-reticulum-sidecar] Skipping on non-Linux host');
     return;
@@ -344,6 +378,7 @@ function main() {
   }
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
+  const hostArch = process.arch === 'arm64' ? 'arm64' : process.arch === 'x64' ? 'x64' : null;
 
   for (const [arch, name] of [
     ['x64', x64Images[0]],
@@ -354,7 +389,9 @@ function main() {
     if (size < 50 * 1024 * 1024) {
       fail(`AppImage too small (${size} bytes): ${appImagePath}`);
     }
-    assertSidecarInAppImage(arch, appImagePath, version);
+    await assertSidecarInAppImage(/** @type {'x64' | 'arm64'} */ (arch), appImagePath, version, {
+      smokeHttp: hostArch === arch,
+    });
   }
 
   console.debug(
@@ -365,10 +402,8 @@ function main() {
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMain) {
-  try {
-    main();
-  } catch (e) {
+  main().catch((e) => {
     console.error('[test-linux-appimage-reticulum-sidecar] Unexpected error:', e);
     process.exit(1);
-  }
+  });
 }

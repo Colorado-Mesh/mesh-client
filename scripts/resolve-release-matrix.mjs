@@ -57,7 +57,10 @@ if (selected.length === 0) {
 const matrix = args.includes('--sidecars')
   ? selected.flatMap((row) =>
       PLATFORM_TARGETS[row.sidecar_platform].map(({ cargoTarget, archKey }) => ({
-        os: row.os,
+        // Linux sidecar builds pin ubuntu-22.04 so the glibc floor stays below
+        // ubuntu-latest (24.04+) AppImage/deb hosts (Pop!_OS 22.04, Ubuntu 22.04, …).
+        // Electron packaging itself still uses row.os (ubuntu-latest).
+        os: row.sidecar_platform === 'linux' ? 'ubuntu-22.04' : row.os,
         platform: row.sidecar_platform,
         arch: archKey,
         target: cargoTarget,
