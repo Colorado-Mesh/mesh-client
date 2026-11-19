@@ -12,7 +12,11 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Ubuntu 22.04 / Pop!_OS 22.04 floor used by packaging-sidecars Linux jobs. */
+/**
+ * Ubuntu 22.04 floor used by packaging-sidecars Linux jobs.
+ * Must stay ≤ host glibc on supported desktops (Pop!_OS/Ubuntu 24.04 ≈ 2.39).
+ * 6.9.0 AppImage shipped a ubuntu-latest binary needing GLIBC_2.43 and crashed on Pop 24.04.
+ */
 export const MAX_SIDECAR_GLIBC = '2.35';
 
 /** @param {string} msg */
