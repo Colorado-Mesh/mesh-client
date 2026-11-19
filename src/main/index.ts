@@ -38,11 +38,8 @@ import {
 } from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { isChannelIdentityKey } from '../shared/channelIdentityKey';
+import { maxQueryableChatReceiptMs, SQL_CHAT_RECEIPT_ORDER_MS } from '../shared/chatReceiptDbOrder';
 import { chatReceivedAtForDb } from '../shared/chatReceivedAt';
-import {
-  maxQueryableChatReceiptMs,
-  SQL_CHAT_RECEIPT_ORDER_MS,
-} from '../shared/chatReceiptDbOrder';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import {
   CLOSE_TO_TRAY_SETTING_KEY,
@@ -5455,7 +5452,10 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
         .prepareOnce(
           `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = @channel ${order}`,
         )
-        .all({ channel: ch, limit: safeLimit, max_receipt: maxReceipt }) as Record<string, unknown>[];
+        .all({ channel: ch, limit: safeLimit, max_receipt: maxReceipt }) as Record<
+        string,
+        unknown
+      >[];
       rows.reverse();
       return rows.map((row) => ({
         ...row,

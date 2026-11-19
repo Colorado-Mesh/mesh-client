@@ -4,8 +4,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   maxQueryableChatReceiptMs,
   SQL_CHAT_RECEIPT_ORDER_MS,
-} from './chatReceiptDbOrder';
-import { CHAT_RECEIPT_SEED_MAX_LEAD_MS } from './timeConstants';
+} from '../shared/chatReceiptDbOrder';
+import { CHAT_RECEIPT_SEED_MAX_LEAD_MS } from '../shared/timeConstants';
+import { NodeSqliteDB } from './db-compat';
+import { runSchemaUpgrade } from './db-schema-sync';
+import { selectMeshcoreMessagesForHydration } from './meshcoreHydrationSelect';
 
 describe('SQL_CHAT_RECEIPT_ORDER_MS', () => {
   const NOW = 1_700_000_000_000;
@@ -14,10 +17,7 @@ describe('SQL_CHAT_RECEIPT_ORDER_MS', () => {
     vi.restoreAllMocks();
   });
 
-  it('ranks a fresh receipt above a far-future poisoned one for LIMIT windows', async () => {
-    const { NodeSqliteDB } = await import('../main/db-compat');
-    const { runSchemaUpgrade } = await import('../main/db-schema-sync');
-    const { selectMeshcoreMessagesForHydration } = await import('../main/meshcoreHydrationSelect');
+  it('ranks a fresh receipt above a far-future poisoned one for LIMIT windows', () => {
     vi.spyOn(Date, 'now').mockReturnValue(NOW);
     const db = new NodeSqliteDB(':memory:');
     runSchemaUpgrade(db);
