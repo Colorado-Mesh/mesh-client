@@ -101,11 +101,32 @@ function mockSidecarProc(pid = 4242): EventEmitter & {
     stderr: EventEmitter;
   };
   proc.pid = pid;
-  proc.kill = vi.fn();
+  proc.kill = vi.fn((signal?: NodeJS.Signals | number) => {
+    // Mirror real ChildProcess: exit then close once stdio is done (mocks have no pipes).
+    const code = typeof signal === 'number' ? signal : 0;
+    const sig = typeof signal === 'string' ? signal : null;
+    proc.emit('exit', code, sig);
+    proc.emit('close', code, sig);
+    return true;
+  });
   proc.stdin = Object.assign(new EventEmitter(), { end: vi.fn() });
   proc.stdout = new EventEmitter();
   proc.stderr = new EventEmitter();
   return proc;
+}
+
+/** Emit exit then close so child-local exit diagnostics finalize (stdio drain). */
+function emitProcExit(
+  proc: EventEmitter,
+  code: number | null = 0,
+  signal: NodeJS.Signals | null = null,
+): void {
+  const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
+  const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+  proc.emit('exit', code, signal);
+  stdout.emit('end');
+  stderr.emit('end');
+  proc.emit('close', code, signal);
 }
 
 describe('ReticulumSidecarManager', () => {
@@ -899,9 +920,6 @@ describe('ReticulumSidecarManager', () => {
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const proc = mockSidecarProc();
-    proc.kill.mockImplementation(() => {
-      proc.emit('exit', 0, null);
-    });
     spawnMock.mockReturnValue(proc);
     vi.stubGlobal(
       'fetch',
@@ -920,7 +938,7 @@ describe('ReticulumSidecarManager', () => {
         "mesh-client-reticulum: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.39' not found\n",
       ),
     );
-    proc.emit('exit', 1, null);
+    emitProcExit(proc, 1, null);
 
     await expect(startPromise).rejects.toThrow(/exit 1.*GLIBC_2\.39/);
     expect(manager.getStatus().lastError).toMatch(/exit 1.*GLIBC_2\.39/);
@@ -934,51 +952,74 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
-  it('retry after failed start succeeds without stop() clearing prior exit error', async () => {
+  it('includes an unterminated stderr line in the exit diagnostic after drain', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const failing = mockSidecarProc(1001);
-    failing.kill.mockImplementation(() => {
-      failing.emit('exit', 0, null);
-    });
-    const healthy = mockSidecarProc(1002);
-    healthy.kill.mockImplementation(() => {
-      healthy.emit('exit', 0, null);
-    });
-    spawnMock.mockReturnValueOnce(failing).mockReturnValueOnce(healthy);
+    const proc = mockSidecarProc();
+    spawnMock.mockReturnValue(proc);
     vi.stubGlobal(
       'fetch',
       vi.fn().mockRejectedValue(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })),
     );
 
     const manager = new ReticulumSidecarManager();
+    const startPromise = manager.start();
+    await vi.waitFor(() => {
+      expect(spawnMock).toHaveBeenCalled();
+    });
+    const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+    stderr.emit(
+      'data',
+      Buffer.from(
+        "mesh-client-reticulum: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.43' not found",
+      ),
+    );
+    emitProcExit(proc, 1, null);
+
+    await expect(startPromise).rejects.toThrow(/exit 1.*GLIBC_2\.43/);
+    expect(manager.getStatus().lastError).toMatch(/exit 1.*GLIBC_2\.43/);
+
+    warnSpy.mockRestore();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('retry start after a failed child does not reuse the prior exit error', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const failing = mockSidecarProc(1111);
+    const healthy = mockSidecarProc(2222);
+    spawnMock.mockReturnValueOnce(failing).mockReturnValueOnce(healthy);
+
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } }))
+      .mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ status: 'ok', version: 'test', rns_ready: true, lxmf_ready: true }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
     const first = manager.start();
     await vi.waitFor(() => {
       expect(spawnMock).toHaveBeenCalledTimes(1);
     });
-    failing.emit('exit', 1, null);
-    await expect(first).rejects.toThrow(/^exit 1/);
-    expect(manager.getStatus().lastError).toMatch(/^exit 1/);
+    const failStderr = (failing as unknown as { stderr: EventEmitter }).stderr;
+    failStderr.emit('data', Buffer.from('first-child-loader-error\n'));
+    emitProcExit(failing, 1, null);
+    await expect(first).rejects.toThrow(/exit 1.*first-child-loader-error/);
 
-    // Re-stub a healthy poll for the retry (beforeEach mock was replaced above).
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            status: 'ok',
-            version: '0.1.0',
-            rns_ready: false,
-            lxmf_ready: false,
-          }),
-      }),
-    );
-
-    await expect(manager.start()).resolves.toMatchObject({ running: true, pid: 1002 });
+    // No manager.stop() between attempts — child-local exit error must not poison retry.
+    const status = await manager.start();
     expect(spawnMock).toHaveBeenCalledTimes(2);
-    expect(manager.getStatus().lastError).toBeUndefined();
+    expect(status.running).toBe(true);
+    expect(status.pid).toBe(2222);
+    expect(status.lastError).toBeUndefined();
 
     await manager.stop();
     warnSpy.mockRestore();

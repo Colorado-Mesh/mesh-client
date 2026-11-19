@@ -219,7 +219,12 @@ async function pollSidecarHealth(
       throw new Error(exitError);
     }
     if (opts?.isAlive && !opts.isAlive()) {
-      throw new Error(exitError ?? 'sidecar process exited during health poll');
+      // Exit seen but drain may still be finalizing the child-local diagnostic — wait.
+      if (!exitError) {
+        await new Promise((r) => setTimeout(r, HEALTH_POLL_INTERVAL_MS));
+        continue;
+      }
+      throw new Error(exitError);
     }
     try {
       const res = await fetch(url, {
@@ -696,9 +701,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
     this.recentSidecarOutput = [];
-    // Prior start failures leave lastError set; clear so a retry without stop()
-    // does not treat the previous child's exit as this child's during health poll.
-    let spawnedExitError: string | undefined;
+    // Child-local exit diagnostic — do not read this._status.lastError (prior spawn poison).
+    let childExitError: string | undefined;
+    let pendingExit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+    let stdoutEnded = proc.stdout == null;
+    let stderrEnded = proc.stderr == null;
+    let exitFinalized = false;
     if (this._status.lastError) {
       this._status = { ...this._status, lastError: undefined };
     }
@@ -739,25 +747,12 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
       console.warn('[ReticulumSidecar]', decision.message);
     };
-    const bindOutputLines = (stream: typeof proc.stdout): void => {
-      if (!stream) return;
-      let buffer = '';
-      stream.on('data', (chunk: Buffer) => {
-        buffer += chunk.toString('utf8');
-        const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop() ?? '';
-        for (const line of lines) processOutputLine(line);
-      });
-      stream.on('end', () => {
-        if (buffer) processOutputLine(buffer);
-        buffer = '';
-      });
-    };
-    bindOutputLines(proc.stdout);
-    bindOutputLines(proc.stderr);
-    proc.on('exit', (code, signal) => {
+    const finalizeChildExit = (): void => {
+      if (exitFinalized || !pendingExit || !stdoutEnded || !stderrEnded) return;
+      exitFinalized = true;
+      const { code, signal } = pendingExit;
       const lastError = this.formatExitLastError(code, signal);
-      spawnedExitError = lastError ?? undefined;
+      childExitError = lastError;
       const abnormal = lastError != null;
       const exitSummary = `exited code=${code ?? 'null'} signal=${signal ?? 'null'}`;
       if (abnormal) {
@@ -769,6 +764,36 @@ export class ReticulumSidecarManager extends EventEmitter {
       } else {
         console.debug(`[ReticulumSidecar] ${exitSummary}`);
       }
+      this._status = {
+        running: false,
+        port: this._status.port,
+        pid: null,
+        lastError,
+      };
+      this.emit('status', this.getStatus());
+    };
+    const bindOutputLines = (stream: typeof proc.stdout, which: 'stdout' | 'stderr'): void => {
+      if (!stream) return;
+      let buffer = '';
+      stream.on('data', (chunk: Buffer) => {
+        buffer += chunk.toString('utf8');
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? '';
+        for (const line of lines) processOutputLine(line);
+      });
+      stream.on('end', () => {
+        if (buffer) processOutputLine(buffer);
+        buffer = '';
+        if (which === 'stdout') stdoutEnded = true;
+        else stderrEnded = true;
+        finalizeChildExit();
+      });
+    };
+    bindOutputLines(proc.stdout, 'stdout');
+    bindOutputLines(proc.stderr, 'stderr');
+    proc.on('exit', (code, signal) => {
+      // Prompt detection: drop proc immediately so isAlive() fails; diagnostic waits for drain.
+      pendingExit = { code, signal };
       this.teardownWs();
       // The watchdog no-ops once proc is null, but leaving it armed leaks its interval
       // across the next spawn.
@@ -784,18 +809,25 @@ export class ReticulumSidecarManager extends EventEmitter {
         running: false,
         port: this._status.port,
         pid: null,
-        lastError,
+        lastError: undefined,
       };
       this.emit('status', this.getStatus());
+      finalizeChildExit();
+    });
+    // Node emits close after stdio ends — finalize if end handlers already flushed.
+    proc.on('close', () => {
+      stdoutEnded = true;
+      stderrEnded = true;
+      finalizeChildExit();
     });
 
     try {
       await pollSidecarHealth(port, authToken, {
         isAlive: () => this.proc === proc,
-        getExitError: () => spawnedExitError,
+        getExitError: () => childExitError,
       });
     } catch (err) {
-      const msg = preferSidecarExitErrorOverFetch(spawnedExitError, err);
+      const msg = preferSidecarExitErrorOverFetch(childExitError, err);
       await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);

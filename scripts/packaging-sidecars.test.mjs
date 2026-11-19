@@ -111,6 +111,10 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).toContain('cargo install cargo-zigbuild --version 0.24.1 --locked');
     expect(sidecars).toContain('docs/ci-cd.md#linux-sidecar-glibc');
     expect(sidecars).not.toMatch(/continue-on-error:/);
+    const smoke = yaml
+      .load(sidecars)
+      .jobs.build.steps.find((step) => step.name === 'Smoke-test staged sidecar HTTP');
+    expect(smoke?.shell).toBe('bash');
   });
 
   it('keeps Zig + cargo-zigbuild before the Linux release build', () => {

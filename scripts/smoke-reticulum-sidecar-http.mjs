@@ -128,7 +128,10 @@ export async function smokeReticulumSidecarHttp(binaryPath, opts = {}) {
   let exitCode = null;
   /** @type {NodeJS.Signals | null} */
   let exitSignal = null;
-  const exited = new Promise((resolve) => {
+  const exited = new Promise((resolve, reject) => {
+    child.on('error', (err) => {
+      reject(err instanceof Error ? err : new Error(String(err)));
+    });
     child.on('exit', (code, signal) => {
       exitCode = code;
       exitSignal = signal;
@@ -178,15 +181,17 @@ export async function smokeReticulumSidecarHttp(binaryPath, opts = {}) {
     const tail = outputLines.slice(-8).join(' | ');
     throw new Error(`${lastError}${tail ? `; last output: ${tail}` : ''}`);
   } finally {
+    // Swallow spawn/exit settle errors so workDir cleanup always runs.
+    const settled = exited.catch(() => undefined);
     if (exitCode == null && exitSignal == null) {
       child.kill('SIGTERM');
-      await Promise.race([exited, new Promise((r) => setTimeout(r, 3_000))]);
+      await Promise.race([settled, new Promise((r) => setTimeout(r, 3_000))]);
       if (exitCode == null && exitSignal == null) {
         child.kill('SIGKILL');
-        await exited;
+        await settled;
       }
     } else {
-      await exited;
+      await settled;
     }
     rmSync(workDir, { recursive: true, force: true });
   }

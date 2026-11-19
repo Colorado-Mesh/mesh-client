@@ -321,10 +321,12 @@ async function assertSidecarInAppImage(arch, appImagePath, expectedVersion, opts
     try {
       assertSidecarGlibcFloor(sidecarPath);
     } catch (err) {
-      fail(
+      // Throw (do not fail()/process.exit) so the finally below can rmSync extractDir.
+      throw new Error(
         `${arch} AppImage sidecar glibc floor failed: ${
           err instanceof Error ? err.message : String(err)
         }`,
+        { cause: err },
       );
     }
     if (opts.smokeHttp) {
@@ -334,10 +336,11 @@ async function assertSidecarInAppImage(arch, appImagePath, expectedVersion, opts
           `[test-linux-appimage-reticulum-sidecar] OK — HTTP smoke for ${arch} sidecar`,
         );
       } catch (err) {
-        fail(
+        throw new Error(
           `${arch} AppImage sidecar HTTP smoke failed: ${
             err instanceof Error ? err.message : String(err)
           }`,
+          { cause: err },
         );
       }
     }
