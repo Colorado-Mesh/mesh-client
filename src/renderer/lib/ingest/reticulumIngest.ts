@@ -440,6 +440,11 @@ export function persistReticulumOutboundRecord(
   replacesMessageHash?: string | null,
 ): void {
   const deliveryStatus = mapMessageStatusToDeliveryStatus(status);
+  // A pending row is built before addMessage stamps its receipt, so take the store's copy.
+  const receivedAt =
+    record.receivedAt ??
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+    useMessageStore.getState().messages[identityId]?.[record.id]?.receivedAt;
   void window.electronAPI.db
     .saveReticulumMessage({
       identity_id: identityId,
@@ -447,7 +452,7 @@ export function persistReticulumOutboundRecord(
       sender_name: senderName,
       payload: record.payload,
       timestamp: record.timestamp,
-      received_at: record.receivedAt ?? null,
+      received_at: receivedAt ?? null,
       to_hash: toHash,
       reply_to_hash: record.reticulumReplyToHash ?? null,
       message_hash: record.reticulumMessageHash ?? record.id,

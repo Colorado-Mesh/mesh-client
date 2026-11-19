@@ -487,17 +487,21 @@ export default function RoomsPanel({
 
   const roomPosts = useMemo(() => {
     if (selectedRoomId == null) return [];
-    // Arrival order (`chatReceiveOrder.ts`): the room server's clock stays on each post.
-    const posts = messages
-      .filter((m) => m.roomServerId === selectedRoomId)
-      .sort((a, b) => compareChatReceiveOrder(a, b));
+    // Chunks of a long post are stamped one after another by the room server, but our own post
+    // (stamped by this computer) can arrive between them, so assemble chunks in stamp order.
+    // Then list posts in arrival order (`chatReceiveOrder.ts`); each keeps the server's clock.
+    const posts = mergeDisplayedRoomPostChunks(
+      messages
+        .filter((m) => m.roomServerId === selectedRoomId)
+        .sort((a, b) => a.timestamp - b.timestamp || compareChatReceiveOrder(a, b)),
+    ).sort((a, b) => compareChatReceiveOrder(a, b));
     const nameByNodeId = new Map<number, string>();
     for (const [id, node] of nodes) {
       const name = node.long_name?.trim();
       if (name) nameByNodeId.set(id, name);
     }
     return repairMeshcoreRoomUnknownSenderNames(
-      repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts)),
+      repairMeshcoreHydrationStaleRoomSends(posts),
       nameByNodeId,
     );
   }, [messages, nodes, selectedRoomId]);

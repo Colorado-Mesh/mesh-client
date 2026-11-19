@@ -2734,6 +2734,58 @@ describe('RoomsPanel receive order', () => {
       }
     });
 
+    it('stores the receipt of the last chunk of a multipart post as the read mark', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1107, 'Chunk Room');
+      savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, now - 5000));
+      const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(0);
+      const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      try {
+        renderRoomsPanel(new Map([[room.node_id, room]]), {
+          initialRoomTarget: room.node_id,
+          isActive: true,
+          messages: [
+            roomPost(room, '[1/2] hello ', 0x200, 'Alice', now - 3000, now - 3000),
+            roomPost(room, '[2/2] world', 0x200, 'Alice', now - 2000, now - 1000),
+          ],
+        });
+
+        await screen.findByText('hello world');
+        await waitFor(() => {
+          expect(readStored()[String(room.node_id)]).toBe(now - 1000);
+        });
+      } finally {
+        distSpy.mockRestore();
+        hasFocusSpy.mockRestore();
+      }
+    });
+
+    // The room server stamps other people's posts in the order it stores them, but our own post
+    // carries this computer's clock and can arrive between two chunks of someone else's post.
+    it('assembles a multipart post when an own post arrived between its chunks', async () => {
+      const now = Date.now();
+      const room = joinRoom(0x1108, 'Interleave Room');
+      renderRoomsPanel(new Map([[room.node_id, room]]), {
+        initialRoomTarget: room.node_id,
+        isActive: true,
+        messages: [
+          roomPost(room, '[1/2] hello ', 0x200, 'Alice', now - 20_000, now - 10_000),
+          {
+            ...roomPost(room, 'my reply', 1, 'Me', now - 5000, now - 9000),
+            status: 'acked',
+          },
+          roomPost(room, '[2/2] world', 0x200, 'Alice', now - 19_000, now - 8000),
+        ],
+      });
+
+      const assembled = await screen.findByText('hello world');
+      const reply = screen.getByText('my reply');
+      // The assembled post sorts at its last chunk's arrival, after the reply.
+      expect(
+        reply.compareDocumentPosition(assembled) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
     it('catches up on posts that arrived after the read mark, whatever their stamps', async () => {
       const now = Date.now();
       const room = joinRoom(0x1106, 'Catch Up Room');

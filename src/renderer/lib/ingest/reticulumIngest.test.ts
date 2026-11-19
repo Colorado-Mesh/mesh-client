@@ -9,6 +9,7 @@ import {
   isReticulumHashPrefixAlias,
   persistReticulumContactFromPayload,
   persistReticulumHistoryFromPayload,
+  persistReticulumOutboundRecord,
   reticulumContactDisplayNameFromPayload,
 } from './reticulumIngest';
 
@@ -285,6 +286,54 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
     const saveArg = saveReticulumMessage.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(saveArg.message_hash).toBe(messageHash);
     expect(saveArg.replaces_message_hash).toBe(pendingId);
+  });
+
+  // The senders build the pending row, hand it to addMessage (which stamps the receipt in the
+  // store) and save the row they built, which has no receipt; the save must take the store's.
+  it('saves a pending send with the receipt the store gave it', async () => {
+    const pending: MessageRecord = {
+      id: 'reticulum-pending-77',
+      from: 1,
+      to: 2,
+      payload: 'pending send',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'sending',
+    };
+    messagesState['id-1'] = { [pending.id]: { ...pending, receivedAt: 4_242 } };
+    persistReticulumOutboundRecord(
+      'id-1',
+      pending,
+      'aa'.repeat(16),
+      'Me',
+      'bb'.repeat(16),
+      'sending',
+    );
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ message_hash: pending.id, received_at: 4_242 }),
+      );
+    });
+  });
+
+  it('keeps the receipt a row already carries over the store copy', async () => {
+    const row: MessageRecord = {
+      id: 'reticulum-pending-78',
+      from: 1,
+      to: 2,
+      payload: 'own receipt',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      receivedAt: 5_555,
+    };
+    messagesState['id-1'] = { [row.id]: { ...row, receivedAt: 4_242 } };
+    persistReticulumOutboundRecord('id-1', row, 'aa'.repeat(16), 'Me', 'bb'.repeat(16), 'acked');
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ message_hash: row.id, received_at: 5_555 }),
+      );
+    });
   });
 
   it('omits replaces_message_hash when replacesMessageHash is absent', async () => {

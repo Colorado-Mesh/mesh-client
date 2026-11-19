@@ -1752,9 +1752,16 @@ export function useMeshtasticRuntime() {
         m.channel === mqttWithPreviews.channel &&
         (m.to ?? undefined) === (mqttWithPreviews.to ?? undefined);
       const alreadyStored = dedupSource.some(isSameMqttMessage);
-      // Ordered by when it reached this app, not by the gateway radio's clock; a copy already in
-      // the store keeps its earlier receipt, and SQLite keeps the first saved row.
-      const mqttReceived: ChatMessage = { ...mqttWithPreviews, receivedAt: nextChatReceivedAt() };
+      // Ordered by when it reached this app, not by the gateway radio's clock. A copy already in
+      // the store keeps its earlier receipt, and the save carries that receipt too, in case the
+      // first save never reached SQLite (which keeps the first saved row).
+      const storedCopy = alreadyStored ? dedupSource.find(isSameMqttMessage) : undefined;
+      const mqttReceived: ChatMessage = storedCopy
+        ? {
+            ...mqttWithPreviews,
+            ...(storedCopy.receivedAt != null ? { receivedAt: storedCopy.receivedAt } : {}),
+          }
+        : { ...mqttWithPreviews, receivedAt: nextChatReceivedAt() };
       setMessages((prev) => {
         if (prev.some(isSameMqttMessage)) return prev;
         return trimChatMessagesToMax([...prev, mqttReceived], MAX_IN_MEMORY_CHAT_MESSAGES);

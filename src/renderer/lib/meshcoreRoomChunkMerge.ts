@@ -65,6 +65,8 @@ export function mergeDisplayedRoomPostChunks(posts: readonly ChatMessage[]): Cha
       ...pending,
       payload: pending.payload + chunk.body,
       timestamp: msg.timestamp,
+      // Read once the last chunk is here, so the post takes that chunk's receipt.
+      ...(msg.receivedAt != null ? { receivedAt: msg.receivedAt } : {}),
     };
     pendingReceived = chunk.index;
     if (chunk.index === chunk.total) flushPending();
