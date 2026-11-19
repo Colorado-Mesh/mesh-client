@@ -218,7 +218,9 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
 
   it('requires zig + cargo-zigbuild for Linux release builds', () => {
     const root = fixture();
-    rmSync(path.join(root, 'bin/zig'));
+    // Shadow host zig: fixture bin is first on PATH; a nonzero stub makes zigOnPath fail.
+    writeFileSync(path.join(root, 'bin/zig'), '#!/bin/sh\nexit 1\n');
+    chmodSync(path.join(root, 'bin/zig'), 0o755);
     const result = build(root, ['--platform', 'linux', '--arch', 'x64', '--skip-tests']);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('docs/ci-cd.md#linux-sidecar-glibc');
