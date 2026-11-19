@@ -2122,6 +2122,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#linux-sidecar-glibc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Reticulum sidecar glibc floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build-channel-stamp-test-vs-release" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3816,6 +3827,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#linux-sidecar-glibc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Reticulum sidecar glibc floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build-channel-stamp-test-vs-release" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4474,6 +4496,17 @@ The workflow does not change repository security settings. Existing global cover
 <p>Local <code>node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin</code> still runs host tests and builds both architectures. <code>--arch x64|arm64</code> selects one target; CI uses <code>--skip-tests</code> only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.</p>
 <p>Packaging sidecars cache Cargo dependencies with <code>Swatinem/rust-cache</code>, separately by target triple, runner OS/architecture, and Rust toolchain. The packaging key is separate from validation jobs. The sidecar workspace crate and Cargo-installed tools are excluded. Every run still clones the current Ratspeak sources, applies overlays, runs the native host tests, and builds/stages the selected target; a cache hit never skips those steps. Missing caches fall back to a normal build.</p>
 <p>To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run <strong>Packaging sidecars</strong> manually and select <code>all</code>, <code>mac</code>, <code>linux</code>, or <code>win</code>. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.</p>
+<h3 id="linux-sidecar-glibc">Linux Reticulum sidecar glibc floor<a class="headerlink" href="#linux-sidecar-glibc" title="Permanent link">&para;</a></h3>
+<p><strong>Why this exists:</strong> The 6.9.0 x64 AppImage bundled a <code>mesh-client-reticulum</code> that needed <strong><code>GLIBC_2.43</code></strong>. Pop!_OS / Ubuntu 24.04 only ship <strong>glibc 2.39</strong>, so the dynamic linker aborted before the HTTP shell listened. Meshtastic/MeshCore BLE (<code>gatt:start-scan</code>) and Reticulum then failed with undici <strong><code>fetch failed</code></strong> (the child had already exited). Electron packaging may keep floating <strong><code>ubuntu-latest</code></strong>; the sidecar ELF is <strong>host-libc linked</strong>, so using the runner’s native glibc as the <em>link</em> ABI regresses users whenever GitHub moves the image forward.</p>
+<p><strong>Policy:</strong> Keep <strong>one</strong> Linux sidecar binary with ABI floor <strong>GLIBC 2.35</strong> (Ubuntu / Pop 22.04+ and 24.04). Build it on <strong><code>ubuntu-latest</code></strong> with current Rust (<code>dtolnay/rust-toolchain</code>) via <strong><code>cargo zigbuild --target …-gnu.2.35</code></strong> — not by pinning the packaging runner to ubuntu-22.04 forever. Zig replaces the linker/glibc targeting; host <code>libdbus-1</code> headers/libs stay on the runner for btleplug.</p>
+<p><strong>CI wiring:</strong></p>
+<ul>
+<li><code>packaging-sidecars.yaml</code> installs a <strong>pinned</strong> Zig + <code>cargo-zigbuild</code> on Linux jobs, then <code>scripts/build-reticulum-sidecar-release.mjs</code> runs <code>cargo zigbuild</code> for <code>platform === 'linux'</code> (macOS/Windows stay on plain <code>cargo build</code>; host <code>cargo test</code> stays plain).</li>
+<li>Shared constant: <code>MAX_SIDECAR_GLIBC = '2.35'</code> in <code>scripts/check-reticulum-sidecar-glibc.mjs</code> (also <code>linuxZigbuildTarget()</code>). Fail-closed step asserts the staged ELF; HTTP smoke still runs on the (newer) runner glibc — that is fine.</li>
+<li>Do <strong>not</strong> “fix” a floor failure by removing zigbuild or raising the max without an intentional support-policy change.</li>
+</ul>
+<p><strong>Bump the floor later:</strong> change <code>MAX_SIDECAR_GLIBC</code>, the zigbuild suffix (automatic via <code>linuxZigbuildTarget</code>), packaging/docs copy, and re-verify AppImage hosts you still support.</p>
+<p>User-facing self-check: <a href="../troubleshooting-reticulum/">troubleshooting-reticulum.md</a> (Linux AppImage / <code>ldd</code> / <code>objdump -T</code>).</p>
 <h3 id="build-channel-stamp-test-vs-release">Build channel stamp (test vs release)<a class="headerlink" href="#build-channel-stamp-test-vs-release" title="Permanent link">&para;</a></h3>
 <p><strong>Build Binaries</strong> (<code>build.yaml</code>), <strong>Release</strong> (<code>release.yaml</code>), and <strong>Build Flatpak</strong> (<code>flatpak.yaml</code>) run <code>scripts/ci-write-build-info-env.mjs</code> before packaging. That writes a JSON <code>MESH_CLIENT_BUILD_INFO</code> blob into <code>$GITHUB_ENV</code>, which <code>scripts/esbuild-main-build.mjs</code> embeds via esbuild <code>--define</code> into the main process. Flatpak also writes <code>flatpak/ci-build-info.json</code> (gitignored) so the sandbox <code>pnpm run build</code> sees the same env.</p>
 <table>
@@ -4595,7 +4628,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 14:16:50 UTC">November 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 17:05:25 UTC">November 19, 2026</span>
   </span>
 
     
