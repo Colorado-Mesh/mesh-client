@@ -14,6 +14,9 @@ export const CHAT_COMPACT_CONTINUATION_TIME_GAP_MS = 5 * MS_PER_MINUTE;
 export const MS_PER_HOUR = 60 * MS_PER_MINUTE;
 export const MS_PER_DAY = 24 * MS_PER_HOUR;
 
+/** Ignore seeding the live receipt clock from stored values farther ahead than this (chat load). */
+export const CHAT_RECEIPT_SEED_MAX_LEAD_MS = MS_PER_DAY;
+
 /**
  * Main-process renderer working-set auto sample cadence (runs whether or not the window is
  * backgrounded). Jittered ±20% by the sampler so machines do not align.

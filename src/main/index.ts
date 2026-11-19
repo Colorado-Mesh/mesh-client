@@ -39,6 +39,10 @@ import {
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { isChannelIdentityKey } from '../shared/channelIdentityKey';
 import { chatReceivedAtForDb } from '../shared/chatReceivedAt';
+import {
+  maxQueryableChatReceiptMs,
+  SQL_CHAT_RECEIPT_ORDER_MS,
+} from '../shared/chatReceiptDbOrder';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import {
   CLOSE_TO_TRAY_SETTING_KEY,
@@ -5443,14 +5447,15 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
     const safeLimit = clampQueryLimit(limit, { default: 200, max: 10000 });
     const db = getDbForIpc('db:getMeshcoreMessages');
     if (!db) return [];
-    const order = 'ORDER BY COALESCE(received_at, timestamp) DESC, id DESC LIMIT ?';
+    const maxReceipt = maxQueryableChatReceiptMs();
+    const order = `ORDER BY ${SQL_CHAT_RECEIPT_ORDER_MS} DESC, id DESC LIMIT @limit`;
     if (channelIdx != null) {
       const ch = typeof channelIdx === 'number' ? Math.trunc(channelIdx) : 0;
       const rows = db
         .prepareOnce(
-          `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? ${order}`,
+          `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = @channel ${order}`,
         )
-        .all(ch, safeLimit) as Record<string, unknown>[];
+        .all({ channel: ch, limit: safeLimit, max_receipt: maxReceipt }) as Record<string, unknown>[];
       rows.reverse();
       return rows.map((row) => ({
         ...row,
@@ -5459,7 +5464,7 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
     }
     const rows = db
       .prepareOnce(`SELECT * FROM meshcore_messages ${order}`)
-      .all(safeLimit) as Record<string, unknown>[];
+      .all({ limit: safeLimit, max_receipt: maxReceipt }) as Record<string, unknown>[];
     rows.reverse();
     return rows.map((row) => ({
       ...row,
