@@ -5803,7 +5803,22 @@
     "rssiTitle": "RSSI分发",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "跳数分布",
-    "hopAxis": "跳数"
+    "hopAxis": "跳数",
+    "noiseFloorTitle": "本地噪声底",
+    "noiseFloorSourceRadio": "由该无线电的接收器测量。",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "升高",
+    "noiseFloorHistoryAria": "噪声底线最小 {{min}} dBm，最大 {{max}} dBm，最后 {{last}} dBm",
+    "noiseFloorMin": "最小",
+    "noiseFloorMax": "max",
+    "noiseFloorLast": "最後一頁",
+    "noiseFloorCollecting": "正在收集迷你图的样本……",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "根据{{count}}个节点上的RSSI − SNR估算。此无线电的固件未报告噪声本底。",
+    "noiseFloorEmpty": "尚无噪声底噪数据。此无线电或固件未报告接收机噪声底。",
+    "noiseFloorEstimatedTitle": "估计噪声底分布",
+    "noiseFloorEstimatedSubtitle": "{{count}}个节点贡献（RSSI − 最后听到的数据包的SNR）",
+    "noiseFloorAxis": "估计噪声底（dBm）"
   },
   "roleInfo": {
     "placeholderDash": "-",

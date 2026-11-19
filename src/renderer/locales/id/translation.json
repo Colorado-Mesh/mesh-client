@@ -5803,7 +5803,22 @@
     "rssiTitle": "Distribusi RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribusi Hop Count",
-    "hopAxis": "Hop"
+    "hopAxis": "Hop",
+    "noiseFloorTitle": "Tingkat kebisingan lokal",
+    "noiseFloorSourceRadio": "Diukur oleh penerima radio ini.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Penting dan Mendesak",
+    "noiseFloorHistoryAria": "Tingkat kebisingan min {{min}} dBm, maks {{max}} dBm, terakhir {{last}} dBm",
+    "noiseFloorMin": "Mnt",
+    "noiseFloorMax": "Maks",
+    "noiseFloorLast": "Belakang",
+    "noiseFloorCollecting": "Mengumpulkan sampel untuk sparkline…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Diperkirakan dari RSSI − SNR di seluruh {{count}} node. Firmware radio ini tidak melaporkan noise floor.",
+    "noiseFloorEmpty": "Belum ada data noise floor. Radio atau firmware ini tidak melaporkan noise floor penerima.",
+    "noiseFloorEstimatedTitle": "Perkiraan Distribusi Noise Floor",
+    "noiseFloorEstimatedSubtitle": "{{count}} node berkontribusi (RSSI − SNR dari paket terakhir yang terdengar)",
+    "noiseFloorAxis": "Estimasi noise floor (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

@@ -5803,7 +5803,22 @@
     "rssiTitle": "RSSI-Verteilung",
     "rssiAxis": "Rssi (dBm)",
     "hopTitle": "Hop-Anzahl-Verteilung",
-    "hopAxis": "Hops"
+    "hopAxis": "Hops",
+    "noiseFloorTitle": "Lokales Grundrauschen",
+    "noiseFloorSourceRadio": "Gemessen mit dem Empfänger dieses Radios.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Erhöht",
+    "noiseFloorHistoryAria": "Rauschpegel min. {{min}} dBm, max. {{max}} dBm, zuletzt {{last}} dBm",
+    "noiseFloorMin": "Min.",
+    "noiseFloorMax": "Max.",
+    "noiseFloorLast": "Letzte",
+    "noiseFloorCollecting": "Proben für den Sparkline werden gesammelt …",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Geschätzt aus RSSI − SNR über {{count}} Knoten. Die Firmware dieses Funkgeräts meldet kein Grundrauschen.",
+    "noiseFloorEmpty": "Noch keine Daten zum Rauschpegel. Dieses Funkgerät oder diese Firmware meldet kein Rauschniveau des Empfängers.",
+    "noiseFloorEstimatedTitle": "Geschätzte Verteilung des Rauschpegels",
+    "noiseFloorEstimatedSubtitle": "{{count}} Knoten tragen bei (RSSI − SNR des zuletzt empfangenen Pakets)",
+    "noiseFloorAxis": "Geschätztes Grundrauschen (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",

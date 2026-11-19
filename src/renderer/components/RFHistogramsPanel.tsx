@@ -2,10 +2,21 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { useRfNoiseFloorHistory } from '../hooks/useRfNoiseFloorHistory';
+import {
+  collectEstimatedNoiseFloors,
+  ESTIMATED_NOISE_FLOOR_BUCKETS,
+  medianOf,
+  NOISE_FLOOR_MIN_ESTIMATE_SAMPLES,
+  readLocalNoiseFloor,
+} from '../lib/rfNoiseFloor';
 import type { MeshNode } from '../lib/types';
+import { RFNoiseFloorCard } from './RFNoiseFloorCard';
 
 interface RFHistogramsPanelProps {
   nodes: Map<number, MeshNode>;
+  /** Self node id for the active protocol (App.tsx already computes it). */
+  myNodeId: number | null | undefined;
 }
 
 interface BucketDef {
@@ -97,10 +108,27 @@ function HistogramChart({
   );
 }
 
-export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
+export default function RFHistogramsPanel({ nodes, myNodeId }: RFHistogramsPanelProps) {
   const { t } = useTranslation();
 
-  const { snrData, rssiData, hopData, nodeCount } = useMemo(() => {
+  const selfNode = myNodeId != null ? nodes.get(myNodeId) : undefined;
+  const localReading = readLocalNoiseFloor(selfNode);
+  useRfNoiseFloorHistory({
+    enabled: localReading != null,
+    nodeId: myNodeId,
+    noiseFloor: localReading?.value,
+    observedAt: localReading?.observedAt,
+  });
+
+  const {
+    snrData,
+    rssiData,
+    hopData,
+    noiseFloorData,
+    noiseFloorEstimate,
+    noiseFloorSamples,
+    nodeCount,
+  } = useMemo(() => {
     const snrVals: number[] = [];
     const rssiVals: number[] = [];
     const hopVals: number[] = [];
@@ -110,19 +138,34 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
       if (typeof node.rssi === 'number' && node.rssi !== 0) rssiVals.push(node.rssi);
       if (typeof node.hops_away === 'number') hopVals.push(node.hops_away);
     }
+    const noiseFloorVals = collectEstimatedNoiseFloors(nodes.values());
+    const enough = noiseFloorVals.length >= NOISE_FLOOR_MIN_ESTIMATE_SAMPLES;
 
     return {
       snrData: buildHistogram(snrVals, SNR_BUCKETS),
       rssiData: buildHistogram(rssiVals, RSSI_BUCKETS),
       hopData: buildHistogram(hopVals, HOP_BUCKETS),
+      noiseFloorData: buildHistogram(noiseFloorVals, ESTIMATED_NOISE_FLOOR_BUCKETS),
+      noiseFloorEstimate: enough ? medianOf(noiseFloorVals) : null,
+      noiseFloorSamples: noiseFloorVals.length,
       nodeCount: nodes.size,
     };
   }, [nodes]);
 
+  const noiseFloorCard = (
+    <RFNoiseFloorCard
+      myNodeId={myNodeId}
+      reading={localReading}
+      estimatedNoiseFloor={noiseFloorEstimate}
+      estimateSampleCount={noiseFloorSamples}
+    />
+  );
+
   if (nodeCount === 0) {
     return (
-      <div data-panel-anchor="RF" className="text-ink-400 flex h-full items-center justify-center">
-        {t('rfHistograms.noNodes')}
+      <div data-panel-anchor="RF" className="flex flex-col gap-6 p-4">
+        {noiseFloorCard}
+        <p className="text-ink-400 text-xs">{t('rfHistograms.noNodes')}</p>
       </div>
     );
   }
@@ -134,6 +177,8 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
         <p className="text-ink-400 text-xs">{t('rfHistograms.subtitle', { count: nodeCount })}</p>
       </div>
 
+      {noiseFloorCard}
+
       <section>
         <h3 className="text-ink-300 mb-1 text-sm font-medium">{t('rfHistograms.snrTitle')}</h3>
         <HistogramChart data={snrData} xlabel={t('rfHistograms.snrAxis')} color="#22c55e" />
@@ -143,6 +188,22 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
         <h3 className="text-ink-300 mb-1 text-sm font-medium">{t('rfHistograms.rssiTitle')}</h3>
         <HistogramChart data={rssiData} xlabel={t('rfHistograms.rssiAxis')} color="#3b82f6" />
       </section>
+
+      {noiseFloorSamples > 0 ? (
+        <section>
+          <h3 className="text-ink-300 mb-1 text-sm font-medium">
+            {t('rfHistograms.noiseFloorEstimatedTitle')}
+          </h3>
+          <p className="text-muted mb-1 text-xs">
+            {t('rfHistograms.noiseFloorEstimatedSubtitle', { count: noiseFloorSamples })}
+          </p>
+          <HistogramChart
+            data={noiseFloorData}
+            xlabel={t('rfHistograms.noiseFloorAxis')}
+            color="#a78bfa"
+          />
+        </section>
+      ) : null}
 
       <section>
         <h3 className="text-ink-300 mb-1 text-sm font-medium">{t('rfHistograms.hopTitle')}</h3>

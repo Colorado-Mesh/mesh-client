@@ -11,6 +11,7 @@ import {
   NODE_WRITE_COALESCE_MS,
   NODE_WRITE_FLUSH_MAX_PENDING,
   peekPendingNodeRecord,
+  pendingNodeRecordMergeFields,
   resetCoalescedNodeWritesForTests,
 } from './coalescedNodeWrites';
 
@@ -205,6 +206,53 @@ describe('coalescedNodeWrites', () => {
     upsertNodeRecord(ID_A, { nodeId: 12, lastHeardAt: 500 });
     await flushNodeWrites();
     expect(getIdentityNode(ID_A, 12)?.last_heard).toBe(500);
+  });
+
+  it('pending merge inherits omitted noiseFloor but applies hopsAway/lastPositionWarning clears', () => {
+    const merged = {
+      nodeId: 5,
+      noiseFloor: -106,
+      noiseFloorObservedAt: 9_001,
+      hopsAway: 2,
+      lastPositionWarning: 'bad fix',
+      snr: 1,
+      ...pendingNodeRecordMergeFields({
+        nodeId: 5,
+        snr: 4,
+        hopsAway: undefined,
+        lastPositionWarning: undefined,
+        noiseFloor: undefined,
+        noiseFloorObservedAt: undefined,
+      }),
+    };
+    expect(merged.snr).toBe(4);
+    expect(merged.noiseFloor).toBe(-106);
+    expect(merged.noiseFloorObservedAt).toBe(9_001);
+    expect(merged.hopsAway).toBeUndefined();
+    expect(merged.lastPositionWarning).toBeUndefined();
+  });
+
+  it('read-through keeps session noiseFloor and applies pending hopsAway clear', async () => {
+    upsertNodeRecord(ID_A, {
+      nodeId: 21,
+      noiseFloor: -108,
+      noiseFloorObservedAt: 7_000,
+      hopsAway: 4,
+      lastPositionWarning: 'stale',
+    });
+    enqueueNodeWrite(
+      ID_A,
+      record(21, {
+        hopsAway: undefined,
+        lastPositionWarning: undefined,
+        noiseFloor: undefined,
+      }),
+    );
+    const mid = getIdentityNode(ID_A, 21);
+    expect(mid?.noise_floor).toBe(-108);
+    expect(mid?.hops_away).toBeUndefined();
+    expect(mid?.lastPositionWarning).toBeUndefined();
+    await flushNodeWrites();
   });
 
   it('reconciles onFlush callbacks with the same lastHeardAt as saveNodes', async () => {

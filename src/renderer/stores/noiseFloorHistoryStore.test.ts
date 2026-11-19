@@ -26,11 +26,11 @@ describe('noiseFloorHistoryStore', () => {
     ]);
   });
 
-  it('dedupes identical consecutive samples inside the dedup window', () => {
+  it('dedupes by observation identity (same t); distinct reports still append', () => {
     const store = useNoiseFloorHistoryStore.getState();
     expect(store.recordSample(3, -105, 1_000)).toBe(true);
-    expect(store.recordSample(3, -105, 1_000 + NOISE_FLOOR_SAMPLE_DEDUP_MS - 1)).toBe(false);
-    expect(store.recordSample(3, -104, 1_000 + 10)).toBe(true);
+    expect(store.recordSample(3, -105, 1_000)).toBe(false);
+    expect(store.recordSample(3, -105, 1_000 + 10)).toBe(true);
     expect(selectNoiseFloorSeries(useNoiseFloorHistoryStore.getState(), 3)).toHaveLength(2);
   });
 

@@ -225,6 +225,85 @@ describe('attachMeshtasticNodeSideEffects', () => {
     detach();
   });
 
+  it('patches self-node noise_floor from localStats telemetry', async () => {
+    upsertNodeRecord(IDENTITY, meshNodeToNodeRecord(emptyNode(MY_NODE)));
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    const observedAt = 1_700_000_000_123;
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId: MY_NODE,
+          timestamp: observedAt,
+          variantCase: 'localStats',
+          channelUtilization: 12,
+          airUtilTx: 3,
+          numPacketsRx: 20,
+          numPacketsTx: 5,
+          noiseFloor: -109,
+        },
+      },
+      IDENTITY,
+    );
+    await flushNodeWrites();
+    expect(getIdentityNode(IDENTITY, MY_NODE)).toEqual(
+      expect.objectContaining({
+        noise_floor: -109,
+        noise_floor_observed_at: observedAt,
+        channel_utilization: 12,
+        air_util_tx: 3,
+        num_packets_rx: 20,
+        num_packets_tx: 5,
+      }),
+    );
+    detach();
+  });
+
+  it('preserves self noise_floor across a later deviceMetrics report', async () => {
+    upsertNodeRecord(IDENTITY, meshNodeToNodeRecord(emptyNode(MY_NODE)));
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    const observedAt = 1_700_000_000_456;
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId: MY_NODE,
+          timestamp: observedAt,
+          variantCase: 'localStats',
+          noiseFloor: -106,
+          channelUtilization: 8,
+          numPacketsRx: 10,
+        },
+      },
+      IDENTITY,
+    );
+    await flushNodeWrites();
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId: MY_NODE,
+          timestamp: observedAt + 5_000,
+          variantCase: 'deviceMetrics',
+          batteryLevel: 101,
+          channelUtilization: 9,
+        },
+      },
+      IDENTITY,
+    );
+    await flushNodeWrites();
+    expect(getIdentityNode(IDENTITY, MY_NODE)).toEqual(
+      expect.objectContaining({
+        noise_floor: -106,
+        noise_floor_observed_at: observedAt,
+        battery: 101,
+      }),
+    );
+    detach();
+  });
+
   it('passes the fully merged NodeDB row to diagnostics', async () => {
     const processNodeUpdate = vi
       .spyOn(useDiagnosticsStore.getState(), 'processNodeUpdate')

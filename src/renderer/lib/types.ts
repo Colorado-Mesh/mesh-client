@@ -204,6 +204,17 @@ export interface MeshNode {
   num_rx_dupe?: number;
   num_packets_rx?: number;
   num_packets_tx?: number;
+  /**
+   * Last reported receiver noise floor (dBm) for this node's radio. Meshtastic LocalStats
+   * `noise_floor`; MeshCore keeps its value in `meshcore_local_stats`. Session-only — never
+   * persisted to SQLite (no `nodes` column; see `src/main/nodeUpsert.ts`).
+   */
+  noise_floor?: number;
+  /**
+   * Stable observation identity for {@link noise_floor} (Meshtastic telemetry `timestamp`).
+   * Session-only; used so RF history records one sample per report, not per remount.
+   */
+  noise_floor_observed_at?: number;
   // MeshCore local stats (connected node only, from getStats*())
   meshcore_local_stats?: MeshCoreLocalStats;
   // Environmental sensor data (session-only, last received reading)

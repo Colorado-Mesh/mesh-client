@@ -10,7 +10,7 @@
  */
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { peekPendingNodeRecord } from './ingest/coalescedNodeWrites';
+import { peekPendingNodeRecord, pendingNodeRecordMergeFields } from './ingest/coalescedNodeWrites';
 import {
   messageRecordsToChatMessages,
   nodeRecordsToMeshNodeMap,
@@ -43,9 +43,17 @@ export function getIdentityNode(
 ): MeshNode | undefined {
   if (!identityId || !nodeId) return undefined;
   const pending = peekPendingNodeRecord(identityId, nodeId);
-  if (pending) return nodeRecordToMeshNode(pending);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  if (pending) {
+    // Pending is a full snapshot that may omit session-only fields (noiseFloor) written
+    // directly via updateTelemetry; merge pending keys onto the live store row.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- bucket/node may be absent at runtime
+    if (record) {
+      return nodeRecordToMeshNode({ ...record, ...pendingNodeRecordMergeFields(pending), nodeId });
+    }
+    return nodeRecordToMeshNode(pending);
+  }
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   return record ? nodeRecordToMeshNode(record) : undefined;
 }

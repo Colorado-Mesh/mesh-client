@@ -238,6 +238,8 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     num_rx_dupe: record.numRxDupe,
     num_packets_rx: record.numPacketsRx,
     num_packets_tx: record.numPacketsTx,
+    noise_floor: record.noiseFloor,
+    noise_floor_observed_at: record.noiseFloorObservedAt,
     meshcore_local_stats: record.meshcoreLocalStats,
     key_manually_verified: record.keyManuallyVerified,
     has_xeddsa_signed: record.hasXeddsaSigned,
@@ -296,6 +298,8 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.numRxDupe === b.numRxDupe &&
     a.numPacketsRx === b.numPacketsRx &&
     a.numPacketsTx === b.numPacketsTx &&
+    a.noiseFloor === b.noiseFloor &&
+    a.noiseFloorObservedAt === b.noiseFloorObservedAt &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
     a.publicKeyHex === b.publicKeyHex &&
     a.reticulumDestinationHash === b.reticulumDestinationHash &&
@@ -416,6 +420,8 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     numRxDupe: node.num_rx_dupe,
     numPacketsRx: node.num_packets_rx,
     numPacketsTx: node.num_packets_tx,
+    noiseFloor: node.noise_floor,
+    noiseFloorObservedAt: node.noise_floor_observed_at,
     meshcoreLocalStats: node.meshcore_local_stats,
     publicKeyHex: node.public_key_hex,
     keyManuallyVerified: node.key_manually_verified,

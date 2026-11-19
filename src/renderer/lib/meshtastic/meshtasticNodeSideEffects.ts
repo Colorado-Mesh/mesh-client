@@ -40,6 +40,7 @@ import { recordOwnMeshtasticNodeNum } from '../meshtasticMqttIdentity';
 import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
+import { isPlausibleNoiseFloorDbm } from '../rfNoiseFloor';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
 import { MAX_TELEMETRY_POINTS } from '../sessionMemoryCaps';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
@@ -498,6 +499,7 @@ function handleLocalStatsTelemetry(
   const myNodeNum = deps.getMyNodeNum();
   const existing = getIdentityNode(identityId, myNodeNum);
   if (!existing) return;
+  const plausibleNoise = isPlausibleNoiseFloorDbm(telemetry.noiseFloor);
   const node: MeshNode = {
     ...existing,
     channel_utilization: telemetry.channelUtilization ?? existing.channel_utilization,
@@ -506,6 +508,11 @@ function handleLocalStatsTelemetry(
     num_rx_dupe: telemetry.numRxDupe ?? existing.num_rx_dupe,
     num_packets_rx: telemetry.numPacketsRx ?? existing.num_packets_rx,
     num_packets_tx: telemetry.numPacketsTx ?? existing.num_packets_tx,
+    // Keep prior plausible floor when this report omits / sends protobuf default 0.
+    noise_floor: plausibleNoise ? telemetry.noiseFloor : existing.noise_floor,
+    noise_floor_observed_at: plausibleNoise
+      ? telemetry.timestamp
+      : existing.noise_floor_observed_at,
     source: 'rf',
     heard_via_mqtt_only: false,
     via_mqtt: false,
@@ -572,9 +579,12 @@ function handleTelemetry(
     handleEnvironmentTelemetry(identityId, telemetry, deps);
     return;
   }
-  if (telemetry.variantCase === 'localStats' && telemetry.nodeId === deps.getMyNodeNum()) {
-    handleLocalStatsTelemetry(identityId, telemetry, deps);
-    return;
+  if (telemetry.variantCase === 'localStats') {
+    const myNodeNum = deps.getMyNodeNum();
+    if (telemetry.nodeId === myNodeNum) {
+      handleLocalStatsTelemetry(identityId, telemetry, deps);
+      return;
+    }
   }
   handleDeviceMetricsTelemetry(identityId, telemetry, deps);
 }

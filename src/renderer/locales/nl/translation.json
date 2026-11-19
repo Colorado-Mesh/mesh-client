@@ -5803,7 +5803,22 @@
     "rssiTitle": "RSSI-verdeling",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Telling Distributie",
-    "hopAxis": "Hop"
+    "hopAxis": "Hop",
+    "noiseFloorTitle": "Lokaal ruisniveau",
+    "noiseFloorSourceRadio": "Gemeten door de ontvanger van deze radio.",
+    "noiseFloorValueDbm": "{{value}} dBm",
+    "noiseFloorElevated": "Verheven",
+    "noiseFloorHistoryAria": "Ruisvloer min. {{min}} dBm, max. {{max}} dBm, laatst {{last}} dBm",
+    "noiseFloorMin": "Min",
+    "noiseFloorMax": "Max",
+    "noiseFloorLast": "Laatste",
+    "noiseFloorCollecting": "Monsters verzamelen voor de sparkline…",
+    "noiseFloorEstimatedValueDbm": "≈ {{value}} dBm",
+    "noiseFloorEstimatedHint": "Geschat op basis van RSSI − SNR over {{count}} knooppunten. De firmware van deze radio rapporteert geen ruisvloer.",
+    "noiseFloorEmpty": "Nog geen gegevens over het ruisniveau. Deze radio of firmware rapporteert geen ruisvloer van de ontvanger.",
+    "noiseFloorEstimatedTitle": "Geschatte verdeling van het ruisniveau",
+    "noiseFloorEstimatedSubtitle": "{{count}} knooppunten dragen bij (RSSI − SNR van het laatst gehoorde pakket)",
+    "noiseFloorAxis": "Geschat ruisniveau (dBm)"
   },
   "roleInfo": {
     "placeholderDash": "-",
