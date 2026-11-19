@@ -129,7 +129,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
     expect(result.stdout).toContain('file:engine/src@59090c8d1577');
     expect(result.stdout).toContain('file:languages@2d43243a9f20');
-    expect(result.stdout).toContain('file:freetext@60b62b2b3cbd');
+    expect(result.stdout).toContain('file:freetext@76bcc1b6cbb4');
     expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
   });
 
