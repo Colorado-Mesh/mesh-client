@@ -989,6 +989,13 @@ export function attachMeshtasticRuntimeWireEffects(
     type,
     (unsub) => unsubscribesRef.current.push(unsub),
     () => {
+      // Ignore loss from a detached/stale transport once a newer device owns the session.
+      if (deviceRef.current !== device) {
+        console.debug(
+          '[meshtasticRuntimeWireEffects] ignore transport loss — watcher device no longer owns connection',
+        );
+        return;
+      }
       handleConnectionLostRef.current();
     },
   );

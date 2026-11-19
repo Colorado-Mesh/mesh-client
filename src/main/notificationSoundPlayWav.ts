@@ -13,12 +13,14 @@ const MAX_BASE64_SOUND_CHARS = Math.ceil(MAX_NOTIFICATION_SOUND_BYTES / 3) * 4;
 
 /** Active SoundPlayer children so preview Stop can kill in-flight PlaySync. */
 const activeWavPlays = new Set<ChildProcess>();
+let wavPlaybackGeneration = 0;
 
 /**
  * OS-specific (#1487): stop any in-flight Windows SoundPlayer child started by
  * {@link playNotificationSoundWav}. Preview-owned; incoming alerts do not call this.
  */
 export function stopNotificationSoundWav(): void {
+  wavPlaybackGeneration++;
   for (const child of activeWavPlays) {
     if (!child.killed) child.kill();
   }
@@ -36,6 +38,9 @@ export async function playNotificationSoundWav(dataBase64: unknown): Promise<voi
   if (process.platform !== 'win32') {
     throw new Error('Native notification playback is only available on Windows');
   }
+  // Supersede any in-flight alert so consecutive notifications do not overlap (#C-UNC-002).
+  stopNotificationSoundWav();
+  const requestGen = wavPlaybackGeneration;
   if (
     typeof dataBase64 !== 'string' ||
     dataBase64.length === 0 ||
@@ -58,6 +63,7 @@ export async function playNotificationSoundWav(dataBase64: unknown): Promise<voi
   const wavPath = path.join(directory, 'tone.wav');
   try {
     await writeFile(wavPath, bytes, { mode: 0o600 });
+    if (requestGen !== wavPlaybackGeneration) return;
     await new Promise<void>((resolve, reject) => {
       const child = execFile(
         'powershell.exe',

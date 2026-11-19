@@ -22,6 +22,12 @@ export {
 export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /**
+ * Debounce before auto-reading MeshCore `owner.info` when the node detail modal opens,
+ * so clicking through the contact list does not burst RF CLI traffic.
+ */
+export const MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS = 800;
+
+/**
  * TracePath / ping TraceData wait after SENT (radio estimate for 1–2 hops is a few seconds).
  * Kept here with the end-to-end ping cap so UI copy and settle budgets cannot drift.
  */

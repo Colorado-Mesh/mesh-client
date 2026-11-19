@@ -1,5 +1,5 @@
 // Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
-// follow MECP 1.3.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
+// follow MECP 1.4.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Engine — Type Definitions
@@ -9,7 +9,7 @@
  */
 
 /** Canonical protocol version clients claim adherence to. */
-export const MECP_PROTOCOL_VERSION = '1.3.0';
+export const MECP_PROTOCOL_VERSION = '1.4.0';
 
 /** Severity levels: 0=MAYDAY, 1=URGENT, 2=SAFETY, 3=ROUTINE */
 export type Severity = 0 | 1 | 2 | 3;
@@ -43,7 +43,7 @@ export interface ParsedMessage {
     reference: string | null;
     /** Sender language hint from @xx pattern (ISO 639-1 / BCP-47) */
     language: string | null;
-    /** Composition timestamp from @HHMM pattern as HH:MM (UTC) */
+    /** Composition timestamp from @HHMM pattern as HH:MM (sender local time) */
     timestamp: string | null;
     /** Sender callsign from ~CALLSIGN pattern */
     callsign: string | null;

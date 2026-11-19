@@ -122,4 +122,13 @@ describe('TransportTcpIpc', () => {
     await transport.disconnect();
     expect(window.electronAPI.meshtastic.tcp.disconnect).toHaveBeenCalledTimes(2);
   });
+
+  it('retireInbound tears down listeners without calling tcp.disconnect', () => {
+    const transport = new TransportTcpIpc('192.168.200.4', 4403);
+    expect(onDataCallback).not.toBeNull();
+    transport.retireInbound();
+    expect(window.electronAPI.meshtastic.tcp.disconnect).not.toHaveBeenCalled();
+    expect(onDataCallback).toBeNull();
+    expect(onDisconnectedCallback).toBeNull();
+  });
 });

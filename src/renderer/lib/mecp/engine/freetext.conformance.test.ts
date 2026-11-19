@@ -1,6 +1,9 @@
 /**
- * MECP 1.3.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
+ * MECP 1.4.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
  * against vendored freetext/tests.json and patterns.json.
+ *
+ * Upstream cases use `{ title, input, expect }`: `expect` is the full decoded
+ * convention map (null values = not decoded), or `null` when the message is invalid.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,40 +23,35 @@ import {
 const ROOT = dirname(fileURLToPath(import.meta.url));
 
 interface FreetextTestCase {
-  convention: string;
+  title: string;
   input: string;
-  expect: Record<string, unknown>;
+  expect: Record<string, unknown> | null;
 }
 
 const CASES = tests as FreetextTestCase[];
 
-function conventionResult(
-  convention: string,
-  freetext: string,
-  codes: string[],
-): Record<string, unknown> {
-  const extracted = extractFreetextConventions(freetext, codes);
-  switch (convention) {
-    case 'timestamp':
-      return extracted.timestamp != null ? { timestamp: extracted.timestamp } : {};
-    case 'reference':
-      return extracted.reference != null ? { reference: extracted.reference } : {};
-    case 'pax':
-      return extracted.count != null ? { pax: extracted.count } : {};
-    case 'gps':
-      return extracted.gps != null ? { gps: extracted.gps } : {};
-    case 'callsign':
-      return extracted.callsign != null ? { callsign: extracted.callsign } : {};
-    case 'language':
-      return extracted.language != null ? { language: extracted.language } : {};
-    case 'duration':
-      return extracted.duration != null ? { duration: extracted.duration } : {};
-    default:
-      throw new Error(`unknown convention ${convention}`);
-  }
+/** Match upstream check-freetext.mjs: omit null expect entries (same as absent). */
+function stripNullExpect(expectMap: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(expectMap).filter(([, v]) => v !== null));
 }
 
-describe('MECP 1.3.0 freetext patterns fixture', () => {
+/** Full convention map from one message, or null when the envelope does not match. */
+function decodeMessageConventions(input: string): Record<string, unknown> | null {
+  const env = matchMessageEnvelope(input);
+  if (!env) return null;
+  const extracted = extractFreetextConventions(env.freetext, env.codes);
+  const got: Record<string, unknown> = {};
+  if (extracted.count != null) got.pax = extracted.count;
+  if (extracted.gps != null) got.gps = extracted.gps;
+  if (extracted.duration != null) got.duration = extracted.duration;
+  if (extracted.reference != null) got.reference = extracted.reference;
+  if (extracted.language != null) got.language = extracted.language;
+  if (extracted.timestamp != null) got.timestamp = extracted.timestamp;
+  if (extracted.callsign != null) got.callsign = extracted.callsign;
+  return got;
+}
+
+describe('MECP 1.4.0 freetext patterns fixture', () => {
   it('keeps every pattern string loadable from patterns.json', () => {
     expect(typeof patterns.message.decode).toBe('string');
     expect(MESSAGE_ENVELOPE_RE.test('MECP/1/T05')).toBe(true);
@@ -62,26 +60,40 @@ describe('MECP 1.3.0 freetext patterns fixture', () => {
     expect(Array.isArray(patterns.duration.decode)).toBe(true);
   });
 
-  it('vendors tests.json beside patterns.json', () => {
+  it('vendors tests.json and manifest.json beside patterns.json', () => {
     const raw = readFileSync(join(ROOT, 'freetext/tests.json'), 'utf8');
     expect(JSON.parse(raw)).toEqual(tests);
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'freetext/manifest.json'), 'utf8')) as {
+      protocolVersion: string;
+      tests: string;
+      patterns: string;
+    };
+    expect(manifest.protocolVersion).toBe('1.4.0');
+    expect(manifest.tests).toBe('tests.json');
+    expect(manifest.patterns).toBe('patterns.json');
+  });
+
+  it('drops seconds from duration encode patterns (1.4.0)', () => {
+    for (const pat of patterns.duration.encode) {
+      expect(pat).not.toMatch(/\[Ss\]/);
+      expect(pat).not.toMatch(/\)s$/);
+    }
+    expect(patterns.duration.encode).toHaveLength(3);
+    expect(patterns.duration.decode).toHaveLength(5);
   });
 });
 
-describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
-  it.each(CASES)('$convention — $input', (t) => {
-    if (t.convention === 'message') {
-      const got = { valid: matchMessageEnvelope(t.input) != null };
-      expect(got).toEqual(t.expect);
+describe('MECP 1.4.0 freetext conformance (upstream tests.json)', () => {
+  it.each(CASES)('$title', (t) => {
+    const got = decodeMessageConventions(t.input);
+    if (t.expect === null) {
+      expect(got).toBeNull();
       return;
     }
-    const env = matchMessageEnvelope(t.input);
-    expect(env, `envelope failed for ${t.input}`).not.toBeNull();
-    const got = conventionResult(t.convention, env!.freetext, env!.codes);
-    expect(got).toEqual(t.expect);
+    expect(got).toEqual(stripNullExpect(t.expect));
   });
 
-  it('uses strict duration encode patterns without spaces before units (1.3.0)', () => {
+  it('uses strict duration encode patterns without spaces before units', () => {
     for (const pat of patterns.duration.encode) {
       expect(pat).not.toMatch(/ \?/);
       expect(pat).not.toContain(' ?');
@@ -95,17 +107,24 @@ describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
 
   it('decode() surfaces the same duration/callsign/reference extractions', () => {
     const duration = decode('MECP/2/R03 45min');
+    expect(duration.valid).toBe(true);
     expect(duration.extracted.duration).toBe(45);
     expect(duration.extracted.durationToken).toBe('45min');
     expect(decode('MECP/3/L06 45min').extracted.duration).toBeNull();
 
-    // #28: any SI unit, no 1440-minute upper bound
+    // Any positive min/h/d total, no 1440-minute upper bound
     expect(decode('MECP/2/R03 2d').extracted.duration).toBe(2880);
     expect(decode('MECP/2/R03 48h').extracted.duration).toBe(2880);
     expect(decode('MECP/2/R03 2880min').extracted.duration).toBe(2880);
 
+    // First by position; seconds are not a duration unit
+    expect(decode('MECP/2/R03 2d 45min').extracted.duration).toBe(2880);
+    expect(decode('MECP/2/R03 30s').extracted.duration).toBeNull();
+    expect(decode('MECP/2/R03 30s 45min').extracted.duration).toBe(45);
+
     const cs = decode('MECP/3/L20 ~DL/OK1ABC');
     expect(cs.extracted.callsign).toBe('DL/OK1ABC');
+    expect(decode('MECP/3/L20 ~W1AW-9').extracted.callsign).toBeNull();
 
     const ref = decode('MECP/2/C08 #base-camp,');
     expect(ref.extracted.reference).toBe('base-camp');
@@ -114,17 +133,10 @@ describe('MECP 1.3.0 freetext conformance (upstream tests.json)', () => {
     expect(ts.extracted.timestamp).toBe('14:00');
   });
 
-  it('rejects 0s so a later positive seconds duration can match', () => {
-    const parsed = decode('MECP/2/R03 0s 7200s');
-    expect(parsed.extracted.duration).toBe(120);
-    expect(parsed.extracted.durationToken).toBe('7200s');
-  });
-
-  it('treats * and / as §6.1 boundaries for pax and duration', () => {
-    expect(decode('MECP/1/S01 *3pax*').extracted.count).toBe(3);
-    const slash = decode('MECP/2/C01 R03 3pax/45min');
-    expect(slash.extracted.count).toBe(3);
-    expect(slash.extracted.duration).toBe(45);
-    expect(slash.extracted.durationToken).toBe('45min');
+  it('decode() strips one trailing CR/LF and rejects interior breaks', () => {
+    expect(decode('MECP/1/T05 T05 damaged\n').valid).toBe(true);
+    expect(decode('MECP/1/T05 T05 damaged\r\n').valid).toBe(true);
+    expect(decode('MECP/1/T05 foo\nbar').valid).toBe(false);
+    expect(decode('MECP/1/T05 ').valid).toBe(false);
   });
 });

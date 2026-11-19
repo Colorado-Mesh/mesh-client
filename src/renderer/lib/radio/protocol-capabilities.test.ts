@@ -45,6 +45,7 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasPowerConfig',
   'hasWifiConfig',
   'hasUserManagedContactGroups',
+  'defaultContactsGroupFilterId',
   'hasCompanionCli',
   'hasCompanionContactManagementConfig',
   'hasCompanionTelemetryPrivacyConfig',
@@ -135,6 +136,7 @@ describe('ProtocolCapabilities contract', () => {
       {
         "composerMaxChunks": 9,
         "dedupeQueueBadgeForLocalSending": true,
+        "defaultContactsGroupFilterId": null,
         "hasAtakPlugin": true,
         "hasAudio": true,
         "hasBatteryTelemetry": true,
@@ -232,6 +234,7 @@ describe('ProtocolCapabilities contract', () => {
       {
         "composerMaxChunks": 1,
         "dedupeQueueBadgeForLocalSending": false,
+        "defaultContactsGroupFilterId": -1,
         "hasAtakPlugin": false,
         "hasAudio": false,
         "hasBatteryTelemetry": true,
@@ -335,6 +338,7 @@ describe('ProtocolCapabilities contract', () => {
       {
         "composerMaxChunks": 9,
         "dedupeQueueBadgeForLocalSending": false,
+        "defaultContactsGroupFilterId": null,
         "hasAtakPlugin": false,
         "hasAudio": false,
         "hasBatteryTelemetry": false,

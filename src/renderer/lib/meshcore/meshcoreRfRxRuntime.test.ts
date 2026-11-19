@@ -5,6 +5,7 @@ import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { flushNodeWrites, resetCoalescedNodeWritesForTests } from '../ingest/coalescedNodeWrites';
 import { resetMeshcoreLateHopSeenPacketsForTests } from '../meshcoreLateRfHopEnrichment';
 import {
   markMeshcoreLocallyDeletedContact,
@@ -91,7 +92,13 @@ function makeDeps(overrides?: Partial<MeshcoreRfRxDeps>): {
 }
 
 describe('handleMeshcoreRfRx', () => {
-  afterEach(() => {
+  beforeEach(() => {
+    resetCoalescedNodeWritesForTests();
+  });
+
+  afterEach(async () => {
+    await flushNodeWrites();
+    resetCoalescedNodeWritesForTests();
     useNodeStore.setState({ nodes: {} });
     setMeshtasticConnectedMyNodeNum(0);
     resetMeshcoreLocallyDeletedContactsForTests();
@@ -99,13 +106,13 @@ describe('handleMeshcoreRfRx', () => {
   });
 
   it('marks sniffer captures as local RF observations for map receiver provenance', () => {
-    const { deps, rawPackets } = makeDeps();
+    const { deps } = makeDeps();
     handleMeshcoreRfRx({ lastSnr: 4, lastRssi: -70, raw: Uint8Array.from([0x15, 0]) }, deps);
-    expect(rawPackets).toHaveLength(1);
-    expect(rawPackets[0]).toMatchObject({ source: 'rf', snr: 4, rssi: -70 });
+    expect(deps.rawPacketsRef.current).toHaveLength(1);
+    expect(deps.rawPacketsRef.current[0]).toMatchObject({ source: 'rf', snr: 4, rssi: -70 });
   });
 
-  it('updates a known Meshtastic-class node last_heard/snr/rssi from the node map', () => {
+  it('updates a known Meshtastic-class node last_heard/snr/rssi from the node map', async () => {
     const nodes = new Map<number, MeshNode>([[2, makeNode(2, { last_heard: 100 })]]);
     const { deps } = makeDeps({
       myNodeNumRef: ref(1),
@@ -119,6 +126,7 @@ describe('handleMeshcoreRfRx', () => {
     const raw = Uint8Array.from([1, 0x3f, 0, 0, 2, 0, 0, 0]);
 
     handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
+    await flushNodeWrites();
 
     const record = useNodeStore.getState().nodes[ID][2];
     expect(record).toMatchObject({ snr: 5.5, rssi: -55 });
@@ -205,7 +213,7 @@ describe('handleMeshcoreRfRx', () => {
     expect(publish).not.toHaveBeenCalled();
   });
 
-  it('clears MQTT-only flags on RF hear even when hops/snr/rssi/last_heard are unchanged', () => {
+  it('clears MQTT-only flags on RF hear even when hops/snr/rssi/last_heard are unchanged', async () => {
     const nowMs = 1_700_000_000_000;
     const nowSec = Math.floor(nowMs / 1000);
     vi.spyOn(Date, 'now').mockReturnValue(nowMs);
@@ -226,6 +234,7 @@ describe('handleMeshcoreRfRx', () => {
     });
 
     applyMeshcoreRfHopsAwayUpdate(7, 1, nowMs, 4, -70, deps);
+    await flushNodeWrites();
 
     expect(useNodeStore.getState().nodes[ID][7]).toMatchObject({
       source: 'rf',
@@ -722,24 +731,29 @@ describe('handleMeshcoreRfRx DM-type packets (1-byte source hash)', () => {
     });
   }
 
-  it('names the contact on a flood DM to us and takes its hops away from the path', () => {
-    const { deps, rawPackets } = setup();
+  it('names the contact on a flood DM to us and takes its hops away from the path', async () => {
+    const { deps } = setup();
 
     handleMeshcoreRfRx(
       { lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('FLOOD', [0xf8, 0xd4, 0x3a]) },
       deps,
     );
+    await flushNodeWrites();
 
-    expect(rawPackets[0]).toMatchObject({ payloadTypeString: 'TXT_MSG', fromNodeId: alexId });
+    expect(deps.rawPacketsRef.current[0]).toMatchObject({
+      payloadTypeString: 'TXT_MSG',
+      fromNodeId: alexId,
+    });
     expect(useNodeStore.getState().nodes[ID][alexId]).toMatchObject({ hopsAway: 3 });
   });
 
-  it('names the contact on a direct DM but leaves hops away alone', () => {
-    const { deps, rawPackets } = setup();
+  it('names the contact on a direct DM but leaves hops away alone', async () => {
+    const { deps } = setup();
 
     handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -80, raw: txtMsgToUs('DIRECT', []) }, deps);
+    await flushNodeWrites();
 
-    expect(rawPackets[0]).toMatchObject({ fromNodeId: alexId });
+    expect(deps.rawPacketsRef.current[0]).toMatchObject({ fromNodeId: alexId });
     expect(useNodeStore.getState().nodes[ID][alexId].hopsAway).toBeUndefined();
   });
 

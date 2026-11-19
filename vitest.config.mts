@@ -154,6 +154,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.telemetry-nodeinfo.test.ts',
   'src/renderer/lib/meshtastic/meshtasticNodeSideEffects.test.ts',
   'src/renderer/lib/meshtastic/meshtasticRawPacketSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticDiagnosticsCoalesce.test.ts',
   'src/renderer/lib/meshtastic/meshtasticRouterSideEffects.test.ts',
   'src/renderer/lib/meshtastic/meshtasticModulePortSideEffects.test.ts',
   'src/renderer/lib/meshtastic/meshtasticStoreForwardSideEffects.test.ts',

@@ -17,6 +17,7 @@ import {
 } from '../connectedMeshcoreBleMac';
 import { packetRouter } from '../drivers/PacketRouter';
 import { getIdentityNode } from '../identityStoreReads';
+import { flushNodeWrites, resetCoalescedNodeWritesForTests } from '../ingest/coalescedNodeWrites';
 import { getNodeStatus } from '../nodeStatus';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
@@ -79,6 +80,7 @@ function makeDeps(overrides: Partial<MeshtasticNodeSideEffectsDeps> = {}) {
 
 describe('attachMeshtasticNodeSideEffects', () => {
   beforeEach(() => {
+    resetCoalescedNodeWritesForTests();
     useNodeStore.setState({ nodes: {} });
     useEnvironmentTelemetryStore.setState({ history: new Map() });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
@@ -93,18 +95,23 @@ describe('attachMeshtasticNodeSideEffects', () => {
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshtastic');
     resetConnectedMeshcoreBleMacForTests();
     window.electronAPI = {
-      db: { saveNode: vi.fn().mockResolvedValue(undefined) },
+      db: {
+        saveNode: vi.fn().mockResolvedValue(undefined),
+        saveNodes: vi.fn().mockResolvedValue({ saved: 0, dropped: 0 }),
+      },
     } as unknown as typeof window.electronAPI;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await flushNodeWrites();
+    resetCoalescedNodeWritesForTests();
     vi.restoreAllMocks();
     localStorage.clear();
     resetConnectedMeshcoreBleMacForTests();
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
   });
 
-  it('applies UserPacket node_info into the hook map and marks RF-heard', () => {
+  it('applies UserPacket node_info into the hook map and marks RF-heard', async () => {
     const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
@@ -125,7 +132,8 @@ describe('attachMeshtasticNodeSideEffects', () => {
     expect(deps.rfHeardNodeIds.current.has(PEER)).toBe(true);
     expect(getIdentityNode(IDENTITY, PEER)?.long_name).toBe('Peer Node');
     expect(getIdentityNode(IDENTITY, PEER)?.short_name).toBe('PEER');
-    expect(window.electronAPI.db.saveNode).toHaveBeenCalled();
+    await flushNodeWrites();
+    expect(window.electronAPI.db.saveNodes).toHaveBeenCalled();
     detach();
   });
 
@@ -217,7 +225,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
     detach();
   });
 
-  it('passes the fully merged NodeDB row to diagnostics', () => {
+  it('passes the fully merged NodeDB row to diagnostics', async () => {
     const processNodeUpdate = vi
       .spyOn(useDiagnosticsStore.getState(), 'processNodeUpdate')
       .mockImplementation(() => undefined);
@@ -240,6 +248,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       },
       IDENTITY,
     );
+    await flushNodeWrites();
     expect(processNodeUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         node_id: PEER,
@@ -325,7 +334,11 @@ describe('attachMeshtasticNodeSideEffects', () => {
     resetMeshtasticRenumberIndexForTests();
     const migrate = vi.fn().mockResolvedValue({ migrated: false, messagesUpdated: 0 });
     window.electronAPI = {
-      db: { saveNode: vi.fn().mockResolvedValue(undefined), migrateMeshtasticNodeNum: migrate },
+      db: {
+        saveNode: vi.fn().mockResolvedValue(undefined),
+        saveNodes: vi.fn().mockResolvedValue({ saved: 0, dropped: 0 }),
+        migrateMeshtasticNodeNum: migrate,
+      },
     } as unknown as typeof window.electronAPI;
     const publicKey = new Uint8Array(32).fill(0xab);
     upsertNodeRecord(
@@ -374,13 +387,14 @@ describe('attachMeshtasticNodeSideEffects', () => {
         }),
       );
       vi.mocked(window.electronAPI.db.saveNode).mockClear();
+      vi.mocked(window.electronAPI.db.saveNodes).mockClear();
     });
 
     afterEach(() => {
       resetMeshtasticConfigurePhaseForTests();
     });
 
-    it('keeps hydrated timestamp when NodeDB then synthetic UserPacket arrive during configure', () => {
+    it('keeps hydrated timestamp when NodeDB then synthetic UserPacket arrive during configure', async () => {
       const { deps } = makeDeps({ getIsConfiguring: () => true });
       const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
       packetRouter.dispatch(
@@ -412,9 +426,12 @@ describe('attachMeshtasticNodeSideEffects', () => {
       const node = getIdentityNode(IDENTITY, PEER);
       expect(node?.last_heard).toBe(STALE_MS);
       expect(getNodeStatus(node?.last_heard ?? 0)).not.toBe('online');
-      const saveCalls = vi.mocked(window.electronAPI.db.saveNode).mock.calls;
+      await flushNodeWrites();
+      const saveCalls = vi.mocked(window.electronAPI.db.saveNodes).mock.calls;
       expect(saveCalls.length).toBeGreaterThan(0);
-      const lastSaved = saveCalls[saveCalls.length - 1]?.[0];
+      const batch = saveCalls[saveCalls.length - 1]?.[0] as { last_heard: number }[];
+      const lastSaved = batch[batch.length - 1];
+      expect(lastSaved).toBeDefined();
       expect(lastSaved.last_heard).toBe(node?.last_heard);
       detach();
     });
@@ -490,6 +507,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
         }),
       );
       vi.mocked(window.electronAPI.db.saveNode).mockClear();
+      vi.mocked(window.electronAPI.db.saveNodes).mockClear();
     });
 
     it('does not bump last_heard on UserPacket node_info for the MAC ghost', () => {
@@ -510,6 +528,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       );
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.last_heard).toBe(priorHeard);
       expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+      expect(window.electronAPI.db.saveNodes).not.toHaveBeenCalled();
       expect(deps.rfHeardNodeIds.current.has(GHOST_NODE)).toBe(false);
       detach();
     });
@@ -535,6 +554,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.last_heard).toBe(priorHeard);
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.snr).toBe(0);
       expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+      expect(window.electronAPI.db.saveNodes).not.toHaveBeenCalled();
       detach();
     });
 
@@ -556,6 +576,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.last_heard).toBe(priorHeard);
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.latitude).toBeNull();
       expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+      expect(window.electronAPI.db.saveNodes).not.toHaveBeenCalled();
       detach();
     });
 
@@ -578,6 +599,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       expect(getIdentityNode(IDENTITY, GHOST_NODE)?.battery).toBe(0);
       expect(deps.setTelemetry).not.toHaveBeenCalled();
       expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+      expect(window.electronAPI.db.saveNodes).not.toHaveBeenCalled();
       detach();
     });
   });

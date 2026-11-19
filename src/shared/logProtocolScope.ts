@@ -28,6 +28,7 @@ export const LOG_TAG_SCOPE: Readonly<Record<string, LogScope>> = Object.freeze({
   '[Meshtastic]': { protocol: 'meshtastic', surface: 'app' },
   '[meshtasticSdkRoutingErrorLog]': { protocol: 'meshtastic', surface: 'device' },
   '[meshtasticTransportLoss]': { protocol: 'meshtastic', surface: 'device' },
+  '[meshtasticAttachSuperseded]': { protocol: 'meshtastic', surface: 'device' },
   '[meshtasticTransportSideEffects]': { protocol: 'meshtastic', surface: 'device' },
   '[meshtasticRuntimeWireEffects]': { protocol: 'meshtastic', surface: 'device' },
   '[meshtasticModulePortSideEffects]': { protocol: 'meshtastic', surface: 'device' },

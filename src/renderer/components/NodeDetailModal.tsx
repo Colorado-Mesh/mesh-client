@@ -48,6 +48,11 @@ import type {
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
+  type MeshcoreOwnerInfoEntry,
+  meshcoreOwnerInfoLines,
+  meshcoreOwnerInfoSupported,
+} from '../lib/meshcoreOwnerInfo';
+import {
   buildMeshcorePathChainSegments,
   buildMeshcorePathResolutionFromNodes,
   meshcoreDisplayRouteFromPathSelection,
@@ -81,7 +86,10 @@ import { nodeBearingRange } from '../lib/nodeBearingRange';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { CliHistoryEntry } from '../lib/repeaterCommandService';
-import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
+import {
+  MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS,
+  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+} from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { useIsBotSender } from '../stores/botSendersStore';
@@ -192,6 +200,12 @@ interface NodeDetailModalProps {
   };
   /** Companion CLI capability: telemetry push subscriptions on v1.18+ sensors. */
   meshcoreTelemetryPush?: MeshcoreTelemetryPushActions;
+  /** MeshCore Repeater/Room/Sensor owner info (`get owner.info`), read on demand. */
+  meshcoreOwnerInfo?: MeshcoreOwnerInfoEntry;
+  onRequestMeshcoreOwnerInfo?: (
+    nodeId: number,
+    opts?: { force?: boolean },
+  ) => Promise<MeshcoreOwnerInfoEntry | null>;
 }
 
 function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
@@ -311,6 +325,8 @@ export default function NodeDetailModal({
   hasRemoteAdminKey,
   meshcoreRemoteCli,
   meshcoreTelemetryPush,
+  meshcoreOwnerInfo,
+  onRequestMeshcoreOwnerInfo,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
@@ -326,6 +342,14 @@ export default function NodeDetailModal({
   const refreshRepeaterSecrets = useCallback(() => {
     setRepeaterSecretsEpoch((n) => n + 1);
   }, []);
+  const [ownerInfoRefreshing, setOwnerInfoRefreshing] = useState(false);
+  /** Debounce key for an in-flight scheduled fetch (cleared if the timer is cancelled). */
+  const ownerInfoScheduledKeyRef = useRef<string | null>(null);
+  /** Connection-scoped dedupe for completed reads (preserved for cached non-error results). */
+  const ownerInfoCompletedKeyRef = useRef<string | null>(null);
+  const ownerInfoSecretsEpochRef = useRef(repeaterSecretsEpoch);
+  /** True when a deferred request returned null (e.g. Room login busy) — show Refresh, not spinner. */
+  const [ownerInfoDeferred, setOwnerInfoDeferred] = useState(false);
   const meshcoreIdentityId = protocol === 'meshcore' ? getIdentityIdForProtocol('meshcore') : null;
   const storeContactPublicKey = useNodeStore((s) => {
     if (!meshcoreIdentityId || node == null) return undefined;
@@ -612,6 +636,94 @@ export default function NodeDetailModal({
     },
     [ensureRepeaterAuth, node?.long_name, refreshRepeaterSecrets, t],
   );
+
+  const ownerInfoSupported =
+    protocol === 'meshcore' &&
+    node != null &&
+    node.node_id !== homeNode?.node_id &&
+    meshcoreOwnerInfoSupported(node.hw_model);
+
+  useEffect(() => {
+    if (!isConnected) {
+      // Reset connection-scoped dedupe on disconnect; preserve nothing across sessions.
+      ownerInfoScheduledKeyRef.current = null;
+      ownerInfoCompletedKeyRef.current = null;
+      setOwnerInfoDeferred(false);
+      return;
+    }
+    if (!ownerInfoSupported || !onRequestMeshcoreOwnerInfo || node == null) return;
+    const secretsChanged = ownerInfoSecretsEpochRef.current !== repeaterSecretsEpoch;
+    ownerInfoSecretsEpochRef.current = repeaterSecretsEpoch;
+
+    const key = `${node.node_id}:${repeaterSecretsEpoch}`;
+    if (ownerInfoScheduledKeyRef.current === key) return;
+    if (ownerInfoCompletedKeyRef.current === key && !secretsChanged) return;
+    if (!secretsChanged && meshcoreOwnerInfo && meshcoreOwnerInfo.status !== 'error') {
+      ownerInfoCompletedKeyRef.current = key;
+      setOwnerInfoDeferred(false);
+      return;
+    }
+    ownerInfoScheduledKeyRef.current = key;
+    setOwnerInfoDeferred(false);
+
+    const timer = setTimeout(() => {
+      void onRequestMeshcoreOwnerInfo(node.node_id, { force: secretsChanged })
+        .then((entry) => {
+          if (ownerInfoScheduledKeyRef.current !== key) return;
+          ownerInfoScheduledKeyRef.current = null;
+          if (entry == null) {
+            // Deferred (e.g. Room login queued): leave completed unset so Refresh can retry.
+            setOwnerInfoDeferred(true);
+            return;
+          }
+          ownerInfoCompletedKeyRef.current = key;
+          setOwnerInfoDeferred(false);
+        })
+        .catch(() => {
+          // catch-no-log-ok the runtime already logged the failure and stores an error state
+          if (ownerInfoScheduledKeyRef.current === key) {
+            ownerInfoScheduledKeyRef.current = null;
+            ownerInfoCompletedKeyRef.current = key;
+          }
+        });
+    }, MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      // Cancelled before fire — allow a later effect to reschedule the same key.
+      if (ownerInfoScheduledKeyRef.current === key) {
+        ownerInfoScheduledKeyRef.current = null;
+      }
+    };
+  }, [
+    ownerInfoSupported,
+    isConnected,
+    node,
+    repeaterSecretsEpoch,
+    meshcoreOwnerInfo,
+    onRequestMeshcoreOwnerInfo,
+  ]);
+
+  const refreshOwnerInfo = () => {
+    if (!onRequestMeshcoreOwnerInfo || node == null) return;
+    setOwnerInfoRefreshing(true);
+    setOwnerInfoDeferred(false);
+    ownerInfoScheduledKeyRef.current = null;
+    void onRequestMeshcoreOwnerInfo(node.node_id, { force: true })
+      .then((entry) => {
+        if (entry == null) {
+          setOwnerInfoDeferred(true);
+          return;
+        }
+        ownerInfoCompletedKeyRef.current = `${node.node_id}:${repeaterSecretsEpoch}`;
+        setOwnerInfoDeferred(false);
+      })
+      .catch(() => {
+        // catch-no-log-ok runtime logs and stores the error entry
+      })
+      .finally(() => {
+        setOwnerInfoRefreshing(false);
+      });
+  };
 
   useEffect(() => {
     if (protocol !== 'meshcore' || !node) {
@@ -1439,16 +1551,76 @@ export default function NodeDetailModal({
             radioConnected={radioConnected}
           />
 
-          {protocol === 'meshcore' && !isOurNode && node.hw_model === 'Repeater' && (
-            <MeshcoreRepeaterPasswordControls
-              nodeId={node.node_id}
-              nodeName={node.long_name}
-              secretsEpoch={repeaterSecretsEpoch}
-              onPromptPassword={promptRepeaterPassword}
-              onSecretsChanged={refreshRepeaterSecrets}
-              onStatusMessage={setActionStatus}
-            />
+          {ownerInfoSupported && (
+            <section className="border-ink-700 bg-ink-950/40 mt-3 space-y-2 rounded-lg border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-ink-300 text-xs font-semibold">
+                  {t('nodeDetailModal.ownerInfoHeading')}
+                </h4>
+                <button
+                  type="button"
+                  disabled={!isConnected || ownerInfoRefreshing}
+                  onClick={refreshOwnerInfo}
+                  aria-label={t('nodeDetailModal.ownerInfoRefresh')}
+                  className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 rounded border px-2 py-1 text-xs disabled:opacity-50"
+                >
+                  {t('nodeDetailModal.ownerInfoRefresh')}
+                </button>
+              </div>
+              {meshcoreOwnerInfo == null ? (
+                <p className="text-muted text-xs">
+                  {ownerInfoDeferred
+                    ? t('nodeDetailModal.ownerInfoDeferred')
+                    : t('nodeDetailModal.ownerInfoLoading')}
+                </p>
+              ) : meshcoreOwnerInfo.status === 'ok' && meshcoreOwnerInfo.text != null ? (
+                <div className="space-y-1">
+                  {meshcoreOwnerInfoLines(meshcoreOwnerInfo.text).map((line, index) => (
+                    <span
+                      key={`${index}:${line}`}
+                      className="text-ink-200 block text-xs wrap-anywhere whitespace-pre-wrap"
+                    >
+                      {line}
+                    </span>
+                  ))}
+                  <p className="text-muted text-xs">
+                    {t('nodeDetailModal.ownerInfoReadAt', {
+                      time: formatDisplayTime(meshcoreOwnerInfo.fetchedAt, {
+                        use24Hour: use24HourTime,
+                      }),
+                    })}
+                  </p>
+                </div>
+              ) : meshcoreOwnerInfo.status === 'empty' ? (
+                <p className="text-muted text-xs">{t('nodeDetailModal.ownerInfoEmpty')}</p>
+              ) : meshcoreOwnerInfo.status === 'unsupported' ? (
+                <p className="text-muted text-xs">{t('nodeDetailModal.ownerInfoUnsupported')}</p>
+              ) : meshcoreOwnerInfo.status === 'needs-password' ? (
+                <p className="text-muted text-xs">
+                  {node.hw_model === 'Room'
+                    ? t('nodeDetailModal.ownerInfoNeedsRoomPassword')
+                    : t('nodeDetailModal.ownerInfoNeedsPassword')}
+                </p>
+              ) : (
+                <p className="text-muted text-xs" title={meshcoreOwnerInfo.reason}>
+                  {t('nodeDetailModal.ownerInfoReadFailed')}
+                </p>
+              )}
+            </section>
           )}
+
+          {protocol === 'meshcore' &&
+            !isOurNode &&
+            (node.hw_model === 'Repeater' || node.hw_model === 'Sensor') && (
+              <MeshcoreRepeaterPasswordControls
+                nodeId={node.node_id}
+                nodeName={node.long_name}
+                secretsEpoch={repeaterSecretsEpoch}
+                onPromptPassword={promptRepeaterPassword}
+                onSecretsChanged={refreshRepeaterSecrets}
+                onStatusMessage={setActionStatus}
+              />
+            )}
 
           {protocol === 'meshcore' &&
             !isOurNode &&

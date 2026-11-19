@@ -1,9 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { BuiltinContactGroupFilterId } from '@/renderer/lib/contactGroupFilterIds';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
+
+export type { BuiltinContactGroupFilterId };
 
 export interface UseContactGroupsResult {
   groups: ContactGroup[];
@@ -19,12 +22,19 @@ export interface UseContactGroupsResult {
   reloadGroups: () => Promise<void>;
 }
 
-export function useContactGroups(selfNodeId: number | null): UseContactGroupsResult {
+export function useContactGroups(
+  selfNodeId: number | null,
+  defaultSelectedGroupId: BuiltinContactGroupFilterId | null = null,
+): UseContactGroupsResult {
   const [groups, setGroups] = useState<ContactGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupIdState] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupIdState] = useState<number | null>(
+    defaultSelectedGroupId,
+  );
   const [groupMemberIds, setGroupMemberIds] = useState<Set<number>>(new Set());
   const selfNodeIdRef = useRef(selfNodeId);
   selfNodeIdRef.current = selfNodeId;
+  const defaultSelectedGroupIdRef = useRef(defaultSelectedGroupId);
+  defaultSelectedGroupIdRef.current = defaultSelectedGroupId;
   const loadedGroupIdRef = useRef<number | null>(null);
   const pendingGroupIdRef = useRef<number | null>(null);
 
@@ -44,11 +54,13 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
 
   useEffect(() => {
     setGroups([]);
-    setSelectedGroupIdState(null);
+    setSelectedGroupIdState(defaultSelectedGroupId);
     setGroupMemberIds(new Set());
+    // Drop in-flight member loads so a late response cannot repopulate after reset.
+    pendingGroupIdRef.current = null;
     void reloadGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selfNodeId]);
+  }, [selfNodeId, defaultSelectedGroupId]);
 
   const setSelectedGroupId = useCallback((id: number | null) => {
     setSelectedGroupIdState(id);
@@ -101,7 +113,7 @@ export function useContactGroups(selfNodeId: number | null): UseContactGroupsRes
       setSelectedGroupIdState((prev) => {
         if (prev === groupId) {
           setGroupMemberIds(new Set());
-          return null;
+          return defaultSelectedGroupIdRef.current;
         }
         return prev;
       });

@@ -12,11 +12,15 @@ describe('networkTransientErrors', () => {
     expect(TRANSIENT_NETWORK_ERROR_CODES.has('ENETDOWN')).toBe(true);
     expect(TRANSIENT_NETWORK_ERROR_CODES.has('ENETUNREACH')).toBe(true);
     expect(TRANSIENT_NETWORK_ERROR_CODES.has('EHOSTUNREACH')).toBe(true);
+    expect(TRANSIENT_NETWORK_ERROR_CODES.has('EADDRNOTAVAIL')).toBe(true);
+    expect(TRANSIENT_NETWORK_ERROR_CODES.has('EHOSTDOWN')).toBe(true);
   });
 
   it('isTransientNetworkErrorCode matches known string codes only', () => {
     expect(isTransientNetworkErrorCode('ENETDOWN')).toBe(true);
     expect(isTransientNetworkErrorCode('EHOSTUNREACH')).toBe(true);
+    expect(isTransientNetworkErrorCode('EADDRNOTAVAIL')).toBe(true);
+    expect(isTransientNetworkErrorCode('EHOSTDOWN')).toBe(true);
     expect(isTransientNetworkErrorCode('EPERM')).toBe(false);
     expect(isTransientNetworkErrorCode(404)).toBe(false);
     expect(isTransientNetworkErrorCode(undefined)).toBe(false);
@@ -25,6 +29,14 @@ describe('networkTransientErrors', () => {
   it('isTransientNetworkError treats ENETDOWN and keepalive timeouts as transient', () => {
     expect(
       isTransientNetworkError(Object.assign(new Error('read ENETDOWN'), { code: 'ENETDOWN' })),
+    ).toBe(true);
+    expect(
+      isTransientNetworkError(
+        Object.assign(new Error('read EADDRNOTAVAIL'), { code: 'EADDRNOTAVAIL' }),
+      ),
+    ).toBe(true);
+    expect(
+      isTransientNetworkError(Object.assign(new Error('read EHOSTDOWN'), { code: 'EHOSTDOWN' })),
     ).toBe(true);
     expect(isTransientNetworkError(new Error('Keepalive timeout'))).toBe(true);
     expect(isTransientNetworkError(new Error('connack timeout'))).toBe(true);

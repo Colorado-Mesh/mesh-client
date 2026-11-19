@@ -276,6 +276,19 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const nodeUpsertPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/nodeUpsert.ts'),
+            [
+              'export const NODE_UPSERT_SQL = "INSERT INTO nodes";',
+              'export function toNodeUpsertParams() { return {}; }',
+              'export function saveNodeRowOn() {}',
+              'export function saveNodesBatchOn() {',
+              `  return { saved: 0, dropped: 0, marker: 'nodes.source = \\'mqtt\\' AND excluded.source = \\'rf\\' ${nodeUpsertPad}' };`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

@@ -433,6 +433,109 @@ describe('patchMainConsole stderr capture', () => {
       process.stderr.write = saved.stderrWrite;
     }
   });
+
+  it('swallows stderr write EPIPE from console.error and still records the log line (#1492)', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    const epipe = Object.assign(new Error('write EPIPE'), { code: 'EPIPE' });
+    const stderrSink = vi.fn(() => {
+      throw epipe;
+    });
+    process.stderr.write = stderrSink;
+    const echoToStderr = (msg: unknown) => {
+      process.stderr.write(`${String(msg)}\n`);
+    };
+    console.warn = echoToStderr;
+    console.error = echoToStderr;
+    try {
+      vi.resetModules();
+      const { patchMainConsole, getRecentLines } = await import('./log-service');
+      patchMainConsole();
+
+      expect(() => {
+        console.error('epipe-still-logged');
+      }).not.toThrow();
+
+      const lines = getRecentLines();
+      expect(lines.some((l) => l.message.includes('epipe-still-logged'))).toBe(true);
+      expect(stderrSink).toHaveBeenCalled();
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
+  });
+
+  it('ignores async stderr EPIPE error events without throwing (#1492)', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    try {
+      vi.resetModules();
+      const { patchMainConsole } = await import('./log-service');
+      patchMainConsole();
+
+      const epipe = Object.assign(new Error('write EPIPE'), { code: 'EPIPE' });
+      expect(() => {
+        process.stderr.emit('error', epipe);
+      }).not.toThrow();
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
+  });
+
+  it('ignores async non-EPIPE stderr errors without throwing (#1492)', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    try {
+      vi.resetModules();
+      const { patchMainConsole } = await import('./log-service');
+      patchMainConsole();
+
+      const err = Object.assign(new Error('write EINVAL'), { code: 'EINVAL' });
+      expect(() => {
+        process.stderr.emit('error', err);
+      }).not.toThrow();
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
+  });
 });
 
 describe('isDroppableMeshtasticSdkLogLine', () => {

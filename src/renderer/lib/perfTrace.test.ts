@@ -21,17 +21,35 @@ describe('perfTrace', () => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => (key === 'mesh-client:perf' ? '1' : null),
     });
+    const startProbe = vi.fn();
+    vi.doMock('./mainThreadLagProbe', () => ({
+      startMainThreadLagProbe: startProbe,
+      mainThreadLagSnapshot: () => ({
+        sampleCount: 0,
+        maxMs: 0,
+        p95Ms: 0,
+        visibilityState: 'visible',
+      }),
+      stopMainThreadLagProbe: () => {},
+      resetMainThreadLagProbe: () => {},
+    }));
     const mod = await import('./perfTrace');
     expect(mod.PERF_TRACE_ENABLED).toBe(true);
     expect(globalThis.__meshPerf).toBe(mod.perfReport);
+    // Lag probe starts at module init (before first perfReport / reconnect work).
+    await vi.waitFor(() => {
+      expect(startProbe).toHaveBeenCalled();
+    });
     mod.perfReset();
     mod.perfSpanSync('unit-span', () => 'ok');
     mod.perfSpan('unit-span', () => undefined);
     const table = vi.spyOn(console, 'table').mockImplementation(() => {});
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
     mod.perfReport();
     expect(table).toHaveBeenCalledOnce();
     const rows = table.mock.calls[0]?.[0] as { name: string; count: number }[];
     expect(rows.some((r) => r.name === 'unit-span' && r.count === 2)).toBe(true);
     table.mockRestore();
+    debug.mockRestore();
   });
 });

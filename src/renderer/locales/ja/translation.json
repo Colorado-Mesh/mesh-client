@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "境界ボックスは、西<東、南<北でなければなりません",
     "waypointNotifyOnEnter": "Enterキーを押したときに通知する",
     "waypointNotifyOnExit": "終了時に通知する",
-    "waypointNotifyFavoritesOnly": "お気に入りのみ通知する"
+    "waypointNotifyFavoritesOnly": "お気に入りのみ通知する",
+    "basemapOpentopo": "OpenTopoMap（地形）",
+    "basemapHot": "人道的（HOT）",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte（公共交通機関）"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "メッシュ経由のシリアル ポート データ転送を有効にします。",
       "serialEchoDesc": "Echo は送信者に返送されたシリアル データを受信しました。",
       "serialRxd": "RXピン",
-      "serialRxdDesc": "シリアル RX の GPIO ピン番号。 0 = デフォルトを使用します。",
       "serialTxd": "TXピン",
-      "serialTxdDesc": "シリアル TX の GPIO ピン番号。 0 = デフォルトを使用します。",
       "serialTimeout": "タイムアウト",
       "serialTimeoutDesc": "パケットを送信する前に待機するミリ秒数。 0 = デフォルトを使用します。",
       "serialMode": "シリアルモード",
-      "serialModeDesc": "シリアルモジュールの動作モード。",
       "serialOverrideConsole": "コンソールのシリアルポートを上書きする",
       "serialOverrideConsoleDesc": "シリアル モジュールにはセカンダリ ポートではなくプライマリ シリアル ポート (コンソール) を使用します。",
       "sfEnabledDesc": "メッシュに再参加するノードのメッセージをバッファーします。",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "チャネル インデックスは 0 ～ 7 でなければなりません。",
         "channelNotConfigured": "このチャネルはこの無線では設定されていません。",
         "frequencySlot": "周波数スロットは 1 以上であるか、それを導出するには 0 である必要があります。"
-      }
+      },
+      "serialRxdDesc": "シリアルRX用のGPIOピン。0 =未設定。RXDとTXDの両方を設定する必要があります（またはNMEA、CalTopo、またはMeshSolar構成でコンソールオーバーライドを使用します）。そうでない場合、デバイスはシリアルモジュールを無効にします。",
+      "serialTxdDesc": "シリアルTX用のGPIOピン。0 = 未設定。TXDとRXDの両方を設定する必要があります（またはコンソールのオーバーライドを使用します）。そうでない場合、デバイスはシリアルモジュールを無効にします。",
+      "serialModeDesc": "シリアルモジュールの動作モード。すべてのモードがすべてのファームウェアバージョンで実装されているわけではありません。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "パブリックMeshtastic MQTTブローカーはTLSをサポートしていません。TLSをオフにするか、カスタムブローカーアドレスを使用します。",
       "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
       "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。",
-      "serialOverrideRequiresMode": "シリアルコンソールオーバーライドがデバイスで有効になっています。ここでシリアルモジュールを有効にする前に、無線で有効なシリアルモードを設定します。"
+      "serialOverrideRequiresMode": "シリアルコンソールのオーバーライドは、NMEA、CalTopo、およびMeshSolar構成モードでのみサポートされています。これらのモードのいずれかを選択するか、コンソールのオーバーライドをオフにしてください。"
     },
     "remoteHardwareConfirmEnableTitle": "リモートハードウェアを有効にしますか？",
     "remoteHardwareConfirmEnableMessage": "リモートノードは、メッシュを介してこのデバイス上のGPIOピンの読み取りと書き込みを行うことができます。メッシュユーザーを信頼し、PINアクセスを設定している場合にのみ有効にします。",
@@ -3567,6 +3571,9 @@
       "joined": "チャンネル {{name}} に参加しました。",
       "radioApplied": "無線設定が送信されました。",
       "joinFailed": "参加に失敗しました: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Meshtasticファームウェアは現在、このモードではシリアル出力を行いません（無線機は設定を保存しますが、何も書き込みません）。チャンネル／DMテキストにはテキストメッセージモードを、生のパススルーにはシンプルモードを使用してください。LOGモードでもコンソールのオーバーライドを使用できません。"
     }
   },
   "networkPanel": {
@@ -3916,7 +3923,17 @@
     "forgetAdvert": "最後のadvertを忘れる",
     "forgetAdvertAria": "この連絡先の最後のadvertタイムスタンプを消去する",
     "forgetAdvertDone": "最後のadvertのタイムスタンプが消去されました。",
-    "forgetAdvertFailed": "最後のadvertのタイムスタンプを消去できませんでした。"
+    "forgetAdvertFailed": "最後のadvertのタイムスタンプを消去できませんでした。",
+    "ownerInfoHeading": "所有者情報",
+    "ownerInfoRefresh": "オーナー情報を更新する",
+    "ownerInfoLoading": "所有者情報を読み込んでいます…",
+    "ownerInfoReadAt": "{{time}}で読む",
+    "ownerInfoEmpty": "このノードにオーナー情報が設定されていません。",
+    "ownerInfoUnsupported": "このファームウェアは所有者情報をサポートしていません。",
+    "ownerInfoNeedsPassword": "所有者情報には管理者パスワードが必要です。以下に1つ保存して読んでください。",
+    "ownerInfoNeedsRoomPassword": "オーナー情報には管理者パスワードが必要です。「リピーターとルーム」→「設定」で設定してください。",
+    "ownerInfoReadFailed": "所有者情報を読み取れませんでした。",
+    "ownerInfoDeferred": "オーナー情報はラジオを待っています。[更新] を使用して、もう一度お試しください。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -7924,7 +7941,11 @@
     "retentionHint": "ローカルのライブトラフィックは、1分間観測を保持します。古いキャプチャはモニタースニッファーに→残ります。",
     "emptyFeedQuiet": "直前の観察はありません。古いパケットはMonitor → Snifferに残ります。",
     "hopTones": "ホップトーン",
-    "hopTonesHint": "アニメーション化された各ホップに対して柔らかな音を鳴らします。短いホップは高い音で、長いホップは低い音で鳴ります。各音符は、マップ上のそのホップの飛行時間と同じ長さです。ローカル、Beacon、およびCoreScopeのトラフィックで動作します。"
+    "hopTonesHint": "アニメーション化された各ホップに対して柔らかな音を鳴らします。短いホップは高い音で、長いホップは低い音で鳴ります。各音符は、マップ上のそのホップの飛行時間と同じ長さです。ローカル、Beacon、およびCoreScopeのトラフィックで動作します。",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "人道主義者",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVカード"
   },
   "meshcoreCompanionCli": {
     "summary": "コンパニオンデバイスの設定",

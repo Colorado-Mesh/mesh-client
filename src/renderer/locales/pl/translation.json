@@ -2971,7 +2971,11 @@
     "waypointBoundingBoxInvalid": "W ramce ograniczającej musi być zachód < wschód i południe < północ",
     "waypointNotifyOnEnter": "Powiadamiaj po wejściu",
     "waypointNotifyOnExit": "Powiadom przy wyjściu",
-    "waypointNotifyFavoritesOnly": "Powiadamiaj tylko o ulubionych"
+    "waypointNotifyFavoritesOnly": "Powiadamiaj tylko o ulubionych",
+    "basemapOpentopo": "OpenTopoMap (teren)",
+    "basemapHot": "Humanitarna (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transport publiczny)"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -3336,13 +3340,10 @@
       "serialModuleEnabledDesc": "Włącz przekazywanie danych portu szeregowego przez siatkę.",
       "serialEchoDesc": "Echo odebrało dane szeregowe z powrotem do nadawcy.",
       "serialRxd": "PIN RX",
-      "serialRxdDesc": "Numer PIN GPIO dla szeregowego RX. 0 = użyj domyślnego.",
       "serialTxd": "TX PIN",
-      "serialTxdDesc": "Numer PIN GPIO dla TX szeregowego. 0 = użyj domyślnego.",
       "serialTimeout": "Limit czasu",
       "serialTimeoutDesc": "Milisekundy na odczekanie przed wysłaniem pakietu. 0 = użyj wartości domyślnej.",
       "serialMode": "Tryb szeregowy",
-      "serialModeDesc": "Tryb pracy modułu szeregowego.",
       "serialOverrideConsole": "Zastąp port szeregowy konsoli",
       "serialOverrideConsoleDesc": "Użyj głównego portu szeregowego (konsoli) dla modułu szeregowego zamiast portu pomocniczego.",
       "sfEnabledDesc": "Buforuje komunikaty dla węzłów, które ponownie przyłączają się do siatki.",
@@ -3417,7 +3418,10 @@
         "channelIndexRange": "Indeks kanału musi mieścić się w przedziale od 0 do 7.",
         "channelNotConfigured": "Ten kanał nie jest skonfigurowany w tym radiu.",
         "frequencySlot": "Szczelina częstotliwości musi mieć wartość 1 lub wyższą albo 0, aby ją wyprowadzić."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO dla szeregowego RX. 0 = nieskonfigurowany. Należy ustawić zarówno RXD, jak i TXD (lub użyć zastąpienia konsoli za pomocą konfiguracji NMEA, CalTopo lub MeshSolar); w przeciwnym razie urządzenie wyłączy moduł szeregowy.",
+      "serialTxdDesc": "Pin GPIO dla szeregowego TX. 0 = nieskonfigurowany. Należy ustawić zarówno TXD, jak i RXD (lub użyć funkcji zastępowania ustawień przez konsolę); w przeciwnym razie urządzenie wyłączy moduł szeregowy.",
+      "serialModeDesc": "Tryb pracy modułu szeregowego. Nie każdy tryb jest zaimplementowany w każdej wersji oprogramowania sprzętowego."
     },
     "applySection": "Zastosuj {{section}}",
     "applyingButton": "Stosowanie...",
@@ -3441,7 +3445,7 @@
       "mqttDefaultServerTls": "Publiczny broker Meshtastic MQTT nie obsługuje TLS. Wyłącz TLS lub użyj niestandardowego adresu brokera.",
       "mqttDefaultServerPort": "Nie umieszczaj portu w publicznym adresie brokera Meshtastic MQTT (użyj mqtt.meshtastic.org z nr :port).",
       "mqttProxyRequired": "To radio nie ma Wi-Fi. Włącz „Proxy do klienta”, aby aplikacja przekazała MQTT, lub użyj LoRa „OK to MQTT” zamiast MQTT po stronie urządzenia.",
-      "serialOverrideRequiresMode": "W urządzeniu włączone jest nadpisywanie konsoli szeregowej. Ustaw prawidłowy tryb szeregowy w radiu przed włączeniem modułu szeregowego tutaj."
+      "serialOverrideRequiresMode": "Zastępowanie konsoli szeregowej jest obsługiwane tylko w trybach konfiguracji NMEA, CalTopo i MeshSolar. Wybierz jeden z tych trybów lub wyłącz zastępowanie konsoli."
     },
     "remoteHardwareConfirmEnableTitle": "Włączyć zdalny sprzęt?",
     "remoteHardwareConfirmEnableMessage": "Zdalne węzły będą mogły odczytywać i zapisywać piny GPIO na tym urządzeniu przez siatkę. Włącz tylko wtedy, gdy ufasz użytkownikom siatki i masz skonfigurowany dostęp PIN.",
@@ -3625,6 +3629,9 @@
       "joined": "Dołączono do kanału {{name}}.",
       "radioApplied": "Ustawienia radia wysłane.",
       "joinFailed": "Dołączenie nie powiodło się: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Oprogramowanie sprzętowe Meshtastic obecnie nie generuje wyjścia szeregowego w tym trybie (radio zapisuje ustawienie, ale nic nie zapisuje). Użyj trybu wiadomości tekstowych dla tekstu kanału/wiadomości bezpośrednich lub trybu prostego dla surowego przekazywania. W trybach LOG nie można również korzystać z funkcji zastępowania konsoli."
     }
   },
   "networkPanel": {
@@ -3978,7 +3985,17 @@
     "forgetAdvert": "Zapomnij o ostatnim advert",
     "forgetAdvertAria": "Usuń ostatni znacznik czasu advert dla tego kontaktu",
     "forgetAdvertDone": "Usunięto znacznik czasu ostatniego advert.",
-    "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert."
+    "forgetAdvertFailed": "Nie udało się usunąć znacznika czasu ostatniego advert.",
+    "ownerInfoHeading": "Informacje o właścicielu",
+    "ownerInfoRefresh": "Odśwież informacje o właścicielu",
+    "ownerInfoLoading": "Odczytywanie informacji o właścicielu…",
+    "ownerInfoReadAt": "Przeczytaj w {{time}}",
+    "ownerInfoEmpty": "W tym węźle nie ustawiono informacji o właścicielu.",
+    "ownerInfoUnsupported": "To oprogramowanie sprzętowe nie obsługuje informacji o właścicielu.",
+    "ownerInfoNeedsPassword": "Informacje o właścicielu wymagają hasła administratora. Zapisz jedno z haseł poniżej, aby móc je odczytać.",
+    "ownerInfoNeedsRoomPassword": "Informacje o właścicielu wymagają hasła administratora. Ustaw to w sekcji Wzmacniacze sygnału i pokoje → Konfiguruj.",
+    "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu.",
+    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -8052,7 +8069,11 @@
     "retentionHint": "Lokalny ruch na żywo przechowuje obserwacje przez jedną minutę. Starsze przechwyty pozostają w Monitor → Sniffer.",
     "emptyFeedQuiet": "Brak obserwacji w ostatniej chwili. Starsze pakiety pozostają w Monitor → Sniffer.",
     "hopTones": "Tony skoków",
-    "hopTonesHint": "Odtwórz cichy dźwięk przy każdym animowanym przeskoku. Krótsze przeskoki brzmią wyżej; dłuższe przeskoki brzmią niżej. Każdy dźwięk trwa tak długo, jak przelot danego odcinka na mapie. Działa w przypadku ruchu lokalnego, Beacon i CoreScope."
+    "hopTonesHint": "Odtwórz cichy dźwięk przy każdym animowanym przeskoku. Krótsze przeskoki brzmią wyżej; dłuższe przeskoki brzmią niżej. Każdy dźwięk trwa tak długo, jak przelot danego odcinka na mapie. Działa w przypadku ruchu lokalnego, Beacon i CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Humanitaryzm",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "Karta ÖPNV"
   },
   "meshcoreCompanionCli": {
     "summary": "Ustawienia urządzenia towarzyszącego",

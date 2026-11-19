@@ -71,8 +71,36 @@ describe('describeMecpForTak', () => {
     expect(describeIn('MECP/0/D01 M01')).toBe('DRILL 🆘 MAYDAY: This is a drill · Injury');
   });
 
-  it('shows the severity alone for a report with no codes', () => {
-    expect(describeIn('MECP/2/')).toBe('⚠️ SAFETY');
+  it('rejects a wire report with no codes (MECP 1.4.0 envelope requires ≥1 code)', () => {
+    expect(tryParseMecp('MECP/2/')).toBeNull();
+  });
+
+  it('shows the severity alone when codes are empty', () => {
+    expect(
+      describeMecpForTak(
+        {
+          valid: true,
+          severity: 2,
+          codes: [],
+          isDrill: false,
+          freetext: null,
+          extracted: {
+            count: null,
+            gps: null,
+            duration: null,
+            durationToken: null,
+            reference: null,
+            language: null,
+            timestamp: null,
+            callsign: null,
+          },
+          warnings: [],
+          raw: 'MECP/2/',
+        },
+        EN,
+        t,
+      ),
+    ).toBe('⚠️ SAFETY');
   });
 
   it("fills the minutes whatever the pack calls them, and keeps them when it can't", () => {

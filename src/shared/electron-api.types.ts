@@ -511,6 +511,8 @@ export interface ElectronAPI {
     listMeshtasticDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
 
     saveNode: (node: MeshNode) => Promise<void>;
+    /** Batched NodeDB / reconnect upserts (one SQLite transaction per chunk). */
+    saveNodes: (nodes: MeshNode[]) => Promise<{ saved: number; dropped: number }>;
 
     saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) => Promise<void>;
 

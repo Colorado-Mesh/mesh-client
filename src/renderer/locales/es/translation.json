@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "El recuadro delimitador debe tener oeste < este y sur < norte",
     "waypointNotifyOnEnter": "Notificar al entrar",
     "waypointNotifyOnExit": "Notificar al salir",
-    "waypointNotifyFavoritesOnly": "Notificar solo para los favoritos"
+    "waypointNotifyFavoritesOnly": "Notificar solo para los favoritos",
+    "basemapOpentopo": "OpenTopoMap (terreno)",
+    "basemapHot": "Humanitario (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (transporte público)"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "Habilite el reenvío de datos del puerto serie a través de la malla.",
       "serialEchoDesc": "Echo recibió datos en serie al remitente.",
       "serialRxd": "PIN RX",
-      "serialRxdDesc": "Número de PIN GPIO para serie RX. 0 = use el valor predeterminado.",
       "serialTxd": "PIN TX",
-      "serialTxdDesc": "Número de PIN GPIO para serial TX. 0 = use el valor predeterminado.",
       "serialTimeout": "Tiempo de espera",
       "serialTimeoutDesc": "Milisegundos de espera antes de enviar un paquete. 0 = use default.",
       "serialMode": "Modo serial",
-      "serialModeDesc": "Modo de funcionamiento para el módulo serie.",
       "serialOverrideConsole": "Anular el puerto serie de la consola",
       "serialOverrideConsoleDesc": "Utilice el puerto serie primario (consola) para el módulo serie en lugar de un puerto secundario.",
       "sfEnabledDesc": "Mensajes en buffer para los nodos que se vuelven a unir a la malla.",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "El índice del canal debe estar entre 0 y 7.",
         "channelNotConfigured": "Ese canal no está configurado en esta radio.",
         "frequencySlot": "La ranura de frecuencia debe ser 1 o superior, o 0 para derivarla."
-      }
+      },
+      "serialRxdDesc": "Pin GPIO para RX serie. 0 = no configurado. Tanto RXD como TXD deben estar configurados (o usar la anulación de la consola con NMEA, CalTopo o la configuración de MeshSolar); de lo contrario, el dispositivo deshabilitará el módulo serie.",
+      "serialTxdDesc": "Pin GPIO para TX serie. 0 = no configurado. Tanto TXD como RXD deben estar configurados (o utilizar la anulación de la consola); de lo contrario, el dispositivo deshabilitará el módulo serie.",
+      "serialModeDesc": "Modo de funcionamiento del módulo serie. No todos los modos están implementados en todas las versiones de firmware."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "El bróker público Meshtastic MQTT no es compatible con TLS. Desactive TLS o utilice una dirección de bróker personalizada.",
       "mqttDefaultServerPort": "No incluya un puerto en la dirección pública del broker MQTT de Meshtastic (use mqtt.meshtastic.org sin :port).",
       "mqttProxyRequired": "Esta radio no tiene wifi. Habilite \"Proxy al cliente\" para que la aplicación reenvíe MQTT, o use LoRa \"OK a MQTT\" en lugar de MQTT del lado del dispositivo.",
-      "serialOverrideRequiresMode": "La anulación de la consola serie está habilitada en el dispositivo. Establezca un modo serie válido en la radio antes de habilitar el módulo serie aquí."
+      "serialOverrideRequiresMode": "La anulación de la consola serie solo es compatible con los modos de configuración NMEA, CalTopo y MeshSolar. Elija uno de esos modos o desactive la anulación de la consola."
     },
     "remoteHardwareConfirmEnableTitle": "¿Habilitar hardware remoto?",
     "remoteHardwareConfirmEnableMessage": "Los nodos remotos podrán leer y escribir pines GPIO en este dispositivo sobre la malla. Solo habilite si confía en sus usuarios de malla y ha configurado el acceso al PIN.",
@@ -3567,6 +3571,9 @@
       "joined": "Se unió al canal {{name}}.",
       "radioApplied": "Configuración de radio enviada.",
       "joinFailed": "Error al unirse: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Actualmente, el firmware Meshtastic no emite salida en serie en este modo (la radio guarda la configuración, pero no escribe nada). Utilice el modo de mensaje de texto para el texto del canal/DM o el modo Simple para el paso directo en bruto. Los modos LOG tampoco pueden utilizar la anulación de la consola."
     }
   },
   "networkPanel": {
@@ -3916,7 +3923,17 @@
     "forgetAdvert": "Olvidar el último anuncio",
     "forgetAdvertAria": "Borrar la última marca de tiempo del anuncio para este contacto",
     "forgetAdvertDone": "Se ha borrado la marca de tiempo del último anuncio.",
-    "forgetAdvertFailed": "No se ha podido borrar la marca de tiempo del último anuncio."
+    "forgetAdvertFailed": "No se ha podido borrar la marca de tiempo del último anuncio.",
+    "ownerInfoHeading": "Información del propietario",
+    "ownerInfoRefresh": "Actualizar la información del propietario",
+    "ownerInfoLoading": "Leyendo la información del propietario...",
+    "ownerInfoReadAt": "Leer en {{time}}",
+    "ownerInfoEmpty": "No se ha establecido ninguna información del propietario en este nodo.",
+    "ownerInfoUnsupported": "Este firmware no admite información del propietario.",
+    "ownerInfoNeedsPassword": "La información del propietario requiere una contraseña de administrador. Guarda una a continuación para leerla.",
+    "ownerInfoNeedsRoomPassword": "La información del propietario requiere una contraseña de administrador. Establézcala en Repetidores y salas → Configurar.",
+    "ownerInfoReadFailed": "No se ha podido leer la información del propietario.",
+    "ownerInfoDeferred": "La información del propietario está esperando a la radio. Use «Actualizar» para intentarlo de nuevo."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -7924,7 +7941,11 @@
     "retentionHint": "El tráfico local en vivo mantiene las observaciones durante un minuto. Las capturas más antiguas permanecen en Monitor → Sniffer.",
     "emptyFeedQuiet": "No hay comentarios en el último minuto. Los paquetes más antiguos permanecen en Monitor → Sniffer.",
     "hopTones": "Tonos de salto",
-    "hopTonesHint": "Reproduce un tono suave por cada salto animado. Los saltos más cortos suenan más agudos; los saltos más largos suenan más graves. Cada nota dura lo que dura el recorrido de ese salto en el mapa. Funciona para el tráfico local, Beacon y CoreScope."
+    "hopTonesHint": "Reproduce un tono suave por cada salto animado. Los saltos más cortos suenan más agudos; los saltos más largos suenan más graves. Cada nota dura lo que dura el recorrido de ese salto en el mapa. Funciona para el tráfico local, Beacon y CoreScope.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "Asistencia",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Configuración del dispositivo complementario",

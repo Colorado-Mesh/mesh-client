@@ -1454,7 +1454,10 @@ function AppContent() {
   const activeChannelPills = asChannelIndexPills(activeRuntime.channels);
   const contactGroupsSelfId =
     typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
-  const contactGroups = useContactGroups(contactGroupsSelfId);
+  const contactGroups = useContactGroups(
+    contactGroupsSelfId,
+    activeProtocolCapabilities.defaultContactsGroupFilterId,
+  );
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);
   const activeTabRef = useRef(activeTab);
@@ -4931,6 +4934,14 @@ function AppContent() {
             ? meshcoreRuntime.meshcoreNeighborErrors.get(selectedNode.node_id)
             : undefined
         }
+        meshcoreOwnerInfo={
+          detailModalProtocol === 'meshcore' && selectedNode != null
+            ? meshcoreRuntime.meshcoreOwnerInfo.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestMeshcoreOwnerInfo={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeOwnerInfo : undefined
+        }
         paxCounterData={
           detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined
         }
@@ -5285,15 +5296,6 @@ function AppContent() {
                                 identityIdByProtocol,
                                 chatProtocol,
                               );
-                              const chatOptions =
-                                chatProtocol === 'meshtastic'
-                                  ? { remap: meshtasticRemapCtx }
-                                  : chatProtocol === 'meshcore'
-                                    ? {
-                                        remap: meshcoreRemapCtx,
-                                        meshcoreSelfNodeId: meshcoreRuntime.selfNodeId,
-                                      }
-                                    : undefined;
                               const chatChannelsForProtocol = selectByProtocol(
                                 chatChannelsByProtocol,
                                 chatProtocol,
@@ -5346,7 +5348,7 @@ function AppContent() {
                                   <ChatSurface
                                     protocol={chatProtocol}
                                     identityId={chatIdentityId}
-                                    chatOptions={chatOptions}
+                                    messages={selectByProtocol(uiMessagesByProtocol, chatProtocol)}
                                     getReceptionStats={
                                       chatCapabilities.hasCompanionContactManagementConfig
                                         ? (message) =>

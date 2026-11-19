@@ -2917,7 +2917,11 @@
     "waypointBoundingBoxInvalid": "Sınır kutusunda batı < doğu ve güney < kuzey olmalıdır",
     "waypointNotifyOnEnter": "Giriş yapıldığında bildir",
     "waypointNotifyOnExit": "Çıkışta bildir",
-    "waypointNotifyFavoritesOnly": "Yalnızca favoriler için bildirim gönder"
+    "waypointNotifyFavoritesOnly": "Yalnızca favoriler için bildirim gönder",
+    "basemapOpentopo": "OpenTopoMap (arazi)",
+    "basemapHot": "İnsani Yardım (HOT)",
+    "basemapCyclosm": "CyclOSM",
+    "basemapOepnv": "ÖPNVKarte (toplu taşıma)"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -3280,13 +3284,10 @@
       "serialModuleEnabledDesc": "Ağ üzerinden seri bağlantı noktası verilerinin iletilmesini etkinleştirin.",
       "serialEchoDesc": "Echo gönderene seri veriyi geri aldı.",
       "serialRxd": "RX pimi",
-      "serialRxdDesc": "Seri RX için GPIO pin numarası. 0 = varsayılanı kullan.",
       "serialTxd": "TX pini",
-      "serialTxdDesc": "Seri TX için GPIO pin numarası. 0 = varsayılanı kullan.",
       "serialTimeout": "Zaman aşımı",
       "serialTimeoutDesc": "Bir paket göndermeden önce beklenecek milisaniye. 0 = varsayılanı kullan.",
       "serialMode": "Seri mod",
-      "serialModeDesc": "Seri modül için çalışma modu.",
       "serialOverrideConsole": "Konsol seri bağlantı noktasını geçersiz kıl",
       "serialOverrideConsoleDesc": "Seri modül için ikincil bağlantı noktası yerine birincil seri bağlantı noktasını (konsol) kullanın.",
       "sfEnabledDesc": "Ağa yeniden katılan düğümler için mesajları tamponlayın.",
@@ -3361,7 +3362,10 @@
         "channelIndexRange": "Kanal dizini 0 ile 7 arasında olmalıdır.",
         "channelNotConfigured": "Bu kanal bu radyoda yapılandırılmamış.",
         "frequencySlot": "Frekans yuvasının türetilmesi için 1 veya daha yüksek ya da 0 olması gerekir."
-      }
+      },
+      "serialRxdDesc": "Seri RX için GPIO pini. 0 = ayarlanmamış. Hem RXD hem de TXD ayarlanmalıdır (veya NMEA, CalTopo veya MeshSolar yapılandırması ile konsol geçersiz kılma kullanılmalıdır); aksi takdirde cihaz seri modülü devre dışı bırakır.",
+      "serialTxdDesc": "Seri TX için GPIO pini. 0 = ayarlanmamış. Hem TXD hem de RXD ayarlanmalıdır (veya konsol geçersiz kılma kullanılmalıdır); aksi takdirde cihaz seri modülü devre dışı bırakır.",
+      "serialModeDesc": "Seri modül için çalışma modu. Her mod, her ürün yazılımı sürümünde uygulanmaz."
     },
     "applySection": "{{section}} uygula",
     "applyingButton": "Başvuruluyor...",
@@ -3385,7 +3389,7 @@
       "mqttDefaultServerTls": "Halka açık Meshtastic MQTT brokeri TLS'yi desteklememektedir. TLS'yi kapatın veya özel bir broker adresi kullanın.",
       "mqttDefaultServerPort": "Meshtastic MQTT broker adresine bir bağlantı noktası eklemeyin (:port olmadan mqtt.meshtastic.org kullanın).",
       "mqttProxyRequired": "Bu telsizde Wi-Fi yok. Uygulamanın MQTT'yi iletmesi için \"İstemciye proxy\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine LoRa \"OK to MQTT\" kullanın.",
-      "serialOverrideRequiresMode": "Cihazda seri konsol geçersiz kılma etkinleştirilmiştir. Burada seri modülü etkinleştirmeden önce radyoda geçerli bir seri modu ayarlayın."
+      "serialOverrideRequiresMode": "Seri konsol geçersiz kılma yalnızca NMEA, CalTopo ve MeshSolar yapılandırma modlarında desteklenir. Bu modlardan birini seçin veya konsol geçersiz kılmayı kapatın."
     },
     "remoteHardwareConfirmEnableTitle": "Uzaktan Donanım Etkinleştirilsin mi?",
     "remoteHardwareConfirmEnableMessage": "Uzak node'lar mesh üzerinden bu cihaz üzerindeki GPIO pinlerini okuyup yazabilecektir. Yalnızca mesh kullanıcılarınıza güveniyorsanız ve PIN erişimini yapılandırdıysanız etkinleştirin.",
@@ -3567,6 +3571,9 @@
       "joined": "{{name}} kanalına katıldı.",
       "radioApplied": "Radyo ayarları gönderildi.",
       "joinFailed": "Katılım başarısız oldu: {{message}}"
+    },
+    "hints": {
+      "serialLogModeUnsupported": "Meshtastic ürün yazılımı şu anda bu modda seri çıkış vermemektedir (telsiz ayarı kaydeder ancak hiçbir şey yazmaz). Kanal/DM metni için Metin mesajı modunu veya işlenmemiş geçiş için Basit modunu kullanın. LOG modları da konsol geçersiz kılmayı kullanamaz."
     }
   },
   "networkPanel": {
@@ -3916,7 +3923,17 @@
     "forgetAdvert": "Son adverti unut",
     "forgetAdvertAria": "Bu kişi için son advert zaman damgasını silin",
     "forgetAdvertDone": "Son advert zaman damgası silindi.",
-    "forgetAdvertFailed": "Son advert zaman damgası silinemedi."
+    "forgetAdvertFailed": "Son advert zaman damgası silinemedi.",
+    "ownerInfoHeading": "Malik bilgileri",
+    "ownerInfoRefresh": "Sahip bilgilerini yenileyin",
+    "ownerInfoLoading": "Sahip bilgileri okunuyor…",
+    "ownerInfoReadAt": "{{time}} adresinde okuyun",
+    "ownerInfoEmpty": "Bu düğümde hiçbir sahip bilgisi ayarlanmamış.",
+    "ownerInfoUnsupported": "Bu ürün yazılımı, sahip bilgilerini desteklemiyor.",
+    "ownerInfoNeedsPassword": "Sahip bilgilerini görüntülemek için yönetici şifresi gerekir. Okumak için aşağıdakilerden birini kaydedin.",
+    "ownerInfoNeedsRoomPassword": "Sahip bilgileri için yönetici parolası gerekiyor. Yineleyiciler ve Odalar → Yapılandır bölümünden ayarlayın.",
+    "ownerInfoReadFailed": "Sahip bilgileri okunamadı.",
+    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -7924,7 +7941,11 @@
     "retentionHint": "Yerel canlı trafik gözlemleri bir dakika tutar. Eski yakalamalar Monitör Koklayıcısında → kalır.",
     "emptyFeedQuiet": "Son dakikada gözlem yok. Eski paketler Monitor Sniffer'da → kalır.",
     "hopTones": "Hop tonları",
-    "hopTonesHint": "Her animasyonlu atlama için yumuşak bir ses çalın. Daha kısa atlamalar daha yüksek, daha uzun atlamalar daha alçak ses çıkarır. Her nota, harita üzerindeki ilgili atlamanın süresi boyunca çalar. Yerel, Beacon ve CoreScope trafiği için çalışır."
+    "hopTonesHint": "Her animasyonlu atlama için yumuşak bir ses çalın. Daha kısa atlamalar daha yüksek, daha uzun atlamalar daha alçak ses çıkarır. Her nota, harita üzerindeki ilgili atlamanın süresi boyunca çalar. Yerel, Beacon ve CoreScope trafiği için çalışır.",
+    "opentopoMap": "OpenTopoMap",
+    "hotMap": "İnsani",
+    "cyclosmMap": "CyclOSM",
+    "oepnvMap": "ÖPNVKarte"
   },
   "meshcoreCompanionCli": {
     "summary": "Refakatçi cihaz ayarları",

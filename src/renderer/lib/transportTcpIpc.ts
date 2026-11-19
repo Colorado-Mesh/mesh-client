@@ -93,8 +93,16 @@ export class TransportTcpIpc implements Types.Transport {
 
   async disconnect(): Promise<void> {
     await window.electronAPI.meshtastic.tcp.disconnect();
+    this.retireInbound();
+  }
+
+  /**
+   * Stop inbound TCP framing without closing the shared main-process socket.
+   * Used when a superseded MeshDevice must retire while a newer owner keeps the link.
+   */
+  retireInbound(): void {
     this._teardownListeners();
-    await this._framerWriter.close().catch(() => {
+    void this._framerWriter.close().catch(() => {
       // catch-no-log-ok framer writer already closed
     });
   }

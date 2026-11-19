@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
+import { isMeshtasticAttachSupersededError } from '../lib/meshtastic/meshtasticAttachSuperseded';
 import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
 import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
@@ -79,12 +80,25 @@ export function useProtocolConnect(): (
         rfConnectionTransportOpts(type, { httpAddress, blePeripheralId }),
       );
       const meshtastic = getMeshtasticSession();
-      await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
+      const attemptGeneration = await meshtastic.prepareRfConnect(
+        type,
+        httpAddress,
+        blePeripheralId,
+      );
       let driverIdentityId: string | undefined;
       try {
         driverIdentityId = await driverConnect('meshtastic', params);
-        await meshtastic.attachRfSession(driverIdentityId, type);
+        await meshtastic.attachRfSession(driverIdentityId, type, undefined, attemptGeneration);
       } catch (err) {
+        if (isMeshtasticAttachSupersededError(err)) {
+          // Match connect/connectAutomatic: stale attach must not report failure or tear down
+          // the live session. attachRfSession already left the owning device on deviceRef;
+          // ConnectionDriver may still hold this attempt's handle until the owner reconnects.
+          console.debug(
+            '[useProtocolConnect] Meshtastic attach superseded by a newer session — skipping failure teardown',
+          );
+          return;
+        }
         await meshtastic.handleRfConnectFailure(driverIdentityId, err);
         throw err;
       }

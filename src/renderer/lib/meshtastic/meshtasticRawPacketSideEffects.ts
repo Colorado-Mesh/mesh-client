@@ -9,18 +9,19 @@
  * Failure point: diagnostics and the sniffer ring buffer are display-only — a
  * missing node row simply skips the patch; chat/node ingest is unaffected.
  */
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { upsertNodeRecord } from '../../stores/nodeStore';
+import { BatchedRingBufferAppender } from '../batchedRingBufferAppender';
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
-import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
+import { enqueueNodeWrite } from '../ingest/coalescedNodeWrites';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { mergeMeshtasticLivePacketLastHeard } from '../meshtasticLastHeard';
 import { effectiveLastHeardMs } from '../nodeStatus';
+import { perfSpanSync } from '../perfTrace';
 import type { RawPacketEntry } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import {
@@ -39,6 +40,30 @@ export interface MeshtasticRawPacketSideEffectsDeps {
   setRawPackets: Dispatch<SetStateAction<MeshtasticRawPacketEntry[]>>;
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
   touchLastData: () => void;
+  /** Optional: keeps a live ref of the ring buffer (tests / future hop correlation). */
+  rawPacketsRef?: RefObject<MeshtasticRawPacketEntry[]>;
+}
+
+const rawPacketAppenders = new WeakMap<
+  Dispatch<SetStateAction<MeshtasticRawPacketEntry[]>>,
+  BatchedRingBufferAppender<MeshtasticRawPacketEntry>
+>();
+
+function rawPacketAppenderFor(
+  deps: MeshtasticRawPacketSideEffectsDeps,
+): BatchedRingBufferAppender<MeshtasticRawPacketEntry> {
+  let appender = rawPacketAppenders.get(deps.setRawPackets);
+  if (!appender) {
+    appender = new BatchedRingBufferAppender(deps.setRawPackets, MAX_RAW_PACKET_LOG_ENTRIES, {
+      syncBeforeCommit: deps.rawPacketsRef
+        ? (next) => {
+            deps.rawPacketsRef!.current = next;
+          }
+        : undefined,
+    });
+    rawPacketAppenders.set(deps.setRawPackets, appender);
+  }
+  return appender;
 }
 
 function appendRawPacketLog(
@@ -63,12 +88,7 @@ function appendRawPacketLog(
       ...(payload.packetId != null ? { packetId: payload.packetId } : {}),
       ...(payload.relayNode != null ? { relayNode: payload.relayNode } : {}),
     };
-    deps.setRawPackets((prev) => {
-      const next = [...prev, entry];
-      return next.length > MAX_RAW_PACKET_LOG_ENTRIES
-        ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
-        : next;
-    });
+    rawPacketAppenderFor(deps).append(entry);
   } catch (e) {
     console.debug(
       '[meshtasticRawPacketSideEffects] raw packet log entry failed ' + errLikeToLogString(e),
@@ -112,9 +132,17 @@ function applySignalAndHops(
     heard_via_mqtt_only: false,
     via_mqtt: payload.viaMqtt,
   };
-  upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
-  persistDbWrite('meshtastic raw packet node', () => window.electronAPI.db.saveNode(node));
-  processMeshtasticNodeDiagnostics(node, myNodeNum, getIdentityNode(identityId, myNodeNum) ?? null);
+  perfSpanSync('rf:meshtastic:nodeStore', () => {
+    enqueueNodeWrite(identityId, meshNodeToNodeRecord(node), { persist: true });
+  });
+  // Per-packet observation (hop history / packet counts); analysis stays debounced in the store.
+  perfSpanSync('rf:meshtastic:diagnostics', () => {
+    processMeshtasticNodeDiagnostics(
+      node,
+      myNodeNum,
+      getIdentityNode(identityId, myNodeNum) ?? null,
+    );
+  });
 }
 
 function handleRawPacket(
@@ -122,40 +150,42 @@ function handleRawPacket(
   payload: RawPacketEntry,
   deps: MeshtasticRawPacketSideEffectsDeps,
 ): void {
-  deps.touchLastData();
-  const from = payload.fromNodeId;
-  if (!from) return;
+  perfSpanSync('rf:meshtastic:rawPacket', () => {
+    deps.touchLastData();
+    const from = payload.fromNodeId;
+    if (!from) return;
 
-  // Connected MeshCore BLE MAC → skip all packet-wide side effects (diagnostics, SNR, hops).
-  if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
-    return;
-  }
-
-  if (getStoredMeshProtocol() === 'meshtastic') {
-    appendRawPacketLog(payload, deps);
-    if (typeof payload.portnum === 'number') {
-      useDiagnosticsStore.getState().recordNoisePort(from, payload.portnum);
+    // Connected MeshCore BLE MAC → skip all packet-wide side effects (diagnostics, SNR, hops).
+    if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
+      return;
     }
-    // Skip packet id 0 — protobuf assigns no unique id for no-ack / non-broadcast.
-    if (payload.packetId != null && payload.packetId !== 0) {
-      useDiagnosticsStore.getState().recordPacketPath(payload.packetId, from, {
-        transport: 'rf',
-        snr: payload.snr,
-        rssi: payload.rssi,
-        timestamp: Date.now(),
-      });
+
+    if (getStoredMeshProtocol() === 'meshtastic') {
+      appendRawPacketLog(payload, deps);
+      if (typeof payload.portnum === 'number') {
+        useDiagnosticsStore.getState().recordNoisePort(from, payload.portnum);
+      }
+      // Skip packet id 0 — protobuf assigns no unique id for no-ack / non-broadcast.
+      if (payload.packetId != null && payload.packetId !== 0) {
+        useDiagnosticsStore.getState().recordPacketPath(payload.packetId, from, {
+          transport: 'rf',
+          snr: payload.snr,
+          rssi: payload.rssi,
+          timestamp: Date.now(),
+        });
+      }
     }
-  }
 
-  applySignalAndHops(identityId, payload, from, deps);
+    applySignalAndHops(identityId, payload, from, deps);
 
-  if (payload.snr || payload.rssi) {
-    deps.setSignalTelemetry((prev) =>
-      [...prev, { timestamp: Date.now(), snr: payload.snr, rssi: payload.rssi }].slice(
-        -MAX_TELEMETRY_POINTS,
-      ),
-    );
-  }
+    if (payload.snr || payload.rssi) {
+      deps.setSignalTelemetry((prev) =>
+        [...prev, { timestamp: Date.now(), snr: payload.snr, rssi: payload.rssi }].slice(
+          -MAX_TELEMETRY_POINTS,
+        ),
+      );
+    }
+  });
 }
 
 /** Attach sniffer / RF diagnostics side effects for one Meshtastic identity. */

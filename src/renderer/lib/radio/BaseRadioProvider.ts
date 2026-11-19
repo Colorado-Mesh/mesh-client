@@ -1,6 +1,9 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_DAY, MS_PER_HOUR } from '@/shared/timeConstants';
 
+import type { BuiltinContactGroupFilterId } from '../contactGroupFilterIds';
+import { MESHCORE_BUILTIN_CONTACT_TYPE_CHAT } from '../meshcoreContactGroupUtils';
+
 /**
  * What a received message's packet records about the nodes that relayed it (Chat hop pill
  * tooltip): every repeater hash (MeshCore flood path), only the last relay's low byte
@@ -67,6 +70,11 @@ export interface ProtocolCapabilities {
   hasWifiConfig: boolean;
   /** User-defined contact groups + built-in filters on the Nodes/Contacts list */
   hasUserManagedContactGroups: boolean;
+  /**
+   * Default Contacts list built-in filter (MeshCore Chat). Null = All contacts /
+   * no built-in type filter (Meshtastic, Reticulum). Custom group IDs are not allowed.
+   */
+  defaultContactsGroupFilterId: BuiltinContactGroupFilterId | null;
   /** MeshCore companion: contact auto-add / manual mode and related Radio UI */
   hasCompanionContactManagementConfig: boolean;
   /** MeshCore companion: telemetry request / location / environment privacy (NodePrefs telemetry modes) */
@@ -247,6 +255,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasPowerConfig: true,
   hasWifiConfig: true,
   hasUserManagedContactGroups: true,
+  defaultContactsGroupFilterId: null,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
   hasCompanionCli: false,
@@ -338,6 +347,8 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasPowerConfig: false,
   hasWifiConfig: false,
   hasUserManagedContactGroups: true,
+  /** MeshCore Contacts defaults to Chat users (Repeaters/Rooms have their own tabs). */
+  defaultContactsGroupFilterId: MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
   hasCompanionContactManagementConfig: true,
   hasCompanionTelemetryPrivacyConfig: true,
   hasCompanionCli: true,
@@ -428,6 +439,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasPowerConfig: false,
   hasWifiConfig: false,
   hasUserManagedContactGroups: true,
+  defaultContactsGroupFilterId: null,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
   hasCompanionCli: false,
