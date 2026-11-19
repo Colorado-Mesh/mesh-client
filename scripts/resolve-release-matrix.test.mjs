@@ -34,8 +34,7 @@ describe('release and sidecar matrices', () => {
         expect(targets.map(({ target }) => target)).toEqual(
           PLATFORM_TARGETS[row.sidecar_platform].map(({ cargoTarget }) => cargoTarget),
         );
-        const expectedSidecarOs = row.sidecar_platform === 'linux' ? 'ubuntu-22.04' : row.os;
-        expect(targets.every(({ os }) => os === expectedSidecarOs)).toBe(true);
+        expect(targets.every(({ os }) => os === row.os)).toBe(true);
         expect(targets.filter(({ run_tests }) => run_tests).map(({ arch }) => arch)).toEqual([
           row.os === 'macos-latest' ? 'arm64' : 'x64',
         ]);

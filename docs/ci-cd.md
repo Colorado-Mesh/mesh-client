@@ -510,6 +510,22 @@ Packaging sidecars cache Cargo dependencies with `Swatinem/rust-cache`, separate
 
 To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run **Packaging sidecars** manually and select `all`, `mac`, `linux`, or `win`. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.
 
+### Linux Reticulum sidecar glibc floor {#linux-sidecar-glibc}
+
+**Why this exists:** The 6.9.0 x64 AppImage bundled a `mesh-client-reticulum` that needed **`GLIBC_2.43`**. Pop!\_OS / Ubuntu 24.04 only ship **glibc 2.39**, so the dynamic linker aborted before the HTTP shell listened. Meshtastic/MeshCore BLE (`gatt:start-scan`) and Reticulum then failed with undici **`fetch failed`** (the child had already exited). Electron packaging may keep floating **`ubuntu-latest`**; the sidecar ELF is **host-libc linked**, so using the runner’s native glibc as the _link_ ABI regresses users whenever GitHub moves the image forward.
+
+**Policy:** Keep **one** Linux sidecar binary with ABI floor **GLIBC 2.35** (Ubuntu / Pop 22.04+ and 24.04). Build it on **`ubuntu-latest`** with current Rust (`dtolnay/rust-toolchain`) via **`cargo zigbuild --target …-gnu.2.35`** — not by pinning the packaging runner to ubuntu-22.04 forever. Zig replaces the linker/glibc targeting; host `libdbus-1` headers/libs stay on the runner for btleplug.
+
+**CI wiring:**
+
+- `packaging-sidecars.yaml` installs a **pinned** Zig + `cargo-zigbuild` on Linux jobs, then `scripts/build-reticulum-sidecar-release.mjs` runs `cargo zigbuild` for `platform === 'linux'` (macOS/Windows stay on plain `cargo build`; host `cargo test` stays plain).
+- Shared constant: `MAX_SIDECAR_GLIBC = '2.35'` in `scripts/check-reticulum-sidecar-glibc.mjs` (also `linuxZigbuildTarget()`). Fail-closed step asserts the staged ELF; HTTP smoke still runs on the (newer) runner glibc — that is fine.
+- Do **not** “fix” a floor failure by removing zigbuild or raising the max without an intentional support-policy change.
+
+**Bump the floor later:** change `MAX_SIDECAR_GLIBC`, the zigbuild suffix (automatic via `linuxZigbuildTarget`), packaging/docs copy, and re-verify AppImage hosts you still support.
+
+User-facing self-check: [troubleshooting-reticulum.md](troubleshooting-reticulum.md) (Linux AppImage / `ldd` / `objdump -T`).
+
 ### Build channel stamp (test vs release)
 
 **Build Binaries** (`build.yaml`), **Release** (`release.yaml`), and **Build Flatpak** (`flatpak.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process. Flatpak also writes `flatpak/ci-build-info.json` (gitignored) so the sandbox `pnpm run build` sees the same env.

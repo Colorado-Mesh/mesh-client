@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest';
 import {
   compareDottedVersion,
   glibcVersionsAboveFloor,
+  linuxZigbuildTarget,
   MAX_SIDECAR_GLIBC,
   parseGlibcVersionsFromText,
 } from './check-reticulum-sidecar-glibc.mjs';
 
 describe('check-reticulum-sidecar-glibc', () => {
-  it('pins the packaging floor to Ubuntu 22.04 glibc', () => {
+  it('pins the packaging floor shared with cargo-zigbuild', () => {
     expect(MAX_SIDECAR_GLIBC).toBe('2.35');
+    expect(linuxZigbuildTarget('x86_64-unknown-linux-gnu')).toBe('x86_64-unknown-linux-gnu.2.35');
+    expect(linuxZigbuildTarget('aarch64-unknown-linux-gnu')).toBe('aarch64-unknown-linux-gnu.2.35');
   });
 
   it('compares dotted glibc versions', () => {

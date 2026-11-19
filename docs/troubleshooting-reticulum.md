@@ -58,7 +58,7 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
 5. **Linux AppImage — sidecar exits immediately / `gatt:start-scan` shows `fetch failed`**: LoRa BLE and Reticulum share the sidecar HTTP process. If logs show `[ReticulumSidecar] exited code=1` within milliseconds of Start / Connect, the binary never stayed up (often a dynamic-linker / glibc mismatch).
 
-   **Confirmed on 6.9.0 x64 AppImage:** the bundled `mesh-client-reticulum` required **`GLIBC_2.43`** (built on a newer Ubuntu packaging runner). **Pop!\_OS 24.04** (and Ubuntu 24.04) only provide **glibc 2.39**, so the loader aborts before HTTP listens — both Meshtastic/MeshCore BLE and Reticulum fail with undici `fetch failed`. Current packaging builds Linux sidecars on **ubuntu-22.04** (glibc floor **2.35**) and CI refuses binaries that need newer GLIBC symbols.
+   **Confirmed on 6.9.0 x64 AppImage:** the bundled `mesh-client-reticulum` required **`GLIBC_2.43`** (built on a newer Ubuntu packaging runner). **Pop!\_OS 24.04** (and Ubuntu 24.04) only provide **glibc 2.39**, so the loader aborts before HTTP listens — both Meshtastic/MeshCore BLE and Reticulum fail with undici `fetch failed`. Current packaging builds Linux sidecars on **`ubuntu-latest` with `cargo zigbuild` targeting glibc 2.35** (not by pinning the runner to ubuntu-22.04 forever) and CI refuses binaries that need newer GLIBC symbols — see [ci-cd.md § Linux Reticulum sidecar glibc floor](ci-cd.md#linux-sidecar-glibc).
 
    Self-check:
 
@@ -71,7 +71,7 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
    ./squashfs-root/resources/reticulum-sidecar/mesh-client-reticulum --help
    ```
 
-   Look for `GLIBC_… not found` or `error while loading shared libraries`. Enable **debug** in the Log panel (or read `~/.config/mesh-client/mesh-client.log`) — current builds forward loader stderr and prefer `exit N: …` over a bare undici `fetch failed`. Workaround on older releases: try Flatpak / `.deb` / `.rpm` if those ships were built on an older runner; otherwise upgrade to a build that includes the ubuntu-22.04 sidecar floor.
+   Look for `GLIBC_… not found` or `error while loading shared libraries`. Enable **debug** in the Log panel (or read `~/.config/mesh-client/mesh-client.log`) — current builds forward loader stderr and prefer `exit N: …` over a bare undici `fetch failed`. Workaround on older releases: try Flatpak / `.deb` / `.rpm` if those ships were built with a lower glibc floor; otherwise upgrade to a build that includes the zigbuild glibc 2.35 sidecar floor.
 
 6. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
 7. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.

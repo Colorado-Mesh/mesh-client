@@ -2,6 +2,9 @@
 /**
  * Build release Reticulum sidecar binaries and stage per-arch copies for electron-builder.
  *
+ * Linux release builds use cargo-zigbuild with a glibc 2.35 ABI floor on ubuntu-latest
+ * (docs/ci-cd.md#linux-sidecar-glibc). macOS/Windows use plain cargo build.
+ *
  * Failure point: cargo or Ratspeak clone fails — exit non-zero so release CI never ships
  * an Electron bundle without the sidecar.
  * Fallback: none; packaging verify scripts assert staged binaries land in unpacked apps.
@@ -11,6 +14,7 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, realpathSync, statSync 
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { parseArgs } from 'node:util';
+import { linuxZigbuildTarget, MAX_SIDECAR_GLIBC } from './check-reticulum-sidecar-glibc.mjs';
 import {
   MIN_SIDECAR_BYTES,
   PLATFORM_TARGETS,
@@ -84,36 +88,93 @@ function cloneRatspeakStack() {
 }
 
 /**
- * Linux x64 hosts cross-compiling aarch64-gnu need multiarch pkg-config + linker.
+ * Env for Linux builds. Zig is the linker when using cargo-zigbuild; still need
+ * multiarch pkg-config for libdbus when cross-compiling aarch64.
  * @param {string} cargoTarget
+ * @param {boolean} useZigbuild
  * @returns {NodeJS.ProcessEnv}
  */
-function cargoEnvForTarget(cargoTarget) {
+export function cargoEnvForTarget(cargoTarget, useZigbuild = false) {
   if (process.platform !== 'linux' || cargoTarget !== 'aarch64-unknown-linux-gnu') {
     return {};
   }
   if (process.arch === 'arm64') {
     return {};
   }
-  return {
-    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: 'aarch64-linux-gnu-gcc',
+  /** @type {NodeJS.ProcessEnv} */
+  const env = {
     PKG_CONFIG_ALLOW_CROSS: '1',
     PKG_CONFIG_PATH: '/usr/lib/aarch64-linux-gnu/pkgconfig',
   };
+  // Plain cargo (non-release local) still needs the cross GCC linker.
+  if (!useZigbuild) {
+    env.CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = 'aarch64-linux-gnu-gcc';
+  }
+  return env;
 }
 
-/** @param {string} cargoTarget @param {import('./reticulum-sidecar-staging.mjs').ElectronPlatform} platform @param {import('./reticulum-sidecar-staging.mjs').SidecarArchKey} archKey */
+/**
+ * @param {string} cargoTarget
+ * @returns {boolean}
+ */
+function zigOnPath() {
+  const result = spawnSync('zig', ['version'], { encoding: 'utf8' });
+  return !result.error && (result.status ?? 1) === 0;
+}
+
+/**
+ * @returns {boolean}
+ */
+function cargoZigbuildAvailable() {
+  const result = spawnSync('cargo', ['zigbuild', '--help'], {
+    encoding: 'utf8',
+    cwd: sidecarDir,
+  });
+  return !result.error && (result.status ?? 1) === 0;
+}
+
+/**
+ * @param {string} cargoTarget
+ * @param {import('./reticulum-sidecar-staging.mjs').ElectronPlatform} platform
+ * @param {import('./reticulum-sidecar-staging.mjs').SidecarArchKey} archKey
+ */
 function buildAndStage(cargoTarget, platform, archKey) {
-  console.debug(
-    `[build-reticulum-sidecar-release] cargo build --release --target ${cargoTarget} (${platform}-${archKey})`,
-  );
-  run(
-    'cargo',
-    ['build', '--release', '--target', cargoTarget, '--features', SIDECAR_FEATURES],
-    cargoEnvForTarget(cargoTarget),
-  );
+  const useZigbuild = platform === 'linux';
+  if (useZigbuild) {
+    if (!zigOnPath()) {
+      fail(
+        'zig not found on PATH (required for Linux release sidecars). ' +
+          'See docs/ci-cd.md#linux-sidecar-glibc',
+      );
+    }
+    if (!cargoZigbuildAvailable()) {
+      fail(
+        'cargo zigbuild not available (install cargo-zigbuild). ' +
+          'See docs/ci-cd.md#linux-sidecar-glibc',
+      );
+    }
+    const zigTarget = linuxZigbuildTarget(cargoTarget);
+    console.debug(
+      `[build-reticulum-sidecar-release] cargo zigbuild --release --target ${zigTarget} (${platform}-${archKey}; glibc ABI ${MAX_SIDECAR_GLIBC})`,
+    );
+    run(
+      'cargo',
+      ['zigbuild', '--release', '--target', zigTarget, '--features', SIDECAR_FEATURES],
+      cargoEnvForTarget(cargoTarget, true),
+    );
+  } else {
+    console.debug(
+      `[build-reticulum-sidecar-release] cargo build --release --target ${cargoTarget} (${platform}-${archKey})`,
+    );
+    run(
+      'cargo',
+      ['build', '--release', '--target', cargoTarget, '--features', SIDECAR_FEATURES],
+      cargoEnvForTarget(cargoTarget, false),
+    );
+  }
 
   const builtName = sidecarBinaryFileName(platform);
+  // zigbuild writes to the Rust triple dir (without the .2.35 suffix).
   const builtPath = path.join(sidecarDir, 'target', cargoTarget, 'release', builtName);
   if (!existsSync(builtPath)) {
     fail(`Built sidecar missing: ${builtPath}`);

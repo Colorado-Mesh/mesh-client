@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Assert a Linux reticulum sidecar ELF does not require glibc newer than the
- * packaging floor (Ubuntu 22.04 → GLIBC_2.35). Catches accidental builds on
- * ubuntu-latest (24.04 / GLIBC 2.39) that crash instantly on older hosts.
+ * packaging floor (GLIBC_2.35). Release Linux builds use cargo-zigbuild with this
+ * suffix on ubuntu-latest — see docs/ci-cd.md#linux-sidecar-glibc.
  *
  * Usage:
  *   node scripts/check-reticulum-sidecar-glibc.mjs <path-to-mesh-client-reticulum>
@@ -13,11 +13,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Ubuntu 22.04 floor used by packaging-sidecars Linux jobs.
- * Must stay ≤ host glibc on supported desktops (Pop!_OS/Ubuntu 24.04 ≈ 2.39).
- * 6.9.0 AppImage shipped a ubuntu-latest binary needing GLIBC_2.43 and crashed on Pop 24.04.
+ * Shared ABI floor for Linux release sidecars (Ubuntu/Pop 22.04+).
+ * Must match the cargo-zigbuild `--target …-gnu.<version>` suffix.
+ * 6.9.0 AppImage linked GLIBC_2.43 on floating ubuntu-latest and crashed on Pop 24.04 (2.39).
  */
 export const MAX_SIDECAR_GLIBC = '2.35';
+
+/**
+ * Zigbuild target triple with glibc floor suffix (artifact dir still uses `cargoTarget`).
+ * @param {string} cargoTarget e.g. x86_64-unknown-linux-gnu
+ */
+export function linuxZigbuildTarget(cargoTarget) {
+  return `${cargoTarget}.${MAX_SIDECAR_GLIBC}`;
+}
 
 /** @param {string} msg */
 function fail(msg) {
@@ -146,7 +154,7 @@ export function assertSidecarGlibcFloor(binaryPath, opts = {}) {
   if (tooNew.length > 0) {
     throw new Error(
       `${binaryPath} requires GLIBC_${tooNew.join(', GLIBC_')} (max allowed GLIBC_${maxGlibc}). ` +
-        `Rebuild the Linux sidecar on ubuntu-22.04 (see resolve-release-matrix.mjs --sidecars).`,
+        `Use cargo zigbuild --target …-gnu.${maxGlibc} (see docs/ci-cd.md#linux-sidecar-glibc).`,
     );
   }
   return { versions, maxRequired: versions[versions.length - 1] ?? null };
