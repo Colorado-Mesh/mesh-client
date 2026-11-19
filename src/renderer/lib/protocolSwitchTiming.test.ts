@@ -21,13 +21,15 @@ describe('protocolSwitchTiming', () => {
     vi.useRealTimers();
   });
 
-  it('records urgent and commit durations from click time', () => {
+  it('records urgent and commit durations from click time and runs commit work', () => {
     const handle = beginProtocolSwitchTiming();
     vi.advanceTimersByTime(12);
     handle.markUrgent();
     vi.advanceTimersByTime(40);
-    handle.markCommit();
+    const work = vi.fn();
+    handle.markCommit(work);
 
+    expect(work).toHaveBeenCalledTimes(1);
     const names = getRendererTimingsSnapshot().samples.map((s) => s.name);
     expect(names).toContain('protocolSwitch:urgent');
     expect(names).toContain('protocolSwitch:commit');

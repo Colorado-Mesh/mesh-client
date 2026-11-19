@@ -110,4 +110,17 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(branch).toContain('protocolChanged: false');
     expect(branch).toContain('scheduleProtocolCommit(');
   });
+
+  it('clears pending selection only when it still matches the committed target', () => {
+    const helper = SOURCE.slice(
+      SOURCE.indexOf('const scheduleProtocolCommit'),
+      SOURCE.indexOf('const handleProtocolChange'),
+    );
+    expect(helper).toContain('timing.markCommit(() => {');
+    expect(helper).toContain('if (getPendingProtocolSelection() === input.pending)');
+    expect(helper).toContain('setPendingProtocolSelection(null)');
+    expect(helper).not.toMatch(
+      /setProtocol\(input\.nextProtocol\);\s*setPendingProtocolSelection\(null\)/,
+    );
+  });
 });

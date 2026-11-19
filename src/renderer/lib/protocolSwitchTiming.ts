@@ -9,8 +9,11 @@ import { recordRendererTiming } from './rendererTimings';
 export interface ProtocolSwitchTimingHandle {
   /** Call when the urgent (sync) portion of the click handler returns. */
   markUrgent(): void;
-  /** Call when the transition body runs (after generation check). */
-  markCommit(): void;
+  /**
+   * Call when the transition body runs (after generation check).
+   * Records click→commit, then wraps `work` in `perfSpanSync('protocol-switch')`.
+   */
+  markCommit(work: () => void): void;
 }
 
 /** Begin a switch span; schedules a double-rAF paint sample from click time. */
@@ -33,10 +36,9 @@ export function beginProtocolSwitchTiming(): ProtocolSwitchTimingHandle {
       recordRendererTiming('protocolSwitch:urgent', Math.round(performance.now() - clickAt));
       schedulePaint();
     },
-    markCommit() {
-      perfSpanSync('protocol-switch', () => {
-        recordRendererTiming('protocolSwitch:commit', Math.round(performance.now() - clickAt));
-      });
+    markCommit(work) {
+      recordRendererTiming('protocolSwitch:commit', Math.round(performance.now() - clickAt));
+      perfSpanSync('protocol-switch', work);
       schedulePaint();
     },
   };

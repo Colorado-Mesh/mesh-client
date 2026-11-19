@@ -2677,24 +2677,27 @@ function AppContent() {
       timing.markUrgent();
       startProtocolTransition(() => {
         if (!isCurrentProtocolSwitch(id)) return;
-        timing.markCommit();
-        const flags = visitFlagsForProtocolCommit(
-          visitFlagsRef.current,
-          input.destinationPanel,
-          input.protocolChanged,
-          input.enablePeers,
-        );
-        setRoomsTabVisited(flags.rooms);
-        setGamesTabVisited(flags.games);
-        setRrcTabVisited(flags.rrc);
-        setRemoteTabVisited(flags.remote);
-        setNomadTabVisited(flags.nomad);
-        setPeersTabVisited(flags.peers);
-        setAppTabVisited(flags.app);
-        setActiveTab(input.nextTab);
-        setProtocol(input.nextProtocol);
-        // Clear after commit so the rail does not flicker (committed === pending).
-        setPendingProtocolSelection(null);
+        timing.markCommit(() => {
+          const flags = visitFlagsForProtocolCommit(
+            visitFlagsRef.current,
+            input.destinationPanel,
+            input.protocolChanged,
+            input.enablePeers,
+          );
+          setRoomsTabVisited(flags.rooms);
+          setGamesTabVisited(flags.games);
+          setRrcTabVisited(flags.rrc);
+          setRemoteTabVisited(flags.remote);
+          setNomadTabVisited(flags.nomad);
+          setPeersTabVisited(flags.peers);
+          setAppTabVisited(flags.app);
+          setActiveTab(input.nextTab);
+          setProtocol(input.nextProtocol);
+          // Clear only when pending still matches this commit — preserve a newer click target.
+          if (getPendingProtocolSelection() === input.pending) {
+            setPendingProtocolSelection(null);
+          }
+        });
       });
     },
     [startProtocolTransition],

@@ -273,6 +273,21 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
   });
 });
 
+describe('useReticulumRuntime background resume refresh', () => {
+  it('re-checks eligibility inside deferred onRefresh and rearms the interface poll', () => {
+    expect(SOURCE).toContain('rearmLocalInterfacePollRef');
+    const resumeStart = SOURCE.indexOf(
+      'One coalesced full refresh when the window becomes visible',
+    );
+    expect(resumeStart).toBeGreaterThan(-1);
+    const resumeBody = SOURCE.slice(resumeStart, resumeStart + 1800);
+    expect(resumeBody).toMatch(
+      /onRefresh:\s*\(\)\s*=>\s*\{[\s\S]*?shouldRunReticulumExpensiveBackgroundWork\(\)/,
+    );
+    expect(resumeBody).toContain('rearmLocalInterfacePollRef.current?.()');
+  });
+});
+
 describe('useReticulumRuntime chat LXMF send timeout wiring', () => {
   it('maps IPC send timeout and proxy readiness errors via shared humanize', () => {
     expect(SOURCE).toContain('withReticulumIpcSendDeadline');

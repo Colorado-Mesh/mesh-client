@@ -361,6 +361,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
   const localInterfacePollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Replaces any pending interface poll with an immediate tick (resume path). */
+  const rearmLocalInterfacePollRef = useRef<(() => void) | null>(null);
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
@@ -2372,6 +2374,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
     const scheduleNextPoll = (delayMs: number) => {
       if (cancelled) return;
+      if (localInterfacePollTimeoutRef.current != null) {
+        clearTimeout(localInterfacePollTimeoutRef.current);
+      }
       localInterfacePollTimeoutRef.current = setTimeout(() => {
         void tick();
       }, delayMs);
@@ -2426,10 +2431,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
       });
     };
 
+    rearmLocalInterfacePollRef.current = () => {
+      scheduleNextPoll(0);
+    };
     void tick();
 
     return () => {
       cancelled = true;
+      rearmLocalInterfacePollRef.current = null;
       if (localInterfacePollTimeoutRef.current) {
         clearTimeout(localInterfacePollTimeoutRef.current);
         localInterfacePollTimeoutRef.current = null;
@@ -2449,10 +2458,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
       scheduleTrailingOnlyRefresh({
         timerRef: peerRefreshDebounceRef,
         onRefresh: () => {
-          void refreshContactsFromSidecar().catch(() => {
-            // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
-          });
-          void syncDiagnosticsFromSidecar();
+          if (!shouldRunReticulumExpensiveBackgroundWork()) return;
+          void (async () => {
+            await Promise.all([
+              refreshContactsFromSidecar().catch(() => {
+                // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+              }),
+              syncDiagnosticsFromSidecar(),
+            ]);
+            if (!shouldRunReticulumExpensiveBackgroundWork()) return;
+            rearmLocalInterfacePollRef.current?.();
+          })();
         },
         coalesceMs: RETICULUM_BACKGROUND_RESUME_COALESCE_MS,
       });
