@@ -3244,7 +3244,7 @@
 <tbody>
 <tr>
 <td>Connect (BLE / serial / TCP / HTTP)</td>
-<td>Automated (unit + panel E2E walk)</td>
+<td>Automated (unit + fake TCP companion E2E)</td>
 <td>Automated (fake TCP radio E2E)</td>
 <td>Automated (sidecar start / panel E2E)</td>
 </tr>
@@ -3312,7 +3312,7 @@
 <td>LXST voice Call</td>
 <td>N/A</td>
 <td>N/A</td>
-<td>Automated (signalling) + Manual audio vs Ratspeak</td>
+<td>Automated (signalling + PCM round-trip) + Manual audio vs Ratspeak</td>
 </tr>
 <tr>
 <td>LXMF voice memos</td>
@@ -3324,13 +3324,13 @@
 <td>LRGP Games</td>
 <td>N/A</td>
 <td>N/A</td>
-<td>Automated (UI/API) + Manual wire vs Ratspeak</td>
+<td>Automated (UI/API + hub challenge/accept wire) + Manual play/Ratspeak</td>
 </tr>
 <tr>
 <td>Nomad page hosting</td>
 <td>N/A</td>
 <td>N/A</td>
-<td>Automated (unit) + Manual (<a href="../nomad-hosting-interop/">nomad-hosting-interop</a>)</td>
+<td>Automated (unit + dual-sidecar page/file) + Manual NomadNet/MeshChat (<a href="../nomad-hosting-interop/">nomad-hosting-interop</a>)</td>
 </tr>
 <tr>
 <td>Remote rnsh / rncp</td>
@@ -3426,7 +3426,7 @@
 <tr>
 <td>Meshtastic firmware companion</td>
 <td>Connect, chat, MQTT</td>
-<td>Automated + Manual live radio</td>
+<td>Automated fake TCP (<code>meshtastic-chat.spec.ts</code>) + Manual live radio</td>
 </tr>
 <tr>
 <td>MeshCore companion / room / repeater</td>
@@ -3441,7 +3441,7 @@
 <tr>
 <td>NomadNet / MeshChat</td>
 <td>Nomad pages / files</td>
-<td>Manual (<a href="../nomad-hosting-interop/">checklist</a>)</td>
+<td>Manual (<a href="../nomad-hosting-interop/">checklist</a>); second mesh-client automated (<code>dual_tcp_nomad_page_and_file</code>)</td>
 </tr>
 <tr>
 <td>Public MQTT brokers</td>
@@ -3478,7 +3478,7 @@
 <tr>
 <td>Full Playwright</td>
 <td>All (daily)</td>
-<td><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e.yaml">e2e.yaml</a></td>
+<td><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e.yaml">e2e.yaml</a> — includes <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/e2e/meshtastic-chat.spec.ts"><code>e2e/meshtastic-chat.spec.ts</code></a></td>
 </tr>
 <tr>
 <td>Sidecar Rust (<code>rns-stack</code>)</td>
@@ -3488,7 +3488,7 @@
 <tr>
 <td>Dual-sidecar TCP interop</td>
 <td>Reticulum</td>
-<td><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/src/stack/interop_tcp_tests.rs"><code>reticulum-sidecar/src/stack/interop_tcp_tests.rs</code></a> (LXMF, stamps, voice signalling)</td>
+<td><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/src/stack/interop_tcp_tests.rs"><code>reticulum-sidecar/src/stack/interop_tcp_tests.rs</code></a> (LXMF, stamps, voice signalling + PCM, FIAR challenge/accept, Nomad page/file)</td>
 </tr>
 </tbody>
 </table>
@@ -3542,19 +3542,19 @@
 <tbody>
 <tr>
 <td>Meshtastic connected chat send/receive E2E (parity with MeshCore TCP fixture)</td>
-<td>Gap — panel walk exists; deepen when a Meshtastic fake companion is practical</td>
+<td>Automated (<code>e2e/meshtastic-chat.spec.ts</code> + <code>fixtures/meshtastic-tcp-radio.ts</code>); echo receive best-effort / partial OK</td>
 </tr>
 <tr>
 <td>Four in a Row wire vs Ratspeak</td>
-<td>Manual pending (<a href="../reticulum-games-parity/">games parity</a>)</td>
+<td>mesh-client challenge→accept automated; play-to-win + Ratspeak manual pending (<a href="../reticulum-games-parity/">games parity</a>)</td>
 </tr>
 <tr>
 <td>Dual-sidecar voice PCM audio (not only signalling)</td>
-<td>Gap — signalling automated; audio Manual</td>
+<td>Automated (<code>dual_tcp_voice_audio_round_trip</code>); cross-client audio Manual</td>
 </tr>
 <tr>
 <td>Python NomadNet / MeshChat in CI</td>
-<td>Manual only (no peer binaries in CI)</td>
+<td>Manual only (no peer binaries in CI); second mesh-client page/file automated</td>
 </tr>
 </tbody>
 </table>
@@ -3580,7 +3580,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 01:53:37 UTC">November 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 20, 2026 12:44:52 UTC">November 20, 2026</span>
   </span>
 
     

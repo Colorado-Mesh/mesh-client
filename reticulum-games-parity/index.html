@@ -3142,7 +3142,7 @@
 <li><code>dashboard/static/js/games_tab.js</code></li>
 </ul>
 <p>Update this file when Games PRs land. <code>pnpm run update</code> warns only when a <strong>published</strong> Ratspeak GitHub Release is newer than the <code>reviewed-ref</code> pin on the <code>games-parity</code> entry in <code>scripts/update.sh</code> (bump that pin after review). Tags, <code>main</code>, and RCs without a GitHub Release are ignored.</p>
-<p><strong>Last review:</strong> 2026-11-16 (Ratspeak <strong>v1.1.0</strong> — Games API / wire surface reviewed against v1.0.42; no Games command delta requiring mesh-client changes. Chess trays + material advantage and mobile session chrome remain. Four in a Row UI <code>done</code>; wire-interop rows still <code>todo</code> until live gold on a TCP hub). Prior: 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).</p>
+<p><strong>Last review:</strong> 2026-11-19 (mesh-client ↔ mesh-client Four in a Row challenge→accept wire automated via hub TCP <code>dual_tcp_four_in_a_row_wire_interop</code>; play-to-win still blocked by loopback Direct multi-message limits; Ratspeak cross-client row still <code>todo</code>). Prior: 2026-11-16 (Ratspeak <strong>v1.1.0</strong> — Games API / wire surface reviewed against v1.0.42; Four in a Row UI <code>done</code>); 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).</p>
 <p>Status: <code>done</code> | <code>partial</code> | <code>wontfix</code> | <code>todo</code></p>
 <h2 id="commands--api">Commands / API<a class="headerlink" href="#commands--api" title="Permanent link">&para;</a></h2>
 <table>
@@ -3314,40 +3314,46 @@
 <tr>
 <th>Scenario</th>
 <th>Status</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>mesh-client ↔ mesh-client TTT</td>
 <td>done</td>
+<td></td>
 </tr>
 <tr>
 <td>mesh-client ↔ mesh-client Chess</td>
 <td>done</td>
+<td></td>
 </tr>
 <tr>
 <td>mesh-client ↔ Ratspeak TTT</td>
 <td>done</td>
+<td></td>
 </tr>
 <tr>
 <td>mesh-client ↔ Ratspeak Chess</td>
 <td>done</td>
+<td></td>
 </tr>
 <tr>
 <td>mesh-client ↔ mesh-client Four in a Row</td>
-<td>todo</td>
+<td>partial</td>
+<td>Hub TCP <code>dual_tcp_four_in_a_row_wire_interop</code> covers challenge → accept; play-to-win needs multi Direct LXMF (loopback still one-shot per direction)</td>
 </tr>
 <tr>
 <td>mesh-client ↔ Ratspeak Four in a Row</td>
 <td>todo</td>
+<td>Live gold still required</td>
 </tr>
 </tbody>
 </table>
-<p>Manual gold test: two clients on a TCP hub — challenge → accept → play → resign/draw.</p>
+<p>Manual gold test (Ratspeak + full mesh-client play): two clients on a TCP hub — challenge → accept → play → resign/draw.</p>
 <h2 id="remaining-follow-ups">Remaining follow-ups<a class="headerlink" href="#remaining-follow-ups" title="Permanent link">&para;</a></h2>
 <p>None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion <code>games_outbound.db</code> (not <code>lrgp-rs</code> <code>LrgpStore</code> schema).</p>
-<p>Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still <strong>unverified on a live mesh</strong> — run the manual gold test against Ratspeak before marking them <code>done</code>. The board follows <code>lrgp-rs</code> <code>SPEC.md</code> appendix C: 42 cells row-major (<code>row * 7 + column</code>), markers <code>A</code> (challenger, first) / <code>B</code>, local outgoing payload exactly <code>{ c }</code> with the sidecar deriving <code>n</code>, landing row/cell, and terminal claims.</p>
-<p>Manual gold test still required before flipping Four in a Row wire-interop rows to <code>done</code>: two clients on a TCP hub — challenge → accept → play → resign/draw (mesh-client ↔ mesh-client and mesh-client ↔ Ratspeak).</p>
+<p>Four in a Row ships with unit + axe coverage, and <strong>mesh-client ↔ mesh-client challenge→accept</strong> is automated in <code>interop_tcp_tests.rs</code> (shared TCP hub). Full play-to-win / resign over loopback dual-sidecar is still limited by Direct LXMF delivering only the first message per direction; deepen when that transport gap is fixed. The Ratspeak cross-client row above is still <strong>unverified on a live mesh</strong>. The board follows <code>lrgp-rs</code> <code>SPEC.md</code> appendix C: 42 cells row-major (<code>row * 7 + column</code>), markers <code>A</code> (challenger, first) / <code>B</code>, local outgoing payload exactly <code>{ c }</code> with the sidecar deriving <code>n</code>, landing row/cell, and terminal claims.</p>
 
 
 
@@ -3368,7 +3374,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 17, 2026 00:48:39 UTC">November 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 20, 2026 12:44:52 UTC">November 20, 2026</span>
   </span>
 
     
