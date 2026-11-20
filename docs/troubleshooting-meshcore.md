@@ -28,6 +28,20 @@ MeshCore-specific problems. For general connection, Bluetooth, USB serial, MQTT,
 2. On MeshCore tab, use **Sync now** if the header still shows a backlog after connect.
 3. In support bundles, check `ui.meshcoreDrain` for `meshcoreCompanionRepeaterRfBusy`, `meshcoreAdminRpcInFlightCount`, and `meshcoreSilentBulkTimeoutStreak` when triaging repeat reports.
 
+## MeshCore: DM fails with radio contact table full
+
+**Symptoms**: Sending a DM fails; Log (or DevTools console) shows `[useSendMessage] send failed meshcore.errors.radioContactTableFull`. You may also see a toast that the radio contact list is full.
+
+**Cause**: The companion rejected a command with `RESP_ERR` **errCode 3** (`TABLE_FULL`). DMs need the peer in the radio contact table; if the contact is missing, mesh-client tries to add it once. That add (or the send itself) fails when the radio table is full (~350 slots).
+
+**Fix**:
+
+1. On **Device → Radio**, use contact management / **offload** to free unused radio slots (rows stay in the app database). See [MeshCore — Contacts](meshcore.md#contacts).
+2. Enable **auto-offload when full** if you want the app to free slots automatically when the companion reports contacts-full.
+3. Retry the DM after the radio has free slots.
+
+DevTools can show the same console line as the Log panel, but not companion TCP frames — see [Electron DevTools](troubleshooting.md#electron-devtools-packaged-app).
+
 ## MeshCore contact delete and sticky Rooms badge
 
 - Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).
