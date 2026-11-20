@@ -5636,6 +5636,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
         m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
           ? Math.trunc(Number(m.rx_hops))
           : null,
+      rx_path_hash_bytes: m.rx_path_hash_bytes == null ? null : Number(m.rx_path_hash_bytes),
       room_server_id:
         m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
           ? Math.trunc(Number(m.room_server_id))

@@ -1062,7 +1062,10 @@
     "cancelPendingDmAck": "Anuluj oczekiwanie",
     "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną",
     "outboxAnnounceBlocked": "Wiadomość została zablokowana i nie została wysłana.",
-    "outboxAnnounceFailed": "Nie udało się wysłać wiadomości."
+    "outboxAnnounceFailed": "Nie udało się wysłać wiadomości.",
+    "pathHashSizeTooltip": "Szerokość hasza ścieżki transmisji dla tego pakietu ({{bytes}} bajtów na przeskok), a nie skonfigurowany tryb TX radia",
+    "pathHashSizeAria": "Rozmiar skrótu ścieżki {{label}}",
+    "pathHashSizeLabel": "{{bytes}} bajta(-ów)"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

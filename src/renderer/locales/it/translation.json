@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Annulla attesa",
     "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito",
     "outboxAnnounceBlocked": "Messaggio bloccato e non inviato.",
-    "outboxAnnounceFailed": "Impossibile inviare il messaggio."
+    "outboxAnnounceFailed": "Impossibile inviare il messaggio.",
+    "pathHashSizeTooltip": "Larghezza dell'hash del percorso di trasmissione per questo pacchetto ({{bytes}} byte per hop), non la modalità TX configurata della tua radio",
+    "pathHashSizeAria": "Dimensione hash del percorso {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

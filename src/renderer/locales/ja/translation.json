@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "待機をキャンセル",
     "cancelPendingDmAckAria": "配信確認の待機を停止し、このメッセージを失敗としてマークする",
     "outboxAnnounceBlocked": "メッセージがブロックされ、送信されませんでした。",
-    "outboxAnnounceFailed": "メッセージを送信できませんでした。"
+    "outboxAnnounceFailed": "メッセージを送信できませんでした。",
+    "pathHashSizeTooltip": "このパケットのオンエアパスハッシュ幅（{{bytes}}バイト/ホップ）。無線機の構成済みTXモードではありません。",
+    "pathHashSizeAria": "パスハッシュサイズ{{label}}",
+    "pathHashSizeLabel": "{{bytes}}バイト"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

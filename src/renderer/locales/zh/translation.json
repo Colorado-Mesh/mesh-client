@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "取消等待",
     "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败",
     "outboxAnnounceBlocked": "消息已被屏蔽，未发送。",
-    "outboxAnnounceFailed": "无法发送邮件。"
+    "outboxAnnounceFailed": "无法发送邮件。",
+    "pathHashSizeTooltip": "此数据包的空中路径哈希宽度（每跳{{bytes}}字节），而非您无线电的已配置TX模式",
+    "pathHashSizeAria": "路径哈希大小 {{label}}",
+    "pathHashSizeLabel": "{{bytes}}字节"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

@@ -302,6 +302,11 @@ class PacketRouter {
           rxSnr: event.payload.rxSnr,
           rxRssi: event.payload.rxRssi,
           hopCount: event.payload.hopCount,
+          ...(event.payload.pathHashSizeBytes === 1 ||
+          event.payload.pathHashSizeBytes === 2 ||
+          event.payload.pathHashSizeBytes === 3
+            ? { rxPathHashSizeBytes: event.payload.pathHashSizeBytes }
+            : {}),
           tapback: event.payload.tapback,
           replyTo: event.payload.replyTo,
           receivedVia,

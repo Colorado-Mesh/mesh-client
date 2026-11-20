@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Batalkan penantian",
     "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal",
     "outboxAnnounceBlocked": "Pesan diblokir dan tidak terkirim.",
-    "outboxAnnounceFailed": "Pesan gagal dikirim."
+    "outboxAnnounceFailed": "Pesan gagal dikirim.",
+    "pathHashSizeTooltip": "Lebar hash jalur on-air untuk paket ini ({{bytes}} byte per hop), bukan mode TX yang dikonfigurasi pada radio Anda",
+    "pathHashSizeAria": "Ukuran hash jalur {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

@@ -1062,7 +1062,10 @@
     "cancelPendingDmAck": "Скасувати очікування",
     "cancelPendingDmAckAria": "Припинити очікування підтвердження доставки та позначити це повідомлення як невдале",
     "outboxAnnounceBlocked": "Повідомлення заблоковано і не надіслано.",
-    "outboxAnnounceFailed": "Не вдалося надіслати повідомлення."
+    "outboxAnnounceFailed": "Не вдалося надіслати повідомлення.",
+    "pathHashSizeTooltip": "Ширина хешу шляху передачі для цього пакета ({{bytes}} байт на перехід), а не налаштований режим передачі вашого радіопристрою",
+    "pathHashSizeAria": "Розмір хешу шляху {{label}}",
+    "pathHashSizeLabel": "{{bytes}} байт"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

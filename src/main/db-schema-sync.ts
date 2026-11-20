@@ -139,6 +139,7 @@ export const CANONICAL_TABLES_DDL = `
         reply_preview_text TEXT,
         reply_preview_sender TEXT,
         rx_hops INTEGER,
+        rx_path_hash_bytes INTEGER,
         room_server_id INTEGER,
         radio_node_id INTEGER,
         channel_key TEXT
@@ -535,6 +536,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_preview_text: 'TEXT',
     reply_preview_sender: 'TEXT',
     rx_hops: 'INTEGER',
+    rx_path_hash_bytes: 'INTEGER',
     room_server_id: 'INTEGER',
     radio_node_id: 'INTEGER',
     channel_key: 'TEXT',

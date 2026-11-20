@@ -775,6 +775,9 @@
     "receivedViaMqtt": "Received via MQTT",
     "receivedViaRfAndMqtt": "Received via RF + MQTT",
     "hopCountRefinedFromRf": "Updated from RF path",
+    "pathHashSizeLabel": "{{bytes}}-byte",
+    "pathHashSizeTooltip": "On-air path hash width for this packet ({{bytes}} bytes per hop), not your radio's configured TX mode",
+    "pathHashSizeAria": "Path hash size {{label}}",
     "messageRoute": {
       "pillAriaLabel": "{{hops}}, route details",
       "receivedDirect": "Received directly from {{name}}, no relays",

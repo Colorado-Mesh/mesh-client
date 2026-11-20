@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Annuler l'attente",
     "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué",
     "outboxAnnounceBlocked": "Message bloqué et non envoyé.",
-    "outboxAnnounceFailed": "Échec de l'envoi du message."
+    "outboxAnnounceFailed": "Échec de l'envoi du message.",
+    "pathHashSizeTooltip": "Largeur de hachage du chemin de transmission pour ce paquet ({{bytes}} octets par saut), et non le mode TX configuré de votre radio",
+    "pathHashSizeAria": "Taille du hachage du chemin {{label}}",
+    "pathHashSizeLabel": "{{bytes}} octet"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

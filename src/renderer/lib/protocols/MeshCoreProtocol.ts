@@ -12,6 +12,7 @@ import { isMeshcoreRoomServerContactType } from '../meshcoreRoomMessageRouting';
 import type { MeshCoreSelfInfoWire } from '../meshcoreTelemetryPrivacy';
 import {
   isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHashSizeBytes,
   meshcoreCompanionRxPathLenToHopCount,
   pubKeyPrefixHex,
   pubkeyToNodeId,
@@ -535,6 +536,7 @@ export class MeshCoreProtocol implements Protocol {
       return this.decodeTransportStatusChatLine(d.text);
     }
     const hopCount = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
+    const pathHashSizeBytes = meshcoreCompanionRxPathLenToHashSizeBytes(d.pathLen);
     return [
       {
         type: 'text_message',
@@ -549,6 +551,7 @@ export class MeshCoreProtocol implements Protocol {
           channelIndex: d.channelIdx,
           timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
           ...(hopCount != null ? { hopCount } : {}),
+          ...(pathHashSizeBytes != null ? { pathHashSizeBytes } : {}),
         },
       },
     ];

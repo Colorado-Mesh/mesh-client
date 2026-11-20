@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "대기 취소",
     "cancelPendingDmAckAria": "전달 확인을 기다리지 말고 이 메시지를 실패로 표시하세요.",
     "outboxAnnounceBlocked": "메시지가 차단되어 전송되지 않았습니다.",
-    "outboxAnnounceFailed": "메시지를 보내지 못했습니다."
+    "outboxAnnounceFailed": "메시지를 보내지 못했습니다.",
+    "pathHashSizeTooltip": "이 패킷의 온에어 경로 해시 폭({{bytes}}바이트/홉)이며, 무전기의 구성된 TX 모드가 아닙니다.",
+    "pathHashSizeAria": "경로 해시 크기 {{label}}",
+    "pathHashSizeLabel": "{{bytes}}바이트"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

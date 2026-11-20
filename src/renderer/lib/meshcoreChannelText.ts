@@ -578,6 +578,8 @@ export interface BuildMeshcoreChannelIncomingOpts {
   receivedVia: ChatMessage['receivedVia'];
   /** RF path hops from correlated raw packet when known */
   rxHops?: number;
+  /** MeshCore on-air path hash width (1/2/3 bytes) when known */
+  rxPathHashSizeBytes?: 1 | 2 | 3;
 }
 
 /**
@@ -593,10 +595,14 @@ export function buildMeshcoreChannelIncomingMessage(
   const colonIdx = rawText.indexOf(':');
   const fallbackPayload = colonIdx > 0 ? rawText.slice(colonIdx + 1).trim() : rawText.trim();
 
-  const rxFields =
-    opts.rxHops != null && Number.isFinite(opts.rxHops)
-      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
-      : {};
+  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
+    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
+    ...(opts.rxPathHashSizeBytes === 1 ||
+    opts.rxPathHashSizeBytes === 2 ||
+    opts.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
+      : {}),
+  };
 
   const base: Pick<
     ChatMessage,
@@ -1173,6 +1179,7 @@ export function repairMeshcoreDisplayMessages(
             myNodeId: msg.to,
             to: msg.to,
             rxHops: msg.rxHops,
+            rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
           }),
         );
       } else if (msg.channel >= 0) {
@@ -1186,6 +1193,7 @@ export function repairMeshcoreDisplayMessages(
             timestamp: msg.timestamp,
             receivedVia: msg.receivedVia,
             rxHops: msg.rxHops,
+            rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
           }),
         );
       }
@@ -1206,6 +1214,8 @@ export interface BuildMeshcoreDmIncomingOpts {
   receivedVia: ChatMessage['receivedVia'];
   /** RF path hops from correlated raw packet when known */
   rxHops?: number;
+  /** MeshCore on-air path hash width (1/2/3 bytes) when known */
+  rxPathHashSizeBytes?: 1 | 2 | 3;
   /** The other party in this DM (remote contact when receiving their message). */
   peerNodeId: number;
   myNodeId: number;
@@ -1222,10 +1232,14 @@ export function buildMeshcoreDmIncomingMessage(
 ): ChatMessage {
   const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
   const parsed = parseMeshcorePlainBracketLine(rawText);
-  const rxFields =
-    opts.rxHops != null && Number.isFinite(opts.rxHops)
-      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
-      : {};
+  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
+    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
+    ...(opts.rxPathHashSizeBytes === 1 ||
+    opts.rxPathHashSizeBytes === 2 ||
+    opts.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
+      : {}),
+  };
 
   const base: Pick<
     ChatMessage,
@@ -1370,15 +1384,20 @@ export interface BuildMeshcoreRoomIncomingOpts {
   timestamp: number;
   receivedVia: ChatMessage['receivedVia'];
   rxHops?: number;
+  rxPathHashSizeBytes?: 1 | 2 | 3;
 }
 
 /** Build a room BBS row after author-prefix strip. Payload is stored verbatim (no bracket reply parse). */
 export function buildMeshcoreRoomIncomingMessage(opts: BuildMeshcoreRoomIncomingOpts): ChatMessage {
   const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
-  const rxFields =
-    opts.rxHops != null && Number.isFinite(opts.rxHops)
-      ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
-      : {};
+  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
+    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
+    ...(opts.rxPathHashSizeBytes === 1 ||
+    opts.rxPathHashSizeBytes === 2 ||
+    opts.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
+      : {}),
+  };
   return {
     sender_id: opts.authorId,
     sender_name: opts.authorName,

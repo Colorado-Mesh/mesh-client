@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Wartezeit abbrechen",
     "cancelPendingDmAckAria": "Warten auf Zustellungsbestätigung beenden und diese Nachricht als fehlgeschlagen markieren",
     "outboxAnnounceBlocked": "Nachricht blockiert und nicht gesendet.",
-    "outboxAnnounceFailed": "Nachrichtenübermittlung fehlgeschlagen"
+    "outboxAnnounceFailed": "Nachrichtenübermittlung fehlgeschlagen",
+    "pathHashSizeTooltip": "Hash-Breite des Übertragungswegs für dieses Paket ({{bytes}} Bytes pro Hop), nicht der konfigurierte TX-Modus Ihres Funkgeräts",
+    "pathHashSizeAria": "Pfad-Hash-Größe {{label}}",
+    "pathHashSizeLabel": "{{bytes}} Byte"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

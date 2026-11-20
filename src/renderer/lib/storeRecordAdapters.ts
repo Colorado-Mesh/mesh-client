@@ -149,6 +149,11 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
     ...(rxHops != null ? { rxHops } : {}),
+    ...(record.rxPathHashSizeBytes === 1 ||
+    record.rxPathHashSizeBytes === 2 ||
+    record.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: record.rxPathHashSizeBytes }
+      : {}),
     ...(record.rxSnr != null ? { rxSnr: record.rxSnr } : {}),
     ...(record.rxRssi != null ? { rxRssi: record.rxRssi } : {}),
     ...(record.rxRadioTransport ? { rxRadioTransport: record.rxRadioTransport } : {}),
@@ -515,6 +520,11 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
     ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
+    ...(msg.rxPathHashSizeBytes === 1 ||
+    msg.rxPathHashSizeBytes === 2 ||
+    msg.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: msg.rxPathHashSizeBytes }
+      : {}),
     ...(msg.rxSnr != null ? { rxSnr: msg.rxSnr } : {}),
     ...(msg.rxRssi != null ? { rxRssi: msg.rxRssi } : {}),
     ...(msg.rxRadioTransport ? { rxRadioTransport: msg.rxRadioTransport } : {}),

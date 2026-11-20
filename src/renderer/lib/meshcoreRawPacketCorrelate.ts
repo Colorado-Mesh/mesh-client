@@ -13,6 +13,8 @@ export interface ChatCorrelateRxLike {
   fromNodeId: number | null;
   advertName?: string | null;
   hopCount?: number;
+  /** On-air path hash width (1–3 bytes) when known from RF parse. */
+  pathHashSizeBytes?: 1 | 2 | 3;
   /** When false, hopCount is unreliable (failed parse / synthetic chat row). Absent = trusted. */
   parseOk?: boolean;
   /** CRC-32 packet fingerprint (8 hex chars) when known from RF parse. */
@@ -153,13 +155,21 @@ export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>
   return undefined;
 }
 
-/** Resolve RF hop count for driver-path ingest from the raw packet log (event 136). */
-export function resolveMeshcoreIngestRxHops(
+export interface MeshcoreIngestPathMeta {
+  hopCount?: number;
+  pathHashSizeBytes?: 1 | 2 | 3;
+}
+
+/**
+ * Resolve RF hop count + path hash width for driver-path ingest from the raw packet log
+ * (event 136). One call so TXT_MSG correlation consumption is not double-applied.
+ */
+export function resolveMeshcoreIngestPathMeta(
   rawPackets: readonly ChatCorrelateRxLike[],
   isChannel: boolean,
   now: number = Date.now(),
   txtMsgMatch?: MeshcoreTxtMsgHopMatch,
-): number | undefined {
+): MeshcoreIngestPathMeta {
   const match = isChannel
     ? meshcoreFindRecentGrpTxtRawPacket(rawPackets, now)
     : meshcoreFindRecentTxtMsgRawPacket(
@@ -169,12 +179,30 @@ export function resolveMeshcoreIngestRxHops(
         txtMsgMatch,
       );
   // Failed parses / synthetic chat rows default hopCount to 0 — do not adopt those.
-  if (!match || match.parseOk === false) return undefined;
+  if (!match || match.parseOk === false) return {};
   const hops = match.hopCount;
-  if (hops == null || !Number.isFinite(hops)) return undefined;
+  const hopCount = hops != null && Number.isFinite(hops) ? hops : undefined;
+  const pathHashSizeBytes =
+    match.pathHashSizeBytes === 1 || match.pathHashSizeBytes === 2 || match.pathHashSizeBytes === 3
+      ? match.pathHashSizeBytes
+      : undefined;
+  if (hopCount == null && pathHashSizeBytes == null) return {};
   // Consume TXT_MSG rows only (channel GRP_TXT correlation stays shared / best-effort).
   if (!isChannel && match.payloadTypeString === 'TXT_MSG') {
     markTxtMsgHopCorrelateConsumed(match);
   }
-  return hops;
+  return {
+    ...(hopCount != null ? { hopCount } : {}),
+    ...(pathHashSizeBytes != null ? { pathHashSizeBytes } : {}),
+  };
+}
+
+/** Resolve RF hop count for driver-path ingest from the raw packet log (event 136). */
+export function resolveMeshcoreIngestRxHops(
+  rawPackets: readonly ChatCorrelateRxLike[],
+  isChannel: boolean,
+  now: number = Date.now(),
+  txtMsgMatch?: MeshcoreTxtMsgHopMatch,
+): number | undefined {
+  return resolveMeshcoreIngestPathMeta(rawPackets, isChannel, now, txtMsgMatch).hopCount;
 }

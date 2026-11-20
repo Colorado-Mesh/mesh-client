@@ -132,6 +132,7 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     const direct = events.find((e) => e.type === 'text_message');
     expect(direct?.type === 'text_message' && direct.payload.hopCount).toBe(0);
+    expect(direct?.type === 'text_message' && direct.payload.pathHashSizeBytes).toBeUndefined();
     events.length = 0;
     conn.emit(EVENT_CHANNEL_MESSAGE, {
       channelIdx: 0,
@@ -141,10 +142,11 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     const flood = events.find((e) => e.type === 'text_message');
     expect(flood?.type === 'text_message' && flood.payload.hopCount).toBe(3);
+    expect(flood?.type === 'text_message' && flood.payload.pathHashSizeBytes).toBe(1);
     teardown();
   });
 
-  it('unpacks packed multibyte pathLen on channel messages (e.g. 65 → 1 hop)', () => {
+  it('unpacks packed multibyte pathLen on channel messages (e.g. 65 → 1 hop @ 2-byte)', () => {
     const conn = mockMeshCoreConnection();
     const events: DomainEvent[] = [];
     const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
@@ -156,10 +158,11 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     const text = events.find((e) => e.type === 'text_message');
     expect(text?.type === 'text_message' && text.payload.hopCount).toBe(1);
+    expect(text?.type === 'text_message' && text.payload.pathHashSizeBytes).toBe(2);
     teardown();
   });
 
-  it('maps DM pathLen to hopCount', () => {
+  it('maps DM pathLen to hopCount and pathHashSizeBytes', () => {
     const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
     const nodeId = pubkeyToNodeId(publicKey);
     registerMeshcorePubKey(nodeId, publicKey);
@@ -175,6 +178,7 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     const text = events.find((e) => e.type === 'text_message');
     expect(text?.type === 'text_message' && text.payload.hopCount).toBe(2);
+    expect(text?.type === 'text_message' && text.payload.pathHashSizeBytes).toBe(1);
     teardown();
   });
 

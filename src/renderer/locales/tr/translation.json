@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Beklemeyi iptal et",
     "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin",
     "outboxAnnounceBlocked": "Mesaj engellendi ve gönderilmedi.",
-    "outboxAnnounceFailed": "Mesajınız gönderilemedi."
+    "outboxAnnounceFailed": "Mesajınız gönderilemedi.",
+    "pathHashSizeTooltip": "Bu paket için havadaki yol karma genişliği ({{bytes}} bayt/atlama), telsizinizin yapılandırılmış TX modu değil",
+    "pathHashSizeAria": "Yol karma boyutu {{label}}",
+    "pathHashSizeLabel": "{{bytes}} bayt"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

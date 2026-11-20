@@ -1026,7 +1026,10 @@
     "cancelPendingDmAck": "Wachten annuleren",
     "cancelPendingDmAckAria": "Stop met wachten op een bevestiging van ontvangst en markeer dit bericht als mislukt",
     "outboxAnnounceBlocked": "Bericht geblokkeerd en niet verzonden.",
-    "outboxAnnounceFailed": "Bericht kon niet worden verzonden."
+    "outboxAnnounceFailed": "Bericht kon niet worden verzonden.",
+    "pathHashSizeTooltip": "Hashbreedte van het on-air-pad voor dit pakket ({{bytes}} bytes per hop), niet de geconfigureerde TX-modus van je radio",
+    "pathHashSizeAria": "Hashgrootte van pad {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

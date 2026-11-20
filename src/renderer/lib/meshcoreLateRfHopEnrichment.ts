@@ -41,6 +41,7 @@ export interface MeshcoreLateHopCandidate {
   channel: number;
   timestamp: number;
   rxHops?: number;
+  rxPathHashSizeBytes?: 1 | 2 | 3;
   receivedVia?: ChatMessage['receivedVia'];
   roomServerId?: number;
   rxPacketFingerprintHex?: string;
@@ -60,6 +61,8 @@ export interface MeshcoreLateHopGroupText {
 export interface MeshcoreLateRfHopEnrichmentInput {
   payloadTypeString: 'TXT_MSG' | 'GRP_TXT';
   hopCount: number;
+  /** On-air path hash width when known from RF parse. */
+  pathHashSizeBytes?: 1 | 2 | 3;
   messageFingerprintHex: string | null;
   parseOk: boolean;
   now?: number;
@@ -309,6 +312,11 @@ function listLateHopCandidates(identityId: IdentityId): MeshcoreLateHopCandidate
       channel: msg.channel,
       timestamp: msg.timestamp,
       ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
+      ...(msg.rxPathHashSizeBytes === 1 ||
+      msg.rxPathHashSizeBytes === 2 ||
+      msg.rxPathHashSizeBytes === 3
+        ? { rxPathHashSizeBytes: msg.rxPathHashSizeBytes }
+        : {}),
       ...(msg.receivedVia != null ? { receivedVia: msg.receivedVia } : {}),
       ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
       ...(msg.rxPacketFingerprintHex != null
@@ -342,6 +350,10 @@ export function applyMeshcoreLateRfHopEnrichment(
   const nextRxHops = Math.trunc(input.hopCount);
   const previousRxHops = target.rxHops;
   const corrected = previousRxHops != null && previousRxHops !== nextRxHops;
+  const nextPathHashSizeBytes =
+    input.pathHashSizeBytes === 1 || input.pathHashSizeBytes === 2 || input.pathHashSizeBytes === 3
+      ? input.pathHashSizeBytes
+      : target.rxPathHashSizeBytes;
 
   const byIdentity = useMessageStore.getState().messages[identityId];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
@@ -360,6 +372,9 @@ export function applyMeshcoreLateRfHopEnrichment(
     id: target.storeId,
     rxHops: nextRxHops,
     hopCount: nextRxHops,
+    ...(nextPathHashSizeBytes === 1 || nextPathHashSizeBytes === 2 || nextPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: nextPathHashSizeBytes }
+      : {}),
     receivedVia: nextReceivedVia,
   });
 
@@ -368,6 +383,9 @@ export function applyMeshcoreLateRfHopEnrichment(
     id: target.storeId,
     rxHops: nextRxHops,
     hopCount: nextRxHops,
+    ...(nextPathHashSizeBytes === 1 || nextPathHashSizeBytes === 2 || nextPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: nextPathHashSizeBytes }
+      : {}),
     receivedVia: nextReceivedVia,
   });
   void window.electronAPI.db

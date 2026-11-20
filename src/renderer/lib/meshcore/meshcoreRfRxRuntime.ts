@@ -958,6 +958,7 @@ function handleMeshcoreRfRxInner(payload: MeshcoreRfRxPayload, deps: MeshcoreRfR
       applyMeshcoreLateRfHopEnrichment(lateHopIdentityId, {
         payloadTypeString: ctx.payloadTypeString,
         hopCount: ctx.hopCount,
+        pathHashSizeBytes: ctx.pathHashSizeBytes,
         messageFingerprintHex: ctx.messageFingerprintHex,
         parseOk: true,
         now,

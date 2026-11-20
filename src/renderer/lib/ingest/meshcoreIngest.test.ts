@@ -1184,6 +1184,50 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(2);
   });
 
+  it('correlates channel path hash size from GRP_TXT raw packet when omitted on event', () => {
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: () => [
+        {
+          ts: now - 50,
+          payloadTypeString: 'GRP_TXT',
+          fromNodeId: null,
+          hopCount: 2,
+          pathHashSizeBytes: 3,
+        },
+      ],
+    });
+    dispatchChannelText();
+    detach();
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
+    expect(messageRecordToChatMessage(record).rxPathHashSizeBytes).toBe(3);
+  });
+
+  it('keeps event pathHashSizeBytes on channel ingest', () => {
+    const detach = attachMeshcoreIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: channelMsgId,
+          from: 0,
+          to: 0,
+          payload: 'Alice: hello',
+          channelIndex: 0,
+          timestamp: now,
+          hopCount: 1,
+          pathHashSizeBytes: 2,
+        },
+      },
+      ID,
+    );
+    detach();
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
+    expect(messageRecordToChatMessage(record)).toMatchObject({
+      rxHops: 1,
+      rxPathHashSizeBytes: 2,
+    });
+  });
+
   it('preserves per-message signal measurements when normalizing MeshCore channel text', () => {
     const detach = attachMeshcoreIngest(ID);
     dispatchChannelText({ rxSnr: 0, rxRssi: -98, hopCount: 2 });
