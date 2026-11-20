@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { reconcileChatOrder, useChatOrder } from './useChatOrder';
+import { moveChatOrderId, reconcileChatOrder, useChatOrder } from './useChatOrder';
 
 const items = [
   { id: '2', name: 'Zulu' },
@@ -12,6 +12,23 @@ const items = [
 describe('chat display order', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+  it('moves an entry before or after a drop target', () => {
+    expect(moveChatOrderId(['a', 'b', 'c', 'd'], 'a', 'c', 'after')).toEqual(['b', 'c', 'a', 'd']);
+    expect(moveChatOrderId(['a', 'b', 'c', 'd'], 'a', 'c', 'before')).toEqual(['b', 'a', 'c', 'd']);
+    expect(moveChatOrderId(['a', 'b', 'c', 'd'], 'd', 'b', 'before')).toEqual(['a', 'd', 'b', 'c']);
+    expect(moveChatOrderId(['a', 'b', 'c', 'd'], 'd', 'a', 'before')).toEqual(['d', 'a', 'b', 'c']);
+  });
+  it('returns null when a drop would not change the order', () => {
+    expect(moveChatOrderId(['a', 'b', 'c'], 'b', 'b', 'after')).toBeNull();
+    expect(moveChatOrderId(['a', 'b', 'c'], 'a', 'b', 'before')).toBeNull();
+    expect(moveChatOrderId(['a', 'b', 'c'], 'b', 'a', 'after')).toBeNull();
+    expect(moveChatOrderId(['a', 'b', 'c'], 'gone', 'a', 'before')).toBeNull();
+    expect(moveChatOrderId(['a', 'b', 'c'], 'a', 'gone', 'after')).toBeNull();
+  });
+  it('keeps entries that are not on screen next to their neighbours', () => {
+    // 'h' is archived and hidden; moving 'c' must not move it.
+    expect(moveChatOrderId(['a', 'h', 'b', 'c'], 'c', 'b', 'before')).toEqual(['a', 'h', 'c', 'b']);
   });
   it('deduplicates saved ids, drops unavailable ones and appends new entries', () => {
     expect(reconcileChatOrder(items, ['3', '3', 'gone', '2'])).toEqual(['3', '2', '1']);
