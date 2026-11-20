@@ -23,6 +23,24 @@ export function reconcileChatOrder(
   return result;
 }
 
+export type ChatOrderSide = 'before' | 'after';
+
+/**
+ * Moves `id` next to `target` in a full display order. Entries that are not on screen stay next
+ * to their neighbours. Returns null when the move would not change the order.
+ */
+export function moveChatOrderId(
+  ids: readonly string[],
+  id: string,
+  target: string,
+  side: ChatOrderSide,
+): string[] | null {
+  if (id === target || !ids.includes(id) || !ids.includes(target)) return null;
+  const next = ids.filter((entry) => entry !== id);
+  next.splice(next.indexOf(target) + (side === 'after' ? 1 : 0), 0, id);
+  return next.every((entry, index) => entry === ids[index]) ? null : next;
+}
+
 function readOrder(key: string): string[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');

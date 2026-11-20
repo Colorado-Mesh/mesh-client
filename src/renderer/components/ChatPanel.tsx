@@ -49,7 +49,8 @@ import { useTranslation } from 'react-i18next';
 
 import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
-import { useChatOrder } from '@/renderer/hooks/useChatOrder';
+import { moveChatOrderId, useChatOrder } from '@/renderer/hooks/useChatOrder';
+import { useChipDragReorder } from '@/renderer/hooks/useChipDragReorder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import {
@@ -329,7 +330,7 @@ import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 import { Button } from './ui/Button';
 import { DocsSiteLink } from './ui/DocsSiteLink';
-import { chipClass, INPUT_CLASS } from './ui/formClasses';
+import { CHIP_DRAG_CLASS, chipClass, INPUT_CLASS } from './ui/formClasses';
 import { Menu } from './ui/Menu';
 import { ScrollStrip } from './ui/ScrollStrip';
 
@@ -3423,6 +3424,15 @@ function ChatPanel({
 
   const channelOrderItems = channels.map((ch) => ({ id: String(ch.index), name: ch.name }));
   const channelOrder = useChatOrder(`${protocol}:${myNodeNum}:channels`, channelOrderItems);
+  // Display order only, like the Order chats dialog. Pinned chips keep pin order, so they are
+  // neither dragged nor drop targets.
+  const channelDrag = useChipDragReorder({
+    canMove: (id) => !conversationPins.pinned.has(`ch:${id}`),
+    onMove: (id, target, side) => {
+      const next = moveChatOrderId(channelOrder.ids, id, target, side);
+      if (next) channelOrder.save(next);
+    },
+  });
   const dmOrderItems = visibleDmTabs.map((id) => ({ id: String(id), name: getDmLabel(id) }));
   const dmOrder = useChatOrder(`${protocol}:${myNodeNum}:dms`, dmOrderItems);
   const orderedDmTabs = filterArchived(
@@ -3660,6 +3670,7 @@ function ChatPanel({
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}
                       data-channel-unread={unread}
+                      {...channelDrag(String(ch.index))}
                       onClick={() => {
                         selectChannel(ch.index);
                         setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
@@ -3685,7 +3696,7 @@ function ChatPanel({
                             }
                           : undefined
                       }
-                      className={`${chipClass(isActiveChannel)} inline-flex h-auto min-h-7 max-w-full items-center gap-1 rounded-full! px-2! py-0.5 text-left`}
+                      className={`${chipClass(isActiveChannel)} ${CHIP_DRAG_CLASS} inline-flex h-auto min-h-7 max-w-full items-center gap-1 rounded-full! px-2! py-0.5 text-left`}
                     >
                       {!ch.name.startsWith('#') && (
                         <span aria-hidden="true" className="text-muted shrink-0 font-mono">
