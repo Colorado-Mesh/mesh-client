@@ -32,6 +32,9 @@ export const MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS = 800;
 /** Collect Serial `--info` console lines after MeshCom connect before parsing settings. */
 export const MESHCOM_SERIAL_INFO_COLLECT_MS = 2500;
 
+/** Collect Serial `--wx` weather lines (and BLE TYP W settle) for Telemetry. */
+export const MESHCOM_SERIAL_WX_COLLECT_MS = 1500;
+
 /** Wait for BLE companion `CONFFIN` (or fall back to `--info`) after MeshCom connect. */
 export const MESHCOM_BLE_SETTINGS_WAIT_MS = 5 * MS_PER_SECOND;
 

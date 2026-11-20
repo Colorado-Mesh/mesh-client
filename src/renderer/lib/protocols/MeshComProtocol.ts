@@ -63,6 +63,44 @@ function notifyDeviceSettingsWaiters(handle: MeshComDeviceHandle): void {
   for (const resolve of waiters) resolve();
 }
 
+function emitDeviceTelemetry(
+  emit: (event: DomainEvent) => void,
+  opts: {
+    nodeId: number;
+    batteryLevel?: number;
+    voltage?: number;
+    temperature?: number;
+    relativeHumidity?: number;
+    barometricPressure?: number;
+    gasResistance?: number;
+    co2?: number;
+  },
+): void {
+  const hasDevice =
+    opts.batteryLevel != null ||
+    opts.voltage != null ||
+    opts.temperature != null ||
+    opts.relativeHumidity != null ||
+    opts.barometricPressure != null ||
+    opts.gasResistance != null ||
+    opts.co2 != null;
+  if (!hasDevice) return;
+  emit({
+    type: 'telemetry',
+    payload: {
+      nodeId: opts.nodeId,
+      timestamp: Date.now(),
+      batteryLevel: opts.batteryLevel,
+      voltage: opts.voltage,
+      temperature: opts.temperature,
+      relativeHumidity: opts.relativeHumidity,
+      barometricPressure: opts.barometricPressure,
+      gasResistance: opts.gasResistance,
+      co2: opts.co2,
+    },
+  });
+}
+
 function emitSelfFromSettings(
   handle: MeshComDeviceHandle,
   emit: (event: DomainEvent) => void,
@@ -82,6 +120,10 @@ function emitSelfFromSettings(
       type: 0,
       txPower: Number.isFinite(txPower) ? txPower : 0,
       radioFreq: Number.isFinite(freqMhz) ? Math.round(freqMhz * 1_000_000) : 0,
+      batteryMilliVolts:
+        handle.deviceSettings.battVoltage != null
+          ? Math.round(handle.deviceSettings.battVoltage * 1000)
+          : undefined,
       manualAddContacts: false,
     },
   });
@@ -92,7 +134,18 @@ function emitSelfFromSettings(
       longName: call,
       shortName: (handle.deviceSettings.operatorName || call).slice(0, 4),
       lastHeardAt: now,
+      batteryLevel: handle.deviceSettings.battPercent,
     },
+  });
+  emitDeviceTelemetry(emit, {
+    nodeId,
+    batteryLevel: handle.deviceSettings.battPercent,
+    voltage: handle.deviceSettings.battVoltage,
+    temperature: handle.deviceSettings.temperatureC,
+    relativeHumidity: handle.deviceSettings.humidityPct,
+    barometricPressure: handle.deviceSettings.pressureHpa,
+    gasResistance: handle.deviceSettings.gasResistance,
+    co2: handle.deviceSettings.co2Ppm,
   });
   if (handle.deviceSettings.fwver) {
     emit({
@@ -120,7 +173,13 @@ function tryIngestSettingsJson(
     return false;
   }
   const { confFin } = mergeMeshcomBleSettingsJson(handle.deviceSettings, parsed);
-  if (handle.deviceSettings.call) {
+  let typ = '';
+  if (typeof parsed === 'object' && parsed !== null && 'TYP' in parsed) {
+    const typVal = (parsed as Record<string, unknown>).TYP;
+    if (typeof typVal === 'string' || typeof typVal === 'number') typ = String(typVal);
+  }
+  // Emit self + telemetry as soon as call/battery/weather arrive (not only on CONFFIN).
+  if (handle.deviceSettings.call && (typ === 'I' || typ === 'W' || typ === 'IS1' || confFin)) {
     emitSelfFromSettings(handle, emit);
   }
   if (confFin) {
@@ -211,6 +270,12 @@ function emitExtUdpEvents(
         hwModel: meshcomHwLabel(parsed.hw_id) || undefined,
       },
     });
+    if (parsed.batt != null) {
+      emitDeviceTelemetry(emit, {
+        nodeId,
+        batteryLevel: parsed.batt,
+      });
+    }
     if (
       latitude != null &&
       longitude != null &&
@@ -228,7 +293,32 @@ function emitExtUdpEvents(
         },
       });
     }
+    return;
   }
+
+  // Remaining inbound variant is `tele` (msg/pos returned above).
+  const { origin } = parseMeshcomSrcPath(parsed.src ?? '');
+  if (!origin && !parsed.src) return;
+  const nodeId = rememberCallsign(handle, origin || parsed.src || '');
+  emit({
+    type: 'node_info',
+    payload: {
+      nodeId,
+      longName: origin || parsed.src,
+      shortName: (origin || parsed.src || '').slice(0, 4),
+      lastHeardAt: now,
+      batteryLevel: parsed.batt,
+    },
+  });
+  emitDeviceTelemetry(emit, {
+    nodeId,
+    batteryLevel: parsed.batt,
+    temperature: parsed.temp,
+    relativeHumidity: parsed.hum,
+    barometricPressure: parsed.press ?? parsed.qnh,
+    gasResistance: parsed.gasres,
+    co2: parsed.co2,
+  });
 }
 
 /**

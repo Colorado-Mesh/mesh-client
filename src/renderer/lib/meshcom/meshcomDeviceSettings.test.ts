@@ -4,6 +4,7 @@ import {
   emptyMeshcomDeviceSettingsAccum,
   mergeMeshcomBleSettingsJson,
   mergeMeshcomSerialInfoText,
+  mergeMeshcomSerialWxText,
   meshcomSettingsToCommandValues,
   snapshotMeshcomDeviceSettings,
 } from './meshcomDeviceSettings';
@@ -32,6 +33,20 @@ describe('meshcomDeviceSettings', () => {
       MQRG: 433.175,
     });
     mergeMeshcomBleSettingsJson(accum, {
+      TYP: 'I',
+      CALL: 'oe1abc-12',
+      BATP: 87,
+      BATV: 4.12,
+    });
+    mergeMeshcomBleSettingsJson(accum, {
+      TYP: 'W',
+      TEMP: 21.5,
+      HUM: 48,
+      PRES: 1013.2,
+      GAS: 120000,
+      CO2: 410,
+    });
+    mergeMeshcomBleSettingsJson(accum, {
       TYP: 'SA',
       NAME: 'Alice',
       ATXT: 'mesh test',
@@ -45,6 +60,11 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.display).toBe('on');
     expect(accum.gps).toBe('on');
     expect(accum.nomsgall).toBe('on');
+    expect(accum.battPercent).toBe(87);
+    expect(accum.battVoltage).toBe(4.12);
+    expect(accum.temperatureC).toBe(21.5);
+    expect(accum.humidityPct).toBe(48);
+    expect(accum.pressureHpa).toBe(1013.2);
     const values = meshcomSettingsToCommandValues(accum);
     expect(values.setcall).toBe('OE1ABC-12');
     expect(values.btcode).toBe('123456');
@@ -52,6 +72,9 @@ describe('meshcomDeviceSettings', () => {
     expect(values.aprscomment).toBe('mesh test');
     const snap = snapshotMeshcomDeviceSettings(accum, 42);
     expect(snap.countryCode).toBe('EU');
+    expect(snap.batteryLevel).toBe(87);
+    expect(snap.voltage).toBe(4.12);
+    expect(snap.temperatureC).toBe(21.5);
     expect(snap.updatedAt).toBe(42);
   });
 
@@ -71,6 +94,7 @@ describe('meshcomDeviceSettings', () => {
         '...CTRY AT',
         '...FREQ 433.1750 MHz TXPWR 20 dBm RXBOOST on',
         '...EXTUDP on ...EXT IP 192.168.1.10',
+        'BATT 3.95 V  BATT 72 %',
         'GC-1:232 GC-2:20',
       ].join('\n'),
     );
@@ -84,5 +108,29 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.extudpip).toBe('192.168.1.10');
     expect(accum.groups).toBe('232;20');
     expect(accum.txPower).toBe('20');
+    expect(accum.battVoltage).toBe(3.95);
+    expect(accum.battPercent).toBe(72);
+  });
+
+  it('parses serial --wx weather dump', () => {
+    const accum = emptyMeshcomDeviceSettingsAccum();
+    mergeMeshcomSerialWxText(
+      accum,
+      [
+        'TEMP: 22.3 °C',
+        'TOUT: 19.1 °C',
+        'HUM: 51.0 %rH',
+        'QFE: 1008.5 hPa',
+        'QNH: 1015.0 hPa',
+        'GAS: 45.0 kOhm',
+        'eCO2: 420 ppm',
+      ].join('\n'),
+    );
+    expect(accum.temperatureC).toBe(22.3);
+    expect(accum.temperatureOutC).toBe(19.1);
+    expect(accum.humidityPct).toBe(51);
+    expect(accum.pressureHpa).toBe(1008.5);
+    expect(accum.gasResistance).toBe(45_000);
+    expect(accum.co2Ppm).toBe(420);
   });
 });

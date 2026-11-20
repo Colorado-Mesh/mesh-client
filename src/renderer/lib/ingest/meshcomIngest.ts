@@ -4,6 +4,7 @@
  * Failure point: DB IPC errors — logged; store state remains authoritative.
  * Fallback: skip DB write; UI still updates from Zustand.
  */
+import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
@@ -167,6 +168,57 @@ function handleNodeInfo(
   });
 }
 
+function handleTelemetry(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'telemetry' }>,
+): void {
+  const t = event.payload;
+  const existing = nodeRecordFor(identityId, t.nodeId);
+  const callsign =
+    normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '') ||
+    `N${t.nodeId.toString(16).toUpperCase()}`;
+
+  upsertNodeRecord(identityId, {
+    nodeId: t.nodeId,
+    longName: callsign,
+    batteryLevel: t.batteryLevel ?? existing?.batteryLevel,
+    voltage: t.voltage ?? existing?.voltage,
+    lastHeardAt: Math.floor(t.timestamp / 1000),
+    source: 'rf',
+  });
+
+  const hasEnv =
+    t.temperature != null ||
+    t.relativeHumidity != null ||
+    t.barometricPressure != null ||
+    t.gasResistance != null ||
+    t.co2 != null;
+  if (hasEnv) {
+    recordEnvironmentReading(
+      'meshcom',
+      identityId,
+      t.nodeId,
+      {
+        temperature: t.temperature,
+        relativeHumidity: t.relativeHumidity,
+        barometricPressure: t.barometricPressure,
+        gasResistance: t.gasResistance,
+        co2: t.co2,
+      },
+      'rf',
+    );
+  }
+
+  if (t.batteryLevel != null) {
+    persistContact(identityId, {
+      callsign,
+      nodeId: t.nodeId,
+      batt: t.batteryLevel,
+      lastHeard: Math.floor(t.timestamp / 1000),
+    });
+  }
+}
+
 function handlePosition(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'position' }>,
@@ -325,6 +377,9 @@ function createListener(
         break;
       case 'position':
         handlePosition(identityId, event, options);
+        break;
+      case 'telemetry':
+        handleTelemetry(identityId, event);
         break;
       default:
         break;

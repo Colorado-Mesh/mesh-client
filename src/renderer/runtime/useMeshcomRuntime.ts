@@ -6,6 +6,7 @@ import {
   useMeshcomDeviceCommands,
 } from '../hooks/meshcom/useMeshcomDeviceCommands';
 import { getAppSettingsRaw } from '../lib/appSettingsStorage';
+import { attachTypedPacketListener } from '../lib/drivers/attachTypedPacketListener';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import {
@@ -17,6 +18,8 @@ import {
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
 import { canTransmitLocation } from '../lib/locationTransmit';
+import { callsignToNodeId } from '../lib/meshcom/meshcomCallsign';
+import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -24,14 +27,22 @@ import type { MeshComDeviceHandle } from '../lib/protocols/MeshComProtocol';
 import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
 import { readRadioSelfPosition } from '../lib/radioSelfPosition';
 import { createRfReconnectController } from '../lib/rfReconnectController';
+import { MAX_TELEMETRY_POINTS } from '../lib/sessionMemoryCaps';
 import {
   type MeshcomRfTransportType,
   registerMeshcomSession,
 } from '../lib/sessions/meshcomSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
-import type { ConnectionType, DeviceState, IdentityId } from '../lib/types';
+import type {
+  ConnectionType,
+  DeviceState,
+  EnvironmentTelemetryPoint,
+  IdentityId,
+  TelemetryPoint,
+} from '../lib/types';
 import { getConnection, setConnection } from '../stores/connectionStore';
+import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import { useMessageStore } from '../stores/messageStore';
 import { upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
@@ -82,9 +93,13 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     shortName: string;
     isLicensed: boolean;
   } | null>(null);
+  const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
+  const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
+  const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
   const identityIdRef = useRef<IdentityId>(offlineIdentityId);
   const driverIdentityIdRef = useRef<IdentityId | null>(null);
   const ingestDetachRef = useRef<(() => void) | null>(null);
+  const telemetryDetachRef = useRef<(() => void) | null>(null);
   const explicitDisconnectRef = useRef(false);
   const connectionParamsRef = useRef<{
     rfType: MeshcomRfTransportType;
@@ -106,6 +121,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   const detachIngest = useCallback(() => {
     ingestDetachRef.current?.();
     ingestDetachRef.current = null;
+    telemetryDetachRef.current?.();
+    telemetryDetachRef.current = null;
+  }, []);
+
+  const pushLocalTelemetry = useCallback((point: TelemetryPoint) => {
+    setTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
+  }, []);
+
+  const pushEnvTelemetry = useCallback((point: EnvironmentTelemetryPoint) => {
+    setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
   }, []);
 
   const attachIngestForIdentity = useCallback(
@@ -121,8 +146,54 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         .catch((e: unknown) => {
           console.warn('[useMeshcomRuntime] ingest attach failed ' + errLikeToLogString(e));
         });
+      telemetryDetachRef.current = attachTypedPacketListener(identityId, 'telemetry', (payload) => {
+        const my = getConnection(identityId)?.myNodeNum ?? 0;
+        const isSelf = my === 0 || payload.nodeId === my;
+        if (isSelf && (payload.batteryLevel != null || payload.voltage != null)) {
+          pushLocalTelemetry({
+            timestamp: payload.timestamp || Date.now(),
+            batteryLevel: payload.batteryLevel,
+            voltage: payload.voltage,
+          });
+        }
+        if (
+          payload.temperature != null ||
+          payload.relativeHumidity != null ||
+          payload.barometricPressure != null ||
+          payload.gasResistance != null ||
+          payload.co2 != null
+        ) {
+          pushEnvTelemetry({
+            timestamp: payload.timestamp || Date.now(),
+            nodeNum: payload.nodeId,
+            temperature: payload.temperature,
+            relativeHumidity: payload.relativeHumidity,
+            barometricPressure: payload.barometricPressure,
+            gasResistance: payload.gasResistance,
+            co2: payload.co2,
+          });
+        }
+      });
+      const detachSignal = attachTypedPacketListener(identityId, 'node_info', (payload) => {
+        if (payload.snr == null && payload.rssi == null) return;
+        setSignalTelemetry((prev) =>
+          [
+            ...prev,
+            {
+              timestamp: payload.lastHeardAt ?? Date.now(),
+              snr: payload.snr,
+              rssi: payload.rssi,
+            },
+          ].slice(-MAX_TELEMETRY_POINTS),
+        );
+      });
+      const prevTelemetryDetach = telemetryDetachRef.current;
+      telemetryDetachRef.current = () => {
+        prevTelemetryDetach?.();
+        detachSignal();
+      };
     },
-    [detachIngest, state.myNodeNum],
+    [detachIngest, pushEnvTelemetry, pushLocalTelemetry, state.myNodeNum],
   );
 
   const prepareRfConnect = useCallback(
@@ -159,6 +230,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         });
       }
       setDeviceOwner(null);
+      setTelemetry([]);
+      setSignalTelemetry([]);
+      setEnvironmentTelemetry([]);
       setState({
         status: 'disconnected',
         myNodeNum: 0,
@@ -212,30 +286,66 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     }
   }, []);
 
-  const onDeviceSettings = useCallback((snap: { callsign: string; operatorName: string }) => {
-    if (!snap.callsign) return;
-    setDeviceOwner({
-      longName: snap.callsign,
-      shortName: snap.operatorName,
-      isLicensed: true,
-    });
-    void import('../lib/meshcom/meshcomCallsign')
-      .then(({ callsignToNodeId }) => {
-        const nodeId = callsignToNodeId(snap.callsign);
-        if (!nodeId) return;
-        setState((prev) => (prev.myNodeNum === nodeId ? prev : { ...prev, myNodeNum: nodeId }));
-        setConnection(identityIdRef.current, { myNodeNum: nodeId });
-        upsertNodeRecord(identityIdRef.current, {
-          nodeId,
+  const onDeviceSettings = useCallback(
+    (snap: MeshcomDeviceSettingsSnapshot) => {
+      const identityId = identityIdRef.current;
+      let nodeId = getConnection(identityId)?.myNodeNum ?? 0;
+      if (snap.callsign) {
+        setDeviceOwner({
           longName: snap.callsign,
-          shortName: (snap.operatorName || snap.callsign).slice(0, 4),
-          lastHeardAt: Date.now(),
+          shortName: snap.operatorName,
+          isLicensed: true,
         });
-      })
-      .catch((e: unknown) => {
-        console.warn('[useMeshcomRuntime] callsign node id ' + errLikeToLogString(e));
-      });
-  }, []);
+        const resolved = callsignToNodeId(snap.callsign);
+        if (resolved) {
+          nodeId = resolved;
+          setState((prev) =>
+            prev.myNodeNum === resolved ? prev : { ...prev, myNodeNum: resolved },
+          );
+          setConnection(identityId, { myNodeNum: resolved });
+          upsertNodeRecord(identityId, {
+            nodeId: resolved,
+            longName: snap.callsign,
+            shortName: (snap.operatorName || snap.callsign).slice(0, 4),
+            batteryLevel: snap.batteryLevel,
+            voltage: snap.voltage,
+            lastHeardAt: Date.now(),
+          });
+        }
+      }
+      if (snap.batteryLevel != null || snap.voltage != null) {
+        pushLocalTelemetry({
+          timestamp: snap.updatedAt,
+          batteryLevel: snap.batteryLevel,
+          voltage: snap.voltage,
+        });
+      }
+      if (
+        snap.temperatureC != null ||
+        snap.humidityPct != null ||
+        snap.pressureHpa != null ||
+        snap.gasResistance != null ||
+        snap.co2Ppm != null
+      ) {
+        const reading = {
+          temperature: snap.temperatureC,
+          relativeHumidity: snap.humidityPct,
+          barometricPressure: snap.pressureHpa,
+          gasResistance: snap.gasResistance,
+          co2: snap.co2Ppm,
+        };
+        pushEnvTelemetry({
+          timestamp: snap.updatedAt,
+          nodeNum: nodeId,
+          ...reading,
+        });
+        if (nodeId > 0) {
+          recordEnvironmentReading('meshcom', identityId, nodeId, reading, 'rf');
+        }
+      }
+    },
+    [pushEnvTelemetry, pushLocalTelemetry],
+  );
 
   const deviceCommands = useMeshcomDeviceCommands({
     resolveIdentityId,
@@ -265,6 +375,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         console.warn('[useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
       });
       if (type === 'serial' || type === 'ble') {
+        // `--info`/`{HELLO}` + `--wx` land battery/weather into Telemetry via onDeviceSettings.
         void refreshSettingsRef.current().catch((e: unknown) => {
           console.warn('[useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
         });
@@ -273,6 +384,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     },
     [attachIngestForIdentity, maybeAutoSettime],
   );
+
+  const requestRefresh = useCallback(async () => {
+    const type = state.connectionType;
+    if (type !== 'serial' && type !== 'ble') return;
+    await refreshSettingsRef.current();
+  }, [state.connectionType]);
 
   const connect = useCallback(
     async (type: MeshcomRfTransportType, httpAddress?: string, blePeripheralId?: string) => {
@@ -618,9 +735,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       queueStatus: null,
       ourPosition,
       gpsLoading,
-      telemetry: null,
-      signalTelemetry: null,
-      environmentTelemetry: null,
+      telemetry,
+      signalTelemetry,
+      environmentTelemetry,
       traceRouteResults: new Map(),
       neighborInfo: new Map(),
       channels: [],
@@ -665,7 +782,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       setNodeFavorited: async () => {},
       refreshNodesFromDb,
       refreshMessagesFromDb,
-      requestRefresh: asyncNoop,
+      requestRefresh,
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
@@ -686,6 +803,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     connectAutomatic,
     deviceCommands,
     deviceOwner,
+    environmentTelemetry,
     finalizeDriverDisconnect,
     getFullNodeLabel,
     getNodes,
@@ -702,10 +820,13 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     refreshMessagesFromDb,
     refreshNodesFromDb,
     refreshOurPosition,
+    requestRefresh,
     sendMessage,
     sendPositionToDevice,
     setOwner,
+    signalTelemetry,
     state,
+    telemetry,
   ]);
 }
 

@@ -134,15 +134,55 @@ describe('MeshComProtocol serial/BLE', () => {
     const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
 
     const info = new TextEncoder().encode(
-      'D{"TYP":"I","CALL":"OE1ABC-1","CTRY":"EU","BPIN":111111}',
+      'D{"TYP":"I","CALL":"OE1ABC-1","CTRY":"EU","BPIN":111111,"BATP":81,"BATV":4.05}',
     );
     conn.onData?.(info);
     expect(handle.deviceSettings.call).toBe('OE1ABC-1');
+    expect(handle.deviceSettings.battPercent).toBe(81);
     expect(events.some((e) => e.type === 'device_self_info')).toBe(true);
+    const battTelemetry = events.filter((e) => e.type === 'telemetry');
+    expect(battTelemetry.some((e) => e.payload.batteryLevel === 81)).toBe(true);
+
+    conn.onData?.(
+      new TextEncoder().encode('D{"TYP":"W","TEMP":20.1,"HUM":40,"PRES":1010,"CO2":400}'),
+    );
+    expect(handle.deviceSettings.temperatureC).toBe(20.1);
+    expect(events.some((e) => e.type === 'telemetry' && e.payload.temperature === 20.1)).toBe(true);
 
     conn.onData?.(new TextEncoder().encode('D{"TYP":"CONFFIN"}'));
     expect(handle.deviceSettings.complete).toBe(true);
     expect(confFinResolved).toBe(true);
+    unsub();
+  });
+
+  it('EXTUDP tele frames emit telemetry DomainEvents', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const tele = `${JSON.stringify({
+      type: 'tele',
+      src: 'OE1WX-1',
+      temp: 18.2,
+      hum: 60,
+      press: 1005,
+      batt: 55,
+      gasres: 90000,
+      co2: 450,
+    })}\r\n`;
+    conn.onData?.(new TextEncoder().encode(tele));
+
+    const telemetry = events.filter((e) => e.type === 'telemetry');
+    expect(telemetry).toHaveLength(1);
+    expect(telemetry[0]?.payload).toMatchObject({
+      batteryLevel: 55,
+      temperature: 18.2,
+      relativeHumidity: 60,
+      barometricPressure: 1005,
+      gasResistance: 90000,
+      co2: 450,
+    });
     unsub();
   });
 });

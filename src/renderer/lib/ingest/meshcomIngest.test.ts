@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  selectEnvironmentSeries,
+  useEnvironmentTelemetryStore,
+} from '../../stores/environmentTelemetryStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
@@ -30,6 +34,7 @@ describe('meshcomIngest', () => {
       .mockResolvedValue({ changes: 1 });
     useMessageStore.setState({ messages: {} });
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    useEnvironmentTelemetryStore.setState({ history: new Map() });
     clearRadioSelfPosition('meshcom');
   });
 
@@ -211,6 +216,58 @@ describe('meshcomIngest', () => {
       hwModel: 'HELTEC-V3',
       source: 'rf',
     });
+    detach();
+  });
+
+  it('telemetry updates battery and records environment history', () => {
+    const call = 'OE1TEL-1';
+    const nodeId = callsignToNodeId(call);
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [nodeId]: { nodeId, longName: call, lastHeardAt: 1 },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const detach = attachMeshcomIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId,
+          timestamp: 1_700_000_200_000,
+          batteryLevel: 66,
+          voltage: 3.9,
+          temperature: 17.5,
+          relativeHumidity: 44,
+          barometricPressure: 1002,
+          co2: 480,
+        },
+      },
+      ID,
+    );
+    expect(useNodeStore.getState().nodes[ID][nodeId]).toMatchObject({
+      batteryLevel: 66,
+      voltage: 3.9,
+    });
+    const series = selectEnvironmentSeries(
+      useEnvironmentTelemetryStore.getState(),
+      'meshcom',
+      ID,
+      nodeId,
+    );
+    expect(series.at(-1)?.reading).toMatchObject({
+      temperature: 17.5,
+      relativeHumidity: 44,
+      barometricPressure: 1002,
+      co2: 480,
+    });
+    expect(window.electronAPI.db.saveMeshcomContact).toHaveBeenCalledWith(
+      expect.objectContaining({ callsign: call, batt: 66 }),
+    );
     detach();
   });
 });

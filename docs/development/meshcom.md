@@ -45,10 +45,22 @@ Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPAB
 
 Radio → **Device Configuration** renders first-class sections (Display, Position / GPS, Sensors, Identity & groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status & debug, Power & OTA, KISS / misc) from the catalog in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).
 
-- **Read on connect**: after Serial/BLE attach, `refreshMeshcomDeviceSettings` loads the node’s current values — Serial via `--info` text parse, BLE via `{HELLO}` companion JSON (`TYP` I/SN/SW/G/SA/… then `CONFFIN`) with `--info` fallback. Snapshot prefills Device User / Country and Radio command rows (`meshcomDeviceSettings.ts`).
+- **Read on connect**: after Serial/BLE attach, `refreshMeshcomDeviceSettings` loads the node’s current values — Serial via `--info` text parse + `--wx` weather dump, BLE via `{HELLO}` companion JSON (`TYP` I/SN/SW/G/SA/W/… then `CONFFIN`) with `--info` / `--wx` fallback. Snapshot prefills Device User / Country and Radio command rows (`meshcomDeviceSettings.ts`) and seeds Telemetry.
 - **Country Apply** (above Device Configuration) saves `meshcomCountryCode` and, on Serial/BLE, sends `--setctry <code>` (reboots after ~15s on the node).
 - **Auto `--settime`**: app setting `meshcomAutoSettime` (default off). When enabled, after each Serial/BLE connect the runtime sends `--settime yyyy.mm.dd hh:mm:ss` in host UTC.
 - Meshtastic Device Role / Position / Power / WiFi / Display / Bluetooth shells stay off for MeshCom so the Radio tab is not an empty config heading.
+
+## Device telemetry
+
+`MESHCOM_CAPABILITIES.hasBatteryTelemetry` / `hasEnvironmentTelemetry` are on. Sources:
+
+| Source                                                   | Battery | Environment    |
+| -------------------------------------------------------- | ------- | -------------- |
+| BLE `TYP` I (`BATP`/`BATV`) + `TYP` W                    | yes     | yes            |
+| Serial `--info` (`BATT`) + `--wx` (`TEMP`/`HUM`/`QFE`/…) | yes     | yes            |
+| EXTUDP `tele` / `pos` (`batt`)                           | yes     | `tele` sensors |
+
+`MeshComProtocol` emits `telemetry` DomainEvents; `meshcomIngest` patches the node row and `recordEnvironmentReading('meshcom', …)`. The runtime also listens for chart points and seeds from the settings snapshot after connect / Telemetry refresh (HELLO can race ahead of ingest attach).
 
 ## Firmware release watch
 

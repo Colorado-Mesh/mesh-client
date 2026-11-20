@@ -5,13 +5,18 @@
 
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import type { MeshComDeviceHandle } from '../protocols/MeshComProtocol';
-import { MESHCOM_BLE_SETTINGS_WAIT_MS, MESHCOM_SERIAL_INFO_COLLECT_MS } from '../timeConstants';
+import {
+  MESHCOM_BLE_SETTINGS_WAIT_MS,
+  MESHCOM_SERIAL_INFO_COLLECT_MS,
+  MESHCOM_SERIAL_WX_COLLECT_MS,
+} from '../timeConstants';
 import type { IdentityId } from '../types';
 import { MESHCOM_BLE_HELLO } from './meshcomBleFrame';
 import { sendMeshcomDeviceCommand } from './meshcomDeviceCommands';
 import {
   emptyMeshcomDeviceSettingsAccum,
   mergeMeshcomSerialInfoText,
+  mergeMeshcomSerialWxText,
   type MeshcomDeviceSettingsSnapshot,
   snapshotMeshcomDeviceSettings,
 } from './meshcomDeviceSettings';
@@ -52,10 +57,15 @@ async function refreshViaSerialInfo(
   try {
     await sendMeshcomDeviceCommand(handle, '--info');
     await sleep(MESHCOM_SERIAL_INFO_COLLECT_MS);
+    mergeMeshcomSerialInfoText(handle.deviceSettings, lines.join('\n'));
+    lines.length = 0;
+    // Serial HELLO-equivalent does not dump weather; pull `--wx` for Telemetry.
+    await sendMeshcomDeviceCommand(handle, '--wx');
+    await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
+    mergeMeshcomSerialWxText(handle.deviceSettings, lines.join('\n'));
   } finally {
     detach();
   }
-  mergeMeshcomSerialInfoText(handle.deviceSettings, lines.join('\n'));
   handle.deviceSettings.complete = true;
   return snapshotMeshcomDeviceSettings(handle.deviceSettings);
 }
@@ -72,11 +82,14 @@ async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDevice
     await sendMeshcomDeviceCommand(handle, '--info');
     await waitForBleConffin(handle, MESHCOM_BLE_SETTINGS_WAIT_MS);
   }
+  // Fresh weather (HELLO may omit W; Telemetry refresh always re-pulls via TYP W).
+  await sendMeshcomDeviceCommand(handle, '--wx');
+  await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
   handle.deviceSettings.complete = true;
   return snapshotMeshcomDeviceSettings(handle.deviceSettings);
 }
 
-/** Read node settings over Serial (`--info`) or BLE (`{HELLO}` / `--info`). */
+/** Read node settings over Serial (`--info` + `--wx`) or BLE (`{HELLO}` / `--info` + `--wx`). */
 export async function refreshMeshcomDeviceSettings(
   handle: MeshComDeviceHandle,
   identityId: IdentityId,

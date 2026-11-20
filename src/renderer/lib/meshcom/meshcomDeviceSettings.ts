@@ -50,6 +50,17 @@ export interface MeshcomDeviceSettingsAccum {
   bme?: 'on' | 'off';
   bmp?: 'on' | 'off';
   onewire?: 'on' | 'off';
+  /** Battery percent from TYP I `BATP` or serial `--info`. */
+  battPercent?: number;
+  /** Battery volts from TYP I `BATV` or serial `--info`. */
+  battVoltage?: number;
+  /** Weather / sensors from TYP W or EXTUDP `tele`. */
+  temperatureC?: number;
+  humidityPct?: number;
+  pressureHpa?: number;
+  temperatureOutC?: number;
+  gasResistance?: number;
+  co2Ppm?: number;
   /** True after BLE `CONFFIN` or a finished serial `--info` collect window. */
   complete: boolean;
 }
@@ -60,8 +71,25 @@ export interface MeshcomDeviceSettingsSnapshot {
   callsign: string;
   operatorName: string;
   countryCode: string;
+  batteryLevel?: number;
+  voltage?: number;
+  temperatureC?: number;
+  humidityPct?: number;
+  pressureHpa?: number;
+  temperatureOutC?: number;
+  gasResistance?: number;
+  co2Ppm?: number;
   complete: boolean;
   updatedAt: number;
+}
+
+function asFiniteNumber(v: unknown): number | undefined {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim()) {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
 }
 
 function onOff(v: unknown): 'on' | 'off' | undefined {
@@ -116,12 +144,31 @@ export function mergeMeshcomBleSettingsJson(
       if (boost) accum.boost = boost;
       const fw = asString(doc.FWVER);
       if (fw) accum.fwver = fw;
+      const batp = asFiniteNumber(doc.BATP);
+      if (batp != null) accum.battPercent = batp;
+      const batv = asFiniteNumber(doc.BATV);
+      if (batv != null) accum.battVoltage = batv;
       const groups: string[] = [];
       for (let i = 0; i < 6; i++) {
         const g = asString(doc[`GCB${i}`]);
         if (g && g !== '0') groups.push(g);
       }
       if (groups.length > 0) accum.groups = groups.join(';');
+      break;
+    }
+    case 'W': {
+      const temp = asFiniteNumber(doc.TEMP);
+      if (temp != null) accum.temperatureC = temp;
+      const tout = asFiniteNumber(doc.TOUT);
+      if (tout != null) accum.temperatureOutC = tout;
+      const hum = asFiniteNumber(doc.HUM);
+      if (hum != null) accum.humidityPct = hum;
+      const press = asFiniteNumber(doc.PRES) ?? asFiniteNumber(doc.QNH);
+      if (press != null) accum.pressureHpa = press;
+      const gas = asFiniteNumber(doc.GAS);
+      if (gas != null) accum.gasResistance = gas;
+      const co2 = asFiniteNumber(doc.CO2);
+      if (co2 != null) accum.co2Ppm = co2;
       break;
     }
     case 'SN': {
@@ -265,12 +312,66 @@ export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, te
   if (maxv?.[1]) accum.maxv = maxv[1];
   const fw = /--MeshCom\s+(\S+)/i.exec(text);
   if (fw?.[1]) accum.fwver = fw[1];
+  const battV = /BATT\s+([\d.]+)\s*V/i.exec(text);
+  if (battV?.[1]) {
+    const n = Number.parseFloat(battV[1]);
+    if (Number.isFinite(n)) accum.battVoltage = n;
+  }
+  const battPct = /BATT\s+(\d+)\s*%/i.exec(text);
+  if (battPct?.[1]) {
+    const n = Number.parseInt(battPct[1], 10);
+    if (Number.isFinite(n)) accum.battPercent = n;
+  }
 
   const groups: string[] = [];
   for (const m of text.matchAll(/GC-(\d+):(\d+)/gi)) {
     if (m[2] && m[2] !== '0') groups.push(m[2]);
   }
   if (groups.length > 0) accum.groups = groups.join(';');
+}
+
+/**
+ * Parse Serial `--wx` console weather dump into the accumulator.
+ * Format (ICSSW firmware): `TEMP: … °C`, `HUM: … %rH`, `QFE`/`QNH`, `GAS`, `eCO2`, `TOUT`.
+ */
+export function mergeMeshcomSerialWxText(accum: MeshcomDeviceSettingsAccum, text: string): void {
+  const temp = /TEMP:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  if (temp?.[1]) {
+    const n = Number.parseFloat(temp[1]);
+    if (Number.isFinite(n)) accum.temperatureC = n;
+  }
+  const tout = /TOUT:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  if (tout?.[1]) {
+    const n = Number.parseFloat(tout[1]);
+    if (Number.isFinite(n)) accum.temperatureOutC = n;
+  }
+  const hum = /HUM:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  if (hum?.[1]) {
+    const n = Number.parseFloat(hum[1]);
+    if (Number.isFinite(n)) accum.humidityPct = n;
+  }
+  const qfe = /QFE:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  const qnh = /QNH:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  if (qfe?.[1]) {
+    const n = Number.parseFloat(qfe[1]);
+    if (Number.isFinite(n)) accum.pressureHpa = n;
+  } else if (qnh?.[1]) {
+    const n = Number.parseFloat(qnh[1]);
+    if (Number.isFinite(n)) accum.pressureHpa = n;
+  }
+  const gas = /GAS:\s*([+-]?\d+\.?\d*)\s*(kOhm|kohm|kΩ|Ohm|ohm|Ω)?/i.exec(text);
+  if (gas?.[1]) {
+    let n = Number.parseFloat(gas[1]);
+    if (Number.isFinite(n)) {
+      if (gas[2] && /^k/i.test(gas[2])) n *= 1000;
+      accum.gasResistance = n;
+    }
+  }
+  const co2 = /e?CO2:\s*([+-]?\d+\.?\d*)/i.exec(text);
+  if (co2?.[1]) {
+    const n = Number.parseFloat(co2[1]);
+    if (Number.isFinite(n)) accum.co2Ppm = n;
+  }
 }
 
 /** Map accumulator fields onto MeshCom Radio command ids. */
@@ -329,6 +430,14 @@ export function snapshotMeshcomDeviceSettings(
     callsign: accum.call ?? '',
     operatorName: accum.operatorName ?? '',
     countryCode: accum.country ?? '',
+    batteryLevel: accum.battPercent,
+    voltage: accum.battVoltage,
+    temperatureC: accum.temperatureC,
+    humidityPct: accum.humidityPct,
+    pressureHpa: accum.pressureHpa,
+    temperatureOutC: accum.temperatureOutC,
+    gasResistance: accum.gasResistance,
+    co2Ppm: accum.co2Ppm,
     complete: accum.complete,
     updatedAt,
   };
