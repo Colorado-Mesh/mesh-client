@@ -26,25 +26,13 @@ interface ConsoleEntry {
 
 const MAX_CONSOLE_ENTRIES = 120;
 
-function GroupFieldset({
-  anchorId,
-  legend,
-  children,
-}: {
-  anchorId?: string;
-  legend: string;
-  children: ReactNode;
-}) {
-  return (
-    <fieldset
-      {...(anchorId ? { 'data-setting-anchor': anchorId } : {})}
-      className="border-ink-600/80 space-y-3 rounded-lg border p-3"
-    >
-      <legend className="text-ink-200 px-1 text-sm font-medium">{legend}</legend>
-      {children}
-    </fieldset>
-  );
-}
+/** Groups that open by default so Device Configuration is not an empty shell. */
+const DEFAULT_OPEN_GROUPS: ReadonlySet<MeshcomCommandGroup> = new Set([
+  'display',
+  'position',
+  'network',
+  'identity',
+]);
 
 function readAutoSettime(): boolean {
   const parsed = parseStoredJson<{ meshcomAutoSettime?: unknown }>(
@@ -181,7 +169,7 @@ export default function MeshComDeviceCommandsSection({
   const settimePreview = formatMeshcomSettimeUtc();
   const linkOk = commands.available && !disabled;
 
-  const groupLegend = (group: MeshcomCommandGroup): string => {
+  const groupTitle = (group: MeshcomCommandGroup): string => {
     switch (group) {
       case 'display':
         return t('meshcomDeviceCommands.groups.display');
@@ -214,7 +202,7 @@ export default function MeshComDeviceCommandsSection({
     }
   };
 
-  const renderCommandRow = (cmd: MeshcomCommandDescriptor) => {
+  const renderCommandRow = (cmd: MeshcomCommandDescriptor): ReactNode => {
     const needsArg = cmd.argKind !== 'none' && cmd.argKind !== 'settime';
     const argValue = argById[cmd.id] ?? '';
     return (
@@ -286,11 +274,13 @@ export default function MeshComDeviceCommandsSection({
                 if (cmd.danger) {
                   try {
                     const line = buildMeshcomCommandLine(cmd, argValue);
-                    requestSend(line, true, redactMeshcomCommandForLog(line));
+                    requestSend(line, true, line);
                   } catch (e) {
-                    const msg = errLikeToLogString(e);
-                    console.warn('[MeshComDeviceCommands] build line failed ' + msg);
-                    pushConsole('error', msg);
+                    console.warn('[MeshComDeviceCommands] build/send failed', e);
+                    onToast?.(
+                      t('meshcomDeviceCommands.sendFailed', { detail: errLikeToLogString(e) }),
+                      'error',
+                    );
                   }
                   return;
                 }
@@ -308,44 +298,204 @@ export default function MeshComDeviceCommandsSection({
 
   return (
     <>
+      <p className="text-muted text-sm">{t('meshcomDeviceCommands.description')}</p>
+      {!commands.available ? (
+        <p className="text-sm text-orange-300/90">{t('meshcomDeviceCommands.requiresSerialBle')}</p>
+      ) : null}
+
       <SettingsCollapsible
-        title={t('meshcomDeviceCommands.summary')}
+        title={t('meshcomDeviceCommands.groups.clock')}
+        titleAs="span"
+        anchorId="radio.meshcomCommands.autoSettime"
+        defaultOpen
+      >
+        <Switch
+          checked={autoSettime}
+          disabled={disabled}
+          label={t('meshcomDeviceCommands.autoSettime')}
+          description={t('meshcomDeviceCommands.autoSettimeHint', { example: settimePreview })}
+          onChange={(next) => {
+            setAutoSettime(next);
+            mergeAppSetting('meshcomAutoSettime', next, 'MeshComDeviceCommandsSection');
+          }}
+        />
+        <button
+          type="button"
+          disabled={!linkOk || busy}
+          aria-label={t('meshcomDeviceCommands.settimeNow')}
+          onClick={() => {
+            void sendNow(`--settime ${settimePreview}`);
+          }}
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded-control border px-3 py-1.5 text-sm disabled:opacity-50"
+        >
+          {t('meshcomDeviceCommands.settimeNow')}
+        </button>
+      </SettingsCollapsible>
+
+      {MESHCOM_COMMAND_GROUPS.map((group) => {
+        const rows = byGroup.get(group) ?? [];
+        if (rows.length === 0) return null;
+        const body = <div className="space-y-3">{rows.map(renderCommandRow)}</div>;
+        const title = groupTitle(group);
+        const defaultOpen = DEFAULT_OPEN_GROUPS.has(group);
+        // anchorId literals must be static for settingsSearchAnchors (no template/object lookup).
+        switch (group) {
+          case 'display':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.display"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'position':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.position"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'sensors':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.sensors"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'identity':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.identity"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'network':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.network"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'gateway':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.gateway"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'bluetooth':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.bluetooth"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'neighbors':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.neighbors"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'mailbox':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.mailbox"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'debug':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.debug"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'power':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.power"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          case 'misc':
+            return (
+              <SettingsCollapsible
+                key={group}
+                title={title}
+                titleAs="span"
+                anchorId="radio.meshcomCommands.misc"
+                defaultOpen={defaultOpen}
+              >
+                {body}
+              </SettingsCollapsible>
+            );
+          default: {
+            const _exhaustive: never = group;
+            return _exhaustive;
+          }
+        }
+      })}
+
+      <SettingsCollapsible
+        title={t('meshcomDeviceCommands.groups.advanced')}
         titleAs="span"
         anchorId="radio.meshcomCommands.section"
       >
-        <p className="text-muted text-xs">{t('meshcomDeviceCommands.description')}</p>
-
-        <GroupFieldset
-          anchorId="radio.meshcomCommands.autoSettime"
-          legend={t('meshcomDeviceCommands.autoSettimeLegend')}
-        >
-          <Switch
-            checked={autoSettime}
-            disabled={disabled}
-            label={t('meshcomDeviceCommands.autoSettime')}
-            description={t('meshcomDeviceCommands.autoSettimeHint', { example: settimePreview })}
-            onChange={(next) => {
-              setAutoSettime(next);
-              mergeAppSetting('meshcomAutoSettime', next, 'MeshComDeviceCommandsSection');
-            }}
-          />
-          <button
-            type="button"
-            disabled={!linkOk || busy}
-            aria-label={t('meshcomDeviceCommands.settimeNow')}
-            onClick={() => {
-              void sendNow(`--settime ${settimePreview}`);
-            }}
-            className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded-control border px-3 py-1.5 text-sm disabled:opacity-50"
-          >
-            {t('meshcomDeviceCommands.settimeNow')}
-          </button>
-        </GroupFieldset>
-
-        {!commands.available ? (
-          <p className="text-muted text-sm">{t('meshcomDeviceCommands.requiresSerialBle')}</p>
-        ) : null}
-
         <div data-setting-anchor="radio.meshcomCommands.filter" className="space-y-1">
           <label htmlFor="meshcom-cmd-filter" className="text-muted text-sm">
             {t('meshcomDeviceCommands.filter')}
@@ -365,20 +515,7 @@ export default function MeshComDeviceCommandsSection({
           />
         </div>
 
-        {MESHCOM_COMMAND_GROUPS.map((group) => {
-          const rows = byGroup.get(group) ?? [];
-          if (rows.length === 0) return null;
-          return (
-            <GroupFieldset key={group} legend={groupLegend(group)}>
-              <div className="space-y-3">{rows.map(renderCommandRow)}</div>
-            </GroupFieldset>
-          );
-        })}
-
-        <GroupFieldset
-          anchorId="radio.meshcomCommands.console"
-          legend={t('meshcomDeviceCommands.groups.console')}
-        >
+        <div data-setting-anchor="radio.meshcomCommands.console" className="space-y-2">
           <p className="text-muted text-xs">{t('meshcomDeviceCommands.consoleHint')}</p>
           <ol
             aria-label={t('meshcomDeviceCommands.consoleLog')}
@@ -427,7 +564,7 @@ export default function MeshComDeviceCommandsSection({
               {t('meshcomDeviceCommands.consoleSend')}
             </button>
           </form>
-        </GroupFieldset>
+        </div>
       </SettingsCollapsible>
 
       {pending && (

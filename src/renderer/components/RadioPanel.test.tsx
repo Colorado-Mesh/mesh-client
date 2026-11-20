@@ -223,7 +223,14 @@ describe('RadioPanel MeshCom identity and device commands', () => {
 
     expect(screen.queryByRole('button', { name: /Apply LoRa/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Country Setting (--setctry)').length).toBeGreaterThan(0);
-    expect(await screen.findByText('MeshCom device commands')).toBeInTheDocument();
+    expect(screen.getByText('Device Configuration')).toBeInTheDocument();
+    // ICSSW command groups render as first-class Radio sections (not a buried CLI dump).
+    expect(await screen.findByText('Display')).toBeInTheDocument();
+    expect(screen.getByText('Position & time')).toBeInTheDocument();
+    expect(screen.getByText('Network & Wi-Fi')).toBeInTheDocument();
+    expect(screen.getByText('Bluetooth')).toBeInTheDocument();
+    expect(screen.getByText('--setcall')).toBeInTheDocument();
+    expect(screen.getByText('--btcode')).toBeInTheDocument();
 
     const userDetails = [...document.querySelectorAll('details')].find((d) => {
       const span = d.querySelector(':scope > summary > span');

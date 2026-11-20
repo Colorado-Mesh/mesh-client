@@ -9036,9 +9036,7 @@
     "operatorNameHint": "Optioneel. Verzonden met Toepassen op serienummer/BLE (max. 19 tekens)."
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshCom-apparaatopdrachten",
     "description": "Verstuur ICSSW-knooppuntopdrachten (--help, --settime, --setctry, …) via Seriële verbinding of BLE. Voor de app geschikte opdrachten komen overeen met de officiële MeshCom-app; opdrachten die alleen via seriële verbinding kunnen worden uitgevoerd, hebben een USB-consolelink nodig.",
-    "autoSettimeLegend": "Klok",
     "autoSettime": "Stel de knooppunttijd automatisch in bij verbinding",
     "autoSettimeHint": "Wanneer u via seriële verbinding of BLE bent verbonden, verzendt u --settime met de UTC-klok van deze computer (bijv. {{example}}).",
     "settimeNow": "Stel nu de tijd in (UTC)",
@@ -9077,8 +9075,11 @@
       "debug": "Status en debuggen",
       "power": "Stroom en OTA",
       "misc": "KISS / diversen",
-      "console": "Console"
+      "console": "Console",
+      "clock": "Klok",
+      "advanced": "Geavanceerde console en filter"
     },
-    "appEligible": "APP / Serieel"
+    "appEligible": "APP / Serieel",
+    "loadingConfig": "Apparaatconfiguratie wordt geladen…"
   }
 }

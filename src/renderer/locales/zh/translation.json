@@ -9036,9 +9036,7 @@
     "operatorNameHint": "可选。随“应用于序列号/BLE”（最多 19 个字符）一起发送。"
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshCom 设备命令",
     "description": "通过串行或BLE发送ICSSW节点命令（--help、--settime、--setctry……）。适用于应用的命令与官方MeshCom应用相匹配；仅适用于串行端口的命令需要USB控制台链接。",
-    "autoSettimeLegend": "按点儿",
     "autoSettime": "连接时自动设置节点时间",
     "autoSettimeHint": "通过串行或BLE连接时，使用此计算机的 UTC 时钟（例如 {{example}}）发送 --settime。",
     "settimeNow": "立即设置时间（UTC）",
@@ -9077,8 +9075,11 @@
       "debug": "状态和调试",
       "power": "电源和 OTA",
       "misc": "KISS / 其他",
-      "console": "控制平台"
+      "console": "控制平台",
+      "clock": "按点儿",
+      "advanced": "高级控制台和筛选器"
     },
-    "appEligible": "应用程序/序列号"
+    "appEligible": "应用程序/序列号",
+    "loadingConfig": "正在加载设备配置……"
   }
 }

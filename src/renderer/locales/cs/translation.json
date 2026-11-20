@@ -9121,9 +9121,7 @@
     "operatorNameHint": "Volitelné. Odesláno s možností Použít na sériové číslo/BLE (max. 19 znaků)."
   },
   "meshcomDeviceCommands": {
-    "summary": "Příkazy zařízení MeshCom",
     "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",
-    "autoSettimeLegend": "Hodiny",
     "autoSettime": "Automaticky nastavit čas uzlu při připojení",
     "autoSettimeHint": "Při připojení přes sériové rozhraní nebo BLE odešlete příkaz --settime s UTC časem tohoto počítače (např. {{example}}).",
     "settimeNow": "Nastavit aktuální čas (UTC)",
@@ -9162,8 +9160,11 @@
       "debug": "Stav a ladění",
       "power": "Napájení a OTA",
       "misc": "KISS / různé",
-      "console": "Konzola"
+      "console": "Konzola",
+      "clock": "Hodiny",
+      "advanced": "Pokročilá konzole a filtr"
     },
-    "appEligible": "Aplikace / Sériové číslo"
+    "appEligible": "Aplikace / Sériové číslo",
+    "loadingConfig": "Načítání konfigurace zařízení…"
   }
 }

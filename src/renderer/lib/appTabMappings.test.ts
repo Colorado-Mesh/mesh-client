@@ -160,6 +160,17 @@ describe('computeTabMappings', () => {
     expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Sniffer'));
   });
 
+  it('shows Radio for MeshCom via hasMeshcomDeviceCommands', () => {
+    const tabs = computeTabMappings(identityT, 'meshcom', MESHCOM_CAPABILITIES);
+    expect(MESHCOM_CAPABILITIES.hasMeshcomDeviceCommands).toBe(true);
+    expect(MESHCOM_CAPABILITIES.hasChannelConfig).toBe(false);
+    expect(MESHCOM_CAPABILITIES.hasJsonRadioConfigImport).toBe(false);
+    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('Radio'));
+    expect(
+      tabs.displayTabLabels[tabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Radio'))],
+    ).toBe('tabs.radio');
+  });
+
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {
     const tabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
     const expectedSlots: (typeof TAB_SLOT_IDS)[number][] = [

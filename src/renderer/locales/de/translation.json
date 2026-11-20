@@ -9036,9 +9036,7 @@
     "operatorNameHint": "Optional. Wird mit „Anwenden auf Seriennummer“/BLE (max. 19 Zeichen) gesendet."
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshCom-Gerätebefehle",
     "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",
-    "autoSettimeLegend": "Uhr",
     "autoSettime": "Knotenzeit bei Verbindung automatisch einstellen",
     "autoSettimeHint": "Wenn die Verbindung über seriell oder BLE hergestellt wird, senden Sie --settime mit der UTC-Uhr dieses Computers (z. B. {{example}}).",
     "settimeNow": "Zeit jetzt einstellen (UTC)",
@@ -9077,8 +9075,11 @@
       "debug": "Status und Debuggen",
       "power": "Stromversorgung und OTA",
       "misc": "KISS / Sonstiges",
-      "console": "Konsole"
+      "console": "Konsole",
+      "clock": "Uhr",
+      "advanced": "Erweiterte Konsole und Filter"
     },
-    "appEligible": "APP/Seriennummer"
+    "appEligible": "APP/Seriennummer",
+    "loadingConfig": "Gerätekonfiguration wird geladen …"
   }
 }

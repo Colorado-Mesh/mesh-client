@@ -9036,9 +9036,7 @@
     "operatorNameHint": "Facultatif. Envoyé avec Appliquer sur le numéro de série/BLE (19 caractères maximum)."
   },
   "meshcomDeviceCommands": {
-    "summary": "Commandes de l’appareil MeshCom",
     "description": "Envoyez les commandes du nœud ICSSW (--help, --settime, --setctry, …) via la liaison série ou BLE. Les commandes compatibles avec l’application correspondent à celles de l’application officielle MeshCom ; les commandes uniquement série nécessitent un lien vers la console USB.",
-    "autoSettimeLegend": "Horloge",
     "autoSettime": "Régler automatiquement l’heure du nœud lors de la connexion",
     "autoSettimeHint": "Lorsqu’il est connecté via une connexion série ou BLE, envoyez --settime avec l’horloge UTC de cet ordinateur (par exemple, {{example}}).",
     "settimeNow": "Régler l'heure maintenant (UTC)",
@@ -9077,8 +9075,11 @@
       "debug": "Statut et débogage",
       "power": "Alimentation et OTA",
       "misc": "KISS / divers",
-      "console": "Console"
+      "console": "Console",
+      "clock": "Horloge",
+      "advanced": "Console et filtre avancés"
     },
-    "appEligible": "APPLICATION/Numéro de série"
+    "appEligible": "APPLICATION/Numéro de série",
+    "loadingConfig": "Chargement de la configuration de l’appareil…"
   }
 }

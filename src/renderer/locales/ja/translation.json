@@ -9036,9 +9036,7 @@
     "operatorNameHint": "オプション。シリアル番号/BLEに適用して送信（最大19文字）。"
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshComデバイスコマンド",
     "description": "ICSSWノードコマンド（--help、--settime、--setctry、…）をシリアルまたはBLE経由で送信します。アプリ対応コマンドは、公式のMeshComアプリと一致します。シリアル専用コマンドには、USBコンソールリンクが必要です。",
-    "autoSettimeLegend": "時計",
     "autoSettime": "接続時にノード時刻を自動的に設定する",
     "autoSettimeHint": "シリアルまたはBLE経由で接続している場合は、このコンピュータのUTCクロック（例：{{example}}）で--settimeを送信します。",
     "settimeNow": "現在時刻を設定（UTC）",
@@ -9077,8 +9075,11 @@
       "debug": "ステータスとデバッグ",
       "power": "電源とOTA",
       "misc": "KISS /その他",
-      "console": "ゲーム機:"
+      "console": "ゲーム機:",
+      "clock": "時計",
+      "advanced": "高度なコンソールとフィルター"
     },
-    "appEligible": "アプリ/シリアル番号"
+    "appEligible": "アプリ/シリアル番号",
+    "loadingConfig": "デバイス構成を読み込み中…"
   }
 }

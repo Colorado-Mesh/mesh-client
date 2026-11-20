@@ -9036,9 +9036,7 @@
     "operatorNameHint": "선택 사항. '일련번호에 적용'/BLE과(와) 함께 전송(최대 19자)."
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshCom 장치 명령",
     "description": "직렬 또는 BLE을 통해 ICSSW 노드 명령(--help, --settime, --setctry, …)을 전송합니다. 앱에서 사용할 수 있는 명령은 공식 MeshCom 앱과 일치합니다. 직렬 전용 명령은 USB 콘솔 링크가 필요합니다.",
-    "autoSettimeLegend": "클럭",
     "autoSettime": "연결 시 노드 시간 자동 설정",
     "autoSettimeHint": "직렬 또는 BLE을(를) 통해 연결된 경우, 이 컴퓨터의 UTC 시계(--settime)를 전송합니다(예: {{example}}).",
     "settimeNow": "현재 시간 설정(UTC)",
@@ -9077,8 +9075,11 @@
       "debug": "상태 및 디버그",
       "power": "전원 및 OTA",
       "misc": "KISS / 기타",
-      "console": "콘솔"
+      "console": "콘솔",
+      "clock": "클럭",
+      "advanced": "고급 콘솔 및 필터"
     },
-    "appEligible": "앱/일련번호"
+    "appEligible": "앱/일련번호",
+    "loadingConfig": "장치 구성 로드 중..."
   }
 }

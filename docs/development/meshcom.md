@@ -39,12 +39,15 @@ MeshCom is **opt-in**: default `hiddenProtocols` includes `meshcom`. Unchecking 
 
 Re-enabling clears the latch and shows MeshCom again after the license acknowledgment (first time only).
 
-## Device commands (Radio panel)
+## Device configuration (Radio panel)
 
-Capability `hasMeshcomDeviceCommands`. Catalog: [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts) (ICSSW [node commands](https://icssw.org/en/meshcom-kommandos-cl-gw/) — APP ✅ and serial-only ❌, plus neighbor/mailbox/KISS helpers). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS carry chat only.
+Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPABILITY_REQUIREMENTS` — MeshCom has neither `hasChannelConfig` nor MeshCore `hasJsonRadioConfigImport`). MeshCom has **no** Meshtastic protobuf config slices — every ICSSW [node command](https://icssw.org/en/meshcom-kommandos-cl-gw/) is applied as a `--` console line over Serial/BLE.
 
-- **Country Apply** saves `meshcomCountryCode` and, on Serial/BLE, sends `--setctry <code>` (reboots after ~15s on the node).
+Radio → **Device Configuration** renders first-class sections (Display, Position / GPS, Sensors, Identity & groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status & debug, Power & OTA, KISS / misc) from the catalog in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).
+
+- **Country Apply** (above Device Configuration) saves `meshcomCountryCode` and, on Serial/BLE, sends `--setctry <code>` (reboots after ~15s on the node).
 - **Auto `--settime`**: app setting `meshcomAutoSettime` (default off). When enabled, after each Serial/BLE connect the runtime sends `--settime yyyy.mm.dd hh:mm:ss` in host UTC.
+- Meshtastic Device Role / Position / Power / WiFi / Display / Bluetooth shells stay off for MeshCom so the Radio tab is not an empty config heading.
 
 ## Firmware release watch
 

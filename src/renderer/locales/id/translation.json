@@ -9036,9 +9036,7 @@
     "operatorNameHint": "Opsional. Dikirim dengan Terapkan pada Seri/BLE (maksimal 19 karakter)."
   },
   "meshcomDeviceCommands": {
-    "summary": "Perintah perangkat MeshCom",
     "description": "Kirim perintah node ICSSW (--help, --settime, --setctry, …) melalui Serial atau BLE. Perintah yang memenuhi syarat APLIKASI sesuai dengan aplikasi MeshCom resmi; perintah khusus serial memerlukan tautan konsol USB.",
-    "autoSettimeLegend": "Jam",
     "autoSettime": "Atur waktu node secara otomatis saat terhubung",
     "autoSettimeHint": "Saat terhubung melalui Serial atau BLE, kirim --settime dengan jam UTC komputer ini (misalnya {{example}}).",
     "settimeNow": "Atur waktu sekarang (UTC)",
@@ -9077,8 +9075,11 @@
       "debug": "Status & debug",
       "power": "Daya & OTA",
       "misc": "KISS / lain-lain",
-      "console": "Konsol"
+      "console": "Konsol",
+      "clock": "Jam",
+      "advanced": "Konsol & filter canggih"
     },
-    "appEligible": "APP / Seri"
+    "appEligible": "APP / Seri",
+    "loadingConfig": "Memuat konfigurasi perangkat…"
   }
 }

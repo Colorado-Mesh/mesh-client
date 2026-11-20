@@ -37,7 +37,6 @@ const CONTACTS = 'meshcoreContactSettings.contactManagement';
 const CONTACTS_APP = 'meshcoreContactSettings.contactsListAppHeading';
 const TELEMETRY_PRIVACY = 'meshcoreTelemetryPrivacy.summary';
 const COMPANION_CLI = 'meshcoreCompanionCli.summary';
-const MESHCOM_CMDS = 'meshcomDeviceCommands.summary';
 
 const radioEntries: readonly SettingSearchEntry[] = [
   {
@@ -854,25 +853,108 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: hasMeshcomDeviceCommands,
   },
   {
-    id: 'radio.meshcomCommands.section',
+    id: 'radio.meshcomCommands.autoSettime',
     slot: 'Radio',
-    labelKey: MESHCOM_CMDS,
-    keywords: ['meshcom', 'settime', 'command', 'console', 'icssw', 'cli'],
+    labelKey: 'meshcomDeviceCommands.groups.clock',
+    keywords: ['settime', 'clock', 'utc', 'time', 'sync', 'meshcom'],
     visible: hasMeshcomDeviceCommands,
   },
   {
-    id: 'radio.meshcomCommands.autoSettime',
+    id: 'radio.meshcomCommands.display',
     slot: 'Radio',
-    labelKey: 'meshcomDeviceCommands.autoSettime',
-    sectionKey: MESHCOM_CMDS,
-    keywords: ['settime', 'clock', 'utc', 'time', 'sync'],
+    labelKey: 'meshcomDeviceCommands.groups.display',
+    keywords: ['display', 'volt', 'proz', 'button', 'rotate', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.position',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.position',
+    keywords: ['gps', 'track', 'setlat', 'setlon', 'postime', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.sensors',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.sensors',
+    keywords: ['bme', 'bmp', 'wx', 'onewire', 'sensor', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.identity',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.identity',
+    keywords: ['setcall', 'setgrc', 'aprscomment', 'nomsgall', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.network',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.network',
+    keywords: ['wifi', 'ssid', 'webserver', 'extudp', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.gateway',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.gateway',
+    keywords: ['gateway', 'hamnet', 'inet', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.bluetooth',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.bluetooth',
+    keywords: ['bluetooth', 'btcode', 'ble', 'pin', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.neighbors',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.neighbors',
+    keywords: ['neighbours', 'nbr', 'relay', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.mailbox',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.mailbox',
+    keywords: ['store', 'mbox', 'mailbox', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.debug',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.debug',
+    keywords: ['info', 'mheard', 'debug', 'dumpsettings', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.power',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.power',
+    keywords: ['reboot', 'deepsleep', 'ota', 'mesh', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.misc',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.misc',
+    keywords: ['kiss', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.section',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.advanced',
+    keywords: ['meshcom', 'console', 'filter', 'icssw', 'cli', 'advanced'],
     visible: hasMeshcomDeviceCommands,
   },
   {
     id: 'radio.meshcomCommands.filter',
     slot: 'Radio',
     labelKey: 'meshcomDeviceCommands.filter',
-    sectionKey: MESHCOM_CMDS,
+    sectionKey: 'meshcomDeviceCommands.groups.advanced',
     keywords: ['search', 'filter', 'commands'],
     visible: hasMeshcomDeviceCommands,
   },
@@ -880,7 +962,7 @@ const radioEntries: readonly SettingSearchEntry[] = [
     id: 'radio.meshcomCommands.console',
     slot: 'Radio',
     labelKey: 'meshcomDeviceCommands.groups.console',
-    sectionKey: MESHCOM_CMDS,
+    sectionKey: 'meshcomDeviceCommands.groups.advanced',
     keywords: ['console', 'terminal', 'command'],
     visible: hasMeshcomDeviceCommands,
   },
@@ -1306,11 +1388,12 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcoreCompanionCli.copyIp': 'copy-IP button inside the indexed WiFi group',
     'meshcoreCompanionCli.ipCopied': 'copy-IP toast, not a control',
     'meshcoreCompanionCli.console*': 'console log, input and send inside the indexed Console group',
-    'meshcomDeviceCommands.description': 'intro text of the indexed MeshCom commands section',
-    'meshcomDeviceCommands.autoSettimeLegend': 'fieldset legend of the indexed auto-settime group',
+    'meshcomDeviceCommands.loadingConfig': 'Suspense fallback while MeshCom config chunks load',
+    'meshcomDeviceCommands.description': 'intro text above MeshCom device configuration sections',
+    'meshcomDeviceCommands.autoSettime': 'switch label inside the indexed clock section',
     'meshcomDeviceCommands.autoSettimeHint': 'help text of the indexed auto-settime switch',
-    'meshcomDeviceCommands.settimeNow': 'one-shot button inside the indexed auto-settime group',
-    'meshcomDeviceCommands.requiresSerialBle': 'transport notice inside the indexed section',
+    'meshcomDeviceCommands.settimeNow': 'one-shot button inside the indexed clock section',
+    'meshcomDeviceCommands.requiresSerialBle': 'transport notice above MeshCom config sections',
     'meshcomDeviceCommands.filterPlaceholder': 'placeholder of the indexed filter field',
     'meshcomDeviceCommands.serialOnly': 'badge text on serial-only command rows',
     'meshcomDeviceCommands.run': 'run button label on command rows',
@@ -1328,30 +1411,6 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcomDeviceCommands.consoleSend': 'send button of the indexed console',
     'meshcomDeviceCommands.confirmDanger.*': 'confirmation dialog for dangerous commands',
     'meshcomDeviceCommands.appEligible': 'badge text on APP-eligible command rows',
-    'meshcomDeviceCommands.groups.display':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.position':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.sensors':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.identity':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.network':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.gateway':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.bluetooth':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.neighbors':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.mailbox':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.debug':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.power':
-      'fieldset legend inside the indexed MeshCom commands section',
-    'meshcomDeviceCommands.groups.misc':
-      'fieldset legend inside the indexed MeshCom commands section',
     'meshcom.connectionHint': 'help text under the indexed country setting',
     'meshcom.callsignHint': 'help text under the indexed MeshCom callsign field',
     'meshcom.operatorNamePlaceholder': 'placeholder of the indexed MeshCom operator field',

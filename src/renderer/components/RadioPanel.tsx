@@ -2676,8 +2676,24 @@ export default function RadioPanel({
         {t('radioPanel.sectionGroupDevice')}
       </h3>
 
+      {/* MeshCom: ICSSW node commands as first-class Radio sections (Display, GPS, Wi‑Fi, …). */}
+      {capabilities?.hasMeshcomDeviceCommands && meshcomDeviceCommands ? (
+        <Suspense
+          fallback={
+            <p className="text-muted text-sm">{t('meshcomDeviceCommands.loadingConfig')}</p>
+          }
+        >
+          <MeshComDeviceCommandsSection
+            key={identityId ?? 'meshcom-device-commands'}
+            commands={meshcomDeviceCommands}
+            disabled={disabled}
+            onToast={addToast}
+          />
+        </Suspense>
+      ) : null}
+
       {/* ═══ Device Role ═══ */}
-      {capabilities?.hasDeviceRoleConfig !== false && (
+      {capabilities?.hasDeviceRoleConfig !== false && !capabilities?.hasMeshcomDeviceCommands && (
         <ConfigSection
           anchorId="radio.device.section"
           title={t('radioPanel.sectionDeviceRole')}
@@ -2831,299 +2847,301 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
-      {/* ═══ Position / GPS ═══ */}
-      <ConfigSection
-        anchorId="radio.position.section"
-        title={t('radioPanel.sectionPositionGps')}
-        onApply={
-          capabilities?.hasFullPositionConfig === false
-            ? undefined
-            : () =>
-                applyConfigWithExtra(
-                  t('radioPanel.sectionPositionGps'),
-                  'position',
-                  {
-                    positionBroadcastSecs,
-                    gpsUpdateInterval,
-                    fixedPosition,
-                    gpsMode,
-                    positionPrecision,
-                    positionBroadcastSmartEnabled: smartPositionEnabled,
-                    broadcastSmartMinimumDistance: smartPositionMinDistance,
-                    broadcastSmartMinimumIntervalSecs: smartPositionMinInterval,
-                  },
-                  positionExtra,
-                )
-        }
-        applying={applyingSection === 'position'}
-        status={sectionStatus('position')}
-        disabled={positionApplyDisabled}
-      >
-        {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
-          <p className="text-xs text-orange-300/90">
-            {t('radioPanel.waitingForConfigSection', {
-              section: t('radioPanel.sectionPositionGps'),
-            })}
-          </p>
-        )}
-        {capabilities?.hasFullPositionConfig !== false && (
-          <>
-            <ConfigNumber
-              anchorId="radio.position.broadcastInterval"
-              label={t('radioPanel.positionBroadcastIntervalLabel')}
-              value={positionBroadcastSecs}
-              onChange={setPositionBroadcastSecs}
-              disabled={disabled || applyingSection !== null}
-              min={0}
-              max={86400}
-              unit={t('radioPanel.secondsUnit')}
-              description={t('radioPanel.positionBroadcastIntervalDesc')}
-            />
-            <ConfigNumber
-              anchorId="radio.position.gpsUpdateInterval"
-              label={t('radioPanel.gpsUpdateIntervalLabel')}
-              value={gpsUpdateInterval}
-              onChange={setGpsUpdateInterval}
-              disabled={disabled || applyingSection !== null}
-              min={0}
-              max={86400}
-              unit={t('radioPanel.secondsUnit')}
-              description={t('radioPanel.gpsUpdateIntervalDesc')}
-            />
-            <ConfigSelect
-              anchorId="radio.position.gpsMode"
-              label={t('radioPanel.gpsModeLabel')}
-              value={gpsMode}
-              options={[
-                { value: 0, label: t('radioPanel.gpsModeDisabled') },
-                { value: 1, label: t('radioPanel.gpsModeEnabled') },
-                { value: 2, label: t('radioPanel.gpsModeNotPresent') },
-              ]}
-              onChange={setGpsMode}
-              disabled={disabled || applyingSection !== null}
-              description={t('radioPanel.gpsModeDesc')}
-            />
-            <ConfigNumber
-              anchorId="radio.position.precision"
-              label={t('radioPanel.positionPrecisionLabel')}
-              value={positionPrecision}
-              onChange={setPositionPrecision}
-              disabled={disabled || applyingSection !== null}
-              min={1}
-              max={19}
-              description={t('radioPanel.positionPrecisionDesc')}
-            />
-            <ConfigToggle
-              anchorId="radio.position.smartBroadcast"
-              label={t('radioPanel.smartPositionBroadcastLabel')}
-              checked={smartPositionEnabled}
-              onChange={setSmartPositionEnabled}
-              disabled={disabled || applyingSection !== null}
-              description={t('radioPanel.smartPositionBroadcastDesc')}
-            />
-            {smartPositionEnabled && (
-              <div className="border-ink-700 space-y-4 border-l pl-3">
-                <ConfigNumber
-                  anchorId="radio.position.smartMinDistance"
-                  label={t('radioPanel.minDistanceTriggerLabel')}
-                  value={smartPositionMinDistance}
-                  onChange={setSmartPositionMinDistance}
-                  disabled={disabled || applyingSection !== null}
-                  min={0}
-                  unit={t('radioPanel.metersUnit')}
-                />
-                <ConfigNumber
-                  anchorId="radio.position.smartMinInterval"
-                  label={t('radioPanel.minIntervalLabel')}
-                  value={smartPositionMinInterval}
-                  onChange={setSmartPositionMinInterval}
-                  disabled={disabled || applyingSection !== null}
-                  min={0}
-                  unit={t('radioPanel.secondsUnit')}
-                />
-              </div>
-            )}
-            <ConfigToggle
-              anchorId="radio.position.fixedPosition"
-              label={t('radioPanel.fixedPositionLabel')}
-              checked={fixedPosition}
-              onChange={setFixedPosition}
-              disabled={disabled || applyingSection !== null}
-              description={t('radioPanel.fixedPositionDesc')}
-            />
-            <MeshtasticExtraConfigField
-              anchorId="radio.position.flags"
-              spec={POSITION_EXTRA_FIELDS.positionFlags}
-              state={positionExtra}
-              disabled={disabled || applyingSection !== null}
-            />
-            <MeshtasticAdvancedHardwareGroup>
-              <MeshtasticExtraConfigField
-                spec={POSITION_EXTRA_FIELDS.rxGpio}
-                state={positionExtra}
-                disabled={disabled || applyingSection !== null}
-              />
-              <MeshtasticExtraConfigField
-                spec={POSITION_EXTRA_FIELDS.txGpio}
-                state={positionExtra}
-                disabled={disabled || applyingSection !== null}
-              />
-              <MeshtasticExtraConfigField
-                spec={POSITION_EXTRA_FIELDS.gpsEnGpio}
-                state={positionExtra}
-                disabled={disabled || applyingSection !== null}
-              />
-            </MeshtasticAdvancedHardwareGroup>
-          </>
-        )}
-        {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
-        {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
-        {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
-          <div
-            data-setting-anchor="radio.position.sendToDevice"
-            className="border-ink-700 space-y-3 border-t pt-2"
-          >
-            {capabilities?.hasFullPositionConfig === false &&
-              (() => {
-                const advertised = formatMeshcoreAdvertisedPositionDegrees(
-                  meshcoreSelfInfo?.advLat,
-                  meshcoreSelfInfo?.advLon,
-                );
-                if (!advertised) return null;
-                return (
-                  <p className="text-muted text-xs">
-                    {t('radioPanel.advertisedPositionLabel', {
-                      lat: advertised.lat,
-                      lon: advertised.lon,
-                    })}
-                  </p>
-                );
-              })()}
-            <p className="text-muted text-xs">
-              {t('radioPanel.setCoordinatesHint')}
-              {ourPosition && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    meshcorePositionFormDirtyRef.current = true;
-                    setLatStr(String(ourPosition.lat));
-                    setLonStr(String(ourPosition.lon));
-                    const a = ourPosition.altitudeMeters;
-                    if (a != null && Number.isFinite(a)) {
-                      setAltStr(String(a));
-                    }
-                  }}
-                  className="text-brand-green ml-2 underline hover:opacity-80"
-                >
-                  {t('radioPanel.useCurrentGps')}
-                </button>
-              )}
+      {/* ═══ Position / GPS ═══ (Meshtastic / MeshCore — MeshCom uses ICSSW --setlat/--gps/…) */}
+      {!capabilities?.hasMeshcomDeviceCommands && (
+        <ConfigSection
+          anchorId="radio.position.section"
+          title={t('radioPanel.sectionPositionGps')}
+          onApply={
+            capabilities?.hasFullPositionConfig === false
+              ? undefined
+              : () =>
+                  applyConfigWithExtra(
+                    t('radioPanel.sectionPositionGps'),
+                    'position',
+                    {
+                      positionBroadcastSecs,
+                      gpsUpdateInterval,
+                      fixedPosition,
+                      gpsMode,
+                      positionPrecision,
+                      positionBroadcastSmartEnabled: smartPositionEnabled,
+                      broadcastSmartMinimumDistance: smartPositionMinDistance,
+                      broadcastSmartMinimumIntervalSecs: smartPositionMinInterval,
+                    },
+                    positionExtra,
+                  )
+          }
+          applying={applyingSection === 'position'}
+          status={sectionStatus('position')}
+          disabled={positionApplyDisabled}
+        >
+          {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
+            <p className="text-xs text-orange-300/90">
+              {t('radioPanel.waitingForConfigSection', {
+                section: t('radioPanel.sectionPositionGps'),
+              })}
             </p>
-            <div className="space-y-1">
-              <label htmlFor="radio-fixed-lat" className="text-muted text-sm">
-                {t('radioPanel.latitudeLabel')}
-              </label>
-              <input
-                id="radio-fixed-lat"
-                type="text"
-                inputMode="decimal"
-                value={latStr}
-                onChange={(e) => {
-                  meshcorePositionFormDirtyRef.current = true;
-                  setLatStr(e.target.value);
-                }}
+          )}
+          {capabilities?.hasFullPositionConfig !== false && (
+            <>
+              <ConfigNumber
+                anchorId="radio.position.broadcastInterval"
+                label={t('radioPanel.positionBroadcastIntervalLabel')}
+                value={positionBroadcastSecs}
+                onChange={setPositionBroadcastSecs}
                 disabled={disabled || applyingSection !== null}
-                placeholder="0.000000"
-                className={`${INPUT_BOX_CLASS} w-36`}
+                min={0}
+                max={86400}
+                unit={t('radioPanel.secondsUnit')}
+                description={t('radioPanel.positionBroadcastIntervalDesc')}
               />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="radio-fixed-lon" className="text-muted text-sm">
-                {t('radioPanel.longitudeLabel')}
-              </label>
-              <input
-                id="radio-fixed-lon"
-                type="text"
-                inputMode="decimal"
-                value={lonStr}
-                onChange={(e) => {
-                  meshcorePositionFormDirtyRef.current = true;
-                  setLonStr(e.target.value);
-                }}
+              <ConfigNumber
+                anchorId="radio.position.gpsUpdateInterval"
+                label={t('radioPanel.gpsUpdateIntervalLabel')}
+                value={gpsUpdateInterval}
+                onChange={setGpsUpdateInterval}
                 disabled={disabled || applyingSection !== null}
-                placeholder="0.000000"
-                className={`${INPUT_BOX_CLASS} w-36`}
+                min={0}
+                max={86400}
+                unit={t('radioPanel.secondsUnit')}
+                description={t('radioPanel.gpsUpdateIntervalDesc')}
               />
-            </div>
-            {(capabilities?.hasFullPositionConfig !== false ||
-              capabilities?.hasMeshcomDeviceCommands) && (
+              <ConfigSelect
+                anchorId="radio.position.gpsMode"
+                label={t('radioPanel.gpsModeLabel')}
+                value={gpsMode}
+                options={[
+                  { value: 0, label: t('radioPanel.gpsModeDisabled') },
+                  { value: 1, label: t('radioPanel.gpsModeEnabled') },
+                  { value: 2, label: t('radioPanel.gpsModeNotPresent') },
+                ]}
+                onChange={setGpsMode}
+                disabled={disabled || applyingSection !== null}
+                description={t('radioPanel.gpsModeDesc')}
+              />
+              <ConfigNumber
+                anchorId="radio.position.precision"
+                label={t('radioPanel.positionPrecisionLabel')}
+                value={positionPrecision}
+                onChange={setPositionPrecision}
+                disabled={disabled || applyingSection !== null}
+                min={1}
+                max={19}
+                description={t('radioPanel.positionPrecisionDesc')}
+              />
+              <ConfigToggle
+                anchorId="radio.position.smartBroadcast"
+                label={t('radioPanel.smartPositionBroadcastLabel')}
+                checked={smartPositionEnabled}
+                onChange={setSmartPositionEnabled}
+                disabled={disabled || applyingSection !== null}
+                description={t('radioPanel.smartPositionBroadcastDesc')}
+              />
+              {smartPositionEnabled && (
+                <div className="border-ink-700 space-y-4 border-l pl-3">
+                  <ConfigNumber
+                    anchorId="radio.position.smartMinDistance"
+                    label={t('radioPanel.minDistanceTriggerLabel')}
+                    value={smartPositionMinDistance}
+                    onChange={setSmartPositionMinDistance}
+                    disabled={disabled || applyingSection !== null}
+                    min={0}
+                    unit={t('radioPanel.metersUnit')}
+                  />
+                  <ConfigNumber
+                    anchorId="radio.position.smartMinInterval"
+                    label={t('radioPanel.minIntervalLabel')}
+                    value={smartPositionMinInterval}
+                    onChange={setSmartPositionMinInterval}
+                    disabled={disabled || applyingSection !== null}
+                    min={0}
+                    unit={t('radioPanel.secondsUnit')}
+                  />
+                </div>
+              )}
+              <ConfigToggle
+                anchorId="radio.position.fixedPosition"
+                label={t('radioPanel.fixedPositionLabel')}
+                checked={fixedPosition}
+                onChange={setFixedPosition}
+                disabled={disabled || applyingSection !== null}
+                description={t('radioPanel.fixedPositionDesc')}
+              />
+              <MeshtasticExtraConfigField
+                anchorId="radio.position.flags"
+                spec={POSITION_EXTRA_FIELDS.positionFlags}
+                state={positionExtra}
+                disabled={disabled || applyingSection !== null}
+              />
+              <MeshtasticAdvancedHardwareGroup>
+                <MeshtasticExtraConfigField
+                  spec={POSITION_EXTRA_FIELDS.rxGpio}
+                  state={positionExtra}
+                  disabled={disabled || applyingSection !== null}
+                />
+                <MeshtasticExtraConfigField
+                  spec={POSITION_EXTRA_FIELDS.txGpio}
+                  state={positionExtra}
+                  disabled={disabled || applyingSection !== null}
+                />
+                <MeshtasticExtraConfigField
+                  spec={POSITION_EXTRA_FIELDS.gpsEnGpio}
+                  state={positionExtra}
+                  disabled={disabled || applyingSection !== null}
+                />
+              </MeshtasticAdvancedHardwareGroup>
+            </>
+          )}
+          {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
+          {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
+          {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
+            <div
+              data-setting-anchor="radio.position.sendToDevice"
+              className="border-ink-700 space-y-3 border-t pt-2"
+            >
+              {capabilities?.hasFullPositionConfig === false &&
+                (() => {
+                  const advertised = formatMeshcoreAdvertisedPositionDegrees(
+                    meshcoreSelfInfo?.advLat,
+                    meshcoreSelfInfo?.advLon,
+                  );
+                  if (!advertised) return null;
+                  return (
+                    <p className="text-muted text-xs">
+                      {t('radioPanel.advertisedPositionLabel', {
+                        lat: advertised.lat,
+                        lon: advertised.lon,
+                      })}
+                    </p>
+                  );
+                })()}
+              <p className="text-muted text-xs">
+                {t('radioPanel.setCoordinatesHint')}
+                {ourPosition && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      meshcorePositionFormDirtyRef.current = true;
+                      setLatStr(String(ourPosition.lat));
+                      setLonStr(String(ourPosition.lon));
+                      const a = ourPosition.altitudeMeters;
+                      if (a != null && Number.isFinite(a)) {
+                        setAltStr(String(a));
+                      }
+                    }}
+                    className="text-brand-green ml-2 underline hover:opacity-80"
+                  >
+                    {t('radioPanel.useCurrentGps')}
+                  </button>
+                )}
+              </p>
               <div className="space-y-1">
-                <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
-                  {t('radioPanel.altitudeMetersLabel')}
+                <label htmlFor="radio-fixed-lat" className="text-muted text-sm">
+                  {t('radioPanel.latitudeLabel')}
                 </label>
                 <input
-                  id="radio-fixed-alt"
+                  id="radio-fixed-lat"
                   type="text"
                   inputMode="decimal"
-                  value={altStr}
+                  value={latStr}
                   onChange={(e) => {
-                    setAltStr(e.target.value);
+                    meshcorePositionFormDirtyRef.current = true;
+                    setLatStr(e.target.value);
                   }}
                   disabled={disabled || applyingSection !== null}
-                  placeholder="0"
+                  placeholder="0.000000"
                   className={`${INPUT_BOX_CLASS} w-36`}
                 />
               </div>
-            )}
-            <button
-              type="button"
-              onClick={async () => {
-                if (!onSendPositionToDevice) return;
-                const lat = parseFloat(latStr);
-                const lon = parseFloat(lonStr);
-                const alt = parseFloat(altStr);
-                if (!isFinite(lat) || !isFinite(lon)) {
-                  addToast(t('radioPanel.invalidCoordinates'), 'error');
-                  return;
+              <div className="space-y-1">
+                <label htmlFor="radio-fixed-lon" className="text-muted text-sm">
+                  {t('radioPanel.longitudeLabel')}
+                </label>
+                <input
+                  id="radio-fixed-lon"
+                  type="text"
+                  inputMode="decimal"
+                  value={lonStr}
+                  onChange={(e) => {
+                    meshcorePositionFormDirtyRef.current = true;
+                    setLonStr(e.target.value);
+                  }}
+                  disabled={disabled || applyingSection !== null}
+                  placeholder="0.000000"
+                  className={`${INPUT_BOX_CLASS} w-36`}
+                />
+              </div>
+              {(capabilities?.hasFullPositionConfig !== false ||
+                capabilities?.hasMeshcomDeviceCommands) && (
+                <div className="space-y-1">
+                  <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
+                    {t('radioPanel.altitudeMetersLabel')}
+                  </label>
+                  <input
+                    id="radio-fixed-alt"
+                    type="text"
+                    inputMode="decimal"
+                    value={altStr}
+                    onChange={(e) => {
+                      setAltStr(e.target.value);
+                    }}
+                    disabled={disabled || applyingSection !== null}
+                    placeholder="0"
+                    className={`${INPUT_BOX_CLASS} w-36`}
+                  />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!onSendPositionToDevice) return;
+                  const lat = parseFloat(latStr);
+                  const lon = parseFloat(lonStr);
+                  const alt = parseFloat(altStr);
+                  if (!isFinite(lat) || !isFinite(lon)) {
+                    addToast(t('radioPanel.invalidCoordinates'), 'error');
+                    return;
+                  }
+                  try {
+                    await onSendPositionToDevice(lat, lon, isFinite(alt) ? alt : 0);
+                    syncedMeshcoreAdvertRef.current = {
+                      lat: String(lat),
+                      lon: String(lon),
+                    };
+                    meshcorePositionFormDirtyRef.current = false;
+                    addToast(t('radioPanel.positionSent'), 'success');
+                  } catch (err) {
+                    console.warn(
+                      '[RadioPanel] send position to device failed ' + errLikeToLogString(err),
+                    );
+                    addToast(
+                      capabilities?.hasCompanionContactManagementConfig
+                        ? t('radioPanel.meshcoreGpsFailed', {
+                            message: err instanceof Error ? err.message : t('common.unknown'),
+                          })
+                        : t('radioPanel.actionFailed', {
+                            message: err instanceof Error ? err.message : t('common.unknown'),
+                          }),
+                      'error',
+                    );
+                  }
+                }}
+                disabled={disabled || !onSendPositionToDevice || !locationSendAllowed}
+                title={
+                  !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
                 }
-                try {
-                  await onSendPositionToDevice(lat, lon, isFinite(alt) ? alt : 0);
-                  syncedMeshcoreAdvertRef.current = {
-                    lat: String(lat),
-                    lon: String(lon),
-                  };
-                  meshcorePositionFormDirtyRef.current = false;
-                  addToast(t('radioPanel.positionSent'), 'success');
-                } catch (err) {
-                  console.warn(
-                    '[RadioPanel] send position to device failed ' + errLikeToLogString(err),
-                  );
-                  addToast(
-                    capabilities?.hasCompanionContactManagementConfig
-                      ? t('radioPanel.meshcoreGpsFailed', {
-                          message: err instanceof Error ? err.message : t('common.unknown'),
-                        })
-                      : t('radioPanel.actionFailed', {
-                          message: err instanceof Error ? err.message : t('common.unknown'),
-                        }),
-                    'error',
-                  );
-                }
-              }}
-              disabled={disabled || !onSendPositionToDevice || !locationSendAllowed}
-              title={
-                !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
-              }
-              className={buttonClassName('primary', 'md')}
-            >
-              {t('radioPanel.sendPositionToDevice')}
-            </button>
-          </div>
-        )}
-      </ConfigSection>
+                className={buttonClassName('primary', 'md')}
+              >
+                {t('radioPanel.sendPositionToDevice')}
+              </button>
+            </div>
+          )}
+        </ConfigSection>
+      )}
 
       {/* ═══ Power ═══ */}
-      {capabilities?.hasPowerConfig !== false && (
+      {capabilities?.hasPowerConfig !== false && !capabilities?.hasMeshcomDeviceCommands && (
         <ConfigSection
           anchorId="radio.power.section"
           title={t('radioPanel.sectionPower')}
@@ -3267,19 +3285,8 @@ export default function RadioPanel({
         />
       )}
 
-      {capabilities?.hasMeshcomDeviceCommands && meshcomDeviceCommands && (
-        <Suspense fallback={null}>
-          <MeshComDeviceCommandsSection
-            key={identityId ?? 'meshcom-device-commands'}
-            commands={meshcomDeviceCommands}
-            disabled={disabled}
-            onToast={addToast}
-          />
-        </Suspense>
-      )}
-
       {/* ═══ WiFi / Network ═══ */}
-      {capabilities?.hasWifiConfig !== false && (
+      {capabilities?.hasWifiConfig !== false && !capabilities?.hasMeshcomDeviceCommands && (
         <ConfigSection
           anchorId="radio.wifi.section"
           title={t('radioPanel.sectionWifi')}
@@ -3411,7 +3418,7 @@ export default function RadioPanel({
       )}
 
       {/* ═══ Display ═══ */}
-      {capabilities?.hasDisplayConfig !== false && (
+      {capabilities?.hasDisplayConfig !== false && !capabilities?.hasMeshcomDeviceCommands && (
         <ConfigSection
           anchorId="radio.display.section"
           title={t('radioPanel.sectionDisplay')}
@@ -3554,7 +3561,7 @@ export default function RadioPanel({
       )}
 
       {/* ═══ Bluetooth ═══ */}
-      {capabilities?.hasBluetoothConfig !== false && (
+      {capabilities?.hasBluetoothConfig !== false && !capabilities?.hasMeshcomDeviceCommands && (
         <ConfigSection
           anchorId="radio.bluetooth.section"
           title={t('radioPanel.sectionBluetooth')}

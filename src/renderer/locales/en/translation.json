@@ -9036,9 +9036,8 @@
     "openLocationUplink": "Open channel key with precise location and MQTT uplink on {{channel}}"
   },
   "meshcomDeviceCommands": {
-    "summary": "MeshCom device commands",
-    "description": "Send ICSSW node commands (--help, --settime, --setctry, …) over Serial or BLE. APP-eligible commands match the official MeshCom app; serial-only commands need a USB console link.",
-    "autoSettimeLegend": "Clock",
+    "loadingConfig": "Loading device configuration…",
+    "description": "Configure this MeshCom node with the full ICSSW command set. Connect via Serial or BLE to apply; EXTUDP/KISS are chat-only. APP-eligible commands match the official MeshCom app; serial-only rows need USB.",
     "autoSettime": "Set node time automatically on connect",
     "autoSettimeHint": "When connected over Serial or BLE, send --settime with this computer’s UTC clock (e.g. {{example}}).",
     "settimeNow": "Set time now (UTC)",
@@ -9065,6 +9064,7 @@
       "confirm": "Send"
     },
     "groups": {
+      "clock": "Clock",
       "display": "Display",
       "position": "Position & time",
       "sensors": "Sensors",
@@ -9077,7 +9077,8 @@
       "debug": "Status & debug",
       "power": "Power & OTA",
       "misc": "KISS / misc",
-      "console": "Console"
+      "console": "Console",
+      "advanced": "Advanced console & filter"
     },
     "appEligible": "APP / Serial"
   }

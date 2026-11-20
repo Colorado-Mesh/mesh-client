@@ -9180,9 +9180,7 @@
     "operatorNameHint": "Opcjonalnie. Wysyłane z opcją „Zastosuj do numeru seryjnego”/BLE (maks. 19 znaków)."
   },
   "meshcomDeviceCommands": {
-    "summary": "Polecenia dotyczące urządzenia MeshCom",
     "description": "Wysyłaj polecenia węzła ICSSW (--help, --settime, --setctry, …) przez port szeregowy lub BLE. Polecenia obsługiwane przez aplikację są zgodne z oficjalną aplikacją MeshCom; polecenia dostępne tylko przez port szeregowy wymagają połączenia z konsolą USB.",
-    "autoSettimeLegend": "Zegar",
     "autoSettime": "Automatyczne ustawianie czasu węzła podczas łączenia",
     "autoSettimeHint": "W przypadku połączenia przez port szeregowy lub BLE wyślij polecenie --settime z godziną UTC tego komputera (np. {{example}}).",
     "settimeNow": "Ustaw godzinę teraz (UTC)",
@@ -9221,8 +9219,11 @@
       "debug": "Status i debugowanie",
       "power": "Zasilanie i OTA",
       "misc": "KISS / różne",
-      "console": "Konsola"
+      "console": "Konsola",
+      "clock": "Zegar",
+      "advanced": "Zaawansowana konsola i filtr"
     },
-    "appEligible": "Aplikacja / Numer seryjny"
+    "appEligible": "Aplikacja / Numer seryjny",
+    "loadingConfig": "Ładowanie konfiguracji urządzenia…"
   }
 }

@@ -45,7 +45,14 @@ export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)
   'hasReticulumRemotePanel', // Remote
   undefined, // Nodes/Contacts
   { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel', 'hasReticulumDiscoveryMap'] }, // Map
-  { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
+  {
+    or: [
+      'hasChannelConfig',
+      'hasReticulumNetworkPanel',
+      'hasJsonRadioConfigImport',
+      'hasMeshcomDeviceCommands',
+    ],
+  }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
   'hasRoomServersPanel', // Rooms (joined)
