@@ -8120,6 +8120,8 @@ export function useMeshcoreRuntime() {
         if (!cacheMatchesSession) {
           meshcoreOwnerInfoRef.current.clear();
           meshcoreOwnerInfoInFlightRef.current.clear();
+          meshcoreOwnerInfoCacheGenRef.current = meshcoreSetupGenerationRef.current;
+          meshcoreOwnerInfoCacheIdentityRef.current = meshcoreIdentityIdRef.current;
         } else {
           const cached = meshcoreOwnerInfoRef.current.get(nodeId);
           if (cached) return cached;
@@ -8135,7 +8137,8 @@ export function useMeshcoreRuntime() {
       const generationAtRequest = meshcoreSetupGenerationRef.current;
       const useAnon = !hasResolvableAdminPassword(nodeId, hwModel);
 
-      const run = (async (): Promise<MeshcoreOwnerInfoEntry> => {
+      const ownerFlight: { promise?: Promise<MeshcoreOwnerInfoEntry> } = {};
+      ownerFlight.promise = (async (): Promise<MeshcoreOwnerInfoEntry> => {
         try {
           let entry: MeshcoreOwnerInfoEntry;
           if (useAnon) {
@@ -8153,7 +8156,10 @@ export function useMeshcoreRuntime() {
                 const parsed = await runMeshcoreAnonOwnerRequest(
                   conn,
                   pubKey,
-                  { hopsAway },
+                  {
+                    hopsAway,
+                    radioContactPathLen: radioContactPathLenByNodeRef.current.get(nodeId) ?? null,
+                  },
                   repeaterRemoteRpcRef.current,
                 );
                 entry = meshcoreOwnerInfoFromAnon(parsed.ownerInfo, Date.now(), parsed.clock);
@@ -8183,11 +8189,13 @@ export function useMeshcoreRuntime() {
           }
           return entry;
         } finally {
-          meshcoreOwnerInfoInFlightRef.current.delete(nodeId);
+          if (meshcoreOwnerInfoInFlightRef.current.get(nodeId) === ownerFlight.promise) {
+            meshcoreOwnerInfoInFlightRef.current.delete(nodeId);
+          }
         }
       })();
-      meshcoreOwnerInfoInFlightRef.current.set(nodeId, run);
-      return run;
+      meshcoreOwnerInfoInFlightRef.current.set(nodeId, ownerFlight.promise);
+      return ownerFlight.promise;
     },
     [
       ensureNodePubKey,
@@ -8224,6 +8232,9 @@ export function useMeshcoreRuntime() {
         if (!cacheMatchesSession) {
           meshcoreAnonBasicRef.current.clear();
           meshcoreAnonBasicInFlightRef.current.clear();
+          // Establish session gen before in-flight reuse so concurrent non-forced calls share one request.
+          meshcoreAnonBasicCacheGenRef.current = meshcoreSetupGenerationRef.current;
+          meshcoreAnonBasicCacheIdentityRef.current = meshcoreIdentityIdRef.current;
         } else {
           const cached = meshcoreAnonBasicRef.current.get(nodeId);
           if (cached) return cached;
@@ -8233,6 +8244,7 @@ export function useMeshcoreRuntime() {
       }
 
       // Prefer clock already obtained from ANON OWNER (saves rate-limit slots).
+      // Clock-only: leave feature flags unknown until a BASIC reply arrives.
       if (!opts?.force) {
         const owner = meshcoreOwnerInfoRef.current.get(nodeId);
         if (owner?.clock != null && Number.isFinite(owner.clock)) {
@@ -8240,10 +8252,6 @@ export function useMeshcoreRuntime() {
             status: 'ok',
             fetchedAt: owner.fetchedAt,
             clock: owner.clock,
-            features: 0,
-            isBridge: false,
-            bridgeKind: null,
-            forwardingDisabled: false,
           };
           setAnonBasicEntry(nodeId, reused);
           return reused;
@@ -8252,7 +8260,8 @@ export function useMeshcoreRuntime() {
 
       const identityAtRequest = meshcoreIdentityIdRef.current;
       const generationAtRequest = meshcoreSetupGenerationRef.current;
-      const run = (async (): Promise<MeshcoreAnonBasicEntry> => {
+      const basicFlight: { promise?: Promise<MeshcoreAnonBasicEntry> } = {};
+      basicFlight.promise = (async (): Promise<MeshcoreAnonBasicEntry> => {
         try {
           const conn = resolveMeshcoreConn();
           const pubKey = await ensureNodePubKey(nodeId);
@@ -8265,7 +8274,10 @@ export function useMeshcoreRuntime() {
               const parsed = await runMeshcoreAnonBasicRequest(
                 conn,
                 pubKey,
-                { hopsAway },
+                {
+                  hopsAway,
+                  radioContactPathLen: radioContactPathLenByNodeRef.current.get(nodeId) ?? null,
+                },
                 repeaterRemoteRpcRef.current,
               );
               entry = meshcoreAnonBasicFromParsed(parsed);
@@ -8288,11 +8300,13 @@ export function useMeshcoreRuntime() {
           }
           return entry;
         } finally {
-          meshcoreAnonBasicInFlightRef.current.delete(nodeId);
+          if (meshcoreAnonBasicInFlightRef.current.get(nodeId) === basicFlight.promise) {
+            meshcoreAnonBasicInFlightRef.current.delete(nodeId);
+          }
         }
       })();
-      meshcoreAnonBasicInFlightRef.current.set(nodeId, run);
-      return run;
+      meshcoreAnonBasicInFlightRef.current.set(nodeId, basicFlight.promise);
+      return basicFlight.promise;
     },
     [ensureNodePubKey, resolveAdminHopsForNode, resolveMeshcoreConn, setAnonBasicEntry],
   );
@@ -8312,7 +8326,10 @@ export function useMeshcoreRuntime() {
       const parsed = await runMeshcoreAnonRegionsRequest(
         conn,
         candidate.publicKey,
-        { hopsAway },
+        {
+          hopsAway,
+          radioContactPathLen: radioContactPathLenByNodeRef.current.get(candidate.nodeId) ?? null,
+        },
         repeaterRemoteRpcRef.current,
       );
       if (opts?.isCurrent && !opts.isCurrent()) {

@@ -569,6 +569,13 @@ describe('meshcoreCompanionRxPathLenToHashSizeBytes', () => {
     expect(meshcoreCompanionRxPathLenToHashSizeBytes(-1)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHashSizeBytes(256)).toBeUndefined();
   });
+
+  it('returns undefined for reserved hash-size code 3', () => {
+    // High 2 bits = 3 → reserved; low bits are hop count (e.g. 0xC0, 0xC1).
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xc0)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xc1)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xff - 1)).toBeUndefined(); // 0xFE still reserved code
+  });
 });
 
 describe('meshcoreTracePathLenToHops', () => {

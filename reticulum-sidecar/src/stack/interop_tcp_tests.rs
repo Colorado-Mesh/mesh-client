@@ -612,6 +612,8 @@ async fn dual_tcp_nomad_page_and_file() {
     .expect("write index.mu");
     let probe_bytes = b"mesh-client-nomad-probe";
     std::fs::write(files.join("probe.bin"), probe_bytes).expect("write probe.bin");
+    // Dotfile must exist before serving so route registration cannot race the exclusion assert.
+    std::fs::write(files.join(".secret"), b"do-not-serve").expect("dotfile");
 
     let status_src = host
         .handle
@@ -759,7 +761,6 @@ async fn dual_tcp_nomad_page_and_file() {
         "path traversal must not yield probe bytes: {traversal:?}"
     );
 
-    std::fs::write(files.join(".secret"), b"do-not-serve").expect("dotfile");
     let dotfile = client
         .handle
         .nomad_file(&dest, "/file/.secret", false, false)

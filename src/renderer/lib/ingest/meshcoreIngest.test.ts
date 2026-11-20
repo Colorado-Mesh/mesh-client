@@ -1285,6 +1285,51 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(4);
   });
 
+  it('does not consume TXT_MSG correlation for direct pathLen 0xFF (hopCount 0)', () => {
+    const correlate = vi.fn(() => [
+      {
+        ts: now - 50,
+        payloadTypeString: 'TXT_MSG' as const,
+        fromNodeId: 0xabcd,
+        hopCount: 3,
+        pathHashSizeBytes: 2 as const,
+      },
+    ]);
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: correlate,
+    });
+    upsertMessage(ID, {
+      id: dmMsgId,
+      from: 0xabcd,
+      senderName: 'Peer',
+      to: 0xffffffff,
+      payload: 'direct dm',
+      channelIndex: -1,
+      timestamp: now,
+      receivedVia: 'rf',
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: dmMsgId,
+          from: 0xabcd,
+          to: 0,
+          payload: 'direct dm',
+          channelIndex: -1,
+          timestamp: now,
+          hopCount: 0,
+        },
+      },
+      ID,
+    );
+    detach();
+    expect(correlate).not.toHaveBeenCalled();
+    const chat = messageRecordToChatMessage(useMessageStore.getState().messages[ID][dmMsgId]);
+    expect(chat.rxHops).toBe(0);
+    expect(chat.rxPathHashSizeBytes).toBeUndefined();
+  });
+
   it('correlates hops when rawPackets callback returns a fresh same-tick packet list', () => {
     const packets = [
       { ts: now - 10, payloadTypeString: 'GRP_TXT' as const, fromNodeId: null, hopCount: 5 },

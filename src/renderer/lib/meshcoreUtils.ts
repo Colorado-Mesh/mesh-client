@@ -174,6 +174,9 @@ export function meshcoreCompanionRxPathLenToHashSizeBytes(pathLen: unknown): 1 |
   const n = Math.trunc(pathLen);
   if (n < 0 || n > 255) return undefined;
   if (n === 0xff) return undefined;
+  // Reserved size code 3 → undefined, matching meshcoreRadioContactRoute.
+  if (((n >> 6) & 0x03) === 3) return undefined;
+  // After rejecting reserved code 3, unpack always yields 1/2/3.
   return meshcoreUnpackPathLenByte(n).hashSizeBytes;
 }
 

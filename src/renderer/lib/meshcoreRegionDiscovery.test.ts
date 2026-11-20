@@ -186,6 +186,36 @@ describe('selectMeshcoreRegionDiscoveryCandidates', () => {
     expect(candidates.slice(0, firstMultiHop).every((c) => c.hopsAway === 0)).toBe(true);
     expect(candidates[0].lastHeard).toBeGreaterThanOrEqual(candidates[1].lastHeard ?? 0);
   });
+
+  it('orders equal unknown hops by lastHeard instead of NaN', () => {
+    const { candidates } = selectMeshcoreRegionDiscoveryCandidates(
+      [
+        node({
+          node_id: 1,
+          hw_model: 'Repeater',
+          long_name: 'A',
+          last_heard: 10,
+          hops_away: undefined,
+        }),
+        node({
+          node_id: 2,
+          hw_model: 'Repeater',
+          long_name: 'B',
+          last_heard: 50,
+          hops_away: undefined,
+        }),
+        node({
+          node_id: 3,
+          hw_model: 'Repeater',
+          long_name: 'C',
+          last_heard: 30,
+          hops_away: undefined,
+        }),
+      ],
+      { resolvePublicKey: (id) => keyFor(id) },
+    );
+    expect(candidates.map((c) => c.nodeId)).toEqual([2, 3, 1]);
+  });
 });
 
 describe('classifyRegionDiscoveryError', () => {
@@ -339,6 +369,42 @@ describe('discoverMeshcoreRegions', () => {
 
     expect(run.cancelled).toBe(true);
     expect(run.entries).toEqual([]);
+  });
+
+  it('cancels on catch when aborted without recording a failure', async () => {
+    const controller = new AbortController();
+    const query = vi.fn(() => {
+      controller.abort();
+      return Promise.reject(new Error('Request timed out'));
+    });
+
+    const run = await discoverMeshcoreRegions({
+      candidates: [candidate({ nodeId: 1 }), candidate({ nodeId: 2 })],
+      query,
+      isCurrent: () => true,
+      signal: controller.signal,
+    });
+
+    expect(run.cancelled).toBe(true);
+    expect(run.failed).toEqual([]);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('still records ordinary query timeouts while the run remains current', async () => {
+    const query = vi.fn((c: MeshcoreRegionDiscoveryCandidate) => {
+      if (c.nodeId === 1) return Promise.reject(new Error('Request timed out'));
+      return Promise.resolve(['ok']);
+    });
+
+    const run = await discoverMeshcoreRegions({
+      candidates: [candidate({ nodeId: 1 }), candidate({ nodeId: 2 })],
+      query,
+      isCurrent: () => true,
+    });
+
+    expect(run.cancelled).toBe(false);
+    expect(run.failed).toEqual([{ nodeId: 1, reason: 'timeout' }]);
+    expect(run.entries.some((e) => e.name === 'ok')).toBe(true);
   });
 
   it('queries each candidate once', async () => {

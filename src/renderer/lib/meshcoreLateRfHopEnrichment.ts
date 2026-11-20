@@ -222,12 +222,18 @@ export function shouldApplyMeshcoreRfHopEnrichment(
   existingRxHops: number | undefined,
   rfHopCount: number,
   parseOk: boolean,
+  existingPathHashSizeBytes?: 1 | 2 | 3,
+  rfPathHashSizeBytes?: 1 | 2 | 3,
 ): boolean {
   if (!parseOk || !Number.isFinite(rfHopCount)) return false;
   const hops = Math.trunc(rfHopCount);
   if (hops < 0 || hops > 63) return false;
-  if (existingRxHops == null) return true;
-  return existingRxHops !== hops;
+  if (existingRxHops == null || existingRxHops !== hops) return true;
+  // Same hop count: still enrich when RF reports a path-hash width the row lacks or disagrees with.
+  if (rfPathHashSizeBytes === 1 || rfPathHashSizeBytes === 2 || rfPathHashSizeBytes === 3) {
+    return existingPathHashSizeBytes !== rfPathHashSizeBytes;
+  }
+  return false;
 }
 
 function isBroadcastChannelCandidate(c: MeshcoreLateHopCandidate): boolean {
@@ -258,7 +264,13 @@ export function findMeshcoreLateRfHopEnrichmentTarget(
   const fp = normalizeFingerprint(input.messageFingerprintHex);
 
   const applicable = (c: MeshcoreLateHopCandidate): boolean =>
-    shouldApplyMeshcoreRfHopEnrichment(c.rxHops, rfHops, true);
+    shouldApplyMeshcoreRfHopEnrichment(
+      c.rxHops,
+      rfHops,
+      true,
+      c.rxPathHashSizeBytes,
+      input.pathHashSizeBytes,
+    );
 
   if (fp) {
     for (let i = candidates.length - 1; i >= 0; i--) {

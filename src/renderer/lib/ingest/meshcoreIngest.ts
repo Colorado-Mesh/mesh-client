@@ -277,7 +277,9 @@ function handleTextMessage(
     event.payload.pathHashSizeBytes === 3
       ? event.payload.pathHashSizeBytes
       : undefined;
-  const needsPathCorrelation = event.payload.hopCount == null || eventPathHashSizeBytes == null;
+  // Direct companion pathLen 0xFF yields hopCount 0 and no hash width — do not consume a TXT_MSG
+  // raw-log row to invent a width. Correlate only when hops are missing.
+  const needsPathCorrelation = event.payload.hopCount == null;
   const correlatedPath = needsPathCorrelation
     ? resolveMeshcoreIngestPathMeta(
         options.rawPacketsForHopCorrelation?.() ?? [],
@@ -287,7 +289,9 @@ function handleTextMessage(
       )
     : {};
   const hopCount = event.payload.hopCount ?? correlatedPath.hopCount;
-  const pathHashSizeBytes = eventPathHashSizeBytes ?? correlatedPath.pathHashSizeBytes;
+  const pathHashSizeBytes =
+    eventPathHashSizeBytes ??
+    (event.payload.hopCount == null ? correlatedPath.pathHashSizeBytes : undefined);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.

@@ -51,9 +51,23 @@ describe('announce', () => {
     announcePoliteQueued('second');
     await vi.advanceTimersByTimeAsync(1); // start drain → announce('first')
     expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('');
-    await vi.advanceTimersByTimeAsync(50); // first write
+    await vi.advanceTimersByTimeAsync(50); // first write (ownership holds +1ms more)
     expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('first');
-    await vi.advanceTimersByTimeAsync(51); // second drain + announce clear
+    await vi.advanceTimersByTimeAsync(1); // ownership releases → second drain + clear
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('');
+    await vi.advanceTimersByTimeAsync(50); // second write
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('second');
+  });
+
+  it('keeps drain ownership when a second announce arrives 10ms later', async () => {
+    announcePoliteQueued('first');
+    await vi.advanceTimersByTimeAsync(10);
+    announcePoliteQueued('second');
+    // Drain already started at t=1 during the 10ms advance; first write due at t=51.
+    await vi.advanceTimersByTimeAsync(41); // first write
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('first');
+    await vi.advanceTimersByTimeAsync(1); // ownership releases → second drain + clear
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('');
     await vi.advanceTimersByTimeAsync(50); // second write
     expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('second');
   });

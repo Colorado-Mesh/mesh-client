@@ -13,6 +13,7 @@ import {
   type MeshcoreRepeaterRunSerialized,
   runMeshcoreRepeaterQueuedSend,
 } from './meshcoreRepeaterRpcQueuedSend';
+import { meshcoreTracePingRadioHasNoRoute } from './meshcoreRepeaterTracePath';
 import {
   MC_ANON_REQ_TYPE_BASIC,
   MC_ANON_REQ_TYPE_OWNER,
@@ -26,6 +27,11 @@ export type MeshcoreAnonReqSubtype =
 
 export interface MeshcoreAnonRequestOpts {
   hopsAway?: number | null;
+  /**
+   * Companion contact `outPathLen` when known. `0xFF` / reserved size → refuse before send
+   * (avoids flooding). Zero-hop known routes keep {@link buildSendAnonReqFrame} replyPathLen 0.
+   */
+  radioContactPathLen?: number | null;
   extraTimeoutMs?: number;
   sentWaitTimeoutMs?: number;
 }
@@ -242,6 +248,12 @@ function performAnonRequest(
         fail('timeout');
       }, waitMs);
     };
+
+    // Unknown outbound path (0xFF) would flood — refuse before TX. Known zero-hop keeps frame[34]=0.
+    if (meshcoreTracePingRadioHasNoRoute(opts.radioContactPathLen)) {
+      fail(new Error('anon request sent as flood'));
+      return;
+    }
 
     void runMeshcoreRepeaterQueuedSend(
       conn,

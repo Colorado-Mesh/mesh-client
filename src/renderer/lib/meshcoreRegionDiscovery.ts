@@ -225,9 +225,10 @@ export function selectMeshcoreRegionDiscoveryCandidates(
 
   // Prefer zero-hop / direct, then recently heard, then name.
   eligible.sort((a, b) => {
-    const hopsDiff =
-      (a.hopsAway ?? Number.POSITIVE_INFINITY) - (b.hopsAway ?? Number.POSITIVE_INFINITY);
-    if (hopsDiff !== 0) return hopsDiff;
+    const aHops = a.hopsAway ?? Number.POSITIVE_INFINITY;
+    const bHops = b.hopsAway ?? Number.POSITIVE_INFINITY;
+    // Equal unknowns (∞) must not subtract to NaN and skip lastHeard ordering.
+    if (aHops !== bHops) return aHops - bHops;
     const heardDiff = (b.lastHeard ?? 0) - (a.lastHeard ?? 0);
     if (heardDiff !== 0) return heardDiff;
     return a.name.localeCompare(b.name);
@@ -325,6 +326,10 @@ export async function discoverMeshcoreRegions(
         tree: meshcoreRegionTreeFromAnonNames(names),
       });
     } catch (error) {
+      if (signal?.aborted || !isCurrent()) {
+        cancelled = true;
+        break;
+      }
       const reason = classifyRegionDiscoveryError(error);
       failed.push({ nodeId: candidate.nodeId, reason });
       console.warn(

@@ -175,6 +175,45 @@ describe('runMeshcoreAnonRequest', () => {
     await expect(promise).rejects.toThrow(/flood/i);
   });
 
+  it('refuses TX when radio contact path is unknown (0xFF) rather than flooding', async () => {
+    const conn = createMockMeshcoreConn();
+    const pubKey = makePubKey(0xaa);
+    const runSerialized = createRepeaterRemoteRpcQueue();
+
+    const promise = runMeshcoreAnonRegionsRequest(
+      conn,
+      pubKey,
+      { hopsAway: 0, radioContactPathLen: 0xff },
+      runSerialized,
+    );
+    await expect(promise).rejects.toThrow(/flood/i);
+    expect(conn.sentFrames).toHaveLength(0);
+  });
+
+  it('still sends zero-hop ANON when the radio has a known direct path', async () => {
+    const conn = createMockMeshcoreConn();
+    const pubKey = makePubKey(0xbb);
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    const responseData = clockBytes(3, new TextEncoder().encode('us'));
+
+    const promise = runMeshcoreAnonRegionsRequest(
+      conn,
+      pubKey,
+      { hopsAway: 0, radioContactPathLen: 0 },
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(conn.sentFrames).toHaveLength(1);
+    expect(conn.sentFrames[0]).toEqual(buildSendAnonReqFrame(pubKey, MC_ANON_REQ_TYPE_REGIONS));
+    expect(conn.sentFrames[0][34]).toBe(0);
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 50, expectedAckCrc: 0xbeef });
+    await Promise.resolve();
+    conn.emit(MC_PUSH_BINARY_RESPONSE, { tag: 0xbeef, responseData });
+    await expect(promise).resolves.toEqual({ clock: 3, names: ['us'] });
+  });
+
   it('ignores mismatched non-zero tags then times out', async () => {
     const conn = createMockMeshcoreConn();
     const pubKey = makePubKey(0x99);

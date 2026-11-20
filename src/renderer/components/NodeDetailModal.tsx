@@ -1714,10 +1714,13 @@ export default function NodeDetailModal({
                           time: formatDisplayTime(meshcoreAnonBasic.clock * 1000, {
                             use24Hour: use24HourTime,
                           }),
-                          skew: meshcoreAnonClockSkewSeconds(meshcoreAnonBasic.clock),
+                          skew: meshcoreAnonClockSkewSeconds(
+                            meshcoreAnonBasic.clock,
+                            meshcoreAnonBasic.fetchedAt,
+                          ),
                         })}
                       </p>
-                      {meshcoreAnonBasic.forwardingDisabled ? (
+                      {meshcoreAnonBasic.forwardingDisabled === true ? (
                         <p className="text-xs text-orange-400">
                           {t('nodeDetailModal.anonBasicForwardingDisabled')}
                         </p>
