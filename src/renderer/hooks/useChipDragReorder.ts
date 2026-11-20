@@ -45,6 +45,11 @@ function scrollNearEdge(event: DragEvent<HTMLElement>) {
   else if (event.clientY > box.bottom - EDGE_PX) scroller.scrollTop += EDGE_STEP_PX;
 }
 
+/** True only for drags this hook started; a file or text dragged in from elsewhere is refused. */
+function isChipDrag(event: DragEvent<HTMLElement>): boolean {
+  return Array.from(event.dataTransfer.types).includes(CHIP_ORDER_DRAG_TYPE);
+}
+
 function dropSide(event: DragEvent<HTMLElement>): ChatOrderSide {
   const box = event.currentTarget.getBoundingClientRect();
   const leftHalf = event.clientX < box.left + box.width / 2;
@@ -77,7 +82,7 @@ export function useChipDragReorder({ canMove, onMove }: Options) {
   // dragover arriving in between.
   const hover = (id: string, event: DragEvent<HTMLElement>) => {
     const current = drag.current;
-    if (!current) return;
+    if (!current || !isChipDrag(event)) return;
     // Browsers fire dragover repeatedly while the pointer rests, so holding near an edge keeps
     // scrolling a strip that overflows.
     scrollNearEdge(event);
@@ -119,7 +124,7 @@ export function useChipDragReorder({ canMove, onMove }: Options) {
       },
       onDrop: (event) => {
         const current = drag.current;
-        if (!current || current.id === id) return;
+        if (!current || current.id === id || !isChipDrag(event)) return;
         event.preventDefault();
         const side = dropSide(event);
         const moved = current.id;

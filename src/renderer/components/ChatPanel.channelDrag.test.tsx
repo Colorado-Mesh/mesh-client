@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { CHIP_ORDER_DRAG_TYPE } from '../hooks/useChipDragReorder';
 import { conversationPrefsStorageKey } from '../lib/conversationPinStorage';
 import type { MeshProtocol } from '../lib/types';
 import ChatPanel, { type ChatPanelProps } from './ChatPanel';
@@ -72,7 +73,12 @@ const order = () =>
     .filter((label): label is string => label != null && NAMES.includes(label));
 
 function transfer() {
-  return { setData: vi.fn(), effectAllowed: 'none', dropEffect: 'none', types: [] };
+  return {
+    setData: vi.fn(),
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    types: [CHIP_ORDER_DRAG_TYPE],
+  };
 }
 
 /** Drops `name` on the right half of `target` (after it) or the left half (before it). */

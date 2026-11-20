@@ -28,7 +28,12 @@ function Harness({ onMove, fixed = new Set() }: HarnessProps) {
 }
 
 function transfer() {
-  return { setData: vi.fn(), effectAllowed: 'none', dropEffect: 'none', types: [] };
+  return {
+    setData: vi.fn(),
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    types: [CHIP_ORDER_DRAG_TYPE],
+  };
 }
 
 /** Each chip sits 40 px wide starting at x=100; the drop side follows the pointer half. */
@@ -171,6 +176,19 @@ describe('useChipDragReorder', () => {
     place(chip('c'));
     expect(fireEvent.dragOver(chip('c'), { dataTransfer: transfer(), clientX: 130 })).toBe(true);
     fireEvent.drop(chip('c'), { dataTransfer: transfer(), clientX: 130 });
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it('refuses a foreign drag even when a chip drag never reported its end', () => {
+    const onMove = vi.fn();
+    render(<Harness onMove={onMove} />);
+    // A chip drag starts, and its dragend is lost (the chip remounted mid-drag).
+    fireEvent.dragStart(chip('a'), { dataTransfer: transfer() });
+    const file = { ...transfer(), types: ['Files'] };
+    place(chip('c'));
+    expect(fireEvent.dragOver(chip('c'), { dataTransfer: file, clientX: 130 })).toBe(true);
+    expect(chip('c')).not.toHaveAttribute('data-drop-side');
+    fireEvent.drop(chip('c'), { dataTransfer: file, clientX: 130 });
     expect(onMove).not.toHaveBeenCalled();
   });
 
