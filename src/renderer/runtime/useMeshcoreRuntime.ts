@@ -2687,6 +2687,12 @@ export function useMeshcoreRuntime() {
         // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
         // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
         conn.once(MESHCORE_RESPONSE_DEVICE_INFO, (response: unknown) => {
+          if (
+            connRef.current === conn &&
+            isMeshcorePathHashMode(parsePathHashModeFromDeviceQuery(response).pathHashMode)
+          ) {
+            meshcoreDeviceReportedPathHashModeRef.current = true;
+          }
           setState((prev) => {
             const next = { ...prev };
             const r = response as { firmware_build_date?: string };
@@ -3416,9 +3422,9 @@ export function useMeshcoreRuntime() {
               conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
             );
             const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
-            meshcoreDeviceReportedPathHashModeRef.current = isMeshcorePathHashMode(
-              pathFields.pathHashMode,
-            );
+            if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+              meshcoreDeviceReportedPathHashModeRef.current = true;
+            }
             setMeshcoreRadioMaxContacts(meshcoreMaxContactsFromDeviceQuery(deviceInfo));
             setState((prev) => {
               const next = { ...prev };

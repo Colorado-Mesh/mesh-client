@@ -33,7 +33,17 @@ describe('useMeshcoreRuntime path hash mode on connect', () => {
       /meshcoreInitConnInFlightRef\.current = true;\s*meshcoreDeviceReportedPathHashModeRef\.current = false;/,
     );
     expect(SOURCE).toMatch(
-      /const pathFields = parsePathHashModeFromDeviceQuery\(deviceInfo\);\s*meshcoreDeviceReportedPathHashModeRef\.current = isMeshcorePathHashMode\(\s*pathFields\.pathHashMode,?\s*\);/,
+      /const pathFields = parsePathHashModeFromDeviceQuery\(deviceInfo\);\s*if \(isMeshcorePathHashMode\(pathFields\.pathHashMode\)\) \{\s*meshcoreDeviceReportedPathHashModeRef\.current = true;\s*\}/,
+    );
+    // The explicit query never clears a report the automatic DeviceInfo already made.
+    expect(SOURCE).not.toMatch(
+      /meshcoreDeviceReportedPathHashModeRef\.current = isMeshcorePathHashMode\(/,
+    );
+  });
+
+  it('records the mode from the automatic DeviceInfo, only for the current connection', () => {
+    expect(SOURCE).toMatch(
+      /conn\.once\(MESHCORE_RESPONSE_DEVICE_INFO, \(response: unknown\) => \{\s*if \(\s*connRef\.current === conn &&\s*isMeshcorePathHashMode\(parsePathHashModeFromDeviceQuery\(response\)\.pathHashMode\)\s*\) \{\s*meshcoreDeviceReportedPathHashModeRef\.current = true;\s*\}/,
     );
   });
 });
