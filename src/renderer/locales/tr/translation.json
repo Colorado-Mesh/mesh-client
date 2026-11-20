@@ -9080,6 +9080,7 @@
       "advanced": "Gelişmiş konsol ve filtre"
     },
     "appEligible": "Uygulama / Seri",
-    "loadingConfig": "Cihaz yapılandırması yükleniyor…"
+    "loadingConfig": "Cihaz yapılandırması yükleniyor…",
+    "currentValue": "şimdi {{value}}"
   }
 }

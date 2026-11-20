@@ -77,6 +77,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [deviceOwner, setDeviceOwner] = useState<{
+    longName: string;
+    shortName: string;
+    isLicensed: boolean;
+  } | null>(null);
   const identityIdRef = useRef<IdentityId>(offlineIdentityId);
   const driverIdentityIdRef = useRef<IdentityId | null>(null);
   const ingestDetachRef = useRef<(() => void) | null>(null);
@@ -153,6 +158,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           console.debug('[useMeshcomRuntime] disconnect ' + errLikeToLogString(e));
         });
       }
+      setDeviceOwner(null);
       setState({
         status: 'disconnected',
         myNodeNum: 0,
@@ -206,6 +212,39 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     }
   }, []);
 
+  const onDeviceSettings = useCallback((snap: { callsign: string; operatorName: string }) => {
+    if (!snap.callsign) return;
+    setDeviceOwner({
+      longName: snap.callsign,
+      shortName: snap.operatorName,
+      isLicensed: true,
+    });
+    void import('../lib/meshcom/meshcomCallsign')
+      .then(({ callsignToNodeId }) => {
+        const nodeId = callsignToNodeId(snap.callsign);
+        if (!nodeId) return;
+        setState((prev) => (prev.myNodeNum === nodeId ? prev : { ...prev, myNodeNum: nodeId }));
+        setConnection(identityIdRef.current, { myNodeNum: nodeId });
+        upsertNodeRecord(identityIdRef.current, {
+          nodeId,
+          longName: snap.callsign,
+          shortName: (snap.operatorName || snap.callsign).slice(0, 4),
+          lastHeardAt: Date.now(),
+        });
+      })
+      .catch((e: unknown) => {
+        console.warn('[useMeshcomRuntime] callsign node id ' + errLikeToLogString(e));
+      });
+  }, []);
+
+  const deviceCommands = useMeshcomDeviceCommands({
+    resolveIdentityId,
+    connectionType: state.connectionType,
+    onSettings: onDeviceSettings,
+  });
+  const refreshSettingsRef = useRef(deviceCommands.refreshSettings);
+  refreshSettingsRef.current = deviceCommands.refreshSettings;
+
   const attachRfSession = useCallback(
     async (driverIdentityId: string, type: MeshcomRfTransportType) => {
       driverIdentityIdRef.current = driverIdentityId;
@@ -225,15 +264,15 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       void hydrateIdentityStoresFromDb('meshcom', driverIdentityId).catch((e: unknown) => {
         console.warn('[useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
       });
+      if (type === 'serial' || type === 'ble') {
+        void refreshSettingsRef.current().catch((e: unknown) => {
+          console.warn('[useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
+        });
+      }
       void maybeAutoSettime(type);
     },
     [attachIngestForIdentity, maybeAutoSettime],
   );
-
-  const deviceCommands = useMeshcomDeviceCommands({
-    resolveIdentityId,
-    connectionType: state.connectionType,
-  });
 
   const connect = useCallback(
     async (type: MeshcomRfTransportType, httpAddress?: string, blePeripheralId?: string) => {
@@ -573,7 +612,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       mqttConnectionLoss: null,
       messages,
       nodes,
-      deviceOwner: null,
+      deviceOwner,
       deviceLogs: [],
       rawPackets: [],
       queueStatus: null,
@@ -646,6 +685,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     connect,
     connectAutomatic,
     deviceCommands,
+    deviceOwner,
     finalizeDriverDisconnect,
     getFullNodeLabel,
     getNodes,

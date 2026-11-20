@@ -9080,6 +9080,7 @@
       "advanced": "Consola y filtro avanzados"
     },
     "appEligible": "Aplicación / Número de serie",
-    "loadingConfig": "Cargando la configuración del dispositivo..."
+    "loadingConfig": "Cargando la configuración del dispositivo...",
+    "currentValue": "ahora {{value}}"
   }
 }

@@ -206,8 +206,10 @@ describe('RadioPanel MeshCom identity and device commands', () => {
     const deviceCommands = {
       available: true,
       transport: 'serial' as const,
+      settings: null,
       run: vi.fn().mockResolvedValue({ command: '--help' }),
       settimeNow: vi.fn().mockResolvedValue({ command: '--settime' }),
+      refreshSettings: vi.fn().mockResolvedValue(null),
     };
     const { container } = render(
       <ToastProvider>
@@ -231,6 +233,15 @@ describe('RadioPanel MeshCom identity and device commands', () => {
     expect(screen.getByText('Bluetooth')).toBeInTheDocument();
     expect(screen.getByText('--setcall')).toBeInTheDocument();
     expect(screen.getByText('--btcode')).toBeInTheDocument();
+    // Device setting sections start collapsed.
+    for (const title of ['Clock', 'Display', 'Position & time', 'Network & Wi-Fi', 'Bluetooth']) {
+      const details = [...document.querySelectorAll('details')].find((d) => {
+        const span = d.querySelector(':scope > summary > span');
+        return span?.textContent?.trim() === title;
+      });
+      expect(details, title).toBeDefined();
+      expect(details!.open, title).toBe(false);
+    }
 
     const userDetails = [...document.querySelectorAll('details')].find((d) => {
       const span = d.querySelector(':scope > summary > span');

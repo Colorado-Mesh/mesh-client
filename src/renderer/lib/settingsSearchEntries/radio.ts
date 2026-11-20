@@ -1411,6 +1411,7 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcomDeviceCommands.consoleSend': 'send button of the indexed console',
     'meshcomDeviceCommands.confirmDanger.*': 'confirmation dialog for dangerous commands',
     'meshcomDeviceCommands.appEligible': 'badge text on APP-eligible command rows',
+    'meshcomDeviceCommands.currentValue': 'read-only current-value hint on command rows',
     'meshcom.connectionHint': 'help text under the indexed country setting',
     'meshcom.callsignHint': 'help text under the indexed MeshCom callsign field',
     'meshcom.operatorNamePlaceholder': 'placeholder of the indexed MeshCom operator field',

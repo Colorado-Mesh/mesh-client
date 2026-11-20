@@ -9080,6 +9080,7 @@
       "advanced": "Erweiterte Konsole und Filter"
     },
     "appEligible": "APP/Seriennummer",
-    "loadingConfig": "Gerätekonfiguration wird geladen …"
+    "loadingConfig": "Gerätekonfiguration wird geladen …",
+    "currentValue": "jetzt {{value}}"
   }
 }

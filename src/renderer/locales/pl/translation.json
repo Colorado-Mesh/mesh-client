@@ -9224,6 +9224,7 @@
       "advanced": "Zaawansowana konsola i filtr"
     },
     "appEligible": "Aplikacja / Numer seryjny",
-    "loadingConfig": "Ładowanie konfiguracji urządzenia…"
+    "loadingConfig": "Ładowanie konfiguracji urządzenia…",
+    "currentValue": "teraz {{value}}"
   }
 }

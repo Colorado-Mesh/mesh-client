@@ -9080,6 +9080,7 @@
       "advanced": "Geavanceerde console en filter"
     },
     "appEligible": "APP / Serieel",
-    "loadingConfig": "Apparaatconfiguratie wordt geladen…"
+    "loadingConfig": "Apparaatconfiguratie wordt geladen…",
+    "currentValue": "nu {{value}}"
   }
 }

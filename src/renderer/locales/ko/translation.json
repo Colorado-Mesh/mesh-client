@@ -9080,6 +9080,7 @@
       "advanced": "고급 콘솔 및 필터"
     },
     "appEligible": "앱/일련번호",
-    "loadingConfig": "장치 구성 로드 중..."
+    "loadingConfig": "장치 구성 로드 중...",
+    "currentValue": "현재 {{value}}"
   }
 }

@@ -9041,6 +9041,7 @@
     "autoSettime": "Set node time automatically on connect",
     "autoSettimeHint": "When connected over Serial or BLE, send --settime with this computer’s UTC clock (e.g. {{example}}).",
     "settimeNow": "Set time now (UTC)",
+    "currentValue": "now {{value}}",
     "requiresSerialBle": "Connect via Serial or BLE to send device commands. EXTUDP and KISS/TCP carry chat only.",
     "filter": "Filter commands",
     "filterPlaceholder": "Search --settime, gateway, neighbors…",

@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
+import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
 import type { MeshComConnection } from './meshcom/MeshComTransport';
 import { type MeshComDeviceHandle, meshcomProtocol } from './MeshComProtocol';
 import type { DomainEvent } from './Protocol';
@@ -37,6 +38,8 @@ function makeHandle(
     callsignByNodeId: new Map(),
     kissSession: null,
     nextMsgNumber: 1,
+    deviceSettings: emptyMeshcomDeviceSettingsAccum(),
+    deviceSettingsWaiters: [],
   };
 }
 
@@ -117,6 +120,29 @@ describe('MeshComProtocol serial/BLE', () => {
     const logs = events.filter((e) => e.type === 'device_log');
     expect(logs).toHaveLength(1);
     expect(logs[0]?.payload.message).toBe('Firmware v4.0');
+    unsub();
+  });
+
+  it('BLE companion settings JSON updates handle and emits device_self_info on CONFFIN', () => {
+    const { conn } = mockConnection('ble');
+    const handle = makeHandle('ble', conn);
+    const events: DomainEvent[] = [];
+    let confFinResolved = false;
+    handle.deviceSettingsWaiters.push(() => {
+      confFinResolved = true;
+    });
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const info = new TextEncoder().encode(
+      'D{"TYP":"I","CALL":"OE1ABC-1","CTRY":"EU","BPIN":111111}',
+    );
+    conn.onData?.(info);
+    expect(handle.deviceSettings.call).toBe('OE1ABC-1');
+    expect(events.some((e) => e.type === 'device_self_info')).toBe(true);
+
+    conn.onData?.(new TextEncoder().encode('D{"TYP":"CONFFIN"}'));
+    expect(handle.deviceSettings.complete).toBe(true);
+    expect(confFinResolved).toBe(true);
     unsub();
   });
 });

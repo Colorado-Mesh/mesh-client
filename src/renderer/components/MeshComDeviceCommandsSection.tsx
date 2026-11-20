@@ -26,14 +26,6 @@ interface ConsoleEntry {
 
 const MAX_CONSOLE_ENTRIES = 120;
 
-/** Groups that open by default so Device Configuration is not an empty shell. */
-const DEFAULT_OPEN_GROUPS: ReadonlySet<MeshcomCommandGroup> = new Set([
-  'display',
-  'position',
-  'network',
-  'identity',
-]);
-
 function readAutoSettime(): boolean {
   const parsed = parseStoredJson<{ meshcomAutoSettime?: unknown }>(
     getAppSettingsRaw(),
@@ -56,6 +48,7 @@ export default function MeshComDeviceCommandsSection({
   const { t } = useTranslation();
   const [autoSettime, setAutoSettime] = useState(readAutoSettime);
   const [filter, setFilter] = useState('');
+  /** Local edits only; device snapshot fills gaps via {@link argValueOf}. */
   const [argById, setArgById] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [consoleInput, setConsoleInput] = useState('');
@@ -63,6 +56,11 @@ export default function MeshComDeviceCommandsSection({
   const [consoleBusy, setConsoleBusy] = useState(false);
   const [pending, setPending] = useState<{ command: string; label: string } | null>(null);
   const consoleIdRef = useRef(0);
+
+  const argValueOf = useCallback(
+    (id: string): string => argById[id] ?? commands.settings?.valuesByCommandId[id] ?? '',
+    [argById, commands.settings?.valuesByCommandId],
+  );
 
   const pushConsole = useCallback((kind: ConsoleEntry['kind'], text: string) => {
     setConsoleLog((prev) => {
@@ -125,8 +123,7 @@ export default function MeshComDeviceCommandsSection({
     async (descriptor: MeshcomCommandDescriptor) => {
       setBusy(true);
       try {
-        const arg = argById[descriptor.id];
-        const line = buildMeshcomCommandLine(descriptor, arg);
+        const line = buildMeshcomCommandLine(descriptor, argValueOf(descriptor.id));
         const result = await commands.run(line);
         pushConsole('sent', redactMeshcomCommandForLog(result.command));
         onToast?.(t('meshcomDeviceCommands.sent'), 'success');
@@ -139,7 +136,7 @@ export default function MeshComDeviceCommandsSection({
         setBusy(false);
       }
     },
-    [argById, commands, onToast, pushConsole, t],
+    [argValueOf, commands, onToast, pushConsole, t],
   );
 
   const onConfirmDanger = useCallback(() => {
@@ -204,7 +201,8 @@ export default function MeshComDeviceCommandsSection({
 
   const renderCommandRow = (cmd: MeshcomCommandDescriptor): ReactNode => {
     const needsArg = cmd.argKind !== 'none' && cmd.argKind !== 'settime';
-    const argValue = argById[cmd.id] ?? '';
+    const argValue = argValueOf(cmd.id);
+    const deviceValue = commands.settings?.valuesByCommandId[cmd.id];
     return (
       <div key={cmd.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
@@ -216,32 +214,46 @@ export default function MeshComDeviceCommandsSection({
               <span>{t('meshcomDeviceCommands.appEligible')}</span>
             )}
             {cmd.restriction ? <span className="text-muted"> · {cmd.restriction}</span> : null}
+            {deviceValue ? (
+              <span className="text-bright-green">
+                {' '}
+                · {t('meshcomDeviceCommands.currentValue', { value: deviceValue })}
+              </span>
+            ) : null}
           </div>
         </div>
         {cmd.argKind === 'onOff' || (cmd.argKind === 'choice' && cmd.choices) ? (
           <div className="flex flex-wrap gap-1">
-            {(cmd.argKind === 'onOff' ? ['on', 'off'] : (cmd.choices ?? [])).map((choice) => (
-              <button
-                key={choice}
-                type="button"
-                disabled={!linkOk || busy}
-                aria-label={t('meshcomDeviceCommands.runChoice', {
-                  command: cmd.token,
-                  value: choice,
-                })}
-                onClick={() => {
-                  const line = `${cmd.token} ${choice}`;
-                  if (cmd.danger) {
-                    requestSend(line, true, line);
-                  } else {
-                    void sendNow(line);
-                  }
-                }}
-                className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded-control border px-2 py-1 font-mono text-xs disabled:opacity-50"
-              >
-                {choice}
-              </button>
-            ))}
+            {(cmd.argKind === 'onOff' ? ['on', 'off'] : (cmd.choices ?? [])).map((choice) => {
+              const isCurrent = deviceValue === choice;
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  disabled={!linkOk || busy}
+                  aria-label={t('meshcomDeviceCommands.runChoice', {
+                    command: cmd.token,
+                    value: choice,
+                  })}
+                  aria-pressed={isCurrent}
+                  onClick={() => {
+                    const line = `${cmd.token} ${choice}`;
+                    if (cmd.danger) {
+                      requestSend(line, true, line);
+                    } else {
+                      void sendNow(line);
+                    }
+                  }}
+                  className={`rounded-control border px-2 py-1 font-mono text-xs disabled:opacity-50 ${
+                    isCurrent
+                      ? 'border-brand-green bg-brand-green/20 text-bright-green'
+                      : 'border-ink-600 text-ink-200 hover:bg-ink-800'
+                  }`}
+                >
+                  {choice}
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="flex min-w-0 flex-1 gap-2 sm:max-w-md sm:flex-none">
@@ -307,7 +319,6 @@ export default function MeshComDeviceCommandsSection({
         title={t('meshcomDeviceCommands.groups.clock')}
         titleAs="span"
         anchorId="radio.meshcomCommands.autoSettime"
-        defaultOpen
       >
         <Switch
           checked={autoSettime}
@@ -337,7 +348,6 @@ export default function MeshComDeviceCommandsSection({
         if (rows.length === 0) return null;
         const body = <div className="space-y-3">{rows.map(renderCommandRow)}</div>;
         const title = groupTitle(group);
-        const defaultOpen = DEFAULT_OPEN_GROUPS.has(group);
         // anchorId literals must be static for settingsSearchAnchors (no template/object lookup).
         switch (group) {
           case 'display':
@@ -347,7 +357,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.display"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -359,7 +368,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.position"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -371,7 +379,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.sensors"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -383,7 +390,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.identity"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -395,7 +401,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.network"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -407,7 +412,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.gateway"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -419,7 +423,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.bluetooth"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -431,7 +434,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.neighbors"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -443,7 +445,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.mailbox"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -455,7 +456,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.debug"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -467,7 +467,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.power"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>
@@ -479,7 +478,6 @@ export default function MeshComDeviceCommandsSection({
                 title={title}
                 titleAs="span"
                 anchorId="radio.meshcomCommands.misc"
-                defaultOpen={defaultOpen}
               >
                 {body}
               </SettingsCollapsible>

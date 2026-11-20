@@ -5,6 +5,11 @@ import {
   normalizeMeshcomCallsign,
   parseMeshcomSrcPath,
 } from '../meshcom/meshcomCallsign';
+import {
+  emptyMeshcomDeviceSettingsAccum,
+  mergeMeshcomBleSettingsJson,
+  type MeshcomDeviceSettingsAccum,
+} from '../meshcom/meshcomDeviceSettings';
 import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
 import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import {
@@ -39,6 +44,10 @@ export interface MeshComDeviceHandle {
   callsignByNodeId: Map<number, string>;
   kissSession: MeshcomKissSession | null;
   nextMsgNumber: number;
+  /** BLE `{HELLO}` / `--info` settings accumulator (mutated by subscribe). */
+  deviceSettings: MeshcomDeviceSettingsAccum;
+  /** Resolvers waiting for BLE `CONFFIN` (or serial collect finish). */
+  deviceSettingsWaiters: (() => void)[];
 }
 
 function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number {
@@ -47,6 +56,77 @@ function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number
   const nodeId = callsignToNodeId(normalized);
   handle.callsignByNodeId.set(nodeId, normalized);
   return nodeId;
+}
+
+function notifyDeviceSettingsWaiters(handle: MeshComDeviceHandle): void {
+  const waiters = handle.deviceSettingsWaiters.splice(0, handle.deviceSettingsWaiters.length);
+  for (const resolve of waiters) resolve();
+}
+
+function emitSelfFromSettings(
+  handle: MeshComDeviceHandle,
+  emit: (event: DomainEvent) => void,
+): void {
+  const call = handle.deviceSettings.call;
+  if (!call) return;
+  handle.operatorCallsign = call;
+  const nodeId = rememberCallsign(handle, call);
+  const now = Date.now();
+  const freqMhz = Number.parseFloat(handle.deviceSettings.freqMhz ?? '');
+  const txPower = Number.parseInt(handle.deviceSettings.txPower ?? '', 10);
+  emit({
+    type: 'device_self_info',
+    payload: {
+      name: call,
+      publicKey: new Uint8Array(0),
+      type: 0,
+      txPower: Number.isFinite(txPower) ? txPower : 0,
+      radioFreq: Number.isFinite(freqMhz) ? Math.round(freqMhz * 1_000_000) : 0,
+      manualAddContacts: false,
+    },
+  });
+  emit({
+    type: 'node_info',
+    payload: {
+      nodeId,
+      longName: call,
+      shortName: (handle.deviceSettings.operatorName || call).slice(0, 4),
+      lastHeardAt: now,
+    },
+  });
+  if (handle.deviceSettings.fwver) {
+    emit({
+      type: 'device_metadata',
+      payload: { firmwareVersion: handle.deviceSettings.fwver },
+    });
+  }
+}
+
+function tryIngestSettingsJson(
+  handle: MeshComDeviceHandle,
+  text: string,
+  emit: (event: DomainEvent) => void,
+): boolean {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{') || !trimmed.includes('"TYP"')) return false;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch (e) {
+    console.debug(
+      '[MeshComProtocol] settings JSON parse failed ' +
+        (e instanceof Error ? e.message : String(e)),
+    );
+    return false;
+  }
+  const { confFin } = mergeMeshcomBleSettingsJson(handle.deviceSettings, parsed);
+  if (handle.deviceSettings.call) {
+    emitSelfFromSettings(handle, emit);
+  }
+  if (confFin) {
+    notifyDeviceSettingsWaiters(handle);
+  }
+  return true;
 }
 
 function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessageOptions): string {
@@ -328,6 +408,8 @@ export const meshcomProtocol: Protocol = {
       callsignByNodeId: new Map(),
       kissSession: transportParams.transport === 'tcp' ? new MeshcomKissSession() : null,
       nextMsgNumber: 1,
+      deviceSettings: emptyMeshcomDeviceSettingsAccum(),
+      deviceSettingsWaiters: [],
     };
   },
 
@@ -345,6 +427,7 @@ export const meshcomProtocol: Protocol = {
       const trimmed = text.trim();
       if (!trimmed) return;
       if (trimmed.startsWith('{')) {
+        if (tryIngestSettingsJson(device, trimmed, emit)) return;
         const parsed = parseMeshcomExtUdp(trimmed);
         if (parsed) {
           emitExtUdpEvents(device, new TextEncoder().encode(trimmed), emit);

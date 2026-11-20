@@ -9080,6 +9080,7 @@
       "advanced": "高级控制台和筛选器"
     },
     "appEligible": "应用程序/序列号",
-    "loadingConfig": "正在加载设备配置……"
+    "loadingConfig": "正在加载设备配置……",
+    "currentValue": "现在{{value}}"
   }
 }

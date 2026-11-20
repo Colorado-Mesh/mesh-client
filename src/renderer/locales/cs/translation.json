@@ -9165,6 +9165,7 @@
       "advanced": "Pokročilá konzole a filtr"
     },
     "appEligible": "Aplikace / Sériové číslo",
-    "loadingConfig": "Načítání konfigurace zařízení…"
+    "loadingConfig": "Načítání konfigurace zařízení…",
+    "currentValue": "nyní {{value}}"
   }
 }

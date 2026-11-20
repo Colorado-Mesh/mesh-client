@@ -145,6 +145,7 @@ import type { OurPosition } from '../lib/gpsSource';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import {
   formatMeshcomCountryFrequency,
+  getMeshcomCountryByCode,
   MESHCOM_COUNTRY_PROFILES,
 } from '../lib/meshcom/meshcomCountryProfiles';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
@@ -967,10 +968,21 @@ export default function RadioPanel({
       if (syncedDeviceOwnerRef.current === signature) return;
       syncedDeviceOwnerRef.current = signature;
       setLongName(deviceOwner.longName);
-      setShortName(truncateMeshtasticShortName(deviceOwner.shortName));
+      setShortName(
+        capabilities?.hasMeshcomDeviceCommands
+          ? deviceOwner.shortName
+          : truncateMeshtasticShortName(deviceOwner.shortName),
+      );
       setIsLicensed(deviceOwner.isLicensed);
     }
-  }, [deviceOwner]);
+  }, [capabilities?.hasMeshcomDeviceCommands, deviceOwner]);
+
+  useEffect(() => {
+    const code = meshcomDeviceCommands?.settings?.countryCode?.trim();
+    if (!code || !capabilities?.hasMeshcomDeviceCommands) return;
+    if (!getMeshcomCountryByCode(code)) return;
+    setMeshcomCountryCode((prev) => (prev === code ? prev : code));
+  }, [capabilities?.hasMeshcomDeviceCommands, meshcomDeviceCommands?.settings?.countryCode]);
 
   const shortNameValidationIssue = capabilities?.hasChannelConfig
     ? validateMeshtasticShortName(shortName)

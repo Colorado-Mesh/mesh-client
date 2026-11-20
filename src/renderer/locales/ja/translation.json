@@ -9080,6 +9080,7 @@
       "advanced": "高度なコンソールとフィルター"
     },
     "appEligible": "アプリ/シリアル番号",
-    "loadingConfig": "デバイス構成を読み込み中…"
+    "loadingConfig": "デバイス構成を読み込み中…",
+    "currentValue": "現在 {{value}}"
   }
 }
