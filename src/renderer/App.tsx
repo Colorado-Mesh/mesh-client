@@ -6160,7 +6160,10 @@ function AppContent() {
                                       }
                                       radioConnected={isConnectedOrOperational}
                                       locationFilter={locationFilter}
-                                      onToggleFavorite={panelActions.setNodeFavorited}
+                                      onToggleFavorite={
+                                        selectByProtocol(panelActionsByProtocol, protocol)
+                                          .setNodeFavorited
+                                      }
                                       mode={protocol}
                                       groups={contactGroups.groups}
                                       selectedGroupId={contactGroups.selectedGroupId}

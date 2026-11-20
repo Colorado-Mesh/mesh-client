@@ -794,6 +794,55 @@ describe('NodeListPanel import contacts', () => {
     },
   );
 
+  it('MeshCom Contacts exposes a favorite toggle on peer rows', async () => {
+    const user = userEvent.setup();
+    const onToggleFavorite = vi.fn();
+    const peerId = 0x1111;
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'OE1SELF-1', favorited: false })],
+      [
+        peerId,
+        makeNode({
+          node_id: peerId,
+          long_name: 'OE1PEER-1',
+          hw_model: 'HELTEC-V3',
+          favorited: false,
+        }),
+      ],
+    ]);
+    const { rerender } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={onToggleFavorite}
+        mode="meshcom"
+      />,
+    );
+    const addBtn = screen.getByRole('button', { name: /add to favorites/i });
+    expect(addBtn).toBeInTheDocument();
+    await user.click(addBtn);
+    expect(onToggleFavorite).toHaveBeenCalledWith(peerId, true);
+
+    const favorited = new Map(nodes);
+    favorited.set(peerId, { ...nodes.get(peerId)!, favorited: true });
+    rerender(
+      <NodeListPanel
+        nodes={favorited}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={onToggleFavorite}
+        mode="meshcom"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /remove from favorites/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
   it.each(['Chat', 'Sensor', 'Repeater', 'Room'])(
     'shows the key icon for any MeshCore %s contact with a known public key',
     async (hwModel) => {

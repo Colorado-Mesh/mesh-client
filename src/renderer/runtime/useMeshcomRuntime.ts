@@ -16,11 +16,11 @@ import {
   resolveOurPosition,
 } from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
-import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
+import { resolveMeshcomContactIdentity } from '../lib/meshcom/meshcomContactIdentity';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
 import { markMeshcomLocallyDeletedContact } from '../lib/meshcom/meshcomLocallyDeletedContacts';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -595,21 +595,44 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
-      // Prefer the UI-facing identity (same bucket as Contacts / nodesForUi), then the
-      // session ref — mirrors MeshCore so favorites do not land in a disconnected bucket.
-      const identityId = getIdentityIdForProtocol('meshcom') ?? resolveIdentityId();
-      const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+      const sessionId = resolveIdentityId();
+      const { identityId, existing, mirrorIdentityId } = resolveMeshcomContactIdentity(
+        nodeId,
+        sessionId,
+      );
       const callsign =
         normalizeMeshcomCallsign(existing?.longName ?? '') ||
         meshcomCallForNodeId(nodeId) ||
         normalizeMeshcomCallsign(existing?.shortName ?? '');
       if (!callsign) {
+        // Still patch when the row exists so Contacts does not look inert; DB needs a callsign.
+        if (existing) {
+          patchNodeFavorited(identityId, nodeId, favorited);
+          if (mirrorIdentityId) patchNodeFavorited(mirrorIdentityId, nodeId, favorited);
+        }
         console.warn(`[useMeshcomRuntime] setNodeFavorited: no callsign for node ${nodeId}`);
         return;
       }
       registerMeshcomCallsign(callsign);
       const prevFav = existing?.favorited ?? false;
       patchNodeFavorited(identityId, nodeId, favorited);
+      if (mirrorIdentityId) {
+        // Ensure Contacts (`getIdentityIdForProtocol`) sees the star when buckets diverge.
+        if (!useNodeStore.getState().nodes[mirrorIdentityId]?.[nodeId] && existing) {
+          upsertNodeRecord(mirrorIdentityId, {
+            nodeId,
+            longName: existing.longName,
+            shortName: existing.shortName,
+            lastHeardAt: existing.lastHeardAt,
+            latitude: existing.latitude,
+            longitude: existing.longitude,
+            batteryLevel: existing.batteryLevel,
+            favorited,
+          });
+        } else {
+          patchNodeFavorited(mirrorIdentityId, nodeId, favorited);
+        }
+      }
       try {
         await window.electronAPI.db.saveMeshcomContact({
           callsign,
@@ -621,9 +644,22 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           batt: existing?.batteryLevel ?? null,
           last_heard: existing?.lastHeardAt ?? null,
         });
+        if (mirrorIdentityId && mirrorIdentityId !== identityId) {
+          await window.electronAPI.db.saveMeshcomContact({
+            callsign,
+            identity_id: mirrorIdentityId,
+            node_id: nodeId >>> 0,
+            favorited: favorited ? 1 : 0,
+            lat: existing?.latitude ?? null,
+            lon: existing?.longitude ?? null,
+            batt: existing?.batteryLevel ?? null,
+            last_heard: existing?.lastHeardAt ?? null,
+          });
+        }
       } catch (e) {
         console.warn('[useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
         patchNodeFavorited(identityId, nodeId, prevFav);
+        if (mirrorIdentityId) patchNodeFavorited(mirrorIdentityId, nodeId, prevFav);
       }
     },
     [resolveIdentityId],
@@ -631,8 +667,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
   const deleteNode = useCallback(
     async (nodeId: number) => {
-      const identityId = getIdentityIdForProtocol('meshcom') ?? resolveIdentityId();
-      const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+      const sessionId = resolveIdentityId();
+      const { identityId, existing, mirrorIdentityId } = resolveMeshcomContactIdentity(
+        nodeId,
+        sessionId,
+      );
       const callsign =
         normalizeMeshcomCallsign(existing?.longName ?? '') ||
         meshcomCallForNodeId(nodeId) ||
@@ -644,8 +683,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       // Tombstone first so concurrent MHEARD/ingest cannot resurrect during awaits.
       markMeshcomLocallyDeletedContact(callsign);
       removeNode(identityId, nodeId);
+      if (mirrorIdentityId) removeNode(mirrorIdentityId, nodeId);
       try {
         await window.electronAPI.db.deleteMeshcomContact(identityId, callsign);
+        if (mirrorIdentityId && mirrorIdentityId !== identityId) {
+          await window.electronAPI.db.deleteMeshcomContact(mirrorIdentityId, callsign);
+        }
       } catch (e: unknown) {
         console.warn('[useMeshcomRuntime] deleteMeshcomContact ' + errLikeToLogString(e));
       }

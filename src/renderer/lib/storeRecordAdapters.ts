@@ -209,7 +209,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     heard_via_mqtt: record.heardViaMqtt,
     source: record.source,
     on_radio: record.onRadio,
-    favorited: record.favorited,
+    favorited: record.favorited ?? false,
     voltage: record.voltage,
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,

@@ -1124,9 +1124,13 @@ function NodeListPanel({
               <th scope="col" className="w-16 px-3 py-2">
                 {t('nodeListPanel.columnHealth')}
               </th>
-              <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
+              <th scope="col" className="w-8 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
                 <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
-                <Star aria-hidden size={14} className={`${ICON_SM_PLUS} text-muted`} />
+                <Star
+                  aria-hidden
+                  size={14}
+                  className={`${ICON_SM_PLUS} ${contactsLayout ? 'text-ink-400' : 'text-muted'}`}
+                />
               </th>
               {showNodeHexIdColumn && (
                 <th
@@ -1518,7 +1522,9 @@ function NodeListPanel({
                               className={`${ICON_MD} ${
                                 node.favorited
                                   ? 'fill-current text-yellow-400'
-                                  : 'text-muted hover:text-yellow-400'
+                                  : contactsLayout
+                                    ? 'text-ink-400 hover:text-yellow-400'
+                                    : 'text-muted hover:text-yellow-400'
                               }`}
                             />
                           </button>
