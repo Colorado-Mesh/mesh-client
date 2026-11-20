@@ -3929,7 +3929,7 @@
 <tr>
 <td><strong><code>release-repair</code></strong></td>
 <td>No custom secret; the workflow uses its job-scoped <code>GITHUB_TOKEN</code></td>
-<td><code>main</code>; required maintainer approval</td>
+<td>Manual <code>workflow_dispatch</code> on <code>main</code> only (approval); auto-repair on <code>release: published</code> skips this environment</td>
 </tr>
 </tbody>
 </table>
@@ -4035,7 +4035,7 @@ approval of the next unsigned Windows release.</p>
 <ol>
 <li>Go to GitHub → <strong>Releases</strong></li>
 <li>Open the new <strong>draft</strong> for the version tag</li>
-<li>Confirm the release <strong>tag</strong> is <code>vX.Y.Z</code> (not <code>untagged-*</code> — a wrong tag breaks the in-app updater footer and AUR/<code>mesh-client-bin</code> download URLs). Finalize CI fails if any matching release is still <code>untagged-*</code>; if Publish lands on a leftover placeholder, a maintainer must manually dispatch <strong>Repair published release tag</strong> and approve its <code>release-repair</code> environment.</li>
+<li>Confirm the release <strong>tag</strong> is <code>vX.Y.Z</code> (not <code>untagged-*</code> — a wrong tag breaks the in-app updater footer and AUR/<code>mesh-client-bin</code> download URLs). Finalize CI fails if any matching release is still <code>untagged-*</code>. <strong>Publish can still rebind <code>tag_name</code> to <code>untagged-*</code></strong> even after a green draft verify — the <strong>Repair published release tag</strong> workflow auto-runs on <code>release: published</code> (no approval) and reattaches <code>vX.Y.Z</code>. If that job fails or was skipped, dispatch the same workflow manually from <code>main</code> (requires <code>release-repair</code> environment approval).</li>
 <li>Confirm artifacts:</li>
 </ol>
 <table>
@@ -4134,7 +4134,8 @@ approval of the next unsigned Windows release.</p>
 <li>Historically caused when parallel <code>dist:*:publish</code> / softprops jobs each <code>POST</code>ed a draft after a List Releases miss. Current CI: only <code>prepare-github-release</code> may create (<code>MESH_CLIENT_ALLOW_DRAFT_CREATE=1</code>); builds/Flatpak upload by id; Flatpak waits with <code>ci-wait-github-draft-release.mjs</code>.</li>
 <li><strong>Draft tag detach (<code>untagged-*</code>):</strong> GitHub can leave a draft on <code>untagged-&lt;hex&gt;</code> while the annotated <code>vX.Y.Z</code> tag still exists (common during the upload window). Prepare asserts/repairs <code>tag_name</code> with the release job's scoped <code>GITHUB_TOKEN</code>, finalize consolidates again, and both paths <strong>delete orphan <code>refs/tags/untagged-*</code></strong> after a successful repair so Publish cannot rebind to a leftover placeholder. Refs that are still a live release’s <code>tag_name</code> (e.g. historical 5.27.0) are never deleted.</li>
 <li><strong><code>finalize-github-release</code></strong> runs consolidation then <strong><code>ci-verify-github-draft-release.mjs</code></strong>, which <strong>fails the workflow</strong> if the draft <code>tag_name</code> is still <code>untagged-*</code> <strong>or</strong> any matching release for that version is still on an untagged placeholder. Do not publish until that job is green and the draft tag shows <code>vX.Y.Z</code>.</li>
-<li><strong>Manual publish repair:</strong> if a published release still needs repair, dispatch <code>.github/workflows/repair-published-release-tag.yaml</code> from <code>main</code> with the release tag/name. Its <code>release-repair</code> environment requires maintainer approval and then reattaches <code>vX.Y.Z</code> via <code>scripts/repair-published-release-tag.mjs</code>.</li>
+<li><strong>Publish-time detach:</strong> clicking <strong>Publish release</strong> can rebind a green draft from <code>vX.Y.Z</code> to <code>untagged-*</code> (observed on v6.9.0 and v6.10.0 after finalize verify passed). <code>.github/workflows/repair-published-release-tag.yaml</code> listens for <code>release: types: [published]</code> and auto-runs <code>scripts/repair-published-release-tag.mjs --from-event</code> with <code>GITHUB_TOKEN</code> only (no environment approval). Adding repair to every OS release matrix job does <strong>not</strong> fix this — those jobs finish before Publish.</li>
+<li><strong>Manual publish repair:</strong> if auto-repair fails or a historical release is still wrong, dispatch the same workflow from <code>main</code> with the release tag/name. That path uses the <code>release-repair</code> environment (maintainer approval) then reattaches <code>vX.Y.Z</code>.</li>
 <li><strong>Finalize PATCH 403 (<code>Resource not accessible by integration</code>):</strong> the release job's scoped <code>GITHUB_TOKEN</code> must repair the protected release tag; tag repair must succeed or the verify step fails. Do not restore a repository-wide credential fallback.</li>
 <li><strong>Assets still split (external fork):</strong> <code>finalize-github-release</code> merges via <code>ci-ensure-github-draft-release.mjs</code>; outside CI run <code>node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z</code> (requires <code>GH_TOKEN</code>).</li>
 <li><strong>Do not force-move the <code>v*</code> tag while a release workflow is in progress.</strong> Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow <code>github.sha</code>.</li>
@@ -4201,7 +4202,7 @@ approval of the next unsigned Windows release.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 3, 2026 16:48:15 UTC">November 3, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 20, 2026 00:38:34 UTC">November 20, 2026</span>
   </span>
 
     
