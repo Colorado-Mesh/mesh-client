@@ -1173,6 +1173,8 @@
     "delete": "Eliminare",
     "copy": "Copia",
     "copied": "Copiati",
+    "copyFailed": "Impossibile copiare",
+    "copyRoute": "Copia percorso",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Rilevato come bot dalle sue risposte automatiche",

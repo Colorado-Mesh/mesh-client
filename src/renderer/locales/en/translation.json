@@ -1292,6 +1292,8 @@
     "delete": "Delete",
     "copy": "Copy",
     "copied": "Copied",
+    "copyFailed": "Couldn't copy",
+    "copyRoute": "Copy route",
     "loading": "Loading",
     "saving": "Saving...",
     "error": "Error",

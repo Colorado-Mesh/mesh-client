@@ -75,6 +75,7 @@ import {
   resolveRepeaterSnr,
   sortPreparedRepeaterRows,
 } from '../lib/repeaterListSort';
+import { formatMeshcoreTraceRoute } from '../lib/traceRouteCopyText';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -89,6 +90,7 @@ import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
 import { Button, buttonClassName } from './ui/Button';
+import { CopyButton } from './ui/CopyButton';
 import { INPUT_CLASS } from './ui/formClasses';
 import { MenuButton } from './ui/Menu';
 import { SegmentedControl } from './ui/SegmentedControl';
@@ -1713,6 +1715,18 @@ export default function RepeatersPanel({
                                     {traceResult.lastSnr.toFixed(2)} dB
                                   </span>
                                   <span className="text-white">▣ {node.long_name}</span>
+                                  <CopyButton
+                                    size="sm"
+                                    className="ml-1"
+                                    label={t('common.copyRoute')}
+                                    text={() =>
+                                      formatMeshcoreTraceRoute({
+                                        hops: traceHopRows,
+                                        destLabel: node.long_name,
+                                        lastSnr: traceResult.lastSnr,
+                                      })
+                                    }
+                                  />
                                 </div>
                               ) : null}
                               {currentRoute && !traceMatchesCurrentRoute ? (

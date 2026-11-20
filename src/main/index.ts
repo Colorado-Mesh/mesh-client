@@ -7,7 +7,6 @@ import {
   type Event as ElectronEvent,
   ipcMain,
   Menu,
-  MenuItem,
   type NativeImage,
   nativeImage,
   net,
@@ -286,6 +285,7 @@ import {
   resumePendingRendererStorageReset,
   runWebStorageOriginMigration,
 } from './webStorageOriginMigration';
+import { attachWindowContextMenu } from './windowContextMenu';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 import {
   attachWindowStatePersistence,
@@ -1906,65 +1906,22 @@ function createWindow() {
     flushPendingOpenUrl();
   });
 
-  // Electron does not show any context menu by default — we must call menu.popup().
-  // Spell suggestions only exist on this event (see spellchecker tutorial); always show
-  // cut/copy/paste for text fields so right-click works even with no misspelling.
-  win.webContents.on('context-menu', (event, params) => {
-    const isTextField =
-      params.isEditable ||
-      params.formControlType === 'text-area' ||
-      params.formControlType === 'input-text' ||
-      params.formControlType === 'input-search';
-    if (!isTextField) return;
-
-    event.preventDefault();
-    const ef = params.editFlags;
-    const suggestions = params.dictionarySuggestions ?? [];
-    const misspelledWord = params.misspelledWord ?? '';
-
-    const menu = new Menu();
-    if (suggestions.length > 0) {
-      for (const suggestion of suggestions) {
-        menu.append(
-          new MenuItem({
-            label: suggestion,
-            click: () => {
-              applySpellcheckSuggestion(
-                win,
-                suggestion,
-                misspelledWord,
-                params.selectionStartOffset,
-              );
-            },
-          }),
-        );
-      }
-      menu.append(new MenuItem({ type: 'separator' }));
-    }
-    if (misspelledWord) {
-      menu.append(
-        new MenuItem({
-          label: 'Add to dictionary',
-          click: () => {
-            void win.webContents.session.addWordToSpellCheckerDictionary(misspelledWord);
-          },
-        }),
+  // Electron does not show any context menu by default. Spell suggestions only exist on this
+  // event (see spellchecker tutorial). Text fields get cut/copy/paste even with no misspelling;
+  // selected read-only text (trace results, node details, logs) gets Copy.
+  attachWindowContextMenu(win, (params) => ({
+    replaceMisspelling: (suggestion) => {
+      applySpellcheckSuggestion(
+        win,
+        suggestion,
+        params.misspelledWord ?? '',
+        params.selectionStartOffset,
       );
-      menu.append(new MenuItem({ type: 'separator' }));
-    }
-    menu.append(new MenuItem({ role: 'cut', enabled: ef.canCut }));
-    menu.append(new MenuItem({ role: 'copy', enabled: ef.canCopy }));
-    menu.append(new MenuItem({ role: 'paste', enabled: ef.canPaste }));
-    menu.append(new MenuItem({ type: 'separator' }));
-    menu.append(new MenuItem({ role: 'selectAll', enabled: ef.canSelectAll }));
-
-    menu.popup({
-      window: win,
-      x: params.x,
-      y: params.y,
-      ...(params.frame ? { frame: params.frame } : {}),
-    });
-  });
+    },
+    addToDictionary: (word) => {
+      win.webContents.session.addWordToSpellCheckerDictionary(word);
+    },
+  }));
 
   // ─── Web Serial: Port Selection ────────────────────────────────────
   // Electron requires this handler for navigator.serial.requestPort()

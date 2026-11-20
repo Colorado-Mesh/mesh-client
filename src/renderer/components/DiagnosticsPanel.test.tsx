@@ -1100,3 +1100,58 @@ describe('DiagnosticsPanel node hex ids', () => {
     expect(screen.getByText(formatMeshtasticNodeId(nodeId))).toBeInTheDocument();
   });
 });
+
+describe('DiagnosticsPanel trace route copy', () => {
+  it('copies a finished trace route as one line', async () => {
+    const nodeId = 0x1234;
+    const relayId = 0x55;
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'routing',
+        id: `routing:${nodeId}`,
+        nodeId,
+        type: 'hop_goblin',
+        severity: 'warning',
+        description: 'Test anomaly',
+        detectedAt: Date.now(),
+      } satisfies RoutingDiagnosticRow,
+    ];
+    diagnosticsStoreState.packetStats = new Map();
+    const labels = new Map([
+      [0, 'Base'],
+      [relayId, 'Ridge Relay'],
+      [nodeId, 'Trailhead'],
+    ]);
+    const props = {
+      nodes: new Map([[nodeId, minimalNode(nodeId)]]),
+      myNodeNum: 0,
+      onTraceRoute: vi.fn().mockResolvedValue(undefined),
+      isConnected: true,
+      getFullNodeLabel: (id: number) => labels.get(id) ?? '?',
+      protocol: 'meshtastic' as const,
+    };
+    const { rerender } = render(<DiagnosticsPanel {...props} traceRouteResults={new Map()} />);
+    expect(screen.queryByRole('button', { name: 'Copy route' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trace Route' }));
+    rerender(
+      <DiagnosticsPanel
+        {...props}
+        traceRouteResults={
+          new Map([[nodeId, { route: [relayId], from: nodeId, timestamp: Date.now() }]])
+        }
+      />,
+    );
+
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockReset();
+    writeText.mockResolvedValue(undefined);
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy route' }));
+    const arrow = String.fromCodePoint(0x2192);
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledExactlyOnceWith(
+        `Base ${arrow} Ridge Relay ${arrow} Trailhead`,
+      );
+    });
+  });
+});

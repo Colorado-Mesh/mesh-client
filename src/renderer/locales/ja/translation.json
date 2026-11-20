@@ -1173,6 +1173,8 @@
     "delete": "消去",
     "copy": "コピー",
     "copied": "コピーしました",
+    "copyFailed": "コピーできませんでした",
+    "copyRoute": "ルートをコピー",
     "botBadge": "ボット",
     "botBadgeLabel": "ボット",
     "botBadgeTooltip": "自動返信からボットとして検出される",

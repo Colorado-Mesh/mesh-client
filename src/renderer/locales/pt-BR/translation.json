@@ -1173,6 +1173,8 @@
     "delete": "Excluir",
     "copy": "Copiar",
     "copied": "Copiado",
+    "copyFailed": "Não foi possível copiar",
+    "copyRoute": "Copiar rota",
     "botBadge": "Robô",
     "botBadgeLabel": "Robô",
     "botBadgeTooltip": "Detectado como um bot em suas respostas automatizadas",
