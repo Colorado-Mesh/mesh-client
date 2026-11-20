@@ -56,6 +56,8 @@ A conversation cannot be pinned and archived at once: pinning an archived conver
 
 **Order chats** opens a dialog to rearrange chips by dragging a handle, using the arrow keys, or using the move buttons. **Sort A–Z** orders by displayed name and **Default order** restores the original. This changes only how chats are displayed, never channel indices, destinations, or room membership.
 
+You can also drag a channel chip in the Chat strip with the mouse and drop it on another chip. It lands before or after that chip, depending on which half you drop on, and a bar shows where. Press Escape to cancel. Pinned channels stay first in the order you pinned them, so they cannot be dragged or dropped onto. If the strip scrolls, drag the chip to its top or bottom edge to scroll it. The new order is the same one **Order chats** shows.
+
 ### Remove and clear (MeshCore)
 
 Right-click a MeshCore channel chip (or press the menu key, or Shift+F10 with the chip focused) to open its menu:

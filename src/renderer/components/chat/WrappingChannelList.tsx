@@ -1,6 +1,8 @@
 import { type ReactNode, useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { CHIP_DRAG_SCROLL_ATTRIBUTE } from '@/renderer/hooks/useChipDragReorder';
+
 interface WrappingChannelListProps {
   activeKey: number | null;
   children: ReactNode;
@@ -124,6 +126,7 @@ export function WrappingChannelList({
         id={id}
         ref={viewportRef}
         role="region"
+        {...{ [CHIP_DRAG_SCROLL_ATTRIBUTE]: '' }}
         aria-label={t(kind === 'dms' ? 'chatPanel.dms' : 'chatPanel.channels')}
         tabIndex={overflow ? 0 : undefined}
         onScroll={measure}

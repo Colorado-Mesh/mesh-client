@@ -53,6 +53,13 @@ export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
   }`;
 }
 
+/**
+ * Drag-to-reorder feedback for chips that spread `useChipDragReorder` props: the dragged chip
+ * dims and a 2px accent bar marks the side it will land on, inside the gap between chips.
+ */
+export const CHIP_DRAG_CLASS =
+  'relative data-[chip-dragging=true]:opacity-50 before:pointer-events-none before:absolute before:inset-y-0.5 before:hidden before:w-0.5 before:rounded-full before:bg-brand-green data-[drop-side]:before:block data-[drop-side=before]:before:-start-1 data-[drop-side=after]:before:-end-1';
+
 /** Inline notices inside a panel. */
 export const NOTICE_CLASS: Record<'info' | 'warn' | 'error' | 'success', string> = {
   info: 'rounded-card border border-ink-800 bg-app-bg px-3 py-2 text-xs text-ink-300',

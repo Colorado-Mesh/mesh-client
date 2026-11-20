@@ -129,6 +129,16 @@ radio/self id and surface (RRC uses the hub). This changes presentation only, ne
 indices, message destinations, room membership, favorites or credentials. Temporarily absent
 entries retain their slots while visible entries are reordered.
 
+Channel chips in the Chat strip can also be dragged directly (`useChipDragReorder`, native HTML5
+drag and drop). A drop saves through the same `useChatOrder` store with `moveChatOrderId`, so
+hidden archived channels stay next to their neighbours. Drop feedback is written to the chips'
+`data-chip-dragging` / `data-drop-side` attributes (styled by `CHIP_DRAG_CLASS`) rather than React
+state, so ChatPanel does not re-render while the pointer moves. Only drags carrying the hook's own
+`CHIP_ORDER_DRAG_TYPE` are accepted. Pinned chips get no drag props, since pin order wins. The
+strip's scroll container carries `data-chip-drag-scroll`, and a drag over a chip near its top or
+bottom edge scrolls it. Reticulum Chat lists DMs instead of channels (`dmOnlyChat`), so it has no
+channel strip; keyboard users reorder with the dialog.
+
 MeshCore Chat and Rooms offer **Sync chats from radio** for a connected companion after setup.
 This reads contacts and channel slots without changing the radio. Room contacts merge with local
 history, names, favorites and saved credentials. The explicit reader checks ChannelInfo indices,
