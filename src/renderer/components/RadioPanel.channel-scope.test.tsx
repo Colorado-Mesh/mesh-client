@@ -115,6 +115,56 @@ describe('MeshCore channel scope settings and QR', () => {
     },
   );
 
+  it('unions discovered public hashtags into the channel scope select and excludes private/wildcard', () => {
+    render(
+      panel({
+        meshcoreFloodScopePresets: ['#metro', '#us-tn-tri'],
+        meshcoreDiscoveredRegions: [
+          {
+            name: 'us-tn-tri',
+            scopeHashtag: '#us-tn-tri',
+            depth: 3,
+            home: false,
+            floodAllowed: true,
+            sources: [1],
+          },
+          {
+            name: 'us-tn',
+            scopeHashtag: '#us-tn',
+            depth: 2,
+            home: false,
+            floodAllowed: true,
+            sources: [1],
+          },
+          {
+            name: '$private',
+            scopeHashtag: null,
+            depth: 1,
+            home: false,
+            floodAllowed: false,
+            sources: [1],
+          },
+          {
+            name: '*',
+            scopeHashtag: null,
+            depth: 0,
+            home: true,
+            floodAllowed: true,
+            sources: [1],
+          },
+        ],
+      }),
+    );
+    const section = openChannels();
+    fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+    const select = section.getByRole('combobox', { name: 'Send scope for this channel' });
+    expect(within(select).getByRole('option', { name: '#metro' })).toBeInTheDocument();
+    expect(within(select).getByRole('option', { name: '#us-tn' })).toBeInTheDocument();
+    expect(within(select).getAllByRole('option', { name: '#us-tn-tri' })).toHaveLength(1);
+    expect(within(select).queryByRole('option', { name: '$private' })).toBeNull();
+    expect(within(select).queryByRole('option', { name: '*' })).toBeNull();
+  });
+
   it('truncates a long QR channel name and drops an over-long flood scope', () => {
     render(panel({ onMeshcoreSetChannel: vi.fn() }));
     const section = openChannels();
