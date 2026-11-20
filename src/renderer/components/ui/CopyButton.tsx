@@ -53,8 +53,9 @@ export function CopyButton({
   };
 
   const handleCopy = () => {
-    const value = typeof text === 'function' ? text() : text;
-    writeClipboardText(value)
+    // Build the text inside the chain so a builder that throws also reaches the failed state.
+    Promise.resolve()
+      .then(() => writeClipboardText(typeof text === 'function' ? text() : text))
       .then(() => {
         showResult('copied');
       })

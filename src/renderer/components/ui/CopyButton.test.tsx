@@ -53,6 +53,27 @@ describe('CopyButton', () => {
     }
   });
 
+  it('says the copy failed when building the text throws', async () => {
+    const warn = mockConsoleWarn();
+    try {
+      const user = userEvent.setup();
+      render(
+        <CopyButton
+          text={() => {
+            throw new Error('builder broke');
+          }}
+          label="Copy route"
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Copy route' }));
+      expect(await screen.findByRole('status')).toHaveTextContent("Couldn't copy");
+      expect(writeText).not.toHaveBeenCalled();
+      expect(warn.spy).toHaveBeenCalled();
+    } finally {
+      warn.restore();
+    }
+  });
+
   it('clears the Copied state after a short time', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
