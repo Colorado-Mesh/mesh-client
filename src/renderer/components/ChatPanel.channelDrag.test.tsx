@@ -133,6 +133,51 @@ describe.each<MeshProtocol>(['meshtastic', 'meshcore', 'reticulum'])(
       expect(savedOrder(protocol)).toEqual(['3', '1', '2', '0']);
     });
 
+    it('keeps focus on a focused chip after dropping it', () => {
+      renderPanel(protocol);
+      chip('General').focus();
+      drag('General', 'Alerts', 'after');
+      expect(order()).toEqual(['Ops', 'Alerts', 'General', 'Wx']);
+      expect(chip('General')).toHaveFocus();
+    });
+
+    it('keeps the chips a drop passes over mounted', () => {
+      renderPanel(protocol);
+      const ops = chip('Ops');
+      const alerts = chip('Alerts');
+      drag('General', 'Alerts', 'after');
+      expect(chip('Ops')).toBe(ops);
+      expect(chip('Alerts')).toBe(alerts);
+    });
+
+    it('refuses a drop when another radio took over the strip mid-drag', () => {
+      const { rerender } = renderPanel(protocol);
+      const data = transfer();
+      fireEvent.dragStart(chip('General'), { dataTransfer: data });
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...props(protocol, { myNodeNum: 2 })} />
+        </ToastProvider>,
+      );
+      const goal = chip('Alerts');
+      vi.spyOn(goal, 'getBoundingClientRect').mockReturnValue({
+        left: 100,
+        right: 160,
+        width: 60,
+        top: 0,
+        bottom: 24,
+        height: 24,
+        x: 100,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      expect(fireEvent.dragOver(goal, { dataTransfer: data, clientX: 150 })).toBe(true);
+      fireEvent.drop(goal, { dataTransfer: data, clientX: 150 });
+      expect(order()).toEqual(NAMES);
+      expect(localStorage.getItem(`mesh-client:chatOrder:${protocol}:2:channels`)).toBeNull();
+      expect(savedOrder(protocol)).toBeNull();
+    });
+
     it('does not select a channel by dragging, but a click still selects it', () => {
       renderPanel(protocol);
       expect(chip('General')).toHaveAttribute('aria-pressed', 'true');

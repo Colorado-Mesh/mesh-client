@@ -3427,10 +3427,13 @@ function ChatPanel({
   // Display order only, like the Order chats dialog. Pinned chips keep pin order, so they are
   // neither dragged nor drop targets.
   const channelDrag = useChipDragReorder({
+    scope: `${protocol}:${myNodeNum}:channels`,
     canMove: (id) => !conversationPins.pinned.has(`ch:${id}`),
     onMove: (id, target, side) => {
       const next = moveChatOrderId(channelOrder.ids, id, target, side);
-      if (next) channelOrder.save(next);
+      if (!next) return false;
+      channelOrder.save(next);
+      return true;
     },
   });
   const dmOrderItems = visibleDmTabs.map((id) => ({ id: String(id), name: getDmLabel(id) }));
@@ -3640,7 +3643,7 @@ function ChatPanel({
                 onSave={channelOrder.save}
               />
               <WrappingChannelList activeKey={channelViewActive ? channel : null}>
-                {orderedChannels.map((ch, chIdx) => {
+                {orderedChannels.map((ch) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
                   // Selection alone does not advance the read watermark.
                   const unread = unreadCounts.get(ch.index) ?? 0;
@@ -3665,7 +3668,9 @@ function ChatPanel({
                   return (
                     <button
                       type="button"
-                      key={`ch-${ch.index}-${chIdx}-${ch.name}`}
+                      // Keyed by channel, not position: a reorder moves chips instead of
+                      // remounting them.
+                      key={`ch-${ch.index}-${ch.name}`}
                       aria-label={chAriaLabel}
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}

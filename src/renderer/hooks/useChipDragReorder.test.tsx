@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
@@ -10,8 +11,36 @@ import {
 } from './useChipDragReorder';
 
 interface HarnessProps {
-  onMove: (id: string, target: string, side: 'before' | 'after') => void;
+  onMove: (id: string, target: string, side: 'before' | 'after') => boolean | undefined;
   fixed?: ReadonlySet<string>;
+}
+
+/**
+ * Keeps its own order and keys chips by position, so a move remounts the chips it passes (the
+ * case that loses focus). `scope` stands in for the protocol and radio the order belongs to.
+ */
+function Reordering({ scope, extra }: { scope: string; extra?: boolean }) {
+  const [ids, setIds] = useState(['a', 'b', 'c']);
+  const chipDrag = useChipDragReorder({
+    scope,
+    canMove: () => true,
+    onMove: (id, target, side) => {
+      const next = ids.filter((entry) => entry !== id);
+      next.splice(next.indexOf(target) + (side === 'after' ? 1 : 0), 0, id);
+      setIds(next);
+      return true;
+    },
+  });
+  return (
+    <div {...{ [CHIP_DRAG_SCROLL_ATTRIBUTE]: '' }}>
+      {extra && <input aria-label="composer" />}
+      {ids.map((id, index) => (
+        <button key={`${id}-${String(index)}`} type="button" aria-label={id} {...chipDrag(id)}>
+          {id}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function Harness({ onMove, fixed = new Set() }: HarnessProps) {
@@ -143,6 +172,52 @@ describe('useChipDragReorder', () => {
     place(chip('c'));
     fireEvent.dragOver(chip('c'), { dataTransfer: data, clientX: 130, clientY: 1 });
     expect(scroller.scrollTop).toBe(0);
+  });
+
+  it('keeps focus on a focused chip after it is dropped and remounted', () => {
+    render(<Reordering scope="meshcore:1" />);
+    const data = transfer();
+    chip('a').focus();
+    fireEvent.dragStart(chip('a'), { dataTransfer: data });
+    place(chip('c'));
+    fireEvent.dragOver(chip('c'), { dataTransfer: data, clientX: 130 });
+    fireEvent.drop(chip('c'), { dataTransfer: data, clientX: 130 });
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'b',
+      'c',
+      'a',
+    ]);
+    expect(chip('a')).toHaveFocus();
+  });
+
+  it('does not move focus to a chip that did not have it', () => {
+    render(<Reordering scope="meshcore:1" extra />);
+    const composer = screen.getByRole('textbox', { name: 'composer' });
+    composer.focus();
+    const data = transfer();
+    fireEvent.dragStart(chip('a'), { dataTransfer: data });
+    place(chip('c'));
+    fireEvent.dragOver(chip('c'), { dataTransfer: data, clientX: 130 });
+    fireEvent.drop(chip('c'), { dataTransfer: data, clientX: 130 });
+    expect(composer).toHaveFocus();
+  });
+
+  it('refuses a drop after the order it belongs to changed', () => {
+    const { rerender } = render(<Reordering scope="meshcore:1" />);
+    const data = transfer();
+    fireEvent.dragStart(chip('a'), { dataTransfer: data });
+    // Another radio connects mid-drag; the same chip ids now belong to its order.
+    rerender(<Reordering scope="meshcore:2" />);
+    place(chip('c'));
+    expect(fireEvent.dragOver(chip('c'), { dataTransfer: data, clientX: 130 })).toBe(true);
+    expect(chip('c')).not.toHaveAttribute('data-drop-side');
+    fireEvent.drop(chip('c'), { dataTransfer: data, clientX: 130 });
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(chip('a')).not.toHaveAttribute('data-chip-dragging');
   });
 
   it('refuses a drop on the dragged chip itself', () => {

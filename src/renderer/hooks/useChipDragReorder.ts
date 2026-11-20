@@ -1,4 +1,4 @@
-import { type DragEvent, type HTMLAttributes, useRef } from 'react';
+import { type DragEvent, type HTMLAttributes, useLayoutEffect, useRef } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
@@ -8,16 +8,23 @@ import type { ChatOrderSide } from './useChatOrder';
 export const CHIP_ORDER_DRAG_TYPE = 'application/x-mesh-client-chip-order';
 
 interface Options {
+  /**
+   * The order the chips belong to (protocol and radio). A drag that started under another scope
+   * is refused, so a radio switch mid-drag cannot save into the new radio's order.
+   */
+  scope?: string;
   /** Chips that may be dragged and dropped onto. Other chips are left alone. */
   canMove: (id: string) => boolean;
-  /** Called once per drop; the caller saves the new order. */
-  onMove: (id: string, target: string, side: ChatOrderSide) => void;
+  /** Called once per drop; the caller saves the new order and returns true when it changed. */
+  onMove: (id: string, target: string, side: ChatOrderSide) => boolean | undefined;
 }
 
 interface DragState {
   id: string;
+  scope: string;
   source: HTMLElement;
   target: HTMLElement | null;
+  hadFocus: boolean;
 }
 
 type ChipDragProps = Pick<
@@ -29,7 +36,7 @@ type ChipDragProps = Pick<
   | 'onDragLeave'
   | 'onDrop'
   | 'onDragEnd'
->;
+> & { 'data-chip-order-id'?: string };
 
 /** Put this attribute on the chips' scroll container so a drag near its edge scrolls it. */
 export const CHIP_DRAG_SCROLL_ATTRIBUTE = 'data-chip-drag-scroll';
@@ -63,8 +70,25 @@ function dropSide(event: DragEvent<HTMLElement>): ChatOrderSide {
  * chips' `data-chip-dragging` / `data-drop-side` attributes so the parent does not re-render on
  * every pointer move. Keyboard users reorder with the Order chats dialog.
  */
-export function useChipDragReorder({ canMove, onMove }: Options) {
+export function useChipDragReorder({ scope = '', canMove, onMove }: Options) {
   const drag = useRef<DragState | null>(null);
+  // A drop re-renders the chips and can remount the moved one, which drops its focus.
+  const refocus = useRef<{ id: string; root: HTMLElement } | null>(null);
+
+  useLayoutEffect(() => {
+    const pending = refocus.current;
+    if (!pending) return;
+    refocus.current = null;
+    const active = document.activeElement;
+    // Only put focus back if it was lost; never take it from something the user moved it to.
+    if (active && active !== document.body && active.isConnected) return;
+    for (const chip of pending.root.querySelectorAll<HTMLElement>('[data-chip-order-id]')) {
+      if (chip.dataset.chipOrderId === pending.id) {
+        chip.focus();
+        return;
+      }
+    }
+  });
 
   const clearTarget = () => {
     const current = drag.current;
@@ -83,6 +107,10 @@ export function useChipDragReorder({ canMove, onMove }: Options) {
   const hover = (id: string, event: DragEvent<HTMLElement>) => {
     const current = drag.current;
     if (!current || !isChipDrag(event)) return;
+    if (current.scope !== scope) {
+      finish();
+      return;
+    }
     // Browsers fire dragover repeatedly while the pointer rests, so holding near an edge keeps
     // scrolling a strip that overflows.
     scrollNearEdge(event);
@@ -103,12 +131,20 @@ export function useChipDragReorder({ canMove, onMove }: Options) {
     if (!canMove(id)) return {};
     return {
       draggable: true,
+      'data-chip-order-id': id,
       onDragStart: (event) => {
         finish();
+        refocus.current = null;
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData(CHIP_ORDER_DRAG_TYPE, id);
         event.currentTarget.dataset.chipDragging = 'true';
-        drag.current = { id, source: event.currentTarget, target: null };
+        drag.current = {
+          id,
+          scope,
+          source: event.currentTarget,
+          target: null,
+          hadFocus: document.activeElement === event.currentTarget,
+        };
       },
       onDragEnter: (event) => {
         hover(id, event);
@@ -125,12 +161,19 @@ export function useChipDragReorder({ canMove, onMove }: Options) {
       onDrop: (event) => {
         const current = drag.current;
         if (!current || current.id === id || !isChipDrag(event)) return;
+        if (current.scope !== scope) {
+          finish();
+          return;
+        }
         event.preventDefault();
         const side = dropSide(event);
         const moved = current.id;
+        const root = event.currentTarget.parentElement;
         finish();
         try {
-          onMove(moved, id, side);
+          if (onMove(moved, id, side) && current.hadFocus && root) {
+            refocus.current = { id: moved, root };
+          }
         } catch (error) {
           console.warn('[useChipDragReorder] move failed ' + errLikeToLogString(error));
         }
