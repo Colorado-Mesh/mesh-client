@@ -2945,53 +2945,55 @@ export default function NodeDetailModal({
               {t('nodeDetailModal.forgetAdvert')}
             </Button>
           ) : null}
-          {!showDeleteConfirm ? (
-            <Button
-              variant="danger"
-              size="sm"
-              className="mt-2"
-              onClick={() => {
-                setShowDeleteConfirm(true);
-              }}
-            >
-              {t('nodeDetailModal.deleteNode')}
-            </Button>
-          ) : (
-            <div className={`mt-2 ${NOTICE_CLASS.error}`}>
-              <p className="mb-2">{t('nodeDetailModal.deleteNodeConfirm')}</p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                  }}
-                >
-                  {t('nodeDetailModal.cancel')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => {
-                    onDeleteNode?.(node.node_id)
-                      .then(onClose)
-                      .catch((e: unknown) => {
-                        setActionStatusIsDeleteMqttError(isDeleteActiveMqttIdentityError(e));
-                        setActionStatus(
-                          isDeleteActiveMqttIdentityError(e)
-                            ? t('nodeDetailModal.deleteFailedMqtt')
-                            : e instanceof Error
-                              ? e.message
-                              : t('nodeDetailModal.deleteFailedMqtt'),
-                        );
-                        setShowDeleteConfirm(false);
-                      });
-                  }}
-                >
-                  {t('nodeDetailModal.confirmDelete')}
-                </Button>
+          {onDeleteNode ? (
+            !showDeleteConfirm ? (
+              <Button
+                variant="danger"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                }}
+              >
+                {t('nodeDetailModal.deleteNode')}
+              </Button>
+            ) : (
+              <div className={`mt-2 ${NOTICE_CLASS.error}`}>
+                <p className="mb-2">{t('nodeDetailModal.deleteNodeConfirm')}</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    {t('nodeDetailModal.cancel')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      void onDeleteNode(node.node_id)
+                        .then(onClose)
+                        .catch((e: unknown) => {
+                          setActionStatusIsDeleteMqttError(isDeleteActiveMqttIdentityError(e));
+                          setActionStatus(
+                            isDeleteActiveMqttIdentityError(e)
+                              ? t('nodeDetailModal.deleteFailedMqtt')
+                              : e instanceof Error
+                                ? e.message
+                                : t('nodeDetailModal.deleteFailedMqtt'),
+                          );
+                          setShowDeleteConfirm(false);
+                        });
+                    }}
+                  >
+                    {t('nodeDetailModal.confirmDelete')}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          ) : null}
         </div>
       </div>
     </>

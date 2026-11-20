@@ -198,6 +198,18 @@ describe('NodeInfoBody', () => {
     expect(screen.queryByText('Type')).not.toBeInTheDocument();
     expect(screen.queryByText('Short Name')).not.toBeInTheDocument();
     expect(screen.queryByText('Source')).not.toBeInTheDocument();
+    expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();
+  });
+
+  it('hides RF Diagnostics when protocol hasRfStats is false', () => {
+    const self = makeNode({
+      node_id: 7,
+      long_name: 'OE1SELF-1',
+      channel_utilization: 0.1,
+    });
+    render(<NodeInfoBody node={self} homeNode={self} protocol="meshcom" />);
+    expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();
+    expect(screen.queryByText('All RF diagnostics OK')).not.toBeInTheDocument();
   });
 
   it('MeshCom detail omits Hardware when hw_model is empty', () => {

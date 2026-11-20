@@ -145,6 +145,29 @@ export function validateSaveMeshcomContact(
   }
 }
 
+/** Validate `db:deleteMeshcomContact` args (throws on invalid fields). */
+export function validateDeleteMeshcomContact(
+  identityId: unknown,
+  callsign: unknown,
+): { identityId: string; callsign: string } {
+  if (typeof identityId !== 'string' || !identityId.trim()) {
+    throw new Error('db:deleteMeshcomContact: identityId must be a non-empty string');
+  }
+  if (identityId.length > MAX_IDENTITY_LEN) {
+    throw new Error('db:deleteMeshcomContact: identityId too long');
+  }
+  if (typeof callsign !== 'string' || !callsign.trim()) {
+    throw new Error('db:deleteMeshcomContact: callsign must be a non-empty string');
+  }
+  if (callsign.length > MAX_CALLSIGN_LEN) {
+    throw new Error('db:deleteMeshcomContact: callsign too long');
+  }
+  return {
+    identityId: identityId.trim().slice(0, MAX_IDENTITY_LEN),
+    callsign: callsign.trim().slice(0, MAX_CALLSIGN_LEN).toUpperCase(),
+  };
+}
+
 export interface MeshcomDbIpcDeps {
   ipcMain: IpcMain;
 }
@@ -348,6 +371,21 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
       return { changes: result.changes };
     } catch (err) {
       finishDbIpcHandler('db:saveMeshcomContact', err);
+    }
+  });
+
+  ipcMain.handle('db:deleteMeshcomContact', (event, identityId: unknown, callsign: unknown) => {
+    if (!validateIpcSender(event)) throw new Error('db:deleteMeshcomContact: unauthorized sender');
+    try {
+      const args = validateDeleteMeshcomContact(identityId, callsign);
+      const db = getDbForIpc('db:deleteMeshcomContact');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce('DELETE FROM meshcom_contacts WHERE identity_id = ? AND callsign = ?')
+        .run(args.identityId, args.callsign);
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteMeshcomContact', err);
     }
   });
 }

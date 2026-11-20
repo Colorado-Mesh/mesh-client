@@ -1060,7 +1060,8 @@ function RFDiagnosticsSection({
   protocol?: MeshProtocol;
 }) {
   const { t } = useTranslation();
-  const { showsNodeNumHexId } = useRadioProvider(protocol);
+  const capabilities = useRadioProvider(protocol);
+  const { showsNodeNumHexId } = capabilities;
   const getCuStats24h = useDiagnosticsStore((s) => s.getCuStats24h);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
@@ -1071,6 +1072,11 @@ function RFDiagnosticsSection({
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
   const anomaliesMap = diagnosticRowsToRoutingMap(protocolDiagnosticRows);
 
+  // MeshCom (and any protocol without RF stats) must not show Meshtastic "no telemetry / all OK".
+  if (!capabilities.hasRfStats) {
+    return null;
+  }
+
   let findings: RFDiagnosis[] | null;
   let totalChecks: number | null = null;
   let noTelemetry = false;
@@ -1079,6 +1085,7 @@ function RFDiagnosticsSection({
     const cuStats24h = getCuStats24h(node.node_id);
     findings = diagnoseConnectedNode(node, {
       cuStats24h: cuStats24h ?? undefined,
+      capabilities,
     });
     totalChecks = 9;
     // If no LocalStats and no channel_utilization, we have no data at all
@@ -1089,6 +1096,7 @@ function RFDiagnosticsSection({
     const cuStatsOther = getCuStats24h(node.node_id);
     findings = diagnoseOtherNode(node, {
       cuStats24h: cuStatsOther ?? undefined,
+      capabilities,
     });
     if (findings === null) noTelemetry = true;
   }

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCom yet */
+import { MS_PER_SECOND } from '@/shared/timeConstants';
+
 import { parseMeshcomAprsPhoneFrame } from '../meshcom/meshcomAprsPhone';
 import {
   encodeMeshcomBleCommand,
@@ -41,6 +43,34 @@ const unsupported = (op: string) => {
   throw new UnsupportedOperation(`meshcom ${op}`);
 };
 
+/** How long sendMessage waits for a KISS TX_RESULT before failing the promise. */
+const MESHCOM_KISS_TX_ACK_TIMEOUT_MS = 8 * MS_PER_SECOND;
+
+function settleKissTxWaiter(
+  handle: MeshComDeviceHandle,
+  msgId: number,
+  outcome: 'ack' | 'nack',
+  statusByte: number,
+): void {
+  const waiter = handle.kissTxWaiters.get(msgId);
+  if (!waiter) return;
+  handle.kissTxWaiters.delete(msgId);
+  clearTimeout(waiter.timer);
+  if (outcome === 'ack') {
+    waiter.resolve();
+    return;
+  }
+  waiter.reject(new Error(`KISS TX rejected status=0x${statusByte.toString(16)}`));
+}
+
+function clearKissTxWaiters(handle: MeshComDeviceHandle): void {
+  for (const waiter of handle.kissTxWaiters.values()) {
+    clearTimeout(waiter.timer);
+    waiter.reject(new Error('MeshCom connection closed'));
+  }
+  handle.kissTxWaiters.clear();
+}
+
 /** Runtime handle returned by {@link meshcomProtocol.createDevice}. */
 export interface MeshComDeviceHandle {
   connection: MeshComConnection;
@@ -51,6 +81,11 @@ export interface MeshComDeviceHandle {
   callsignByNodeId: Map<number, string>;
   kissSession: MeshcomKissSession | null;
   nextMsgNumber: number;
+  /** Pending KISS TX_RESULT waiters keyed by msg number (TCP only). */
+  kissTxWaiters: Map<
+    number,
+    { resolve: () => void; reject: (err: Error) => void; timer: ReturnType<typeof setTimeout> }
+  >;
   /** BLE `{HELLO}` / `--info` settings accumulator (mutated by subscribe). */
   deviceSettings: MeshcomDeviceSettingsAccum;
   /** Resolvers waiting for BLE `CONFFIN` (or serial collect finish). */
@@ -558,13 +593,20 @@ function emitKissEvents(
   for (const event of events) {
     if (event.type === 'tx_result') {
       const { status, msgId } = event.result;
-      // Firmware: 0x01 = accepted (+ msg_id); other codes = reject / fail.
+      // Firmware: 0x01 = accepted (+ msg_id); other codes = reject / fail (msg_id often omitted).
       const isAck = status === 0x01;
-      if (msgId != null && Number.isFinite(msgId)) {
+      const settleId =
+        msgId != null && Number.isFinite(msgId)
+          ? msgId >>> 0
+          : handle.kissTxWaiters.size === 1
+            ? handle.kissTxWaiters.keys().next().value
+            : undefined;
+      if (settleId != null) {
+        settleKissTxWaiter(handle, settleId, isAck ? 'ack' : 'nack', status);
         emit({
           type: 'meshtastic_routing_ack',
           payload: {
-            requestId: msgId >>> 0,
+            requestId: settleId,
             ackProofStatus: isAck ? 1 : 0,
             isAck,
           },
@@ -691,6 +733,7 @@ export const meshcomProtocol: Protocol = {
       callsignByNodeId: new Map(),
       kissSession: transportParams.transport === 'tcp' ? new MeshcomKissSession() : null,
       nextMsgNumber: 1,
+      kissTxWaiters: new Map(),
       deviceSettings: emptyMeshcomDeviceSettingsAccum(),
       deviceSettingsWaiters: [],
     };
@@ -699,6 +742,7 @@ export const meshcomProtocol: Protocol = {
   async destroyDevice(handle: unknown): Promise<void> {
     const device = handle as MeshComDeviceHandle | null;
     if (!device) return;
+    clearKissTxWaiters(device);
     device.kissSession?.reset();
     await device.connection.close();
   },
@@ -767,6 +811,7 @@ export const meshcomProtocol: Protocol = {
       if (device.kissSession) {
         emitKissEvents(device, device.kissSession.flush(), emit);
       }
+      clearKissTxWaiters(device);
       serialLines.reset();
       emit({ type: 'device_status', payload: { status: 'disconnected' } });
     };
@@ -805,7 +850,24 @@ export const meshcomProtocol: Protocol = {
         text,
         msgNumber,
       });
-      await device.connection.write(frame);
+      const ackPromise = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          device.kissTxWaiters.delete(msgNumber);
+          reject(new Error('KISS TX timeout'));
+        }, MESHCOM_KISS_TX_ACK_TIMEOUT_MS);
+        device.kissTxWaiters.set(msgNumber, { resolve, reject, timer });
+      });
+      try {
+        await device.connection.write(frame);
+        await ackPromise;
+      } catch (err) {
+        const pending = device.kissTxWaiters.get(msgNumber);
+        if (pending) {
+          device.kissTxWaiters.delete(msgNumber);
+          clearTimeout(pending.timer);
+        }
+        throw err;
+      }
       return { packetId: msgNumber };
     }
 

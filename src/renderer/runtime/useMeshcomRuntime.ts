@@ -16,11 +16,13 @@ import {
   resolveOurPosition,
 } from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
+import { markMeshcomLocallyDeletedContact } from '../lib/meshcom/meshcomLocallyDeletedContacts';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -45,7 +47,12 @@ import type {
 import { getConnection, setConnection } from '../stores/connectionStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import { useMessageStore } from '../stores/messageStore';
-import { patchNodeFavorited, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
+import {
+  patchNodeFavorited,
+  removeNode,
+  upsertNodeRecord,
+  useNodeStore,
+} from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 function isMeshcomAutoSettimeEnabled(): boolean {
@@ -588,7 +595,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
-      const identityId = resolveIdentityId();
+      // Prefer the UI-facing identity (same bucket as Contacts / nodesForUi), then the
+      // session ref — mirrors MeshCore so favorites do not land in a disconnected bucket.
+      const identityId = getIdentityIdForProtocol('meshcom') ?? resolveIdentityId();
       const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
       const callsign =
         normalizeMeshcomCallsign(existing?.longName ?? '') ||
@@ -615,6 +624,30 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       } catch (e) {
         console.warn('[useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
         patchNodeFavorited(identityId, nodeId, prevFav);
+      }
+    },
+    [resolveIdentityId],
+  );
+
+  const deleteNode = useCallback(
+    async (nodeId: number) => {
+      const identityId = getIdentityIdForProtocol('meshcom') ?? resolveIdentityId();
+      const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+      const callsign =
+        normalizeMeshcomCallsign(existing?.longName ?? '') ||
+        meshcomCallForNodeId(nodeId) ||
+        normalizeMeshcomCallsign(existing?.shortName ?? '');
+      if (!callsign) {
+        console.warn(`[useMeshcomRuntime] deleteNode: no callsign for node ${nodeId}`);
+        return;
+      }
+      // Tombstone first so concurrent MHEARD/ingest cannot resurrect during awaits.
+      markMeshcomLocallyDeletedContact(callsign);
+      removeNode(identityId, nodeId);
+      try {
+        await window.electronAPI.db.deleteMeshcomContact(identityId, callsign);
+      } catch (e: unknown) {
+        console.warn('[useMeshcomRuntime] deleteMeshcomContact ' + errLikeToLogString(e));
       }
     },
     [resolveIdentityId],
@@ -829,6 +862,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
       sendMessage: sendMessage as ProtocolRuntime['sendMessage'],
       setNodeFavorited,
+      deleteNode,
       refreshNodesFromDb,
       refreshMessagesFromDb,
       requestRefresh,
@@ -841,6 +875,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     };
     return {
       ...base,
+      // Re-narrow: ProtocolRuntime marks these optional; panel actions require them.
+      setNodeFavorited,
+      deleteNode,
       deviceCommands,
       refreshOurPosition,
       setOwner,
@@ -860,6 +897,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     gpsLoading,
     handleRfConnectFailure,
     setNodeFavorited,
+    deleteNode,
     identityIdForStore,
     messages,
     nodes,

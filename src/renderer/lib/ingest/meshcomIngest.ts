@@ -6,7 +6,7 @@
  */
 import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
-import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { removeNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
@@ -16,6 +16,7 @@ import {
   parseMeshcomSrcPath,
 } from '../meshcom/meshcomCallsign';
 import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
+import { shouldApplyMeshcomContact } from '../meshcom/meshcomLocallyDeletedContacts';
 import type { DomainEvent } from '../protocols/Protocol';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord, messageRecordToChatMessage } from '../storeRecordAdapters';
@@ -61,7 +62,7 @@ function persistContact(
   },
 ): void {
   const callsign = normalizeMeshcomCallsign(opts.callsign);
-  if (!callsign) return;
+  if (!callsign || !shouldApplyMeshcomContact(callsign)) return;
   persistDbWrite('meshcom ingest contact', () =>
     window.electronAPI.db.saveMeshcomContact({
       callsign,
@@ -141,6 +142,13 @@ function handleNodeInfo(
   if (!nodeId && !callsign) return;
 
   const resolvedId = nodeId || info.nodeId;
+  const contactCall = callsign || `N${resolvedId.toString(16).toUpperCase()}`;
+  if (!shouldApplyMeshcomContact(contactCall)) {
+    // PacketRouter already upserted — drop the resurrected row for tombstoned callsigns.
+    removeNode(identityId, resolvedId);
+    return;
+  }
+
   // MeshCom node_info carries POS/MHEARD fields upsertNode drops — use full record merge.
   upsertNodeRecord(identityId, {
     nodeId: resolvedId,
@@ -161,7 +169,7 @@ function handleNodeInfo(
   });
 
   persistContact(identityId, {
-    callsign: callsign || `N${resolvedId.toString(16).toUpperCase()}`,
+    callsign: contactCall,
     nodeId: resolvedId,
     lat: info.latitude ?? null,
     lon: info.longitude ?? null,
@@ -179,6 +187,10 @@ function handleTelemetry(
   const callsign =
     normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '') ||
     `N${t.nodeId.toString(16).toUpperCase()}`;
+  if (!shouldApplyMeshcomContact(callsign)) {
+    removeNode(identityId, t.nodeId);
+    return;
+  }
 
   upsertNodeRecord(identityId, {
     nodeId: t.nodeId,
@@ -237,6 +249,13 @@ function handlePosition(
     recordRadioSelfPosition('meshcom', latitude, longitude);
   }
 
+  if (!shouldApplyMeshcomContact(callsign)) {
+    if (myNodeNum === 0 || nodeId !== myNodeNum) {
+      removeNode(identityId, nodeId);
+    }
+    return;
+  }
+
   upsertNodeRecord(identityId, {
     nodeId,
     longName: callsign,
@@ -280,21 +299,25 @@ export function ingestMeshcomExtUdpFrame(
   const nodeId = registerMeshcomCallsign(origin);
   const now = Date.now();
 
+  const allowContact = shouldApplyMeshcomContact(origin);
+
   if (frame.type === 'msg' && frame.msg != null && frame.dst != null) {
     const dst = normalizeMeshcomCallsign(frame.dst === '*' ? '' : frame.dst) || frame.dst;
     if (dst && dst !== '*') registerMeshcomCallsign(dst);
     const channelIdx = frame.dst === '*' || frame.dst === '0' ? 0 : -1;
     const msgId = frame.msg_id ?? `meshcom:${origin}:${now}`;
-    upsertNodeRecord(identityId, {
-      nodeId,
-      longName: origin,
-      lastHeardAt: Math.floor(now / 1000),
-      snr: frame.snr,
-      rssi: frame.rssi,
-      hopsAway: pathParse.hopCount,
-      hwModel: meshcomHwLabel(frame.hw_id) || undefined,
-      source: 'rf',
-    });
+    if (allowContact) {
+      upsertNodeRecord(identityId, {
+        nodeId,
+        longName: origin,
+        lastHeardAt: Math.floor(now / 1000),
+        snr: frame.snr,
+        rssi: frame.rssi,
+        hopsAway: pathParse.hopCount,
+        hwModel: meshcomHwLabel(frame.hw_id) || undefined,
+        source: 'rf',
+      });
+    }
     upsertMessage(
       identityId,
       chatMessageToMessageRecord({
@@ -311,12 +334,14 @@ export function ingestMeshcomExtUdpFrame(
         rxHops: pathParse.hopCount,
       }),
     );
-    persistContact(identityId, {
-      callsign: origin,
-      nodeId,
-      hwId: frame.hw_id ?? null,
-      lastHeard: Math.floor(now / 1000),
-    });
+    if (allowContact) {
+      persistContact(identityId, {
+        callsign: origin,
+        nodeId,
+        hwId: frame.hw_id ?? null,
+        lastHeard: Math.floor(now / 1000),
+      });
+    }
     persistDbWrite('meshcom EXTUDP msg', () =>
       window.electronAPI.db.saveMeshcomMessage({
         identity_id: identityId,
@@ -339,6 +364,7 @@ export function ingestMeshcomExtUdpFrame(
   }
 
   if (frame.type === 'pos') {
+    if (!allowContact) return;
     upsertNodeRecord(identityId, {
       nodeId,
       longName: origin,

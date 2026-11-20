@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateSaveMeshcomContact, validateSaveMeshcomMessage } from './meshcom-db-handlers';
+import {
+  validateDeleteMeshcomContact,
+  validateSaveMeshcomContact,
+  validateSaveMeshcomMessage,
+} from './meshcom-db-handlers';
 
 describe('validateSaveMeshcomMessage', () => {
   it('accepts a minimal valid message', () => {
@@ -66,5 +70,36 @@ describe('saveMeshcomContact favorited upsert SQL', () => {
     );
     expect(src).toMatch(/WHEN @favorited_provided = 1 THEN excluded\.favorited/);
     expect(src).toMatch(/ELSE meshcom_contacts\.favorited/);
+  });
+});
+
+describe('validateDeleteMeshcomContact', () => {
+  it('uppercases callsign and trims identity (same as saveMeshcomContact)', () => {
+    expect(validateDeleteMeshcomContact('  offline-meshcom  ', 'oe1kfr-1')).toEqual({
+      identityId: 'offline-meshcom',
+      callsign: 'OE1KFR-1',
+    });
+  });
+
+  it('rejects empty identity or callsign', () => {
+    expect(() => {
+      validateDeleteMeshcomContact('', 'W1AW-1');
+    }).toThrow(/identityId/);
+    expect(() => {
+      validateDeleteMeshcomContact('id', '  ');
+    }).toThrow(/callsign/);
+  });
+});
+
+describe('deleteMeshcomContact SQL', () => {
+  it('deletes by identity_id and callsign PK', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const path = await import('node:path');
+    const src = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), 'meshcom-db-handlers.ts'),
+      'utf8',
+    );
+    expect(src).toMatch(/DELETE FROM meshcom_contacts WHERE identity_id = \? AND callsign = \?/);
   });
 });

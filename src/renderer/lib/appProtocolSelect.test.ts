@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { protocolRecord } from './appProtocolSelect';
+import { protocolRecord, selectByProtocol } from './appProtocolSelect';
 import {
   MESHCOM_CAPABILITIES,
   MESHCORE_CAPABILITIES,
@@ -29,5 +29,18 @@ describe('protocolRecord', () => {
     );
     expect(caps.meshcom).toBe(MESHCOM_CAPABILITIES);
     expect(caps.meshcom.protocol).toBe('meshcom');
+  });
+
+  it('friends identity map selects MeshCom identity, not Reticulum', () => {
+    const friendsIdentityByProtocol = protocolRecord('id-mt', 'id-mc', 'id-rns', 'id-cm');
+    expect(selectByProtocol(friendsIdentityByProtocol, 'meshcom')).toBe('id-cm');
+    expect(selectByProtocol(friendsIdentityByProtocol, 'reticulum')).toBe('id-rns');
+  });
+});
+
+describe('Stats / raw packet gating', () => {
+  it('MeshCom does not expose a raw packet log for the Stats panel', () => {
+    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(false);
+    expect(MESHTASTIC_CAPABILITIES.hasRawPacketLog).toBe(true);
   });
 });

@@ -15,6 +15,8 @@ export function useMeshcomPanelActions(runtime: MeshcomRuntime) {
       setOwner: runtime.setOwner,
       sendPositionToDevice: runtime.sendPositionToDevice,
       setNodeFavorited: runtime.setNodeFavorited,
+      // ProtocolRuntime types deleteNode optional; MeshCom always provides it.
+      deleteNode: runtime.deleteNode as (nodeId: number) => Promise<void>,
       sendReaction: runtime.sendReaction,
       clearRawPackets: runtime.clearRawPackets,
       hydrateRawPackets: runtime.hydrateRawPackets,

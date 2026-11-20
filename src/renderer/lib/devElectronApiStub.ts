@@ -228,6 +228,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       saveMeshcomMessage: async () => ({ changes: 0 }),
       getMeshcomContacts: async () => [],
       saveMeshcomContact: async () => ({ changes: 0 }),
+      deleteMeshcomContact: async () => ({ changes: 0 }),
       saveMeshcoreMessage: noopAsync,
       updateMeshcoreMessageSender: noopAsync,
       saveMeshcoreContact: noopAsync,

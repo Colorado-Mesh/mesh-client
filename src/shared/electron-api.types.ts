@@ -736,6 +736,7 @@ export interface ElectronAPI {
       last_heard?: number | null;
       favorited?: number | boolean | null;
     }) => Promise<{ changes: number }>;
+    deleteMeshcomContact: (identityId: string, callsign: string) => Promise<{ changes: number }>;
     updateMeshcoreMessageSender: (
       messageId: number,
       senderId: number,

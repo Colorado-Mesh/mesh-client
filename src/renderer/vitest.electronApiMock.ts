@@ -330,6 +330,7 @@ export function createElectronAPIMock(): ElectronAPI {
       saveMeshcomMessage: vi.fn().mockResolvedValue({ changes: 1 }),
       getMeshcomContacts: vi.fn().mockResolvedValue([]),
       saveMeshcomContact: vi.fn().mockResolvedValue({ changes: 1 }),
+      deleteMeshcomContact: vi.fn().mockResolvedValue({ changes: 1 }),
       saveMeshcoreMessage: vi.fn().mockResolvedValue(undefined),
       updateMeshcoreMessageSender: vi.fn().mockResolvedValue(undefined),
       saveMeshcoreContact: vi.fn().mockResolvedValue(undefined),

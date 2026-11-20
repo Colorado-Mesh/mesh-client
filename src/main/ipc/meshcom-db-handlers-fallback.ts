@@ -11,6 +11,7 @@ const MESHCOM_DB_IPC_CHANNELS = [
   'db:saveMeshcomMessage',
   'db:getMeshcomContacts',
   'db:saveMeshcomContact',
+  'db:deleteMeshcomContact',
 ] as const;
 
 /**

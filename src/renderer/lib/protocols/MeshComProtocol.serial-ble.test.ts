@@ -3,12 +3,20 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+import { kissSlipEncode } from '../meshcom/kissSlip';
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
 import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
-import { MeshcomKissSession } from '../meshcom/meshcomKissCodec';
+import { MESHCOM_KISS_TYPE_TX_RESULT, MeshcomKissSession } from '../meshcom/meshcomKissCodec';
 import type { MeshComConnection } from './meshcom/MeshComTransport';
 import { type MeshComDeviceHandle, meshcomProtocol } from './MeshComProtocol';
 import type { DomainEvent } from './Protocol';
+
+function wrapKiss(type: number, body: Uint8Array): Uint8Array {
+  const payload = new Uint8Array(1 + body.length);
+  payload[0] = type;
+  payload.set(body, 1);
+  return kissSlipEncode(payload);
+}
 
 function mockConnection(transport: MeshComDeviceHandle['transport']): {
   conn: MeshComConnection;
@@ -39,6 +47,7 @@ function makeHandle(
     callsignByNodeId: new Map(),
     kissSession: null,
     nextMsgNumber: 1,
+    kissTxWaiters: new Map(),
     deviceSettings: emptyMeshcomDeviceSettingsAccum(),
     deviceSettingsWaiters: [],
   };
@@ -334,6 +343,40 @@ describe('MeshComProtocol serial/BLE', () => {
     conn.onData?.(new TextEncoder().encode('D{"TYP":"MH","CALL":"OE8MH-1","RSSI":-88,"SNR":4.5}'));
     const nodes = events.filter((e) => e.type === 'node_info');
     expect(nodes.some((e) => e.payload.longName === 'OE8MH-1')).toBe(true);
+    unsub();
+  });
+
+  it('TCP sendMessage waits for KISS TX_RESULT before resolving', async () => {
+    const { conn, writes } = mockConnection('tcp');
+    const handle = makeHandle('tcp', conn);
+    handle.kissSession = new MeshcomKissSession();
+    const unsub = meshcomProtocol.subscribe(handle, () => undefined);
+
+    const pending = meshcomProtocol.sendMessage(handle, { text: 'via kiss', channelIndex: 0 });
+    expect(writes).toHaveLength(1);
+    expect(handle.kissTxWaiters.size).toBe(1);
+
+    // Firmware: status 0x01 + little-endian msg id matching nextMsgNumber-1 (1).
+    const body = new Uint8Array([0x01, 0x01, 0x00, 0x00, 0x00]);
+    conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_TX_RESULT, body));
+
+    await expect(pending).resolves.toEqual({ packetId: 1 });
+    expect(handle.kissTxWaiters.size).toBe(0);
+    unsub();
+  });
+
+  it('TCP sendMessage rejects when KISS TX_RESULT is a NACK', async () => {
+    const { conn } = mockConnection('tcp');
+    const handle = makeHandle('tcp', conn);
+    handle.kissSession = new MeshcomKissSession();
+    const unsub = meshcomProtocol.subscribe(handle, () => undefined);
+
+    const pending = meshcomProtocol.sendMessage(handle, { text: 'nope', channelIndex: 0 });
+    // Reject status without msg_id — single pending waiter is settled by emitKissEvents.
+    conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_TX_RESULT, new Uint8Array([0x03])));
+
+    await expect(pending).rejects.toThrow(/KISS TX rejected status=0x3/);
+    expect(handle.kissTxWaiters.size).toBe(0);
     unsub();
   });
 });

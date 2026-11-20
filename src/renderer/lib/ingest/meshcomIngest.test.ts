@@ -8,6 +8,10 @@ import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { callsignToNodeId } from '../meshcom/meshcomCallsign';
+import {
+  clearAllMeshcomLocallyDeletedContactsForTests,
+  markMeshcomLocallyDeletedContact,
+} from '../meshcom/meshcomLocallyDeletedContacts';
 import { clearRadioSelfPosition, readRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord } from '../storeRecordAdapters';
 import {
@@ -26,6 +30,7 @@ const ID = 'offline-meshcom';
 
 describe('meshcomIngest', () => {
   beforeEach(() => {
+    clearAllMeshcomLocallyDeletedContactsForTests();
     vi.spyOn(window.electronAPI.db, 'saveMeshcomMessage')
       .mockReset()
       .mockResolvedValue({ changes: 1 });
@@ -218,6 +223,28 @@ describe('meshcomIngest', () => {
       firmwareVersion: '4.35p',
       source: 'rf',
     });
+    detach();
+  });
+
+  it('skips node_info upsert and contact persist for tombstoned callsigns', () => {
+    const call = 'OE1DEL-1';
+    const nodeId = callsignToNodeId(call);
+    markMeshcomLocallyDeletedContact(call);
+    const detach = attachMeshcomIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: {
+          nodeId,
+          longName: call,
+          shortName: 'OE1D',
+          lastHeardAt: 1_700_000_100,
+        },
+      },
+      ID,
+    );
+    expect(useNodeStore.getState().nodes[ID][nodeId]).toBeUndefined();
+    expect(window.electronAPI.db.saveMeshcomContact).not.toHaveBeenCalled();
     detach();
   });
 

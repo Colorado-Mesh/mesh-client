@@ -53,6 +53,7 @@ import {
   getSanitizedMeshtasticChatLastRead,
   getSanitizedReticulumChatLastRead,
   loadMutedViews,
+  loadPersistedLastReadInitial,
   removePersistedLastReadForChannel,
   subscribeMutedViewsChanged,
   subscribePersistedLastRead,
@@ -338,6 +339,7 @@ import {
 } from './lib/connectionHeaderStatus';
 import { statusBarTransportLabel, takStatusBarLabels } from './lib/connectionPanelLabels';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
+import { resolveDetailModalProtocol } from './lib/detailModalProtocol';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
   enabledProtocolsFrom,
@@ -1773,6 +1775,11 @@ function AppContent() {
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
+  const meshcomOwnNodeIdSet = useMemo(() => {
+    const selfId = asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum);
+    return selfId > 0 ? new Set([selfId]) : new Set<number>();
+  }, [meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum]);
+
   const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
   useEffect(() => {
     const hash = reticulumIdentity?.lxmf_hash?.trim();
@@ -2219,17 +2226,22 @@ function AppContent() {
         ...meshtasticOwnNodeIdSet,
         ...meshcoreOwnNodeIdSet,
         ...reticulumOwnNodeIdSet,
+        ...meshcomOwnNodeIdSet,
         meshtasticRuntime.state.myNodeNum,
         meshcoreRuntime.selfNodeId,
         reticulumRuntime.state.myNodeNum,
+        asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum),
       ]),
     [
       meshtasticOwnNodeIdSet,
       meshcoreOwnNodeIdSet,
       reticulumOwnNodeIdSet,
+      meshcomOwnNodeIdSet,
       meshtasticRuntime.state.myNodeNum,
       meshcoreRuntime.selfNodeId,
       reticulumRuntime.state.myNodeNum,
+      meshcomRuntime.selfNodeId,
+      meshcomRuntime.state.myNodeNum,
     ],
   );
 
@@ -2239,8 +2251,9 @@ function AppContent() {
       meshtastic: meshtasticOwnNodeIdSet,
       meshcore: meshcoreOwnNodeIdSet,
       reticulum: reticulumOwnNodeIdSet,
+      meshcom: meshcomOwnNodeIdSet,
     }),
-    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet],
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet, meshcomOwnNodeIdSet],
   );
 
   const ownReticulumHashes = useMemo(() => {
@@ -2387,31 +2400,46 @@ function AppContent() {
   );
   const chatUnreadTotal = selectByProtocol(chatUnreadByProtocol, protocol);
   const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
-  const activeFriendsIdentityId =
-    protocol === 'meshtastic'
-      ? meshtasticIdentityId
-      : protocol === 'meshcore'
-        ? meshcoreIdentityId
-        : reticulumIdentityId;
+  const friendsIdentityByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticIdentityId,
+        meshcoreIdentityId,
+        reticulumIdentityId,
+        meshcomIdentityId,
+      ),
+    [meshtasticIdentityId, meshcoreIdentityId, reticulumIdentityId, meshcomIdentityId],
+  );
+  const activeFriendsIdentityId = selectByProtocol(friendsIdentityByProtocol, protocol);
   const friendsByIdentity = useFriendsStore((s) => s.byIdentity);
   const activeFriendNodeIds = useMemo(() => {
     if (!activeFriendsIdentityId) return new Set<number>();
     return new Set(friendsByIdentity[activeFriendsIdentityId] ?? []);
   }, [activeFriendsIdentityId, friendsByIdentity]);
+  const friendsMessagesByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticUiMessages,
+        meshcoreUiMessages,
+        reticulumUiMessages,
+        meshcomUiMessages,
+      ),
+    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages, meshcomUiMessages],
+  );
+  const friendsOwnNodeIdsByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticOwnNodeIdSet,
+        meshcoreOwnNodeIdSet,
+        reticulumOwnNodeIdSet,
+        meshcomOwnNodeIdSet,
+      ),
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet, meshcomOwnNodeIdSet],
+  );
   const friendsUnread = useMemo(() => {
     if (activeFriendNodeIds.size === 0) return 0;
-    const messages =
-      protocol === 'meshtastic'
-        ? meshtasticUiMessages
-        : protocol === 'meshcore'
-          ? meshcoreUiMessages
-          : reticulumUiMessages;
-    const own =
-      protocol === 'meshtastic'
-        ? meshtasticOwnNodeIdSet
-        : protocol === 'meshcore'
-          ? meshcoreOwnNodeIdSet
-          : reticulumOwnNodeIdSet;
+    const messages = selectByProtocol(friendsMessagesByProtocol, protocol);
+    const own = selectByProtocol(friendsOwnNodeIdsByProtocol, protocol);
     touch(lastReadRevision.meshtastic);
     touch(lastReadRevision.meshcore);
     touch(lastReadRevision.reticulum);
@@ -2423,7 +2451,9 @@ function AppContent() {
         ? getSanitizedMeshtasticChatLastRead(meshtasticUiMessages, meshtasticOwnNodeIdSet)
         : protocol === 'meshcore'
           ? meshcoreChatLastRead
-          : getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
+          : protocol === 'meshcom'
+            ? loadPersistedLastReadInitial('meshcom')
+            : getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     const dm = computeDmUnreadCounts(
       messages,
       persisted,
@@ -2434,13 +2464,13 @@ function AppContent() {
     return partitionDmUnreadByFriends(dm, activeFriendNodeIds).friendsUnread;
   }, [
     activeFriendNodeIds,
+    friendsMessagesByProtocol,
+    friendsOwnNodeIdsByProtocol,
     lastReadRevision.meshtastic,
     lastReadRevision.meshcore,
     lastReadRevision.reticulum,
     meshcoreChatLastRead,
     meshcoreChatUnreadDmOptions,
-    meshcoreOwnNodeIdSet,
-    meshcoreUiMessages,
     meshtasticOwnNodeIdSet,
     meshtasticUiMessages,
     protocol,
@@ -3366,9 +3396,10 @@ function AppContent() {
   ]);
 
   const detailModalProtocol = useMemo((): MeshProtocol => {
-    if (selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId)) return 'meshcore';
-    return protocol;
-  }, [selectedNodeId, protocol, meshcoreUiNodes]);
+    return resolveDetailModalProtocol(selectedNodeId, protocol, (p, nodeId) =>
+      selectByProtocol(uiNodesByProtocol, p).has(nodeId),
+    );
+  }, [selectedNodeId, protocol, uiNodesByProtocol]);
 
   const detailModalCapabilities = selectByProtocol(capabilitiesByProtocol, detailModalProtocol);
   const detailModalPanelActions = selectByProtocol(panelActionsByProtocol, detailModalProtocol);
@@ -3385,18 +3416,20 @@ function AppContent() {
     [detailIsOperational, detailConnectionView.state.status],
   );
 
-  const detailModalNodes =
-    selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId) ? meshcoreUiNodes : nodesForUi;
-  const detailHomeNode = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
-    ? (meshcoreUiNodes.get(meshcoreRuntime.selfNodeId) ?? null)
-    : (nodesForUi.get(meshtasticConnectionView.state.myNodeNum) ?? null);
-  const detailMyNodeNum = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
-    ? meshcoreRuntime.selfNodeId
-    : meshtasticConnectionView.state.myNodeNum;
+  const detailModalNodes = selectByProtocol(uiNodesByProtocol, detailModalProtocol);
+  const detailMyNodeNum =
+    detailModalProtocol === 'meshcore'
+      ? meshcoreRuntime.selfNodeId
+      : detailModalProtocol === 'meshcom'
+        ? asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum)
+        : detailModalProtocol === 'reticulum'
+          ? asNumericNodeId(reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum)
+          : meshtasticConnectionView.state.myNodeNum;
+  const detailHomeNode = detailModalNodes.get(detailMyNodeNum) ?? null;
 
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
-    const liveNode = meshcoreUiNodes.get(selectedNodeId) ?? nodesForUi.get(selectedNodeId);
+    const liveNode = detailModalNodes.get(selectedNodeId);
     if (liveNode) return liveNode;
 
     const fallback = meshNodeStubForDetailModal(selectedNodeId);
@@ -3414,7 +3447,7 @@ function AppContent() {
       longitude: latest.lon,
       last_heard: Math.max(fallback.last_heard, Math.floor(latest.t / 1000)),
     };
-  }, [selectedNodeId, nodesForUi, meshcoreUiNodes, selectedNodeHistoryPoints]);
+  }, [selectedNodeId, detailModalNodes, selectedNodeHistoryPoints]);
   const selectedNodeHistory = useMemo(() => {
     if (selectedNodeId == null || !selectedNodeHistoryPoints) return undefined;
     return new Map([[selectedNodeId, selectedNodeHistoryPoints]]);
@@ -4619,7 +4652,9 @@ function AppContent() {
   const handleMessageNode = useCallback(
     (nodeNum: number) => {
       const messageProtocol =
-        detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+        detailModalProtocol === 'meshcore' ||
+        detailModalProtocol === 'meshtastic' ||
+        detailModalProtocol === 'meshcom'
           ? detailModalProtocol
           : protocol;
       setPendingDmTarget({ protocol: messageProtocol, peer: nodeNum });
@@ -4640,12 +4675,20 @@ function AppContent() {
     async (nodeNum: number) => {
       if (detailModalProtocol === 'meshcore') {
         await meshcorePanelActions.deleteNode(nodeNum);
+      } else if (detailModalProtocol === 'meshcom') {
+        await meshcomPanelActions.deleteNode(nodeNum);
       } else {
         await meshtasticPanelActions.deleteNode(nodeNum);
       }
       setSelectedNodeId(null);
     },
-    [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions, setSelectedNodeId],
+    [
+      detailModalProtocol,
+      meshcomPanelActions,
+      meshcorePanelActions,
+      meshtasticPanelActions,
+      setSelectedNodeId,
+    ],
   );
 
   const handleOpenReticulumDmByHash = useCallback(
@@ -5060,7 +5103,9 @@ function AppContent() {
         traceRouteHops={traceRouteHops}
         onShowTraceRouteOnMap={handleShowTraceRouteOnMap}
         onDeleteNode={
-          detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+          detailModalProtocol === 'meshcore' ||
+          detailModalProtocol === 'meshtastic' ||
+          detailModalProtocol === 'meshcom'
             ? handleDeleteNode
             : undefined
         }
@@ -5080,14 +5125,13 @@ function AppContent() {
         }
         isFriend={Boolean(
           selectedNode &&
-          (detailModalProtocol === 'meshtastic'
-            ? meshtasticIdentityId &&
-              (friendsByIdentity[meshtasticIdentityId] ?? []).includes(selectedNode.node_id)
-            : detailModalProtocol === 'meshcore'
-              ? meshcoreIdentityId &&
-                (friendsByIdentity[meshcoreIdentityId] ?? []).includes(selectedNode.node_id)
-              : reticulumIdentityId &&
-                (friendsByIdentity[reticulumIdentityId] ?? []).includes(selectedNode.node_id)),
+          (() => {
+            const identityId = selectByProtocol(friendsIdentityByProtocol, detailModalProtocol);
+            return (
+              identityId != null &&
+              (friendsByIdentity[identityId] ?? []).includes(selectedNode.node_id)
+            );
+          })(),
         )}
         onToggleFriend={
           selectedNode?.node_id !== detailMyNodeNum &&
@@ -5096,12 +5140,7 @@ function AppContent() {
             isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
           )
             ? (nodeNum, next) => {
-                const identityId =
-                  detailModalProtocol === 'meshtastic'
-                    ? meshtasticIdentityId
-                    : detailModalProtocol === 'meshcore'
-                      ? meshcoreIdentityId
-                      : reticulumIdentityId;
+                const identityId = selectByProtocol(friendsIdentityByProtocol, detailModalProtocol);
                 if (!identityId) return;
                 if (next) useFriendsStore.getState().addFriend(identityId, nodeNum);
                 else useFriendsStore.getState().removeFriend(identityId, nodeNum);
@@ -6833,20 +6872,8 @@ function AppContent() {
                                 protocol={protocol}
                                 identityId={activeFriendsIdentityId}
                                 nodes={nodesForUi}
-                                messages={
-                                  protocol === 'meshtastic'
-                                    ? meshtasticUiMessages
-                                    : protocol === 'meshcore'
-                                      ? meshcoreUiMessages
-                                      : reticulumUiMessages
-                                }
-                                ownNodeIds={
-                                  protocol === 'meshtastic'
-                                    ? meshtasticOwnNodeIdSet
-                                    : protocol === 'meshcore'
-                                      ? meshcoreOwnNodeIdSet
-                                      : reticulumOwnNodeIdSet
-                                }
+                                messages={selectByProtocol(friendsMessagesByProtocol, protocol)}
+                                ownNodeIds={selectByProtocol(friendsOwnNodeIdsByProtocol, protocol)}
                                 persistedLastRead={
                                   protocol === 'meshtastic'
                                     ? getSanitizedMeshtasticChatLastRead(
@@ -6855,10 +6882,12 @@ function AppContent() {
                                       )
                                     : protocol === 'meshcore'
                                       ? meshcoreChatLastRead
-                                      : getSanitizedReticulumChatLastRead(
-                                          reticulumUiMessages,
-                                          reticulumOwnNodeIdSet,
-                                        )
+                                      : protocol === 'meshcom'
+                                        ? loadPersistedLastReadInitial('meshcom')
+                                        : getSanitizedReticulumChatLastRead(
+                                            reticulumUiMessages,
+                                            reticulumOwnNodeIdSet,
+                                          )
                                 }
                                 excludeDmPeer={
                                   protocol === 'meshcore'
