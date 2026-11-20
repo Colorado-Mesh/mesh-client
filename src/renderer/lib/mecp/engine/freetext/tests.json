@@ -275,6 +275,41 @@
     "expect": { "duration": 120 }
   },
   {
+    "title": "Duration: a decimal hour is not read from its fractional part",
+    "input": "MECP/2/R03 1.5h",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a decimal with a comma is not read from its fractional part",
+    "input": "MECP/2/R03 2,5h",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a decimal below one is not read from its fractional part",
+    "input": "MECP/2/R03 0.5h",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a decimal day is not read from its fractional part",
+    "input": "MECP/2/R03 1.25d",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a decimal minute value is not read from its fractional part",
+    "input": "MECP/2/R03 2.5min",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a skipped decimal value lets the next value be used",
+    "input": "MECP/2/R03 1.5h 45min",
+    "expect": { "duration": 45 }
+  },
+  {
+    "title": "Duration: a period after a letter still separates a value",
+    "input": "MECP/2/R03 hut.2h",
+    "expect": { "duration": 120 }
+  },
+  {
     "title": "Message: a trailing space is invalid",
     "input": "MECP/1/T05 ",
     "expect": null

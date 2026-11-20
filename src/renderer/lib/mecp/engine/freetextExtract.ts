@@ -1,5 +1,5 @@
 /**
- * MECP 1.4.0 §6.1 freetext convention extraction.
+ * MECP 1.4.1 §6.1 freetext convention extraction.
  * Patterns and semantics from https://github.com/mecp-org/MECP (freetext/patterns.json,
  * scripts/check-freetext.mjs). Additional Validation failures are ignored; freetext is preserved.
  */
@@ -31,6 +31,12 @@ export interface FreetextExtracted {
 }
 
 type RegExpMatch = RegExpMatchArray;
+
+interface MatchValidateContext {
+  freetext: string;
+  /** Absolute start of the current search slice in `freetext`. */
+  pos: number;
+}
 
 interface BoundedMatch {
   match: RegExpMatch;
@@ -76,6 +82,13 @@ function toMinutes(kind: string, m: RegExpMatch): number {
   }
 }
 
+/** True when group 1 is the fractional part of a decimal (digit + .|, before it). */
+function isDecimalFraction(freetext: string, group1Start: number): boolean {
+  const before = freetext[group1Start - 1];
+  const before2 = freetext[group1Start - 2];
+  return (before === '.' || before === ',') && before2 >= '0' && before2 <= '9';
+}
+
 /**
  * Find the first decode match that passes validate().
  * Wrapped as (?:^|B)(pattern)(?:B|$). On validation failure, resume after the
@@ -84,10 +97,12 @@ function toMinutes(kind: string, m: RegExpMatch): number {
 function firstValidMatch(
   pattern: string,
   freetext: string,
-  validate: ((m: RegExpMatch) => boolean) | null,
+  validate: ((m: RegExpMatch, ctx: MatchValidateContext) => boolean) | null,
 ): BoundedMatch | null {
+  // `d` gives capture indices so Additional Validation can inspect characters
+  // before/after group 1 (e.g. R03 decimal-fraction rejection).
   // eslint-disable-next-line security/detect-non-literal-regexp -- pattern from vendored MECP patterns.json
-  const re = new RegExp(`(?:^|${B_CLASS})(?:${pattern})(?:${B_CLASS}|$)`);
+  const re = new RegExp(`(?:^|${B_CLASS})(?:${pattern})(?:${B_CLASS}|$)`, 'd');
   let pos = 0;
   while (pos <= freetext.length) {
     const slice = freetext.slice(pos);
@@ -103,7 +118,7 @@ function firstValidMatch(
     const tokenStart = abs + (usedLeftB ? 1 : 0);
     if (tokenEnd < tokenStart) tokenEnd = tokenStart;
 
-    if (validate && !validate(m)) {
+    if (validate && !validate(m, { freetext, pos })) {
       pos = Math.max(tokenEnd, abs + 1);
       continue;
     }
@@ -115,7 +130,9 @@ function firstValidMatch(
 /**
  * R03 Duration: first unit-bearing match by position wins; pattern order breaks
  * ties at the same index. Bare number is a fallback only when no unit-bearing
- * value matches; a decimal group fails Additional Validation (no match).
+ * value matches. Decimal fractions fail Additional Validation (no match) —
+ * unit patterns must not read digits after `.`/`,` (`1.5h` is not 5 h), and bare
+ * must not take the integer before that mark (`1.5h` is not 1 min).
  */
 function decodeDuration(
   freetext: string,
@@ -134,10 +151,22 @@ function decodeDuration(
     // Bare number is only used when no unit-bearing value matched.
     if (best && kind === 'bare') break;
 
-    const found = firstValidMatch(pat, freetext, (mm) => {
-      const mins = toMinutes(kind, mm);
-      // Bare Additional Validation: reject when the optional decimal group matched.
-      return mins > 0 && (kind !== 'bare' || !mm[2]);
+    const found = firstValidMatch(pat, freetext, (mm, ctx) => {
+      if (!(toMinutes(kind, mm) > 0)) return false;
+      const indices = mm.indices;
+      if (!indices?.[1]) return false;
+      if (kind === 'bare') {
+        // Group 2 present (47.3769), or `.`/`,` used as B before more digits (1.5h).
+        if (indices[2]) return false;
+        const group1End = ctx.pos + indices[1][1];
+        const sep = freetext[group1End];
+        const next = freetext[group1End + 1];
+        if ((sep === '.' || sep === ',') && next >= '0' && next <= '9') return false;
+        return true;
+      }
+      // Patterns 1–4: reject a number that is only the fractional part of a decimal.
+      const group1Start = ctx.pos + indices[1][0];
+      return !isDecimalFraction(freetext, group1Start);
     });
     if (found && (!best || found.index < best.index)) {
       best = {

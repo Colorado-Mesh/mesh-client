@@ -21,7 +21,7 @@ const ACK_MARKER_CODES: ReadonlySet<string> = new Set([
   MECP_BEACON_CANCEL_CODE,
 ]);
 
-/** MECP 1.4.0 callsign: `~([A-Z0-9]+(?:/[A-Z0-9]+)*)`, max 12 characters. */
+/** MECP 1.4.1 callsign: `~([A-Z0-9]+(?:/[A-Z0-9]+)*)`, max 12 characters. */
 const CALLSIGN_MAX_LEN = 12;
 const CALLSIGN_SEGMENT_RE = /^[A-Za-z0-9]+$/;
 
