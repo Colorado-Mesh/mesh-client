@@ -20,4 +20,20 @@ describe('useMeshcoreRuntime path hash mode on connect', () => {
     expect(SOURCE).not.toMatch(/savedMode !== pathFields\.pathHashMode/);
     expect(SOURCE).not.toContain('initConn reapply path hash mode');
   });
+
+  it('lets a companion that reported a path hash mode set multibyte modes whatever its version text', () => {
+    expect(SOURCE).toMatch(
+      /meshcoreCompanionSupportsMultibytePathHash\(\s*fw,\s*meshcoreDeviceReportedPathHashModeRef\.current,?\s*\)/,
+    );
+    expect(SOURCE).not.toMatch(/!meshcoreFirmwareSupportsMultibytePathHash\(fw\)/);
+  });
+
+  it('records the reported mode per connection: cleared when initConn starts, set from DeviceInfo', () => {
+    expect(SOURCE).toMatch(
+      /meshcoreInitConnInFlightRef\.current = true;\s*meshcoreDeviceReportedPathHashModeRef\.current = false;/,
+    );
+    expect(SOURCE).toMatch(
+      /const pathFields = parsePathHashModeFromDeviceQuery\(deviceInfo\);\s*meshcoreDeviceReportedPathHashModeRef\.current = isMeshcorePathHashMode\(\s*pathFields\.pathHashMode,?\s*\);/,
+    );
+  });
 });

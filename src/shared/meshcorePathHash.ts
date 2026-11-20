@@ -229,3 +229,17 @@ export function meshcoreFirmwareSupportsMultibytePathHash(
   if (maj < 1) return false;
   return min >= 14;
 }
+
+/**
+ * Whether the connected companion can use multibyte path hashes.
+ * A DeviceInfo frame that carries the path hash mode byte only comes from v1.14+ firmware,
+ * so it decides first: forks report their own version text (e.g. "PowerSaving17.1.6"),
+ * which the version parser cannot read. Without that byte, fall back to the version text.
+ */
+export function meshcoreCompanionSupportsMultibytePathHash(
+  firmwareVersion: string | undefined,
+  deviceReportedPathHashMode: boolean,
+): boolean {
+  if (deviceReportedPathHashMode) return true;
+  return meshcoreFirmwareSupportsMultibytePathHash(firmwareVersion);
+}
