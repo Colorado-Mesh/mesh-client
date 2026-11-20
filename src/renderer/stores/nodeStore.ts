@@ -118,6 +118,8 @@ export interface NodeRecord {
   publicKeyHex?: string;
   keyManuallyVerified?: boolean;
   hasXeddsaSigned?: boolean;
+  /** MeshCom: firmware string from EXTUDP / HELLO when heard on-air (session). */
+  firmwareVersion?: string;
   // MeshCore per-node op state (results of on-demand requests for repeaters /
   // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
   meshcoreNodeStatus?: StatusResult;

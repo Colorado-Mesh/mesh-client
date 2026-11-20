@@ -200,6 +200,7 @@ describe('meshcomIngest', () => {
           rssi: -85,
           hopsAway: 2,
           hwModel: 'HELTEC-V3',
+          firmwareVersion: '4.35p',
         },
       },
       ID,
@@ -214,6 +215,7 @@ describe('meshcomIngest', () => {
       rssi: -85,
       hopsAway: 2,
       hwModel: 'HELTEC-V3',
+      firmwareVersion: '4.35p',
       source: 'rf',
     });
     detach();

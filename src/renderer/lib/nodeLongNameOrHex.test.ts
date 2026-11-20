@@ -23,6 +23,11 @@ describe('nodeDisplayName', () => {
     const b = { long_name: 'LongOnly' } as MeshNode;
     expect(nodeDisplayName(b, 'meshtastic')).toBe('LongOnly');
   });
+
+  it('MeshCom prefers callsign (long_name) over truncated short_name', () => {
+    const a = { long_name: 'OE1ABC-1', short_name: 'OE1A' } as MeshNode;
+    expect(nodeDisplayName(a, 'meshcom')).toBe('OE1ABC-1');
+  });
 });
 
 describe('nodeLabelForRawPacket', () => {

@@ -1704,7 +1704,10 @@ function ChatPanel({
     (nodeNum: number) => {
       const node = nodes.get(nodeNum);
       const label = nodeDisplayName(node, protocol);
-      return label || formatMeshtasticNodeId(nodeNum);
+      if (label) return label;
+      // MeshCom/MeshCore/Reticulum store keys are not Meshtastic node nums — never invent `!xxxxxxxx`.
+      if (protocol === 'meshtastic') return formatMeshtasticNodeId(nodeNum);
+      return nodeNum.toString(16);
     },
     [nodes, protocol],
   );

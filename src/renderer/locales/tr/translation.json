@@ -4042,7 +4042,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Çağrı kodu",
+    "firmware": "Yazılım",
+    "rssi": "RSSI",
+    "altitude": "Yükseklik"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",

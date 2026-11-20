@@ -4042,7 +4042,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC 指数",
-    "nox": "NOx指数"
+    "nox": "NOx指数",
+    "callsign": "呼号",
+    "firmware": "固닒",
+    "rssi": "RSSI",
+    "altitude": "海拔高度"
   },
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",

@@ -231,6 +231,38 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
+  it('EXTUDP pos carries firmware onto node_info', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const pos = `${JSON.stringify({
+      type: 'pos',
+      src: 'OE1FW-1',
+      lat: 48.2,
+      long: 16.3,
+      alt: 200,
+      batt: 70,
+      hw_id: 43,
+      firmware: '4.35p',
+      fw_sub: 'eu',
+      rssi: -80,
+      snr: 6,
+    })}\r\n`;
+    conn.onData?.(new TextEncoder().encode(pos));
+
+    const info = events.find((e) => e.type === 'node_info');
+    expect(info?.payload).toMatchObject({
+      hwModel: 'HELTEC-V3',
+      firmwareVersion: '4.35p (eu)',
+      altitude: 200,
+      batteryLevel: 70,
+      rssi: -80,
+    });
+    unsub();
+  });
+
   it('EXTUDP msg to a GRC group uses positive channelIndex', () => {
     const { conn } = mockConnection('serial');
     const handle = makeHandle('serial', conn);

@@ -128,3 +128,35 @@ export function meshcomHwLabel(hwId: number | null | undefined): string {
   if (!Object.hasOwn(MESHCOM_HW_IDS, hwId)) return `HW#${hwId}`;
   return MESHCOM_HW_IDS[hwId].abbreviation;
 }
+
+/**
+ * Node-detail hardware line from a stored MeshCom `hw_model` (abbreviation or `HW#n`).
+ * Returns null when empty so callers can omit the row.
+ */
+export function meshcomHwDisplay(stored: string | null | undefined): string | null {
+  const raw = typeof stored === 'string' ? stored.trim() : '';
+  if (!raw) return null;
+  for (const info of Object.values(MESHCOM_HW_IDS)) {
+    if (info.abbreviation !== raw) continue;
+    const ver = info.version ? ` ${info.version}` : '';
+    return `${info.abbreviation} · ${info.hwType}${ver}`;
+  }
+  return raw;
+}
+
+/** Format EXTUDP `firmware` + optional `fw_sub` for node detail. */
+export function meshcomFirmwareDisplay(
+  firmware: string | number | null | undefined,
+  fwSub?: string | null,
+): string | null {
+  const base =
+    firmware == null || firmware === ''
+      ? ''
+      : typeof firmware === 'number'
+        ? String(firmware)
+        : firmware.trim();
+  const sub = typeof fwSub === 'string' ? fwSub.trim() : '';
+  if (!base && !sub) return null;
+  if (base && sub) return `${base} (${sub})`;
+  return base || sub;
+}

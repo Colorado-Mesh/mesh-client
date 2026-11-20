@@ -256,6 +256,8 @@ export interface MeshNode {
   key_manually_verified?: boolean;
   /** `NodeInfo.has_xeddsa_signed`: radio has verified an XEdDSA signature from this node */
   has_xeddsa_signed?: boolean;
+  /** MeshCom: firmware string from EXTUDP / HELLO when heard on-air (session). */
+  firmware_version?: string;
 }
 
 export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';

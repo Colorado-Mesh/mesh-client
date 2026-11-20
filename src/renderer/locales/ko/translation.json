@@ -4042,7 +4042,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "콜사인",
+    "firmware": "펌웨어",
+    "rssi": "RSSI",
+    "altitude": "고도"
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",

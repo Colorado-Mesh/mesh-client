@@ -4042,7 +4042,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "識別信号",
+    "firmware": "ファームウェア",
+    "rssi": "RSSI",
+    "altitude": "高度"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",

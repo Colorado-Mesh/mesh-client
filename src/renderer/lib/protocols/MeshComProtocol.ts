@@ -17,7 +17,7 @@ import {
   type MeshcomDeviceSettingsAccum,
 } from '../meshcom/meshcomDeviceSettings';
 import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
-import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
+import { meshcomFirmwareDisplay, meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import {
   buildMeshcomKissTxMessage,
   type MeshcomKissEvent,
@@ -134,6 +134,7 @@ function emitSelfFromSettings(
       manualAddContacts: false,
     },
   });
+  const selfFw = meshcomFirmwareDisplay(handle.deviceSettings.fwver);
   emit({
     type: 'node_info',
     payload: {
@@ -142,6 +143,8 @@ function emitSelfFromSettings(
       shortName: (handle.deviceSettings.operatorName || call).slice(0, 4),
       lastHeardAt: now,
       batteryLevel: handle.deviceSettings.battPercent,
+      voltage: handle.deviceSettings.battVoltage,
+      firmwareVersion: selfFw ?? undefined,
     },
   });
   emitDeviceTelemetry(emit, {
@@ -154,10 +157,10 @@ function emitSelfFromSettings(
     gasResistance: handle.deviceSettings.gasResistance,
     co2: handle.deviceSettings.co2Ppm,
   });
-  if (handle.deviceSettings.fwver) {
+  if (selfFw) {
     emit({
       type: 'device_metadata',
-      payload: { firmwareVersion: handle.deviceSettings.fwver },
+      payload: { firmwareVersion: selfFw },
     });
   }
 }
@@ -377,6 +380,7 @@ function emitExtUdpEvents(
           rssi: parsed.rssi,
           hopsAway: hopCount,
           hwModel: meshcomHwLabel(parsed.hw_id) || undefined,
+          firmwareVersion: meshcomFirmwareDisplay(parsed.firmware, parsed.fw_sub) ?? undefined,
         },
       });
     }
@@ -406,6 +410,7 @@ function emitExtUdpEvents(
         rssi: parsed.rssi,
         hopsAway: hopCount,
         hwModel: meshcomHwLabel(parsed.hw_id) || undefined,
+        firmwareVersion: meshcomFirmwareDisplay(parsed.firmware, parsed.fw_sub) ?? undefined,
       },
     });
     if (parsed.batt != null) {

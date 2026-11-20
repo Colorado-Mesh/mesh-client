@@ -38,6 +38,7 @@ import {
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
+import { meshcomHwDisplay } from '../lib/meshcom/meshcomHwIds';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
   isMeshtasticSelfHybridPath,
@@ -359,43 +360,61 @@ export default function NodeInfoBody({
           : t('nodeInfoBody.offenseZeroHops')
     : null;
 
+  const meshcomHardware = protocol === 'meshcom' ? meshcomHwDisplay(node.hw_model) : null;
+  const meshcomFirmware =
+    protocol === 'meshcom' && node.firmware_version?.trim() ? node.firmware_version.trim() : null;
+
   return (
     <>
-      {/* Names */}
-      {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
-      {protocol !== 'meshcore' && node.short_name && (
-        <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
-      )}
-
-      {protocol === 'meshcore' ? (
+      {/* Names / identity */}
+      {protocol === 'meshcom' ? (
         <>
-          <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
-          <InfoRow
-            label={t('nodeInfoBody.hardware')}
-            value={
-              isOurNode
-                ? (meshcoreManufacturerModel ?? '—')
-                : t('nodeInfoBody.notAvailableRemotely')
-            }
-          />
+          {node.long_name && <InfoRow label={t('nodeInfoBody.callsign')} value={node.long_name} />}
+          {meshcomHardware != null && (
+            <InfoRow label={t('nodeInfoBody.hardware')} value={meshcomHardware} />
+          )}
+          {meshcomFirmware != null && (
+            <InfoRow label={t('nodeInfoBody.firmware')} value={meshcomFirmware} />
+          )}
         </>
       ) : (
         <>
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
-            <div className="flex items-center gap-2">
-              <RoleDisplay role={node.role} />
-              {awaitingNodeInfo && (
-                <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
-                  {t('nodeInfoBody.pending')}
-                </span>
-              )}
-            </div>
-          </div>
-          <InfoRow
-            label={t('nodeInfoBody.hardware')}
-            value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
-          />
+          {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
+          {protocol !== 'meshcore' && node.short_name && (
+            <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
+          )}
+
+          {protocol === 'meshcore' ? (
+            <>
+              <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
+              <InfoRow
+                label={t('nodeInfoBody.hardware')}
+                value={
+                  isOurNode
+                    ? (meshcoreManufacturerModel ?? '—')
+                    : t('nodeInfoBody.notAvailableRemotely')
+                }
+              />
+            </>
+          ) : (
+            <>
+              <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+                <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
+                <div className="flex items-center gap-2">
+                  <RoleDisplay role={node.role} />
+                  {awaitingNodeInfo && (
+                    <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
+                      {t('nodeInfoBody.pending')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <InfoRow
+                label={t('nodeInfoBody.hardware')}
+                value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -414,9 +433,12 @@ export default function NodeInfoBody({
           className={snrColor}
         />
       )}
+      {protocol === 'meshcom' && node.rssi != null && node.rssi !== 0 && (
+        <InfoRow label={t('nodeInfoBody.rssi')} value={`${node.rssi} dBm`} />
+      )}
 
-      {/* Battery — Meshtastic % ; MeshCore: voltage from local radio (self) + approximate % bar */}
-      {protocol === 'meshcore' ? (
+      {/* Battery — Meshtastic % ; MeshCore/MeshCom: voltage when known + % bar */}
+      {protocol === 'meshcore' || protocol === 'meshcom' ? (
         node.voltage != null && node.voltage > 0 ? (
           <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
             <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
@@ -528,8 +550,8 @@ export default function NodeInfoBody({
           </div>
         )}
 
-      {/* Source (RF / MQTT) — Meshtastic only; MeshCore is always RF */}
-      {protocol !== 'meshcore' && (
+      {/* Source (RF / MQTT) — Meshtastic only; MeshCore/MeshCom are RF (or EXTUDP) */}
+      {protocol === 'meshtastic' && (
         <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
           <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
           <NodeSourceBadge
@@ -576,6 +598,12 @@ export default function NodeInfoBody({
           </div>
         );
       })()}
+      {protocol === 'meshcom' &&
+        node.altitude != null &&
+        Number.isFinite(node.altitude) &&
+        node.altitude !== 0 && (
+          <InfoRow label={t('nodeInfoBody.altitude')} value={`${node.altitude} m`} />
+        )}
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (

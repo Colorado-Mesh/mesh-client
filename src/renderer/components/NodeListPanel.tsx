@@ -56,6 +56,7 @@ import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../li
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import { meshcomCallForNodeId } from '../lib/meshcom/meshcomCallRegistry';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
   MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
@@ -143,10 +144,18 @@ type NodeListTab = 'all' | 'history';
 
 function stubDmHistoryNode(nodeId: number, lastMessageAt: number, mode: MeshProtocol): MeshNode {
   const hex = formatMeshtasticNodeId(nodeId).replace(/^!/, '');
+  // MeshCom identity is callsign (hash is only a store key). MeshCore uses bare hex; Meshtastic uses !hex.
+  const meshcomCall = mode === 'meshcom' ? meshcomCallForNodeId(nodeId) : undefined;
+  const longName =
+    mode === 'meshcom'
+      ? (meshcomCall ?? hex)
+      : mode === 'meshcore' || mode === 'reticulum'
+        ? hex
+        : `!${hex}`;
   return {
     node_id: nodeId,
-    long_name: mode === 'meshcore' ? hex : `!${hex}`,
-    short_name: hex.slice(-4),
+    long_name: longName,
+    short_name: mode === 'meshcom' && meshcomCall ? meshcomCall.slice(0, 4) : hex.slice(-4),
     hw_model: mode === 'meshcore' ? 'Chat' : '',
     snr: 0,
     battery: 0,
@@ -280,6 +289,8 @@ function NodeListPanel({
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
   /** Compact Contacts columns (MeshCore / MeshCom) — not Meshtastic Nodes layout. */
   const contactsLayout = capabilities.nodeListTabUsesContactsLabel;
+  /** Meshtastic-only: hashed callsign / pubkey-derived ids must not show as `!xxxxxxxx`. */
+  const showNodeHexIdColumn = capabilities.showsNodeNumHexId && !contactsLayout;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const botSenders = useBotSendersStore((s) => s.senders[mode]);
   const positionHistory = usePositionHistoryStore((s) => s.history);
@@ -543,9 +554,9 @@ function NodeListPanel({
           n.long_name.toLowerCase().includes(q) ||
           n.short_name.toLowerCase().includes(q) ||
           n.hw_model?.toLowerCase().includes(q) ||
-          (mode === 'meshcore'
-            ? n.node_id.toString(16).includes(q.replace(/^!/, ''))
-            : meshtasticNodeIdMatchesHexQuery(n.node_id, q)),
+          (mode === 'meshtastic'
+            ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
+            : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
       );
     }
 
@@ -1116,7 +1127,7 @@ function NodeListPanel({
               <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
                 <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
               </th>
-              {!contactsLayout && (
+              {showNodeHexIdColumn && (
                 <th
                   scope="col"
                   aria-sort={
@@ -1512,7 +1523,7 @@ function NodeListPanel({
                           </button>
                         )}
                       </td>
-                      {!contactsLayout && (
+                      {showNodeHexIdColumn && (
                         <td className="text-muted px-3 py-2 font-mono text-xs">
                           {formatMeshtasticNodeId(node.node_id)}
                         </td>

@@ -4079,7 +4079,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Volací značka",
+    "firmware": "Firmware",
+    "rssi": "\"RSSI\"",
+    "altitude": "Nadmořská výška"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",

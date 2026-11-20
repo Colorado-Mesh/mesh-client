@@ -4108,7 +4108,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Позывной",
+    "firmware": "Прошивка",
+    "rssi": "RSSI",
+    "altitude": "Высота над уровнем моря"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",

@@ -761,25 +761,38 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByText(hex)).toBeInTheDocument();
   });
 
-  it('drops the MeshCore ID column (no ID header, no !-prefixed id text)', () => {
-    const nodeId = 0xdeadbeef;
-    const nodes = new Map<number, MeshNode>([
-      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: 'Chat' })],
-    ]);
-    render(
-      <NodeListPanel
-        nodes={nodes}
-        myNodeNum={0}
-        onNodeClick={vi.fn()}
-        locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshcore"
-        meshcorePublicKeyHexByNodeId={new Map([[nodeId, 'aa'.repeat(32)]])}
-      />,
-    );
-    expect(screen.queryByRole('columnheader', { name: /^ID$/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/^!/)).not.toBeInTheDocument();
-  });
+  it.each(['meshcore', 'meshcom'] as const)(
+    'drops the %s ID column (no ID header, no !-prefixed id text)',
+    (mode) => {
+      const nodeId = 0xdeadbeef;
+      const nodes = new Map<number, MeshNode>([
+        [
+          nodeId,
+          makeNode({
+            node_id: nodeId,
+            long_name: mode === 'meshcom' ? 'OE1ABC-1' : 'Peer',
+            hw_model: mode === 'meshcom' ? 'HELTEC-V3' : 'Chat',
+          }),
+        ],
+      ]);
+      render(
+        <NodeListPanel
+          nodes={nodes}
+          myNodeNum={0}
+          onNodeClick={vi.fn()}
+          locationFilter={defaultFilter}
+          onToggleFavorite={vi.fn()}
+          mode={mode}
+          meshcorePublicKeyHexByNodeId={
+            mode === 'meshcore' ? new Map([[nodeId, 'aa'.repeat(32)]]) : undefined
+          }
+        />,
+      );
+      expect(screen.queryByRole('columnheader', { name: /^ID$/ })).not.toBeInTheDocument();
+      expect(screen.queryByText(/^!/)).not.toBeInTheDocument();
+      expect(screen.queryByText('!deadbeef')).not.toBeInTheDocument();
+    },
+  );
 
   it.each(['Chat', 'Sensor', 'Repeater', 'Room'])(
     'shows the key icon for any MeshCore %s contact with a known public key',

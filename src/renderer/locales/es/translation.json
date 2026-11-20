@@ -4042,7 +4042,11 @@
     "pm10": "PM1",
     "co2": "CO₂",
     "voc": "Índice de COV",
-    "nox": "Índice de NOx"
+    "nox": "Índice de NOx",
+    "callsign": "Señal de llamada",
+    "firmware": "Firmware",
+    "rssi": "RSSI",
+    "altitude": "Altitude"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",

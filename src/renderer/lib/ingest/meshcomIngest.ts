@@ -152,9 +152,11 @@ function handleNodeInfo(
     longitude: info.longitude,
     altitude: info.altitude,
     batteryLevel: info.batteryLevel,
+    voltage: info.voltage,
     snr: info.snr,
     rssi: info.rssi,
     hopsAway: info.hopsAway,
+    firmwareVersion: info.firmwareVersion,
     source: 'rf',
   });
 

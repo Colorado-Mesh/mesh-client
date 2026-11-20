@@ -3033,7 +3033,12 @@ export default function ConnectionPanel({
         state.connectionType
           ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
           : null,
-        state.myNodeNum > 0 ? (myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)) : null,
+        state.myNodeNum > 0
+          ? (myNodeLabel ??
+            (protocol === 'meshtastic'
+              ? formatMeshtasticNodeId(state.myNodeNum)
+              : String(state.myNodeNum)))
+          : null,
       ]
         .filter((part): part is string => !!part)
         .join(' · ')
@@ -3196,7 +3201,10 @@ export default function ConnectionPanel({
                 ) : null}
                 {state.myNodeNum > 0 && (
                   <LabelValue label={t('connectionPanel.myNode')} mono>
-                    {myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)}
+                    {myNodeLabel ??
+                      (protocol === 'meshtastic'
+                        ? formatMeshtasticNodeId(state.myNodeNum)
+                        : String(state.myNodeNum))}
                   </LabelValue>
                 )}
                 {state.myNodeNum > 0 && state.batteryPercent !== undefined && (
