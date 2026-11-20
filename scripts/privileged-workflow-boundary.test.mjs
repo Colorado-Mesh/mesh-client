@@ -128,19 +128,31 @@ describe('privileged workflow boundaries', () => {
     expect(source).not.toContain('github.token');
   });
 
-  it('makes release repair explicit, main-only, and protected', () => {
+  it('auto-repairs on publish and keeps dispatch behind release-repair', () => {
     const workflow = loadWorkflow('repair-published-release-tag');
     const source = read('.github/workflows/repair-published-release-tag.yaml');
-    expect(workflow.on.release).toBeUndefined();
+    expect(workflow.on.release.types).toEqual(['published']);
     expect(workflow.on.workflow_dispatch.inputs.release_tag.required).toBe(true);
-    expect(workflow.jobs.repair.if).toBe("github.ref == 'refs/heads/main'");
+    expect(workflow.jobs['repair-on-publish'].if).toBe("github.event_name == 'release'");
+    expect(workflow.jobs['repair-on-publish'].environment).toBeUndefined();
+    expect(workflow.jobs['repair-on-publish'].steps[0].with).toMatchObject({
+      ref: 'main',
+      'persist-credentials': false,
+    });
+    expect(workflow.jobs.repair.if).toBe(
+      "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'",
+    );
     expect(workflow.jobs.repair.environment).toBe('release-repair');
     expect(workflow.jobs.repair.steps[0].with).toMatchObject({
       ref: 'main',
       'persist-credentials': false,
     });
-    expect(source).not.toContain('github.event.release');
+    expect(source).toContain('github.event.release.tag_name');
+    expect(source).toContain('github.event.release.name');
+    expect(source).toContain('--from-event');
     expect(source).not.toContain('RELEASE_PUSH_TOKEN');
+    expect(source).not.toContain('RELEASE_CUT_TOKEN');
+    expect(workflow.permissions).toEqual({ contents: 'write' });
   });
 
   it('protects only the privileged Flatpak publish phase', () => {

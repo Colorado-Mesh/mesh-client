@@ -1,7 +1,10 @@
-# Maintainer-invoked recovery for a release published with tag_name `untagged-*`
-# (or rebound after verify): reattach it to vX.Y.Z and delete the orphan ref.
+# Auto-repair when Publish rebinds tag_name to `untagged-*`, plus maintainer
+# workflow_dispatch recovery. Complements finalize verify in release.yaml —
+# publish is manual and outside that gate; GitHub can detach on Publish even
+# after a green draft verify.
 #
-# Complements finalize verify in release.yaml — publish is manual and outside that gate.
+# Auto path (release published): no environment approval — GITHUB_TOKEN only.
+# Manual path (workflow_dispatch on main): release-repair environment.
 
 name: Repair published release tag
 
@@ -9,6 +12,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -24,9 +29,27 @@ permissions:
   contents: write
 
 jobs:
+  repair-on-publish:
+    name: Auto-repair after publish
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Resolve vX.Y.Z tag and repair if needed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_NAME: ${{ github.event.release.name }}
+        run: node scripts/repair-published-release-tag.mjs --from-event
+
   repair:
     name: Repair published release tag
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: release-repair
     steps:
@@ -41,22 +64,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_TAG: ${{ inputs.release_tag }}
           EVENT_NAME: ${{ inputs.release_name }}
-        run: |
-          set -euo pipefail
-          TAG="${EVENT_TAG}"
-          if [[ "${TAG}" == untagged-* ]]; then
-            NAME="${EVENT_NAME}"
-            if [[ "${NAME}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              TAG="v${NAME}"
-              echo "Published release is on ${EVENT_TAG}; repairing to ${TAG}"
-            else
-              echo "::error::Published release has untagged tag_name and non-semver name=${NAME}"
-              exit 1
-            fi
-          fi
-          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping non-semver release tag ${TAG}"
-            exit 0
-          fi
-          export RELEASE_TAG="${TAG}"
-          node scripts/repair-published-release-tag.mjs
+        run: node scripts/repair-published-release-tag.mjs --from-event
