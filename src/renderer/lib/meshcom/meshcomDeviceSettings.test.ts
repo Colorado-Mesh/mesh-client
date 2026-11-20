@@ -94,6 +94,12 @@ describe('meshcomDeviceSettings', () => {
         '...CTRY AT',
         '...FREQ 433.1750 MHz TXPWR 20 dBm RXBOOST on',
         '...EXTUDP on ...EXT IP 192.168.1.10',
+        '...SSID: MeshClub',
+        'OWNIP 192.168.1.42',
+        'LAT 48.2082 LON 16.3738 ALT 200',
+        'POSTIME 300',
+        '...BME on ...BMP off ...ONEWIRE on',
+        'SYMID / SYMCD #',
         'BATT 3.95 V  BATT 72 %',
         'GC-1:232 GC-2:20',
       ].join('\n'),
@@ -106,6 +112,19 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.display).toBe('on');
     expect(accum.extudp).toBe('on');
     expect(accum.extudpip).toBe('192.168.1.10');
+    expect(accum.ssid).toBe('MeshClub');
+    expect(accum.ownip).toBe('192.168.1.42');
+    expect(accum.lat).toBe('48.2082');
+    expect(accum.lon).toBe('16.3738');
+    expect(accum.alt).toBe('200');
+    expect(accum.postime).toBe('300');
+    expect(accum.bme).toBe('on');
+    expect(accum.bmp).toBe('off');
+    expect(accum.onewire).toBe('on');
+    expect(accum.symid).toBe('/');
+    expect(accum.symcd).toBe('#');
+    expect(accum.boost).toBe('on');
+    expect(accum.ble).toBe('long');
     expect(accum.groups).toBe('232;20');
     expect(accum.txPower).toBe('20');
     expect(accum.battVoltage).toBe(3.95);

@@ -79,6 +79,13 @@ export interface MeshcomDeviceSettingsSnapshot {
   temperatureOutC?: number;
   gasResistance?: number;
   co2Ppm?: number;
+  /** Stations from serial `--mheard` when collected during refresh. */
+  mheard?: readonly {
+    callsign: string;
+    rssi?: number;
+    snr?: number;
+    distanceKm?: number;
+  }[];
   complete: boolean;
   updatedAt: number;
 }
@@ -323,6 +330,30 @@ export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, te
     if (Number.isFinite(n)) accum.battPercent = n;
   }
 
+  const ssid = /\.\.\.SSID:\s*(\S+)/i.exec(text) ?? /SSID:\s*<([^>]+)>/i.exec(text);
+  if (ssid?.[1] && ssid[1] !== 'none') accum.ssid = ssid[1];
+  const ownip =
+    /OWNIP\s+(\d+\.\d+\.\d+\.\d+)/i.exec(text) ?? /IP:\s*(\d+\.\d+\.\d+\.\d+)/i.exec(text);
+  if (ownip?.[1]) accum.ownip = ownip[1];
+  const lat = /LAT\s+([+-]?\d+\.?\d*)/i.exec(text) ?? /\.\.\.LAT\s+([+-]?\d+\.?\d*)/i.exec(text);
+  if (lat?.[1]) accum.lat = lat[1];
+  const lon = /LON\s+([+-]?\d+\.?\d*)/i.exec(text) ?? /\.\.\.LON\s+([+-]?\d+\.?\d*)/i.exec(text);
+  if (lon?.[1]) accum.lon = lon[1];
+  const alt = /ALT\s+([+-]?\d+)/i.exec(text) ?? /\.\.\.ALT\s+([+-]?\d+)/i.exec(text);
+  if (alt?.[1]) accum.alt = alt[1];
+  const postime = /POSTIME\s+(\d+)/i.exec(text) ?? /POS.?TIME\s+(\d+)/i.exec(text);
+  if (postime?.[1]) accum.postime = postime[1];
+  const bme = /\.\.\.BME\s+(on|off)/i.exec(text);
+  if (bme?.[1] === 'on' || bme?.[1] === 'off') accum.bme = bme[1];
+  const bmp = /\.\.\.BMP\s+(on|off)/i.exec(text);
+  if (bmp?.[1] === 'on' || bmp?.[1] === 'off') accum.bmp = bmp[1];
+  const ow = /\.\.\.ONEWIRE\s+(on|off)/i.exec(text) ?? /\.\.\.OW\s+(on|off)/i.exec(text);
+  if (ow?.[1] === 'on' || ow?.[1] === 'off') accum.onewire = ow[1];
+  const symid = /SYMID\s+([/\\])/i.exec(text) ?? /SYM.?ID\s+([/\\])/i.exec(text);
+  if (symid?.[1]) accum.symid = symid[1];
+  const symcd = /SYMCD\s+(\S)/i.exec(text) ?? /SYM.?CD\s+(\S)/i.exec(text);
+  if (symcd?.[1]) accum.symcd = symcd[1];
+
   const groups: string[] = [];
   for (const m of text.matchAll(/GC-(\d+):(\d+)/gi)) {
     if (m[2] && m[2] !== '0') groups.push(m[2]);
@@ -388,7 +419,7 @@ export function meshcomSettingsToCommandValues(
   put('btcode', accum.btCode);
   put('ble', accum.ble);
   put('maxv', accum.maxv);
-  put('boost', accum.boost);
+  put('rxboost', accum.boost);
   put('display', accum.display);
   put('button', accum.button);
   put('volt', accum.volt);
@@ -424,6 +455,7 @@ export function meshcomSettingsToCommandValues(
 export function snapshotMeshcomDeviceSettings(
   accum: MeshcomDeviceSettingsAccum,
   updatedAt = Date.now(),
+  extras?: { mheard?: MeshcomDeviceSettingsSnapshot['mheard'] },
 ): MeshcomDeviceSettingsSnapshot {
   return {
     valuesByCommandId: meshcomSettingsToCommandValues(accum),
@@ -438,6 +470,7 @@ export function snapshotMeshcomDeviceSettings(
     temperatureOutC: accum.temperatureOutC,
     gasResistance: accum.gasResistance,
     co2Ppm: accum.co2Ppm,
+    mheard: extras?.mheard,
     complete: accum.complete,
     updatedAt,
   };

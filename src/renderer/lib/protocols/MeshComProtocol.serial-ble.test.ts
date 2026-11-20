@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
 import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
+import { MeshcomKissSession } from '../meshcom/meshcomKissCodec';
 import type { MeshComConnection } from './meshcom/MeshComTransport';
 import { type MeshComDeviceHandle, meshcomProtocol } from './MeshComProtocol';
 import type { DomainEvent } from './Protocol';
@@ -183,6 +184,124 @@ describe('MeshComProtocol serial/BLE', () => {
       gasResistance: 90000,
       co2: 450,
     });
+    unsub();
+  });
+
+  it('EXTUDP tele temp2 fills temperature when temp is absent', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const tele = `${JSON.stringify({
+      type: 'tele',
+      src: 'OE1WX-2',
+      temp2: 21.5,
+      hum: 55,
+    })}\r\n`;
+    conn.onData?.(new TextEncoder().encode(tele));
+
+    const telemetry = events.filter((e) => e.type === 'telemetry');
+    expect(telemetry[0]?.payload.temperature).toBe(21.5);
+    unsub();
+  });
+
+  it('KISS TX_RESULT with msg_id emits meshtastic_routing_ack', () => {
+    const { conn } = mockConnection('tcp');
+    const handle = makeHandle('tcp', conn);
+    handle.kissSession = new MeshcomKissSession();
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    // FEND 0xF0 status=0x01 msgId LE 0x12345678 FEND
+    const body = new Uint8Array([0xf0, 0x01, 0x78, 0x56, 0x34, 0x12]);
+    const frame = new Uint8Array(1 + body.length + 1);
+    frame[0] = 0xc0;
+    frame.set(body, 1);
+    frame[frame.length - 1] = 0xc0;
+    conn.onData?.(frame);
+
+    const acks = events.filter((e) => e.type === 'meshtastic_routing_ack');
+    expect(acks).toHaveLength(1);
+    expect(acks[0]?.payload).toMatchObject({
+      requestId: 0x12345678,
+      isAck: true,
+      ackProofStatus: 1,
+    });
+    unsub();
+  });
+
+  it('EXTUDP msg to a GRC group uses positive channelIndex', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const msg = `${JSON.stringify({
+      type: 'msg',
+      src: 'OE1GRP-1',
+      dst: '232',
+      msg: 'group cq',
+      msg_id: 'g1',
+    })}\r\n`;
+    conn.onData?.(new TextEncoder().encode(msg));
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts[0]?.payload.channelIndex).toBe(232);
+    unsub();
+  });
+
+  it('BLE @ phone APRS text becomes text_message', () => {
+    const { conn } = mockConnection('ble');
+    const handle = makeHandle('ble', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    // @: msgid(4) hop path>dest:text\\0 hw mod fcs
+    const body = new Uint8Array([
+      0x3a,
+      0x11,
+      0x22,
+      0x33,
+      0x44,
+      0x05,
+      ...'OE1BLE-1'.split('').map((c) => c.charCodeAt(0)),
+      0x3e,
+      0x2a, // *
+      0x3a,
+      ...'hi ble'.split('').map((c) => c.charCodeAt(0)),
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+      0x00,
+    ]);
+    const framed = new Uint8Array(1 + body.length);
+    framed[0] = 0x40;
+    framed.set(body, 1);
+    conn.onData?.(framed);
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toBe('hi ble');
+    expect(texts[0]?.payload.channelIndex).toBe(0);
+    unsub();
+  });
+
+  it('sendMessage with positive channelIndex frames a GRC group', async () => {
+    const { conn, writes } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    await meshcomProtocol.sendMessage(handle, { text: 'grp', channelIndex: 20 });
+    expect(new TextDecoder().decode(writes[0])).toBe('{20}grp\r\n');
+  });
+
+  it('BLE TYP MH updates a heard station node_info', () => {
+    const { conn } = mockConnection('ble');
+    const handle = makeHandle('ble', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+    conn.onData?.(new TextEncoder().encode('D{"TYP":"MH","CALL":"OE8MH-1","RSSI":-88,"SNR":4.5}'));
+    const nodes = events.filter((e) => e.type === 'node_info');
+    expect(nodes.some((e) => e.payload.longName === 'OE8MH-1')).toBe(true);
     unsub();
   });
 });

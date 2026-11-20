@@ -343,6 +343,20 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           recordEnvironmentReading('meshcom', identityId, nodeId, reading, 'rf');
         }
       }
+      if (snap.mheard) {
+        for (const st of snap.mheard) {
+          const heardId = callsignToNodeId(st.callsign);
+          if (!heardId) continue;
+          upsertNodeRecord(identityId, {
+            nodeId: heardId,
+            longName: st.callsign,
+            shortName: st.callsign.slice(0, 4),
+            rssi: st.rssi,
+            snr: st.snr,
+            lastHeardAt: snap.updatedAt,
+          });
+        }
+      }
     },
     [pushEnvTelemetry, pushLocalTelemetry],
   );

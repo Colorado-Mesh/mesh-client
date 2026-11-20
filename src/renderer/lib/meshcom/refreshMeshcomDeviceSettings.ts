@@ -11,7 +11,7 @@ import {
   MESHCOM_SERIAL_WX_COLLECT_MS,
 } from '../timeConstants';
 import type { IdentityId } from '../types';
-import { MESHCOM_BLE_HELLO } from './meshcomBleFrame';
+import { encodeMeshcomBleTimestamp, MESHCOM_BLE_HELLO } from './meshcomBleFrame';
 import { sendMeshcomDeviceCommand } from './meshcomDeviceCommands';
 import {
   emptyMeshcomDeviceSettingsAccum,
@@ -20,6 +20,7 @@ import {
   type MeshcomDeviceSettingsSnapshot,
   snapshotMeshcomDeviceSettings,
 } from './meshcomDeviceSettings';
+import { parseMeshcomMheardText } from './meshcomMheard';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -54,6 +55,7 @@ async function refreshViaSerialInfo(
       lines.push(payload.message);
     }
   });
+  let mheard: MeshcomDeviceSettingsSnapshot['mheard'];
   try {
     await sendMeshcomDeviceCommand(handle, '--info');
     await sleep(MESHCOM_SERIAL_INFO_COLLECT_MS);
@@ -63,11 +65,16 @@ async function refreshViaSerialInfo(
     await sendMeshcomDeviceCommand(handle, '--wx');
     await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
     mergeMeshcomSerialWxText(handle.deviceSettings, lines.join('\n'));
+    lines.length = 0;
+    await sendMeshcomDeviceCommand(handle, '--mheard');
+    await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
+    const stations = parseMeshcomMheardText(lines.join('\n'));
+    if (stations.length > 0) mheard = stations;
   } finally {
     detach();
   }
   handle.deviceSettings.complete = true;
-  return snapshotMeshcomDeviceSettings(handle.deviceSettings);
+  return snapshotMeshcomDeviceSettings(handle.deviceSettings, Date.now(), { mheard });
 }
 
 async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDeviceSettingsSnapshot> {
@@ -82,6 +89,16 @@ async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDevice
     await sendMeshcomDeviceCommand(handle, '--info');
     await waitForBleConffin(handle, MESHCOM_BLE_SETTINGS_WAIT_MS);
   }
+  // Firmware expects a UTC timestamp packet after CONFFIN (phone_commands 0x20).
+  try {
+    const unixSecs = Math.floor(Date.now() / 1000);
+    await handle.connection.write(encodeMeshcomBleTimestamp(unixSecs));
+  } catch (e) {
+    console.debug(
+      '[refreshMeshcomDeviceSettings] BLE timestamp ' +
+        (e instanceof Error ? e.message : String(e)),
+    );
+  }
   // Fresh weather (HELLO may omit W; Telemetry refresh always re-pulls via TYP W).
   await sendMeshcomDeviceCommand(handle, '--wx');
   await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
@@ -89,7 +106,7 @@ async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDevice
   return snapshotMeshcomDeviceSettings(handle.deviceSettings);
 }
 
-/** Read node settings over Serial (`--info` + `--wx`) or BLE (`{HELLO}` / `--info` + `--wx`). */
+/** Read node settings over Serial (`--info` + `--wx` + `--mheard`) or BLE (`{HELLO}` / `--info` + timestamp + `--wx`). */
 export async function refreshMeshcomDeviceSettings(
   handle: MeshComDeviceHandle,
   identityId: IdentityId,

@@ -15,6 +15,11 @@ describe('meshcomCommands catalog', () => {
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--mesh')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--deepsleep')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--sendtrack')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--setnoinfo')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--rxboost')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--symid')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--io')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--aht20')).toBe(true);
   });
 
   it('builds command lines including empty setgrc', () => {

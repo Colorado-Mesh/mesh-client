@@ -75,6 +75,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     argKind: 'number',
     argHint: '99.9',
   },
+  { id: 'rxboost', token: '--rxboost', channel: 'app', group: 'display', argKind: 'onOff' },
   { id: 'button', token: '--button', channel: 'app', group: 'display', argKind: 'onOff' },
   {
     id: 'buttonGpio',
@@ -171,7 +172,11 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     choices: ['off'],
   },
   { id: '680', token: '--680', channel: 'app', group: 'sensors', argKind: 'onOff' },
+  { id: '390', token: '--390', channel: 'app', group: 'sensors', argKind: 'onOff' },
   { id: '811', token: '--811', channel: 'app', group: 'sensors', argKind: 'onOff' },
+  { id: 'aht20', token: '--aht20', channel: 'app', group: 'sensors', argKind: 'onOff' },
+  { id: 'sht21', token: '--sht21', channel: 'app', group: 'sensors', argKind: 'onOff' },
+  { id: 'lps33', token: '--lps33', channel: 'app', group: 'sensors', argKind: 'onOff' },
   { id: 'onewire', token: '--onewire', channel: 'app', group: 'sensors', argKind: 'onOff' },
   {
     id: 'onewireGpio',
@@ -181,7 +186,56 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     argKind: 'number',
     argHint: '99',
   },
+  {
+    id: 'tempoff',
+    token: '--tempoff',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'number',
+    argHint: '-1.5',
+  },
+  {
+    id: 'shunt',
+    token: '--shunt',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'number',
+    argHint: '0.002',
+  },
+  {
+    id: 'imax',
+    token: '--imax',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'number',
+    argHint: '20',
+  },
+  {
+    id: 'isamp',
+    token: '--isamp',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'number',
+    argHint: '0',
+  },
   { id: 'showi2c', token: '--showi2c', channel: 'app', group: 'sensors', argKind: 'none' },
+  { id: 'io', token: '--io', channel: 'app', group: 'sensors', argKind: 'none' },
+  {
+    id: 'setio',
+    token: '--setio',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'custom',
+    argHint: 'A0 out',
+  },
+  {
+    id: 'setout',
+    token: '--setout',
+    channel: 'app',
+    group: 'sensors',
+    argKind: 'custom',
+    argHint: 'A0 high',
+  },
 
   // ── Identity (APP) ──
   {
@@ -210,12 +264,28 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     argHint: 'textinfo',
   },
   {
+    id: 'symid',
+    token: '--symid',
+    channel: 'app',
+    group: 'identity',
+    argKind: 'text',
+    argHint: '/',
+  },
+  {
+    id: 'symcd',
+    token: '--symcd',
+    channel: 'app',
+    group: 'identity',
+    argKind: 'text',
+    argHint: '#',
+  },
+  {
     id: 'setctry',
     token: '--setctry',
     channel: 'app',
     group: 'identity',
     argKind: 'text',
-    argHint: 'EU',
+    argHint: 'EU,UK,US,ON,PL,…',
     danger: true,
   },
   {
@@ -316,6 +386,14 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     argHint: 'NNNNNN',
     sensitive: true,
   },
+  {
+    id: 'ble',
+    token: '--ble',
+    channel: 'app',
+    group: 'bluetooth',
+    argKind: 'choice',
+    choices: ['long', 'short'],
+  },
 
   // ── Neighbors (serial / new) ──
   {
@@ -404,6 +482,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
   { id: 'help', token: '--help', channel: 'app', group: 'debug', argKind: 'none' },
   { id: 'info', token: '--info', channel: 'serial', group: 'debug', argKind: 'none' },
   { id: 'mheard', token: '--mheard', channel: 'serial', group: 'debug', argKind: 'none' },
+  { id: 'mh', token: '--mh', channel: 'serial', group: 'debug', argKind: 'none' },
   { id: 'path', token: '--path', channel: 'serial', group: 'debug', argKind: 'none' },
   { id: 'msgid', token: '--msgid', channel: 'serial', group: 'debug', argKind: 'none' },
   {
@@ -428,6 +507,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
   { id: 'bledebug', token: '--bledebug', channel: 'serial', group: 'debug', argKind: 'onOff' },
   { id: 'setlog', token: '--setlog', channel: 'serial', group: 'debug', argKind: 'onOff' },
   { id: 'setinfo', token: '--setinfo', channel: 'serial', group: 'debug', argKind: 'onOff' },
+  { id: 'setnoinfo', token: '--setnoinfo', channel: 'app', group: 'debug', argKind: 'none' },
   {
     id: 'softserdebug',
     token: '--softserdebug',
@@ -505,6 +585,14 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
   {
     id: 'reboot',
     token: '--reboot',
+    channel: 'app',
+    group: 'power',
+    argKind: 'none',
+    danger: true,
+  },
+  {
+    id: 'save',
+    token: '--save',
     channel: 'app',
     group: 'power',
     argKind: 'none',

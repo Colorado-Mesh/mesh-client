@@ -1,10 +1,16 @@
 /* eslint-disable @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCom yet */
-import { encodeMeshcomBleCommand, parseMeshcomBleFrames } from '../meshcom/meshcomBleFrame';
+import { parseMeshcomAprsPhoneFrame } from '../meshcom/meshcomAprsPhone';
+import {
+  encodeMeshcomBleCommand,
+  MESHCOM_BLE_MH_TYPE,
+  parseMeshcomBleFrames,
+} from '../meshcom/meshcomBleFrame';
 import {
   callsignToNodeId,
   normalizeMeshcomCallsign,
   parseMeshcomSrcPath,
 } from '../meshcom/meshcomCallsign';
+import { meshcomOutboundDest, resolveMeshcomDestination } from '../meshcom/meshcomChannel';
 import {
   emptyMeshcomDeviceSettingsAccum,
   mergeMeshcomBleSettingsJson,
@@ -18,6 +24,7 @@ import {
   MeshcomKissSession,
   parseMeshcomInfoField,
 } from '../meshcom/meshcomKissCodec';
+import { parseMeshcomMhJson } from '../meshcom/meshcomMheard';
 import { MeshcomSerialLineBuffer, meshcomSerialSendText } from '../meshcom/meshcomSerial';
 import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
@@ -178,6 +185,36 @@ function tryIngestSettingsJson(
     const typVal = (parsed as Record<string, unknown>).TYP;
     if (typeof typVal === 'string' || typeof typVal === 'number') typ = String(typVal);
   }
+  if (typ === 'MH') {
+    const station = parseMeshcomMhJson(parsed);
+    if (station) {
+      const nodeId = rememberCallsign(handle, station.callsign);
+      const now = Date.now();
+      emit({
+        type: 'node_info',
+        payload: {
+          nodeId,
+          longName: station.callsign,
+          shortName: station.callsign.slice(0, 4),
+          lastHeardAt: now,
+          snr: station.snr,
+          rssi: station.rssi,
+          hwModel: meshcomHwLabel(station.hwId) || undefined,
+        },
+      });
+    }
+  }
+  if (typ === 'IO') {
+    emit({
+      type: 'device_log',
+      payload: {
+        message: typeof parsed === 'object' ? JSON.stringify(parsed) : 'IO',
+        time: Date.now(),
+        source: 'meshcom-io',
+        level: 0,
+      },
+    });
+  }
   // Emit self + telemetry as soon as call/battery/weather arrive (not only on CONFFIN).
   if (handle.deviceSettings.call && (typ === 'I' || typ === 'W' || typ === 'IS1' || confFin)) {
     emitSelfFromSettings(handle, emit);
@@ -189,6 +226,9 @@ function tryIngestSettingsJson(
 }
 
 function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessageOptions): string {
+  if (opts.channelIndex != null && opts.channelIndex > 0) {
+    return meshcomOutboundDest({ channelIndex: opts.channelIndex });
+  }
   if (opts.destination == null || opts.destination === 0xffffffff) {
     return '*';
   }
@@ -197,6 +237,105 @@ function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessa
   throw new Error(
     `meshcom sendMessage: unknown destination nodeId ${opts.destination} (no callsign mapping)`,
   );
+}
+
+function textMessageToFromDest(
+  handle: MeshComDeviceHandle,
+  destRaw: string | undefined,
+): { to: number; channelIndex: number } {
+  const dest = resolveMeshcomDestination(destRaw);
+  if (dest.channelIndex === 0) return { to: 0xffffffff, channelIndex: 0 };
+  if (dest.channelIndex > 0) return { to: 0xffffffff, channelIndex: dest.channelIndex };
+  const to = dest.toNodeId || rememberCallsign(handle, dest.wireDest);
+  return { to, channelIndex: -1 };
+}
+
+function emitPhoneAprsEvents(
+  handle: MeshComDeviceHandle,
+  bytes: Uint8Array,
+  emit: (event: DomainEvent) => void,
+): void {
+  const parsed = parseMeshcomAprsPhoneFrame(bytes);
+  const now = Date.now();
+  if (parsed.kind === 'ack') {
+    emit({
+      type: 'device_log',
+      payload: {
+        message: `ACK msg=${parsed.ackMsgId.toString(16)} type=${parsed.ackType}`,
+        time: now,
+        source: 'meshcom-ack',
+        level: 0,
+      },
+    });
+    emit({
+      type: 'meshtastic_routing_ack',
+      payload: {
+        requestId: parsed.ackMsgId,
+        ackProofStatus: parsed.ackType,
+        isAck: true,
+      },
+    });
+    return;
+  }
+  if (parsed.kind === 'text') {
+    const from = rememberCallsign(handle, parsed.sourceCall);
+    const { to, channelIndex } = textMessageToFromDest(handle, parsed.destCall);
+    emit({
+      type: 'text_message',
+      payload: {
+        id: `meshcom-ble-${parsed.msgId.toString(16)}`,
+        from,
+        to,
+        payload: parsed.text,
+        channelIndex,
+        timestamp: now,
+        hopCount: parsed.hopCount,
+      },
+    });
+    emit({
+      type: 'node_info',
+      payload: {
+        nodeId: from,
+        longName: parsed.sourceCall,
+        shortName: parsed.sourceCall.slice(0, 4),
+        lastHeardAt: now,
+        hopsAway: parsed.hopCount,
+        hwModel: meshcomHwLabel(parsed.hwId) || undefined,
+      },
+    });
+    return;
+  }
+  if (parsed.kind === 'position') {
+    const from = rememberCallsign(handle, parsed.sourceCall);
+    emit({
+      type: 'node_info',
+      payload: {
+        nodeId: from,
+        longName: parsed.sourceCall,
+        shortName: parsed.sourceCall.slice(0, 4),
+        lastHeardAt: now,
+        latitude: parsed.latitude,
+        longitude: parsed.longitude,
+        altitude: parsed.altitudeM,
+        batteryLevel: parsed.batteryPercent,
+        hopsAway: parsed.hopCount,
+        hwModel: meshcomHwLabel(parsed.hwId) || undefined,
+      },
+    });
+    emit({
+      type: 'position',
+      payload: {
+        nodeId: from,
+        latitude: parsed.latitude,
+        longitude: parsed.longitude,
+        altitude: parsed.altitudeM,
+        timestamp: now,
+      },
+    });
+    if (parsed.batteryPercent != null) {
+      emitDeviceTelemetry(emit, { nodeId: from, batteryLevel: parsed.batteryPercent });
+    }
+  }
 }
 
 function emitExtUdpEvents(
@@ -211,8 +350,7 @@ function emitExtUdpEvents(
   if (parsed.type === 'msg') {
     const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
     const from = rememberCallsign(handle, origin || parsed.src);
-    const to =
-      parsed.dst === '*' || !parsed.dst ? 0xffffffff : rememberCallsign(handle, parsed.dst);
+    const { to, channelIndex } = textMessageToFromDest(handle, parsed.dst);
     emit({
       type: 'text_message',
       payload: {
@@ -220,7 +358,7 @@ function emitExtUdpEvents(
         from,
         to,
         payload: parsed.msg,
-        channelIndex: to === 0xffffffff ? 0 : -1,
+        channelIndex,
         timestamp: now,
         rxSnr: parsed.snr,
         rxRssi: parsed.rssi,
@@ -313,7 +451,7 @@ function emitExtUdpEvents(
   emitDeviceTelemetry(emit, {
     nodeId,
     batteryLevel: parsed.batt,
-    temperature: parsed.temp,
+    temperature: parsed.temp ?? parsed.temp2,
     relativeHumidity: parsed.hum,
     barometricPressure: parsed.press ?? parsed.qnh,
     gasResistance: parsed.gasres,
@@ -338,20 +476,30 @@ function emitConsoleTextLine(
   const now = Date.now();
   const brace = /^\{([^}]+)\}(.*)$/.exec(trimmed);
   if (brace) {
-    const call = normalizeMeshcomCallsign(brace[1]);
+    const destRaw = brace[1].trim();
     const text = brace[2].trimEnd();
-    if (!call || !text) return;
+    if (!destRaw || !text) return;
     // EXTUDP JSON also starts with `{` — only treat as brace-directed when not JSON.
     if (trimmed.startsWith('{"') || trimmed.startsWith('{ ')) return;
-    const from = rememberCallsign(handle, call);
+    const dest = resolveMeshcomDestination(destRaw);
+    // Inbound `{CALL}text` is from that callsign (ALL/group dest is rare on serial RX).
+    const fromCall =
+      dest.channelIndex === -1 ? dest.wireDest : normalizeMeshcomCallsign(destRaw) || destRaw;
+    const from = rememberCallsign(handle, fromCall);
+    const { to, channelIndex } =
+      dest.channelIndex > 0
+        ? { to: 0xffffffff, channelIndex: dest.channelIndex }
+        : dest.channelIndex === 0
+          ? { to: 0xffffffff, channelIndex: 0 }
+          : { to: 0xffffffff, channelIndex: 0 };
     emit({
       type: 'text_message',
       payload: {
         id: `meshcom-console-${from}-${now}`,
         from,
-        to: 0xffffffff,
+        to,
         payload: text,
-        channelIndex: 0,
+        channelIndex,
         timestamp: now,
       },
     });
@@ -359,8 +507,8 @@ function emitConsoleTextLine(
       type: 'node_info',
       payload: {
         nodeId: from,
-        longName: call,
-        shortName: call.slice(0, 4),
+        longName: fromCall,
+        shortName: fromCall.slice(0, 4),
         lastHeardAt: now,
       },
     });
@@ -404,7 +552,28 @@ function emitKissEvents(
   const now = Date.now();
   for (const event of events) {
     if (event.type === 'tx_result') {
-      // TX result is observed by sendMessage waiters later; no DomainEvent yet.
+      const { status, msgId } = event.result;
+      // Firmware: 0x01 = accepted (+ msg_id); other codes = reject / fail.
+      const isAck = status === 0x01;
+      if (msgId != null && Number.isFinite(msgId)) {
+        emit({
+          type: 'meshtastic_routing_ack',
+          payload: {
+            requestId: msgId >>> 0,
+            ackProofStatus: isAck ? 1 : 0,
+            isAck,
+          },
+        });
+      }
+      emit({
+        type: 'device_log',
+        payload: {
+          message: `KISS TX status=0x${status.toString(16)}${msgId != null ? ` msg=${msgId.toString(16)}` : ''}`,
+          time: now,
+          source: 'meshcom-kiss',
+          level: 0,
+        },
+      });
       continue;
     }
     const { frame } = event;
@@ -413,10 +582,29 @@ function emitKissEvents(
     const info = parseMeshcomInfoField(frame.info);
 
     if (info.kind === 'message') {
-      const to =
-        info.addressee === '*' || !info.addressee
-          ? 0xffffffff
-          : rememberCallsign(handle, info.addressee);
+      if (info.ackNumber != null) {
+        const requestId = Number.parseInt(info.ackNumber, 10);
+        const isAck = /^ack/i.test(info.text);
+        emit({
+          type: 'meshtastic_routing_ack',
+          payload: {
+            requestId: Number.isFinite(requestId) ? requestId : 0,
+            ackProofStatus: isAck ? 1 : 0,
+            isAck,
+          },
+        });
+        emit({
+          type: 'device_log',
+          payload: {
+            message: `KISS ${info.text}`,
+            time: now,
+            source: 'meshcom-kiss',
+            level: 0,
+          },
+        });
+        continue;
+      }
+      const { to, channelIndex } = textMessageToFromDest(handle, info.addressee);
       emit({
         type: 'text_message',
         payload: {
@@ -424,7 +612,7 @@ function emitKissEvents(
           from,
           to,
           payload: info.text,
-          channelIndex: to === 0xffffffff ? 0 : -1,
+          channelIndex,
           timestamp: now,
           rxSnr: frame.meta?.snr,
           rxRssi: frame.meta?.rssi,
@@ -547,8 +735,19 @@ export const meshcomProtocol: Protocol = {
         }
         if (device.transport === 'ble') {
           for (const frame of parseMeshcomBleFrames(bytes)) {
+            if (frame.kind === 'phone_aprs') {
+              emitPhoneAprsEvents(device, frame.bytes, emit);
+              continue;
+            }
             if (frame.kind === 'text' || frame.kind === 'json') {
               ingestTextOrJson(frame.kind === 'text' ? frame.text : frame.json);
+              continue;
+            }
+            if (frame.kind === 'binary' && frame.type === MESHCOM_BLE_MH_TYPE) {
+              // Legacy MH type byte; modern firmware sends TYP MH as D{JSON}.
+              const asText = new TextDecoder('utf-8', { fatal: false }).decode(frame.payload);
+              const jsonStart = asText.indexOf('{');
+              if (jsonStart >= 0) ingestTextOrJson(asText.slice(jsonStart));
             }
           }
         }

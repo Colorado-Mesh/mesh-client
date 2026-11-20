@@ -62,6 +62,24 @@ Radio → **Device Configuration** renders first-class sections (Display, Positi
 
 `MeshComProtocol` emits `telemetry` DomainEvents; `meshcomIngest` patches the node row and `recordEnvironmentReading('meshcom', …)`. The runtime also listens for chart points and seeds from the settings snapshot after connect / Telemetry refresh (HELLO can race ahead of ingest attach).
 
+## BLE phone APRS (`@` frames)
+
+Firmware prepends `0x40` to LoRa APRS buffers for the APP (`ble_phone_frame.h`). Client decoder: [`meshcomAprsPhone.ts`](../../src/renderer/lib/meshcom/meshcomAprsPhone.ts) — text (`:`), position (`!`), ACK (`0x41`). After CONFFIN refresh, BLE sends a `0x20` UTC timestamp packet (`phone_commands`).
+
+## Chat destinations (ALL / GRC / DM)
+
+| Destination | Wire                            | `channelIndex` |
+| ----------- | ------------------------------- | -------------- |
+| ALL         | `*` / plain serial text         | `0`            |
+| GRC group   | `{n}text` / EXTUDP `dst` digits | positive `n`   |
+| DM          | `{CALL}text`                    | `-1`           |
+
+Send honors `SendMessageOptions.channelIndex` for groups ([`meshcomChannel.ts`](../../src/renderer/lib/meshcom/meshcomChannel.ts)).
+
+## MHEARD
+
+BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / contact upserts ([`meshcomMheard.ts`](../../src/renderer/lib/meshcom/meshcomMheard.ts)).
+
 ## Firmware release watch
 
 `pnpm run update` runs `check_meshcom_upstream` against [icssw-org/MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware) published releases (`MESHCOM_UPSTREAM_WATCH_ENTRIES` in `scripts/update.sh`). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump `reviewed-ref`.
