@@ -3254,6 +3254,15 @@ leaves it unchanged. Preferences persist through the renderer-preference map, sc
 radio/self id and surface (RRC uses the hub). This changes presentation only, never radio channel
 indices, message destinations, room membership, favorites or credentials. Temporarily absent
 entries retain their slots while visible entries are reordered.</p>
+<p>Channel chips in the Chat strip can also be dragged directly (<code>useChipDragReorder</code>, native HTML5
+drag and drop). A drop saves through the same <code>useChatOrder</code> store with <code>moveChatOrderId</code>, so
+hidden archived channels stay next to their neighbours. Drop feedback is written to the chips'
+<code>data-chip-dragging</code> / <code>data-drop-side</code> attributes (styled by <code>CHIP_DRAG_CLASS</code>) rather than React
+state, so ChatPanel does not re-render while the pointer moves. Only drags carrying the hook's own
+<code>CHIP_ORDER_DRAG_TYPE</code> are accepted. Pinned chips get no drag props, since pin order wins. The
+strip's scroll container carries <code>data-chip-drag-scroll</code>, and a drag over a chip near its top or
+bottom edge scrolls it. Reticulum Chat lists DMs instead of channels (<code>dmOnlyChat</code>), so it has no
+channel strip; keyboard users reorder with the dialog.</p>
 <p>MeshCore Chat and Rooms offer <strong>Sync chats from radio</strong> for a connected companion after setup.
 This reads contacts and channel slots without changing the radio. Room contacts merge with local
 history, names, favorites and saved credentials. The explicit reader checks ChannelInfo indices,
@@ -3292,7 +3301,7 @@ history that were never stored on it; it can restore the room contacts and confi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 19:28:34 UTC">November 19, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 20, 2026 04:14:42 UTC">November 20, 2026</span>
   </span>
 
     
