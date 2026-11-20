@@ -107,6 +107,7 @@ export const nodesSurface: SettingsSearchSurface = {
     'nodeListPanel.contactsRefreshed': 'success toast, not a control',
     'nodeListPanel.meshcoreImportedHint': 'help text under the contact filters',
     'nodeListPanel.meshcoreContactType': 'column tooltip',
+    'nodeListPanel.meshcomHardwareType': 'column tooltip',
     'nodeListPanel.favoritesColumn': 'column tooltip',
     'nodeListPanel.hasPublicKeyTitle': 'table cell tooltip',
     'nodeListPanel.healthAriaLabel': 'table cell accessible name',

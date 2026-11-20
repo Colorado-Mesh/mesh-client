@@ -4139,7 +4139,8 @@
     "statusFilterAll": "Alle",
     "buttonExport": "Exporteren",
     "exportMenuLabel": "Exportformaten",
-    "youBadge": "Jij"
+    "youBadge": "Jij",
+    "meshcomHardwareType": "MeshCom-hardware (van on-air hw_id)"
   },
   "nomadNetwork": {
     "showBrowser": "Browser tonen",
@@ -9025,7 +9026,14 @@
     "connectionHint": "MeshCom gebruikt amateurradioband LoRa via Landinstelling (--setctry). Zorg ervoor dat het landprofiel van je node overeenkomt met je licentie.",
     "countrySettingLabel": "Landinstelling (--setctry)",
     "extUdpHint": "EXTUDP heeft de node nodig die is geconfigureerd met --extudp aan en --extudpip die naar deze computer wijst (UDP 1799).",
-    "kissTcpHint": "KISS/TCP gebruikt MeshCom-poort 8001 — niet Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP gebruikt MeshCom-poort 8001 — niet Reticulum KISS/AX.25.",
+    "channelAll": "ALLE",
+    "channelGroup": "Groep {{id}}",
+    "callsignFieldLabel": "Roepnaam (--setcall)",
+    "callsignHint": "Geldige roepnaam in APRS-stijl (SSID optioneel). Toepassen verzendt --setcall op Seriëel/BLE.",
+    "operatorNameFieldLabel": "Naam van de exploitant (--operatorname)",
+    "operatorNamePlaceholder": "roepnaam",
+    "operatorNameHint": "Optioneel. Verzonden met Toepassen op serienummer/BLE (max. 19 tekens)."
   },
   "meshcomDeviceCommands": {
     "summary": "MeshCom-apparaatopdrachten",

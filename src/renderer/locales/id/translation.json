@@ -4139,7 +4139,8 @@
     "statusFilterAll": "Semua",
     "buttonExport": "Ekspor",
     "exportMenuLabel": "Format ekspor",
-    "youBadge": "Anda"
+    "youBadge": "Anda",
+    "meshcomHardwareType": "Perangkat keras MeshCom (dari hw_id on-air)"
   },
   "nomadNetwork": {
     "showBrowser": "Tampilkan browser",
@@ -9025,7 +9026,14 @@
     "connectionHint": "MeshCom menggunakan pita frekuensi amatir LoRa melalui Pengaturan Negara (--setctry). Pastikan profil negara node Anda sesuai dengan lisensi Anda.",
     "countrySettingLabel": "Pengaturan Negara (--setctry)",
     "extUdpHint": "EXTUDP memerlukan node yang dikonfigurasi dengan --extudp aktif dan --extudpip mengarah ke komputer ini (UDP 1799).",
-    "kissTcpHint": "KISS/TCP menggunakan port MeshCom 8001 — bukan Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP menggunakan port MeshCom 8001 — bukan Reticulum KISS/AX.25.",
+    "channelAll": "SEMUA",
+    "channelGroup": "Grup {{id}}",
+    "callsignFieldLabel": "Panggilan tanda (--setcall)",
+    "callsignHint": "Tanda panggilan gaya APRS yang valid (SSID opsional). Terapkan mengirim --setcall pada Serial/BLE.",
+    "operatorNameFieldLabel": "Nama operator (--operatorname)",
+    "operatorNamePlaceholder": "nama depan",
+    "operatorNameHint": "Opsional. Dikirim dengan Terapkan pada Seri/BLE (maksimal 19 karakter)."
   },
   "meshcomDeviceCommands": {
     "summary": "Perintah perangkat MeshCom",

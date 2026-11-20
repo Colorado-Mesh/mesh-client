@@ -54,6 +54,10 @@ Capability `hasMeshcomDeviceCommands`. Catalog: [`meshcomCommands.ts`](../../src
 
 `MESHCOM_CAPABILITIES` in `BaseRadioProvider.ts`. Shared MeshCore-style panels are on where firmware supports them; Rooms BBS and MeshCore repeater admin stay off (`hasRoomServersPanel: false`, `modulesTabUsesRepeatersLabel: false`).
 
+**Map / live traffic:** MeshCom has SmartBeaconing (`--track`) for LoRa-APRS on the track frequency and mesh POS reports, but **no** MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (`hasRawPacketLog: false` so Stats/Sniffer do not appear or fall through to Meshtastic buffers).
+
+**Chat channels:** ALL (`*`, index 0) plus positive GRC group indices seen in messages — never MeshCore PSK channel pills.
+
 ## Key source files
 
 | Area             | Path                                                                                 |

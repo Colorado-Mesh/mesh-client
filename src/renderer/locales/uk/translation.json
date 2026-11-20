@@ -4211,7 +4211,8 @@
     "statusFilterAll": "Усі",
     "buttonExport": "Експорт",
     "exportMenuLabel": "Формати експорту",
-    "youBadge": "Ви"
+    "youBadge": "Ви",
+    "meshcomHardwareType": "Апаратне забезпечення MeshCom (з on-air hw_id)"
   },
   "nomadNetwork": {
     "showBrowser": "Показати браузер",
@@ -9169,7 +9170,14 @@
     "connectionHint": "MeshCom використовує аматорський діапазон LoRa через налаштування країни (--setctry). Переконайтеся, що профіль країни вашого вузла відповідає вашій ліцензії.",
     "countrySettingLabel": "Налаштування країни (--setctry)",
     "extUdpHint": "Для EXTUDP потрібно, щоб вузол був налаштований за допомогою --extudp on та --extudpip, що вказує на цей комп'ютер (UDP 1799).",
-    "kissTcpHint": "KISS/TCP використовує порт MeshCom 8001, а не Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP використовує порт MeshCom 8001, а не Reticulum KISS/AX.25.",
+    "channelAll": "УСІ",
+    "channelGroup": "Група {{id}}",
+    "callsignFieldLabel": "Позивний (--setcall)",
+    "callsignHint": "Дійсний позивний у стилі APRS (SSID необов'язковий). Застосування надсилає --setcall на Serial/BLE.",
+    "operatorNameFieldLabel": "Ім'я оператора (--operatorname)",
+    "operatorNamePlaceholder": "firstname",
+    "operatorNameHint": "Необов'язково. Надсилається з текстом «Застосувати до серійного номера/BLE» (не більше 19 символів)."
   },
   "meshcomDeviceCommands": {
     "summary": "Команди пристрою MeshCom",

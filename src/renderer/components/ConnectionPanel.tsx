@@ -1053,7 +1053,11 @@ export default function ConnectionPanel({
       const becameConfigured = prevStoreStatusRef.current !== 'configured';
       if (state.connectionType && becameConfigured && !protocolChanged) {
         const conn: LastConnection = { type: state.connectionType };
-        if (state.connectionType === 'http' || state.connectionType === 'tcp') {
+        if (
+          state.connectionType === 'http' ||
+          state.connectionType === 'tcp' ||
+          state.connectionType === 'udp'
+        ) {
           // Prefer the address field for the configured transport (not UI radio selection).
           conn.httpAddress =
             protocol === 'meshcore'
@@ -1079,7 +1083,10 @@ export default function ConnectionPanel({
             if (bleIdentity.isMac) conn.bleMac = bleIdentity.display;
           }
         } else if (state.connectionType === 'serial') {
-          const serialId = loadLastSerialPort();
+          // MeshCom must not inherit the shared Meshtastic/MeshCore serial key.
+          const serialId =
+            lastConnectionRef.current?.serialPortId ??
+            (protocol === 'meshcom' ? null : loadLastSerialPort());
           if (serialId) conn.serialPortId = serialId;
         }
         saveLastConnection(protocol, conn);
@@ -1462,7 +1469,10 @@ export default function ConnectionPanel({
     return window.electronAPI.onSerialPortsDiscovered((ports) => {
       setSerialPorts(ports);
       if (isAutoConnecting) {
-        const lastId = lastConnection?.serialPortId ?? loadLastSerialPort();
+        // MeshCom: only match this protocol's remembered port — never the shared last-serial key
+        // (that belongs to Meshtastic/MeshCore and would open the wrong USB radio).
+        const lastId =
+          lastConnection?.serialPortId ?? (protocol === 'meshcom' ? null : loadLastSerialPort());
         if (lastId) {
           const match = ports.find((p) => p.portId === lastId);
           if (match) {
@@ -1479,7 +1489,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(true);
       setConnectionStage('connectionPanel.stageSelectSerial');
     });
-  }, [isAutoConnecting, lastConnection]);
+  }, [isAutoConnecting, lastConnection, protocol]);
 
   const handleConnect = useCallback(async () => {
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
@@ -1684,12 +1694,21 @@ export default function ConnectionPanel({
     ],
   );
 
-  const handleSelectSerialPort = useCallback((portId: string) => {
-    saveLastSerialPort(portId);
-    window.electronAPI.selectSerialPort(portId);
-    setShowSerialPicker(false);
-    setConnectionStage('connectionPanel.stageConnecting');
-  }, []);
+  const handleSelectSerialPort = useCallback(
+    (portId: string) => {
+      // Keep the shared key for Meshtastic/MeshCore reconnect UX; MeshCom only stores per-protocol.
+      if (protocol !== 'meshcom') {
+        saveLastSerialPort(portId);
+      }
+      const conn: LastConnection = { type: 'serial', serialPortId: portId };
+      saveLastConnection(protocol, conn);
+      setLastConnection(conn);
+      window.electronAPI.selectSerialPort(portId);
+      setShowSerialPicker(false);
+      setConnectionStage('connectionPanel.stageConnecting');
+    },
+    [protocol, setLastConnection],
+  );
 
   // Cold-start RF auto-connect (serial/BLE/TCP/HTTP) is owned by
   // ProtocolAutoConnectCoordinator / useProtocolRfAutoConnect — not this panel.

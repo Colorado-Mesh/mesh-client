@@ -175,6 +175,17 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
     expect(resolveLastSerialPortId('meshtastic')).toBe('ttyUSB0');
   });
 
+  it('does not let MeshCom inherit the shared last-serial key from MeshCore/Meshtastic', () => {
+    localStorage.setItem('mesh-client:lastSerialPort', 'meshcore-usb-port');
+    localStorage.setItem('mesh-client:lastConnection:meshcom', JSON.stringify({ type: 'serial' }));
+    expect(resolveLastSerialPortId('meshcom')).toBeNull();
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcom',
+      JSON.stringify({ type: 'serial', serialPortId: 'meshcom-usb-port' }),
+    );
+    expect(resolveLastSerialPortId('meshcom')).toBe('meshcom-usb-port');
+  });
+
   it('resolveLastHttpAddress accepts tcp type and ignores ble leftovers', () => {
     localStorage.setItem(
       'mesh-client:lastConnection:meshcore',

@@ -1501,15 +1501,26 @@ export default function RadioPanel({
   const networkApplyDisabled = disabled || !networkConfigReady;
 
   const locationSendAllowed = useMemo(() => {
+    if (capabilities?.hasMeshcomDeviceCommands) {
+      return canTransmitLocation({ protocol: 'meshcom' });
+    }
     if (capabilities?.hasCompanionContactManagementConfig) {
       return canTransmitLocation({ protocol: 'meshcore' });
+    }
+    if (capabilities?.hasReticulumNetworkPanel) {
+      return canTransmitLocation({ protocol: 'reticulum' });
     }
     const appliedRole = resolveAppliedMeshtasticDeviceRole(
       meshtasticDeviceRoleFromConfigSlice(meshtasticConfigSlices?.device),
       null,
     );
     return canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: appliedRole });
-  }, [capabilities?.hasCompanionContactManagementConfig, meshtasticConfigSlices?.device]);
+  }, [
+    capabilities?.hasMeshcomDeviceCommands,
+    capabilities?.hasCompanionContactManagementConfig,
+    capabilities?.hasReticulumNetworkPanel,
+    meshtasticConfigSlices?.device,
+  ]);
 
   const applyClientMuteGpsSuppression = async () => {
     if (!onSetModuleConfig) return;
@@ -1929,10 +1940,16 @@ export default function RadioPanel({
         }
       >
         <div data-setting-anchor="radio.user.longName" className="space-y-1">
-          <label htmlFor="radio-long-name" className="text-muted text-sm">
+          <label
+            htmlFor="radio-long-name"
+            data-setting-anchor="radio.user.meshcomCallsign"
+            className="text-muted text-sm"
+          >
             {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.meshcoreNameFieldLabel')
-              : t('radioPanel.longNameFieldLabel')}
+              : capabilities?.hasMeshcomDeviceCommands
+                ? t('meshcom.callsignFieldLabel')
+                : t('radioPanel.longNameFieldLabel')}
           </label>
           <input
             id="radio-long-name"
@@ -1962,7 +1979,9 @@ export default function RadioPanel({
           <p className="text-muted text-xs">
             {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.longNameHintMeshcore')
-              : t('radioPanel.longNameHintMeshtasticBytes')}
+              : capabilities?.hasMeshcomDeviceCommands
+                ? t('meshcom.callsignHint')
+                : t('radioPanel.longNameHintMeshtasticBytes')}
           </p>
           {longNameValidationError ? (
             <p id="radio-long-name-error" className="text-xs text-red-400" role="alert">
@@ -1970,6 +1989,27 @@ export default function RadioPanel({
             </p>
           ) : null}
         </div>
+        {capabilities?.hasMeshcomDeviceCommands && (
+          <div data-setting-anchor="radio.user.meshcomOperator" className="space-y-1">
+            <label htmlFor="radio-meshcom-operator" className="text-muted text-sm">
+              {t('meshcom.operatorNameFieldLabel')}
+            </label>
+            <input
+              id="radio-meshcom-operator"
+              type="text"
+              value={shortName}
+              onChange={(e) => {
+                setShortName(e.target.value.slice(0, 19));
+              }}
+              maxLength={19}
+              disabled={disabled}
+              placeholder={t('meshcom.operatorNamePlaceholder')}
+              className={`${INPUT_BOX_CLASS} w-full`}
+              aria-label={t('meshcom.operatorNameFieldLabel')}
+            />
+            <p className="text-muted text-xs">{t('meshcom.operatorNameHint')}</p>
+          </div>
+        )}
         {capabilities?.hasChannelConfig && (
           <>
             <div data-setting-anchor="radio.user.shortName" className="space-y-1">
@@ -2305,8 +2345,8 @@ export default function RadioPanel({
             </ConfigSection>
           )}
         </>
-      ) : (
-        /* Meshtastic path: region, presets, hop limit */
+      ) : capabilities?.hasMeshcomDeviceCommands ? null : (
+        /* Meshtastic path: region, presets, hop limit (MeshCom uses --setctry instead) */
         <ConfigSection
           anchorId="radio.lora.section"
           title={t('radioPanel.sectionLora')}
@@ -3015,7 +3055,8 @@ export default function RadioPanel({
                 className={`${INPUT_BOX_CLASS} w-36`}
               />
             </div>
-            {capabilities?.hasFullPositionConfig !== false && (
+            {(capabilities?.hasFullPositionConfig !== false ||
+              capabilities?.hasMeshcomDeviceCommands) && (
               <div className="space-y-1">
                 <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
                   {t('radioPanel.altitudeMetersLabel')}

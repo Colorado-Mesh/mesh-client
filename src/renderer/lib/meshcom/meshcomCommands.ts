@@ -494,10 +494,25 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     choices: ['start', 'stop'],
   },
 
-  // ── Power / OTA (APP) ──
+  // ── Power / OTA / mesh (APP + serial) ──
+  {
+    id: 'mesh',
+    token: '--mesh',
+    channel: 'app',
+    group: 'power',
+    argKind: 'onOff',
+  },
   {
     id: 'reboot',
     token: '--reboot',
+    channel: 'app',
+    group: 'power',
+    argKind: 'none',
+    danger: true,
+  },
+  {
+    id: 'deepsleep',
+    token: '--deepsleep',
     channel: 'app',
     group: 'power',
     argKind: 'none',
@@ -510,6 +525,13 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     group: 'power',
     argKind: 'none',
     danger: true,
+  },
+  {
+    id: 'sendtrack',
+    token: '--sendtrack',
+    channel: 'app',
+    group: 'position',
+    argKind: 'none',
   },
 
   // ── Misc serial bootstrap (KISS) ──

@@ -1,4 +1,5 @@
 import type { ReticulumSidecarEvent } from '../../shared/reticulum-types';
+import type { OurPosition } from '../lib/gpsSource';
 import type {
   ChatMessage,
   DeviceState,
@@ -100,7 +101,7 @@ export interface ProtocolRuntime {
   hydrateRawPackets?: () => Promise<void>;
   getRemoteAdminKeyForNode?: (nodeId: number) => string | null;
   setRemoteAdminKeyForNode?: (nodeId: number, key: string) => void;
-  refreshOurPosition?: () => Promise<void>;
+  refreshOurPosition?: () => Promise<OurPosition | null>;
   updateGpsInterval?: (...args: never[]) => void;
 
   /** Reticulum sidecar WebSocket events (optional — Reticulum runtime only). */

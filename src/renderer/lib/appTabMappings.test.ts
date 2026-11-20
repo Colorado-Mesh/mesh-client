@@ -10,6 +10,7 @@ import {
   TAB_CAPABILITY_REQUIREMENTS,
 } from './appTabMappings';
 import {
+  MESHCOM_CAPABILITIES,
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
   RETICULUM_CAPABILITIES,
@@ -139,6 +140,24 @@ describe('computeTabMappings', () => {
     const meshcoreTabs = computeTabMappings(identityT, 'meshcore', MESHCORE_CAPABILITIES);
     expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
     expect(meshcoreTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
+  });
+
+  it('omits Reticulum-only panels for MeshCom', () => {
+    const tabs = computeTabMappings(identityT, 'meshcom', MESHCOM_CAPABILITIES);
+    for (const slot of ['RRC', 'Games', 'NomadNetwork', 'Remote'] as const) {
+      expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf(slot));
+    }
+    expect(MESHCOM_CAPABILITIES.hasRrcPanel).toBe(false);
+    expect(MESHCOM_CAPABILITIES.hasLrgpGames).toBe(false);
+    expect(MESHCOM_CAPABILITIES.hasNomadNetworkPanel).toBe(false);
+    expect(MESHCOM_CAPABILITIES.hasReticulumPeersList).toBe(false);
+  });
+
+  it('omits Stats and Sniffer for MeshCom (no corescope / raw packet log)', () => {
+    const tabs = computeTabMappings(identityT, 'meshcom', MESHCOM_CAPABILITIES);
+    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(false);
+    expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Stats'));
+    expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Sniffer'));
   });
 
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {

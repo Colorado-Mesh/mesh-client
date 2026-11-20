@@ -103,6 +103,9 @@ export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefin
 export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {
   const last = loadLastConnection(protocol);
   if (last?.serialPortId) return last.serialPortId;
+  // MeshCom must not inherit the shared Meshtastic/MeshCore last-serial key — that opens the
+  // wrong USB radio and makes CM look like it is routing MeshCore traffic.
+  if (protocol === 'meshcom') return null;
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
   } catch {

@@ -12,6 +12,9 @@ describe('meshcomCommands catalog', () => {
     expect(getMeshcomCommandById('info')?.channel).toBe('serial');
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--neighbours')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--setctry')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--mesh')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--deepsleep')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--sendtrack')).toBe(true);
   });
 
   it('builds command lines including empty setgrc', () => {

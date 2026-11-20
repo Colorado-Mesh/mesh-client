@@ -5,7 +5,7 @@
  * Fallback: skip DB write; UI still updates from Zustand.
  */
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
-import { upsertNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
@@ -16,6 +16,7 @@ import {
 } from '../meshcom/meshcomCallsign';
 import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import type { DomainEvent } from '../protocols/Protocol';
+import { recordRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord, messageRecordToChatMessage } from '../storeRecordAdapters';
 import type { IdentityId } from '../types';
 
@@ -138,16 +139,27 @@ function handleNodeInfo(
   const nodeId = callsign ? registerMeshcomCallsign(callsign) : info.nodeId;
   if (!nodeId && !callsign) return;
 
-  upsertNode(identityId, {
-    ...info,
-    nodeId: nodeId || info.nodeId,
+  const resolvedId = nodeId || info.nodeId;
+  // MeshCom node_info carries POS/MHEARD fields upsertNode drops — use full record merge.
+  upsertNodeRecord(identityId, {
+    nodeId: resolvedId,
     longName: callsign || info.longName,
     shortName: info.shortName ?? (callsign ? callsign.slice(0, 4) : undefined),
+    hwModel: info.hwModel,
+    lastHeardAt: info.lastHeardAt,
+    latitude: info.latitude,
+    longitude: info.longitude,
+    altitude: info.altitude,
+    batteryLevel: info.batteryLevel,
+    snr: info.snr,
+    rssi: info.rssi,
+    hopsAway: info.hopsAway,
+    source: 'rf',
   });
 
   persistContact(identityId, {
-    callsign: callsign || `N${(nodeId || info.nodeId).toString(16).toUpperCase()}`,
-    nodeId: nodeId || info.nodeId,
+    callsign: callsign || `N${resolvedId.toString(16).toUpperCase()}`,
+    nodeId: resolvedId,
     lat: info.latitude ?? null,
     lon: info.longitude ?? null,
     batt: info.batteryLevel ?? null,
@@ -158,12 +170,18 @@ function handleNodeInfo(
 function handlePosition(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'position' }>,
+  options: MeshcomIngestOptions,
 ): void {
   const { nodeId, latitude, longitude, timestamp } = event.payload;
   const existing = nodeRecordFor(identityId, nodeId);
   const callsign =
     normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '') ||
     `N${nodeId.toString(16).toUpperCase()}`;
+
+  const myNodeNum = options.getMyNodeNum?.() ?? 0;
+  if (myNodeNum > 0 && nodeId === myNodeNum) {
+    recordRadioSelfPosition('meshcom', latitude, longitude);
+  }
 
   upsertNodeRecord(identityId, {
     nodeId,
@@ -219,7 +237,9 @@ export function ingestMeshcomExtUdpFrame(
       lastHeardAt: Math.floor(now / 1000),
       snr: frame.snr,
       rssi: frame.rssi,
+      hopsAway: pathParse.hopCount,
       hwModel: meshcomHwLabel(frame.hw_id) || undefined,
+      source: 'rf',
     });
     upsertMessage(
       identityId,
@@ -274,7 +294,9 @@ export function ingestMeshcomExtUdpFrame(
       batteryLevel: frame.batt,
       snr: frame.snr,
       rssi: frame.rssi,
+      hopsAway: pathParse.hopCount,
       hwModel: meshcomHwLabel(frame.hw_id) || undefined,
+      source: 'rf',
     });
     persistContact(identityId, {
       callsign: origin,
@@ -302,7 +324,7 @@ function createListener(
         handleNodeInfo(identityId, event);
         break;
       case 'position':
-        handlePosition(identityId, event);
+        handlePosition(identityId, event, options);
         break;
       default:
         break;

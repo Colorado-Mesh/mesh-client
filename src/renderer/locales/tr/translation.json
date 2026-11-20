@@ -4139,7 +4139,8 @@
     "statusFilterAll": "Tümü",
     "buttonExport": "Dışa aktar",
     "exportMenuLabel": "Dışa aktarma biçimleri",
-    "youBadge": "Siz"
+    "youBadge": "Siz",
+    "meshcomHardwareType": "MeshCom donanımı (yayın içi hw_id'den)"
   },
   "nomadNetwork": {
     "showBrowser": "Tarayıcıyı göster",
@@ -9025,7 +9026,14 @@
     "connectionHint": "MeshCom, Ülke Ayarı (--setctry) aracılığıyla amatör telsiz bandı LoRa kullanır. Düğümünüzün ülke profilinin lisansınızla eşleştiğinden emin olun.",
     "countrySettingLabel": "Ülke Ayarı (--setctry)",
     "extUdpHint": "EXTUDP'nin --extudp açık ve --extudpip bu bilgisayarı (UDP 1799) gösterecek şekilde yapılandırılmış düğüme ihtiyacı var.",
-    "kissTcpHint": "KISS/TCP, Reticulum KISS/AX.25'i değil, MeshCom bağlantı noktası 8001'i kullanır."
+    "kissTcpHint": "KISS/TCP, Reticulum KISS/AX.25'i değil, MeshCom bağlantı noktası 8001'i kullanır.",
+    "channelAll": "TÜMÜ",
+    "channelGroup": "Grup {{id}}",
+    "callsignFieldLabel": "Çağrı işareti (--setcall)",
+    "callsignHint": "Geçerli APRS tarzı çağrı işareti (SSID isteğe bağlı). Uygula, Seri/BLE üzerinden --setcall gönderir.",
+    "operatorNameFieldLabel": "Operatör adı (--operatorname)",
+    "operatorNamePlaceholder": "Adınız",
+    "operatorNameHint": "İsteğe bağlı. Seri Numarasına Uygula/BLE ile gönderilir (maks. 19 karakter)."
   },
   "meshcomDeviceCommands": {
     "summary": "MeshCom cihaz komutları",

@@ -15,7 +15,7 @@ import { projectConversationMutes } from './conversationMuteStorage';
 import { createDurableRendererSetting } from './durableRendererSetting';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { parseStoredJson } from './parseStoredJson';
-import type { MeshProtocol } from './types';
+import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from './types';
 
 /** Cap persisted flood-scope override map size (view keys). */
 const FLOOD_SCOPE_OVERRIDE_MAX_KEYS = 200;
@@ -30,7 +30,7 @@ const LEGACY_OPEN_DM_TABS_KEY = 'mesh-client:openDmTabs';
 const LEGACY_LAST_READ_KEY = 'mesh-client:lastRead';
 
 const chatLastReadPersistence = Object.fromEntries(
-  (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => [
+  REGISTERED_MESH_PROTOCOLS.map((protocol) => [
     protocol,
     createDurableRendererSetting(
       lastReadStorageKey(protocol),
@@ -47,7 +47,7 @@ const roomsLastReadPersistence = createDurableRendererSetting(
 export async function hydrateChatLastRead(
   settings: Partial<Record<string, string>>,
 ): Promise<void> {
-  const chat = (['meshtastic', 'meshcore', 'reticulum'] as const).map(async (protocol) => {
+  const chat = REGISTERED_MESH_PROTOCOLS.map(async (protocol) => {
     const persistence = chatLastReadPersistence[protocol];
     if (settings[DURABLE_RENDERER_STORAGE_KEYS.chatLastRead[protocol]] === undefined) {
       persistence.write(JSON.stringify(loadPersistedLastReadInitial(protocol)));
@@ -873,7 +873,7 @@ export function convertSavedReadMarksOnce(nowMs = Date.now()): boolean {
   }
   // Never write over a namespace that was not read from the database: an unreadable one keeps its
   // saved value (its marks cannot be read anyway). With none read, the next start tries again.
-  const protocols = (['meshtastic', 'meshcore', 'reticulum'] as const).filter((protocol) =>
+  const protocols = REGISTERED_MESH_PROTOCOLS.filter((protocol) =>
     chatLastReadPersistence[protocol].isHydrated(),
   );
   const roomsHydrated = roomsLastReadPersistence.isHydrated();
@@ -909,7 +909,7 @@ export function convertSavedReadMarksOnce(nowMs = Date.now()): boolean {
  * are stamped times and stay out. Call after durable hydration, before panels read marks.
  */
 export function observeSavedReadMarks(nowMs = Date.now()): void {
-  for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+  for (const protocol of REGISTERED_MESH_PROTOCOLS) {
     if (!chatLastReadPersistence[protocol].isHydrated()) continue;
     for (const [key, mark] of Object.entries(loadPersistedLastReadInitial(protocol))) {
       if (key.startsWith('ch:') || key.startsWith('dm:')) observeSavedChatReceivedAt(mark, nowMs);

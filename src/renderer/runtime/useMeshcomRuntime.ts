@@ -8,22 +8,32 @@ import {
 import { getAppSettingsRaw } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import {
+  isLowAccuracyPosition,
+  type OurPosition,
+  readStoredStaticGps,
+  resolveOurPosition,
+} from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
+import { canTransmitLocation } from '../lib/locationTransmit';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshComDeviceHandle } from '../lib/protocols/MeshComProtocol';
 import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
+import { readRadioSelfPosition } from '../lib/radioSelfPosition';
 import { createRfReconnectController } from '../lib/rfReconnectController';
 import {
   type MeshcomRfTransportType,
   registerMeshcomSession,
 } from '../lib/sessions/meshcomSession';
+import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import type { ConnectionType, DeviceState, IdentityId } from '../lib/types';
 import { getConnection, setConnection } from '../stores/connectionStore';
 import { useMessageStore } from '../stores/messageStore';
-import { useNodeStore } from '../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 function isMeshcomAutoSettimeEnabled(): boolean {
@@ -59,9 +69,14 @@ function resolveHost(httpAddress?: string): string {
  */
 export function useMeshcomRuntime(): ProtocolRuntime & {
   deviceCommands: MeshcomDeviceCommandsActions;
+  refreshOurPosition: () => Promise<OurPosition | null>;
+  setOwner: (opts: { longName: string; shortName: string; isLicensed: boolean }) => Promise<void>;
+  sendPositionToDevice: (lat: number, lon: number, alt?: number) => Promise<void>;
 } {
   const offlineIdentityId = getOfflineIdentityIdForProtocol('meshcom');
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
+  const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const identityIdRef = useRef<IdentityId>(offlineIdentityId);
   const driverIdentityIdRef = useRef<IdentityId | null>(null);
   const ingestDetachRef = useRef<(() => void) | null>(null);
@@ -75,6 +90,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   const reconnectAttemptRef = useRef(0);
   const rfReconnectRef = useRef(createRfReconnectController({ logTag: 'useMeshcomRuntime' }));
   const handleConnectionLostRef = useRef<() => void>(() => {});
+  const refreshOurPositionGenerationRef = useRef(0);
+  const refreshOurPositionRef = useRef<() => Promise<OurPosition | null>>(async () => null);
 
   const resolveIdentityId = useCallback(
     (): IdentityId => identityIdRef.current || offlineIdentityId,
@@ -423,6 +440,107 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     [resolveIdentityId],
   );
 
+  const setOwner = useCallback(
+    async (opts: { longName: string; shortName: string; isLicensed: boolean }) => {
+      const identityId = resolveIdentityId();
+      const handle = connectionDriver.getHandle(identityId);
+      if (!handle) {
+        throw new Error('Not connected to MeshCom radio');
+      }
+      const protocol = await ensureMeshcomProtocolLoaded();
+      await protocol.setOwner(handle, opts);
+    },
+    [resolveIdentityId],
+  );
+
+  const sendPositionToDevice = useCallback(
+    async (lat: number, lon: number, alt?: number) => {
+      const identityId = resolveIdentityId();
+      const handle = connectionDriver.getHandle(identityId);
+      if (!handle) {
+        throw new Error('Not connected to MeshCom radio');
+      }
+      const protocol = await ensureMeshcomProtocolLoaded();
+      await protocol.sendPositionToDevice(handle, lat, lon, alt);
+    },
+    [resolveIdentityId],
+  );
+
+  const pushStaticPositionToDevice = useCallback(async (lat: number, lon: number) => {
+    const handle = connectionDriver.getHandle(identityIdRef.current) as MeshComDeviceHandle | null;
+    if (!handle || (handle.transport !== 'serial' && handle.transport !== 'ble')) return;
+    if (!canTransmitLocation({ protocol: 'meshcom' })) return;
+    try {
+      const { sendMeshcomDeviceCommand } = await import('../lib/meshcom/meshcomDeviceCommands');
+      await sendMeshcomDeviceCommand(handle, `--setlat ${lat}`);
+      await sendMeshcomDeviceCommand(handle, `--setlon ${lon}`);
+    } catch (e) {
+      console.debug(
+        '[useMeshcomRuntime] pushStaticPositionToDevice non-fatal ' + errLikeToLogString(e),
+      );
+    }
+  }, []);
+
+  const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
+    // Dual-protocol: this hook stays mounted on other tabs; skip OS geolocation unless CM is active.
+    if (getStoredMeshProtocol() !== 'meshcom') {
+      return null;
+    }
+    const generation = ++refreshOurPositionGenerationRef.current;
+    setGpsLoading(true);
+    try {
+      const storedStatic = readStoredStaticGps();
+      const staticLat = storedStatic?.lat;
+      const staticLon = storedStatic?.lon;
+      const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshcom');
+      const pos = await resolveOurPosition(
+        radioSelf?.lat,
+        radioSelf?.lon,
+        staticLat,
+        staticLon,
+        radioSelf?.altitudeMeters,
+      );
+      if (generation !== refreshOurPositionGenerationRef.current) {
+        return null;
+      }
+      setOurPosition(pos);
+      if (getStoredMeshProtocol() === 'meshcom') {
+        publishOurPositionReference(pos);
+      }
+
+      if (pos && !isLowAccuracyPosition(pos.source)) {
+        const selfNodeId = state.myNodeNum;
+        if (selfNodeId > 0) {
+          const existing = getIdentityNodeMap(identityIdRef.current).get(selfNodeId);
+          upsertNodeRecord(identityIdRef.current, {
+            nodeId: selfNodeId,
+            longName: existing?.long_name,
+            shortName: existing?.short_name,
+            latitude: pos.lat,
+            longitude: pos.lon,
+            lastHeardAt: Math.floor(Date.now() / 1000),
+          });
+        }
+        if (pos.source === 'static') {
+          void pushStaticPositionToDevice(pos.lat, pos.lon);
+        }
+      }
+      return pos;
+    } finally {
+      if (generation === refreshOurPositionGenerationRef.current) {
+        setGpsLoading(false);
+      }
+    }
+  }, [pushStaticPositionToDevice, state.myNodeNum]);
+
+  refreshOurPositionRef.current = refreshOurPosition;
+
+  useEffect(() => {
+    void refreshOurPositionRef.current().catch((e: unknown) => {
+      console.debug('[useMeshcomRuntime] refreshOurPosition on mount ' + errLikeToLogString(e));
+    });
+  }, [refreshOurPosition]);
+
   const identityIdForStore = resolveIdentityId();
   const messagesFromStore = useMessageStore((s) => s.messages[identityIdForStore]);
   const nodesFromStore = useNodeStore((s) => s.nodes[identityIdForStore]);
@@ -459,8 +577,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       deviceLogs: [],
       rawPackets: [],
       queueStatus: null,
-      ourPosition: null,
-      gpsLoading: false,
+      ourPosition,
+      gpsLoading,
       telemetry: null,
       signalTelemetry: null,
       environmentTelemetry: null,
@@ -516,7 +634,13 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       hydrateRawPackets: asyncNoop,
       sendReaction: asyncNoop as ProtocolRuntime['sendReaction'],
     };
-    return { ...base, deviceCommands };
+    return {
+      ...base,
+      deviceCommands,
+      refreshOurPosition,
+      setOwner,
+      sendPositionToDevice,
+    };
   }, [
     attachRfSession,
     connect,
@@ -526,16 +650,21 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     getFullNodeLabel,
     getNodes,
     getPickerStyleNodeLabel,
+    gpsLoading,
     handleRfConnectFailure,
     identityIdForStore,
     messages,
     nodes,
     onPowerResume,
     onPowerSuspend,
+    ourPosition,
     prepareRfConnect,
     refreshMessagesFromDb,
     refreshNodesFromDb,
+    refreshOurPosition,
     sendMessage,
+    sendPositionToDevice,
+    setOwner,
     state,
   ]);
 }

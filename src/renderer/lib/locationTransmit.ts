@@ -3,7 +3,7 @@ import { isShareMyLocationEnabled } from '@/renderer/lib/appSettingsStorage';
 /** Meshtastic Config.DeviceConfig.Role.CLIENT_MUTE */
 export const MESHTASTIC_ROLE_CLIENT_MUTE = 1;
 
-export type LocationTransmitProtocol = 'meshtastic' | 'meshcore' | 'reticulum';
+export type LocationTransmitProtocol = 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom';
 
 export interface CanTransmitLocationOpts {
   protocol: LocationTransmitProtocol;

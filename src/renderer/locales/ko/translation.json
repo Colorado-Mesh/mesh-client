@@ -4139,7 +4139,8 @@
     "statusFilterAll": "전체",
     "buttonExport": "내보내기",
     "exportMenuLabel": "내보내기 형식",
-    "youBadge": "나"
+    "youBadge": "나",
+    "meshcomHardwareType": "MeshCom 하드웨어(온에어 hw_id에서)"
   },
   "nomadNetwork": {
     "showBrowser": "브라우저 표시",
@@ -9025,7 +9026,14 @@
     "connectionHint": "MeshCom은 국가 설정(--setctry)을 통해 아마추어 무선 주파수 대역 LoRa을(를) 사용합니다. 노드의 국가 프로필이 라이선스와 일치하는지 확인하세요.",
     "countrySettingLabel": "국가 설정(--setctry)",
     "extUdpHint": "EXTUDP에는 --extudp가 켜져 있고 --extudpip가 이 컴퓨터(UDP 1799)를 가리키도록 구성된 노드가 필요합니다.",
-    "kissTcpHint": "KISS/TCP은(는) Reticulum KISS/AX.25가 아닌 MeshCom 포트 8001을 사용합니다."
+    "kissTcpHint": "KISS/TCP은(는) Reticulum KISS/AX.25가 아닌 MeshCom 포트 8001을 사용합니다.",
+    "channelAll": "전체",
+    "channelGroup": "그룹 {{id}}",
+    "callsignFieldLabel": "콜사인(--setcall)",
+    "callsignHint": "유효한 APRS 스타일 호출 부호(SSID 선택 사항). 적용하면 Serial/BLE에 --setcall을 전송합니다.",
+    "operatorNameFieldLabel": "운영자 이름(--operatorname)",
+    "operatorNamePlaceholder": "이름",
+    "operatorNameHint": "선택 사항. '일련번호에 적용'/BLE과(와) 함께 전송(최대 19자)."
   },
   "meshcomDeviceCommands": {
     "summary": "MeshCom 장치 명령",

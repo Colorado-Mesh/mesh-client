@@ -4,6 +4,7 @@ import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { callsignToNodeId } from '../meshcom/meshcomCallsign';
+import { clearRadioSelfPosition, readRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord } from '../storeRecordAdapters';
 import {
   attachMeshcomIngest,
@@ -29,6 +30,7 @@ describe('meshcomIngest', () => {
       .mockResolvedValue({ changes: 1 });
     useMessageStore.setState({ messages: {} });
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    clearRadioSelfPosition('meshcom');
   });
 
   it('attachMeshcomIngest returns a detach function', () => {
@@ -152,6 +154,63 @@ describe('meshcomIngest', () => {
       ID,
     );
     expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalled();
+    detach();
+  });
+
+  it('records radio self position when position event is for myNodeNum', () => {
+    const selfId = callsignToNodeId('OE1ABC-1');
+    const detach = attachMeshcomIngest(ID, { getMyNodeNum: () => selfId });
+    packetRouter.dispatch(
+      {
+        type: 'position',
+        payload: {
+          nodeId: selfId,
+          latitude: 48.2,
+          longitude: 16.37,
+          timestamp: Date.now(),
+        },
+      },
+      ID,
+    );
+    expect(readRadioSelfPosition('meshcom')).toMatchObject({ lat: 48.2, lon: 16.37 });
+    detach();
+  });
+
+  it('node_info merges POS fields (hops, snr, battery, hardware) into the node store', () => {
+    const call = 'OE9XYZ-7';
+    const nodeId = callsignToNodeId(call);
+    const detach = attachMeshcomIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: {
+          nodeId,
+          longName: call,
+          shortName: 'OE9X',
+          lastHeardAt: 1_700_000_100,
+          latitude: 47.1,
+          longitude: 15.2,
+          batteryLevel: 88,
+          snr: 7.5,
+          rssi: -85,
+          hopsAway: 2,
+          hwModel: 'HELTEC-V3',
+        },
+      },
+      ID,
+    );
+    const node = useNodeStore.getState().nodes[ID][nodeId];
+    expect(node).toMatchObject({
+      longName: call,
+      latitude: 47.1,
+      longitude: 15.2,
+      batteryLevel: 88,
+      snr: 7.5,
+      rssi: -85,
+      hopsAway: 2,
+      hwModel: 'HELTEC-V3',
+      source: 'rf',
+    });
     detach();
   });
 });

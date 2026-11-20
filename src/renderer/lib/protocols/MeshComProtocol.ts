@@ -6,6 +6,7 @@ import {
   parseMeshcomSrcPath,
 } from '../meshcom/meshcomCallsign';
 import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
+import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import {
   buildMeshcomKissTxMessage,
   type MeshcomKissEvent,
@@ -98,7 +99,7 @@ function emitExtUdpEvents(
           snr: parsed.snr,
           rssi: parsed.rssi,
           hopsAway: hopCount,
-          hwModel: parsed.hw_id != null ? String(parsed.hw_id) : undefined,
+          hwModel: meshcomHwLabel(parsed.hw_id) || undefined,
         },
       });
     }
@@ -127,7 +128,7 @@ function emitExtUdpEvents(
         snr: parsed.snr,
         rssi: parsed.rssi,
         hopsAway: hopCount,
-        hwModel: parsed.hw_id != null ? String(parsed.hw_id) : undefined,
+        hwModel: meshcomHwLabel(parsed.hw_id) || undefined,
       },
     });
     if (
@@ -497,7 +498,20 @@ export const meshcomProtocol: Protocol = {
     opts: { longName: string; shortName: string; isLicensed: boolean },
   ): Promise<void> {
     const device = handle as MeshComDeviceHandle;
-    device.operatorCallsign = normalizeMeshcomCallsign(opts.longName);
+    const callsign = normalizeMeshcomCallsign(opts.longName);
+    if (!callsign) {
+      throw new Error('meshcom setOwner: callsign required (--setcall)');
+    }
+    device.operatorCallsign = callsign;
+    // Persist on the radio only over Serial/BLE console; KISS/EXTUDP just need local TX src.
+    if (device.transport === 'serial' || device.transport === 'ble') {
+      const { sendMeshcomDeviceCommand } = await import('../meshcom/meshcomDeviceCommands');
+      await sendMeshcomDeviceCommand(device, `--setcall ${callsign}`);
+      const operator = opts.shortName.trim();
+      if (operator) {
+        await sendMeshcomDeviceCommand(device, `--operatorname ${operator.slice(0, 19)}`);
+      }
+    }
   },
   async setModuleConfig(): Promise<void> {
     unsupported('setModuleConfig');
@@ -508,8 +522,22 @@ export const meshcomProtocol: Protocol = {
   async setRingtone(): Promise<void> {
     unsupported('setRingtone');
   },
-  async sendPositionToDevice(): Promise<void> {
-    unsupported('sendPositionToDevice');
+  async sendPositionToDevice(
+    handle: unknown,
+    lat: number,
+    lon: number,
+    alt?: number,
+  ): Promise<void> {
+    const device = handle as MeshComDeviceHandle;
+    if (device.transport !== 'serial' && device.transport !== 'ble') {
+      throw new Error('meshcom sendPositionToDevice requires Serial or BLE');
+    }
+    const { sendMeshcomDeviceCommand } = await import('../meshcom/meshcomDeviceCommands');
+    await sendMeshcomDeviceCommand(device, `--setlat ${lat}`);
+    await sendMeshcomDeviceCommand(device, `--setlon ${lon}`);
+    if (typeof alt === 'number' && Number.isFinite(alt)) {
+      await sendMeshcomDeviceCommand(device, `--setalt ${Math.round(alt)}`);
+    }
   },
   async requestPosition(): Promise<void> {
     unsupported('requestPosition');

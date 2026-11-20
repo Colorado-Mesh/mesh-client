@@ -4179,7 +4179,8 @@
     "statusFilterAll": "Vše",
     "buttonExport": "Exportovat",
     "exportMenuLabel": "Formáty exportu",
-    "youBadge": "Vy"
+    "youBadge": "Vy",
+    "meshcomHardwareType": "Hardware MeshCom (z hw_id vysílání)"
   },
   "nomadNetwork": {
     "showBrowser": "Zobrazit prohlížeč",
@@ -9110,7 +9111,14 @@
     "connectionHint": "MeshCom používá amatérské rádiové pásmo LoRa prostřednictvím nastavení země (--setctry). Ujistěte se, že profil země vašeho uzlu odpovídá vaší licenci.",
     "countrySettingLabel": "Nastavení země (--setctry)",
     "extUdpHint": "EXTUDP vyžaduje uzel nakonfigurovaný s možností --extudp zapnutou a s možností --extudpip směřující na tento počítač (UDP 1799).",
-    "kissTcpHint": "KISS/TCP používá port MeshCom 8001 – nikoli Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP používá port MeshCom 8001 – nikoli Reticulum KISS/AX.25.",
+    "channelAll": "VŠE",
+    "channelGroup": "Skupina {{id}}",
+    "callsignFieldLabel": "Volací značka (--setcall)",
+    "callsignHint": "Platná volací značka ve stylu APRS (SSID volitelné). Použít odešle --setcall na Serial/BLE.",
+    "operatorNameFieldLabel": "Název operátora (--operatorname)",
+    "operatorNamePlaceholder": "Křestní jméno",
+    "operatorNameHint": "Volitelné. Odesláno s možností Použít na sériové číslo/BLE (max. 19 znaků)."
   },
   "meshcomDeviceCommands": {
     "summary": "Příkazy zařízení MeshCom",

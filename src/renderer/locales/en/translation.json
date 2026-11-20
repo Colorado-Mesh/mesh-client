@@ -3361,7 +3361,14 @@
     "connectionHint": "MeshCom uses ham-band LoRa via Country Setting (--setctry). Ensure your node’s country profile matches your license.",
     "countrySettingLabel": "Country Setting (--setctry)",
     "extUdpHint": "EXTUDP needs the node configured with --extudp on and --extudpip pointing at this computer (UDP 1799).",
-    "kissTcpHint": "KISS/TCP uses MeshCom port 8001 — not Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP uses MeshCom port 8001 — not Reticulum KISS/AX.25.",
+    "channelAll": "ALL (*)",
+    "channelGroup": "Group {{id}}",
+    "callsignFieldLabel": "Callsign (--setcall)",
+    "callsignHint": "Valid APRS-style callsign (SSID optional). Apply sends --setcall on Serial/BLE.",
+    "operatorNameFieldLabel": "Operator name (--operatorname)",
+    "operatorNamePlaceholder": "firstname",
+    "operatorNameHint": "Optional. Sent with Apply on Serial/BLE (max 19 characters)."
   },
   "meshcore": {
     "errors": {
@@ -4726,6 +4733,7 @@
     "yourNodeTooltip": "This is your node",
     "signalBarsTooltip": "Signal bars (RSSI) only for direct (0-hop) RF neighbors",
     "meshcoreContactType": "MeshCore contact / advert type",
+    "meshcomHardwareType": "MeshCom hardware (from on-air hw_id)",
     "favoritesColumn": "Favorites",
     "mqttHeardOnlyTooltip": "Heard only via MQTT",
     "mqttConnectedTooltip": "Connected via MQTT",

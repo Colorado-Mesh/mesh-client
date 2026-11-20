@@ -4139,7 +4139,8 @@
     "statusFilterAll": "すべて",
     "buttonExport": "エクスポート",
     "exportMenuLabel": "エクスポート形式",
-    "youBadge": "自分"
+    "youBadge": "自分",
+    "meshcomHardwareType": "MeshComハードウェア（オンエアのhw_idから）"
   },
   "nomadNetwork": {
     "showBrowser": "ブラウザーを表示",
@@ -9025,7 +9026,14 @@
     "connectionHint": "MeshComは、国設定（--setctry）を介してハムバンドLoRaを使用します。ノードの国プロファイルがライセンスと一致していることを確認してください。",
     "countrySettingLabel": "国/地域の設定（--setctry）",
     "extUdpHint": "EXTUDPには、--extudpがオンで、--extudpipがこのコンピュータ (UDP 1799)を指すように構成されたノードが必要です。",
-    "kissTcpHint": "KISS/TCPはMeshComポート8001を使用します。Reticulum KISS/AX.25ではありません。"
+    "kissTcpHint": "KISS/TCPはMeshComポート8001を使用します。Reticulum KISS/AX.25ではありません。",
+    "channelAll": "すべて",
+    "channelGroup": "グループ{{id}}",
+    "callsignFieldLabel": "コールサイン（--setcall）",
+    "callsignHint": "有効なAPRSスタイルのコールサイン（SSIDはオプション）。適用すると、Serial/BLEに--setcallを送信します。",
+    "operatorNameFieldLabel": "オペレーター名（--operatorname）",
+    "operatorNamePlaceholder": "名",
+    "operatorNameHint": "オプション。シリアル番号/BLEに適用して送信（最大19文字）。"
   },
   "meshcomDeviceCommands": {
     "summary": "MeshComデバイスコマンド",

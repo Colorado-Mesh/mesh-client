@@ -4139,7 +4139,8 @@
     "statusFilterAll": "Todos",
     "buttonExport": "Exportar",
     "exportMenuLabel": "Formatos de exportação",
-    "youBadge": "Você"
+    "youBadge": "Você",
+    "meshcomHardwareType": "Hardware MeshCom (do hw_id no ar)"
   },
   "nomadNetwork": {
     "showBrowser": "Mostrar navegador",
@@ -9025,7 +9026,14 @@
     "connectionHint": "O MeshCom usa a banda de rádioamador LoRa por meio da configuração de país (--setctry). Certifique-se de que o perfil de país do seu nó corresponda à sua licença.",
     "countrySettingLabel": "Configuração de país (--setctry)",
     "extUdpHint": "O EXTUDP precisa do nó configurado com --extudp ativado e --extudpip apontando para este computador (UDP 1799).",
-    "kissTcpHint": "KISS/TCP usa a porta 8001 do MeshCom — não Reticulum KISS/AX.25."
+    "kissTcpHint": "KISS/TCP usa a porta 8001 do MeshCom — não Reticulum KISS/AX.25.",
+    "channelAll": "TODOS",
+    "channelGroup": "Grupo {{id}}",
+    "callsignFieldLabel": "Indicativo de chamada (--setcall)",
+    "callsignHint": "Indicativo de chamada válido no estilo APRS (SSID opcional). Aplicar envia --setcall em Serial/BLE.",
+    "operatorNameFieldLabel": "Nome do operador (--operatorname)",
+    "operatorNamePlaceholder": "nome",
+    "operatorNameHint": "Opcional. Enviado com Aplicar no número de série/BLE (máx. 19 caracteres)."
   },
   "meshcomDeviceCommands": {
     "summary": "Comandos do dispositivo MeshCom",

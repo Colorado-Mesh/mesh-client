@@ -95,6 +95,22 @@ const radioEntries: readonly SettingSearchEntry[] = [
     keywords: ['ham', 'amateur', 'licensed', 'callsign', 'unencrypted'],
     visible: hasChannelConfig,
   },
+  {
+    id: 'radio.user.meshcomCallsign',
+    slot: 'Radio',
+    labelKey: 'meshcom.callsignFieldLabel',
+    sectionKey: USER,
+    keywords: ['callsign', 'setcall', 'aprs', 'meshcom', 'ham'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.user.meshcomOperator',
+    slot: 'Radio',
+    labelKey: 'meshcom.operatorNameFieldLabel',
+    sectionKey: USER,
+    keywords: ['operatorname', 'operator', 'firstname', 'meshcom'],
+    visible: hasMeshcomDeviceCommands,
+  },
 
   // LoRa (MeshCore)
   {
@@ -1337,6 +1353,9 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcomDeviceCommands.groups.misc':
       'fieldset legend inside the indexed MeshCom commands section',
     'meshcom.connectionHint': 'help text under the indexed country setting',
+    'meshcom.callsignHint': 'help text under the indexed MeshCom callsign field',
+    'meshcom.operatorNamePlaceholder': 'placeholder of the indexed MeshCom operator field',
+    'meshcom.operatorNameHint': 'help text under the indexed MeshCom operator field',
     'meshcoreTelemetryPrivacy.contactCount': 'option description inside an indexed telemetry row',
     'meshcoreTelemetryPrivacy.description': 'card prose; its rows are indexed',
     'meshcoreTelemetryPrivacy.applyButton': 'card Apply button; the card is indexed',

@@ -21,6 +21,7 @@ describe('canTransmitLocation', () => {
     { shareMyLocation: true, protocol: 'meshtastic' as const, role: 0, expected: true },
     { shareMyLocation: true, protocol: 'meshcore' as const, role: null, expected: true },
     { shareMyLocation: true, protocol: 'reticulum' as const, role: null, expected: true },
+    { shareMyLocation: true, protocol: 'meshcom' as const, role: null, expected: true },
   ])(
     'shareMyLocation=$shareMyLocation protocol=$protocol role=$role => $expected',
     ({ shareMyLocation, protocol, role, expected }) => {
@@ -34,7 +35,7 @@ describe('canTransmitLocation', () => {
     },
   );
 
-  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+  it.each(['meshtastic', 'meshcore', 'reticulum', 'meshcom'] as const)(
     'blocks %s without location consent',
     (protocol) => {
       vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(false);

@@ -42,8 +42,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * MeshCom (CM) fourth protocol: SQLite IPC ships as sibling `meshcom-db-handlers.js` and
  * EXTUDP as `udp-bridge.js` (not in index.js). Remaining schema/TAK/BLE glue still tipped
  * the minified main past 815 KiB; budget +3 KiB.
+ * MeshCom durable `chatLastRead:meshcom` (+ migration) tipped the minified main past 816 KiB
+ * (~+31 B after collapsing reset rows via Object.values); budget +1 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 816 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 817 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
