@@ -12,7 +12,20 @@ import {
   sanitizeLogMessage,
 } from './sanitize-log-message';
 
-export type GattSessionProfile = 'meshtastic' | 'meshcore';
+/** Electron-side GATT session slot (MeshCom is distinct from MeshCore for coexistence). */
+export type GattSessionProfile = 'meshtastic' | 'meshcore' | 'meshcom';
+
+/** Sidecar BLE wire profile — MeshCom uses the same NUS pipe as MeshCore. */
+export type GattWireProfile = 'meshtastic' | 'meshcore';
+
+export function isGattSessionProfile(value: unknown): value is GattSessionProfile {
+  return value === 'meshtastic' || value === 'meshcore' || value === 'meshcom';
+}
+
+/** Map a session slot to the sidecar scan/connect profile. */
+export function gattWireProfileFromSession(sessionId: GattSessionProfile): GattWireProfile {
+  return sessionId === 'meshtastic' ? 'meshtastic' : 'meshcore';
+}
 
 export interface GattDiscoveredDevice {
   deviceId: string;
@@ -79,11 +92,6 @@ const GATT_CLEANUP_MAX_ATTEMPTS = 8;
  */
 export function gattConnectFailureCode(error: string): string {
   return /\bRETICULUM_[A-Z_]+/.test(error) ? 'sidecar_down' : 'connect_timeout';
-}
-
-function profileFromSession(sessionId: string): GattSessionProfile {
-  if (sessionId === 'meshcore') return 'meshcore';
-  return 'meshtastic';
 }
 
 /** `AbortSignal.timeout` rejects with `TimeoutError` ("aborted due to timeout"). */
@@ -301,7 +309,7 @@ export class GattSidecarProxy extends EventEmitter {
     const safeMessage = sanitizeForLogSink(message);
     // Peripheral not advertising (radio off / out of range) is expected; keep error for real faults.
     const log = isPeripheralNotFoundMessage(safeMessage) ? console.warn : console.error;
-    log(sanitizeForConsoleEcho(`[GATT:${sessionId ?? 'all'}] ${safeCode}: ${safeMessage}`)); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
+    log(sanitizeForConsoleEcho(`[GATT:${sessionId ?? 'all'}] ${safeCode}: ${safeMessage}`)); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore]/[GATT:meshcom] explicitly
     this.emit('issue', { sessionId, code: safeCode, message: safeMessage });
   }
 
@@ -309,7 +317,7 @@ export class GattSidecarProxy extends EventEmitter {
     if (this.rnodeBondRecoveryExclusive) {
       return { ok: false, code: 'scan_busy', owner: 'rnode_bond_recovery' };
     }
-    const mode = profileFromSession(sessionId);
+    const mode = gattWireProfileFromSession(sessionId);
     const { status, body } = await this.jsonFetch(
       `/api/v1/gatt/scan?mode=${mode}&timeout_secs=8`,
       undefined,
@@ -349,8 +357,8 @@ export class GattSidecarProxy extends EventEmitter {
 
   stopScan(sessionId: GattSessionProfile): Promise<void> {
     // Sidecar scan is request-scoped; keep the profile arg for IPC parity / future cancel.
-    if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-      return Promise.reject(new Error(`gatt stopScan: invalid session ${sessionId}`));
+    if (!isGattSessionProfile(sessionId)) {
+      return Promise.reject(new Error(`gatt stopScan: invalid session ${String(sessionId)}`));
     }
     return Promise.resolve();
   }
@@ -384,7 +392,7 @@ export class GattSidecarProxy extends EventEmitter {
       error: 'BLE connect cancelled',
       code: 'connect_aborted',
     };
-    const profile = profileFromSession(sessionId);
+    const wireProfile = gattWireProfileFromSession(sessionId);
     try {
       const port = await this.ensurePort();
       if (!isCurrent()) return cancelled;
@@ -394,7 +402,7 @@ export class GattSidecarProxy extends EventEmitter {
         '/api/v1/gatt/sessions',
         {
           method: 'POST',
-          body: JSON.stringify({ profile, address: peripheralId }),
+          body: JSON.stringify({ profile: wireProfile, address: peripheralId }),
         },
         { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS, port },
       );
@@ -420,7 +428,7 @@ export class GattSidecarProxy extends EventEmitter {
         authToken,
         reservationId: attempt,
         sidecarSessionId,
-        profile,
+        profile: sessionId,
         address: peripheralId,
         ws,
         rssiPoll: null,

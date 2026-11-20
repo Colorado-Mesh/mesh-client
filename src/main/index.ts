@@ -163,6 +163,7 @@ import {
   type GattDiscoveredDevice,
   type GattSessionProfile,
   gattSidecarProxy,
+  isGattSessionProfile,
 } from './gatt-sidecar-proxy';
 import { writeGattToRadio } from './gattIpcWrite';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
@@ -2815,8 +2816,8 @@ ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => 
 
 ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:start-scan');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:start-scan: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:start-scan: sessionId must be meshtastic, meshcore, or meshcom');
   }
   if (isQuitting) {
     console.debug('[main] gatt:start-scan: ignoring (app is quitting)');
@@ -2835,8 +2836,8 @@ ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
 });
 ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:stop-scan');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:stop-scan: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:stop-scan: sessionId must be meshtastic, meshcore, or meshcom');
   }
   try {
     await gattSidecarProxy.stopScan(sessionId);
@@ -2849,8 +2850,8 @@ ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
 });
 ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: unknown) => {
   assertIpcSender(event, 'gatt:connect');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:connect: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:connect: sessionId must be meshtastic, meshcore, or meshcom');
   }
   if (typeof peripheralId !== 'string')
     throw new Error('gatt:connect: peripheralId must be a string');
@@ -2884,8 +2885,8 @@ ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: u
 });
 ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:disconnect');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:disconnect: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:disconnect: sessionId must be meshtastic, meshcore, or meshcom');
   }
   try {
     await gattSidecarProxy.disconnect(sessionId);
@@ -2921,15 +2922,15 @@ ipcMain.handle('gatt:clear-bond-recovery-exclusive', (event) => {
 });
 ipcMain.handle('gatt:is-connected', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:is-connected');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:is-connected: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:is-connected: sessionId must be meshtastic, meshcore, or meshcom');
   }
   return gattSidecarProxy.isConnected(sessionId);
 });
 ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown) => {
   assertIpcSender(event, 'gatt:to-radio');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('gatt:to-radio: sessionId must be meshtastic or meshcore');
+  if (!isGattSessionProfile(sessionId)) {
+    throw new Error('gatt:to-radio: sessionId must be meshtastic, meshcore, or meshcom');
   }
   if (isQuitting) {
     console.debug(`[main] gatt:to-radio: ignoring session=${sessionId} (app is quitting)`);

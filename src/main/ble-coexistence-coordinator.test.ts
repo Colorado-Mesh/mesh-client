@@ -25,15 +25,18 @@ describe('BleCoexistenceCoordinator', () => {
     }).toThrow(/already in use/);
   });
 
-  it('allows different MACs for meshtastic and meshcore', () => {
+  it('allows different MACs for meshtastic, meshcore, and meshcom', () => {
     const coordinator = new BleCoexistenceCoordinator();
     coordinator.register('AA:BB:CC:DD:EE:01', 'gatt:meshtastic');
     coordinator.register('AA:BB:CC:DD:EE:02', 'gatt:meshcore');
+    // MeshCom is a first-class LoRa GATT owner (same NUS wire profile, distinct slot).
+    coordinator.register('AA:BB:CC:DD:EE:03', 'gatt:meshcom');
     const state = coordinator.getState();
     expect(state.connections).toEqual(
       expect.arrayContaining([
         { mac: 'aa:bb:cc:dd:ee:01', owner: 'gatt:meshtastic' },
         { mac: 'aa:bb:cc:dd:ee:02', owner: 'gatt:meshcore' },
+        { mac: 'aa:bb:cc:dd:ee:03', owner: 'gatt:meshcom' },
       ]),
     );
   });

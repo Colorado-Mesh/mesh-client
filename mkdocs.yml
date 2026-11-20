@@ -169,6 +169,7 @@ nav:
           - MeshCore Rooms: development/meshcore-rooms.md
           - MeshCore companion CLI: development/meshcore-companion-cli.md
           - MeshCom: development/meshcom.md
+          - Adding a MeshProtocol: development/adding-a-protocol.md
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
           - TAK gateway: development/tak.md

@@ -105,7 +105,7 @@ export class BleCoexistenceCoordinator {
     // Reticulum discovery/pairing holds the interactive scan lease.
     if (
       this.scanOwner === 'reticulum' &&
-      (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore')
+      (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore' || owner === 'gatt:meshcom')
     ) {
       throw new BleScanBusyError('reticulum');
     }

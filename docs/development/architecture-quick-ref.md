@@ -30,7 +30,9 @@ Developer reference: where to look first by area. Moved out of [`ARCHITECTURE.md
 
 - **Meshtastic:** `runtime/useMeshtasticRuntime.ts`, `lib/protocols/MeshtasticProtocol.ts`, `lib/connection.ts` (`createConnection`).
 - **MeshCore:** `runtime/useMeshcoreRuntime.ts`, `lib/protocols/MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
+- **MeshCom:** `runtime/useMeshcomRuntime.ts`, `lib/protocols/MeshComProtocol.ts`, `lib/protocols/meshcom/MeshComTransport.ts`; docs [meshcom.md](meshcom.md).
 - **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/sessions/reticulumSession.ts`, `components/ReticulumMapPanel.tsx`, `components/ReticulumRemotePanel.tsx`, `components/NomadNetworkPanel.tsx`, `components/RrcPanel.tsx`, `stores/reticulumDiscoveryMapStore.ts`, `stores/reticulumPeerStore.ts`, `stores/rncpTransferStore.ts`, `stores/rnshSessionStore.ts`, `stores/rrcHubStore.ts`, `stores/rrcSessionStore.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum` including `rrc_*` / `rnsh_*` / `rncp_*` modules); IPC `reticulum:*` in main with typed `electronAPI.reticulum.rrc|rnsh|rncp|remote`; RMAP map data: sidecar `DiscoveryStore` → REST/WS → store → join `reticulumPeerStore` for reachability; docs [docs/reticulum.md](../reticulum.md), [docs/reticulum-sidecar-ipc.md](../reticulum-sidecar-ipc.md).
+- **Adding another protocol:** [adding-a-protocol.md](adding-a-protocol.md).
 
 ## App lifecycle (mount once from `App.tsx`)
 

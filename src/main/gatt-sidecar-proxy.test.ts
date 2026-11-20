@@ -48,8 +48,25 @@ vi.mock('ws', async () => {
 import {
   fetchErrorDetail,
   GattSidecarProxy,
+  gattWireProfileFromSession,
+  isGattSessionProfile,
   isPeripheralNotFoundMessage,
 } from './gatt-sidecar-proxy';
+
+describe('GattSessionProfile helpers', () => {
+  it('accepts meshtastic, meshcore, and meshcom session ids', () => {
+    expect(isGattSessionProfile('meshtastic')).toBe(true);
+    expect(isGattSessionProfile('meshcore')).toBe(true);
+    expect(isGattSessionProfile('meshcom')).toBe(true);
+    expect(isGattSessionProfile('reticulum')).toBe(false);
+  });
+
+  it('maps meshcom sessions to the MeshCore NUS wire profile', () => {
+    expect(gattWireProfileFromSession('meshtastic')).toBe('meshtastic');
+    expect(gattWireProfileFromSession('meshcore')).toBe('meshcore');
+    expect(gattWireProfileFromSession('meshcom')).toBe('meshcore');
+  });
+});
 
 describe('fetchErrorDetail', () => {
   it('appends the undici cause code and message to "fetch failed"', () => {
@@ -375,6 +392,30 @@ describe('GattSidecarProxy', () => {
       address: 'ff92959fd78be6f009376829a4d6efdc',
     });
     expect(adapterState).not.toHaveBeenCalled();
+  });
+
+  it('startScan for meshcom uses the meshcore sidecar scan mode', async () => {
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, devices: [] }),
+    });
+    await expect(proxy.startScan('meshcom')).resolves.toEqual({ ok: true });
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('mode=meshcore');
+  });
+
+  it('connect for meshcom posts the meshcore wire profile and keeps a meshcom owner slot', async () => {
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-meshcom-1' }),
+    });
+    await expect(proxy.connect('meshcom', 'AA:BB:CC:DD:EE:42')).resolves.toEqual({ ok: true });
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).endsWith('/api/v1/gatt/sessions') && init?.method === 'POST',
+    );
+    expect(post?.[1]?.body).toBe(
+      JSON.stringify({ profile: 'meshcore', address: 'AA:BB:CC:DD:EE:42' }),
+    );
+    expect(proxy.getConnections()).toEqual([{ mac: 'AA:BB:CC:DD:EE:42', owner: 'gatt:meshcom' }]);
   });
 
   it('connect starts RSSI poll and emits linkRssi', async () => {

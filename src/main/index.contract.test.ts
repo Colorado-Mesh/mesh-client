@@ -183,6 +183,8 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(handler).toContain("bleCoexistenceCoordinator.withScan('gatt'");
     expect(handler).toContain('gattSidecarProxy.startScan(sessionId)');
     expect(handler).toContain("code: 'scan_busy'");
+    expect(handler).toContain('isGattSessionProfile(sessionId)');
+    expect(handler).toMatch(/meshtastic, meshcore, or meshcom/);
   });
 
   it('returns scan_busy from bleCoexistence:acquireScan without throwing', () => {

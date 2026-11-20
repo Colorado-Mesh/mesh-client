@@ -2,6 +2,8 @@
 
 MeshCom 4.0 is the fourth RF protocol (`meshcom`, rail monogram **CM**). It mirrors the MeshCore/Meshtastic LoRa spine (`ConnectionDriver` / `PacketRouter` / shared Chat·Contacts·Map·Radio·Diagnostics) with first-party codecs under `src/renderer/lib/meshcom/` — there is **no** MeshCom npm SDK, and MeshCore/`meshcore.js` codecs must not drive MeshCom wire frames.
 
+Checklist / lessons for the next protocol: [adding-a-protocol.md](adding-a-protocol.md).
+
 ## Transports
 
 | Transport    | Port / medium       | Notes                                                                                                                         |
