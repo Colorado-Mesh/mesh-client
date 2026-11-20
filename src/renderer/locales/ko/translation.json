@@ -1024,7 +1024,9 @@
     "markdownLink": "링크",
     "markdownToolbar": "서식 지정",
     "cancelPendingDmAck": "대기 취소",
-    "cancelPendingDmAckAria": "전달 확인을 기다리지 말고 이 메시지를 실패로 표시하세요."
+    "cancelPendingDmAckAria": "전달 확인을 기다리지 말고 이 메시지를 실패로 표시하세요.",
+    "outboxAnnounceBlocked": "메시지가 차단되어 전송되지 않았습니다.",
+    "outboxAnnounceFailed": "메시지를 보내지 못했습니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

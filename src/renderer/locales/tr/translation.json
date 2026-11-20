@@ -1024,7 +1024,9 @@
     "markdownLink": "Bağlantı",
     "markdownToolbar": "Biçimlendirme",
     "cancelPendingDmAck": "Beklemeyi iptal et",
-    "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin"
+    "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin",
+    "outboxAnnounceBlocked": "Mesaj engellendi ve gönderilmedi.",
+    "outboxAnnounceFailed": "Mesajınız gönderilemedi."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

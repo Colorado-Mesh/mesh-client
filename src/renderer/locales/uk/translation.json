@@ -1060,7 +1060,9 @@
     "markdownLink": "Посилання",
     "markdownToolbar": "Форматування",
     "cancelPendingDmAck": "Скасувати очікування",
-    "cancelPendingDmAckAria": "Припинити очікування підтвердження доставки та позначити це повідомлення як невдале"
+    "cancelPendingDmAckAria": "Припинити очікування підтвердження доставки та позначити це повідомлення як невдале",
+    "outboxAnnounceBlocked": "Повідомлення заблоковано і не надіслано.",
+    "outboxAnnounceFailed": "Не вдалося надіслати повідомлення."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

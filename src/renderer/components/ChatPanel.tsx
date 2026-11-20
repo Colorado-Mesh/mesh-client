@@ -53,6 +53,7 @@ import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import {
+  announce,
   type BatchedMessageAnnouncer,
   createBatchedMessageAnnouncer,
   truncateForAnnouncement,
@@ -464,6 +465,20 @@ function OutboxBubble({
   const { t } = useTranslation();
   const awaitingAck = useOutboxRowAwaitingAck(row.id);
   const isScheduled = isScheduledOutboxRow(row);
+  const announcedStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (row.status !== 'failed' && row.status !== 'blocked') return;
+    if (announcedStatusRef.current === row.status) return;
+    announcedStatusRef.current = row.status;
+    announce(
+      t(
+        row.status === 'blocked'
+          ? 'chatPanel.outboxAnnounceBlocked'
+          : 'chatPanel.outboxAnnounceFailed',
+      ),
+      'polite',
+    );
+  }, [row.status, t]);
   const backingOff =
     !isScheduled && (row.status === 'queued' || row.status === 'failed') && row.nextRetryAt != null;
   const nowMs = useNowMs(backingOff, 1000);

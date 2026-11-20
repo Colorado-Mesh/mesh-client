@@ -1060,7 +1060,9 @@
     "markdownLink": "Połączyć",
     "markdownToolbar": "Formatowanie",
     "cancelPendingDmAck": "Anuluj oczekiwanie",
-    "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną"
+    "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną",
+    "outboxAnnounceBlocked": "Wiadomość została zablokowana i nie została wysłana.",
+    "outboxAnnounceFailed": "Nie udało się wysłać wiadomości."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -1024,7 +1024,9 @@
     "markdownLink": "Link",
     "markdownToolbar": "Formattazione",
     "cancelPendingDmAck": "Annulla attesa",
-    "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito"
+    "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito",
+    "outboxAnnounceBlocked": "Messaggio bloccato e non inviato.",
+    "outboxAnnounceFailed": "Impossibile inviare il messaggio."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

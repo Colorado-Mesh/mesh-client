@@ -1024,7 +1024,9 @@
     "markdownLink": "链接",
     "markdownToolbar": "格式",
     "cancelPendingDmAck": "取消等待",
-    "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败"
+    "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败",
+    "outboxAnnounceBlocked": "消息已被屏蔽，未发送。",
+    "outboxAnnounceFailed": "无法发送邮件。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

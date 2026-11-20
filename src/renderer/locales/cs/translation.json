@@ -1045,7 +1045,9 @@
     "markdownLink": "Odkaz",
     "markdownToolbar": "Formátování",
     "cancelPendingDmAck": "Zrušit čekání",
-    "cancelPendingDmAckAria": "Přestat čekat na potvrzení doručení a označit tuto zprávu jako neúspěšnou"
+    "cancelPendingDmAckAria": "Přestat čekat na potvrzení doručení a označit tuto zprávu jako neúspěšnou",
+    "outboxAnnounceBlocked": "Zpráva byla zablokována a nebyla odeslána.",
+    "outboxAnnounceFailed": "Odeslání zprávy se nezdařilo."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

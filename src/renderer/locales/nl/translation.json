@@ -1024,7 +1024,9 @@
     "markdownLink": "Link",
     "markdownToolbar": "Opmaak",
     "cancelPendingDmAck": "Wachten annuleren",
-    "cancelPendingDmAckAria": "Stop met wachten op een bevestiging van ontvangst en markeer dit bericht als mislukt"
+    "cancelPendingDmAckAria": "Stop met wachten op een bevestiging van ontvangst en markeer dit bericht als mislukt",
+    "outboxAnnounceBlocked": "Bericht geblokkeerd en niet verzonden.",
+    "outboxAnnounceFailed": "Bericht kon niet worden verzonden."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

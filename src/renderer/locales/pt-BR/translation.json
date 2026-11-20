@@ -1024,7 +1024,9 @@
     "markdownLink": "Link",
     "markdownToolbar": "Formatação",
     "cancelPendingDmAck": "Cancelar espera",
-    "cancelPendingDmAckAria": "Parar de esperar pela confirmação de entrega e marcar esta mensagem como com falha"
+    "cancelPendingDmAckAria": "Parar de esperar pela confirmação de entrega e marcar esta mensagem como com falha",
+    "outboxAnnounceBlocked": "A mensagem foi bloqueada e não foi enviada.",
+    "outboxAnnounceFailed": "Falha ao enviar a mensagem"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

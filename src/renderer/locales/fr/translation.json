@@ -1024,7 +1024,9 @@
     "markdownLink": "Lien",
     "markdownToolbar": "Mettre en forme",
     "cancelPendingDmAck": "Annuler l'attente",
-    "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué"
+    "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué",
+    "outboxAnnounceBlocked": "Message bloqué et non envoyé.",
+    "outboxAnnounceFailed": "Échec de l'envoi du message."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

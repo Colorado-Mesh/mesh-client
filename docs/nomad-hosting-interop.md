@@ -25,7 +25,7 @@ Repeat with each peer you care about:
 
 1. **Python NomadNet** — node appears in announces; open destination; view index page; download a file under `/file/` if present.
 2. **MeshChat** (if available on the same network) — same announce → page → file path.
-3. **Second mesh-client** — Announces list → open node → page + file download.
+3. **Second mesh-client** — Announces list → open node → page + file download (also automated in CI via `dual_tcp_nomad_page_and_file`).
 
 ## Pass criteria
 
@@ -45,6 +45,7 @@ When NomadNet / MeshChat are not installed in the environment:
 
 - `nomad-core` tests: Link request handler serves page + file by path hash; request budget rejects over-concurrency; listing skips dotfiles/`*.allowed`; `encode_request_fields` / `decode_request_fields` round-trip MessagePack form bodies
 - Sidecar: `nomad_page_request_payload` (base64 JSON → `encode_request_fields`) plus content-source layout resolve + persistence of `nomad_serving_content_source`
+- Dual-sidecar TCP: host serves `pages/` + `files/` to a second sidecar (`dual_tcp_nomad_page_and_file`) — page + file bytes, traversal/dotfile negatives
 - mesh-client Vitest: My Pages folder choose, start gated on content source, read-only page/file lists, and **Open in browser** wiring
 
-Treat the peer table above as the release gate for cross-client hosting.
+Treat NomadNet / MeshChat in the peer table as the release gate for cross-client hosting; second mesh-client is covered by the dual-sidecar test above.

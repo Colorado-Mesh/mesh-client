@@ -307,7 +307,7 @@ check_ratspeak_patches() {
     'rsReticulum-rncp-picker-pinned-jail.patch|ratspeak/rsReticulum||rsReticulum RNCP native-picker pinned fetch jail|'
     'rsReticulum-rncp-inbound-admission.patch|ratspeak/rsReticulum||rsReticulum RNCP pre-advertisement inbound admission|'
     'rsNomad-picker-pinned-roots.patch|Colorado-Mesh/rsNomad||rsNomad native-picker pinned content roots|'
-    'rsNomad-request-outcome-reply-value.patch|Colorado-Mesh/rsNomad||rsNomad RequestOutcome ReplyValue/ReplyFile source for rsReticulum 1.5|'
+    'rsNomad-request-outcome-reply-value.patch|Colorado-Mesh/rsNomad||rsNomad RequestOutcome ReplyBytes/ReplyFile source for rsReticulum 1.5|'
     'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'

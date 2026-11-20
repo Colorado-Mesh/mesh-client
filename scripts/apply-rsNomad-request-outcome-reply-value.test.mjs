@@ -13,15 +13,15 @@ const PATCH_FILE = path.join(
 );
 
 describe('apply-rsNomad-request-outcome-reply-value', () => {
-  it('patch migrates RequestOutcome::Reply to ReplyValue / Cursor ReplyFile', () => {
+  it('patch migrates RequestOutcome::Reply to ReplyBytes / Cursor ReplyFile', () => {
     const patch = readFileSync(PATCH_FILE, 'utf8');
-    expect(patch).toContain('RequestOutcome::ReplyValue');
+    expect(patch).toContain('RequestOutcome::ReplyBytes');
     expect(patch).toContain('Cursor::new');
   });
 
   it('apply script checks for overlay marker', () => {
     const script = readFileSync(APPLY_SCRIPT, 'utf8');
-    expect(script).toContain('RequestOutcome::ReplyValue');
+    expect(script).toContain('RequestOutcome::ReplyBytes');
     expect(script).toContain('rsNomad-request-outcome-reply-value.patch');
   });
 });

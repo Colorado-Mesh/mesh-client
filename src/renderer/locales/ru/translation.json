@@ -1060,7 +1060,9 @@
     "markdownLink": "Связь",
     "markdownToolbar": "Форматирование",
     "cancelPendingDmAck": "Отменить ожидание",
-    "cancelPendingDmAckAria": "Прекратить ожидание подтверждения доставки и пометить это сообщение как недоставленное"
+    "cancelPendingDmAckAria": "Прекратить ожидание подтверждения доставки и пометить это сообщение как недоставленное",
+    "outboxAnnounceBlocked": "Сообщение заблокировано и не отправлено.",
+    "outboxAnnounceFailed": "Ваше сообщение не удалось отправить."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

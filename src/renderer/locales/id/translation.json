@@ -1024,7 +1024,9 @@
     "markdownLink": "Tautan",
     "markdownToolbar": "Pemformatan",
     "cancelPendingDmAck": "Batalkan penantian",
-    "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal"
+    "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal",
+    "outboxAnnounceBlocked": "Pesan diblokir dan tidak terkirim.",
+    "outboxAnnounceFailed": "Pesan gagal dikirim."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

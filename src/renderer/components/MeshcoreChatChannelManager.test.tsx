@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -235,9 +235,10 @@ describe('MeshcoreChatChannelManager', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(props.onSetChannel).not.toHaveBeenCalled();
     expect(props.onSelectChannel).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('All channel slots are full.');
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('All channel slots are full.');
     expect(screen.getByLabelText('Name')).toHaveValue('Team');
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(dialog).toBeInTheDocument();
   });
 
   it('clears the private key when the dialog is dismissed', async () => {
@@ -266,7 +267,9 @@ describe('MeshcoreChatChannelManager', () => {
     await user.type(screen.getByLabelText('Name'), 'Team');
     await user.type(screen.getByLabelText('Key (32 hex chars = 16 bytes)'), 'aa'.repeat(16));
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Failed: Radio disconnected');
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      'Failed: Radio disconnected',
+    );
     expect(props.onSelectChannel).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Key (32 hex chars = 16 bytes)')).toHaveValue('aa'.repeat(16));
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -377,7 +380,9 @@ describe('MeshcoreChatChannelManager', () => {
     const key = screen.getByLabelText('Key (32 hex chars = 16 bytes)');
     await user.type(key, 'aa'.repeat(16));
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Failed: Disconnected');
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      'Failed: Disconnected',
+    );
     expect(screen.getByLabelText('Name')).toHaveValue('Team');
     expect(key).toHaveValue('aa'.repeat(16));
     expect(screen.getByRole('switch', { name: 'Keep open after adding' })).toBeChecked();
@@ -485,7 +490,7 @@ describe('MeshcoreChatChannelManager', () => {
     expect(screen.getByLabelText('Name')).toHaveValue('FromQr');
     expect(screen.getByLabelText('Key (32 hex chars = 16 bytes)')).toHaveValue('ab'.repeat(16));
     expect(props.onSetChannel).not.toHaveBeenCalled();
-    expect(screen.getByRole('status')).toHaveTextContent(
+    expect(within(screen.getByRole('dialog')).getByRole('status')).toHaveTextContent(
       'Channel details filled from QR — save to apply',
     );
   });

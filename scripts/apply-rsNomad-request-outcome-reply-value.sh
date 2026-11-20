@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Migrate rsNomad RequestOutcome::Reply → ReplyValue and ReplyFile { data, … }
+# Migrate rsNomad RequestOutcome::Reply → ReplyBytes and ReplyFile { data, … }
 # → ReplyFile { source: Cursor, metadata } for rsReticulum 1.5 ReplyFile API.
 set -euo pipefail
 
@@ -24,7 +24,7 @@ short_head() {
   git -C "${NOMAD_DIR}" rev-parse --short HEAD
 }
 
-if [[ -f "${NODE_RS}" ]] && grep -q 'RequestOutcome::ReplyValue(' "${NODE_RS}" \
+if [[ -f "${NODE_RS}" ]] && grep -q 'RequestOutcome::ReplyBytes(' "${NODE_RS}" \
   && grep -q 'Box::new(Cursor::new(' "${NODE_RS}"; then
   echo "request-outcome-reply-value overlay already present on rsNomad @ $(short_head)"
   exit 0

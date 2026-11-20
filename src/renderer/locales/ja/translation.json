@@ -1024,7 +1024,9 @@
     "markdownLink": "リンク",
     "markdownToolbar": "書式設定",
     "cancelPendingDmAck": "待機をキャンセル",
-    "cancelPendingDmAckAria": "配信確認の待機を停止し、このメッセージを失敗としてマークする"
+    "cancelPendingDmAckAria": "配信確認の待機を停止し、このメッセージを失敗としてマークする",
+    "outboxAnnounceBlocked": "メッセージがブロックされ、送信されませんでした。",
+    "outboxAnnounceFailed": "メッセージを送信できませんでした。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

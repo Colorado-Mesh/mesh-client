@@ -1038,6 +1038,8 @@
     "outboxStatusSending": "Sending…",
     "outboxStatusBlocked": "Blocked",
     "outboxStatusFailed": "Failed",
+    "outboxAnnounceBlocked": "Message blocked and was not sent.",
+    "outboxAnnounceFailed": "Message failed to send.",
     "outboxLegacyMultipartBlocked": "This queued message used multi-part MeshCore splitting, which is no longer sent. Cancel it and send a shorter message (or several separate shorter messages).",
     "outboxRemoveFailed": "Message was sent, but removing it from the outbox failed. Cancel the queued copy.",
     "outboxEmergencyBadge": "Emergency",
