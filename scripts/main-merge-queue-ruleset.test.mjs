@@ -6,10 +6,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
+
+import { RELEASE_GATES_CHECK } from './releaseGates.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RULESET_PATH = path.join(ROOT, '.github', 'rulesets', 'main-merge-queue.json');
+const E2E_PATH = path.join(ROOT, '.github', 'workflows', 'e2e.yaml');
 
 const REQUIRED_CONTEXTS = [
   'Build & Test',
@@ -17,6 +22,7 @@ const REQUIRED_CONTEXTS = [
   'Coverage (renderer-logic)',
   'Coverage (main)',
   'Merge coverage',
+  RELEASE_GATES_CHECK,
 ];
 
 /** GitHub Actions app id used to pin required checks. */
@@ -39,6 +45,15 @@ describe('main-merge-queue.json contract', () => {
     for (const check of checks) {
       expect(check.integration_id).toBe(GITHUB_ACTIONS_INTEGRATION_ID);
     }
+  });
+
+  it('requires Release gates from e2e.yaml, which reports it on pull requests and merge groups', () => {
+    const e2e = yaml.load(fs.readFileSync(E2E_PATH, 'utf8'));
+    const gates = Object.values(e2e.jobs).filter((job) => job.name === RELEASE_GATES_CHECK);
+    expect(gates).toHaveLength(1);
+    expect(gates[0].if).toBe('always()');
+    expect(e2e.on.pull_request).toEqual({ branches: ['main'] });
+    expect('merge_group' in e2e.on).toBe(true);
   });
 
   it('keeps admin-only bypass (no Actions integration bypass)', () => {

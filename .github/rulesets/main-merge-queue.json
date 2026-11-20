@@ -58,6 +58,10 @@
           {
             "context": "Merge coverage",
             "integration_id": 15368
+          },
+          {
+            "context": "Release gates",
+            "integration_id": 15368
           }
         ]
       }

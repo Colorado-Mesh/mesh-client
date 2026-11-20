@@ -122,7 +122,7 @@ Adding a cross-boundary feature:
 
 ## 6. Commands & CI Checks
 
-**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run check:pr`, `pnpm run update`. Electron E2E (on demand / daily CI, not Vitest or pre-commit): `pnpm run test:e2e:build` (or `test:e2e` after `build`); workflow [`.github/workflows/e2e.yaml`](.github/workflows/e2e.yaml) (`schedule` on `main` + `workflow_dispatch`, 3-OS matrix). The repeater spec (`e2e/meshcore-repeater-admin.spec.ts`) also runs on PRs that touch MeshCore ping or repeater code ([`e2e-meshcore-repeaters.yaml`](.github/workflows/e2e-meshcore-repeaters.yaml), Linux, not a required check). Reticulum sidecar: `pnpm run check:reticulum-sidecar` (full features), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
+**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run check:pr`, `pnpm run update`. Electron E2E (on demand / daily CI, not Vitest or pre-commit): `pnpm run test:e2e:build` (or `test:e2e` after `build`); workflow [`.github/workflows/e2e.yaml`](.github/workflows/e2e.yaml) (3-OS matrix plus the release preflight on release pull requests to `main`, daily on `main` and by `workflow_dispatch`; its required `Release gates` check passes at once on other pull requests and merge groups). Releases (maintainers): `pnpm run release:open` opens the release pull request, and Cut release tags it after merge; see [`docs/release-process.md`](docs/release-process.md). The repeater spec (`e2e/meshcore-repeater-admin.spec.ts`) also runs on PRs that touch MeshCore ping or repeater code ([`e2e-meshcore-repeaters.yaml`](.github/workflows/e2e-meshcore-repeaters.yaml), Linux, not a required check). Reticulum sidecar: `pnpm run check:reticulum-sidecar` (full features), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
 
 - **Linux sidecar packaging (glibc):** Release Linux sidecars build on `ubuntu-latest` via `cargo zigbuild` targeting **glibc 2.35** (`MAX_SIDECAR_GLIBC` / `…-gnu.2.35`). Do **not** ship Linux release sidecars from plain `cargo build` on latest host glibc — see [docs/ci-cd.md#linux-sidecar-glibc](docs/ci-cd.md#linux-sidecar-glibc).
 
@@ -149,7 +149,7 @@ Before PR: `pnpm run check:pr` (lint + typecheck + `typecheck:strict-shared` + f
 
 ## 7. Git & PR Workflow
 
-Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/mesh-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
+Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/mesh-client`. Never bump the version in a feature pull request; `pnpm run release:open` does it in the release pull request. Pre-PR: refresh `README` as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
 
 ## 8. Subsystem Quick Reference
 

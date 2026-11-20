@@ -1,25 +1,65 @@
 // @vitest-environment node
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
+
+import { RELEASE_GATES_CHECK } from './releaseGates.mjs';
 
 const cutRelease = readFileSync('.github/workflows/cut-release.yaml', 'utf8');
 const e2e = readFileSync('.github/workflows/e2e.yaml', 'utf8');
+const e2eWorkflow = yaml.load(e2e);
 const toolchain = readFileSync('.github/actions/setup-release-toolchain/action.yaml', 'utf8');
 const preflightJob = e2e.slice(e2e.indexOf('\n  release-preflight:'));
 
+/** A release pull request: one from this repository's release/ branch (release:open makes them). */
+const RELEASE_PR =
+  "github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/') && " +
+  'github.event.pull_request.head.repo.full_name == github.repository';
+/** Where the E2E legs and the release preflight run: by hand, daily on main, release pull requests. */
+const GATE_RUNS = `github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || (${RELEASE_PR})`;
+
 describe('Release preflight (e2e.yaml job)', () => {
-  it('is a job in e2e.yaml, not a standalone PR workflow', () => {
+  it('is a job in e2e.yaml, which runs for pull requests to main and merge groups', () => {
     expect(e2e).toContain('\n  release-preflight:');
     expect(existsSync('.github/workflows/release-preflight.yaml')).toBe(false);
-    expect(e2e).not.toMatch(/^\s*pull_request:/m);
+    expect(e2eWorkflow.on.pull_request).toEqual({ branches: ['main'] });
+    // The main ruleset requires Release gates, so it has to report in merge groups too.
+    expect('merge_group' in e2eWorkflow.on).toBe(true);
+    expect(Object.keys(e2eWorkflow.on).sort()).toEqual([
+      'merge_group',
+      'pull_request',
+      'schedule',
+      'workflow_dispatch',
+    ]);
   });
 
-  it('shares the Node/pnpm and release toolchain composites with Cut release', () => {
-    for (const workflow of [cutRelease, preflightJob]) {
-      expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
-      expect(workflow).toContain('uses: ./.github/actions/setup-release-toolchain');
+  it('runs the E2E legs and the preflight only by hand, daily on main and on release pull requests', () => {
+    expect(e2eWorkflow.jobs.e2e.if).toBe(GATE_RUNS);
+    expect(e2eWorkflow.jobs['release-preflight'].if).toBe(GATE_RUNS);
+  });
+
+  it('tests the pull request head commit in both gate jobs, the tree Cut release credits', () => {
+    // By default a pull_request run checks out GitHub's merge of the head into main, whose tree
+    // can differ from the head commit the check runs report on.
+    for (const name of ['e2e', 'release-preflight']) {
+      const checkouts = e2eWorkflow.jobs[name].steps.filter((step) =>
+        step.uses?.startsWith('actions/checkout@'),
+      );
+      expect(checkouts).toHaveLength(1);
+      expect(e2eWorkflow.jobs[name].steps[0]).toBe(checkouts[0]);
+      expect(checkouts[0].with.ref).toBe('${{ github.event.pull_request.head.sha }}');
     }
+  });
+
+  it('runs the release tooling in the preflight job; Cut release only tags', () => {
+    expect(preflightJob).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(preflightJob).toContain('uses: ./.github/actions/setup-release-toolchain');
+    expect(cutRelease).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(cutRelease).not.toContain('setup-release-toolchain');
+    // Its jobs never run scripts/release.sh (the header comment may name release:open).
+    expect(JSON.stringify(yaml.load(cutRelease).jobs)).not.toContain('pnpm run release');
   });
 
   it('keeps release tooling in the composite, not inline in Cut release', () => {
@@ -44,23 +84,23 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(preflightJob).toMatch(/permissions:\s*\n\s*contents: read/);
     expect(preflightJob).not.toContain('RELEASE_PUSH_TOKEN');
     expect(preflightJob).toContain("MESH_CLIENT_RELEASE_PARSE_ONLY: ''");
-    expect(preflightJob).toContain(
-      "if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'",
-    );
   });
 
-  it('keeps the admin token out of checkout and release preparation', () => {
+  it('keeps the admin token out of checkout, planning and tag creation', () => {
     expect(cutRelease).toMatch(/persist-credentials: false/);
     expect(cutRelease).not.toMatch(/^\s*token:\s*>-/m);
-    expect(cutRelease).toContain('Prepare release without push credentials');
-    expect(cutRelease).toContain('--prepare-only');
-    expect(cutRelease).toContain('Push prepared release');
-    expect(cutRelease).toContain('--push-only');
 
-    const prepare = cutRelease.slice(
-      cutRelease.indexOf('- name: Prepare release without push credentials'),
-      cutRelease.indexOf('- name: Push prepared release'),
+    const planJob = cutRelease.slice(
+      cutRelease.indexOf('\n  plan:'),
+      cutRelease.indexOf('\n  tag:'),
     );
+    const prepare = cutRelease.slice(
+      cutRelease.indexOf('\n  tag:'),
+      cutRelease.indexOf('- name: Push release tag'),
+    );
+    expect(planJob).toContain('node scripts/release-tag-plan.mjs');
+    expect(planJob).not.toContain('RELEASE_CUT_TOKEN');
+    expect(prepare).toContain('- name: Create annotated tag');
     expect(prepare).not.toContain('RELEASE_CUT_TOKEN');
     expect(cutRelease).not.toContain('RELEASE_PUSH_TOKEN');
 
@@ -68,6 +108,47 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(tokenRefs).toHaveLength(1);
     expect(cutRelease).toContain('GIT_ASKPASS');
     expect(cutRelease).not.toMatch(/git remote set-url[^\n]*RELEASE_CUT_TOKEN/);
+  });
+
+  it('reports one Release gates check, the one the main ruleset requires', () => {
+    const job = e2eWorkflow.jobs['release-gates'];
+    expect(job.name).toBe(RELEASE_GATES_CHECK);
+    expect(job.needs).toEqual(['e2e', 'release-preflight']);
+    // Plain always(): with `&& !cancelled()` a cancelled run would skip this job, and GitHub
+    // counts a skipped required check as passed.
+    expect(job.if).toBe('always()');
+    expect(job.permissions).toEqual({});
+    // Not a matrix: a skipped matrix job does not report its expanded names.
+    expect(job.strategy).toBeUndefined();
+    const steps = job.steps.filter((step) => step.run);
+    expect(steps).toHaveLength(1);
+    expect(steps[0].env.RELEASE_PR).toBe('${{ ' + RELEASE_PR + ' }}');
+    expect(steps[0].env.E2E_RESULT).toBe('${{ needs.e2e.result }}');
+    expect(steps[0].env.PREFLIGHT_RESULT).toBe("${{ needs['release-preflight'].result }}");
+    expect(steps[0].run).not.toContain('${{');
+  });
+
+  it.each([
+    ['a release pull request whose gates passed', 'true', 'success', 'success', 0],
+    ['a release pull request with a failed E2E leg', 'true', 'failure', 'success', 1],
+    ['a release pull request whose preflight was cancelled', 'true', 'success', 'cancelled', 1],
+    ['a release pull request whose gates were skipped', 'true', 'skipped', 'skipped', 1],
+    ['another pull request or a merge group', 'false', 'skipped', 'skipped', 0],
+    ['a daily or manual run that passed', 'false', 'success', 'success', 0],
+    ['a daily or manual run with a failed leg', 'false', 'failure', 'success', 1],
+    ['a run with only one gate skipped', 'false', 'skipped', 'success', 1],
+  ])('Release gates decides %s', (_case, releasePr, e2eResult, preflightResult, code) => {
+    const step = e2eWorkflow.jobs['release-gates'].steps.find((entry) => entry.run);
+    const result = spawnSync('bash', ['-c', step.run], {
+      encoding: 'utf8',
+      env: {
+        PATH: process.env.PATH,
+        RELEASE_PR: releasePr,
+        E2E_RESULT: e2eResult,
+        PREFLIGHT_RESULT: preflightResult,
+      },
+    });
+    expect(result.status, `${result.stdout}${result.stderr}`).toBe(code);
   });
 
   it('installs yamllint from an exact wheel-only hash lock', () => {

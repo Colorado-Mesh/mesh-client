@@ -46,11 +46,60 @@ describe('privileged workflow boundaries', () => {
     }
   });
 
-  it('binds release cutting to its trusted main environment', () => {
+  it('tags releases from main through a secret-free plan and an approval-gated tag job', () => {
     const cut = loadWorkflow('cut-release');
-    expect(cut.jobs.release.if).toBe("github.ref == 'refs/heads/main'");
-    expect(cut.jobs.release.environment).toBe('release-cut');
-    expect(read('.github/workflows/cut-release.yaml')).not.toContain('secrets.RELEASE_PUSH_TOKEN');
+    const source = read('.github/workflows/cut-release.yaml');
+    expect(cut.on.push).toEqual({ branches: ['main'] });
+    expect('workflow_dispatch' in cut.on).toBe(true);
+    // queue: max keeps every waiting run; the default keeps one and cancels the others, which
+    // could drop a releasing merge while an earlier run waits for approval.
+    expect(cut.concurrency).toEqual({
+      group: 'cut-release',
+      'cancel-in-progress': false,
+      queue: 'max',
+    });
+
+    const { plan, tag } = cut.jobs;
+    expect(plan.if).toBe("github.ref == 'refs/heads/main'");
+    expect(plan.environment).toBeUndefined();
+    // checks: read lets the plan see whether the release gates passed on the tree it tags, and
+    // actions: read which workflow made each of those check runs.
+    expect(plan.permissions).toEqual({
+      contents: 'read',
+      'pull-requests': 'read',
+      checks: 'read',
+      actions: 'read',
+    });
+    expect(JSON.stringify(plan)).not.toMatch(/secrets\.[A-Za-z_]/);
+
+    expect(tag.needs).toBe('plan');
+    expect(tag.if).toBe("needs.plan.outputs.should_tag == 'true'");
+    expect(tag.environment).toBe('release-cut');
+    expect(tag.permissions).toEqual({ contents: 'read' });
+    // The admin token never shares a job with Node or dependency install scripts.
+    expect(JSON.stringify(tag)).not.toMatch(/setup-node|pnpm|npm |node scripts/);
+
+    expect(source.match(/secrets\.RELEASE_CUT_TOKEN/g)).toHaveLength(1);
+    const tokenSteps = tag.steps.filter((step) =>
+      JSON.stringify(step).includes('secrets.RELEASE_CUT_TOKEN'),
+    );
+    expect(tokenSteps.map((step) => step.name)).toEqual(['Push release tag']);
+    const push = tokenSteps[0].run;
+    expect(push).toContain('git push origin "refs/tags/${RELEASE_TAG}"');
+    expect(push.match(/git push/g)).toHaveLength(1);
+    const create = tag.steps.find((step) => step.name === 'Create annotated tag');
+    expect(create.run).toContain('--cleanup=verbatim');
+    expect(create.env.RELEASE_NOTES).toBe('${{ needs.plan.outputs.notes }}');
+
+    for (const job of [plan, tag]) {
+      for (const step of job.steps.filter((entry) => entry.uses?.startsWith('actions/checkout@'))) {
+        expect(step.with['persist-credentials']).toBe(false);
+      }
+      for (const step of job.steps.filter((entry) => entry.run)) {
+        expect(step.run, step.name).not.toContain('${{');
+      }
+    }
+    expect(source).not.toContain('secrets.RELEASE_PUSH_TOKEN');
   });
 
   it('publishes docs with masked basic auth scoped to the deploy step', () => {

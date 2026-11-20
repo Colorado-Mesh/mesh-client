@@ -2,3 +2,9 @@
 self-hosted-runner:
   labels:
     - windows-11-vs2026-arm
+# concurrency.queue is newer than actionlint 1.7.12 (the latest release and the pinned
+# version), which reports it as an unknown key. Every other check still runs on this file.
+paths:
+  .github/workflows/cut-release.yaml:
+    ignore:
+      - 'unexpected key "queue" for "concurrency" section'
