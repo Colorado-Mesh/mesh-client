@@ -1220,7 +1220,7 @@ The app functions fully offline; this is not a critical error. When there is no 
 
 **Manage updates with a package manager:** Turn off **App → Updates → Download updates automatically**. The app still checks for updates and shows the new version in the footer, but only downloads it when you press **Download**. Installation always waits for you to restart.
 
-**Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft detach / leftover placeholder ref). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. CI prepare/finalize repair `tag_name` and delete orphan `untagged-*` refs; verify fails if any matching release is still untagged; a **Repair published release tag** workflow also runs on Publish.
+**Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (Publish can detach even after green finalize verify). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. The **Repair published release tag** workflow auto-runs on Publish and should reattach `vX.Y.Z` within a minute — check that Actions run first. If it failed or the release predates auto-repair: dispatch the workflow from `main`, or run `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`. CI prepare/finalize still repair drafts and delete orphan `untagged-*` refs; verify fails if any matching draft is still untagged.
 
 ### Language and translations
 

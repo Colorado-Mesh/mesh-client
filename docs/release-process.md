@@ -114,12 +114,12 @@ Official macOS release artifacts require **Developer ID signing** and **notariza
 
 Configure secrets under the named **Settings → Environments** boundary, not at repository scope:
 
-| Environment              | Secret(s)                                                                                  | Allowed ref / approval                                               |
-| ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; no reviewer (the approved cut is the gate)       |
-| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts                |
-| **`license-automation`** | Required `LICENSE_PR_TOKEN` (repo-admin PAT; Contents + PRs write; unattended admin-merge) | `main`; license-document maintenance only, with no release authority |
-| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                 |
+| Environment              | Secret(s)                                                                                  | Allowed ref / approval                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; no reviewer (the approved cut is the gate)                                                   |
+| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts                                                            |
+| **`license-automation`** | Required `LICENSE_PR_TOKEN` (repo-admin PAT; Contents + PRs write; unattended admin-merge) | `main`; license-document maintenance only, with no release authority                                             |
+| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | Manual `workflow_dispatch` on `main` only (approval); auto-repair on `release: published` skips this environment |
 
 `release.yaml` alone receives the Apple/CSC credentials, and only its **`macos-latest`** matrix leg uses them. `build.yaml` never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. A one-time migration moved these credentials into the protected environments and deleted the legacy repository-wide secrets. No release credential should remain repository-scoped.
 
@@ -250,7 +250,7 @@ Both tag-triggered workflows must complete before the release is fully populated
 
 1. Go to GitHub → **Releases**
 2. Open the new **draft** for the version tag
-3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`; if Publish lands on a leftover placeholder, a maintainer must manually dispatch **Repair published release tag** and approve its `release-repair` environment.
+3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`. **Publish can still rebind `tag_name` to `untagged-*`** even after a green draft verify — the **Repair published release tag** workflow auto-runs on `release: published` (no approval) and reattaches `vX.Y.Z`. If that job fails or was skipped, dispatch the same workflow manually from `main` (requires `release-repair` environment approval).
 4. Confirm artifacts:
 
 | Platform      | Artifacts                                                                                                                                        |
@@ -341,7 +341,8 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 - Historically caused when parallel `dist:*:publish` / softprops jobs each `POST`ed a draft after a List Releases miss. Current CI: only `prepare-github-release` may create (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`); builds/Flatpak upload by id; Flatpak waits with `ci-wait-github-draft-release.mjs`.
 - **Draft tag detach (`untagged-*`):** GitHub can leave a draft on `untagged-<hex>` while the annotated `vX.Y.Z` tag still exists (common during the upload window). Prepare asserts/repairs `tag_name` with the release job's scoped `GITHUB_TOKEN`, finalize consolidates again, and both paths **delete orphan `refs/tags/untagged-*`** after a successful repair so Publish cannot rebind to a leftover placeholder. Refs that are still a live release’s `tag_name` (e.g. historical 5.27.0) are never deleted.
 - **`finalize-github-release`** runs consolidation then **`ci-verify-github-draft-release.mjs`**, which **fails the workflow** if the draft `tag_name` is still `untagged-*` **or** any matching release for that version is still on an untagged placeholder. Do not publish until that job is green and the draft tag shows `vX.Y.Z`.
-- **Manual publish repair:** if a published release still needs repair, dispatch `.github/workflows/repair-published-release-tag.yaml` from `main` with the release tag/name. Its `release-repair` environment requires maintainer approval and then reattaches `vX.Y.Z` via `scripts/repair-published-release-tag.mjs`.
+- **Publish-time detach:** clicking **Publish release** can rebind a green draft from `vX.Y.Z` to `untagged-*` (observed on v6.9.0 and v6.10.0 after finalize verify passed). `.github/workflows/repair-published-release-tag.yaml` listens for `release: types: [published]` and auto-runs `scripts/repair-published-release-tag.mjs --from-event` with `GITHUB_TOKEN` only (no environment approval). Adding repair to every OS release matrix job does **not** fix this — those jobs finish before Publish.
+- **Manual publish repair:** if auto-repair fails or a historical release is still wrong, dispatch the same workflow from `main` with the release tag/name. That path uses the `release-repair` environment (maintainer approval) then reattaches `vX.Y.Z`.
 - **Finalize PATCH 403 (`Resource not accessible by integration`):** the release job's scoped `GITHUB_TOKEN` must repair the protected release tag; tag repair must succeed or the verify step fails. Do not restore a repository-wide credential fallback.
 - **Assets still split (external fork):** `finalize-github-release` merges via `ci-ensure-github-draft-release.mjs`; outside CI run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`).
 - **Do not force-move the `v*` tag while a release workflow is in progress.** Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow `github.sha`.

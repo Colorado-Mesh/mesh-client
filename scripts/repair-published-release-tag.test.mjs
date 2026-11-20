@@ -1,9 +1,62 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { listReleasesForTag } from './github-release-api.mjs';
-import { repairPublishedReleaseTag } from './repair-published-release-tag.mjs';
+import {
+  repairPublishedReleaseTag,
+  resolveRepairReleaseTag,
+  resolveRepairTagFromArgv,
+} from './repair-published-release-tag.mjs';
 
 const TAG = 'v5.30.0';
+
+describe('resolveRepairReleaseTag', () => {
+  it('keeps a semver v* tag', () => {
+    expect(resolveRepairReleaseTag(TAG, '5.30.0')).toEqual({ ok: true, tag: TAG });
+  });
+
+  it('derives vX.Y.Z from release name when tag_name is untagged-*', () => {
+    expect(resolveRepairReleaseTag('untagged-1a7d458feb5a1ac8ddab', '5.30.0')).toEqual({
+      ok: true,
+      tag: TAG,
+      fromUntagged: 'untagged-1a7d458feb5a1ac8ddab',
+    });
+  });
+
+  it('errors when untagged-* has a non-semver name', () => {
+    expect(resolveRepairReleaseTag('untagged-abc', 'nightly')).toEqual({
+      ok: false,
+      message: 'Published release has untagged tag_name and non-semver name=nightly',
+    });
+  });
+
+  it('skips non-semver tags', () => {
+    expect(resolveRepairReleaseTag('latest', '5.30.0')).toEqual({
+      ok: false,
+      skip: true,
+      message: 'Skipping non-semver release tag latest',
+    });
+  });
+});
+
+describe('resolveRepairTagFromArgv', () => {
+  it('resolves --from-event via EVENT_TAG / EVENT_NAME', () => {
+    expect(
+      resolveRepairTagFromArgv(['--from-event'], {
+        EVENT_TAG: 'untagged-1a7d458feb5a1ac8ddab',
+        EVENT_NAME: '5.30.0',
+      }),
+    ).toEqual({ ok: true, tag: TAG });
+  });
+
+  it('skips --from-event for non-semver tags', () => {
+    expect(
+      resolveRepairTagFromArgv(['--from-event'], {
+        EVENT_TAG: 'latest',
+        EVENT_NAME: '',
+      }),
+    ).toMatchObject({ ok: false, skip: true });
+  });
+});
 
 describe('listReleasesForTag published untagged', () => {
   it('includes published untagged-* rows that match release name', async () => {
