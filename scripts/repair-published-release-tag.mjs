@@ -77,8 +77,16 @@ export async function repairPublishedReleaseTag(tag, token, fallbackToken) {
     if (!correct) {
       fail(`No published GitHub release with tag ${tag}`);
     }
-    console.debug(`[repair-published-release-tag] ${tag} already has correct tag_name`);
-    return getRelease(correct.id, token);
+    const fresh = await getRelease(correct.id, token);
+    if (fresh.tag_name === tag) {
+      console.debug(`[repair-published-release-tag] ${tag} already has correct tag_name`);
+      return fresh;
+    }
+    // List saw the right tag_name; a concurrent Publish may have detached it.
+    console.debug(
+      `[repair-published-release-tag] Repairing release ${fresh.id} (${String(fresh.tag_name)} → ${tag}) after re-fetch`,
+    );
+    return repairReleaseTagAndCleanupOrphan(fresh, tag, token, { fallbackToken });
   }
   console.debug(
     `[repair-published-release-tag] Repairing release ${target.id} (${String(target.tag_name)} → ${tag})`,
