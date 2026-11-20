@@ -39,6 +39,17 @@ MeshCom is **opt-in**: default `hiddenProtocols` includes `meshcom`. Unchecking 
 
 Re-enabling clears the latch and shows MeshCom again after the license acknowledgment (first time only).
 
+## MQTT (Connection panel)
+
+MeshCom has `hasMqttConnectionPanel: true` and `hasMqttHybrid: false`. Broker settings are **custom only** (no Meshtastic Official/Liam or MeshCore LetsMesh network presets) and live in their own storage:
+
+| Key                                | Role                                                        |
+| ---------------------------------- | ----------------------------------------------------------- |
+| `mesh-client:mqttSettings:meshcom` | Active broker fields (+ secure `mqtt:meshcom` password)     |
+| `mesh-client:mqttProfiles:meshcom` | Saved custom broker list (+ secure `mqtt:profiles:meshcom`) |
+
+Connect uses `mqttTransportProtocol: 'meshcom'` and a dedicated main-process adapter instance (same MQTT.js stack as MeshCore; no MeshCom chat ingest yet). Device-side gateway commands (`--gateway`, …) remain under Radio → Device Configuration.
+
 ## Device configuration (Radio panel)
 
 Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPABILITY_REQUIREMENTS` — MeshCom has neither `hasChannelConfig` nor MeshCore `hasJsonRadioConfigImport`). MeshCom has **no** Meshtastic protobuf config slices — every ICSSW [node command](https://icssw.org/en/meshcom-kommandos-cl-gw/) is applied as a `--` console line over Serial/BLE.

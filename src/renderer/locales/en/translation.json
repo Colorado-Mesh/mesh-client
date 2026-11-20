@@ -1427,18 +1427,21 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Country]/[State], e.g. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, e.g. meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO",
+      "meshcom": "Broker root topic for your MeshCom gateway, e.g. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "radioMqttRootDivergesWarning": "Radio MQTT root topic is {{radioRoot}} but this panel subscribes to {{appPrefix}}. Match the radio to limit nationwide node traffic — update Topic Prefix and reconnect MQTT.",
     "maxRetries": "Max Retries",
     "maxRetriesHelp": {
       "meshtastic": "Reconnect attempts (1–{{max}}) before giving up.",
-      "meshcore": "Reconnect attempts (1–20) before giving up."
+      "meshcore": "Reconnect attempts (1–20) before giving up.",
+      "meshcom": "Reconnect attempts (1–{{max}}) before giving up."
     },
     "maxRetriesHelpConnected": {
       "meshcore": "Reconnect tries before giving up (1–{{max}}). Saved with settings; press Connect again after changing so the main process picks it up.",
-      "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value."
+      "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value.",
+      "meshcom": "Reconnect tries before giving up (1–{{max}}). Saved with settings; disconnect and Connect again so the running session uses the new value."
     },
     "meshtasticPreset": {
       "officialPlain": "Official",
@@ -3068,6 +3071,7 @@
     "nameAria": "Profile name",
     "reconnectNeeded": "Disconnect and reconnect MQTT to use this profile's broker settings.",
     "switchLabel": "Saved profile",
+    "listLabel": "Saved custom brokers",
     "noneSelected": "Current settings (not saved)"
   },
   "weatherFilter": {

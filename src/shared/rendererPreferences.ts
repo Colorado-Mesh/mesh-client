@@ -7,7 +7,7 @@ const preferenceCredentialField =
 
 /** Preference keys whose values are structured records that may embed those fields. */
 const preferenceCredentialBearingKey =
-  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::meshcore)?|mqttProfiles:meshtastic|meshcoreIdentity)$/;
+  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::(?:meshcore|meshcom))?|mqttProfiles:(?:meshtastic|meshcom)|meshcoreIdentity)$/;
 
 function isPreferenceRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -49,7 +49,7 @@ export function sanitizeRendererPreferenceValue(key: string, raw: string): strin
     const value: unknown = JSON.parse(raw);
     if (preferenceCredentialBearingKey.test(key)) {
       const valid =
-        key === 'mesh-client:mqttProfiles:meshtastic'
+        key === 'mesh-client:mqttProfiles:meshtastic' || key === 'mesh-client:mqttProfiles:meshcom'
           ? Array.isArray(value) && value.every(isPreferenceRecord)
           : isPreferenceRecord(value);
       if (!valid) return null;

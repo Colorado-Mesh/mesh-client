@@ -433,7 +433,8 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   hasHopCount: true,
   hopLimitRange: [1, 7],
   hasMqttHybrid: false,
-  hasMqttConnectionPanel: false,
+  // Custom broker form + own saved-profile list (no Meshtastic/MeshCore network presets).
+  hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
   hasRfStats: false,
   hasNeighborInfo: false,

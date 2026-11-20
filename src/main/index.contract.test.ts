@@ -245,15 +245,18 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
     );
+    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is interpolated.
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:status \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(s\)/,
+      /mqtt:status \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(s\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:error \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
+      /mqtt:error \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:clientId \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(id\)/,
+      /mqtt:clientId \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(id\)/,
     );
+    expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcoreMqttAdapter,\s*'meshcore'\)/);
+    expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcomMqttAdapter,\s*'meshcom'\)/);
   });
 
   it('sanitizes Linux BlueZ bluetooth IPC error log paths', () => {

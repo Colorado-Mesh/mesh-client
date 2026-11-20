@@ -179,7 +179,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasMapReport": false,
         "hasMeshcomDeviceCommands": true,
         "hasModemPresets": false,
-        "hasMqttConnectionPanel": false,
+        "hasMqttConnectionPanel": true,
         "hasMqttHybrid": false,
         "hasNeighborInfo": false,
         "hasNodeDbReset": false,

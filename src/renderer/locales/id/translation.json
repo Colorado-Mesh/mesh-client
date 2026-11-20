@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Negara]/[Negara Bagian], mis. msh/CO/AS",
       "meshcoreLetsmesh": "meshcore/{IATA}, mis. inti jaring/DEN",
-      "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO"
+      "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO",
+      "meshcom": "Topik root broker untuk gateway MeshCom Anda, misalnya meshcom"
     },
     "topicPrefixPlaceholder": "msh/AS/",
     "maxRetriesHelp": {
       "meshtastic": "Hubungkan kembali upaya (1–{{max}}) sebelum menyerah.",
-      "meshcore": "Hubungkan kembali upaya (1–20) sebelum menyerah."
+      "meshcore": "Hubungkan kembali upaya (1–20) sebelum menyerah.",
+      "meshcom": "Coba sambungkan kembali (1–{{max}}) sebelum menyerah."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
-      "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
+      "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru.",
+      "meshcom": "Coba sambungkan kembali sebelum menyerah (1–{{max}}). Disimpan dengan pengaturan; putuskan sambungan dan Sambungkan lagi agar sesi yang sedang berjalan menggunakan nilai baru."
     },
     "reticulumStackRunningAs": "Berjalan — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Putuskan dan sambungkan kembali MQTT untuk menggunakan pengaturan broker profil ini.",
     "switchLabel": "Profil tersimpan",
     "noneSelected": "Pengaturan saat ini (tidak disimpan)",
-    "nameAria": "Nama profil"
+    "nameAria": "Nama profil",
+    "listLabel": "Pialang bea cukai tersimpan"
   },
   "weatherFilter": {
     "viewTooltip": "Postingan cuaca di saluran ini",

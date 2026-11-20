@@ -1751,12 +1751,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Bundesland], z.B. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, z.B. Meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Land]/[Staat], z.B. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Land]/[Staat], z.B. MESHCORE/US/CO",
+      "meshcom": "Broker-Stam-Topic für Ihr MeshCom-Gateway, z. B. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "maxRetriesHelp": {
       "meshtastic": "Wiederholen Sie die Verbindungsversuche (1–{{max}}), bevor Sie aufgeben.",
-      "meshcore": "Wiederholen Sie die Versuche (1–20), bevor Sie aufgeben."
+      "meshcore": "Wiederholen Sie die Versuche (1–20), bevor Sie aufgeben.",
+      "meshcom": "Wiederherstellungsversuche (1–{{max}}) vor dem Abbruch."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1855,7 +1857,8 @@
     "topicPrefixInvalidIata": "Das Themenpräfix muss meshcore/test oder meshcore/{IATA} (3 Buchstaben) sein, z. B. meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
-      "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
+      "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet.",
+      "meshcom": "Versuche, erneut eine Verbindung herzustellen, bevor Sie aufgeben (1–{{max}}). Mit Einstellungen gespeichert; trennen Sie die Verbindung und stellen Sie sie erneut her, damit die laufende Sitzung den neuen Wert verwendet."
     },
     "reticulumStackRunningAs": "Läuft — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Trennen und verbinden Sie MQTT erneut, um die Brokereinstellungen dieses Profils zu verwenden.",
     "switchLabel": "GESPEICHERTES PROFIL",
     "noneSelected": "Aktuelle Einstellungen (nicht gespeichert)",
-    "nameAria": "Profil Name"
+    "nameAria": "Profil Name",
+    "listLabel": "Gespeicherte Zollagenten"
   },
   "weatherFilter": {
     "viewTooltip": "Wetterbeiträge in diesem Kanal",

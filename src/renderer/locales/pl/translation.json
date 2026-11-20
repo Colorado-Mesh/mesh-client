@@ -1791,12 +1791,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Kraj]/[Stan], np. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, np. siatkacore/DEN",
-      "meshcoreDefault": "MESHCORE/[Kraj]/[Stan], np. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Kraj]/[Stan], np. MESHCORE/US/CO",
+      "meshcom": "Temat główny brokera dla Twojej bramki MeshCom, np. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "maxRetriesHelp": {
       "meshtastic": "Ponów próby połączenia (1–{{max}}), zanim się poddasz.",
-      "meshcore": "Połącz ponownie próby (1–20), zanim się poddasz."
+      "meshcore": "Połącz ponownie próby (1–20), zanim się poddasz.",
+      "meshcom": "Liczba prób ponownego połączenia (1–{{max}}) przed zaprzestaniem."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT: 1883",
@@ -1895,7 +1897,8 @@
     "topicPrefixInvalidIata": "Prefiks tematu musi być meshcore/test lub meshcore/{IATA} (3 litery), np. meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
-      "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
+      "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości.",
+      "meshcom": "Liczba prób ponownego połączenia przed zakończeniem (1–{{max}}). Zapisano z ustawieniami; rozłącz się i połącz ponownie, aby w trwającej sesji była używana nowa wartość."
     },
     "reticulumStackRunningAs": "Działa — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…",
@@ -7674,7 +7677,8 @@
     "reconnectNeeded": "Rozłącz i ponownie połącz MQTT, aby użyć ustawień brokera tego profilu.",
     "switchLabel": "Zapisany profil",
     "noneSelected": "Bieżące ustawienia (niezapisane)",
-    "nameAria": "Nazwa profilu"
+    "nameAria": "Nazwa profilu",
+    "listLabel": "Zapisani agenci celni"
   },
   "weatherFilter": {
     "viewTooltip": "Posty pogodowe w tym kanale",

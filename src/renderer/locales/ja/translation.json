@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[国]/[州]、例: msh/コロラド州/米国",
       "meshcoreLetsmesh": "メッシュコア/{IATA}、例:メッシュコア/DEN",
-      "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州"
+      "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州",
+      "meshcom": "MeshComゲートウェイのブローカルートトピック（例：meshcom）"
     },
     "topicPrefixPlaceholder": "msh/米国/",
     "maxRetriesHelp": {
       "meshtastic": "諦める前に再接続を試みます (1–{{max}})。",
-      "meshcore": "諦める前に再接続を試みます (1 ～ 20)。"
+      "meshcore": "諦める前に再接続を試みます (1 ～ 20)。",
+      "meshcom": "諦める前に再接続を試みる回数（1～{{max}}）。"
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
-      "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
+      "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。",
+      "meshcom": "諦める前に再接続を試みます（1～{{max}}回）。設定を保存しました。切断して再度接続し、実行中のセッションで新しい値を使用してください。"
     },
     "reticulumStackRunningAs": "実行中— {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "このプロファイルのブローカー設定を使用するには、MQTTを切断して再接続します。",
     "switchLabel": "保存されたプロフィール",
     "noneSelected": "現在の設定（保存されていません）",
-    "nameAria": "プロファイル名"
+    "nameAria": "プロファイル名",
+    "listLabel": "保存済みの通関業者"
   },
   "weatherFilter": {
     "viewTooltip": "このチャンネルの天気予報投稿",

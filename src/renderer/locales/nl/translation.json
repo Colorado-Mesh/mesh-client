@@ -1752,12 +1752,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Staat], b.v. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, b.v. meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Land]/[Staat], b.v. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Land]/[Staat], b.v. MESHCORE/US/CO",
+      "meshcom": "Broker-hoofdonderwerp voor je MeshCom-gateway, bijv. meshcom"
     },
     "topicPrefixPlaceholder": "msh/VS/",
     "maxRetriesHelp": {
       "meshtastic": "Sluit de pogingen opnieuw aan (1–{{max}}) voordat u het opgeeft.",
-      "meshcore": "Sluit de pogingen (1–20) opnieuw aan voordat u het opgeeft."
+      "meshcore": "Sluit de pogingen (1–20) opnieuw aan voordat u het opgeeft.",
+      "meshcom": "Pogingen tot opnieuw verbinden (1–{{max}}) voordat je het opgeeft."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1856,7 +1858,8 @@
     "topicPrefixInvalidIata": "Onderwerpvoorvoegsel moet meshcore/test of meshcore/{IATA} zijn (3 letters), bijv. meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
-      "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
+      "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt.",
+      "meshcom": "Pogingen tot opnieuw verbinden voordat het wordt opgegeven (1–{{max}}). Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de actieve sessie de nieuwe waarde gebruikt."
     },
     "reticulumStackRunningAs": "Actief — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Verbreek de verbinding en sluit MQTT opnieuw aan om de brokerinstellingen van dit profiel te gebruiken.",
     "switchLabel": "Opgeslagen profiel",
     "noneSelected": "Huidige instellingen (niet opgeslagen)",
-    "nameAria": "Profielnaam"
+    "nameAria": "Profielnaam",
+    "listLabel": "Opgeslagen douane-expediteurs"
   },
   "weatherFilter": {
     "viewTooltip": "Weerberichten in dit kanaal",

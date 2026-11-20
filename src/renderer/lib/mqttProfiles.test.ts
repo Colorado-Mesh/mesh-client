@@ -57,6 +57,18 @@ describe('mqttProfiles', () => {
     expect(localStorage.getItem(MQTT_PROFILES_STORAGE_KEY)).not.toContain('large4cats');
   });
 
+  it('keeps MeshCom custom profiles on a separate list from Meshtastic', async () => {
+    const meshtastic = createMqttProfile([], 'Chi', base, 'mt');
+    const meshcom = createMqttProfile([], 'Ham broker', { ...base, topicPrefix: 'meshcom' }, 'cm');
+    await saveMqttProfiles(meshtastic, 'meshtastic');
+    await saveMqttProfiles(meshcom, 'meshcom');
+
+    expect(loadMqttProfiles('meshtastic').map((p) => p.id)).toEqual(['mt']);
+    expect(loadMqttProfiles('meshcom').map((p) => p.id)).toEqual(['cm']);
+    expect(localStorage.getItem('mesh-client:mqttProfiles:meshcom')).toContain('Ham broker');
+    expect(localStorage.getItem('mesh-client:mqttProfiles:meshcom')).not.toContain('large4cats');
+  });
+
   it('restores the previous password map when metadata persistence fails', async () => {
     const original = createMqttProfile([], 'Original', base, 'original');
     await saveMqttProfiles(original);

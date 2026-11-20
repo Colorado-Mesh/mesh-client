@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Ülke]/[Eyalet], ör. msh/CO/ABD",
       "meshcoreLetsmesh": "meshcore/{IATA}, ör. ağ puanı/DEN",
-      "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO"
+      "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO",
+      "meshcom": "MeshCom ağ geçidiniz için aracı kök konusu, ör. meshcom"
     },
     "topicPrefixPlaceholder": "msh/ABD/",
     "maxRetriesHelp": {
       "meshtastic": "Vazgeçmeden önce yeniden bağlanma denemeleri yapın (1–{{max}}).",
-      "meshcore": "Vazgeçmeden önce yeniden bağlanma girişimlerini (1-20) yapın."
+      "meshcore": "Vazgeçmeden önce yeniden bağlanma girişimlerini (1-20) yapın.",
+      "meshcom": "Vazgeçmeden önce yeniden bağlanma denemeleri (1–{{max}})."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
-      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
+      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır.",
+      "meshcom": "Vazgeçmeden önce yeniden bağlanma denemeleri (1–{{max}}). Ayarlarla birlikte kaydedildi; devam eden oturumun yeni değeri kullanması için bağlantıyı kesin ve tekrar bağlanın."
     },
     "reticulumStackRunningAs": "Çalışıyor — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Bu profilin aracı ayarlarını kullanmak için MQTT bağlantısını kesin ve yeniden bağlayın.",
     "switchLabel": "Kayıtlı profil",
     "noneSelected": "Geçerli ayarlar (kaydedilmedi)",
-    "nameAria": "Profil ismi"
+    "nameAria": "Profil ismi",
+    "listLabel": "Kayıtlı özel gümrük müşavirleri"
   },
   "weatherFilter": {
     "viewTooltip": "Bu kanaldaki hava durumu gönderileri",

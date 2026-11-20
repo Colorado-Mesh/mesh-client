@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[国家/地区]/[州]，例如msh/CO/美国",
       "meshcoreLetsmesh": "meshcore/{IATA}，例如网状核心/DEN",
-      "meshcoreDefault": "MESHCORE/[国家/地区]/[州]，例如MESHCORE/美国/CO"
+      "meshcoreDefault": "MESHCORE/[国家/地区]/[州]，例如MESHCORE/美国/CO",
+      "meshcom": "MeshCom 网关的代理根主题，例如 meshcom"
     },
     "topicPrefixPlaceholder": "msh/美国/",
     "maxRetriesHelp": {
       "meshtastic": "放弃之前重新尝试连接 (1–{{max}})。",
-      "meshcore": "放弃前重新连接尝试 (1-20)。"
+      "meshcore": "放弃前重新连接尝试 (1-20)。",
+      "meshcom": "在放弃之前尝试重新连接（1–{{max}}）次。"
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT：1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。",
     "maxRetriesHelpConnected": {
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
-      "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
+      "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。",
+      "meshcom": "放弃前重连尝试次数（1–{{max}}）。已保存设置；请断开连接并重新连接，以便正在运行的会话使用新值。"
     },
     "reticulumStackRunningAs": "运行中 — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动...",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "断开并重新连接MQTT以使用此配置文件的经纪人设置。",
     "switchLabel": "已保存的个人资料",
     "noneSelected": "当前设置（未保存）",
-    "nameAria": "档案名称"
+    "nameAria": "档案名称",
+    "listLabel": "已保存的海关经纪人"
   },
   "weatherFilter": {
     "viewTooltip": "此频道中的天气帖子",

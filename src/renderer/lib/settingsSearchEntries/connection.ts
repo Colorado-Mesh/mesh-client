@@ -10,7 +10,9 @@ const hasLoraConnection = (ctx: SettingsSearchContext) =>
 const hasMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttConnectionPanel;
 const hasMeshtasticMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttHybrid;
 const hasMeshcoreMqtt = (ctx: SettingsSearchContext) =>
-  ctx.capabilities.hasMqttConnectionPanel && !ctx.capabilities.hasMqttHybrid;
+  ctx.capabilities.protocol === 'meshcore' && ctx.capabilities.hasMqttConnectionPanel;
+const hasMeshcomMqtt = (ctx: SettingsSearchContext) =>
+  ctx.capabilities.protocol === 'meshcom' && ctx.capabilities.hasMqttConnectionPanel;
 // HTTP/TCP host fields: Meshtastic nodes on Wi-Fi vs MeshCore companion TCP.
 const hasNetworkNodeAddress = (ctx: SettingsSearchContext) => ctx.capabilities.hasWifiConfig;
 const hasCompanionTcpHost = (ctx: SettingsSearchContext) =>
@@ -118,6 +120,22 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     sectionKey: MQTT,
     keywords: ['mqtt', 'profile', 'switch'],
     visible: hasMeshtasticMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcomSwitchProfile',
+    slot: 'Connection',
+    labelKey: 'mqttProfiles.switchLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'profile', 'switch', 'custom'],
+    visible: hasMeshcomMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcomProfiles',
+    slot: 'Connection',
+    labelKey: 'mqttProfiles.listLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'profile', 'custom', 'broker', 'saved'],
+    visible: hasMeshcomMqtt,
   },
   {
     id: 'connection.mqtt.meshcoreCaBroker',

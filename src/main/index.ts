@@ -364,6 +364,8 @@ const WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-state.json'
 
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
+/** MeshCom uses the same generic MQTT.js adapter; envelopes are MeshCore-specific and ignored. */
+const meshcomMqttAdapter = new MeshcoreMqttAdapter();
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -467,7 +469,11 @@ const GATT_TO_RADIO_MAX_BYTES = 512;
 const MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 
 function isAnyMqttConnected(): boolean {
-  return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
+  return (
+    mqttManager.getStatus() === 'connected' ||
+    meshcoreMqttAdapter.getStatus() === 'connected' ||
+    meshcomMqttAdapter.getStatus() === 'connected'
+  );
 }
 
 function isReticulumSidecarRunning(): boolean {
@@ -610,6 +616,7 @@ async function shutdownAppResources(): Promise<void> {
   try {
     mqttManager.disconnect();
     meshcoreMqttAdapter.disconnect();
+    meshcomMqttAdapter.disconnect();
   } catch (err) {
     console.debug(
       '[main] MQTT disconnect during shutdown (ignored):',
@@ -1059,8 +1066,14 @@ function validateMqttSettings(settings: unknown): void {
     throw new Error('mqtt:connect: meshcorePacketLoggerEnabled must be a boolean');
   }
   if (s.mqttTransportProtocol != null) {
-    if (s.mqttTransportProtocol !== 'meshtastic' && s.mqttTransportProtocol !== 'meshcore') {
-      throw new Error('mqtt:connect: mqttTransportProtocol must be meshtastic or meshcore');
+    if (
+      s.mqttTransportProtocol !== 'meshtastic' &&
+      s.mqttTransportProtocol !== 'meshcore' &&
+      s.mqttTransportProtocol !== 'meshcom'
+    ) {
+      throw new Error(
+        'mqtt:connect: mqttTransportProtocol must be meshtastic, meshcore, or meshcom',
+      );
     }
   }
 }
@@ -1339,6 +1352,7 @@ function setupTray(window: BrowserWindow) {
           isQuitting = true;
           mqttManager.disconnect();
           meshcoreMqttAdapter.disconnect();
+          meshcomMqttAdapter.disconnect();
           meshtasticDeviceConnected = false;
           meshcoreDeviceConnected = false;
           mainWindow?.destroy();
@@ -1621,6 +1635,7 @@ function setupAppMenu() {
               isQuitting = true;
               mqttManager.disconnect();
               meshcoreMqttAdapter.disconnect();
+              meshcomMqttAdapter.disconnect();
               app.quit();
             },
           },
@@ -1646,6 +1661,7 @@ function setupAppMenu() {
               isQuitting = true;
               mqttManager.disconnect();
               meshcoreMqttAdapter.disconnect();
+              meshcomMqttAdapter.disconnect();
               app.quit();
             },
           },
@@ -2986,41 +3002,49 @@ mqttManager.on('brokerRaw', (payload: { topic: string; payload: Buffer; retained
   }
 });
 
-meshcoreMqttAdapter.on('status', (s: string) => {
-  syncPowerSaveBlocker();
-  if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshcore' });
-  else
-    console.debug(
-      '[main] mqtt:status (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(s),
-    );
-});
-meshcoreMqttAdapter.on('error', (msg: string) => {
-  if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol: 'meshcore' });
-  else
-    console.debug(
-      '[main] mqtt:error (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(msg),
-    );
-});
-meshcoreMqttAdapter.on('clientId', (id: string) => {
-  if (mainWindow)
-    mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol: 'meshcore' });
-  else
-    console.debug(
-      '[main] mqtt:clientId (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(id),
-    );
-});
-meshcoreMqttAdapter.on('subscribeWarning', (msg: string) => {
-  if (mainWindow)
-    mainWindow.webContents.send('mqtt:warning', { warning: msg, protocol: 'meshcore' });
-  else
-    console.debug(
-      '[main] mqtt:warning (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(msg),
-    );
-});
+/** Shared MeshCore / MeshCom MQTT → renderer event fan-out (keeps main bundle lean). */
+function attachMqttAdapterUiEvents(
+  adapter: MeshcoreMqttAdapter,
+  protocol: 'meshcore' | 'meshcom',
+): void {
+  adapter.on('status', (s: string) => {
+    syncPowerSaveBlocker();
+    if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol });
+    else
+      console.debug(
+        `[main] mqtt:status (${protocol}) dropped (mainWindow not ready)`,
+        sanitizeLogMessage(s),
+      );
+  });
+  adapter.on('error', (msg: string) => {
+    if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol });
+    else
+      console.debug(
+        `[main] mqtt:error (${protocol}) dropped (mainWindow not ready)`,
+        sanitizeLogMessage(msg),
+      );
+  });
+  adapter.on('clientId', (id: string) => {
+    if (mainWindow) mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol });
+    else
+      console.debug(
+        `[main] mqtt:clientId (${protocol}) dropped (mainWindow not ready)`,
+        sanitizeLogMessage(id),
+      );
+  });
+  adapter.on('subscribeWarning', (msg: string) => {
+    if (mainWindow) mainWindow.webContents.send('mqtt:warning', { warning: msg, protocol });
+    else
+      console.debug(
+        `[main] mqtt:warning (${protocol}) dropped (mainWindow not ready)`,
+        sanitizeLogMessage(msg),
+      );
+  });
+}
+
+attachMqttAdapterUiEvents(meshcoreMqttAdapter, 'meshcore');
+attachMqttAdapterUiEvents(meshcomMqttAdapter, 'meshcom');
+
 meshcoreMqttAdapter.on('chatMessage', (m) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:meshcore-chat', m);
   else console.debug('[main] mqtt:meshcore-chat dropped (mainWindow not ready)');
@@ -3049,7 +3073,12 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
     console.debug('[IPC] mqtt:connect');
     validateMqttSettings(settings);
     const s = settings as { mqttTransportProtocol?: string };
-    const mode = s.mqttTransportProtocol === 'meshcore' ? 'meshcore' : 'meshtastic';
+    const mode =
+      s.mqttTransportProtocol === 'meshcore'
+        ? 'meshcore'
+        : s.mqttTransportProtocol === 'meshcom'
+          ? 'meshcom'
+          : 'meshtastic';
     // Dual-mode: only disconnect the target manager before reconnecting it.
     // The other manager stays connected independently.
     const mqttSettings = settings as MQTTSettings;
@@ -3058,6 +3087,9 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
     if (mode === 'meshcore') {
       meshcoreMqttAdapter.disconnect();
       meshcoreMqttAdapter.connect(settingsWithClientId);
+    } else if (mode === 'meshcom') {
+      meshcomMqttAdapter.disconnect();
+      meshcomMqttAdapter.connect(settingsWithClientId);
     } else {
       mqttManager.disconnect();
       mqttManager.connect(settingsWithClientId);
@@ -3073,9 +3105,10 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
 ipcMain.handle('mqtt:disconnect', (event, protocol?: MeshProtocol) => {
   assertIpcSender(event, 'mqtt:disconnect');
   try {
-    console.debug('[IPC] mqtt:disconnect', protocol ?? 'both');
+    console.debug('[IPC] mqtt:disconnect', protocol ?? 'all');
     if (!protocol || protocol === 'meshtastic') mqttManager.disconnect();
     if (!protocol || protocol === 'meshcore') meshcoreMqttAdapter.disconnect();
+    if (!protocol || protocol === 'meshcom') meshcomMqttAdapter.disconnect();
   } catch (err) {
     console.error(
       '[IPC] mqtt:disconnect failed:',
@@ -3090,6 +3123,7 @@ ipcMain.handle('mqtt:powerResume', (event) => {
     console.debug('[IPC] mqtt:powerResume');
     mqttManager.handlePowerResume();
     meshcoreMqttAdapter.handlePowerResume();
+    meshcomMqttAdapter.handlePowerResume();
   } catch (err) {
     console.error(
       '[IPC] mqtt:powerResume failed:',
@@ -3104,6 +3138,7 @@ ipcMain.handle('mqtt:powerSuspend', (event) => {
     console.debug('[IPC] mqtt:powerSuspend');
     mqttManager.handlePowerSuspend();
     meshcoreMqttAdapter.handlePowerSuspend();
+    meshcomMqttAdapter.handlePowerSuspend();
   } catch (err) {
     console.error(
       '[IPC] mqtt:powerSuspend failed:',
@@ -3117,9 +3152,11 @@ ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol) => {
   try {
     console.debug('[IPC] mqtt:getClientId', protocol);
     if (protocol === 'meshcore') return meshcoreMqttAdapter.getClientId();
+    if (protocol === 'meshcom') return meshcomMqttAdapter.getClientId();
     if (protocol === 'meshtastic') return mqttManager.getClientId();
     // Fallback: return whichever is connected
     if (meshcoreMqttAdapter.getStatus() === 'connected') return meshcoreMqttAdapter.getClientId();
+    if (meshcomMqttAdapter.getStatus() === 'connected') return meshcomMqttAdapter.getClientId();
     return mqttManager.getClientId();
   } catch (err) {
     console.error(
@@ -3710,6 +3747,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'mapBasemapId',
   'meshtasticMqttClientId',
   'meshcoreMqttClientId',
+  'meshcomMqttClientId',
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
   'meshtasticOwnNodeNumsByPublicKey',
@@ -7167,6 +7205,7 @@ void app
         rendererHeartbeatWatchdog.clearResumeWatchdog();
         mqttManager.handlePowerSuspend();
         meshcoreMqttAdapter.handlePowerSuspend();
+        meshcomMqttAdapter.handlePowerSuspend();
         mainWindow?.webContents.send('power:suspend');
       });
       powerMonitor.on('resume', () => {
@@ -7298,6 +7337,7 @@ app.on('will-quit', (event) => {
     try {
       mqttManager.disconnect();
       meshcoreMqttAdapter.disconnect();
+      meshcomMqttAdapter.disconnect();
     } catch (err) {
       console.debug(
         '[main] MQTT disconnect during will-quit (ignored):',

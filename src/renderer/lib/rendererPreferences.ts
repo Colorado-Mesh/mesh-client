@@ -15,7 +15,7 @@ import { createDurableRendererSetting } from './durableRendererSetting';
 
 const STORAGE_KEY = 'mesh-client:rendererPreferences';
 const credentialBearingKey =
-  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::meshcore)?|mqttProfiles:meshtastic|meshcoreIdentity)$/;
+  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::(?:meshcore|meshcom))?|mqttProfiles:(?:meshtastic|meshcom)|meshcoreIdentity)$/;
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -84,7 +84,8 @@ function decodeValues(values: Record<string, unknown>): Record<string, string> {
       }
       if (
         credentialBearingKey.test(key) &&
-        !(key === 'mesh-client:mqttProfiles:meshtastic'
+        !(key === 'mesh-client:mqttProfiles:meshtastic' ||
+        key === 'mesh-client:mqttProfiles:meshcom'
           ? Array.isArray(parsed) && parsed.every(record)
           : record(parsed))
       )

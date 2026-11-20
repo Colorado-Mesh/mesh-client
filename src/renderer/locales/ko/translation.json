@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[국가]/[주], 예: msh/CO/미국",
       "meshcoreLetsmesh": "meshcore/{IATA}, 예: 메쉬코어/덴",
-      "meshcoreDefault": "MESHCORE/[국가]/[주], 예: 메쉬코어/미국/CO"
+      "meshcoreDefault": "MESHCORE/[국가]/[주], 예: 메쉬코어/미국/CO",
+      "meshcom": "MeshCom 게이트웨이의 브로커 루트 토픽(예: meshcom)"
     },
     "topicPrefixPlaceholder": "msh/미국/",
     "maxRetriesHelp": {
       "meshtastic": "포기하기 전에 시도(1~{{max}})를 다시 연결하세요.",
-      "meshcore": "포기하기 전에 시도(1~20)를 다시 연결하세요."
+      "meshcore": "포기하기 전에 시도(1~20)를 다시 연결하세요.",
+      "meshcom": "포기하기 전에 다시 연결을 시도합니다(1~{{max}})."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN).",
     "maxRetriesHelpConnected": {
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
-      "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
+      "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다.",
+      "meshcom": "포기하기 전 재연결 시도 횟수(1~{{max}}). 설정과 함께 저장되었습니다. 연결을 해제한 후 다시 연결하여 실행 중인 세션에서 새 값을 사용하도록 하세요."
     },
     "reticulumStackRunningAs": "실행 중 — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "이 프로필의 브로커 설정을 사용하려면 MQTT를 연결 해제했다가 다시 연결하세요.",
     "switchLabel": "저장된 프로필",
     "noneSelected": "현재 설정 (저장되지 않음)",
-    "nameAria": "프로필 이름"
+    "nameAria": "프로필 이름",
+    "listLabel": "저장된 맞춤 통관사"
   },
   "weatherFilter": {
     "viewTooltip": "이 채널의 날씨 게시물",

@@ -1776,12 +1776,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Země]/[Stát], např. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, např. meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Země]/[Stát], např. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Země]/[Stát], např. MESHCORE/US/CO",
+      "meshcom": "Kořenové téma brokera pro vaši bránu MeshCom, např. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "maxRetriesHelp": {
       "meshtastic": "Pokusy o připojení znovu (1–{{max}}), než se vzdáte.",
-      "meshcore": "Pokusy o připojení znovu (1–20), než to vzdáte."
+      "meshcore": "Pokusy o připojení znovu (1–20), než to vzdáte.",
+      "meshcom": "Pokusy o opětovné připojení (1–{{max}}) před vzdáním se."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT: 1883",
@@ -1880,7 +1882,8 @@
     "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
-      "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
+      "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu.",
+      "meshcom": "Počet pokusů o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; odpojte se a znovu se připojte, aby probíhající relace používala novou hodnotu."
     },
     "reticulumStackRunningAs": "Běží — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…",
@@ -7624,7 +7627,8 @@
     "reconnectNeeded": "Chcete-li použít nastavení makléře tohoto profilu, odpojte a znovu připojte MQTT.",
     "switchLabel": "Uložený profil",
     "noneSelected": "Aktuální nastavení (neuloženo)",
-    "nameAria": "Jméno profilu"
+    "nameAria": "Jméno profilu",
+    "listLabel": "Uložené celní úřady"
   },
   "weatherFilter": {
     "viewTooltip": "Příspěvky o počasí v tomto kanálu",

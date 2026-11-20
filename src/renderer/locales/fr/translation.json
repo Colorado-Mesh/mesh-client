@@ -1752,12 +1752,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Pays]/[État], par ex. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, par ex. meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Pays]/[État], par ex. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Pays]/[État], par ex. MESHCORE/US/CO",
+      "meshcom": "Sujet racine du broker pour votre passerelle MeshCom, par exemple meshcom"
     },
     "topicPrefixPlaceholder": "msh/États-Unis/",
     "maxRetriesHelp": {
       "meshtastic": "Reconnectez les tentatives (1–{{max}}) avant d’abandonner.",
-      "meshcore": "Reconnectez les tentatives (1 à 20) avant d’abandonner."
+      "meshcore": "Reconnectez les tentatives (1 à 20) avant d’abandonner.",
+      "meshcom": "Tentatives de reconnexion (1–{{max}}) avant d’abandonner."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT : 1883",
@@ -1856,7 +1858,8 @@
     "topicPrefixInvalidIata": "Le préfixe du sujet doit être meshcore/test ou meshcore/{IATA} (3 lettres), par exemple meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Reconnectez-vous avant d'abandonner (1–{{max}}). Enregistré avec les paramètres ; appuyez à nouveau sur Connecter après la modification pour que le processus principal le récupère.",
-      "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur."
+      "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur.",
+      "meshcom": "Tentatives de reconnexion avant d’abandonner (1–{{max}}). Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous pour que la session en cours utilise la nouvelle valeur."
     },
     "reticulumStackRunningAs": "En cours — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "La pile Reticulum ne répond pas – redémarrage…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Déconnectez et reconnectez MQTT pour utiliser les paramètres de courtier de ce profil.",
     "switchLabel": "Profil enregistré",
     "noneSelected": "Paramètres actuels (non enregistrés)",
-    "nameAria": "Nom de profil"
+    "nameAria": "Nom de profil",
+    "listLabel": "Courtiers en douane enregistrés"
   },
   "weatherFilter": {
     "viewTooltip": "Poteaux météo dans ce canal",

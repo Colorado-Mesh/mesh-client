@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import {
+  MESHCOM_MQTT_CLIENT_ID_SETTING_KEY,
   MESHCORE_MQTT_CLIENT_ID_SETTING_KEY,
   MESHTASTIC_MQTT_CLIENT_ID_SETTING_KEY,
   resolveMqttBrokerClientId,
@@ -67,5 +68,15 @@ describe('resolveMqttBrokerClientId', () => {
     const id = resolveMqttBrokerClientId('meshcore', { ...settings, username: v1Username });
     expect(id).toBe(v1Username);
     expect(store.has(MESHCORE_MQTT_CLIENT_ID_SETTING_KEY)).toBe(false);
+  });
+
+  it('creates and persists a meshcom clientId separate from meshcore', () => {
+    const id1 = resolveMqttBrokerClientId('meshcom', settings);
+    expect(id1).toMatch(/^meshcom-mqtt-[0-9a-f]{16}$/);
+    expect(store.get(MESHCOM_MQTT_CLIENT_ID_SETTING_KEY)).toBe(id1);
+    expect(store.has(MESHCORE_MQTT_CLIENT_ID_SETTING_KEY)).toBe(false);
+
+    const id2 = resolveMqttBrokerClientId('meshcom', settings);
+    expect(id2).toBe(id1);
   });
 });

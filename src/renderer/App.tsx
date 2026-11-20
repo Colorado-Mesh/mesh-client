@@ -6161,8 +6161,17 @@ function AppContent() {
                                       radioConnected={isConnectedOrOperational}
                                       locationFilter={locationFilter}
                                       onToggleFavorite={
-                                        selectByProtocol(panelActionsByProtocol, protocol)
-                                          .setNodeFavorited
+                                        // Prefer the protocol-scoped panel bundle (MeshCom must not
+                                        // fall through to MeshCore/Meshtastic no-op stubs).
+                                        selectByProtocol(
+                                          {
+                                            meshtastic: meshtasticPanelActions.setNodeFavorited,
+                                            meshcore: meshcorePanelActions.setNodeFavorited,
+                                            reticulum: reticulumPanelActions.setNodeFavorited,
+                                            meshcom: meshcomPanelActions.setNodeFavorited,
+                                          },
+                                          protocol,
+                                        )
                                       }
                                       mode={protocol}
                                       groups={contactGroups.groups}

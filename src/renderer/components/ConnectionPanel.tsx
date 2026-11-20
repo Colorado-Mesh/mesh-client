@@ -93,6 +93,7 @@ import {
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
+import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
@@ -380,6 +381,10 @@ function loadMeshcoreMqttSettings(): MQTTSettings {
   return loadProtocolMqttSettings('meshcore');
 }
 
+function loadMeshcomMqttSettings(): MQTTSettings {
+  return loadProtocolMqttSettings('meshcom');
+}
+
 interface Props {
   state: DeviceState;
   onConnect: RfConnectFn;
@@ -515,21 +520,31 @@ export default function ConnectionPanel({
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
   const [meshcoreMqttSettings, setMeshcoreMqttSettings] =
     useState<MQTTSettings>(loadMeshcoreMqttSettings);
+  const [meshcomMqttSettings, setMeshcomMqttSettings] =
+    useState<MQTTSettings>(loadMeshcomMqttSettings);
   const [showMqttPassword, setShowMqttPassword] = useState(false);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
   const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
   const [channelPskDraft, setChannelPskDraft] = useState(() =>
     formatChannelPskInput(
-      (protocol === 'meshcore' ? loadMeshcoreMqttSettings() : loadMqttSettings()).channelPsks,
+      (protocol === 'meshcore'
+        ? loadMeshcoreMqttSettings()
+        : protocol === 'meshcom'
+          ? loadMeshcomMqttSettings()
+          : loadMqttSettings()
+      ).channelPsks,
     ),
   );
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const meshcomMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mqttSettingsRef = useRef(mqttSettings);
   mqttSettingsRef.current = mqttSettings;
   const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
   meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
+  const meshcomMqttSettingsRef = useRef(meshcomMqttSettings);
+  meshcomMqttSettingsRef.current = meshcomMqttSettings;
   const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() =>
     readStoredMeshcoreMqttPreset(),
   );
@@ -546,23 +561,35 @@ export default function ConnectionPanel({
       return 'custom';
     },
   );
-  const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(loadMqttProfiles);
+  const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(() =>
+    loadMqttProfiles('meshtastic'),
+  );
   const mqttProfilesRef = useRef(mqttProfiles);
   mqttProfilesRef.current = mqttProfiles;
   const persistedMqttProfilesRef = useRef(mqttProfiles);
   const mqttProfileSaveRequestRef = useRef(0);
+  const [meshcomMqttProfiles, setMeshcomMqttProfiles] = useState<MqttProfile[]>(() =>
+    loadMqttProfiles('meshcom'),
+  );
+  const meshcomMqttProfilesRef = useRef(meshcomMqttProfiles);
+  meshcomMqttProfilesRef.current = meshcomMqttProfiles;
+  const persistedMeshcomMqttProfilesRef = useRef(meshcomMqttProfiles);
+  const meshcomMqttProfileSaveRequestRef = useRef(0);
   // Profile chosen while connected whose broker/credentials differ; applied once MQTT disconnects
   // so the live session's settings and matched profile stay accurate.
   const [pendingMqttProfile, setPendingMqttProfile] = useState<MqttProfile | null>(null);
   const activeMqttProfile = useMemo(
-    () => matchMqttProfile(mqttProfiles, mqttSettings),
-    [mqttProfiles, mqttSettings],
+    () =>
+      protocol === 'meshcom'
+        ? matchMqttProfile(meshcomMqttProfiles, meshcomMqttSettings)
+        : matchMqttProfile(mqttProfiles, mqttSettings),
+    [protocol, meshcomMqttProfiles, meshcomMqttSettings, mqttProfiles, mqttSettings],
   );
   const updateMqttProfiles = (next: MqttProfile[]) => {
     const requestId = ++mqttProfileSaveRequestRef.current;
     mqttProfilesRef.current = next;
     setMqttProfiles(next);
-    void saveMqttProfiles(next)
+    void saveMqttProfiles(next, 'meshtastic')
       .then(() => {
         persistedMqttProfilesRef.current = next;
       })
@@ -572,6 +599,25 @@ export default function ConnectionPanel({
           const persisted = persistedMqttProfilesRef.current;
           mqttProfilesRef.current = persisted;
           setMqttProfiles(persisted);
+        }
+      });
+  };
+  const updateMeshcomMqttProfiles = (next: MqttProfile[]) => {
+    const requestId = ++meshcomMqttProfileSaveRequestRef.current;
+    meshcomMqttProfilesRef.current = next;
+    setMeshcomMqttProfiles(next);
+    void saveMqttProfiles(next, 'meshcom')
+      .then(() => {
+        persistedMeshcomMqttProfilesRef.current = next;
+      })
+      .catch((e: unknown) => {
+        console.warn(
+          '[ConnectionPanel] MeshCom MQTT profile persistence failed ' + errLikeToLogString(e),
+        );
+        if (meshcomMqttProfileSaveRequestRef.current === requestId) {
+          const persisted = persistedMeshcomMqttProfilesRef.current;
+          meshcomMqttProfilesRef.current = persisted;
+          setMeshcomMqttProfiles(persisted);
         }
       });
   };
@@ -625,10 +671,27 @@ export default function ConnectionPanel({
 
   useEffect(() => {
     if (mqttStatus !== 'disconnected' || !pendingMqttProfile) return;
-    setMeshtasticPreset('custom');
-    setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    if (protocol === 'meshcom') {
+      setMeshcomMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    } else {
+      setMeshtasticPreset('custom');
+      setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    }
     setPendingMqttProfile(null);
-  }, [mqttStatus, pendingMqttProfile]);
+  }, [mqttStatus, pendingMqttProfile, protocol]);
+
+  const applyMeshcomMqttProfile = (profile: MqttProfile) => {
+    if (mqttStatus === 'connecting') return;
+    const next = applyMqttProfile(meshcomMqttSettings, profile);
+    const effect = mqttProfileApplyEffect(meshcomMqttSettings, next);
+    // MeshCom has no live topicPrefix IPC — any live change needs reconnect.
+    if (mqttStatus === 'connected' && effect !== 'none') {
+      setPendingMqttProfile(profile);
+      return;
+    }
+    setPendingMqttProfile(null);
+    setMeshcomMqttSettings(next);
+  };
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -706,6 +769,40 @@ export default function ConnectionPanel({
     };
   }, []);
 
+  // Persist MeshCom MQTT settings with debounce
+  useEffect(() => {
+    if (meshcomMqttSaveTimerRef.current) clearTimeout(meshcomMqttSaveTimerRef.current);
+    meshcomMqttSaveTimerRef.current = setTimeout(() => {
+      persistMqttSettingsIfChanged(MESHCOM_MQTT_SETTINGS_KEY, meshcomMqttSettingsRef.current);
+      meshcomMqttSaveTimerRef.current = null;
+    }, 300);
+    return () => {
+      if (meshcomMqttSaveTimerRef.current) {
+        clearTimeout(meshcomMqttSaveTimerRef.current);
+        meshcomMqttSaveTimerRef.current = null;
+      }
+    };
+  }, [meshcomMqttSettings]);
+
+  useEffect(() => {
+    const flushMeshcomMqtt = () => {
+      flushPendingMqttSave(
+        meshcomMqttSaveTimerRef,
+        MESHCOM_MQTT_SETTINGS_KEY,
+        meshcomMqttSettingsRef.current,
+      );
+    };
+    window.addEventListener('beforeunload', flushMeshcomMqtt);
+    return () => {
+      window.removeEventListener('beforeunload', flushMeshcomMqtt);
+      flushPendingMqttSave(
+        meshcomMqttSaveTimerRef,
+        MESHCOM_MQTT_SETTINGS_KEY,
+        meshcomMqttSettingsRef.current,
+      );
+    };
+  }, []);
+
   // Listen for MQTT events from main process (dual-mode: only errors for the active protocol)
   useEffect(() => {
     return window.electronAPI.mqtt.onError(({ error, protocol: mqttProtocol }) => {
@@ -713,7 +810,9 @@ export default function ConnectionPanel({
       setMqttError(
         protocol === 'meshcore'
           ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
-          : meshtasticMqttErrorUserHint(error, t),
+          : protocol === 'meshcom'
+            ? error
+            : meshtasticMqttErrorUserHint(error, t),
       );
     });
   }, [protocol, t]);
@@ -779,8 +878,18 @@ export default function ConnectionPanel({
     };
   }, []);
 
-  const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
-  const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
+  const activeMqttSettings =
+    protocol === 'meshcore'
+      ? meshcoreMqttSettings
+      : protocol === 'meshcom'
+        ? meshcomMqttSettings
+        : mqttSettings;
+  const setActiveMqttSettings =
+    protocol === 'meshcore'
+      ? setMeshcoreMqttSettings
+      : protocol === 'meshcom'
+        ? setMeshcomMqttSettings
+        : setMqttSettings;
   const activeMqttTls = mqttUsesTls(activeMqttSettings);
   const { focusedIdentityId } = useActiveMeshIdentity(protocol);
   const radioModuleConfigs = useDeviceStore((s) =>
@@ -808,7 +917,7 @@ export default function ConnectionPanel({
     if (affectsPreset) {
       if (protocol === 'meshcore') {
         setMeshcorePreset('custom');
-      } else {
+      } else if (protocol === 'meshtastic') {
         setMeshtasticPreset('custom');
       }
     }
@@ -2199,13 +2308,13 @@ export default function ConnectionPanel({
   // ─── Shared MQTT section ────────────────────────────────────────
   const disconnectMqtt = (reason: string) => {
     markMqttUserDisconnect();
-    window.electronAPI.mqtt
-      .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
-      .catch((err: unknown) => {
-        console.warn(
-          `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
-        );
-      });
+    const mqttProtocol =
+      protocol === 'meshcore' ? 'meshcore' : protocol === 'meshcom' ? 'meshcom' : 'meshtastic';
+    window.electronAPI.mqtt.disconnect(mqttProtocol).catch((err: unknown) => {
+      console.warn(
+        `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
+      );
+    });
   };
 
   const mqttAuthDocsLink =
@@ -2267,7 +2376,7 @@ export default function ConnectionPanel({
               #
             </LabelValue>
           </LabelValueGrid>
-          {protocol !== 'meshcore' && mqttProfiles.length > 0 ? (
+          {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
             <div data-setting-anchor="connection.mqtt.switchProfile" className="space-y-1">
               <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
                 {t('mqttProfiles.switchLabel')}
@@ -2298,6 +2407,37 @@ export default function ConnectionPanel({
               ) : null}
             </div>
           ) : null}
+          {protocol === 'meshcom' && meshcomMqttProfiles.length > 0 ? (
+            <div data-setting-anchor="connection.mqtt.meshcomSwitchProfile" className="space-y-1">
+              <p id="conn-meshcom-live-profile" className="text-muted text-xs">
+                {t('mqttProfiles.switchLabel')}
+              </p>
+              <MqttNetworkPresetSelect
+                id="conn-meshcom-live-profile-select"
+                labelledById="conn-meshcom-live-profile"
+                value={activeMqttProfile ? mqttProfileSelectValue(activeMqttProfile.id) : ''}
+                options={[
+                  ...(activeMqttProfile
+                    ? []
+                    : [{ value: '', label: t('mqttProfiles.noneSelected') }]),
+                  ...meshcomMqttProfiles.map((p) => ({
+                    value: mqttProfileSelectValue(p.id),
+                    label: p.name,
+                  })),
+                ]}
+                onSelect={(value) => {
+                  const profileId = mqttProfileIdFromSelectValue(value);
+                  const profile = meshcomMqttProfiles.find((p) => p.id === profileId);
+                  if (profile) applyMeshcomMqttProfile(profile);
+                }}
+              />
+              {pendingMqttProfile ? (
+                <p className="text-xs text-orange-400" role="status">
+                  {t('mqttProfiles.reconnectNeeded')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <Stepper
             id="mqtt-max-retries-when-connected"
             label={t('connectionPanel.maxReconnectAttempts')}
@@ -2312,9 +2452,13 @@ export default function ConnectionPanel({
                 ? t('connectionPanel.maxRetriesHelpConnected.meshcore', {
                     max: MQTT_MAX_RECONNECT_ATTEMPTS,
                   })
-                : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
-                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                  })
+                : protocol === 'meshcom'
+                  ? t('connectionPanel.maxRetriesHelpConnected.meshcom', {
+                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                    })
+                  : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
+                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                    })
             }
           />
         </div>
@@ -2327,7 +2471,7 @@ export default function ConnectionPanel({
               {mqttError}
             </div>
           )}
-          {protocol !== 'meshcore' && (
+          {protocol === 'meshtastic' && (
             <div data-setting-anchor="connection.mqtt.meshtasticPreset" className="space-y-1">
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
@@ -2390,6 +2534,50 @@ export default function ConnectionPanel({
                 }}
                 onDelete={(id) => {
                   updateMqttProfiles(deleteMqttProfile(mqttProfiles, id));
+                }}
+              />
+            </div>
+          )}
+          {protocol === 'meshcom' && (
+            <div data-setting-anchor="connection.mqtt.meshcomProfiles" className="space-y-1">
+              <p id="conn-meshcom-saved-profiles" className="text-muted text-xs">
+                {t('mqttProfiles.listLabel')}
+              </p>
+              {meshcomMqttProfiles.length > 0 ? (
+                <MqttNetworkPresetSelect
+                  id="conn-meshcom-saved-profiles-select"
+                  labelledById="conn-meshcom-saved-profiles"
+                  disabled={mqttStatus === 'connecting'}
+                  value={activeMqttProfile ? mqttProfileSelectValue(activeMqttProfile.id) : ''}
+                  options={[
+                    ...(activeMqttProfile
+                      ? []
+                      : [{ value: '', label: t('mqttProfiles.noneSelected') }]),
+                    ...meshcomMqttProfiles.map((p) => ({
+                      value: mqttProfileSelectValue(p.id),
+                      label: t('mqttProfiles.optionLabel', { name: p.name }),
+                    })),
+                  ]}
+                  onSelect={(value) => {
+                    const profileId = mqttProfileIdFromSelectValue(value);
+                    if (profileId == null) return;
+                    const profile = meshcomMqttProfiles.find((p) => p.id === profileId);
+                    if (profile) applyMeshcomMqttProfile(profile);
+                  }}
+                />
+              ) : null}
+              <MqttProfileControls
+                activeProfile={activeMqttProfile}
+                onSave={(name) => {
+                  updateMeshcomMqttProfiles(
+                    createMqttProfile(meshcomMqttProfiles, name, meshcomMqttSettings),
+                  );
+                }}
+                onRename={(id, name) => {
+                  updateMeshcomMqttProfiles(renameMqttProfile(meshcomMqttProfiles, id, name));
+                }}
+                onDelete={(id) => {
+                  updateMeshcomMqttProfiles(deleteMqttProfile(meshcomMqttProfiles, id));
                 }}
               />
             </div>
@@ -2740,10 +2928,12 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : isDeviceSigningMeshcorePreset(meshcorePreset) ||
-                        isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
-                      ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
-                      : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
+                    : protocol === 'meshcom'
+                      ? t('connectionPanel.topicPrefixHelp.meshcom')
+                      : isDeviceSigningMeshcorePreset(meshcorePreset) ||
+                          isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
+                        ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
+                        : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
                 }
               />
             </div>
@@ -2799,13 +2989,17 @@ export default function ConnectionPanel({
               hint={
                 protocol === 'meshcore'
                   ? t('connectionPanel.maxRetriesHelp.meshcore')
-                  : t('connectionPanel.maxRetriesHelp.meshtastic', {
-                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                    })
+                  : protocol === 'meshcom'
+                    ? t('connectionPanel.maxRetriesHelp.meshcom', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
+                    : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
               }
             />
           </div>
-          {protocol !== 'meshcore' && (
+          {protocol === 'meshtastic' && (
             <div data-setting-anchor="connection.mqtt.channelPsks" className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <label htmlFor="mqtt-channel-psks" className="text-muted text-xs">
@@ -2869,8 +3063,16 @@ export default function ConnectionPanel({
                 const committedPsks = commitChannelPskDraft();
                 const settings: Parameters<typeof window.electronAPI.mqtt.connect>[0] = {
                   ...activeMqttSettings,
-                  channelPsks: committedPsks.length > 0 ? committedPsks : undefined,
-                  mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
+                  channelPsks:
+                    protocol === 'meshtastic' && committedPsks.length > 0
+                      ? committedPsks
+                      : undefined,
+                  mqttTransportProtocol:
+                    protocol === 'meshcore'
+                      ? 'meshcore'
+                      : protocol === 'meshcom'
+                        ? 'meshcom'
+                        : 'meshtastic',
                 };
                 if (protocol === 'meshcore') {
                   const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, settings);

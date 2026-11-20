@@ -11,6 +11,7 @@ import {
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
+import { readMeshcomMqttSettingsFromStorage } from './meshcomMqttSettingsStorage';
 import {
   type MeshcoreMqttPreset,
   readStoredMeshcoreMqttPreset,
@@ -51,7 +52,9 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
   const settings =
     prot === 'meshcore'
       ? readMeshcoreMqttSettingsFromStorage()
-      : readMeshtasticMqttSettingsFromStorage();
+      : prot === 'meshcom'
+        ? readMeshcomMqttSettingsFromStorage()
+        : readMeshtasticMqttSettingsFromStorage();
   if (!settings.autoLaunch) return;
 
   if (prot === 'meshcore' && meshcoreMqttNeedsColoradoRegionAck()) {
@@ -63,7 +66,8 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     prot === 'meshtastic' ? { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS, ...settings } : settings;
   const connectSettings: MQTTSettings = {
     ...base,
-    mqttTransportProtocol: prot === 'meshcore' ? 'meshcore' : 'meshtastic',
+    mqttTransportProtocol:
+      prot === 'meshcore' ? 'meshcore' : prot === 'meshcom' ? 'meshcom' : 'meshtastic',
   };
 
   const meshcorePreset: MeshcoreMqttPreset | null =

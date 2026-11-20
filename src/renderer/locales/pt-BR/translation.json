@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[País]/[Estado], por exemplo. msh/CO/EUA",
       "meshcoreLetsmesh": "meshcore/{IATA}, por ex. malhacore/DEN",
-      "meshcoreDefault": "MESHCORE/[País]/[Estado], por exemplo. MESHCORE/EUA/CO"
+      "meshcoreDefault": "MESHCORE/[País]/[Estado], por exemplo. MESHCORE/EUA/CO",
+      "meshcom": "Tópico raiz do broker para o seu gateway MeshCom, por exemplo, meshcom"
     },
     "topicPrefixPlaceholder": "msh/EUA/",
     "maxRetriesHelp": {
       "meshtastic": "Reconecte as tentativas (1–{{max}}) antes de desistir.",
-      "meshcore": "Reconecte as tentativas (1–20) antes de desistir."
+      "meshcore": "Reconecte as tentativas (1–20) antes de desistir.",
+      "meshcom": "Tentativas de reconexão (1–{{max}}) antes de desistir."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "O prefixo do tópico deve ser meshcore/test ou meshcore/{IATA} (3 letras), por exemplo, meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Reconecte as tentativas antes de desistir (1–{{max}}). Salvo com as configurações; pressione Conectar novamente depois de alterar para que o processo principal o pegue.",
-      "meshtastic": "Ambos os protocolos permitem 1–{{max}}. Salvo com configurações; desconecte e conecte novamente para que a sessão em execução use o novo valor."
+      "meshtastic": "Ambos os protocolos permitem 1–{{max}}. Salvo com configurações; desconecte e conecte novamente para que a sessão em execução use o novo valor.",
+      "meshcom": "Tentativas de reconexão antes de desistir (1–{{max}}). Salvo com as configurações; desconecte e conecte-se novamente para que a sessão em execução use o novo valor."
     },
     "reticulumStackRunningAs": "Em execução — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Pilha Reticulum sem resposta – reiniciando…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Desconecte e reconecte o MQTT para usar as configurações do corretor deste perfil.",
     "switchLabel": "Perfil salvo",
     "noneSelected": "Configurações atuais (não salvas)",
-    "nameAria": "Nome do perfil"
+    "nameAria": "Nome do perfil",
+    "listLabel": "Despachantes aduaneiros salvos"
   },
   "weatherFilter": {
     "viewTooltip": "Publicações meteorológicas neste canal",

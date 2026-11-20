@@ -10,14 +10,15 @@ import { getOfflineIdentityIdForProtocol } from '../offlineProtocolIdentities';
 import type { IdentityId } from '../types';
 
 export interface MeshcomContactIdentityHit {
-  /** Bucket to patch / persist (prefers UI-facing id when the node lives there). */
+  /** Bucket that currently holds the contact row (preferred for callsign / coords). */
   identityId: IdentityId;
   existing: NodeRecord | undefined;
   /**
-   * When the node was found only in a non-UI bucket, also patch this id so
-   * Contacts (`meshcomUiNodes`) updates immediately.
+   * Every MeshCom identity that must receive the favorited (or delete) mutation so
+   * Contacts (`meshcomUiNodes` via {@link getIdentityIdForProtocol}) and the session /
+   * offline slots stay aligned. Always includes the UI id.
    */
-  mirrorIdentityId?: IdentityId;
+  syncIdentityIds: readonly IdentityId[];
 }
 
 /**
@@ -31,20 +32,24 @@ export function resolveMeshcomContactIdentity(
   const uiId = getIdentityIdForProtocol('meshcom') ?? sessionIdentityId;
   const offlineId = getOfflineIdentityIdForProtocol('meshcom');
   const nodes = useNodeStore.getState().nodes;
-  const candidates = [...new Set([uiId, sessionIdentityId, offlineId])];
+  const syncIdentityIds = [...new Set([uiId, sessionIdentityId, offlineId])];
 
-  for (const identityId of candidates) {
+  let foundId: IdentityId | undefined;
+  let existing: NodeRecord | undefined;
+  for (const identityId of syncIdentityIds) {
     if (!Object.hasOwn(nodes, identityId)) continue;
     const byId = nodes[identityId];
     // Record typing treats missing keys as present; require an own property.
     if (!Object.hasOwn(byId, nodeId)) continue;
-    const existing = byId[nodeId];
-    return {
-      identityId,
-      existing,
-      mirrorIdentityId: identityId !== uiId ? uiId : undefined,
-    };
+    foundId = identityId;
+    existing = byId[nodeId];
+    // Prefer the UI-facing bucket when multiple copies exist.
+    if (identityId === uiId) break;
   }
 
-  return { identityId: uiId, existing: undefined };
+  return {
+    identityId: foundId ?? uiId,
+    existing,
+    syncIdentityIds,
+  };
 }

@@ -22,6 +22,7 @@ describe('useProtocolMqttSettings helpers', () => {
   it('maps storage keys by protocol', () => {
     expect(getMqttSettingsStorageKey('meshtastic')).toBe('mesh-client:mqttSettings');
     expect(getMqttSettingsStorageKey('meshcore')).toBe('mesh-client:mqttSettings:meshcore');
+    expect(getMqttSettingsStorageKey('meshcom')).toBe('mesh-client:mqttSettings:meshcom');
   });
 
   it('loads protocol defaults from storage helpers', () => {
@@ -29,6 +30,8 @@ describe('useProtocolMqttSettings helpers', () => {
     expect(meshtastic.topicPrefix).toBeTruthy();
     const meshcore = loadProtocolMqttSettings('meshcore');
     expect(meshcore.topicPrefix).toBe('meshcore');
+    const meshcom = loadProtocolMqttSettings('meshcom');
+    expect(meshcom.topicPrefix).toBe('meshcom');
   });
 
   it('preserves an unreadable protected password during preference-only updates', async () => {

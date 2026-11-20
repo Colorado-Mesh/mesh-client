@@ -1753,12 +1753,14 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[País]/[Estado], p.e. msh/CO/EE.UU.",
       "meshcoreLetsmesh": "meshcore/{IATA}, p. núcleo de malla/DEN",
-      "meshcoreDefault": "MESHCORE/[País]/[Estado], p. MESHCORE/EE.UU./CO"
+      "meshcoreDefault": "MESHCORE/[País]/[Estado], p. MESHCORE/EE.UU./CO",
+      "meshcom": "Tema raíz del bróker para su pasarela MeshCom, por ejemplo, meshcom"
     },
     "topicPrefixPlaceholder": "msh/EE.UU./",
     "maxRetriesHelp": {
       "meshtastic": "Intentos de reconectar (1–{{max}}) antes de darse por vencido.",
-      "meshcore": "Vuelva a conectar los intentos (1 a 20) antes de darse por vencido."
+      "meshcore": "Vuelva a conectar los intentos (1 a 20) antes de darse por vencido.",
+      "meshcom": "Intentos de reconexión (1–{{max}}) antes de desistir."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1857,7 +1859,8 @@
     "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Vuelve a conectar los intentos antes de darte por vencido (1–{{max}}). Guardado con la configuración; pulse Conectar de nuevo después de cambiar para que el proceso principal lo recoja.",
-      "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor."
+      "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor.",
+      "meshcom": "Intentos de reconexión antes de desistir (1–{{max}}). Guardado con la configuración; desconéctese y vuelva a conectarse para que la sesión en curso utilice el nuevo valor."
     },
     "reticulumStackRunningAs": "En ejecución — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…",
@@ -7556,7 +7559,8 @@
     "reconnectNeeded": "Desconecte y vuelva a conectar MQTT para utilizar la configuración del bróker de este perfil.",
     "switchLabel": "Perfil guardado",
     "noneSelected": "Configuración actual (no guardada)",
-    "nameAria": "Nombre de perfil"
+    "nameAria": "Nombre de perfil",
+    "listLabel": "Agentes de aduanas guardados"
   },
   "weatherFilter": {
     "viewTooltip": "Publicaciones meteorológicas en este canal",
