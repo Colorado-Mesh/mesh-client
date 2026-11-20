@@ -7379,7 +7379,6 @@
     "ackSent": "{{sender}} (으) 로 확인 메시지가 전송되었습니다.",
     "ackQueued": "{{sender}} 대기열에 대한 확인; 라디오를 사용할 수 있을 때 전송됩니다.",
     "ackFailed": "확인 메시지를 보내거나 대기열에 넣을 수 없습니다.",
-    "intro": "모든 프로토콜에서 들리는 MECP 비상 사태에 대한 일반적인 작동 그림. 메이데이 및 긴급 행 열기 배지가 이 탭에 표시됩니다. 훈련도 포함됩니다. 메시에 회신하려면 '확인' (또는 활성화된 비콘의 경우 '확인') 을 사용하고, 현지에서 사건이 종결되면 '해결' 을 사용하세요.",
     "ackQueuedBadge": "ACK 대기열",
     "pendingAckListAria": "이 사건에 대한 확인 대기 중",
     "cancelPendingAck": "취소",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "보기",
     "standingAlertViewAria": "Incident 탭을 엽니다.",
     "standingAlertDismiss": "표시됨",
-    "standingAlertDismissAria": "표시된 대로 {{sender}} 의 비상사태를 표시합니다."
+    "standingAlertDismissAria": "표시된 대로 {{sender}} 의 비상사태를 표시합니다.",
+    "intro": "모든 프로토콜에서 감지된 미해결 MECP 보고서 — 훈련을 포함한 모든 심각도. 행을 해결하면 이 목록에서 해당 행이 제거됩니다. 내보내기 로그에는 여전히 포함됩니다. 열린 행은 이 탭에 배지를 표시합니다. 메시에 응답하려면 '확인'을 사용하고(또는 활성 비콘의 경우 '확인') 현장에서 사건이 종결되면 '해결'을 사용하세요. 조난 비콘을 보낸 경우, 비콘 취소 시에도 B03이 전송되므로 다른 스테이션에서 이를 해제합니다."
   },
   "shell": {
     "section": {

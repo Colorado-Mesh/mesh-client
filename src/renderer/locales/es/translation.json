@@ -7379,7 +7379,6 @@
     "ackSent": "Acuse de recibo enviado a {{sender}}",
     "ackQueued": "Acuse de recibo a {{sender}} en cola; se enviará cuando la radio esté disponible",
     "ackFailed": "No se ha podido enviar o poner en cola el acuse de recibo",
-    "intro": "Cuadro operativo común para emergencias MECP escuchado en cualquier protocolo. Abra MAYDAY y las filas URGENTES en esta pestaña; incluidos los simulacros. Utilice Reconocer (o Confirmar para una baliza activa) para responder en la malla y, a continuación, Resolver cuando el incidente se cierre localmente.",
     "ackQueuedBadge": "ACK en cola",
     "pendingAckListAria": "Reconocimientos en cola por este incidente",
     "cancelPendingAck": "Cancelar",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Visualización",
     "standingAlertViewAria": "Abre la pestaña Incidencia",
     "standingAlertDismiss": "Marca vista",
-    "standingAlertDismissAria": "Marca la emergencia de {{sender}} como se ve"
+    "standingAlertDismissAria": "Marca la emergencia de {{sender}} como se ve",
+    "intro": "Informes de MECP no resueltos escuchados en cualquier protocolo, de cualquier gravedad, incluidos los simulacros. Al resolver una fila, esta se elimina de esta lista; el registro de exportación aún la incluye. Las filas abiertas llevan una insignia en esta pestaña. Utilice «Reconocer» (o «Confirmar» en el caso de una baliza activa) para responder en la red y, a continuación, «Resolver» cuando se cierre el incidente localmente. Si ha enviado la baliza de socorro, «Cancelar baliza» también transmite B03 para que otras estaciones la eliminen."
   },
   "shell": {
     "section": {

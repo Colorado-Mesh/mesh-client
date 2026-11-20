@@ -7379,7 +7379,6 @@
     "ackSent": "Accusé de réception envoyé à {{sender}}",
     "ackQueued": "Accusé de réception à {{sender}} en file d'attente ; il sera envoyé lorsque la radio sera disponible",
     "ackFailed": "Impossible d'envoyer ou de mettre en file d'attente l'accusé de réception",
-    "intro": "Image opérationnelle commune pour les urgences MECP entendues sur n'importe quel protocole. Ouvrez le badge MAYDAY et les lignes URGENTES dans cet onglet ; exercices compris. Utilisez Acquitter (ou Confirmer pour une balise active) pour répondre sur le maillage, puis Résoudre lorsque l'incident est fermé localement.",
     "ackQueuedBadge": "ACK en file d'attente",
     "pendingAckListAria": "Accusés de réception en file d'attente pour cet incident",
     "cancelPendingAck": "Annuler",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Afficher",
     "standingAlertViewAria": "Ouvrez l'onglet Incident",
     "standingAlertDismiss": "Marquer comme vu",
-    "standingAlertDismissAria": "Marquez l'urgence à partir de {{sender}} comme vu"
+    "standingAlertDismissAria": "Marquez l'urgence à partir de {{sender}} comme vu",
+    "intro": "Rapports MECP non résolus entendus sur n’importe quel protocole — tous les niveaux de gravité, y compris les exercices. La résolution d’une ligne la supprime de cette liste ; elle figure toujours dans le journal d’exportation. Les lignes ouvertes sont signalées par un badge sur cet onglet. Utilisez Accuser réception (ou Confirmer pour une balise active) pour répondre sur le réseau maillé, puis Résoudre lorsque l’incident est clos localement. Si vous avez envoyé la balise de détresse, l’option Annuler la balise transmet également le code B03 afin que les autres stations puissent la supprimer."
   },
   "shell": {
     "section": {

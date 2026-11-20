@@ -7379,7 +7379,6 @@
     "ackSent": "Conferma inviata a {{sender}}",
     "ackQueued": "Conferma a {{sender}} in coda; invierà quando la radio sarà disponibile",
     "ackFailed": "Impossibile inviare o accodare la conferma",
-    "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; incluse le esercitazioni. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
     "ackQueuedBadge": "ACK in coda",
     "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
     "cancelPendingAck": "Annulla",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Visualizza",
     "standingAlertViewAria": "Apri la scheda Incidente",
     "standingAlertDismiss": "Segna come visto",
-    "standingAlertDismissAria": "Contrassegna l'emergenza da {{sender}} come visibile"
+    "standingAlertDismissAria": "Contrassegna l'emergenza da {{sender}} come visibile",
+    "intro": "Segnalazioni MECP irrisolte rilevate su qualsiasi protocollo — di qualsiasi livello di gravità, comprese le esercitazioni. La risoluzione di una riga la rimuove da questo elenco; il registro di esportazione la include ancora. Le righe aperte contrassegnano questa scheda. Utilizza Conferma ricezione (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente. Se hai inviato il segnale di soccorso, anche l'opzione Annulla segnale trasmette B03 in modo che le altre stazioni lo cancellino."
   },
   "shell": {
     "section": {

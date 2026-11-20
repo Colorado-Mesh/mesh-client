@@ -7379,7 +7379,6 @@
     "ackSent": "Ucapan terima kasih dikirim ke {{sender}}",
     "ackQueued": "Ucapan terima kasih kepada {{sender}} antri; akan dikirimkan saat radio tersedia",
     "ackFailed": "Tidak dapat mengirim atau mengantre pengakuan",
-    "intro": "Gambaran operasi umum untuk keadaan darurat MECP terdengar pada protokol apa pun. Buka MAYDAY dan lencana baris MENDESAK tab ini; termasuk latihan. Gunakan Acknowledge (atau Confirm untuk suar aktif) untuk membalas di mesh, lalu Resolve ketika insiden ditutup secara lokal.",
     "ackQueuedBadge": "ACK antri",
     "pendingAckListAria": "Pengakuan antrian atas insiden ini",
     "cancelPendingAck": "Batal",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Lihat",
     "standingAlertViewAria": "Buka tab Insiden",
     "standingAlertDismiss": "Tandai terlihat",
-    "standingAlertDismissAria": "Tandai keadaan darurat dari {{sender}} seperti yang terlihat"
+    "standingAlertDismissAria": "Tandai keadaan darurat dari {{sender}} seperti yang terlihat",
+    "intro": "Laporan MECP yang belum terselesaikan yang terdengar pada protokol apa pun — setiap tingkat keparahan, termasuk latihan. Menyelesaikan baris akan menghapusnya dari daftar ini; Log ekspor masih menyertakannya. Baris terbuka diberi lencana di tab ini. Gunakan Konfirmasi (atau Konfirmasi untuk suar aktif) untuk membalas di mesh, lalu Selesaikan saat insiden ditutup secara lokal. Jika Anda mengirim suar bahaya, Batalkan suar juga akan mengirimkan B03 sehingga stasiun lain dapat menghapusnya."
   },
   "shell": {
     "section": {

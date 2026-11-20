@@ -7379,7 +7379,6 @@
     "ackSent": "Bevestiging verzonden naar {{sender}}",
     "ackQueued": "Bevestiging aan {{sender}} in de wachtrij; deze wordt verzonden wanneer de radio beschikbaar is",
     "ackFailed": "Kon de bevestiging niet verzenden of in de wachtrij plaatsen",
-    "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; inclusief oefeningen. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
     "ackQueuedBadge": "ACK in de wachtrij",
     "pendingAckListAria": "Bevestigingen in de wachtrij voor dit incident",
     "cancelPendingAck": "Annuleren",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Bekijken",
     "standingAlertViewAria": "Open het tabblad Incident",
     "standingAlertDismiss": "Markeer gezien",
-    "standingAlertDismissAria": "Markeer de noodsituatie van {{sender}} als gezien"
+    "standingAlertDismissAria": "Markeer de noodsituatie van {{sender}} als gezien",
+    "intro": "Onopgeloste MECP-meldingen die op elk protocol zijn gehoord — elke ernst, inclusief oefeningen. Als u een rij oplost, wordt deze uit deze lijst verwijderd; het exportlogboek bevat deze nog steeds. Open rijen geven een badge weer op dit tabblad. Gebruik Bevestigen (of Bevestigen voor een actieve zender) om op het mesh te antwoorden en vervolgens Oplossen wanneer het incident lokaal is afgesloten. Als u de noodzender hebt verzonden, zendt Noodzender annuleren ook B03 uit, zodat andere stations deze kunnen wissen."
   },
   "shell": {
     "section": {

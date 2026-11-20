@@ -7379,7 +7379,6 @@
     "ackSent": "Onay {{sender}} adresine gönderildi",
     "ackQueued": "{{sender}} kuyruğuna alındı; radyo uygun olduğunda gönderilecektir",
     "ackFailed": "Onay gönderilemedi veya kuyruğa alınamadı",
-    "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar dahil. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
     "ackQueuedBadge": "ACK kuyruğa alındı",
     "pendingAckListAria": "Bu olay için kuyruğa alınmış onaylar",
     "cancelPendingAck": "İptal",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Görüntüle",
     "standingAlertViewAria": "Olay sekmesini açın",
     "standingAlertDismiss": "Görüldü olarak",
-    "standingAlertDismissAria": "Acil durumu {{sender}} 'dan görüldüğü gibi işaretleyin"
+    "standingAlertDismissAria": "Acil durumu {{sender}} 'dan görüldüğü gibi işaretleyin",
+    "intro": "Herhangi bir protokolde duyulan çözülmemiş MECP raporları — tatbikatlar dâhil olmak üzere her ciddiyet seviyesi. Bir satırın çözümlenmesi, o satırı bu listeden kaldırır; Dışa aktarma günlüğü hâlâ o satırı içerir. Açık satırlar bu sekmeyi işaretler. Mesh üzerinde yanıt vermek için Onayla'yı (veya aktif bir işaret için Doğrula'yı) kullanın, ardından olay yerel olarak kapatıldığında Çözün. Sıkıntı sinyalini siz gönderdiyseniz Sinyali iptal et seçeneği de B03'ü iletir, böylece diğer istasyonlar bunu siler."
   },
   "shell": {
     "section": {

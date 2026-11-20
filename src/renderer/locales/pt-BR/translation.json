@@ -7379,7 +7379,6 @@
     "ackSent": "Confirmação enviada para {{sender}}",
     "ackQueued": "Reconhecimento para {{sender}} na fila; será enviado quando o rádio estiver disponível",
     "ackFailed": "Não foi possível enviar ou enfileirar a confirmação",
-    "intro": "Imagem operacional comum para emergências MECP ouvida em qualquer protocolo. Abrir MAYDAY e linhas URGENTES marcam esta guia; incluindo simulados. Use Confirmar (ou Confirmar para um sinalizador ativo) para responder na malha e, em seguida, Resolva quando o incidente for fechado localmente.",
     "ackQueuedBadge": "ACK na fila",
     "pendingAckListAria": "Reconhecimentos em fila para este incidente",
     "cancelPendingAck": "Cancelar",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Visualizar",
     "standingAlertViewAria": "Abra a guia Incidente",
     "standingAlertDismiss": "Marca vista",
-    "standingAlertDismissAria": "Marque a emergência de {{sender}} como vista"
+    "standingAlertDismissAria": "Marque a emergência de {{sender}} como vista",
+    "intro": "Relatórios de MECP não resolvidos ouvidos em qualquer protocolo — todos os níveis de gravidade, incluindo simulações. Resolver uma linha a remove desta lista; o registro de exportação ainda a inclui. As linhas abertas marcam esta aba. Use \"Confirmar\" (ou \"Confirmar\" para um sinalizador ativo) para responder na mesh e, em seguida, \"Resolver\" quando o incidente for encerrado localmente. Se você enviou o sinalizador de socorro, a opção Cancelar sinalizador também transmite B03 para que outras estações o apaguem."
   },
   "shell": {
     "section": {

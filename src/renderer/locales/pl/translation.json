@@ -7493,7 +7493,6 @@
     "ackFailed": "Nie można wysłać lub ustawić w kolejce potwierdzenia",
     "ackCount_few": "Podziękowania: {{count}}",
     "ackCount_many": "Podziękowania: {{count}}",
-    "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; w tym ćwiczenia. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
     "ackQueuedBadge": "ACK W kolejce",
     "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
     "cancelPendingAck": "Anuluj",
@@ -7518,7 +7517,8 @@
     "standingAlertView": "Wyświetl",
     "standingAlertViewAria": "Otwórz kartę Zdarzenie.",
     "standingAlertDismiss": "Oznacz jako widziane",
-    "standingAlertDismissAria": "Oznacz sytuację awaryjną z {{sender}} jako widoczną"
+    "standingAlertDismissAria": "Oznacz sytuację awaryjną z {{sender}} jako widoczną",
+    "intro": "Nierozwiązane zgłoszenia MECP zarejestrowane w dowolnym protokole – o każdym stopniu ważności, w tym dotyczące ćwiczeń. Rozwiązanie wiersza powoduje jego usunięcie z tej listy; nadal jest on jednak uwzględniony w dzienniku eksportu. Otwarte wiersze są oznaczone na tej karcie. Użyj opcji „Potwierdź” (lub „Potwierdź” w przypadku aktywnego sygnału alarmowego), aby odpowiedzieć w sieci mesh, a następnie wybierz „Rozwiąż”, gdy zdarzenie zostanie zamknięte lokalnie. Jeśli wysłano sygnał alarmowy, funkcja Anuluj sygnał alarmowy również przesyła komunikat B03, aby inne stacje mogły go usunąć."
   },
   "shell": {
     "section": {

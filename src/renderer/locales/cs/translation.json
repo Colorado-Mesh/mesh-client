@@ -7445,7 +7445,6 @@
     "ackQueued": "Potvrzení o zařazení do {{sender}} fronty; odešle se, až bude rádio k dispozici",
     "ackFailed": "Potvrzení nelze odeslat nebo zařadit do fronty",
     "ackCount_few": "{{count}} poděkování",
-    "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; včetně cvičení. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
     "ackQueuedBadge": "ACK ve frontě",
     "pendingAckListAria": "Poděkování za tento incident ve frontě",
     "cancelPendingAck": "Zrušit",
@@ -7469,7 +7468,8 @@
     "standingAlertView": "Zobrazit",
     "standingAlertViewAria": "Otevřít kartu Incident",
     "standingAlertDismiss": "Značka zobrazena",
-    "standingAlertDismissAria": "Označit stav nouze z {{sender}} jako viditelný"
+    "standingAlertDismissAria": "Označit stav nouze z {{sender}} jako viditelný",
+    "intro": "Nevyřešená hlášení MECP zaznamenaná na jakémkoli protokolu – všechny úrovně závažnosti, včetně cvičení. Vyřešením řádku jej odstraníte z tohoto seznamu; protokol exportu jej stále obsahuje. Otevřené řádky označují tuto kartu. Pro odpověď v síti použijte možnost Potvrdit (nebo Potvrdit u aktivního majáku) a poté možnost Vyřešit, jakmile bude incident lokálně uzavřen. Pokud jste odeslali nouzový maják, funkce Zrušit maják také odešle B03, aby jej ostatní stanice mohly vymazat."
   },
   "shell": {
     "section": {

@@ -7379,7 +7379,6 @@
     "ackSent": "Bestätigung gesendet an {{sender}}",
     "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
     "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
-    "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Übungen eingeschlossen. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
     "ackQueuedBadge": "ACK in Warteschlange gestellt",
     "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
     "cancelPendingAck": "Abbrechen",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "Ansicht",
     "standingAlertViewAria": "Öffnen Sie die Registerkarte Vorfall",
     "standingAlertDismiss": "Als gesehen markieren",
-    "standingAlertDismissAria": "Notruf von {{sender}} als gesehen markieren"
+    "standingAlertDismissAria": "Notruf von {{sender}} als gesehen markieren",
+    "intro": "Nicht gelöste MECP-Meldungen, die bei jedem Protokoll eingegangen sind – jeder Schweregrad, einschließlich Übungen. Durch das Lösen einer Zeile wird sie aus dieser Liste entfernt; das Exportprotokoll enthält sie weiterhin. Offene Zeilen werden auf dieser Registerkarte mit einem Badge gekennzeichnet. Verwenden Sie „Bestätigen“ (oder „Bestätigen“ für ein aktives Signal), um im Mesh zu antworten, und anschließend „Lösen“, wenn der Vorfall lokal abgeschlossen ist. Wenn Sie das Notsignal gesendet haben, sendet „Signal abbrechen“ auch B03, damit andere Stationen es löschen können."
   },
   "shell": {
     "section": {

@@ -7379,7 +7379,6 @@
     "ackSent": "确认已发送至{{sender}}",
     "ackQueued": "确认{{sender}}已排队；当收音机可用时，它将发送",
     "ackFailed": "无法发送或排队确认",
-    "intro": "在任何方案中都能听到MECP紧急情况的常见操作画面。打开MAYDAY和紧急行标记此选项卡；包括演练。使用确认（或确认活动信标）在网格上回复，然后在本地关闭事件时解决。",
     "ackQueuedBadge": "ACK已排队",
     "pendingAckListAria": "已排队确认此事件",
     "cancelPendingAck": "取消",
@@ -7402,7 +7401,8 @@
     "standingAlertView": "查看",
     "standingAlertViewAria": "打开“事件”标签卡",
     "standingAlertDismiss": "标记为已见",
-    "standingAlertDismissAria": "将{{sender}}的紧急情况标记为可见"
+    "standingAlertDismissAria": "将{{sender}}的紧急情况标记为可见",
+    "intro": "在任何方案上听到的未解决 MECP 报告——所有严重程度，包括演习。解决某一行会将该行从此列表中移除；导出日志仍会包含该行。未结行会在此选项卡上显示徽章。使用“确认”（或对于活动信标使用“确认”）在网状网络上回复，然后在事件在本地结案后使用“解决”。如果您发送了遇险信标，取消信标也会传输 B03，以便其他工作站将其清除。"
   },
   "shell": {
     "section": {
