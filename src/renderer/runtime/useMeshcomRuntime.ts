@@ -18,7 +18,8 @@ import {
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
 import { canTransmitLocation } from '../lib/locationTransmit';
-import { callsignToNodeId } from '../lib/meshcom/meshcomCallsign';
+import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
+import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
@@ -44,7 +45,7 @@ import type {
 import { getConnection, setConnection } from '../stores/connectionStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import { useMessageStore } from '../stores/messageStore';
-import { upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
+import { patchNodeFavorited, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 function isMeshcomAutoSettimeEnabled(): boolean {
@@ -585,6 +586,40 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     [getFullNodeLabel],
   );
 
+  const setNodeFavorited = useCallback(
+    async (nodeId: number, favorited: boolean) => {
+      const identityId = resolveIdentityId();
+      const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+      const callsign =
+        normalizeMeshcomCallsign(existing?.longName ?? '') ||
+        meshcomCallForNodeId(nodeId) ||
+        normalizeMeshcomCallsign(existing?.shortName ?? '');
+      if (!callsign) {
+        console.warn(`[useMeshcomRuntime] setNodeFavorited: no callsign for node ${nodeId}`);
+        return;
+      }
+      registerMeshcomCallsign(callsign);
+      const prevFav = existing?.favorited ?? false;
+      patchNodeFavorited(identityId, nodeId, favorited);
+      try {
+        await window.electronAPI.db.saveMeshcomContact({
+          callsign,
+          identity_id: identityId,
+          node_id: nodeId >>> 0,
+          favorited: favorited ? 1 : 0,
+          lat: existing?.latitude ?? null,
+          lon: existing?.longitude ?? null,
+          batt: existing?.batteryLevel ?? null,
+          last_heard: existing?.lastHeardAt ?? null,
+        });
+      } catch (e) {
+        console.warn('[useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
+        patchNodeFavorited(identityId, nodeId, prevFav);
+      }
+    },
+    [resolveIdentityId],
+  );
+
   const refreshMessagesFromDb = useCallback(async () => {
     await hydrateIdentityStoresFromDb('meshcom', resolveIdentityId(), { nodes: false });
   }, [resolveIdentityId]);
@@ -793,7 +828,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         })) as ProtocolRuntime['finalizeDriverDisconnect'],
 
       sendMessage: sendMessage as ProtocolRuntime['sendMessage'],
-      setNodeFavorited: async () => {},
+      setNodeFavorited,
       refreshNodesFromDb,
       refreshMessagesFromDb,
       requestRefresh,
@@ -824,6 +859,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     getPickerStyleNodeLabel,
     gpsLoading,
     handleRfConnectFailure,
+    setNodeFavorited,
     identityIdForStore,
     messages,
     nodes,

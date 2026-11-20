@@ -310,8 +310,9 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
       const c = contact;
       const db = getDbForIpc('db:saveMeshcomContact');
       if (!db) return { changes: 0 };
-      const favoritedRaw = c.favorited;
-      const favorited = favoritedRaw === true || favoritedRaw === 1 ? 1 : 0;
+      // Ingest upserts omit `favorited` — preserve an existing star. Explicit 0/1 updates it.
+      const favoritedProvided = c.favorited !== undefined && c.favorited !== null;
+      const favorited = c.favorited === true || c.favorited === 1 ? 1 : 0;
       const result = db
         .prepareOnce(
           `INSERT INTO meshcom_contacts (
@@ -326,7 +327,10 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
              batt = COALESCE(excluded.batt, meshcom_contacts.batt),
              hw_id = COALESCE(excluded.hw_id, meshcom_contacts.hw_id),
              last_heard = COALESCE(excluded.last_heard, meshcom_contacts.last_heard),
-             favorited = excluded.favorited`,
+             favorited = CASE
+               WHEN @favorited_provided = 1 THEN excluded.favorited
+               ELSE meshcom_contacts.favorited
+             END`,
         )
         .run({
           callsign: c.callsign.trim().slice(0, MAX_CALLSIGN_LEN).toUpperCase(),
@@ -338,7 +342,8 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
           hw_id: c.hw_id != null && Number.isFinite(c.hw_id) ? Math.trunc(c.hw_id) : null,
           last_heard:
             c.last_heard != null && Number.isFinite(c.last_heard) ? Math.trunc(c.last_heard) : null,
-          favorited,
+          favorited: favoritedProvided ? favorited : 0,
+          favorited_provided: favoritedProvided ? 1 : 0,
         });
       return { changes: result.changes };
     } catch (err) {

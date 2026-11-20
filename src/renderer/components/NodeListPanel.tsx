@@ -1126,6 +1126,7 @@ function NodeListPanel({
               </th>
               <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
                 <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
+                <Star aria-hidden size={14} className={`${ICON_SM_PLUS} text-muted`} />
               </th>
               {showNodeHexIdColumn && (
                 <th

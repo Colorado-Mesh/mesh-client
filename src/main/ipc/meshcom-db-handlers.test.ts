@@ -44,4 +44,27 @@ describe('validateSaveMeshcomContact', () => {
       validateSaveMeshcomContact({ callsign: '  ', node_id: 1 });
     }).toThrow(/callsign/);
   });
+
+  it('accepts explicit favorited 0/1', () => {
+    expect(() => {
+      validateSaveMeshcomContact({ callsign: 'OE1ABC-1', node_id: 2, favorited: 1 });
+    }).not.toThrow();
+    expect(() => {
+      validateSaveMeshcomContact({ callsign: 'OE1ABC-1', node_id: 2, favorited: false });
+    }).not.toThrow();
+  });
+});
+
+describe('saveMeshcomContact favorited upsert SQL', () => {
+  it('preserves existing favorited when the field is omitted on ingest upsert', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const path = await import('node:path');
+    const src = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), 'meshcom-db-handlers.ts'),
+      'utf8',
+    );
+    expect(src).toMatch(/WHEN @favorited_provided = 1 THEN excluded\.favorited/);
+    expect(src).toMatch(/ELSE meshcom_contacts\.favorited/);
+  });
 });
