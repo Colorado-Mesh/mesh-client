@@ -90,6 +90,29 @@ describe('MeshComTransport', () => {
     expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcom');
   });
 
+  it('buffers fromRadio until Protocol.subscribe attaches onData', async () => {
+    let fromRadioCb: ((payload: { sessionId: string; bytes: Uint8Array }) => void) | undefined;
+    vi.mocked(window.electronAPI.onGattFromRadio).mockImplementation((cb) => {
+      fromRadioCb = cb as typeof fromRadioCb;
+      return () => {};
+    });
+    vi.mocked(window.electronAPI.onGattDisconnected).mockReturnValue(() => {});
+
+    const conn = await createMeshComConnection({
+      transport: 'ble',
+      peripheralId: 'meshcom-periph',
+    });
+
+    const early = new TextEncoder().encode('D{"TYP":"I","CALL":"NV0N-20"}');
+    fromRadioCb?.({ sessionId: 'meshcom', bytes: early });
+
+    const onData = vi.fn();
+    conn.onData = onData;
+    expect(onData).toHaveBeenCalledTimes(1);
+    const flushed = onData.mock.calls[0]?.[0] as Uint8Array;
+    expect(Array.from(flushed)).toEqual(Array.from(early));
+  });
+
   it('BLE requires peripheralId', async () => {
     await expect(createMeshComConnection({ transport: 'ble' })).rejects.toThrow(
       /peripheral ID required/i,

@@ -143,9 +143,11 @@ describe('MeshComProtocol serial/BLE', () => {
     });
     const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
 
-    const info = new TextEncoder().encode(
-      'D{"TYP":"I","CALL":"OE1ABC-1","CTRY":"EU","BPIN":111111,"BATP":81,"BATV":4.05}',
-    );
+    // Firmware pads notifies with trailing NULs (blelen+2); parse must still ingest.
+    const infoBody =
+      'D{"TYP":"I","CALL":"OE1ABC-1","CTRY":"EU","BPIN":111111,"BATP":81,"BATV":4.05}';
+    const info = new Uint8Array(infoBody.length + 2);
+    info.set(new TextEncoder().encode(infoBody), 0);
     conn.onData?.(info);
     expect(handle.deviceSettings.call).toBe('OE1ABC-1');
     expect(handle.deviceSettings.battPercent).toBe(81);

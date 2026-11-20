@@ -205,7 +205,8 @@ function tryIngestSettingsJson(
   text: string,
   emit: (event: DomainEvent) => void,
 ): boolean {
-  const trimmed = text.trim();
+  // BLE notifies may still carry trailing NULs if a caller bypassed parseMeshcomBleFrames.
+  const trimmed = text.replace(/\0/g, '').trim();
   if (!trimmed.startsWith('{') || !trimmed.includes('"TYP"')) return false;
   let parsed: unknown;
   try {

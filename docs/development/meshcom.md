@@ -6,12 +6,12 @@ Checklist / lessons for the next protocol: [adding-a-protocol.md](adding-a-proto
 
 ## Transports
 
-| Transport    | Port / medium       | Notes                                                                                                                         |
-| ------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **EXTUDP**   | UDP **1799**        | Primary MVP. JSON `msg` / `pos` / `tele`. Node needs `--extudp on` + `--extudpip`. Main bridge: `src/main/ipc/udp-bridge.ts`. |
-| **KISS/TCP** | TCP **8001**        | Required. AX.25 UI over KISS (`0x00`/`0x10`/`0x20`/`0xF0`). Not Reticulum `kiss` / `ax25kiss`.                                |
-| **Serial**   | 115200 console      | `--` commands, `{CALL}text` inject, `--info` / `--setctry` / ExtUDP+KISS bootstrap.                                           |
-| **BLE**      | NUS + phone framing | Sidecar GATT session `gatt:meshcom` (same NUS UUID as MeshCore — filter by advertising name / user selection).                |
+| Transport    | Port / medium       | Notes                                                                                                                                                                                                                                 |
+| ------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **EXTUDP**   | UDP **1799**        | Primary MVP. JSON `msg` / `pos` / `tele`. Node needs `--extudp on` + `--extudpip`. Main bridge: `src/main/ipc/udp-bridge.ts`.                                                                                                         |
+| **KISS/TCP** | TCP **8001**        | Required. AX.25 UI over KISS (`0x00`/`0x10`/`0x20`/`0xF0`). Not Reticulum `kiss` / `ax25kiss`.                                                                                                                                        |
+| **Serial**   | 115200 console      | `--` commands, `{CALL}text` inject, `--info` / `--setctry` / ExtUDP+KISS bootstrap.                                                                                                                                                   |
+| **BLE**      | NUS + phone framing | Sidecar GATT session `gatt:meshcom` (same NUS UUID as MeshCore). Picker hides `RNode*` adverts and prefers `MC-<mac>-<call>` names; firmware pads notifies with trailing NULs (`blelen+2`) which the client strips before JSON parse. |
 
 Shared constants: `src/shared/meshcomConstants.ts`.
 
@@ -58,7 +58,7 @@ Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPAB
 
 Radio → **Device Configuration** renders first-class sections (Display, Position / GPS, Sensors, Identity & groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status & debug, Power & OTA, KISS / misc) from the catalog in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).
 
-- **Read on connect**: after Serial/BLE attach, `refreshMeshcomDeviceSettings` loads the node’s current values — Serial via `--info` text parse + `--wx` weather dump, BLE via `{HELLO}` companion JSON (`TYP` I/SN/SW/G/SA/W/… then `CONFFIN`) with `--info` / `--wx` fallback. Snapshot prefills Device User / Country and Radio command rows (`meshcomDeviceSettings.ts`) and seeds Telemetry.
+- **Read on connect**: after Serial/BLE attach, `refreshMeshcomDeviceSettings` loads the node’s current values — Serial via `--info` text parse + `--wx` weather dump, BLE via `{HELLO}` companion JSON (`TYP` I/SN/SW/G/SA/W/… then `CONFFIN`) with `--info` / `--wx` fallback. Firmware waits ~3s after HELLO before draining the config burst, so the BLE `CONFFIN` wait is 15s. Snapshot prefills Device User / Country and Radio command rows (`meshcomDeviceSettings.ts`) and seeds Telemetry.
 - **Country Apply** (above Device Configuration) saves `meshcomCountryCode` and, on Serial/BLE, sends `--setctry <code>` (reboots after ~15s on the node).
 - **Auto `--settime`**: app setting `meshcomAutoSettime` (default off). When enabled, after each Serial/BLE connect the runtime sends `--settime yyyy.mm.dd hh:mm:ss` in host UTC.
 - Meshtastic Device Role / Position / Power / WiFi / Display / Bluetooth shells stay off for MeshCom so the Radio tab is not an empty config heading.

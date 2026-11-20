@@ -93,6 +93,7 @@ import {
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
+import { looksLikeRnodeBleName, meshcomBlePickerDisplayName } from '../lib/meshcom/meshcomBleName';
 import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
@@ -978,13 +979,19 @@ export default function ConnectionPanel({
     return cache;
   }, [bleDevices]);
   const getBlePickerName = useCallback(
-    (device: GattBleDevice) =>
-      blePickerDisplayName(
-        device.deviceId,
-        device.deviceName,
-        bleDeviceNamesCache[device.deviceId],
-      ),
-    [bleDeviceNamesCache],
+    (device: GattBleDevice) => {
+      const cached = bleDeviceNamesCache[device.deviceId];
+      if (protocol === 'meshcom') {
+        return meshcomBlePickerDisplayName(
+          device.deviceId,
+          device.deviceName,
+          cached,
+          blePickerDisplayName,
+        );
+      }
+      return blePickerDisplayName(device.deviceId, device.deviceName, cached);
+    },
+    [bleDeviceNamesCache, protocol],
   );
   const getBlePickerId = useCallback((device: GattBleDevice) => device.deviceId, []);
   const getBlePickerRssi = useCallback((device: GattBleDevice) => device.rssi, []);
@@ -994,6 +1001,12 @@ export default function ConnectionPanel({
     blePickerSort.dir,
     { getName: getBlePickerName, getId: getBlePickerId, getRssi: getBlePickerRssi },
   );
+  // MeshCom reuses MeshCore NUS scan (unfiltered) — hide obvious RNode adverts so users
+  // do not GATT-connect a Reticulum radio and get a silent HELLO (no MeshCom TYP JSON).
+  const visibleBleDevices = useMemo(() => {
+    if (protocol !== 'meshcom') return sortedBleDevices;
+    return sortedBleDevices.filter((d) => !looksLikeRnodeBleName(d.deviceName));
+  }, [protocol, sortedBleDevices]);
   const isLinux = window.electronAPI.getPlatform() === 'linux';
   const isWindows = window.electronAPI.getPlatform() === 'win32';
 
@@ -2116,9 +2129,9 @@ export default function ConnectionPanel({
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-ink-300 text-xs" aria-live="polite">
-                  {t('connectionPanel.devicesFound', { count: bleDevices.length })}
+                  {t('connectionPanel.devicesFound', { count: visibleBleDevices.length })}
                 </span>
-                {bleDevices.length > 0 ? (
+                {visibleBleDevices.length > 0 ? (
                   <PickerSortControls
                     mode="ble"
                     sortKey={blePickerSort.key}
@@ -2131,15 +2144,20 @@ export default function ConnectionPanel({
               </div>
             </div>
             <div className="max-h-60 overflow-y-auto">
-              {bleDevices.length === 0 ? (
+              {visibleBleDevices.length === 0 ? (
                 <div className="text-muted px-4 py-6 text-center text-sm">
                   <SpinnerIcon className="text-muted mx-auto mb-2 h-5 w-5" />
                   {t('connectionPanel.scanningDevices', {
-                    protocol: protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic',
+                    protocol:
+                      protocol === 'meshcore'
+                        ? 'MeshCore'
+                        : protocol === 'meshcom'
+                          ? 'MeshCom'
+                          : 'Meshtastic',
                   })}
                 </div>
               ) : (
-                sortedBleDevices.map((device) => {
+                visibleBleDevices.map((device) => {
                   const displayName = getBlePickerName(device);
                   const identity = resolveBlePickerIdentity({
                     deviceId: device.deviceId,

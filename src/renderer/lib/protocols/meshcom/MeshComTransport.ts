@@ -261,14 +261,36 @@ class WebSerialMeshComConnection implements MeshComConnection {
 /** Sidecar GATT Nordic UART + MeshCom `{HELLO}` handshake. */
 class IpcBleMeshComConnection implements MeshComConnection {
   readonly transport = 'ble' as const;
-  onData: ((bytes: Uint8Array) => void) | null = null;
   onDisconnected: (() => void) | null = null;
 
   private readonly sessionId = 'meshcom' as const;
   private cleanupFns: (() => void)[] = [];
   private connected = false;
+  private _onData: ((bytes: Uint8Array) => void) | null = null;
+  /** Notifications that arrive after HELLO but before Protocol.subscribe sets onData. */
+  private pendingFromRadio: Uint8Array[] = [];
 
   constructor(private readonly peripheralId: string) {}
+
+  get onData(): ((bytes: Uint8Array) => void) | null {
+    return this._onData;
+  }
+
+  set onData(cb: ((bytes: Uint8Array) => void) | null) {
+    this._onData = cb;
+    if (!cb || this.pendingFromRadio.length === 0) return;
+    const queued = this.pendingFromRadio;
+    this.pendingFromRadio = [];
+    for (const frame of queued) cb(frame);
+  }
+
+  private deliverFromRadio(frame: Uint8Array): void {
+    if (this._onData) {
+      this._onData(frame);
+      return;
+    }
+    this.pendingFromRadio.push(frame.slice());
+  }
 
   async connect(): Promise<void> {
     const { sessionId } = this;
@@ -283,12 +305,13 @@ class IpcBleMeshComConnection implements MeshComConnection {
     const offData = window.electronAPI.onGattFromRadio(({ sessionId: sid, bytes }) => {
       if (sid !== sessionId) return;
       const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-      this.onData?.(frame);
+      this.deliverFromRadio(frame);
     });
     const offDisc = window.electronAPI.onGattDisconnected((sid) => {
       if (sid !== sessionId) return;
       releaseCleanupFns(this.cleanupFns);
       this.connected = false;
+      this.pendingFromRadio = [];
       const r = rejectOnDisconnect;
       rejectOnDisconnect = undefined;
       r?.(new Error('MeshCom BLE peripheral disconnected during connect'));
@@ -309,6 +332,7 @@ class IpcBleMeshComConnection implements MeshComConnection {
       }
       releaseCleanupFns(this.cleanupFns);
       this.connected = false;
+      this.pendingFromRadio = [];
       throw err;
     }
   }
@@ -335,6 +359,7 @@ class IpcBleMeshComConnection implements MeshComConnection {
   async close(): Promise<void> {
     releaseCleanupFns(this.cleanupFns);
     this.connected = false;
+    this.pendingFromRadio = [];
     await window.electronAPI.disconnectGatt(this.sessionId).catch((e: unknown) => {
       console.debug('[MeshComTransport] BLE disconnect ' + String(e));
     });

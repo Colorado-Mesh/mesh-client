@@ -55,6 +55,17 @@ export type MeshcomBleInbound =
   | { kind: 'hello_ack' };
 
 /**
+ * Firmware `blePhonePush` sends `blelen + 2` bytes from a zero-filled buffer, so
+ * JSON/`D{…}` notifies often end with trailing NUL padding. Strip that before
+ * `JSON.parse` (a single `\0` makes parse fail).
+ */
+export function sanitizeMeshcomBleJsonText(raw: string): string {
+  const nul = raw.indexOf('\0');
+  const cut = nul >= 0 ? raw.slice(0, nul) : raw;
+  return cut.trim();
+}
+
+/**
  * Parse one or more concatenated BLE phone frames from a NUS notification chunk.
  * Frames start with length byte (total frame length including length byte),
  * or unframed `@` / `D{` shortcuts from some firmwares.
@@ -69,16 +80,20 @@ export function parseMeshcomBleFrames(chunk: Uint8Array): MeshcomBleInbound[] {
       break;
     }
     if (chunk[offset] === 0x44 /* D */ && chunk[offset + 1] === 0x7b /* { */) {
-      const json = new TextDecoder('utf-8', { fatal: false }).decode(chunk.subarray(offset + 1));
-      out.push({ kind: 'json', json });
+      const json = sanitizeMeshcomBleJsonText(
+        new TextDecoder('utf-8', { fatal: false }).decode(chunk.subarray(offset + 1)),
+      );
+      if (json) out.push({ kind: 'json', json });
       break;
     }
 
     const len = chunk[offset];
     if (len < 2 || offset + len > chunk.length) {
       // Incomplete or raw — treat remainder as text
-      const text = new TextDecoder('utf-8', { fatal: false }).decode(chunk.subarray(offset));
-      if (text.trim()) out.push({ kind: 'text', text });
+      const text = sanitizeMeshcomBleJsonText(
+        new TextDecoder('utf-8', { fatal: false }).decode(chunk.subarray(offset)),
+      );
+      if (text) out.push({ kind: 'text', text });
       break;
     }
     const type = chunk[offset + 1];
@@ -93,7 +108,9 @@ export function parseMeshcomBleFrames(chunk: Uint8Array): MeshcomBleInbound[] {
     } else if (type === MESHCOM_BLE_CMD_TEXT || type === 0x00) {
       out.push({
         kind: 'text',
-        text: new TextDecoder('utf-8', { fatal: false }).decode(payload),
+        text: sanitizeMeshcomBleJsonText(
+          new TextDecoder('utf-8', { fatal: false }).decode(payload),
+        ),
       });
     } else if (type === 0x40 /* @ */ && payload.length > 0) {
       // Length-prefixed phone APRS (tag in type byte, body in payload).
