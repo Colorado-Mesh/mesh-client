@@ -24,5 +24,13 @@ export const MC_CMD_SEND_STATUS_REQ = 27;
 export const MC_CMD_LOGOUT = 29;
 export const MC_CMD_SEND_TELEMETRY_REQ = 39;
 export const MC_CMD_SEND_BINARY_REQ = 50;
+/** Companion: anonymous RF request to a contact pubkey (regions / owner / basic). */
+export const MC_CMD_SEND_ANON_REQ = 57;
 /** Companion v14+: run a local companion CLI command. */
 export const MC_CMD_RUN_CLI_COMMAND = 66;
+
+/** ANON_REQ subtypes for {@link MC_CMD_SEND_ANON_REQ} (repeater firmware). */
+export const MC_ANON_REQ_TYPE_REGIONS = 0x01;
+export const MC_ANON_REQ_TYPE_OWNER = 0x02;
+/** Remote clock + feature flags (bridge / forwarding disabled). */
+export const MC_ANON_REQ_TYPE_BASIC = 0x03;

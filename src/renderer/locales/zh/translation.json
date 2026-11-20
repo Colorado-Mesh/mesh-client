@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "所有者信息需要管理员密码。在下方保存一个密码以读取信息。",
     "ownerInfoNeedsRoomPassword": "所有者信息需要管理员密码。请在“中继器和房间”→“配置”中设置。",
     "ownerInfoReadFailed": "无法读取所有者信息。",
-    "ownerInfoDeferred": "车主信息正在等待无线电信号。请使用“刷新”重试。"
+    "ownerInfoDeferred": "车主信息正在等待无线电信号。请使用“刷新”重试。",
+    "anonBasicHeading": "远程考勤钟",
+    "anonBasicRefresh": "刷新远程时钟",
+    "anonBasicLoading": "正在读取远程时钟……",
+    "anonBasicClock": "节点时钟{{time}}（偏移{{skew}}秒）",
+    "anonBasicForwardingDisabled": "此中继器当前已禁用转发功能。",
+    "anonBasicBridgeUart": "UART 桥接已启用",
+    "anonBasicBridgeEspNow": "ESP-NOW 桥接已启用",
+    "anonBasicReadFailed": "无法读取远程时钟。",
+    "anonBasicUnsupported": "此固件不支持匿名时钟查询。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

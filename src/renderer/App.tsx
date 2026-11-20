@@ -157,6 +157,7 @@ import {
 import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
+import { hexToBytesExact } from '../shared/hexBytes';
 import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -369,7 +370,6 @@ import {
   rememberMeshcoreFloodScopePreset,
   saveMeshcoreFloodScopePresets,
 } from './lib/meshcoreFloodScopePresetsStorage';
-import { hasResolvableAdminPassword } from './lib/meshcoreInfraAdminSecrets';
 import {
   type DiscoveredMeshcoreRegion,
   discoverMeshcoreRegions,
@@ -1185,7 +1185,7 @@ function AppContent() {
       onProgress: (progress: MeshcoreRegionDiscoveryProgress) => void,
     ): Promise<
       MeshcoreRegionDiscoveryRun & {
-        skipped: readonly { nodeId: number; reason: 'no-password' }[];
+        skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
       }
     > => {
       if (meshcoreDiscoveryInFlightRef.current) {
@@ -1211,13 +1211,16 @@ function AppContent() {
           meshcoreUiNodes.values(),
           {
             selfNodeId: meshcoreRadioNodeId > 0 ? meshcoreRadioNodeId : null,
-            hasPassword: hasResolvableAdminPassword,
+            resolvePublicKey: (nodeId) =>
+              hexToBytesExact(
+                meshcoreUiNodes.get(nodeId)?.public_key_hex?.replace(/\s/g, '').toLowerCase(),
+                32,
+              ) ?? null,
           },
         );
         const run = await discoverMeshcoreRegions({
           candidates,
-          send: (nodeId, command, opts) =>
-            meshcorePanelActions.sendRepeaterCliCommand(nodeId, command, opts),
+          query: meshcoreRuntime.queryAnonRegions,
           isCurrent,
           signal,
           onProgress,
@@ -1244,9 +1247,9 @@ function AppContent() {
     },
     [
       meshcoreIdentityId,
-      meshcorePanelActions,
       meshcoreRadioNodeId,
       meshcoreRadioSignature,
+      meshcoreRuntime.queryAnonRegions,
       meshcoreUiNodes,
     ],
   );
@@ -5070,6 +5073,14 @@ function AppContent() {
         }
         onRequestMeshcoreOwnerInfo={
           detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeOwnerInfo : undefined
+        }
+        meshcoreAnonBasic={
+          detailModalProtocol === 'meshcore' && selectedNode != null
+            ? meshcoreRuntime.meshcoreAnonBasic.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestMeshcoreAnonBasic={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeAnonBasic : undefined
         }
         paxCounterData={
           detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined

@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "所有者情報には管理者パスワードが必要です。以下に1つ保存して読んでください。",
     "ownerInfoNeedsRoomPassword": "オーナー情報には管理者パスワードが必要です。「リピーターとルーム」→「設定」で設定してください。",
     "ownerInfoReadFailed": "所有者情報を読み取れませんでした。",
-    "ownerInfoDeferred": "オーナー情報はラジオを待っています。[更新] を使用して、もう一度お試しください。"
+    "ownerInfoDeferred": "オーナー情報はラジオを待っています。[更新] を使用して、もう一度お試しください。",
+    "anonBasicHeading": "リモートクロック",
+    "anonBasicRefresh": "リモートクロックを更新",
+    "anonBasicLoading": "リモートクロックを読み取っています…",
+    "anonBasicClock": "ノードクロック{{time}}（スキュー{{skew}}秒）",
+    "anonBasicForwardingDisabled": "現在、このリピーターでは転送が無効になっています。",
+    "anonBasicBridgeUart": "UARTブリッジが有効になっています",
+    "anonBasicBridgeEspNow": "ESP-NOWブリッジが有効になっています",
+    "anonBasicReadFailed": "リモートクロックを読み取れませんでした。",
+    "anonBasicUnsupported": "このファームウェアは、匿名クロッククエリをサポートしていません。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

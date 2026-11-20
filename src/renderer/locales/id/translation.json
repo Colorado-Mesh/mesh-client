@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "Informasi pemilik memerlukan kata sandi admin. Simpan satu di bawah ini untuk membacanya.",
     "ownerInfoNeedsRoomPassword": "Informasi pemilik memerlukan kata sandi admin. Atur di Repeater & Ruangan → Konfigurasi.",
     "ownerInfoReadFailed": "Tidak dapat membaca informasi pemilik.",
-    "ownerInfoDeferred": "Informasi pemilik sedang menunggu radio. Gunakan Muat Ulang untuk mencoba lagi."
+    "ownerInfoDeferred": "Informasi pemilik sedang menunggu radio. Gunakan Muat Ulang untuk mencoba lagi.",
+    "anonBasicHeading": "Jam jarak jauh",
+    "anonBasicRefresh": "Segarkan jam jarak jauh",
+    "anonBasicLoading": "Membaca jam jarak jauh…",
+    "anonBasicClock": "Jam simpul {{time}} (selisih {{skew}} dtk)",
+    "anonBasicForwardingDisabled": "Penerusan saat ini dinonaktifkan pada repeater ini.",
+    "anonBasicBridgeUart": "Jembatan UART diaktifkan",
+    "anonBasicBridgeEspNow": "Jembatan ESP-NOW diaktifkan",
+    "anonBasicReadFailed": "Tidak dapat membaca jam jarak jauh.",
+    "anonBasicUnsupported": "Firmware ini tidak mendukung kueri jam anonim."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

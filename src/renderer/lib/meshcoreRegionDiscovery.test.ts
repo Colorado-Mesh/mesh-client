@@ -6,6 +6,8 @@ import {
   discoverMeshcoreRegions,
   mergeMeshcoreRegionTrees,
   MESHCORE_REGION_DISCOVERY_MAX_REPEATERS,
+  type MeshcoreRegionDiscoveryCandidate,
+  meshcoreRegionTreeFromAnonNames,
   scopeHashtagForRegionName,
   selectMeshcoreRegionDiscoveryCandidates,
 } from './meshcoreRegionDiscovery';
@@ -22,6 +24,24 @@ function node(partial: Partial<MeshNode> & Pick<MeshNode, 'node_id' | 'hw_model'
     last_heard: 0,
     latitude: null,
     longitude: null,
+    ...partial,
+  };
+}
+
+function keyFor(nodeId: number): Uint8Array {
+  const key = new Uint8Array(32);
+  key[0] = nodeId & 0xff;
+  key[1] = (nodeId >> 8) & 0xff;
+  return key;
+}
+
+function candidate(
+  partial: Partial<MeshcoreRegionDiscoveryCandidate> &
+    Pick<MeshcoreRegionDiscoveryCandidate, 'nodeId'>,
+): MeshcoreRegionDiscoveryCandidate {
+  return {
+    name: `Node-${partial.nodeId}`,
+    publicKey: keyFor(partial.nodeId),
     ...partial,
   };
 }
@@ -47,6 +67,17 @@ describe('scopeHashtagForRegionName', () => {
   });
 });
 
+describe('meshcoreRegionTreeFromAnonNames', () => {
+  it('builds flat flood-allowed entries and strips # / *', () => {
+    const tree = meshcoreRegionTreeFromAnonNames(['*', '#us', 'us', 'us-tn']);
+    expect(tree.entries).toEqual([
+      { name: 'us', depth: 0, home: false, floodAllowed: true },
+      { name: 'us-tn', depth: 0, home: false, floodAllowed: true },
+    ]);
+    expect(tree.truncated).toBe(false);
+  });
+});
+
 describe('mergeMeshcoreRegionTrees', () => {
   it('merges same name across repeaters with OR flags and min depth', () => {
     const a = parseMeshcoreRepeaterRegions('*\n us F\n  us-tn^\n');
@@ -69,8 +100,6 @@ describe('mergeMeshcoreRegionTrees', () => {
   });
 
   it('dedupes the same name twice within one tree', () => {
-    // Parser rejects duplicate `*` roots; use a valid tree and merge twice from one source list
-    // via two identical region entries by constructing manually through two sources with same node.
     const tree = parseMeshcoreRepeaterRegions('*\n us F\n');
     const merged = mergeMeshcoreRegionTrees([
       { nodeId: 1, tree },
@@ -96,28 +125,43 @@ describe('mergeMeshcoreRegionTrees', () => {
 });
 
 describe('selectMeshcoreRegionDiscoveryCandidates', () => {
-  const passwords = new Set([1, 2, 3]);
-
-  it('includes only Repeaters with passwords, excludes self and Room', () => {
+  it('includes Repeaters and Rooms with pubkeys; skips missing keys and self', () => {
+    const keys = new Map<number, Uint8Array>([
+      [1, keyFor(1)],
+      [2, keyFor(2)],
+      [3, keyFor(3)],
+    ]);
     const { candidates, skipped } = selectMeshcoreRegionDiscoveryCandidates(
       [
-        node({ node_id: 1, hw_model: 'Repeater', long_name: 'A', last_heard: 100 }),
-        node({ node_id: 2, hw_model: 'Room', long_name: 'Room', last_heard: 200 }),
-        node({ node_id: 3, hw_model: 'Repeater', long_name: 'B', last_heard: 50 }),
-        node({ node_id: 4, hw_model: 'Repeater', long_name: 'NoPass', last_heard: 300 }),
+        node({ node_id: 1, hw_model: 'Repeater', long_name: 'A', last_heard: 100, hops_away: 1 }),
+        node({ node_id: 2, hw_model: 'Room', long_name: 'Room', last_heard: 200, hops_away: 0 }),
+        node({ node_id: 3, hw_model: 'Repeater', long_name: 'B', last_heard: 50, hops_away: 0 }),
+        node({ node_id: 4, hw_model: 'Repeater', long_name: 'NoKey', last_heard: 300 }),
         node({ node_id: 99, hw_model: 'Repeater', long_name: 'Self', last_heard: 400 }),
         node({ node_id: 5, hw_model: 'Chat', long_name: 'Chat', last_heard: 500 }),
       ],
       {
         selfNodeId: 99,
-        hasPassword: (id) => passwords.has(id),
+        resolvePublicKey: (id) => keys.get(id) ?? null,
       },
     );
-    expect(candidates.map((c) => c.nodeId)).toEqual([1, 3]);
-    expect(skipped).toEqual([{ nodeId: 4, reason: 'no-password' }]);
+    expect(candidates.map((c) => c.nodeId)).toEqual([2, 3, 1]);
+    expect(skipped).toEqual([{ nodeId: 4, reason: 'no-pubkey' }]);
+    expect(candidates[0].publicKey).toEqual(keyFor(2));
   });
 
-  it('orders by lastHeard desc, hops asc, then name and applies the cap', () => {
+  it('falls back to public_key_hex on the node', () => {
+    const hex = Array.from(keyFor(9), (b) => b.toString(16).padStart(2, '0')).join('');
+    const { candidates, skipped } = selectMeshcoreRegionDiscoveryCandidates(
+      [node({ node_id: 9, hw_model: 'Repeater', public_key_hex: hex })],
+      {},
+    );
+    expect(skipped).toEqual([]);
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].publicKey).toEqual(keyFor(9));
+  });
+
+  it('orders by hops asc, lastHeard desc, then name and applies the cap', () => {
     const many = Array.from({ length: MESHCORE_REGION_DISCOVERY_MAX_REPEATERS + 5 }, (_, i) =>
       node({
         node_id: i + 1,
@@ -128,10 +172,14 @@ describe('selectMeshcoreRegionDiscoveryCandidates', () => {
       }),
     );
     const { candidates } = selectMeshcoreRegionDiscoveryCandidates(many, {
-      hasPassword: () => true,
+      resolvePublicKey: (id) => keyFor(id),
     });
     expect(candidates).toHaveLength(MESHCORE_REGION_DISCOVERY_MAX_REPEATERS);
-    expect(candidates[0].nodeId).toBe(MESHCORE_REGION_DISCOVERY_MAX_REPEATERS + 5);
+    // All zero-hop candidates come before any multi-hop ones.
+    const firstMultiHop = candidates.findIndex((c) => (c.hopsAway ?? 99) > 0);
+    expect(firstMultiHop).toBeGreaterThan(0);
+    expect(candidates.slice(0, firstMultiHop).every((c) => c.hopsAway === 0)).toBe(true);
+    expect(candidates[0].lastHeard).toBeGreaterThanOrEqual(candidates[1].lastHeard ?? 0);
   });
 });
 
@@ -147,58 +195,53 @@ describe('classifyRegionDiscoveryError', () => {
     );
   });
 
-  it('classifies timeout and unreachable strings', () => {
+  it('classifies timeout, flood, and unreachable strings', () => {
     expect(classifyRegionDiscoveryError(new Error('Request timed out'))).toBe('timeout');
     expect(classifyRegionDiscoveryError(new Error('Not connected'))).toBe('unreachable');
     expect(classifyRegionDiscoveryError(new Error('contact not found'))).toBe('unreachable');
+    expect(classifyRegionDiscoveryError(new Error('anon request sent as flood'))).toBe(
+      'unreachable',
+    );
     expect(classifyRegionDiscoveryError(new Error('boom'))).toBe('unknown');
   });
 });
 
 describe('discoverMeshcoreRegions', () => {
-  it('runs sequentially with max concurrency 1 and sends only region', async () => {
+  it('runs sequentially with max concurrency 1 via anon query', async () => {
     let inFlight = 0;
     let maxInFlight = 0;
-    const send = vi.fn(async (nodeId: number, command: string) => {
-      expect(command).toBe('region');
+    const query = vi.fn(async (c: MeshcoreRegionDiscoveryCandidate) => {
       inFlight += 1;
       maxInFlight = Math.max(maxInFlight, inFlight);
       await Promise.resolve();
       inFlight -= 1;
-      return `*\n n${nodeId} F\n`;
+      return [`n${c.nodeId}`];
     });
 
     const run = await discoverMeshcoreRegions({
-      candidates: [
-        { nodeId: 1, name: 'One' },
-        { nodeId: 2, name: 'Two' },
-        { nodeId: 3, name: 'Three' },
-      ],
-      send,
+      candidates: [candidate({ nodeId: 1 }), candidate({ nodeId: 2 }), candidate({ nodeId: 3 })],
+      query,
       isCurrent: () => true,
     });
 
     expect(maxInFlight).toBe(1);
-    expect(send).toHaveBeenCalledTimes(3);
+    expect(query).toHaveBeenCalledTimes(3);
     expect(run.cancelled).toBe(false);
-    expect(run.entries.map((e) => e.name).sort()).toEqual(['*', 'n1', 'n2', 'n3']);
+    expect(run.entries.map((e) => e.name).sort()).toEqual(['n1', 'n2', 'n3']);
+    expect(run.entries.every((e) => e.floodAllowed && e.depth === 0)).toBe(true);
     expect(run.failed).toEqual([]);
   });
 
   it('emits progress before each read and keeps partial results on failure', async () => {
     const progress: { done: number; total: number; nodeId: number }[] = [];
-    const send = vi.fn((nodeId: number) => {
-      if (nodeId === 2) return Promise.reject(new Error('Request timed out'));
-      return Promise.resolve(`*\n ok${nodeId} F\n`);
+    const query = vi.fn((c: MeshcoreRegionDiscoveryCandidate) => {
+      if (c.nodeId === 2) return Promise.reject(new Error('Request timed out'));
+      return Promise.resolve([`ok${c.nodeId}`]);
     });
 
     const run = await discoverMeshcoreRegions({
-      candidates: [
-        { nodeId: 1, name: 'One' },
-        { nodeId: 2, name: 'Two' },
-        { nodeId: 3, name: 'Three' },
-      ],
-      send,
+      candidates: [candidate({ nodeId: 1 }), candidate({ nodeId: 2 }), candidate({ nodeId: 3 })],
+      query,
       isCurrent: () => true,
       onProgress: (p) => {
         progress.push({ done: p.done, total: p.total, nodeId: p.nodeId });
@@ -218,41 +261,37 @@ describe('discoverMeshcoreRegions', () => {
 
   it('stops scheduling when aborted mid-loop and keeps committed results', async () => {
     const controller = new AbortController();
-    const send = vi.fn((nodeId: number) => {
-      if (nodeId === 2) {
+    const query = vi.fn((c: MeshcoreRegionDiscoveryCandidate) => {
+      if (c.nodeId === 2) {
         controller.abort();
-        return Promise.resolve(`*\n b F\n`);
+        return Promise.resolve(['b']);
       }
-      return Promise.resolve(`*\n a F\n`);
+      return Promise.resolve(['a']);
     });
 
     const run = await discoverMeshcoreRegions({
-      candidates: [
-        { nodeId: 1, name: 'One' },
-        { nodeId: 2, name: 'Two' },
-        { nodeId: 3, name: 'Three' },
-      ],
-      send,
+      candidates: [candidate({ nodeId: 1 }), candidate({ nodeId: 2 }), candidate({ nodeId: 3 })],
+      query,
       isCurrent: () => true,
       signal: controller.signal,
     });
 
     expect(run.cancelled).toBe(true);
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(query).toHaveBeenCalledTimes(2);
     expect(run.entries.some((e) => e.name === 'a')).toBe(true);
     expect(run.entries.some((e) => e.name === 'b')).toBe(false);
   });
 
   it('discards a completed reply when isCurrent becomes false', async () => {
     let current = true;
-    const send = vi.fn(() => {
+    const query = vi.fn(() => {
       current = false;
-      return Promise.resolve(`*\n late F\n`);
+      return Promise.resolve(['late']);
     });
 
     const run = await discoverMeshcoreRegions({
-      candidates: [{ nodeId: 1, name: 'One' }],
-      send,
+      candidates: [candidate({ nodeId: 1 })],
+      query,
       isCurrent: () => current,
     });
 
@@ -260,23 +299,18 @@ describe('discoverMeshcoreRegions', () => {
     expect(run.entries).toEqual([]);
   });
 
-  it('never sends more than one command per candidate', async () => {
-    const commands: string[] = [];
-    const send = vi.fn((nodeId: number, command: string, opts: { isCurrent?: () => boolean }) => {
-      expect(nodeId).toBeGreaterThan(0);
-      expect(opts).toBeDefined();
-      commands.push(command);
-      return Promise.resolve(`*\n x F\n`);
+  it('queries each candidate once', async () => {
+    const seen: number[] = [];
+    const query = vi.fn((c: MeshcoreRegionDiscoveryCandidate) => {
+      seen.push(c.nodeId);
+      return Promise.resolve(['x']);
     });
     await discoverMeshcoreRegions({
-      candidates: [
-        { nodeId: 7, name: 'Seven' },
-        { nodeId: 8, name: 'Eight' },
-      ],
-      send,
+      candidates: [candidate({ nodeId: 7 }), candidate({ nodeId: 8 })],
+      query,
       isCurrent: () => true,
     });
-    expect(commands).toEqual(['region', 'region']);
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(seen).toEqual([7, 8]);
+    expect(query).toHaveBeenCalledTimes(2);
   });
 });

@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "Für die Informationen zum Eigentümer ist ein Administratorpasswort erforderlich. Speichern Sie unten eines, um es zu lesen.",
     "ownerInfoNeedsRoomPassword": "Für die Eigentümerinformationen ist ein Administratorpasswort erforderlich. Stellen Sie es unter Repeater & Räume → Konfigurieren ein.",
     "ownerInfoReadFailed": "Die Informationen zum Eigentümer konnten nicht gelesen werden.",
-    "ownerInfoDeferred": "Die Informationen zum Eigentümer warten auf das Radio. Verwenden Sie „Aktualisieren“, um es erneut zu versuchen."
+    "ownerInfoDeferred": "Die Informationen zum Eigentümer warten auf das Radio. Verwenden Sie „Aktualisieren“, um es erneut zu versuchen.",
+    "anonBasicHeading": "Fernuhr",
+    "anonBasicRefresh": "Remote-Uhr aktualisieren",
+    "anonBasicLoading": "Fernuhr wird gelesen …",
+    "anonBasicClock": "Knotentakt {{time}} (Abweichung {{skew}} s)",
+    "anonBasicForwardingDisabled": "Die Weiterleitung ist auf diesem Repeater derzeit deaktiviert.",
+    "anonBasicBridgeUart": "UART-Brücke aktiviert",
+    "anonBasicBridgeEspNow": "ESP-NOW-Bridge aktiviert",
+    "anonBasicReadFailed": "Die Remote-Uhr konnte nicht gelesen werden.",
+    "anonBasicUnsupported": "Diese Firmware unterstützt keine anonymen Uhrenabfragen."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

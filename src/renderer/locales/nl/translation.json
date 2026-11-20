@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord vereist. Sla er hieronder een op om het te lezen.",
     "ownerInfoNeedsRoomPassword": "Voor eigenaarsinformatie is een beheerderswachtwoord nodig. Stel dit in via Repeaters en ruimtes → Configureren.",
     "ownerInfoReadFailed": "Kon de eigenaarsinformatie niet lezen.",
-    "ownerInfoDeferred": "Eigenaarsinformatie wacht op de radio. Gebruik Vernieuwen om het opnieuw te proberen."
+    "ownerInfoDeferred": "Eigenaarsinformatie wacht op de radio. Gebruik Vernieuwen om het opnieuw te proberen.",
+    "anonBasicHeading": "Klok op afstand",
+    "anonBasicRefresh": "Klok op afstand vernieuwen",
+    "anonBasicLoading": "Klok op afstand aan het uitlezen…",
+    "anonBasicClock": "Knooppuntklok {{time}} (afwijking {{skew}} s)",
+    "anonBasicForwardingDisabled": "Doorsturen is momenteel uitgeschakeld op deze repeater.",
+    "anonBasicBridgeUart": "UART-brug ingeschakeld",
+    "anonBasicBridgeEspNow": "ESP-NOW-brug ingeschakeld",
+    "anonBasicReadFailed": "Kon de externe klok niet lezen.",
+    "anonBasicUnsupported": "Deze firmware ondersteunt geen anonieme klokvragen."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

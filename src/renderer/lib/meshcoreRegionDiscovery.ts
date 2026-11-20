@@ -1,18 +1,16 @@
 /**
- * Aggregate MeshCore flood-scope region names from repeater CLI `region` trees.
- * Explicit, sequential, read-only — no automatic discovery.
+ * Aggregate MeshCore flood-scope region names via ANON_REQ subtype REGIONS (0x01).
+ * Explicit, sequential, read-only — no automatic discovery; no admin password.
  */
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+import { hexToBytesExact } from '@/shared/hexBytes';
 
 import {
   deserializeMeshcoreUserMessage,
   isDiagnosticTextI18n,
 } from './meshcore/meshcoreMessageI18n';
-import {
-  type MeshcoreRepeaterRegions,
-  parseMeshcoreRepeaterRegions,
-} from './meshcoreRepeaterRegions';
+import type { MeshcoreRepeaterRegions } from './meshcoreRepeaterRegions';
 import { MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN } from './meshcoreUtils';
 import type { MeshNode } from './types';
 
@@ -21,19 +19,21 @@ export const MESHCORE_REGION_DISCOVERY_MAX_REPEATERS = 24;
 export interface MeshcoreRegionDiscoveryCandidate {
   nodeId: number;
   name: string;
+  /** 32-byte contact/advert public key used for CMD_SEND_ANON_REQ. */
+  publicKey: Uint8Array;
   /** Advert/contact hop count when known; used only for ordering. */
   hopsAway?: number;
   lastHeard?: number;
 }
 
-export type MeshcoreRegionDiscoverySkipReason = 'no-password';
+export type MeshcoreRegionDiscoverySkipReason = 'no-pubkey';
 
 export type MeshcoreRegionDiscoveryFailureReason =
-  | 'unsupported' // firmware does not implement `region`
+  | 'unsupported' // firmware does not implement anon regions
   | 'rejected' // firmware returned an explicit error
-  | 'invalid-reply' // parser rejected the tree
+  | 'invalid-reply' // parser rejected the payload
   | 'timeout'
-  | 'unreachable' // not connected / contact missing / no pubkey
+  | 'unreachable' // not connected / flood-sent / contact missing
   | 'unknown';
 
 export interface MeshcoreRegionDiscoveryFailure {
@@ -79,9 +79,9 @@ export interface MeshcoreRegionTreeSource {
 }
 
 /**
- * Firmware stores public regions with a leading '#', but `region` export uses
- * skip_hash() and prints the bare name. The transport key hashes the name
- * INCLUDING '#', so a discovered `us-tn-tri` must become `#us-tn-tri`.
+ * Firmware stores public regions with a leading '#', but anon CSV / CLI export may
+ * print the bare name. The transport key hashes the name INCLUDING '#', so a
+ * discovered `us-tn-tri` must become `#us-tn-tri`.
  *
  * Returns null for `*`, `$…` private names, invalid/oversized names.
  */
@@ -106,6 +106,24 @@ function compareDiscoveredRegions(
   const kind = regionKindRank(a.name) - regionKindRank(b.name);
   if (kind !== 0) return kind;
   return a.name.localeCompare(b.name);
+}
+
+/** Normalize anon CSV tokens into a flat flood-allowed region tree (depth 0). */
+export function meshcoreRegionTreeFromAnonNames(names: readonly string[]): MeshcoreRepeaterRegions {
+  const entries: MeshcoreRepeaterRegions['entries'] = [];
+  const seen = new Set<string>();
+  for (const raw of names) {
+    const name = raw.startsWith('#') ? raw.slice(1) : raw;
+    if (!name || name === '*' || seen.has(name)) continue;
+    seen.add(name);
+    entries.push({
+      name,
+      depth: 0,
+      home: false,
+      floodAllowed: true,
+    });
+  }
+  return { entries, truncated: false };
 }
 
 export function mergeMeshcoreRegionTrees(sources: readonly MeshcoreRegionTreeSource[]): {
@@ -162,11 +180,22 @@ export function mergeMeshcoreRegionTrees(sources: readonly MeshcoreRegionTreeSou
   };
 }
 
+function resolveNodePublicKey(
+  node: MeshNode,
+  resolvePublicKey?: (nodeId: number) => Uint8Array | null | undefined,
+): Uint8Array | null {
+  const fromMap = resolvePublicKey?.(node.node_id);
+  if (fromMap?.length === 32) return fromMap;
+  const fromHex = hexToBytesExact(node.public_key_hex?.replace(/\s/g, '').toLowerCase(), 32);
+  return fromHex ?? null;
+}
+
 export function selectMeshcoreRegionDiscoveryCandidates(
   nodes: Iterable<MeshNode>,
   opts: {
     selfNodeId?: number | null;
-    hasPassword: (nodeId: number, hwModel: string | undefined) => boolean;
+    /** Prefer live contact map; falls back to `node.public_key_hex`. */
+    resolvePublicKey?: (nodeId: number) => Uint8Array | null | undefined;
   },
 ): {
   candidates: MeshcoreRegionDiscoveryCandidate[];
@@ -177,26 +206,29 @@ export function selectMeshcoreRegionDiscoveryCandidates(
   const eligible: MeshcoreRegionDiscoveryCandidate[] = [];
 
   for (const node of nodes) {
-    if (node.hw_model !== 'Repeater') continue;
+    if (node.hw_model !== 'Repeater' && node.hw_model !== 'Room') continue;
     if (selfNodeId != null && node.node_id === selfNodeId) continue;
-    if (!opts.hasPassword(node.node_id, node.hw_model)) {
-      skipped.push({ nodeId: node.node_id, reason: 'no-password' });
+    const publicKey = resolveNodePublicKey(node, opts.resolvePublicKey);
+    if (!publicKey) {
+      skipped.push({ nodeId: node.node_id, reason: 'no-pubkey' });
       continue;
     }
     eligible.push({
       nodeId: node.node_id,
       name: node.long_name || `Node-${node.node_id.toString(16).toUpperCase()}`,
+      publicKey,
       hopsAway: node.hops_away ?? node.hops,
       lastHeard: node.last_heard,
     });
   }
 
+  // Prefer zero-hop / direct, then recently heard, then name.
   eligible.sort((a, b) => {
-    const heardDiff = (b.lastHeard ?? 0) - (a.lastHeard ?? 0);
-    if (heardDiff !== 0) return heardDiff;
     const hopsDiff =
       (a.hopsAway ?? Number.POSITIVE_INFINITY) - (b.hopsAway ?? Number.POSITIVE_INFINITY);
     if (hopsDiff !== 0) return hopsDiff;
+    const heardDiff = (b.lastHeard ?? 0) - (a.lastHeard ?? 0);
+    if (heardDiff !== 0) return heardDiff;
     return a.name.localeCompare(b.name);
   });
 
@@ -223,14 +255,25 @@ export function classifyRegionDiscoveryError(error: unknown): MeshcoreRegionDisc
         break;
     }
   }
+  if (/invalid anon regions|invalid-reply/i.test(message)) return 'invalid-reply';
   if (/timed?\s*out|timeout/i.test(message)) return 'timeout';
-  if (message.includes('Not connected') || message.includes('not found')) return 'unreachable';
+  if (
+    message.includes('Not connected') ||
+    message.includes('not found') ||
+    /sent as flood/i.test(message)
+  ) {
+    return 'unreachable';
+  }
   return 'unknown';
 }
 
 export interface DiscoverMeshcoreRegionsDeps {
   candidates: readonly MeshcoreRegionDiscoveryCandidate[];
-  send: (nodeId: number, command: string, opts: { isCurrent?: () => boolean }) => Promise<string>;
+  /** ANON regions query; returns flood-allowed names (may be empty). */
+  query: (
+    candidate: MeshcoreRegionDiscoveryCandidate,
+    opts: { isCurrent?: () => boolean },
+  ) => Promise<readonly string[]>;
   isCurrent: () => boolean;
   signal?: AbortSignal;
   onProgress?: (progress: MeshcoreRegionDiscoveryProgress) => void;
@@ -242,7 +285,7 @@ export async function discoverMeshcoreRegions(
   const trees: MeshcoreRegionTreeSource[] = [];
   const failed: MeshcoreRegionDiscoveryFailure[] = [];
   let cancelled = false;
-  const { candidates, send, isCurrent, signal, onProgress } = deps;
+  const { candidates, query, isCurrent, signal, onProgress } = deps;
 
   for (let i = 0; i < candidates.length; i++) {
     if (signal?.aborted || !isCurrent()) {
@@ -257,14 +300,14 @@ export async function discoverMeshcoreRegions(
       name: candidate.name,
     });
     try {
-      const response = await send(candidate.nodeId, 'region', { isCurrent });
+      const names = await query(candidate, { isCurrent });
       if (signal?.aborted || !isCurrent()) {
         cancelled = true;
         break;
       }
       trees.push({
         nodeId: candidate.nodeId,
-        tree: parseMeshcoreRepeaterRegions(response),
+        tree: meshcoreRegionTreeFromAnonNames(names),
       });
     } catch (error) {
       const reason = classifyRegionDiscoveryError(error);

@@ -36,7 +36,7 @@ export interface MeshcoreFloodScopeHandle {
 }
 
 type DiscoveryRunResult = MeshcoreRegionDiscoveryRun & {
-  skipped: readonly { nodeId: number; reason: 'no-password' }[];
+  skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
 };
 
 interface Props {

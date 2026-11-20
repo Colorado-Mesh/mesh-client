@@ -3970,7 +3970,16 @@
     "ownerInfoNeedsPassword": "Informace o majiteli vyžadují heslo správce. Uložte jedno níže, abyste si ho mohli přečíst.",
     "ownerInfoNeedsRoomPassword": "Informace o majiteli vyžadují heslo správce. Nastavte jej v části Opakovače a místnosti → Konfigurovat.",
     "ownerInfoReadFailed": "Informace o majiteli se nepodařilo načíst.",
-    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit."
+    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit.",
+    "anonBasicHeading": "Vzdálené hodiny",
+    "anonBasicRefresh": "Obnovit vzdálené hodiny",
+    "anonBasicLoading": "Načítání vzdálených hodin…",
+    "anonBasicClock": "Hodiny uzlu {{time}} (odchylka {{skew}} s)",
+    "anonBasicForwardingDisabled": "Přesměrování je na tomto opakovači momentálně zakázáno.",
+    "anonBasicBridgeUart": "Můstek UART je povolen",
+    "anonBasicBridgeEspNow": "Můstek ESP-NOW je povolen",
+    "anonBasicReadFailed": "Nepodařilo se načíst vzdálené hodiny.",
+    "anonBasicUnsupported": "Tento firmware nepodporuje anonymní dotazy na čas."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

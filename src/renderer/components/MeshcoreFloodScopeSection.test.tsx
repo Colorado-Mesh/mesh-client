@@ -14,7 +14,7 @@ import { MESHCORE_DISCOVERED_REGIONS_STALE_MS } from '@/renderer/lib/meshcoreReg
 import { MeshcoreFloodScopeSection } from './MeshcoreFloodScopeSection';
 
 type DiscoveryRunResult = MeshcoreRegionDiscoveryRun & {
-  skipped: readonly { nodeId: number; reason: 'no-password' }[];
+  skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
 };
 
 vi.mock('react-i18next', () => ({
@@ -71,7 +71,7 @@ vi.mock('react-i18next', () => ({
         'radioPanel.floodScopeDiscoverFloodDenied': 'Flood denied',
         'radioPanel.floodScopeDiscoverSources': `Reported by ${count} repeaters`,
         'radioPanel.floodScopeDiscoverTruncated': `${count} region lists were truncated by firmware; some names may be missing.`,
-        'radioPanel.floodScopeDiscoverSkipped': `${count} repeaters skipped (no saved admin password).`,
+        'radioPanel.floodScopeDiscoverSkipped': `${count} repeaters skipped (no public key).`,
         'radioPanel.floodScopeDiscoverFailed': `${count} repeaters did not respond.`,
         'radioPanel.floodScopeDiscoverStale': `Last discovered ${when}`,
         'radioPanel.floodScopeDiscoverError':
@@ -404,7 +404,7 @@ describe('MeshcoreFloodScopeSection', () => {
             entries: [publicRegion],
             readAt: Date.now(),
             truncatedSources: [42],
-            skipped: [{ nodeId: 9, reason: 'no-password' as const }],
+            skipped: [{ nodeId: 9, reason: 'no-pubkey' as const }],
             failed: [{ nodeId: 7, reason: 'timeout' as const }],
             cancelled: false,
           })
@@ -414,7 +414,7 @@ describe('MeshcoreFloodScopeSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Discover regions' }));
     return waitFor(() => {
       expect(screen.getByText(/truncated by firmware/i)).toBeInTheDocument();
-      expect(screen.getByText(/skipped \(no saved admin password\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/skipped \(no public key\)/i)).toBeInTheDocument();
       expect(screen.getByText(/did not respond/i)).toBeInTheDocument();
     });
   });

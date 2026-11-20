@@ -324,7 +324,7 @@ interface Props {
     onProgress: (progress: MeshcoreRegionDiscoveryProgress) => void,
   ) => Promise<
     MeshcoreRegionDiscoveryRun & {
-      skipped: readonly { nodeId: number; reason: 'no-password' }[];
+      skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
     }
   >;
   onXmodemUpload?: () => Promise<void>;

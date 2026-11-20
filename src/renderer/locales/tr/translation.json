@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "Sahip bilgilerini görüntülemek için yönetici şifresi gerekir. Okumak için aşağıdakilerden birini kaydedin.",
     "ownerInfoNeedsRoomPassword": "Sahip bilgileri için yönetici parolası gerekiyor. Yineleyiciler ve Odalar → Yapılandır bölümünden ayarlayın.",
     "ownerInfoReadFailed": "Sahip bilgileri okunamadı.",
-    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın."
+    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın.",
+    "anonBasicHeading": "Uzaktan kumanda saati",
+    "anonBasicRefresh": "Uzak saati yenile",
+    "anonBasicLoading": "Uzak saat okunuyor…",
+    "anonBasicClock": "Düğüm saati {{time}} ({{skew}} sn. sapma)",
+    "anonBasicForwardingDisabled": "Yönlendirme şu anda bu tekrarlayıcıda devre dışı.",
+    "anonBasicBridgeUart": "UART köprüsü etkinleştirildi",
+    "anonBasicBridgeEspNow": "ESP-NOW köprüsü etkinleştirildi",
+    "anonBasicReadFailed": "Uzak saat okunamadı.",
+    "anonBasicUnsupported": "Bu ürün yazılımı anonim saat sorgularını desteklemiyor."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",

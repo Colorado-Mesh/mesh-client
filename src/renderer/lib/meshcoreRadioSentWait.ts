@@ -10,6 +10,11 @@ import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
 export interface MeshcoreRepeaterQueuedSendResult {
   estTimeoutMs: number;
   expectedAckCrc?: number;
+  /**
+   * Companion RESP_SENT byte1: 1 when the outbound packet was flooded.
+   * ANON_REQ replies are direct-only — callers should treat flood as unreachable.
+   */
+  sentAsFlood?: boolean;
 }
 
 export interface MeshcoreRadioSentWaitOptions {
@@ -45,10 +50,18 @@ export function waitForMeshcoreRadioSentAck(
     };
     const onSent = (response: unknown): void => {
       cleanup();
-      const r = response as { estTimeout?: number; expectedAckCrc?: number };
+      const r = response as {
+        estTimeout?: number;
+        expectedAckCrc?: number;
+        type?: number;
+        result?: number;
+      };
+      // Firmware RESP_CODE_SENT[1] = 1 for flood; meshcore.js may surface as `type` or `result`.
+      const routeFlag = r.type ?? r.result;
       const result: MeshcoreRepeaterQueuedSendResult = {
         estTimeoutMs: r.estTimeout ?? 0,
         expectedAckCrc: r.expectedAckCrc,
+        ...(routeFlag === 1 ? { sentAsFlood: true as const } : {}),
       };
       opts?.onSentAck?.(result);
       resolve(result);

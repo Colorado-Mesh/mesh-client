@@ -3997,7 +3997,16 @@
     "ownerInfoNeedsPassword": "Informacje o właścicielu wymagają hasła administratora. Zapisz jedno z haseł poniżej, aby móc je odczytać.",
     "ownerInfoNeedsRoomPassword": "Informacje o właścicielu wymagają hasła administratora. Ustaw to w sekcji Wzmacniacze sygnału i pokoje → Konfiguruj.",
     "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu.",
-    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie."
+    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie.",
+    "anonBasicHeading": "Zegar zdalny",
+    "anonBasicRefresh": "Odśwież zegar zdalny",
+    "anonBasicLoading": "Odczytywanie zegara zdalnego…",
+    "anonBasicClock": "Zegar węzła {{time}} (przesunięcie {{skew}} s)",
+    "anonBasicForwardingDisabled": "Przekazywanie jest obecnie wyłączone na tym wzmacniaczu sygnału.",
+    "anonBasicBridgeUart": "Mostek UART włączony",
+    "anonBasicBridgeEspNow": "Mostek ESP-NOW włączony",
+    "anonBasicReadFailed": "Nie można odczytać zegara zdalnego.",
+    "anonBasicUnsupported": "To oprogramowanie sprzętowe nie obsługuje anonimowych zapytań o godzinę."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

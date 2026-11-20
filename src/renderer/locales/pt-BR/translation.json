@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "As informações do proprietário precisam de uma senha de administrador. Salve uma abaixo para lê-la.",
     "ownerInfoNeedsRoomPassword": "As informações do proprietário precisam de uma senha de administrador. Defina-a em Repetidores e salas → Configurar.",
     "ownerInfoReadFailed": "Não foi possível ler as informações do proprietário.",
-    "ownerInfoDeferred": "As informações do proprietário estão aguardando o rádio. Use \"Atualizar\" para tentar novamente."
+    "ownerInfoDeferred": "As informações do proprietário estão aguardando o rádio. Use \"Atualizar\" para tentar novamente.",
+    "anonBasicHeading": "Relógio remoto",
+    "anonBasicRefresh": "Atualizar relógio remoto",
+    "anonBasicLoading": "Lendo o relógio remoto…",
+    "anonBasicClock": "Relógio do nó {{time}} (desvio de {{skew}} s)",
+    "anonBasicForwardingDisabled": "O encaminhamento está desativado neste repetidor no momento.",
+    "anonBasicBridgeUart": "Ponte UART ativada",
+    "anonBasicBridgeEspNow": "Ponte ESP-NOW ativada",
+    "anonBasicReadFailed": "Não foi possível ler o relógio remoto.",
+    "anonBasicUnsupported": "Este firmware não oferece suporte a consultas de relógio anônimas."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

@@ -24,6 +24,8 @@ export interface MeshcoreOwnerInfoEntry {
   fetchedAt: number;
   /** i18n-free reason token for status `error` (`invalid-reply`, `timeout`, `auth`, …). */
   reason?: string;
+  /** Repeater Unix clock from ANON_REQ OWNER/BASIC replies (seconds), when known. */
+  clock?: number;
 }
 
 export function meshcoreOwnerInfoSupported(hwModel: string | undefined): boolean {
@@ -40,6 +42,20 @@ export function parseMeshcoreOwnerInfoReply(
   const raw = trimmed.startsWith('> ') ? trimmed.slice(2) : trimmed.slice(1);
   const text = truncateMeshcoreOwnerInfoText(raw.trim());
   return text ? { status: 'ok', text, fetchedAt } : { status: 'empty', fetchedAt };
+}
+
+/**
+ * Map ANON_REQ OWNER (0x02) payload fields into the same entry shape as CLI `get owner.info`.
+ * Displays owner_info only (contact already shows node name). Optional `clock` for skew UI.
+ */
+export function meshcoreOwnerInfoFromAnon(
+  ownerInfo: string,
+  fetchedAt = Date.now(),
+  clock?: number,
+): MeshcoreOwnerInfoEntry {
+  const text = truncateMeshcoreOwnerInfoText(ownerInfo.trim());
+  if (!text) return { status: 'empty', fetchedAt, clock };
+  return { status: 'ok', text, fetchedAt, clock };
 }
 
 /** `|` and stray newlines both become line breaks; interior blanks are kept. */

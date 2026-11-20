@@ -3935,7 +3935,16 @@
     "ownerInfoNeedsPassword": "소유자 정보를 확인하려면 관리자 비밀번호가 필요합니다. 아래에 하나를 저장하여 읽으세요.",
     "ownerInfoNeedsRoomPassword": "소유자 정보에는 관리자 비밀번호가 필요합니다. '리피터 및 공간 → 구성'에서 설정하세요.",
     "ownerInfoReadFailed": "소유자 정보를 읽을 수 없습니다.",
-    "ownerInfoDeferred": "소유자 정보가 라디오를 기다리고 있습니다. '새로 고침'을 사용하여 다시 시도하세요."
+    "ownerInfoDeferred": "소유자 정보가 라디오를 기다리고 있습니다. '새로 고침'을 사용하여 다시 시도하세요.",
+    "anonBasicHeading": "원격 시계",
+    "anonBasicRefresh": "원격 시계 새로 고침",
+    "anonBasicLoading": "원격 시계 읽는 중…",
+    "anonBasicClock": "노드 클록 {{time}} (스큐 {{skew}}초)",
+    "anonBasicForwardingDisabled": "현재 이 중계기에서 포워딩이 비활성화되어 있습니다.",
+    "anonBasicBridgeUart": "UART 브리지 활성화됨",
+    "anonBasicBridgeEspNow": "ESP-NOW 브리지 활성화됨",
+    "anonBasicReadFailed": "원격 시계를 읽을 수 없습니다.",
+    "anonBasicUnsupported": "이 펌웨어는 익명 클록 쿼리를 지원하지 않습니다."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
