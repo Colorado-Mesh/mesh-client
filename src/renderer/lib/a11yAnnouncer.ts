@@ -26,6 +26,35 @@ export function announce(text: string, politeness: AnnouncePoliteness = 'polite'
   );
 }
 
+/** Serialize polite announces so simultaneous callers (e.g. two outbox rows) do not cancel each other. */
+const politeTexts: string[] = [];
+let politeDrainTimer: ReturnType<typeof setTimeout> | undefined;
+
+function drainPoliteQueue(): void {
+  politeDrainTimer = undefined;
+  const next = politeTexts.shift();
+  if (next == null) return;
+  announce(next, 'polite');
+  if (politeTexts.length > 0) {
+    politeDrainTimer = setTimeout(drainPoliteQueue, REANNOUNCE_DELAY_MS + 1);
+  }
+}
+
+export function announcePoliteQueued(text: string): void {
+  politeTexts.push(text);
+  if (politeDrainTimer != null) return;
+  politeDrainTimer = setTimeout(drainPoliteQueue, 1);
+}
+
+/** Test-only: reset the polite queue between fake-timer cases. */
+export function resetAnnouncePoliteQueueForTests(): void {
+  politeTexts.length = 0;
+  if (politeDrainTimer != null) {
+    clearTimeout(politeDrainTimer);
+    politeDrainTimer = undefined;
+  }
+}
+
 export function truncateForAnnouncement(text: string): string {
   const trimmed = text.replace(/\s+/g, ' ').trim();
   return trimmed.length > ANNOUNCED_TEXT_MAX_CHARS

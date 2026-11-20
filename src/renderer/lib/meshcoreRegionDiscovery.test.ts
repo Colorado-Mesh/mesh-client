@@ -1,15 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import {
+  MESHCORE_ERR_NOT_CONNECTED,
+  serializeMeshcoreUserMessage,
+} from './meshcore/meshcoreMessageI18n';
 import {
   classifyRegionDiscoveryError,
   discoverMeshcoreRegions,
+  isMeshcoreRegionDiscoveryStatusCurrent,
   mergeMeshcoreRegionTrees,
   MESHCORE_REGION_DISCOVERY_MAX_REPEATERS,
   type MeshcoreRegionDiscoveryCandidate,
   meshcoreRegionTreeFromAnonNames,
   scopeHashtagForRegionName,
   selectMeshcoreRegionDiscoveryCandidates,
+  shouldPersistDiscoveredMeshcoreRegions,
 } from './meshcoreRegionDiscovery';
 import { parseMeshcoreRepeaterRegions } from './meshcoreRepeaterRegions';
 import { MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN } from './meshcoreUtils';
@@ -198,11 +203,48 @@ describe('classifyRegionDiscoveryError', () => {
   it('classifies timeout, flood, and unreachable strings', () => {
     expect(classifyRegionDiscoveryError(new Error('Request timed out'))).toBe('timeout');
     expect(classifyRegionDiscoveryError(new Error('Not connected'))).toBe('unreachable');
+    expect(classifyRegionDiscoveryError(new Error(MESHCORE_ERR_NOT_CONNECTED))).toBe('unreachable');
     expect(classifyRegionDiscoveryError(new Error('contact not found'))).toBe('unreachable');
     expect(classifyRegionDiscoveryError(new Error('anon request sent as flood'))).toBe(
       'unreachable',
     );
     expect(classifyRegionDiscoveryError(new Error('boom'))).toBe('unknown');
+  });
+});
+
+describe('isMeshcoreRegionDiscoveryStatusCurrent', () => {
+  it.each(['connected', 'configured', 'stale'] as const)('allows %s', (status) => {
+    expect(isMeshcoreRegionDiscoveryStatusCurrent(status)).toBe(true);
+  });
+
+  it.each(['disconnected', 'connecting', null, undefined] as const)('rejects %s', (status) => {
+    expect(isMeshcoreRegionDiscoveryStatusCurrent(status)).toBe(false);
+  });
+});
+
+describe('shouldPersistDiscoveredMeshcoreRegions', () => {
+  it('skips cancelled and empty runs', () => {
+    expect(shouldPersistDiscoveredMeshcoreRegions({ cancelled: true, entries: [{}, {}] })).toBe(
+      false,
+    );
+    expect(shouldPersistDiscoveredMeshcoreRegions({ cancelled: false, entries: [] })).toBe(false);
+    expect(shouldPersistDiscoveredMeshcoreRegions({ cancelled: false, entries: [{}] })).toBe(true);
+  });
+});
+
+describe('discoverMeshcoreRegions with configured-status isCurrent', () => {
+  it('still queries candidates when isCurrent mirrors configured/stale allowlist', async () => {
+    const query = vi.fn(() => Promise.resolve(['us']));
+    let status: 'configured' | 'disconnected' = 'configured';
+    const run = await discoverMeshcoreRegions({
+      candidates: [candidate({ nodeId: 1 })],
+      query,
+      isCurrent: () => isMeshcoreRegionDiscoveryStatusCurrent(status),
+    });
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(run.entries.map((e) => e.name)).toEqual(['us']);
+    status = 'disconnected';
+    expect(isMeshcoreRegionDiscoveryStatusCurrent(status)).toBe(false);
   });
 });
 

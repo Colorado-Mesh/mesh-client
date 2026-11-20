@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} Repeater übersprungen (kein gespeichertes Administratorpasswort).",
     "floodScopeDiscoverFailed": "{{count}} Repeater haben nicht geantwortet.",
     "floodScopeDiscoverStale": "Zuletzt erkannt {{when}}",
-    "floodScopeDiscoverError": "Die Erkennung der Region ist fehlgeschlagen. Versuchen Sie es erneut oder überprüfen Sie die Registerkarte „Repeater“."
+    "floodScopeDiscoverError": "Die Erkennung der Region ist fehlgeschlagen. Versuchen Sie es erneut oder überprüfen Sie die Registerkarte „Repeater“.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "Regionen werden nicht unterstützt",
+      "rejected": "Anfrage abgelehnt",
+      "invalid-reply": "Ungültige Antwort",
+      "timeout": "Zeitüberschreitung",
+      "unreachable": "nicht erreichbar",
+      "unknown": "unbekannter Fehler"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",

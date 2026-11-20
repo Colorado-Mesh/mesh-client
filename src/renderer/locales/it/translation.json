@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} ripetitori saltati (nessuna password amministratore salvata).",
     "floodScopeDiscoverFailed": "{{count}} ripetitori non hanno risposto.",
     "floodScopeDiscoverStale": "Ultimo rilevamento {{when}}",
-    "floodScopeDiscoverError": "Rilevamento della regione non riuscito. Riprova o controlla la scheda Ripetitori."
+    "floodScopeDiscoverError": "Rilevamento della regione non riuscito. Riprova o controlla la scheda Ripetitori.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regioni non supportate",
+      "rejected": "Rich. rifiutata",
+      "invalid-reply": "ID risposta non valido.",
+      "timeout": "Timeout",
+      "unreachable": "irragiungibile",
+      "unknown": "errore sconosciuto"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

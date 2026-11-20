@@ -5323,7 +5323,15 @@
     "floodScopeDiscoverSkipped": "{{count}} opakovačů bylo přeskočeno (nebylo uloženo žádné heslo správce).",
     "floodScopeDiscoverFailed": "{{count}} opakovače neodpověděly.",
     "floodScopeDiscoverStale": "Naposledy zjištěno {{when}}",
-    "floodScopeDiscoverError": "Zjišťování oblasti se nezdařilo. Zkuste to znovu nebo zkontrolujte kartu Opakovače."
+    "floodScopeDiscoverError": "Zjišťování oblasti se nezdařilo. Zkuste to znovu nebo zkontrolujte kartu Opakovače.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiony nejsou podporovány",
+      "rejected": "Požadavek zamítnut",
+      "invalid-reply": "Neplatné ID odpovědi.",
+      "timeout": "Vypršel časový limit.",
+      "unreachable": "nedostupné",
+      "unknown": "neznámá chyba"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

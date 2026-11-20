@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} repetidores omitidos (no se ha guardado la contraseña de administrador).",
     "floodScopeDiscoverFailed": "{{count}} repetidores no respondieron.",
     "floodScopeDiscoverStale": "Última vez detectado {{when}}",
-    "floodScopeDiscoverError": "Error al detectar la región. Inténtalo de nuevo o consulta la pestaña «Repetidores»."
+    "floodScopeDiscoverError": "Error al detectar la región. Inténtalo de nuevo o consulta la pestaña «Repetidores».",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiones no compatibles",
+      "rejected": "Solicitud rechazada",
+      "invalid-reply": "Respuesta no válida",
+      "timeout": "se termino el tiempo",
+      "unreachable": "No Disponible",
+      "unknown": "error desconocido"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

@@ -24,6 +24,7 @@ import {
 } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 import type {
   DiscoveredMeshcoreRegion,
+  MeshcoreRegionDiscoveryFailureReason,
   MeshcoreRegionDiscoveryProgress,
   MeshcoreRegionDiscoveryRun,
 } from '@/renderer/lib/meshcoreRegionDiscovery';
@@ -37,6 +38,15 @@ export interface MeshcoreFloodScopeHandle {
 
 type DiscoveryRunResult = MeshcoreRegionDiscoveryRun & {
   skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
+};
+
+const DISCOVER_FAIL_I18N: Record<MeshcoreRegionDiscoveryFailureReason, string> = {
+  unsupported: 'radioPanel.floodScopeDiscoverFail.unsupported',
+  rejected: 'radioPanel.floodScopeDiscoverFail.rejected',
+  'invalid-reply': 'radioPanel.floodScopeDiscoverFail.invalid-reply',
+  timeout: 'radioPanel.floodScopeDiscoverFail.timeout',
+  unreachable: 'radioPanel.floodScopeDiscoverFail.unreachable',
+  unknown: 'radioPanel.floodScopeDiscoverFail.unknown',
 };
 
 interface Props {
@@ -188,11 +198,12 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     );
 
     const displayRegions = useMemo(() => {
-      if (run?.entries.length) return run.entries;
+      if (run && !run.cancelled && run.entries.length > 0) return run.entries;
       return discoveredRegions;
     }, [discoveredRegions, run]);
 
-    const displayReadAt = run?.readAt ?? discoveredRegionsReadAt;
+    const displayReadAt =
+      run && !run.cancelled && run.entries.length > 0 ? run.readAt : discoveredRegionsReadAt;
     const displayTruncated = run?.truncatedSources ?? [];
     const displaySkipped = run?.skipped ?? [];
     const displayFailed = run?.failed ?? [];
@@ -430,7 +441,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
                 <ul className="mt-1 space-y-0.5">
                   {displayFailed.map((failure) => (
                     <li key={`${failure.nodeId}-${failure.reason}`}>
-                      {failure.nodeId}: {failure.reason}
+                      {failure.nodeId}: {t(DISCOVER_FAIL_I18N[failure.reason])}
                     </li>
                   ))}
                 </ul>

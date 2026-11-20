@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}}个中继器已跳过（未保存管理员密码）。",
     "floodScopeDiscoverFailed": "{{count}}个中继器未响应。",
     "floodScopeDiscoverStale": "上次发现时间：{{when}}",
-    "floodScopeDiscoverError": "区域发现失败。请重试或检查“中继器”选项卡。"
+    "floodScopeDiscoverError": "区域发现失败。请重试或检查“中继器”选项卡。",
+    "floodScopeDiscoverFail": {
+      "unsupported": "不支持的地区",
+      "rejected": "请求遭到拒绝",
+      "invalid-reply": "无效的 gdb 回应",
+      "timeout": "超时",
+      "unreachable": "不可达",
+      "unknown": "未知错误"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

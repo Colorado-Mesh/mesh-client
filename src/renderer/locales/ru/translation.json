@@ -5361,7 +5361,15 @@
     "floodScopeDiscoverSkipped": "Пропущено повторителей: {{count}} (нет сохраненного пароля администратора).",
     "floodScopeDiscoverFailed": "{{count}} репитеров не ответили.",
     "floodScopeDiscoverStale": "Последнее обнаружение {{when}}",
-    "floodScopeDiscoverError": "Не удалось обнаружить регион. Повторите попытку или перейдите на вкладку «Репитеры»."
+    "floodScopeDiscoverError": "Не удалось обнаружить регион. Повторите попытку или перейдите на вкладку «Репитеры».",
+    "floodScopeDiscoverFail": {
+      "unsupported": "регионы не поддерживаются",
+      "rejected": "запрос отклонен",
+      "invalid-reply": "Недействительный ID ответа.",
+      "timeout": "время истекло.",
+      "unreachable": "Вне доступа",
+      "unknown": "неизвестная ошибка"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

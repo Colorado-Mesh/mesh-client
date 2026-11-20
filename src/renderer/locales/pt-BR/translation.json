@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} repetidores ignorados (nenhuma senha de administrador salva).",
     "floodScopeDiscoverFailed": "{{count}} repetidores não responderam.",
     "floodScopeDiscoverStale": "Última descoberta {{when}}",
-    "floodScopeDiscoverError": "Falha ao identificar a região. Tente novamente ou verifique a guia Repetidores."
+    "floodScopeDiscoverError": "Falha ao identificar a região. Tente novamente ou verifique a guia Repetidores.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiões não compatíveis",
+      "rejected": "solicitação recusada",
+      "invalid-reply": "ID de resposta inválido.",
+      "timeout": "encerrado",
+      "unreachable": "inalcançável",
+      "unknown": "erro desconhecido"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",

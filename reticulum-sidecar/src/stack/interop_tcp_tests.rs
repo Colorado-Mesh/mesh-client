@@ -544,16 +544,24 @@ async fn dual_tcp_voice_audio_round_trip() {
                 let parsed: serde_json::Value =
                     serde_json::from_str(&raw).expect("voice.audio json");
                 let payload = parsed.get("payload").cloned().unwrap_or(parsed);
-                assert!(
-                    payload
-                        .get("samples_b64")
-                        .and_then(|v| v.as_str())
-                        .is_some(),
-                    "missing samples_b64: {payload:?}"
-                );
+                let samples_b64 = payload
+                    .get("samples_b64")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_else(|| panic!("missing samples_b64: {payload:?}"));
+                let samples = base64::engine::general_purpose::STANDARD
+                    .decode(samples_b64)
+                    .expect("samples_b64 must decode");
+                let channels = payload
+                    .get("channels")
+                    .and_then(serde_json::Value::as_u64)
+                    .expect("channels") as usize;
+                assert_eq!(channels, 1);
+                assert!(!samples.is_empty(), "PCM samples empty: {payload:?}");
                 assert_eq!(
-                    payload.get("channels").and_then(serde_json::Value::as_u64),
-                    Some(1)
+                    samples.len() % (channels * 4),
+                    0,
+                    "PCM byte length must align to f32 * channels: len={} channels={channels}",
+                    samples.len()
                 );
                 got_frame = true;
                 break;
@@ -677,24 +685,16 @@ async fn dual_tcp_nomad_page_and_file() {
         }
         tokio::time::sleep(READY_POLL).await;
     }
-    if !saw_announce {
-        let mut inner = client.handle.inner.write().await;
-        inner.upsert_nomad_node(
-            &dest,
-            Some(host_identity.clone()),
-            Some("Interop Host".into()),
-            Some(0),
-        );
-    }
     let nodes = client.handle.list_nomad_nodes().await;
     assert!(
-        nodes.iter().any(|n| {
-            n.destination_hash.eq_ignore_ascii_case(&dest)
-                && n.identity_hash
-                    .as_deref()
-                    .is_some_and(|h| !h.trim().is_empty())
-        }),
-        "client missing nomad identity_hash for {dest}: {nodes:?}"
+        saw_announce
+            && nodes.iter().any(|n| {
+                n.destination_hash.eq_ignore_ascii_case(&dest)
+                    && n.identity_hash
+                        .as_deref()
+                        .is_some_and(|h| !h.trim().is_empty())
+            }),
+        "client did not discover nomad identity via announce for {dest}: {nodes:?}"
     );
 
     let file = client

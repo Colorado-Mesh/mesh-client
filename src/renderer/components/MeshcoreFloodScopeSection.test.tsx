@@ -73,6 +73,12 @@ vi.mock('react-i18next', () => ({
         'radioPanel.floodScopeDiscoverTruncated': `${count} region lists were truncated by firmware; some names may be missing.`,
         'radioPanel.floodScopeDiscoverSkipped': `${count} repeaters skipped (no public key).`,
         'radioPanel.floodScopeDiscoverFailed': `${count} repeaters did not respond.`,
+        'radioPanel.floodScopeDiscoverFail.unsupported': 'regions not supported',
+        'radioPanel.floodScopeDiscoverFail.rejected': 'request rejected',
+        'radioPanel.floodScopeDiscoverFail.invalid-reply': 'invalid reply',
+        'radioPanel.floodScopeDiscoverFail.timeout': 'timed out',
+        'radioPanel.floodScopeDiscoverFail.unreachable': 'unreachable',
+        'radioPanel.floodScopeDiscoverFail.unknown': 'unknown error',
         'radioPanel.floodScopeDiscoverStale': `Last discovered ${when}`,
         'radioPanel.floodScopeDiscoverError':
           'Region discovery failed. Try again or check the Repeaters tab.',
@@ -416,6 +422,7 @@ describe('MeshcoreFloodScopeSection', () => {
       expect(screen.getByText(/truncated by firmware/i)).toBeInTheDocument();
       expect(screen.getByText(/skipped \(no public key\)/i)).toBeInTheDocument();
       expect(screen.getByText(/did not respond/i)).toBeInTheDocument();
+      expect(screen.getByText(/7: timed out/i)).toBeInTheDocument();
     });
   });
 

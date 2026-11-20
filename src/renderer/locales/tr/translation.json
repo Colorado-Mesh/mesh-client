@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} tekrarlayıcı atlandı (kayıtlı yönetici parolası yok).",
     "floodScopeDiscoverFailed": "{{count}} tekrarlayıcı yanıt vermedi.",
     "floodScopeDiscoverStale": "Son keşfedilme tarihi: {{when}}",
-    "floodScopeDiscoverError": "Bölge bulunamadı. Tekrar deneyin veya Tekrarlayıcılar sekmesini kontrol edin."
+    "floodScopeDiscoverError": "Bölge bulunamadı. Tekrar deneyin veya Tekrarlayıcılar sekmesini kontrol edin.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "desteklenmeyen bölgeler",
+      "rejected": "Talep reddedildi",
+      "invalid-reply": "Geçersiz gdb yanıtı",
+      "timeout": "Zaman aşımına uğradı.",
+      "unreachable": "Ulaşılamaz",
+      "unknown": "bilinmeyen hata"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

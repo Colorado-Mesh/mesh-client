@@ -9,12 +9,14 @@ import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
 const announce = vi.fn();
+const announcePoliteQueued = vi.fn((text: string) => announce(text, 'polite'));
 
 vi.mock('@/renderer/lib/a11yAnnouncer', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     announce: (...args: unknown[]) => announce(...args),
+    announcePoliteQueued: (...args: unknown[]) => announcePoliteQueued(...(args as [string])),
   };
 });
 
@@ -88,6 +90,7 @@ function renderPanel() {
 describe('ChatPanel outbox failure announcements', () => {
   beforeEach(() => {
     announce.mockClear();
+    announcePoliteQueued.mockClear();
     outboxRows = [];
     useIdentityStore.setState({
       activeIdentityId: 'radio',
@@ -129,5 +132,18 @@ describe('ChatPanel outbox failure announcements', () => {
       expect(document.body).toBeTruthy();
     });
     expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('announces simultaneous failed and blocked rows', async () => {
+    outboxRows = [
+      { ...baseRow('failed'), id: 1 },
+      { ...baseRow('blocked'), id: 2, payload: 'blocked' },
+    ];
+    renderPanel();
+    await waitFor(() => {
+      expect(announce).toHaveBeenCalledWith(expect.stringMatching(/failed/i), 'polite');
+      expect(announce).toHaveBeenCalledWith(expect.stringMatching(/blocked/i), 'polite');
+    });
+    expect(announcePoliteQueued).toHaveBeenCalledTimes(2);
   });
 });

@@ -145,6 +145,9 @@ export async function startMeshtasticTcpRadio(opts?: {
 
   const server = createServer((socket) => {
     sockets.add(socket);
+    socket.on('error', () => {
+      // Teardown/close can emit ECONNRESET; ignore so Playwright does not see uncaught exceptions.
+    });
     socket.on('close', () => sockets.delete(socket));
     let buffer = Buffer.alloc(0);
     socket.on('data', (chunk: Buffer) => {

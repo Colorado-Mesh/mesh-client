@@ -3,19 +3,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   announce,
+  announcePoliteQueued,
   APP_ANNOUNCER_ASSERTIVE_ID,
   APP_ANNOUNCER_POLITE_ID,
   createBatchedMessageAnnouncer,
+  resetAnnouncePoliteQueueForTests,
   truncateForAnnouncement,
 } from './a11yAnnouncer';
 
 describe('announce', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    resetAnnouncePoliteQueueForTests();
     document.body.innerHTML = `<div id="${APP_ANNOUNCER_ASSERTIVE_ID}"></div><div id="${APP_ANNOUNCER_POLITE_ID}"></div>`;
   });
   afterEach(() => {
     vi.useRealTimers();
+    resetAnnouncePoliteQueueForTests();
     document.body.innerHTML = '';
   });
 
@@ -39,6 +43,18 @@ describe('announce', () => {
     announce('first');
     announce('second');
     vi.advanceTimersByTime(60);
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('second');
+  });
+
+  it('queues polite announces so the first is not cancelled', async () => {
+    announcePoliteQueued('first');
+    announcePoliteQueued('second');
+    await vi.advanceTimersByTimeAsync(1); // start drain → announce('first')
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('');
+    await vi.advanceTimersByTimeAsync(50); // first write
+    expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('first');
+    await vi.advanceTimersByTimeAsync(51); // second drain + announce clear
+    await vi.advanceTimersByTimeAsync(50); // second write
     expect(document.getElementById(APP_ANNOUNCER_POLITE_ID)!.textContent).toBe('second');
   });
 

@@ -6005,6 +6005,14 @@
     "floodScopeDiscoverTruncated": "{{count}} region lists were truncated by firmware; some names may be missing.",
     "floodScopeDiscoverSkipped": "{{count}} repeaters skipped (no public key).",
     "floodScopeDiscoverFailed": "{{count}} repeaters did not respond.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regions not supported",
+      "rejected": "request rejected",
+      "invalid-reply": "invalid reply",
+      "timeout": "timed out",
+      "unreachable": "unreachable",
+      "unknown": "unknown error"
+    },
     "floodScopeDiscoverStale": "Last discovered {{when}}",
     "floodScopeDiscoverError": "Region discovery failed. Try again or check the Repeaters tab."
   },

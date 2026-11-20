@@ -9,6 +9,7 @@ import { hexToBytesExact } from '@/shared/hexBytes';
 import {
   deserializeMeshcoreUserMessage,
   isDiagnosticTextI18n,
+  MESHCORE_ERR_NOT_CONNECTED,
 } from './meshcore/meshcoreMessageI18n';
 import type { MeshcoreRepeaterRegions } from './meshcoreRepeaterRegions';
 import { MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN } from './meshcoreUtils';
@@ -238,6 +239,19 @@ export function selectMeshcoreRegionDiscoveryCandidates(
   };
 }
 
+/** Operational MeshCore statuses that may keep an in-flight Discover run alive. */
+export function isMeshcoreRegionDiscoveryStatusCurrent(status: string | null | undefined): boolean {
+  return status === 'connected' || status === 'configured' || status === 'stale';
+}
+
+/** Persist Discover results only when the run finished with at least one region. */
+export function shouldPersistDiscoveredMeshcoreRegions(run: {
+  cancelled: boolean;
+  entries: readonly unknown[];
+}): boolean {
+  return !run.cancelled && run.entries.length > 0;
+}
+
 export function classifyRegionDiscoveryError(error: unknown): MeshcoreRegionDiscoveryFailureReason {
   const message = error instanceof Error ? error.message : String(error);
   const ref = deserializeMeshcoreUserMessage(message);
@@ -259,6 +273,7 @@ export function classifyRegionDiscoveryError(error: unknown): MeshcoreRegionDisc
   if (/timed?\s*out|timeout/i.test(message)) return 'timeout';
   if (
     message.includes('Not connected') ||
+    message.includes(MESHCORE_ERR_NOT_CONNECTED) ||
     message.includes('not found') ||
     /sent as flood/i.test(message)
   ) {

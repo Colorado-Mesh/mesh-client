@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}}個のリピーターがスキップされました（保存された管理者パスワードがありません）。",
     "floodScopeDiscoverFailed": "{{count}}台のリピーターが応答しませんでした。",
     "floodScopeDiscoverStale": "最終検出日{{when}}",
-    "floodScopeDiscoverError": "リージョンの検出に失敗しました。もう一度お試しいただくか、[リピーター]タブをご確認ください。"
+    "floodScopeDiscoverError": "リージョンの検出に失敗しました。もう一度お試しいただくか、[リピーター]タブをご確認ください。",
+    "floodScopeDiscoverFail": {
+      "unsupported": "対応していない地域",
+      "rejected": "リクエストが拒否されました",
+      "invalid-reply": "無効な返信",
+      "timeout": "タイムアウト",
+      "unreachable": "UNREACHABLE",
+      "unknown": "不明なエラー"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

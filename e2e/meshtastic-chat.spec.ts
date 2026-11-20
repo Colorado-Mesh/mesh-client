@@ -3,15 +3,22 @@ import { expect, test } from '@playwright/test';
 import { launchApp, type LaunchedApp, openPanel, teardownApp } from './electronApp';
 import { startMeshtasticTcpRadio } from './fixtures/meshtastic-tcp-radio';
 
-let launched: LaunchedApp;
-let radio: Awaited<ReturnType<typeof startMeshtasticTcpRadio>>;
+let launched: LaunchedApp | undefined;
+let radio: Awaited<ReturnType<typeof startMeshtasticTcpRadio>> | undefined;
 
 test.afterEach(async () => {
-  if (launched) {
-    launched.retainUserData = false;
-    await teardownApp(launched);
+  const app = launched;
+  const fakeRadio = radio;
+  launched = undefined;
+  radio = undefined;
+  try {
+    if (app) {
+      app.retainUserData = false;
+      await teardownApp(app);
+    }
+  } finally {
+    if (fakeRadio) await fakeRadio.close();
   }
-  if (radio) await radio.close();
 });
 
 test('Meshtastic TCP fake companion: connect, send, echo receive', async () => {
@@ -40,19 +47,9 @@ test('Meshtastic TCP fake companion: connect, send, echo receive', async () => {
   await page.getByRole('button', { name: /^send$/i }).click();
 
   await expect
-    .poll(() => radio.outboundTexts.some((t) => t.includes(outbound)), { timeout: 45_000 })
+    .poll(() => radio!.outboundTexts.some((t) => t.includes(outbound)), { timeout: 45_000 })
     .toBe(true);
 
-  // Prefer echo receive when the chat UI surfaces inbound text; soft-fallback is
-  // covered by the outbound assert above (docs: partial OK if handshake-only).
   const echo = page.getByText(`echo:${outbound}`, { exact: false });
-  try {
-    await expect(echo).toBeVisible({ timeout: 20_000 });
-  } catch {
-    // Partial scope: connected + outbound recorded. Inbound echo is best-effort.
-    test.info().annotations.push({
-      type: 'note',
-      description: 'Meshtastic echo receive not visible; outbound + connect passed (partial)',
-    });
-  }
+  await expect(echo).toBeVisible({ timeout: 20_000 });
 });

@@ -2198,6 +2198,7 @@ export default function RadioPanel({
               disabled={loraDisabled}
             >
               <MeshcoreFloodScopeSection
+                key={identityId ?? 'meshcore-flood-scope'}
                 ref={floodScopeRef}
                 embedded
                 disabled={disabled}

@@ -5361,7 +5361,15 @@
     "floodScopeDiscoverSkipped": "Пропущено повторювачів: {{count}} (немає збереженого пароля адміністратора).",
     "floodScopeDiscoverFailed": "Репітери ({{count}}) не відповіли.",
     "floodScopeDiscoverStale": "Востаннє виявлено {{when}}",
-    "floodScopeDiscoverError": "Не вдалося виявити регіон. Повторіть спробу або перевірте вкладку «Репітери»."
+    "floodScopeDiscoverError": "Не вдалося виявити регіон. Повторіть спробу або перевірте вкладку «Репітери».",
+    "floodScopeDiscoverFail": {
+      "unsupported": "регіони не підтримуються",
+      "rejected": "Замовлення скасоване",
+      "invalid-reply": "Некоректна відповідь gdb",
+      "timeout": "Час очікування збіг.",
+      "unreachable": "Недосяжно",
+      "unknown": "невідома помилка"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

@@ -5361,7 +5361,15 @@
     "floodScopeDiscoverSkipped": "Pominięto {{count}} wzmacniaczy sygnału (brak zapisanego hasła administratora).",
     "floodScopeDiscoverFailed": "{{count}} wzmacniacze sygnału nie zareagowały.",
     "floodScopeDiscoverStale": "Ostatnio wykryto {{when}}",
-    "floodScopeDiscoverError": "Wykrywanie regionu nie powiodło się. Spróbuj ponownie lub sprawdź kartę „Wzmacniacze”."
+    "floodScopeDiscoverError": "Wykrywanie regionu nie powiodło się. Spróbuj ponownie lub sprawdź kartę „Wzmacniacze”.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiony nieobsługiwane",
+      "rejected": "Żądanie odrzucone",
+      "invalid-reply": "Niepoprawna odpowiedź gdb",
+      "timeout": "przekroczenie limitu czasu",
+      "unreachable": "Niedosięgalne",
+      "unknown": "nieznany błąd"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

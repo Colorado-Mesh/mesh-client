@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} répéteurs ignorés (aucun mot de passe administrateur enregistré).",
     "floodScopeDiscoverFailed": "{{count}} répéteurs n’ont pas répondu.",
     "floodScopeDiscoverStale": "Dernière découverte : {{when}}",
-    "floodScopeDiscoverError": "Échec de la détection de la région. Réessayez ou consultez l’onglet Répéteurs."
+    "floodScopeDiscoverError": "Échec de la détection de la région. Réessayez ou consultez l’onglet Répéteurs.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "régions non prises en charge",
+      "rejected": "Demande rejetée",
+      "invalid-reply": "Réponse Invalide",
+      "timeout": "Terminé",
+      "unreachable": "inaccessible/injoignable/impossible",
+      "unknown": "erreur inconnue"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

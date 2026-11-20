@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} repeater dilewati (tidak ada kata sandi admin yang disimpan).",
     "floodScopeDiscoverFailed": "{{count}} repeater tidak merespons.",
     "floodScopeDiscoverStale": "Terakhir ditemukan {{when}}",
-    "floodScopeDiscoverError": "Pencarian wilayah gagal. Coba lagi atau periksa tab Repeater."
+    "floodScopeDiscoverError": "Pencarian wilayah gagal. Coba lagi atau periksa tab Repeater.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "wilayah yang tidak didukung",
+      "rejected": "Permintaan bergabung ditolak.",
+      "invalid-reply": "balasan tidak valid",
+      "timeout": "Waktu habis.",
+      "unreachable": "tidak dapat dihubungi",
+      "unknown": "unknown error"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

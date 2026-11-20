@@ -5277,7 +5277,15 @@
     "floodScopeDiscoverSkipped": "{{count}} repeaters overgeslagen (geen opgeslagen beheerderswachtwoord).",
     "floodScopeDiscoverFailed": "{{count}} repeaters hebben niet gereageerd.",
     "floodScopeDiscoverStale": "Laatst ontdekt {{when}}",
-    "floodScopeDiscoverError": "Regio-detectie is mislukt. Probeer het opnieuw of controleer het tabblad Repeaters."
+    "floodScopeDiscoverError": "Regio-detectie is mislukt. Probeer het opnieuw of controleer het tabblad Repeaters.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regio's worden niet ondersteund",
+      "rejected": "Verzoek afgewezen",
+      "invalid-reply": "Ongeldig antwoord",
+      "timeout": "duurde te lang",
+      "unreachable": "onbereikbaar",
+      "unknown": "onbekende fout"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

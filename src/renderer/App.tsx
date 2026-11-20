@@ -373,9 +373,11 @@ import {
 import {
   type DiscoveredMeshcoreRegion,
   discoverMeshcoreRegions,
+  isMeshcoreRegionDiscoveryStatusCurrent,
   type MeshcoreRegionDiscoveryProgress,
   type MeshcoreRegionDiscoveryRun,
   selectMeshcoreRegionDiscoveryCandidates,
+  shouldPersistDiscoveredMeshcoreRegions,
 } from './lib/meshcoreRegionDiscovery';
 import {
   loadDiscoveredMeshcoreRegions,
@@ -1174,11 +1176,18 @@ function AppContent() {
   const meshcoreDiscoveredRegionsRef = useRef(meshcoreDiscoveredRegions);
   const meshcoreDiscoveredRegionsReadAtRef = useRef(meshcoreDiscoveredRegionsReadAt);
   const meshcoreConnectionStatusRef = useRef(meshcoreRuntime.state.status);
+  const meshcoreIdentityIdRef = useRef(meshcoreIdentityId);
   useEffect(() => {
     meshcoreDiscoveredRegionsRef.current = meshcoreDiscoveredRegions;
     meshcoreDiscoveredRegionsReadAtRef.current = meshcoreDiscoveredRegionsReadAt;
     meshcoreConnectionStatusRef.current = meshcoreRuntime.state.status;
-  }, [meshcoreDiscoveredRegions, meshcoreDiscoveredRegionsReadAt, meshcoreRuntime.state.status]);
+    meshcoreIdentityIdRef.current = meshcoreIdentityId;
+  }, [
+    meshcoreDiscoveredRegions,
+    meshcoreDiscoveredRegionsReadAt,
+    meshcoreIdentityId,
+    meshcoreRuntime.state.status,
+  ]);
   const discoverMeshcoreRegionsForRadio = useCallback(
     async (
       signal: AbortSignal,
@@ -1199,13 +1208,13 @@ function AppContent() {
         };
       }
       meshcoreDiscoveryInFlightRef.current = true;
-      const identityAtStart = meshcoreIdentityId;
+      const identityAtStart = meshcoreIdentityIdRef.current;
       const signatureAtStart = meshcoreRadioSignature;
       const generation = ++meshcoreDiscoveryGenerationRef.current;
       const isCurrent = () =>
         generation === meshcoreDiscoveryGenerationRef.current &&
-        meshcoreIdentityId === identityAtStart &&
-        meshcoreConnectionStatusRef.current === 'connected';
+        meshcoreIdentityIdRef.current === identityAtStart &&
+        isMeshcoreRegionDiscoveryStatusCurrent(meshcoreConnectionStatusRef.current);
       try {
         const { candidates, skipped } = selectMeshcoreRegionDiscoveryCandidates(
           meshcoreUiNodes.values(),
@@ -1228,6 +1237,9 @@ function AppContent() {
         if (run.cancelled || !signatureAtStart || !isCurrent()) {
           return { ...run, skipped };
         }
+        if (!shouldPersistDiscoveredMeshcoreRegions(run)) {
+          return { ...run, skipped };
+        }
         const nextCache = {
           version: 1 as const,
           readAt: run.readAt,
@@ -1246,7 +1258,6 @@ function AppContent() {
       }
     },
     [
-      meshcoreIdentityId,
       meshcoreRadioNodeId,
       meshcoreRadioSignature,
       meshcoreRuntime.queryAnonRegions,
