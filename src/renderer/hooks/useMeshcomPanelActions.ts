@@ -1,0 +1,22 @@
+import { useMemo } from 'react';
+
+import type { MeshcomRuntime } from '../runtime/useMeshcomRuntime';
+
+/** MeshCom panel callbacks backed by the App-mounted protocol runtime. */
+export function useMeshcomPanelActions(runtime: MeshcomRuntime) {
+  return useMemo(
+    () => ({
+      getFullNodeLabel: runtime.getFullNodeLabel,
+      getPickerStyleNodeLabel: runtime.getPickerStyleNodeLabel,
+      refreshNodesFromDb: runtime.refreshNodesFromDb,
+      refreshMessagesFromDb: runtime.refreshMessagesFromDb,
+      requestRefresh: runtime.requestRefresh,
+      setNodeFavorited: runtime.setNodeFavorited,
+      sendReaction: runtime.sendReaction,
+      clearRawPackets: runtime.clearRawPackets,
+      hydrateRawPackets: runtime.hydrateRawPackets,
+      deviceCommands: runtime.deviceCommands,
+    }),
+    [runtime],
+  );
+}

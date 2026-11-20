@@ -83,12 +83,14 @@ describe('hidden protocol wake', () => {
               onPowerResume: meshcore.onPowerResume,
             },
             reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
+            meshcom: { onPowerSuspend: () => {}, onPowerResume: () => {} },
           },
           hiddenProtocols: [hidden],
           resumeSchedule: [
             { protocol: 'meshtastic', delayMs: 0 },
             { protocol: 'meshcore', delayMs: 0 },
             { protocol: 'reticulum', delayMs: 0 },
+            { protocol: 'meshcom', delayMs: 0 },
           ],
         });
         return hidden === 'meshtastic' ? meshtastic : meshcore;

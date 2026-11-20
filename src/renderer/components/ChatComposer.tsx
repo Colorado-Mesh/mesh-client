@@ -46,7 +46,7 @@ import {
   subscribeRoomMacroTextApply,
   takePendingRoomMacroTextApplyIfMatch,
 } from '@/renderer/lib/roomMacros';
-import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
+import type { ChatMessage, ConnectionType, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import {
   isChatMacroSlotEmpty,
   resolveChatMacroSize,
@@ -191,7 +191,7 @@ export interface ChatComposerProps {
   protocol: MeshProtocol;
   viewKey: string;
   isConnected: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
+  connectionType?: ConnectionType | null;
   isMqttOnly?: boolean;
   /** When false, disconnected sends fail instead of queueing (room posts). Default true. */
   allowOutbox?: boolean;

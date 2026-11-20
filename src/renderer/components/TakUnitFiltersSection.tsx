@@ -61,6 +61,7 @@ const PROTOCOL_LABELS: Record<MeshProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
   reticulum: 'Reticulum',
+  meshcom: 'MeshCom',
 };
 
 const DEFAULT_COLOR = '#22C55E';

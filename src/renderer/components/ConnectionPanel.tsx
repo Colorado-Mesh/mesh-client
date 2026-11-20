@@ -183,6 +183,7 @@ import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshComConnectionHints } from './MeshComConnectionHints';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { MqttProfileControls } from './MqttProfileControls';
 import { PickerSortControls } from './PickerSortControls';
@@ -448,7 +449,11 @@ export default function ConnectionPanel({
   const [connectionType, setConnectionType] = useState<ConnectionType>('ble');
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
-    return last?.type === 'http' && last.httpAddress ? last.httpAddress : 'meshtastic.local';
+    if (last?.httpAddress && (last.type === 'http' || last.type === 'udp')) {
+      return last.httpAddress;
+    }
+    if (protocol === 'meshcom') return '127.0.0.1:8001';
+    return 'meshtastic.local';
   });
   const [tcpAddress, setTcpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
@@ -456,7 +461,11 @@ export default function ConnectionPanel({
   });
   const [tcpHost, setTcpHost] = useState(() => {
     const last = loadLastConnection(protocol);
-    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
+    if (
+      last?.httpAddress &&
+      (protocol === 'meshcore' || protocol === 'meshcom') &&
+      (last.type === 'http' || last.type === 'tcp' || last.type === 'udp')
+    ) {
       return parseTcpAddress(last.httpAddress).host;
     }
     return 'localhost';
@@ -466,9 +475,12 @@ export default function ConnectionPanel({
     if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
       return String(parseTcpAddress(last.httpAddress).port);
     }
-    return '5000';
+    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcom') {
+      return String(parseTcpAddress(last.httpAddress).port);
+    }
+    return protocol === 'meshcom' ? '8001' : '5000';
   });
-  const tcpPort = parseTcpPortFromString(tcpPortStr, 5000);
+  const tcpPort = parseTcpPortFromString(tcpPortStr, protocol === 'meshcom' ? 8001 : 5000);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
@@ -479,9 +491,11 @@ export default function ConnectionPanel({
   const activeHostAddress =
     protocol === 'meshcore'
       ? `${tcpHost}:${tcpPort}`
-      : connectionType === 'tcp' || state.connectionType === 'tcp'
-        ? tcpAddress
-        : httpAddress;
+      : protocol === 'meshcom' && (connectionType === 'http' || connectionType === 'udp')
+        ? httpAddress
+        : connectionType === 'tcp' || state.connectionType === 'tcp'
+          ? tcpAddress
+          : httpAddress;
   const hostLinkMeter = useHostLinkMeter({
     protocol,
     connectionType: state.connectionType,
@@ -1516,6 +1530,8 @@ export default function ConnectionPanel({
         await onConnect('http', activeHostAddress);
       } else if (connectionType === 'tcp') {
         await onConnect('tcp', activeHostAddress);
+      } else if (connectionType === 'udp') {
+        await onConnect('udp', activeHostAddress);
       } else {
         await onConnect('serial');
       }
@@ -1524,7 +1540,11 @@ export default function ConnectionPanel({
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t);
-      } else if (connectionType === 'http' || connectionType === 'tcp') {
+      } else if (
+        connectionType === 'http' ||
+        connectionType === 'tcp' ||
+        connectionType === 'udp'
+      ) {
         errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
         errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
@@ -3108,6 +3128,7 @@ export default function ConnectionPanel({
       <div data-panel-anchor="Connection" className="w-full space-y-4">
         {statusTiles}
         {renderAutoReconnectBanner()}
+        {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
 
         {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
         <div className="grid items-start gap-4 xl:grid-cols-2">
@@ -3227,7 +3248,9 @@ export default function ConnectionPanel({
   const connectionTypeOptions: SegmentedOption<ConnectionType>[] = (
     protocol === 'meshtastic'
       ? (['ble', 'serial', 'http', 'tcp'] as const)
-      : (['ble', 'serial', 'http'] as const)
+      : protocol === 'meshcom'
+        ? (['udp', 'http', 'ble', 'serial'] as const) // http UI = MeshCom KISS/TCP :8001
+        : (['ble', 'serial', 'http'] as const)
   ).map((type) => ({
     value: type,
     label: connectionPanelConnectionTypeLabel(t, type, protocol),
@@ -3237,6 +3260,7 @@ export default function ConnectionPanel({
     <div data-panel-anchor="Connection" className="w-full space-y-4">
       {statusTiles}
       {renderAutoReconnectBanner()}
+      {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
 
       {/* Last Connection — one-click reconnect card */}
       {showLastConnection && (
@@ -3417,6 +3441,32 @@ export default function ConnectionPanel({
                 <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
               </div>
             )}
+            {(connectionType === 'udp' ||
+              (connectionType === 'http' && protocol === 'meshcom')) && (
+              <div
+                data-setting-anchor="connection.radio.meshcomHost"
+                className="max-w-md space-y-1"
+              >
+                <label htmlFor="connection-meshcom-host" className="text-muted text-xs">
+                  {t('connectionPanel.deviceAddress')}
+                </label>
+                <input
+                  id="connection-meshcom-host"
+                  type="text"
+                  value={httpAddress}
+                  onChange={(e) => {
+                    setHttpAddress(e.target.value);
+                  }}
+                  placeholder={connectionType === 'udp' ? '192.168.1.x' : '192.168.1.x:8001'}
+                  className={INPUT_CLASS}
+                  autoComplete="off"
+                  aria-label={t('connectionPanel.deviceAddress')}
+                />
+                <p className="text-muted text-xs">
+                  {connectionType === 'udp' ? t('meshcom.extUdpHint') : t('meshcom.kissTcpHint')}
+                </p>
+              </div>
+            )}
 
             {/* Connection hints */}
             <div className={`space-y-1 ${NOTICE_CLASS.info}`}>
@@ -3470,7 +3520,9 @@ export default function ConnectionPanel({
                 disabled={
                   connecting ||
                   state.status === 'connecting' ||
-                  ((connectionType === 'http' || connectionType === 'tcp') &&
+                  ((connectionType === 'http' ||
+                    connectionType === 'tcp' ||
+                    connectionType === 'udp') &&
                     !activeHostAddress.trim())
                 }
               >

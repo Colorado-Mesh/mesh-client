@@ -4,6 +4,7 @@ import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { IdentityId, MeshProtocol } from '../lib/types';
 import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
+import type { useMeshcomPanelActions } from './useMeshcomPanelActions';
 import type { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 import type { useReticulumPanelActions } from './useReticulumPanelActions';
@@ -11,7 +12,8 @@ import type { useReticulumPanelActions } from './useReticulumPanelActions';
 export type PanelActions =
   | ReturnType<typeof useMeshtasticPanelActions>
   | ReturnType<typeof useMeshcorePanelActions>
-  | ReturnType<typeof useReticulumPanelActions>;
+  | ReturnType<typeof useReticulumPanelActions>
+  | ReturnType<typeof useMeshcomPanelActions>;
 
 export interface PanelActionsBundle {
   actions: PanelActions;

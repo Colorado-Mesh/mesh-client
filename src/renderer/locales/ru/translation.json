@@ -481,7 +481,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Небо",
-      "classic": "Классический зелёный"
+      "classic": "Классический зелёный",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Удалить узлы без позиции / Zero Island",
     "protocolsSection": "Протоколы",
@@ -568,7 +569,9 @@
     "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
     "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано",
     "tabWithUnread": "{{label}}, {{count}} НЕ прочитано",
-    "tabWithOpenIncidents": "{{label}}, {{count}} открытые ПЕРВОМАЙСКИЕ или СРОЧНЫЕ ПРОИСШЕСТВИЯ"
+    "tabWithOpenIncidents": "{{label}}, {{count}} открытые ПЕРВОМАЙСКИЕ или СРОЧНЫЕ ПРОИСШЕСТВИЯ",
+    "switchToMeshCom": "Переключиться на MeshCom",
+    "switchToMeshComWithUnread": "Перейти в MeshCom, {{count}} непрочитанных"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -1784,7 +1787,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Страна]/[Штат], например. мш/Колорадо/США",
@@ -1981,7 +1985,10 @@
     "meshtasticSilentAfterConfigure": "Подключен к радиоприемнику, но он перестал отправлять сетевой трафик после установки. Повторное подключение автоматически. Если это продолжается, проверьте сетевое подключение радиоприемника или перезапустите его.",
     "mqttPacketTooLarge": "Брокер отправил пакет MQTT больше предела безопасности в {{limit}} байт; автоматическое переподключение отключено.",
     "protocolGuideLink": "Руководство по протоколу ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -7788,7 +7795,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Получено {{when}}"
   },
@@ -8631,7 +8639,8 @@
     "meshcore": "MeshCore",
     "reticulum": "Reticulum",
     "openFromChat": "Искать все разговоры",
-    "unavailable": "Поиск сообщений недоступен в этой среде."
+    "unavailable": "Поиск сообщений недоступен в этой среде.",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "open": "Открыть единый почтовый ящик",
@@ -8678,7 +8687,8 @@
     "deleteConfirm_few": "Удалить сообщения {{count}} из этого почтового ящика? История чатов Meshtastic и MeshCore сохраняется.",
     "deleteConfirm_many": "Удалить сообщения {{count}} из этого почтового ящика? История чатов Meshtastic и MeshCore сохраняется.",
     "deleted_few": "Удалены сообщения {{count}}.",
-    "deleted_many": "Удалены сообщения {{count}}."
+    "deleted_many": "Удалены сообщения {{count}}.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "verifyButton": "Подтвердить ключ…",
@@ -9112,7 +9122,8 @@
     "loadFailed": "Не удалось загрузить контактные карты из базы данных.",
     "retryLoad": "Попробовать еще раз",
     "retryLoadAria": "Повторить попытку загрузки контактных карт",
-    "loadUnavailable": "Визитные карточки недоступны в этой сборке. Переустановите или обновите приложение."
+    "loadUnavailable": "Визитные карточки недоступны в этой сборке. Переустановите или обновите приложение.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Скрыть сообщения, соответствующие фильтру слов",
@@ -9150,5 +9161,60 @@
     "openAria": "Открыть {{name}}",
     "unknownRoom": "Комната {{id}}",
     "hops": "{{count}} пересадок"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — лицензированная любительская радиосвязь",
+    "licenseNoticeBody": "MeshCom работает на лицензированных любительских (HAM) частотах LoRa, выбранных в настройке страны (--setctry) по всему миру, а не только на частоте 433 МГц в ЕС. Включайте MeshCom, только если у вас есть разрешение на передачу на диапазонах, настроенных для профиля вашей страны. Это уведомление не связано с разблокировкой частоты Meshtastic для лицензированных радиолюбителей.",
+    "licenseNoticeAccept": "Понятно",
+    "connectionHint": "MeshCom использует любительский диапазон LoRa через настройку страны (--setctry). Убедитесь, что профиль страны вашего узла соответствует вашей лицензии.",
+    "countrySettingLabel": "Настройка страны (--setctry)",
+    "extUdpHint": "Для EXTUDP требуется, чтобы узел был настроен с параметрами --extudp on и --extudpip, указывающими на этот компьютер (UDP 1799).",
+    "kissTcpHint": "KISS/TCP использует порт MeshCom 8001, а не Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "Команды устройства MeshCom",
+    "description": "Отправляйте команды узла ICSSW (--help, --settime, --setctry, …) по последовательному интерфейсу или через BLE. Команды, поддерживаемые приложением, соответствуют официальному приложению MeshCom; для команд, доступных только через последовательный интерфейс, требуется подключение к консоли USB.",
+    "autoSettimeLegend": "Часы",
+    "autoSettime": "Автоматически устанавливать время узла при подключении",
+    "autoSettimeHint": "При подключении по последовательному интерфейсу или через BLE отправьте команду --settime с указанием времени по UTC на этом компьютере (например, {{example}}).",
+    "settimeNow": "Установить текущее время (UTC)",
+    "requiresSerialBle": "Подключитесь через последовательный порт или BLE, чтобы отправлять команды устройству. EXTUDP и KISS/TCP предназначены только для чата.",
+    "filter": "Команды фильтра",
+    "filterPlaceholder": "Поиск --settime, шлюз, соседи…",
+    "serialOnly": "только последовательный",
+    "run": "Работа",
+    "runCommand": "Запустить {{command}}",
+    "runChoice": "Запустить {{command}} {{value}}",
+    "argInput": "Аргумент для {{command}}",
+    "sent": "Команда отправлена на узел.",
+    "sendFailed": "Ошибка команды: {{detail}}",
+    "setctrySent": "Сохранено и отправлено --setctry {{code}} в узел.",
+    "setctrySavedLocal": "Предпочтительная страна сохранена. Подключитесь через последовательный порт или BLE, чтобы применить команду --setctry к узлу.",
+    "consoleHint": "Введите любую команду --command или ярлык приложения (GATEWAY, GPS, WX-Info). Секретные данные в журнале скрыты.",
+    "consoleLog": "Журнал консоли команд устройства",
+    "consoleInput": "Ввод команды устройства",
+    "consolePlaceholder": "Информация",
+    "consoleSend": "Отправить",
+    "confirmDanger": {
+      "title": "Подтвердить команду",
+      "message": "Отправить {{command}} на узел? Это может привести к перезагрузке или изменению настроек радиочастоты.",
+      "confirm": "Отправить"
+    },
+    "groups": {
+      "display": "Экран",
+      "position": "Позиция, время",
+      "sensors": "Датчики",
+      "identity": "Идентификация и группы",
+      "network": "Сеть и Wi-Fi",
+      "gateway": "Шлюз",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Соседи",
+      "mailbox": "Почтовый ящик",
+      "debug": "Статус и отладка",
+      "power": "Питание и OTA",
+      "misc": "KISS / прочее",
+      "console": "консоль"
+    },
+    "appEligible": "Приложение / Серийный номер"
   }
 }

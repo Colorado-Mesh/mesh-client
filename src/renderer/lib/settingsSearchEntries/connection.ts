@@ -15,6 +15,8 @@ const hasMeshcoreMqtt = (ctx: SettingsSearchContext) =>
 const hasNetworkNodeAddress = (ctx: SettingsSearchContext) => ctx.capabilities.hasWifiConfig;
 const hasCompanionTcpHost = (ctx: SettingsSearchContext) =>
   hasLoraConnection(ctx) && !ctx.capabilities.hasWifiConfig;
+const hasMeshcomHost = (ctx: SettingsSearchContext) =>
+  hasLoraConnection(ctx) && ctx.capabilities.hasMeshcomDeviceCommands;
 
 const RADIO = 'connectionPanel.radioConnection';
 const MQTT = 'connectionPanel.mqttConnection';
@@ -60,6 +62,14 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     sectionKey: RADIO,
     keywords: ['tcp', 'port'],
     visible: hasCompanionTcpHost,
+  },
+  {
+    id: 'connection.radio.meshcomHost',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.deviceAddress',
+    sectionKey: RADIO,
+    keywords: ['meshcom', 'udp', 'extudp', 'kiss', 'tcp', 'host', '1799', '8001'],
+    visible: hasMeshcomHost,
   },
   {
     id: 'connection.radio.connect',
@@ -243,6 +253,8 @@ export const connectionSurface: SettingsSearchSurface = {
   entries: connectionEntries,
   files: [{ path: 'src/renderer/components/ConnectionPanel.tsx', sweepAllKeys: true }],
   exempt: {
+    'meshcom.extUdpHint': 'help text under the indexed MeshCom host field',
+    'meshcom.kissTcpHint': 'help text under the indexed MeshCom host field',
     'connectionPanel.*Hint': 'help text under a control; the control is indexed',
     'connectionPanel.*Placeholder': 'placeholder of an indexed field',
     'connectionPanel.*Warning': 'warning text, not a control',

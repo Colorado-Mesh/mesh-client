@@ -8,8 +8,8 @@ import {
 } from './meshProtocol';
 
 describe('meshProtocol', () => {
-  it('REGISTERED_MESH_PROTOCOLS includes meshtastic, meshcore, and reticulum', () => {
-    expect(REGISTERED_MESH_PROTOCOLS).toEqual(['meshtastic', 'meshcore', 'reticulum']);
+  it('REGISTERED_MESH_PROTOCOLS includes meshtastic, meshcore, reticulum, and meshcom', () => {
+    expect(REGISTERED_MESH_PROTOCOLS).toEqual(['meshtastic', 'meshcore', 'reticulum', 'meshcom']);
   });
 
   it('isMeshProtocol narrows known protocols', () => {
@@ -25,6 +25,6 @@ describe('meshProtocol', () => {
   });
 
   it('meshProtocolSqlInList matches registered protocols', () => {
-    expect(meshProtocolSqlInList()).toBe("'meshtastic','meshcore','reticulum'");
+    expect(meshProtocolSqlInList()).toBe("'meshtastic','meshcore','reticulum','meshcom'");
   });
 });

@@ -120,7 +120,7 @@ import {
   setMeshcoreRoomSyncConfig,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
-import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
+import type { ChatMessage, ConnectionType, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { MESHCORE_ROOMS_DOCS_URL } from '@/shared/docsSite';
@@ -206,7 +206,7 @@ interface Props {
   messages: ChatMessage[];
   myNodeNum: number;
   isConnected: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
+  connectionType?: ConnectionType | null;
   /** True when the Rooms tab panel is visible (for mark-read while viewing). */
   isActive?: boolean;
   initialRoomTarget?: number | null;

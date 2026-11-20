@@ -36,6 +36,7 @@ function renderInbox(over: Partial<UnifiedInboxDialogProps> = {}) {
       reticulum: [
         msg(4, { reticulum_message_hash: 'aa11', reticulum_sender_hash: 'bb22', storeId: 'aa11' }),
       ],
+      meshcom: [],
     },
     reticulumIdentityId: 'rid',
     onSelectItem: vi.fn(),
@@ -75,6 +76,7 @@ describe('UnifiedInboxDialog', () => {
         meshtastic: [msg(1, { receivedAt: arrived })],
         meshcore: [msg(3, { timestamp: arrived - 2 * 3_600_000, receivedAt: arrived + 60_000 })],
         reticulum: [],
+        meshcom: [],
       },
     });
     const rows = within(screen.getByRole('list', { name: 'Inbox messages' })).getAllByRole(
@@ -91,6 +93,7 @@ describe('UnifiedInboxDialog', () => {
         meshtastic: [msg(1, { receivedAt: arrived })],
         meshcore: [msg(3, { timestamp: arrived - 2 * 3_600_000, receivedAt: arrived + 60_000 })],
         reticulum: [],
+        meshcom: [],
       },
       enabledProtocols: ALL,
       limit: 1,

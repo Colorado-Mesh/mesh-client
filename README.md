@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote). EMCOMM support via MECP & TAK.
+> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, **MeshCom** (CM), and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote). EMCOMM support via MECP & TAK.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -29,14 +29,14 @@ Releases and build artifacts are published on [GitHub](https://github.com/Colora
 
 Reliable Desktop Power. Local Persistence. Total Insight.
 
-While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited desktop options for MeshCore and Reticulum (LXMF), inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience that unifies **Meshtastic**, **MeshCore**, and **Reticulum** in one app.
+While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited desktop options for MeshCore, MeshCom, and Reticulum (LXMF), inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience that unifies **Meshtastic**, **MeshCore**, **MeshCom**, and **Reticulum** in one app.
 
 With a dedicated local SQLite database, Mesh-Client keeps message and node history across restarts, subject to configurable retention limits. Diagnostic logs are stored separately in rotating local files. It provides one reliable hub for Meshtastic, MeshCore, and Reticulum (via an AGPL Rust sidecar), delivering a unified workflow regardless of protocol or hardware.
 
 **Why Mesh-Client?**
 
 - **Durable message history:** Local SQLite storage with configurable retention limits.
-- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (rail protocol switcher, MT / MC / RN; Reticulum yellow; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
+- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, MeshCom, and Reticulum (rail protocol switcher, MT / MC / CM / RN; MeshCom burgundy; Reticulum yellow; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
 - **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore); for Reticulum, LXMF DMs / encrypted paper / propagation, RRC, LRGP Games, LXST voice, and rnsh/rncp Remote — aimed at Ratspeak-compatible peers.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
@@ -128,12 +128,13 @@ Select any image to view it at full size.
 
 <!-- docs-site:features:start -->
 
-Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / RN; Meshtastic green, MeshCore cyan, Reticulum yellow) to focus a tab; the other sessions stay connected in the background.
+Mesh-Client supports **four mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / CM / RN; Meshtastic green, MeshCore cyan, MeshCom burgundy, Reticulum yellow) to focus a tab; the other sessions stay connected in the background. Opt in to MeshCom under App → Protocols (licensed amateur-radio notice on first enable).
 
 | Protocol   | Transport focus                                    | Deep-dive doc                                                                                                      |
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Meshtastic | BLE, USB serial, HTTP, TCP (4403), MQTT (protobuf) | Sections below + [diagnostics](docs/diagnostics.md)                                                                |
 | MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)               | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                                                           |
+| MeshCom    | EXTUDP (:1799), KISS/TCP (:8001), USB serial, BLE  | [MeshCom development](docs/development/meshcom.md) — callsign mesh; worldwide `--setctry` bands                    |
 | Reticulum  | Sidecar stack: TCP, I2P, Auto, RNode USB/BLE/Wi‑Fi | [reticulum.md](docs/reticulum.md) · [Games](docs/reticulum-games-parity.md) · [IPC](docs/reticulum-sidecar-ipc.md) |
 
 ### Meshtastic Features

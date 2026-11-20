@@ -39,6 +39,7 @@ export function networkAckTimeoutMs(protocol: MeshProtocol): number {
     case 'meshtastic':
       return MESHTASTIC_NETWORK_ACK_TIMEOUT_MS;
     case 'meshcore':
+    case 'meshcom':
       return MESHCORE_NETWORK_ACK_TIMEOUT_MS;
     case 'reticulum':
       return RETICULUM_RECEIPT_TIMEOUT_MS;

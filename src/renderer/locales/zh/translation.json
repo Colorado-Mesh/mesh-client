@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "天空",
-      "classic": "经典绿"
+      "classic": "经典绿",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "修剪无定位/零岛节点",
     "protocolsSection": "协议",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
     "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读",
     "tabWithUnread": "{{label}}, {{count}}未读",
-    "tabWithOpenIncidents": "{{label}}, {{count}} OPEN MAYDAY或紧急事件"
+    "tabWithOpenIncidents": "{{label}}, {{count}} OPEN MAYDAY或紧急事件",
+    "switchToMeshCom": "切换到 MeshCom",
+    "switchToMeshComWithUnread": "切换到MeshCom，{{count}}条未读消息"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -1744,7 +1747,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[国家/地区]/[州]，例如msh/CO/美国",
@@ -1941,7 +1945,10 @@
     "meshtasticSilentAfterConfigure": "已连接到无线电，但设置后停止发送网格流量。正在自动重新连接。如果这种情况持续发生，请检查收音机的网络连接或重新启动它。",
     "mqttPacketTooLarge": "代理发送的 MQTT 数据包超过 {{limit}} 字节安全上限，已禁用自动重连。",
     "protocolGuideLink": "方案指南 ↗",
-    "mqttAuthDocsLink": "MQTT AUTH ↗"
+    "mqttAuthDocsLink": "MQTT AUTH ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -7670,7 +7677,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "已收到{{when}}"
   },
@@ -8497,7 +8505,8 @@
     "directMessage": "直接发送消息",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "results": "收件箱消息",
@@ -8534,7 +8543,8 @@
     "deleteFailed": "无法保存更改。未删除任何内容。",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "验证公钥",
@@ -8968,7 +8978,8 @@
     "loadFailed": "无法从数据库加载联系人卡片。",
     "retryLoad": "再试一次",
     "retryLoadAria": "重试加载联系人卡片",
-    "loadUnavailable": "此版本中不提供联系人卡片。请重新安装或更新应用。"
+    "loadUnavailable": "此版本中不提供联系人卡片。请重新安装或更新应用。",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "隐藏与词语筛选条件匹配的消息",
@@ -9006,5 +9017,60 @@
     "openAria": "打开{{name}}",
     "unknownRoom": "房间{{id}}",
     "hops": "{{count}}个中转站"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — 获许可的业余无线电",
+    "licenseNoticeBody": "MeshCom 在全球范围内通过国家/地区设置（--setctry）选择的持证业余（ham）LoRa频率上运行，而不仅仅是欧盟的 433 MHz。仅当您有权在为您的国家/地区配置文件配置的频段上进行传输时，方可启用 MeshCom。本通知与Meshtastic的持证业余无线电频率解锁无关。",
+    "licenseNoticeAccept": "我明白",
+    "connectionHint": "MeshCom 通过国家/地区设置 (--setctry) 使用业余无线电频段 LoRa。请确保您节点的国家/地区配置文件与您的执照相匹配。",
+    "countrySettingLabel": "国家/地区设置 (--setctry)",
+    "extUdpHint": "EXTUDP需要将节点配置为--extudp开启，且--extudpip指向此计算机（UDP 1799）。",
+    "kissTcpHint": "KISS/TCP 使用 MeshCom 端口 8001 — 而非 Reticulum KISS/AX.25。"
+  },
+  "meshcomDeviceCommands": {
+    "summary": "MeshCom 设备命令",
+    "description": "通过串行或BLE发送ICSSW节点命令（--help、--settime、--setctry……）。适用于应用的命令与官方MeshCom应用相匹配；仅适用于串行端口的命令需要USB控制台链接。",
+    "autoSettimeLegend": "按点儿",
+    "autoSettime": "连接时自动设置节点时间",
+    "autoSettimeHint": "通过串行或BLE连接时，使用此计算机的 UTC 时钟（例如 {{example}}）发送 --settime。",
+    "settimeNow": "立即设置时间（UTC）",
+    "requiresSerialBle": "通过串行或BLE连接以发送设备命令。EXTUDP 和 KISS/TCP 仅用于聊天。",
+    "filter": "筛选命令",
+    "filterPlaceholder": "搜索 --settime、网关、邻居……",
+    "serialOnly": "仅限串行",
+    "run": "潛襲",
+    "runCommand": "运行{{command}}",
+    "runChoice": "运行{{command}} {{value}}",
+    "argInput": "{{command}}的参数",
+    "sent": "命令已发送到节点。",
+    "sendFailed": "命令失败：{{detail}}",
+    "setctrySent": "已保存并发送 --setctry {{code}} 至节点。",
+    "setctrySavedLocal": "已保存国家/地区偏好。请通过串行或BLE连接，以便在节点上应用 --setctry。",
+    "consoleHint": "输入任意 --command 或 APP 快捷方式（GATEWAY、GPS、WX-Info）。机密信息在日志中被隐藏。",
+    "consoleLog": "设备命令控制台日志",
+    "consoleInput": "设备命令输入",
+    "consolePlaceholder": "信息",
+    "consoleSend": "傳送",
+    "confirmDanger": {
+      "title": "确认命令",
+      "message": "要将{{command}}发送到节点吗？这可能会重启或更改射频设置。",
+      "confirm": "傳送"
+    },
+    "groups": {
+      "display": "波形图显示",
+      "position": "位置和时间",
+      "sensors": "传感器",
+      "identity": "身份与群组",
+      "network": "网络和Wi-Fi",
+      "gateway": "网关",
+      "bluetooth": "蓝牙",
+      "neighbors": "邻居",
+      "mailbox": "邮箱",
+      "debug": "状态和调试",
+      "power": "电源和 OTA",
+      "misc": "KISS / 其他",
+      "console": "控制平台"
+    },
+    "appEligible": "应用程序/序列号"
   }
 }

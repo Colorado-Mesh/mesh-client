@@ -1,0 +1,520 @@
+/* eslint-disable @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCom yet */
+import { encodeMeshcomBleCommand, parseMeshcomBleFrames } from '../meshcom/meshcomBleFrame';
+import {
+  callsignToNodeId,
+  normalizeMeshcomCallsign,
+  parseMeshcomSrcPath,
+} from '../meshcom/meshcomCallsign';
+import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
+import {
+  buildMeshcomKissTxMessage,
+  type MeshcomKissEvent,
+  MeshcomKissSession,
+  parseMeshcomInfoField,
+} from '../meshcom/meshcomKissCodec';
+import { MeshcomSerialLineBuffer, meshcomSerialSendText } from '../meshcom/meshcomSerial';
+import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
+import type { TransportParams } from '../types';
+import {
+  createMeshComConnection,
+  type MeshComConnection,
+  transportParamsToMeshCom,
+} from './meshcom/MeshComTransport';
+import { meshcomIdentitySignature } from './meshcomIdentitySignature';
+import type { DomainEvent, Protocol, SendMessageOptions, SendResult } from './Protocol';
+import { UnsupportedOperation } from './Protocol';
+
+const unsupported = (op: string) => {
+  throw new UnsupportedOperation(`meshcom ${op}`);
+};
+
+/** Runtime handle returned by {@link meshcomProtocol.createDevice}. */
+export interface MeshComDeviceHandle {
+  connection: MeshComConnection;
+  transport: 'udp' | 'tcp' | 'serial' | 'ble';
+  /** Operator callsign for KISS TX src (SSID 0–15). */
+  operatorCallsign: string;
+  /** nodeId → callsign learned from inbound traffic. */
+  callsignByNodeId: Map<number, string>;
+  kissSession: MeshcomKissSession | null;
+  nextMsgNumber: number;
+}
+
+function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number {
+  const normalized = normalizeMeshcomCallsign(callsign);
+  if (!normalized) return 0;
+  const nodeId = callsignToNodeId(normalized);
+  handle.callsignByNodeId.set(nodeId, normalized);
+  return nodeId;
+}
+
+function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessageOptions): string {
+  if (opts.destination == null || opts.destination === 0xffffffff) {
+    return '*';
+  }
+  const known = handle.callsignByNodeId.get(opts.destination);
+  if (known) return known;
+  throw new Error(
+    `meshcom sendMessage: unknown destination nodeId ${opts.destination} (no callsign mapping)`,
+  );
+}
+
+function emitExtUdpEvents(
+  handle: MeshComDeviceHandle,
+  raw: Uint8Array,
+  emit: (event: DomainEvent) => void,
+): void {
+  const parsed = parseMeshcomExtUdp(raw);
+  if (!parsed) return;
+  const now = Date.now();
+
+  if (parsed.type === 'msg') {
+    const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
+    const from = rememberCallsign(handle, origin || parsed.src);
+    const to =
+      parsed.dst === '*' || !parsed.dst ? 0xffffffff : rememberCallsign(handle, parsed.dst);
+    emit({
+      type: 'text_message',
+      payload: {
+        id: parsed.msg_id ?? `meshcom-udp-${from}-${now}`,
+        from,
+        to,
+        payload: parsed.msg,
+        channelIndex: to === 0xffffffff ? 0 : -1,
+        timestamp: now,
+        rxSnr: parsed.snr,
+        rxRssi: parsed.rssi,
+        hopCount,
+      },
+    });
+    if (origin) {
+      emit({
+        type: 'node_info',
+        payload: {
+          nodeId: from,
+          longName: origin,
+          shortName: origin.slice(0, 4),
+          lastHeardAt: now,
+          snr: parsed.snr,
+          rssi: parsed.rssi,
+          hopsAway: hopCount,
+          hwModel: parsed.hw_id != null ? String(parsed.hw_id) : undefined,
+        },
+      });
+    }
+    return;
+  }
+
+  if (parsed.type === 'pos') {
+    const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
+    const nodeId = rememberCallsign(handle, origin || parsed.src);
+    let latitude = parsed.lat;
+    let longitude = parsed.long;
+    if (latitude != null && parsed.lat_dir?.toUpperCase() === 'S') latitude = -latitude;
+    if (longitude != null && parsed.long_dir?.toUpperCase() === 'W') longitude = -longitude;
+
+    emit({
+      type: 'node_info',
+      payload: {
+        nodeId,
+        longName: origin || parsed.src,
+        shortName: (origin || parsed.src).slice(0, 4),
+        lastHeardAt: now,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        altitude: parsed.alt,
+        batteryLevel: parsed.batt,
+        snr: parsed.snr,
+        rssi: parsed.rssi,
+        hopsAway: hopCount,
+        hwModel: parsed.hw_id != null ? String(parsed.hw_id) : undefined,
+      },
+    });
+    if (
+      latitude != null &&
+      longitude != null &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude)
+    ) {
+      emit({
+        type: 'position',
+        payload: {
+          nodeId,
+          latitude,
+          longitude,
+          altitude: parsed.alt,
+          timestamp: now,
+        },
+      });
+    }
+  }
+}
+
+/**
+ * Serial/BLE console line:
+ * - `{CALL}text` / `::text` → chat inject
+ * - other lines (e.g. `--info` replies) → device_log for the Device Commands console
+ * - outbound `--` echoes are ignored
+ */
+function emitConsoleTextLine(
+  handle: MeshComDeviceHandle,
+  line: string,
+  emit: (event: DomainEvent) => void,
+): void {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith('--')) return;
+
+  const now = Date.now();
+  const brace = /^\{([^}]+)\}(.*)$/.exec(trimmed);
+  if (brace) {
+    const call = normalizeMeshcomCallsign(brace[1]);
+    const text = brace[2].trimEnd();
+    if (!call || !text) return;
+    // EXTUDP JSON also starts with `{` — only treat as brace-directed when not JSON.
+    if (trimmed.startsWith('{"') || trimmed.startsWith('{ ')) return;
+    const from = rememberCallsign(handle, call);
+    emit({
+      type: 'text_message',
+      payload: {
+        id: `meshcom-console-${from}-${now}`,
+        from,
+        to: 0xffffffff,
+        payload: text,
+        channelIndex: 0,
+        timestamp: now,
+      },
+    });
+    emit({
+      type: 'node_info',
+      payload: {
+        nodeId: from,
+        longName: call,
+        shortName: call.slice(0, 4),
+        lastHeardAt: now,
+      },
+    });
+    return;
+  }
+
+  // Serial ALL inject uses `::text` (two colons).
+  if (trimmed.startsWith('::')) {
+    const text = trimmed.slice(2).trim();
+    if (!text) return;
+    emit({
+      type: 'text_message',
+      payload: {
+        id: `meshcom-console-all-${now}-${text.length}`,
+        from: 0,
+        to: 0xffffffff,
+        payload: text,
+        channelIndex: 0,
+        timestamp: now,
+      },
+    });
+    return;
+  }
+
+  emit({
+    type: 'device_log',
+    payload: {
+      message: trimmed,
+      time: now,
+      source: 'meshcom-console',
+      level: 0,
+    },
+  });
+}
+
+function emitKissEvents(
+  handle: MeshComDeviceHandle,
+  events: MeshcomKissEvent[],
+  emit: (event: DomainEvent) => void,
+): void {
+  const now = Date.now();
+  for (const event of events) {
+    if (event.type === 'tx_result') {
+      // TX result is observed by sendMessage waiters later; no DomainEvent yet.
+      continue;
+    }
+    const { frame } = event;
+    const from = rememberCallsign(handle, frame.src);
+    const hopCount = frame.digis.length;
+    const info = parseMeshcomInfoField(frame.info);
+
+    if (info.kind === 'message') {
+      const to =
+        info.addressee === '*' || !info.addressee
+          ? 0xffffffff
+          : rememberCallsign(handle, info.addressee);
+      emit({
+        type: 'text_message',
+        payload: {
+          id: `meshcom-kiss-${from}-${now}-${frame.info.length}`,
+          from,
+          to,
+          payload: info.text,
+          channelIndex: to === 0xffffffff ? 0 : -1,
+          timestamp: now,
+          rxSnr: frame.meta?.snr,
+          rxRssi: frame.meta?.rssi,
+          hopCount,
+        },
+      });
+      emit({
+        type: 'node_info',
+        payload: {
+          nodeId: from,
+          longName: frame.src,
+          shortName: frame.src.slice(0, 4),
+          lastHeardAt: now,
+          snr: frame.meta?.snr,
+          rssi: frame.meta?.rssi,
+          hopsAway: hopCount,
+        },
+      });
+      continue;
+    }
+
+    if (info.kind === 'position') {
+      const altitudeM =
+        info.altitudeFt != null && Number.isFinite(info.altitudeFt)
+          ? Math.round(info.altitudeFt * 0.3048)
+          : undefined;
+      emit({
+        type: 'node_info',
+        payload: {
+          nodeId: from,
+          longName: frame.src,
+          shortName: frame.src.slice(0, 4),
+          lastHeardAt: now,
+          latitude: info.latitude,
+          longitude: info.longitude,
+          altitude: altitudeM,
+          batteryLevel: info.batteryPercent,
+          snr: frame.meta?.snr,
+          rssi: frame.meta?.rssi,
+          hopsAway: hopCount,
+        },
+      });
+      emit({
+        type: 'position',
+        payload: {
+          nodeId: from,
+          latitude: info.latitude,
+          longitude: info.longitude,
+          altitude: altitudeM,
+          timestamp: now,
+        },
+      });
+    }
+  }
+}
+
+/**
+ * MeshCom protocol adapter — EXTUDP + KISS/TCP transports.
+ */
+export const meshcomProtocol: Protocol = {
+  type: 'meshcom',
+  capabilities: MESHCOM_CAPABILITIES,
+
+  async createDevice(params: TransportParams): Promise<MeshComDeviceHandle> {
+    const transportParams = transportParamsToMeshCom(params);
+    const connection = await createMeshComConnection(transportParams);
+    return {
+      connection,
+      transport: transportParams.transport,
+      operatorCallsign: '',
+      callsignByNodeId: new Map(),
+      kissSession: transportParams.transport === 'tcp' ? new MeshcomKissSession() : null,
+      nextMsgNumber: 1,
+    };
+  },
+
+  async destroyDevice(handle: unknown): Promise<void> {
+    const device = handle as MeshComDeviceHandle | null;
+    if (!device) return;
+    device.kissSession?.reset();
+    await device.connection.close();
+  },
+
+  subscribe(handle: unknown, emit: (event: DomainEvent) => void): () => void {
+    const device = handle as MeshComDeviceHandle;
+    const serialLines = new MeshcomSerialLineBuffer();
+    const ingestTextOrJson = (text: string): void => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      if (trimmed.startsWith('{')) {
+        const parsed = parseMeshcomExtUdp(trimmed);
+        if (parsed) {
+          emitExtUdpEvents(device, new TextEncoder().encode(trimmed), emit);
+          return;
+        }
+        emitConsoleTextLine(device, trimmed, emit);
+        return;
+      }
+      emitConsoleTextLine(device, trimmed, emit);
+    };
+    const onData = (bytes: Uint8Array): void => {
+      try {
+        if (device.transport === 'udp') {
+          emitExtUdpEvents(device, bytes, emit);
+          return;
+        }
+        if (device.transport === 'tcp' && device.kissSession) {
+          const events = device.kissSession.pushBytes(bytes);
+          emitKissEvents(device, events, emit);
+          return;
+        }
+        if (device.transport === 'serial') {
+          for (const line of serialLines.push(bytes)) {
+            ingestTextOrJson(line);
+          }
+          return;
+        }
+        if (device.transport === 'ble') {
+          for (const frame of parseMeshcomBleFrames(bytes)) {
+            if (frame.kind === 'text' || frame.kind === 'json') {
+              ingestTextOrJson(frame.kind === 'text' ? frame.text : frame.json);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(
+          '[MeshComProtocol] inbound parse failed:',
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    };
+    const onDisconnected = (): void => {
+      if (device.kissSession) {
+        emitKissEvents(device, device.kissSession.flush(), emit);
+      }
+      serialLines.reset();
+      emit({ type: 'device_status', payload: { status: 'disconnected' } });
+    };
+    device.connection.onData = onData;
+    device.connection.onDisconnected = onDisconnected;
+    return () => {
+      device.connection.onData = null;
+      device.connection.onDisconnected = null;
+    };
+  },
+
+  identitySignature(params: TransportParams): string {
+    return meshcomIdentitySignature(params);
+  },
+
+  async sendMessage(handle: unknown, opts: SendMessageOptions): Promise<SendResult> {
+    const device = handle as MeshComDeviceHandle;
+    const dst = resolveDestinationCallsign(device, opts);
+    const text = opts.text;
+
+    if (device.transport === 'udp') {
+      const json = serializeMeshcomExtUdp({ type: 'msg', dst, msg: text });
+      await device.connection.write(new TextEncoder().encode(json));
+      return { packetId: device.nextMsgNumber++ };
+    }
+
+    if (device.transport === 'tcp') {
+      const operator = normalizeMeshcomCallsign(device.operatorCallsign);
+      if (!operator) {
+        throw new Error('meshcom KISS sendMessage: operatorCallsign not set');
+      }
+      const msgNumber = device.nextMsgNumber++;
+      const frame = buildMeshcomKissTxMessage({
+        operatorCallsign: operator,
+        destination: dst,
+        text,
+        msgNumber,
+      });
+      await device.connection.write(frame);
+      return { packetId: msgNumber };
+    }
+
+    if (device.transport === 'serial') {
+      await device.connection.write(meshcomSerialSendText(dst, text));
+      return { packetId: device.nextMsgNumber++ };
+    }
+
+    // Remaining MeshCom transport is BLE (udp/tcp/serial handled above).
+    const line = new TextDecoder('utf-8', { fatal: false }).decode(
+      meshcomSerialSendText(dst, text),
+    );
+    await device.connection.write(encodeMeshcomBleCommand(line.replace(/\r?\n$/, '')));
+    return { packetId: device.nextMsgNumber++ };
+  },
+
+  async sendPosition(): Promise<void> {
+    unsupported('sendPosition');
+  },
+  async sendTraceRoute(): Promise<void> {
+    unsupported('sendTraceRoute');
+  },
+  async sendWaypoint(): Promise<void> {
+    unsupported('sendWaypoint');
+  },
+  async deleteWaypoint(): Promise<void> {
+    unsupported('deleteWaypoint');
+  },
+  async reboot(): Promise<void> {
+    unsupported('reboot');
+  },
+  async shutdown(): Promise<void> {
+    unsupported('shutdown');
+  },
+  async factoryReset(): Promise<void> {
+    unsupported('factoryReset');
+  },
+  async resetNodeDb(): Promise<void> {
+    unsupported('resetNodeDb');
+  },
+  async rebootOta(): Promise<void> {
+    unsupported('rebootOta');
+  },
+  async enterDfuMode(): Promise<void> {
+    unsupported('enterDfuMode');
+  },
+  async factoryResetConfig(): Promise<void> {
+    unsupported('factoryResetConfig');
+  },
+  async requestRefresh(): Promise<void> {
+    return Promise.resolve();
+  },
+  async setConfig(): Promise<void> {
+    unsupported('setConfig');
+  },
+  async commitConfig(): Promise<void> {
+    unsupported('commitConfig');
+  },
+  async setChannel(): Promise<void> {
+    unsupported('setChannel');
+  },
+  async clearChannel(): Promise<void> {
+    unsupported('clearChannel');
+  },
+  async setOwner(
+    handle: unknown,
+    opts: { longName: string; shortName: string; isLicensed: boolean },
+  ): Promise<void> {
+    const device = handle as MeshComDeviceHandle;
+    device.operatorCallsign = normalizeMeshcomCallsign(opts.longName);
+  },
+  async setModuleConfig(): Promise<void> {
+    unsupported('setModuleConfig');
+  },
+  async setCannedMessages(): Promise<void> {
+    unsupported('setCannedMessages');
+  },
+  async setRingtone(): Promise<void> {
+    unsupported('setRingtone');
+  },
+  async sendPositionToDevice(): Promise<void> {
+    unsupported('sendPositionToDevice');
+  },
+  async requestPosition(): Promise<void> {
+    unsupported('requestPosition');
+  },
+  async deleteNode(): Promise<void> {
+    unsupported('deleteNode');
+  },
+};

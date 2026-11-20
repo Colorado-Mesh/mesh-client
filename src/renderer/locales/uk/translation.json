@@ -481,7 +481,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Небо",
-      "classic": "Класичний зелений"
+      "classic": "Класичний зелений",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Обрізати вузли без позиції / Zero Island",
     "protocolsSection": "Протоколів",
@@ -568,7 +569,9 @@
     "switchToMeshCoreWithUnread": "Перейти на MeshCore, {{count}} непрочитано",
     "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано",
     "tabWithUnread": "{{label}}, {{count}} непрочитано",
-    "tabWithOpenIncidents": "{{label}}, {{count}} відкриті травневі або ТЕРМІНОВІ ІНЦИДЕНТИ"
+    "tabWithOpenIncidents": "{{label}}, {{count}} відкриті травневі або ТЕРМІНОВІ ІНЦИДЕНТИ",
+    "switchToMeshCom": "Перейти на MeshCom",
+    "switchToMeshComWithUnread": "Перейти до MeshCom, {{count}} непрочитаних"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -1784,7 +1787,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Країна]/[Штат], напр. msh/CO/US",
@@ -1981,7 +1985,10 @@
     "meshtasticSilentAfterConfigure": "Підключено до радіоприймача, але він припинив надсилати мережевий трафік після налаштування. Повторне підключення автоматично. Якщо це продовжуватиметься, перевірте підключення радіостанції до мережі або перезапустіть її.",
     "mqttPacketTooLarge": "Брокер надіслав пакет MQTT, більший за межу безпеки {{limit}} байт; автоматичне перепідключення вимкнено.",
     "protocolGuideLink": "Посібник з протоколу ↗",
-    "mqttAuthDocsLink": "MQTT авт. ↗"
+    "mqttAuthDocsLink": "MQTT авт. ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -7788,7 +7795,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Отримано {{when}}"
   },
@@ -8631,7 +8639,8 @@
     "openFromChat": "Пошук у всіх розмовах",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Єдина папка «Вхідні»",
@@ -8678,7 +8687,8 @@
     "deleteConfirm_few": "Видалити {{count}} повідомлення з цієї папки вхідних? Зберігається історія чатів Meshtastic та MeshCore.",
     "deleteConfirm_many": "Видалити {{count}} повідомлення з цієї папки вхідних? Зберігається історія чатів Meshtastic та MeshCore.",
     "deleted_few": "Видалено {{count}} повідомлень.",
-    "deleted_many": "Видалено {{count}} повідомлень."
+    "deleted_many": "Видалено {{count}} повідомлень.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Перевірити відкритий ключ",
@@ -9112,7 +9122,8 @@
     "loadFailed": "Не вдалося завантажити контактні картки з бази даних.",
     "retryLoad": "Повторити спробу",
     "retryLoadAria": "Повторити спробу завантаження карток контактів",
-    "loadUnavailable": "Контактні картки недоступні в цій збірці. Перевстановіть або оновіть застосунок."
+    "loadUnavailable": "Контактні картки недоступні в цій збірці. Перевстановіть або оновіть застосунок.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Приховувати повідомлення за фільтром слів",
@@ -9150,5 +9161,60 @@
     "openAria": "Відкрити {{name}}",
     "unknownRoom": "Кімната {{id}}",
     "hops": "{{count}} пересадок"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom – ліцензоване аматорське радіозв'язкування",
+    "licenseNoticeBody": "MeshCom працює на ліцензованих аматорських (радіоаматорських) частотах LoRa, вибраних за допомогою параметра \"Країна\" (--setctry) у всьому світі, а не лише на частоті 433 МГц, яка використовується в ЄС. Умикайте MeshCom, лише якщо ви маєте дозвіл на передачу на діапазонах, налаштованих для профілю вашої країни. Це повідомлення не стосується розблокування ліцензованої аматорської частоти Meshtastic.",
+    "licenseNoticeAccept": "Я розумію",
+    "connectionHint": "MeshCom використовує аматорський діапазон LoRa через налаштування країни (--setctry). Переконайтеся, що профіль країни вашого вузла відповідає вашій ліцензії.",
+    "countrySettingLabel": "Налаштування країни (--setctry)",
+    "extUdpHint": "Для EXTUDP потрібно, щоб вузол був налаштований за допомогою --extudp on та --extudpip, що вказує на цей комп'ютер (UDP 1799).",
+    "kissTcpHint": "KISS/TCP використовує порт MeshCom 8001, а не Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "Команди пристрою MeshCom",
+    "description": "Надсилайте команди вузла ICSSW (--help, --settime, --setctry, …) через послідовний інтерфейс або BLE. Команди, сумісні з застосунком, відповідають офіційному застосунку MeshCom; для команд, які підтримуються лише через послідовний інтерфейс, потрібне з'єднання з консоллю USB.",
+    "autoSettimeLegend": "Годинник",
+    "autoSettime": "Автоматично встановлювати час вузла під час під'єднання",
+    "autoSettimeHint": "У разі під'єднання через послідовний інтерфейс або BLE надішліть команду --settime з часом UTC цього комп'ютера (наприклад, {{example}}).",
+    "settimeNow": "Встановити поточний час (UTC)",
+    "requiresSerialBle": "Під'єднайтеся через послідовний інтерфейс або BLE, щоб надсилати команди пристрою. EXTUDP і KISS/TCP підтримують лише чат.",
+    "filter": "Команди фільтра",
+    "filterPlaceholder": "Пошук --settime, шлюз, сусіди…",
+    "serialOnly": "лише послідовний",
+    "run": "Біг",
+    "runCommand": "Запустити {{command}}",
+    "runChoice": "Запустити {{command}} {{value}}",
+    "argInput": "Аргумент для {{command}}",
+    "sent": "Команду надіслано до вузла.",
+    "sendFailed": "Помилка команди: {{detail}}",
+    "setctrySent": "Збережено та надіслано --setctry {{code}} до вузла.",
+    "setctrySavedLocal": "Збережені налаштування країни. Під'єднайтеся через послідовний інтерфейс або BLE, щоб застосувати --setctry до вузла.",
+    "consoleHint": "Введіть будь-яку команду --command або ярлик програми (GATEWAY, GPS, WX-Info). Секретні дані в журналі видаляються.",
+    "consoleLog": "Журнал консолі команд пристрою",
+    "consoleInput": "Введення команди для пристрою",
+    "consolePlaceholder": "Інформація",
+    "consoleSend": "Надіслати",
+    "confirmDanger": {
+      "title": "Підтвердити команду",
+      "message": "Надіслати {{command}} на вузол? Це може призвести до перезавантаження або зміни налаштувань радіочастоти.",
+      "confirm": "Надіслати"
+    },
+    "groups": {
+      "display": "Екран",
+      "position": "Місцезнаходження та час",
+      "sensors": "Датчики",
+      "identity": "Ідентифікаційні дані та групи",
+      "network": "Мережа та Wi-Fi",
+      "gateway": "Шлюз",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Сусідство",
+      "mailbox": "Поштова Скринька",
+      "debug": "Статус і налагодження",
+      "power": "Живлення та бездротове оновлення",
+      "misc": "KISS / інше",
+      "console": "Втішити"
+    },
+    "appEligible": "ДОДАТОК / Серійний номер"
   }
 }

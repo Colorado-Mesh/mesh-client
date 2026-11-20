@@ -542,6 +542,7 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
+      "meshcom": "MeshCom",
       "sky": "Sky",
       "classic": "Classic green"
     },
@@ -585,9 +586,11 @@
     "switchToMeshtastic": "Switch to Meshtastic",
     "switchToMeshCore": "Switch to MeshCore",
     "switchToReticulum": "Switch to Reticulum",
+    "switchToMeshCom": "Switch to MeshCom",
     "switchToMeshtasticWithUnread": "Switch to Meshtastic, {{count}} unread",
     "switchToMeshCoreWithUnread": "Switch to MeshCore, {{count}} unread",
     "switchToReticulumWithUnread": "Switch to Reticulum, {{count}} unread",
+    "switchToMeshComWithUnread": "Switch to MeshCom, {{count}} unread",
     "tabWithUnread": "{{label}}, {{count}} unread",
     "tabWithOpenIncidents": "{{label}}, {{count}} open incidents",
     "backToTop": "Back to top"
@@ -670,7 +673,8 @@
     "openFromChat": "Search all conversations",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Unified inbox",
@@ -707,7 +711,8 @@
     "deleteFailed": "Couldn't save the change. Nothing was removed.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "chatPanel": {
     "channelMenuAria": "Options for {{name}}",
@@ -1532,7 +1537,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "reticulumIdentity": {
       "title": "Reticulum identity",
@@ -1899,10 +1905,13 @@
     "reconnect": "Reconnect",
     "forgetDevice": "Forget this device",
     "bluetooth": "Bluetooth",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
     "usbSerial": "USB Serial",
     "wifiHttp": "WiFi/HTTP",
     "wifiTcp": "WiFi/TCP (fast)",
     "tcpIp": "TCP/IP",
+    "kissTcp": "KISS/TCP",
     "deviceAddress": "Device Address",
     "deviceAddressPlaceholder": "meshtastic.local, 192.168.1.x, or [fd00::1]",
     "deviceAddressHint": "Enter hostname or IP address (without http://)",
@@ -3090,7 +3099,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     }
   },
   "sensorLayer": {
@@ -3343,6 +3353,15 @@
     "extraRfReceptions": "extra RF receptions",
     "originatorPacket": "packet",
     "originatorPackets": "packets"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — licensed amateur radio",
+    "licenseNoticeBody": "MeshCom operates on licensed amateur (ham) LoRa frequencies selected by Country Setting (--setctry) worldwide — not EU 433 MHz only. Enable MeshCom only if you are authorized to transmit on the bands configured for your country profile. This notice is separate from Meshtastic’s licensed-ham frequency unlock.",
+    "licenseNoticeAccept": "I understand",
+    "connectionHint": "MeshCom uses ham-band LoRa via Country Setting (--setctry). Ensure your node’s country profile matches your license.",
+    "countrySettingLabel": "Country Setting (--setctry)",
+    "extUdpHint": "EXTUDP needs the node configured with --extudp on and --extudpip pointing at this computer (UDP 1799).",
+    "kissTcpHint": "KISS/TCP uses MeshCom port 8001 — not Reticulum KISS/AX.25."
   },
   "meshcore": {
     "errors": {
@@ -7408,6 +7427,7 @@
     "protocolMeshtastic": "Meshtastic",
     "protocolMeshcore": "MeshCore",
     "protocolReticulum": "Reticulum",
+    "protocolMeshcom": "MeshCom",
     "loadFailed": "Could not load contact cards from the database.",
     "loadUnavailable": "Contact Cards are unavailable in this build. Reinstall or update the app.",
     "retryLoad": "Try again",
@@ -9006,5 +9026,51 @@
     "open": "Weak or open channel key on {{channel}}",
     "openLocation": "Open channel key with precise location on {{channel}}",
     "openLocationUplink": "Open channel key with precise location and MQTT uplink on {{channel}}"
+  },
+  "meshcomDeviceCommands": {
+    "summary": "MeshCom device commands",
+    "description": "Send ICSSW node commands (--help, --settime, --setctry, …) over Serial or BLE. APP-eligible commands match the official MeshCom app; serial-only commands need a USB console link.",
+    "autoSettimeLegend": "Clock",
+    "autoSettime": "Set node time automatically on connect",
+    "autoSettimeHint": "When connected over Serial or BLE, send --settime with this computer’s UTC clock (e.g. {{example}}).",
+    "settimeNow": "Set time now (UTC)",
+    "requiresSerialBle": "Connect via Serial or BLE to send device commands. EXTUDP and KISS/TCP carry chat only.",
+    "filter": "Filter commands",
+    "filterPlaceholder": "Search --settime, gateway, neighbors…",
+    "serialOnly": "serial only",
+    "run": "Run",
+    "runCommand": "Run {{command}}",
+    "runChoice": "Run {{command}} {{value}}",
+    "argInput": "Argument for {{command}}",
+    "sent": "Command sent to the node.",
+    "sendFailed": "Command failed: {{detail}}",
+    "setctrySent": "Saved and sent --setctry {{code}} to the node.",
+    "setctrySavedLocal": "Saved country preference. Connect via Serial or BLE to apply --setctry on the node.",
+    "consoleHint": "Type any --command or APP shortcut (GATEWAY, GPS, WX-Info). Secrets are redacted in the log.",
+    "consoleLog": "Device command console log",
+    "consoleInput": "Device command input",
+    "consolePlaceholder": "--info",
+    "consoleSend": "Send",
+    "confirmDanger": {
+      "title": "Confirm command",
+      "message": "Send {{command}} to the node? This may reboot or change RF settings.",
+      "confirm": "Send"
+    },
+    "groups": {
+      "display": "Display",
+      "position": "Position & time",
+      "sensors": "Sensors",
+      "identity": "Identity & groups",
+      "network": "Network & Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Neighbors",
+      "mailbox": "Mailbox",
+      "debug": "Status & debug",
+      "power": "Power & OTA",
+      "misc": "KISS / misc",
+      "console": "Console"
+    },
+    "appEligible": "APP / Serial"
   }
 }

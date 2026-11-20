@@ -103,6 +103,8 @@ export function bleOwnerI18nKey(owner: BlePeripheralOwner): string | null {
       return 'connectionPanel.bleOwner.meshtastic';
     case 'gatt:meshcore':
       return 'connectionPanel.bleOwner.meshcore';
+    case 'gatt:meshcom':
+      return 'connectionPanel.bleOwner.meshcom';
     case 'reticulum':
       return 'connectionPanel.bleOwner.reticulum';
     default:

@@ -9,6 +9,7 @@ import {
   getIdentity,
   removeIdentity as removeIdentityFromStore,
   removeTransport,
+  replaceIdentityProtocol,
   setActiveIdentity,
   updateIdentity,
 } from '../../stores/identityStore';
@@ -18,6 +19,7 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import { flushNodeWrites } from '../ingest/coalescedNodeWrites';
 import { mergeOfflineStoreIntoIdentity } from '../mergeOfflineIdentityStore';
 import { tryReuseOfflineProtocolIdentity } from '../offlineProtocolIdentities';
+import { ensureMeshcomProtocolLoaded } from '../protocols/meshcomProtocolLoader';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
 import { getProtocolForType } from '../protocols/protocolRegistry';
@@ -55,6 +57,7 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
     case 'serial':
     case 'http':
     case 'tcp':
+    case 'udp':
       return type;
     default:
       return null;
@@ -161,6 +164,9 @@ export class ConnectionDriver {
     params: TransportParams,
     opts?: { skipDiscoverSelf?: boolean },
   ): Promise<IdentityId> {
+    if (protocolType === 'meshcom') {
+      await ensureMeshcomProtocolLoaded();
+    }
     const protocol = getProtocolForType(protocolType);
     if (!protocol) throw new Error(`Unknown protocol: ${protocolType}`);
 
@@ -172,6 +178,8 @@ export class ConnectionDriver {
       const reusableOffline = tryReuseOfflineProtocolIdentity(protocol.type as MeshProtocol);
       if (reusableOffline && getIdentity(reusableOffline)) {
         identityId = reusableOffline;
+        // MeshCom offline identities start with a type-only stub; swap in the loaded protocol.
+        replaceIdentityProtocol(reusableOffline, protocol);
         updateIdentity(reusableOffline, {
           signature: provisionalKey,
           lastSeenAt: Date.now(),

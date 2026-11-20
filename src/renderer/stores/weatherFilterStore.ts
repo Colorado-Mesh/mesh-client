@@ -10,6 +10,7 @@ import {
   saveWeatherMarkedSenders,
 } from '../lib/chatPanelProtocolStorage';
 import type { ChatMessage, MeshProtocol } from '../lib/types';
+import { REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import {
   compileWeatherPattern,
   isChannelBroadcastMessage,
@@ -18,7 +19,7 @@ import {
 } from '../lib/weatherPosts';
 import { useWeatherForecastStore } from './weatherForecastStore';
 
-const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'reticulum'];
+const PROTOCOLS: readonly MeshProtocol[] = REGISTERED_MESH_PROTOCOLS;
 
 interface WeatherFilterState {
   hideInChannels: boolean;

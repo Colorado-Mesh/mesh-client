@@ -18,22 +18,24 @@ describe('enabledProtocols', () => {
   });
 
   describe('sanitizeHiddenProtocols', () => {
-    it('defaults to none hidden for missing or non-array values', () => {
-      expect(sanitizeHiddenProtocols(undefined)).toEqual([]);
-      expect(sanitizeHiddenProtocols('meshcore')).toEqual([]);
+    it('defaults to MeshCom hidden for missing or non-array values', () => {
+      expect(sanitizeHiddenProtocols(undefined)).toEqual(['meshcom']);
+      expect(sanitizeHiddenProtocols('meshcore')).toEqual(['meshcom']);
     });
 
     it('drops unknown values and duplicates', () => {
       expect(sanitizeHiddenProtocols(['meshcore', 'garbage', 3, 'meshcore'])).toEqual(['meshcore']);
     });
 
-    it('never hides every protocol', () => {
-      expect(sanitizeHiddenProtocols(['meshtastic', 'meshcore', 'reticulum'])).toEqual([]);
+    it('never hides every protocol (falls back to MeshCom-only default)', () => {
+      expect(sanitizeHiddenProtocols(['meshtastic', 'meshcore', 'reticulum', 'meshcom'])).toEqual([
+        'meshcom',
+      ]);
     });
   });
 
-  it('loadHiddenProtocols reads App settings and defaults to all enabled', () => {
-    expect(loadHiddenProtocols()).toEqual([]);
+  it('loadHiddenProtocols reads App settings and defaults MeshCom hidden', () => {
+    expect(loadHiddenProtocols()).toEqual(['meshcom']);
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
       JSON.stringify({ hiddenProtocols: ['reticulum', 'bogus'] }),
@@ -42,9 +44,10 @@ describe('enabledProtocols', () => {
   });
 
   it('enabledProtocolsFrom keeps registry order', () => {
-    expect(enabledProtocolsFrom([])).toEqual(['meshtastic', 'meshcore', 'reticulum']);
-    expect(enabledProtocolsFrom(['meshcore'])).toEqual(['meshtastic', 'reticulum']);
-    expect(enabledProtocolsFrom(['meshtastic', 'meshcore'])).toEqual(['reticulum']);
+    expect(enabledProtocolsFrom([])).toEqual(['meshtastic', 'meshcore', 'reticulum', 'meshcom']);
+    expect(enabledProtocolsFrom(['meshcore'])).toEqual(['meshtastic', 'reticulum', 'meshcom']);
+    expect(enabledProtocolsFrom(['meshtastic', 'meshcore'])).toEqual(['reticulum', 'meshcom']);
+    expect(enabledProtocolsFrom(['meshcom'])).toEqual(['meshtastic', 'meshcore', 'reticulum']);
   });
 
   it('resolveEnabledProtocol falls back to the first enabled protocol', () => {

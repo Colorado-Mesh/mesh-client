@@ -55,6 +55,12 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/notificationSoundPlayWav.ts --bundle --platform=node --outfile=dist-electron/main/notification-sound-play-wav.js --format=cjs --watch';
   const nodeUpsertBuild =
     'esbuild src/main/nodeUpsert.ts --bundle --platform=node --outfile=dist-electron/main/node-upsert.js --external:electron --format=cjs --watch';
+  const meshcomDbBuild =
+    'esbuild src/main/ipc/meshcom-db-handlers.ts --bundle --platform=node --outfile=dist-electron/main/meshcom-db-handlers.js --external:electron --format=cjs --watch';
+  const meshcomDbFallbackBuild =
+    'esbuild src/main/ipc/meshcom-db-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/meshcom-db-handlers-fallback.js --external:electron --format=cjs --watch';
+  const udpBridgeBuild =
+    'esbuild src/main/ipc/udp-bridge.ts --bundle --platform=node --outfile=dist-electron/main/udp-bridge.js --external:electron --format=cjs --watch';
   const electronLaunch =
     'node scripts/wait-for-dev.mjs && VITE_DEV_SERVER_URL=http://localhost:5173 ELECTRON_ENABLE_SECURITY_WARNINGS=1 electron .';
 
@@ -63,7 +69,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,notifwav,nodeupsert,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -81,6 +87,9 @@ export function buildDevConcurrentlyArgs() {
     mqttWaypointValidationBuild,
     notificationSoundPlayWavBuild,
     nodeUpsertBuild,
+    meshcomDbBuild,
+    meshcomDbFallbackBuild,
+    udpBridgeBuild,
     'vite',
     electronLaunch,
   ];

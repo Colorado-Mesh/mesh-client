@@ -17,6 +17,7 @@ export const TROUBLESHOOTING_PAGE_BY_PROTOCOL: Readonly<Record<MeshProtocol, str
   meshtastic: 'troubleshooting',
   meshcore: 'troubleshooting-meshcore',
   reticulum: 'troubleshooting-reticulum',
+  meshcom: 'troubleshooting-meshcom',
 };
 
 export function troubleshootingDocsUrl(protocol: MeshProtocol): string {
@@ -33,6 +34,7 @@ export const MESHTASTIC_DOCS_URL = docsSitePageUrl('meshtastic');
 export const MESHCORE_DOCS_URL = docsSitePageUrl('meshcore');
 /** MeshCore Rooms (BBS) section of the MeshCore user guide. */
 export const MESHCORE_ROOMS_DOCS_URL = docsSitePageUrl('meshcore', 'rooms-bbs');
+export const MESHCOM_DOCS_URL = docsSitePageUrl('meshcom');
 export const SETTINGS_DOCS_URL = docsSitePageUrl('settings');
 /** Catch up / AI conversation summaries (User Guide). */
 export const AI_CATCH_UP_DOCS_URL = docsSitePageUrl('ai-catch-up');

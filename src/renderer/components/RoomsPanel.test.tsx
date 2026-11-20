@@ -979,7 +979,7 @@ describe('RoomsPanel', () => {
       starInboxItems(
         buildUnifiedInboxItems({
           enabledProtocols: ['meshcore'],
-          messagesByProtocol: { meshtastic: [], meshcore: [dm], reticulum: [] },
+          messagesByProtocol: { meshtastic: [], meshcore: [dm], reticulum: [], meshcom: [] },
         }),
       );
     });

@@ -22,6 +22,7 @@ const UNIQUE_INDEX_NAMES_WITH_DEDUPE_PATH = new Set([
   'idx_msg_packet_dedup',
   'idx_mc_msg_dedup',
   'idx_mc_msg_dedup_null_sender',
+  'idx_meshcom_msg_id',
 ]);
 
 function parseUniqueIndexNamesFromDdls(ddls: readonly string[]): Set<string> {
@@ -207,6 +208,37 @@ describe(
         }
       },
     );
+
+    it('idx_meshcom_msg_id: dedupes duplicate (identity_id, msg_id) rows', () => {
+      const db = openFreshUpgradedDb('meshcom.db');
+      db.execScript('DROP INDEX IF EXISTS idx_meshcom_msg_id');
+      db.prepare(
+        `INSERT INTO meshcom_messages (identity_id, msg_id, from_call, text, channel_idx, timestamp)
+       VALUES ('offline-meshcom', 'm1', 'N0CALL', 'a', 0, 1000)`,
+      ).run();
+      db.prepare(
+        `INSERT INTO meshcom_messages (identity_id, msg_id, from_call, text, channel_idx, timestamp)
+       VALUES ('offline-meshcom', 'm1', 'N0CALL', 'b', 0, 1001)`,
+      ).run();
+      runSchemaUpgrade(db);
+      const n = (
+        db
+          .prepare(
+            `SELECT COUNT(*) as c FROM meshcom_messages
+             WHERE identity_id = 'offline-meshcom' AND msg_id = 'm1'`,
+          )
+          .get() as { c: number }
+      ).c;
+      expect(n).toBe(1);
+      expect(
+        db
+          .prepare(
+            `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_meshcom_msg_id' LIMIT 1`,
+          )
+          .get(),
+      ).toBeDefined();
+      db.close();
+    });
 
     it('idx_mc_msg_dedup: UPDATE by natural key upgrades sending row to acked', () => {
       const db = openFreshUpgradedDb('mc-upsert.db');

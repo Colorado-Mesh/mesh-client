@@ -39,8 +39,11 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * tipped the minified main past 811 KiB (~+14 B); budget +1 KiB.
  * MeshCore `rx_path_hash_bytes` message column (schema + persist SQL) tipped the minified
  * main past 812 KiB (~+29 B after coerce inlining); budget +1 KiB.
+ * MeshCom (CM) fourth protocol: SQLite IPC ships as sibling `meshcom-db-handlers.js` and
+ * EXTUDP as `udp-bridge.js` (not in index.js). Remaining schema/TAK/BLE glue still tipped
+ * the minified main past 815 KiB; budget +3 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 813 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 816 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
@@ -58,7 +61,8 @@ export function formatMainBundleOverBudgetMessage(size) {
     '1. Move bulky or new main-process code into a sibling esbuild entry in scripts/esbuild-main-build.mjs',
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
     '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
-    '   environment-telemetry-handlers.js, notification-sound-play-wav.js, node-upsert.js) so it is NOT counted',
+    '   environment-telemetry-handlers.js, notification-sound-play-wav.js, node-upsert.js,',
+    '   meshcom-db-handlers.js, udp-bridge.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
@@ -243,6 +247,19 @@ describe('esbuild-main-build', () => {
       expect(nodeUpsertBytes.toString('utf8')).not.toContain('path.txt');
       expect(nodeUpsertBytes.toString('utf8')).not.toContain('Downloading Electron');
       expect(nodeUpsertBytes.toString('utf8')).not.toContain('install.js');
+      const meshcomDbBytes = fs.readFileSync(path.join(tempDir, 'meshcom-db-handlers.js'));
+      expect(meshcomDbBytes.length).toBeGreaterThan(500);
+      expect(meshcomDbBytes.toString('utf8')).toContain('registerMeshcomDbIpcHandlers');
+      const meshcomDbFallbackBytes = fs.readFileSync(
+        path.join(tempDir, 'meshcom-db-handlers-fallback.js'),
+      );
+      expect(meshcomDbFallbackBytes.length).toBeGreaterThan(200);
+      expect(meshcomDbFallbackBytes.toString('utf8')).toContain(
+        'registerMeshcomDbIpcFallbackHandlers',
+      );
+      const udpBridgeBytes = fs.readFileSync(path.join(tempDir, 'udp-bridge.js'));
+      expect(udpBridgeBytes.length).toBeGreaterThan(200);
+      expect(udpBridgeBytes.toString('utf8')).toContain('registerUdpBridgeIpcHandlers');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(

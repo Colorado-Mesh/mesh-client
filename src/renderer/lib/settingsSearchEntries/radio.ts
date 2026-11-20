@@ -20,6 +20,8 @@ const hasBluetooth = (ctx: SettingsSearchContext) => ctx.capabilities.hasBluetoo
 const hasTelemetryPrivacy = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasCompanionTelemetryPrivacyConfig;
 const hasCompanionCli = (ctx: SettingsSearchContext) => ctx.capabilities.hasCompanionCli;
+const hasMeshcomDeviceCommands = (ctx: SettingsSearchContext) =>
+  ctx.capabilities.hasMeshcomDeviceCommands;
 
 const USER = 'radioPanel.sectionDeviceUser';
 const LORA = 'radioPanel.sectionLora';
@@ -35,6 +37,7 @@ const CONTACTS = 'meshcoreContactSettings.contactManagement';
 const CONTACTS_APP = 'meshcoreContactSettings.contactsListAppHeading';
 const TELEMETRY_PRIVACY = 'meshcoreTelemetryPrivacy.summary';
 const COMPANION_CLI = 'meshcoreCompanionCli.summary';
+const MESHCOM_CMDS = 'meshcomDeviceCommands.summary';
 
 const radioEntries: readonly SettingSearchEntry[] = [
   {
@@ -818,6 +821,54 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: hasCompanionCli,
   },
 
+  // MeshCom ICSSW node commands
+  {
+    id: 'radio.meshcom.country',
+    slot: 'Radio',
+    labelKey: 'meshcom.countrySettingLabel',
+    keywords: ['setctry', 'country', 'meshcom', 'ham', 'region', 'lora'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcom.countrySetting',
+    slot: 'Radio',
+    labelKey: 'meshcom.countrySettingLabel',
+    sectionKey: 'meshcom.countrySettingLabel',
+    keywords: ['setctry', 'country', 'frequency'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.section',
+    slot: 'Radio',
+    labelKey: MESHCOM_CMDS,
+    keywords: ['meshcom', 'settime', 'command', 'console', 'icssw', 'cli'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.autoSettime',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.autoSettime',
+    sectionKey: MESHCOM_CMDS,
+    keywords: ['settime', 'clock', 'utc', 'time', 'sync'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.filter',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.filter',
+    sectionKey: MESHCOM_CMDS,
+    keywords: ['search', 'filter', 'commands'],
+    visible: hasMeshcomDeviceCommands,
+  },
+  {
+    id: 'radio.meshcomCommands.console',
+    slot: 'Radio',
+    labelKey: 'meshcomDeviceCommands.groups.console',
+    sectionKey: MESHCOM_CMDS,
+    keywords: ['console', 'terminal', 'command'],
+    visible: hasMeshcomDeviceCommands,
+  },
+
   // WiFi / network
   {
     id: 'radio.wifi.section',
@@ -1074,6 +1125,7 @@ export const radioSurface: SettingsSearchSurface = {
     { path: 'src/renderer/components/MeshcoreContactSettingsSection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/MeshcoreTelemetryPrivacySection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/MeshcoreCompanionCliSection.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/MeshComDeviceCommandsSection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/LockdownSection.tsx', sweepAllKeys: true },
   ],
   exempt: {
@@ -1238,6 +1290,53 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcoreCompanionCli.copyIp': 'copy-IP button inside the indexed WiFi group',
     'meshcoreCompanionCli.ipCopied': 'copy-IP toast, not a control',
     'meshcoreCompanionCli.console*': 'console log, input and send inside the indexed Console group',
+    'meshcomDeviceCommands.description': 'intro text of the indexed MeshCom commands section',
+    'meshcomDeviceCommands.autoSettimeLegend': 'fieldset legend of the indexed auto-settime group',
+    'meshcomDeviceCommands.autoSettimeHint': 'help text of the indexed auto-settime switch',
+    'meshcomDeviceCommands.settimeNow': 'one-shot button inside the indexed auto-settime group',
+    'meshcomDeviceCommands.requiresSerialBle': 'transport notice inside the indexed section',
+    'meshcomDeviceCommands.filterPlaceholder': 'placeholder of the indexed filter field',
+    'meshcomDeviceCommands.serialOnly': 'badge text on serial-only command rows',
+    'meshcomDeviceCommands.run': 'run button label on command rows',
+    'meshcomDeviceCommands.runCommand': 'aria-label of a command run button',
+    'meshcomDeviceCommands.runChoice': 'aria-label of an on/off/choice button',
+    'meshcomDeviceCommands.argInput': 'aria-label of a command argument field',
+    'meshcomDeviceCommands.sent': 'success toast, not a control',
+    'meshcomDeviceCommands.sendFailed': 'error toast or section status, not a control',
+    'meshcomDeviceCommands.setctrySent': 'country Apply success status, not a control',
+    'meshcomDeviceCommands.setctrySavedLocal': 'country Apply local-only status, not a control',
+    'meshcomDeviceCommands.consoleHint': 'help text of the indexed console group',
+    'meshcomDeviceCommands.consoleLog': 'aria-label of the console log',
+    'meshcomDeviceCommands.consoleInput': 'aria-label of the console input',
+    'meshcomDeviceCommands.consolePlaceholder': 'placeholder of the console input',
+    'meshcomDeviceCommands.consoleSend': 'send button of the indexed console',
+    'meshcomDeviceCommands.confirmDanger.*': 'confirmation dialog for dangerous commands',
+    'meshcomDeviceCommands.appEligible': 'badge text on APP-eligible command rows',
+    'meshcomDeviceCommands.groups.display':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.position':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.sensors':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.identity':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.network':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.gateway':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.bluetooth':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.neighbors':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.mailbox':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.debug':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.power':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcomDeviceCommands.groups.misc':
+      'fieldset legend inside the indexed MeshCom commands section',
+    'meshcom.connectionHint': 'help text under the indexed country setting',
     'meshcoreTelemetryPrivacy.contactCount': 'option description inside an indexed telemetry row',
     'meshcoreTelemetryPrivacy.description': 'card prose; its rows are indexed',
     'meshcoreTelemetryPrivacy.applyButton': 'card Apply button; the card is indexed',

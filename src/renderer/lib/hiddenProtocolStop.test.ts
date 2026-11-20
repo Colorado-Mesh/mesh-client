@@ -5,6 +5,7 @@ import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
 } from './reticulum/reticulumManualStackStopSuppress';
+import { tryGetMeshcomSession } from './sessions/meshcomSession';
 import { tryGetMeshcoreSession } from './sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from './sessions/meshtasticSession';
 
@@ -24,6 +25,10 @@ function fakeSession(): {
   };
 }
 
+vi.mock('./sessions/meshcomSession', () => ({
+  tryGetMeshcomSession: vi.fn(),
+}));
+
 vi.mock('./sessions/meshcoreSession', () => ({
   tryGetMeshcoreSession: vi.fn(),
 }));
@@ -34,6 +39,7 @@ vi.mock('./sessions/meshtasticSession', () => ({
 
 const mockedSuppress = vi.mocked(isReticulumManualStackStopSuppress);
 const mockedSetSuppress = vi.mocked(setReticulumManualStackStopSuppress);
+const mockedMeshcomSession = vi.mocked(tryGetMeshcomSession);
 const mockedMeshcoreSession = vi.mocked(tryGetMeshcoreSession);
 const mockedMeshtasticSession = vi.mocked(tryGetMeshtasticSession);
 
@@ -41,6 +47,7 @@ describe('hiddenProtocolStop', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedSuppress.mockReturnValue(false);
+    mockedMeshcomSession.mockReturnValue(fakeSession() as never);
     mockedMeshcoreSession.mockReturnValue(fakeSession() as never);
     mockedMeshtasticSession.mockReturnValue(fakeSession() as never);
   });
@@ -59,11 +66,23 @@ describe('hiddenProtocolStop', () => {
   it('latches MeshCore stop through the session latch', () => {
     expect(latchHiddenProtocolStop('meshcore')).toBe(true);
     expect(mockedMeshcoreSession).toHaveBeenCalled();
+    expect(mockedMeshcomSession).not.toHaveBeenCalled();
   });
 
   it('returns false when the MeshCore session is missing', () => {
     mockedMeshcoreSession.mockReturnValue(undefined as never);
     expect(latchHiddenProtocolStop('meshcore')).toBe(false);
+  });
+
+  it('latches MeshCom stop through the session latch', () => {
+    expect(latchHiddenProtocolStop('meshcom')).toBe(true);
+    expect(mockedMeshcomSession).toHaveBeenCalled();
+    expect(mockedMeshcoreSession).not.toHaveBeenCalled();
+  });
+
+  it('returns false when the MeshCom session is missing', () => {
+    mockedMeshcomSession.mockReturnValue(null);
+    expect(latchHiddenProtocolStop('meshcom')).toBe(false);
   });
 
   it('latches Meshtastic stop through the session latch', () => {
@@ -83,6 +102,13 @@ describe('hiddenProtocolStop', () => {
     expect(session.clearExplicitDisconnectLatch).toHaveBeenCalled();
   });
 
+  it('releases the MeshCom latch', () => {
+    const session = fakeSession();
+    mockedMeshcomSession.mockReturnValue(session as never);
+    releaseHiddenProtocolStop('meshcom');
+    expect(session.clearExplicitDisconnectLatch).toHaveBeenCalled();
+  });
+
   it('releases the Meshtastic latch', () => {
     const session = fakeSession();
     mockedMeshtasticSession.mockReturnValue(session as never);
@@ -92,8 +118,10 @@ describe('hiddenProtocolStop', () => {
 
   it('does nothing when releasing with no session', () => {
     mockedMeshcoreSession.mockReturnValue(undefined as never);
+    mockedMeshcomSession.mockReturnValue(null);
     expect(() => {
       releaseHiddenProtocolStop('meshcore');
+      releaseHiddenProtocolStop('meshcom');
     }).not.toThrow();
   });
 });

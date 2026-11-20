@@ -224,6 +224,10 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       searchMessages: async () => [],
       searchMeshcoreMessages: async () => [],
       getMeshcoreContacts: async () => [],
+      getMeshcomMessages: async () => [],
+      saveMeshcomMessage: async () => ({ changes: 0 }),
+      getMeshcomContacts: async () => [],
+      saveMeshcomContact: async () => ({ changes: 0 }),
       saveMeshcoreMessage: noopAsync,
       updateMeshcoreMessageSender: noopAsync,
       saveMeshcoreContact: noopAsync,
@@ -448,6 +452,22 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         onDisconnected: noopUnsub,
       },
       openJsonFile: async () => null,
+    },
+    meshcom: {
+      udp: {
+        connect: noopAsync,
+        write: noopAsync,
+        disconnect: noopAsync,
+        onData: noopUnsub,
+        onDisconnected: noopUnsub,
+      },
+      tcp: {
+        connect: noopAsync,
+        write: noopAsync,
+        disconnect: noopAsync,
+        onData: noopUnsub,
+        onDisconnected: noopUnsub,
+      },
     },
     http: {
       preflight: noopAsync,

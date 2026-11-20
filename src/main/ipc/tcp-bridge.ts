@@ -1,9 +1,9 @@
 /**
- * Shared MeshCore / Meshtastic TCP socket bridge.
+ * Shared MeshCore / Meshtastic / MeshCom TCP socket bridge.
  *
- * Two `createTcpBridge` instances keep independent sockets so both stacks can
+ * Separate `createTcpBridge` instances keep independent sockets so stacks can
  * stay connected. The only intentional protocol fork is `writeMissing`:
- * MeshCore rejects a missing socket; Meshtastic resolves `'no-socket'`.
+ * MeshCore/MeshCom reject a missing socket; Meshtastic resolves `'no-socket'`.
  */
 
 import { type BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
@@ -20,7 +20,7 @@ import { logDeviceConnection, sanitizeLogMessage } from '../log-service';
 import { meshtasticTcpWriteErrorIsNoSocket } from '../meshtasticTcpWriteResult';
 import { assertIpcSender } from '../validate-ipc-sender';
 
-export type TcpBridgeProtocol = 'meshcore' | 'meshtastic';
+export type TcpBridgeProtocol = 'meshcore' | 'meshtastic' | 'meshcom';
 export type TcpBridgeWriteMissing = 'reject' | 'no-socket';
 
 /** Max TCP toRadio write payload (DoS guard). */
@@ -286,7 +286,17 @@ export function registerTcpBridgeIpcHandlers(deps: TcpBridgeRegisterDeps): void 
   ipcMain.handle('meshtastic:tcp-write', meshtastic.write);
   ipcMain.handle('meshtastic:tcp-disconnect', meshtastic.disconnect);
 
-  registeredBridges.push(meshcore, meshtastic);
+  const meshcom = createTcpBridge({
+    protocol: 'meshcom',
+    writeMissing: 'reject',
+    getMainWindow: deps.getMainWindow,
+    validateHost: deps.validateHost,
+  });
+  ipcMain.handle('meshcom:tcp-connect', meshcom.connect);
+  ipcMain.handle('meshcom:tcp-write', meshcom.write);
+  ipcMain.handle('meshcom:tcp-disconnect', meshcom.disconnect);
+
+  registeredBridges.push(meshcore, meshtastic, meshcom);
 }
 
 /** Destroy both protocol sockets on quit / will-quit. */

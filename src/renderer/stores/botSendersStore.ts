@@ -3,13 +3,13 @@ import { persist } from 'zustand/middleware';
 
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 
-import type { MeshProtocol } from '../lib/types';
+import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 
 export const BOT_SENDERS_STORAGE_KEY = 'mesh-client:botSenders';
 /** Per-protocol cap; the oldest detections are evicted first (Sets keep insertion order). */
 export const BOT_SENDERS_MAX_PER_PROTOCOL = 500;
 
-const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'reticulum'];
+const PROTOCOLS: readonly MeshProtocol[] = REGISTERED_MESH_PROTOCOLS;
 
 type BotSenderSets = Readonly<Record<MeshProtocol, ReadonlySet<number>>>;
 
@@ -24,7 +24,9 @@ interface BotSendersState {
 }
 
 function emptySenders(): Record<MeshProtocol, ReadonlySet<number>> {
-  return { meshtastic: new Set(), meshcore: new Set(), reticulum: new Set() };
+  const out = {} as Record<MeshProtocol, ReadonlySet<number>>;
+  for (const p of PROTOCOLS) out[p] = new Set();
+  return out;
 }
 
 export const useBotSendersStore = create<BotSendersState>()(

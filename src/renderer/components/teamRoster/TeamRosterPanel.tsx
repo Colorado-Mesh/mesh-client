@@ -40,6 +40,7 @@ const EMPTY_MESSAGES: MessagesByProtocol = {
   meshtastic: [],
   meshcore: [],
   reticulum: [],
+  meshcom: [],
 };
 
 export interface TeamRosterPanelProps {

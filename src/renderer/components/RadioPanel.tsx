@@ -1,6 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+/** Catalog UI stays out of the Radio sync graph / App chunk budget. */
+const MeshComDeviceCommandsSection = lazy(() => import('./MeshComDeviceCommandsSection'));
 
 import { ChannelSecurityBadges } from '@/renderer/components/chat/ChannelSecurityBadges';
 import { useFloodScopeOverride } from '@/renderer/hooks/useFloodScopeOverride';
@@ -125,6 +128,7 @@ function setOwnerApplyErrorMessage(
   return err instanceof Error ? err.message : t('common.unknown');
 }
 
+import type { MeshcomDeviceCommandsActions } from '../hooks/meshcom/useMeshcomDeviceCommands';
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import {
   type OffloadContactsFromRadioFn,
@@ -139,6 +143,10 @@ import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
 import { canTransmitLocation } from '../lib/locationTransmit';
+import {
+  formatMeshcomCountryFrequency,
+  MESHCOM_COUNTRY_PROFILES,
+} from '../lib/meshcom/meshcomCountryProfiles';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
@@ -280,6 +288,8 @@ interface Props {
   }) => Promise<void>;
   /** MeshCore companion CLI (firmware v1.18+): device, radio tuning, WiFi, power, console. */
   meshcoreCompanionCli?: MeshcoreCompanionCliActions;
+  /** MeshCom ICSSW node `--` / APP commands (Serial/BLE). */
+  meshcomDeviceCommands?: MeshcomDeviceCommandsActions;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
   /** Cached Meshtastic ModuleConfig slices for merge-on-apply (local device or remote snapshot). */
@@ -895,6 +905,7 @@ export default function RadioPanel({
   meshcoreContactsForTelemetry,
   onApplyMeshcoreTelemetryPrivacy,
   meshcoreCompanionCli,
+  meshcomDeviceCommands,
   meshcoreAutoadd,
   onApplyMeshcoreContactAutoAdd,
   onRefreshMeshcoreAutoaddFromDevice,
@@ -930,6 +941,15 @@ export default function RadioPanel({
   const [longName, setLongName] = useState('');
   const [shortName, setShortName] = useState('');
   const [isLicensed, setIsLicensed] = useState(false);
+  const [meshcomCountryCode, setMeshcomCountryCode] = useState(() => {
+    const parsed = parseStoredJson<{ meshcomCountryCode?: unknown }>(
+      getAppSettingsRaw(),
+      'RadioPanel meshcomCountry',
+    );
+    return typeof parsed?.meshcomCountryCode === 'string' && parsed.meshcomCountryCode
+      ? parsed.meshcomCountryCode
+      : 'EU';
+  });
   /** Last device-reported owner applied to the form (skip redundant overwrites while editing). */
   const syncedDeviceOwnerRef = useRef<string | null>(null);
   /** Last device-reported MeshCore LoRa params applied to the form. */
@@ -1987,6 +2007,76 @@ export default function RadioPanel({
           </>
         )}
       </ConfigSection>
+
+      {capabilities?.hasMeshcomDeviceCommands && (
+        <ConfigSection
+          anchorId="radio.meshcom.country"
+          title={t('meshcom.countrySettingLabel')}
+          onApply={async () => {
+            setApplyingSection('meshcomCountry');
+            try {
+              mergeAppSetting(
+                'meshcomCountryCode',
+                meshcomCountryCode,
+                'RadioPanel meshcomCountry',
+              );
+              if (meshcomDeviceCommands?.available) {
+                await meshcomDeviceCommands.run(`--setctry ${meshcomCountryCode}`);
+                showSectionStatus(
+                  'meshcomCountry',
+                  t('meshcomDeviceCommands.setctrySent', { code: meshcomCountryCode }),
+                  'success',
+                );
+              } else {
+                showSectionStatus(
+                  'meshcomCountry',
+                  t('meshcomDeviceCommands.setctrySavedLocal'),
+                  'success',
+                );
+              }
+            } catch (e) {
+              const detail = errLikeToLogString(e);
+              console.warn('[RadioPanel] meshcom setctry failed ' + detail);
+              showSectionStatus(
+                'meshcomCountry',
+                t('meshcomDeviceCommands.sendFailed', { detail }),
+                'error',
+              );
+            } finally {
+              setApplyingSection(null);
+            }
+          }}
+          applying={applyingSection === 'meshcomCountry'}
+          status={sectionStatus('meshcomCountry')}
+          disabled={disabled}
+        >
+          <div data-setting-anchor="radio.meshcom.countrySetting" className="space-y-1">
+            <label htmlFor="radio-meshcom-country" className="text-muted text-sm">
+              {t('meshcom.countrySettingLabel')}
+            </label>
+            <select
+              id="radio-meshcom-country"
+              className={`${SELECT_BOX_CLASS} w-full`}
+              value={meshcomCountryCode}
+              disabled={disabled}
+              aria-label={t('meshcom.countrySettingLabel')}
+              onChange={(e) => {
+                setMeshcomCountryCode(e.target.value);
+              }}
+            >
+              {MESHCOM_COUNTRY_PROFILES.map((profile) => {
+                const freq = formatMeshcomCountryFrequency(profile);
+                return (
+                  <option key={profile.code} value={profile.code}>
+                    {freq ? `${profile.code} — ${freq}` : profile.code}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-muted text-xs">{t('meshcom.connectionHint')}</p>
+          </div>
+        </ConfigSection>
+      )}
 
       {/* ═══ LoRa / Radio ═══ */}
       {onApplyLoraParams ? (
@@ -3134,6 +3224,17 @@ export default function RadioPanel({
           disabled={disabled}
           onToast={addToast}
         />
+      )}
+
+      {capabilities?.hasMeshcomDeviceCommands && meshcomDeviceCommands && (
+        <Suspense fallback={null}>
+          <MeshComDeviceCommandsSection
+            key={identityId ?? 'meshcom-device-commands'}
+            commands={meshcomDeviceCommands}
+            disabled={disabled}
+            onToast={addToast}
+          />
+        </Suspense>
       )}
 
       {/* ═══ WiFi / Network ═══ */}

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 
 import { isBotReplyText } from '../lib/firmwareBotReplyParse';
-import type { ChatMessage, MeshProtocol } from '../lib/types';
+import { type ChatMessage, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useBotSendersStore } from '../stores/botSendersStore';
 
-const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'reticulum'];
+const PROTOCOLS: readonly MeshProtocol[] = REGISTERED_MESH_PROTOCOLS;
 
 function messageScanKey(m: ChatMessage): string {
   return `${m.storeId ?? m.id ?? ''}:${m.timestamp}:${m.sender_id}`;
@@ -38,7 +38,10 @@ export function useBotSenderDetection(
   selfNodeIdByProtocol: Readonly<Record<MeshProtocol, number | null | undefined>>,
 ): void {
   const seenRef = useRef<Record<MeshProtocol, Set<string>> | null>(null);
-  seenRef.current ??= { meshtastic: new Set(), meshcore: new Set(), reticulum: new Set() };
+  seenRef.current ??= Object.fromEntries(PROTOCOLS.map((p) => [p, new Set()])) as Record<
+    MeshProtocol,
+    Set<string>
+  >;
 
   useEffect(() => {
     const seen = seenRef.current;

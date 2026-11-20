@@ -78,7 +78,10 @@ import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext
 import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
-import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import {
+  hydrateIdentityStoresFromDb,
+  type MessageClearRefreshOptions,
+} from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
@@ -199,6 +202,7 @@ import { useHasLocalSendingMessage, useHasSendingMessage } from './hooks/useHasS
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
+import type { useMeshcomPanelActions } from './hooks/useMeshcomPanelActions';
 import { useMeshcoreChannelsDeviceSync } from './hooks/useMeshcoreChannelsDeviceSync';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
@@ -474,6 +478,7 @@ import {
   useAllRuntimes,
   useRuntime,
 } from './runtime/ProtocolRuntimeContext';
+import { useMeshcomRuntime } from './runtime/useMeshcomRuntime';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
@@ -643,13 +648,15 @@ export default function App() {
   const meshtasticRuntime = useMeshtasticRuntime();
   const meshcoreRuntime = useMeshcoreRuntime();
   const reticulumRuntime = useReticulumRuntime();
+  const meshcomRuntime = useMeshcomRuntime();
   const runtimeMap = useMemo<RuntimeMap>(
     () => ({
       meshtastic: meshtasticRuntime,
       meshcore: meshcoreRuntime,
       reticulum: reticulumRuntime,
+      meshcom: meshcomRuntime,
     }),
-    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime],
+    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime, meshcomRuntime],
   );
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
@@ -696,6 +703,7 @@ function AppContent() {
   const meshtasticRuntime = runtimes.meshtastic;
   const meshcoreRuntime = runtimes.meshcore;
   const reticulumRuntime = runtimes.reticulum;
+  const meshcomRuntime = runtimes.meshcom;
   const [activeTab, setActiveTab] = useState(0);
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherPins, setLauncherPins] = useState(readLauncherPins);
@@ -787,6 +795,7 @@ function AppContent() {
     meshtastic: 0,
     meshcore: 0,
     reticulum: 0,
+    meshcom: 0,
   });
   const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
   const [meshcoreMutedViewsRevision, setMeshcoreMutedViewsRevision] = useState(0);
@@ -1027,6 +1036,7 @@ function AppContent() {
   const meshtasticConnection = allConnectionActions.meshtastic;
   const meshcoreConnection = allConnectionActions.meshcore;
   const reticulumConnection = allConnectionActions.reticulum;
+  const meshcomConnection = allConnectionActions.meshcom;
   const startReticulumStack = useCallback(
     () => reticulumConnection.connectAutomatic('http'),
     [reticulumConnection],
@@ -1051,6 +1061,10 @@ function AppContent() {
         onPowerSuspend: reticulumRuntime.onPowerSuspend,
         onPowerResume: reticulumRuntime.onPowerResume,
       },
+      meshcom: {
+        onPowerSuspend: meshcomRuntime.onPowerSuspend,
+        onPowerResume: meshcomRuntime.onPowerResume,
+      },
     },
     hiddenProtocols,
   });
@@ -1066,6 +1080,7 @@ function AppContent() {
     meshtastic: meshtasticRuntime,
     meshcore: meshcoreRuntime,
     reticulum: reticulumRuntime,
+    meshcom: meshcomRuntime,
   });
   const meshtasticPanelActions = allPanelActions.meshtastic as ReturnType<
     typeof useMeshtasticPanelActions
@@ -1073,6 +1088,7 @@ function AppContent() {
   const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
     typeof useMeshcorePanelActions
   >;
+  const meshcomPanelActions = allPanelActions.meshcom as ReturnType<typeof useMeshcomPanelActions>;
   const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
     typeof useReticulumPanelActions
   >;
@@ -1307,11 +1323,17 @@ function AppContent() {
       meshtastic: meshtasticIdentityId,
       meshcore: meshcoreIdentityId,
       reticulum: reticulumIdentityId,
+      meshcom: identityIdByProtocol.meshcom,
     };
     const refreshByProtocol: Record<MeshProtocol, () => Promise<void>> = {
       meshtastic: refreshMeshtasticAllFromDb,
       meshcore: refreshMeshcoreAllFromDb,
       reticulum: refreshReticulumAllFromDb,
+      meshcom: async () => {
+        const id = identityIdByProtocol.meshcom;
+        if (!id) return;
+        await hydrateIdentityStoresFromDb('meshcom', id);
+      },
     };
 
     const shouldSkipProtocol = (p: MeshProtocol): boolean => {
@@ -1385,6 +1407,7 @@ function AppContent() {
     meshtasticIdentityId,
     meshcoreIdentityId,
     reticulumIdentityId,
+    identityIdByProtocol.meshcom,
     refreshMeshtasticAllFromDb,
     refreshMeshcoreAllFromDb,
     refreshReticulumAllFromDb,
@@ -2267,7 +2290,7 @@ function AppContent() {
   );
 
   const chatUnreadByProtocol = useMemo(
-    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
+    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, 0),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
   );
   const protocolSwitcherUnreadByProtocol = useMemo(
@@ -2278,6 +2301,7 @@ function AppContent() {
         reticulumChatUnread,
         rrcUnread,
         gamesUnread,
+        0,
       ),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread, gamesUnread],
   );
@@ -5315,6 +5339,11 @@ function AppContent() {
                         connectAutomatic: meshcoreConnection.connectAutomatic,
                         enabled: enabledProtocols.includes('meshcore'),
                       }}
+                      meshcom={{
+                        state: meshcomConnection.state,
+                        connectAutomatic: meshcomConnection.connectAutomatic,
+                        enabled: enabledProtocols.includes('meshcom'),
+                      }}
                     />
                     {reticulumCapabilities.hasReticulumInterfaceConfig ? (
                       <ReticulumStackAutostartCoordinator
@@ -6338,6 +6367,11 @@ function AppContent() {
                                     meshcoreCompanionCli={
                                       capabilities.hasCompanionCli
                                         ? meshcorePanelActions.companionCli
+                                        : undefined
+                                    }
+                                    meshcomDeviceCommands={
+                                      capabilities.hasMeshcomDeviceCommands
+                                        ? meshcomPanelActions.deviceCommands
                                         : undefined
                                     }
                                     meshcoreAutoadd={

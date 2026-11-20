@@ -10,6 +10,9 @@ export const POWER_RESUME_RECOVERY_DELAY_MS = 4_000;
 /** Stagger MeshCore RF reconnect after Meshtastic to avoid dual-protocol Noble scan contention. */
 export const POWER_RESUME_MESHCORE_STAGGER_MS = 8_000;
 
+/** Additional delay after MeshCore before MeshCom wake reconnect (~12s). */
+export const POWER_RESUME_MESHCOM_STAGGER_MS = 12_000;
+
 export interface PowerRecoveryCallbacks {
   onPowerSuspend: () => void;
   onPowerResume: () => void;
@@ -28,6 +31,14 @@ export const DEFAULT_POWER_RESUME_SCHEDULE: readonly {
   {
     protocol: 'reticulum',
     delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS + 4_000,
+  },
+  {
+    // ~12s after MeshCore (see useMeshcomRuntime onPowerResume).
+    protocol: 'meshcom',
+    delayMs:
+      POWER_RESUME_RECOVERY_DELAY_MS +
+      POWER_RESUME_MESHCORE_STAGGER_MS +
+      POWER_RESUME_MESHCOM_STAGGER_MS,
   },
 ];
 
@@ -59,6 +70,7 @@ export function usePowerRecovery(
           // started before an earlier suspend can't clobber a fresher post-resume state; this
           // no-op fallback only applies when a caller opts into the legacy two-protocol shape.
           reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
+          meshcom: { onPowerSuspend: () => {}, onPowerResume: () => {} },
         };
   const resumeSchedule =
     'resumeSchedule' in options && options.resumeSchedule

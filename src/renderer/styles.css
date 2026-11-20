@@ -82,6 +82,13 @@
   --color-reticulum-500: #facc15;
   --color-reticulum-700: #a16207;
   --color-reticulum-900: #713f12;
+  /* MeshCom ICSSW burgundy (#a2182f family); 700 is badge fill under white text. */
+  --color-meshcom-100: #fce8ec;
+  --color-meshcom-300: #f5b8c2;
+  /* 500 must clear 4.5:1 on ink-800 and highContrast ink-800 (theme accent base). */
+  --color-meshcom-500: #e89aa6;
+  --color-meshcom-700: #a2182f;
+  --color-meshcom-900: #6b0f1e;
 
   /* Status, main tier (dots and icons). The light-background and dark-text tiers are still Tailwind
      steps until the designer's values land (docs/style-guide.md, Status). */

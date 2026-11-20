@@ -124,6 +124,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/hydrateIdentityStoresFromDb.test.ts',
   'src/renderer/lib/ingest/meshtasticIngest.test.ts',
   'src/renderer/lib/ingest/meshcoreIngest.test.ts',
+  'src/renderer/lib/ingest/meshcomIngest.test.ts',
+  'src/renderer/lib/meshcom/meshcomLicenseAck.test.ts',
   'src/renderer/lib/tak/takChannelRelay.test.ts',
   'src/renderer/lib/tak/takServedChannels.test.ts',
   'src/renderer/lib/tak/takMeshSend.test.ts',

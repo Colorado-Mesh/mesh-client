@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Himmel",
-      "classic": "Klassisches Grün"
+      "classic": "Klassisches Grün",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen",
     "protocolsSection": "Protokolle",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "Wechseln Sie zu MeshCore, {{count}} ungelesen",
     "switchToReticulumWithUnread": "Zu Reticulum wechseln, {{count}} ungelesen",
     "tabWithUnread": "{{label}}, {{count}} ungelesen",
-    "tabWithOpenIncidents": "{{label}}, {{count}} offener MAITAG oder DRINGENDE VORFÄLLE"
+    "tabWithOpenIncidents": "{{label}}, {{count}} offener MAITAG oder DRINGENDE VORFÄLLE",
+    "switchToMeshCom": "Zu MeshCom wechseln",
+    "switchToMeshComWithUnread": "Zu MeshCom wechseln, {{count}} ungelesen"
   },
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
@@ -1742,7 +1745,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Bundesland], z.B. msh/CO/US",
@@ -1941,7 +1945,10 @@
     "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu.",
     "mqttPacketTooLarge": "Der Broker hat ein MQTT-Paket gesendet, das größer als das Sicherheitslimit von {{limit}} Byte ist; die automatische Wiederverbindung ist deaktiviert.",
     "protocolGuideLink": "Protokollfuhrer:",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -7670,7 +7677,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Empfangen {{when}}"
   },
@@ -8497,7 +8505,8 @@
     "openFromChat": "Alle Unterhaltungen durchsuchen",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Einheitlicher Posteingang",
@@ -8534,7 +8543,8 @@
     "deleteFailed": "Die Änderung konnte nicht gespeichert werden. Es wurde nichts entfernt.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Öffentlichen Schlüssel verifizieren",
@@ -8968,7 +8978,8 @@
     "loadFailed": "Die Kontaktkarten konnten nicht aus der Datenbank geladen werden.",
     "retryLoad": "Erneut versuchen",
     "retryLoadAria": "Laden der Kontaktkarten erneut versuchen",
-    "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie."
+    "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Nachrichten ausblenden, die dem Wortfilter entsprechen",
@@ -9006,5 +9017,60 @@
     "openAria": "{{name}} öffnen",
     "unknownRoom": "Raum {{id}}",
     "hops": "{{count}} Umstiege"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom – lizenzierter Amateurfunk",
+    "licenseNoticeBody": "MeshCom arbeitet weltweit auf lizenzierten Amateurfrequenzen (Ham) LoRa, die über die Ländereinstellung (--setctry) ausgewählt werden – nicht nur auf den in der EU genutzten 433 MHz. Aktivieren Sie MeshCom nur, wenn Sie berechtigt sind, auf den für Ihr Länderprofil konfigurierten Frequenzbändern zu senden. Dieser Hinweis steht in keinem Zusammenhang mit der Freischaltung der lizenzierten Amateurfunkfrequenz von Meshtastic.",
+    "licenseNoticeAccept": "Ich verstehe",
+    "connectionHint": "MeshCom verwendet das Amateurfunkband LoRa über die Ländereinstellung (--setctry). Stellen Sie sicher, dass das Länderprofil Ihres Knotens mit Ihrer Lizenz übereinstimmt.",
+    "countrySettingLabel": "Ländereinstellung (--setctry)",
+    "extUdpHint": "EXTUDP benötigt den Knoten, der mit --extudp on und --extudpip konfiguriert ist, der auf diesen Computer verweist (UDP 1799).",
+    "kissTcpHint": "KISS/TCP verwendet den MeshCom-Port 8001 – nicht Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "MeshCom-Gerätebefehle",
+    "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",
+    "autoSettimeLegend": "Uhr",
+    "autoSettime": "Knotenzeit bei Verbindung automatisch einstellen",
+    "autoSettimeHint": "Wenn die Verbindung über seriell oder BLE hergestellt wird, senden Sie --settime mit der UTC-Uhr dieses Computers (z. B. {{example}}).",
+    "settimeNow": "Zeit jetzt einstellen (UTC)",
+    "requiresSerialBle": "Stellen Sie eine Verbindung über Serial oder BLE her, um Gerätebefehle zu senden. EXTUDP und KISS/TCP übertragen nur den Chat.",
+    "filter": "Befehle filtern",
+    "filterPlaceholder": "Suche --settime, Gateway, Nachbarn …",
+    "serialOnly": "nur seriell",
+    "run": "Ausführen",
+    "runCommand": "{{command}} ausführen",
+    "runChoice": "{{command}} {{value}} ausführen",
+    "argInput": "Argument für {{command}}",
+    "sent": "Befehl an den Knoten gesendet.",
+    "sendFailed": "Befehl fehlgeschlagen: {{detail}}",
+    "setctrySent": "Gespeichert und an den Knoten gesendet – --setctry {{code}}.",
+    "setctrySavedLocal": "Ländereinstellung gespeichert. Stellen Sie eine Verbindung über seriell oder BLE her, um --setctry auf dem Knoten anzuwenden.",
+    "consoleHint": "Geben Sie einen beliebigen --Befehl oder eine beliebige APP-Verknüpfung ein (GATEWAY, GPS, WX-Info). Geheime Informationen werden im Protokoll geschwärzt.",
+    "consoleLog": "Protokoll der Gerätebefehlskonsole",
+    "consoleInput": "Eingabe von Gerätebefehlen",
+    "consolePlaceholder": "Hinweise",
+    "consoleSend": "Senden",
+    "confirmDanger": {
+      "title": "Befehl bestätigen",
+      "message": "{{command}} an den Knoten senden? Dies kann einen Neustart verursachen oder die RF-Einstellungen ändern.",
+      "confirm": "Senden"
+    },
+    "groups": {
+      "display": "Displayanzeige",
+      "position": "Laoezeitl",
+      "sensors": "Sensorik",
+      "identity": "Identität und Gruppen",
+      "network": "Netzwerk & Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Nachbar_innen",
+      "mailbox": "Mailbox, Posteingang",
+      "debug": "Status und Debuggen",
+      "power": "Stromversorgung und OTA",
+      "misc": "KISS / Sonstiges",
+      "console": "Konsole"
+    },
+    "appEligible": "APP/Seriennummer"
   }
 }

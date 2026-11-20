@@ -43,6 +43,10 @@ import {
 import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
+  acknowledgeMeshcomLicense,
+  isMeshcomLicenseAcknowledged,
+} from '../lib/meshcom/meshcomLicenseAck';
+import {
   DEFAULT_MESSAGE_RETENTION,
   MESSAGE_RETENTION_KEYS,
   MESSAGE_RETENTION_MAX_COUNT,
@@ -358,6 +362,7 @@ export default function AppPanel({
     localStorage.setItem('mesh-client:notifMuted', soundNotifEnabled ? '0' : '1');
   }, [soundNotifEnabled]);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [meshcomLicensePending, setMeshcomLicensePending] = useState(false);
   const [supportBundleExporting, setSupportBundleExporting] = useState<SupportBundleMode | null>(
     null,
   );
@@ -973,6 +978,15 @@ export default function AppPanel({
                   checked={enabled}
                   disabled={isLastEnabled}
                   onChange={(e) => {
+                    if (
+                      e.target.checked &&
+                      proto === 'meshcom' &&
+                      !isMeshcomLicenseAcknowledged()
+                    ) {
+                      e.target.checked = false;
+                      setMeshcomLicensePending(true);
+                      return;
+                    }
                     const next = e.target.checked
                       ? settings.hiddenProtocols.filter((p) => p !== proto)
                       : [...settings.hiddenProtocols, proto];
@@ -3398,6 +3412,24 @@ export default function AppPanel({
           onConfirm={handleConfirm}
           onCancel={() => {
             setPendingAction(null);
+          }}
+        />
+      )}
+      {meshcomLicensePending && (
+        <ConfirmModal
+          title={t('meshcom.licenseNoticeTitle')}
+          message={t('meshcom.licenseNoticeBody')}
+          confirmLabel={t('meshcom.licenseNoticeAccept')}
+          onConfirm={() => {
+            acknowledgeMeshcomLicense();
+            setMeshcomLicensePending(false);
+            updateSetting(
+              'hiddenProtocols',
+              sanitizeHiddenProtocols(settings.hiddenProtocols.filter((p) => p !== 'meshcom')),
+            );
+          }}
+          onCancel={() => {
+            setMeshcomLicensePending(false);
           }}
         />
       )}

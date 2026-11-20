@@ -630,6 +630,13 @@ MECP_UPSTREAM_WATCH_ENTRIES=(
   'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@eab95105cad121b3b80f7a49bf5e05ca7aa80c9d'
 )
 
+# MeshCom firmware wire contract (no npm SDK). Format matches RATSPEAK_RELEASE_WATCH_ENTRIES.
+# On newer tag: review extudp_functions.cpp, phone_commands.cpp, ble_phone_frame.h, country
+# profiles, EXTUDP JSON; update golden fixtures / meshcomCountryProfiles.ts; bump reviewed-ref.
+MESHCOM_UPSTREAM_WATCH_ENTRIES=(
+  'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.14'
+)
+
 # Open MECP upstream PRs carried locally ahead of the languages pin.
 # Format: "github-owner/repo|pr-number|display-label|review-url"
 # When PR merges: re-vendor languages/, bump MECP_UPSTREAM_WATCH_ENTRIES file:languages@sha, drop entry.
@@ -677,6 +684,10 @@ print_ratspeak_upstream_catalog() {
   done
   echo 'MECP_PR_WATCH_ENTRIES:'
   for entry in "${MECP_PR_WATCH_ENTRIES[@]}"; do
+    echo "  ${entry}"
+  done
+  echo 'MESHCOM_UPSTREAM_WATCH_ENTRIES:'
+  for entry in "${MESHCOM_UPSTREAM_WATCH_ENTRIES[@]}"; do
     echo "  ${entry}"
   done
 }
@@ -732,6 +743,47 @@ check_mecp_upstream() {
 
   if [ "${has_upstream_warning}" -eq 0 ]; then
     echo '  MECP upstream watch complete (reviewed baselines current).'
+  fi
+}
+
+# Warn when a published MeshCom firmware release differs from reviewed-ref.
+check_meshcom_upstream() {
+  local entry repo stub label reviewed summary tag published first four url
+  local has_upstream_warning=0
+
+  echo ''
+  echo 'Checking MeshCom firmware published releases...'
+
+  for entry in "${MESHCOM_UPSTREAM_WATCH_ENTRIES[@]}"; do
+    IFS='|' read -r repo stub label reviewed <<< "${entry}"
+    url="https://github.com/${repo}/releases"
+
+    summary="$(github_latest_release_summary "${repo}")"
+    if [ -z "${summary}" ]; then
+      if [ -n "${reviewed}" ]; then
+        echo "  ${label}: no published GitHub release (reviewed ${reviewed})"
+      else
+        echo "  ${label}: no published GitHub release"
+      fi
+      continue
+    fi
+    IFS='|' read -r tag published first four <<< "${summary}"
+    if [ -n "${reviewed}" ] && release_refs_equal "${tag}" "${reviewed}"; then
+      echo "  ${label}: ${tag} (${published}; reviewed; current)"
+      continue
+    fi
+    echo "  ${label}: ${tag} (${published}) — ${first}"
+    warn_box "${label}" "${reviewed:-none}" "${tag}" "${url}"
+    echo "  Reason tracked: published release is newer than reviewed-ref ${reviewed:-none} —"
+    echo "    review EXTUDP/BLE/serial wire (extudp_functions.cpp, phone_commands.cpp,"
+    echo "    ble_phone_frame.h, country profiles), update fixtures / meshcomCountryProfiles.ts,"
+    echo "    then bump MESHCOM_UPSTREAM_WATCH_ENTRIES reviewed-ref."
+    has_upstream_warning=1
+    HAS_WARNING=1
+  done
+
+  if [ "${has_upstream_warning}" -eq 0 ]; then
+    echo '  MeshCom firmware watch complete (reviewed baselines current).'
   fi
 }
 
@@ -1029,6 +1081,7 @@ check_ratspeak_patches
 check_ratspeak_upstream
 check_mecp_upstream
 check_mecp_prs
+check_meshcom_upstream
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'

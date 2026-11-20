@@ -397,7 +397,7 @@ describe('registerTcpBridgeIpcHandlers', () => {
     vi.mocked(ipcMain.handle).mockClear();
   });
 
-  it('registers both protocol channel literals with assertIpcSender inside the shared handlers', () => {
+  it('registers protocol channel literals with assertIpcSender inside the shared handlers', () => {
     registerTcpBridgeIpcHandlers({
       getMainWindow: () => null,
       validateHost,
@@ -410,9 +410,13 @@ describe('registerTcpBridgeIpcHandlers', () => {
       'meshtastic:tcp-connect',
       'meshtastic:tcp-write',
       'meshtastic:tcp-disconnect',
+      'meshcom:tcp-connect',
+      'meshcom:tcp-write',
+      'meshcom:tcp-disconnect',
     ]);
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
+    expect(TCP_BRIDGE_SOURCE).toContain("protocol: 'meshcom'");
     expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, connectChannel)');
     expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, writeChannel)');
     expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, disconnectChannel)');

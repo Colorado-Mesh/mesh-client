@@ -1,4 +1,5 @@
 import type { AiHistoryMessage, AiHistoryQuery } from './ai-history';
+import type { MeshProtocol } from './meshProtocol';
 import { MS_PER_MINUTE, MS_PER_SECOND } from './timeConstants';
 
 export type AiWireFormat = 'openai' | 'anthropic' | 'gemini' | 'ollama';
@@ -51,7 +52,7 @@ export interface AiSummaryRequest {
   mode?: AiSummaryPassMode;
   /** Conversation label shown to the model, e.g. "#general", "DM with KX4ABC", "Room: NodeChat". */
   conversationLabel: string;
-  protocol: 'meshtastic' | 'meshcore' | 'reticulum';
+  protocol: MeshProtocol;
   surface: 'channel' | 'dm' | 'room' | 'rrc';
   /** UI locale (BCP-47) so the summary comes back in the user's language. */
   locale: string;

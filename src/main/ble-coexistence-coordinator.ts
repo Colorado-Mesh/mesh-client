@@ -1,6 +1,6 @@
 import type { GattSidecarProxy } from './gatt-sidecar-proxy';
 
-export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'gatt:meshcom' | 'reticulum';
 
 export type BleScanOwner = 'gatt' | 'reticulum';
 

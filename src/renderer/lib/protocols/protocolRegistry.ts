@@ -11,6 +11,8 @@ import { meshtasticProtocol } from './MeshtasticProtocol';
 import type { Protocol } from './Protocol';
 import { reticulumProtocol } from './ReticulumProtocol';
 
+// MeshCom registers via `ensureMeshcomProtocolLoaded()` so App entry stays under budget.
+
 export interface ProtocolRegistration {
   type: MeshProtocol;
   protocol: Protocol;

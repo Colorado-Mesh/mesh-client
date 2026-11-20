@@ -127,8 +127,17 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   /**
    * Protocols the user does not use: hidden from the switcher and skipped by autostart.
    * Stored as a hidden list so newly registered protocols default to enabled.
+   * MeshCom is opt-in (licensed amateur-radio notice on first enable).
    */
-  hiddenProtocols: [] as MeshProtocol[],
+  hiddenProtocols: ['meshcom'] as MeshProtocol[],
+  /** One-time MeshCom amateur-radio license acknowledgment (App → Protocols). */
+  meshcomLicenseAcknowledged: false,
+  /** Preferred MeshCom `--setctry` country code (Radio panel). */
+  meshcomCountryCode: 'EU' as string,
+  /**
+   * When true, send `--settime` (host UTC) automatically after Serial/BLE MeshCom connect.
+   */
+  meshcomAutoSettime: false,
   /** Master switch for Scheduled Broadcasts timers (default off — safe). */
   scheduledBroadcastsEnabled: false,
   /** Opt-in internet weather overlays on the shared map (default off). */

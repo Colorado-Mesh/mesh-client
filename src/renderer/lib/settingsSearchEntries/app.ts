@@ -1045,5 +1045,8 @@ export const appSurface: SettingsSearchSurface = {
     'mecp.section.learnMore': 'external documentation link',
     'mecp.section.protocolSource': 'external source link',
     'mecp.exportLog*': 'result toasts of the indexed MECP log export',
+    'meshcom.licenseNoticeTitle': 'MeshCom license acknowledgment dialog title',
+    'meshcom.licenseNoticeBody': 'MeshCom license acknowledgment dialog body',
+    'meshcom.licenseNoticeAccept': 'MeshCom license acknowledgment confirm button',
   },
 };

@@ -2,9 +2,16 @@ import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
 } from './reticulum/reticulumManualStackStopSuppress';
+import { tryGetMeshcomSession } from './sessions/meshcomSession';
 import { tryGetMeshcoreSession } from './sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from './sessions/meshtasticSession';
 import type { MeshProtocol } from './types';
+
+function rfSessionFor(protocol: Exclude<MeshProtocol, 'reticulum'>) {
+  if (protocol === 'meshtastic') return tryGetMeshtasticSession();
+  if (protocol === 'meshcore') return tryGetMeshcoreSession();
+  return tryGetMeshcomSession();
+}
 
 /**
  * Latch the user-stop flag wake reconnect already honors, including when the
@@ -16,8 +23,7 @@ export function latchHiddenProtocolStop(protocol: MeshProtocol): boolean {
     setReticulumManualStackStopSuppress(true);
     return true;
   }
-  const session = protocol === 'meshtastic' ? tryGetMeshtasticSession() : tryGetMeshcoreSession();
-  return session?.latchExplicitDisconnect?.() ?? false;
+  return rfSessionFor(protocol)?.latchExplicitDisconnect?.() ?? false;
 }
 
 /** Undo a hide-induced latch so turning the protocol back on can connect again. */
@@ -26,6 +32,5 @@ export function releaseHiddenProtocolStop(protocol: MeshProtocol): void {
     setReticulumManualStackStopSuppress(false);
     return;
   }
-  const session = protocol === 'meshtastic' ? tryGetMeshtasticSession() : tryGetMeshcoreSession();
-  session?.clearExplicitDisconnectLatch?.();
+  rfSessionFor(protocol)?.clearExplicitDisconnectLatch?.();
 }

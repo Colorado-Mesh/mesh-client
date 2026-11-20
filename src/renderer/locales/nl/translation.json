@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Lucht",
-      "classic": "Klassiek groen"
+      "classic": "Klassiek groen",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island",
     "protocolsSection": "Protocollen",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "Schakel over naar MeshCore, {{count}} ongelezen",
     "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen",
     "tabWithUnread": "{{label}}, {{count}} ongelezen",
-    "tabWithOpenIncidents": "{{label}}, {{count}} open MAYDAY of DRINGENDE INCIDENTEN"
+    "tabWithOpenIncidents": "{{label}}, {{count}} open MAYDAY of DRINGENDE INCIDENTEN",
+    "switchToMeshCom": "Overschakelen naar MeshCom",
+    "switchToMeshComWithUnread": "Overschakelen naar MeshCom, {{count}} ongelezen"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -1743,7 +1746,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Staat], b.v. msh/CO/US",
@@ -1941,7 +1945,10 @@
     "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op.",
     "mqttPacketTooLarge": "De broker stuurde een MQTT-pakket groter dan de veiligheidsgrens van {{limit}} bytes; automatisch opnieuw verbinden is uitgeschakeld.",
     "protocolGuideLink": "Protocolgids ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -7670,7 +7677,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "{{when}} ontvangen"
   },
@@ -8497,7 +8505,8 @@
     "meshcore": "MeshCore",
     "openFromChat": "Doorzoek alle gesprekken",
     "directMessage": "Direct bericht",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "results": "Inbox-berichten",
@@ -8534,7 +8543,8 @@
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
     "reticulum": "Reticulum",
-    "deleteFailed": "Kan de wijziging niet opslaan. Er is niets verwijderd."
+    "deleteFailed": "Kan de wijziging niet opslaan. Er is niets verwijderd.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Controleer de openbare sleutel",
@@ -8968,7 +8978,8 @@
     "loadFailed": "Kan geen contactkaarten uit de database laden.",
     "retryLoad": "Opnieuw proberen",
     "retryLoadAria": "Probeer de contactkaarten opnieuw te laden",
-    "loadUnavailable": "Contactkaarten zijn niet beschikbaar in deze build. Installeer de app opnieuw of werk deze bij."
+    "loadUnavailable": "Contactkaarten zijn niet beschikbaar in deze build. Installeer de app opnieuw of werk deze bij.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Verberg berichten die overeenkomen met het woordfilter",
@@ -9006,5 +9017,60 @@
     "openAria": "{{name}} openen",
     "unknownRoom": "Ruimte {{id}}",
     "hops": "{{count}} overstappen"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — gelicentieerde amateurradio",
+    "licenseNoticeBody": "MeshCom werkt op gelicentieerde amateur (LoRa)-frequenties die wereldwijd zijn geselecteerd via de landinstelling (--setctry) — niet alleen op 433 MHz in de EU. Schakel MeshCom alleen in als u bevoegd bent om te zenden op de banden die zijn geconfigureerd voor uw landprofiel. Deze mededeling staat los van de ontgrendeling van de gelicentieerde amateurfrequentie van Meshtastic.",
+    "licenseNoticeAccept": "Ik begrijp het",
+    "connectionHint": "MeshCom gebruikt amateurradioband LoRa via Landinstelling (--setctry). Zorg ervoor dat het landprofiel van je node overeenkomt met je licentie.",
+    "countrySettingLabel": "Landinstelling (--setctry)",
+    "extUdpHint": "EXTUDP heeft de node nodig die is geconfigureerd met --extudp aan en --extudpip die naar deze computer wijst (UDP 1799).",
+    "kissTcpHint": "KISS/TCP gebruikt MeshCom-poort 8001 — niet Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "MeshCom-apparaatopdrachten",
+    "description": "Verstuur ICSSW-knooppuntopdrachten (--help, --settime, --setctry, …) via Seriële verbinding of BLE. Voor de app geschikte opdrachten komen overeen met de officiële MeshCom-app; opdrachten die alleen via seriële verbinding kunnen worden uitgevoerd, hebben een USB-consolelink nodig.",
+    "autoSettimeLegend": "Klok",
+    "autoSettime": "Stel de knooppunttijd automatisch in bij verbinding",
+    "autoSettimeHint": "Wanneer u via seriële verbinding of BLE bent verbonden, verzendt u --settime met de UTC-klok van deze computer (bijv. {{example}}).",
+    "settimeNow": "Stel nu de tijd in (UTC)",
+    "requiresSerialBle": "Maak verbinding via seriële poort of BLE om apparaatopdrachten te verzenden. EXTUDP en KISS/TCP ondersteunen alleen chat.",
+    "filter": "Opdrachten filteren",
+    "filterPlaceholder": "Zoeken --settime, gateway, buren…",
+    "serialOnly": "alleen serieel",
+    "run": "Hardlopen",
+    "runCommand": "Uitvoeren {{command}}",
+    "runChoice": "{{command}} {{value}} uitvoeren",
+    "argInput": "Argument voor {{command}}",
+    "sent": "Opdracht verzonden naar het knooppunt.",
+    "sendFailed": "Opdracht mislukt: {{detail}}",
+    "setctrySent": "Opgeslagen en verzonden --setctry {{code}} naar de node.",
+    "setctrySavedLocal": "Opgeslagen landvoorkeur. Maak verbinding via seriële poort of BLE om --setctry op het knooppunt toe te passen.",
+    "consoleHint": "Typ een willekeurig --commando of een APP-snelkoppeling (GATEWAY, GPS, WX-Info). Geheime gegevens worden in het logboek bewerkt.",
+    "consoleLog": "Logboek van de apparaatbeheerdersconsole",
+    "consoleInput": "Invoer van apparaatcommando",
+    "consolePlaceholder": "Info",
+    "consoleSend": "Verzenden",
+    "confirmDanger": {
+      "title": "Opdracht bevestigen",
+      "message": "{{command}} naar het knooppunt sturen? Dit kan de RF-instellingen opnieuw opstarten of wijzigen.",
+      "confirm": "Verzenden"
+    },
+    "groups": {
+      "display": "Display",
+      "position": "Positie en tijd",
+      "sensors": "Sensoren",
+      "identity": "Identiteit en groepen",
+      "network": "Netwerk en Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Buren",
+      "mailbox": "Mailbox",
+      "debug": "Status en debuggen",
+      "power": "Stroom en OTA",
+      "misc": "KISS / diversen",
+      "console": "Console"
+    },
+    "appEligible": "APP / Serieel"
   }
 }

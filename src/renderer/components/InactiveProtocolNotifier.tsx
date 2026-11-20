@@ -17,6 +17,7 @@ const EMPTY_MESSAGES: Record<MeshProtocol, ChatMessage[]> = {
   meshtastic: [],
   meshcore: [],
   reticulum: [],
+  meshcom: [],
 };
 
 export interface InactiveProtocolNotifierProps {

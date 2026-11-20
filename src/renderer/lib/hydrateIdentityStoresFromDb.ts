@@ -518,10 +518,16 @@ function hydrateReticulumIdentity(
   })();
 }
 
+const hydrateMeshcomIdentity: IdentityHydratorFn = async (identityId, opts, isCurrent) => {
+  const { hydrateMeshcomIdentity: load } = await import('./hydrateMeshcomIdentityStores');
+  await load(identityId, opts, isCurrent);
+};
+
 const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
   meshtastic: hydrateMeshtasticIdentity,
   meshcore: hydrateMeshcoreIdentity,
   reticulum: hydrateReticulumIdentity,
+  meshcom: hydrateMeshcomIdentity,
 };
 
 /**

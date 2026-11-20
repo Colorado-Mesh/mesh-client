@@ -271,7 +271,7 @@ import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
-import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
+import type { ChatMessage, ConnectionType, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useBotSendersStore } from '../stores/botSendersStore';
@@ -852,7 +852,7 @@ export interface ChatPanelProps {
   onPeerClick?: (destinationHash: string) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
+  connectionType?: ConnectionType | null;
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
@@ -3233,7 +3233,7 @@ function ChatPanel({
     [aiEnabled, viewMessages],
   );
   const summary = useConversationSummary({
-    key: `${identityId ?? protocol}:${protocol}:${viewKey}:${viewMode === 'channels' && protocol !== 'reticulum' ? (getLiveChannelKey(protocol, channel) ?? '') : ''}`,
+    key: `${identityId ?? protocol}:${protocol}:${viewKey}:${viewMode === 'channels' && (protocol === 'meshtastic' || protocol === 'meshcore') ? (getLiveChannelKey(protocol, channel) ?? '') : ''}`,
     label: viewMode === 'dm' ? getDmLabel(activeDmNode ?? 0) : `#${channel}`,
     protocol,
     surface: viewMode === 'dm' ? 'dm' : 'channel',
@@ -3255,11 +3255,14 @@ function ChatPanel({
       channel,
       peerId: activeDmNode ?? undefined,
       ownNodeIds: [...ownNodeIdSet],
-      radioNodeId: protocol !== 'reticulum' && myNodeNum > 0 ? myNodeNum : undefined,
+      radioNodeId:
+        (protocol === 'meshtastic' || protocol === 'meshcore') && myNodeNum > 0
+          ? myNodeNum
+          : undefined,
       identityId: identityId ?? undefined,
       peerHash: reticulumDmDestinationHash ?? undefined,
       channelKey:
-        viewMode === 'channels' && protocol !== 'reticulum'
+        viewMode === 'channels' && (protocol === 'meshtastic' || protocol === 'meshcore')
           ? (getLiveChannelKey(protocol, channel) ?? undefined)
           : undefined,
     },

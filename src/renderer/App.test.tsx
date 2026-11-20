@@ -950,7 +950,8 @@ describe('App shell layout', () => {
     ) => void;
 
     act(() => {
-      setHidden(['meshcore']);
+      // Keep MeshCom hidden (default) so this case stays a three→two protocol drop.
+      setHidden(['meshcore', 'meshcom']);
     });
     const group = within(appRail()).getByRole('radiogroup', { name: 'Protocol switcher' });
     expect(
@@ -960,7 +961,7 @@ describe('App shell layout', () => {
     ).toEqual(['MT', 'RN']);
 
     act(() => {
-      setHidden(['meshtastic', 'meshcore']);
+      setHidden(['meshtastic', 'meshcore', 'meshcom']);
     });
     expect(within(appRail()).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
     // The active protocol was disabled, so the app moved to the one still enabled.

@@ -16,12 +16,14 @@ export function useAllProtocolConnectionActions(): ConnectionActionsByProtocol {
   const meshtasticActions = useProtocolConnectionActions('meshtastic');
   const meshcoreActions = useProtocolConnectionActions('meshcore');
   const reticulumActions = useProtocolConnectionActions('reticulum');
+  const meshcomActions = useProtocolConnectionActions('meshcom');
   return useMemo(
     () => ({
       meshtastic: meshtasticActions,
       meshcore: meshcoreActions,
       reticulum: reticulumActions,
+      meshcom: meshcomActions,
     }),
-    [meshtasticActions, meshcoreActions, reticulumActions],
+    [meshtasticActions, meshcoreActions, reticulumActions, meshcomActions],
   );
 }

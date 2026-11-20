@@ -129,6 +129,7 @@ nav:
       - Troubleshooting: troubleshooting.md
       - MeshCore Troubleshooting: troubleshooting-meshcore.md
       - Reticulum Troubleshooting: troubleshooting-reticulum.md
+      - MeshCom Troubleshooting: troubleshooting-meshcom.md
       - Diagnostics: diagnostics.md
       - Log Analysis: log-analysis.md
       - Community: https://coloradomesh.org/
@@ -167,6 +168,7 @@ nav:
           - MeshCore Repeaters: development/meshcore-repeaters.md
           - MeshCore Rooms: development/meshcore-rooms.md
           - MeshCore companion CLI: development/meshcore-companion-cli.md
+          - MeshCom: development/meshcom.md
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
           - TAK gateway: development/tak.md

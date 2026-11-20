@@ -459,6 +459,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
     searchMeshcoreMessages: (query: string, limit?: number) =>
       ipcRenderer.invoke('db:searchMeshcoreMessages', query, limit),
     getMeshcoreContacts: () => ipcRenderer.invoke('db:getMeshcoreContacts'),
+    getMeshcomMessages: (identityId?: string, channelIdx?: number, limit?: number) =>
+      ipcRenderer.invoke('db:getMeshcomMessages', identityId, channelIdx, limit),
+    saveMeshcomMessage: (message: {
+      identity_id?: string | null;
+      msg_id?: string | null;
+      from_call?: string | null;
+      to_call_or_group?: string | null;
+      text: string;
+      channel_idx?: number | null;
+      path?: string | null;
+      rssi?: number | null;
+      snr?: number | null;
+      hw_id?: number | null;
+      received_via?: string | null;
+      timestamp: number;
+      status?: string | null;
+      received_at?: number | null;
+    }) => ipcRenderer.invoke('db:saveMeshcomMessage', message),
+    getMeshcomContacts: (identityId?: string) =>
+      ipcRenderer.invoke('db:getMeshcomContacts', identityId),
+    saveMeshcomContact: (contact: {
+      callsign: string;
+      identity_id?: string | null;
+      node_id: number;
+      lat?: number | null;
+      lon?: number | null;
+      batt?: number | null;
+      hw_id?: number | null;
+      last_heard?: number | null;
+      favorited?: number | boolean | null;
+    }) => ipcRenderer.invoke('db:saveMeshcomContact', contact),
     updateMeshcoreMessageSender: (messageId: number, senderId: number, senderName: string) =>
       ipcRenderer.invoke('db:updateMeshcoreMessageSender', messageId, senderId, senderName),
     saveMeshcoreMessage: (message: {
@@ -1511,6 +1542,49 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openJsonFile: (): Promise<string | null> => ipcRenderer.invoke('meshcore:openJsonFile'),
   },
 
+  // ─── MeshCom EXTUDP + KISS/TCP bridges ────────────────────────────
+  meshcom: {
+    udp: {
+      connect: (host: string) => ipcRenderer.invoke('meshcom:udp-connect', host),
+      write: (bytes: number[]) => ipcRenderer.invoke('meshcom:udp-write', bytes),
+      disconnect: () => ipcRenderer.invoke('meshcom:udp-disconnect'),
+      onData: (cb: (bytes: Uint8Array) => void) => {
+        const handler = (_: unknown, bytes: number[] | Uint8Array) => {
+          cb(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+        };
+        ipcRenderer.on('meshcom:udp-data', handler);
+        return () => ipcRenderer.off('meshcom:udp-data', handler);
+      },
+      onDisconnected: (cb: () => void) => {
+        const handler = () => {
+          cb();
+        };
+        ipcRenderer.on('meshcom:udp-disconnected', handler);
+        return () => ipcRenderer.off('meshcom:udp-disconnected', handler);
+      },
+    },
+    tcp: {
+      connect: (host: string, port: number) =>
+        ipcRenderer.invoke('meshcom:tcp-connect', host, port),
+      write: (bytes: number[]) => ipcRenderer.invoke('meshcom:tcp-write', bytes),
+      disconnect: () => ipcRenderer.invoke('meshcom:tcp-disconnect'),
+      onData: (cb: (bytes: Uint8Array) => void) => {
+        const handler = (_: unknown, bytes: Uint8Array) => {
+          cb(bytes);
+        };
+        ipcRenderer.on('meshcom:tcp-data', handler);
+        return () => ipcRenderer.off('meshcom:tcp-data', handler);
+      },
+      onDisconnected: (cb: () => void) => {
+        const handler = () => {
+          cb();
+        };
+        ipcRenderer.on('meshcom:tcp-disconnected', handler);
+        return () => ipcRenderer.off('meshcom:tcp-disconnected', handler);
+      },
+    },
+  },
+
   // ─── Meshtastic HTTP bridge ───────────────────────────────────────
   http: {
     preflight: (host: string, tls: boolean): Promise<void> =>
@@ -1535,7 +1609,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     probeTcpRtt: (host: string, port: number): Promise<number | null> =>
       ipcRenderer.invoke('hostLink:probeTcpRtt', host, port),
     getSessionMeter: (
-      protocol: 'meshtastic' | 'meshcore',
+      protocol: 'meshtastic' | 'meshcore' | 'meshcom',
     ): Promise<{ rttMs: number | null } | null> =>
       ipcRenderer.invoke('hostLink:getSessionMeter', protocol),
   },

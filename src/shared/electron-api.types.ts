@@ -408,7 +408,7 @@ export interface RendererLivenessSnapshot {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
-export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'gatt:meshcom' | 'reticulum';
 
 export type BleScanOwner = 'gatt' | 'reticulum';
 
@@ -703,6 +703,39 @@ export interface ElectronAPI {
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
     searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
     getMeshcoreContacts: () => Promise<unknown[]>;
+    getMeshcomMessages: (
+      identityId?: string,
+      channelIdx?: number,
+      limit?: number,
+    ) => Promise<unknown[]>;
+    saveMeshcomMessage: (message: {
+      identity_id?: string | null;
+      msg_id?: string | null;
+      from_call?: string | null;
+      to_call_or_group?: string | null;
+      text: string;
+      channel_idx?: number | null;
+      path?: string | null;
+      rssi?: number | null;
+      snr?: number | null;
+      hw_id?: number | null;
+      received_via?: string | null;
+      timestamp: number;
+      status?: string | null;
+      received_at?: number | null;
+    }) => Promise<{ changes: number }>;
+    getMeshcomContacts: (identityId?: string) => Promise<unknown[]>;
+    saveMeshcomContact: (contact: {
+      callsign: string;
+      identity_id?: string | null;
+      node_id: number;
+      lat?: number | null;
+      lon?: number | null;
+      batt?: number | null;
+      hw_id?: number | null;
+      last_heard?: number | null;
+      favorited?: number | boolean | null;
+    }) => Promise<{ changes: number }>;
     updateMeshcoreMessageSender: (
       messageId: number,
       senderId: number,
@@ -1517,6 +1550,24 @@ export interface ElectronAPI {
     openJsonFile: () => Promise<string | null>;
   };
 
+  /** MeshCom EXTUDP (:1799) + KISS/TCP (:8001) bridges. */
+  meshcom: {
+    udp: {
+      connect: (host: string) => Promise<void>;
+      write: (bytes: number[]) => Promise<void>;
+      disconnect: () => Promise<void>;
+      onData: (cb: (bytes: Uint8Array) => void) => () => void;
+      onDisconnected: (cb: () => void) => () => void;
+    };
+    tcp: {
+      connect: (host: string, port: number) => Promise<void>;
+      write: (bytes: number[]) => Promise<void>;
+      disconnect: () => Promise<void>;
+      onData: (cb: (bytes: Uint8Array) => void) => () => void;
+      onDisconnected: (cb: () => void) => () => void;
+    };
+  };
+
   // ─── Meshtastic HTTP bridge ───────────────────────────────────────────────────
   http: {
     preflight: (host: string, tls: boolean) => Promise<void>;
@@ -1535,7 +1586,7 @@ export interface ElectronAPI {
     probeHttpRtt: (host: string, tls: boolean) => Promise<number | null>;
     probeTcpRtt: (host: string, port: number) => Promise<number | null>;
     getSessionMeter: (
-      protocol: 'meshtastic' | 'meshcore',
+      protocol: 'meshtastic' | 'meshcore' | 'meshcom',
     ) => Promise<{ rttMs: number | null } | null>;
   };
 

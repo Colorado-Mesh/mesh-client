@@ -25,7 +25,9 @@ export interface GlobalMessageSearchFilters {
    * Own LoRa node ids keyed by protocol. Meshtastic and MeshCore must stay separate so an id
    * owned on one protocol cannot skew DM peer / direction classification on the other.
    */
-  ownNodeIdsByProtocol?: Partial<Record<'meshtastic' | 'meshcore', ReadonlySet<number>>>;
+  ownNodeIdsByProtocol?: Partial<
+    Record<'meshtastic' | 'meshcore' | 'meshcom', ReadonlySet<number>>
+  >;
   /** Own Reticulum destination hashes (lowercase hex) for direction filtering. */
   ownReticulumHashes?: ReadonlySet<string>;
 }

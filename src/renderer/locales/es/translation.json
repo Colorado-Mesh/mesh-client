@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Cielo",
-      "classic": "Verde clásico"
+      "classic": "Verde clásico",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island",
     "protocolsSection": "Protocolos",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "Cambiar a MeshCore, {{count}} no leído",
     "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer",
     "tabWithUnread": "{{label}}, {{count}} sin leer",
-    "tabWithOpenIncidents": "{{label}}, {{count}} abierto MAYDAY o incidentes URGENTES"
+    "tabWithOpenIncidents": "{{label}}, {{count}} abierto MAYDAY o incidentes URGENTES",
+    "switchToMeshCom": "Cambiar a MeshCom",
+    "switchToMeshComWithUnread": "Cambiar a MeshCom, {{count}} sin leer"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -1744,7 +1747,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[País]/[Estado], p.e. msh/CO/EE.UU.",
@@ -1941,7 +1945,10 @@
     "meshtasticSilentAfterConfigure": "Se conectó a la radio, pero dejó de enviar tráfico de malla después de la configuración. Reconexión automática. Si esto sigue ocurriendo, compruebe la conexión de red de la radio o reiníciela.",
     "mqttPacketTooLarge": "El bróker envió un paquete MQTT mayor que el límite de seguridad de {{limit}} bytes; la reconexión automática está desactivada.",
     "protocolGuideLink": "Guía de protocolo ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -7670,7 +7677,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Recibido {{when}}"
   },
@@ -8497,7 +8505,8 @@
     "openFromChat": "Buscar en todas las conversaciones",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Bandeja de entrada unificada",
@@ -8534,7 +8543,8 @@
     "deleteFailed": "No se ha podido guardar el cambio. No se ha eliminado nada.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Verificar clave pública",
@@ -8968,7 +8978,8 @@
     "loadFailed": "No se han podido cargar las tarjetas de contacto de la base de datos.",
     "retryLoad": "Probar de nuevo",
     "retryLoadAria": "Volver a intentar cargar las tarjetas de contacto",
-    "loadUnavailable": "Las tarjetas de contacto no están disponibles en esta versión. Vuelve a instalar o actualiza la aplicación."
+    "loadUnavailable": "Las tarjetas de contacto no están disponibles en esta versión. Vuelve a instalar o actualiza la aplicación.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Ocultar los mensajes que coincidan con el filtro de palabras",
@@ -9006,5 +9017,60 @@
     "openAria": "Abrir {{name}}",
     "unknownRoom": "Sala {{id}}",
     "hops": "{{count}} escalas"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom: radioaficionados con licencia",
+    "licenseNoticeBody": "MeshCom funciona con frecuencias de radioaficionados (ham) con licencia LoRa seleccionadas por el ajuste de país (--setctry) en todo el mundo, no solo con los 433 MHz de la UE. Habilite MeshCom solo si está autorizado a transmitir en las bandas configuradas para el perfil de su país. Este aviso es independiente del desbloqueo de la frecuencia de radioaficionado con licencia de Meshtastic.",
+    "licenseNoticeAccept": "Entiendo",
+    "connectionHint": "MeshCom utiliza la banda de radioaficionados LoRa a través de la configuración de país (--setctry). Asegúrese de que el perfil de país de su nodo coincida con su licencia.",
+    "countrySettingLabel": "Configuración del país (--setctry)",
+    "extUdpHint": "EXTUDP necesita que el nodo esté configurado con --extudp activado y --extudpip apuntando a este ordenador (UDP 1799).",
+    "kissTcpHint": "KISS/TCP utiliza el puerto MeshCom 8001, no Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "Comandos del dispositivo MeshCom",
+    "description": "Envíe comandos del nodo ICSSW (--help, --settime, --setctry, …) a través del puerto serie o de BLE. Los comandos compatibles con la aplicación coinciden con los de la aplicación oficial de MeshCom; los comandos exclusivos para conexión serie necesitan un enlace a la consola USB.",
+    "autoSettimeLegend": "Clock",
+    "autoSettime": "Ajustar la hora del nodo automáticamente al conectarse",
+    "autoSettimeHint": "Cuando se conecte a través de un puerto serie o BLE, envíe --settime con el reloj UTC de este ordenador (por ejemplo, {{example}}).",
+    "settimeNow": "Establecer la hora ahora (UTC)",
+    "requiresSerialBle": "Conéctese a través de serie o BLE para enviar comandos al dispositivo. EXTUDP y KISS/TCP solo transmiten el chat.",
+    "filter": "Filtrar comandos",
+    "filterPlaceholder": "Buscar --settime, puerta de enlace, vecinos…",
+    "serialOnly": "solo serie",
+    "run": "Corrida",
+    "runCommand": "Ejecutar {{command}}",
+    "runChoice": "Ejecutar {{command}} {{value}}",
+    "argInput": "Argumento para {{command}}",
+    "sent": "Comando enviado al nodo.",
+    "sendFailed": "Error en el comando: {{detail}}",
+    "setctrySent": "Guardado y enviado --setctry {{code}} al nodo.",
+    "setctrySavedLocal": "Se ha guardado la preferencia de país. Conéctese a través de serie o BLE para aplicar --setctry en el nodo.",
+    "consoleHint": "Escriba cualquier --comando o acceso directo de la aplicación (GATEWAY, GPS, WX-Info). Los secretos se ocultan en el registro.",
+    "consoleLog": "Registro de la consola de comandos del dispositivo",
+    "consoleInput": "Entrada de comandos del dispositivo",
+    "consolePlaceholder": "Información",
+    "consoleSend": "Enviar",
+    "confirmDanger": {
+      "title": "Confirma un comando",
+      "message": "¿Enviar {{command}} al nodo? Esto puede reiniciar o cambiar la configuración de RF.",
+      "confirm": "Enviar"
+    },
+    "groups": {
+      "display": "Pantalla",
+      "position": "POSICIÓN/ MOMENTO",
+      "sensors": "Sensores",
+      "identity": "Identidad y grupos",
+      "network": "Red y Wi-Fi",
+      "gateway": "Puerta de enlace",
+      "bluetooth": "Bluetooth,",
+      "neighbors": "Vecino/a(s)",
+      "mailbox": "Mailbox",
+      "debug": "Estado y depuración",
+      "power": "Alimentación y OTA",
+      "misc": "KISS / varios",
+      "console": "Consola"
+    },
+    "appEligible": "Aplicación / Número de serie"
   }
 }

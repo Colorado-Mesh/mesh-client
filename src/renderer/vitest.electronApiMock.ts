@@ -326,6 +326,10 @@ export function createElectronAPIMock(): ElectronAPI {
       searchMessages: vi.fn().mockResolvedValue([]),
       searchMeshcoreMessages: vi.fn().mockResolvedValue([]),
       getMeshcoreContacts: vi.fn().mockResolvedValue([]),
+      getMeshcomMessages: vi.fn().mockResolvedValue([]),
+      saveMeshcomMessage: vi.fn().mockResolvedValue({ changes: 1 }),
+      getMeshcomContacts: vi.fn().mockResolvedValue([]),
+      saveMeshcomContact: vi.fn().mockResolvedValue({ changes: 1 }),
       saveMeshcoreMessage: vi.fn().mockResolvedValue(undefined),
       updateMeshcoreMessageSender: vi.fn().mockResolvedValue(undefined),
       saveMeshcoreContact: vi.fn().mockResolvedValue(undefined),
@@ -604,6 +608,22 @@ export function createElectronAPIMock(): ElectronAPI {
         onDisconnected: vi.fn().mockReturnValue(() => {}),
       },
       openJsonFile: vi.fn().mockResolvedValue(null),
+    },
+    meshcom: {
+      udp: {
+        connect: vi.fn().mockResolvedValue(undefined),
+        write: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        onData: vi.fn().mockReturnValue(() => {}),
+        onDisconnected: vi.fn().mockReturnValue(() => {}),
+      },
+      tcp: {
+        connect: vi.fn().mockResolvedValue(undefined),
+        write: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        onData: vi.fn().mockReturnValue(() => {}),
+        onDisconnected: vi.fn().mockReturnValue(() => {}),
+      },
     },
     http: {
       preflight: vi.fn().mockResolvedValue(undefined),

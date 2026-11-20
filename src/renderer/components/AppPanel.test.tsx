@@ -1378,7 +1378,7 @@ describe('AppPanel: Protocols section (#1124)', () => {
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
   });
 
-  it('enables every protocol by default', () => {
+  it('enables Meshtastic/MeshCore/Reticulum by default; MeshCom stays opt-in', () => {
     render(
       <ToastProvider>
         <AppPanel {...defaultProps} />
@@ -1389,6 +1389,7 @@ describe('AppPanel: Protocols section (#1124)', () => {
       expect(box).toBeChecked();
       expect(box).toBeEnabled();
     }
+    expect(screen.getByRole('checkbox', { name: 'Enable MeshCom' })).not.toBeChecked();
   });
 
   it('persists hidden protocols, reports them, and keeps the last one enabled', async () => {
@@ -1398,28 +1399,54 @@ describe('AppPanel: Protocols section (#1124)', () => {
         <AppPanel {...defaultProps} onHiddenProtocolsChange={onHiddenProtocolsChange} />
       </ToastProvider>,
     );
-    expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith([]);
+    expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith(['meshcom']);
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enable MeshCore' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enable Reticulum' }));
 
     await waitFor(() => {
-      expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith(['meshcore', 'reticulum']);
+      expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith([
+        'meshcom',
+        'meshcore',
+        'reticulum',
+      ]);
     });
     const stored = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as {
       hiddenProtocols?: string[];
     };
-    expect(stored.hiddenProtocols).toEqual(['meshcore', 'reticulum']);
+    expect(stored.hiddenProtocols).toEqual(['meshcom', 'meshcore', 'reticulum']);
 
     const last = screen.getByRole('checkbox', { name: 'Enable Meshtastic' });
     expect(last).toBeChecked();
     expect(last).toBeDisabled();
   });
 
+  it('shows MeshCom license notice before enabling and persists acknowledgment', async () => {
+    const onHiddenProtocolsChange = vi.fn();
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} onHiddenProtocolsChange={onHiddenProtocolsChange} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enable MeshCom' }));
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByText(/licensed amateur radio/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /I understand/i }));
+    await waitFor(() => {
+      expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith([]);
+    });
+    const stored = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as {
+      meshcomLicenseAcknowledged?: boolean;
+      hiddenProtocols?: string[];
+    };
+    expect(stored.meshcomLicenseAcknowledged).toBe(true);
+    expect(stored.hiddenProtocols ?? []).not.toContain('meshcom');
+  });
+
   it('has no axe violations with one protocol left enabled', async () => {
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ hiddenProtocols: ['meshcore', 'reticulum'] }),
+      JSON.stringify({ hiddenProtocols: ['meshcore', 'reticulum', 'meshcom'] }),
     );
     const { container } = render(
       <ToastProvider>

@@ -473,7 +473,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Nebe",
-      "classic": "Klasická zelená"
+      "classic": "Klasická zelená",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island",
     "protocolsSection": "Protokoly",
@@ -560,7 +561,9 @@
     "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
     "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno",
     "tabWithUnread": "{{label}}, {{count}} nepřečteno",
-    "tabWithOpenIncidents": "{{label}}, {{count}} otevřené MAYDAY nebo NALÉHAVÉ INCIDENTY"
+    "tabWithOpenIncidents": "{{label}}, {{count}} otevřené MAYDAY nebo NALÉHAVÉ INCIDENTY",
+    "switchToMeshCom": "Přepnout na MeshCom",
+    "switchToMeshComWithUnread": "Přepnout na MeshCom, {{count}} nepřečtených"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -1767,7 +1770,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Země]/[Stát], např. msh/CO/US",
@@ -1965,7 +1969,10 @@
     "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte.",
     "mqttPacketTooLarge": "Broker odeslal paket MQTT větší než bezpečnostní limit {{limit}} bajtů; automatické opětovné připojení je vypnuto.",
     "protocolGuideLink": "Průvodce protokolem ↗",
-    "mqttAuthDocsLink": "MQTT Auth ↗"
+    "mqttAuthDocsLink": "MQTT Auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -7738,7 +7745,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Přijato {{when}}"
   },
@@ -8577,7 +8585,8 @@
     "meshtastic": "Meshtastic",
     "openFromChat": "Prohledejte všechny konverzace",
     "directMessage": "Přímá zpráva",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Jednotná doručená pošta",
@@ -8619,7 +8628,8 @@
     "copied_few": "Zkopírováno {{count}} zpráv.",
     "starred_few": "{{count}} zpráv označených hvězdičkou.",
     "deleteConfirm_few": "Odebrat zprávy ({{count}}) z této doručené pošty? Uchovává se historie chatu Meshtastic a MeshCore.",
-    "deleted_few": "Odebráno {{count}} zpráv."
+    "deleted_few": "Odebráno {{count}} zpráv.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Ověřte veřejný klíč",
@@ -9053,7 +9063,8 @@
     "loadFailed": "Nelze načíst vizitky kontaktů z databáze.",
     "retryLoad": "Zkusit znovu",
     "retryLoadAria": "Zkusit načíst vizitky znovu",
-    "loadUnavailable": "Vizitky nejsou v této verzi k dispozici. Přeinstalujte nebo aktualizujte aplikaci."
+    "loadUnavailable": "Vizitky nejsou v této verzi k dispozici. Přeinstalujte nebo aktualizujte aplikaci.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Skrýt zprávy odpovídající filtru slov",
@@ -9091,5 +9102,60 @@
     "openAria": "Otevřít {{name}}",
     "unknownRoom": "Místnost {{id}}",
     "hops": "{{count}} přestupů"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom – licencovaná amatérská radiostanice",
+    "licenseNoticeBody": "MeshCom pracuje na licencovaných amatérských (ham) frekvencích LoRa vybraných nastavením země (--setctry) po celém světě – nejen na frekvenci 433 MHz v EU. MeshCom povolte pouze v případě, že máte oprávnění vysílat na pásmech nakonfigurovaných pro profil vaší země. Toto upozornění nesouvisí s odemknutím licencované amatérské frekvence Meshtastic.",
+    "licenseNoticeAccept": "Rozumím",
+    "connectionHint": "MeshCom používá amatérské rádiové pásmo LoRa prostřednictvím nastavení země (--setctry). Ujistěte se, že profil země vašeho uzlu odpovídá vaší licenci.",
+    "countrySettingLabel": "Nastavení země (--setctry)",
+    "extUdpHint": "EXTUDP vyžaduje uzel nakonfigurovaný s možností --extudp zapnutou a s možností --extudpip směřující na tento počítač (UDP 1799).",
+    "kissTcpHint": "KISS/TCP používá port MeshCom 8001 – nikoli Reticulum KISS/AX.25."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "Příkazy zařízení MeshCom",
+    "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",
+    "autoSettimeLegend": "Hodiny",
+    "autoSettime": "Automaticky nastavit čas uzlu při připojení",
+    "autoSettimeHint": "Při připojení přes sériové rozhraní nebo BLE odešlete příkaz --settime s UTC časem tohoto počítače (např. {{example}}).",
+    "settimeNow": "Nastavit aktuální čas (UTC)",
+    "requiresSerialBle": "Pro odesílání příkazů zařízení se připojte přes sériové rozhraní nebo BLE. EXTUDP a KISS/TCP přenášejí pouze chat.",
+    "filter": "Filtrovat příkazy",
+    "filterPlaceholder": "Hledat --settime, bránu, sousedy…",
+    "serialOnly": "pouze sériové číslo",
+    "run": "Spustit",
+    "runCommand": "Spustit {{command}}",
+    "runChoice": "Spustit {{command}} {{value}}",
+    "argInput": "Argument pro {{command}}",
+    "sent": "Příkaz odeslán do uzlu.",
+    "sendFailed": "Příkaz se nezdařil: {{detail}}",
+    "setctrySent": "Uloženo a odesláno – setctry {{code}} do uzlu.",
+    "setctrySavedLocal": "Uložená preference země. Pro použití --setctry na uzlu se připojte přes sériové rozhraní nebo BLE.",
+    "consoleHint": "Zadejte libovolný --příkaz nebo zkratku aplikace (GATEWAY, GPS, WX-Info). Tajné informace jsou v protokolu redigovány.",
+    "consoleLog": "Protokol konzole příkazů zařízení",
+    "consoleInput": "Zadání příkazu pro zařízení",
+    "consolePlaceholder": "Info",
+    "consoleSend": "Odeslat",
+    "confirmDanger": {
+      "title": "Potvrdit příkaz",
+      "message": "Odeslat {{command}} do uzlu? Může dojít k restartu nebo změně nastavení RF.",
+      "confirm": "Odeslat"
+    },
+    "groups": {
+      "display": "Displej",
+      "position": "Poloha a čas",
+      "sensors": "Snímače",
+      "identity": "Identita a skupiny",
+      "network": "Síť a Wi-Fi",
+      "gateway": "Diagnostické rozhraní pro datové sběrnice",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Sousedé",
+      "mailbox": "Poštovní schránka",
+      "debug": "Stav a ladění",
+      "power": "Napájení a OTA",
+      "misc": "KISS / různé",
+      "console": "Konzola"
+    },
+    "appEligible": "Aplikace / Sériové číslo"
   }
 }

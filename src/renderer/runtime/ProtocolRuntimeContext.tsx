@@ -2,13 +2,19 @@ import { createContext, type ReactNode, useContext } from 'react';
 
 import type { MeshProtocol } from '../lib/types';
 import type { ProtocolRuntime } from './protocolRuntime';
-import type { MeshcoreRuntime, MeshtasticRuntime, ReticulumRuntime } from './runtimeTypes';
+import type {
+  MeshcomRuntime,
+  MeshcoreRuntime,
+  MeshtasticRuntime,
+  ReticulumRuntime,
+} from './runtimeTypes';
 
 /** Per-protocol slots stay specific; `useRuntime` exposes the shared ProtocolRuntime surface. */
 export type RuntimeMap = Readonly<{
   meshtastic: MeshtasticRuntime;
   meshcore: MeshcoreRuntime;
   reticulum: ReticulumRuntime;
+  meshcom: MeshcomRuntime;
 }>;
 
 const ProtocolRuntimeMapContext = createContext<RuntimeMap | null>(null);

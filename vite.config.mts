@@ -138,6 +138,12 @@ export default defineConfig({
               test: /node_modules[\\/]esptool-js/,
               priority: 30,
             },
+            {
+              // Keep MeshCom runtime shell out of App-*.js (1000 kB entry budget).
+              name: 'meshcom-runtime',
+              test: /[\\/](useMeshcomRuntime|openMeshComTransport|useMeshcomDeviceCommands|meshcomSession|meshcomProtocolLoader|meshcomIdentitySignature)\.[tj]sx?$/,
+              priority: 20,
+            },
           ],
         },
       },

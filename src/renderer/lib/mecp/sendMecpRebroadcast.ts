@@ -5,6 +5,7 @@ import type {
 } from '@/renderer/lib/mecp/mecpRebroadcast';
 import { withReticulumIpcSendDeadline } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSession';
+import type { MeshProtocol } from '@/renderer/lib/types';
 import { getDevice } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 
@@ -20,17 +21,20 @@ function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore') {
  * Resolve a human channel name for the source endpoint (never emit a bare index).
  */
 export function resolveMecpSourceChannelName(
-  protocol: 'meshtastic' | 'meshcore' | 'reticulum',
+  protocol: MeshProtocol,
   channelIndex: number,
   opts?: { rrcRoom?: string; rrcHubDestHash?: string },
 ): string {
-  // Reticulum has no numbered channels — name LXMF or the RRC room for bridge notices.
+  // Reticulum / MeshCom have no Meshtastic-style numbered channel configs.
   if (protocol === 'reticulum') {
     if (opts?.rrcRoom) {
       const hub = opts.rrcHubDestHash?.slice(0, 8);
       return hub ? `${hub}/${opts.rrcRoom}` : opts.rrcRoom;
     }
     return 'LXMF';
+  }
+  if (protocol === 'meshcom') {
+    return channelIndex === 0 ? 'ALL' : `GRC${channelIndex}`;
   }
   const identity = findIdentityForProtocol(protocol);
   if (!identity) {

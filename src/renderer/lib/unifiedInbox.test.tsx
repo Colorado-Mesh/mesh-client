@@ -28,7 +28,7 @@ function msg(over: Partial<ChatMessage>): ChatMessage {
   };
 }
 
-const EMPTY = { meshtastic: [], meshcore: [], reticulum: [] };
+const EMPTY = { meshtastic: [], meshcore: [], reticulum: [], meshcom: [] };
 
 describe('buildUnifiedInboxItems', () => {
   it('merges protocols newest first and excludes own sends, reactions and empty payloads', () => {
@@ -46,6 +46,7 @@ describe('buildUnifiedInboxItems', () => {
         reticulum: [
           msg({ id: undefined, storeId: 'abc', timestamp: 500, reticulum_message_hash: 'ab' }),
         ],
+        meshcom: [],
       },
     });
     expect(items.map((i) => i.key)).toEqual(['reticulum:500-x', 'meshcore:5', 'meshtastic:1']);
@@ -61,6 +62,7 @@ describe('buildUnifiedInboxItems', () => {
           msg({ id: 2, timestamp: 2, to: 77, sender_id: 12 }),
         ],
         reticulum: [msg({ id: 3, timestamp: 1, sender_id: 55 })],
+        meshcom: [],
       },
     });
     expect([bcast.isDirectMessage, bcast.viewKey]).toEqual([false, 'ch:4']);
@@ -117,6 +119,7 @@ describe('inboxItemToJumpTarget', () => {
             reticulum_message_hash: 'EF01',
           }),
         ],
+        meshcom: [],
       },
     });
     expect(inboxItemToJumpTarget(ch)).toMatchObject({
@@ -179,6 +182,7 @@ describe('inboxItemToJumpTarget', () => {
         meshtastic: [msg({ id: 1, timestamp: 3, channel: 2, receivedAt: 30 })],
         meshcore: [msg({ id: 2, timestamp: 2, channel: 1, receivedAt: 20 })],
         reticulum: [msg({ id: 3, timestamp: 1, reticulum_sender_hash: 'ab', receivedAt: 10 })],
+        meshcom: [],
       },
     });
     expect(items.map((item) => inboxItemToJumpTarget(item).receivedAt)).toEqual([30, 20, 10]);

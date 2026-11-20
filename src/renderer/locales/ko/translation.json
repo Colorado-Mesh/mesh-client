@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "하늘",
-      "classic": "클래식 그린"
+      "classic": "클래식 그린",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리",
     "protocolsSection": "프로토콜",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "MeshCore로 전환, {{count}} 읽지 않음",
     "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음",
     "tabWithUnread": "{{label}}, {{count}} 읽지 않음",
-    "tabWithOpenIncidents": "{{label}}, {{count}} 오픈 메이데이 또는 긴급 사건"
+    "tabWithOpenIncidents": "{{label}}, {{count}} 오픈 메이데이 또는 긴급 사건",
+    "switchToMeshCom": "MeshCom으로 전환",
+    "switchToMeshComWithUnread": "MeshCom으로 전환, {{count}}개 미독"
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -1744,7 +1747,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[국가]/[주], 예: msh/CO/미국",
@@ -1941,7 +1945,10 @@
     "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오.",
     "mqttPacketTooLarge": "브로커가 안전 한도 {{limit}}바이트보다 큰 MQTT 패킷을 보내 자동 재연결이 꺼졌습니다.",
     "protocolGuideLink": "임상시험계획서 가이드 ↗",
-    "mqttAuthDocsLink": "MQTT AUTH ↗"
+    "mqttAuthDocsLink": "MQTT AUTH ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -7670,7 +7677,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "접수됨 {{when}}"
   },
@@ -8497,7 +8505,8 @@
     "directMessage": "다이렉트 메시지",
     "openFromChat": "모든 대화 검색",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "empty": "표시할 수신된 메시지가 없습니다.",
@@ -8534,7 +8543,8 @@
     "meshtastic": "Meshtastic",
     "reticulum": "Reticulum",
     "deleted_other": "{{count}} 메시지를 삭제했습니다.",
-    "deleteFailed": "변경사항을 저장할 수 없습니다. 아무것도 제거되지 않았습니다."
+    "deleteFailed": "변경사항을 저장할 수 없습니다. 아무것도 제거되지 않았습니다.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "verifyButton": "키 확인…",
@@ -8968,7 +8978,8 @@
     "loadFailed": "데이터베이스에서 연락처 카드를 불러올 수 없습니다.",
     "retryLoad": "다시 시도",
     "retryLoadAria": "연락처 카드 로딩 재시도",
-    "loadUnavailable": "이 빌드에서는 연락처 카드를 사용할 수 없습니다. 앱을 다시 설치하거나 업데이트하세요."
+    "loadUnavailable": "이 빌드에서는 연락처 카드를 사용할 수 없습니다. 앱을 다시 설치하거나 업데이트하세요.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "단어 필터와 일치하는 메시지 숨기기",
@@ -9006,5 +9017,60 @@
     "openAria": "{{name}} 열기",
     "unknownRoom": "룸 {{id}}",
     "hops": "경유지 {{count}}곳"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — 허가받은 아마추어 무선 통신",
+    "licenseNoticeBody": "MeshCom은 전 세계적으로 국가 설정(--setctry)에 따라 선택된 허가받은 아마추어(햄) LoRa 주파수에서 작동합니다. EU 433MHz에만 국한되지 않습니다. 귀하의 국가 프로필에 대해 구성된 대역에서 전송할 권한이 있는 경우에만 MeshCom을 활성화하세요. 이 공지는 Meshtastic의 아마추어 무선사 자격증 주파수 잠금 해제와는 별개입니다.",
+    "licenseNoticeAccept": "알겠습니다",
+    "connectionHint": "MeshCom은 국가 설정(--setctry)을 통해 아마추어 무선 주파수 대역 LoRa을(를) 사용합니다. 노드의 국가 프로필이 라이선스와 일치하는지 확인하세요.",
+    "countrySettingLabel": "국가 설정(--setctry)",
+    "extUdpHint": "EXTUDP에는 --extudp가 켜져 있고 --extudpip가 이 컴퓨터(UDP 1799)를 가리키도록 구성된 노드가 필요합니다.",
+    "kissTcpHint": "KISS/TCP은(는) Reticulum KISS/AX.25가 아닌 MeshCom 포트 8001을 사용합니다."
+  },
+  "meshcomDeviceCommands": {
+    "summary": "MeshCom 장치 명령",
+    "description": "직렬 또는 BLE을 통해 ICSSW 노드 명령(--help, --settime, --setctry, …)을 전송합니다. 앱에서 사용할 수 있는 명령은 공식 MeshCom 앱과 일치합니다. 직렬 전용 명령은 USB 콘솔 링크가 필요합니다.",
+    "autoSettimeLegend": "클럭",
+    "autoSettime": "연결 시 노드 시간 자동 설정",
+    "autoSettimeHint": "직렬 또는 BLE을(를) 통해 연결된 경우, 이 컴퓨터의 UTC 시계(--settime)를 전송합니다(예: {{example}}).",
+    "settimeNow": "현재 시간 설정(UTC)",
+    "requiresSerialBle": "장치 명령을 보내려면 직렬 또는 BLE을(를) 통해 연결하세요. EXTUDP 및 KISS/TCP는 채팅만 전송합니다.",
+    "filter": "명령 필터링",
+    "filterPlaceholder": "--settime, 게이트웨이, 이웃... 검색",
+    "serialOnly": "일련번호만",
+    "run": "런",
+    "runCommand": "{{command}} 실행",
+    "runChoice": "{{command}} {{value}} 실행",
+    "argInput": "{{command}}에 대한 인수",
+    "sent": "노드로 명령이 전송되었습니다.",
+    "sendFailed": "명령 실패: {{detail}}",
+    "setctrySent": "저장 및 전송 완료 --setctry {{code}} 노드로 전송.",
+    "setctrySavedLocal": "국가 기본 설정이 저장되었습니다. 노드에 --setctry를 적용하려면 직렬 또는 BLE을(를) 통해 연결하세요.",
+    "consoleHint": "--명령 또는 앱 단축키(GATEWAY, GPS, WX-Info)를 입력합니다. 비밀은 로그에서 삭제됩니다.",
+    "consoleLog": "장치 명령 콘솔 로그",
+    "consoleInput": "기기 명령 입력",
+    "consolePlaceholder": "정보",
+    "consoleSend": "보내기",
+    "confirmDanger": {
+      "title": "명령 확인",
+      "message": "{{command}}을(를) 노드로 전송하시겠습니까? 이로 인해 RF 설정이 재부팅되거나 변경될 수 있습니다.",
+      "confirm": "보내기"
+    },
+    "groups": {
+      "display": "디스플레이",
+      "position": "위치 및 시간",
+      "sensors": "센서",
+      "identity": "ID 및 그룹",
+      "network": "네트워크 및 Wi-Fi",
+      "gateway": "게이트웨이",
+      "bluetooth": "블루투스",
+      "neighbors": "옆방",
+      "mailbox": "메일박스",
+      "debug": "상태 및 디버그",
+      "power": "전원 및 OTA",
+      "misc": "KISS / 기타",
+      "console": "콘솔"
+    },
+    "appEligible": "앱/일련번호"
   }
 }

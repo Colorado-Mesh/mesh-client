@@ -26,7 +26,11 @@ export function useAllProtocolChatMessages(
     meshcoreSelfNodeId: options.meshcoreSelfNodeId,
   });
   const reticulum = useProtocolChatMessages('reticulum', options.identityIdByProtocol.reticulum);
-  return useMemo(() => ({ meshtastic, meshcore, reticulum }), [meshtastic, meshcore, reticulum]);
+  const meshcom = useProtocolChatMessages('meshcom', options.identityIdByProtocol.meshcom);
+  return useMemo(
+    () => ({ meshtastic, meshcore, reticulum, meshcom }),
+    [meshtastic, meshcore, reticulum, meshcom],
+  );
 }
 
 /** Stable empty record for inactive panels. */

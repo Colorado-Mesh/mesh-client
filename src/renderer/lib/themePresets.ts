@@ -9,7 +9,7 @@ export type InkScale = Record<InkStep, string>;
 export type ThemeSurfaceId =
   'midnight' | 'slate' | 'zinc' | 'graphite' | 'deepSea' | 'dusk' | 'evergreen' | 'highContrast';
 
-export type ThemeAccentId = 'meshtastic' | 'meshcore' | 'reticulum' | 'sky' | 'classic';
+export type ThemeAccentId = 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom' | 'sky' | 'classic';
 
 /** A neutral family: the values behind every `ink-*` class (`--color-ink-*`). */
 export interface ThemeSurface {
@@ -193,6 +193,13 @@ export const THEME_ACCENTS: readonly ThemeAccent[] = [
     labelKey: 'appPanel.themeAccents.reticulum',
     base: '#facc15',
     fill: '#a16207',
+  },
+  {
+    id: 'meshcom',
+    labelKey: 'appPanel.themeAccents.meshcom',
+    // meshcom-300: light enough for 4.5:1 on highContrast ink-800 (500 fails).
+    base: '#e89aa6',
+    fill: '#a2182f',
   },
   { id: 'sky', labelKey: 'appPanel.themeAccents.sky', base: '#38bdf8', fill: '#0369a1' },
   // The pre-v6 green.

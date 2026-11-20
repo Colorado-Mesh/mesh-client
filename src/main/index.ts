@@ -507,6 +507,8 @@ function syncPowerSaveBlocker(): void {
 }
 
 let mainWindow: BrowserWindow | null = null;
+/** Set when MeshCom UDP bridge sibling chunk loads (out of measured main budget). */
+let destroyRegisteredUdpBridgeSocketsRef: ((reason: string) => void) | null = null;
 let reloadMainRenderer: ((beforeLoad?: () => void) => Promise<void>) | null = null;
 let rendererLoadPromise: Promise<void> | null = null;
 let rendererMemoryAutoSampler: ReturnType<typeof createRendererMemoryAutoSampler> | null = null;
@@ -559,6 +561,7 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
     await shutdownAppResources();
 
     destroyRegisteredTcpBridgeSockets('quitMainProcess TCP socket destroy (ignored)');
+    destroyRegisteredUdpBridgeSocketsRef?.('quitMainProcess UDP socket destroy (ignored)');
     stopPowerSaveBlocker();
 
     tray?.destroy();
@@ -2710,6 +2713,7 @@ gattSidecarProxy.on(
 const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
   'gatt:meshtastic',
   'gatt:meshcore',
+  'gatt:meshcom',
   'reticulum',
 ]);
 const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt', 'reticulum']);
@@ -6750,7 +6754,7 @@ ipcMain.handle('hostLink:probeTcpRtt', async (event, host: unknown, port: unknow
 
 ipcMain.handle('hostLink:getSessionMeter', (event, protocol: unknown) => {
   assertIpcSender(event, 'hostLink:getSessionMeter');
-  if (protocol !== 'meshtastic' && protocol !== 'meshcore') {
+  if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') {
     throw new Error('Invalid protocol');
   }
   return snapshotLiveSessionMeter(protocol);
@@ -7010,6 +7014,59 @@ void app
           assertIpcSender,
         });
       }
+      // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
+      try {
+        const meshcomDbMod = (
+          process.env.VITEST
+            ? await import('./ipc/meshcom-db-handlers')
+            : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers.js')).href)
+        ) as {
+          registerMeshcomDbIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
+        };
+        meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
+      } catch (err: unknown) {
+        console.error(
+          '[main] meshcom-db IPC registration failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+        const meshcomDbFallbackMod = (
+          process.env.VITEST
+            ? await import('./ipc/meshcom-db-handlers-fallback')
+            : await import(
+                pathToFileURL(path.join(__dirname, 'meshcom-db-handlers-fallback.js')).href
+              )
+        ) as {
+          registerMeshcomDbIpcFallbackHandlers: (deps: {
+            ipcMain: typeof ipcMain;
+            assertIpcSender: typeof assertIpcSender;
+          }) => void;
+        };
+        meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
+      }
+      // Production ships `udp-bridge.js` beside index.js (out of measured budget).
+      try {
+        const udpBridgeMod = (
+          process.env.VITEST
+            ? await import('./ipc/udp-bridge')
+            : await import(pathToFileURL(path.join(__dirname, 'udp-bridge.js')).href)
+        ) as {
+          registerUdpBridgeIpcHandlers: (deps: {
+            getMainWindow: () => BrowserWindow | null;
+            validateHost: typeof validateHttpHost;
+          }) => void;
+          destroyRegisteredUdpBridgeSockets: (reason: string) => void;
+        };
+        udpBridgeMod.registerUdpBridgeIpcHandlers({
+          getMainWindow: () => mainWindow,
+          validateHost: validateHttpHost,
+        });
+        destroyRegisteredUdpBridgeSocketsRef = udpBridgeMod.destroyRegisteredUdpBridgeSockets;
+      } catch (err: unknown) {
+        console.error(
+          '[main] MeshCom UDP bridge IPC registration failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
       protocol.handle(
         RENDERER_SCHEME,
         createRendererOriginProtocolHandler({
@@ -7248,6 +7305,7 @@ app.on('will-quit', (event) => {
       ); // log-injection-ok internal library error during cleanup
     }
     destroyRegisteredTcpBridgeSockets('TCP socket destroy during will-quit (ignored)');
+    destroyRegisteredUdpBridgeSocketsRef?.('UDP socket destroy during will-quit (ignored)');
     stopPowerSaveBlocker();
     tray?.destroy();
     tray = null;

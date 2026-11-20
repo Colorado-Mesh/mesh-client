@@ -44,6 +44,9 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
     'dist-electron/main/notification-sound-play-wav.js',
   ),
   nodeUpsert: path.join(projectRoot, 'dist-electron/main/node-upsert.js'),
+  meshcomDb: path.join(projectRoot, 'dist-electron/main/meshcom-db-handlers.js'),
+  meshcomDbFallback: path.join(projectRoot, 'dist-electron/main/meshcom-db-handlers-fallback.js'),
+  udpBridge: path.join(projectRoot, 'dist-electron/main/udp-bridge.js'),
 };
 
 /** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */
