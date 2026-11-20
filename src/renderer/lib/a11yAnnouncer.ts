@@ -26,6 +26,49 @@ export function announce(text: string, politeness: AnnouncePoliteness = 'polite'
   );
 }
 
+/** Serialize polite announces so simultaneous callers (e.g. two outbox rows) do not cancel each other. */
+const politeTexts: string[] = [];
+let politeDrainTimer: ReturnType<typeof setTimeout> | undefined;
+/** True from first drain schedule until the deferred write finishes (blocks competing drains). */
+let politeDrainOwned = false;
+
+function drainPoliteQueue(): void {
+  politeDrainTimer = undefined;
+  const next = politeTexts.shift();
+  if (next == null) {
+    politeDrainOwned = false;
+    return;
+  }
+  announce(next, 'polite');
+  // Hold ownership until after announce()'s deferred write (same delay + 1ms) so a second
+  // announcePoliteQueued cannot start a competing drain and cancel this announcement.
+  politeDrainTimer = setTimeout(() => {
+    politeDrainTimer = undefined;
+    if (politeTexts.length > 0) {
+      drainPoliteQueue();
+    } else {
+      politeDrainOwned = false;
+    }
+  }, REANNOUNCE_DELAY_MS + 1);
+}
+
+export function announcePoliteQueued(text: string): void {
+  politeTexts.push(text);
+  if (politeDrainOwned) return;
+  politeDrainOwned = true;
+  politeDrainTimer = setTimeout(drainPoliteQueue, 1);
+}
+
+/** Test-only: reset the polite queue between fake-timer cases. */
+export function resetAnnouncePoliteQueueForTests(): void {
+  politeTexts.length = 0;
+  politeDrainOwned = false;
+  if (politeDrainTimer != null) {
+    clearTimeout(politeDrainTimer);
+    politeDrainTimer = undefined;
+  }
+}
+
 export function truncateForAnnouncement(text: string): string {
   const trimmed = text.replace(/\s+/g, ' ').trim();
   return trimmed.length > ANNOUNCED_TEXT_MAX_CHARS

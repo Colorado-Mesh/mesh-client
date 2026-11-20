@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -19,6 +19,20 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 }));
 
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
+
+function renderControls(disabled = false) {
+  return render(
+    <ToastProvider>
+      <div data-testid="announce-controls">
+        <ReticulumAnnounceControls disabled={disabled} />
+      </div>
+    </ToastProvider>,
+  );
+}
+
+function controlsRoot() {
+  return screen.getByTestId('announce-controls');
+}
 
 describe('ReticulumAnnounceControls', () => {
   beforeEach(() => {
@@ -41,11 +55,7 @@ describe('ReticulumAnnounceControls', () => {
       loglevel: 4,
       announce_interval_sec: 0,
     });
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
     expect(input).toHaveValue(0);
@@ -57,11 +67,7 @@ describe('ReticulumAnnounceControls', () => {
       share_instance: true,
       loglevel: 4,
     });
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
     expect(input).toHaveValue(3600);
@@ -69,11 +75,7 @@ describe('ReticulumAnnounceControls', () => {
 
   it('saves announce interval and shows status when sidecar is running', async () => {
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
     await user.clear(input);
@@ -85,16 +87,14 @@ describe('ReticulumAnnounceControls', () => {
         announce_interval_sec: 300,
       });
     });
-    expect(await screen.findByRole('status')).toHaveTextContent('reticulumIdentity.announceSaved');
+    expect(await within(controlsRoot()).findByRole('status')).toHaveTextContent(
+      'reticulumIdentity.announceSaved',
+    );
   });
 
   it('clamps announce interval to 86400 on save', async () => {
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
     await user.clear(input);
@@ -111,14 +111,10 @@ describe('ReticulumAnnounceControls', () => {
   it('shows error when sidecar is stopped on save', async () => {
     isReticulumSidecarRunning.mockResolvedValue(false);
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     await user.click(screen.getByRole('button', { name: 'common.save' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await within(controlsRoot()).findByRole('status')).toHaveTextContent(
       'reticulumIdentity.announceSaveSidecarStopped',
     );
     expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
@@ -126,11 +122,7 @@ describe('ReticulumAnnounceControls', () => {
 
   it('clears announces when sidecar is running', async () => {
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     await user.click(screen.getByRole('button', { name: 'reticulumIdentity.clearAnnounces' }));
     await waitFor(() => {
@@ -140,17 +132,13 @@ describe('ReticulumAnnounceControls', () => {
 
   it('sends announce now when sidecar is running', async () => {
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     await user.click(screen.getByRole('button', { name: 'reticulumIdentity.announceNow' }));
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/announces', {});
     });
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await within(controlsRoot()).findByRole('status')).toHaveTextContent(
       'reticulumIdentity.announceNowDone',
     );
   });
@@ -158,24 +146,16 @@ describe('ReticulumAnnounceControls', () => {
   it('surfaces proxyPut failure', async () => {
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: false, error: 'nope' });
     const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     await user.click(screen.getByRole('button', { name: 'common.save' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await within(controlsRoot()).findByRole('status')).toHaveTextContent(
       'reticulumIdentity.announceSaveFailed:nope',
     );
   });
 
   it('remains clickable when parent only gates on sidecar readiness (not connecting)', () => {
-    render(
-      <ToastProvider>
-        <ReticulumAnnounceControls disabled={false} />
-      </ToastProvider>,
-    );
+    renderControls();
 
     expect(screen.getByRole('button', { name: 'common.save' })).not.toBeDisabled();
   });

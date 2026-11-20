@@ -178,6 +178,12 @@ export function messageToDbRow(
     reply_preview_text: msg.replyPreviewText ?? null,
     reply_preview_sender: msg.replyPreviewSender ?? null,
     rx_hops: msg.rxHops != null && Number.isFinite(msg.rxHops) ? Math.trunc(msg.rxHops) : null,
+    rx_path_hash_bytes:
+      msg.rxPathHashSizeBytes === 1 ||
+      msg.rxPathHashSizeBytes === 2 ||
+      msg.rxPathHashSizeBytes === 3
+        ? msg.rxPathHashSizeBytes
+        : null,
     room_server_id: msg.roomServerId ?? null,
     radio_node_id:
       radioNodeId != null && Number.isSafeInteger(radioNodeId) && radioNodeId > 0
@@ -899,6 +905,7 @@ export interface MeshcoreMessageDbRow {
   reply_preview_text?: string | null;
   reply_preview_sender?: string | null;
   rx_hops?: number | null;
+  rx_path_hash_bytes?: number | null;
   room_server_id?: number | null;
   radio_node_id?: number | null;
   channel_key?: string | null;
@@ -1180,6 +1187,10 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       replyPreviewSender:
         typeof r.reply_preview_sender === 'string' ? r.reply_preview_sender : undefined,
       rxHops: coerceOptionalDbInt(r.rx_hops),
+      ...(() => {
+        const bytes = coerceOptionalDbInt(r.rx_path_hash_bytes);
+        return bytes === 1 || bytes === 2 || bytes === 3 ? { rxPathHashSizeBytes: bytes } : {};
+      })(),
       roomServerId: coerceOptionalDbInt(r.room_server_id),
       ...(isChannelIdentityKey(r.channel_key) ? { channelKey: r.channel_key } : {}),
       ...(r.radio_node_id != null && r.radio_node_id > 0 ? { radioNodeId: r.radio_node_id } : {}),

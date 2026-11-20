@@ -1024,7 +1024,12 @@
     "markdownLink": "Enlaces",
     "markdownToolbar": "Format",
     "cancelPendingDmAck": "Cancelar la espera",
-    "cancelPendingDmAckAria": "Dejar de esperar la confirmación de entrega y marcar este mensaje como fallido"
+    "cancelPendingDmAckAria": "Dejar de esperar la confirmación de entrega y marcar este mensaje como fallido",
+    "outboxAnnounceBlocked": "El mensaje se ha bloqueado y no se ha enviado.",
+    "outboxAnnounceFailed": "Error al enviar el mensaje",
+    "pathHashSizeTooltip": "Ancho de hash de la ruta en el aire para este paquete ({{bytes}} bytes por salto), no el modo TX configurado de su radio",
+    "pathHashSizeAria": "Tamaño del hash de la ruta {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "La información del propietario requiere una contraseña de administrador. Guarda una a continuación para leerla.",
     "ownerInfoNeedsRoomPassword": "La información del propietario requiere una contraseña de administrador. Establézcala en Repetidores y salas → Configurar.",
     "ownerInfoReadFailed": "No se ha podido leer la información del propietario.",
-    "ownerInfoDeferred": "La información del propietario está esperando a la radio. Use «Actualizar» para intentarlo de nuevo."
+    "ownerInfoDeferred": "La información del propietario está esperando a la radio. Use «Actualizar» para intentarlo de nuevo.",
+    "anonBasicHeading": "Reloj de tiempo remoto",
+    "anonBasicRefresh": "Actualizar el reloj remoto",
+    "anonBasicLoading": "Leyendo el reloj remoto...",
+    "anonBasicClock": "Reloj del nodo {{time}} (desfase {{skew}} s)",
+    "anonBasicForwardingDisabled": "El reenvío está actualmente desactivado en este repetidor.",
+    "anonBasicBridgeUart": "Puente UART habilitado",
+    "anonBasicBridgeEspNow": "Puente ESP-NOW activado",
+    "anonBasicReadFailed": "No se ha podido leer el reloj remoto.",
+    "anonBasicUnsupported": "Este firmware no admite consultas de hora anónimas."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Añade regiones aquí y, a continuación, elige un ámbito para cada canal junto a Enviar o en → Canales de radio. Guardar o eliminar una región deja las opciones predeterminadas de radio y canal sin cambios.",
     "floodScopeAddHashtag": "Hashtag de región para guardar",
     "floodScopeAddSaved": "Salvar región",
-    "floodScopePresetsFull": "Puedes ahorrar hasta {{count}} regiones. Elimine uno antes de añadir otro."
+    "floodScopePresetsFull": "Puedes ahorrar hasta {{count}} regiones. Elimine uno antes de añadir otro.",
+    "floodScopeDiscover": "DESCUBRA LAS REGIONES",
+    "floodScopeDiscoverTitle": "Regiones descubiertas",
+    "floodScopeDiscoverHelp": "Lee el árbol de regiones de los repetidores con una contraseña de administrador guardada. No se envía nada automáticamente.",
+    "floodScopeDiscoverBusy": "Descubriendo {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Cancelar el descubrimiento",
+    "floodScopeDiscoverCancelled": "Se ha detenido la detección.",
+    "floodScopeDiscoverEmpty": "Aún no se han descubierto regiones.",
+    "floodScopeDiscoverNone": "No se han indicado regiones públicas.",
+    "floodScopeDiscoverSave": "Guardar",
+    "floodScopeDiscoverSaveAria": "Guardar {{region}} como preajuste de alcance",
+    "floodScopeDiscoverSaved": "Guardado",
+    "floodScopeDiscoverSelect": "Seleccionar",
+    "floodScopeDiscoverSelectAria": "Seleccione {{region}} para el alcance de la radio",
+    "floodScopeDiscoverSelected": "Se ha seleccionado {{region}}. Pulse «Aplicar» para establecer el alcance de la radio.",
+    "floodScopeDiscoverAddAll": "Añadir todos los públicos ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Se han añadido {{added}} de {{total}}; la lista de ámbitos guardados está llena.",
+    "floodScopeDiscoverPrivate": "Privado (no se puede acceder mediante hashtag)",
+    "floodScopeDiscoverHome": "Inicio",
+    "floodScopeDiscoverFloodAllowed": "Flood permitido",
+    "floodScopeDiscoverFloodDenied": "Flood bloqueado",
+    "floodScopeDiscoverSources": "Informado por {{count}} repetidores",
+    "floodScopeDiscoverTruncated": "{{count}} Las listas de regiones se han truncado por el firmware; es posible que falten algunos nombres.",
+    "floodScopeDiscoverSkipped": "{{count}} repetidores omitidos (no se ha guardado la contraseña de administrador).",
+    "floodScopeDiscoverFailed": "{{count}} repetidores no respondieron.",
+    "floodScopeDiscoverStale": "Última vez detectado {{when}}",
+    "floodScopeDiscoverError": "Error al detectar la región. Inténtalo de nuevo o consulta la pestaña «Repetidores».",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiones no compatibles",
+      "rejected": "Solicitud rechazada",
+      "invalid-reply": "Respuesta no válida",
+      "timeout": "se termino el tiempo",
+      "unreachable": "No Disponible",
+      "unknown": "error desconocido"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",
@@ -7379,7 +7427,6 @@
     "ackSent": "Acuse de recibo enviado a {{sender}}",
     "ackQueued": "Acuse de recibo a {{sender}} en cola; se enviará cuando la radio esté disponible",
     "ackFailed": "No se ha podido enviar o poner en cola el acuse de recibo",
-    "intro": "Cuadro operativo común para emergencias MECP escuchado en cualquier protocolo. Abra MAYDAY y las filas URGENTES en esta pestaña; incluidos los simulacros. Utilice Reconocer (o Confirmar para una baliza activa) para responder en la malla y, a continuación, Resolver cuando el incidente se cierre localmente.",
     "ackQueuedBadge": "ACK en cola",
     "pendingAckListAria": "Reconocimientos en cola por este incidente",
     "cancelPendingAck": "Cancelar",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Visualización",
     "standingAlertViewAria": "Abre la pestaña Incidencia",
     "standingAlertDismiss": "Marca vista",
-    "standingAlertDismissAria": "Marca la emergencia de {{sender}} como se ve"
+    "standingAlertDismissAria": "Marca la emergencia de {{sender}} como se ve",
+    "intro": "Informes de MECP no resueltos escuchados en cualquier protocolo, de cualquier gravedad, incluidos los simulacros. Al resolver una fila, esta se elimina de esta lista; el registro de exportación aún la incluye. Las filas abiertas llevan una insignia en esta pestaña. Utilice «Reconocer» (o «Confirmar» en el caso de una baliza activa) para responder en la red y, a continuación, «Resolver» cuando se cierre el incidente localmente. Si ha enviado la baliza de socorro, «Cancelar baliza» también transmite B03 para que otras estaciones la eliminen."
   },
   "shell": {
     "section": {

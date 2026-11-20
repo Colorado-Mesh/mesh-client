@@ -18,6 +18,7 @@ import {
 } from './meshcoreRoomMessageRouting';
 import {
   isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHashSizeBytes,
   meshcoreCompanionRxPathLenToHopCount,
   pubKeyPrefixHex,
 } from './meshcoreUtils';
@@ -145,6 +146,7 @@ export function decodeMeshcoreDirectMessageEvents(
         )
       : undefined;
   const hopCount = meshcoreCompanionRxPathLenToHopCount(raw.pathLen);
+  const pathHashSizeBytes = meshcoreCompanionRxPathLenToHashSizeBytes(raw.pathLen);
   return [
     {
       type: 'text_message',
@@ -158,6 +160,7 @@ export function decodeMeshcoreDirectMessageEvents(
         channelIndex: isRoomWire ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
         timestamp: effectiveMessageTimestampMs(raw.senderTimestamp * 1000),
         ...(hopCount != null ? { hopCount } : {}),
+        ...(pathHashSizeBytes != null ? { pathHashSizeBytes } : {}),
         ...(raw.txtType != null ? { txtType: raw.txtType } : {}),
         ...(roomServerId != null ? { roomServerId } : {}),
       },

@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-11-16 (Ratspeak **v1.1.0** — Games API / wire surface reviewed against v1.0.42; no Games command delta requiring mesh-client changes. Chess trays + material advantage and mobile session chrome remain. Four in a Row UI `done`; wire-interop rows still `todo` until live gold on a TCP hub). Prior: 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).
+**Last review:** 2026-11-19 (mesh-client ↔ mesh-client Four in a Row challenge→accept wire automated via hub TCP `dual_tcp_four_in_a_row_wire_interop`; play-to-win still blocked by loopback Direct multi-message limits; Ratspeak cross-client row still `todo`). Prior: 2026-11-16 (Ratspeak **v1.1.0** — Games API / wire surface reviewed against v1.0.42; Four in a Row UI `done`); 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
@@ -46,21 +46,19 @@ Status: `done` | `partial` | `wontfix` | `todo`
 
 ## Wire interop
 
-| Scenario                                | Status |
-| --------------------------------------- | ------ |
-| mesh-client ↔ mesh-client TTT           | done   |
-| mesh-client ↔ mesh-client Chess         | done   |
-| mesh-client ↔ Ratspeak TTT              | done   |
-| mesh-client ↔ Ratspeak Chess            | done   |
-| mesh-client ↔ mesh-client Four in a Row | todo   |
-| mesh-client ↔ Ratspeak Four in a Row    | todo   |
+| Scenario                                | Status  | Notes                                                                                                                                                |
+| --------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mesh-client ↔ mesh-client TTT           | done    |                                                                                                                                                      |
+| mesh-client ↔ mesh-client Chess         | done    |                                                                                                                                                      |
+| mesh-client ↔ Ratspeak TTT              | done    |                                                                                                                                                      |
+| mesh-client ↔ Ratspeak Chess            | done    |                                                                                                                                                      |
+| mesh-client ↔ mesh-client Four in a Row | partial | Hub TCP `dual_tcp_four_in_a_row_wire_interop` covers challenge → accept; play-to-win needs multi Direct LXMF (loopback still one-shot per direction) |
+| mesh-client ↔ Ratspeak Four in a Row    | todo    | Live gold still required                                                                                                                             |
 
-Manual gold test: two clients on a TCP hub — challenge → accept → play → resign/draw.
+Manual gold test (Ratspeak + full mesh-client play): two clients on a TCP hub — challenge → accept → play → resign/draw.
 
 ## Remaining follow-ups
 
 None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion `games_outbound.db` (not `lrgp-rs` `LrgpStore` schema).
 
-Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still **unverified on a live mesh** — run the manual gold test against Ratspeak before marking them `done`. The board follows `lrgp-rs` `SPEC.md` appendix C: 42 cells row-major (`row * 7 + column`), markers `A` (challenger, first) / `B`, local outgoing payload exactly `{ c }` with the sidecar deriving `n`, landing row/cell, and terminal claims.
-
-Manual gold test still required before flipping Four in a Row wire-interop rows to `done`: two clients on a TCP hub — challenge → accept → play → resign/draw (mesh-client ↔ mesh-client and mesh-client ↔ Ratspeak).
+Four in a Row ships with unit + axe coverage, and **mesh-client ↔ mesh-client challenge→accept** is automated in `interop_tcp_tests.rs` (shared TCP hub). Full play-to-win / resign over loopback dual-sidecar is still limited by Direct LXMF delivering only the first message per direction; deepen when that transport gap is fixed. The Ratspeak cross-client row above is still **unverified on a live mesh**. The board follows `lrgp-rs` `SPEC.md` appendix C: 42 cells row-major (`row * 7 + column`), markers `A` (challenger, first) / `B`, local outgoing payload exactly `{ c }` with the sidecar deriving `n`, landing row/cell, and terminal claims.

@@ -54,6 +54,8 @@ export interface MeshcoreMessageRowParams {
   reply_preview_text: string | null;
   reply_preview_sender: string | null;
   rx_hops: number | null;
+  /** MeshCore on-air path hash width (1/2/3); null when unknown or direct. */
+  rx_path_hash_bytes?: number | null;
   room_server_id: number | null;
   /** Companion radio that stored this row. Null leaves a historical row unscoped. */
   radio_node_id?: number | null;
@@ -64,10 +66,12 @@ export interface MeshcoreMessageRowParams {
 }
 
 export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessageRowParams) {
+  const hashBytes = Number(params.rx_path_hash_bytes);
   const rowParams = {
     ...params,
     channel_key: params.channel_key ?? null,
     received_at: params.received_at ?? null,
+    rx_path_hash_bytes: hashBytes === 1 || hashBytes === 2 || hashBytes === 3 ? hashBytes : null,
   };
   // idx_mc_msg_dedup is a partial UNIQUE index (sender_id IS NOT NULL); SQLite cannot
   // target it with INSERT ON CONFLICT(columns). Update by natural key, then insert.
@@ -96,6 +100,7 @@ export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessage
           'reply_preview_text = COALESCE(@reply_preview_text, reply_preview_text), ' +
           'reply_preview_sender = COALESCE(@reply_preview_sender, reply_preview_sender), ' +
           'rx_hops = COALESCE(@rx_hops, rx_hops), ' +
+          'rx_path_hash_bytes = COALESCE(@rx_path_hash_bytes, rx_path_hash_bytes), ' +
           'room_server_id = COALESCE(@room_server_id, room_server_id), ' +
           'channel_key = COALESCE(channel_key, @channel_key), ' +
           'received_at = COALESCE(received_at, @received_at) ' +
@@ -116,8 +121,8 @@ export function persistMeshcoreMessage(db: NodeSqliteDB, params: MeshcoreMessage
   return db
     .prepareOnce(
       'INSERT OR IGNORE INTO meshcore_messages ' +
-        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id, radio_node_id, channel_key, received_at) ' +
-        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id, @radio_node_id, @channel_key, @received_at)',
+        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, rx_path_hash_bytes, room_server_id, radio_node_id, channel_key, received_at) ' +
+        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @rx_path_hash_bytes, @room_server_id, @radio_node_id, @channel_key, @received_at)',
     )
     .run({ ...rowParams, radio_node_id: radioNodeId });
 }

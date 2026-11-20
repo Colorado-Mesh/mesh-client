@@ -444,6 +444,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
         deps,
       );
       expect(direct.pendingMessages[0]?.rxHops).toBe(0);
+      expect(direct.pendingMessages[0]?.rxPathHashSizeBytes).toBeUndefined();
 
       const flood = processMeshcoreWaitingMessageItem(
         {
@@ -457,6 +458,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
         deps,
       );
       expect(flood.pendingMessages[0]?.rxHops).toBe(3);
+      expect(flood.pendingMessages[0]?.rxPathHashSizeBytes).toBe(1);
     });
 
     it('omits DM rxHops when pathLen is missing', () => {
@@ -472,6 +474,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
         deps,
       );
       expect(result.pendingMessages[0]?.rxHops).toBeUndefined();
+      expect(result.pendingMessages[0]?.rxPathHashSizeBytes).toBeUndefined();
     });
 
     it('sets channel rxHops from pathLen', () => {
@@ -488,6 +491,24 @@ describe('processMeshcoreWaitingMessageItem', () => {
         deps,
       );
       expect(result.pendingMessages[0]?.rxHops).toBe(2);
+      expect(result.pendingMessages[0]?.rxPathHashSizeBytes).toBe(1);
+    });
+
+    it('sets channel rxPathHashSizeBytes from packed multibyte pathLen', () => {
+      const deps = baseDeps();
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          channelMessage: {
+            channelIdx: 0,
+            text: 'channel 2-byte hops',
+            senderTimestamp: 1_700_000_722,
+            pathLen: 65, // pack(1, 2-byte hashes)
+          },
+        },
+        deps,
+      );
+      expect(result.pendingMessages[0]?.rxHops).toBe(1);
+      expect(result.pendingMessages[0]?.rxPathHashSizeBytes).toBe(2);
     });
 
     it('omits channel rxHops when pathLen is missing', () => {
@@ -503,6 +524,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
         deps,
       );
       expect(result.pendingMessages[0]?.rxHops).toBeUndefined();
+      expect(result.pendingMessages[0]?.rxPathHashSizeBytes).toBeUndefined();
     });
 
     it('forwards pathLen into PacketRouter room dispatch as hopCount (room pathLen)', () => {

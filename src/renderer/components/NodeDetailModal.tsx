@@ -48,6 +48,10 @@ import type {
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
+  type MeshcoreAnonBasicEntry,
+  meshcoreAnonClockSkewSeconds,
+} from '../lib/meshcoreAnonBasic';
+import {
   type MeshcoreOwnerInfoEntry,
   meshcoreOwnerInfoLines,
   meshcoreOwnerInfoSupported,
@@ -200,12 +204,18 @@ interface NodeDetailModalProps {
   };
   /** Companion CLI capability: telemetry push subscriptions on v1.18+ sensors. */
   meshcoreTelemetryPush?: MeshcoreTelemetryPushActions;
-  /** MeshCore Repeater/Room/Sensor owner info (`get owner.info`), read on demand. */
+  /** MeshCore Repeater/Room/Sensor owner info (`get owner.info` or ANON OWNER), read on demand. */
   meshcoreOwnerInfo?: MeshcoreOwnerInfoEntry;
   onRequestMeshcoreOwnerInfo?: (
     nodeId: number,
     opts?: { force?: boolean },
   ) => Promise<MeshcoreOwnerInfoEntry | null>;
+  /** MeshCore ANON BASIC (remote clock + feature flags), read on demand. */
+  meshcoreAnonBasic?: MeshcoreAnonBasicEntry;
+  onRequestMeshcoreAnonBasic?: (
+    nodeId: number,
+    opts?: { force?: boolean },
+  ) => Promise<MeshcoreAnonBasicEntry | null>;
 }
 
 function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
@@ -327,6 +337,8 @@ export default function NodeDetailModal({
   meshcoreTelemetryPush,
   meshcoreOwnerInfo,
   onRequestMeshcoreOwnerInfo,
+  meshcoreAnonBasic,
+  onRequestMeshcoreAnonBasic,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
@@ -347,6 +359,9 @@ export default function NodeDetailModal({
   const ownerInfoScheduledKeyRef = useRef<string | null>(null);
   /** Connection-scoped dedupe for completed reads (preserved for cached non-error results). */
   const ownerInfoCompletedKeyRef = useRef<string | null>(null);
+  const [anonBasicRefreshing, setAnonBasicRefreshing] = useState(false);
+  const anonBasicScheduledKeyRef = useRef<string | null>(null);
+  const anonBasicCompletedKeyRef = useRef<string | null>(null);
   const ownerInfoSecretsEpochRef = useRef(repeaterSecretsEpoch);
   /** True when a deferred request returned null (e.g. Room login busy) — show Refresh, not spinner. */
   const [ownerInfoDeferred, setOwnerInfoDeferred] = useState(false);
@@ -722,6 +737,72 @@ export default function NodeDetailModal({
       })
       .finally(() => {
         setOwnerInfoRefreshing(false);
+      });
+  };
+
+  useEffect(() => {
+    if (!isConnected) {
+      anonBasicScheduledKeyRef.current = null;
+      anonBasicCompletedKeyRef.current = null;
+      return;
+    }
+    if (!ownerInfoSupported || !onRequestMeshcoreAnonBasic || node == null) return;
+    // Wait until owner fetch settled so we can reuse its clock when present.
+    if (meshcoreOwnerInfo == null && onRequestMeshcoreOwnerInfo) return;
+
+    const key = `${node.node_id}:anon-basic`;
+    if (anonBasicScheduledKeyRef.current === key) return;
+    if (anonBasicCompletedKeyRef.current === key) return;
+    if (meshcoreAnonBasic?.status === 'ok') {
+      anonBasicCompletedKeyRef.current = key;
+      return;
+    }
+    // Owner ANON already carried a clock — runtime reuses it; still request once so cache fills.
+    anonBasicScheduledKeyRef.current = key;
+    const timer = setTimeout(() => {
+      void onRequestMeshcoreAnonBasic(node.node_id)
+        .then(() => {
+          if (anonBasicScheduledKeyRef.current !== key) return;
+          anonBasicScheduledKeyRef.current = null;
+          anonBasicCompletedKeyRef.current = key;
+        })
+        .catch(() => {
+          // catch-no-log-ok runtime logs and stores the error entry
+          if (anonBasicScheduledKeyRef.current === key) {
+            anonBasicScheduledKeyRef.current = null;
+            anonBasicCompletedKeyRef.current = key;
+          }
+        });
+    }, MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      if (anonBasicScheduledKeyRef.current === key) {
+        anonBasicScheduledKeyRef.current = null;
+      }
+    };
+  }, [
+    ownerInfoSupported,
+    isConnected,
+    node,
+    meshcoreOwnerInfo,
+    meshcoreAnonBasic,
+    onRequestMeshcoreAnonBasic,
+    onRequestMeshcoreOwnerInfo,
+  ]);
+
+  const refreshAnonBasic = () => {
+    if (!onRequestMeshcoreAnonBasic || node == null) return;
+    setAnonBasicRefreshing(true);
+    anonBasicScheduledKeyRef.current = null;
+    void onRequestMeshcoreAnonBasic(node.node_id, { force: true })
+      .then(() => {
+        anonBasicCompletedKeyRef.current = `${node.node_id}:anon-basic`;
+      })
+      .catch(() => {
+        // catch-no-log-ok runtime logs and stores the error entry
+      })
+      .finally(() => {
+        setAnonBasicRefreshing(false);
       });
   };
 
@@ -1605,6 +1686,65 @@ export default function NodeDetailModal({
                 <p className="text-muted text-xs" title={meshcoreOwnerInfo.reason}>
                   {t('nodeDetailModal.ownerInfoReadFailed')}
                 </p>
+              )}
+              {(meshcoreAnonBasic != null || onRequestMeshcoreAnonBasic) && (
+                <div className="border-ink-700 space-y-1 border-t pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h5 className="text-ink-300 text-xs font-semibold">
+                      {t('nodeDetailModal.anonBasicHeading')}
+                    </h5>
+                    {onRequestMeshcoreAnonBasic && (
+                      <button
+                        type="button"
+                        disabled={!isConnected || anonBasicRefreshing}
+                        onClick={refreshAnonBasic}
+                        aria-label={t('nodeDetailModal.anonBasicRefresh')}
+                        className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 rounded border px-2 py-1 text-xs disabled:opacity-50"
+                      >
+                        {t('nodeDetailModal.anonBasicRefresh')}
+                      </button>
+                    )}
+                  </div>
+                  {meshcoreAnonBasic == null ? (
+                    <p className="text-muted text-xs">{t('nodeDetailModal.anonBasicLoading')}</p>
+                  ) : meshcoreAnonBasic.status === 'ok' && meshcoreAnonBasic.clock != null ? (
+                    <div className="space-y-1">
+                      <p className="text-ink-200 text-xs">
+                        {t('nodeDetailModal.anonBasicClock', {
+                          time: formatDisplayTime(meshcoreAnonBasic.clock * 1000, {
+                            use24Hour: use24HourTime,
+                          }),
+                          skew: meshcoreAnonClockSkewSeconds(
+                            meshcoreAnonBasic.clock,
+                            meshcoreAnonBasic.fetchedAt,
+                          ),
+                        })}
+                      </p>
+                      {meshcoreAnonBasic.forwardingDisabled === true ? (
+                        <p className="text-xs text-orange-400">
+                          {t('nodeDetailModal.anonBasicForwardingDisabled')}
+                        </p>
+                      ) : null}
+                      {meshcoreAnonBasic.bridgeKind === 'uart' ? (
+                        <p className="text-muted text-xs">
+                          {t('nodeDetailModal.anonBasicBridgeUart')}
+                        </p>
+                      ) : meshcoreAnonBasic.bridgeKind === 'espnow' ? (
+                        <p className="text-muted text-xs">
+                          {t('nodeDetailModal.anonBasicBridgeEspNow')}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : meshcoreAnonBasic.status === 'error' ? (
+                    <p className="text-muted text-xs" title={meshcoreAnonBasic.reason}>
+                      {t('nodeDetailModal.anonBasicReadFailed')}
+                    </p>
+                  ) : (
+                    <p className="text-muted text-xs">
+                      {t('nodeDetailModal.anonBasicUnsupported')}
+                    </p>
+                  )}
+                </div>
               )}
             </section>
           )}

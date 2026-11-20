@@ -1024,7 +1024,12 @@
     "markdownLink": "Link",
     "markdownToolbar": "Formattazione",
     "cancelPendingDmAck": "Annulla attesa",
-    "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito"
+    "cancelPendingDmAckAria": "Interrompi l'attesa della conferma di consegna e contrassegna questo messaggio come non riuscito",
+    "outboxAnnounceBlocked": "Messaggio bloccato e non inviato.",
+    "outboxAnnounceFailed": "Impossibile inviare il messaggio.",
+    "pathHashSizeTooltip": "Larghezza dell'hash del percorso di trasmissione per questo pacchetto ({{bytes}} byte per hop), non la modalità TX configurata della tua radio",
+    "pathHashSizeAria": "Dimensione hash del percorso {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "Le informazioni sul proprietario richiedono una password di amministratore. Salvala qui sotto per leggerla.",
     "ownerInfoNeedsRoomPassword": "Le informazioni sul proprietario richiedono una password di amministratore. Impostala in Ripetitori e stanze → Configura.",
     "ownerInfoReadFailed": "Impossibile leggere le informazioni sul proprietario.",
-    "ownerInfoDeferred": "Le informazioni sul proprietario sono in attesa della radio. Usa Aggiorna per riprovare."
+    "ownerInfoDeferred": "Le informazioni sul proprietario sono in attesa della radio. Usa Aggiorna per riprovare.",
+    "anonBasicHeading": "Orologio remoto",
+    "anonBasicRefresh": "Aggiorna l'orologio remoto",
+    "anonBasicLoading": "Lettura dell'orologio remoto in corso...",
+    "anonBasicClock": "Clock del nodo {{time}} (scostamento {{skew}} s)",
+    "anonBasicForwardingDisabled": "L'inoltro è attualmente disabilitato su questo ripetitore.",
+    "anonBasicBridgeUart": "Bridge UART abilitato",
+    "anonBasicBridgeEspNow": "Bridge ESP-NOW abilitato",
+    "anonBasicReadFailed": "Impossibile leggere l'orologio remoto.",
+    "anonBasicUnsupported": "Questo firmware non supporta le query di orologio anonime."
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Aggiungi le regioni qui, quindi scegli un ambito per ciascun canale accanto a Invia o nei → canali radio. Il salvataggio o la rimozione di una regione lascia invariate le impostazioni predefinite della radio e le scelte del canale.",
     "floodScopeAddHashtag": "Hashtag della regione da salvare",
     "floodScopeAddSaved": "Salva regione",
-    "floodScopePresetsFull": "Puoi risparmiare fino a {{count}} regioni. Rimuovine uno prima di aggiungerne un altro."
+    "floodScopePresetsFull": "Puoi risparmiare fino a {{count}} regioni. Rimuovine uno prima di aggiungerne un altro.",
+    "floodScopeDiscover": "Scopri le regioni",
+    "floodScopeDiscoverTitle": "Regioni scoperte",
+    "floodScopeDiscoverHelp": "Legge l'albero delle regioni dai ripetitori con una password di amministratore salvata. Non viene inviato nulla automaticamente.",
+    "floodScopeDiscoverBusy": "Rilevamento di {{done}}/{{total}} ({{name}}) in corso…",
+    "floodScopeDiscoverCancel": "Annulla la scoperta",
+    "floodScopeDiscoverCancelled": "Rilevamento interrotto.",
+    "floodScopeDiscoverEmpty": "Nessuna regione scoperta finora.",
+    "floodScopeDiscoverNone": "Nessuna regione pubblica segnalata.",
+    "floodScopeDiscoverSave": "Salva",
+    "floodScopeDiscoverSaveAria": "Salva {{region}} come preimpostazione dell'ambito",
+    "floodScopeDiscoverSaved": "Salvato",
+    "floodScopeDiscoverSelect": "Seleziona",
+    "floodScopeDiscoverSelectAria": "Selezionare {{region}} per l'ambito radio",
+    "floodScopeDiscoverSelected": "{{region}} selezionato. Premi Applica per impostare l'ambito del pulsante di opzione.",
+    "floodScopeDiscoverAddAll": "Aggiungi tutti gli elementi pubblici ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Aggiunti {{added}} su {{total}}; l'elenco degli ambiti salvati è pieno.",
+    "floodScopeDiscoverPrivate": "Privato (non indirizzabile tramite hashtag)",
+    "floodScopeDiscoverHome": "Homepage",
+    "floodScopeDiscoverFloodAllowed": "Flood consentito",
+    "floodScopeDiscoverFloodDenied": "Flood bloccato",
+    "floodScopeDiscoverSources": "Segnalato da {{count}} ripetitori",
+    "floodScopeDiscoverTruncated": "Gli elenchi delle regioni {{count}} sono stati troncati dal firmware; alcuni nomi potrebbero mancare.",
+    "floodScopeDiscoverSkipped": "{{count}} ripetitori saltati (nessuna password amministratore salvata).",
+    "floodScopeDiscoverFailed": "{{count}} ripetitori non hanno risposto.",
+    "floodScopeDiscoverStale": "Ultimo rilevamento {{when}}",
+    "floodScopeDiscoverError": "Rilevamento della regione non riuscito. Riprova o controlla la scheda Ripetitori.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regioni non supportate",
+      "rejected": "Rich. rifiutata",
+      "invalid-reply": "ID risposta non valido.",
+      "timeout": "Timeout",
+      "unreachable": "irragiungibile",
+      "unknown": "errore sconosciuto"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",
@@ -7379,7 +7427,6 @@
     "ackSent": "Conferma inviata a {{sender}}",
     "ackQueued": "Conferma a {{sender}} in coda; invierà quando la radio sarà disponibile",
     "ackFailed": "Impossibile inviare o accodare la conferma",
-    "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; incluse le esercitazioni. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
     "ackQueuedBadge": "ACK in coda",
     "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
     "cancelPendingAck": "Annulla",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Visualizza",
     "standingAlertViewAria": "Apri la scheda Incidente",
     "standingAlertDismiss": "Segna come visto",
-    "standingAlertDismissAria": "Contrassegna l'emergenza da {{sender}} come visibile"
+    "standingAlertDismissAria": "Contrassegna l'emergenza da {{sender}} come visibile",
+    "intro": "Segnalazioni MECP irrisolte rilevate su qualsiasi protocollo — di qualsiasi livello di gravità, comprese le esercitazioni. La risoluzione di una riga la rimuove da questo elenco; il registro di esportazione la include ancora. Le righe aperte contrassegnano questa scheda. Utilizza Conferma ricezione (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente. Se hai inviato il segnale di soccorso, anche l'opzione Annulla segnale trasmette B03 in modo che le altre stazioni lo cancellino."
   },
   "shell": {
     "section": {

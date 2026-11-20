@@ -1,9 +1,10 @@
 /**
- * MECP 1.4.0 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
+ * MECP 1.4.1 freetext conformance — mirrors mecp-org/MECP scripts/check-freetext.mjs
  * against vendored freetext/tests.json and patterns.json.
  *
- * Upstream cases use `{ title, input, expect }`: `expect` is the full decoded
- * convention map (null values = not decoded), or `null` when the message is invalid.
+ * Upstream cases use `{ title, input, expect }` (manifest schemaVersion 2):
+ * `expect` is the full decoded convention map (null values = not decoded), or
+ * `null` when the message is invalid.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -51,7 +52,7 @@ function decodeMessageConventions(input: string): Record<string, unknown> | null
   return got;
 }
 
-describe('MECP 1.4.0 freetext patterns fixture', () => {
+describe('MECP 1.4.1 freetext patterns fixture', () => {
   it('keeps every pattern string loadable from patterns.json', () => {
     expect(typeof patterns.message.decode).toBe('string');
     expect(MESSAGE_ENVELOPE_RE.test('MECP/1/T05')).toBe(true);
@@ -65,15 +66,17 @@ describe('MECP 1.4.0 freetext patterns fixture', () => {
     expect(JSON.parse(raw)).toEqual(tests);
     const manifest = JSON.parse(readFileSync(join(ROOT, 'freetext/manifest.json'), 'utf8')) as {
       protocolVersion: string;
+      schemaVersion: number;
       tests: string;
       patterns: string;
     };
-    expect(manifest.protocolVersion).toBe('1.4.0');
+    expect(manifest.protocolVersion).toBe('1.4.1');
+    expect(manifest.schemaVersion).toBe(2);
     expect(manifest.tests).toBe('tests.json');
     expect(manifest.patterns).toBe('patterns.json');
   });
 
-  it('drops seconds from duration encode patterns (1.4.0)', () => {
+  it('drops seconds from duration encode patterns (1.4.0+)', () => {
     for (const pat of patterns.duration.encode) {
       expect(pat).not.toMatch(/\[Ss\]/);
       expect(pat).not.toMatch(/\)s$/);
@@ -83,7 +86,7 @@ describe('MECP 1.4.0 freetext patterns fixture', () => {
   });
 });
 
-describe('MECP 1.4.0 freetext conformance (upstream tests.json)', () => {
+describe('MECP 1.4.1 freetext conformance (upstream tests.json)', () => {
   it.each(CASES)('$title', (t) => {
     const got = decodeMessageConventions(t.input);
     if (t.expect === null) {

@@ -264,6 +264,12 @@ import {
   yieldToMeshcoreTcpUserTxSends,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import type { MeshcoreLppChannelEntry } from '../lib/meshcore/meshcoreTelemetryPush';
+import { type MeshcoreAnonBasicEntry, meshcoreAnonBasicFromParsed } from '../lib/meshcoreAnonBasic';
+import {
+  runMeshcoreAnonBasicRequest,
+  runMeshcoreAnonOwnerRequest,
+  runMeshcoreAnonRegionsRequest,
+} from '../lib/meshcoreAnonRequestRpc';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_COMMAND,
@@ -318,6 +324,7 @@ import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
 import {
   type MeshcoreOwnerInfoEntry,
+  meshcoreOwnerInfoFromAnon,
   meshcoreOwnerInfoSupported,
   readMeshcoreOwnerInfo,
 } from '../lib/meshcoreOwnerInfo';
@@ -332,6 +339,7 @@ import {
   meshcoreSnapshotContactPathFromContacts,
 } from '../lib/meshcoreRadioContactPath';
 import { waitForMeshcoreRadioSentAck } from '../lib/meshcoreRadioSentWait';
+import type { MeshcoreRegionDiscoveryCandidate } from '../lib/meshcoreRegionDiscovery';
 import {
   type MeshcoreRepeaterRpcPendingMap,
   setRepeaterAdminRpcPending,
@@ -801,6 +809,15 @@ export function useMeshcoreRuntime() {
   /** Setup generation / identity that minted the current owner-info cache (invalid across reconnect). */
   const meshcoreOwnerInfoCacheGenRef = useRef(-1);
   const meshcoreOwnerInfoCacheIdentityRef = useRef<string | null>(null);
+  const [meshcoreAnonBasic, setMeshcoreAnonBasic] = useState<Map<number, MeshcoreAnonBasicEntry>>(
+    new Map(),
+  );
+  const meshcoreAnonBasicRef = useRef<Map<number, MeshcoreAnonBasicEntry>>(new Map());
+  const meshcoreAnonBasicInFlightRef = useRef<Map<number, Promise<MeshcoreAnonBasicEntry>>>(
+    new Map(),
+  );
+  const meshcoreAnonBasicCacheGenRef = useRef(-1);
+  const meshcoreAnonBasicCacheIdentityRef = useRef<string | null>(null);
   const [meshcoreCliHistories, setMeshcoreCliHistories] = useState<Map<number, CliHistoryEntry[]>>(
     new Map(),
   );
@@ -1301,6 +1318,10 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     meshcoreOwnerInfoRef.current = meshcoreOwnerInfo;
   }, [meshcoreOwnerInfo]);
+
+  useEffect(() => {
+    meshcoreAnonBasicRef.current = meshcoreAnonBasic;
+  }, [meshcoreAnonBasic]);
 
   useEffect(() => {
     meshcoreRadioContactsLoadedRef.current = meshcoreRadioContactsLoaded;
@@ -3571,6 +3592,11 @@ export function useMeshcoreRuntime() {
       meshcoreOwnerInfoInFlightRef.current.clear();
       meshcoreOwnerInfoCacheGenRef.current = -1;
       meshcoreOwnerInfoCacheIdentityRef.current = null;
+      setMeshcoreAnonBasic(new Map());
+      meshcoreAnonBasicRef.current.clear();
+      meshcoreAnonBasicInFlightRef.current.clear();
+      meshcoreAnonBasicCacheGenRef.current = -1;
+      meshcoreAnonBasicCacheIdentityRef.current = null;
       // Drop prior radio's session GPS before opening a (possibly different) transport.
       clearRadioSelfPosition('meshcore');
       refreshOurPositionGenerationRef.current += 1;
@@ -3873,6 +3899,11 @@ export function useMeshcoreRuntime() {
       meshcoreOwnerInfoInFlightRef.current.clear();
       meshcoreOwnerInfoCacheGenRef.current = -1;
       meshcoreOwnerInfoCacheIdentityRef.current = null;
+      setMeshcoreAnonBasic(new Map());
+      meshcoreAnonBasicRef.current.clear();
+      meshcoreAnonBasicInFlightRef.current.clear();
+      meshcoreAnonBasicCacheGenRef.current = -1;
+      meshcoreAnonBasicCacheIdentityRef.current = null;
       setMeshcoreCliHistories(new Map());
       setMeshcoreCliErrors(new Map());
       meshcoreClearAllRoomSessions();
@@ -4204,6 +4235,11 @@ export function useMeshcoreRuntime() {
     meshcoreOwnerInfoInFlightRef.current.clear();
     meshcoreOwnerInfoCacheGenRef.current = -1;
     meshcoreOwnerInfoCacheIdentityRef.current = null;
+    setMeshcoreAnonBasic(new Map());
+    meshcoreAnonBasicRef.current.clear();
+    meshcoreAnonBasicInFlightRef.current.clear();
+    meshcoreAnonBasicCacheGenRef.current = -1;
+    meshcoreAnonBasicCacheIdentityRef.current = null;
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -8061,6 +8097,7 @@ export function useMeshcoreRuntime() {
   const setOwnerInfoEntry = useCallback((nodeId: number, entry: MeshcoreOwnerInfoEntry) => {
     meshcoreOwnerInfoCacheGenRef.current = meshcoreSetupGenerationRef.current;
     meshcoreOwnerInfoCacheIdentityRef.current = meshcoreIdentityIdRef.current;
+    meshcoreOwnerInfoRef.current.set(nodeId, entry);
     setMeshcoreOwnerInfo((prev) => {
       const next = new Map(prev);
       next.set(nodeId, entry);
@@ -8083,6 +8120,8 @@ export function useMeshcoreRuntime() {
         if (!cacheMatchesSession) {
           meshcoreOwnerInfoRef.current.clear();
           meshcoreOwnerInfoInFlightRef.current.clear();
+          meshcoreOwnerInfoCacheGenRef.current = meshcoreSetupGenerationRef.current;
+          meshcoreOwnerInfoCacheIdentityRef.current = meshcoreIdentityIdRef.current;
         } else {
           const cached = meshcoreOwnerInfoRef.current.get(nodeId);
           if (cached) return cached;
@@ -8091,27 +8130,57 @@ export function useMeshcoreRuntime() {
         }
       }
 
-      if (!hasResolvableAdminPassword(nodeId, hwModel)) {
-        const entry: MeshcoreOwnerInfoEntry = {
-          status: 'needs-password',
-          fetchedAt: Date.now(),
-        };
-        setOwnerInfoEntry(nodeId, entry);
-        return entry;
-      }
-
       // CLI cancels an in-flight Room BBS login. Do not hijack that: skip and let Refresh try later.
       if (hwModel === 'Room' && meshcoreIsRoomLoginQueued(nodeId)) return null;
 
       const identityAtRequest = meshcoreIdentityIdRef.current;
       const generationAtRequest = meshcoreSetupGenerationRef.current;
-      const run = (async (): Promise<MeshcoreOwnerInfoEntry> => {
+      const useAnon = !hasResolvableAdminPassword(nodeId, hwModel);
+
+      const ownerFlight: { promise?: Promise<MeshcoreOwnerInfoEntry> } = {};
+      ownerFlight.promise = (async (): Promise<MeshcoreOwnerInfoEntry> => {
         try {
-          const entry = await readMeshcoreOwnerInfo({
-            hwModel,
-            hasAdminPassword: true,
-            send: (command) => sendRepeaterCliCommand(nodeId, command),
-          });
+          let entry: MeshcoreOwnerInfoEntry;
+          if (useAnon) {
+            const conn = resolveMeshcoreConn();
+            const pubKey = await ensureNodePubKey(nodeId);
+            if (!conn || !pubKey) {
+              entry = {
+                status: 'error',
+                fetchedAt: Date.now(),
+                reason: 'no-pubkey',
+              };
+            } else {
+              try {
+                const hopsAway = resolveAdminHopsForNode(nodeId);
+                const parsed = await runMeshcoreAnonOwnerRequest(
+                  conn,
+                  pubKey,
+                  {
+                    hopsAway,
+                    radioContactPathLen: radioContactPathLenByNodeRef.current.get(nodeId) ?? null,
+                  },
+                  repeaterRemoteRpcRef.current,
+                );
+                entry = meshcoreOwnerInfoFromAnon(parsed.ownerInfo, Date.now(), parsed.clock);
+              } catch (e) {
+                const message = e instanceof Error ? e.message : String(e);
+                const reason = /timeout|timed out/i.test(message)
+                  ? 'timeout'
+                  : /flood/i.test(message)
+                    ? 'unreachable'
+                    : 'failed';
+                console.debug('[useMeshcoreRuntime] anon owner failed ' + message);
+                entry = { status: 'error', fetchedAt: Date.now(), reason };
+              }
+            }
+          } else {
+            entry = await readMeshcoreOwnerInfo({
+              hwModel,
+              hasAdminPassword: true,
+              send: (command) => sendRepeaterCliCommand(nodeId, command),
+            });
+          }
           if (
             meshcoreIdentityIdRef.current === identityAtRequest &&
             meshcoreSetupGenerationRef.current === generationAtRequest
@@ -8120,13 +8189,155 @@ export function useMeshcoreRuntime() {
           }
           return entry;
         } finally {
-          meshcoreOwnerInfoInFlightRef.current.delete(nodeId);
+          if (meshcoreOwnerInfoInFlightRef.current.get(nodeId) === ownerFlight.promise) {
+            meshcoreOwnerInfoInFlightRef.current.delete(nodeId);
+          }
         }
       })();
-      meshcoreOwnerInfoInFlightRef.current.set(nodeId, run);
-      return run;
+      meshcoreOwnerInfoInFlightRef.current.set(nodeId, ownerFlight.promise);
+      return ownerFlight.promise;
     },
-    [sendRepeaterCliCommand, setOwnerInfoEntry],
+    [
+      ensureNodePubKey,
+      resolveMeshcoreConn,
+      resolveAdminHopsForNode,
+      sendRepeaterCliCommand,
+      setOwnerInfoEntry,
+    ],
+  );
+
+  const setAnonBasicEntry = useCallback((nodeId: number, entry: MeshcoreAnonBasicEntry) => {
+    meshcoreAnonBasicCacheGenRef.current = meshcoreSetupGenerationRef.current;
+    meshcoreAnonBasicCacheIdentityRef.current = meshcoreIdentityIdRef.current;
+    meshcoreAnonBasicRef.current.set(nodeId, entry);
+    setMeshcoreAnonBasic((prev) => {
+      const next = new Map(prev);
+      next.set(nodeId, entry);
+      return next;
+    });
+  }, []);
+
+  const requestNodeAnonBasic = useCallback(
+    async (nodeId: number, opts?: { force?: boolean }): Promise<MeshcoreAnonBasicEntry | null> => {
+      if (!connRef.current) return null;
+      if (!meshcoreRadioContactsLoadedRef.current) return null;
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+      const hwModel = node?.hw_model;
+      if (!meshcoreOwnerInfoSupported(hwModel)) return null;
+
+      if (!opts?.force) {
+        const cacheMatchesSession =
+          meshcoreAnonBasicCacheGenRef.current === meshcoreSetupGenerationRef.current &&
+          meshcoreAnonBasicCacheIdentityRef.current === meshcoreIdentityIdRef.current;
+        if (!cacheMatchesSession) {
+          meshcoreAnonBasicRef.current.clear();
+          meshcoreAnonBasicInFlightRef.current.clear();
+          // Establish session gen before in-flight reuse so concurrent non-forced calls share one request.
+          meshcoreAnonBasicCacheGenRef.current = meshcoreSetupGenerationRef.current;
+          meshcoreAnonBasicCacheIdentityRef.current = meshcoreIdentityIdRef.current;
+        } else {
+          const cached = meshcoreAnonBasicRef.current.get(nodeId);
+          if (cached) return cached;
+          const inFlight = meshcoreAnonBasicInFlightRef.current.get(nodeId);
+          if (inFlight) return inFlight;
+        }
+      }
+
+      // Prefer clock already obtained from ANON OWNER (saves rate-limit slots).
+      // Clock-only: leave feature flags unknown until a BASIC reply arrives.
+      if (!opts?.force) {
+        const owner = meshcoreOwnerInfoRef.current.get(nodeId);
+        if (owner?.clock != null && Number.isFinite(owner.clock)) {
+          const reused: MeshcoreAnonBasicEntry = {
+            status: 'ok',
+            fetchedAt: owner.fetchedAt,
+            clock: owner.clock,
+          };
+          setAnonBasicEntry(nodeId, reused);
+          return reused;
+        }
+      }
+
+      const identityAtRequest = meshcoreIdentityIdRef.current;
+      const generationAtRequest = meshcoreSetupGenerationRef.current;
+      const basicFlight: { promise?: Promise<MeshcoreAnonBasicEntry> } = {};
+      basicFlight.promise = (async (): Promise<MeshcoreAnonBasicEntry> => {
+        try {
+          const conn = resolveMeshcoreConn();
+          const pubKey = await ensureNodePubKey(nodeId);
+          let entry: MeshcoreAnonBasicEntry;
+          if (!conn || !pubKey) {
+            entry = { status: 'error', fetchedAt: Date.now(), reason: 'unreachable' };
+          } else {
+            try {
+              const hopsAway = resolveAdminHopsForNode(nodeId);
+              const parsed = await runMeshcoreAnonBasicRequest(
+                conn,
+                pubKey,
+                {
+                  hopsAway,
+                  radioContactPathLen: radioContactPathLenByNodeRef.current.get(nodeId) ?? null,
+                },
+                repeaterRemoteRpcRef.current,
+              );
+              entry = meshcoreAnonBasicFromParsed(parsed);
+            } catch (e) {
+              const message = e instanceof Error ? e.message : String(e);
+              const reason = /timeout|timed out/i.test(message)
+                ? 'timeout'
+                : /flood/i.test(message)
+                  ? 'unreachable'
+                  : 'failed';
+              console.debug('[useMeshcoreRuntime] anon basic failed ' + message);
+              entry = { status: 'error', fetchedAt: Date.now(), reason };
+            }
+          }
+          if (
+            meshcoreIdentityIdRef.current === identityAtRequest &&
+            meshcoreSetupGenerationRef.current === generationAtRequest
+          ) {
+            setAnonBasicEntry(nodeId, entry);
+          }
+          return entry;
+        } finally {
+          if (meshcoreAnonBasicInFlightRef.current.get(nodeId) === basicFlight.promise) {
+            meshcoreAnonBasicInFlightRef.current.delete(nodeId);
+          }
+        }
+      })();
+      meshcoreAnonBasicInFlightRef.current.set(nodeId, basicFlight.promise);
+      return basicFlight.promise;
+    },
+    [ensureNodePubKey, resolveAdminHopsForNode, resolveMeshcoreConn, setAnonBasicEntry],
+  );
+
+  const queryAnonRegions = useCallback(
+    async (
+      candidate: MeshcoreRegionDiscoveryCandidate,
+      opts?: { isCurrent?: () => boolean },
+    ): Promise<readonly string[]> => {
+      if (opts?.isCurrent && !opts.isCurrent()) {
+        throw new Error('session changed');
+      }
+      const conn = resolveMeshcoreConn();
+      if (!conn) throw new Error('Not connected');
+      if (candidate.publicKey.length !== 32) throw new Error('contact not found');
+      const hopsAway = resolveAdminHopsForNode(candidate.nodeId);
+      const parsed = await runMeshcoreAnonRegionsRequest(
+        conn,
+        candidate.publicKey,
+        {
+          hopsAway,
+          radioContactPathLen: radioContactPathLenByNodeRef.current.get(candidate.nodeId) ?? null,
+        },
+        repeaterRemoteRpcRef.current,
+      );
+      if (opts?.isCurrent && !opts.isCurrent()) {
+        throw new Error('session changed');
+      }
+      return parsed.names;
+    },
+    [resolveAdminHopsForNode, resolveMeshcoreConn],
   );
 
   const resolveRoomLoginHopsForNode = useCallback((nodeId: number): number => {
@@ -10343,6 +10554,9 @@ export function useMeshcoreRuntime() {
       meshcoreNeighborErrors,
       meshcoreOwnerInfo,
       requestNodeOwnerInfo,
+      meshcoreAnonBasic,
+      requestNodeAnonBasic,
+      queryAnonRegions,
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,
@@ -10506,6 +10720,9 @@ export function useMeshcoreRuntime() {
       meshcoreNeighborErrors,
       meshcoreOwnerInfo,
       requestNodeOwnerInfo,
+      meshcoreAnonBasic,
+      requestNodeAnonBasic,
+      queryAnonRegions,
       meshcoreCliHistories,
       meshcoreCliErrors,
       sendRepeaterCliCommand,

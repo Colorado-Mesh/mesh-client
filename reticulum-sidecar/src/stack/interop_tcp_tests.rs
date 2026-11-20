@@ -1,4 +1,4 @@
-//! Dual `StackHandle` TCP interop (LXMF DM, stack settings, LXST signalling).
+//! Dual `StackHandle` TCP interop (LXMF DM, stack settings, LXST signalling, LRGP).
 
 use std::net::TcpListener;
 use std::path::Path;
@@ -16,9 +16,10 @@ const READY_TIMEOUT: Duration = Duration::from_secs(45);
 const PEER_TIMEOUT: Duration = Duration::from_secs(45);
 const INBOUND_TIMEOUT: Duration = Duration::from_secs(45);
 const VOICE_TIMEOUT: Duration = Duration::from_secs(45);
+const GAMES_TIMEOUT: Duration = Duration::from_secs(45);
 
 struct TcpStackFixture {
-    _dir: tempfile::TempDir,
+    dir: tempfile::TempDir,
     handle: Arc<StackHandle>,
 }
 
@@ -29,7 +30,7 @@ fn ephemeral_loopback_port() -> u16 {
     port
 }
 
-fn write_tcp_stack_config(dir: &Path, server: bool, port: u16) {
+fn write_tcp_stack_config(dir: &Path, server: bool, port: u16, enable_transport: bool) {
     let iface = if server {
         format!(
             r#"
@@ -51,10 +52,11 @@ fn write_tcp_stack_config(dir: &Path, server: bool, port: u16) {
 "#
         )
     };
+    let transport = if enable_transport { "Yes" } else { "No" };
     let content = format!(
         r#"[reticulum]
   share_instance = No
-  enable_transport = Yes
+  enable_transport = {transport}
   link_mtu_discovery = Yes
 [stamps]
   stamp_destinations = No
@@ -70,11 +72,19 @@ fn write_tcp_stack_config(dir: &Path, server: bool, port: u16) {
 }
 
 async fn spawn_tcp_stack(server: bool, port: u16) -> TcpStackFixture {
+    spawn_tcp_stack_with_transport(server, port, true).await
+}
+
+async fn spawn_tcp_stack_with_transport(
+    server: bool,
+    port: u16,
+    enable_transport: bool,
+) -> TcpStackFixture {
     let dir = tempfile::tempdir().expect("temp stack dir");
     let config_dir = dir.path().join("config");
     let storage_dir = dir.path().join("storage");
     std::fs::create_dir_all(&storage_dir).expect("storage dir");
-    write_tcp_stack_config(&config_dir, server, port);
+    write_tcp_stack_config(&config_dir, server, port, enable_transport);
     let (events, _) = broadcast::channel(256);
     let handle = Arc::new(Box::pin(StackHandle::bootstrap(config_dir, storage_dir, events)).await);
     handle
@@ -85,7 +95,7 @@ async fn spawn_tcp_stack(server: bool, port: u16) -> TcpStackFixture {
     wait_stack_ready(&handle, READY_TIMEOUT)
         .await
         .expect("stack ready");
-    TcpStackFixture { _dir: dir, handle }
+    TcpStackFixture { dir, handle }
 }
 
 async fn wait_stack_ready(stack: &StackHandle, timeout: Duration) -> Result<(), String> {
@@ -162,6 +172,64 @@ where
     Err("timeout waiting for voice status".into())
 }
 
+async fn wait_games_sessions(
+    stack: &StackHandle,
+    peer: &str,
+    timeout: Duration,
+) -> Result<serde_json::Value, String> {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        let listed = stack.games_sessions(Some(peer)).await;
+        let sessions = listed
+            .get("sessions")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+        if !sessions.is_empty() {
+            return Ok(listed);
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    Err(format!(
+        "timeout waiting for games sessions with peer {peer}"
+    ))
+}
+
+async fn wait_games_session_detail<F>(
+    stack: &StackHandle,
+    session_id: &str,
+    timeout: Duration,
+    predicate: F,
+) -> Result<serde_json::Value, String>
+where
+    F: Fn(&serde_json::Value) -> bool,
+{
+    let deadline = Instant::now() + timeout;
+    let mut last = serde_json::Value::Null;
+    while Instant::now() < deadline {
+        let detail = stack.games_session_detail(session_id).await;
+        if let Some(session) = detail.get("session")
+            && !session.is_null()
+        {
+            last = session.clone();
+            if predicate(session) {
+                return Ok(detail);
+            }
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    Err(format!(
+        "timeout waiting for games session detail {session_id}; last={last}"
+    ))
+}
+
+fn session_meta_str<'a>(session: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    session
+        .get("metadata")
+        .and_then(|m| m.get(key))
+        .and_then(|v| v.as_str())
+}
+
 async fn bootstrap_dual_tcp() -> (TcpStackFixture, TcpStackFixture) {
     let port = ephemeral_loopback_port();
     let server = spawn_tcp_stack(true, port).await;
@@ -180,9 +248,49 @@ async fn bootstrap_dual_tcp() -> (TcpStackFixture, TcpStackFixture) {
     (server, client)
 }
 
+/// Two LXMF peers as TCP clients through a shared TCPServer transport hub.
+/// Direct peer↔peer multi-message delivery is more reliable here than the
+/// two-node TCPServer↔TCPClient fixture (which only delivers one Direct per
+/// direction on loopback).
+async fn bootstrap_hub_tcp() -> (TcpStackFixture, TcpStackFixture, TcpStackFixture) {
+    let port = ephemeral_loopback_port();
+    let hub = spawn_tcp_stack(true, port).await;
+    let peer_a = spawn_tcp_stack(false, port).await;
+    let peer_b = spawn_tcp_stack(false, port).await;
+    let a_id = peer_a.handle.identity_status().await;
+    let b_id = peer_b.handle.identity_status().await;
+    assert!(a_id.configured);
+    assert!(b_id.configured);
+    peer_a.handle.announce_now().await.expect("peer_a announce");
+    peer_b.handle.announce_now().await.expect("peer_b announce");
+    peer_a
+        .handle
+        .request_peer_path_with_opts(&b_id.lxmf_hash, true)
+        .await
+        .expect("peer_a request path to b");
+    peer_b
+        .handle
+        .request_peer_path_with_opts(&a_id.lxmf_hash, true)
+        .await
+        .expect("peer_b request path to a");
+    wait_peer_lxmf_path(&peer_a.handle, &b_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("peer_a path to peer_b");
+    wait_peer_lxmf_path(&peer_b.handle, &a_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("peer_b path to peer_a");
+    (hub, peer_a, peer_b)
+}
+
 async fn teardown_dual(server: &TcpStackFixture, client: &TcpStackFixture) {
     let _ = server.handle.detach_live().await;
     let _ = client.handle.detach_live().await;
+}
+
+async fn teardown_hub(hub: &TcpStackFixture, a: &TcpStackFixture, b: &TcpStackFixture) {
+    let _ = a.handle.detach_live().await;
+    let _ = b.handle.detach_live().await;
+    let _ = hub.handle.detach_live().await;
 }
 
 #[tokio::test]
@@ -190,7 +298,7 @@ async fn stack_settings_stamps_and_mtu_round_trip() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config_dir = dir.path().join("config");
     std::fs::create_dir_all(&config_dir).expect("config");
-    write_tcp_stack_config(&config_dir, false, 42_424);
+    write_tcp_stack_config(&config_dir, false, 42_424, true);
     let (events, _) = broadcast::channel(8);
     let storage_dir = dir.path().join("storage");
     std::fs::create_dir_all(&storage_dir).expect("storage");
@@ -258,6 +366,95 @@ async fn dual_tcp_lxmf_dm_stamps_off() {
 }
 
 #[tokio::test]
+async fn dual_tcp_four_in_a_row_wire_interop() {
+    // Hub topology (manual-gold shape). Full play-to-win needs repeated Direct LXMF
+    // in the same direction; on loopback dual-sidecar that currently delivers only
+    // the first message per direction (challenge then accept works; moves stall).
+    // This test proves LRGP four_in_a_row challenge→accept over the real wire.
+    let (hub, challenger, opponent) = bootstrap_hub_tcp().await;
+    let challenger_id = challenger.handle.identity_status().await;
+    let opponent_id = opponent.handle.identity_status().await;
+
+    let apps = opponent.handle.games_apps().await;
+    let apps_list = apps
+        .get("apps")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        apps_list.iter().any(|app| {
+            app.get("app_id").and_then(|v| v.as_str()) == Some("four_in_a_row")
+                && app.get("version").and_then(serde_json::Value::as_u64) == Some(1)
+        }),
+        "four_in_a_row v1 must be registered: {apps:?}"
+    );
+
+    let challenge = challenger
+        .handle
+        .games_send_action(
+            &opponent_id.lxmf_hash,
+            "four_in_a_row",
+            "challenge",
+            None,
+            None,
+        )
+        .await
+        .expect("challenge send");
+    assert_eq!(challenge.get("ok"), Some(&serde_json::Value::Bool(true)));
+    let session_id = challenge
+        .get("session_id")
+        .and_then(|v| v.as_str())
+        .expect("session id")
+        .to_string();
+
+    wait_games_session_detail(&opponent.handle, &session_id, GAMES_TIMEOUT, |s| {
+        s.get("status").and_then(|v| v.as_str()) == Some("pending")
+            && session_meta_str(s, "first_turn")
+                .is_some_and(|ft| ft.eq_ignore_ascii_case(&challenger_id.lxmf_hash))
+            && session_meta_str(s, "board") == Some("__________________________________________")
+    })
+    .await
+    .expect("opponent pending challenge");
+
+    let accept = opponent
+        .handle
+        .games_send_action(
+            &challenger_id.lxmf_hash,
+            "four_in_a_row",
+            "accept",
+            Some(&session_id),
+            None,
+        )
+        .await
+        .expect("accept send");
+    assert_eq!(accept.get("ok"), Some(&serde_json::Value::Bool(true)));
+
+    wait_games_session_detail(&opponent.handle, &session_id, GAMES_TIMEOUT, |s| {
+        s.get("status").and_then(|v| v.as_str()) == Some("active")
+            && session_meta_str(s, "my_marker") == Some("B")
+            && session_meta_str(s, "turn")
+                .is_some_and(|t| t.eq_ignore_ascii_case(&challenger_id.lxmf_hash))
+    })
+    .await
+    .expect("opponent active");
+    wait_games_session_detail(&challenger.handle, &session_id, GAMES_TIMEOUT, |s| {
+        s.get("status").and_then(|v| v.as_str()) == Some("active")
+            && session_meta_str(s, "my_marker") == Some("A")
+            && session_meta_str(s, "turn")
+                .is_some_and(|t| t.eq_ignore_ascii_case(&challenger_id.lxmf_hash))
+    })
+    .await
+    .expect("challenger active");
+
+    // Confirm sessions are listed for the peer filter (wire + store path).
+    wait_games_sessions(&opponent.handle, &challenger_id.lxmf_hash, GAMES_TIMEOUT)
+        .await
+        .expect("opponent lists challenger sessions");
+
+    teardown_hub(&hub, &challenger, &opponent).await;
+}
+
+#[tokio::test]
 async fn dual_tcp_voice_signalling_smoke() {
     let (server, client) = bootstrap_dual_tcp().await;
     let server_id = server.handle.identity_status().await;
@@ -291,6 +488,300 @@ async fn dual_tcp_voice_signalling_smoke() {
     assert_eq!(hang_b.get("ok"), Some(&serde_json::Value::Bool(true)));
 
     teardown_dual(&server, &client).await;
+}
+
+#[tokio::test]
+async fn dual_tcp_voice_audio_round_trip() {
+    use base64::Engine as _;
+    use lxst_core::Profile;
+
+    let (server, client) = bootstrap_dual_tcp().await;
+    let server_id = server.handle.identity_status().await;
+    let call = client.handle.voice_call(&server_id.identity_hash).await;
+    assert_eq!(call.get("ok"), Some(&serde_json::Value::Bool(true)));
+
+    wait_voice_status(&server.handle, VOICE_TIMEOUT, |st| {
+        st.get("active_call")
+            .and_then(|c| c.get("status"))
+            .and_then(|v| v.as_str())
+            == Some("ringing")
+    })
+    .await
+    .expect("server ringing");
+
+    let answer = server.handle.voice_answer().await;
+    assert_eq!(answer.get("ok"), Some(&serde_json::Value::Bool(true)));
+
+    wait_voice_status(&client.handle, VOICE_TIMEOUT, |st| {
+        st.get("active_call")
+            .and_then(|c| c.get("status"))
+            .and_then(|v| v.as_str())
+            == Some("established")
+    })
+    .await
+    .expect("call established");
+
+    let mut audio_rx = server.handle.subscribe_voice_audio();
+    let n = Profile::QualityHigh.sample_frames_per_packet()
+        * usize::from(Profile::QualityHigh.channels());
+    let mut bytes = Vec::with_capacity(n * 4);
+    for _ in 0..n {
+        bytes.extend_from_slice(&0f32.to_le_bytes());
+    }
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+
+    let mut got_frame = false;
+    for attempt in 0..5 {
+        let resp = client.handle.voice_audio(Some(1), 1, &b64).await;
+        assert_eq!(
+            resp.get("ok"),
+            Some(&serde_json::Value::Bool(true)),
+            "voice_audio attempt {attempt}: {resp:?}"
+        );
+        assert!(resp.get("dropped").is_none(), "frame dropped: {resp:?}");
+        match tokio::time::timeout(Duration::from_secs(5), audio_rx.recv()).await {
+            Ok(Ok(raw)) => {
+                let parsed: serde_json::Value =
+                    serde_json::from_str(&raw).expect("voice.audio json");
+                let payload = parsed.get("payload").cloned().unwrap_or(parsed);
+                let samples_b64 = payload
+                    .get("samples_b64")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_else(|| panic!("missing samples_b64: {payload:?}"));
+                let samples = base64::engine::general_purpose::STANDARD
+                    .decode(samples_b64)
+                    .expect("samples_b64 must decode");
+                let channels = payload
+                    .get("channels")
+                    .and_then(serde_json::Value::as_u64)
+                    .expect("channels") as usize;
+                assert_eq!(channels, 1);
+                assert!(!samples.is_empty(), "PCM samples empty: {payload:?}");
+                assert_eq!(
+                    samples.len() % (channels * 4),
+                    0,
+                    "PCM byte length must align to f32 * channels: len={} channels={channels}",
+                    samples.len()
+                );
+                got_frame = true;
+                break;
+            }
+            Ok(Err(e)) => panic!("voice audio broadcast closed: {e}"),
+            Err(_) => {}
+        }
+    }
+    assert!(
+        got_frame,
+        "no PCM frame received on server after established call (Opus/headless?)"
+    );
+
+    let hang_a = client.handle.voice_hangup().await;
+    let hang_b = server.handle.voice_hangup().await;
+    assert_eq!(hang_a.get("ok"), Some(&serde_json::Value::Bool(true)));
+    assert_eq!(hang_b.get("ok"), Some(&serde_json::Value::Bool(true)));
+
+    teardown_dual(&server, &client).await;
+}
+
+#[tokio::test]
+async fn dual_tcp_nomad_page_and_file() {
+    // Direct TCPServer (host, transport) ↔ TCPClient (browser, leaf).
+    let port = ephemeral_loopback_port();
+    let host = spawn_tcp_stack_with_transport(true, port, true).await;
+    let client = spawn_tcp_stack_with_transport(false, port, false).await;
+    let host_id = host.handle.identity_status().await;
+    let client_id = client.handle.identity_status().await;
+    assert!(host_id.configured);
+    assert!(client_id.configured);
+    wait_peer_lxmf_path(&client.handle, &host_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("client path to host");
+    wait_peer_lxmf_path(&host.handle, &client_id.lxmf_hash, PEER_TIMEOUT)
+        .await
+        .expect("host path to client");
+
+    let site = host.dir.path().join("nomad-site");
+    let pages = site.join("pages");
+    let files = site.join("files");
+    std::fs::create_dir_all(&pages).expect("pages dir");
+    std::fs::create_dir_all(&files).expect("files dir");
+    std::fs::write(
+        pages.join("index.mu"),
+        "# Interop\n\nHello from mesh-client.\n",
+    )
+    .expect("write index.mu");
+    let probe_bytes = b"mesh-client-nomad-probe";
+    std::fs::write(files.join("probe.bin"), probe_bytes).expect("write probe.bin");
+    // Dotfile must exist before serving so route registration cannot race the exclusion assert.
+    std::fs::write(files.join(".secret"), b"do-not-serve").expect("dotfile");
+
+    let status_src = host
+        .handle
+        .set_nomad_content_source(site.to_string_lossy().into_owned(), None)
+        .await
+        .expect("set_nomad_content_source");
+    assert_eq!(
+        status_src.content_layout.as_deref(),
+        Some("site_root"),
+        "content_layout={:?}",
+        status_src.content_layout
+    );
+
+    host.handle
+        .set_nomad_serving(true, Some("Interop Host".into()), None)
+        .await
+        .expect("set_nomad_serving");
+
+    let deadline = Instant::now() + Duration::from_secs(45);
+    let mut dest = String::new();
+    while Instant::now() < deadline {
+        let st = host.handle.nomad_serving_status().await;
+        if st.running
+            && let Some(hash) = st.destination_hash.clone()
+        {
+            dest = hash;
+            break;
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    assert!(
+        !dest.is_empty(),
+        "nomad destination_hash missing while running"
+    );
+    let host_st = host.handle.nomad_serving_status().await;
+    let host_identity = match host_st.identity_hash.clone() {
+        Some(h) if !h.trim().is_empty() => h,
+        _ => host.handle.identity_status().await.identity_hash,
+    };
+    assert!(
+        !host_identity.trim().is_empty(),
+        "host identity_hash missing for nomad link"
+    );
+
+    host.handle
+        .set_nomad_serving(true, Some("Interop Host".into()), None)
+        .await
+        .expect("nomad re-announce");
+
+    client
+        .handle
+        .request_peer_path_with_opts(&dest, true)
+        .await
+        .expect("request nomad path");
+    wait_peer_lxmf_path(&client.handle, &dest, PEER_TIMEOUT)
+        .await
+        .expect("client path to nomad dest");
+
+    let announce_deadline = Instant::now() + Duration::from_secs(15);
+    let mut saw_announce = false;
+    while Instant::now() < announce_deadline {
+        let nodes = client.handle.list_nomad_nodes().await;
+        if nodes.iter().any(|n| {
+            n.destination_hash.eq_ignore_ascii_case(&dest)
+                && n.identity_hash
+                    .as_deref()
+                    .is_some_and(|h| !h.trim().is_empty())
+        }) {
+            saw_announce = true;
+            break;
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    let nodes = client.handle.list_nomad_nodes().await;
+    assert!(
+        saw_announce
+            && nodes.iter().any(|n| {
+                n.destination_hash.eq_ignore_ascii_case(&dest)
+                    && n.identity_hash
+                        .as_deref()
+                        .is_some_and(|h| !h.trim().is_empty())
+            }),
+        "client did not discover nomad identity via announce for {dest}: {nodes:?}"
+    );
+
+    let file = client
+        .handle
+        .nomad_file(&dest, "/file/probe.bin", true, false)
+        .await;
+    assert_eq!(
+        file.get("ok"),
+        Some(&serde_json::Value::Bool(true)),
+        "nomad_file: {file:?}"
+    );
+    let got = file
+        .get("content_base64")
+        .and_then(|v| v.as_str())
+        .map(|b64| {
+            use base64::Engine as _;
+            base64::engine::general_purpose::STANDARD
+                .decode(b64)
+                .expect("file b64")
+        })
+        .unwrap_or_default();
+    assert_eq!(got, probe_bytes, "nomad_file body: {file:?}");
+
+    let page = client
+        .handle
+        .nomad_page(&dest, "/page/index.mu", None, false, None, false)
+        .await;
+    assert_eq!(
+        page.get("ok"),
+        Some(&serde_json::Value::Bool(true)),
+        "nomad_page: {page:?}"
+    );
+    let page_body = page
+        .get("content")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .expect("page content");
+    assert!(
+        page_body.contains("Hello from mesh-client"),
+        "unexpected page body: {page_body}"
+    );
+
+    // Traversal / escape must not yield the real file bytes (may surface as
+    // not-found Micron with ok=true when the path hash misses the route table).
+    let traversal = client
+        .handle
+        .nomad_file(&dest, "/page/../files/probe.bin", false, false)
+        .await;
+    let trav = traversal
+        .get("content_base64")
+        .and_then(|v| v.as_str())
+        .map(|b64| {
+            use base64::Engine as _;
+            base64::engine::general_purpose::STANDARD
+                .decode(b64)
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    assert_ne!(
+        trav.as_slice(),
+        probe_bytes.as_slice(),
+        "path traversal must not yield probe bytes: {traversal:?}"
+    );
+
+    let dotfile = client
+        .handle
+        .nomad_file(&dest, "/file/.secret", false, false)
+        .await;
+    let dot = dotfile
+        .get("content_base64")
+        .and_then(|v| v.as_str())
+        .map(|b64| {
+            use base64::Engine as _;
+            base64::engine::general_purpose::STANDARD
+                .decode(b64)
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    assert_ne!(
+        dot.as_slice(),
+        b"do-not-serve".as_slice(),
+        "dotfile must not be served: {dotfile:?}"
+    );
+
+    teardown_dual(&host, &client).await;
 }
 
 #[tokio::test]

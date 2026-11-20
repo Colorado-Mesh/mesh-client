@@ -87,6 +87,16 @@ describe('shouldApplyMeshcoreRfHopEnrichment', () => {
     expect(shouldApplyMeshcoreRfHopEnrichment(2, 2, true)).toBe(false);
     expect(shouldApplyMeshcoreRfHopEnrichment(undefined, 2, false)).toBe(false);
   });
+
+  it('applies when hop counts match but path-hash width is missing', () => {
+    expect(shouldApplyMeshcoreRfHopEnrichment(2, 2, true, undefined, 1)).toBe(true);
+    expect(shouldApplyMeshcoreRfHopEnrichment(2, 2, true, undefined, 3)).toBe(true);
+  });
+
+  it('applies when hop counts match but path-hash widths differ', () => {
+    expect(shouldApplyMeshcoreRfHopEnrichment(2, 2, true, 1, 2)).toBe(true);
+    expect(shouldApplyMeshcoreRfHopEnrichment(2, 2, true, 2, 2)).toBe(false);
+  });
 });
 
 describe('decodeMeshcoreLateHopGroupText', () => {

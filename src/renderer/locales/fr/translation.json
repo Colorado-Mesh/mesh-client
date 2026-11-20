@@ -1024,7 +1024,12 @@
     "markdownLink": "Lien",
     "markdownToolbar": "Mettre en forme",
     "cancelPendingDmAck": "Annuler l'attente",
-    "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué"
+    "cancelPendingDmAckAria": "Arrêter d'attendre l'accusé de réception et marquer ce message comme ayant échoué",
+    "outboxAnnounceBlocked": "Message bloqué et non envoyé.",
+    "outboxAnnounceFailed": "Échec de l'envoi du message.",
+    "pathHashSizeTooltip": "Largeur de hachage du chemin de transmission pour ce paquet ({{bytes}} octets par saut), et non le mode TX configuré de votre radio",
+    "pathHashSizeAria": "Taille du hachage du chemin {{label}}",
+    "pathHashSizeLabel": "{{bytes}} octet"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "Les informations sur le propriétaire nécessitent un mot de passe administrateur. Enregistrez-en un ci-dessous pour le lire.",
     "ownerInfoNeedsRoomPassword": "Les informations du propriétaire nécessitent un mot de passe administrateur. Définissez-le dans Répéteurs et pièces → Configurer.",
     "ownerInfoReadFailed": "Impossible de lire les informations sur le propriétaire.",
-    "ownerInfoDeferred": "Les informations sur le propriétaire sont en attente de la radio. Utilisez Actualiser pour réessayer."
+    "ownerInfoDeferred": "Les informations sur le propriétaire sont en attente de la radio. Utilisez Actualiser pour réessayer.",
+    "anonBasicHeading": "Horloge à distance",
+    "anonBasicRefresh": "Actualiser l’horloge distante",
+    "anonBasicLoading": "Lecture de l’horloge distante…",
+    "anonBasicClock": "Horloge du nœud {{time}} (décalage : {{skew}} s)",
+    "anonBasicForwardingDisabled": "Le transfert est actuellement désactivé sur ce répéteur.",
+    "anonBasicBridgeUart": "Pont UART activé",
+    "anonBasicBridgeEspNow": "Pont ESP-NOW activé",
+    "anonBasicReadFailed": "Impossible de lire l’horloge distante.",
+    "anonBasicUnsupported": "Ce micrologiciel ne prend pas en charge les requêtes d’horloge anonymes."
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Ajoutez des régions ici, puis choisissez une portée pour chaque canal à côté de Envoyer ou dans les → canaux radio. L'enregistrement ou la suppression d'une région laisse les paramètres par défaut de la radio et les choix de canal inchangés.",
     "floodScopeAddHashtag": "Hashtag de la région à enregistrer",
     "floodScopeAddSaved": "Enregistrer la région",
-    "floodScopePresetsFull": "Vous pouvez enregistrer jusqu'à {{count}} régions. Supprimez-en un avant d'en ajouter un autre."
+    "floodScopePresetsFull": "Vous pouvez enregistrer jusqu'à {{count}} régions. Supprimez-en un avant d'en ajouter un autre.",
+    "floodScopeDiscover": "DECOUVERTE DE NOS REGIONS",
+    "floodScopeDiscoverTitle": "Régions découvertes",
+    "floodScopeDiscoverHelp": "Lit l’arborescence des régions à partir des répéteurs avec un mot de passe administrateur enregistré. Rien n’est envoyé automatiquement.",
+    "floodScopeDiscoverBusy": "Découverte de {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Annuler la découverte",
+    "floodScopeDiscoverCancelled": "La détection s’est arrêtée.",
+    "floodScopeDiscoverEmpty": "Aucune région découverte pour le moment.",
+    "floodScopeDiscoverNone": "Aucune région publique signalée.",
+    "floodScopeDiscoverSave": "Sauvegarder",
+    "floodScopeDiscoverSaveAria": "Enregistrer {{region}} en tant que préréglage de champ d’application",
+    "floodScopeDiscoverSaved": "Enregistré",
+    "floodScopeDiscoverSelect": "Sélectionner",
+    "floodScopeDiscoverSelectAria": "Sélectionnez {{region}} pour la portée de la radio",
+    "floodScopeDiscoverSelected": "{{region}} sélectionné(e). Appuyez sur Appliquer pour définir la portée de la radio.",
+    "floodScopeDiscoverAddAll": "Ajouter tous les publics ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Ajout de {{added}} sur {{total}} ; la liste des portées enregistrées est pleine.",
+    "floodScopeDiscoverPrivate": "Privé (non adressable par hashtag)",
+    "floodScopeDiscoverHome": "Page d'accueil",
+    "floodScopeDiscoverFloodAllowed": "Flood autorisé",
+    "floodScopeDiscoverFloodDenied": "Flood bloqué",
+    "floodScopeDiscoverSources": "Signalé par {{count}} personnes qui ont partagé le message",
+    "floodScopeDiscoverTruncated": "Les listes de régions {{count}} ont été tronquées par le micrologiciel ; il se peut que certains noms manquent.",
+    "floodScopeDiscoverSkipped": "{{count}} répéteurs ignorés (aucun mot de passe administrateur enregistré).",
+    "floodScopeDiscoverFailed": "{{count}} répéteurs n’ont pas répondu.",
+    "floodScopeDiscoverStale": "Dernière découverte : {{when}}",
+    "floodScopeDiscoverError": "Échec de la détection de la région. Réessayez ou consultez l’onglet Répéteurs.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "régions non prises en charge",
+      "rejected": "Demande rejetée",
+      "invalid-reply": "Réponse Invalide",
+      "timeout": "Terminé",
+      "unreachable": "inaccessible/injoignable/impossible",
+      "unknown": "erreur inconnue"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -7379,7 +7427,6 @@
     "ackSent": "Accusé de réception envoyé à {{sender}}",
     "ackQueued": "Accusé de réception à {{sender}} en file d'attente ; il sera envoyé lorsque la radio sera disponible",
     "ackFailed": "Impossible d'envoyer ou de mettre en file d'attente l'accusé de réception",
-    "intro": "Image opérationnelle commune pour les urgences MECP entendues sur n'importe quel protocole. Ouvrez le badge MAYDAY et les lignes URGENTES dans cet onglet ; exercices compris. Utilisez Acquitter (ou Confirmer pour une balise active) pour répondre sur le maillage, puis Résoudre lorsque l'incident est fermé localement.",
     "ackQueuedBadge": "ACK en file d'attente",
     "pendingAckListAria": "Accusés de réception en file d'attente pour cet incident",
     "cancelPendingAck": "Annuler",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Afficher",
     "standingAlertViewAria": "Ouvrez l'onglet Incident",
     "standingAlertDismiss": "Marquer comme vu",
-    "standingAlertDismissAria": "Marquez l'urgence à partir de {{sender}} comme vu"
+    "standingAlertDismissAria": "Marquez l'urgence à partir de {{sender}} comme vu",
+    "intro": "Rapports MECP non résolus entendus sur n’importe quel protocole — tous les niveaux de gravité, y compris les exercices. La résolution d’une ligne la supprime de cette liste ; elle figure toujours dans le journal d’exportation. Les lignes ouvertes sont signalées par un badge sur cet onglet. Utilisez Accuser réception (ou Confirmer pour une balise active) pour répondre sur le réseau maillé, puis Résoudre lorsque l’incident est clos localement. Si vous avez envoyé la balise de détresse, l’option Annuler la balise transmet également le code B03 afin que les autres stations puissent la supprimer."
   },
   "shell": {
     "section": {

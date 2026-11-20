@@ -1024,7 +1024,12 @@
     "markdownLink": "Bağlantı",
     "markdownToolbar": "Biçimlendirme",
     "cancelPendingDmAck": "Beklemeyi iptal et",
-    "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin"
+    "cancelPendingDmAckAria": "Teslimat onayını beklemeyi bırakın ve bu mesajı başarısız olarak işaretleyin",
+    "outboxAnnounceBlocked": "Mesaj engellendi ve gönderilmedi.",
+    "outboxAnnounceFailed": "Mesajınız gönderilemedi.",
+    "pathHashSizeTooltip": "Bu paket için havadaki yol karma genişliği ({{bytes}} bayt/atlama), telsizinizin yapılandırılmış TX modu değil",
+    "pathHashSizeAria": "Yol karma boyutu {{label}}",
+    "pathHashSizeLabel": "{{bytes}} bayt"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "Sahip bilgilerini görüntülemek için yönetici şifresi gerekir. Okumak için aşağıdakilerden birini kaydedin.",
     "ownerInfoNeedsRoomPassword": "Sahip bilgileri için yönetici parolası gerekiyor. Yineleyiciler ve Odalar → Yapılandır bölümünden ayarlayın.",
     "ownerInfoReadFailed": "Sahip bilgileri okunamadı.",
-    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın."
+    "ownerInfoDeferred": "Sahip bilgileri radyodan gelecek yanıtı bekliyor. Tekrar denemek için Yenile'yi kullanın.",
+    "anonBasicHeading": "Uzaktan kumanda saati",
+    "anonBasicRefresh": "Uzak saati yenile",
+    "anonBasicLoading": "Uzak saat okunuyor…",
+    "anonBasicClock": "Düğüm saati {{time}} ({{skew}} sn. sapma)",
+    "anonBasicForwardingDisabled": "Yönlendirme şu anda bu tekrarlayıcıda devre dışı.",
+    "anonBasicBridgeUart": "UART köprüsü etkinleştirildi",
+    "anonBasicBridgeEspNow": "ESP-NOW köprüsü etkinleştirildi",
+    "anonBasicReadFailed": "Uzak saat okunamadı.",
+    "anonBasicUnsupported": "Bu ürün yazılımı anonim saat sorgularını desteklemiyor."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Bölgeleri buraya ekleyin, ardından Gönder'in yanında veya Radyo → Kanallarında her kanal için bir kapsam seçin. Bir bölgeyi kaydetmek veya kaldırmak, radyo varsayılanını ve kanal seçeneklerini değiştirmez.",
     "floodScopeAddHashtag": "Kaydedilecek bölge etiketi",
     "floodScopeAddSaved": "Bölgeyi kaydet",
-    "floodScopePresetsFull": "{{count}} bölgeye kadar tasarruf edebilirsiniz. Birini eklemeden önce diğerini kaldırın."
+    "floodScopePresetsFull": "{{count}} bölgeye kadar tasarruf edebilirsiniz. Birini eklemeden önce diğerini kaldırın.",
+    "floodScopeDiscover": "Bölgeleri keşfedin",
+    "floodScopeDiscoverTitle": "Keşfedilen bölgeler",
+    "floodScopeDiscoverHelp": "Bölge ağacını kayıtlı bir yönetici parolası olan tekrarlayıcılardan okur. Hiçbir şey otomatik olarak gönderilmez.",
+    "floodScopeDiscoverBusy": "{{done}}/{{total}} ({{name}}) bulunuyor…",
+    "floodScopeDiscoverCancel": "Keşfi iptal et",
+    "floodScopeDiscoverCancelled": "Bulma işlemi durduruldu.",
+    "floodScopeDiscoverEmpty": "Henüz hiçbir bölge keşfedilmedi.",
+    "floodScopeDiscoverNone": "Hiçbir herkese açık bölge bildirilmedi.",
+    "floodScopeDiscoverSave": "Kaydet",
+    "floodScopeDiscoverSaveAria": "{{region}} öğesini bir kapsam ön ayarı olarak kaydedin",
+    "floodScopeDiscoverSaved": "Kaydedildi",
+    "floodScopeDiscoverSelect": "Seç",
+    "floodScopeDiscoverSelectAria": "Radyo kapsamı için {{region}} seçeneğini belirleyin",
+    "floodScopeDiscoverSelected": "{{region}} seçildi. Radyo kapsamını ayarlamak için Uygula'ya basın.",
+    "floodScopeDiscoverAddAll": "Tüm herkese açık olanları ekle ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "{{added}} / {{total}} eklendi; kaydedilen kapsam listesi dolu.",
+    "floodScopeDiscoverPrivate": "Özel (hashtag ile erişilemez)",
+    "floodScopeDiscoverHome": "Ev.",
+    "floodScopeDiscoverFloodAllowed": "Flood izinli",
+    "floodScopeDiscoverFloodDenied": "Flood engelli",
+    "floodScopeDiscoverSources": "{{count}} tekrarlayıcı tarafından bildirildi",
+    "floodScopeDiscoverTruncated": "{{count}} bölge listeleri ürün yazılımı tarafından kısaltıldı; bazı adlar eksik olabilir.",
+    "floodScopeDiscoverSkipped": "{{count}} tekrarlayıcı atlandı (kayıtlı yönetici parolası yok).",
+    "floodScopeDiscoverFailed": "{{count}} tekrarlayıcı yanıt vermedi.",
+    "floodScopeDiscoverStale": "Son keşfedilme tarihi: {{when}}",
+    "floodScopeDiscoverError": "Bölge bulunamadı. Tekrar deneyin veya Tekrarlayıcılar sekmesini kontrol edin.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "desteklenmeyen bölgeler",
+      "rejected": "Talep reddedildi",
+      "invalid-reply": "Geçersiz gdb yanıtı",
+      "timeout": "Zaman aşımına uğradı.",
+      "unreachable": "Ulaşılamaz",
+      "unknown": "bilinmeyen hata"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -7379,7 +7427,6 @@
     "ackSent": "Onay {{sender}} adresine gönderildi",
     "ackQueued": "{{sender}} kuyruğuna alındı; radyo uygun olduğunda gönderilecektir",
     "ackFailed": "Onay gönderilemedi veya kuyruğa alınamadı",
-    "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar dahil. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
     "ackQueuedBadge": "ACK kuyruğa alındı",
     "pendingAckListAria": "Bu olay için kuyruğa alınmış onaylar",
     "cancelPendingAck": "İptal",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Görüntüle",
     "standingAlertViewAria": "Olay sekmesini açın",
     "standingAlertDismiss": "Görüldü olarak",
-    "standingAlertDismissAria": "Acil durumu {{sender}} 'dan görüldüğü gibi işaretleyin"
+    "standingAlertDismissAria": "Acil durumu {{sender}} 'dan görüldüğü gibi işaretleyin",
+    "intro": "Herhangi bir protokolde duyulan çözülmemiş MECP raporları — tatbikatlar dâhil olmak üzere her ciddiyet seviyesi. Bir satırın çözümlenmesi, o satırı bu listeden kaldırır; Dışa aktarma günlüğü hâlâ o satırı içerir. Açık satırlar bu sekmeyi işaretler. Mesh üzerinde yanıt vermek için Onayla'yı (veya aktif bir işaret için Doğrula'yı) kullanın, ardından olay yerel olarak kapatıldığında Çözün. Sıkıntı sinyalini siz gönderdiyseniz Sinyali iptal et seçeneği de B03'ü iletir, böylece diğer istasyonlar bunu siler."
   },
   "shell": {
     "section": {

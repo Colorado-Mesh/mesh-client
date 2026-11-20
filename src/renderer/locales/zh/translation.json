@@ -1024,7 +1024,12 @@
     "markdownLink": "链接",
     "markdownToolbar": "格式",
     "cancelPendingDmAck": "取消等待",
-    "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败"
+    "cancelPendingDmAckAria": "停止等待送达确认，并将此消息标记为失败",
+    "outboxAnnounceBlocked": "消息已被屏蔽，未发送。",
+    "outboxAnnounceFailed": "无法发送邮件。",
+    "pathHashSizeTooltip": "此数据包的空中路径哈希宽度（每跳{{bytes}}字节），而非您无线电的已配置TX模式",
+    "pathHashSizeAria": "路径哈希大小 {{label}}",
+    "pathHashSizeLabel": "{{bytes}}字节"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "所有者信息需要管理员密码。在下方保存一个密码以读取信息。",
     "ownerInfoNeedsRoomPassword": "所有者信息需要管理员密码。请在“中继器和房间”→“配置”中设置。",
     "ownerInfoReadFailed": "无法读取所有者信息。",
-    "ownerInfoDeferred": "车主信息正在等待无线电信号。请使用“刷新”重试。"
+    "ownerInfoDeferred": "车主信息正在等待无线电信号。请使用“刷新”重试。",
+    "anonBasicHeading": "远程考勤钟",
+    "anonBasicRefresh": "刷新远程时钟",
+    "anonBasicLoading": "正在读取远程时钟……",
+    "anonBasicClock": "节点时钟{{time}}（偏移{{skew}}秒）",
+    "anonBasicForwardingDisabled": "此中继器当前已禁用转发功能。",
+    "anonBasicBridgeUart": "UART 桥接已启用",
+    "anonBasicBridgeEspNow": "ESP-NOW 桥接已启用",
+    "anonBasicReadFailed": "无法读取远程时钟。",
+    "anonBasicUnsupported": "此固件不支持匿名时钟查询。"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "在此处添加区域，然后为“发送”旁边或“广播频道”中的每个→频道选择一个范围。保存或删除区域时，单选框默认值和频道选择保持不变。",
     "floodScopeAddHashtag": "要保存的区域主题标签",
     "floodScopeAddSaved": "保存区域",
-    "floodScopePresetsFull": "您最多可以节省{{count}}个地区。请先删除一个，然后再添加另一个。"
+    "floodScopePresetsFull": "您最多可以节省{{count}}个地区。请先删除一个，然后再添加另一个。",
+    "floodScopeDiscover": "探索各地区",
+    "floodScopeDiscoverTitle": "已探索区域",
+    "floodScopeDiscoverHelp": "使用已保存的管理员密码从中继器读取区域树。不会自动发送任何内容。",
+    "floodScopeDiscoverBusy": "正在发现{{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "取消发现",
+    "floodScopeDiscoverCancelled": "发现已停止。",
+    "floodScopeDiscoverEmpty": "尚未发现任何区域。",
+    "floodScopeDiscoverNone": "未报告任何公共区域。",
+    "floodScopeDiscoverSave": "保存",
+    "floodScopeDiscoverSaveAria": "将{{region}}保存为范围预设",
+    "floodScopeDiscoverSaved": "保存成功",
+    "floodScopeDiscoverSelect": "选择大奖",
+    "floodScopeDiscoverSelectAria": "为无线电范围选择{{region}}",
+    "floodScopeDiscoverSelected": "已选择{{region}}。请按“应用”以设置无线电范围。",
+    "floodScopeDiscoverAddAll": "添加所有公开的（{{count}}）",
+    "floodScopeDiscoverAddAllClipped": "已添加{{added}}个，共{{total}}个；已保存的范围列表已满。",
+    "floodScopeDiscoverPrivate": "私密（不可通过话题标签访问）",
+    "floodScopeDiscoverHome": "首页",
+    "floodScopeDiscoverFloodAllowed": "允许 Flood",
+    "floodScopeDiscoverFloodDenied": "禁止 Flood",
+    "floodScopeDiscoverSources": "由{{count}}个复读器报告",
+    "floodScopeDiscoverTruncated": "{{count}}区域列表被固件截断；某些名称可能缺失。",
+    "floodScopeDiscoverSkipped": "{{count}}个中继器已跳过（未保存管理员密码）。",
+    "floodScopeDiscoverFailed": "{{count}}个中继器未响应。",
+    "floodScopeDiscoverStale": "上次发现时间：{{when}}",
+    "floodScopeDiscoverError": "区域发现失败。请重试或检查“中继器”选项卡。",
+    "floodScopeDiscoverFail": {
+      "unsupported": "不支持的地区",
+      "rejected": "请求遭到拒绝",
+      "invalid-reply": "无效的 gdb 回应",
+      "timeout": "超时",
+      "unreachable": "不可达",
+      "unknown": "未知错误"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -7379,7 +7427,6 @@
     "ackSent": "确认已发送至{{sender}}",
     "ackQueued": "确认{{sender}}已排队；当收音机可用时，它将发送",
     "ackFailed": "无法发送或排队确认",
-    "intro": "在任何方案中都能听到MECP紧急情况的常见操作画面。打开MAYDAY和紧急行标记此选项卡；包括演练。使用确认（或确认活动信标）在网格上回复，然后在本地关闭事件时解决。",
     "ackQueuedBadge": "ACK已排队",
     "pendingAckListAria": "已排队确认此事件",
     "cancelPendingAck": "取消",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "查看",
     "standingAlertViewAria": "打开“事件”标签卡",
     "standingAlertDismiss": "标记为已见",
-    "standingAlertDismissAria": "将{{sender}}的紧急情况标记为可见"
+    "standingAlertDismissAria": "将{{sender}}的紧急情况标记为可见",
+    "intro": "在任何方案上听到的未解决 MECP 报告——所有严重程度，包括演习。解决某一行会将该行从此列表中移除；导出日志仍会包含该行。未结行会在此选项卡上显示徽章。使用“确认”（或对于活动信标使用“确认”）在网状网络上回复，然后在事件在本地结案后使用“解决”。如果您发送了遇险信标，取消信标也会传输 B03，以便其他工作站将其清除。"
   },
   "shell": {
     "section": {

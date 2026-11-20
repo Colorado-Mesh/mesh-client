@@ -65,6 +65,8 @@ export interface MessageRecord {
   hopCount?: number;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
+  /** MeshCore on-air path hash width (1/2/3 bytes) for this receive when known. */
+  rxPathHashSizeBytes?: 1 | 2 | 3;
   tapback?: boolean;
   replyTo?: string;
   replyPreviewText?: string;
@@ -166,6 +168,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'rxRadioTransport',
   'hopCount',
   'rxHops',
+  'rxPathHashSizeBytes',
   'tapback',
   'replyTo',
   'replyPreviewText',

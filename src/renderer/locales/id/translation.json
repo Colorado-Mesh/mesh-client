@@ -1024,7 +1024,12 @@
     "markdownLink": "Tautan",
     "markdownToolbar": "Pemformatan",
     "cancelPendingDmAck": "Batalkan penantian",
-    "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal"
+    "cancelPendingDmAckAria": "Berhenti menunggu konfirmasi penerimaan dan tandai pesan ini gagal",
+    "outboxAnnounceBlocked": "Pesan diblokir dan tidak terkirim.",
+    "outboxAnnounceFailed": "Pesan gagal dikirim.",
+    "pathHashSizeTooltip": "Lebar hash jalur on-air untuk paket ini ({{bytes}} byte per hop), bukan mode TX yang dikonfigurasi pada radio Anda",
+    "pathHashSizeAria": "Ukuran hash jalur {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "Informasi pemilik memerlukan kata sandi admin. Simpan satu di bawah ini untuk membacanya.",
     "ownerInfoNeedsRoomPassword": "Informasi pemilik memerlukan kata sandi admin. Atur di Repeater & Ruangan → Konfigurasi.",
     "ownerInfoReadFailed": "Tidak dapat membaca informasi pemilik.",
-    "ownerInfoDeferred": "Informasi pemilik sedang menunggu radio. Gunakan Muat Ulang untuk mencoba lagi."
+    "ownerInfoDeferred": "Informasi pemilik sedang menunggu radio. Gunakan Muat Ulang untuk mencoba lagi.",
+    "anonBasicHeading": "Jam jarak jauh",
+    "anonBasicRefresh": "Segarkan jam jarak jauh",
+    "anonBasicLoading": "Membaca jam jarak jauh…",
+    "anonBasicClock": "Jam simpul {{time}} (selisih {{skew}} dtk)",
+    "anonBasicForwardingDisabled": "Penerusan saat ini dinonaktifkan pada repeater ini.",
+    "anonBasicBridgeUart": "Jembatan UART diaktifkan",
+    "anonBasicBridgeEspNow": "Jembatan ESP-NOW diaktifkan",
+    "anonBasicReadFailed": "Tidak dapat membaca jam jarak jauh.",
+    "anonBasicUnsupported": "Firmware ini tidak mendukung kueri jam anonim."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Tambahkan wilayah di sini, lalu pilih ruang lingkup untuk setiap saluran di samping Kirim atau di → Saluran Radio. Menyimpan atau menghapus suatu wilayah membuat pilihan default dan saluran radio tidak berubah.",
     "floodScopeAddHashtag": "Hashtag wilayah untuk disimpan",
     "floodScopeAddSaved": "Simpan wilayah",
-    "floodScopePresetsFull": "Anda bisa menghemat hingga {{count}} wilayah. Hapus satu sebelum menambahkan yang lain."
+    "floodScopePresetsFull": "Anda bisa menghemat hingga {{count}} wilayah. Hapus satu sebelum menambahkan yang lain.",
+    "floodScopeDiscover": "Temukan berbagai wilayah",
+    "floodScopeDiscoverTitle": "Wilayah yang ditemukan",
+    "floodScopeDiscoverHelp": "Membaca pohon wilayah dari repeater dengan kata sandi admin yang disimpan. Tidak ada yang dikirim secara otomatis.",
+    "floodScopeDiscoverBusy": "Menemukan {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Batalkan penemuan",
+    "floodScopeDiscoverCancelled": "Pencarian dihentikan.",
+    "floodScopeDiscoverEmpty": "Belum ada wilayah yang ditemukan.",
+    "floodScopeDiscoverNone": "Tidak ada wilayah publik yang dilaporkan.",
+    "floodScopeDiscoverSave": "Simpan",
+    "floodScopeDiscoverSaveAria": "Simpan {{region}} sebagai pengaturan awal cakupan",
+    "floodScopeDiscoverSaved": "Disimpan",
+    "floodScopeDiscoverSelect": "Pilih",
+    "floodScopeDiscoverSelectAria": "Pilih {{region}} untuk cakupan radio",
+    "floodScopeDiscoverSelected": "{{region}} dipilih. Tekan Terapkan untuk menetapkan cakupan radio.",
+    "floodScopeDiscoverAddAll": "Tambahkan semua yang bersifat publik ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Ditambahkan {{added}} dari {{total}}; daftar cakupan yang disimpan sudah penuh.",
+    "floodScopeDiscoverPrivate": "Privat (tidak dapat diakses melalui hashtag)",
+    "floodScopeDiscoverHome": "Beranda",
+    "floodScopeDiscoverFloodAllowed": "Flood diizinkan",
+    "floodScopeDiscoverFloodDenied": "Flood diblokir",
+    "floodScopeDiscoverSources": "Dilaporkan oleh {{count}} repeater",
+    "floodScopeDiscoverTruncated": "Daftar wilayah {{count}} dipotong oleh firmware; beberapa nama mungkin tidak ada.",
+    "floodScopeDiscoverSkipped": "{{count}} repeater dilewati (tidak ada kata sandi admin yang disimpan).",
+    "floodScopeDiscoverFailed": "{{count}} repeater tidak merespons.",
+    "floodScopeDiscoverStale": "Terakhir ditemukan {{when}}",
+    "floodScopeDiscoverError": "Pencarian wilayah gagal. Coba lagi atau periksa tab Repeater.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "wilayah yang tidak didukung",
+      "rejected": "Permintaan bergabung ditolak.",
+      "invalid-reply": "balasan tidak valid",
+      "timeout": "Waktu habis.",
+      "unreachable": "tidak dapat dihubungi",
+      "unknown": "unknown error"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -7379,7 +7427,6 @@
     "ackSent": "Ucapan terima kasih dikirim ke {{sender}}",
     "ackQueued": "Ucapan terima kasih kepada {{sender}} antri; akan dikirimkan saat radio tersedia",
     "ackFailed": "Tidak dapat mengirim atau mengantre pengakuan",
-    "intro": "Gambaran operasi umum untuk keadaan darurat MECP terdengar pada protokol apa pun. Buka MAYDAY dan lencana baris MENDESAK tab ini; termasuk latihan. Gunakan Acknowledge (atau Confirm untuk suar aktif) untuk membalas di mesh, lalu Resolve ketika insiden ditutup secara lokal.",
     "ackQueuedBadge": "ACK antri",
     "pendingAckListAria": "Pengakuan antrian atas insiden ini",
     "cancelPendingAck": "Batal",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Lihat",
     "standingAlertViewAria": "Buka tab Insiden",
     "standingAlertDismiss": "Tandai terlihat",
-    "standingAlertDismissAria": "Tandai keadaan darurat dari {{sender}} seperti yang terlihat"
+    "standingAlertDismissAria": "Tandai keadaan darurat dari {{sender}} seperti yang terlihat",
+    "intro": "Laporan MECP yang belum terselesaikan yang terdengar pada protokol apa pun — setiap tingkat keparahan, termasuk latihan. Menyelesaikan baris akan menghapusnya dari daftar ini; Log ekspor masih menyertakannya. Baris terbuka diberi lencana di tab ini. Gunakan Konfirmasi (atau Konfirmasi untuk suar aktif) untuk membalas di mesh, lalu Selesaikan saat insiden ditutup secara lokal. Jika Anda mengirim suar bahaya, Batalkan suar juga akan mengirimkan B03 sehingga stasiun lain dapat menghapusnya."
   },
   "shell": {
     "section": {

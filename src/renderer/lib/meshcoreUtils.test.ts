@@ -17,6 +17,7 @@ import {
   MESHCORE_MAX_CONTACTS,
   meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
+  meshcoreCompanionRxPathLenToHashSizeBytes,
   meshcoreCompanionRxPathLenToHopCount,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactThresholds,
@@ -535,6 +536,45 @@ describe('meshcoreCompanionRxPathLenToHopCount', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(-1)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount(256)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount(511)).toBeUndefined();
+  });
+});
+
+describe('meshcoreCompanionRxPathLenToHashSizeBytes', () => {
+  it('returns undefined for direct 0xFF', () => {
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xff)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(255)).toBeUndefined();
+  });
+
+  it('returns 1 for plain 0..63 pathLen values', () => {
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0)).toBe(1);
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(3)).toBe(1);
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(63)).toBe(1);
+  });
+
+  it('unpacks packed multibyte path-hash pathLen bytes', () => {
+    // 2-byte: pack(1,2)=65; 3-byte: pack(3,3)=131
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(64)).toBe(2);
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(65)).toBe(2);
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(131)).toBe(3);
+  });
+
+  it('returns undefined for missing or non-finite values', () => {
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(undefined)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(null)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes('2')).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(Number.NaN)).toBeUndefined();
+  });
+
+  it('rejects negatives and oversized values without wrapping', () => {
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(-1)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(256)).toBeUndefined();
+  });
+
+  it('returns undefined for reserved hash-size code 3', () => {
+    // High 2 bits = 3 → reserved; low bits are hop count (e.g. 0xC0, 0xC1).
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xc0)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xc1)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHashSizeBytes(0xff - 1)).toBeUndefined(); // 0xFE still reserved code
   });
 });
 

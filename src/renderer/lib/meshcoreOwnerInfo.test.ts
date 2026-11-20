@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  meshcoreOwnerInfoFromAnon,
   meshcoreOwnerInfoLines,
   meshcoreOwnerInfoSupported,
   parseMeshcoreOwnerInfoReply,
@@ -56,6 +57,20 @@ describe('meshcoreOwnerInfo', () => {
     expect(meshcoreOwnerInfoSupported('Sensor')).toBe(true);
     expect(meshcoreOwnerInfoSupported('Chat')).toBe(false);
     expect(meshcoreOwnerInfoSupported(undefined)).toBe(false);
+  });
+
+  it('maps ANON owner payload into display entry with clock', () => {
+    expect(meshcoreOwnerInfoFromAnon('Callsign\nline2', 99, 123)).toEqual({
+      status: 'ok',
+      text: 'Callsign\nline2',
+      fetchedAt: 99,
+      clock: 123,
+    });
+    expect(meshcoreOwnerInfoFromAnon('  ', 1, 5)).toEqual({
+      status: 'empty',
+      fetchedAt: 1,
+      clock: 5,
+    });
   });
 
   it('does not call send without an admin password', async () => {

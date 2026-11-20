@@ -13,6 +13,8 @@ export interface TextMessageEvent {
   rxSnr?: number;
   rxRssi?: number;
   hopCount?: number;
+  /** MeshCore on-air path hash width (1/2/3 bytes) from the packed path_length byte. */
+  pathHashSizeBytes?: 1 | 2 | 3;
   tapback?: boolean;
   replyTo?: string;
   /** meshcore.js TxtTypes (e.g. SignedPlain room posts). */

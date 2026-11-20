@@ -165,6 +165,22 @@ export function meshcoreCompanionRxPathLenToHopCount(pathLen: unknown): number |
 }
 
 /**
+ * Companion ContactMsgRecv / ChannelMsgRecv `pathLen` → on-air path hash width (1/2/3 bytes).
+ * `0xFF` = direct (no path hashes). Flood values use the packed path_length byte
+ * ({@link meshcoreUnpackPathLenByte}). Same validation as hop-count unpacking.
+ */
+export function meshcoreCompanionRxPathLenToHashSizeBytes(pathLen: unknown): 1 | 2 | 3 | undefined {
+  if (typeof pathLen !== 'number' || !Number.isFinite(pathLen)) return undefined;
+  const n = Math.trunc(pathLen);
+  if (n < 0 || n > 255) return undefined;
+  if (n === 0xff) return undefined;
+  // Reserved size code 3 → undefined, matching meshcoreRadioContactRoute.
+  if (((n >> 6) & 0x03) === 3) return undefined;
+  // After rejecting reserved code 3, unpack always yields 1/2/3.
+  return meshcoreUnpackPathLenByte(n).hashSizeBytes;
+}
+
+/**
  * `tracePath` reports `pathLen` as segment count along the route (a direct RF link is often 1).
  * UI hop count (repeaters between us and the peer) is one less; clamp at 0.
  * Auto-return TRACE paths are `[...out, dest, ...out.reverse()]` (odd segment count); hop count

@@ -738,7 +738,11 @@ describe('RadioPanel apply status placement', () => {
 
     await user.click(screen.getByRole('button', { name: 'Apply Device User / Identity' }));
 
-    const statusEl = await screen.findByRole('status');
+    const statusEl = await waitFor(() => {
+      const el = userDetails!.querySelector('[role="status"]');
+      expect(el).toBeTruthy();
+      return el!;
+    });
     expect(userDetails!.contains(statusEl)).toBe(true);
   });
 
@@ -778,7 +782,11 @@ describe('RadioPanel apply status placement', () => {
     await waitFor(() => {
       expect(onCommit).toHaveBeenCalled();
     });
-    const statusEl = await screen.findByRole('status');
+    const statusEl = await waitFor(() => {
+      const el = deviceDetails!.querySelector('[role="status"]');
+      expect(el).toBeTruthy();
+      return el!;
+    });
     expect(deviceDetails!.contains(statusEl)).toBe(true);
     expect(bluetoothDetails!.contains(statusEl)).toBe(false);
     // Styling comes from the reported outcome, not from matching English message text.
@@ -818,7 +826,11 @@ describe('RadioPanel apply status placement', () => {
 
     await user.click(screen.getByRole('button', { name: 'Apply Device User / Identity' }));
 
-    const statusEl = await screen.findByRole('status');
+    const statusEl = await waitFor(() => {
+      const el = userDetails!.querySelector('[role="status"]');
+      expect(el).toBeTruthy();
+      return el!;
+    });
     expect(userDetails!.contains(statusEl)).toBe(true);
     expect(loraDetails!.contains(statusEl)).toBe(false);
   });

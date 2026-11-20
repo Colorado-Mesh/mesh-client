@@ -14,6 +14,7 @@ import {
 import { setMeshcoreRoomLastPostAt } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import {
   isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHashSizeBytes,
   meshcoreCompanionRxPathLenToHopCount,
   meshcoreMergeChannelDisplayNameOntoNode,
   minimalMeshcoreChatNode,
@@ -131,6 +132,7 @@ export function processMeshcoreWaitingMessageItem(
         }
       } else {
         const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
+        const dmPathHashSizeBytes = meshcoreCompanionRxPathLenToHashSizeBytes(d.pathLen);
         pendingMessages.push({
           ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
             rawText: d.text,
@@ -142,6 +144,7 @@ export function processMeshcoreWaitingMessageItem(
             myNodeId: deps.myNodeNum || 0,
             to: deps.myNodeNum || undefined,
             ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
+            ...(dmPathHashSizeBytes != null ? { rxPathHashSizeBytes: dmPathHashSizeBytes } : {}),
           }),
           isHistory: true,
         });
@@ -181,6 +184,7 @@ export function processMeshcoreWaitingMessageItem(
         updatedNodeIds.push(resolved.senderId);
       }
       const channelRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
+      const channelPathHashSizeBytes = meshcoreCompanionRxPathLenToHashSizeBytes(d.pathLen);
       pendingMessages.push({
         ...parseMeshcoreChannelIncomingFromThread(deps.storePriorForBatch(), {
           rawText: d.text,
@@ -190,6 +194,9 @@ export function processMeshcoreWaitingMessageItem(
           timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
           receivedVia: 'rf',
           ...(channelRxHops != null ? { rxHops: channelRxHops } : {}),
+          ...(channelPathHashSizeBytes != null
+            ? { rxPathHashSizeBytes: channelPathHashSizeBytes }
+            : {}),
         }),
         isHistory: true,
       });

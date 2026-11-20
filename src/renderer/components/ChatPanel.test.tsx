@@ -4354,6 +4354,65 @@ describe('ChatPanel RF hop label', () => {
     expect(await screen.findByText('3 hops')).toBeInTheDocument();
   });
 
+  it('shows path-hash size between channel and hop for MeshCore RF incoming messages', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Side' },
+          ]}
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'Peer',
+              payload: 'hello mesh',
+              channel: 0,
+              timestamp: Date.now(),
+              receivedVia: 'rf',
+              rxHops: 3,
+              rxPathHashSizeBytes: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('ch0')).toBeInTheDocument();
+    expect(screen.getByText('2-byte')).toBeInTheDocument();
+    expect(screen.getByText('3 hops')).toBeInTheDocument();
+    const headerRow = screen.getByText('ch0').parentElement;
+    expect(headerRow?.textContent).toMatch(/ch0.*2-byte/);
+    expect(headerRow?.textContent).toMatch(/2-byte.*3 hops/);
+  });
+
+  it('omits path-hash size badge when rxPathHashSizeBytes is unset', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'Peer',
+              payload: 'hello mesh',
+              channel: 0,
+              timestamp: Date.now(),
+              receivedVia: 'rf',
+              rxHops: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('2 hops')).toBeInTheDocument();
+    expect(screen.queryByText('1-byte')).not.toBeInTheDocument();
+    expect(screen.queryByText('2-byte')).not.toBeInTheDocument();
+    expect(screen.queryByText('3-byte')).not.toBeInTheDocument();
+  });
+
   it('shows rx hops when messages come from MessageRecord store adapters', async () => {
     const records: MessageRecord[] = [
       {

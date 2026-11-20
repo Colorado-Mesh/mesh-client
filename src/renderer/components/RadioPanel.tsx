@@ -23,6 +23,11 @@ import {
 } from '@/renderer/lib/meshcoreChannelScope';
 import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
 import { isValidMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
+import type {
+  DiscoveredMeshcoreRegion,
+  MeshcoreRegionDiscoveryProgress,
+  MeshcoreRegionDiscoveryRun,
+} from '@/renderer/lib/meshcoreRegionDiscovery';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -312,6 +317,16 @@ interface Props {
   onMeshcoreFloodScopeHashtagChange?: (hashtag: string) => void;
   meshcoreFloodScopePresets?: string[];
   onMeshcoreFloodScopePresetsChange?: (presets: string[]) => void;
+  meshcoreDiscoveredRegions?: readonly DiscoveredMeshcoreRegion[];
+  meshcoreDiscoveredRegionsReadAt?: number | null;
+  onDiscoverMeshcoreRegions?: (
+    signal: AbortSignal,
+    onProgress: (progress: MeshcoreRegionDiscoveryProgress) => void,
+  ) => Promise<
+    MeshcoreRegionDiscoveryRun & {
+      skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
+    }
+  >;
   onXmodemUpload?: () => Promise<void>;
   onXmodemDownload?: (filename: string) => Promise<void>;
   onSyncClock?: () => Promise<void>;
@@ -897,6 +912,9 @@ export default function RadioPanel({
   onMeshcoreFloodScopeHashtagChange,
   meshcoreFloodScopePresets = [],
   onMeshcoreFloodScopePresetsChange,
+  meshcoreDiscoveredRegions = [],
+  meshcoreDiscoveredRegionsReadAt = null,
+  onDiscoverMeshcoreRegions,
   onXmodemUpload,
   onXmodemDownload,
   onSyncClock,
@@ -1270,6 +1288,16 @@ export default function RadioPanel({
   const { t } = useTranslation();
   const scopeRadioSignature = useIdentityStore((s) =>
     identityId ? s.identities[identityId]?.signature : undefined,
+  );
+  const discoveredScopeHashtags = useMemo(
+    () => [
+      ...new Set(
+        meshcoreDiscoveredRegions
+          .map((region) => region.scopeHashtag)
+          .filter((tag): tag is string => tag != null),
+      ),
+    ],
+    [meshcoreDiscoveredRegions],
   );
   /**
    * Labels come from the proto enum name, not the wire number, so a new upstream value
@@ -2170,6 +2198,7 @@ export default function RadioPanel({
               disabled={loraDisabled}
             >
               <MeshcoreFloodScopeSection
+                key={identityId ?? 'meshcore-flood-scope'}
                 ref={floodScopeRef}
                 embedded
                 disabled={disabled}
@@ -2179,6 +2208,9 @@ export default function RadioPanel({
                 onSavedPresetsChange={onMeshcoreFloodScopePresetsChange ?? (() => {})}
                 onApplyFloodScope={onApplyMeshcoreFloodScopeHashtag}
                 onSavedHashtagChange={onMeshcoreFloodScopeHashtagChange}
+                discoveredRegions={meshcoreDiscoveredRegions}
+                discoveredRegionsReadAt={meshcoreDiscoveredRegionsReadAt}
+                onDiscoverRegions={onDiscoverMeshcoreRegions}
               />
             </ConfigSection>
           )}
@@ -2442,7 +2474,7 @@ export default function RadioPanel({
           channels={meshcoreChannels}
           radioSignature={scopeRadioSignature}
           radioScope={meshcoreFloodScopeHashtag}
-          scopePresets={meshcoreFloodScopePresets}
+          scopePresets={[...new Set([...meshcoreFloodScopePresets, ...discoveredScopeHashtags])]}
           onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
           onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
           onImportContactFromQr={onImportContactFromQr}

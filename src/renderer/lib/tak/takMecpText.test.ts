@@ -71,7 +71,7 @@ describe('describeMecpForTak', () => {
     expect(describeIn('MECP/0/D01 M01')).toBe('DRILL 🆘 MAYDAY: This is a drill · Injury');
   });
 
-  it('rejects a wire report with no codes (MECP 1.4.0 envelope requires ≥1 code)', () => {
+  it('rejects a wire report with no codes (MECP 1.4.1 envelope requires ≥1 code)', () => {
     expect(tryParseMecp('MECP/2/')).toBeNull();
   });
 

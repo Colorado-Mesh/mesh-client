@@ -848,6 +848,8 @@ export interface ElectronAPI {
       reply_preview_text?: string | null;
       reply_preview_sender?: string | null;
       rx_hops?: number | null;
+      /** MeshCore on-air path hash width (1/2/3); null when unknown or direct. */
+      rx_path_hash_bytes?: number | null;
       room_server_id?: number | null;
       radio_node_id?: number | null;
       channel_key?: string | null;

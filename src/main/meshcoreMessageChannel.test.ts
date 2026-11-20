@@ -104,6 +104,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
       reply_preview_text: null,
       reply_preview_sender: null,
       rx_hops: null,
+      rx_path_hash_bytes: null,
       room_server_id: null,
     };
     try {
@@ -183,6 +184,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
       reply_preview_text: null,
       reply_preview_sender: null,
       rx_hops: null,
+      rx_path_hash_bytes: null,
       room_server_id: null,
     };
     try {
@@ -208,6 +210,20 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
           .prepareOnce('SELECT local_order,rx_hops FROM meshcore_messages WHERE sender_id IS NULL')
           .all(),
       ).toEqual([{ local_order: row.local_order, rx_hops: 2 }]);
+      expect(
+        persistMeshcoreMessage(db, {
+          ...anonymousRow,
+          rx_hops: 2,
+          rx_path_hash_bytes: 2,
+        }).changes,
+      ).toBe(1);
+      expect(
+        db
+          .prepareOnce(
+            'SELECT rx_hops,rx_path_hash_bytes FROM meshcore_messages WHERE sender_id IS NULL',
+          )
+          .all(),
+      ).toEqual([{ rx_hops: 2, rx_path_hash_bytes: 2 }]);
     } finally {
       db.close();
     }
@@ -233,6 +249,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
       reply_preview_text: null,
       reply_preview_sender: null,
       rx_hops: null,
+      rx_path_hash_bytes: null,
       room_server_id: null,
     };
     try {
@@ -297,6 +314,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
             reply_preview_text: null,
             reply_preview_sender: null,
             rx_hops: null,
+            rx_path_hash_bytes: null,
             room_server_id: null,
           };
           expect(persistMeshcoreMessage(db, row).changes).toBe(1);
@@ -397,6 +415,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
         reply_preview_text: null,
         reply_preview_sender: null,
         rx_hops: null,
+        rx_path_hash_bytes: null,
         room_server_id: null,
       };
       expect(persistMeshcoreMessage(db, row).changes).toBe(1);
@@ -440,6 +459,7 @@ describe('MeshCore message receipt time', () => {
     reply_preview_text: null,
     reply_preview_sender: null,
     rx_hops: null,
+    rx_path_hash_bytes: null,
     room_server_id: null,
     received_at: 1_700_007_200_000,
   };

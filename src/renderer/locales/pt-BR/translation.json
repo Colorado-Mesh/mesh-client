@@ -1024,7 +1024,12 @@
     "markdownLink": "Link",
     "markdownToolbar": "Formatação",
     "cancelPendingDmAck": "Cancelar espera",
-    "cancelPendingDmAckAria": "Parar de esperar pela confirmação de entrega e marcar esta mensagem como com falha"
+    "cancelPendingDmAckAria": "Parar de esperar pela confirmação de entrega e marcar esta mensagem como com falha",
+    "outboxAnnounceBlocked": "A mensagem foi bloqueada e não foi enviada.",
+    "outboxAnnounceFailed": "Falha ao enviar a mensagem",
+    "pathHashSizeTooltip": "Largura do hash do caminho de transmissão para este pacote ({{bytes}} bytes por salto), e não o modo TX configurado do seu rádio",
+    "pathHashSizeAria": "Tamanho do hash do caminho {{label}}",
+    "pathHashSizeLabel": "{{bytes}} byte"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "As informações do proprietário precisam de uma senha de administrador. Salve uma abaixo para lê-la.",
     "ownerInfoNeedsRoomPassword": "As informações do proprietário precisam de uma senha de administrador. Defina-a em Repetidores e salas → Configurar.",
     "ownerInfoReadFailed": "Não foi possível ler as informações do proprietário.",
-    "ownerInfoDeferred": "As informações do proprietário estão aguardando o rádio. Use \"Atualizar\" para tentar novamente."
+    "ownerInfoDeferred": "As informações do proprietário estão aguardando o rádio. Use \"Atualizar\" para tentar novamente.",
+    "anonBasicHeading": "Relógio remoto",
+    "anonBasicRefresh": "Atualizar relógio remoto",
+    "anonBasicLoading": "Lendo o relógio remoto…",
+    "anonBasicClock": "Relógio do nó {{time}} (desvio de {{skew}} s)",
+    "anonBasicForwardingDisabled": "O encaminhamento está desativado neste repetidor no momento.",
+    "anonBasicBridgeUart": "Ponte UART ativada",
+    "anonBasicBridgeEspNow": "Ponte ESP-NOW ativada",
+    "anonBasicReadFailed": "Não foi possível ler o relógio remoto.",
+    "anonBasicUnsupported": "Este firmware não oferece suporte a consultas de relógio anônimas."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Adicione regiões aqui e escolha um escopo para cada canal ao lado de Enviar ou em → Canais de Rádio. Salvar ou remover uma região deixa o padrão de rádio e as opções de canal inalteradas.",
     "floodScopeAddHashtag": "Hashtag da região para salvar",
     "floodScopeAddSaved": "Salvar região",
-    "floodScopePresetsFull": "Pode poupar até {{count}} regiões. Remova um antes de adicionar outro."
+    "floodScopePresetsFull": "Pode poupar até {{count}} regiões. Remova um antes de adicionar outro.",
+    "floodScopeDiscover": "Descubra regiões",
+    "floodScopeDiscoverTitle": "Regiões descobertas",
+    "floodScopeDiscoverHelp": "Lê a árvore de regiões dos repetidores com uma senha de administrador salva. Nada é enviado automaticamente.",
+    "floodScopeDiscoverBusy": "Descobrindo {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Cancelar descoberta",
+    "floodScopeDiscoverCancelled": "A descoberta foi interrompida.",
+    "floodScopeDiscoverEmpty": "Nenhuma região descoberta ainda.",
+    "floodScopeDiscoverNone": "Nenhuma região pública informada.",
+    "floodScopeDiscoverSave": "Salvar",
+    "floodScopeDiscoverSaveAria": "Salvar {{region}} como uma predefinição de escopo",
+    "floodScopeDiscoverSaved": "Salva",
+    "floodScopeDiscoverSelect": "Selecione",
+    "floodScopeDiscoverSelectAria": "Selecione {{region}} para o escopo do botão de opção",
+    "floodScopeDiscoverSelected": "{{region}} selecionado. Pressione Aplicar para definir o escopo do rádio.",
+    "floodScopeDiscoverAddAll": "Adicionar todos os públicos ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Adicionado {{added}} de {{total}}; a lista de escopos salvos está cheia.",
+    "floodScopeDiscoverPrivate": "Privado (não endereçável por hashtag)",
+    "floodScopeDiscoverHome": "Casa",
+    "floodScopeDiscoverFloodAllowed": "Flood permitido",
+    "floodScopeDiscoverFloodDenied": "Flood bloqueado",
+    "floodScopeDiscoverSources": "Relatado por {{count}} repetidores",
+    "floodScopeDiscoverTruncated": "{{count}} as listas de regiões foram truncadas pelo firmware; alguns nomes podem estar faltando.",
+    "floodScopeDiscoverSkipped": "{{count}} repetidores ignorados (nenhuma senha de administrador salva).",
+    "floodScopeDiscoverFailed": "{{count}} repetidores não responderam.",
+    "floodScopeDiscoverStale": "Última descoberta {{when}}",
+    "floodScopeDiscoverError": "Falha ao identificar a região. Tente novamente ou verifique a guia Repetidores.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiões não compatíveis",
+      "rejected": "solicitação recusada",
+      "invalid-reply": "ID de resposta inválido.",
+      "timeout": "encerrado",
+      "unreachable": "inalcançável",
+      "unknown": "erro desconhecido"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -7379,7 +7427,6 @@
     "ackSent": "Confirmação enviada para {{sender}}",
     "ackQueued": "Reconhecimento para {{sender}} na fila; será enviado quando o rádio estiver disponível",
     "ackFailed": "Não foi possível enviar ou enfileirar a confirmação",
-    "intro": "Imagem operacional comum para emergências MECP ouvida em qualquer protocolo. Abrir MAYDAY e linhas URGENTES marcam esta guia; incluindo simulados. Use Confirmar (ou Confirmar para um sinalizador ativo) para responder na malha e, em seguida, Resolva quando o incidente for fechado localmente.",
     "ackQueuedBadge": "ACK na fila",
     "pendingAckListAria": "Reconhecimentos em fila para este incidente",
     "cancelPendingAck": "Cancelar",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Visualizar",
     "standingAlertViewAria": "Abra a guia Incidente",
     "standingAlertDismiss": "Marca vista",
-    "standingAlertDismissAria": "Marque a emergência de {{sender}} como vista"
+    "standingAlertDismissAria": "Marque a emergência de {{sender}} como vista",
+    "intro": "Relatórios de MECP não resolvidos ouvidos em qualquer protocolo — todos os níveis de gravidade, incluindo simulações. Resolver uma linha a remove desta lista; o registro de exportação ainda a inclui. As linhas abertas marcam esta aba. Use \"Confirmar\" (ou \"Confirmar\" para um sinalizador ativo) para responder na mesh e, em seguida, \"Resolver\" quando o incidente for encerrado localmente. Se você enviou o sinalizador de socorro, a opção Cancelar sinalizador também transmite B03 para que outras estações o apaguem."
   },
   "shell": {
     "section": {

@@ -39,7 +39,7 @@ import {
 } from '../meshcoreChannelText';
 import {
   type ChatCorrelateRxLike,
-  resolveMeshcoreIngestRxHops,
+  resolveMeshcoreIngestPathMeta,
 } from '../meshcoreRawPacketCorrelate';
 import {
   isMeshcoreRoomOwnLine,
@@ -271,14 +271,27 @@ function handleTextMessage(
   const messages = listChatMessages(identityId);
   const wireTimestampMs = effectiveMessageTimestampMs(event.payload.timestamp);
   const isChannel = event.payload.id.startsWith('ch:');
-  const hopCount =
-    event.payload.hopCount ??
-    resolveMeshcoreIngestRxHops(
-      options.rawPacketsForHopCorrelation?.() ?? [],
-      isChannel,
-      Date.now(),
-      isChannel ? undefined : { fromNodeId: event.payload.from },
-    );
+  const eventPathHashSizeBytes =
+    event.payload.pathHashSizeBytes === 1 ||
+    event.payload.pathHashSizeBytes === 2 ||
+    event.payload.pathHashSizeBytes === 3
+      ? event.payload.pathHashSizeBytes
+      : undefined;
+  // Direct companion pathLen 0xFF yields hopCount 0 and no hash width — do not consume a TXT_MSG
+  // raw-log row to invent a width. Correlate only when hops are missing.
+  const needsPathCorrelation = event.payload.hopCount == null;
+  const correlatedPath = needsPathCorrelation
+    ? resolveMeshcoreIngestPathMeta(
+        options.rawPacketsForHopCorrelation?.() ?? [],
+        isChannel,
+        Date.now(),
+        isChannel ? undefined : { fromNodeId: event.payload.from },
+      )
+    : {};
+  const hopCount = event.payload.hopCount ?? correlatedPath.hopCount;
+  const pathHashSizeBytes =
+    eventPathHashSizeBytes ??
+    (event.payload.hopCount == null ? correlatedPath.pathHashSizeBytes : undefined);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
@@ -330,6 +343,7 @@ function handleTextMessage(
       timestamp: wireTimestampMs,
       receivedVia: record.receivedVia ?? 'rf',
       rxHops: hopCount,
+      rxPathHashSizeBytes: pathHashSizeBytes,
     });
     // PacketRouter has just stored this event's raw copy under its id. A record there with no
     // status was written only by the router (ingested, reloaded and own sending rows all carry
@@ -395,6 +409,7 @@ function handleTextMessage(
         timestamp: wireTimestampMs,
         receivedVia: 'rf',
         rxHops: hopCount,
+        rxPathHashSizeBytes: pathHashSizeBytes,
       })
     : parseMeshcoreDmIncomingFromThread(sortedPrior, {
         rawText: event.payload.payload,
@@ -406,6 +421,7 @@ function handleTextMessage(
         myNodeId: myNodeNum,
         to: myNodeNum > 0 ? myNodeNum : undefined,
         rxHops: hopCount,
+        rxPathHashSizeBytes: pathHashSizeBytes,
       });
 
   const merged: ChatMessage = {

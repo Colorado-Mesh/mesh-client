@@ -151,8 +151,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     emergency: 'bg-red-900/95 border-red-500 text-red-100',
   }[toast.type];
 
+  const liveRole = toast.type === 'error' || toast.type === 'emergency' ? 'alert' : 'status';
+
   return (
     <div
+      role={liveRole}
+      aria-atomic="true"
       className={`shadow-level-3 pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm backdrop-blur-sm transition-all duration-300 ${colors} ${
         visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
       }`}

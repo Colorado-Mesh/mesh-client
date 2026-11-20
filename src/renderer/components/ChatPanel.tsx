@@ -54,6 +54,7 @@ import { useChipDragReorder } from '@/renderer/hooks/useChipDragReorder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import {
+  announcePoliteQueued,
   type BatchedMessageAnnouncer,
   createBatchedMessageAnnouncer,
   truncateForAnnouncement,
@@ -465,6 +466,22 @@ function OutboxBubble({
   const { t } = useTranslation();
   const awaitingAck = useOutboxRowAwaitingAck(row.id);
   const isScheduled = isScheduledOutboxRow(row);
+  const announcedStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (row.status !== 'failed' && row.status !== 'blocked') {
+      announcedStatusRef.current = null;
+      return;
+    }
+    if (announcedStatusRef.current === row.status) return;
+    announcedStatusRef.current = row.status;
+    announcePoliteQueued(
+      t(
+        row.status === 'blocked'
+          ? 'chatPanel.outboxAnnounceBlocked'
+          : 'chatPanel.outboxAnnounceFailed',
+      ),
+    );
+  }, [row.status, t]);
   const backingOff =
     !isScheduled && (row.status === 'queued' || row.status === 'failed') && row.nextRetryAt != null;
   const nowMs = useNowMs(backingOff, 1000);
@@ -4623,6 +4640,30 @@ function ChatPanel({
                 // keep it as a footer.
                 const showRfHops =
                   msg.rxHops != null && (msg.receivedVia === 'rf' || msg.receivedVia === 'both');
+                // MeshCore-only: on-air path hash width for this packet (1/2/3-byte), from pathLen.
+                const pathHashBytes =
+                  protocol === 'meshcore' &&
+                  (msg.rxPathHashSizeBytes === 1 ||
+                    msg.rxPathHashSizeBytes === 2 ||
+                    msg.rxPathHashSizeBytes === 3)
+                    ? msg.rxPathHashSizeBytes
+                    : null;
+                const pathHashLabel =
+                  pathHashBytes != null
+                    ? t('chatPanel.pathHashSizeLabel', { bytes: pathHashBytes })
+                    : null;
+                const pathHashBadge =
+                  pathHashLabel != null && pathHashBytes != null ? (
+                    <span
+                      className="text-muted text-2xs font-mono"
+                      title={t('chatPanel.pathHashSizeTooltip', {
+                        bytes: pathHashBytes,
+                      })}
+                      aria-label={t('chatPanel.pathHashSizeAria', { label: pathHashLabel })}
+                    >
+                      {pathHashLabel}
+                    </span>
+                  ) : null;
                 const incomingMeta =
                   !isOwn && (msg.receivedVia || msg.viaStoreForward || showRfHops) ? (
                     <>
@@ -4892,6 +4933,7 @@ function ChatPanel({
                                         ch{msg.channel}
                                       </span>
                                     )}
+                                    {pathHashBadge}
                                     {incomingMeta && (
                                       <span className="ml-auto flex shrink-0 items-center gap-2 pl-2">
                                         {incomingMeta}
@@ -5081,8 +5123,9 @@ function ChatPanel({
                             />
 
                             {/* Transport + RF hop count on continuations (no header line) */}
-                            {isContinuation && incomingMeta && (
+                            {isContinuation && (incomingMeta || pathHashBadge) && (
                               <div className="mt-0.5 flex items-center justify-end gap-2">
+                                {pathHashBadge}
                                 {incomingMeta}
                               </div>
                             )}

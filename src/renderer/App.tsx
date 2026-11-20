@@ -157,6 +157,7 @@ import {
 import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
+import { hexToBytesExact } from '../shared/hexBytes';
 import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -369,6 +370,19 @@ import {
   rememberMeshcoreFloodScopePreset,
   saveMeshcoreFloodScopePresets,
 } from './lib/meshcoreFloodScopePresetsStorage';
+import {
+  type DiscoveredMeshcoreRegion,
+  discoverMeshcoreRegions,
+  isMeshcoreRegionDiscoveryStatusCurrent,
+  type MeshcoreRegionDiscoveryProgress,
+  type MeshcoreRegionDiscoveryRun,
+  selectMeshcoreRegionDiscoveryCandidates,
+  shouldPersistDiscoveredMeshcoreRegions,
+} from './lib/meshcoreRegionDiscovery';
+import {
+  loadDiscoveredMeshcoreRegions,
+  saveDiscoveredMeshcoreRegions,
+} from './lib/meshcoreRegionDiscoveryStorage';
 import {
   buildMeshcoreRoomMembershipContext,
   isMeshcoreRoomJoined,
@@ -887,6 +901,13 @@ function AppContent() {
   const handleMeshcoreFloodScopePresetsChange = useCallback((presets: string[]) => {
     setMeshcoreFloodScopePresets(saveMeshcoreFloodScopePresets(presets));
   }, []);
+  const [meshcoreDiscoveredSession, setMeshcoreDiscoveredSession] = useState<{
+    signature: string;
+    entries: DiscoveredMeshcoreRegion[];
+    readAt: number;
+  } | null>(null);
+  const meshcoreDiscoveryGenerationRef = useRef(0);
+  const meshcoreDiscoveryInFlightRef = useRef(false);
 
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
@@ -1127,6 +1148,122 @@ function AppContent() {
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
+  const meshcoreRadioSignature = useIdentityStore((s) =>
+    meshcoreIdentityId ? s.identities[meshcoreIdentityId]?.signature : undefined,
+  );
+  const meshcoreLoadedDiscoveredCache = useMemo(
+    () => loadDiscoveredMeshcoreRegions(meshcoreRadioSignature),
+    [meshcoreRadioSignature],
+  );
+  const meshcoreDiscoveredRegions = useMemo(() => {
+    if (
+      meshcoreDiscoveredSession != null &&
+      meshcoreDiscoveredSession.signature === meshcoreRadioSignature
+    ) {
+      return meshcoreDiscoveredSession.entries;
+    }
+    return meshcoreLoadedDiscoveredCache?.entries ?? [];
+  }, [meshcoreDiscoveredSession, meshcoreLoadedDiscoveredCache, meshcoreRadioSignature]);
+  const meshcoreDiscoveredRegionsReadAt = useMemo(() => {
+    if (
+      meshcoreDiscoveredSession != null &&
+      meshcoreDiscoveredSession.signature === meshcoreRadioSignature
+    ) {
+      return meshcoreDiscoveredSession.readAt;
+    }
+    return meshcoreLoadedDiscoveredCache?.readAt ?? null;
+  }, [meshcoreDiscoveredSession, meshcoreLoadedDiscoveredCache, meshcoreRadioSignature]);
+  const meshcoreDiscoveredRegionsRef = useRef(meshcoreDiscoveredRegions);
+  const meshcoreDiscoveredRegionsReadAtRef = useRef(meshcoreDiscoveredRegionsReadAt);
+  const meshcoreConnectionStatusRef = useRef(meshcoreRuntime.state.status);
+  const meshcoreIdentityIdRef = useRef(meshcoreIdentityId);
+  useEffect(() => {
+    meshcoreDiscoveredRegionsRef.current = meshcoreDiscoveredRegions;
+    meshcoreDiscoveredRegionsReadAtRef.current = meshcoreDiscoveredRegionsReadAt;
+    meshcoreConnectionStatusRef.current = meshcoreRuntime.state.status;
+    meshcoreIdentityIdRef.current = meshcoreIdentityId;
+  }, [
+    meshcoreDiscoveredRegions,
+    meshcoreDiscoveredRegionsReadAt,
+    meshcoreIdentityId,
+    meshcoreRuntime.state.status,
+  ]);
+  const discoverMeshcoreRegionsForRadio = useCallback(
+    async (
+      signal: AbortSignal,
+      onProgress: (progress: MeshcoreRegionDiscoveryProgress) => void,
+    ): Promise<
+      MeshcoreRegionDiscoveryRun & {
+        skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
+      }
+    > => {
+      if (meshcoreDiscoveryInFlightRef.current) {
+        return {
+          entries: meshcoreDiscoveredRegionsRef.current,
+          readAt: meshcoreDiscoveredRegionsReadAtRef.current ?? Date.now(),
+          truncatedSources: [],
+          skipped: [],
+          failed: [],
+          cancelled: true,
+        };
+      }
+      meshcoreDiscoveryInFlightRef.current = true;
+      const identityAtStart = meshcoreIdentityIdRef.current;
+      const signatureAtStart = meshcoreRadioSignature;
+      const generation = ++meshcoreDiscoveryGenerationRef.current;
+      const isCurrent = () =>
+        generation === meshcoreDiscoveryGenerationRef.current &&
+        meshcoreIdentityIdRef.current === identityAtStart &&
+        isMeshcoreRegionDiscoveryStatusCurrent(meshcoreConnectionStatusRef.current);
+      try {
+        const { candidates, skipped } = selectMeshcoreRegionDiscoveryCandidates(
+          meshcoreUiNodes.values(),
+          {
+            selfNodeId: meshcoreRadioNodeId > 0 ? meshcoreRadioNodeId : null,
+            resolvePublicKey: (nodeId) =>
+              hexToBytesExact(
+                meshcoreUiNodes.get(nodeId)?.public_key_hex?.replace(/\s/g, '').toLowerCase(),
+                32,
+              ) ?? null,
+          },
+        );
+        const run = await discoverMeshcoreRegions({
+          candidates,
+          query: meshcoreRuntime.queryAnonRegions,
+          isCurrent,
+          signal,
+          onProgress,
+        });
+        if (run.cancelled || !signatureAtStart || !isCurrent()) {
+          return { ...run, skipped };
+        }
+        if (!shouldPersistDiscoveredMeshcoreRegions(run)) {
+          return { ...run, skipped };
+        }
+        const nextCache = {
+          version: 1 as const,
+          readAt: run.readAt,
+          entries: [...run.entries],
+          truncatedSources: [...run.truncatedSources],
+        };
+        saveDiscoveredMeshcoreRegions(signatureAtStart, nextCache);
+        setMeshcoreDiscoveredSession({
+          signature: signatureAtStart,
+          entries: run.entries,
+          readAt: run.readAt,
+        });
+        return { ...run, skipped };
+      } finally {
+        meshcoreDiscoveryInFlightRef.current = false;
+      }
+    },
+    [
+      meshcoreRadioNodeId,
+      meshcoreRadioSignature,
+      meshcoreRuntime.queryAnonRegions,
+      meshcoreUiNodes,
+    ],
+  );
   const reticulumNodesById = useNodeStore((s) =>
     reticulumIdentityId ? s.nodes[reticulumIdentityId] : undefined,
   );
@@ -4948,6 +5085,14 @@ function AppContent() {
         onRequestMeshcoreOwnerInfo={
           detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeOwnerInfo : undefined
         }
+        meshcoreAnonBasic={
+          detailModalProtocol === 'meshcore' && selectedNode != null
+            ? meshcoreRuntime.meshcoreAnonBasic.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestMeshcoreAnonBasic={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.requestNodeAnonBasic : undefined
+        }
         paxCounterData={
           detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined
         }
@@ -6274,6 +6419,21 @@ function AppContent() {
                                     onMeshcoreFloodScopePresetsChange={
                                       capabilities.hasContactImportExport
                                         ? handleMeshcoreFloodScopePresetsChange
+                                        : undefined
+                                    }
+                                    meshcoreDiscoveredRegions={
+                                      capabilities.hasContactImportExport
+                                        ? meshcoreDiscoveredRegions
+                                        : []
+                                    }
+                                    meshcoreDiscoveredRegionsReadAt={
+                                      capabilities.hasContactImportExport
+                                        ? meshcoreDiscoveredRegionsReadAt
+                                        : null
+                                    }
+                                    onDiscoverMeshcoreRegions={
+                                      capabilities.hasContactImportExport
+                                        ? discoverMeshcoreRegionsForRadio
                                         : undefined
                                     }
                                     onXmodemUpload={

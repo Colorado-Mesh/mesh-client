@@ -1060,7 +1060,12 @@
     "markdownLink": "Połączyć",
     "markdownToolbar": "Formatowanie",
     "cancelPendingDmAck": "Anuluj oczekiwanie",
-    "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną"
+    "cancelPendingDmAckAria": "Przestań czekać na potwierdzenie dostarczenia i oznacz tę wiadomość jako niedostarczoną",
+    "outboxAnnounceBlocked": "Wiadomość została zablokowana i nie została wysłana.",
+    "outboxAnnounceFailed": "Nie udało się wysłać wiadomości.",
+    "pathHashSizeTooltip": "Szerokość hasza ścieżki transmisji dla tego pakietu ({{bytes}} bajtów na przeskok), a nie skonfigurowany tryb TX radia",
+    "pathHashSizeAria": "Rozmiar skrótu ścieżki {{label}}",
+    "pathHashSizeLabel": "{{bytes}} bajta(-ów)"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -3995,7 +4000,16 @@
     "ownerInfoNeedsPassword": "Informacje o właścicielu wymagają hasła administratora. Zapisz jedno z haseł poniżej, aby móc je odczytać.",
     "ownerInfoNeedsRoomPassword": "Informacje o właścicielu wymagają hasła administratora. Ustaw to w sekcji Wzmacniacze sygnału i pokoje → Konfiguruj.",
     "ownerInfoReadFailed": "Nie można odczytać informacji o właścicielu.",
-    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie."
+    "ownerInfoDeferred": "Informacje o właścicielu oczekują na radio. Użyj opcji Odśwież, aby spróbować ponownie.",
+    "anonBasicHeading": "Zegar zdalny",
+    "anonBasicRefresh": "Odśwież zegar zdalny",
+    "anonBasicLoading": "Odczytywanie zegara zdalnego…",
+    "anonBasicClock": "Zegar węzła {{time}} (przesunięcie {{skew}} s)",
+    "anonBasicForwardingDisabled": "Przekazywanie jest obecnie wyłączone na tym wzmacniaczu sygnału.",
+    "anonBasicBridgeUart": "Mostek UART włączony",
+    "anonBasicBridgeEspNow": "Mostek ESP-NOW włączony",
+    "anonBasicReadFailed": "Nie można odczytać zegara zdalnego.",
+    "anonBasicUnsupported": "To oprogramowanie sprzętowe nie obsługuje anonimowych zapytań o godzinę."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -5324,7 +5338,41 @@
     "floodScopePresetsHelp": "Dodaj regiony tutaj, a następnie wybierz zakres dla każdego kanału obok Wyślij lub w → kanałach radiowych. Zapisanie lub usunięcie regionu pozostawia ustawienia domyślne radia i wybór kanału bez zmian.",
     "floodScopeAddHashtag": "Hasztag regionu do zapisania",
     "floodScopeAddSaved": "Zapisz region",
-    "floodScopePresetsFull": "Możesz zaoszczędzić do {{count}} regionów. Usuń jeden przed dodaniem kolejnego."
+    "floodScopePresetsFull": "Możesz zaoszczędzić do {{count}} regionów. Usuń jeden przed dodaniem kolejnego.",
+    "floodScopeDiscover": "Odkrywaj regiony",
+    "floodScopeDiscoverTitle": "Odkryte regiony",
+    "floodScopeDiscoverHelp": "Odczytuje drzewo regionów z repeaterów przy użyciu zapisanego hasła administratora. Nic nie jest wysyłane automatycznie.",
+    "floodScopeDiscoverBusy": "Wykrywanie {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Anuluj odkrywanie",
+    "floodScopeDiscoverCancelled": "Wykrywanie zostało zatrzymane.",
+    "floodScopeDiscoverEmpty": "Nie odkryto jeszcze żadnych regionów.",
+    "floodScopeDiscoverNone": "Nie zgłoszono żadnych regionów publicznych.",
+    "floodScopeDiscoverSave": "Zapisz",
+    "floodScopeDiscoverSaveAria": "Zapisz {{region}} jako ustawienie wstępne zakresu",
+    "floodScopeDiscoverSaved": "Zapisane",
+    "floodScopeDiscoverSelect": "Wybierz",
+    "floodScopeDiscoverSelectAria": "Wybierz {{region}} jako zakres radia",
+    "floodScopeDiscoverSelected": "Wybrano {{region}}. Naciśnij przycisk „Zastosuj”, aby ustawić zakres radia.",
+    "floodScopeDiscoverAddAll": "Dodaj wszystkie publiczne ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Dodano {{added}} z {{total}}; zapisana lista zakresów jest pełna.",
+    "floodScopeDiscoverPrivate": "Prywatne (bez możliwości adresowania za pomocą hashtagu)",
+    "floodScopeDiscoverHome": "Dom",
+    "floodScopeDiscoverFloodAllowed": "Flood dozwolony",
+    "floodScopeDiscoverFloodDenied": "Flood zablokowany",
+    "floodScopeDiscoverSources": "Zgłoszone przez {{count}} osoby powtarzające",
+    "floodScopeDiscoverTruncated": "Listy regionów {{count}} zostały skrócone przez oprogramowanie sprzętowe; niektóre nazwy mogą być pominięte.",
+    "floodScopeDiscoverSkipped": "Pominięto {{count}} wzmacniaczy sygnału (brak zapisanego hasła administratora).",
+    "floodScopeDiscoverFailed": "{{count}} wzmacniacze sygnału nie zareagowały.",
+    "floodScopeDiscoverStale": "Ostatnio wykryto {{when}}",
+    "floodScopeDiscoverError": "Wykrywanie regionu nie powiodło się. Spróbuj ponownie lub sprawdź kartę „Wzmacniacze”.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiony nieobsługiwane",
+      "rejected": "Żądanie odrzucone",
+      "invalid-reply": "Niepoprawna odpowiedź gdb",
+      "timeout": "przekroczenie limitu czasu",
+      "unreachable": "Niedosięgalne",
+      "unknown": "nieznany błąd"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -7493,7 +7541,6 @@
     "ackFailed": "Nie można wysłać lub ustawić w kolejce potwierdzenia",
     "ackCount_few": "Podziękowania: {{count}}",
     "ackCount_many": "Podziękowania: {{count}}",
-    "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; w tym ćwiczenia. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
     "ackQueuedBadge": "ACK W kolejce",
     "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
     "cancelPendingAck": "Anuluj",
@@ -7518,7 +7565,8 @@
     "standingAlertView": "Wyświetl",
     "standingAlertViewAria": "Otwórz kartę Zdarzenie.",
     "standingAlertDismiss": "Oznacz jako widziane",
-    "standingAlertDismissAria": "Oznacz sytuację awaryjną z {{sender}} jako widoczną"
+    "standingAlertDismissAria": "Oznacz sytuację awaryjną z {{sender}} jako widoczną",
+    "intro": "Nierozwiązane zgłoszenia MECP zarejestrowane w dowolnym protokole – o każdym stopniu ważności, w tym dotyczące ćwiczeń. Rozwiązanie wiersza powoduje jego usunięcie z tej listy; nadal jest on jednak uwzględniony w dzienniku eksportu. Otwarte wiersze są oznaczone na tej karcie. Użyj opcji „Potwierdź” (lub „Potwierdź” w przypadku aktywnego sygnału alarmowego), aby odpowiedzieć w sieci mesh, a następnie wybierz „Rozwiąż”, gdy zdarzenie zostanie zamknięte lokalnie. Jeśli wysłano sygnał alarmowy, funkcja Anuluj sygnał alarmowy również przesyła komunikat B03, aby inne stacje mogły go usunąć."
   },
   "shell": {
     "section": {

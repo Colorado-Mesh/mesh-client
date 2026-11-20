@@ -1024,7 +1024,12 @@
     "markdownLink": "Link",
     "markdownToolbar": "Formatierung",
     "cancelPendingDmAck": "Wartezeit abbrechen",
-    "cancelPendingDmAckAria": "Warten auf Zustellungsbestätigung beenden und diese Nachricht als fehlgeschlagen markieren"
+    "cancelPendingDmAckAria": "Warten auf Zustellungsbestätigung beenden und diese Nachricht als fehlgeschlagen markieren",
+    "outboxAnnounceBlocked": "Nachricht blockiert und nicht gesendet.",
+    "outboxAnnounceFailed": "Nachrichtenübermittlung fehlgeschlagen",
+    "pathHashSizeTooltip": "Hash-Breite des Übertragungswegs für dieses Paket ({{bytes}} Bytes pro Hop), nicht der konfigurierte TX-Modus Ihres Funkgeräts",
+    "pathHashSizeAria": "Pfad-Hash-Größe {{label}}",
+    "pathHashSizeLabel": "{{bytes}} Byte"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -3933,7 +3938,16 @@
     "ownerInfoNeedsPassword": "Für die Informationen zum Eigentümer ist ein Administratorpasswort erforderlich. Speichern Sie unten eines, um es zu lesen.",
     "ownerInfoNeedsRoomPassword": "Für die Eigentümerinformationen ist ein Administratorpasswort erforderlich. Stellen Sie es unter Repeater & Räume → Konfigurieren ein.",
     "ownerInfoReadFailed": "Die Informationen zum Eigentümer konnten nicht gelesen werden.",
-    "ownerInfoDeferred": "Die Informationen zum Eigentümer warten auf das Radio. Verwenden Sie „Aktualisieren“, um es erneut zu versuchen."
+    "ownerInfoDeferred": "Die Informationen zum Eigentümer warten auf das Radio. Verwenden Sie „Aktualisieren“, um es erneut zu versuchen.",
+    "anonBasicHeading": "Fernuhr",
+    "anonBasicRefresh": "Remote-Uhr aktualisieren",
+    "anonBasicLoading": "Fernuhr wird gelesen …",
+    "anonBasicClock": "Knotentakt {{time}} (Abweichung {{skew}} s)",
+    "anonBasicForwardingDisabled": "Die Weiterleitung ist auf diesem Repeater derzeit deaktiviert.",
+    "anonBasicBridgeUart": "UART-Brücke aktiviert",
+    "anonBasicBridgeEspNow": "ESP-NOW-Bridge aktiviert",
+    "anonBasicReadFailed": "Die Remote-Uhr konnte nicht gelesen werden.",
+    "anonBasicUnsupported": "Diese Firmware unterstützt keine anonymen Uhrenabfragen."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -5240,7 +5254,41 @@
     "floodScopePresetsHelp": "Fügen Sie hier Regionen hinzu und wählen Sie dann einen Bereich für jeden Kanal neben Senden oder in → Radiokanälen aus. Beim Speichern oder Entfernen einer Region bleiben die Radio-Standard- und Kanalauswahl unverändert.",
     "floodScopeAddHashtag": "Region-Hashtag zum Speichern",
     "floodScopeAddSaved": "Region speichern",
-    "floodScopePresetsFull": "Du kannst bis zu {{count}} Regionen sparen. Entfernen Sie eine, bevor Sie eine weitere hinzufügen."
+    "floodScopePresetsFull": "Du kannst bis zu {{count}} Regionen sparen. Entfernen Sie eine, bevor Sie eine weitere hinzufügen.",
+    "floodScopeDiscover": "Entdecken Sie die Regionen",
+    "floodScopeDiscoverTitle": "Entdeckte Regionen",
+    "floodScopeDiscoverHelp": "Liest den Bereichsbaum von Repeatern mit einem gespeicherten Administratorpasswort aus. Es wird nichts automatisch gesendet.",
+    "floodScopeDiscoverBusy": "{{done}}/{{total}} ({{name}}) wird erkannt …",
+    "floodScopeDiscoverCancel": "Entdeckung abbrechen",
+    "floodScopeDiscoverCancelled": "Erkennung wurde gestoppt.",
+    "floodScopeDiscoverEmpty": "Noch keine Regionen entdeckt.",
+    "floodScopeDiscoverNone": "Keine öffentlichen Regionen gemeldet.",
+    "floodScopeDiscoverSave": "Speichern",
+    "floodScopeDiscoverSaveAria": "{{region}} als Bereichsvoreinstellung speichern",
+    "floodScopeDiscoverSaved": "Gespeichert",
+    "floodScopeDiscoverSelect": "Auswählen",
+    "floodScopeDiscoverSelectAria": "Wählen Sie {{region}} für den Funkbereich aus",
+    "floodScopeDiscoverSelected": "{{region}} ausgewählt. Klicken Sie auf „Übernehmen“, um den Radio-Bereich festzulegen.",
+    "floodScopeDiscoverAddAll": "Alle öffentlichen hinzufügen ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "{{added}} von {{total}} hinzugefügt; die gespeicherte Umfangsliste ist voll.",
+    "floodScopeDiscoverPrivate": "Privat (nicht über Hashtag adressierbar)",
+    "floodScopeDiscoverHome": "Homepage",
+    "floodScopeDiscoverFloodAllowed": "Flood erlaubt",
+    "floodScopeDiscoverFloodDenied": "Flood gesperrt",
+    "floodScopeDiscoverSources": "Gemeldet von {{count}} Repeatern",
+    "floodScopeDiscoverTruncated": "{{count}} Regionslisten wurden von der Firmware abgeschnitten; einige Namen fehlen möglicherweise.",
+    "floodScopeDiscoverSkipped": "{{count}} Repeater übersprungen (kein gespeichertes Administratorpasswort).",
+    "floodScopeDiscoverFailed": "{{count}} Repeater haben nicht geantwortet.",
+    "floodScopeDiscoverStale": "Zuletzt erkannt {{when}}",
+    "floodScopeDiscoverError": "Die Erkennung der Region ist fehlgeschlagen. Versuchen Sie es erneut oder überprüfen Sie die Registerkarte „Repeater“.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "Regionen werden nicht unterstützt",
+      "rejected": "Anfrage abgelehnt",
+      "invalid-reply": "Ungültige Antwort",
+      "timeout": "Zeitüberschreitung",
+      "unreachable": "nicht erreichbar",
+      "unknown": "unbekannter Fehler"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -7379,7 +7427,6 @@
     "ackSent": "Bestätigung gesendet an {{sender}}",
     "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
     "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
-    "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Übungen eingeschlossen. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
     "ackQueuedBadge": "ACK in Warteschlange gestellt",
     "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
     "cancelPendingAck": "Abbrechen",
@@ -7402,7 +7449,8 @@
     "standingAlertView": "Ansicht",
     "standingAlertViewAria": "Öffnen Sie die Registerkarte Vorfall",
     "standingAlertDismiss": "Als gesehen markieren",
-    "standingAlertDismissAria": "Notruf von {{sender}} als gesehen markieren"
+    "standingAlertDismissAria": "Notruf von {{sender}} als gesehen markieren",
+    "intro": "Nicht gelöste MECP-Meldungen, die bei jedem Protokoll eingegangen sind – jeder Schweregrad, einschließlich Übungen. Durch das Lösen einer Zeile wird sie aus dieser Liste entfernt; das Exportprotokoll enthält sie weiterhin. Offene Zeilen werden auf dieser Registerkarte mit einem Badge gekennzeichnet. Verwenden Sie „Bestätigen“ (oder „Bestätigen“ für ein aktives Signal), um im Mesh zu antworten, und anschließend „Lösen“, wenn der Vorfall lokal abgeschlossen ist. Wenn Sie das Notsignal gesendet haben, sendet „Signal abbrechen“ auch B03, damit andere Stationen es löschen können."
   },
   "shell": {
     "section": {

@@ -82,6 +82,21 @@ describe('store record adapters (merge precedence)', () => {
     expect(back.to).toBeUndefined();
   });
 
+  it('round-trips rxPathHashSizeBytes through MessageRecord', () => {
+    const msg: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Peer',
+      payload: 'hi',
+      channel: 0,
+      timestamp: 1,
+      rxHops: 2,
+      rxPathHashSizeBytes: 3,
+    };
+    const record = chatMessageToMessageRecord(msg);
+    expect(record.rxPathHashSizeBytes).toBe(3);
+    expect(messageRecordToChatMessage(record).rxPathHashSizeBytes).toBe(3);
+  });
+
   it('round-trips rxHops and viaStoreForward through MessageRecord', () => {
     const rfMsg: ChatMessage = {
       sender_id: 3,

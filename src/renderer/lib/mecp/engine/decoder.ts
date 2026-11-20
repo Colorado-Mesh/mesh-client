@@ -1,5 +1,5 @@
 // Adapted from https://github.com/mecp-org/mecp-app (GPLv3). Freetext conventions
-// follow MECP 1.4.0 from https://github.com/mecp-org/MECP. Do not edit without attribution.
+// follow MECP 1.4.1 from https://github.com/mecp-org/MECP. Do not edit without attribution.
 
 /**
  * MECP Decoder — Parses MECP message strings into structured data.
@@ -66,7 +66,7 @@ export function decode(input: string): ParsedMessage {
   result.codes = env.codes;
   result.freetext = env.freetext.length > 0 ? env.freetext : null;
 
-  // MECP 1.4.0 §6.1 freetext conventions
+  // MECP 1.4.1 §6.1 freetext conventions
   result.extracted = extractFreetextConventions(env.freetext, env.codes);
 
   // Only D01 and D02 set isDrill. D03 and D04 do NOT.

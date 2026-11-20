@@ -1045,7 +1045,12 @@
     "markdownLink": "Odkaz",
     "markdownToolbar": "Formátování",
     "cancelPendingDmAck": "Zrušit čekání",
-    "cancelPendingDmAckAria": "Přestat čekat na potvrzení doručení a označit tuto zprávu jako neúspěšnou"
+    "cancelPendingDmAckAria": "Přestat čekat na potvrzení doručení a označit tuto zprávu jako neúspěšnou",
+    "outboxAnnounceBlocked": "Zpráva byla zablokována a nebyla odeslána.",
+    "outboxAnnounceFailed": "Odeslání zprávy se nezdařilo.",
+    "pathHashSizeTooltip": "Šířka hashe cesty ve vysílání pro tento paket ({{bytes}} bajtů na hop), nikoli nakonfigurovaný režim TX vašeho rádia",
+    "pathHashSizeAria": "Velikost hashování cesty {{label}}",
+    "pathHashSizeLabel": "{{bytes}} bajtů"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -3968,7 +3973,16 @@
     "ownerInfoNeedsPassword": "Informace o majiteli vyžadují heslo správce. Uložte jedno níže, abyste si ho mohli přečíst.",
     "ownerInfoNeedsRoomPassword": "Informace o majiteli vyžadují heslo správce. Nastavte jej v části Opakovače a místnosti → Konfigurovat.",
     "ownerInfoReadFailed": "Informace o majiteli se nepodařilo načíst.",
-    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit."
+    "ownerInfoDeferred": "Informace o majiteli čekají na rádio. Pro nový pokus použijte tlačítko Obnovit.",
+    "anonBasicHeading": "Vzdálené hodiny",
+    "anonBasicRefresh": "Obnovit vzdálené hodiny",
+    "anonBasicLoading": "Načítání vzdálených hodin…",
+    "anonBasicClock": "Hodiny uzlu {{time}} (odchylka {{skew}} s)",
+    "anonBasicForwardingDisabled": "Přesměrování je na tomto opakovači momentálně zakázáno.",
+    "anonBasicBridgeUart": "Můstek UART je povolen",
+    "anonBasicBridgeEspNow": "Můstek ESP-NOW je povolen",
+    "anonBasicReadFailed": "Nepodařilo se načíst vzdálené hodiny.",
+    "anonBasicUnsupported": "Tento firmware nepodporuje anonymní dotazy na čas."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -5286,7 +5300,41 @@
     "floodScopePresetsHelp": "Zde přidejte regiony a poté vyberte rozsah pro každý kanál vedle Odeslat nebo v Rádiových → kanálech. Uložení nebo odebrání oblasti ponechává výchozí nastavení rádia a volby kanálu beze změny.",
     "floodScopeAddHashtag": "Hashtag regionu, který chcete uložit",
     "floodScopeAddSaved": "Uložit region",
-    "floodScopePresetsFull": "Můžeš ušetřit až {{count}} regionů. Před přidáním dalšího odstraňte jeden."
+    "floodScopePresetsFull": "Můžeš ušetřit až {{count}} regionů. Před přidáním dalšího odstraňte jeden.",
+    "floodScopeDiscover": "Objevuj regiony",
+    "floodScopeDiscoverTitle": "Objevené regiony",
+    "floodScopeDiscoverHelp": "Načte strom oblastí z opakovačů s uloženým heslem správce. Nic se neodesílá automaticky.",
+    "floodScopeDiscoverBusy": "Probíhá zjišťování {{done}}/{{total}} ({{name}})…",
+    "floodScopeDiscoverCancel": "Zrušit objevování",
+    "floodScopeDiscoverCancelled": "Vyhledávání bylo zastaveno.",
+    "floodScopeDiscoverEmpty": "Zatím nebyly objeveny žádné regiony.",
+    "floodScopeDiscoverNone": "Nebyly nahlášeny žádné veřejné regiony.",
+    "floodScopeDiscoverSave": "Uložit",
+    "floodScopeDiscoverSaveAria": "Uložit {{region}} jako předvolbu rozsahu",
+    "floodScopeDiscoverSaved": "Uloženo",
+    "floodScopeDiscoverSelect": "Vyberte",
+    "floodScopeDiscoverSelectAria": "Vyberte {{region}} pro rozsah rádia",
+    "floodScopeDiscoverSelected": "Vybráno {{region}}. Stiskněte Použít pro nastavení rozsahu rádia.",
+    "floodScopeDiscoverAddAll": "Přidat všechny veřejné ({{count}})",
+    "floodScopeDiscoverAddAllClipped": "Přidáno {{added}} z {{total}}; uložený seznam oblastí působnosti je plný.",
+    "floodScopeDiscoverPrivate": "Soukromé (bez adresovatelného hashtagu)",
+    "floodScopeDiscoverHome": "Domov",
+    "floodScopeDiscoverFloodAllowed": "Flood povolen",
+    "floodScopeDiscoverFloodDenied": "Flood zakázán",
+    "floodScopeDiscoverSources": "Nahlášeno {{count}} opakujícími se uživateli",
+    "floodScopeDiscoverTruncated": "Seznamy oblastí {{count}} byly zkráceny firmwarem; některé názvy mohou chybět.",
+    "floodScopeDiscoverSkipped": "{{count}} opakovačů bylo přeskočeno (nebylo uloženo žádné heslo správce).",
+    "floodScopeDiscoverFailed": "{{count}} opakovače neodpověděly.",
+    "floodScopeDiscoverStale": "Naposledy zjištěno {{when}}",
+    "floodScopeDiscoverError": "Zjišťování oblasti se nezdařilo. Zkuste to znovu nebo zkontrolujte kartu Opakovače.",
+    "floodScopeDiscoverFail": {
+      "unsupported": "regiony nejsou podporovány",
+      "rejected": "Požadavek zamítnut",
+      "invalid-reply": "Neplatné ID odpovědi.",
+      "timeout": "Vypršel časový limit.",
+      "unreachable": "nedostupné",
+      "unknown": "neznámá chyba"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -7445,7 +7493,6 @@
     "ackQueued": "Potvrzení o zařazení do {{sender}} fronty; odešle se, až bude rádio k dispozici",
     "ackFailed": "Potvrzení nelze odeslat nebo zařadit do fronty",
     "ackCount_few": "{{count}} poděkování",
-    "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; včetně cvičení. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
     "ackQueuedBadge": "ACK ve frontě",
     "pendingAckListAria": "Poděkování za tento incident ve frontě",
     "cancelPendingAck": "Zrušit",
@@ -7469,7 +7516,8 @@
     "standingAlertView": "Zobrazit",
     "standingAlertViewAria": "Otevřít kartu Incident",
     "standingAlertDismiss": "Značka zobrazena",
-    "standingAlertDismissAria": "Označit stav nouze z {{sender}} jako viditelný"
+    "standingAlertDismissAria": "Označit stav nouze z {{sender}} jako viditelný",
+    "intro": "Nevyřešená hlášení MECP zaznamenaná na jakémkoli protokolu – všechny úrovně závažnosti, včetně cvičení. Vyřešením řádku jej odstraníte z tohoto seznamu; protokol exportu jej stále obsahuje. Otevřené řádky označují tuto kartu. Pro odpověď v síti použijte možnost Potvrdit (nebo Potvrdit u aktivního majáku) a poté možnost Vyřešit, jakmile bude incident lokálně uzavřen. Pokud jste odeslali nouzový maják, funkce Zrušit maják také odešle B03, aby jej ostatní stanice mohly vymazat."
   },
   "shell": {
     "section": {
