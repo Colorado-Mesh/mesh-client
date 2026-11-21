@@ -172,7 +172,6 @@ describe('createUdpBridge', () => {
       bridge.write(event, new Array(UDP_BRIDGE_WRITE_MAX_BYTES + 1).fill(1)),
     ).rejects.toThrow(/oversized/);
   });
-
 });
 
 describe('registerUdpBridgeIpcHandlers', () => {
