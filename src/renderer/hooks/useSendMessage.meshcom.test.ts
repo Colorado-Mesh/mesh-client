@@ -55,7 +55,7 @@ describe('sendChatOnIdentity MeshCom', () => {
         channel_idx: 0,
         to_call_or_group: '*',
         status: 'sending',
-        received_via: 'local',
+        received_via: 'rf',
       }),
     );
 

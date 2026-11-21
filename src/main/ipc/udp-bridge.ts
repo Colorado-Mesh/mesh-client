@@ -67,6 +67,8 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
   const validateHost: (host: unknown) => asserts host is string = deps.validateHost;
   let activeSocket: dgram.Socket | null = null;
   let remoteHost: string | null = null;
+  /** True after successful `socket.connect()` — write must omit dest (Node ERR_SOCKET_DGRAM_IS_CONNECTED). */
+  let peerConnected = false;
   /** Last time we logged a rejected peer (rate-limit DoS via log/IPC fan-out). */
   let lastRejectedPeerLogAt = 0;
   let suppressedRejectedPeerLogs = 0;
@@ -76,6 +78,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     const prev = activeSocket;
     activeSocket = null;
     remoteHost = null;
+    peerConnected = false;
     try {
       prev.close();
     } catch (err) {
@@ -165,6 +168,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
         if (activeSocket === socket) {
           activeSocket = null;
           remoteHost = null;
+          peerConnected = false;
           getMainWindow()?.webContents.send(DISCONNECTED_CHANNEL);
         }
       });
@@ -190,7 +194,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           if (remoteHost) {
             try {
               socket.connect(MESHCOM_EXTUDP_PORT, remoteHost);
+              peerConnected = true;
             } catch (connectErr) {
+              peerConnected = false;
               console.warn(
                 `[IPC] ${CONNECT_CHANNEL} UDP connect failed; peer filter remains in handler:`,
                 sanitizeLogMessage(
@@ -228,15 +234,23 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     }
     const sock = activeSocket;
     const host = remoteHost;
+    const connected = peerConnected;
     return new Promise<void>((resolve, reject) => {
-      sock.send(Buffer.from(bytes), MESHCOM_EXTUDP_PORT, host, (err) => {
+      const onSent = (err?: Error | null): void => {
         if (err) {
           console.error(`[IPC] ${WRITE_CHANNEL} error:`, sanitizeLogMessage(err.message));
           reject(err);
         } else {
           resolve();
         }
-      });
+      };
+      const payload = Buffer.from(bytes);
+      // Connected sockets must use the destination-free send overload.
+      if (connected) {
+        sock.send(payload, onSent);
+      } else {
+        sock.send(payload, MESHCOM_EXTUDP_PORT, host, onSent);
+      }
     });
   };
 
@@ -248,6 +262,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       const prev = activeSocket;
       activeSocket = null;
       remoteHost = null;
+      peerConnected = false;
       try {
         prev.close();
       } catch (err) {
@@ -264,6 +279,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     const prev = activeSocket;
     activeSocket = null;
     remoteHost = null;
+    peerConnected = false;
     try {
       prev.close();
     } catch (err) {

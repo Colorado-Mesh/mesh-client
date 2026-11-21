@@ -15,11 +15,13 @@ const { FakeSocket, sockets } = vi.hoisted(() => {
       this.connected = { port, host };
       cb?.();
     });
-    readonly send = vi.fn(
-      (_msg: Buffer, _port: number, _host: string, cb?: (err?: Error | null) => void) => {
-        cb?.(null);
-      },
-    );
+    readonly send = vi.fn((...args: unknown[]) => {
+      // Connected: send(msg, cb) — unconnected: send(msg, port, host, cb)
+      const cb = args[args.length - 1];
+      if (typeof cb === 'function') {
+        (cb as (err?: Error | null) => void)(null);
+      }
+    });
     readonly close = vi.fn(() => {
       this.emit('close');
     });
@@ -122,12 +124,8 @@ describe('createUdpBridge', () => {
     expect(sockets[0].connected).toEqual({ port: MESHCOM_EXTUDP_PORT, host: '192.168.1.20' });
 
     await bridge.write(event, [0x7b, 0x7d]);
-    expect(sockets[0].send).toHaveBeenCalledWith(
-      Buffer.from([0x7b, 0x7d]),
-      MESHCOM_EXTUDP_PORT,
-      '192.168.1.20',
-      expect.any(Function),
-    );
+    // Connected sockets must omit port/host (ERR_SOCKET_DGRAM_IS_CONNECTED otherwise).
+    expect(sockets[0].send).toHaveBeenCalledWith(Buffer.from([0x7b, 0x7d]), expect.any(Function));
 
     const msgHandler = sockets[0];
     msgHandler.emit('message', Buffer.from('{"type":"msg"}'), {
@@ -174,6 +172,7 @@ describe('createUdpBridge', () => {
       bridge.write(event, new Array(UDP_BRIDGE_WRITE_MAX_BYTES + 1).fill(1)),
     ).rejects.toThrow(/oversized/);
   });
+
 });
 
 describe('registerUdpBridgeIpcHandlers', () => {
