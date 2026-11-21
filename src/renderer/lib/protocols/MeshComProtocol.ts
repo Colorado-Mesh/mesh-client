@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCom yet */
+import { MESHCOM_CONTACT_CAP_DEFAULT, MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { parseMeshcomAprsPhoneFrame } from '../meshcom/meshcomAprsPhone';
@@ -101,7 +102,16 @@ function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number
   const normalized = normalizeMeshcomCallsign(callsign);
   if (!normalized) return 0;
   const nodeId = callsignToNodeId(normalized);
-  handle.callsignByNodeId.set(nodeId, normalized);
+  const map = handle.callsignByNodeId;
+  const isNew = !map.has(nodeId);
+  if (isNew && map.size >= MESHCOM_CONTACT_CAP_DEFAULT) {
+    const oldest = map.keys().next().value;
+    if (oldest != null) map.delete(oldest);
+  } else if (!isNew) {
+    // Refresh insertion order (LRU-ish) for known callsigns.
+    map.delete(nodeId);
+  }
+  map.set(nodeId, normalized);
   return nodeId;
 }
 
@@ -523,7 +533,7 @@ function emitConsoleTextLine(
   const brace = /^\{([^}]+)\}(.*)$/.exec(trimmed);
   if (brace) {
     const destRaw = brace[1].trim();
-    const text = brace[2].trimEnd();
+    const text = brace[2].trimEnd().slice(0, MESHCOM_MAX_TEXT_LEN);
     if (!destRaw || !text) return;
     // EXTUDP JSON also starts with `{` — only treat as brace-directed when not JSON.
     if (trimmed.startsWith('{"') || trimmed.startsWith('{ ')) return;
@@ -563,7 +573,7 @@ function emitConsoleTextLine(
 
   // Serial ALL inject uses `::text` (two colons).
   if (trimmed.startsWith('::')) {
-    const text = trimmed.slice(2).trim();
+    const text = trimmed.slice(2).trim().slice(0, MESHCOM_MAX_TEXT_LEN);
     if (!text) return;
     emit({
       type: 'text_message',
@@ -582,7 +592,7 @@ function emitConsoleTextLine(
   emit({
     type: 'device_log',
     payload: {
-      message: trimmed,
+      message: trimmed.slice(0, MESHCOM_MAX_TEXT_LEN),
       time: now,
       source: 'meshcom-console',
       level: 0,

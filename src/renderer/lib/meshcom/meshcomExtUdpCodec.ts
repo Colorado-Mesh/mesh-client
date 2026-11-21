@@ -3,7 +3,11 @@
  * Spec: firmware `extudp_functions.cpp`, `extern_msg_json.h`, `docs/ext_udp_telemetry.md`.
  */
 
-import { MESHCOM_EXTUDP_PORT } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_EXTUDP_PORT,
+  MESHCOM_MAX_MSG_ID_LEN,
+  MESHCOM_MAX_TEXT_LEN,
+} from '@/shared/meshcomConstants';
 
 import {
   MESHCOM_CALLSIGN_MAX_LEN,
@@ -11,8 +15,10 @@ import {
   normalizeMeshcomCallsign,
 } from './meshcomCallsign';
 
-export { MESHCOM_EXTUDP_PORT };
+export { MESHCOM_EXTUDP_PORT, MESHCOM_MAX_MSG_ID_LEN };
 export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
+/** Bound firmware / src_type / aprs metadata strings retained from EXTUDP peers. */
+const MESHCOM_EXTUDP_META_MAX_LEN = 64;
 
 export type MeshcomExtUdpOutbound =
   | { type: 'msg'; dst: string; msg: string }
@@ -91,15 +97,18 @@ function asOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+function asOptionalBoundedString(value: unknown, maxLen: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  return value.length > maxLen ? value.slice(0, maxLen) : value;
+}
+
 function asOptionalNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function asOptionalFirmware(value: unknown): string | number | undefined {
-  if (typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value))) {
-    return value;
-  }
-  return undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return asOptionalBoundedString(value, MESHCOM_EXTUDP_META_MAX_LEN);
 }
 
 /** Validate and clamp client→node outbound payloads. */
@@ -173,10 +182,10 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
       src,
       dst,
       msg,
-      msg_id: asOptionalString(parsed.msg_id),
-      src_type: asOptionalString(parsed.src_type),
+      msg_id: asOptionalBoundedString(parsed.msg_id, MESHCOM_MAX_MSG_ID_LEN),
+      src_type: asOptionalBoundedString(parsed.src_type, MESHCOM_EXTUDP_META_MAX_LEN),
       firmware: asOptionalFirmware(parsed.firmware),
-      fw_sub: asOptionalString(parsed.fw_sub),
+      fw_sub: asOptionalBoundedString(parsed.fw_sub, MESHCOM_EXTUDP_META_MAX_LEN),
       rssi: asOptionalNumber(parsed.rssi),
       snr: asOptionalNumber(parsed.snr),
       hw_id: asOptionalNumber(parsed.hw_id),
@@ -185,35 +194,44 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
     };
   }
   if (type === 'pos') {
-    const src = asOptionalString(parsed.src);
-    if (src == null) return null;
+    const srcRaw = asOptionalString(parsed.src);
+    if (srcRaw == null) return null;
+    const src = normalizeMeshcomCallsign(srcRaw).slice(0, MESHCOM_CALLSIGN_MAX_LEN);
+    if (!src) return null;
+    const posMsg = asOptionalBoundedString(parsed.msg, MESHCOM_MAX_TEXT_LEN);
     return {
       type: 'pos',
       src,
-      msg: asOptionalString(parsed.msg),
+      msg: posMsg,
       lat: asOptionalNumber(parsed.lat),
-      lat_dir: asOptionalString(parsed.lat_dir),
+      lat_dir: asOptionalBoundedString(parsed.lat_dir, MESHCOM_EXTUDP_META_MAX_LEN),
       long: asOptionalNumber(parsed.long),
-      long_dir: asOptionalString(parsed.long_dir),
-      aprs_symbol: asOptionalString(parsed.aprs_symbol),
-      aprs_symbol_group: asOptionalString(parsed.aprs_symbol_group),
+      long_dir: asOptionalBoundedString(parsed.long_dir, MESHCOM_EXTUDP_META_MAX_LEN),
+      aprs_symbol: asOptionalBoundedString(parsed.aprs_symbol, MESHCOM_EXTUDP_META_MAX_LEN),
+      aprs_symbol_group: asOptionalBoundedString(
+        parsed.aprs_symbol_group,
+        MESHCOM_EXTUDP_META_MAX_LEN,
+      ),
       hw_id: asOptionalNumber(parsed.hw_id),
-      msg_id: asOptionalString(parsed.msg_id),
+      msg_id: asOptionalBoundedString(parsed.msg_id, MESHCOM_MAX_MSG_ID_LEN),
       alt: asOptionalNumber(parsed.alt),
       lora_mod: asOptionalNumber(parsed.lora_mod),
       max_hop: asOptionalNumber(parsed.max_hop),
       batt: asOptionalNumber(parsed.batt),
       firmware: asOptionalFirmware(parsed.firmware),
-      fw_sub: asOptionalString(parsed.fw_sub),
+      fw_sub: asOptionalBoundedString(parsed.fw_sub, MESHCOM_EXTUDP_META_MAX_LEN),
       rssi: asOptionalNumber(parsed.rssi),
       snr: asOptionalNumber(parsed.snr),
-      src_type: asOptionalString(parsed.src_type),
+      src_type: asOptionalBoundedString(parsed.src_type, MESHCOM_EXTUDP_META_MAX_LEN),
     };
   }
   if (type === 'tele') {
+    const teleSrc = asOptionalString(parsed.src);
     return {
       type: 'tele',
-      src: asOptionalString(parsed.src),
+      src: teleSrc
+        ? normalizeMeshcomCallsign(teleSrc).slice(0, MESHCOM_CALLSIGN_MAX_LEN) || undefined
+        : undefined,
       temp: asOptionalNumber(parsed.temp),
       hum: asOptionalNumber(parsed.hum),
       press: asOptionalNumber(parsed.press),

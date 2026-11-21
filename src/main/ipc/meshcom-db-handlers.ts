@@ -6,7 +6,11 @@ import type { IpcMain } from 'electron';
 
 import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
-import { MESHCOM_CONTACT_CAP_DEFAULT, MESHCOM_MAX_TEXT_LEN } from '../../shared/meshcomConstants';
+import {
+  MESHCOM_CONTACT_CAP_DEFAULT,
+  MESHCOM_MAX_MSG_ID_LEN,
+  MESHCOM_MAX_TEXT_LEN,
+} from '../../shared/meshcomConstants';
 import type { NodeSqliteDB } from '../db-compat';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { assertIpcSender, validateIpcSender } from '../validate-ipc-sender';
@@ -16,7 +20,7 @@ import { MESHCOM_DB_DEGRADED_CHANNEL } from './meshcom-db-status';
 const MAX_CALLSIGN_LEN = 16;
 const MAX_TEXT_LEN = MESHCOM_MAX_TEXT_LEN;
 const MAX_PATH_LEN = 512;
-const MAX_MSG_ID_LEN = 128;
+const MAX_MSG_ID_LEN = MESHCOM_MAX_MSG_ID_LEN;
 const MAX_IDENTITY_LEN = 128;
 const MAX_STATUS_LEN = 32;
 
