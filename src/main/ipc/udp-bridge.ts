@@ -18,11 +18,25 @@ import {
   stripConnectHostBrackets,
 } from '../../shared/connectHost';
 import { MESHCOM_EXTUDP_PORT } from '../../shared/meshcomConstants';
+import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { sanitizeLogMessage } from '../log-service';
 import { assertIpcSender } from '../validate-ipc-sender';
 
-/** Max UDP write / inbound datagram size (DoS guard). */
+/**
+ * Max outbound write size (renderer → node). Kept generous for forward-compat;
+ * EXTUDP JSON itself is tiny.
+ */
 export const UDP_BRIDGE_WRITE_MAX_BYTES = 64 * 1024;
+
+/**
+ * Max inbound datagram forwarded to the renderer. EXTUDP JSON (msg/pos/tele) is
+ * well under a few KiB; rejecting larger peer floods before IPC expansion.
+ */
+export const UDP_BRIDGE_INBOUND_MAX_BYTES = 4 * 1024;
+
+/** Cap configured-peer datagrams forwarded to renderer IPC per window. */
+export const UDP_BRIDGE_INBOUND_RATE_MAX = 60;
+export const UDP_BRIDGE_INBOUND_RATE_WINDOW_MS = MS_PER_SECOND;
 
 export interface UdpBridgeDeps {
   getMainWindow: () => BrowserWindow | null;
@@ -72,6 +86,11 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
   /** Last time we logged a rejected peer (rate-limit DoS via log/IPC fan-out). */
   let lastRejectedPeerLogAt = 0;
   let suppressedRejectedPeerLogs = 0;
+  /** Sliding window for configured-peer → renderer IPC rate limiting. */
+  let inboundWindowStartedAt = 0;
+  let inboundWindowCount = 0;
+  let suppressedInboundRateDrops = 0;
+  let lastInboundRateLogAt = 0;
 
   const closeSocket = (emitDisconnected: boolean): void => {
     if (!activeSocket) return;
@@ -79,6 +98,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     activeSocket = null;
     remoteHost = null;
     peerConnected = false;
+    inboundWindowStartedAt = 0;
+    inboundWindowCount = 0;
+    suppressedInboundRateDrops = 0;
     try {
       prev.close();
     } catch (err) {
@@ -132,9 +154,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
 
       socket.on('message', (msg, rinfo) => {
         if (activeSocket !== socket) return;
-        if (msg.length > UDP_BRIDGE_WRITE_MAX_BYTES) {
+        if (msg.length > UDP_BRIDGE_INBOUND_MAX_BYTES) {
           console.warn(
-            `[IPC] ${DATA_CHANNEL} oversized datagram (${msg.length} > ${UDP_BRIDGE_WRITE_MAX_BYTES}); dropping`,
+            `[IPC] ${DATA_CHANNEL} oversized datagram (${msg.length} > ${UDP_BRIDGE_INBOUND_MAX_BYTES}); dropping`,
           );
           return;
         }
@@ -161,7 +183,26 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           }
           return;
         }
-        getMainWindow()?.webContents.send(DATA_CHANNEL, Array.from(msg));
+        const now = Date.now();
+        if (now - inboundWindowStartedAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
+          inboundWindowStartedAt = now;
+          inboundWindowCount = 0;
+        }
+        if (inboundWindowCount >= UDP_BRIDGE_INBOUND_RATE_MAX) {
+          suppressedInboundRateDrops += 1;
+          if (now - lastInboundRateLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
+            console.warn(
+              `[IPC] ${DATA_CHANNEL} rate-limited peer flood (${UDP_BRIDGE_INBOUND_RATE_MAX}/s;` +
+                ` +${suppressedInboundRateDrops} dropped)`,
+            );
+            lastInboundRateLogAt = now;
+            suppressedInboundRateDrops = 0;
+          }
+          return;
+        }
+        inboundWindowCount += 1;
+        // Compact typed array (not number[]) — same pattern as meshcore TCP bridge.
+        getMainWindow()?.webContents.send(DATA_CHANNEL, new Uint8Array(msg));
       });
 
       socket.on('close', () => {

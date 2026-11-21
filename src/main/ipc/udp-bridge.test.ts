@@ -88,6 +88,8 @@ import { assertIpcSender } from '../validate-ipc-sender';
 import {
   createUdpBridge,
   registerUdpBridgeIpcHandlers,
+  UDP_BRIDGE_INBOUND_MAX_BYTES,
+  UDP_BRIDGE_INBOUND_RATE_MAX,
   UDP_BRIDGE_WRITE_MAX_BYTES,
 } from './udp-bridge';
 
@@ -134,8 +136,54 @@ describe('createUdpBridge', () => {
     });
     expect(send).toHaveBeenCalledWith(
       'meshcom:udp-data',
-      Array.from(Buffer.from('{"type":"msg"}')),
+      new Uint8Array(Buffer.from('{"type":"msg"}')),
     );
+  });
+
+  it('drops inbound datagrams over the EXTUDP protocol size cap', async () => {
+    const send = vi.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const bridge = createUdpBridge({
+      getMainWindow: () =>
+        ({
+          webContents: { send },
+        }) as never,
+      validateHost,
+    });
+    await bridge.connect(event, '192.168.1.10');
+    sockets[0].emit('message', Buffer.alloc(UDP_BRIDGE_INBOUND_MAX_BYTES + 1, 0x41), {
+      address: '192.168.1.10',
+      port: MESHCOM_EXTUDP_PORT,
+    });
+    expect(send).not.toHaveBeenCalled();
+    expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('oversized datagram'))).toBe(
+      true,
+    );
+    warn.mockRestore();
+  });
+
+  it('rate-limits configured-peer IPC fan-out under datagram flood', async () => {
+    const send = vi.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const bridge = createUdpBridge({
+      getMainWindow: () =>
+        ({
+          webContents: { send },
+        }) as never,
+      validateHost,
+    });
+    await bridge.connect(event, '192.168.1.10');
+    const sock = sockets[0];
+    const payload = Buffer.from('{"type":"msg","src":"A-1","dst":"*","msg":"x"}');
+    for (let i = 0; i < UDP_BRIDGE_INBOUND_RATE_MAX + 40; i++) {
+      sock.emit('message', payload, {
+        address: '192.168.1.10',
+        port: MESHCOM_EXTUDP_PORT,
+      });
+    }
+    expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX);
+    expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('rate-limited'))).toBe(true);
+    warn.mockRestore();
   });
 
   it('rate-limits rejected-peer debug logs under datagram flood', async () => {
