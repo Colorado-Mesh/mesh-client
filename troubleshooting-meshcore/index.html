@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, Reticulum (LXMF), and MeshCom mesh networks.">
       
       
       
@@ -1264,6 +1264,8 @@
       
         
       
+        
+      
     
     
     
@@ -1429,6 +1431,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#meshcore-dm-fails-with-radio-contact-table-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: DM fails with radio contact table full
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#meshcore-contact-delete-and-sticky-rooms-badge" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1562,6 +1575,34 @@
     
   
     Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom Troubleshooting
   
 
     
@@ -2205,6 +2246,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2770,6 +2815,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/adding-a-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding a MeshProtocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/emcomm/" class="md-nav__link">
         
   
@@ -3174,6 +3275,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#meshcore-dm-fails-with-radio-contact-table-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: DM fails with radio contact table full
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#meshcore-contact-delete-and-sticky-rooms-badge" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3329,6 +3441,16 @@
 <li>On MeshCore tab, use <strong>Sync now</strong> if the header still shows a backlog after connect.</li>
 <li>In support bundles, check <code>ui.meshcoreDrain</code> for <code>meshcoreCompanionRepeaterRfBusy</code>, <code>meshcoreAdminRpcInFlightCount</code>, and <code>meshcoreSilentBulkTimeoutStreak</code> when triaging repeat reports.</li>
 </ol>
+<h2 id="meshcore-dm-fails-with-radio-contact-table-full">MeshCore: DM fails with radio contact table full<a class="headerlink" href="#meshcore-dm-fails-with-radio-contact-table-full" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Sending a DM fails; Log (or DevTools console) shows <code>[useSendMessage] send failed meshcore.errors.radioContactTableFull</code>. You may also see a toast that the radio contact list is full.</p>
+<p><strong>Cause</strong>: The companion rejected a command with <code>RESP_ERR</code> <strong>errCode 3</strong> (<code>TABLE_FULL</code>). DMs need the peer in the radio contact table; if the contact is missing, mesh-client tries to add it once. That add (or the send itself) fails when the radio table is full (~350 slots).</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>On <strong>Device → Radio</strong>, use contact management / <strong>offload</strong> to free unused radio slots (rows stay in the app database). See <a href="../meshcore/#contacts">MeshCore — Contacts</a>.</li>
+<li>Enable <strong>auto-offload when full</strong> if you want the app to free slots automatically when the companion reports contacts-full.</li>
+<li>Retry the DM after the radio has free slots.</li>
+</ol>
+<p>DevTools can show the same console line as the Log panel, but not companion TCP frames — see <a href="../troubleshooting/#electron-devtools-packaged-app">Electron DevTools</a>.</p>
 <h2 id="meshcore-contact-delete-and-sticky-rooms-badge">MeshCore contact delete and sticky Rooms badge<a class="headerlink" href="#meshcore-contact-delete-and-sticky-rooms-badge" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Deleting a contact from Chat/Contacts removes the SQLite contact row <strong>and</strong> room BBS messages for that <code>room_server_id</code> (so Rooms unread cannot outlive the room server).</li>
@@ -3506,7 +3628,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 01:39:00 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 02:36:14 UTC">November 21, 2026</span>
   </span>
 
     

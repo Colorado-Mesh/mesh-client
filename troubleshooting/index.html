@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, Reticulum (LXMF), and MeshCom mesh networks.">
       
       
       
@@ -1264,6 +1264,8 @@
       
         
       
+        
+      
     
     
     
@@ -1406,6 +1408,17 @@
     <span class="md-ellipsis">
       
         Connection or transport issues: use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#electron-devtools-packaged-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electron DevTools (packaged app)
       
     </span>
   </a>
@@ -2568,6 +2581,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../troubleshooting-meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../diagnostics/" class="md-nav__link">
         
   
@@ -3191,6 +3232,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3756,6 +3801,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/adding-a-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding a MeshProtocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/emcomm/" class="md-nav__link">
         
   
@@ -4165,6 +4266,17 @@
     <span class="md-ellipsis">
       
         Connection or transport issues: use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#electron-devtools-packaged-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electron DevTools (packaged app)
       
     </span>
   </a>
@@ -5285,6 +5397,7 @@
 <h2 id="contents">Contents<a class="headerlink" href="#contents" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="#quick-reference">Quick reference</a></li>
+<li><a href="#electron-devtools-packaged-app">Electron DevTools (packaged app)</a></li>
 <li><a href="#system-requirements">System requirements</a></li>
 <li><a href="#development-and-building">Development and building</a></li>
 <li><a href="#installation-and-packaged-apps">Installation and packaged apps</a></li>
@@ -5307,8 +5420,37 @@
 <p>Start here for log analysis, bug reports, and general connection debugging.</p>
 <h3 id="connection-or-transport-issues-use-log-analyze">Connection or transport issues: use Log <strong>Analyze</strong><a class="headerlink" href="#connection-or-transport-issues-use-log-analyze" title="Permanent link">&para;</a></h3>
 <p>Open the <strong>Log</strong> panel (right rail), enable <strong>debug</strong> if needed, reproduce the problem, then click <strong>Analyze</strong>. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists <strong>suggested next steps</strong>. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is <strong>heuristic</strong>; treat recommendations as hints, not guarantees. Expand <strong>View evidence</strong> on a finding to inspect its timestamped log lines. <strong>Copy troubleshooting report</strong> copies the findings, specific advice, and recent samples for a support request; review the samples before sharing. See <a href="../log-analysis/">Log analysis</a> for scope and limitations.</p>
+<h3 id="electron-devtools-packaged-app">Electron DevTools (packaged app)<a class="headerlink" href="#electron-devtools-packaged-app" title="Permanent link">&para;</a></h3>
+<p>Chromium DevTools work in downloaded / packaged builds as well as local <code>pnpm run dev</code>. Focus the Mesh Client window, then:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Shortcut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS</td>
+<td><strong>⌘⌥I</strong> (Command-Option-I)</td>
+</tr>
+<tr>
+<td>Windows/Linux</td>
+<td><strong>Ctrl+Shift+I</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Prefer those over bare <strong>F12</strong>. F1–F12 are chat macros app-wide; when a composer macro slot applies, F12 may be consumed instead of opening DevTools.</p>
+<p><strong>Dev vs release:</strong> <code>pnpm run dev</code> opens DevTools automatically. Packaged binaries and <code>pnpm start</code> do not. There is no in-app View menu entry for Developer Tools today. Release builds do <strong>not</strong> disable DevTools (<code>devTools: false</code> is unset), so the shortcuts above still work.</p>
+<p><strong>Good for:</strong> renderer console (same lines the Log panel forwards), React/DOM inspection, <code>localStorage</code>, and renderer perf helpers.</p>
+<p><strong>Not for companion wire traffic:</strong> MeshCore / Meshtastic TCP, BLE, and serial sockets live in the Electron <strong>main</strong> process and reach the renderer over IPC. The DevTools <strong>Network</strong> tab will not show companion frames. Use:</p>
+<ol>
+<li><strong>Log</strong> panel — enable <strong>debug</strong>, reproduce, then <strong>Analyze</strong> (see above).</li>
+<li>On-disk <code>mesh-client.log</code> under the userData paths in <a href="#reporting-bugs-export-for-github-app-tab">Reporting bugs</a>.</li>
+<li><strong>Monitor → Sniffer</strong> for raw hex frames — see <a href="../diagnostics/#17-sniffer-raw-packet-log">Diagnostics — Sniffer</a>.</li>
+</ol>
 <h3 id="reporting-bugs-export-for-github-app-tab">Reporting bugs: <strong>Export for GitHub</strong> (App tab)<a class="headerlink" href="#reporting-bugs-export-for-github-app-tab" title="Permanent link">&para;</a></h3>
-<p>Before opening a GitHub issue, use <strong>App → Support / Bug reports → Export for GitHub</strong>. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes <strong>Reticulum</strong> sidecar status, interface diagnostics, and config audit when the stack was running at export time (<code>reticulum</code> section in <code>debug-snapshot.json</code>; <code>[ReticulumSidecar]</code> lines in the log).</p>
+<p>Before opening a GitHub issue, use <strong>App → Support / Bug reports → Export for GitHub</strong>. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes <strong>Meshtastic</strong>, <strong>MeshCore</strong>, <strong>MeshCom</strong>, and <strong>Reticulum</strong> identity/session buckets (<code>sessionSummary</code> plus matching protocol keys in <code>debug-snapshot.json</code>). Reticulum also includes sidecar status, interface diagnostics, and config audit when the stack was running at export time (<code>reticulum</code> section; <code>[ReticulumSidecar]</code> lines in the log). MeshCom connect/MQTT/GATT lines use <code>[useMeshcomRuntime]</code>, <code>[MeshCom*]</code>, and <code>[GATT:meshcom]</code> tags in <code>mesh-client.log</code>.</p>
 <p>Open <code>manifest.json</code> first when triaging: <code>appVersion</code> is package semver; <strong><code>buildChannel</code></strong> is <code>test</code> (Build Binaries / Flatpak no-release), <code>release</code> (official Release or Flatpak tag), or <code>local</code> (unmarked local dist). For CI builds, <code>buildInfo.runUrl</code> links to the exact GitHub Actions run — do not assume <code>appVersion</code> alone means an official release. Test-build downloadable installers include <code>-run{N}</code> in the filename; if the filename and <code>runUrl</code> disagree, trust <code>runUrl</code> / the <code>[Startup] runtime … run=</code> log line.</p>
 <p><strong>Do not attach Export for Developer or <code>mesh-client.db</code> to public GitHub issues.</strong> The developer bundle includes your SQLite database, which may contain <strong>saved passwords</strong> (MeshCore room/repeater credentials, MQTT settings, etc.), plus MECP emergency audit logs that may contain message text, sender/channel identifiers, and location details. It may also include <strong>Reticulum</strong> rnsd config and sidecar stack state under <code>reticulum/</code> — share only via a <strong>private channel</strong> when a maintainer requests <strong>Export for Developer</strong>. The database is not encrypted at rest so maintainers can open private exports in ordinary SQLite tools; see <a href="../database-encryption-decision/">Database at-rest encryption decision</a>.</p>
 <p>Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:</p>
@@ -6002,6 +6144,7 @@ allocations as <code>mainLiveness</code>.</p>
 <ul>
 <li><a href="../troubleshooting-meshcore/#meshcore-tcp-connect-stuck-or-reconnect-loop-on-openhop">MeshCore TCP connect stuck or reconnect loop on OpenHop</a></li>
 <li><a href="../troubleshooting-meshcore/#meshcore-tcp--pymc-initial-connect-msgwaiting-drain-slow-or-paused">MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused</a></li>
+<li><a href="../troubleshooting-meshcore/#meshcore-dm-fails-with-radio-contact-table-full">MeshCore: DM fails with radio contact table full</a></li>
 <li><a href="../troubleshooting-meshcore/#meshcore-contact-delete-and-sticky-rooms-badge">MeshCore contact delete and sticky Rooms badge</a></li>
 <li><a href="../troubleshooting-meshcore/#meshcore-contact-age-prune-and-favorites">MeshCore contact age prune and favorites</a></li>
 <li><a href="../troubleshooting-meshcore/#meshcore-ui-slow-or-frozen-with-large-repeater-lists-usb-serial">MeshCore: UI slow or frozen with large repeater lists (USB serial)</a></li>
@@ -6388,7 +6531,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 20, 2026 00:38:34 UTC">November 20, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 02:36:14 UTC">November 21, 2026</span>
   </span>
 
     

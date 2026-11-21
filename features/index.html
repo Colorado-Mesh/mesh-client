@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, Reticulum (LXMF), and MeshCom mesh networks.">
       
       
       
@@ -581,10 +581,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#shared-rf-features-meshtastic--meshcore" class="md-nav__link">
+  <a href="#shared-rf-features-meshtastic-meshcore--meshcom" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Shared RF features (Meshtastic &amp; MeshCore)
+        Shared RF features (Meshtastic, MeshCore &amp; MeshCom)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcom-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCom Features
       
     </span>
   </a>
@@ -1375,6 +1386,8 @@
       
         
       
+        
+      
     
     
     
@@ -1491,6 +1504,34 @@
     
   
     Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom Troubleshooting
   
 
     
@@ -2134,6 +2175,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2699,6 +2744,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/meshcom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/adding-a-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding a MeshProtocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/emcomm/" class="md-nav__link">
         
   
@@ -3103,10 +3204,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#shared-rf-features-meshtastic--meshcore" class="md-nav__link">
+  <a href="#shared-rf-features-meshtastic-meshcore--meshcom" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Shared RF features (Meshtastic &amp; MeshCore)
+        Shared RF features (Meshtastic, MeshCore &amp; MeshCom)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcom-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCom Features
       
     </span>
   </a>
@@ -3175,7 +3287,7 @@
 
 <h1 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h1>
 <p>What Mesh-Client does on each protocol. New to the terms? See the <a href="../glossary/">Glossary</a>.</p>
-<p>Mesh-Client supports <strong>three mesh stacks</strong> in one desktop app. Use the <strong>protocol switcher</strong> at the top of the rail (MT / MC / RN; Meshtastic green, MeshCore cyan, Reticulum yellow) to focus a tab; the other sessions stay connected in the background.</p>
+<p>Mesh-Client supports <strong>four mesh stacks</strong> in one desktop app. Use the <strong>protocol switcher</strong> at the top of the rail (MT / MC / CM / RN; Meshtastic green, MeshCore cyan, MeshCom burgundy, Reticulum yellow) to focus a tab; the other sessions stay connected in the background. Opt in to MeshCom under App → Protocols (licensed amateur-radio notice on first enable).</p>
 <table>
 <thead>
 <tr>
@@ -3194,6 +3306,11 @@
 <td>MeshCore</td>
 <td>BLE, USB serial, TCP, MQTT (JSON v1)</td>
 <td>Below + <a href="../meshcore-meshtastic-parity/">parity doc</a></td>
+</tr>
+<tr>
+<td>MeshCom</td>
+<td>EXTUDP (:1799), KISS/TCP (:8001), USB serial, BLE</td>
+<td><a href="../development/meshcom/">MeshCom development</a> — callsign mesh; worldwide <code>--setctry</code> bands</td>
 </tr>
 <tr>
 <td>Reticulum</td>
@@ -3280,15 +3397,15 @@
 </ul>
 <p><strong>TAK Server (CoT Gateway)</strong></p>
 <ul>
-<li><strong>TAK</strong> tab (Network rail section) on Meshtastic, MeshCore, and Reticulum: local CoT TLS gateway (port 8089) so ATAK / WinTAK / iTAK clients can see mesh nodes on their maps</li>
-<li>Feeds all three protocols at once (node online windows, RMAP interfaces, optional own Reticulum position); positions refresh every 5 minutes</li>
+<li><strong>TAK</strong> tab (Network rail section) on Meshtastic, MeshCore, MeshCom, and Reticulum: local CoT TLS gateway (port 8089) so ATAK / WinTAK / iTAK clients can see mesh nodes on their maps</li>
+<li>Feeds enabled protocols at once (node online windows, RMAP interfaces, optional own Reticulum position); positions refresh every 5 minutes</li>
 <li>Certificates, ATAK data package, remote TAK server relay (mTLS or plain TCP), channel and DM messaging in ATAK, unit filters/icons, and Meshtastic ATAK plugin messages — full operator guide: <a href="../tak/">TAK gateway</a></li>
 <li><strong>MECP in ATAK</strong>: served-channel / DM reports and incident spot markers; optional MAYDAY alarm — see <a href="../tak/#messaging-in-atak">TAK messaging</a> and <a href="../emcomm/#reports-in-atak">EMCOMM: Reports in ATAK</a></li>
 </ul>
 <hr />
 <h2 id="desktop-shell-all-protocols">Desktop shell (all protocols)<a class="headerlink" href="#desktop-shell-all-protocols" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Tri-protocol switcher</strong>: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (Meshtastic green, MeshCore cyan, Reticulum yellow — the Reticulum total is LXMF Chat + <strong>RRC</strong> + <strong>Games</strong>; Games also has its own tab badge); passive toast notifications when an inactive protocol receives traffic</li>
+<li><strong>Multi-protocol switcher</strong>: Meshtastic, MeshCore, MeshCom, and Reticulum run simultaneously; per-protocol unread badges (Meshtastic green, MeshCore cyan, MeshCom burgundy, Reticulum yellow — the Reticulum total is LXMF Chat + <strong>RRC</strong> + <strong>Games</strong>; Games also has its own tab badge); passive toast notifications when an inactive protocol receives traffic</li>
 <li><strong>Localization</strong>: 16 languages via static JSON bundles; fully offline — see <a href="../localization/">Localization &amp; Languages</a></li>
 <li><strong>Accessibility</strong>: modal focus trap, screen reader labels, reduce-motion and <strong>Use 24-hour time</strong> toggles in App → Appearance — see <a href="../accessibility-checklist/">Accessibility Checklist</a></li>
 <li><strong>Colors</strong> (App → Appearance): customize theme tokens including chat/RRC <strong>message action</strong> bar and button hover colors; optional <strong>Show background</strong> on the action bar and <strong>Always show message actions</strong></li>
@@ -3296,19 +3413,19 @@
 <li><strong>SQLite persistence</strong>: protocol-scoped history and settings; DB export/import/clear in the App tab; <strong>Export for GitHub</strong> (zip: debug snapshot + logs) and <strong>Export for Developer</strong> (includes full SQLite — share privately only)</li>
 <li><strong>Updates &amp; tray</strong>: update status in the status bar; system tray unread badge when the window is backgrounded</li>
 <li><strong>Launcher settings search</strong>: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it — see <a href="../settings/">Settings and shortcuts</a></li>
-<li><strong>Stats</strong> (packet distribution) and <strong>Sniffer</strong> (raw packet log) in the Monitor section on all three protocols — see <a href="../diagnostics/#16-stats-panel-packet-distribution">Diagnostics: Stats</a> and <a href="../diagnostics/#17-sniffer-raw-packet-log">Diagnostics: Sniffer</a></li>
+<li><strong>Stats</strong> (packet distribution) and <strong>Sniffer</strong> (raw packet log) in the Monitor section on Meshtastic, MeshCore, and Reticulum (MeshCom omits them — no companion packet sniffer) — see <a href="../diagnostics/#16-stats-panel-packet-distribution">Diagnostics: Stats</a> and <a href="../diagnostics/#17-sniffer-raw-packet-log">Diagnostics: Sniffer</a></li>
 <li><strong>Enable / disable protocols</strong> (App → Protocols): turn off protocols you don't use. A disabled protocol is hidden from the switcher, disconnected, and skipped by auto-connect, autostart, and sleep/wake recovery; with one protocol left, the switcher is hidden</li>
 <li><strong>Firmware update toast</strong>: <strong>Don't remind me</strong> silences the toast for that release (per protocol); it returns when a newer release ships — see <a href="../firmware/#firmware-update-toast">Firmware guide</a></li>
 <li><strong>Developer announcements</strong>: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See <a href="../service-announcements/"><code>docs/service-announcements.md</code></a></li>
 </ul>
-<h2 id="shared-rf-features-meshtastic--meshcore">Shared RF features (Meshtastic &amp; MeshCore)<a class="headerlink" href="#shared-rf-features-meshtastic--meshcore" title="Permanent link">&para;</a></h2>
-<p>These sections apply to the two LoRa companion-radio stacks. See <a href="../chat/">Chat</a>, <a href="../maps/">Maps</a>, <a href="../tak/">TAK</a>, and <a href="../firmware/">Firmware</a>. Reticulum uses the sidecar model documented under <a href="#reticulum-features">Reticulum Features</a> below.</p>
+<h2 id="shared-rf-features-meshtastic-meshcore--meshcom">Shared RF features (Meshtastic, MeshCore &amp; MeshCom)<a class="headerlink" href="#shared-rf-features-meshtastic-meshcore--meshcom" title="Permanent link">&para;</a></h2>
+<p>These sections apply to the LoRa companion-radio stacks (MeshCom joins the shared Chat / Contacts / Map / Connection shell; see <a href="#meshcom-features">MeshCom Features</a> for CM-specific transports). See <a href="../chat/">Chat</a>, <a href="../maps/">Maps</a>, <a href="../tak/">TAK</a>, and <a href="../firmware/">Firmware</a>. Reticulum uses the sidecar model documented under <a href="#reticulum-features">Reticulum Features</a> below.</p>
 <p><strong>Connectivity</strong></p>
 <ul>
 <li><strong>Bluetooth LE</strong>: pair wirelessly via sidecar <strong>btleplug</strong> GATT on all platforms; startup auto-reconnect can run without a user gesture. <strong>Reticulum</strong> BLE (RNode / BLE Peer) shares the same sidecar process and may coexist on a <strong>different</strong> MAC — see <a href="../reticulum/#interface-management-connection-tab">Reticulum BLE coexistence</a>.</li>
 <li><strong>USB Serial</strong>: plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)</li>
 <li><strong>WiFi / HTTP / TCP</strong>: Meshtastic offers <strong>WiFi/HTTP</strong> (REST, one packet per request) and <strong>WiFi/TCP (fast)</strong> (native binary streaming on port <strong>4403</strong>, same framing as USB serial — much faster NodeDB sync on large networks); MeshCore uses TCP on port <strong>5000</strong> by default; remembered addresses <strong>auto-connect on launch</strong> (same coordinator as serial/BLE) and support quick reconnect after drops</li>
-<li><strong>Dual LoRa mode</strong>: Meshtastic and MeshCore stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic</li>
+<li><strong>Multi LoRa mode</strong>: Meshtastic, MeshCore, and MeshCom stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic</li>
 <li><strong>Connection status in the status bar</strong>: device, MQTT, and TAK indicators pulse <strong>red</strong> after an unexpected disconnect; manual stop/disconnect stays gray; in-progress connect keeps yellow</li>
 </ul>
 <p><strong>Chat</strong></p>
@@ -3355,8 +3472,8 @@
 </ul>
 <p><strong>EMCOMM / Incident Command</strong></p>
 <ul>
-<li><strong>MECP</strong> (Mesh Emergency Communication Protocol): structured emergency text (<code>MECP/&lt;severity&gt;/&lt;codes&gt; …</code>) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (<code>mecp-received.log</code>), and can optionally bridge Meshtastic↔MeshCore RF channels (<strong>App → MECP RF rebroadcast</strong>, default off). Chat compose is opt-in (<strong>App → MECP → Show MECP button in Chat</strong>, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Operator guide: <a href="../emcomm/">EMCOMM: MECP and Incident Command</a>.</li>
-<li><strong>Incident</strong> tab (always visible on all three protocols; pinned at the bottom of the rail next to <strong>App</strong> — rarely needed day-to-day, but the red badge counts every open row including drills so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress <strong>beacon</strong> is active. Coordinates come from the report or the sender's last known position and can appear on the Map (<strong>Layers → Emergency incidents</strong>) for Meshtastic, MeshCore, <strong>and Reticulum</strong> (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). <strong>Acknowledge</strong> sends R01 (or <strong>Confirm</strong> / B02 when a beacon is active). <strong>Resolve</strong> closes the row locally. If you sent the distress beacon, <strong>Cancel beacon</strong> also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed and badge the tab, but never alert. Operator guide: <a href="../emcomm/">EMCOMM: MECP and Incident Command</a>.</li>
+<li><strong>MECP</strong> (Mesh Emergency Communication Protocol): structured emergency text (<code>MECP/&lt;severity&gt;/&lt;codes&gt; …</code>) on Meshtastic, MeshCore, MeshCom, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (<code>mecp-received.log</code>), and can optionally bridge Meshtastic↔MeshCore RF channels (<strong>App → MECP RF rebroadcast</strong>, default off). Chat compose is opt-in (<strong>App → MECP → Show MECP button in Chat</strong>, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Operator guide: <a href="../emcomm/">EMCOMM: MECP and Incident Command</a>.</li>
+<li><strong>Incident</strong> tab (always visible on all enabled protocols; pinned at the bottom of the rail next to <strong>App</strong> — rarely needed day-to-day, but the red badge counts every open row including drills so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress <strong>beacon</strong> is active. Coordinates come from the report or the sender's last known position and can appear on the Map (<strong>Layers → Emergency incidents</strong>) for Meshtastic, MeshCore, <strong>and Reticulum</strong> (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). <strong>Acknowledge</strong> sends R01 (or <strong>Confirm</strong> / B02 when a beacon is active). <strong>Resolve</strong> closes the row locally. If you sent the distress beacon, <strong>Cancel beacon</strong> also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed and badge the tab, but never alert. Operator guide: <a href="../emcomm/">EMCOMM: MECP and Incident Command</a>.</li>
 <li><strong>Emergency outbox</strong>: MECP / MAYDAY reports are queued as emergency priority and keep retrying until the network acknowledges them (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes). <strong>Stop retrying</strong> cancels a stuck report</li>
 <li><strong>ACK honesty</strong>: broadcast acknowledgements are <strong>heard by the network</strong> / best effort — not read receipts</li>
 <li><strong>Ops alerts</strong> (App → Notifications): watched-node silence escalation, battery low (where telemetry exists), and unexpected link-down (never on manual disconnect or during reconnect)</li>
@@ -3380,8 +3497,21 @@
 <li>Battery voltage and signal quality charts (SNR/RSSI) in <strong>Device → Telemetry</strong></li>
 </ul>
 <hr />
+<h2 id="meshcom-features">MeshCom Features<a class="headerlink" href="#meshcom-features" title="Permanent link">&para;</a></h2>
+<p>Developer / wire guide: <a href="../development/meshcom/">MeshCom development</a>. <strong>MeshCom (CM)</strong> is the fourth RF stack — ICSSW MeshCom 4.0 callsign mesh. Opt in under <strong>App → Protocols</strong> (licensed amateur-radio notice on first enable). It shares the Chat / Contacts / Map / Connection / Diagnostics shell with Meshtastic and MeshCore; there is <strong>no</strong> MeshCom npm SDK (first-party codecs under <code>src/renderer/lib/meshcom/</code>).</p>
+<ul>
+<li><strong>Transports</strong>: <strong>EXTUDP</strong> (UDP <strong>1799</strong>), <strong>KISS/TCP</strong> (TCP <strong>8001</strong>), <strong>USB serial</strong> (115200 console), and <strong>BLE</strong> (NUS phone framing via sidecar GATT session <code>gatt:meshcom</code>, same NUS UUID as MeshCore)</li>
+<li><strong>Identity</strong>: soft-normalized callsigns; Chat <code>*</code> = ALL, groups = GRC ids, DM = channel <code>-1</code></li>
+<li><strong>Radio tab</strong>: first-class ICSSW <code>--</code> device commands (Display, GPS, Sensors, Identity, WiFi, Gateway, Bluetooth, …) over Serial/BLE; country Apply (<code>--setctry</code>); optional auto <code>--settime</code></li>
+<li><strong>Telemetry / MHEARD / phone APRS</strong>: device battery and weather from Serial/BLE/EXTUDP; BLE <code>@</code> APRS phone frames; MHEARD into Contacts</li>
+<li><strong>MQTT</strong>: custom brokers only (own settings + profile list — no Meshtastic/MeshCore network presets)</li>
+<li><strong>Host Signal</strong>: Connection panel BLE RSSI is scan-seeded on CoreBluetooth (no live connected GATT RSSI on the LoRa btleplug path)</li>
+<li><strong>Not in MeshCom</strong>: Rooms, MeshCore Repeaters RPC, Stats/Sniffer packet log, Meshtastic channel-crypto / remote admin</li>
+</ul>
+<p>Adding another protocol? See <a href="../development/adding-a-protocol/">adding-a-protocol.md</a>.</p>
+<hr />
 <h2 id="meshcore-features">MeshCore Features<a class="headerlink" href="#meshcore-features" title="Permanent link">&para;</a></h2>
-<p>Operator guide: <a href="../meshcore/">MeshCore guide</a>. MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. <strong>Meshtastic</strong> shows <strong>17</strong> panels (including <strong>Administration</strong>, <strong>Security</strong>, <strong>TAK</strong>, <strong>Incident</strong> next to <strong>App</strong>, <strong>Stats</strong>, and <strong>Sniffer</strong>; no <strong>Rooms</strong> tab). <strong>MeshCore</strong> shows <strong>18</strong> panels (<strong>TAK</strong>, and <strong>Incident</strong> next to <strong>App</strong>; <strong>Contacts</strong> replaces <strong>Nodes</strong>, <strong>Repeaters</strong> replaces <strong>Modules</strong>, and <strong>Rooms</strong> is MeshCore-only; <strong>Security</strong> shows backup/restore and crypto tools only). <strong>Reticulum</strong> shows <strong>17</strong> panels (Connection, Chat, <strong>Games</strong>, <strong>RRC</strong>, Nomad Network, <strong>Remote</strong>, Peers, <strong>Map</strong>, Network, Admin, <strong>TAK</strong>, <strong>Incident</strong>, App, Diagnostics, <strong>Stats</strong>, <strong>Sniffer</strong>, Topology). <strong>Stats</strong> and <strong>Sniffer</strong> are available in all three protocols; <strong>RF</strong> and <strong>Graph</strong> are LoRa-only (Meshtastic and MeshCore).</p>
+<p>Operator guide: <a href="../meshcore/">MeshCore guide</a>. MeshCore runs simultaneously alongside Meshtastic, MeshCom, and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. <strong>Meshtastic</strong> shows <strong>17</strong> panels (including <strong>Administration</strong>, <strong>Security</strong>, <strong>TAK</strong>, <strong>Incident</strong> next to <strong>App</strong>, <strong>Stats</strong>, and <strong>Sniffer</strong>; no <strong>Rooms</strong> tab). <strong>MeshCore</strong> shows <strong>18</strong> panels (<strong>TAK</strong>, and <strong>Incident</strong> next to <strong>App</strong>; <strong>Contacts</strong> replaces <strong>Nodes</strong>, <strong>Repeaters</strong> replaces <strong>Modules</strong>, and <strong>Rooms</strong> is MeshCore-only; <strong>Security</strong> shows backup/restore and crypto tools only). <strong>MeshCom</strong> uses the shared LoRa shell (Connection, Chat, Contacts, Map, Radio device commands, Diagnostics, TAK, Incident, App) without Rooms / Repeaters / Stats / Sniffer. <strong>Reticulum</strong> shows <strong>17</strong> panels (Connection, Chat, <strong>Games</strong>, <strong>RRC</strong>, Nomad Network, <strong>Remote</strong>, Peers, <strong>Map</strong>, Network, Admin, <strong>TAK</strong>, <strong>Incident</strong>, App, Diagnostics, <strong>Stats</strong>, <strong>Sniffer</strong>, Topology). <strong>Stats</strong> and <strong>Sniffer</strong> are on Meshtastic, MeshCore, and Reticulum; <strong>RF</strong> and <strong>Graph</strong> are LoRa-only (Meshtastic and MeshCore).</p>
 <ul>
 <li><strong>Transmit queue</strong>: status-bar badge (with tooltip) when the connected radio reports outbound queue depth (STATS).</li>
 </ul>
@@ -3551,7 +3681,7 @@
 <p><strong>Transport notes</strong></p>
 <ul>
 <li>No Meshtastic/MeshCore-style MQTT <code>ConnectionDriver</code> path; connect by starting the sidecar, then enabling interfaces</li>
-<li><strong>BLE coexistence:</strong> Meshtastic, MeshCore, and Reticulum run Bluetooth in the same sidecar process and can use <strong>different devices</strong> concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See <a href="../development/ble-serial/#multi-protocol-ble-coexistence-incl-reticulum">BLE coexistence</a>.</li>
+<li><strong>BLE coexistence:</strong> Meshtastic, MeshCore, MeshCom, and Reticulum run Bluetooth in the same sidecar process and can use <strong>different devices</strong> concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See <a href="../development/ble-serial/#multi-protocol-ble-coexistence-incl-reticulum">BLE coexistence</a>.</li>
 <li>Packaged builds bundle <code>mesh-client-reticulum</code> beside the Electron app; dev builds: <code>pnpm run reticulum:sidecar:build</code> — see <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a></li>
 </ul>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
@@ -3594,7 +3724,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 00:28:10 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 02:36:45 UTC">November 21, 2026</span>
   </span>
 
     
