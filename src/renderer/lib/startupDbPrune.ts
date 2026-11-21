@@ -273,6 +273,17 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               }),
           );
         }
+        if (r.meshcomEnabled) {
+          innerOps.push(
+            window.electronAPI.db
+              .pruneMeshcomMessagesByCount(r.meshcomCount)
+              .catch((e: unknown) => {
+                console.warn(
+                  `[App] ${label} pruneMeshcomMessagesByCount failed ` + errLikeToLogString(e),
+                );
+              }),
+          );
+        }
         if (r.reticulumEnabled) {
           innerOps.push(
             window.electronAPI.db

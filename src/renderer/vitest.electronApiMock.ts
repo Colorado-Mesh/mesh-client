@@ -250,6 +250,7 @@ export function createElectronAPIMock(): ElectronAPI {
       pruneNodesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneMeshcoreMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
+      pruneMeshcomMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneReticulumMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       listRrcMessages: vi.fn().mockResolvedValue([]),
       insertRrcMessage: vi.fn().mockResolvedValue({ changes: 1 }),

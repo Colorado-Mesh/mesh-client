@@ -1195,6 +1195,8 @@ function seedAppSettings(db: NodeSqliteDB): void {
   seed.run('meshtasticMessageRetentionCount', '4000');
   seed.run('meshcoreMessageRetentionEnabled', '1');
   seed.run('meshcoreMessageRetentionCount', '4000');
+  seed.run('meshcomMessageRetentionEnabled', '1');
+  seed.run('meshcomMessageRetentionCount', '4000');
   seed.run('reticulumMessageRetentionEnabled', '1');
   seed.run('reticulumMessageRetentionCount', '4000');
   seed.run('rrcMessageRetentionEnabled', '1');

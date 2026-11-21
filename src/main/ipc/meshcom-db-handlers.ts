@@ -6,6 +6,7 @@ import type { IpcMain } from 'electron';
 
 import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
+import type { NodeSqliteDB } from '../db-compat';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { assertIpcSender, validateIpcSender } from '../validate-ipc-sender';
 
@@ -15,6 +16,38 @@ const MAX_PATH_LEN = 512;
 const MAX_MSG_ID_LEN = 128;
 const MAX_IDENTITY_LEN = 128;
 const MAX_STATUS_LEN = 32;
+
+/** Keep in sync with renderer `messageRetention` defaults (main must not import renderer). */
+const MESHCOM_MESSAGE_RETENTION_MIN = 100;
+const MESHCOM_MESSAGE_RETENTION_MAX = 100_000;
+const MESHCOM_MESSAGE_RETENTION_DEFAULT = 4000;
+
+/** Soft cap applied after each insert (updated when prune IPC runs at startup). */
+let meshcomMessageRetentionCap = MESHCOM_MESSAGE_RETENTION_DEFAULT;
+
+function clampMeshcomRetentionCap(maxCount: unknown): number | null {
+  if (
+    typeof maxCount !== 'number' ||
+    !Number.isFinite(maxCount) ||
+    maxCount < MESHCOM_MESSAGE_RETENTION_MIN
+  ) {
+    return null;
+  }
+  return Math.min(MESHCOM_MESSAGE_RETENTION_MAX, Math.floor(maxCount));
+}
+
+/** Delete oldest MeshCom rows, keeping the newest `cap` by timestamp/id. */
+export function pruneMeshcomMessagesByCountOn(db: NodeSqliteDB, cap: number): number {
+  return Number(
+    db
+      .prepareOnce(
+        `DELETE FROM meshcom_messages WHERE id NOT IN (
+           SELECT id FROM meshcom_messages ORDER BY timestamp DESC, id DESC LIMIT ?
+         )`,
+      )
+      .run(cap).changes,
+  );
+}
 
 const VALID_RECEIVED_VIA = new Set(['rf', 'mqtt', 'both']);
 
@@ -298,9 +331,31 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
            )`,
         )
         .run(row);
+      // Bound growth under unique msg_id flood (MeshCom was missing from retention).
+      pruneMeshcomMessagesByCountOn(db, meshcomMessageRetentionCap);
       return { changes: result.changes };
     } catch (err) {
       finishDbIpcHandler('db:saveMeshcomMessage', err);
+    }
+  });
+
+  ipcMain.handle('db:pruneMeshcomMessagesByCount', (event, maxCount: unknown) => {
+    try {
+      assertIpcSender(event, 'db:pruneMeshcomMessagesByCount');
+      const db = getDbForIpc('db:pruneMeshcomMessagesByCount');
+      if (!db) return { changes: 0 };
+      const cap = clampMeshcomRetentionCap(maxCount);
+      if (cap == null) return { changes: 0 };
+      meshcomMessageRetentionCap = cap;
+      const changes = pruneMeshcomMessagesByCountOn(db, cap);
+      if (changes > 0) {
+        console.debug(
+          `[IPC] db:pruneMeshcomMessagesByCount: pruned ${changes} messages, keeping newest ${cap}`,
+        );
+      }
+      return { changes };
+    } catch (err) {
+      finishDbIpcHandler('db:pruneMeshcomMessagesByCount', err);
     }
   });
 

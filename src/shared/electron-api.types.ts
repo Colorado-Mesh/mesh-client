@@ -537,6 +537,7 @@ export interface ElectronAPI {
     pruneNodesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneMeshcomMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     listRrcMessages: (
       hubHash: string,

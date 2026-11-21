@@ -8,6 +8,12 @@ export const KISS_FESC = 0xdb;
 export const KISS_TFEND = 0xdc;
 export const KISS_TFESC = 0xdd;
 
+/**
+ * Max encoded bytes buffered between FENDs. Delimiter-free TCP streams must not
+ * grow the deframer without bound (DoS). Matches EXTUDP datagram ceiling.
+ */
+export const KISS_SLIP_MAX_ENCODED_FRAME_BYTES = 64 * 1024;
+
 /** Escape payload bytes and wrap with FEND delimiters (includes type byte in payload). */
 export function kissSlipEncode(payload: Uint8Array | number[]): Uint8Array {
   const out: number[] = [KISS_FEND];
@@ -58,11 +64,17 @@ export function kissSlipDecode(frame: Uint8Array | number[]): Uint8Array | null 
  */
 export class KissSlipDeframer {
   private buffer: number[] = [];
+  private overflowed = false;
 
   push(chunk: Uint8Array | number[]): Uint8Array[] {
     const frames: Uint8Array[] = [];
     for (const byte of chunk) {
       if (byte === KISS_FEND) {
+        if (this.overflowed) {
+          this.overflowed = false;
+          this.buffer = [];
+          continue;
+        }
         if (this.buffer.length > 0) {
           const decoded = kissSlipDecode(this.buffer);
           if (decoded && decoded.length > 0) {
@@ -70,8 +82,15 @@ export class KissSlipDeframer {
           }
           this.buffer = [];
         }
+      } else if (this.overflowed) {
+        // Discard until the next FEND so a partial over-limit frame cannot resume.
+        continue;
       } else {
         this.buffer.push(byte);
+        if (this.buffer.length > KISS_SLIP_MAX_ENCODED_FRAME_BYTES) {
+          this.buffer = [];
+          this.overflowed = true;
+        }
       }
     }
     return frames;
@@ -79,5 +98,6 @@ export class KissSlipDeframer {
 
   reset(): void {
     this.buffer = [];
+    this.overflowed = false;
   }
 }

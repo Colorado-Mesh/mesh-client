@@ -721,10 +721,18 @@ describe('Persistent app settings IPC (source contract)', () => {
         'reticulumRmapPublishIfac',
       ]),
     );
+    const retentionFlatMap =
+      allowListBlock.includes("['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc']") &&
+      allowListBlock.includes('MessageRetentionEnabled') &&
+      allowListBlock.includes('MessageRetentionCount');
     const missing = rendererKeys.filter(
       (key) =>
         !allowListBlock.includes(`'${key}'`) &&
-        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length),
+        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length) &&
+        !(
+          retentionFlatMap &&
+          /^(meshtastic|meshcore|meshcom|reticulum|rrc)MessageRetention(Enabled|Count)$/.test(key)
+        ),
     );
     expect(missing).toEqual([]);
   });

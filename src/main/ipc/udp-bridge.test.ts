@@ -10,6 +10,11 @@ const { FakeSocket, sockets } = vi.hoisted(() => {
       this.bindPort = port;
       cb?.();
     });
+    connected: { port: number; host: string } | null = null;
+    readonly connect = vi.fn((port: number, host: string, cb?: () => void) => {
+      this.connected = { port, host };
+      cb?.();
+    });
     readonly send = vi.fn(
       (_msg: Buffer, _port: number, _host: string, cb?: (err?: Error | null) => void) => {
         cb?.(null);
@@ -105,6 +110,8 @@ describe('createUdpBridge', () => {
     expect(assertIpcSender).toHaveBeenCalledWith(event, 'meshcom:udp-connect');
     expect(sockets).toHaveLength(1);
     expect(sockets[0].bindPort).toBe(MESHCOM_EXTUDP_PORT);
+    expect(sockets[0].connect).toHaveBeenCalledWith(MESHCOM_EXTUDP_PORT, '192.168.1.10');
+    expect(sockets[0].connected).toEqual({ port: MESHCOM_EXTUDP_PORT, host: '192.168.1.10' });
 
     await bridge.write(event, [0x7b, 0x7d]);
     expect(sockets[0].send).toHaveBeenCalledWith(
@@ -123,6 +130,30 @@ describe('createUdpBridge', () => {
       'meshcom:udp-data',
       Array.from(Buffer.from('{"type":"msg"}')),
     );
+  });
+
+  it('rate-limits rejected-peer debug logs under datagram flood', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const bridge = createUdpBridge({
+      getMainWindow: () =>
+        ({
+          webContents: { send: vi.fn() },
+        }) as never,
+      validateHost,
+    });
+    await bridge.connect(event, '192.168.1.10');
+    const sock = sockets[0];
+    for (let i = 0; i < 50; i++) {
+      sock.emit('message', Buffer.from('x'), {
+        address: '10.0.0.99',
+        port: MESHCOM_EXTUDP_PORT,
+      });
+    }
+    const ignoreLogs = debug.mock.calls.filter((c) =>
+      String(c[0] ?? '').includes('meshcom:udp-data ignore from'),
+    );
+    expect(ignoreLogs.length).toBe(1);
+    debug.mockRestore();
   });
 
   it('rejects oversized writes', async () => {

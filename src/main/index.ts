@@ -3696,14 +3696,10 @@ ipcMain.handle('app:setLoginItem', (event, openAtLogin: unknown) => {
 // Allow-list keys to prevent arbitrary writes from a compromised renderer.
 const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   ...DURABLE_RENDERER_STORAGE_MIGRATIONS.map(([, databaseKey]) => databaseKey),
-  'meshtasticMessageRetentionEnabled',
-  'meshtasticMessageRetentionCount',
-  'meshcoreMessageRetentionEnabled',
-  'meshcoreMessageRetentionCount',
-  'reticulumMessageRetentionEnabled',
-  'reticulumMessageRetentionCount',
-  'rrcMessageRetentionEnabled',
-  'rrcMessageRetentionCount',
+  ...(['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc'] as const).flatMap((p) => [
+    `${p}MessageRetentionEnabled`,
+    `${p}MessageRetentionCount`,
+  ]),
   'locale',
   'mapBasemapId',
   'meshtasticMqttClientId',

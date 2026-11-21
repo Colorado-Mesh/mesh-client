@@ -359,6 +359,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:pruneMessagesByCount', maxCount),
     pruneMeshcoreMessagesByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneMeshcoreMessagesByCount', maxCount),
+    pruneMeshcomMessagesByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneMeshcomMessagesByCount', maxCount),
     pruneReticulumMessagesByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneReticulumMessagesByCount', maxCount),
     listRrcMessages: (hubHash: string, room: string, limit?: number) =>

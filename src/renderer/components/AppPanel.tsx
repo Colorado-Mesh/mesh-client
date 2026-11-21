@@ -766,7 +766,7 @@ export default function AppPanel({
   );
 
   const updateRetentionEnabled = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', enabled: boolean) => {
+    (which: 'meshtastic' | 'meshcore' | 'meshcom' | 'reticulum' | 'rrc', enabled: boolean) => {
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
@@ -776,7 +776,7 @@ export default function AppPanel({
   );
 
   const updateRetentionCount = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', count: number) => {
+    (which: 'meshtastic' | 'meshcore' | 'meshcom' | 'reticulum' | 'rrc', count: number) => {
       const clamped = Math.max(
         MESSAGE_RETENTION_MIN_COUNT,
         Math.min(MESSAGE_RETENTION_MAX_COUNT, Math.floor(count) || MESSAGE_RETENTION_MIN_COUNT),
@@ -1793,6 +1793,49 @@ export default function AppPanel({
                   {t('appPanel.meshcoreRoomPostRetentionHint')}
                 </p>
               </>
+            ) : protocol === 'meshcom' ? (
+              <div
+                data-setting-anchor="app.retention.meshcomMessageCap"
+                className="border-ink-700 flex items-center gap-2 border-t pt-2"
+              >
+                <input
+                  type="checkbox"
+                  id="messageRetentionMeshcom"
+                  checked={retention.meshcomEnabled}
+                  onChange={(e) => {
+                    updateRetentionEnabled('meshcom', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capStoredMessages')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-message-retention-meshcom-label"
+                  htmlFor="messageRetentionMeshcom"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.capStoredMessagesLabel')}
+                </label>
+                <input
+                  id="apppanel-message-retention-meshcom-count"
+                  type="number"
+                  min={MESSAGE_RETENTION_MIN_COUNT}
+                  max={MESSAGE_RETENTION_MAX_COUNT}
+                  value={retention.meshcomCount}
+                  onChange={(e) => {
+                    updateRetentionCount(
+                      'meshcom',
+                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                    );
+                  }}
+                  disabled={!retention.meshcomEnabled}
+                  aria-labelledby="apppanel-message-retention-meshcom-label"
+                  aria-label={t('appPanel.capStoredMessagesCountAria', {
+                    count: retention.meshcomCount,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
+              </div>
             ) : protocol === 'reticulum' ? (
               <>
                 <div

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  pruneMeshcomMessagesByCountOn,
   validateDeleteMeshcomContact,
   validateSaveMeshcomContact,
   validateSaveMeshcomMessage,
@@ -101,5 +102,18 @@ describe('deleteMeshcomContact SQL', () => {
       'utf8',
     );
     expect(src).toMatch(/DELETE FROM meshcom_contacts WHERE identity_id = \? AND callsign = \?/);
+  });
+});
+
+describe('pruneMeshcomMessagesByCountOn', () => {
+  it('keeps only the newest N rows', () => {
+    const run = vi.fn().mockReturnValue({ changes: 7 });
+    const prepareOnce = vi.fn().mockReturnValue({ run });
+    const db = { prepareOnce } as never;
+    expect(pruneMeshcomMessagesByCountOn(db, 4000)).toBe(7);
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE FROM meshcom_messages WHERE id NOT IN'),
+    );
+    expect(run).toHaveBeenCalledWith(4000);
   });
 });

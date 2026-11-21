@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { KISS_FEND, KISS_FESC, kissSlipDecode, KissSlipDeframer, kissSlipEncode } from './kissSlip';
+import {
+  KISS_FEND,
+  KISS_FESC,
+  KISS_SLIP_MAX_ENCODED_FRAME_BYTES,
+  kissSlipDecode,
+  KissSlipDeframer,
+  kissSlipEncode,
+} from './kissSlip';
 
 describe('kissSlip', () => {
   it('round-trips payload including FEND/FESC bytes', () => {
@@ -27,5 +34,16 @@ describe('kissSlip', () => {
     expect(rest).toHaveLength(1);
     expect(rest[0]).toEqual(payload);
     expect(deframer.push([KISS_FEND, KISS_FEND])).toEqual([]);
+  });
+
+  it('resets on over-limit frames and recovers after the next FEND', () => {
+    const deframer = new KissSlipDeframer();
+    const flood = new Uint8Array(KISS_SLIP_MAX_ENCODED_FRAME_BYTES + 1).fill(0x01);
+    expect(deframer.push(flood)).toEqual([]);
+    expect(deframer.push(flood.subarray(0, 100))).toEqual([]);
+    const ok = kissSlipEncode(new Uint8Array([0x00, 0x42]));
+    const frames = deframer.push(ok);
+    expect(frames).toHaveLength(1);
+    expect(frames[0]).toEqual(new Uint8Array([0x00, 0x42]));
   });
 });

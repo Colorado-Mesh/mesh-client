@@ -269,7 +269,7 @@ describe('renderer preference recovery', () => {
     },
   );
 
-  it.each(['meshtastic', 'meshcore', 'reticulum', 'rrc'])(
+  it.each(['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc'])(
     'keeps %s retention in SQLite after a later direct save and when the app blob is removed',
     async (protocol) => {
       const enabled = `${protocol}MessageRetentionEnabled`;

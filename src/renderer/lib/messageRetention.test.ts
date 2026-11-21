@@ -80,6 +80,8 @@ describe('fetchMessageRetention', () => {
       meshtasticCount: 4000,
       meshcoreEnabled: true,
       meshcoreCount: 7500,
+      meshcomEnabled: true,
+      meshcomCount: MESSAGE_RETENTION_DEFAULT_COUNT,
       reticulumEnabled: true,
       reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
       rrcEnabled: true,

@@ -8,6 +8,8 @@ import type {
 const hasNodeDbRetention = (ctx: SettingsSearchContext) => ctx.capabilities.hasNodeDbReset;
 const hasContactRetention = (ctx: SettingsSearchContext) =>
   ctx.capabilities.nodeListTabUsesContactsLabel;
+const hasMeshcomMessageRetention = (ctx: SettingsSearchContext) =>
+  ctx.capabilities.hasMeshcomDeviceCommands;
 const hasDestinationRetention = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasReticulumPeersList;
 
@@ -217,6 +219,14 @@ const appEntries: readonly SettingSearchEntry[] = [
     sectionKey: RETENTION,
     keywords: ['messages', 'retention', 'database'],
     visible: hasContactRetention,
+  },
+  {
+    id: 'app.retention.meshcomMessageCap',
+    slot: 'App',
+    labelKey: 'appPanel.capStoredMessagesLabel',
+    sectionKey: RETENTION,
+    keywords: ['messages', 'retention', 'database', 'meshcom'],
+    visible: hasMeshcomMessageRetention,
   },
   {
     id: 'app.retention.reticulumMessageCap',

@@ -33,6 +33,7 @@ describe('runStartupDbPrune', () => {
     vi.mocked(window.electronAPI.db.deleteNodesWithoutLongname).mockResolvedValue(0);
     vi.mocked(window.electronAPI.db.pruneMessagesByCount).mockResolvedValue({ changes: 0 });
     vi.mocked(window.electronAPI.db.pruneMeshcoreMessagesByCount).mockResolvedValue({ changes: 0 });
+    vi.mocked(window.electronAPI.db.pruneMeshcomMessagesByCount).mockResolvedValue({ changes: 0 });
     vi.mocked(window.electronAPI.db.pruneReticulumMessagesByCount).mockResolvedValue({
       changes: 0,
     });
@@ -50,6 +51,7 @@ describe('runStartupDbPrune', () => {
     vi.mocked(window.electronAPI.db.deleteNodesWithoutLongname).mockClear();
     vi.mocked(window.electronAPI.db.pruneMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneMeshcoreMessagesByCount).mockClear();
+    vi.mocked(window.electronAPI.db.pruneMeshcomMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneReticulumMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneRrcMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneRrcMessagesByAge).mockClear();
@@ -65,6 +67,7 @@ describe('runStartupDbPrune', () => {
     expect(window.electronAPI.db.deleteNodesWithoutLongname).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneMeshcoreMessagesByCount).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.db.pruneMeshcomMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneRrcMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneRrcMessagesByAge).toHaveBeenCalledTimes(1);

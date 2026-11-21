@@ -42,6 +42,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
   const validateHost: (host: unknown) => asserts host is string = deps.validateHost;
   let activeSocket: dgram.Socket | null = null;
   let remoteHost: string | null = null;
+  /** Last time we logged a rejected peer (rate-limit DoS via log/IPC fan-out). */
+  let lastRejectedPeerLogAt = 0;
+  let suppressedRejectedPeerLogs = 0;
 
   const closeSocket = (emitDisconnected: boolean): void => {
     if (!activeSocket) return;
@@ -109,13 +112,23 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           );
           return;
         }
-        // Only forward packets from the configured remote host (port is fixed).
+        // Prefer UDP connect() so the kernel drops non-peer datagrams; still filter
+        // defensively and rate-limit any mismatch logs (flood → disk/IPC DoS).
         if (remoteHost && rinfo.address !== remoteHost) {
-          console.debug(
-            `[IPC] ${DATA_CHANNEL} ignore from`,
-            sanitizeLogMessage(rinfo.address),
-            `(expected ${sanitizeLogMessage(remoteHost)})`,
-          );
+          const now = Date.now();
+          if (now - lastRejectedPeerLogAt >= 60_000) {
+            const suppressed =
+              suppressedRejectedPeerLogs > 0 ? ` (+${suppressedRejectedPeerLogs} suppressed)` : '';
+            console.debug(
+              `[IPC] ${DATA_CHANNEL} ignore from`,
+              sanitizeLogMessage(rinfo.address),
+              `(expected ${sanitizeLogMessage(remoteHost)})${suppressed}`,
+            );
+            lastRejectedPeerLogAt = now;
+            suppressedRejectedPeerLogs = 0;
+          } else {
+            suppressedRejectedPeerLogs += 1;
+          }
           return;
         }
         getMainWindow()?.webContents.send(DATA_CHANNEL, Array.from(msg));
@@ -137,6 +150,18 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
             closeSocket(true);
           }
         });
+        // Associate the datagram socket with the configured peer so foreign
+        // sources are dropped before the message handler (and its logging).
+        try {
+          socket.connect(MESHCOM_EXTUDP_PORT, socketHost);
+        } catch (connectErr) {
+          console.warn(
+            `[IPC] ${CONNECT_CHANNEL} UDP connect failed; peer filter remains in handler:`,
+            sanitizeLogMessage(
+              connectErr instanceof Error ? connectErr.message : String(connectErr),
+            ),
+          );
+        }
         console.debug(
           `[IPC] ${CONNECT_CHANNEL} bound :${MESHCOM_EXTUDP_PORT} →`,
           sanitizeLogMessage(socketHost),

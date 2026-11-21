@@ -105,7 +105,7 @@ const oneZeroBooleans = new Set([
   'reticulumAutoResendOnAnnounce',
   'autoUpdateDownloadEnabled',
   'closeToTray',
-  ...['meshtastic', 'meshcore', 'reticulum', 'rrc'].map(
+  ...['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc'].map(
     (protocol) => `${protocol}MessageRetentionEnabled`,
   ),
 ]);
@@ -124,7 +124,7 @@ const numbers = new Set([
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
   'meshcoreLastSelfNodeId',
-  ...['meshtastic', 'meshcore', 'reticulum', 'rrc'].map(
+  ...['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc'].map(
     (protocol) => `${protocol}MessageRetentionCount`,
   ),
 ]);
@@ -146,7 +146,7 @@ const sqlitePreferences = new Set([
   'closeToTray',
   'aiEnabled',
   'translationEnabled',
-  ...['meshtastic', 'meshcore', 'reticulum', 'rrc'].flatMap((protocol) => [
+  ...['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc'].flatMap((protocol) => [
     `${protocol}MessageRetentionEnabled`,
     `${protocol}MessageRetentionCount`,
   ]),
