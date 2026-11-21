@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  pruneMeshcomContactsByCountOn,
   pruneMeshcomMessagesByCountOn,
   validateDeleteMeshcomContact,
   validateSaveMeshcomContact,
@@ -115,5 +116,23 @@ describe('pruneMeshcomMessagesByCountOn', () => {
       expect.stringContaining('DELETE FROM meshcom_messages WHERE id NOT IN'),
     );
     expect(run).toHaveBeenCalledWith(4000);
+  });
+});
+
+describe('pruneMeshcomContactsByCountOn', () => {
+  it('no-ops when under the cap', () => {
+    const get = vi.fn().mockReturnValue({ cnt: 10 });
+    const prepareOnce = vi.fn().mockReturnValue({ get, run: vi.fn() });
+    const db = { prepareOnce } as never;
+    expect(pruneMeshcomContactsByCountOn(db, 100)).toBe(0);
+  });
+
+  it('deletes excess non-favorited contacts when over the cap', () => {
+    const get = vi.fn().mockReturnValueOnce({ cnt: 150 }).mockReturnValueOnce({ cnt: 5 });
+    const run = vi.fn().mockReturnValue({ changes: 45 });
+    const prepareOnce = vi.fn().mockReturnValue({ get, run });
+    const db = { prepareOnce } as never;
+    expect(pruneMeshcomContactsByCountOn(db, 100)).toBe(45);
+    expect(run).toHaveBeenCalledWith(95);
   });
 });

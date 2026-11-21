@@ -6,12 +6,13 @@ import type { IpcMain } from 'electron';
 
 import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
+import { MESHCOM_CONTACT_CAP_DEFAULT, MESHCOM_MAX_TEXT_LEN } from '../../shared/meshcomConstants';
 import type { NodeSqliteDB } from '../db-compat';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { assertIpcSender, validateIpcSender } from '../validate-ipc-sender';
 
 const MAX_CALLSIGN_LEN = 16;
-const MAX_TEXT_LEN = 4096;
+const MAX_TEXT_LEN = MESHCOM_MAX_TEXT_LEN;
 const MAX_PATH_LEN = 512;
 const MAX_MSG_ID_LEN = 128;
 const MAX_IDENTITY_LEN = 128;
@@ -24,6 +25,7 @@ const MESHCOM_MESSAGE_RETENTION_DEFAULT = 4000;
 
 /** Soft cap applied after each insert (updated when prune IPC runs at startup). */
 let meshcomMessageRetentionCap = MESHCOM_MESSAGE_RETENTION_DEFAULT;
+let meshcomContactCap = MESHCOM_CONTACT_CAP_DEFAULT;
 
 function clampMeshcomRetentionCap(maxCount: unknown): number | null {
   if (
@@ -47,6 +49,45 @@ export function pruneMeshcomMessagesByCountOn(db: NodeSqliteDB, cap: number): nu
       )
       .run(cap).changes,
   );
+}
+
+/**
+ * Cap MeshCom contacts: keep favorited rows, then newest `last_heard` until `cap`.
+ * Prevents unique-callsign floods from filling SQLite / hydrate.
+ */
+export function pruneMeshcomContactsByCountOn(db: NodeSqliteDB, cap: number): number {
+  const total = (
+    db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcom_contacts').get() as { cnt: number }
+  ).cnt;
+  if (total <= cap) return 0;
+  const favorited = (
+    db
+      .prepareOnce(
+        'SELECT COUNT(*) as cnt FROM meshcom_contacts WHERE favorited IS NOT NULL AND favorited = 1',
+      )
+      .get() as { cnt: number }
+  ).cnt;
+  const keepNonFavorited = Math.max(0, cap - favorited);
+  return Number(
+    db
+      .prepareOnce(
+        `DELETE FROM meshcom_contacts WHERE (favorited IS NULL OR favorited = 0)
+         AND rowid NOT IN (
+           SELECT rowid FROM meshcom_contacts
+           WHERE (favorited IS NULL OR favorited = 0)
+           ORDER BY COALESCE(last_heard, 0) DESC, callsign ASC
+           LIMIT ?
+         )`,
+      )
+      .run(keepNonFavorited).changes,
+  );
+}
+
+function clampMeshcomContactCap(maxCount: unknown): number | null {
+  if (typeof maxCount !== 'number' || !Number.isFinite(maxCount) || maxCount < 1) {
+    return null;
+  }
+  return Math.min(MESHCOM_MESSAGE_RETENTION_MAX, Math.floor(maxCount));
 }
 
 const VALID_RECEIVED_VIA = new Set(['rf', 'mqtt', 'both']);
@@ -423,9 +464,30 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
           favorited: favoritedProvided ? favorited : 0,
           favorited_provided: favoritedProvided ? 1 : 0,
         });
+      pruneMeshcomContactsByCountOn(db, meshcomContactCap);
       return { changes: result.changes };
     } catch (err) {
       finishDbIpcHandler('db:saveMeshcomContact', err);
+    }
+  });
+
+  ipcMain.handle('db:pruneMeshcomContactsByCount', (event, maxCount: unknown) => {
+    try {
+      assertIpcSender(event, 'db:pruneMeshcomContactsByCount');
+      const db = getDbForIpc('db:pruneMeshcomContactsByCount');
+      if (!db) return { changes: 0 };
+      const cap = clampMeshcomContactCap(maxCount);
+      if (cap == null) return { changes: 0 };
+      meshcomContactCap = cap;
+      const changes = pruneMeshcomContactsByCountOn(db, cap);
+      if (changes > 0) {
+        console.debug(
+          `[IPC] db:pruneMeshcomContactsByCount: pruned ${changes} contacts, keeping ${cap}`,
+        );
+      }
+      return { changes };
+    } catch (err) {
+      finishDbIpcHandler('db:pruneMeshcomContactsByCount', err);
     }
   });
 

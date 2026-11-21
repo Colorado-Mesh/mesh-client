@@ -4,9 +4,16 @@
  * Failure point: DB IPC errors — logged; store state remains authoritative.
  * Fallback: skip DB write; UI still updates from Zustand.
  */
+import { MESHCOM_CONTACT_CAP_DEFAULT } from '@/shared/meshcomConstants';
+
 import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
-import { removeNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import {
+  type NodeRecord,
+  removeNode,
+  upsertNodeRecord,
+  useNodeStore,
+} from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
@@ -75,6 +82,23 @@ function persistContact(
       last_heard: opts.lastHeard ?? null,
     }),
   );
+  trimMeshcomIdentityNodes(identityId, MESHCOM_CONTACT_CAP_DEFAULT);
+}
+
+/** Drop oldest non-favorited in-memory nodes when an identity exceeds the contact cap. */
+function trimMeshcomIdentityNodes(identityId: IdentityId, cap: number): void {
+  const bucket = useNodeStore.getState().nodes[identityId] ?? {};
+  const entries: NodeRecord[] = Object.values(bucket);
+  if (entries.length <= cap) return;
+  const favorited = entries.filter((n) => n.favorited);
+  const rest = entries
+    .filter((n) => !n.favorited)
+    .sort((a, b) => (a.lastHeardAt ?? 0) - (b.lastHeardAt ?? 0));
+  const keepRest = Math.max(0, cap - favorited.length);
+  const doomed = rest.slice(0, Math.max(0, rest.length - keepRest));
+  for (const node of doomed) {
+    removeNode(identityId, node.nodeId);
+  }
 }
 
 function handleTextMessage(

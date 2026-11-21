@@ -170,6 +170,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       pruneMessagesByCount: async () => ({ changes: 0 }),
       pruneMeshcoreMessagesByCount: async () => ({ changes: 0 }),
       pruneMeshcomMessagesByCount: async () => ({ changes: 0 }),
+      pruneMeshcomContactsByCount: async () => ({ changes: 0 }),
       pruneReticulumMessagesByCount: async () => ({ changes: 0 }),
       listRrcMessages: async () => [],
       insertRrcMessage: async () => ({ changes: 0 }),

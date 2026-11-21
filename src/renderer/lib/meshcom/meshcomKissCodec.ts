@@ -3,6 +3,8 @@
  * TX message frame builder, and info-field (`!` / `:`) parse.
  */
 
+import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
+
 import { KissSlipDeframer, kissSlipEncode } from './kissSlip';
 import { buildAx25UiFrame, formatAprsAddressee, parseAx25UiFrame } from './meshcomAx25';
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
@@ -79,7 +81,8 @@ export function parseMeshcomInfoField(info: string): MeshcomInfoParse {
       return { kind: 'unknown', raw: info };
     }
     const addressee = info.slice(1, 10).trim().toUpperCase();
-    const text = info.slice(11);
+    // Bound before emit — DB also rejects >4 KiB, but UI insert happens first.
+    const text = info.slice(11, 11 + MESHCOM_MAX_TEXT_LEN);
     const ackMatch = /^(ack|rej)(\d{1,5})$/i.exec(text.trim());
     if (ackMatch) {
       return {

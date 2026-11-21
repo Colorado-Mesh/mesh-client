@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
+
 import { kissSlipEncode } from './kissSlip';
 import { buildAx25UiFrame } from './meshcomAx25';
 import {
@@ -28,6 +30,11 @@ describe('meshcomKissCodec', () => {
       addressee: 'DH1FR-1',
       text: 'hello{01',
     });
+    const oversized = parseMeshcomInfoField(`:DH1FR-1  :${'x'.repeat(MESHCOM_MAX_TEXT_LEN + 500)}`);
+    expect(oversized.kind).toBe('message');
+    if (oversized.kind === 'message') {
+      expect(oversized.text).toHaveLength(MESHCOM_MAX_TEXT_LEN);
+    }
     expect(parseMeshcomInfoField(':DH1FR-1  :ack12')).toMatchObject({
       kind: 'message',
       ackNumber: '12',
