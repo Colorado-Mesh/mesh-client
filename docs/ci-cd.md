@@ -516,11 +516,18 @@ Prefer the job-summary **artifact-url** links (or the Actions Artifacts UI). Do 
 
 ```bash
 id=$(gh api "repos/Colorado-Mesh/mesh-client/actions/runs/<run-id>/artifacts" \
-  --jq '.artifacts[] | select(.name == "<artifact-name>") | .id')
+  --jq '
+    [.artifacts[] | select(.name == "<artifact-name>")]
+    | sort_by(.created_at) | reverse | .[0].id // empty
+  ')
+if [ -z "${id}" ]; then
+  echo "no artifact named <artifact-name> for that run" >&2
+  exit 1
+fi
 gh api "repos/Colorado-Mesh/mesh-client/actions/artifacts/${id}/zip" > "<artifact-name>"
 ```
 
-(The Actions API path still ends in `/zip`; for unarchived uploads the body is the raw file.)
+(The Actions API path still ends in `/zip`; for unarchived uploads the body is the raw file. Reruns can leave duplicate names — the jq picks the newest.)
 
 Local `node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin` still runs host tests and builds both architectures. `--arch x64|arm64` selects one target; CI uses `--skip-tests` only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.
 
@@ -565,8 +572,8 @@ User-facing self-check: [troubleshooting-reticulum.md](troubleshooting-reticulum
 | Workflow       | When                       | Filename stamp                                                                                                                                                                                                                            |
 | -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client-Setup-5.26.0-run214.exe`) |
-| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `org.coloradomesh.MeshClient-run{N}.flatpak`, then upload                                                                                                                                                   |
-| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak` (no `-run{N}`)                                                                                                                                                                                |
+| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke + arch suffix: `org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak` (`archive: false` artifact name = basename)                                                                                                 |
+| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (no `-run{N}`; same basename as the Actions artifact / release asset)                                                                                                          |
 | `release.yaml` | tag publish                | Clean electron-builder names (no rename step)                                                                                                                                                                                             |
 
 `packaging-smoke` on Build Binaries downloads **stamped** names (Windows Setup matcher accepts default or `-run{N}`). Flatpak smoke always uses the unstamped local path **before** rename. Manual Flatpak runs use Actions run title **`Build Flatpak (no release)`**; tag runs use **`Build Flatpak`**.
