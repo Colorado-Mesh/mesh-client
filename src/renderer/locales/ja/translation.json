@@ -1208,7 +1208,8 @@
     "serialReselect": "USBシリアル接続が失われました—デバイスを再度選択してください",
     "serialReselectAction": "シリアルポートを選択",
     "statusRegion": "接続状態",
-    "rebootingReconnectAttempt": "無線を再起動しています。再接続しています… {{attempt}}/{{max}}を試みてください"
+    "rebootingReconnectAttempt": "無線を再起動しています。再接続しています… {{attempt}}/{{max}}を試みてください",
+    "serialDeliveryUnhealthy": "USBシリアルは接続されているように見えますが、配信に失敗しています。引き続き回復しない場合は、アプリを終了するか、ケーブルを抜き差しするか、コンピュータを再起動してください。"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",

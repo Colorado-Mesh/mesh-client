@@ -5,6 +5,7 @@ import {
   createSerializedWritableStream,
   isMeshtasticTransportLostError,
 } from '../meshtastic/meshtasticTransportLossDetection';
+import { noteSerialTransportLoss } from '../serialDeliveryHealth';
 
 /** Neutral alias — same heuristics apply to Web Serial write/read failures. */
 export const isWebSerialTransportLostError = isMeshtasticTransportLostError;
@@ -43,6 +44,7 @@ export function attachMeshcoreSerialTransportLossWatch(
       `[meshcoreSerialTransportLoss] serial link lost (${source})` +
         (err ? `: ${errLikeToLogString(err)}` : ''),
     );
+    noteSerialTransportLoss({ connectionType: 'serial' });
     onConnectionLost();
   };
 

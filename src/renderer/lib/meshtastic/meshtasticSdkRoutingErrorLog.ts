@@ -1,6 +1,9 @@
+import { CHAT_SEND_ERROR_DEST_KEY_KEY } from '@/renderer/lib/chatSendErrorI18n';
 import i18n from '@/renderer/lib/i18n';
+import { markOutboundBlocked } from '@/renderer/lib/markOutboundBlocked';
 import { clearSfHistoryFetchForWirePacket } from '@/renderer/lib/meshtasticBacklogUtils';
 import { meshtasticPacketIdsEqual } from '@/renderer/lib/meshtasticMessageDedup';
+import { noteSerialDeliveryFailure } from '@/renderer/lib/serialDeliveryHealth';
 import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/meshtasticSession';
 import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage } from '@/renderer/lib/types';
@@ -224,15 +227,35 @@ export function applyMeshtasticOutboundRoutingError(
     return false;
   }
   const storeMessageId = resolveStoreMessageId(target, parsed.packetId);
-  updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
+  const missingKey = isMeshtasticMissingRecipientKeyError(parsed.errorName);
+  const status = missingKey ? 'blocked' : 'failed';
+  const persistError = missingKey ? CHAT_SEND_ERROR_DEST_KEY_KEY : errorText;
+  if (missingKey) {
+    markOutboundBlocked(identityId, storeMessageId, CHAT_SEND_ERROR_DEST_KEY_KEY);
+    console.warn(
+      `[meshtasticAck] PKI packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+    );
+  } else {
+    updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
+    if (
+      parsed.errorName === 'TIMEOUT' ||
+      parsed.errorName === 'NO_RESPONSE' ||
+      parsed.errorName === 'MAX_RETRANSMIT'
+    ) {
+      console.warn(
+        `[meshtasticAck] TIMEOUT packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+      );
+      noteSerialDeliveryFailure({ reason: 'delivery-ack-timeout' });
+    } else {
+      console.warn(
+        `[meshtasticAck] NACK packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+      );
+    }
+  }
   // Missing recipient public key: fetch the recipient's NODEINFO so a retry can succeed.
   // Only for real DM recipients — never the broadcast address (a PKI NAK there is not
   // a per-node key gap, and 0xffffffff has no NODEINFO to fetch).
-  if (
-    isMeshtasticMissingRecipientKeyError(parsed.errorName) &&
-    target.to != null &&
-    !isMeshtasticBroadcastNodeNum(target.to)
-  ) {
+  if (missingKey && target.to != null && !isMeshtasticBroadcastNodeNum(target.to)) {
     ctx.onMissingRecipientKey?.(target.to);
   }
   // The DB row may still hold the optimistic temp packet id (device never acked,
@@ -240,7 +263,7 @@ export function applyMeshtasticOutboundRoutingError(
   // not the wire id from the radio NAK, or the UPDATE matches zero rows.
   const dbPacketId = target.packetId ?? parsed.packetId;
   void window.electronAPI.db
-    .updateMessageStatus(dbPacketId, 'failed', errorText)
+    .updateMessageStatus(dbPacketId, status, persistError)
     .catch((err: unknown) => {
       console.debug(
         '[meshtasticSdkRoutingErrorLog] DB update failed',

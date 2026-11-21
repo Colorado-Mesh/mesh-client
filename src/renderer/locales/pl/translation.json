@@ -1248,7 +1248,8 @@
     "serialReselect": "Utracono połączenie szeregowe USB — wybierz ponownie swoje urządzenie",
     "serialReselectAction": "Wybierz port szeregowy",
     "statusRegion": "Status połączenia",
-    "rebootingReconnectAttempt": "Ponowne uruchamianie radia. Ponowne łączenie… próba {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Ponowne uruchamianie radia. Ponowne łączenie… próba {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "Port szeregowy USB wygląda na podłączony, ale transmisja nie działa – zamknij aplikację, odłącz i podłącz ponownie kabel lub uruchom ponownie komputer, jeśli problem nadal nie ustąpi."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",

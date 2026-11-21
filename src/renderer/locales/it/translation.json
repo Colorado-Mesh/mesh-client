@@ -1208,7 +1208,8 @@
     "serialReselect": "Connessione seriale USB persa — seleziona di nuovo il tuo dispositivo",
     "serialReselectAction": "Seleziona porta seriale",
     "statusRegion": "Stato della connessione",
-    "rebootingReconnectAttempt": "Riavvio radio. Riconnessione in corso... prova {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Riavvio radio. Riconnessione in corso... prova {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "La seriale USB sembra connessa, ma la trasmissione non riesce — esci dall'app, scollega e ricollega il cavo o riavvia il computer se il problema persiste."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",

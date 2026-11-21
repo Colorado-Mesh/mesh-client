@@ -261,6 +261,12 @@ import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { createRfReconnectController } from '../lib/rfReconnectController';
+import { isSerialPostWakeUntrusted, noteSerialDeliveryFailure } from '../lib/serialDeliveryHealth';
+import {
+  beginSerialPostWakeUntrustedWindow,
+  runSerialDeliveryProbe,
+  serialDeadThresholdMs,
+} from '../lib/serialDeliveryProbe';
 import { registerMeshtasticSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
   captureSerialIdentityForRediscovery,
@@ -1048,6 +1054,10 @@ export function useMeshtasticRuntime() {
       case 'ble':
         return { stale: BLE_STALE_THRESHOLD_MS, dead: BLE_DEAD_THRESHOLD_MS };
       case 'serial':
+        return {
+          stale: SERIAL_STALE_THRESHOLD_MS,
+          dead: serialDeadThresholdMs(isSerialPostWakeUntrusted()),
+        };
       case 'tcp':
         return { stale: SERIAL_STALE_THRESHOLD_MS, dead: SERIAL_DEAD_THRESHOLD_MS };
       case 'http':
@@ -1153,6 +1163,9 @@ export function useMeshtasticRuntime() {
         console.warn(
           `[useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect${linkStats}`,
         );
+        if (transport === 'serial') {
+          noteSerialDeliveryFailure({ reason: 'watchdog-dead', connectionType: 'serial' });
+        }
         if (postConfigureSilence.noteDead()) {
           pushAppToast(
             i18n.t('connectionPanel.meshtasticSilentAfterConfigure'),
@@ -1174,6 +1187,24 @@ export function useMeshtasticRuntime() {
         });
       }
     }, WATCHDOG_INTERVAL_MS);
+    if (
+      connectionParamsRef.current?.type === 'serial' &&
+      isSerialPostWakeUntrusted() &&
+      deviceRef.current
+    ) {
+      void runSerialDeliveryProbe('meshtastic', async () => {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1500);
+        });
+        if (Date.now() - lastDataReceivedRef.current > 10_000) {
+          throw new Error('no recent FromRadio after wake reconnect');
+        }
+      }).then((result) => {
+        if (result === 'failed') {
+          handleConnectionLostRef.current();
+        }
+      });
+    }
   }, [getThresholds, postConfigureSilence]);
 
   useEffect(() => {
@@ -2657,6 +2688,9 @@ export function useMeshtasticRuntime() {
       console.debug(
         '[useMeshtasticRuntime] power resume — rehydrated reconnect params from storage',
       );
+    }
+    if (connectionParamsRef.current?.type === 'serial') {
+      beginSerialPostWakeUntrustedWindow();
     }
     console.debug('[useMeshtasticRuntime] power resume — resetting reconnect budget');
     reconnectAttemptRef.current = 0;

@@ -5,6 +5,7 @@ vi.mock('./serialPortRecovery', () => ({
 }));
 
 import {
+  registerMeshcomSerialDisconnectTarget,
   registerMeshcoreSerialDisconnectTarget,
   registerMeshtasticSerialDisconnectTarget,
   routeSerialServiceDisconnect,
@@ -22,11 +23,13 @@ describe('serialDisconnectRouter', () => {
     vi.mocked(serialPortMatchesPersistedIdentity).mockReturnValue(true);
     registerMeshtasticSerialDisconnectTarget(null);
     registerMeshcoreSerialDisconnectTarget(null);
+    registerMeshcomSerialDisconnectTarget(null);
   });
 
   afterEach(() => {
     registerMeshtasticSerialDisconnectTarget(null);
     registerMeshcoreSerialDisconnectTarget(null);
+    registerMeshcomSerialDisconnectTarget(null);
     vi.useRealTimers();
   });
 

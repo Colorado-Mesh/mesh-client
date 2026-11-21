@@ -9,6 +9,7 @@ import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
 import { encodeMeshcomBleCommand, MESHCOM_BLE_HELLO } from '../../meshcom/meshcomBleFrame';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
+import { noteSerialTransportLoss } from '../../serialDeliveryHealth';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
@@ -179,9 +180,10 @@ class WebSerialMeshComConnection implements MeshComConnection {
       }
     } catch (err) {
       if (!this.closed) {
-        console.debug(
+        console.warn(
           '[MeshComTransport] serial read ' + (err instanceof Error ? err.message : String(err)),
         );
+        noteSerialTransportLoss({ connectionType: 'serial' });
       }
     } finally {
       try {

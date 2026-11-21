@@ -1208,7 +1208,8 @@
     "serialReselect": "USB串行连接丢失—请重新选择您的设备",
     "serialReselectAction": "选择串行端口",
     "statusRegion": "连接状态",
-    "rebootingReconnectAttempt": "无线电重启。正在重新连接…尝试{{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "无线电重启。正在重新连接…尝试{{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "USB 串行端口似乎已连接，但传输失败 — 请退出应用程序，拔下并重新插入线缆，如果仍无法恢复，请重启电脑"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",

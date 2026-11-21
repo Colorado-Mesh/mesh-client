@@ -13,10 +13,13 @@ import {
 /** Match Meshtastic initial connect timeout in connection.ts */
 export const SERIAL_OPEN_TIMEOUT_MS = 15_000;
 
-/** Shared serial silence thresholds (Meshtastic + MeshCore watchdog). */
+/** Shared serial silence thresholds (Meshtastic + MeshCore + MeshCom watchdog). */
 export const SERIAL_STALE_THRESHOLD_MS = 120_000;
 export const SERIAL_DEAD_THRESHOLD_MS = 180_000;
 export const SERIAL_WATCHDOG_INTERVAL_MS = 15_000;
+/** After OS wake, require a delivery probe or treat silence as dead sooner than the normal dead floor. */
+export const SERIAL_POST_WAKE_PROBE_TIMEOUT_MS = 10_000;
+export const SERIAL_POST_WAKE_DEAD_THRESHOLD_MS = 30_000;
 
 export function withSerialTransportTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
   return withTimeout(promise, SERIAL_OPEN_TIMEOUT_MS, label);

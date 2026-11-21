@@ -2,6 +2,7 @@ import type { MeshDevice } from '@meshtastic/core';
 
 import { getSerialPortFromMeshTransport } from '../connection';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { noteSerialTransportLoss } from '../serialDeliveryHealth';
 import type { ConnectionType } from '../types';
 
 const TRANSPORT_LOST_MESSAGE =
@@ -194,6 +195,9 @@ export function attachMeshtasticTransportLossWatch(
       `[meshtasticTransportLoss] ${type} link lost (${source})` +
         (err ? `: ${errLikeToLogString(err)}` : ''),
     );
+    if (type === 'serial') {
+      noteSerialTransportLoss({ connectionType: 'serial' });
+    }
     onConnectionLost();
   };
 

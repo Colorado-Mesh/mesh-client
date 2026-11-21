@@ -1,9 +1,11 @@
+import { CHAT_SEND_ERROR_DEST_KEY_KEY } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   findReticulumParentRecordByHash,
   persistReticulumOutboundRecord,
   resolveReticulumOutboundSenderHash,
 } from '@/renderer/lib/ingest/reticulumIngest';
+import { markOutboundBlocked } from '@/renderer/lib/markOutboundBlocked';
 import { truncateReplyPreviewText } from '@/renderer/lib/replyPreview';
 import {
   registerReticulumDestinationHash,
@@ -116,13 +118,33 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
     return null;
   }
   const destHash = destResolved.status === 'ok' ? destResolved.hash : null;
-  if (!destHash) {
-    console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
-    return null;
-  }
   const selfNodeId = session.selfNodeId;
   if (typeof selfNodeId !== 'number') {
     console.warn('[sendReticulumChatMessage] Reticulum self node id not ready');
+    return null;
+  }
+  // Orphan / missing peer hash: keep a Blocked bubble so retries do not look like delivery ACK failure.
+  if (!destHash && destination != null && destination !== 0) {
+    console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
+    const pendingId = `reticulum-pending-${Date.now()}`;
+    const senderName = session.getFullNodeLabel(selfNodeId);
+    const replyFields = buildReticulumReplyFields(identityId, replyTo);
+    addMessage(identityId, {
+      id: pendingId,
+      from: selfNodeId >>> 0,
+      senderName,
+      to: destination >>> 0,
+      payload: text,
+      channelIndex,
+      timestamp: Date.now(),
+      status: 'sending',
+      ...replyFields,
+    });
+    markOutboundBlocked(identityId, pendingId, CHAT_SEND_ERROR_DEST_KEY_KEY);
+    return pendingId;
+  }
+  if (!destHash) {
+    console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
     return null;
   }
   const receivedVia = resolveReticulumOutboundVia(destHash);

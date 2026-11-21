@@ -1208,7 +1208,8 @@
     "serialReselect": "Conexão serial USB perdida — selecione seu dispositivo novamente",
     "serialReselectAction": "Selecionar porta serial",
     "statusRegion": "Status da conexão",
-    "rebootingReconnectAttempt": "Reinicialização do rádio. Reconectando… tentativa {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Reinicialização do rádio. Reconectando… tentativa {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "O serial USB parece estar conectado, mas a transmissão está falhando — saia do aplicativo, desconecte e reconecte o cabo ou reinicie o computador se ele ainda não se recuperar."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Tentativas máximas de reconexão do MQTT",

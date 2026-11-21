@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
+import { getConnection } from '../../stores/connectionStore';
 import {
   deleteMessage,
   isGroupChannelRecord,
@@ -10,9 +11,11 @@ import {
   useMessageStore,
 } from '../../stores/messageStore';
 import { omitRecordKey } from '../../stores/storeUtils';
+import { isEncryptionBlockedSendError } from '../chatSendErrorI18n';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { tryParseMecp } from '../mecp/mecpMessages';
 import { getRadioCapabilities } from '../radio/providerFactory';
+import { noteSerialDeliveryFailure } from '../serialDeliveryHealth';
 import type { IdentityId, MeshProtocol } from '../types';
 import { autoResendDelayMs, REGULAR_MESSAGE_MAX_AUTO_RESENDS } from './autoResendPolicy';
 
@@ -102,6 +105,10 @@ function emitOutcome(info: TrackedOutbound, outcome: AutoResendOutcome['outcome'
     originId: info.originId,
     outcome,
   };
+  if (outcome === 'gave-up') {
+    const connectionType = getConnection(info.identityId)?.connectionType ?? null;
+    noteSerialDeliveryFailure({ reason: 'auto-resend-gave-up', connectionType });
+  }
   for (const listener of outcomeListeners) {
     try {
       listener(event);
@@ -151,6 +158,8 @@ function clearEntry(key: string): void {
 export function isAutoResendEligible(protocol: MeshProtocol, record: MessageRecord): boolean {
   if (record.tapback) return false;
   if (record.roomServerId != null) return false;
+  if (record.status === 'blocked') return false;
+  if (record.error != null && isEncryptionBlockedSendError(record.error)) return false;
   if (tryParseMecp(record.payload) != null) return false;
   if (isGroupChannelRecord(record) && !getRadioCapabilities(protocol).hasChannelDeliveryAck) {
     return false;
@@ -281,6 +290,15 @@ export function evaluateTrackedOutbound(now: number = Date.now()): void {
       tracked.delete(key);
       clearEntry(key);
       emitOutcome(info, 'acked');
+      continue;
+    }
+    // Missing-key / orphan DM: terminal Blocked — never schedule hop-ACK-style retries.
+    if (
+      record.status === 'blocked' ||
+      (record.error != null && isEncryptionBlockedSendError(record.error))
+    ) {
+      tracked.delete(key);
+      clearEntry(key);
       continue;
     }
     if (record.status !== 'failed' || Object.hasOwn(entries, key)) continue;

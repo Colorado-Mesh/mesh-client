@@ -51,6 +51,7 @@ import {
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
+import { noteSerialDeliveryFailure } from '../../lib/serialDeliveryHealth';
 import { meshNodeToNodeRecord } from '../../lib/storeRecordAdapters';
 import {
   MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN,
@@ -584,6 +585,12 @@ export function attachMeshcoreConnSideEffects(
           !isNack,
           !isNack && typeof payload.roundTrip === 'number' ? payload.roundTrip : undefined,
         );
+    }
+    console.warn(
+      `[meshcoreDmAck] ${isNack ? 'NACK' : 'ACK'} packetId=${ackKeyU32} dest=${pending.destNodeId ?? '?'} detail=event-130`,
+    );
+    if (isNack) {
+      noteSerialDeliveryFailure({ reason: 'delivery-ack-timeout' });
     }
     setMessages((prev) =>
       prev.map((m) =>

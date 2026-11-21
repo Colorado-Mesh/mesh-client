@@ -31,6 +31,10 @@ export function registerMeshcoreSerialDisconnectTarget(
   registerSerialDisconnectTarget('meshcore', target);
 }
 
+export function registerMeshcomSerialDisconnectTarget(target: SerialDisconnectTarget | null): void {
+  registerSerialDisconnectTarget('meshcom', target);
+}
+
 export function routeSerialServiceDisconnect(port: SerialPort): void {
   if (!serialPortMatchesPersistedIdentity(port)) return;
   const now = Date.now();

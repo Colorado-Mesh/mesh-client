@@ -1208,7 +1208,8 @@
     "serialReselect": "USB seri bağlantısı kesildi — cihazınızı tekrar seçin",
     "serialReselectAction": "Seri port seçin",
     "statusRegion": "Bağlantı durumu",
-    "rebootingReconnectAttempt": "Radyo yeniden başlatılıyor. Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
+    "rebootingReconnectAttempt": "Radyo yeniden başlatılıyor. Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi",
+    "serialDeliveryUnhealthy": "USB seri numaralı cihaz bağlı görünüyor ancak iletim başarısız oluyor. Hala düzelmiyorsa uygulamadan çıkın, kabloyu çıkarıp yeniden takın veya bilgisayarı yeniden başlatın."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",
