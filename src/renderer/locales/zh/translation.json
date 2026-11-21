@@ -9043,7 +9043,8 @@
     "callsignHint": "有效的APRS式呼号（SSID可选）。应用将 --setcall 发送到 Serial/BLE。",
     "operatorNameFieldLabel": "操作员姓名（--operatorname）",
     "operatorNamePlaceholder": "名",
-    "operatorNameHint": "可选。随“应用于序列号/BLE”（最多 19 个字符）一起发送。"
+    "operatorNameHint": "可选。随“应用于序列号/BLE”（最多 19 个字符）一起发送。",
+    "dbStorageDegraded": "MeshCom 消息历史记录不可用（数据库模块加载失败）。聊天功能仍可使用；在您重启应用程序之前，历史记录将不会保留。"
   },
   "meshcomDeviceCommands": {
     "description": "通过串行或BLE发送ICSSW节点命令（--help、--settime、--setctry……）。适用于应用的命令与官方MeshCom应用相匹配；仅适用于串行端口的命令需要USB控制台链接。",

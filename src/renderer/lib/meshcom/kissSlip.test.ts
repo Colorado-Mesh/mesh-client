@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   KISS_FEND,
   KISS_FESC,
-  KISS_SLIP_MAX_ENCODED_FRAME_BYTES,
+  KISS_SLIP_DEFRAME_MAX_BYTES,
   kissSlipDecode,
   KissSlipDeframer,
   kissSlipEncode,
@@ -38,12 +38,18 @@ describe('kissSlip', () => {
 
   it('resets on over-limit frames and recovers after the next FEND', () => {
     const deframer = new KissSlipDeframer();
-    const flood = new Uint8Array(KISS_SLIP_MAX_ENCODED_FRAME_BYTES + 1).fill(0x01);
+    const flood = new Uint8Array(KISS_SLIP_DEFRAME_MAX_BYTES + 1).fill(0x01);
     expect(deframer.push(flood)).toEqual([]);
     expect(deframer.push(flood.subarray(0, 100))).toEqual([]);
     const ok = kissSlipEncode(new Uint8Array([0x00, 0x42]));
     const frames = deframer.push(ok);
     expect(frames).toHaveLength(1);
     expect(frames[0]).toEqual(new Uint8Array([0x00, 0x42]));
+  });
+
+  it('resets when the escape buffer exceeds the cap', () => {
+    const deframer = new KissSlipDeframer();
+    deframer.push(Array.from({ length: KISS_SLIP_DEFRAME_MAX_BYTES + 8 }, () => 0x01));
+    expect(deframer.push([KISS_FEND])).toEqual([]);
   });
 });

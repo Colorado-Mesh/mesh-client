@@ -1,7 +1,7 @@
 site_name: Colorado Mesh Client
 site_url: https://colorado-mesh.github.io/mesh-client/
 site_description: >-
-  Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.
+  Cross-platform desktop client for Meshtastic, MeshCore, Reticulum (LXMF), and MeshCom mesh networks.
 repo_url: https://github.com/Colorado-Mesh/mesh-client
 repo_name: Colorado-Mesh/mesh-client
 edit_uri: edit/main/docs/

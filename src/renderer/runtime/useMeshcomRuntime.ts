@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/refs, @typescript-eslint/require-await, @typescript-eslint/no-unnecessary-type-assertion -- Runtime session pattern matches useMeshtasticRuntime (ref latch + ProtocolRuntime casts). */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { useToast } from '../components/Toast';
 import {
   type MeshcomDeviceCommandsActions,
   useMeshcomDeviceCommands,
@@ -98,7 +100,17 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   setOwner: (opts: { longName: string; shortName: string; isLicensed: boolean }) => Promise<void>;
   sendPositionToDevice: (lat: number, lon: number, alt?: number) => Promise<void>;
 } {
+  const { t } = useTranslation();
+  const { addToast } = useToast();
   const offlineIdentityId = getOfflineIdentityIdForProtocol('meshcom');
+
+  useEffect(() => {
+    void window.electronAPI.db.getMeshcomDbDegraded().then((status) => {
+      if (status.degraded) {
+        addToast(t('meshcom.dbStorageDegraded'), 'warning');
+      }
+    });
+  }, [addToast, t]);
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [ourPosition, setOurPosition] = useState<OurPosition | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);

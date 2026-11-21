@@ -18,6 +18,7 @@ import { getTakRadio } from '../../stores/takChannelStore';
 import { getTakRelayPrefs, type TakRelayIdentityPrefs } from '../../stores/takRelayPrefsStore';
 import { isTakSinkActive } from '../../stores/takSinkStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { normalizeMeshcomCallsign } from '../meshcom/meshcomCallsign';
 import { isMeshcoreDmExcludedHwModel } from '../meshcoreUtils';
 import { resolveReticulumChatLxmfDestination } from '../reticulum/resolveReticulumChatLxmfDest';
 import type { IdentityId, MeshNode } from '../types';
@@ -51,6 +52,10 @@ export function canTakDirectMessage(node: MeshNode, protocol: MeshProtocol): boo
   if (!identityId || node.node_id === getConnection(identityId)?.myNodeNum) return false;
   if (protocol === 'meshtastic') return !isMeshtasticBroadcastNodeNum(node.node_id);
   if (protocol === 'reticulum') return hasOwnLxmfDestination(node.node_id);
+  if (protocol === 'meshcom') {
+    const label = node.long_name || node.short_name || '';
+    return Boolean(normalizeMeshcomCallsign(label));
+  }
   return !isMeshcoreDmExcludedHwModel(node.hw_model) && hasMeshcoreContactKey(identityId, node);
 }
 

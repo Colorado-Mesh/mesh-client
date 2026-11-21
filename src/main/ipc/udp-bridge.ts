@@ -8,10 +8,15 @@
  */
 
 import dgram from 'node:dgram';
+import dns from 'node:dns';
 
 import { type BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
 
-import { formatHostForSocket } from '../../shared/connectHost';
+import {
+  formatHostForSocket,
+  isValidIpv4Literal,
+  stripConnectHostBrackets,
+} from '../../shared/connectHost';
 import { MESHCOM_EXTUDP_PORT } from '../../shared/meshcomConstants';
 import { sanitizeLogMessage } from '../log-service';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -22,6 +27,26 @@ export const UDP_BRIDGE_WRITE_MAX_BYTES = 64 * 1024;
 export interface UdpBridgeDeps {
   getMainWindow: () => BrowserWindow | null;
   validateHost: (host: unknown) => asserts host is string;
+}
+
+/** Normalize rinfo / resolved peer addresses (IPv4-mapped IPv6, zone id). */
+export function normalizeMeshcomUdpPeerAddress(address: string): string {
+  const bare = stripConnectHostBrackets(address.trim());
+  const noZone = bare.split('%')[0] ?? bare;
+  if (noZone.toLowerCase().startsWith('::ffff:')) {
+    return noZone.slice(7);
+  }
+  return noZone;
+}
+
+export async function resolveMeshcomUdpPeerHost(host: string): Promise<string> {
+  const socketHost = formatHostForSocket(host);
+  const bare = stripConnectHostBrackets(socketHost);
+  if (isValidIpv4Literal(bare)) {
+    return bare;
+  }
+  const result = await dns.promises.lookup(bare, { family: 4, order: 'ipv4first' });
+  return normalizeMeshcomUdpPeerAddress(result.address);
 }
 
 export interface UdpBridgeHandlers {
@@ -78,8 +103,6 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       // Tear down any prior socket without reporting a live drop (connect-replace).
       closeSocket(false);
 
-      const socketHost = formatHostForSocket(host);
-      remoteHost = socketHost;
       const socket = dgram.createSocket('udp4');
       activeSocket = socket;
 
@@ -113,8 +136,12 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           return;
         }
         // Prefer UDP connect() so the kernel drops non-peer datagrams; still filter
-        // defensively and rate-limit any mismatch logs (flood → disk/IPC DoS).
-        if (remoteHost && rinfo.address !== remoteHost) {
+        // with normalized addresses and rate-limit mismatch logs (flood → disk/IPC DoS).
+        if (
+          remoteHost &&
+          normalizeMeshcomUdpPeerAddress(rinfo.address) !==
+            normalizeMeshcomUdpPeerAddress(remoteHost)
+        ) {
           const now = Date.now();
           if (now - lastRejectedPeerLogAt >= 60_000) {
             const suppressed =
@@ -142,32 +169,43 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
         }
       });
 
-      socket.bind(MESHCOM_EXTUDP_PORT, () => {
-        socket.removeAllListeners('error');
-        socket.on('error', (err) => {
-          console.error(`[IPC] meshcom:udp error:`, sanitizeLogMessage(err.message));
-          if (activeSocket === socket) {
-            closeSocket(true);
-          }
-        });
-        // Associate the datagram socket with the configured peer so foreign
-        // sources are dropped before the message handler (and its logging).
+      void (async () => {
         try {
-          socket.connect(MESHCOM_EXTUDP_PORT, socketHost);
-        } catch (connectErr) {
-          console.warn(
-            `[IPC] ${CONNECT_CHANNEL} UDP connect failed; peer filter remains in handler:`,
-            sanitizeLogMessage(
-              connectErr instanceof Error ? connectErr.message : String(connectErr),
-            ),
-          );
+          remoteHost = await resolveMeshcomUdpPeerHost(host);
+        } catch (err) {
+          // catch-no-log-ok failConnect forwards the error to ipcMain.invoke rejection
+          failConnect(err instanceof Error ? err : new Error(String(err)));
+          return;
         }
-        console.debug(
-          `[IPC] ${CONNECT_CHANNEL} bound :${MESHCOM_EXTUDP_PORT} →`,
-          sanitizeLogMessage(socketHost),
-        );
-        resolve();
-      });
+        socket.bind(MESHCOM_EXTUDP_PORT, () => {
+          socket.removeAllListeners('error');
+          socket.on('error', (err) => {
+            console.error(`[IPC] meshcom:udp error:`, sanitizeLogMessage(err.message));
+            if (activeSocket === socket) {
+              closeSocket(true);
+            }
+          });
+          // Associate the datagram socket with the resolved peer so foreign
+          // sources are dropped before the message handler (and its logging).
+          if (remoteHost) {
+            try {
+              socket.connect(MESHCOM_EXTUDP_PORT, remoteHost);
+            } catch (connectErr) {
+              console.warn(
+                `[IPC] ${CONNECT_CHANNEL} UDP connect failed; peer filter remains in handler:`,
+                sanitizeLogMessage(
+                  connectErr instanceof Error ? connectErr.message : String(connectErr),
+                ),
+              );
+            }
+          }
+          console.debug(
+            `[IPC] ${CONNECT_CHANNEL} bound :${MESHCOM_EXTUDP_PORT} →`,
+            sanitizeLogMessage(remoteHost ?? host),
+          );
+          resolve();
+        });
+      })();
     });
   };
 

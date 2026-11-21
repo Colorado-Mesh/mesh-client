@@ -9043,7 +9043,8 @@
     "callsignHint": "Geldige roepnaam in APRS-stijl (SSID optioneel). Toepassen verzendt --setcall op Seriëel/BLE.",
     "operatorNameFieldLabel": "Naam van de exploitant (--operatorname)",
     "operatorNamePlaceholder": "roepnaam",
-    "operatorNameHint": "Optioneel. Verzonden met Toepassen op serienummer/BLE (max. 19 tekens)."
+    "operatorNameHint": "Optioneel. Verzonden met Toepassen op serienummer/BLE (max. 19 tekens).",
+    "dbStorageDegraded": "De berichtgeschiedenis van MeshCom is niet beschikbaar (de databasemodule kon niet worden geladen). De chat werkt nog steeds; de geschiedenis blijft niet behouden totdat u de app opnieuw start."
   },
   "meshcomDeviceCommands": {
     "description": "Verstuur ICSSW-knooppuntopdrachten (--help, --settime, --setctry, …) via Seriële verbinding of BLE. Voor de app geschikte opdrachten komen overeen met de officiële MeshCom-app; opdrachten die alleen via seriële verbinding kunnen worden uitgevoerd, hebben een USB-consolelink nodig.",

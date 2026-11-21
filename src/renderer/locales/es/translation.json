@@ -9043,7 +9043,8 @@
     "callsignHint": "Indicativo de llamada válido de tipo APRS (SSID opcional). Aplicar envía --setcall en Serie/BLE.",
     "operatorNameFieldLabel": "Nombre del operador (--operatorname)",
     "operatorNamePlaceholder": "firstname",
-    "operatorNameHint": "Opcional. Se envía con «Aplicar a número de serie»/BLE (máximo 19 caracteres)."
+    "operatorNameHint": "Opcional. Se envía con «Aplicar a número de serie»/BLE (máximo 19 caracteres).",
+    "dbStorageDegraded": "El historial de mensajes de MeshCom no está disponible (no se ha podido cargar el módulo de la base de datos). El chat sigue funcionando; el historial no se conservará hasta que reinicie la aplicación."
   },
   "meshcomDeviceCommands": {
     "description": "Envíe comandos del nodo ICSSW (--help, --settime, --setctry, …) a través del puerto serie o de BLE. Los comandos compatibles con la aplicación coinciden con los de la aplicación oficial de MeshCom; los comandos exclusivos para conexión serie necesitan un enlace a la consola USB.",

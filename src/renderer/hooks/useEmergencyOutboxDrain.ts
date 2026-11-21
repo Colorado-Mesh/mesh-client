@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { MeshProtocol } from '@/renderer/lib/types';
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
+import { protocolMqttProvidesChatSend } from '../lib/chatMqttHybridSend';
 import {
   notifyChatOutboxRowsChanged,
   registerChatOutboxDrainListener,
@@ -44,7 +45,7 @@ export function isChatOutboxSendAvailable(
 ): boolean {
   const operational = view.state.status === 'configured' || view.state.status === 'stale';
   if (operational) return true;
-  return view.mqttStatus === 'connected' && protocol !== 'meshcore';
+  return view.mqttStatus === 'connected' && protocolMqttProvidesChatSend(protocol);
 }
 
 interface TimerHandleRef {

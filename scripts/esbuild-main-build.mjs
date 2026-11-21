@@ -280,6 +280,28 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/loadMeshcomUdpBridge.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'loadMeshcomUdpBridge.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/udp-bridge-fallback.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'udp-bridge-fallback.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

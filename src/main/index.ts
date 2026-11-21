@@ -7038,30 +7038,22 @@ void app
         };
         meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
       }
-      // Production ships `udp-bridge.js` beside index.js (out of measured budget).
-      try {
-        const udpBridgeMod = (
-          process.env.VITEST
-            ? await import('./ipc/udp-bridge')
-            : await import(pathToFileURL(path.join(__dirname, 'udp-bridge.js')).href)
-        ) as {
-          registerUdpBridgeIpcHandlers: (deps: {
-            getMainWindow: () => BrowserWindow | null;
-            validateHost: typeof validateHttpHost;
-          }) => void;
-          destroyRegisteredUdpBridgeSockets: (reason: string) => void;
-        };
-        udpBridgeMod.registerUdpBridgeIpcHandlers({
-          getMainWindow: () => mainWindow,
-          validateHost: validateHttpHost,
-        });
-        destroyRegisteredUdpBridgeSocketsRef = udpBridgeMod.destroyRegisteredUdpBridgeSockets;
-      } catch (err: unknown) {
-        console.error(
-          '[main] MeshCom UDP bridge IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-      }
+      const loadUdpBridgeMod = (
+        process.env.VITEST
+          ? await import('./ipc/loadMeshcomUdpBridge')
+          : await import(pathToFileURL(path.join(__dirname, 'loadMeshcomUdpBridge.js')).href)
+      ) as {
+        loadMeshcomUdpBridge: (deps: {
+          dirname: string;
+          getMainWindow: () => BrowserWindow | null;
+          validateHost: typeof validateHttpHost;
+        }) => Promise<((reason: string) => void) | null>;
+      };
+      destroyRegisteredUdpBridgeSocketsRef = await loadUdpBridgeMod.loadMeshcomUdpBridge({
+        dirname: __dirname,
+        getMainWindow: () => mainWindow,
+        validateHost: validateHttpHost,
+      });
       protocol.handle(
         RENDERER_SCHEME,
         createRendererOriginProtocolHandler({

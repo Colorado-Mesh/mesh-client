@@ -73,6 +73,8 @@ describe('MeshComProtocol serial/BLE', () => {
     expect(texts).toHaveLength(2);
     expect(texts[0]?.payload.payload).toBe('hello udp');
     expect(texts[1]?.payload.payload).toBe('brace text');
+    expect(texts[1]?.payload.from).toBeGreaterThan(0);
+    expect(texts[1]?.payload.to).toBe(0xffffffff);
 
     unsub();
   });

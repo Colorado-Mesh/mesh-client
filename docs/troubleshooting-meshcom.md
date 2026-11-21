@@ -23,7 +23,7 @@ MeshCom-specific problems. For general connection, Bluetooth, USB serial, MQTT, 
 
 **Fix**:
 
-1. Use the Connection panel **HTTP** (companion TCP) field with `host:8001` or host only (default port applied).
+1. Use the Connection panel **KISS/TCP** field with `host:8001` or host only (default port applied).
 2. Verify the radio firmware exposes KISS TCP and that the callsign / `--setcall` identity is set (Radio → MeshCom device commands).
 3. Fall back to Serial 115200 console if TCP is unavailable.
 

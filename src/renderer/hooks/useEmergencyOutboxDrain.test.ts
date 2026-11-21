@@ -222,6 +222,8 @@ describe('useEmergencyOutboxDrain', () => {
     ['meshcore', { state: { status: 'stale' }, mqttStatus: null }, true],
     ['meshtastic', { state: { status: 'disconnected' }, mqttStatus: 'connected' }, true],
     ['meshcore', { state: { status: 'disconnected' }, mqttStatus: 'connected' }, false],
+    ['meshcom', { state: { status: 'disconnected' }, mqttStatus: 'connected' }, false],
+    ['meshcom', { state: { status: 'configured' }, mqttStatus: null }, true],
     ['reticulum', { state: { status: 'disconnected' }, mqttStatus: null }, false],
   ] as const)('isChatOutboxSendAvailable(%s, %j) → %s', (protocol, view, expected) => {
     expect(isChatOutboxSendAvailable(protocol, view)).toBe(expected);

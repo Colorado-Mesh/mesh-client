@@ -105,6 +105,21 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 **Chat channels:** ALL (`*`, index 0) plus positive GRC group indices seen in messages — never MeshCore PSK channel pills.
 
+## EXTUDP local bind (UDP 1799)
+
+Each Mesh Client instance binds **one** local UDP socket on **1799** for EXTUDP (`udp-bridge.ts`). A second copy of the app on the same machine, or another process holding that port, yields `EADDRINUSE` on connect — disconnect other copies or stop the conflicting process, then retry.
+
+At connect, the bridge resolves a hostname to a canonical IPv4 and filters inbound datagrams to that peer (not the unresolved hostname string).
+
+## Serial console `{CALL}text`
+
+- **TX:** `{CALLSIGN}payload` directs the injection to that callsign (or `{groupId}` for GRC).
+- **RX:** firmware echoes use the **sender** callsign inside braces (see ICSSW `sendReply` / `:{CALL}` forms), so `{OE1BBB-2}hello` attributes `from` = `OE1BBB-2`.
+
+## BLE phone framing
+
+ICSSW `ble_phone_drain.h` documents **one BLE notify = one phone frame**. The client does not scan past a leading `0x40` APRS shortcut in the same chunk — firmware does not concatenate multiple frames in one notify.
+
 ## Key source files
 
 | Area             | Path                                                                                 |

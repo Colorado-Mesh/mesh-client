@@ -9128,7 +9128,8 @@
     "callsignHint": "Platná volací značka ve stylu APRS (SSID volitelné). Použít odešle --setcall na Serial/BLE.",
     "operatorNameFieldLabel": "Název operátora (--operatorname)",
     "operatorNamePlaceholder": "Křestní jméno",
-    "operatorNameHint": "Volitelné. Odesláno s možností Použít na sériové číslo/BLE (max. 19 znaků)."
+    "operatorNameHint": "Volitelné. Odesláno s možností Použít na sériové číslo/BLE (max. 19 znaků).",
+    "dbStorageDegraded": "Historie zpráv MeshCom není k dispozici (modul databáze se nepodařilo načíst). Chat stále funguje; historie nebude zachována, dokud aplikaci nerestartujete."
   },
   "meshcomDeviceCommands": {
     "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",

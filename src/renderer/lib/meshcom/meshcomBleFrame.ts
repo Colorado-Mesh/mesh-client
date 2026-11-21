@@ -3,6 +3,8 @@
  * Spec: firmware `ble_phone_frame.h` / phone_commands.cpp.
  */
 
+import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
+
 /** `{HELLO}` = `04 10 20 30` — optional PIN SHA-256 follows in some firmwares. */
 export const MESHCOM_BLE_HELLO = new Uint8Array([0x04, 0x10, 0x20, 0x30]);
 
@@ -13,7 +15,7 @@ export const MESHCOM_BLE_SAVE_REBOOT = 0xf0;
 
 /** Encode a UTF-8 companion command (`len+2 | 0xA0 | utf8`). */
 export function encodeMeshcomBleCommand(utf8: string): Uint8Array {
-  const body = new TextEncoder().encode(utf8);
+  const body = new TextEncoder().encode(sanitizeMeshcomWireLine(utf8));
   const len = body.length + 2;
   if (len > 255) {
     throw new Error('meshcom BLE command too long');
@@ -76,6 +78,7 @@ export function parseMeshcomBleFrames(chunk: Uint8Array): MeshcomBleInbound[] {
   while (offset < chunk.length) {
     // ASCII `@` + APRS phone frame (text/POS/ACK) — keep binary intact.
     if (chunk[offset] === 0x40 /* @ */) {
+      // Firmware BLE phone drain sends one notify = one frame (see ble_phone_drain.h).
       out.push({ kind: 'phone_aprs', bytes: chunk.subarray(offset + 1) });
       break;
     }

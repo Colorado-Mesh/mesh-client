@@ -3374,7 +3374,8 @@
     "callsignHint": "Valid APRS-style callsign (SSID optional). Apply sends --setcall on Serial/BLE.",
     "operatorNameFieldLabel": "Operator name (--operatorname)",
     "operatorNamePlaceholder": "firstname",
-    "operatorNameHint": "Optional. Sent with Apply on Serial/BLE (max 19 characters)."
+    "operatorNameHint": "Optional. Sent with Apply on Serial/BLE (max 19 characters).",
+    "dbStorageDegraded": "MeshCom message history is unavailable (database module failed to load). Chat still works; history will not persist until you restart the app."
   },
   "meshcore": {
     "errors": {

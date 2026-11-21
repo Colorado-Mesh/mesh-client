@@ -9187,7 +9187,8 @@
     "callsignHint": "Prawidłowy znak wywoławczy w stylu APRS (SSID opcjonalny). Zastosuj wysyła --setcall na Serial/BLE.",
     "operatorNameFieldLabel": "Nazwa operatora (--operatorname)",
     "operatorNamePlaceholder": "imię",
-    "operatorNameHint": "Opcjonalnie. Wysyłane z opcją „Zastosuj do numeru seryjnego”/BLE (maks. 19 znaków)."
+    "operatorNameHint": "Opcjonalnie. Wysyłane z opcją „Zastosuj do numeru seryjnego”/BLE (maks. 19 znaków).",
+    "dbStorageDegraded": "Historia wiadomości MeshCom jest niedostępna (nie udało się załadować modułu bazy danych). Czat nadal działa; historia nie będzie dostępna, dopóki nie uruchomisz aplikacji ponownie."
   },
   "meshcomDeviceCommands": {
     "description": "Wysyłaj polecenia węzła ICSSW (--help, --settime, --setctry, …) przez port szeregowy lub BLE. Polecenia obsługiwane przez aplikację są zgodne z oficjalną aplikacją MeshCom; polecenia dostępne tylko przez port szeregowy wymagają połączenia z konsolą USB.",

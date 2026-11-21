@@ -82,6 +82,7 @@ import {
 } from '@/renderer/lib/chatComposerLimits';
 import type { ChatMessageRouteLookup } from '@/renderer/lib/chatMessageRoute';
 import { buildChatMessageRouteView } from '@/renderer/lib/chatMessageRouteView';
+import { protocolMqttProvidesChatSend } from '@/renderer/lib/chatMqttHybridSend';
 import {
   clearFloodScopeOverride,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -2284,7 +2285,8 @@ function ChatPanel({
     ],
   );
 
-  const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
+  const outboxSendAvailable =
+    isConnected && !(isMqttOnly && !protocolMqttProvidesChatSend(protocol));
   // Hop pill tooltip: capture lookup and name resolution run on hover/focus only.
   const describeMessageRoute = useCallback(
     (message: ChatMessage) => {

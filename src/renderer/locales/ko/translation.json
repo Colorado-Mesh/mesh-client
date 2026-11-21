@@ -9043,7 +9043,8 @@
     "callsignHint": "유효한 APRS 스타일 호출 부호(SSID 선택 사항). 적용하면 Serial/BLE에 --setcall을 전송합니다.",
     "operatorNameFieldLabel": "운영자 이름(--operatorname)",
     "operatorNamePlaceholder": "이름",
-    "operatorNameHint": "선택 사항. '일련번호에 적용'/BLE과(와) 함께 전송(최대 19자)."
+    "operatorNameHint": "선택 사항. '일련번호에 적용'/BLE과(와) 함께 전송(최대 19자).",
+    "dbStorageDegraded": "MeshCom 메시지 기록을 사용할 수 없습니다(데이터베이스 모듈을 로드하지 못했습니다). 채팅은 여전히 작동합니다. 앱을 다시 시작할 때까지 기록이 유지되지 않습니다."
   },
   "meshcomDeviceCommands": {
     "description": "직렬 또는 BLE을 통해 ICSSW 노드 명령(--help, --settime, --setctry, …)을 전송합니다. 앱에서 사용할 수 있는 명령은 공식 MeshCom 앱과 일치합니다. 직렬 전용 명령은 USB 콘솔 링크가 필요합니다.",

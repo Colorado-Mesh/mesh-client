@@ -10,6 +10,7 @@
  */
 
 import { buildMeshcomSettimeCommand } from './meshcomCommandWire';
+import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 export {
   buildMeshcomSettimeCommand,
@@ -676,7 +677,7 @@ export function buildMeshcomCommandLine(
   if (descriptor.id === 'setgrc' && (arg == null || arg.trim() === '')) {
     return '--setgrc';
   }
-  const value = (arg ?? '').trim();
+  const value = sanitizeMeshcomWireLine((arg ?? '').trim());
   if (!value && descriptor.argKind !== 'custom') {
     throw new Error(`meshcom command ${descriptor.token} requires an argument`);
   }

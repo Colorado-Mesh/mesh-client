@@ -10,6 +10,8 @@ import { MESHCOM_CONTACT_CAP_DEFAULT, MESHCOM_MAX_TEXT_LEN } from '../../shared/
 import type { NodeSqliteDB } from '../db-compat';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { assertIpcSender, validateIpcSender } from '../validate-ipc-sender';
+import type { MeshcomDbDegradedPayload } from './meshcom-db-status';
+import { MESHCOM_DB_DEGRADED_CHANNEL } from './meshcom-db-status';
 
 const MAX_CALLSIGN_LEN = 16;
 const MAX_TEXT_LEN = MESHCOM_MAX_TEXT_LEN;
@@ -247,6 +249,11 @@ export interface MeshcomDbIpcDeps {
 }
 
 export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): void {
+  ipcMain.handle('meshcom:db-degraded', (event) => {
+    assertIpcSender(event, MESHCOM_DB_DEGRADED_CHANNEL);
+    const payload: MeshcomDbDegradedPayload = { degraded: false };
+    return payload;
+  });
   ipcMain.handle(
     'db:getMeshcomMessages',
     (event, identityId?: unknown, channelIdx?: unknown, limit = 200) => {
@@ -255,10 +262,10 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
         const safeLimit = clampQueryLimit(limit, { default: 200, max: 10_000 });
         const db = getDbForIpc('db:getMeshcomMessages');
         if (!db) return [];
-        const identity =
-          typeof identityId === 'string' && identityId.trim()
-            ? identityId.trim().slice(0, MAX_IDENTITY_LEN)
-            : null;
+        if (typeof identityId !== 'string' || !identityId.trim()) {
+          throw new Error('db:getMeshcomMessages: identityId required');
+        }
+        const identity = identityId.trim().slice(0, MAX_IDENTITY_LEN);
         const channel =
           channelIdx == null || channelIdx === ''
             ? null
@@ -266,7 +273,7 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
               ? Math.trunc(Number(channelIdx))
               : null;
 
-        if (identity != null && channel != null) {
+        if (channel != null) {
           const rows = db
             .prepareOnce(
               `SELECT * FROM meshcom_messages
@@ -277,33 +284,13 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
           rows.reverse();
           return rows;
         }
-        if (identity != null) {
-          const rows = db
-            .prepareOnce(
-              `SELECT * FROM meshcom_messages
-             WHERE identity_id = @identity
-             ORDER BY timestamp DESC, id DESC LIMIT @limit`,
-            )
-            .all({ identity, limit: safeLimit }) as Record<string, unknown>[];
-          rows.reverse();
-          return rows;
-        }
-        if (channel != null) {
-          const rows = db
-            .prepareOnce(
-              `SELECT * FROM meshcom_messages
-             WHERE channel_idx = @channel
-             ORDER BY timestamp DESC, id DESC LIMIT @limit`,
-            )
-            .all({ channel, limit: safeLimit }) as Record<string, unknown>[];
-          rows.reverse();
-          return rows;
-        }
         const rows = db
           .prepareOnce(
-            `SELECT * FROM meshcom_messages ORDER BY timestamp DESC, id DESC LIMIT @limit`,
+            `SELECT * FROM meshcom_messages
+             WHERE identity_id = @identity
+             ORDER BY timestamp DESC, id DESC LIMIT @limit`,
           )
-          .all({ limit: safeLimit }) as Record<string, unknown>[];
+          .all({ identity, limit: safeLimit }) as Record<string, unknown>[];
         rows.reverse();
         return rows;
       } catch (err) {
@@ -405,18 +392,15 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
       assertIpcSender(event, 'db:getMeshcomContacts');
       const db = getDbForIpc('db:getMeshcomContacts');
       if (!db) return [];
-      const identity =
-        typeof identityId === 'string' && identityId.trim()
-          ? identityId.trim().slice(0, MAX_IDENTITY_LEN)
-          : null;
-      if (identity != null) {
-        return db
-          .prepareOnce(
-            'SELECT * FROM meshcom_contacts WHERE identity_id = ? ORDER BY last_heard DESC',
-          )
-          .all(identity);
+      if (typeof identityId !== 'string' || !identityId.trim()) {
+        throw new Error('db:getMeshcomContacts: identityId required');
       }
-      return db.prepareOnce('SELECT * FROM meshcom_contacts ORDER BY last_heard DESC').all();
+      const identity = identityId.trim().slice(0, MAX_IDENTITY_LEN);
+      return db
+        .prepareOnce(
+          'SELECT * FROM meshcom_contacts WHERE identity_id = ? ORDER BY last_heard DESC',
+        )
+        .all(identity);
     } catch (err) {
       finishDbIpcHandler('db:getMeshcomContacts', err);
     }

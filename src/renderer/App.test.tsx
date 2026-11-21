@@ -1034,6 +1034,11 @@ describe('App shell layout', () => {
     });
   });
 
+  it('wires meshcom into hide-protocol MQTT disconnect (parity with meshcore)', () => {
+    const appSource = readFileSync(join(import.meta.dirname, 'App.tsx'), 'utf8');
+    expect(appSource).toMatch(/hidden === 'meshcom'[\s\S]{0,220}mqtt\.disconnect\('meshcom'\)/);
+  });
+
   it('disconnects an already-connected MeshCore MQTT session when MeshCore is hidden', async () => {
     ensureOfflineProtocolIdentities();
     setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {

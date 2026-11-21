@@ -9,7 +9,7 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import { getDevice } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 
-function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore') {
+function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore' | 'meshcom') {
   return (
     Object.values(useIdentityStore.getState().identities).find(
       (i) => i.protocol.type === protocol,
@@ -109,6 +109,22 @@ export const sendMecpRebroadcastOnProtocol: MecpRebroadcastSendFn = async (targe
       throw new Error('Meshtastic session not mounted');
     }
     session.sendChatMessage(payload, target.channelIndex, undefined, undefined);
+    return;
+  }
+
+  if (target.protocol === 'meshcom') {
+    const identity = findIdentityForProtocol('meshcom');
+    if (!identity) {
+      throw new Error('MeshCom identity not found');
+    }
+    const handle = connectionDriver.getHandle(identity.id);
+    if (!handle) {
+      throw new Error('MeshCom not connected');
+    }
+    await identity.protocol.sendMessage(handle, {
+      text: payload,
+      channelIndex: target.channelIndex,
+    });
     return;
   }
 

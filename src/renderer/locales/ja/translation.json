@@ -9043,7 +9043,8 @@
     "callsignHint": "有効なAPRSスタイルのコールサイン（SSIDはオプション）。適用すると、Serial/BLEに--setcallを送信します。",
     "operatorNameFieldLabel": "オペレーター名（--operatorname）",
     "operatorNamePlaceholder": "名",
-    "operatorNameHint": "オプション。シリアル番号/BLEに適用して送信（最大19文字）。"
+    "operatorNameHint": "オプション。シリアル番号/BLEに適用して送信（最大19文字）。",
+    "dbStorageDegraded": "MeshComメッセージ履歴は利用できません（データベースモジュールの読み込みに失敗しました）。チャットは引き続き利用できます。履歴は、アプリを再起動するまで保持されません。"
   },
   "meshcomDeviceCommands": {
     "description": "ICSSWノードコマンド（--help、--settime、--setctry、…）をシリアルまたはBLE経由で送信します。アプリ対応コマンドは、公式のMeshComアプリと一致します。シリアル専用コマンドには、USBコンソールリンクが必要です。",

@@ -274,7 +274,7 @@ export interface TAKChannelChatMessage {
 }
 
 /** Radios whose companions (on Reticulum, LXMF peers) TAK clients may message directly. */
-export const TAK_DM_PROTOCOLS = ['meshcore', 'meshtastic', 'reticulum'] as const;
+export const TAK_DM_PROTOCOLS = ['meshcore', 'meshtastic', 'reticulum', 'meshcom'] as const;
 export type TakDmProtocol = (typeof TAK_DM_PROTOCOLS)[number];
 
 export function isTakDmProtocol(value: unknown): value is TakDmProtocol {

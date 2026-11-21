@@ -10,9 +10,12 @@ export const KISS_TFESC = 0xdd;
 
 /**
  * Max encoded bytes buffered between FENDs. Delimiter-free TCP streams must not
- * grow the deframer without bound (DoS). Matches EXTUDP datagram ceiling.
+ * grow the deframer without bound (DoS).
  */
-export const KISS_SLIP_MAX_ENCODED_FRAME_BYTES = 64 * 1024;
+export const KISS_SLIP_DEFRAME_MAX_BYTES = 128 * 1024;
+
+/** @deprecated Prefer {@link KISS_SLIP_DEFRAME_MAX_BYTES}. */
+export const KISS_SLIP_MAX_ENCODED_FRAME_BYTES = KISS_SLIP_DEFRAME_MAX_BYTES;
 
 /** Escape payload bytes and wrap with FEND delimiters (includes type byte in payload). */
 export function kissSlipEncode(payload: Uint8Array | number[]): Uint8Array {
@@ -64,14 +67,15 @@ export function kissSlipDecode(frame: Uint8Array | number[]): Uint8Array | null 
  */
 export class KissSlipDeframer {
   private buffer: number[] = [];
-  private overflowed = false;
+  /** After overflow, drop bytes until the next FEND (no partial frame emit). */
+  private dropUntilFend = false;
 
   push(chunk: Uint8Array | number[]): Uint8Array[] {
     const frames: Uint8Array[] = [];
     for (const byte of chunk) {
       if (byte === KISS_FEND) {
-        if (this.overflowed) {
-          this.overflowed = false;
+        if (this.dropUntilFend) {
+          this.dropUntilFend = false;
           this.buffer = [];
           continue;
         }
@@ -82,14 +86,14 @@ export class KissSlipDeframer {
           }
           this.buffer = [];
         }
-      } else if (this.overflowed) {
+      } else if (this.dropUntilFend) {
         // Discard until the next FEND so a partial over-limit frame cannot resume.
         continue;
       } else {
         this.buffer.push(byte);
-        if (this.buffer.length > KISS_SLIP_MAX_ENCODED_FRAME_BYTES) {
+        if (this.buffer.length > KISS_SLIP_DEFRAME_MAX_BYTES) {
           this.buffer = [];
-          this.overflowed = true;
+          this.dropUntilFend = true;
         }
       }
     }
@@ -98,6 +102,6 @@ export class KissSlipDeframer {
 
   reset(): void {
     this.buffer = [];
-    this.overflowed = false;
+    this.dropUntilFend = false;
   }
 }

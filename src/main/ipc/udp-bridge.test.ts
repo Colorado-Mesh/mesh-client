@@ -58,6 +58,14 @@ vi.mock('node:dgram', () => ({
   },
 }));
 
+vi.mock('node:dns', () => ({
+  default: {
+    promises: {
+      lookup: vi.fn(() => Promise.resolve({ address: '192.168.1.20', family: 4 })),
+    },
+  },
+}));
+
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
 }));
@@ -106,24 +114,24 @@ describe('createUdpBridge', () => {
       validateHost,
     });
 
-    await bridge.connect(event, '192.168.1.10');
+    await bridge.connect(event, 'radio.local');
     expect(assertIpcSender).toHaveBeenCalledWith(event, 'meshcom:udp-connect');
     expect(sockets).toHaveLength(1);
     expect(sockets[0].bindPort).toBe(MESHCOM_EXTUDP_PORT);
-    expect(sockets[0].connect).toHaveBeenCalledWith(MESHCOM_EXTUDP_PORT, '192.168.1.10');
-    expect(sockets[0].connected).toEqual({ port: MESHCOM_EXTUDP_PORT, host: '192.168.1.10' });
+    expect(sockets[0].connect).toHaveBeenCalledWith(MESHCOM_EXTUDP_PORT, '192.168.1.20');
+    expect(sockets[0].connected).toEqual({ port: MESHCOM_EXTUDP_PORT, host: '192.168.1.20' });
 
     await bridge.write(event, [0x7b, 0x7d]);
     expect(sockets[0].send).toHaveBeenCalledWith(
       Buffer.from([0x7b, 0x7d]),
       MESHCOM_EXTUDP_PORT,
-      '192.168.1.10',
+      '192.168.1.20',
       expect.any(Function),
     );
 
     const msgHandler = sockets[0];
     msgHandler.emit('message', Buffer.from('{"type":"msg"}'), {
-      address: '192.168.1.10',
+      address: '192.168.1.20',
       port: MESHCOM_EXTUDP_PORT,
     });
     expect(send).toHaveBeenCalledWith(
