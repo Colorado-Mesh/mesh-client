@@ -72,3 +72,9 @@ Package.resolved
 
 # Local CodeGraph index
 .codegraph/
+
+# Local ast-grep project (sg init)
+/sgconfig.yml
+/rules/
+/rule-tests/
+/utils/
