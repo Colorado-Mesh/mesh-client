@@ -13,6 +13,7 @@ describe('reconnectRfFromLastConnection', () => {
     connectSerialAutomatic: vi.fn().mockResolvedValue(undefined),
     connectHttp: vi.fn().mockResolvedValue(undefined),
     connectTcp: vi.fn().mockResolvedValue(undefined),
+    connectUdp: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -63,6 +64,22 @@ describe('reconnectRfFromLastConnection', () => {
     localStorage.setItem(STORAGE_KEY('meshtastic'), JSON.stringify({ type: 'tcp' }));
     await expect(reconnectRfFromLastConnection('meshtastic', 'tcp', handlers)).rejects.toThrow(
       /missing TCP address/,
+    );
+  });
+
+  it('reconnects MeshCom EXTUDP using stored address', async () => {
+    localStorage.setItem(
+      STORAGE_KEY('meshcom'),
+      JSON.stringify({ type: 'udp', httpAddress: '192.168.1.50' }),
+    );
+    await reconnectRfFromLastConnection('meshcom', 'udp', handlers);
+    expect(handlers.connectUdp).toHaveBeenCalledWith('192.168.1.50');
+  });
+
+  it('throws when reconnecting MeshCom UDP with no stored address', async () => {
+    localStorage.setItem(STORAGE_KEY('meshcom'), JSON.stringify({ type: 'udp' }));
+    await expect(reconnectRfFromLastConnection('meshcom', 'udp', handlers)).rejects.toThrow(
+      /missing UDP address/,
     );
   });
 

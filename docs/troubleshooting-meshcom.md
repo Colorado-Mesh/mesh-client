@@ -1,6 +1,6 @@
 # MeshCom troubleshooting
 
-MeshCom-specific problems. For general connection, Bluetooth, USB serial, MQTT, log analysis, and bug-report help, see [Troubleshooting](troubleshooting.md). For protocol setup, see [MeshCom](meshcom.md).
+MeshCom-specific problems. For general connection, Bluetooth, USB serial, MQTT, log analysis, and bug-report help, see [Troubleshooting](troubleshooting.md). For protocol setup, see [MeshCom](development/meshcom.md).
 
 ## EXTUDP connect fails or no traffic
 
