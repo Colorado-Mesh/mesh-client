@@ -78,3 +78,6 @@ Package.resolved
 /rules/
 /rule-tests/
 /utils/
+
+# Local OpenCode config
+/opencode.json
