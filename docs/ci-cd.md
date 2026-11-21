@@ -512,7 +512,7 @@ The sidecars reach the packaging jobs as tar archives from the same workflow run
 | Build Binaries Windows meta  | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
 | Build Flatpak                | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
 
-CLI fallback: `gh run download <run-id> -n <artifact-name>`. Job summaries on the Windows packaging and Flatpak jobs also list the `artifact-url` links.
+Download **`archive: false`** Windows Setup / Flatpak artifacts via the Actions Artifacts UI or the `artifact-url` links in those jobs’ summaries. Do **not** use `gh run download` for them — the CLI always treats the response as a zip and fails with `zip: not a valid zip file` on raw uploads ([cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download <run-id> -n <artifact-name>`.
 
 Local `node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin` still runs host tests and builds both architectures. `--arch x64|arm64` selects one target; CI uses `--skip-tests` only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.
 
