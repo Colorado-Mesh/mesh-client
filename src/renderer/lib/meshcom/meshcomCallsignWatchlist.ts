@@ -3,6 +3,7 @@
  * Inspired by dg9vh/MeshCom-Client Settings → Watchlist.
  */
 import { getAppSettingsRaw, mergeAppSetting } from '../appSettingsStorage';
+import { CHAT_NOTIF_MUTED_STORAGE_KEY } from '../chatInactiveNotifications';
 import { playMessageNotification } from '../chatNotifications';
 import { fireNotification } from '../desktopNotification';
 import i18n from '../i18n';
@@ -141,7 +142,15 @@ export function maybeAlertMeshcomWatchlistCallsign(callsign: string): boolean {
   const last = lastAlertAtByBase.get(base) ?? 0;
   if (now - last < WATCHLIST_ALERT_COOLDOWN_MS) return false;
   lastAlertAtByBase.set(base, now);
-  playMessageNotification('dm');
+  let muted = false;
+  try {
+    muted = localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1';
+  } catch {
+    // catch-no-log-ok localStorage may be unavailable in tests / restricted contexts
+  }
+  if (!muted) {
+    playMessageNotification('dm');
+  }
   fireNotification(
     i18n.t('meshcomWatchlist.alertTitle', { callsign: base }),
     i18n.t('meshcomWatchlist.alertBody', { callsign: normalizeMeshcomCallsign(callsign) || base }),

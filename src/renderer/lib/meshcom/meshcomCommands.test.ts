@@ -41,5 +41,21 @@ describe('meshcomCommands catalog', () => {
     expect(buildMeshcomCommandLine(getMeshcomCommandById('values')!, 'temp,onewire')).toBe(
       '--values temp,onewire',
     );
+    expect(buildMeshcomCommandLine(getMeshcomCommandById('parm')!, 'tm1,tm2')).toBe(
+      '--parm tm1,tm2',
+    );
+  });
+
+  it('rejects empty arguments for dynamic APRS text descriptors', () => {
+    for (const id of ['parm', 'unit', 'eqns', 'values'] as const) {
+      const descriptor = getMeshcomCommandById(id)!;
+      expect(descriptor.argKind).toBe('text');
+      expect(() => buildMeshcomCommandLine(descriptor, '')).toThrow(
+        `meshcom command ${descriptor.token} requires an argument`,
+      );
+      expect(() => buildMeshcomCommandLine(descriptor, '   ')).toThrow(
+        `meshcom command ${descriptor.token} requires an argument`,
+      );
+    }
   });
 });

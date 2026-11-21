@@ -71,4 +71,27 @@ describe('meshcomCallsignWatchlist', () => {
     expect(playMessageNotification).toHaveBeenCalledWith('dm');
     expect(fireNotification).toHaveBeenCalled();
   });
+
+  it('skips sound when notifications are muted but still fires OS notify', async () => {
+    const { playMessageNotification } = await import('../chatNotifications');
+    const { fireNotification } = await import('../desktopNotification');
+    const { CHAT_NOTIF_MUTED_STORAGE_KEY } = await import('../chatInactiveNotifications');
+    vi.mocked(playMessageNotification).mockClear();
+    vi.mocked(fireNotification).mockClear();
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+    });
+    localStorage.setItem(CHAT_NOTIF_MUTED_STORAGE_KEY, '1');
+    await saveMeshcomCallsignWatchlist(['OE1ABC']);
+    expect(maybeAlertMeshcomWatchlistCallsign('OE1ABC-1')).toBe(true);
+    expect(playMessageNotification).not.toHaveBeenCalled();
+    expect(fireNotification).toHaveBeenCalled();
+  });
 });

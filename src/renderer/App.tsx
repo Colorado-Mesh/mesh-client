@@ -6479,7 +6479,8 @@ function AppContent() {
                                           useFahrenheit={useFahrenheit}
                                           onSendPositionOnAir={
                                             mapProtocol === 'meshcom' &&
-                                            meshcomPanelActions.deviceCommands.available
+                                            meshcomPanelActions.deviceCommands.available &&
+                                            canTransmitLocation({ protocol: 'meshcom' })
                                               ? async () => {
                                                   const pos = asOurPosition(
                                                     meshcomRuntime.ourPosition,

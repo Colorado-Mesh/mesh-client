@@ -3731,8 +3731,11 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
   'scheduledBroadcastsEnabled',
+  'meshcomCallsignWatchlist',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
+/** JSON array of up to 50 base callsigns (see MESHCOM_CALLSIGN_WATCHLIST_MAX). */
+const MESHCOM_CALLSIGN_WATCHLIST_MAX_VALUE_LENGTH = 2048;
 
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
@@ -3760,6 +3763,7 @@ function appSettingsMaxValueLengthForKey(key: string): number {
   }
   if (key === 'notificationSounds') return 4096;
   if (key === 'meshtasticOwnNodeNumsByPublicKey') return 4096;
+  if (key === 'meshcomCallsignWatchlist') return MESHCOM_CALLSIGN_WATCHLIST_MAX_VALUE_LENGTH;
   if (
     key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)

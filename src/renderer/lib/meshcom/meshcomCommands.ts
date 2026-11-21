@@ -256,7 +256,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     token: '--parm',
     channel: 'app',
     group: 'sensors',
-    argKind: 'custom',
+    argKind: 'text',
     argHint: 'tm1,tm2,tm3,tm4,tm5',
   },
   {
@@ -264,7 +264,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     token: '--unit',
     channel: 'app',
     group: 'sensors',
-    argKind: 'custom',
+    argKind: 'text',
     argHint: 'V,A,mV,C,hPa',
   },
   {
@@ -272,7 +272,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     token: '--eqns',
     channel: 'app',
     group: 'sensors',
-    argKind: 'custom',
+    argKind: 'text',
     argHint: '0,1,0, 0,1,0, 0,1,0, 0,1,0, 0,1,0',
   },
   {
@@ -280,7 +280,7 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     token: '--values',
     channel: 'app',
     group: 'sensors',
-    argKind: 'custom',
+    argKind: 'text',
     argHint: 'temp,onewire,press,qnh,hum',
   },
   {

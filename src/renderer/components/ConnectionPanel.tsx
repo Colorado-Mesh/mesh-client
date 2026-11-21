@@ -3409,9 +3409,11 @@ export default function ConnectionPanel({
     getMeshcomNetworkTime,
     getMeshcomNetworkTime,
   );
-  const meshcomNetworkNowMs = useNowMs(protocol === 'meshcom' && meshcomNetworkTime != null);
+  const meshcomNetworkNowMs = useNowMs(
+    capabilities.hasMeshcomNetworkTime && meshcomNetworkTime != null,
+  );
   const meshcomNetworkTimeDetail =
-    protocol === 'meshcom' && meshcomNetworkTime && meshcomNetworkNowMs > 0
+    capabilities.hasMeshcomNetworkTime && meshcomNetworkTime && meshcomNetworkNowMs > 0
       ? (() => {
           const ageMs = Math.max(0, meshcomNetworkNowMs - meshcomNetworkTime.heardAtMs);
           const age =

@@ -89,6 +89,11 @@ export interface ProtocolCapabilities {
    * Protocol exception: MeshCom firmware console (Serial/BLE), not MeshCore companion CLI.
    */
   hasMeshcomDeviceCommands: boolean;
+  /**
+   * MeshCom Connection panel: gateway/network UTC (`{CET}`) mesh-liveness indicator.
+   * Protocol exception: MeshCom EXTUDP/net-time beacons only.
+   */
+  hasMeshcomNetworkTime: boolean;
   /** Whether shutdown button is available */
   hasShutdown: boolean;
   /** Whether Reset NodeDB button is available */
@@ -265,6 +270,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasCompanionTelemetryPrivacyConfig: false,
   hasCompanionCli: false,
   hasMeshcomDeviceCommands: false,
+  hasMeshcomNetworkTime: false,
   hasShutdown: true,
   hasNodeDbReset: true,
   hasFactoryReset: true,
@@ -359,6 +365,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasCompanionTelemetryPrivacyConfig: true,
   hasCompanionCli: true,
   hasMeshcomDeviceCommands: false,
+  hasMeshcomNetworkTime: false,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,
@@ -458,6 +465,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   hasCompanionTelemetryPrivacyConfig: false,
   hasCompanionCli: false,
   hasMeshcomDeviceCommands: true,
+  hasMeshcomNetworkTime: true,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,
@@ -554,6 +562,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasCompanionTelemetryPrivacyConfig: false,
   hasCompanionCli: false,
   hasMeshcomDeviceCommands: false,
+  hasMeshcomNetworkTime: false,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,
