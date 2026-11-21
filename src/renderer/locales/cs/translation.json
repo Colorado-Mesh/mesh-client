@@ -9246,7 +9246,8 @@
         "italianLanguage": "Zprávy v italštině",
         "dach": "Německo, Rakousko, Švýcarsko",
         "dl26251": "Okres Rheinisch-Bergischer Kreis"
-      }
+      },
+      "slotsFullLocalOnly": "Sloty pro poslech uzlu jsou plné (6). Otevřeno pouze lokálně – nahraďte slot v části Rádio → Identita a rezervujte si místo na uzlu."
     }
   },
   "meshcomDeviceCommands": {

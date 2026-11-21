@@ -3,7 +3,7 @@
  * Persisted so pills survive reload before any traffic arrives on that group.
  */
 
-import { parseMeshcomGrcListenList } from './meshcomGrcGroups';
+import { parseMeshcomGrcIdList } from './meshcomGrcGroups';
 
 const STORAGE_KEY = 'mesh-client:meshcomGrcLocalChannels';
 
@@ -16,7 +16,7 @@ function readRaw(): number[] {
   if (cached) return cached;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    cached = parseMeshcomGrcListenList(raw ?? '');
+    cached = parseMeshcomGrcIdList(raw ?? '');
   } catch {
     // catch-no-log-ok localStorage unavailable (private mode / SSR)
     cached = [];
@@ -65,7 +65,7 @@ export function removeMeshcomGrcLocalChannel(id: number): void {
   write(cur.filter((x) => x !== id));
 }
 
-/** Replace the entire local list (tests / clear). */
+/** Replace the entire local list (tests / clear). Uncapped (not device `--setgrc`). */
 export function setMeshcomGrcLocalChannels(ids: readonly number[]): void {
-  write(parseMeshcomGrcListenList(ids.join(';')));
+  write(parseMeshcomGrcIdList(ids.join(';')));
 }

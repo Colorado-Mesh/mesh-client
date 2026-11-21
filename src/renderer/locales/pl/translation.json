@@ -9305,7 +9305,8 @@
         "italianLanguage": "Wiadomości w języku włoskim",
         "dach": "Hiszpania",
         "dl26251": "Powiat Ren-Berg"
-      }
+      },
+      "slotsFullLocalOnly": "Gniazda nasłuchu węzła są zajęte (6). Otwarty tylko lokalnie – zastąp gniazdo w sekcji Radio → Tożsamość, aby zarezerwować je na węźle."
     }
   },
   "meshcomDeviceCommands": {

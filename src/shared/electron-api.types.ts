@@ -726,6 +726,12 @@ export interface ElectronAPI {
       status?: string | null;
       received_at?: number | null;
     }) => Promise<{ changes: number }>;
+    /** Status-only update — does not overwrite text or timestamp. */
+    updateMeshcomMessageStatus: (args: {
+      identity_id: string;
+      msg_id: string;
+      status: string;
+    }) => Promise<{ changes: number }>;
     getMeshcomContacts: (identityId?: string) => Promise<unknown[]>;
     getMeshcomDbDegraded: () => Promise<{ degraded: boolean }>;
     saveMeshcomContact: (contact: {

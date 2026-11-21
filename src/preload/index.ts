@@ -481,6 +481,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       status?: string | null;
       received_at?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcomMessage', message),
+    updateMeshcomMessageStatus: (args: { identity_id: string; msg_id: string; status: string }) =>
+      ipcRenderer.invoke('db:updateMeshcomMessageStatus', args),
     getMeshcomContacts: (identityId?: string) =>
       ipcRenderer.invoke('db:getMeshcomContacts', identityId),
     getMeshcomDbDegraded: () => ipcRenderer.invoke('meshcom:db-degraded'),

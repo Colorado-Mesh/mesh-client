@@ -11,6 +11,7 @@ export interface MeshcomDbIpcFallbackDeps {
 const MESHCOM_DB_IPC_CHANNELS = [
   'db:getMeshcomMessages',
   'db:saveMeshcomMessage',
+  'db:updateMeshcomMessageStatus',
   'db:pruneMeshcomMessagesByCount',
   'db:getMeshcomContacts',
   'db:saveMeshcomContact',

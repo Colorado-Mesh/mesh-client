@@ -9161,7 +9161,8 @@
         "italianLanguage": "İtalyanca mesajlar",
         "dach": "DACH (Almanya, Avusturya, İsviçre):",
         "dl26251": "Rheinisch-Bergischer Bölgesi"
-      }
+      },
+      "slotsFullLocalOnly": "Düğüm dinleme yuvaları dolu (6). Yalnızca yerel olarak açıldı — düğümde yer ayırtmak için Radyo → Kimlik bölümündeki bir yuvanın yerini değiştirin."
     }
   },
   "meshcomDeviceCommands": {

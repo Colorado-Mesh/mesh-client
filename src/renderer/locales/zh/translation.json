@@ -9161,7 +9161,8 @@
         "italianLanguage": "意大利语消息",
         "dach": "德国、奥地利、瑞士",
         "dl26251": "莱茵-贝格县"
-      }
+      },
+      "slotsFullLocalOnly": "节点监听插槽已满（6个）。仅在本地打开 — 更换“无线电”→“身份”中的一个插槽，以便在节点上预订。"
     }
   },
   "meshcomDeviceCommands": {

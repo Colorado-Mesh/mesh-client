@@ -9161,7 +9161,8 @@
         "italianLanguage": "Mensajes en italiano",
         "dach": "Alemania, Austria, Suiza",
         "dl26251": "la circunscripción de Rheinisch-Bergischer"
-      }
+      },
+      "slotsFullLocalOnly": "Las ranuras de escucha del nodo están llenas (6). Abierto solo localmente: sustituye un espacio en Radio → Identidad para reservar en el nodo."
     }
   },
   "meshcomDeviceCommands": {

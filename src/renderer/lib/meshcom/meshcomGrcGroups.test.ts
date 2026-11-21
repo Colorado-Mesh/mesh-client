@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildMeshcomChatChannels,
+  compactMeshcomGrcDraftSlots,
   formatMeshcomGrcListenList,
   getMeshcomGrcGroup,
   MESHCOM_GRC_GROUPS,
   MESHCOM_GRC_MAX_SLOTS,
   meshcomGrcChannelLabel,
+  parseMeshcomGrcIdList,
   parseMeshcomGrcListenList,
   searchMeshcomGrcGroups,
 } from './meshcomGrcGroups';
@@ -26,6 +28,11 @@ describe('meshcomGrcGroups', () => {
     expect(formatMeshcomGrcListenList([232, 20, 232])).toBe('232;20');
     const many = Array.from({ length: 10 }, (_, i) => i + 1);
     expect(formatMeshcomGrcListenList(many).split(';')).toHaveLength(MESHCOM_GRC_MAX_SLOTS);
+    expect(parseMeshcomGrcIdList(many.join(';'))).toHaveLength(10);
+  });
+
+  it('compacts editor slot texts only on Apply (order, dedupe, cap)', () => {
+    expect(compactMeshcomGrcDraftSlots(['232', '', '20', '232', 'abc', '9'])).toEqual([232, 20, 9]);
   });
 
   it('labels known groups with prefix', () => {

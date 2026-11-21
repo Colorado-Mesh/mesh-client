@@ -9161,7 +9161,8 @@
         "italianLanguage": "Nachrichten auf Italienisch",
         "dach": "Albanien, Österreich, Bosnien-Herzegowina, Bulgarien, Kroatien, Tschechien, Estland, Griechenland, Ungarn, Lettland, Litauen, Mazedonien, Montenegro, Polen, Rumänien, Serbien, Slowakei, Slowenien",
         "dl26251": "Rheinisch-Bergischer Kreis, 6]"
-      }
+      },
+      "slotsFullLocalOnly": "Die Abhör-Slots des Knotens sind voll (6). Nur lokal geöffnet – ersetzen Sie einen Slot unter Funk → Identität, um ihn auf dem Knoten zu buchen."
     }
   },
   "meshcomDeviceCommands": {

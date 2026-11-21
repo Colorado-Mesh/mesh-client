@@ -9161,7 +9161,8 @@
         "italianLanguage": "Messaggi in lingua italiana",
         "dach": "Germania, Austria, Svizzera",
         "dl26251": "- Rheinisch-Bergischer Kreis (distretto di Rhein-Berg)"
-      }
+      },
+      "slotsFullLocalOnly": "Gli slot di ascolto del nodo sono pieni (6). Aperto solo localmente — sostituisci uno slot in Radio → Identità per prenotare sul nodo."
     }
   },
   "meshcomDeviceCommands": {

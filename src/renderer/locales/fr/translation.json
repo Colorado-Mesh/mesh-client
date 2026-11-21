@@ -9161,7 +9161,8 @@
         "italianLanguage": "Messages en italien",
         "dach": "Allemagne, Autriche et Suisse",
         "dl26251": "- Rheinisch-Bergischer Kreis"
-      }
+      },
+      "slotsFullLocalOnly": "Les emplacements d’écoute du nœud sont complets (6). Ouvert uniquement localement — remplacez un emplacement dans Radio → Identité pour réserver sur le nœud."
     }
   },
   "meshcomDeviceCommands": {

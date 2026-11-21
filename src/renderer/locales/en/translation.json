@@ -3403,6 +3403,7 @@
       "joinTitle": "Open GRC group",
       "joinHint": "Pick a known group or enter a numeric id. Optionally book it on the connected node.",
       "joinFailed": "Could not open that GRC group.",
+      "slotsFullLocalOnly": "Node listen slots are full (6). Opened locally only — replace a slot in Radio → Identity to book on the node.",
       "open": "Open",
       "bookOnDevice": "Also book on node (--setgrc)",
       "notes": {

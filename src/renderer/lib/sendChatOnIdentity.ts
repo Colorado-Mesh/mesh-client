@@ -19,6 +19,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
+import { scheduleMeshcomDmAckTimeout } from './meshcom/meshcomRoutingAckSideEffects';
 import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
@@ -587,11 +588,7 @@ export function sendChatOnIdentity(
               'sending',
               resolvedId,
             );
-            void import('./meshcom/meshcomRoutingAckSideEffects').then(
-              ({ scheduleMeshcomDmAckTimeout }) => {
-                scheduleMeshcomDmAckTimeout(identityId, resolvedId);
-              },
-            );
+            scheduleMeshcomDmAckTimeout(identityId, resolvedId);
           } else {
             updateMessageStatus(identityId, resolvedId, 'acked');
             persistMeshcomOutboundRow(

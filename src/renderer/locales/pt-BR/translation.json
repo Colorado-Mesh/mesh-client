@@ -9161,7 +9161,8 @@
         "italianLanguage": "Mensagens em italiano",
         "dach": "Alemanha, Áustria, Suíça",
         "dl26251": "Distrito de Rheinisch-Bergischer"
-      }
+      },
+      "slotsFullLocalOnly": "Os slots de escuta do nó estão cheios (6). Aberto apenas localmente — substitua um slot em Rádio → Identidade para reservar no nó."
     }
   },
   "meshcomDeviceCommands": {

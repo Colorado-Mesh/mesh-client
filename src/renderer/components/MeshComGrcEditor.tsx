@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { isMeshcomGroupDest } from '../lib/meshcom/meshcomChannel';
 import {
-  formatMeshcomGrcListenList,
+  compactMeshcomGrcDraftSlots,
   MESHCOM_GRC_MAX_SLOTS,
-  parseMeshcomGrcListenList,
+  padMeshcomGrcSlotTexts,
   searchMeshcomGrcGroups,
 } from '../lib/meshcom/meshcomGrcGroups';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
@@ -40,7 +40,7 @@ export default function MeshComGrcEditor({
 }: MeshComGrcEditorProps) {
   const { t } = useTranslation();
   const slotsKey = slots.join(';');
-  const [draft, setDraft] = useState<number[]>(() => [...slots]);
+  const [draftTexts, setDraftTexts] = useState<string[]>(() => padMeshcomGrcSlotTexts(slots));
   const [syncedSlotsKey, setSyncedSlotsKey] = useState(slotsKey);
   const [customId, setCustomId] = useState('');
   const [query, setQuery] = useState('');
@@ -50,32 +50,33 @@ export default function MeshComGrcEditor({
   // Adjust draft when the device snapshot changes (React “store info from props” pattern).
   if (slotsKey !== syncedSlotsKey) {
     setSyncedSlotsKey(slotsKey);
-    setDraft(parseMeshcomGrcListenList(slotsKey));
+    setDraftTexts(padMeshcomGrcSlotTexts(slots));
   }
 
   const searchHits = useMemo(() => searchMeshcomGrcGroups(query).slice(0, 24), [query]);
+  const filledCount = draftTexts.filter((text) => text.trim().length > 0).length;
+  const draftHasId = useCallback(
+    (id: number) => draftTexts.some((text) => text.trim() === String(id)),
+    [draftTexts],
+  );
 
   const setSlot = useCallback((index: number, raw: string) => {
-    setDraft((prev) => {
+    setDraftTexts((prev) => {
       const next = [...prev];
-      const trimmed = raw.trim();
-      if (!trimmed) {
-        next.splice(index, 1);
-        return next;
-      }
-      if (!isMeshcomGroupDest(trimmed)) return prev;
-      const id = Number.parseInt(trimmed, 10);
-      while (next.length <= index) next.push(0);
-      next[index] = id;
-      return parseMeshcomGrcListenList(formatMeshcomGrcListenList(next.filter((n) => n > 0)));
+      next[index] = raw;
+      return next;
     });
   }, []);
 
   const addId = useCallback(
     (id: number) => {
-      setDraft((prev) => {
-        if (prev.includes(id) || prev.length >= MESHCOM_GRC_MAX_SLOTS) return prev;
-        return [...prev, id];
+      setDraftTexts((prev) => {
+        if (prev.some((text) => text.trim() === String(id))) return prev;
+        const empty = prev.findIndex((text) => !text.trim());
+        if (empty < 0) return prev;
+        const next = [...prev];
+        next[empty] = String(id);
+        return next;
       });
       onOpenInChat?.(id);
     },
@@ -85,14 +86,14 @@ export default function MeshComGrcEditor({
   const apply = useCallback(async () => {
     setLocalBusy(true);
     try {
-      await onApplyListen(draft);
+      await onApplyListen(compactMeshcomGrcDraftSlots(draftTexts));
     } finally {
       setLocalBusy(false);
     }
-  }, [draft, onApplyListen]);
+  }, [draftTexts, onApplyListen]);
 
   const clearAll = useCallback(async () => {
-    setDraft([]);
+    setDraftTexts(padMeshcomGrcSlotTexts([]));
     setLocalBusy(true);
     try {
       await onApplyListen([]);
@@ -106,7 +107,7 @@ export default function MeshComGrcEditor({
       <p className="text-muted text-xs">{t('meshcom.grc.editorHint')}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {Array.from({ length: MESHCOM_GRC_MAX_SLOTS }, (_, index) => {
-          const value = draft[index];
+          const value = draftTexts[index] ?? '';
           return (
             <label key={index} className="flex flex-col gap-0.5">
               <span className="text-muted text-xs">
@@ -124,7 +125,7 @@ export default function MeshComGrcEditor({
                     : t('meshcom.grc.slotAria', { n: index + 1 })
                 }
                 placeholder={t('meshcom.grc.slotPlaceholder')}
-                value={value == null || value === 0 ? '' : String(value)}
+                value={value}
                 onChange={(e) => {
                   setSlot(index, e.target.value);
                 }}
@@ -193,10 +194,7 @@ export default function MeshComGrcEditor({
               <button
                 type="button"
                 disabled={
-                  disabled ||
-                  working ||
-                  draft.includes(g.id) ||
-                  draft.length >= MESHCOM_GRC_MAX_SLOTS
+                  disabled || working || draftHasId(g.id) || filledCount >= MESHCOM_GRC_MAX_SLOTS
                 }
                 aria-label={t('meshcom.grc.addKnownAria', { prefix: g.prefix, id: g.id })}
                 onClick={() => {
@@ -235,7 +233,7 @@ export default function MeshComGrcEditor({
               disabled ||
               working ||
               !isMeshcomGroupDest(customId.trim()) ||
-              draft.length >= MESHCOM_GRC_MAX_SLOTS
+              filledCount >= MESHCOM_GRC_MAX_SLOTS
             }
             aria-label={t('meshcom.grc.addCustomAria')}
             onClick={() => {

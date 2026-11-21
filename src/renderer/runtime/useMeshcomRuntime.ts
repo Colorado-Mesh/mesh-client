@@ -25,6 +25,7 @@ import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshc
 import { resolveMeshcomContactIdentity } from '../lib/meshcom/meshcomContactIdentity';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
 import { markMeshcomLocallyDeletedContact } from '../lib/meshcom/meshcomLocallyDeletedContacts';
+import { attachMeshcomRoutingAckSideEffects } from '../lib/meshcom/meshcomRoutingAckSideEffects';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
@@ -225,20 +226,13 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           ].slice(-MAX_TELEMETRY_POINTS),
         );
       });
-      const routingAckHolder: { detach: (() => void) | null } = { detach: null };
-      void import('../lib/meshcom/meshcomRoutingAckSideEffects')
-        .then(({ attachMeshcomRoutingAckSideEffects }) => {
-          if (identityIdRef.current !== identityId) return;
-          routingAckHolder.detach = attachMeshcomRoutingAckSideEffects(identityId);
-        })
-        .catch((e: unknown) => {
-          console.warn('[useMeshcomRuntime] routing ACK attach failed ' + errLikeToLogString(e));
-        });
+      // Sync attach so routing ACKs are registered before session becomes configured.
+      const detachRoutingAck = attachMeshcomRoutingAckSideEffects(identityId);
       const prevTelemetryDetach = telemetryDetachRef.current;
       telemetryDetachRef.current = () => {
         prevTelemetryDetach?.();
         detachSignal();
-        routingAckHolder.detach?.();
+        detachRoutingAck();
       };
     },
     [detachIngest, pushEnvTelemetry, pushLocalTelemetry, state.myNodeNum],

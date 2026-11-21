@@ -497,6 +497,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: true,
   prefersDeviceDeliveryStatusOverMqtt: true,
   // DM / gateway ACK frames settle outbound chat (see meshcomRoutingAckSideEffects).
+  // Group (ALL/GRC) floods stay ineligible for auto-resend via isAutoResendEligible.
   hasChannelDeliveryAck: true,
   messageRouteDetail: 'floodPath',
   hasDiagnosticsPanel: true,

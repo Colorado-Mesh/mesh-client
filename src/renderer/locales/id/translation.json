@@ -9161,7 +9161,8 @@
         "italianLanguage": "Pesan dalam bahasa Italia",
         "dach": "Jerman, Austria, Swiss",
         "dl26251": "Distrik Rheinisch-Bergischer"
-      }
+      },
+      "slotsFullLocalOnly": "Slot dengar node penuh (6). Hanya dibuka secara lokal — ganti slot di Radio → Identitas untuk memesan di node."
     }
   },
   "meshcomDeviceCommands": {

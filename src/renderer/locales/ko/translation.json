@@ -9161,7 +9161,8 @@
         "italianLanguage": "이탈리아어 메시지",
         "dach": "독일, 오스트리아, 스위스",
         "dl26251": "라인-베르기셔크라이스"
-      }
+      },
+      "slotsFullLocalOnly": "노드 수신 슬롯이 가득 찼습니다(6). 로컬에서만 열림 — 노드에 예약하려면 라디오 → ID에서 슬롯을 교체하세요."
     }
   },
   "meshcomDeviceCommands": {

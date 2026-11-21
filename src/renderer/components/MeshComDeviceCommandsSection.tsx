@@ -105,17 +105,19 @@ export default function MeshComDeviceCommandsSection({
   ) as 'on' | 'off' | null;
 
   const sendNow = useCallback(
-    async (command: string) => {
+    async (command: string): Promise<boolean> => {
       setBusy(true);
       try {
         const result = await commands.run(command);
         pushConsole('sent', redactMeshcomCommandForLog(result.command));
         onToast?.(t('meshcomDeviceCommands.sent'), 'success');
+        return true;
       } catch (e) {
         const msg = errLikeToLogString(e);
         console.warn('[MeshComDeviceCommands] send failed ' + msg);
         pushConsole('error', msg);
         onToast?.(t('meshcomDeviceCommands.sendFailed', { detail: msg }), 'error');
+        return false;
       } finally {
         setBusy(false);
       }
@@ -127,7 +129,8 @@ export default function MeshComDeviceCommandsSection({
     async (ids: readonly number[]) => {
       const arg = formatMeshcomGrcListenList(ids);
       const line = arg ? `--setgrc ${arg}` : '--setgrc';
-      await sendNow(line);
+      const ok = await sendNow(line);
+      if (!ok) return;
       setArgById((prev) => ({ ...prev, setgrc: arg }));
       void commands.refreshSettings();
     },
@@ -136,7 +139,8 @@ export default function MeshComDeviceCommandsSection({
 
   const applyNomsgall = useCallback(
     async (value: 'on' | 'off') => {
-      await sendNow(`--nomsgall ${value}`);
+      const ok = await sendNow(`--nomsgall ${value}`);
+      if (!ok) return;
       setArgById((prev) => ({ ...prev, nomsgall: value }));
       void commands.refreshSettings();
     },

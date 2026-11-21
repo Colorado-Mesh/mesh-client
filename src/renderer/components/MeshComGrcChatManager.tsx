@@ -1,8 +1,9 @@
 import { Plus, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { useModalFocusTrap } from '@/renderer/hooks/useModalFocusTrap';
 import { isMeshcomGroupDest } from '@/renderer/lib/meshcom/meshcomChannel';
 import {
   MESHCOM_GRC_MAX_SLOTS,
@@ -42,7 +43,6 @@ export default function MeshComGrcChatManager({
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const closeDialog = useCallback(() => {
     setOpen(false);
@@ -51,21 +51,11 @@ export default function MeshComGrcChatManager({
     setFeedback(null);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    inputRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!saving) closeDialog();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown, true);
-    };
-  }, [open, saving, closeDialog]);
+  const closeIfIdle = useCallback(() => {
+    if (!saving) closeDialog();
+  }, [closeDialog, saving]);
+
+  useModalFocusTrap(panelRef, closeIfIdle, { enabled: open });
 
   const openGroup = useCallback(
     async (id: number) => {
@@ -73,16 +63,20 @@ export default function MeshComGrcChatManager({
       setSaving(true);
       setFeedback(null);
       try {
+        // Local pill always opens; device booking never silently drops slots / master.
         addMeshcomGrcLocalChannel(id);
-        if (canApplyToDevice && bookOnDevice && onBookOnDevice) {
-          const next = listenGroupIds.includes(id)
-            ? listenGroupIds
-            : [...listenGroupIds, id].slice(0, MESHCOM_GRC_MAX_SLOTS);
-          if (!listenGroupIds.includes(id)) {
-            await onBookOnDevice(next);
-          }
-        }
         onSelectChannel(id);
+        if (canApplyToDevice && bookOnDevice && onBookOnDevice) {
+          if (listenGroupIds.includes(id)) {
+            closeDialog();
+            return;
+          }
+          if (listenGroupIds.length >= MESHCOM_GRC_MAX_SLOTS) {
+            setFeedback(t('meshcom.grc.slotsFullLocalOnly'));
+            return;
+          }
+          await onBookOnDevice([...listenGroupIds, id]);
+        }
         closeDialog();
       } catch (e) {
         console.warn('[MeshComGrcChatManager] open failed', e);
@@ -148,7 +142,6 @@ export default function MeshComGrcChatManager({
                 </div>
                 <p className="text-muted mb-2 text-xs">{t('meshcom.grc.joinHint')}</p>
                 <input
-                  ref={inputRef}
                   type="search"
                   disabled={saving}
                   aria-label={t('meshcom.grc.searchAria')}

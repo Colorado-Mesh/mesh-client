@@ -101,7 +101,7 @@ import {
   buildMeshcomChatChannels,
   formatMeshcomGrcListenList,
   MESHCOM_GRC_MAX_SLOTS,
-  parseMeshcomGrcListenList,
+  parseMeshcomGrcIdList,
 } from '@/renderer/lib/meshcom/meshcomGrcGroups';
 import {
   getMeshcomGrcLocalChannels,
@@ -3595,7 +3595,7 @@ function AppContent() {
     return buildMeshcomChatChannels({
       listenGroupIds,
       // meshcomGrcLocalEpoch is the subscribe snapshot (semicolon-joined ids).
-      localGroupIds: parseMeshcomGrcListenList(meshcomGrcLocalEpoch),
+      localGroupIds: parseMeshcomGrcIdList(meshcomGrcLocalEpoch),
       historyGroupIds: historyIds,
       labelAll: t('meshcom.channelAll'),
       labelGroup: (id) => t('meshcom.channelGroup', { id }),

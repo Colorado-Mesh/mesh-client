@@ -9161,7 +9161,8 @@
         "italianLanguage": "Berichten in het Italiaans",
         "dach": "België, Nederland, Luxemburg",
         "dl26251": "Rheinisch-Bergischer Kreis"
-      }
+      },
+      "slotsFullLocalOnly": "Luisterplaatsen van knooppunt zijn vol (6). Alleen lokaal geopend — vervang een sleuf in Radio → Identiteit om op het knooppunt te boeken."
     }
   },
   "meshcomDeviceCommands": {

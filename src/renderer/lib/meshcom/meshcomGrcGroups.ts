@@ -126,8 +126,11 @@ export function getMeshcomGrcGroup(id: number): MeshcomGrcGroup | undefined {
   return BY_ID.get(id);
 }
 
-/** Parse semicolon-separated `--setgrc` / snapshot value into unique ids (max 6). */
-export function parseMeshcomGrcListenList(raw: string | null | undefined): number[] {
+/**
+ * Parse semicolon-separated GRC ids (unique, valid 1–99999).
+ * Uncapped — use for local chat pills. Device listen uses {@link parseMeshcomGrcListenList}.
+ */
+export function parseMeshcomGrcIdList(raw: string | null | undefined): number[] {
   if (!raw?.trim()) return [];
   const out: number[] = [];
   const seen = new Set<number>();
@@ -138,7 +141,33 @@ export function parseMeshcomGrcListenList(raw: string | null | undefined): numbe
     if (seen.has(id)) continue;
     seen.add(id);
     out.push(id);
-    if (out.length >= MESHCOM_GRC_MAX_SLOTS) break;
+  }
+  return out;
+}
+
+/** Parse semicolon-separated `--setgrc` / snapshot value into unique ids (max 6). */
+export function parseMeshcomGrcListenList(raw: string | null | undefined): number[] {
+  return parseMeshcomGrcIdList(raw).slice(0, MESHCOM_GRC_MAX_SLOTS);
+}
+
+/**
+ * Compact editor slot text into a device listen list (order preserved, dedupe, max 6).
+ * Call on Apply — not on each keystroke.
+ */
+export function compactMeshcomGrcDraftSlots(texts: readonly string[]): number[] {
+  return parseMeshcomGrcListenList(
+    texts
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .join(';'),
+  );
+}
+
+/** Pad device listen ids into six editable slot strings. */
+export function padMeshcomGrcSlotTexts(ids: readonly number[]): string[] {
+  const out = Array.from({ length: MESHCOM_GRC_MAX_SLOTS }, () => '');
+  for (let i = 0; i < Math.min(ids.length, MESHCOM_GRC_MAX_SLOTS); i++) {
+    out[i] = String(ids[i]);
   }
   return out;
 }

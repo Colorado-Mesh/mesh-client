@@ -12,7 +12,8 @@ import {
   useMessageStore,
 } from '../../stores/messageStore';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
-import { normalizeAckProofStatus } from '../meshtastic/meshtasticAckProof';
+import { errLikeToLogString } from '../errLikeToLogString';
+import type { MeshtasticAckProofStatus } from '../meshtastic/meshtasticAckProof';
 import type { IdentityId } from '../types';
 
 /** FAQ: undelivered DM after ~6 minutes. */
@@ -36,12 +37,52 @@ function clearDmAckTimer(identityId: IdentityId, messageId: string): void {
 function readOutboundRow(
   identityId: IdentityId,
   messageId: string,
-): { status?: string } | undefined {
+): { status?: string; to?: number; channelIndex?: number } | undefined {
   const messages = useMessageStore.getState().messages;
   if (!Object.hasOwn(messages, identityId)) return undefined;
   const bucket = messages[identityId];
   if (!Object.hasOwn(bucket, messageId)) return undefined;
   return bucket[messageId];
+}
+
+function isMeshcomDmRow(row: { to?: number; channelIndex?: number }): boolean {
+  return row.channelIndex === -1;
+}
+
+/**
+ * MeshCom radio ACKs are not Meshtastic cryptographic proofs — never stamp `valid`.
+ * Successful peer receipt → `absent` (acked, unproven); NACK → `invalid`.
+ */
+function meshcomAckProofStatus(isAck: boolean): MeshtasticAckProofStatus {
+  return isAck ? 'absent' : 'invalid';
+}
+
+/** Persist terminal status only — do not rewrite text / timestamp. */
+function persistMeshcomTerminalStatus(
+  identityId: IdentityId,
+  messageId: string,
+  status: 'acked' | 'failed',
+): void {
+  void window.electronAPI.db
+    .updateMeshcomMessageStatus({
+      identity_id: identityId,
+      msg_id: messageId,
+      status,
+    })
+    .catch((e: unknown) => {
+      console.warn(
+        '[meshcomRoutingAck] updateMeshcomMessageStatus failed ' + errLikeToLogString(e),
+      );
+    });
+}
+
+function settleOutboundStatus(
+  identityId: IdentityId,
+  messageId: string,
+  status: 'acked' | 'failed',
+): void {
+  updateMessageStatus(identityId, messageId, status);
+  persistMeshcomTerminalStatus(identityId, messageId, status);
 }
 
 /**
@@ -55,7 +96,7 @@ export function scheduleMeshcomDmAckTimeout(identityId: IdentityId, messageId: s
     pendingDmTimers.delete(key);
     const row = readOutboundRow(identityId, messageId);
     if (row?.status !== 'sending') return;
-    updateMessageStatus(identityId, messageId, 'failed');
+    settleOutboundStatus(identityId, messageId, 'failed');
   }, MESHCOM_DM_ACK_TIMEOUT_MS);
   pendingDmTimers.set(key, timer);
 }
@@ -75,17 +116,27 @@ export function clearAllMeshcomDmAckTimeouts(): void {
 export function attachMeshcomRoutingAckSideEffects(identityId: IdentityId): () => void {
   return attachTypedPacketListener(identityId, 'meshtastic_routing_ack', (payload) => {
     const messageId = String(payload.requestId >>> 0);
-    clearDmAckTimer(identityId, messageId);
-    const proof = normalizeAckProofStatus(payload.isAck ? 1 : 0);
-    updateMeshtasticDeliveryMeta(identityId, messageId, { ackProofStatus: proof });
     const row = readOutboundRow(identityId, messageId);
     if (!row) return;
+    // When the peer callsign/node is known, require it to match the outbound DM destination.
+    if (
+      isMeshcomDmRow(row) &&
+      payload.from != null &&
+      row.to != null &&
+      payload.from >>> 0 !== row.to >>> 0
+    ) {
+      return;
+    }
+    clearDmAckTimer(identityId, messageId);
+    updateMeshtasticDeliveryMeta(identityId, messageId, {
+      ackProofStatus: meshcomAckProofStatus(payload.isAck),
+    });
     if (payload.isAck) {
       if (row.status === 'sending' || row.status === 'failed') {
-        updateMessageStatus(identityId, messageId, 'acked');
+        settleOutboundStatus(identityId, messageId, 'acked');
       }
     } else if (row.status === 'sending') {
-      updateMessageStatus(identityId, messageId, 'failed');
+      settleOutboundStatus(identityId, messageId, 'failed');
     }
   });
 }
