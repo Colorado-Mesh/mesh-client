@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Maak verbinding via seriële poort of BLE om apparaatopdrachten te verzenden. EXTUDP en KISS/TCP ondersteunen alleen chat.",
     "filter": "Opdrachten filteren",
     "filterPlaceholder": "Zoeken --settime, gateway, buren…",
-    "serialOnly": "alleen serieel",
+    "serialOnly": "USB seriële console (verouderd)",
     "run": "Hardlopen",
     "runCommand": "Uitvoeren {{command}}",
     "runChoice": "{{command}} {{value}} uitvoeren",
@@ -9221,7 +9221,7 @@
       "clock": "Klok",
       "advanced": "Geavanceerde console en filter"
     },
-    "appEligible": "APP / Serieel",
+    "appEligible": "Serienummer / BLE",
     "loadingConfig": "Apparaatconfiguratie wordt geladen…",
     "currentValue": "nu {{value}}"
   },

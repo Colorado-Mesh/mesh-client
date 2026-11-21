@@ -9329,7 +9329,7 @@
     "requiresSerialBle": "Połącz się przez port szeregowy lub BLE, aby wysyłać polecenia do urządzenia. EXTUDP i KISS/TCP obsługują wyłącznie czat.",
     "filter": "Filtruj polecenia",
     "filterPlaceholder": "Wyszukaj --settime, bramę, sąsiadów…",
-    "serialOnly": "tylko numer seryjny",
+    "serialOnly": "Konsola szeregowa USB (starsza wersja)",
     "run": "Bieganie",
     "runCommand": "Uruchom {{command}}",
     "runChoice": "Uruchom {{command}} {{value}}",
@@ -9365,7 +9365,7 @@
       "clock": "Zegar",
       "advanced": "Zaawansowana konsola i filtr"
     },
-    "appEligible": "Aplikacja / Numer seryjny",
+    "appEligible": "Numer seryjny / BLE",
     "loadingConfig": "Ładowanie konfiguracji urządzenia…",
     "currentValue": "teraz {{value}}"
   },

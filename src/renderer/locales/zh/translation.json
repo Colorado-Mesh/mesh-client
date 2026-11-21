@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "通过串行或BLE连接以发送设备命令。EXTUDP 和 KISS/TCP 仅用于聊天。",
     "filter": "筛选命令",
     "filterPlaceholder": "搜索 --settime、网关、邻居……",
-    "serialOnly": "仅限串行",
+    "serialOnly": "USB串行控制台（旧版）",
     "run": "潛襲",
     "runCommand": "运行{{command}}",
     "runChoice": "运行{{command}} {{value}}",
@@ -9221,7 +9221,7 @@
       "clock": "按点儿",
       "advanced": "高级控制台和筛选器"
     },
-    "appEligible": "应用程序/序列号",
+    "appEligible": "序列号/ BLE",
     "loadingConfig": "正在加载设备配置……",
     "currentValue": "现在{{value}}"
   },

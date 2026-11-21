@@ -9270,7 +9270,7 @@
     "requiresSerialBle": "Pro odesílání příkazů zařízení se připojte přes sériové rozhraní nebo BLE. EXTUDP a KISS/TCP přenášejí pouze chat.",
     "filter": "Filtrovat příkazy",
     "filterPlaceholder": "Hledat --settime, bránu, sousedy…",
-    "serialOnly": "pouze sériové číslo",
+    "serialOnly": "USB sériová konzole (starší)",
     "run": "Spustit",
     "runCommand": "Spustit {{command}}",
     "runChoice": "Spustit {{command}} {{value}}",
@@ -9306,7 +9306,7 @@
       "clock": "Hodiny",
       "advanced": "Pokročilá konzole a filtr"
     },
-    "appEligible": "Aplikace / Sériové číslo",
+    "appEligible": "Sériové číslo / BLE",
     "loadingConfig": "Načítání konfigurace zařízení…",
     "currentValue": "nyní {{value}}"
   },

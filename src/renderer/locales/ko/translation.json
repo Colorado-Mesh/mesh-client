@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "장치 명령을 보내려면 직렬 또는 BLE을(를) 통해 연결하세요. EXTUDP 및 KISS/TCP는 채팅만 전송합니다.",
     "filter": "명령 필터링",
     "filterPlaceholder": "--settime, 게이트웨이, 이웃... 검색",
-    "serialOnly": "일련번호만",
+    "serialOnly": "USB 직렬 콘솔(레거시)",
     "run": "런",
     "runCommand": "{{command}} 실행",
     "runChoice": "{{command}} {{value}} 실행",
@@ -9221,7 +9221,7 @@
       "clock": "클럭",
       "advanced": "고급 콘솔 및 필터"
     },
-    "appEligible": "앱/일련번호",
+    "appEligible": "일련번호 / BLE",
     "loadingConfig": "장치 구성 로드 중...",
     "currentValue": "현재 {{value}}"
   },

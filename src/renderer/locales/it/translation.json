@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Connettiti tramite porta seriale o BLE per inviare comandi al dispositivo. EXTUDP e KISS/TCP supportano solo la chat.",
     "filter": "Filtra comandi",
     "filterPlaceholder": "Cerca --settime, gateway, neighbor...",
-    "serialOnly": "solo seriale",
+    "serialOnly": "Console seriale USB (legacy)",
     "run": "Marcia",
     "runCommand": "Esegui {{command}}",
     "runChoice": "Esegui {{command}} {{value}}",
@@ -9221,7 +9221,7 @@
       "clock": "Orologio",
       "advanced": "Console e filtro avanzati"
     },
-    "appEligible": "APP / Numero di serie",
+    "appEligible": "Numero di serie / BLE",
     "loadingConfig": "Caricamento della configurazione del dispositivo in corso...",
     "currentValue": "ora {{value}}"
   },

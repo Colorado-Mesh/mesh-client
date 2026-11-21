@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Stellen Sie eine Verbindung über Serial oder BLE her, um Gerätebefehle zu senden. EXTUDP und KISS/TCP übertragen nur den Chat.",
     "filter": "Befehle filtern",
     "filterPlaceholder": "Suche --settime, Gateway, Nachbarn …",
-    "serialOnly": "nur seriell",
+    "serialOnly": "USB serielle Konsole (Legacy)",
     "run": "Ausführen",
     "runCommand": "{{command}} ausführen",
     "runChoice": "{{command}} {{value}} ausführen",
@@ -9221,7 +9221,7 @@
       "clock": "Uhr",
       "advanced": "Erweiterte Konsole und Filter"
     },
-    "appEligible": "APP/Seriennummer",
+    "appEligible": "Seriennummer / BLE",
     "loadingConfig": "Gerätekonfiguration wird geladen …",
     "currentValue": "jetzt {{value}}"
   },

@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "シリアルまたはBLEを介して接続し、デバイスコマンドを送信します。EXTUDPおよびKISS/TCPはチャットのみを伝送します。",
     "filter": "コマンドを絞り込む",
     "filterPlaceholder": "--settime、ゲートウェイ、ネイバーを検索…",
-    "serialOnly": "シリアルのみ",
+    "serialOnly": "USBシリアルコンソール（レガシー）",
     "run": "ラン",
     "runCommand": "{{command}}を実行",
     "runChoice": "{{command}} {{value}}を実行",
@@ -9221,7 +9221,7 @@
       "clock": "時計",
       "advanced": "高度なコンソールとフィルター"
     },
-    "appEligible": "アプリ/シリアル番号",
+    "appEligible": "シリアル番号 / BLE",
     "loadingConfig": "デバイス構成を読み込み中…",
     "currentValue": "現在 {{value}}"
   },

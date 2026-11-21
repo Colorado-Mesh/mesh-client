@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Connectez-vous via Serial ou BLE pour envoyer des commandes à l’appareil. EXTUDP et KISS/TCP ne transmettent que le chat.",
     "filter": "Filtrer les commandes",
     "filterPlaceholder": "Rechercher --settime, passerelle, voisins…",
-    "serialOnly": "série uniquement",
+    "serialOnly": "Console série USB (ancienne)",
     "run": "Exécuter",
     "runCommand": "Exécuter {{command}}",
     "runChoice": "Exécuter {{command}} {{value}}",
@@ -9221,7 +9221,7 @@
       "clock": "Horloge",
       "advanced": "Console et filtre avancés"
     },
-    "appEligible": "APPLICATION/Numéro de série",
+    "appEligible": "Numéro de série / BLE",
     "loadingConfig": "Chargement de la configuration de l’appareil…",
     "currentValue": "maintenant {{value}}"
   },

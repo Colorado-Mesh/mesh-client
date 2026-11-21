@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Cihaz komutlarını göndermek için Seri veya BLE üzerinden bağlanın. EXTUDP ve KISS/TCP yalnızca sohbeti taşır.",
     "filter": "Komutları filtrele",
     "filterPlaceholder": "--settime, ağ geçidi, komşular… arayın",
-    "serialOnly": "yalnızca seri",
+    "serialOnly": "USB seri konsol (eski)",
     "run": "Koşma",
     "runCommand": "{{command}} çalıştırın",
     "runChoice": "{{command}} {{value}} çalıştırın",
@@ -9221,7 +9221,7 @@
       "clock": "Saat",
       "advanced": "Gelişmiş konsol ve filtre"
     },
-    "appEligible": "Uygulama / Seri",
+    "appEligible": "Seri / BLE",
     "loadingConfig": "Cihaz yapılandırması yükleniyor…",
     "currentValue": "şimdi {{value}}"
   },

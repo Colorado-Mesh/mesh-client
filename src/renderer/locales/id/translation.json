@@ -9185,7 +9185,7 @@
     "requiresSerialBle": "Sambungkan melalui Serial atau BLE untuk mengirim perintah perangkat. EXTUDP dan KISS/TCP hanya untuk obrolan.",
     "filter": "Perintah filter",
     "filterPlaceholder": "Cari --settime, gateway, tetangga…",
-    "serialOnly": "hanya serial",
+    "serialOnly": "Konsol serial USB (lama)",
     "run": "Menjalankan",
     "runCommand": "Jalankan {{command}}",
     "runChoice": "Jalankan {{command}} {{value}}",
@@ -9221,7 +9221,7 @@
       "clock": "Jam",
       "advanced": "Konsol & filter canggih"
     },
-    "appEligible": "APP / Seri",
+    "appEligible": "Serial / BLE",
     "loadingConfig": "Memuat konfigurasi perangkat…",
     "currentValue": "sekarang {{value}}"
   },

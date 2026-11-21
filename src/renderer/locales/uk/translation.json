@@ -9329,7 +9329,7 @@
     "requiresSerialBle": "Під'єднайтеся через послідовний інтерфейс або BLE, щоб надсилати команди пристрою. EXTUDP і KISS/TCP підтримують лише чат.",
     "filter": "Команди фільтра",
     "filterPlaceholder": "Пошук --settime, шлюз, сусіди…",
-    "serialOnly": "лише послідовний",
+    "serialOnly": "Послідовна консоль USB (застаріла)",
     "run": "Біг",
     "runCommand": "Запустити {{command}}",
     "runChoice": "Запустити {{command}} {{value}}",
@@ -9365,7 +9365,7 @@
       "clock": "Годинник",
       "advanced": "Розширена консоль і фільтр"
     },
-    "appEligible": "ДОДАТОК / Серійний номер",
+    "appEligible": "Серійний номер / BLE",
     "loadingConfig": "Завантаження конфігурації пристрою…",
     "currentValue": "зараз {{value}}"
   },
