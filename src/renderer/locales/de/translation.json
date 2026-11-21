@@ -1208,7 +1208,8 @@
     "serialReselect": "USB-Seriellverbindung unterbrochen — wählen Sie Ihr Gerät erneut aus",
     "serialReselectAction": "Serielle Schnittstelle auswählen",
     "statusRegion": "Verbindungsstatus",
-    "rebootingReconnectAttempt": "Neustart des Radios. Wiederverbindung wird hergestellt… Versuch {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Neustart des Radios. Wiederverbindung wird hergestellt… Versuch {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "Die serielle Verbindung USB scheint hergestellt zu sein, aber die Übertragung schlägt fehl – beende die App, ziehe das Kabel ab und schließe es wieder an oder starte den Computer neu, wenn sich das Problem dadurch nicht beheben lässt."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",

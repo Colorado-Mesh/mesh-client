@@ -141,7 +141,7 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(chatRoutingErrorKeyForSdkErrorName(errorName)).toBe(key);
   });
 
-  it('marks matching outbound message failed', () => {
+  it('marks matching outbound message blocked for missing recipient PKI key', () => {
     seedOutbound([{ packetId: 669520633 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
       'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
@@ -151,8 +151,8 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(updateMessageStatus).toHaveBeenCalledWith(
       IDENTITY,
       '669520633',
-      'failed',
-      'chatPanel.routingErrors.pkiMissingRecipientKey',
+      'blocked',
+      'chatPanel.sendErrors.missingDestinationKey',
     );
   });
 

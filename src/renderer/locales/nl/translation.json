@@ -1208,7 +1208,8 @@
     "serialReselect": "USB seriële verbinding verbroken — selecteer uw apparaat opnieuw",
     "serialReselectAction": "Seriële poort selecteren",
     "statusRegion": "Verbindingsstatus",
-    "rebootingReconnectAttempt": "Radio wordt opnieuw opgestart. Opnieuw verbinden... poging {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Radio wordt opnieuw opgestart. Opnieuw verbinden... poging {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "USB seriële poort lijkt verbonden te zijn, maar de overdracht mislukt — sluit de app af, koppel de kabel los en sluit deze weer aan, of start de computer opnieuw op als het probleem aanhoudt"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",

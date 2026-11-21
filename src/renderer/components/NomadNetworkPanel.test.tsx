@@ -346,6 +346,40 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByText('pasted page')).toBeInTheDocument();
   });
 
+  it('submits multi-variable forum thread URL bar destinations with cat and thread', async () => {
+    const user = userEvent.setup();
+    const hash = '9ce92808be498e9e05590ff27cbfdfe4';
+    const destination = `${hash}:/page/forum/thread.mu\`cat=general|thread=rns-161-released`;
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Forum Thread:`!',
+      content_type: 'micron',
+    });
+    useNomadNetworkStore.setState({
+      nodes: new Map(),
+      fetchNomadPage,
+    });
+
+    render(<NomadNetworkPanel />);
+    const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+    await user.clear(urlBar);
+    await user.type(urlBar, destination);
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+
+    await waitFor(() => {
+      expect(fetchNomadPage).toHaveBeenCalledWith(
+        hash,
+        '/page/forum/thread.mu',
+        {
+          var_cat: 'general',
+          var_thread: 'rns-161-released',
+        },
+        expect.objectContaining({ requestId: expect.any(String) }),
+      );
+    });
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(destination);
+  });
+
   it('shows invalid URL error from empty-state paste without opening viewer', async () => {
     const user = userEvent.setup();
     const fetchNomadPage = vi.fn();

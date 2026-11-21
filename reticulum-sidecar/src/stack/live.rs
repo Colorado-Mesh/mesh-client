@@ -34,7 +34,7 @@ use rns_identity::identity::Identity;
 use rns_runtime::lifecycle::ShutdownSignal;
 use rns_runtime::link_session::{
     LinkSession, LinkSessionConfig, LinkSessionError, LinkSessionEvent, LinkSessionHandle,
-    discover_destination,
+    RequestOptions, discover_destination,
 };
 use rns_runtime::reticulum;
 use rns_transport::messages::{
@@ -74,7 +74,9 @@ use super::nomad_link_schedule::{
     nomad_link_schedule_cancels_prior, nomad_link_schedule_holds_request_queue,
     nomad_media_queue_lock_wait,
 };
-use super::nomad_request_payload::{nomad_media_request_payload, nomad_page_request_payload};
+use super::nomad_request_payload::{
+    nomad_link_request_data_value, nomad_media_request_payload, nomad_page_request_payload,
+};
 use super::nomad_server::NomadServerHandle;
 use super::nomad_timeouts;
 use super::packet_log::{
@@ -1905,7 +1907,14 @@ impl LiveBridge {
             self.close_nomad_link_session().await;
             return Err(LinkSessionError::Timeout("overall query"));
         }
-        let result = handle.request(path, &payload, Some(remaining)).await;
+        let request_data = nomad_link_request_data_value(&payload);
+        let request_options = RequestOptions {
+            timeout: Some(remaining),
+            ..RequestOptions::default()
+        };
+        let result = handle
+            .request_with_options(path, request_data, request_options)
+            .await;
         match result {
             Ok(resp) => {
                 debug_assert!(!nomad_fresh_request_must_drop_cache(
@@ -1925,7 +1934,15 @@ impl LiveBridge {
                     }
                     return Err(LinkSessionError::Timeout("overall query"));
                 }
-                match handle.request(path, &payload, Some(remaining)).await {
+                let request_data = nomad_link_request_data_value(&payload);
+                let request_options = RequestOptions {
+                    timeout: Some(remaining),
+                    ..RequestOptions::default()
+                };
+                match handle
+                    .request_with_options(path, request_data, request_options)
+                    .await
+                {
                     Ok(resp) => Ok((resp.data, resp.metadata)),
                     Err(e) => {
                         if nomad_fresh_request_must_drop_cache(

@@ -8,8 +8,20 @@ use std::collections::BTreeMap;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use nomad_core::{encode_media_request, encode_request_fields};
+use rns_link::link::decode_single_value;
 
-/// Decode base64 JSON object into msgpack map bytes for `LinkClient::query` payload.
+/// MessagePack value for Reticulum Link REQUEST slot 3 (NomadNet `data` / form map).
+///
+/// Pre-encoded nomad-core bodies are a single top-level map; [`rns_runtime::link_session::LinkSessionHandle::request`]
+/// would wrap them as `Binary`, which breaks Python NomadNet (`isinstance(data, dict)`).
+pub fn nomad_link_request_data_value(payload: &[u8]) -> rmpv::Value {
+    if payload.is_empty() {
+        return rmpv::Value::Nil;
+    }
+    decode_single_value(payload).unwrap_or_else(|| rmpv::Value::Binary(payload.to_vec()))
+}
+
+/// Decode base64 JSON object into msgpack map bytes for a Nomad Link REQUEST body.
 pub fn nomad_page_request_payload(data_b64: Option<&str>) -> Vec<u8> {
     let Some(b64) = data_b64.filter(|s| !s.is_empty()) else {
         return Vec::new();
@@ -80,6 +92,58 @@ mod tests {
             "{:?}",
             nomad_page_request_payload(Some("not-base64!!!"))
         );
+    }
+
+    #[test]
+    fn link_request_value_is_map_not_binary_wrapper() {
+        let mut fields = BTreeMap::new();
+        fields.insert("field_q".into(), "hello".into());
+        fields.insert("var_mode".into(), "search".into());
+        let payload = encode_request_fields(&fields);
+        let value = super::nomad_link_request_data_value(&payload);
+        let rmpv::Value::Map(map) = value else {
+            panic!("expected map for NomadNet parity, got {value:?}");
+        };
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn link_request_value_empty_payload_is_nil() {
+        assert!(matches!(
+            super::nomad_link_request_data_value(&[]),
+            rmpv::Value::Nil
+        ));
+    }
+
+    #[test]
+    fn link_request_value_forum_cat_and_thread_is_map() {
+        let mut fields = BTreeMap::new();
+        fields.insert("var_cat".into(), "general".into());
+        fields.insert("var_thread".into(), "rns-161-released".into());
+        let payload = encode_request_fields(&fields);
+        let value = super::nomad_link_request_data_value(&payload);
+        let rmpv::Value::Map(map) = value else {
+            panic!("expected map for forum vars, got {value:?}");
+        };
+        let mut cat = None;
+        let mut thread = None;
+        for (k, v) in map {
+            let name = match k {
+                rmpv::Value::String(s) => s.as_str().map(str::to_owned),
+                _ => None,
+            };
+            let text = match v {
+                rmpv::Value::String(s) => s.as_str().map(str::to_owned),
+                _ => None,
+            };
+            match name.as_deref() {
+                Some("var_cat") => cat = text,
+                Some("var_thread") => thread = text,
+                _ => {}
+            }
+        }
+        assert_eq!(cat.as_deref(), Some("general"));
+        assert_eq!(thread.as_deref(), Some("rns-161-released"));
     }
 
     #[test]

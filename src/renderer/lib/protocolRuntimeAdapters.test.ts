@@ -89,6 +89,17 @@ describe('protocolRuntimeAdapters', () => {
     expect([...map.entries()]).toEqual([[1, { route: [2], from: 3, timestamp: 4 }]]);
   });
 
+  it('asTraceRouteResultsMap tolerates missing Maps (MeshCom disabled stub)', () => {
+    expect(asTraceRouteResultsMap(undefined).size).toBe(0);
+    expect(asTraceRouteResultsMap(null).size).toBe(0);
+    expect(asTraceRouteResultsMap({} as Map<number, unknown>).size).toBe(0);
+  });
+
+  it('asChannelIndexPills tolerates missing arrays', () => {
+    expect(asChannelIndexPills(undefined)).toEqual([]);
+    expect(asChannelIndexPills(null)).toEqual([]);
+  });
+
   it('coerces ProtocolRuntime scalars used on the App path', () => {
     expect(asNumericNodeId(12, 99)).toBe(12);
     expect(asNumericNodeId('ab', 99)).toBe(99);

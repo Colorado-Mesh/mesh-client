@@ -1208,7 +1208,8 @@
     "serialReselect": "Conexión serie USB perdida — seleccione su dispositivo de nuevo",
     "serialReselectAction": "Seleccionar puerto serie",
     "statusRegion": "Estado de conexión",
-    "rebootingReconnectAttempt": "Reinicio de la radio. Volviendo a conectar… intento {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Reinicio de la radio. Volviendo a conectar… intento {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "El puerto serie USB parece estar conectado, pero la transmisión está fallando: salga de la aplicación, desconecte y vuelva a conectar el cable o reinicie el ordenador si sigue sin funcionar."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",

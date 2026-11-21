@@ -13,8 +13,10 @@ import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeS
 import { isMeshcoreOpenWireCompatEnabled } from './appSettingsStorage';
 import { withMeshtasticChannelIdentity } from './channelIdentity';
 import { nextChatReceivedAt } from './chatReceiveOrder';
+import { CHAT_SEND_ERROR_DEST_KEY_KEY } from './chatSendErrorI18n';
 import { connectionDriver } from './drivers/ConnectionDriver';
 import { errLikeToLogString } from './errLikeToLogString';
+import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
 import {
@@ -45,9 +47,6 @@ import { tryGetMeshtasticSession } from './sessions/meshtasticSession';
 import { messageRecordToChatMessage, nodeRecordToMeshNode } from './storeRecordAdapters';
 import type { IdentityId } from './types';
 
-const MESHCORE_DM_NO_KEY_ERROR =
-  'Cannot send DM: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.';
-
 /** The identity's known nodes; either level of the lookup can miss. */
 function nodesOf(identityId: IdentityId): Record<number, NodeRecord | undefined> | undefined {
   return useNodeStore.getState().nodes[identityId];
@@ -57,7 +56,7 @@ function persistMeshcoreOutboundRow(
   record: MessageRecord,
   myNodeNum: number,
   senderName: string,
-  status: 'sending' | 'acked' | 'failed',
+  status: 'sending' | 'acked' | 'failed' | 'blocked',
   packetId?: number,
 ): void {
   const chat = messageRecordToChatMessage({ ...record, status });
@@ -391,9 +390,9 @@ export function sendChatOnIdentity(
   const wireText = resolvedOutbound.wireText;
 
   const failMeshcoreDmNoKey = (): void => {
-    console.warn('[useSendMessage] send failed ' + MESHCORE_DM_NO_KEY_ERROR);
-    updateMessageStatus(identityId, provisionalId, 'failed', MESHCORE_DM_NO_KEY_ERROR);
-    persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+    console.warn('[useSendMessage] send blocked ' + CHAT_SEND_ERROR_DEST_KEY_KEY);
+    markOutboundBlocked(identityId, provisionalId, CHAT_SEND_ERROR_DEST_KEY_KEY);
+    persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'blocked');
     abandonMeshcoreHeardRepeat();
   };
 

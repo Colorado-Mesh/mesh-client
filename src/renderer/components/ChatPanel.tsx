@@ -5186,7 +5186,8 @@ function ChatPanel({
                                     status={
                                       msg.status === 'sending' ||
                                       msg.status === 'acked' ||
-                                      msg.status === 'failed'
+                                      msg.status === 'failed' ||
+                                      msg.status === 'blocked'
                                         ? msg.status
                                         : 'failed'
                                     }
