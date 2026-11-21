@@ -13,7 +13,11 @@ interface Props {
   ids: readonly string[];
   onSave: (ids: readonly string[]) => void;
   title?: string;
-  /** When false (pre-connect scope), ordering controls stay disabled. */
+  /**
+   * When false, the control stays disabled even with two or more items.
+   * Pre-connect chat order uses an in-memory pending buffer, so callers normally
+   * leave this true and only disable for unrelated reasons.
+   */
   orderingEnabled?: boolean;
 }
 

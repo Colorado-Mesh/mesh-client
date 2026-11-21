@@ -238,19 +238,23 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
       )
       .toEqual(desired);
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
-    await page.reload();
-    await openPanel(page, 'Chat');
-    await page.getByRole('button', { name: 'Order chats' }).last().click();
+    // Pre-connect order is session-only (no :0: writes). Confirm nothing was persisted
+    // under the legacy unresolved scope, then re-open the dialog in this session.
+    expect(
+      await page.evaluate(() =>
+        Object.keys(localStorage).filter((key) => key.includes('chatOrder') && key.includes(':0:')),
+      ),
+    ).toEqual([]);
+    await orderButton.click();
     await expect
       .poll(() =>
-        page
-          .getByRole('dialog')
+        dialog
           .locator('li')
           .evaluateAll((rows) => rows.map((row) => (row as HTMLElement).dataset.chatOrderId)),
       )
       .toEqual(desired);
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Order chats' }).last()).toBeEnabled();
+    await expect(orderButton).toBeEnabled();
     for (const [width, height] of [
       [768, 844],
       [390, 844],
