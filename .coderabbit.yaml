@@ -41,7 +41,7 @@ reviews:
     enabled: true
     drafts: false
     auto_pause_after_reviewed_commits: 2
-    exclude_user_handles:
+    ignore_usernames:
       - 'dependabot[bot]'
       - 'renovate[bot]'
     ignore_title_keywords:
