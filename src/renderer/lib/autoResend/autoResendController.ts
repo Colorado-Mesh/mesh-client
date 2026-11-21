@@ -164,6 +164,11 @@ export function isAutoResendEligible(protocol: MeshProtocol, record: MessageReco
   if (isGroupChannelRecord(record) && !getRadioCapabilities(protocol).hasChannelDeliveryAck) {
     return false;
   }
+  // Protocol-specific: MeshCom hasChannelDeliveryAck is for DM/gateway ACKs only —
+  // GRC / ALL floods still accept on wire without a failing delivery signal.
+  if (protocol === 'meshcom' && isGroupChannelRecord(record)) {
+    return false;
+  }
   return true;
 }
 

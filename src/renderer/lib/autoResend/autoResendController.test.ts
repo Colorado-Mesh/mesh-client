@@ -79,6 +79,9 @@ describe('isAutoResendEligible', () => {
     const channel = dm('1', { to: 0, channelIndex: 0 });
     expect(isAutoResendEligible('meshtastic', channel)).toBe(true);
     expect(isAutoResendEligible('meshcore', channel)).toBe(false);
+    // MeshCom enables DM ACK capability but still skips ALL/GRC auto-resend.
+    expect(isAutoResendEligible('meshcom', channel)).toBe(false);
+    expect(isAutoResendEligible('meshcom', dm('2'))).toBe(true);
   });
 });
 

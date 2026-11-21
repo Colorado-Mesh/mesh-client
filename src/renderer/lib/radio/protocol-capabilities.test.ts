@@ -151,7 +151,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasBluetoothConfig": false,
         "hasCayenneTelemetry": false,
         "hasChannelConfig": false,
-        "hasChannelDeliveryAck": false,
+        "hasChannelDeliveryAck": true,
         "hasCompanionCli": false,
         "hasCompanionContactManagementConfig": false,
         "hasCompanionTelemetryPrivacyConfig": false,

@@ -324,7 +324,8 @@ function emitPhoneAprsEvents(
       type: 'meshtastic_routing_ack',
       payload: {
         requestId: parsed.ackMsgId,
-        ackProofStatus: parsed.ackType,
+        // Phone 0x41 has no authenticated sender — never claim Meshtastic VALID.
+        ackProofStatus: 0,
         isAck: true,
       },
     });
@@ -617,15 +618,9 @@ function emitKissEvents(
             ? handle.kissTxWaiters.keys().next().value
             : undefined;
       if (settleId != null) {
+        // Local TX accept/reject only — not peer delivery. Do not emit routing_ack
+        // (that would settle DMs without an authenticated peer receipt).
         settleKissTxWaiter(handle, settleId, isAck ? 'ack' : 'nack', status);
-        emit({
-          type: 'meshtastic_routing_ack',
-          payload: {
-            requestId: settleId,
-            ackProofStatus: isAck ? 1 : 0,
-            isAck,
-          },
-        });
       }
       emit({
         type: 'device_log',
@@ -651,8 +646,10 @@ function emitKissEvents(
           type: 'meshtastic_routing_ack',
           payload: {
             requestId: Number.isFinite(requestId) ? requestId : 0,
-            ackProofStatus: isAck ? 1 : 0,
+            // MeshCom APRS ack/rej is not Meshtastic cryptographic proof.
+            ackProofStatus: 0,
             isAck,
+            from,
           },
         });
         emit({

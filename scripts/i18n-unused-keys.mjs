@@ -105,6 +105,8 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'messageStatusBadge.ackProof.', leafKeys: true },
   { prefix: 'messageStatusBadge.sfpp.', leafKeys: true },
   { prefix: 'channelSecurityBadges.', leafKeys: true },
+  { prefix: 'meshcom.grc.notes.', leafKeys: true },
+  { prefix: 'meshcom.grc.reach.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

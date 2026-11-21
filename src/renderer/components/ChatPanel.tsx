@@ -309,6 +309,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MecpComposeModal } from './mecp/MecpComposeModal';
 import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
 import { MecpUnreadIcon, useMecpUnreadLabel } from './mecp/MecpUnreadIcon';
+import MeshComGrcChatManager from './MeshComGrcChatManager';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
@@ -822,6 +823,12 @@ export interface ChatPanelProps {
   onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
+  /** MeshCom: device listen-filter GRC ids (for join dialog booking). */
+  meshcomGrcListenIds?: readonly number[];
+  /** MeshCom: Serial/BLE can apply `--setgrc`. */
+  meshcomGrcCanApplyToDevice?: boolean;
+  /** MeshCom: book GRC ids on the node via `--setgrc`. */
+  onMeshcomBookGrc?: (ids: readonly number[]) => Promise<void>;
   /** MeshCore: import a scanned contact QR from the channel manager. */
   onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
   /** Clear one channel's saved messages (chat asks first). `channelKey` is snapshotted at dialog open. */
@@ -939,6 +946,9 @@ function ChatPanel({
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
+  meshcomGrcListenIds,
+  meshcomGrcCanApplyToDevice = false,
+  onMeshcomBookGrc,
   onImportContactFromQr,
   onClearChannelMessages,
   meshcoreChannelManagementDisabled = false,
@@ -3779,6 +3789,18 @@ function ChatPanel({
                   }}
                   onRemoveChannel={onDeleteMeshcoreChannel ? askToRemoveChannel : undefined}
                   onImportContactFromQr={onImportContactFromQr}
+                />
+              ) : null}
+              {meshcomGrcListenIds != null ? (
+                <MeshComGrcChatManager
+                  listenGroupIds={meshcomGrcListenIds}
+                  canApplyToDevice={meshcomGrcCanApplyToDevice}
+                  disabled={composerDisabled || !isConnected}
+                  onSelectChannel={(index) => {
+                    selectChannel(index);
+                    setViewMode('channels');
+                  }}
+                  onBookOnDevice={onMeshcomBookGrc}
                 />
               ) : null}
               <Menu

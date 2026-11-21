@@ -371,6 +371,35 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
     }
   });
 
+  ipcMain.handle('db:updateMeshcomMessageStatus', (event, args: unknown) => {
+    if (!validateIpcSender(event)) {
+      throw new Error('db:updateMeshcomMessageStatus: unauthorized sender');
+    }
+    try {
+      if (!args || typeof args !== 'object') {
+        throw new Error('db:updateMeshcomMessageStatus: args must be an object');
+      }
+      const a = args as Record<string, unknown>;
+      const identityId = clampStr(a.identity_id, MAX_IDENTITY_LEN);
+      const msgId = clampStr(a.msg_id, MAX_MSG_ID_LEN);
+      const status = clampStr(a.status, MAX_STATUS_LEN);
+      if (!identityId || !msgId || !status) {
+        throw new Error('db:updateMeshcomMessageStatus: identity_id, msg_id, and status required');
+      }
+      const db = getDbForIpc('db:updateMeshcomMessageStatus');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce(
+          `UPDATE meshcom_messages SET status = @status
+             WHERE identity_id = @identity_id AND msg_id = @msg_id`,
+        )
+        .run({ identity_id: identityId, msg_id: msgId, status });
+      return { changes: result.changes };
+    } catch (err) {
+      finishDbIpcHandler('db:updateMeshcomMessageStatus', err);
+    }
+  });
+
   ipcMain.handle('db:pruneMeshcomMessagesByCount', (event, maxCount: unknown) => {
     try {
       assertIpcSender(event, 'db:pruneMeshcomMessagesByCount');

@@ -7,6 +7,7 @@
  */
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
+import { parseMeshcomGrcListenList } from './meshcomGrcGroups';
 
 /** Mutable accumulator while BLE config packets (or serial --info lines) arrive. */
 export interface MeshcomDeviceSettingsAccum {
@@ -478,4 +479,12 @@ export function snapshotMeshcomDeviceSettings(
 
 export function emptyMeshcomDeviceSettingsAccum(): MeshcomDeviceSettingsAccum {
   return { complete: false };
+}
+
+/** Listen-filter GRC ids from a settings snapshot (`--setgrc` / GCBn). */
+export function meshcomListenGroupIdsFromSnapshot(
+  snap: MeshcomDeviceSettingsSnapshot | null | undefined,
+): number[] {
+  if (!snap) return [];
+  return parseMeshcomGrcListenList(snap.valuesByCommandId.setgrc);
 }

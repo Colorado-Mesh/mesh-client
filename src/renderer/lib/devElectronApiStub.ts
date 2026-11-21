@@ -228,6 +228,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getMeshcoreContacts: async () => [],
       getMeshcomMessages: async () => [],
       saveMeshcomMessage: async () => ({ changes: 0 }),
+      updateMeshcomMessageStatus: async () => ({ changes: 0 }),
       getMeshcomContacts: async () => [],
       getMeshcomDbDegraded: async () => ({ degraded: false }),
       saveMeshcomContact: async () => ({ changes: 0 }),

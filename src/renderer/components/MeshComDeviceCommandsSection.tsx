@@ -13,8 +13,14 @@ import {
   type MeshcomCommandGroup,
   redactMeshcomCommandForLog,
 } from '../lib/meshcom/meshcomCommands';
+import {
+  formatMeshcomGrcListenList,
+  parseMeshcomGrcListenList,
+} from '../lib/meshcom/meshcomGrcGroups';
+import { addMeshcomGrcLocalChannel } from '../lib/meshcom/meshcomGrcLocalChannels';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { ConfirmModal } from './ConfirmModal';
+import MeshComGrcEditor from './MeshComGrcEditor';
 import { SettingsCollapsible } from './ui/SettingsSection';
 import { Switch } from './ui/Switch';
 
@@ -84,28 +90,61 @@ export default function MeshComDeviceCommandsSection({
     const map = new Map<MeshcomCommandGroup, MeshcomCommandDescriptor[]>();
     for (const group of MESHCOM_COMMAND_GROUPS) map.set(group, []);
     for (const cmd of filtered) {
+      // Dedicated MeshComGrcEditor owns --setgrc / --nomsgall.
+      if (cmd.id === 'setgrc' || cmd.id === 'nomsgall') continue;
       map.get(cmd.group)?.push(cmd);
     }
     return map;
   }, [filtered]);
 
+  const grcSlots = useMemo(() => parseMeshcomGrcListenList(argValueOf('setgrc')), [argValueOf]);
+  const nomsgallValue = (
+    argValueOf('nomsgall') === 'on' || argValueOf('nomsgall') === 'off'
+      ? argValueOf('nomsgall')
+      : null
+  ) as 'on' | 'off' | null;
+
   const sendNow = useCallback(
-    async (command: string) => {
+    async (command: string): Promise<boolean> => {
       setBusy(true);
       try {
         const result = await commands.run(command);
         pushConsole('sent', redactMeshcomCommandForLog(result.command));
         onToast?.(t('meshcomDeviceCommands.sent'), 'success');
+        return true;
       } catch (e) {
         const msg = errLikeToLogString(e);
         console.warn('[MeshComDeviceCommands] send failed ' + msg);
         pushConsole('error', msg);
         onToast?.(t('meshcomDeviceCommands.sendFailed', { detail: msg }), 'error');
+        return false;
       } finally {
         setBusy(false);
       }
     },
     [commands, onToast, pushConsole, t],
+  );
+
+  const applyGrcListen = useCallback(
+    async (ids: readonly number[]) => {
+      const arg = formatMeshcomGrcListenList(ids);
+      const line = arg ? `--setgrc ${arg}` : '--setgrc';
+      const ok = await sendNow(line);
+      if (!ok) return;
+      setArgById((prev) => ({ ...prev, setgrc: arg }));
+      void commands.refreshSettings();
+    },
+    [commands, sendNow],
+  );
+
+  const applyNomsgall = useCallback(
+    async (value: 'on' | 'off') => {
+      const ok = await sendNow(`--nomsgall ${value}`);
+      if (!ok) return;
+      setArgById((prev) => ({ ...prev, nomsgall: value }));
+      void commands.refreshSettings();
+    },
+    [commands, sendNow],
   );
 
   const requestSend = useCallback(
@@ -345,8 +384,10 @@ export default function MeshComDeviceCommandsSection({
 
       {MESHCOM_COMMAND_GROUPS.map((group) => {
         const rows = byGroup.get(group) ?? [];
-        if (rows.length === 0) return null;
-        const body = <div className="space-y-3">{rows.map(renderCommandRow)}</div>;
+        // Identity always shows the GRC editor even when --setgrc/--nomsgall are the only cmds.
+        if (rows.length === 0 && group !== 'identity') return null;
+        const body =
+          rows.length > 0 ? <div className="space-y-3">{rows.map(renderCommandRow)}</div> : null;
         const title = groupTitle(group);
         // anchorId literals must be static for settingsSearchAnchors (no template/object lookup).
         switch (group) {
@@ -391,6 +432,17 @@ export default function MeshComDeviceCommandsSection({
                 titleAs="span"
                 anchorId="radio.meshcomCommands.identity"
               >
+                <MeshComGrcEditor
+                  slots={grcSlots}
+                  nomsgall={nomsgallValue}
+                  disabled={!linkOk}
+                  busy={busy}
+                  onApplyListen={applyGrcListen}
+                  onNomsgallChange={applyNomsgall}
+                  onOpenInChat={(id) => {
+                    addMeshcomGrcLocalChannel(id);
+                  }}
+                />
                 {body}
               </SettingsCollapsible>
             );

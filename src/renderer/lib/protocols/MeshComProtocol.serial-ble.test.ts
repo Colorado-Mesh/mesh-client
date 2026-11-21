@@ -267,7 +267,7 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
-  it('KISS TX_RESULT with msg_id emits meshtastic_routing_ack', () => {
+  it('KISS TX_RESULT does not emit peer routing_ack (local TX only)', () => {
     const { conn } = mockConnection('tcp');
     const handle = makeHandle('tcp', conn);
     handle.kissSession = new MeshcomKissSession();
@@ -283,12 +283,8 @@ describe('MeshComProtocol serial/BLE', () => {
     conn.onData?.(frame);
 
     const acks = events.filter((e) => e.type === 'meshtastic_routing_ack');
-    expect(acks).toHaveLength(1);
-    expect(acks[0]?.payload).toMatchObject({
-      requestId: 0x12345678,
-      isAck: true,
-      ackProofStatus: 1,
-    });
+    expect(acks).toHaveLength(0);
+    expect(events.some((e) => e.type === 'device_log')).toBe(true);
     unsub();
   });
 

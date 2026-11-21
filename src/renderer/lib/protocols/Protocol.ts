@@ -410,6 +410,12 @@ export interface MeshtasticRoutingAckEvent {
   ackProofStatus: number;
   /** True when Routing.errorReason is NONE (ACK). */
   isAck: boolean;
+  /**
+   * Optional ACK sender node id (MeshCom peer APRS/KISS). When set, MeshCom DM
+   * settlement requires it to match the outbound `to` — spoofed ackNN must not
+   * mark delivery proven for a different peer.
+   */
+  from?: number;
 }
 
 export type DomainEvent =

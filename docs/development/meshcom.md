@@ -89,6 +89,14 @@ Firmware prepends `0x40` to LoRa APRS buffers for the APP (`ble_phone_frame.h`).
 
 Send honors `SendMessageOptions.channelIndex` for groups ([`meshcomChannel.ts`](../../src/renderer/lib/meshcom/meshcomChannel.ts)).
 
+### GRC groups (ICSSW)
+
+Named catalog: [`meshcomGrcGroups.ts`](../../src/renderer/lib/meshcom/meshcomGrcGroups.ts) (from [ICSSW GRC Gruppen](https://icssw.org/en/meshcom-grc-gruppen/)). Firmware listen filter is up to **six** ids via `--setgrc a;b;…` (first = master); bare `--setgrc` clears. Empty filter shows all GRCs; with ≥1 booking, only matching groups reach the APP. Group **9** (LOC) is HF-cloud only.
+
+**Chat pills:** ALL + device listen slots (`GCB` / `--info`) + locally opened ids + history-discovered ids ([`buildMeshcomChatChannels`](../../src/renderer/lib/meshcom/meshcomGrcGroups.ts)). Chat “+” opens [`MeshComGrcChatManager`](../../src/renderer/components/MeshComGrcChatManager.tsx); Radio → Identity uses [`MeshComGrcEditor`](../../src/renderer/components/MeshComGrcEditor.tsx) (slots + `--nomsgall`).
+
+**DM delivery:** `hasChannelDeliveryAck: true`. Outbound DMs stay `sending` until a routing ACK (`meshcomRoutingAckSideEffects`) or a ~6 minute timeout; ALL/GRC acked on wire accept.
+
 ## MHEARD
 
 BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / contact upserts ([`meshcomMheard.ts`](../../src/renderer/lib/meshcom/meshcomMheard.ts)).
@@ -103,7 +111,7 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 **Map / live traffic:** MeshCom has SmartBeaconing (`--track`) for LoRa-APRS on the track frequency and mesh POS reports, but **no** MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (`hasRawPacketLog: false` so Stats/Sniffer do not appear or fall through to Meshtastic buffers).
 
-**Chat channels:** ALL (`*`, index 0) plus positive GRC group indices seen in messages — never MeshCore PSK channel pills.
+**Chat channels:** ALL (`*`, index 0) plus device listen / local / history GRC pills (named via ICSSW registry) — never MeshCore PSK channel pills.
 
 ## EXTUDP local bind (UDP 1799)
 

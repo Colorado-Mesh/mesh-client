@@ -19,6 +19,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
+import { scheduleMeshcomDmAckTimeout } from './meshcom/meshcomRoutingAckSideEffects';
 import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
@@ -576,10 +577,20 @@ export function sendChatOnIdentity(
             isDm: isMeshcoreDm,
             destination,
           });
-        } else {
-          // MeshCom TCP sendMessage awaits KISS TX_RESULT; other transports resolve on write.
-          updateMessageStatus(identityId, resolvedId, 'acked');
-          if (isMeshcom) {
+        } else if (isMeshcom) {
+          // ALL / GRC: treat wire accept as delivered. DMs wait for OTA ACK
+          // (meshcomRoutingAckSideEffects) with a FAQ-aligned timeout.
+          if (isMeshcomDm) {
+            persistMeshcomOutboundRow(
+              identityId,
+              { ...record, id: resolvedId, status: 'sending' },
+              myNodeNum,
+              'sending',
+              resolvedId,
+            );
+            scheduleMeshcomDmAckTimeout(identityId, resolvedId);
+          } else {
+            updateMessageStatus(identityId, resolvedId, 'acked');
             persistMeshcomOutboundRow(
               identityId,
               { ...record, id: resolvedId },
@@ -588,6 +599,8 @@ export function sendChatOnIdentity(
               resolvedId,
             );
           }
+        } else {
+          updateMessageStatus(identityId, resolvedId, 'acked');
         }
         if (isMeshtastic && meshtasticTempPacketId != null) {
           const rowPacketId = res.packetId ?? meshtasticTempPacketId;

@@ -31,7 +31,7 @@ describe('sendChatOnIdentity MeshCom', () => {
     vi.spyOn(window.electronAPI.db, 'saveMeshcomMessage').mockResolvedValue({ changes: 1 });
   });
 
-  it('persists outbound ALL chat as sending then acked on send success', async () => {
+  it('persists outbound ALL chat as acked on send success', async () => {
     addIdentity({
       id: ID,
       protocol: meshcomProtocol,
@@ -67,6 +67,37 @@ describe('sendChatOnIdentity MeshCom', () => {
         msg_id: '42',
         status: 'acked',
         text: 'hello cm',
+      }),
+    );
+  });
+
+  it('keeps MeshCom DM as sending until routing ACK', async () => {
+    const peerCall = 'N0PEER-1';
+    const peerNode = callsignToNodeId(peerCall);
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', myNodeNum: SELF_NODE });
+    upsertNode(ID, { nodeId: SELF_NODE, longName: SELF_CALL });
+    upsertNode(ID, { nodeId: peerNode, longName: peerCall });
+    vi.spyOn(meshcomProtocol, 'sendMessage').mockResolvedValue({ packetId: 99 });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+
+    sendChatOnIdentity(ID, { text: 'dm hi', channelIndex: -1, destination: peerNode });
+
+    await vi.waitFor(() => {
+      expect(useMessageStore.getState().messages[ID]?.['99']?.status).toBe('sending');
+    });
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg_id: '99',
+        status: 'sending',
+        text: 'dm hi',
       }),
     );
   });
