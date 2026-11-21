@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Riwayat lingkungan",
     "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas.",
     "clearAllRooms": "Hapus Semua Ruangan",
-    "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan."
+    "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan.",
+    "meshcomWatchlistHeading": "Daftar pantau nama panggilan MeshCom"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "Terhubung jarak jauh",
       "remoteConnecting": "Koneksi jarak jauh",
       "remoteError": "Kesalahan jarak jauh",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Waktu jaringan {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "Baru saja",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} menit yang lalu"
     },
     "disconnectAll": "Putuskan radio dan MQTT",
     "disconnectRadioGroup": "Putuskan radio",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap (medan)",
     "basemapHot": "Kemanusiaan (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (transportasi umum)"
+    "basemapOepnv": "ÖPNVKarte (transportasi umum)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Buka MeshCom MeshMap (meshmap.oevsv.at) di tab baru",
+    "meshcomMeshMapHint": "MeshMap diisi oleh gateway yang mendengar POS Anda di RF — bukan hanya peta dalam aplikasi ini. Aktifkan --gateway pada node lokasi atau berada dalam jangkauan salah satunya.",
+    "meshcomSendPosition": "Kirim POS",
+    "meshcomSendPositionAria": "Kirim posisi MeshCom melalui udara untuk gateway dan MeshMap",
+    "meshcomSendPositionHint": "Mendorong koordinat yang diketahui ke node (jika tersedia) dan mengirim --sendpos sehingga gateway dapat mengunggah ke MeshMap.",
+    "meshcomSendPositionSent": "Perintah posisi dikirim ke node MeshCom.",
+    "meshcomSendPositionFailed": "Tidak dapat mengirim posisi: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -9212,5 +9224,18 @@
     "appEligible": "APP / Seri",
     "loadingConfig": "Memuat konfigurasi perangkat…",
     "currentValue": "sekarang {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Daftar pantau nama panggilan MeshCom",
+    "help": "Peringatan dengan suara dan notifikasi OS saat tanda panggilan pangkalan yang tercantum terdengar di MeshCom (SSID diabaikan). Maksimal {{max}} entri.",
+    "placeholder": "OE1ABC",
+    "add": "Tambahkan",
+    "addAria": "Tambahkan nama panggilan ke daftar pantauan MeshCom",
+    "listAria": "Panggilan MeshCom yang diawasi",
+    "removeAria": "Hapus {{callsign}} dari daftar pantauan MeshCom",
+    "empty": "Belum ada nama panggilan yang dipantau.",
+    "saveFailed": "Tidak dapat menyimpan daftar pantau MeshCom.",
+    "alertTitle": "Jam tangan MeshCom: {{callsign}}",
+    "alertBody": "Mendengar {{callsign}} di MeshCom."
   }
 }

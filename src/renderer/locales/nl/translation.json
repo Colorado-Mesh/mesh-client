@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Omgevingsgeschiedenis",
     "dangerZoneEnvironmentHistoryDesc": "Verwijdert alle opgeslagen temperatuur-, vochtigheids-, druk- en luchtkwaliteitsmetingen voor elk protocol en elke identiteit.",
     "clearAllRooms": "Alle ruimtes wissen",
-    "clearAllRoomsConfirm": "Hiermee worden alle niet-favoriete MeshCore-roomservers van de aangesloten radio en de lokale database verwijderd. Ruimtes verschijnen opnieuw wanneer ze weer worden aangekondigd. Dit kan niet ongedaan worden gemaakt."
+    "clearAllRoomsConfirm": "Hiermee worden alle niet-favoriete MeshCore-roomservers van de aangesloten radio en de lokale database verwijderd. Ruimtes verschijnen opnieuw wanneer ze weer worden aangekondigd. Dit kan niet ongedaan worden gemaakt.",
+    "meshcomWatchlistHeading": "Watchlist voor MeshCom-roepnamen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "Op afstand verbonden",
       "remoteConnecting": "Verbinding op afstand",
       "remoteError": "Fout op afstand",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Netwerktijd {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "op dit moment",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} min geleden"
     },
     "disconnectAll": "Radio en MQTT loskoppelen",
     "disconnectRadioGroup": "Radio loskoppelen",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap (terrein)",
     "basemapHot": "Humanitair (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (openbaar vervoer)"
+    "basemapOepnv": "ÖPNVKarte (openbaar vervoer)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Open MeshCom MeshMap (meshmap.oevsv.at) in een nieuw tabblad",
+    "meshcomMeshMapHint": "MeshMap wordt gevuld door gateways die uw kassasysteem op RF horen — niet alleen deze kaart in de app. Schakel --gateway in op een locatienode of bevind u binnen het bereik van een gateway.",
+    "meshcomSendPosition": "POS verzenden",
+    "meshcomSendPositionAria": "MeshCom-positie over de ether verzenden voor gateways en MeshMap",
+    "meshcomSendPositionHint": "Stuurt bekende coördinaten naar het knooppunt (indien beschikbaar) en verzendt --sendpos zodat een gateway kan uploaden naar MeshMap.",
+    "meshcomSendPositionSent": "Positiecommando verzonden naar de MeshCom-node.",
+    "meshcomSendPositionFailed": "Kon positie niet verzenden: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -9212,5 +9224,18 @@
     "appEligible": "APP / Serieel",
     "loadingConfig": "Apparaatconfiguratie wordt geladen…",
     "currentValue": "nu {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Watchlist voor MeshCom-roepnamen",
+    "help": "Waarschuwing met geluid en een OS-melding wanneer een vermelde basisroepnaam wordt gehoord op MeshCom (SSID genegeerd). Maximaal {{max}} invoeren.",
+    "placeholder": "OE1ABC",
+    "add": "Toevoegen",
+    "addAria": "Roepnaam toevoegen aan MeshCom-watchlist",
+    "listAria": "Door MeshCom bekeken roepnamen",
+    "removeAria": "{{callsign}} van de MeshCom-watchlist verwijderen",
+    "empty": "Nog geen gevolgde roepnamen.",
+    "saveFailed": "Kon de MeshCom-watchlist niet opslaan.",
+    "alertTitle": "MeshCom-horloge: {{callsign}}",
+    "alertBody": "{{callsign}} gehoord op MeshCom."
   }
 }

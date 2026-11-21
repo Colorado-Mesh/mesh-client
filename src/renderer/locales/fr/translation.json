@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Historique d'environnement",
     "dangerZoneEnvironmentHistoryDesc": "Supprime toutes les mesures enregistrées de température, humidité, pression et qualité de l'air pour chaque protocole et identité.",
     "clearAllRooms": "Effacer toutes les salles",
-    "clearAllRoomsConfirm": "Cette action supprime tous les serveurs de salles MeshCore non favoris de la radio connectée et de la base de données locale. Les salles réapparaissent lorsqu’elles se signalent à nouveau. Cette action est irréversible."
+    "clearAllRoomsConfirm": "Cette action supprime tous les serveurs de salles MeshCore non favoris de la radio connectée et de la base de données locale. Les salles réapparaissent lorsqu’elles se signalent à nouveau. Cette action est irréversible.",
+    "meshcomWatchlistHeading": "Liste de surveillance des indicatifs d’appel MeshCom"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "Connecté à distance",
       "remoteConnecting": "Connexion à distance",
       "remoteError": "Erreur CSS à distance",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Heure réseau {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "juste maintenant",
+      "meshcomNetworkTimeAgeMinutes": "Il y a {{count}} min"
     },
     "disconnectAll": "Déconnecter la radio et MQTT",
     "disconnectRadioGroup": "Déconnecter la radio",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap (relief)",
     "basemapHot": "Humanitaire (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (transports en commun)"
+    "basemapOepnv": "ÖPNVKarte (transports en commun)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Ouvrir MeshCom MeshMap (meshmap.oevsv.at) dans un nouvel onglet",
+    "meshcomMeshMapHint": "MeshMap est renseigné par les passerelles qui entendent votre système de caisse sur RF, et pas uniquement par cette carte intégrée à l’application. Activez --gateway sur un nœud du site ou soyez à portée d’un nœud.",
+    "meshcomSendPosition": "Envoyer le PDV",
+    "meshcomSendPositionAria": "Envoyer la position MeshCom par voie hertzienne pour les passerelles et MeshMap",
+    "meshcomSendPositionHint": "Transmet les coordonnées connues au nœud (lorsqu’elles sont disponibles) et envoie --sendpos afin qu’une passerelle puisse les télécharger sur MeshMap.",
+    "meshcomSendPositionSent": "Commande de position envoyée au nœud MeshCom.",
+    "meshcomSendPositionFailed": "Impossible d’envoyer la position : {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",
@@ -9212,5 +9224,18 @@
     "appEligible": "APPLICATION/Numéro de série",
     "loadingConfig": "Chargement de la configuration de l’appareil…",
     "currentValue": "maintenant {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Liste de surveillance des indicatifs d’appel MeshCom",
+    "help": "Alerte sonore et notification du système d’exploitation lorsqu’un indicatif d’appel de base répertorié est entendu sur MeshCom (SSID ignoré). Jusqu’à {{max}} entrées.",
+    "placeholder": "OE1ABC",
+    "add": "Ajouter",
+    "addAria": "Ajouter l’indicatif d’appel à la liste de surveillance MeshCom",
+    "listAria": "Indicatifs d’appel surveillés par MeshCom",
+    "removeAria": "Supprimer {{callsign}} de la liste de suivi MeshCom",
+    "empty": "Aucun indicatif d’appel surveillé pour le moment.",
+    "saveFailed": "Impossible d’enregistrer la liste de suivi MeshCom.",
+    "alertTitle": "Montre MeshCom : {{callsign}}",
+    "alertBody": "{{callsign}} entendu sur MeshCom."
   }
 }

@@ -20,6 +20,7 @@ import { Circle, Marker, Polyline, Popup, Rectangle, useMap, useMapEvents } from
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { MAPS_DOCS_URL } from '@/shared/docsSite';
+import { MESHCOM_MESHMAP_URL } from '@/shared/meshcomConstants';
 
 import type { LocationFilter } from '../App';
 import { useMapBasemap } from '../hooks/useMapBasemap';
@@ -563,6 +564,11 @@ export interface MapPanelProps {
   onLiveWindowNodeClick?: (nodeId: number) => void;
   /** Opens the node that posted a weather forecast (may be on another protocol). */
   onForecastSenderClick?: (protocol: MeshProtocol, senderId: number) => void;
+  /**
+   * MeshCom: push known coords (if any) then `--sendpos` so a gateway can feed MeshMap.
+   * Only wired for MeshCom Map.
+   */
+  onSendPositionOnAir?: () => Promise<void>;
   protocol?: MeshProtocol;
   useFahrenheit?: boolean;
   meshcorePackets?: readonly RxPacketEntry[];
@@ -652,8 +658,10 @@ function OverviewMapPanel({
   protocol = 'meshtastic',
   useFahrenheit = false,
   showMapsDocs = true,
+  onSendPositionOnAir,
 }: MapPanelProps & { showMapsDocs?: boolean }) {
   const { t } = useTranslation();
+  const [sendPosBusy, setSendPosBusy] = useState(false);
   const [waypointEditor, setWaypointEditor] = useState<{
     mode: 'create' | 'edit';
     initial: Partial<MeshWaypoint> & { latitude: number; longitude: number };
@@ -737,6 +745,26 @@ function OverviewMapPanel({
   const { addToast } = useToast();
   const routeWeightLoadedNodeIdsRef = useRef<Set<number>>(new Set());
   const routeWeightsSupported = protocol === 'meshcore';
+  const isMeshcomMap = protocol === 'meshcom';
+
+  const handleSendPositionOnAir = useCallback(async () => {
+    if (!onSendPositionOnAir || sendPosBusy) return;
+    setSendPosBusy(true);
+    try {
+      await onSendPositionOnAir();
+      addToast(t('mapPanel.meshcomSendPositionSent'), 'success');
+    } catch (err) {
+      console.warn('[MapPanel] MeshCom send position on air failed', err);
+      addToast(
+        t('mapPanel.meshcomSendPositionFailed', {
+          message: err instanceof Error ? err.message : t('common.unknown'),
+        }),
+        'error',
+      );
+    } finally {
+      setSendPosBusy(false);
+    }
+  }, [addToast, onSendPositionOnAir, sendPosBusy, t]);
 
   const handleExportGpx = useCallback(async () => {
     if (gpxExporting) return;
@@ -1155,6 +1183,30 @@ function OverviewMapPanel({
         controlsAfter={
           <>
             {showMapsDocs ? <DocsSiteLink href={MAPS_DOCS_URL} /> : null}
+            {isMeshcomMap ? (
+              <DocsSiteLink
+                href={MESHCOM_MESHMAP_URL}
+                labelKey="mapPanel.meshcomMeshMapLink"
+                aria-label={t('mapPanel.meshcomMeshMapLinkAria')}
+              />
+            ) : null}
+            {isMeshcomMap && onSendPositionOnAir ? (
+              <button
+                type="button"
+                className={MAP_CONTROL_CLASS}
+                disabled={sendPosBusy}
+                aria-label={t('mapPanel.meshcomSendPositionAria')}
+                title={t('mapPanel.meshcomSendPositionHint')}
+                onClick={() => void handleSendPositionOnAir()}
+              >
+                {t('mapPanel.meshcomSendPosition')}
+              </button>
+            ) : null}
+            {isMeshcomMap ? (
+              <p className="text-muted max-w-[14rem] text-right text-xs leading-snug">
+                {t('mapPanel.meshcomMeshMapHint')}
+              </p>
+            ) : null}
             {onSendWaypoint ? (
               <button
                 type="button"

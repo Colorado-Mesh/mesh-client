@@ -63,6 +63,24 @@ Radio → **Device Configuration** renders first-class sections (Display, Positi
 - **Auto `--settime`**: app setting `meshcomAutoSettime` (default off). When enabled, after each Serial/BLE connect the runtime sends `--settime yyyy.mm.dd hh:mm:ss` in host UTC.
 - Meshtastic Device Role / Position / Power / WiFi / Display / Bluetooth shells stay off for MeshCom so the Radio tab is not an empty config heading.
 
+## Dynamic APRS telemetry commands
+
+ICSSW [dynamic telemetry compilation](https://icssw.org/en/telemetrie-dynamisch-zusammenstellen/) (`--parm` / `--unit` / `--eqns` / `--values` / `--ptime` / `--tel`) is in the Sensors group of [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts) (Device Configuration / console). Packets go RF→MeshCom server→aprs.fi and are hidden from the APP by design — no dedicated builder UI. Value token names include `press`, `hum`, `temp`, `onewire`, `co2`, `gasres`, `batt`, `proz`, `vbus`, `vcurrent`, `qnh`.
+
+## Callsign watchlist
+
+App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching `msg`/`pos` (`node_info`), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).
+
+## Network time liveness
+
+Inbound text containing `{CET}` (gateway/network clock, ~every 5 minutes) updates [`meshcomNetworkTime.ts`](../../src/renderer/lib/meshcom/meshcomNetworkTime.ts). Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).
+
+## MeshMap (meshmap.oevsv.at)
+
+Companions do **not** POST to [MeshMap](https://meshmap.oevsv.at/). Gateways upload POS/telemetry to MeshCom servers over UDP; MeshMap reads that server feed. Mesh Client feeds MeshMap only by causing the linked node to TX POS that a gateway hears (`--sendpos`, GPS/`--setlat`/`--setlon` push, `--track`, or `--gateway on` on a site node).
+
+The MeshCom **Map** panel links to MeshMap and offers **Send POS** (push known coords when available, then `--sendpos`). The in-app map is local contacts only — it is not MeshMap.
+
 ## Device telemetry
 
 `MESHCOM_CAPABILITIES.hasBatteryTelemetry` / `hasEnvironmentTelemetry` are on. Sources:
@@ -101,6 +119,10 @@ Named catalog: [`meshcomGrcGroups.ts`](../../src/renderer/lib/meshcom/meshcomGrc
 
 BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / contact upserts ([`meshcomMheard.ts`](../../src/renderer/lib/meshcom/meshcomMheard.ts)).
 
+## Hardware IDs
+
+[`meshcomHwIds.ts`](../../src/renderer/lib/meshcom/meshcomHwIds.ts) maps on-air / EXTUDP `hw_id` to abbreviations (ICSSW protocol table + firmware README / WebDesk through ~61). Unknown ids display as `HW#n`.
+
 ## Firmware release watch
 
 `pnpm run update` runs `check_meshcom_upstream` against [icssw-org/MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware) published releases (`MESHCOM_UPSTREAM_WATCH_ENTRIES` in `scripts/update.sh`). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump `reviewed-ref`.
@@ -109,7 +131,7 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 `MESHCOM_CAPABILITIES` in `BaseRadioProvider.ts`. Shared MeshCore-style panels are on where firmware supports them; Rooms BBS and MeshCore repeater admin stay off (`hasRoomServersPanel: false`, `modulesTabUsesRepeatersLabel: false`).
 
-**Map / live traffic:** MeshCom has SmartBeaconing (`--track`) for LoRa-APRS on the track frequency and mesh POS reports, but **no** MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (`hasRawPacketLog: false` so Stats/Sniffer do not appear or fall through to Meshtastic buffers).
+**Map / live traffic:** MeshCom has SmartBeaconing (`--track`) for LoRa-APRS on the track frequency and mesh POS reports, but **no** MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (`hasRawPacketLog: false` so Stats/Sniffer do not appear or fall through to Meshtastic buffers). See [MeshMap](#meshmap-meshmapoevsvat) for the external map feed path.
 
 **Chat channels:** ALL (`*`, index 0) plus device listen / local / history GRC pills (named via ICSSW registry) — never MeshCore PSK channel pills.
 

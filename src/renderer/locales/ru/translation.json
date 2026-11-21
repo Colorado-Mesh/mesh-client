@@ -552,7 +552,8 @@
     "dangerZoneEnvironmentHistoryHeading": "История среды",
     "dangerZoneEnvironmentHistoryDesc": "Удаляет все сохранённые показания температуры, влажности, давления и качества воздуха для каждого протокола и идентичности.",
     "clearAllRooms": "Очистить все комнаты",
-    "clearAllRoomsConfirm": "Это действие удалит все не добавленные в избранное серверы комнат MeshCore из подключенного радио и локальной базы данных. Комнаты снова появятся, когда они снова будут объявлены. Это действие нельзя отменить."
+    "clearAllRoomsConfirm": "Это действие удалит все не добавленные в избранное серверы комнат MeshCore из подключенного радио и локальной базы данных. Комнаты снова появятся, когда они снова будут объявлены. Это действие нельзя отменить.",
+    "meshcomWatchlistHeading": "Список наблюдения позывных MeshCom"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -1978,7 +1979,10 @@
       "remoteConnected": "пульт ДУ подключен",
       "remoteConnecting": "Подключение пульта ДУ",
       "remoteError": "Ошибка удалённого подключения",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Сетевое время {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "прямо сейчас",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} мин. назад"
     },
     "disconnectAll": "Отключить радио и MQTT",
     "disconnectRadioGroup": "Отключить радио",
@@ -2993,7 +2997,15 @@
     "basemapOpentopo": "OpenTopoMap (рельеф)",
     "basemapHot": "Гуманитарная помощь (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (общественный транспорт)"
+    "basemapOepnv": "ÖPNVKarte (общественный транспорт)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Откройте MeshCom MeshMap (meshmap.oevsv.at) в новой вкладке",
+    "meshcomMeshMapHint": "MeshMap заполняется шлюзами, которые слышат ваш POS по радиочастотному каналу, а не только этой картой в приложении. Включите --gateway на узле объекта или находитесь в зоне действия такого узла.",
+    "meshcomSendPosition": "Отправить POS-материалы",
+    "meshcomSendPositionAria": "Отправка данных о местоположении MeshCom по радиоканалу для шлюзов и MeshMap",
+    "meshcomSendPositionHint": "Передает известные координаты на узел (если они доступны) и отправляет команду --sendpos, чтобы шлюз мог загрузить их в MeshMap.",
+    "meshcomSendPositionSent": "Команда положения отправлена на узел MeshCom.",
+    "meshcomSendPositionFailed": "Не удалось отправить данные о местоположении: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Почему вы видите дублирующийся трафик",
@@ -9356,5 +9368,18 @@
     "appEligible": "Приложение / Серийный номер",
     "loadingConfig": "Загрузка конфигурации устройства…",
     "currentValue": "сейчас {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Список наблюдения за позывными MeshCom",
+    "help": "Оповещение со звуковым сигналом и уведомлением ОС при обнаружении указанного позывного базовой станции в MeshCom (SSID игнорируется). До {{max}} записей.",
+    "placeholder": "OE1ABC",
+    "add": "Добавить",
+    "addAria": "Добавить позывной в список наблюдения MeshCom",
+    "listAria": "Отслеживаемые позывные MeshCom",
+    "removeAria": "Удалить {{callsign}} из списка отслеживания MeshCom",
+    "empty": "Пока нет отслеживаемых позывных.",
+    "saveFailed": "Не удалось сохранить список отслеживания MeshCom.",
+    "alertTitle": "Часы MeshCom: {{callsign}}",
+    "alertBody": "Слышал(а) {{callsign}} по MeshCom."
   }
 }

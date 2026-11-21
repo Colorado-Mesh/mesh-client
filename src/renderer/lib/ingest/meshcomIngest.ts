@@ -7,7 +7,7 @@
 import { MESHCOM_CONTACT_CAP_DEFAULT } from '@/shared/meshcomConstants';
 
 import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
-import { upsertMessage, useMessageStore } from '../../stores/messageStore';
+import { deleteMessage, upsertMessage, useMessageStore } from '../../stores/messageStore';
 import {
   type NodeRecord,
   removeNode,
@@ -22,8 +22,10 @@ import {
   normalizeMeshcomCallsign,
   parseMeshcomSrcPath,
 } from '../meshcom/meshcomCallsign';
+import { maybeAlertMeshcomWatchlistCallsign } from '../meshcom/meshcomCallsignWatchlist';
 import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import { shouldApplyMeshcomContact } from '../meshcom/meshcomLocallyDeletedContacts';
+import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
 import type { DomainEvent } from '../protocols/Protocol';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord, messageRecordToChatMessage } from '../storeRecordAdapters';
@@ -120,6 +122,14 @@ function handleTextMessage(
   const toCall = callsignFromNode(identityId, event.payload.to);
   if (fromCall) registerMeshcomCallsign(fromCall);
   if (toCall && toCall !== '*') registerMeshcomCallsign(toCall);
+
+  // Gateway/network clock beacon (~5 min) — mesh liveness, not a chat line.
+  if (noteMeshcomNetworkTimeFromText(incoming.payload)) {
+    deleteMessage(identityId, event.payload.id);
+    return;
+  }
+  if (fromCall) maybeAlertMeshcomWatchlistCallsign(fromCall);
+
   const channelIdx = channelIdxForEvent(event.payload.channelIndex, event.payload.to, myNodeNum);
   const path = event.payload.hopCount != null ? String(event.payload.hopCount) : null;
 
@@ -175,6 +185,8 @@ function handleNodeInfo(
     removeNode(identityId, resolvedId);
     return;
   }
+
+  if (callsign) maybeAlertMeshcomWatchlistCallsign(callsign);
 
   // MeshCom node_info carries POS/MHEARD fields upsertNode drops — use full record merge.
   upsertNodeRecord(identityId, {

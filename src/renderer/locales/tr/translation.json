@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Ortam geçmişi",
     "dangerZoneEnvironmentHistoryDesc": "Her protokol ve kimlik için kayıtlı sıcaklık, nem, basınç ve hava kalitesi okumalarını kaldırır.",
     "clearAllRooms": "Tüm Odaları Temizle",
-    "clearAllRoomsConfirm": "Bu işlem, favori olmayan tüm MeshCore oda sunucularını bağlı radyodan ve yerel veritabanından kaldırır. Odalar tekrar duyuru yaptıklarında yeniden görünür. Bu işlem geri alınamaz."
+    "clearAllRoomsConfirm": "Bu işlem, favori olmayan tüm MeshCore oda sunucularını bağlı radyodan ve yerel veritabanından kaldırır. Odalar tekrar duyuru yaptıklarında yeniden görünür. Bu işlem geri alınamaz.",
+    "meshcomWatchlistHeading": "MeshCom çağrı işareti izleme listesi"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "Uzaktan bağlı",
       "remoteConnecting": "Uzaktan bağlantı",
       "remoteError": "uzaktan hata",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Ağ saati {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "az önce",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} dk. önce"
     },
     "disconnectAll": "Radyo ve MQTT bağlantısını kes",
     "disconnectRadioGroup": "Radyo bağlantısını kes",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap (arazi)",
     "basemapHot": "İnsani Yardım (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (toplu taşıma)"
+    "basemapOepnv": "ÖPNVKarte (toplu taşıma)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "MeshCom MeshMap'i (meshmap.oevsv.at) yeni bir sekmede açın",
+    "meshcomMeshMapHint": "MeshMap, yalnızca bu uygulama içi harita değil, POS'unuzu RF üzerinden duyan ağ geçitleri tarafından doldurulur. Bir site düğümünde --gateway özelliğini etkinleştirin veya birinin menzilinde olun.",
+    "meshcomSendPosition": "POS gönder",
+    "meshcomSendPositionAria": "Ağ geçitleri ve MeshMap için MeshCom konumunu yayına gönderin",
+    "meshcomSendPositionHint": "Bilinen koordinatları düğüme iletir (varsa) ve --sendpos komutunu gönderir, böylece bir ağ geçidi MeshMap'e yükleme yapabilir.",
+    "meshcomSendPositionSent": "Konum komutu MeshCom düğümüne gönderildi.",
+    "meshcomSendPositionFailed": "Konum gönderilemedi: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -9212,5 +9224,18 @@
     "appEligible": "Uygulama / Seri",
     "loadingConfig": "Cihaz yapılandırması yükleniyor…",
     "currentValue": "şimdi {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshCom çağrı işareti izleme listesi",
+    "help": "MeshCom'da listelenen bir baz istasyonu çağrı işareti duyulduğunda sesli uyarı ve işletim sistemi bildirimi (SSID dikkate alınmaz). En fazla {{max}} giriş.",
+    "placeholder": "OE1ABC",
+    "add": "Ekle",
+    "addAria": "MeshCom izleme listesine çağrı işareti ekleyin",
+    "listAria": "MeshCom izlenen çağrı işaretleri",
+    "removeAria": "{{callsign}} öğesini MeshCom izleme listesinden kaldırın",
+    "empty": "Henüz izlenen bir çağrı işareti yok.",
+    "saveFailed": "MeshCom izleme listesi kaydedilemedi.",
+    "alertTitle": "MeshCom saati: {{callsign}}",
+    "alertBody": "MeshCom'da {{callsign}} duyuldu."
   }
 }

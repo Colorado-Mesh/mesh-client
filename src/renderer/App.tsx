@@ -381,6 +381,7 @@ import type {
 } from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { hydrateLoraBlocklists } from './lib/loraBlocklist';
+import { loadMeshcomCallsignWatchlist } from './lib/meshcom/meshcomCallsignWatchlist';
 import { meshcoreRoomServerIdsFromNodes } from './lib/meshcoreDbCacheHydration';
 import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
 import {
@@ -745,6 +746,9 @@ function AppContent() {
   useEffect(() => {
     void loadNotificationSoundSettings().catch((error: unknown) => {
       console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
+    });
+    void loadMeshcomCallsignWatchlist().catch((error: unknown) => {
+      console.warn('[App] MeshCom watchlist hydrate failed ' + errLikeToLogString(error));
     });
   }, []);
 
@@ -6473,6 +6477,30 @@ function AppContent() {
                                           }}
                                           protocol={mapProtocol}
                                           useFahrenheit={useFahrenheit}
+                                          onSendPositionOnAir={
+                                            mapProtocol === 'meshcom' &&
+                                            meshcomPanelActions.deviceCommands.available
+                                              ? async () => {
+                                                  const pos = asOurPosition(
+                                                    meshcomRuntime.ourPosition,
+                                                  );
+                                                  if (
+                                                    pos &&
+                                                    Number.isFinite(pos.lat) &&
+                                                    Number.isFinite(pos.lon)
+                                                  ) {
+                                                    await meshcomPanelActions.sendPositionToDevice(
+                                                      pos.lat,
+                                                      pos.lon,
+                                                      pos.altitudeMeters,
+                                                    );
+                                                  }
+                                                  await meshcomPanelActions.deviceCommands.run(
+                                                    '--sendpos',
+                                                  );
+                                                }
+                                              : undefined
+                                          }
                                         />
                                       );
                                     },

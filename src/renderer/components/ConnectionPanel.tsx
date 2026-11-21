@@ -1,6 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR, Unplug } from 'lucide-react-motion';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -40,6 +48,7 @@ import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
 import { useHostLinkMeter } from '../hooks/useHostLinkMeter';
+import { useNowMs } from '../hooks/useNowMs';
 import {
   flushPendingMqttSave,
   getMqttSettingsStorageKey,
@@ -95,6 +104,10 @@ import {
 } from '../lib/letsMeshJwt';
 import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
 import { looksLikeRnodeBleName, meshcomBlePickerDisplayName } from '../lib/meshcom/meshcomBleName';
+import {
+  getMeshcomNetworkTime,
+  subscribeMeshcomNetworkTime,
+} from '../lib/meshcom/meshcomNetworkTime';
 import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
@@ -3391,6 +3404,28 @@ export default function ConnectionPanel({
       : null;
 
   const connectingRadio = connecting && !isConnected;
+  const meshcomNetworkTime = useSyncExternalStore(
+    subscribeMeshcomNetworkTime,
+    getMeshcomNetworkTime,
+    getMeshcomNetworkTime,
+  );
+  const meshcomNetworkNowMs = useNowMs(protocol === 'meshcom' && meshcomNetworkTime != null);
+  const meshcomNetworkTimeDetail =
+    protocol === 'meshcom' && meshcomNetworkTime && meshcomNetworkNowMs > 0
+      ? (() => {
+          const ageMs = Math.max(0, meshcomNetworkNowMs - meshcomNetworkTime.heardAtMs);
+          const age =
+            ageMs < 60_000
+              ? t('connectionPanel.tiles.meshcomNetworkTimeJustNow')
+              : t('connectionPanel.tiles.meshcomNetworkTimeAgeMinutes', {
+                  count: Math.max(1, Math.round(ageMs / 60_000)),
+                });
+          return t('connectionPanel.tiles.meshcomNetworkTime', {
+            time: meshcomNetworkTime.text,
+            age,
+          });
+        })()
+      : null;
   const radioTileDetail = isConnected
     ? [
         state.connectionType
@@ -3402,10 +3437,11 @@ export default function ConnectionPanel({
               ? formatMeshtasticNodeId(state.myNodeNum)
               : String(state.myNodeNum)))
           : null,
+        meshcomNetworkTimeDetail,
       ]
         .filter((part): part is string => !!part)
         .join(' · ')
-    : '';
+    : (meshcomNetworkTimeDetail ?? '');
   const statusTiles = (
     <ConnectionStatusTiles
       link={{

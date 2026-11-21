@@ -198,6 +198,39 @@ describe('MapPanel accessibility', () => {
     );
   });
 
+  it('links MeshMap on MeshCom overview and exposes Send POS when wired', async () => {
+    const user = userEvent.setup();
+    const onSendPositionOnAir = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        protocol="meshcom"
+        onSendPositionOnAir={onSendPositionOnAir}
+      />,
+    );
+    expect(screen.getByRole('link', { name: /Open MeshCom MeshMap/i })).toHaveAttribute(
+      'href',
+      'https://meshmap.oevsv.at/',
+    );
+    await user.click(screen.getByRole('button', { name: /Send MeshCom position on the air/i }));
+    expect(onSendPositionOnAir).toHaveBeenCalled();
+  });
+
+  it('does not show MeshMap link on MeshCore overview', () => {
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        protocol="meshcore"
+        meshcorePackets={[]}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: /Open MeshCom MeshMap/i })).toBeNull();
+  });
+
   it.each(['meshcore', 'meshtastic'] as const)(
     'restores %s traffic mode after leaving the map without keeping its map DOM alive',
     async (protocol) => {

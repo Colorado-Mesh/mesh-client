@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Umgebungsverlauf",
     "dangerZoneEnvironmentHistoryDesc": "Entfernen Sie alle gespeicherten Messwerte für Temperatur, Luftfeuchtigkeit, Druck und Luftqualität für jedes Protokoll und jede Identität.",
     "clearAllRooms": "Alle Räume löschen",
-    "clearAllRoomsConfirm": "Dadurch werden alle nicht zu den Favoriten gehörenden MeshCore-Room-Server aus dem verbundenen Radio und der lokalen Datenbank entfernt. Räume werden wieder angezeigt, wenn sie erneut angekündigt werden. Dieser Vorgang kann nicht rückgängig gemacht werden."
+    "clearAllRoomsConfirm": "Dadurch werden alle nicht zu den Favoriten gehörenden MeshCore-Room-Server aus dem verbundenen Radio und der lokalen Datenbank entfernt. Räume werden wieder angezeigt, wenn sie erneut angekündigt werden. Dieser Vorgang kann nicht rückgängig gemacht werden.",
+    "meshcomWatchlistHeading": "MeshCom-Rufzeichen-Beobachtungsliste"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "Ferngesteuerte Verbindung",
       "remoteConnecting": "Fernverbindung",
       "remoteError": "Remote-Fehler",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Netzwerkzeit {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "gerade eben",
+      "meshcomNetworkTimeAgeMinutes": "Vor {{count}} Min."
     },
     "disconnectAll": "Funkgerät und MQTT trennen",
     "disconnectRadioGroup": "Funkgerät trennen",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap (Gelände)",
     "basemapHot": "Humanitär (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNV-Karte (ÖPNV)"
+    "basemapOepnv": "ÖPNV-Karte (ÖPNV)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "MeshCom MeshMap (meshmap.oevsv.at) in einem neuen Tab öffnen",
+    "meshcomMeshMapHint": "MeshMap wird von Gateways gefüllt, die Ihren POS über Funk empfangen – nicht nur von dieser In-App-Karte. Aktivieren Sie --gateway auf einem Standortknoten oder befinden Sie sich in Reichweite eines solchen.",
+    "meshcomSendPosition": "POS senden",
+    "meshcomSendPositionAria": "Senden Sie die MeshCom-Position über Funk an Gateways und MeshMap",
+    "meshcomSendPositionHint": "Überträgt bekannte Koordinaten an den Knoten (sofern verfügbar) und sendet --sendpos, damit ein Gateway sie auf MeshMap hochladen kann.",
+    "meshcomSendPositionSent": "Positionsbefehl an den MeshCom-Knoten gesendet.",
+    "meshcomSendPositionFailed": "Position konnte nicht gesendet werden: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -9212,5 +9224,18 @@
     "appEligible": "APP/Seriennummer",
     "loadingConfig": "Gerätekonfiguration wird geladen …",
     "currentValue": "jetzt {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshCom-Rufzeichen-Beobachtungsliste",
+    "help": "Alarm mit Ton und einer Betriebssystembenachrichtigung, wenn ein aufgelistetes Basis-Rufzeichen auf MeshCom gehört wird (SSID wird ignoriert). Bis zu {{max}} Einträge.",
+    "placeholder": "OE1ABC",
+    "add": "Hinzufügen",
+    "addAria": "Rufzeichen zur MeshCom-Beobachtungsliste hinzufügen",
+    "listAria": "Beobachtete Rufzeichen von MeshCom",
+    "removeAria": "{{callsign}} aus der MeshCom-Beobachtungsliste entfernen",
+    "empty": "Noch keine beobachteten Rufzeichen.",
+    "saveFailed": "Die MeshCom-Beobachtungsliste konnte nicht gespeichert werden.",
+    "alertTitle": "MeshCom-Uhr: {{callsign}}",
+    "alertBody": "{{callsign}} auf MeshCom gehört."
   }
 }
