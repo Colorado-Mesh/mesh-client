@@ -423,6 +423,18 @@ describe('analyzeLogs', () => {
       'meshcom',
     );
     expect(meshcom.categories.find((c) => c.id === 'serial-reconnect')).toBeDefined();
+    expect(
+      analyzeLogs(
+        [makeEntry('[serialDeliveryProbe] OK label=meshcom', 'warn')],
+        'meshcom',
+      ).categories.find((c) => c.id === 'serial-reconnect'),
+    ).toBeUndefined();
+    expect(
+      analyzeLogs(
+        [makeEntry('[serialDeliveryProbe] FAILED label=meshcom detail=boom', 'warn')],
+        'meshcom',
+      ).categories.find((c) => c.id === 'serial-reconnect'),
+    ).toBeDefined();
   });
 
   it('ignores routine serial teardown debug lines for serial-reconnect', () => {

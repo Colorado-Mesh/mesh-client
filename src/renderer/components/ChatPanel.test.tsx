@@ -663,6 +663,37 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByLabelText(/Sent via TCP/i)).toBeInTheDocument();
   });
 
+  it('forwards blocked status to the Reticulum delivery badge', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          isConnected
+          showLxmfDeliveryStatus
+          myNodeNum={42}
+          messages={[
+            {
+              sender_id: 42,
+              sender_name: 'Self',
+              payload: 'Orphan DM',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'blocked',
+              error: 'chatPanel.sendErrors.destKey',
+              receivedVia: 'tcp',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    // Badge forwards `blocked` (lock + blocked tooltip), not a substituted Failed status.
+    expect(screen.getByLabelText(/chatPanel\.sendErrors\.destKey/i)).toBeInTheDocument();
+    expect(screen.getByText(/\uD83D\uDD12/)).toBeInTheDocument();
+  });
+
   it('shows explicit multi-egress Reticulum outbound badge (RF+TCP)', () => {
     render(
       <ToastProvider>

@@ -407,7 +407,10 @@ async function sendOneOutboxRow(
       ) {
         recordMeshcoreSend();
       }
-      if (isEmergencyOutboxPriority(row)) {
+      if (sendResult === null) {
+        // Explicit null = local block / soft skip (orphan Reticulum DM) — no ACK wait.
+        // undefined / other falsy values still go through the failure path below.
+      } else if (isEmergencyOutboxPriority(row)) {
         // Radio accept is not delivery: keep the row until the network acknowledges it.
         setOutboxRowAwaitingAck(row.id, true);
         await awaitNetworkAck({

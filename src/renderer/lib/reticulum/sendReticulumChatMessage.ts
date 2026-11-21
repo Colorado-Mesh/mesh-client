@@ -124,24 +124,67 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
     return null;
   }
   // Orphan / missing peer hash: keep a Blocked bubble so retries do not look like delivery ACK failure.
+  // Return null so outbox skips assertReticulumSendAcked / auto-resend ACK waits.
   if (!destHash && destination != null && destination !== 0) {
     console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
-    const pendingId = `reticulum-pending-${Date.now()}`;
     const senderName = session.getFullNodeLabel(selfNodeId);
+    const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
     const replyFields = buildReticulumReplyFields(identityId, replyTo);
-    addMessage(identityId, {
-      id: pendingId,
-      from: selfNodeId >>> 0,
-      senderName,
-      to: destination >>> 0,
-      payload: text,
-      channelIndex,
-      timestamp: Date.now(),
-      status: 'sending',
-      ...replyFields,
-    });
-    markOutboundBlocked(identityId, pendingId, CHAT_SEND_ERROR_DEST_KEY_KEY);
-    return pendingId;
+    const existing =
+      retryOfStoreId != null && retryOfStoreId !== ''
+        ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+          useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
+        : undefined;
+    let pendingId: string;
+    let record: MessageRecord;
+    if (existing) {
+      pendingId = existing.id;
+      record = {
+        ...existing,
+        from: selfNodeId >>> 0,
+        senderName,
+        to: destination >>> 0,
+        payload: text,
+        channelIndex,
+        status: 'sending',
+        error: undefined,
+        ...replyFields,
+      };
+      upsertMessage(identityId, record);
+    } else {
+      pendingId = `reticulum-pending-${Date.now()}`;
+      record = {
+        id: pendingId,
+        from: selfNodeId >>> 0,
+        senderName,
+        to: destination >>> 0,
+        payload: text,
+        channelIndex,
+        timestamp: Date.now(),
+        status: 'sending',
+        ...replyFields,
+      };
+      addMessage(identityId, record);
+    }
+    const blockedError = markOutboundBlocked(identityId, pendingId, CHAT_SEND_ERROR_DEST_KEY_KEY);
+    const blockedRecord =
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+      useMessageStore.getState().messages[identityId]?.[pendingId] ?? {
+        ...record,
+        status: 'blocked' as const,
+        error: blockedError,
+      };
+    if (senderHash) {
+      persistReticulumOutboundRecord(
+        identityId,
+        blockedRecord,
+        senderHash,
+        senderName,
+        null,
+        'blocked',
+      );
+    }
+    return null;
   }
   if (!destHash) {
     console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);

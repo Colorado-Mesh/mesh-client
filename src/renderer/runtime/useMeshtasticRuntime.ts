@@ -1192,15 +1192,20 @@ export function useMeshtasticRuntime() {
       isSerialPostWakeUntrusted() &&
       deviceRef.current
     ) {
-      void runSerialDeliveryProbe('meshtastic', async () => {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 1500);
-        });
-        if (Date.now() - lastDataReceivedRef.current > 10_000) {
-          throw new Error('no recent FromRadio after wake reconnect');
-        }
-      }).then((result) => {
-        if (result === 'failed') {
+      const probeGeneration = reconnectGenerationRef.current;
+      void runSerialDeliveryProbe(
+        'meshtastic',
+        async () => {
+          const device = deviceRef.current;
+          if (!device) throw new Error('no device for post-wake probe');
+          // Active ToRadio round-trip — configure-completion alone must not clear untrusted.
+          await device.heartbeat();
+        },
+        {
+          isCurrent: () => reconnectGenerationRef.current === probeGeneration,
+        },
+      ).then((result) => {
+        if (result === 'failed' && reconnectGenerationRef.current === probeGeneration) {
           handleConnectionLostRef.current();
         }
       });

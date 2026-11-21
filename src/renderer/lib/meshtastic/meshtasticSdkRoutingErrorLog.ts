@@ -7,6 +7,7 @@ import { noteSerialDeliveryFailure } from '@/renderer/lib/serialDeliveryHealth';
 import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/meshtasticSession';
 import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage } from '@/renderer/lib/types';
+import { getConnection } from '@/renderer/stores/connectionStore';
 import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
@@ -230,11 +231,18 @@ export function applyMeshtasticOutboundRoutingError(
   const missingKey = isMeshtasticMissingRecipientKeyError(parsed.errorName);
   const status = missingKey ? 'blocked' : 'failed';
   const persistError = missingKey ? CHAT_SEND_ERROR_DEST_KEY_KEY : errorText;
+  const priorBucket = useMessageStore.getState().messages[identityId];
+  const priorStatus = Object.hasOwn(priorBucket, storeMessageId)
+    ? priorBucket[storeMessageId].status
+    : undefined;
   if (missingKey) {
     markOutboundBlocked(identityId, storeMessageId, CHAT_SEND_ERROR_DEST_KEY_KEY);
     console.warn(
       `[meshtasticAck] PKI packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
     );
+  } else if (priorStatus === 'blocked') {
+    // Keep Blocked rows sticky unless this event is another missing-key PKI failure.
+    return true;
   } else {
     updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
     if (
@@ -245,7 +253,14 @@ export function applyMeshtasticOutboundRoutingError(
       console.warn(
         `[meshtasticAck] TIMEOUT packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
       );
-      noteSerialDeliveryFailure({ reason: 'delivery-ack-timeout' });
+      const connectionType = getConnection(identityId)?.connectionType ?? null;
+      if (connectionType === 'serial') {
+        noteSerialDeliveryFailure({
+          reason: 'delivery-ack-timeout',
+          connectionType: 'serial',
+          identityId,
+        });
+      }
     } else {
       console.warn(
         `[meshtasticAck] NACK packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,

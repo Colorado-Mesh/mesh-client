@@ -82,10 +82,42 @@ describe('serialDeliveryHealth', () => {
     });
   });
 
-  it('tracks post-wake untrusted window', () => {
-    noteSerialPostWakeUntrusted(30_000);
+  it('keeps post-wake untrusted until cleared by probe (not wall-clock alone)', () => {
+    noteSerialPostWakeUntrusted(1);
     expect(isSerialPostWakeUntrusted()).toBe(true);
     clearSerialPostWakeUntrusted();
     expect(isSerialPostWakeUntrusted()).toBe(false);
+  });
+
+  it('does not attribute BLE timeouts to an unrelated serial connection', () => {
+    setConnection('id-serial', {
+      status: 'configured',
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+      reconnectAttempt: 0,
+      myNodeNum: 1,
+    });
+    setConnection('id-ble', {
+      status: 'configured',
+      connectionType: 'ble',
+      mqttStatus: 'disconnected',
+      reconnectAttempt: 0,
+      myNodeNum: 2,
+    });
+    noteSerialTransportLoss({ connectionType: 'serial', identityId: 'id-serial' });
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: 'ble',
+      identityId: 'id-ble',
+    });
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: 'ble',
+      identityId: 'id-ble',
+    });
+    expect(pushAppToast).not.toHaveBeenCalled();
+    const serialConn = useConnectionStore.getState().connections['id-serial'];
+    expect(serialConn).toBeDefined();
+    expect(serialConn.serialNeedsReselect).toBeFalsy();
   });
 });

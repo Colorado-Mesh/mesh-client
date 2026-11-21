@@ -3757,8 +3757,17 @@ export function useMeshcoreRuntime() {
         }
         startMeshcoreSerialWatchdog(conn);
         if (isSerialPostWakeUntrusted()) {
-          void runSerialDeliveryProbe('meshcore', () => conn.getSelfInfo(5000)).then((result) => {
-            if (result === 'failed') {
+          const probeConn = conn;
+          const probeSetupGen = setupGen;
+          void runSerialDeliveryProbe('meshcore', () => probeConn.getSelfInfo(5000), {
+            isCurrent: () =>
+              meshcoreSetupGenerationRef.current === probeSetupGen && connRef.current === probeConn,
+          }).then((result) => {
+            if (
+              result === 'failed' &&
+              meshcoreSetupGenerationRef.current === probeSetupGen &&
+              connRef.current === probeConn
+            ) {
               handleMeshcoreConnectionLostRef.current();
             }
           });

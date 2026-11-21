@@ -91,7 +91,7 @@ export function readTransportVerdict(
     return undefined;
   }
   if (protocol === 'meshcore') {
-    if (record.status === 'failed') return 'failed';
+    if (record.status === 'failed' || record.status === 'blocked') return 'failed';
     if (isGroupChannelRecord(record)) {
       // Companion accept marks channel floods `acked`; only a repeater rebroadcast counts.
       const coverage = useRelayCoverageStore.getState().coverageFor(identityId, record.id);
@@ -99,7 +99,9 @@ export function readTransportVerdict(
     }
     return record.status === 'acked' ? 'acked' : undefined;
   }
-  return record.status === 'acked' ? 'acked' : record.status === 'failed' ? 'failed' : undefined;
+  if (record.status === 'acked') return 'acked';
+  if (record.status === 'failed' || record.status === 'blocked') return 'failed';
+  return undefined;
 }
 
 function findIdentityWithMessage(

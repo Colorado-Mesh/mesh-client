@@ -116,6 +116,12 @@ describe('readTransportVerdict', () => {
       'failed',
     );
   });
+
+  it('meshcore DM: blocked ends the wait as failed without clearing blocked status', () => {
+    const blocked = record({ id: 'dm', status: 'blocked', error: 'chatPanel.sendErrors.destKey' });
+    expect(readTransportVerdict('meshcore', IDENTITY, blocked)).toBe('failed');
+    expect(blocked.status).toBe('blocked');
+  });
 });
 
 describe('networkAckTimeoutMs', () => {

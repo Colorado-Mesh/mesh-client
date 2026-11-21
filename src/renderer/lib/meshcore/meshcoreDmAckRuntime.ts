@@ -12,6 +12,7 @@ import {
   meshcorePendingDmAckMapKeys,
   type PendingDmAckEntry,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import { getConnection } from '../../stores/connectionStore';
 import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import { computePathHash, usePathHistoryStore } from '../../stores/pathHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
@@ -68,7 +69,11 @@ export function armMeshcoreDmAckPending(
             errLikeToLogString(e),
         );
       });
-    noteSerialDeliveryFailure({ reason: 'delivery-ack-timeout' });
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: getConnection(identityId)?.connectionType ?? null,
+      identityId,
+    });
   }, estTimeoutMs);
   const pendingEntry: PendingDmAckEntry = {
     timeoutId,

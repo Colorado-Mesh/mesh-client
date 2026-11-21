@@ -59,6 +59,7 @@ import {
   MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
 } from '../../lib/timeConstants';
 import type { ChatMessage, MeshNode } from '../../lib/types';
+import { getConnection } from '../../stores/connectionStore';
 import type { NodeRecord } from '../../stores/nodeStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '../../stores/nodeStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
@@ -590,7 +591,11 @@ export function attachMeshcoreConnSideEffects(
       `[meshcoreDmAck] ${isNack ? 'NACK' : 'ACK'} packetId=${ackKeyU32} dest=${pending.destNodeId ?? '?'} detail=event-130`,
     );
     if (isNack) {
-      noteSerialDeliveryFailure({ reason: 'delivery-ack-timeout' });
+      noteSerialDeliveryFailure({
+        reason: 'delivery-ack-timeout',
+        connectionType: getConnection(identityId)?.connectionType ?? null,
+        identityId,
+      });
     }
     setMessages((prev) =>
       prev.map((m) =>

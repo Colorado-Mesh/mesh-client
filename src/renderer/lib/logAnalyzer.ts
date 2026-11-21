@@ -423,7 +423,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
       /reconnectSerial createFromPort failed/i,
       /TransportWebSerial\.createFromPort failed/i,
       /\[serialDeliveryHealth\]/i,
-      /\[serialDeliveryProbe\]/i,
+      /\[serialDeliveryProbe\] FAILED/i,
       /watchdog: serial dead/i,
       /\[usePowerRecovery\].*resume/i,
       /\[meshcoreDmAck\] TIMEOUT/i,

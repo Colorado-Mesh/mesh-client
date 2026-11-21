@@ -37,8 +37,20 @@ describe('serialDeliveryProbe', () => {
   });
 
   it('returns failed when probe throws', async () => {
+    beginSerialPostWakeUntrustedWindow();
     const result = await runSerialDeliveryProbe('test', () => Promise.reject(new Error('boom')));
     expect(result).toBe('failed');
+  });
+
+  it('ignores success from a superseded post-wake generation', async () => {
+    beginSerialPostWakeUntrustedWindow();
+    const firstGenProbe = runSerialDeliveryProbe('stale', () => {
+      beginSerialPostWakeUntrustedWindow();
+      return Promise.resolve('ok');
+    });
+    const result = await firstGenProbe;
+    expect(result).toBe('stale');
+    expect(isSerialPostWakeUntrusted()).toBe(true);
   });
 
   it('uses accelerated dead threshold while post-wake untrusted', () => {
