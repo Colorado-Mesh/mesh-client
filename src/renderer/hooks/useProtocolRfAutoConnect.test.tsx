@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   loadLastConnection: vi.fn(),
   loadLastBleDeviceId: vi.fn(),
   saveLastConnection: vi.fn(),
+  clearLastConnection: vi.fn(),
   clearStoredBleSelection: vi.fn(),
   notifyBleSelectionCleared: vi.fn(),
   reconnectBleWithScan: vi.fn(),
@@ -21,16 +22,22 @@ const mocks = vi.hoisted(() => ({
   awaitNobleBlePrimaryAutoConnectSettled: vi.fn(),
   tryGetMeshtasticSession: vi.fn(),
   tryGetMeshcoreSession: vi.fn(),
+  tryGetMeshcomSession: vi.fn(),
   awaitNobleBleProtocolSettle: vi.fn(),
 }));
 
-vi.mock('@/renderer/lib/lastConnectionStorage', () => ({
-  clearStoredBleSelection: mocks.clearStoredBleSelection,
-  notifyBleSelectionCleared: mocks.notifyBleSelectionCleared,
-  loadLastConnection: mocks.loadLastConnection,
-  loadLastBleDeviceId: mocks.loadLastBleDeviceId,
-  saveLastConnection: mocks.saveLastConnection,
-}));
+vi.mock('@/renderer/lib/lastConnectionStorage', async () => {
+  const actual = await vi.importActual('@/renderer/lib/lastConnectionStorage');
+  return {
+    ...(actual as Record<string, unknown>),
+    clearStoredBleSelection: mocks.clearStoredBleSelection,
+    notifyBleSelectionCleared: mocks.notifyBleSelectionCleared,
+    loadLastConnection: mocks.loadLastConnection,
+    loadLastBleDeviceId: mocks.loadLastBleDeviceId,
+    saveLastConnection: mocks.saveLastConnection,
+    clearLastConnection: mocks.clearLastConnection,
+  };
+});
 
 vi.mock('@/renderer/lib/bleReconnectHelper', () => ({
   reconnectBleWithScan: mocks.reconnectBleWithScan,
@@ -57,6 +64,10 @@ vi.mock('@/renderer/lib/sessions/meshtasticSession', () => ({
 
 vi.mock('@/renderer/lib/sessions/meshcoreSession', () => ({
   tryGetMeshcoreSession: mocks.tryGetMeshcoreSession,
+}));
+
+vi.mock('@/renderer/lib/sessions/meshcomSession', () => ({
+  tryGetMeshcomSession: mocks.tryGetMeshcomSession,
 }));
 
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
@@ -87,6 +98,7 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(false);
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });
+    mocks.tryGetMeshcomSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.awaitNobleBleProtocolSettle.mockResolvedValue(undefined);
     mocks.awaitNobleBlePrimaryAutoConnectSettled.mockResolvedValue(undefined);
     vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('darwin');
@@ -256,6 +268,7 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     mocks.loadLastBleDeviceId.mockReturnValue(null);
     mocks.clearStoredBleSelection.mockReset();
     mocks.notifyBleSelectionCleared.mockReset();
+    mocks.clearLastConnection.mockReset();
     mocks.awaitReticulumBleCoexistenceClear.mockResolvedValue(undefined);
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
@@ -264,12 +277,63 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(false);
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });
+    mocks.tryGetMeshcomSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.awaitNobleBleProtocolSettle.mockResolvedValue(undefined);
     mocks.awaitNobleBlePrimaryAutoConnectSettled.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('skips MeshCom auto-connect for Meshtastic-only tcp lastConnection and clears it', async () => {
+    const warn = mockConsoleWarn();
+    try {
+      mocks.loadLastConnection.mockReturnValue({
+        type: 'tcp',
+        httpAddress: 'meshtastic.local:4403',
+      });
+      const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshcom',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(mocks.clearLastConnection).toHaveBeenCalledWith('meshcom');
+      });
+      expect(connectAutomatic).not.toHaveBeenCalled();
+      expect(warn.spy).toHaveBeenCalledWith(
+        expect.stringContaining('ignoring Meshtastic-only tcp lastConnection'),
+      );
+    } finally {
+      warn.restore();
+    }
+  });
+
+  it('auto-connects MeshCom mistyped tcp lastConnection with a KISS address as http', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'tcp',
+      httpAddress: '192.168.1.50:8001',
+    });
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcom',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('http', '192.168.1.50:8001');
+    });
+    expect(mocks.clearLastConnection).not.toHaveBeenCalled();
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(

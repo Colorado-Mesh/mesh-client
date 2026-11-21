@@ -1686,6 +1686,41 @@ describe('ConnectionPanel last-connection restoration across protocol switches',
     }
   });
 
+  it('does not keep Meshtastic native TCP selected when switching to MeshCom', async () => {
+    const meshcomKey = 'mesh-client:lastConnection:meshcom';
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: 'meshtastic.local:4403' }),
+    );
+
+    try {
+      const view = render(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+      const radioCard = () => screen.getByText('Radio Connection').closest('.bg-deep-black');
+      await waitFor(() => {
+        expect(
+          within(radioCard() as HTMLElement).getByRole('radio', { name: /tcp/i }),
+        ).toBeChecked();
+      });
+
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshcom" />,
+      );
+
+      await waitFor(() => {
+        expect(
+          within(radioCard() as HTMLElement).getByRole('radio', { name: /bluetooth/i }),
+        ).toBeChecked();
+      });
+      // Stale Meshtastic tcp must not be rewritten onto MeshCom lastConnection.
+      expect(localStorage.getItem(meshcomKey)).toBeNull();
+    } finally {
+      localStorage.removeItem('mesh-client:lastConnection:meshtastic');
+      localStorage.removeItem(meshcomKey);
+    }
+  });
+
   it('restores Meshtastic HTTP address after switching away and back', async () => {
     const lastConnKey = 'mesh-client:lastConnection:meshtastic';
     const stored = { type: 'http' as const, httpAddress: '192.168.1.20' };
