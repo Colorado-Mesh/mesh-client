@@ -1232,7 +1232,8 @@
     "serialReselect": "Ztráta sériového připojení USB — vyberte zařízení znovu",
     "serialReselectAction": "Výběr sériového portu",
     "statusRegion": "Stav připojení",
-    "rebootingReconnectAttempt": "Restartování rádia. Opětovné připojení… pokus {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Restartování rádia. Opětovné připojení… pokus {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "Sériové číslo USB vypadá, že je připojeno, ale přenos selhává – ukončete aplikaci, odpojte a znovu připojte kabel nebo restartujte počítač, pokud se problém nevyřeší."
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",

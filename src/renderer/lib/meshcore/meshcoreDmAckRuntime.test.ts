@@ -25,6 +25,27 @@ describe('meshcoreDmAckRuntime', () => {
     expect(resolveMeshcoreDmAck(0x80, pending).newStatus).toBe('acked');
   });
 
+  it('armMeshcoreDmAckPending logs TIMEOUT at warn when the wait expires', async () => {
+    vi.useFakeTimers();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.stubGlobal('window', {
+      electronAPI: {
+        db: { updateMeshcoreMessageStatus: vi.fn().mockResolvedValue(undefined) },
+      },
+    });
+    const { armMeshcoreDmAckPending } = await import('./meshcoreDmAckRuntime');
+    const pendingAcks = new Map<number, PendingDmAckEntry>();
+    armMeshcoreDmAckPending(
+      { identityId: ID, ackKeyU32: 99, estTimeoutMs: 1000, destNodeId: 7 },
+      { pendingAcks, getSelfNodeId: () => 1 },
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes('[meshcoreDmAck] TIMEOUT'))).toBe(
+      true,
+    );
+    vi.useRealTimers();
+  });
+
   it('applyMeshcoreDmAckToPending clears matching pending entry', () => {
     const timeoutId = setTimeout(() => {}, 60_000);
     // Signed CRC and its u32 form are distinct Map keys — exercises multi-alias cleanup.

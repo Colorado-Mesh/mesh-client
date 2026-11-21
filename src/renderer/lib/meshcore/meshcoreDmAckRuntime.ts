@@ -12,10 +12,12 @@ import {
   meshcorePendingDmAckMapKeys,
   type PendingDmAckEntry,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import { getConnection } from '../../stores/connectionStore';
 import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import { computePathHash, usePathHistoryStore } from '../../stores/pathHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { MeshcoreDmAckPendingParams } from '../meshcoreDmAckDelivery';
+import { noteSerialDeliveryFailure } from '../serialDeliveryHealth';
 import type { IdentityId } from '../types';
 
 /** MeshCore firmware RESP codes: 0x80 = ACK, 0x81 = NACK (may arrive signed). */
@@ -55,6 +57,9 @@ export function armMeshcoreDmAckPending(
     if (destNodeId != null && sendPathHash.length > 0) {
       usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
     }
+    console.warn(
+      `[meshcoreDmAck] TIMEOUT packetId=${ackKeyU32} dest=${destNodeId ?? '?'} detail=hop-ack-timeout`,
+    );
     syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, deps.getSelfNodeId(), 'failed');
     void window.electronAPI.db
       .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
@@ -64,6 +69,11 @@ export function armMeshcoreDmAckPending(
             errLikeToLogString(e),
         );
       });
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: getConnection(identityId)?.connectionType ?? null,
+      identityId,
+    });
   }, estTimeoutMs);
   const pendingEntry: PendingDmAckEntry = {
     timeoutId,

@@ -402,7 +402,7 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'meshcore-tcp')).toBeDefined();
   });
 
-  it('detects Meshtastic serial reconnect failures', () => {
+  it('detects serial reconnect failures across USB protocols', () => {
     const result = analyzeLogs(
       [
         makeEntry(
@@ -417,7 +417,24 @@ describe('analyzeLogs', () => {
       [makeEntry('Failed to execute open on SerialPort: The port is already open.', 'error')],
       'meshcore',
     );
-    expect(meshcore.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
+    expect(meshcore.categories.find((c) => c.id === 'serial-reconnect')).toBeDefined();
+    const meshcom = analyzeLogs(
+      [makeEntry('[serialDeliveryHealth] repeated delivery ACK failures on serial', 'warn')],
+      'meshcom',
+    );
+    expect(meshcom.categories.find((c) => c.id === 'serial-reconnect')).toBeDefined();
+    expect(
+      analyzeLogs(
+        [makeEntry('[serialDeliveryProbe] OK label=meshcom', 'warn')],
+        'meshcom',
+      ).categories.find((c) => c.id === 'serial-reconnect'),
+    ).toBeUndefined();
+    expect(
+      analyzeLogs(
+        [makeEntry('[serialDeliveryProbe] FAILED label=meshcom detail=boom', 'warn')],
+        'meshcom',
+      ).categories.find((c) => c.id === 'serial-reconnect'),
+    ).toBeDefined();
   });
 
   it('ignores routine serial teardown debug lines for serial-reconnect', () => {

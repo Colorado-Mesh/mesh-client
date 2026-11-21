@@ -342,6 +342,11 @@ export function applyReticulumOutboundDeliveryStatus(
     status === 'failed' && opts?.error === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
       ? RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
       : undefined;
+  if (status === 'failed') {
+    console.warn(
+      `[reticulumLxmfAck] FAILED hash=${normalizedHash.slice(0, 16)} detail=${opts?.error ?? wireStatus}`,
+    );
+  }
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     normalizedHash,

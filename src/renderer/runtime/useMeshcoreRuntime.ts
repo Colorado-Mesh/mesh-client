@@ -595,6 +595,12 @@ import {
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
 import { createRfReconnectController } from '../lib/rfReconnectController';
+import { isSerialPostWakeUntrusted, noteSerialDeliveryFailure } from '../lib/serialDeliveryHealth';
+import {
+  beginSerialPostWakeUntrustedWindow,
+  runSerialDeliveryProbe,
+  serialDeadThresholdMs,
+} from '../lib/serialDeliveryProbe';
 import { registerMeshcoreSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
   captureSerialIdentityForRediscovery,
@@ -603,7 +609,6 @@ import {
 import {
   escalateSerialReconnectExhaustion,
   forgetGrantedSerialPortBestEffort,
-  SERIAL_DEAD_THRESHOLD_MS,
   SERIAL_STALE_THRESHOLD_MS,
   SERIAL_WATCHDOG_INTERVAL_MS,
 } from '../lib/serialPortRecovery';
@@ -2401,10 +2406,12 @@ export function useMeshcoreRuntime() {
           : null;
         const lastAt = Math.max(meshcoreLastDataReceivedRef.current, driverLast ?? 0);
         const elapsed = Date.now() - lastAt;
-        if (elapsed > SERIAL_DEAD_THRESHOLD_MS) {
+        const deadMs = serialDeadThresholdMs(isSerialPostWakeUntrusted());
+        if (elapsed > deadMs) {
           console.warn(
             `[useMeshcoreRuntime] watchdog: serial dead for ${elapsed}ms, triggering reconnect`,
           );
+          noteSerialDeliveryFailure({ reason: 'watchdog-dead', connectionType: 'serial' });
           handleMeshcoreConnectionLostRef.current();
         } else if (elapsed > SERIAL_STALE_THRESHOLD_MS) {
           console.warn(`[useMeshcoreRuntime] watchdog: serial stale for ${elapsed}ms`);
@@ -3749,6 +3756,22 @@ export function useMeshcoreRuntime() {
           meshcoreConnectionParamsRef.current.serialPort = serialPort;
         }
         startMeshcoreSerialWatchdog(conn);
+        if (isSerialPostWakeUntrusted()) {
+          const probeConn = conn;
+          const probeSetupGen = setupGen;
+          void runSerialDeliveryProbe('meshcore', () => probeConn.getSelfInfo(5000), {
+            isCurrent: () =>
+              meshcoreSetupGenerationRef.current === probeSetupGen && connRef.current === probeConn,
+          }).then((result) => {
+            if (
+              result === 'failed' &&
+              meshcoreSetupGenerationRef.current === probeSetupGen &&
+              connRef.current === probeConn
+            ) {
+              handleMeshcoreConnectionLostRef.current();
+            }
+          });
+        }
         const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
         const nodeName = selfInfoRef.current?.name?.trim() || null;
         if (portId && nodeName) {
@@ -4485,6 +4508,9 @@ export function useMeshcoreRuntime() {
       meshcoreConnectionParamsRef.current = rehydrated;
       console.debug('[useMeshcoreRuntime] power resume — rehydrated reconnect params from storage');
     }
+    if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
+      beginSerialPostWakeUntrustedWindow();
+    }
     console.debug('[useMeshcoreRuntime] power resume — resetting reconnect budget');
     meshcoreReconnectAttemptRef.current = 0;
     meshcoreReconnectGenerationRef.current += 1;
@@ -4771,9 +4797,7 @@ export function useMeshcoreRuntime() {
         }
         const pubKey = pubKeyMapRef.current.get(destNodeId);
         if (!pubKey) {
-          throw new Error(
-            'Cannot send DM: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.',
-          );
+          throw new Error('chatPanel.sendErrors.missingDestinationKey');
         }
         const sentAt = Date.now();
         const openWireCompat = isMeshcoreOpenWireCompatEnabled();

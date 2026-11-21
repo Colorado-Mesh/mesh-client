@@ -26,7 +26,7 @@ import { getIdentity } from './identityStore';
 import { getLiveChannelKeys } from './liveChannelKeyStore';
 import { omitRecordKey } from './storeUtils';
 
-export type MessageStatus = 'sending' | 'acked' | 'failed';
+export type MessageStatus = 'sending' | 'acked' | 'failed' | 'blocked';
 
 /**
  * Transport markers. Reticulum multi-egress uses `+`-joined atoms (e.g. `rf+tcp`).

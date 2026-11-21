@@ -591,6 +591,20 @@ If auto-recovery does not help:
 
 This applies on **Windows, macOS, and Linux** (same Web Serial stack). Linux **permission denied** before the first connect is a separate issue — see [Linux: serial port access denied](#linux-serial-port-access-denied).
 
+### USB serial after sleep (connected UI, no radio activity)
+
+**Symptoms (all OSes):** Laptop sleeps with a USB radio connected; after wake Mesh-Client still shows **USB connected**, but there is **no RF / chat activity** for a long time. Restarting only the radio or only the app may not help; a full **OS reboot** clears it.
+
+**Cause:** Chromium Web Serial / OS CDC can leave a **zombie open port** across sleep. `navigator.serial` disconnect often does **not** fire on sleep. mesh-client treats serial as **untrusted after resume**, runs a short companion delivery probe, and uses a faster silence watchdog (~30s) until the probe succeeds. Look in the Log for `[serialDeliveryProbe]`, `[serialDeliveryHealth]`, and `[usePowerRecovery]`.
+
+**What to do:**
+
+1. Quit mesh-client completely, unplug and replug USB, reopen, and reconnect (or use **Select serial port**).
+2. If that fails, reboot the computer — some Windows CDC drivers stay wedged until then.
+3. Capture a **Developer** support bundle **while stuck** (with Log debug on) if you need help diagnosing.
+
+See also [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions).
+
 ### Serial port auto-rediscovery after reconnect exhaustion
 
 **Symptoms**: After the port permission is revoked (step 3 above) the device reconnects on its own without a manual **Select serial port**, or it does not and you are prompted after ~1 minute.
@@ -668,6 +682,7 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 - **BLE stuck after wake** (`connect_timeout`, peripheral not found, or GATT session errors in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
+- **USB serial connected but silent after wake:** Same zombie CDC path as [USB serial after sleep](#usb-serial-after-sleep-connected-ui-no-radio-activity) — quit + replug, or reboot Windows if the COM driver is wedged.
 
 **Linux:** Same sidecar GATT path as macOS/Windows; see **Linux-specific** under [BLE known issues](#ble-known-issues) for BlueZ / Flatpak steps.
 

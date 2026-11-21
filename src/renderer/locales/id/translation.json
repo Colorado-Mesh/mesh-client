@@ -1208,7 +1208,8 @@
     "serialReselect": "Koneksi serial USB terputus — pilih perangkat Anda lagi",
     "serialReselectAction": "Pilih port serial",
     "statusRegion": "Status Koneksi",
-    "rebootingReconnectAttempt": "Pemutaran ulang radio. Menghubungkan kembali… upaya {{attempt}}/{{max}}"
+    "rebootingReconnectAttempt": "Pemutaran ulang radio. Menghubungkan kembali… upaya {{attempt}}/{{max}}",
+    "serialDeliveryUnhealthy": "Serial USB terlihat terhubung, tetapi pengiriman gagal — keluar dari aplikasi, cabut dan pasang kembali kabel, atau mulai ulang komputer jika masih belum pulih"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

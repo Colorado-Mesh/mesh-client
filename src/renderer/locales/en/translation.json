@@ -1356,6 +1356,7 @@
     "rebootingReconnectAttempt": "Radio rebooting. Reconnecting… attempt {{attempt}}/{{max}}",
     "serialReselect": "USB serial connection lost — reselect the port, or power-cycle the radio if it still will not connect",
     "serialReselectAction": "Select serial port",
+    "serialDeliveryUnhealthy": "USB serial looks connected but delivery is failing — quit the app, unplug and replug the cable, or reboot the computer if it still will not recover",
     "statusRegion": "Connection status"
   },
   "connectionPanel": {

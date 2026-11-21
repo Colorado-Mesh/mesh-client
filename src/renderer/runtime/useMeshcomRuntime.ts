@@ -33,6 +33,15 @@ import type { MeshComDeviceHandle } from '../lib/protocols/MeshComProtocol';
 import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
 import { readRadioSelfPosition } from '../lib/radioSelfPosition';
 import { createRfReconnectController } from '../lib/rfReconnectController';
+import { isSerialPostWakeUntrusted, noteSerialDeliveryFailure } from '../lib/serialDeliveryHealth';
+import {
+  beginSerialPostWakeUntrustedWindow,
+  runSerialDeliveryProbe,
+  serialDeadThresholdMs,
+} from '../lib/serialDeliveryProbe';
+import { registerMeshcomSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
+import { SERIAL_STALE_THRESHOLD_MS, SERIAL_WATCHDOG_INTERVAL_MS } from '../lib/serialPortRecovery';
+import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import { MAX_TELEMETRY_POINTS } from '../lib/sessionMemoryCaps';
 import {
   type MeshcomRfTransportType,
@@ -397,6 +406,59 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   });
   const refreshSettingsRef = useRef(deviceCommands.refreshSettings);
   refreshSettingsRef.current = deviceCommands.refreshSettings;
+  const serialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const serialLastDataRef = useRef(0);
+  const isReconnectingRef = useRef(false);
+
+  const stopMeshcomSerialWatchdog = useCallback(() => {
+    if (serialWatchdogRef.current != null) {
+      clearInterval(serialWatchdogRef.current);
+      serialWatchdogRef.current = null;
+    }
+  }, []);
+
+  const startMeshcomSerialWatchdog = useCallback(
+    (driverIdentityId: string) => {
+      if (connectionParamsRef.current?.rfType !== 'serial') return;
+      stopMeshcomSerialWatchdog();
+      serialLastDataRef.current = Date.now();
+      serialWatchdogRef.current = setInterval(() => {
+        if (isReconnectingRef.current) return;
+        if (connectionParamsRef.current?.rfType !== 'serial') return;
+        const driverLast = connectionDriver.getLastDataAtForIdentity(driverIdentityId);
+        const lastAt = Math.max(serialLastDataRef.current, driverLast ?? 0);
+        const elapsed = Date.now() - lastAt;
+        const deadMs = serialDeadThresholdMs(isSerialPostWakeUntrusted());
+        if (elapsed > deadMs) {
+          console.warn(
+            `[useMeshcomRuntime] watchdog: serial dead for ${elapsed}ms, triggering reconnect`,
+          );
+          noteSerialDeliveryFailure({
+            reason: 'watchdog-dead',
+            connectionType: 'serial',
+            identityId: driverIdentityId,
+          });
+          handleConnectionLostRef.current();
+        } else if (elapsed > SERIAL_STALE_THRESHOLD_MS) {
+          console.warn(`[useMeshcomRuntime] watchdog: serial stale for ${elapsed}ms`);
+          setState((s) => {
+            if (s.status === 'configured' || s.status === 'connected') {
+              return { ...s, status: 'stale' };
+            }
+            return s;
+          });
+        } else {
+          setState((s) => {
+            if (s.status === 'stale') {
+              return { ...s, status: 'configured' };
+            }
+            return s;
+          });
+        }
+      }, SERIAL_WATCHDOG_INTERVAL_MS);
+    },
+    [stopMeshcomSerialWatchdog],
+  );
 
   const attachRfSession = useCallback(
     async (driverIdentityId: string, type: MeshcomRfTransportType) => {
@@ -414,6 +476,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       });
       rfReconnectRef.current.markSuccess();
       reconnectAttemptRef.current = 0;
+      isReconnectingRef.current = false;
       void hydrateIdentityStoresFromDb('meshcom', driverIdentityId).catch((e: unknown) => {
         console.warn('[useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
       });
@@ -423,9 +486,42 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           console.warn('[useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
         });
       }
+      if (type === 'serial') {
+        startMeshcomSerialWatchdog(driverIdentityId);
+        if (isSerialPostWakeUntrusted()) {
+          const probeIdentityId = driverIdentityId;
+          void runSerialDeliveryProbe(
+            'meshcom',
+            async () => {
+              const snap = await refreshSettingsRef.current();
+              if (!snap) throw new Error('settings refresh returned no snapshot');
+            },
+            {
+              isCurrent: () =>
+                driverIdentityIdRef.current === probeIdentityId &&
+                connectionParamsRef.current?.rfType === 'serial',
+            },
+          ).then((result) => {
+            if (
+              result === 'failed' &&
+              driverIdentityIdRef.current === probeIdentityId &&
+              connectionParamsRef.current?.rfType === 'serial'
+            ) {
+              handleConnectionLostRef.current();
+            }
+          });
+        }
+      } else {
+        stopMeshcomSerialWatchdog();
+      }
       void maybeAutoSettime(type);
     },
-    [attachIngestForIdentity, maybeAutoSettime],
+    [
+      attachIngestForIdentity,
+      maybeAutoSettime,
+      startMeshcomSerialWatchdog,
+      stopMeshcomSerialWatchdog,
+    ],
   );
 
   const requestRefresh = useCallback(async () => {
@@ -446,6 +542,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
             type === 'udp' || type === 'tcp' || type === 'http'
               ? resolveHost(httpAddress)
               : undefined,
+          portSignature: type === 'serial' ? (loadLastSerialPortId() ?? undefined) : undefined,
         });
         connectionParamsRef.current = {
           rfType: type,
@@ -454,6 +551,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               ? resolveHost(httpAddress)
               : undefined,
           blePeripheralId,
+          serialPortId: type === 'serial' ? loadLastSerialPortId() : undefined,
         };
         await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {
@@ -515,7 +613,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const run = async () => {
         rfReconnectRef.current.beginOpening();
         try {
-          await connect(params.rfType, params.httpAddress, params.blePeripheralId);
+          if (params.rfType === 'serial') {
+            await connectAutomatic('serial', undefined, params.serialPortId);
+          } else {
+            await connect(params.rfType, params.httpAddress, params.blePeripheralId);
+          }
         } catch (err) {
           console.warn(
             `[useMeshcomRuntime] reconnect attempt=${attempt} ${errLikeToLogString(err)}`,
@@ -537,7 +639,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       };
       void run();
     });
-  }, [connect]);
+  }, [connect, connectAutomatic]);
 
   handleConnectionLostRef.current = attemptReconnect;
 
@@ -554,12 +656,30 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       console.debug('[useMeshcomRuntime] power resume — skip reconnect (no stored session)');
       return;
     }
+    if (connectionParamsRef.current.rfType === 'serial') {
+      beginSerialPostWakeUntrustedWindow();
+    }
     console.debug('[useMeshcomRuntime] power resume — resetting reconnect budget');
     reconnectAttemptRef.current = 0;
     explicitDisconnectRef.current = false;
+    isReconnectingRef.current = true;
     // Wake stagger is owned by usePowerRecovery (~12s); reconnect immediately when scheduled.
     handleConnectionLostRef.current();
   }, []);
+
+  useEffect(() => {
+    registerMeshcomSerialDisconnectTarget({
+      isSerialConnected: () => connectionParamsRef.current?.rfType === 'serial',
+      onDisconnected: () => {
+        noteSerialDeliveryFailure({ reason: 'transport-loss', connectionType: 'serial' });
+        handleConnectionLostRef.current();
+      },
+    });
+    return () => {
+      registerMeshcomSerialDisconnectTarget(null);
+      stopMeshcomSerialWatchdog();
+    };
+  }, [stopMeshcomSerialWatchdog]);
 
   useLayoutEffect(() => {
     registerMeshcomSession({

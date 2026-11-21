@@ -50,7 +50,9 @@ export async function waitForReticulumOutboundTerminal(
     if (!Object.hasOwn(byId, trackedId)) return undefined;
     const msg = byId[trackedId];
     const status: MessageStatus | undefined = msg.status;
-    if (status === 'acked' || status === 'failed') return status;
+    if (status === 'acked' || status === 'failed' || status === 'blocked') {
+      return status === 'acked' ? 'acked' : 'failed';
+    }
     if (msg.reticulumDeliveryMethod === 'propagated') return 'acked';
     return undefined;
   };

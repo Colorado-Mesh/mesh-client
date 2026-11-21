@@ -135,7 +135,12 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     receivedAt: record.receivedAt,
     packetId,
     status: record.status,
-    mqttStatus: record.mqttStatus,
+    mqttStatus:
+      record.mqttStatus === 'sending' ||
+      record.mqttStatus === 'acked' ||
+      record.mqttStatus === 'failed'
+        ? record.mqttStatus
+        : undefined,
     receivedVia: record.receivedVia,
     isHistory: record.isHistory,
     error: record.error,
@@ -513,7 +518,9 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     timestamp: msg.timestamp,
     localOrder: msg.localOrder,
     receivedAt: msg.receivedAt,
-    status: msg.status === 'queued' || msg.status === 'blocked' ? undefined : msg.status,
+    // `queued` is outbox-only (not a MessageRecord status). `blocked` is a first-class
+    // chat status (missing key / orphan DM) and must survive round-trip.
+    status: msg.status === 'queued' ? undefined : msg.status,
     mqttStatus: msg.mqttStatus,
     receivedVia: msg.receivedVia,
     isHistory: msg.isHistory,

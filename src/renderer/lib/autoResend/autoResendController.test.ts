@@ -65,6 +65,16 @@ describe('isAutoResendEligible', () => {
     expect(isAutoResendEligible('meshtastic', dm('1', { payload: 'MECP/0/M01' }))).toBe(false);
   });
 
+  it('excludes blocked and encryption-blocked error rows', () => {
+    expect(isAutoResendEligible('meshcore', dm('1', { status: 'blocked' }))).toBe(false);
+    expect(
+      isAutoResendEligible(
+        'meshcore',
+        dm('1', { status: 'failed', error: 'chatPanel.sendErrors.missingDestinationKey' }),
+      ),
+    ).toBe(false);
+  });
+
   it('skips channel sends only where the protocol has no channel delivery ACK', () => {
     const channel = dm('1', { to: 0, channelIndex: 0 });
     expect(isAutoResendEligible('meshtastic', channel)).toBe(true);

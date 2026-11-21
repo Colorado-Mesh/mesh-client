@@ -12,7 +12,7 @@ import { RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION } from '@/shared/reticulum-
 import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export interface ReticulumMessageStatusBadgeProps {
-  status: 'sending' | 'acked' | 'failed';
+  status: 'sending' | 'acked' | 'failed' | 'blocked';
   via: MessageTransport | undefined;
   deliveryMethod?: MessageRecord['reticulumDeliveryMethod'];
   error?: string;
@@ -72,6 +72,8 @@ function statusIcon(
       return '\u23F3';
     case 'acked':
       return '\u2713';
+    case 'blocked':
+      return '\uD83D\uDD12';
     default:
       return '\u2717';
   }
@@ -83,6 +85,9 @@ function statusColorClass(
   error?: string,
 ): string {
   if (isReticulumTooLargeForPropagationError(error)) {
+    return 'text-orange-400';
+  }
+  if (status === 'blocked') {
     return 'text-orange-400';
   }
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
@@ -134,6 +139,8 @@ function statusLabelText(
         return t('chatPanel.reticulumSendPaper');
       }
       return t('chatPanel.reticulumSendDelivered');
+    case 'blocked':
+      return t('messageStatusBadge.blockedLabel');
     default:
       return error ?? t('chatPanel.reticulumSendFailed');
   }
@@ -179,9 +186,13 @@ export function ReticulumMessageStatusBadge({
   // Completed paper: paper-only prefix. Direct-only oversize: full notice (not "PN: failed").
   const tooltip = isReticulumTooLargeForPropagationError(error)
     ? t('chatPanel.voiceMemo.tooLargeForPropagation')
-    : deliveryMethod === 'paper' && status === 'acked'
-      ? viaPrefix
-      : `${viaPrefix}: ${statusLabel}`;
+    : status === 'blocked'
+      ? error
+        ? t(error)
+        : t('messageStatusBadge.blockedDefault')
+      : deliveryMethod === 'paper' && status === 'acked'
+        ? viaPrefix
+        : `${viaPrefix}: ${statusLabel}`;
   return (
     <DeliveryStatusBadgeFrame
       label={label}
