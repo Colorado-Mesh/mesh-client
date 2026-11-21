@@ -123,6 +123,27 @@ describe('chat display order', () => {
     setItem.mockRestore();
   });
 
+  it('flushes the full pending sequence when scope resolves even if some ids are absent', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem');
+    const { result, rerender } = renderHook(
+      ({ scope, entries }: { scope: string | null; entries: typeof items }) =>
+        useChatOrder(scope, entries),
+      { initialProps: { scope: null as string | null, entries: items } },
+    );
+    act(() => {
+      result.current.save(['3', '1', '2']);
+    });
+    rerender({ scope: 'meshcore:7:channels', entries: items.slice(0, 2) });
+    expect(result.current.ids).toEqual(['1', '2']);
+    expect(setItem).toHaveBeenCalledWith(
+      'mesh-client:chatOrder:meshcore:7:channels',
+      JSON.stringify(['3', '1', '2']),
+    );
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    expect(result.current.ids).toEqual(['3', '1', '2']);
+    setItem.mockRestore();
+  });
+
   it('preserves absent entries in their prior slots while reordering visible entries', () => {
     localStorage.setItem('mesh-client:chatOrder:test', JSON.stringify(['2', '1', '3']));
     const { result, rerender } = renderHook(({ entries }) => useChatOrder('test', entries), {

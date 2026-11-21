@@ -64,11 +64,12 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
   useEffect(() => {
     if (!persist) return;
     if (stored.key === key) return;
-    // scope change: load order for the new key (replaces render-phase setState)
+    // scope change: load order for the new key (replaces render-phase setState).
+    // Persist the full pending sequence (including ids absent from current items); the
+    // render path below still reconciles to the visible set.
     const pending = pendingWhileUnresolved;
     const fromStorage = readOrder(key);
-    const ids =
-      pending != null && pending.length > 0 ? reconcileChatOrder(items, pending) : fromStorage;
+    const ids = pending != null && pending.length > 0 ? [...pending] : fromStorage;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync storage when chat order scope becomes known
     setStored({ key, ids });
     if (pending != null && pending.length > 0) {

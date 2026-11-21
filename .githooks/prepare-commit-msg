@@ -5,8 +5,16 @@ case "$2" in
   merge | squash | commit) ;;
   *)
     if [ -f "$1" ]; then
-      sed -i.bak '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"
-      rm -f "$1.bak"
+      if sed -i.bak '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"; then
+        rm -f "$1.bak"
+      else
+        status=$?
+        # Keep the backup (and restore it if sed removed the original message file).
+        if [ ! -f "$1" ] && [ -f "$1.bak" ]; then
+          mv "$1.bak" "$1"
+        fi
+        exit "$status"
+      fi
     fi
     ;;
 esac
