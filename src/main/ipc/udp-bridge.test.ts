@@ -90,6 +90,7 @@ import {
   registerUdpBridgeIpcHandlers,
   UDP_BRIDGE_INBOUND_MAX_BYTES,
   UDP_BRIDGE_INBOUND_RATE_MAX,
+  UDP_BRIDGE_INBOUND_RATE_WINDOW_MS,
   UDP_BRIDGE_WRITE_MAX_BYTES,
 } from './udp-bridge';
 
@@ -141,49 +142,116 @@ describe('createUdpBridge', () => {
   });
 
   it('drops inbound datagrams over the EXTUDP protocol size cap', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_700_000_000_000);
     const send = vi.fn();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const bridge = createUdpBridge({
-      getMainWindow: () =>
-        ({
-          webContents: { send },
-        }) as never,
-      validateHost,
-    });
-    await bridge.connect(event, '192.168.1.10');
-    sockets[0].emit('message', Buffer.alloc(UDP_BRIDGE_INBOUND_MAX_BYTES + 1, 0x41), {
-      address: '192.168.1.10',
-      port: MESHCOM_EXTUDP_PORT,
-    });
-    expect(send).not.toHaveBeenCalled();
-    expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('oversized datagram'))).toBe(
-      true,
-    );
-    warn.mockRestore();
+    try {
+      const bridge = createUdpBridge({
+        getMainWindow: () =>
+          ({
+            webContents: { send },
+          }) as never,
+        validateHost,
+      });
+      await bridge.connect(event, '192.168.1.10');
+      const sock = sockets[0];
+      const oversized = Buffer.alloc(UDP_BRIDGE_INBOUND_MAX_BYTES + 1, 0x41);
+      const emitOversized = () =>
+        sock.emit('message', oversized, {
+          address: '192.168.1.10',
+          port: MESHCOM_EXTUDP_PORT,
+        });
+      // First drop logs; two more in the same window are suppressed.
+      emitOversized();
+      emitOversized();
+      emitOversized();
+      expect(send).not.toHaveBeenCalled();
+      expect(
+        warn.mock.calls.filter((c) => String(c[0] ?? '').includes('oversized datagram')),
+      ).toHaveLength(1);
+
+      // Next window's first drop summarizes the prior suppressed count (+2) plus itself.
+      vi.advanceTimersByTime(UDP_BRIDGE_INBOUND_RATE_WINDOW_MS);
+      emitOversized();
+      const oversizedLogs = warn.mock.calls.filter((c) =>
+        String(c[0] ?? '').includes('oversized datagram'),
+      );
+      expect(oversizedLogs).toHaveLength(2);
+      expect(String(oversizedLogs[1]?.[0] ?? '')).toContain('+3 dropped');
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
   });
 
   it('rate-limits configured-peer IPC fan-out under datagram flood', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_700_000_000_000);
     const send = vi.fn();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const bridge = createUdpBridge({
-      getMainWindow: () =>
-        ({
-          webContents: { send },
-        }) as never,
-      validateHost,
-    });
-    await bridge.connect(event, '192.168.1.10');
-    const sock = sockets[0];
-    const payload = Buffer.from('{"type":"msg","src":"A-1","dst":"*","msg":"x"}');
-    for (let i = 0; i < UDP_BRIDGE_INBOUND_RATE_MAX + 40; i++) {
-      sock.emit('message', payload, {
+    try {
+      const bridge = createUdpBridge({
+        getMainWindow: () =>
+          ({
+            webContents: { send },
+          }) as never,
+        validateHost,
+      });
+      await bridge.connect(event, '192.168.1.10');
+      const sock = sockets[0];
+      const payload = Buffer.from('{"type":"msg","src":"A-1","dst":"*","msg":"x"}');
+      for (let i = 0; i < UDP_BRIDGE_INBOUND_RATE_MAX + 40; i++) {
+        sock.emit('message', payload, {
+          address: '192.168.1.10',
+          port: MESHCOM_EXTUDP_PORT,
+        });
+      }
+      expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX);
+      expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('rate-limited'))).toBe(true);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('resets inbound rate quota on disconnect→reconnect within the same window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_700_000_000_000);
+    const send = vi.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const bridge = createUdpBridge({
+        getMainWindow: () =>
+          ({
+            webContents: { send },
+          }) as never,
+        validateHost,
+      });
+      await bridge.connect(event, '192.168.1.10');
+      const firstSock = sockets[0];
+      const payload = Buffer.from('{"type":"msg","src":"A-1","dst":"*","msg":"x"}');
+      for (let i = 0; i < UDP_BRIDGE_INBOUND_RATE_MAX; i++) {
+        firstSock.emit('message', payload, {
+          address: '192.168.1.10',
+          port: MESHCOM_EXTUDP_PORT,
+        });
+      }
+      expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX);
+
+      bridge.disconnect(event);
+      await bridge.connect(event, '192.168.1.10');
+      const secondSock = sockets[1];
+      secondSock.emit('message', payload, {
         address: '192.168.1.10',
         port: MESHCOM_EXTUDP_PORT,
       });
+      expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX + 1);
+      expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('rate-limited'))).toBe(false);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
     }
-    expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX);
-    expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('rate-limited'))).toBe(true);
-    warn.mockRestore();
   });
 
   it('rate-limits rejected-peer debug logs under datagram flood', async () => {

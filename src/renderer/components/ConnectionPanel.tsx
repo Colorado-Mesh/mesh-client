@@ -464,6 +464,8 @@ export default function ConnectionPanel({
     return 'meshtastic.local';
   });
   const [tcpAddress, setTcpAddress] = useState(() => {
+    // Meshtastic native TCP only — MeshCom KISS uses httpAddress / host:port fields.
+    if (protocol !== 'meshtastic') return 'meshtastic.local:4403';
     const last = loadLastConnection(protocol);
     return last?.type === 'tcp' && last.httpAddress ? last.httpAddress : 'meshtastic.local:4403';
   });
@@ -483,7 +485,11 @@ export default function ConnectionPanel({
     if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
       return String(parseTcpAddress(last.httpAddress).port);
     }
-    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcom') {
+    if (
+      last?.httpAddress &&
+      protocol === 'meshcom' &&
+      (last.type === 'http' || last.type === 'udp')
+    ) {
       return String(parseTcpAddress(last.httpAddress).port);
     }
     return protocol === 'meshcom' ? '8001' : '5000';
@@ -499,7 +505,7 @@ export default function ConnectionPanel({
   const activeHostAddress =
     protocol === 'meshcore'
       ? `${tcpHost}:${tcpPort}`
-      : protocol === 'meshcom' && (connectionType === 'http' || connectionType === 'udp')
+      : protocol === 'meshcom'
         ? httpAddress
         : connectionType === 'tcp' || state.connectionType === 'tcp'
           ? tcpAddress
@@ -1105,6 +1111,7 @@ export default function ConnectionPanel({
   // Reload last connection + host fields when protocol switches (one panel instance for all protocols).
   // Without rehydrating tcpHost/httpAddress/tcpAddress, a Meshtastic-first mount leaves MeshCore
   // TCP at default localhost and a later configured-save overwrites the real stored IP.
+  // MeshCom must not inherit Meshtastic's native TCP selection (`meshtastic.local:4403`).
   useEffect(() => {
     const loaded = loadLastConnection(protocol);
     setLastConnection(loaded);
@@ -1118,6 +1125,17 @@ export default function ConnectionPanel({
         setConnectionType(loaded.type);
       } else {
         setConnectionType('ble');
+      }
+    } else if (protocol === 'meshcom') {
+      // Meshtastic-only `tcp` in storage is stale cross-protocol bleed — ignore it.
+      if (loaded?.httpAddress && (loaded.type === 'http' || loaded.type === 'udp')) {
+        setHttpAddress(loaded.httpAddress);
+        setConnectionType(loaded.type);
+      } else if (loaded?.type === 'ble' || loaded?.type === 'serial') {
+        setConnectionType(loaded.type);
+      } else {
+        setConnectionType('ble');
+        setHttpAddress('127.0.0.1:8001');
       }
     } else if (protocol === 'meshtastic') {
       if (loaded?.type === 'http' && loaded.httpAddress) {
@@ -1203,12 +1221,15 @@ export default function ConnectionPanel({
           state.connectionType === 'udp'
         ) {
           // Prefer the address field for the configured transport (not UI radio selection).
+          // MeshCom KISS/EXTUDP never use Meshtastic native TCP (`tcpAddress` / :4403).
           conn.httpAddress =
             protocol === 'meshcore'
               ? `${tcpHost}:${tcpPort}`
-              : state.connectionType === 'tcp'
-                ? tcpAddress
-                : httpAddress;
+              : protocol === 'meshcom'
+                ? httpAddress
+                : state.connectionType === 'tcp'
+                  ? tcpAddress
+                  : httpAddress;
         } else if (state.connectionType === 'ble') {
           const prev = lastConnectionRef.current;
           const bleId = loadLastBleDevice(protocol) ?? prev?.bleDeviceId;
@@ -2053,6 +2074,12 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     } else if (lastConnection.type === 'tcp') {
+      // MeshCom has no Meshtastic native TCP — drop cross-protocol bleed.
+      if (protocol === 'meshcom') {
+        clearLastConnection(protocol);
+        setLastConnection(null);
+        return;
+      }
       const addr = lastConnection.httpAddress ?? tcpAddress;
       setTcpAddress(addr);
       setConnectionType('tcp');
@@ -2086,6 +2113,7 @@ export default function ConnectionPanel({
     }
   }, [
     lastConnection,
+    setLastConnection,
     onConnect,
     onAutoConnect,
     httpAddress,

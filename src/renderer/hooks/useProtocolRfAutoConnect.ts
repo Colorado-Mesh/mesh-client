@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { reconnectBleWithScan } from '@/renderer/lib/bleReconnectHelper';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  clearLastConnection,
   clearStoredBleSelection,
   loadLastBleDeviceId,
   loadLastConnection,
@@ -361,6 +362,16 @@ export function useProtocolRfAutoConnect({
         lastConnection.type === 'tcp' ||
         lastConnection.type === 'udp'
       ) {
+        // MeshCom has no Meshtastic native TCP (:4403). A tcp-typed lastConnection is
+        // cross-protocol bleed from a shared ConnectionPanel — drop it and skip.
+        if (protocol === 'meshcom' && lastConnection.type === 'tcp') {
+          console.warn(
+            '[useProtocolRfAutoConnect] meshcom auto-connect skipped — ignoring Meshtastic-only tcp lastConnection',
+          );
+          clearLastConnection('meshcom');
+          onAutoConnectCancelled();
+          return;
+        }
         const addr = lastConnection.httpAddress?.trim();
         if (addr) {
           startAutoConnectTimeout();

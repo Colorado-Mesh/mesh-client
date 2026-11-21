@@ -91,6 +91,16 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
   let inboundWindowCount = 0;
   let suppressedInboundRateDrops = 0;
   let lastInboundRateLogAt = 0;
+  /** Oversized-datagram drops (same interval summary pattern as rate-limit). */
+  let suppressedOversizedDrops = 0;
+  let lastOversizedLogAt = 0;
+
+  const resetInboundRateWindow = (): void => {
+    inboundWindowStartedAt = 0;
+    inboundWindowCount = 0;
+    suppressedInboundRateDrops = 0;
+    suppressedOversizedDrops = 0;
+  };
 
   const closeSocket = (emitDisconnected: boolean): void => {
     if (!activeSocket) return;
@@ -98,9 +108,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     activeSocket = null;
     remoteHost = null;
     peerConnected = false;
-    inboundWindowStartedAt = 0;
-    inboundWindowCount = 0;
-    suppressedInboundRateDrops = 0;
+    resetInboundRateWindow();
     try {
       prev.close();
     } catch (err) {
@@ -127,6 +135,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
 
       // Tear down any prior socket without reporting a live drop (connect-replace).
       closeSocket(false);
+      // Always reset the quota when installing a new socket — disconnect may have
+      // already nulled activeSocket so closeSocket returned without clearing counts.
+      resetInboundRateWindow();
 
       const socket = dgram.createSocket('udp4');
       activeSocket = socket;
@@ -155,9 +166,17 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       socket.on('message', (msg, rinfo) => {
         if (activeSocket !== socket) return;
         if (msg.length > UDP_BRIDGE_INBOUND_MAX_BYTES) {
-          console.warn(
-            `[IPC] ${DATA_CHANNEL} oversized datagram (${msg.length} > ${UDP_BRIDGE_INBOUND_MAX_BYTES}); dropping`,
-          );
+          const now = Date.now();
+          suppressedOversizedDrops += 1;
+          if (now - lastOversizedLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
+            console.warn(
+              `[IPC] ${DATA_CHANNEL} oversized datagram` +
+                ` (>${UDP_BRIDGE_INBOUND_MAX_BYTES} bytes;` +
+                ` +${suppressedOversizedDrops} dropped)`,
+            );
+            lastOversizedLogAt = now;
+            suppressedOversizedDrops = 0;
+          }
           return;
         }
         // Prefer UDP connect() so the kernel drops non-peer datagrams; still filter
@@ -304,6 +323,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       activeSocket = null;
       remoteHost = null;
       peerConnected = false;
+      resetInboundRateWindow();
       try {
         prev.close();
       } catch (err) {
