@@ -158,9 +158,19 @@ describe('packaging sidecar workflow gates', () => {
   it('prefixes Build Binaries installer artifacts with test- and keeps Release unprefixed', () => {
     const build = read('.github/workflows/build.yaml');
     const release = read('.github/workflows/release.yaml');
-    for (const os of ['macos', 'linux', 'windows']) {
+    // macOS/Linux still use a single test-prefixed zip artifact.
+    for (const os of ['macos', 'linux']) {
       expect(build).toContain(`name: test-mesh-client-${os}-\${{ github.sha }}`);
       expect(build).toContain(`artifact: test-mesh-client-${os}-\${{ github.sha }}`);
+    }
+    // Windows Build Binaries: archive:false Setup .exe (basename artifact) + test-prefixed meta zip.
+    expect(build).toContain('name: test-mesh-client-windows-meta-${{ github.sha }}');
+    expect(build).toContain('archive: false');
+    expect(build).toContain('artifact_mode: windows-split');
+    expect(build).toContain('pattern: Mesh-client-Setup-*');
+    expect(build).not.toContain('name: test-mesh-client-windows-${{ github.sha }}');
+    expect(build).not.toContain('artifact: test-mesh-client-windows-${{ github.sha }}');
+    for (const os of ['macos', 'linux', 'windows']) {
       expect(release).toContain(`name: mesh-client-${os}-\${{ github.sha }}`);
       expect(release).toContain(`artifact: mesh-client-${os}-\${{ github.sha }}`);
       expect(release).not.toContain(`test-mesh-client-${os}-`);
