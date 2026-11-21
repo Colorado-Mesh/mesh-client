@@ -2809,6 +2809,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="7. Capabilities and product parity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-upstream-product-audit-avoid-thin-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Upstream product audit (avoid thin UX)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3333,6 +3350,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="7. Capabilities and product parity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-upstream-product-audit-avoid-thin-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Upstream product audit (avoid thin UX)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3539,16 +3573,44 @@
 <p>Before shipping “protocol X is done,” walk shared surfaces with a matrix (at least smoke):</p>
 <ul>
 <li>Connection (transport matrix you claim: BLE / serial / TCP / UDP / HTTP)</li>
-<li>Chat (channels / ALL / DM semantics)</li>
+<li>Chat (address space + channel strip + DM / broadcast semantics — see §7.1)</li>
 <li>Contacts (list + detail + favorite + delete)</li>
 <li>Map (positions only vs live traffic)</li>
-<li>Radio / device config</li>
+<li>Radio / device config (and any companion CLI catalog — see §7.1)</li>
 <li>Diagnostics (or explicit off)</li>
 <li>MQTT (or <code>hasMqttConnectionPanel: false</code>)</li>
 <li>Hide protocol + power resume</li>
 <li>Node detail OTA / telemetry fields you parse</li>
 </ul>
 <p>Document justified exceptions in the protocol’s <code>docs/development/*.md</code> and inline <code>// Protocol-specific: …</code> where you gate.</p>
+<h3 id="71-upstream-product-audit-avoid-thin-ux">7.1 Upstream product audit (avoid thin UX)<a class="headerlink" href="#71-upstream-product-audit-avoid-thin-ux" title="Permanent link">&para;</a></h3>
+<p>Transport + codec parity is necessary but not sufficient. A protocol can decode traffic and still feel unfinished when <strong>chat addressing</strong>, <strong>device filters</strong>, <strong>delivery feedback</strong>, or <strong>companion commands</strong> from the upstream docs never reach shared UI. Treat the vendor’s public pages (not this repo’s other stacks) as a checklist before calling the protocol done.</p>
+<p><strong>Chat address space</strong></p>
+<ol>
+<li><strong>Inventory every destination class</strong> the radio/firmware understands (flood / ALL, named or numeric groups, rooms, DMs, digipeater paths, etc.). Wire decode alone is not product parity — each class needs a visible way to open, send, and (when the protocol books it on the node) listen.</li>
+<li><strong>Merge device booking into the chat strip.</strong> If the node holds a listen filter, channel list, or group slots, those ids must appear as pills alongside ALL and any history-discovered destinations. Local “open without booking” tabs are fine; they must not replace the device list.</li>
+<li><strong>Vendor named catalogs when upstream publishes them.</strong> Prefer a typed registry (id → short label + i18n note/reach) over raw numbers in the strip and join picker. Register dynamic <code>t(\</code>….\${leaf}`)<code>prefixes in</code>scripts/i18n-unused-keys.mjs` so catalog leaves are not flagged unused.</li>
+<li><strong>Radio Identity / device settings ↔ Chat.</strong> Slot editors, master-first ordering, max-slot limits, and clear-all behavior belong next to other identity knobs <strong>and</strong> must stay consistent with what Chat shows after apply.</li>
+<li><strong>Chat “+” / join UX</strong> should search the catalog, accept custom ids the wire allows, and optionally book the node when Serial/BLE (or equivalent) is available.</li>
+</ol>
+<p><strong>Delivery and status</strong></p>
+<ol>
+<li><strong>Map firmware ACK / NACK / routing events onto chat rows.</strong> If the transport emits delivery proof, wire it through the runtime (typed packet listener or equivalent), keep outbound DMs in <code>sending</code> until settle or timeout, and set capability flags honestly (<code>hasChannelDeliveryAck</code>, etc.). Fire-and-forget UI on an ACK-capable radio is a product gap, not a transport gap.</li>
+<li><strong>Broadcast vs DM semantics differ</strong> — document which destinations ack on wire-accept vs wait for peer proof; tests should cover both.</li>
+</ol>
+<p><strong>Companion / device command catalog</strong></p>
+<ol>
+<li><strong>Walk the full upstream command list</strong>, not only RF/modem knobs. Flags that change chat behavior (suppress ALL, gateway/APRS inject, group listen, mailbox) need either first-class controls or an explicit “out of scope” note in the protocol’s subsystem doc.</li>
+<li><strong>Capability honesty</strong> — turn flags on only when the UI and side effects exist; leave them off (and document why) when the wire exists but product work is deferred. False negatives hide features; false positives show dead controls.</li>
+<li><strong>Write down non-goals</strong> in the subsystem page (MQTT ingest, embed maps, hardware id ranges, store-and-forward, …). Silence reads as unfinished; an explicit non-goal prevents the next contributor from rediscovering the same gap as a bug.</li>
+</ol>
+<p><strong>Smoke questions before “done”</strong></p>
+<ul>
+<li>Can a user open every destination class the firmware docs describe without typing opaque wire syntax?</li>
+<li>After booking listen slots on the node, do those destinations appear in Chat without a reload hack?</li>
+<li>Does a DM that the radio ACKs leave <code>sending</code>, and does a missed ACK eventually fail?</li>
+<li>Is every chat-affecting companion flag either in Radio UI or listed as a deliberate non-goal?</li>
+</ul>
 <h2 id="8-tests-and-ci">8. Tests and CI<a class="headerlink" href="#8-tests-and-ci" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Prefer protocol-matrix or capability-driven cases for shared components (<code>NodeListPanel</code>, ConnectionPanel).</li>
@@ -3598,7 +3660,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 03:39:46 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 15:40:02 UTC">November 21, 2026</span>
   </span>
 
     
