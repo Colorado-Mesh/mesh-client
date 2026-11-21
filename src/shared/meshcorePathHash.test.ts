@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  meshcoreCompanionSupportsMultibytePathHash,
   meshcoreFirmwareSupportsMultibytePathHash,
   meshcorePackPathLenByte,
   meshcorePathHashModeFromSize,
@@ -116,5 +117,19 @@ describe('meshcorePathHash', () => {
     expect(meshcoreFirmwareSupportsMultibytePathHash('1.14.0')).toBe(true);
     expect(meshcoreFirmwareSupportsMultibytePathHash('1.13.9')).toBe(false);
     expect(meshcoreFirmwareSupportsMultibytePathHash(undefined)).toBe(false);
+  });
+
+  it('allows multibyte paths on fork firmware whose DeviceInfo reported a path hash mode', () => {
+    expect(meshcoreCompanionSupportsMultibytePathHash('PowerSaving17.1.6', true)).toBe(true);
+  });
+
+  it('allows multibyte paths on v1.14+ version text when no mode was reported', () => {
+    expect(meshcoreCompanionSupportsMultibytePathHash('v1.14.0', false)).toBe(true);
+  });
+
+  it('refuses multibyte paths when no mode was reported and the version text is older or unreadable', () => {
+    expect(meshcoreCompanionSupportsMultibytePathHash('v1.13.9', false)).toBe(false);
+    expect(meshcoreCompanionSupportsMultibytePathHash('PowerSaving17.1.6', false)).toBe(false);
+    expect(meshcoreCompanionSupportsMultibytePathHash(undefined, false)).toBe(false);
   });
 });
