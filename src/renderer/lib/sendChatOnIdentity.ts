@@ -105,7 +105,8 @@ function persistMeshcomOutboundRow(
       to_call_or_group: toCallOrGroup,
       text: record.payload,
       channel_idx: record.channelIndex,
-      received_via: 'local',
+      // MeshCom DB only accepts rf|mqtt|both — outbound RF chat is 'rf' (not 'local').
+      received_via: 'rf',
       timestamp: record.timestamp,
       status,
       received_at: record.receivedAt ?? Date.now(),
