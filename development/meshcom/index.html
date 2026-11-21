@@ -2767,6 +2767,50 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dynamic-aprs-telemetry-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic APRS telemetry commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#callsign-watchlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Callsign watchlist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-time-liveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network time liveness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshmap-meshmapoevsvat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshMap (meshmap.oevsv.at)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#device-telemetry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2821,6 +2865,17 @@
     <span class="md-ellipsis">
       
         MHEARD
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware IDs
       
     </span>
   </a>
@@ -3396,6 +3451,50 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dynamic-aprs-telemetry-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic APRS telemetry commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#callsign-watchlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Callsign watchlist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-time-liveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network time liveness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshmap-meshmapoevsvat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshMap (meshmap.oevsv.at)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#device-telemetry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3450,6 +3549,17 @@
     <span class="md-ellipsis">
       
         MHEARD
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware IDs
       
     </span>
   </a>
@@ -3633,6 +3743,15 @@
 <li><strong>Auto <code>--settime</code></strong>: app setting <code>meshcomAutoSettime</code> (default off). When enabled, after each Serial/BLE connect the runtime sends <code>--settime yyyy.mm.dd hh:mm:ss</code> in host UTC.</li>
 <li>Meshtastic Device Role / Position / Power / WiFi / Display / Bluetooth shells stay off for MeshCom so the Radio tab is not an empty config heading.</li>
 </ul>
+<h2 id="dynamic-aprs-telemetry-commands">Dynamic APRS telemetry commands<a class="headerlink" href="#dynamic-aprs-telemetry-commands" title="Permanent link">&para;</a></h2>
+<p>ICSSW <a href="https://icssw.org/en/telemetrie-dynamisch-zusammenstellen/">dynamic telemetry compilation</a> (<code>--parm</code> / <code>--unit</code> / <code>--eqns</code> / <code>--values</code> / <code>--ptime</code> / <code>--tel</code>) is in the Sensors group of <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a> (Device Configuration / console). Packets go RF→MeshCom server→aprs.fi and are hidden from the APP by design — no dedicated builder UI. Value token names include <code>press</code>, <code>hum</code>, <code>temp</code>, <code>onewire</code>, <code>co2</code>, <code>gasres</code>, <code>batt</code>, <code>proz</code>, <code>vbus</code>, <code>vcurrent</code>, <code>qnh</code>.</p>
+<h2 id="callsign-watchlist">Callsign watchlist<a class="headerlink" href="#callsign-watchlist" title="Permanent link">&para;</a></h2>
+<p>App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching <code>msg</code>/<code>pos</code> (<code>node_info</code>), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).</p>
+<h2 id="network-time-liveness">Network time liveness<a class="headerlink" href="#network-time-liveness" title="Permanent link">&para;</a></h2>
+<p>Inbound text containing <code>{CET}</code> (gateway/network clock, ~every 5 minutes) updates <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomNetworkTime.ts"><code>meshcomNetworkTime.ts</code></a>. Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).</p>
+<h2 id="meshmap-meshmapoevsvat">MeshMap (meshmap.oevsv.at)<a class="headerlink" href="#meshmap-meshmapoevsvat" title="Permanent link">&para;</a></h2>
+<p>Companions do <strong>not</strong> POST to <a href="https://meshmap.oevsv.at/">MeshMap</a>. Gateways upload POS/telemetry to MeshCom servers over UDP; MeshMap reads that server feed. Mesh Client feeds MeshMap only by causing the linked node to TX POS that a gateway hears (<code>--sendpos</code>, GPS/<code>--setlat</code>/<code>--setlon</code> push, <code>--track</code>, or <code>--gateway on</code> on a site node).</p>
+<p>The MeshCom <strong>Map</strong> panel links to MeshMap and offers <strong>Send POS</strong> (push known coords when available, then <code>--sendpos</code>). The in-app map is local contacts only — it is not MeshMap.</p>
 <h2 id="device-telemetry">Device telemetry<a class="headerlink" href="#device-telemetry" title="Permanent link">&para;</a></h2>
 <p><code>MESHCOM_CAPABILITIES.hasBatteryTelemetry</code> / <code>hasEnvironmentTelemetry</code> are on. Sources:</p>
 <table>
@@ -3698,11 +3817,13 @@
 <p><strong>DM delivery:</strong> <code>hasChannelDeliveryAck: true</code>. On transports that can emit peer delivery ACKs (<strong>BLE</strong> phone <code>0x41</code>, <strong>KISS/TCP</strong> <code>ackNN</code>), outbound DMs stay <code>sending</code> until <code>meshcomRoutingAckSideEffects</code> settles the row or a ~6 minute timeout. <strong>EXTUDP</strong> and <strong>USB serial</strong> have no peer-delivery ACK on the wire — DMs ack on wire accept there. Firmware message ids are <code>((gwId &amp; 0x3FFFFF) &lt;&lt; 10) | (node_msgid &amp; 0x3FF)</code> (<code>loop_functions.cpp</code> / <code>msgid_counter.h</code>); KISS returns the assigned id in <code>TX_RESULT</code>, BLE ACKs reference the full id or the low <code>{NNN}</code> suffix. ALL/GRC ack on wire accept on every transport.</p>
 <h2 id="mheard">MHEARD<a class="headerlink" href="#mheard" title="Permanent link">&para;</a></h2>
 <p>BLE HELLO <code>TYP</code> <strong>MH</strong> JSON and serial <code>--mheard</code> rows parse into <code>node_info</code> / contact upserts (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomMheard.ts"><code>meshcomMheard.ts</code></a>).</p>
+<h2 id="hardware-ids">Hardware IDs<a class="headerlink" href="#hardware-ids" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomHwIds.ts"><code>meshcomHwIds.ts</code></a> maps on-air / EXTUDP <code>hw_id</code> to abbreviations (ICSSW protocol table + firmware README / WebDesk through ~61). Unknown ids display as <code>HW#n</code>.</p>
 <h2 id="firmware-release-watch">Firmware release watch<a class="headerlink" href="#firmware-release-watch" title="Permanent link">&para;</a></h2>
 <p><code>pnpm run update</code> runs <code>check_meshcom_upstream</code> against <a href="https://github.com/icssw-org/MeshCom-Firmware">icssw-org/MeshCom-Firmware</a> published releases (<code>MESHCOM_UPSTREAM_WATCH_ENTRIES</code> in <code>scripts/update.sh</code>). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump <code>reviewed-ref</code>.</p>
 <h2 id="capability-gates">Capability gates<a class="headerlink" href="#capability-gates" title="Permanent link">&para;</a></h2>
 <p><code>MESHCOM_CAPABILITIES</code> in <code>BaseRadioProvider.ts</code>. Shared MeshCore-style panels are on where firmware supports them; Rooms BBS and MeshCore repeater admin stay off (<code>hasRoomServersPanel: false</code>, <code>modulesTabUsesRepeatersLabel: false</code>).</p>
-<p><strong>Map / live traffic:</strong> MeshCom has SmartBeaconing (<code>--track</code>) for LoRa-APRS on the track frequency and mesh POS reports, but <strong>no</strong> MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (<code>hasRawPacketLog: false</code> so Stats/Sniffer do not appear or fall through to Meshtastic buffers).</p>
+<p><strong>Map / live traffic:</strong> MeshCom has SmartBeaconing (<code>--track</code>) for LoRa-APRS on the track frequency and mesh POS reports, but <strong>no</strong> MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (<code>hasRawPacketLog: false</code> so Stats/Sniffer do not appear or fall through to Meshtastic buffers). See <a href="#meshmap-meshmapoevsvat">MeshMap</a> for the external map feed path.</p>
 <p><strong>Chat channels:</strong> ALL (<code>*</code>, index 0) plus device listen / local / history GRC pills (named via ICSSW registry) — never MeshCore PSK channel pills.</p>
 <h2 id="extudp-local-bind-udp-1799">EXTUDP local bind (UDP 1799)<a class="headerlink" href="#extudp-local-bind-udp-1799" title="Permanent link">&para;</a></h2>
 <p>Each Mesh Client instance binds <strong>one</strong> local UDP socket on <strong>1799</strong> for EXTUDP (<code>udp-bridge.ts</code>). A second copy of the app on the same machine, or another process holding that port, yields <code>EADDRINUSE</code> on connect — disconnect other copies or stop the conflicting process, then retry.</p>
@@ -3773,7 +3894,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 17:48:07 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 21:30:32 UTC">November 21, 2026</span>
   </span>
 
     
