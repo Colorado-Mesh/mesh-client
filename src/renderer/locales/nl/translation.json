@@ -1176,6 +1176,8 @@
     "delete": "Verwijderen",
     "copy": "Kopiëren",
     "copied": "Gekopieerd",
+    "copyFailed": "Kopiëren mislukt",
+    "copyRoute": "Route kopiëren",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Gedetecteerd als een bot uit de geautomatiseerde antwoorden",

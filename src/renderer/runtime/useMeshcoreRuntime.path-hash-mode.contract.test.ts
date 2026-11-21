@@ -20,4 +20,30 @@ describe('useMeshcoreRuntime path hash mode on connect', () => {
     expect(SOURCE).not.toMatch(/savedMode !== pathFields\.pathHashMode/);
     expect(SOURCE).not.toContain('initConn reapply path hash mode');
   });
+
+  it('lets a companion that reported a path hash mode set multibyte modes whatever its version text', () => {
+    expect(SOURCE).toMatch(
+      /meshcoreCompanionSupportsMultibytePathHash\(\s*fw,\s*meshcoreDeviceReportedPathHashModeRef\.current,?\s*\)/,
+    );
+    expect(SOURCE).not.toMatch(/!meshcoreFirmwareSupportsMultibytePathHash\(fw\)/);
+  });
+
+  it('records the reported mode per connection: cleared when initConn starts, set from DeviceInfo', () => {
+    expect(SOURCE).toMatch(
+      /meshcoreInitConnInFlightRef\.current = true;\s*meshcoreDeviceReportedPathHashModeRef\.current = false;/,
+    );
+    expect(SOURCE).toMatch(
+      /const pathFields = parsePathHashModeFromDeviceQuery\(deviceInfo\);\s*if \(isMeshcorePathHashMode\(pathFields\.pathHashMode\)\) \{\s*meshcoreDeviceReportedPathHashModeRef\.current = true;\s*\}/,
+    );
+    // The explicit query never clears a report the automatic DeviceInfo already made.
+    expect(SOURCE).not.toMatch(
+      /meshcoreDeviceReportedPathHashModeRef\.current = isMeshcorePathHashMode\(/,
+    );
+  });
+
+  it('records the mode from the automatic DeviceInfo, only for the current connection', () => {
+    expect(SOURCE).toMatch(
+      /conn\.once\(MESHCORE_RESPONSE_DEVICE_INFO, \(response: unknown\) => \{\s*if \(\s*connRef\.current === conn &&\s*isMeshcorePathHashMode\(parsePathHashModeFromDeviceQuery\(response\)\.pathHashMode\)\s*\) \{\s*meshcoreDeviceReportedPathHashModeRef\.current = true;\s*\}/,
+    );
+  });
 });

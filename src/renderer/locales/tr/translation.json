@@ -1176,6 +1176,8 @@
     "delete": "Silmek",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
+    "copyFailed": "Kopyalanamadı",
+    "copyRoute": "Rotayı kopyala",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Otomatik yanıtlarından bot olduğu algılandı",

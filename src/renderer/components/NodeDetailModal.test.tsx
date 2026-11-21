@@ -1016,6 +1016,42 @@ describe('NodeDetailModal MeshCore path names', () => {
     expect(screen.getByTitle('Dest Node')).toHaveTextContent('Dest Node');
   });
 
+  it('copies the Path Trace with hop names, hashes and SNR', async () => {
+    const { writeClipboardText } = await import('@/renderer/lib/writeClipboardText');
+    const writeText = vi.mocked(writeClipboardText);
+    writeText.mockClear();
+    const relayId = 0xaa;
+    const destId = 0xbb;
+    const dest: MeshNode = { ...meshcoreRepeaterNode, node_id: destId, long_name: 'Dest Node' };
+    const relay: MeshNode = { ...meshcoreRepeaterNode, node_id: relayId, long_name: 'Relay Alpha' };
+    renderMeshcoreModal({
+      node: dest,
+      nodes: new Map([
+        [destId, dest],
+        [relayId, relay],
+      ]),
+      meshcoreTraceResult: {
+        pathLen: 2,
+        pathHashes: [0xaa, 0xbb],
+        hashSizeBytes: 1,
+        pathSnrs: [4.5, 3],
+        lastSnr: 2.5,
+        tag: 1,
+      },
+    });
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Copy route' }));
+    const arrow = String.fromCodePoint(0x2192);
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      `Relay Alpha [AA] +4.50 dB ${arrow} Dest Node +2.50 dB`,
+    );
+  });
+
+  it('shows no Copy route button before a MeshCore trace has run', () => {
+    const dest: MeshNode = { ...meshcoreRepeaterNode, node_id: 0xbb, long_name: 'Dest Node' };
+    renderMeshcoreModal({ node: dest, nodes: new Map([[0xbb, dest]]) });
+    expect(screen.queryByRole('button', { name: 'Copy route' })).not.toBeInTheDocument();
+  });
+
   it('labels saved path history without claiming it is the current radio route', () => {
     const relayId = 0xee;
     const destId = 0xdd;

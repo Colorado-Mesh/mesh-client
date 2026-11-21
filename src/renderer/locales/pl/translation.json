@@ -1216,6 +1216,8 @@
     "delete": "Usuwać",
     "copy": "Kopiuj",
     "copied": "Skopiowano",
+    "copyFailed": "Nie udało się skopiować",
+    "copyRoute": "Kopiuj trasę",
     "botBadge": "Nerw",
     "botBadgeLabel": "Nerw",
     "botBadgeTooltip": "Wykryty jako bot na podstawie automatycznych odpowiedzi",

@@ -1176,6 +1176,8 @@
     "delete": "삭제",
     "copy": "복사",
     "copied": "복사됨",
+    "copyFailed": "복사하지 못했습니다",
+    "copyRoute": "경로 복사",
     "botBadge": "봇",
     "botBadgeLabel": "봇",
     "botBadgeTooltip": "자동 응답에서 봇으로 감지됨",

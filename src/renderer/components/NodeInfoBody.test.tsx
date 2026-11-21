@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -235,5 +236,40 @@ describe('NodeInfoBody', () => {
     render(<NodeInfoBody node={node} protocol="meshtastic" />);
     expect(screen.getByText('PM1.0')).toBeInTheDocument();
     expect(screen.getByText('12 µg/m³')).toBeInTheDocument();
+  });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'copies the traceroute path as one line (%s)',
+    async (protocol) => {
+      const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+      writeText.mockReset();
+      writeText.mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      const { container } = render(
+        <NodeInfoBody
+          node={makeNode({ node_id: 12, long_name: 'Trailhead' })}
+          protocol={protocol}
+          traceRouteHops={['Base', 'Ridge Relay', 'Trailhead']}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Copy route' }));
+      const arrow = String.fromCodePoint(0x2192);
+      expect(writeText).toHaveBeenCalledExactlyOnceWith(
+        `Base ${arrow} Ridge Relay ${arrow} Trailhead`,
+      );
+      expect(await screen.findByRole('status')).toHaveTextContent('Copied');
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
+
+  it('shows no Copy route button before a traceroute has run', () => {
+    render(
+      <NodeInfoBody
+        node={makeNode({ node_id: 12, long_name: 'Trailhead' })}
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Copy route' })).not.toBeInTheDocument();
   });
 });

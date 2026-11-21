@@ -29,7 +29,7 @@ test('Meshtastic TCP fake companion: connect, send, echo receive', async () => {
 
   await page.getByRole('radio', { name: 'Switch to Meshtastic' }).click();
   await openPanel(page, 'Device', 'Connection');
-  await page.getByRole('radio', { name: 'TCP/IP', exact: true }).click();
+  await page.getByRole('radio', { name: 'WiFi/TCP (fast)', exact: true }).click();
   await page.locator('#connection-meshtastic-tcp-host').fill(radio.address);
   await page.locator('[data-setting-anchor="connection.radio.connect"]').click();
 
@@ -50,6 +50,7 @@ test('Meshtastic TCP fake companion: connect, send, echo receive', async () => {
     .poll(() => radio!.outboundTexts.some((t) => t.includes(outbound)), { timeout: 45_000 })
     .toBe(true);
 
-  const echo = page.getByText(`echo:${outbound}`, { exact: false });
+  // exact: the hidden new-message announcer also contains this text, prefixed with the sender.
+  const echo = page.getByText(`echo:${outbound}`, { exact: true });
   await expect(echo).toBeVisible({ timeout: 20_000 });
 });

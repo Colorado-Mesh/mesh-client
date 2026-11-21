@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import {
@@ -280,10 +281,11 @@ export default function MeshcoreCompanionCliSection({
 
   const copyIp = async (ip: string): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(ip);
+      await writeClipboardText(ip);
       onToast?.(t('meshcoreCompanionCli.ipCopied'), 'success');
     } catch (e) {
       console.warn('[MeshcoreCompanionCliSection] copy IP failed ' + errLikeToLogString(e));
+      onToast?.(t('common.copyFailed'), 'error');
     }
   };
 

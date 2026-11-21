@@ -40,6 +40,7 @@ import {
   revealElementWithinContainer,
   scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { openNomadPageFromLink } from '@/renderer/lib/nomad/openNomadPageFromLink';
@@ -78,6 +79,7 @@ import {
 import { rrcReplyMention } from '@/renderer/lib/rrcReplyMention';
 import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -1045,8 +1047,8 @@ export function RrcChatView({
             aria-label={t('rrc.copyMessage')}
             title={t('rrc.copyMessage')}
             onClick={() => {
-              void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
-                console.debug('[RrcChatView] clipboard ' + String(e));
+              void writeClipboardText(msg.body).catch((e: unknown) => {
+                console.warn('[RrcChatView] copy message failed ' + errLikeToLogString(e));
               });
             }}
           >

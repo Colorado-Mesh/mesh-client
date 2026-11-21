@@ -30,7 +30,7 @@ import { touch } from '@/shared/touch';
 import { bytesToHex } from '../../shared/hexBytes';
 import {
   isMeshcorePathHashMode,
-  meshcoreFirmwareSupportsMultibytePathHash,
+  meshcoreCompanionSupportsMultibytePathHash,
   type MeshcorePathHashMode,
   meshcorePathHashSizeFromTraceFlags,
   meshcorePubkeyPathPrefix,
@@ -847,6 +847,8 @@ export function useMeshcoreRuntime() {
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
+  /** True once this connection's DeviceInfo carried a path hash mode byte (v1.14+ frame). */
+  const meshcoreDeviceReportedPathHashModeRef = useRef(false);
   const meshcoreConnectTypeRef = useRef<'ble' | 'serial' | 'tcp'>('ble');
   const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIngestDetachRef = useRef<(() => void) | null>(null);
@@ -2675,6 +2677,7 @@ export function useMeshcoreRuntime() {
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       meshcoreInitConnInFlightRef.current = true;
+      meshcoreDeviceReportedPathHashModeRef.current = false;
       meshcoreInitConnInFlightSetupGenRef.current = setupGen;
       try {
         connRef.current = conn;
@@ -2684,6 +2687,12 @@ export function useMeshcoreRuntime() {
         // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
         // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
         conn.once(MESHCORE_RESPONSE_DEVICE_INFO, (response: unknown) => {
+          if (
+            connRef.current === conn &&
+            isMeshcorePathHashMode(parsePathHashModeFromDeviceQuery(response).pathHashMode)
+          ) {
+            meshcoreDeviceReportedPathHashModeRef.current = true;
+          }
           setState((prev) => {
             const next = { ...prev };
             const r = response as { firmware_build_date?: string };
@@ -3413,6 +3422,9 @@ export function useMeshcoreRuntime() {
               conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
             );
             const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
+            if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+              meshcoreDeviceReportedPathHashModeRef.current = true;
+            }
             setMeshcoreRadioMaxContacts(meshcoreMaxContactsFromDeviceQuery(deviceInfo));
             setState((prev) => {
               const next = { ...prev };
@@ -5292,7 +5304,13 @@ export function useMeshcoreRuntime() {
         throw new Error('Invalid path hash mode');
       }
       const fw = state.firmwareVersion;
-      if (mode !== 0 && !meshcoreFirmwareSupportsMultibytePathHash(fw)) {
+      if (
+        mode !== 0 &&
+        !meshcoreCompanionSupportsMultibytePathHash(
+          fw,
+          meshcoreDeviceReportedPathHashModeRef.current,
+        )
+      ) {
         throw new Error('Path hash mode requires companion firmware v1.14.0 or newer');
       }
       if (typeof conn.setPathHashMode === 'function') {

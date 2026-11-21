@@ -95,6 +95,7 @@ import {
   MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
 } from '../lib/timeConstants';
+import { formatMeshcoreTraceRoute } from '../lib/traceRouteCopyText';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { useIsBotSender } from '../stores/botSendersStore';
@@ -119,6 +120,7 @@ import SnrIndicator from './SnrIndicator';
 import { SuggestToTeamContactModalLazy } from './teamRoster/SuggestToTeamContactModalLazy';
 import { useToast } from './Toast';
 import { Button, buttonClassName } from './ui/Button';
+import { CopyButton } from './ui/CopyButton';
 import { INPUT_BOX_SM_CLASS, NOTICE_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
 
@@ -1811,9 +1813,23 @@ export default function NodeDetailModal({
           {/* MeshCore: trace path result */}
           {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
             <div className="mt-3 space-y-1">
-              <h4 className="text-ink-300 text-xs font-semibold">
-                {t('nodeDetailModal.pathTraceHeading')}
-              </h4>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-ink-300 text-xs font-semibold">
+                  {t('nodeDetailModal.pathTraceHeading')}
+                </h4>
+                <CopyButton
+                  size="sm"
+                  label={t('common.copyRoute')}
+                  text={() =>
+                    formatMeshcoreTraceRoute({
+                      hops: traceHopRows,
+                      destLabel: node.long_name || t('nodeDetailModal.destLabel'),
+                      lastSnr: meshcoreTraceResult.lastSnr,
+                      hopFallbackLabel: (n) => t('nodeDetailModal.hopNLabel', { n }),
+                    })
+                  }
+                />
+              </div>
               <div className="text-ink-400 text-xs">
                 {t('nodeDetailModal.hopsLabel')}{' '}
                 <span className="text-ink-200 font-mono">

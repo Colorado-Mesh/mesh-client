@@ -91,6 +91,18 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message: 'mecpComposeEnabled must default false (EMCOMM safety S14)',
   },
   {
+    id: 'renderer-clipboard-via-helper',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: [
+      'src/renderer/**/*.test.ts',
+      'src/renderer/**/*.test.tsx',
+      'src/renderer/lib/writeClipboardText.ts',
+    ],
+    forbid: /\bnavigator\.clipboard\.writeText\b/,
+    message:
+      'Copy with writeClipboardText() (lib/writeClipboardText.ts) or CopyButton: sandboxed Electron renderers often reject navigator.clipboard, and the helper uses the preload clipboard IPC',
+  },
+  {
     id: 'renderer-font-size-in-rem',
     include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
     exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],

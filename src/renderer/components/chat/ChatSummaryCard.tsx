@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { ConversationSummaryController } from '@/renderer/hooks/useConversationSummary';
 import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { AI_MAX_FOLLOW_UP_QUESTION_CHARS } from '@/shared/ai-types';
 
 import { Button } from '../ui/Button';
@@ -171,7 +172,7 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
           aria-label={t('aiSummary.copy')}
           disabled={!canCopy}
           onClick={() => {
-            void navigator.clipboard.writeText(state.text).then(
+            void writeClipboardText(state.text).then(
               () => {
                 setCopyError(false);
               },

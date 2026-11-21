@@ -1,14 +1,4 @@
-import { Check, Copy } from 'lucide-react-motion';
-import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-
-import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { ICON_MD } from '@/renderer/lib/icons/iconClass';
-import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
-
-import { IconButton } from './Button';
-
-const COPIED_RESET_MS = 1500;
+import { CopyButton } from './CopyButton';
 
 export interface CopyFieldProps {
   value: string;
@@ -20,31 +10,6 @@ export interface CopyFieldProps {
 
 /** Read-only mono value with a copy button (client keys, public keys, addresses). */
 export function CopyField({ value, display, copyLabel }: CopyFieldProps) {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (resetRef.current) clearTimeout(resetRef.current);
-    },
-    [],
-  );
-
-  const handleCopy = () => {
-    writeClipboardText(value)
-      .then(() => {
-        setCopied(true);
-        if (resetRef.current) clearTimeout(resetRef.current);
-        resetRef.current = setTimeout(() => {
-          setCopied(false);
-        }, COPIED_RESET_MS);
-      })
-      .catch((e: unknown) => {
-        console.warn('[CopyField] copy failed ' + errLikeToLogString(e));
-      });
-  };
-
   return (
     <div className="flex min-w-0 gap-2">
       <div
@@ -53,21 +18,7 @@ export function CopyField({ value, display, copyLabel }: CopyFieldProps) {
       >
         <span className="truncate">{display ?? value}</span>
       </div>
-      <IconButton
-        aria-label={copyLabel}
-        variant="secondary"
-        onClick={handleCopy}
-        icon={
-          copied ? (
-            <Check aria-hidden className={`${ICON_MD} text-bright-green`} size={16} />
-          ) : (
-            <Copy aria-hidden className={ICON_MD} size={16} />
-          )
-        }
-      />
-      <span role="status" aria-live="polite" className="sr-only">
-        {copied ? t('common.copied') : ''}
-      </span>
+      <CopyButton text={value} label={copyLabel} variant="secondary" />
     </div>
   );
 }

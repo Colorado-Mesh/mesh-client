@@ -18,6 +18,7 @@ import {
   type UnifiedInboxItem,
 } from '@/renderer/lib/unifiedInbox';
 import { starInboxItems } from '@/renderer/lib/unifiedInboxActions';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { deleteMessage } from '@/renderer/stores/messageStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
@@ -163,7 +164,7 @@ function UnifiedInboxDialogBody({
       .join('\n');
     void (async () => {
       try {
-        await navigator.clipboard.writeText(text);
+        await writeClipboardText(text);
         addToast(t('unifiedInbox.copied', { count: selectedCount }), 'success');
       } catch (e: unknown) {
         console.warn('[UnifiedInbox] copy failed ' + errLikeToLogString(e));

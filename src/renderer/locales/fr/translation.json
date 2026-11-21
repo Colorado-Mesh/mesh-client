@@ -1176,6 +1176,8 @@
     "delete": "Supprimer",
     "copy": "Copier",
     "copied": "Copié",
+    "copyFailed": "Impossible de copier",
+    "copyRoute": "Copier la route",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Détecté comme un bot à partir de ses réponses automatisées",
