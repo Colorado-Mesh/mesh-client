@@ -476,13 +476,13 @@ import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
 import { setVisibleMeshProtocol } from './lib/visibleMeshProtocolStore';
 import { isSupportedLocale } from './locales/languages';
 import { MeshcomRuntimeActive } from './runtime/MeshcomRuntimeActive';
-import { createMeshcomRuntimeDisabledStub } from './runtime/meshcomRuntimeDisabledStub';
 import {
   ProtocolRuntimeProvider,
   type RuntimeMap,
   useAllRuntimes,
   useRuntime,
 } from './runtime/ProtocolRuntimeContext';
+import { getProtocolRuntimeDisabledStub } from './runtime/protocolRuntimeDisabledStubs';
 import { useMeshcomProtocolEnabled } from './runtime/useMeshcomProtocolEnabled';
 import type { MeshcomRuntime } from './runtime/useMeshcomRuntime';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
@@ -671,7 +671,14 @@ export default function App() {
   const meshcoreRuntime = useMeshcoreRuntime();
   const reticulumRuntime = useReticulumRuntime();
   const meshcomEnabled = useMeshcomProtocolEnabled();
-  const meshcomStub = useMemo(() => createMeshcomRuntimeDisabledStub(), []);
+  const meshcomStub = useMemo((): MeshcomRuntime => {
+    const stub = getProtocolRuntimeDisabledStub('meshcom');
+    if (!stub) {
+      throw new Error('meshcom disabled stub missing from PROTOCOL_RUNTIME_DISABLED_STUBS');
+    }
+    // Registry is ProtocolRuntime-typed; MeshCom adds deviceCommands on the stub.
+    return stub as MeshcomRuntime;
+  }, []);
   const [liveMeshcomRuntime, setLiveMeshcomRuntime] = useState<MeshcomRuntime | null>(null);
   const onMeshcomRuntime = useCallback((runtime: MeshcomRuntime) => {
     setLiveMeshcomRuntime(runtime);
