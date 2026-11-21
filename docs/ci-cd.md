@@ -403,7 +403,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
-- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
+- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration. `Analyze (swift)` in particular is path-filtered on pull requests: when no Swift input changes, `codeql.yaml` leaves Swift out of the matrix, so that check never reports on the PR. `scripts/main-merge-queue-ruleset.test.mjs` fails if any `Analyze (...)` context is added to the ruleset JSON.
 - E2E, packaging smoke, Flatpak, release jobs (including the path-filtered `Repeater E2E (Linux)` and `Panel matrix E2E (Linux)`)
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
