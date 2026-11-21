@@ -1797,6 +1797,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#usb-serial-after-sleep-connected-ui-no-radio-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB serial after sleep (connected UI, no radio activity)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#serial-port-auto-rediscovery-after-reconnect-exhaustion" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4655,6 +4666,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#usb-serial-after-sleep-connected-ui-no-radio-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB serial after sleep (connected UI, no radio activity)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#serial-port-auto-rediscovery-after-reconnect-exhaustion" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5931,6 +5953,16 @@ LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to mig
 <li>Open <strong>Log → Analyze</strong> after enabling <strong>debug</strong> — look for <strong>USB Serial Reconnect</strong> patterns.</li>
 </ol>
 <p>This applies on <strong>Windows, macOS, and Linux</strong> (same Web Serial stack). Linux <strong>permission denied</strong> before the first connect is a separate issue — see <a href="#linux-serial-port-access-denied">Linux: serial port access denied</a>.</p>
+<h3 id="usb-serial-after-sleep-connected-ui-no-radio-activity">USB serial after sleep (connected UI, no radio activity)<a class="headerlink" href="#usb-serial-after-sleep-connected-ui-no-radio-activity" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms (all OSes):</strong> Laptop sleeps with a USB radio connected; after wake Mesh-Client still shows <strong>USB connected</strong>, but there is <strong>no RF / chat activity</strong> for a long time. Restarting only the radio or only the app may not help; a full <strong>OS reboot</strong> clears it.</p>
+<p><strong>Cause:</strong> Chromium Web Serial / OS CDC can leave a <strong>zombie open port</strong> across sleep. <code>navigator.serial</code> disconnect often does <strong>not</strong> fire on sleep. mesh-client treats serial as <strong>untrusted after resume</strong>, runs a short companion delivery probe, and uses a faster silence watchdog (~30s) until the probe succeeds. Look in the Log for <code>[serialDeliveryProbe]</code>, <code>[serialDeliveryHealth]</code>, and <code>[usePowerRecovery]</code>.</p>
+<p><strong>What to do:</strong></p>
+<ol>
+<li>Quit mesh-client completely, unplug and replug USB, reopen, and reconnect (or use <strong>Select serial port</strong>).</li>
+<li>If that fails, reboot the computer — some Windows CDC drivers stay wedged until then.</li>
+<li>Capture a <strong>Developer</strong> support bundle <strong>while stuck</strong> (with Log debug on) if you need help diagnosing.</li>
+</ol>
+<p>See also <a href="#sleep-wake-and-long-running-sessions">Sleep, wake, and long-running sessions</a>.</p>
 <h3 id="serial-port-auto-rediscovery-after-reconnect-exhaustion">Serial port auto-rediscovery after reconnect exhaustion<a class="headerlink" href="#serial-port-auto-rediscovery-after-reconnect-exhaustion" title="Permanent link">&para;</a></h3>
 <p><strong>Symptoms</strong>: After the port permission is revoked (step 3 above) the device reconnects on its own without a manual <strong>Select serial port</strong>, or it does not and you are prompted after ~1 minute.</p>
 <p><strong>Cause</strong>: <code>serialPortAutoRediscovery.ts</code> captures the port signature before escalate clears saved identity, then polls granted Web Serial ports every <strong>5 s</strong> for up to a <strong>60 s</strong> window, matching by signature (or Chromium <code>portId</code>). A match reconnects automatically; the window expiring calls <code>onTimeout</code> (forget port + picker).</p>
@@ -5983,6 +6015,7 @@ LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to mig
 <li><strong>BLE stuck after wake</strong> (<code>connect_timeout</code>, peripheral not found, or GATT session errors in the app log): <strong>Exit mesh-client fully</strong>, toggle <strong>Bluetooth off → on</strong> in <strong>Settings → Bluetooth &amp; devices</strong> (or disable/enable the adapter in <strong>Device Manager</strong>), wait a few seconds, reopen the app, then use <strong>Connect</strong>. If disconnects persist, update the Bluetooth driver in Device Manager.</li>
 <li><strong>MQTT-only:</strong> Transient errors such as <code>ENETDOWN</code> or <code>ENETUNREACH</code> after wake should recover automatically.</li>
 <li><strong>Renderer hung after wake:</strong> Same as macOS — if you see <code>[main] renderer unresponsive after system resume (no heartbeat within 30s)</code> without <code>[usePowerRecovery]</code> logs, quit fully and relaunch.</li>
+<li><strong>USB serial connected but silent after wake:</strong> Same zombie CDC path as <a href="#usb-serial-after-sleep-connected-ui-no-radio-activity">USB serial after sleep</a> — quit + replug, or reboot Windows if the COM driver is wedged.</li>
 </ul>
 <p><strong>Linux:</strong> Same sidecar GATT path as macOS/Windows; see <strong>Linux-specific</strong> under <a href="#ble-known-issues">BLE known issues</a> for BlueZ / Flatpak steps.</p>
 <p><strong>Reticulum (all platforms):</strong> On suspend, <code>onPowerSuspend</code> clears in-memory rnsh sessions and rncp transfers. On resume, <code>onPowerResume</code> restarts the sidecar via <code>connect()</code> unless the user disconnected.</p>
@@ -6531,7 +6564,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 02:36:14 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 05:06:39 UTC">November 21, 2026</span>
   </span>
 
     
