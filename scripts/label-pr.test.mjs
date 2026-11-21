@@ -25,6 +25,7 @@ describe('computeLabels', () => {
       'enhancement',
       'meshcore',
     ]);
+    expect(computeLabels({ title: 'fix(meshcom): repair thing' })).toEqual(['bug', 'meshcom']);
     expect(computeLabels({ title: 'fix(reticulum): repair thing' })).toEqual(['bug', 'reticulum']);
     expect(computeLabels({ title: 'fix(windows): repair installer' })).toEqual(['bug', 'windows']);
     expect(computeLabels({ title: 'fix(win): repair installer' })).toEqual(['bug', 'windows']);
@@ -47,6 +48,9 @@ describe('computeLabels', () => {
     expect(
       computeLabels({ title: 'chore: x', changedFiles: ['src/renderer/lib/meshcore/foo.ts'] }),
     ).toEqual(['chore', 'meshcore']);
+    expect(
+      computeLabels({ title: 'chore: x', changedFiles: ['src/renderer/lib/meshcom/kissSlip.ts'] }),
+    ).toEqual(['chore', 'meshcom']);
     expect(
       computeLabels({
         title: 'chore: x',

@@ -19,6 +19,18 @@ describe('resolveLogProtocolFromChannel', () => {
     expect(
       resolveLogProtocolFromChannel({
         source: 'main',
+        message: '[GATT:meshcom] connect_timeout',
+      }),
+    ).toBe('meshcom');
+    expect(
+      resolveLogProtocolFromChannel({
+        source: 'main',
+        message: '[IPC] meshcom:udp-connect bound',
+      }),
+    ).toBe('meshcom');
+    expect(
+      resolveLogProtocolFromChannel({
+        source: 'main',
         message: '[Connection] connected stack=reticulum path=tcp',
       }),
     ).toBe('reticulum');

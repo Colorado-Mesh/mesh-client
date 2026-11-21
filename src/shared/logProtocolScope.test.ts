@@ -13,7 +13,7 @@ import {
 function line(
   message: string,
   source = 'main',
-  protocol?: 'meshtastic' | 'meshcore' | 'reticulum',
+  protocol?: 'meshtastic' | 'meshcore' | 'meshcom' | 'reticulum',
 ) {
   return protocol ? { source, message, protocol } : { source, message };
 }
@@ -50,10 +50,14 @@ describe('logProtocolScope registry', () => {
   it('attributes session-scoped GATT/BLE/sidecar tags', () => {
     expect(resolveLogProtocol(line('[GATT:meshcore] connect_timeout'))).toBe('meshcore');
     expect(resolveLogProtocol(line('[GATT:meshtastic] connect_timeout'))).toBe('meshtastic');
+    expect(resolveLogProtocol(line('[GATT:meshcom] connect_timeout'))).toBe('meshcom');
     expect(resolveLogProtocol(line('[BLE:meshcore] coalesce failed'))).toBe('meshcore');
+    expect(resolveLogProtocol(line('[BLE:meshcom] coalesce failed'))).toBe('meshcom');
     expect(resolveLogProtocol(line('[IpcSidecarGattConnection:meshtastic] disconnected'))).toBe(
       'meshtastic',
     );
+    expect(resolveLogProtocol(line('[useMeshcomRuntime] connect failed'))).toBe('meshcom');
+    expect(resolveLogProtocol(line('[MeshCom MQTT] CONNACK received'))).toBe('meshcom');
   });
 
   it('uses longest-prefix so ReticulumSidecar is not swallowed by Reticulum', () => {

@@ -81,6 +81,18 @@ export const LOG_TAG_SCOPE: Readonly<Record<string, LogScope>> = Object.freeze({
   '[GATT:meshcore]': { protocol: 'meshcore', surface: 'device' },
   '[IpcSidecarGattConnection:meshcore]': { protocol: 'meshcore', surface: 'device' },
 
+  // --- MeshCom ---
+  '[MeshCom MQTT]': { protocol: 'meshcom', surface: 'app' },
+  '[MeshComProtocol]': { protocol: 'meshcom', surface: 'app' },
+  '[MeshComTransport]': { protocol: 'meshcom', surface: 'app' },
+  '[MeshComDeviceCommands]': { protocol: 'meshcom', surface: 'app' },
+  '[useMeshcomRuntime]': { protocol: 'meshcom', surface: 'device' },
+  '[useMeshcomDeviceCommands]': { protocol: 'meshcom', surface: 'app' },
+  '[meshcomSession]': { protocol: 'meshcom', surface: 'device' },
+  '[BLE:meshcom]': { protocol: 'meshcom', surface: 'device' },
+  '[GATT:meshcom]': { protocol: 'meshcom', surface: 'device' },
+  '[IpcSidecarGattConnection:meshcom]': { protocol: 'meshcom', surface: 'device' },
+
   // --- Reticulum ---
   '[ReticulumSidecar]': { protocol: 'reticulum', surface: 'device' },
   '[ReticulumIPC]': { protocol: 'reticulum', surface: 'device' },

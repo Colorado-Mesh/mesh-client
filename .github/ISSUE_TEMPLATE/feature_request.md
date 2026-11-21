@@ -14,6 +14,7 @@ Does this feature apply to (check all that apply):
 
 - [ ] Meshtastic
 - [ ] MeshCore
+- [ ] MeshCom
 - [ ] Reticulum
 - [ ] All protocols / protocol-independent (app-wide UI, settings, etc.)
 

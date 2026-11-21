@@ -84,8 +84,10 @@ function collectScanFiles() {
   for (const rel of [
     'src/renderer/lib/meshtastic',
     'src/renderer/lib/meshcore',
+    'src/renderer/lib/meshcom',
     'src/renderer/lib/reticulum',
     'src/renderer/hooks/meshcore',
+    'src/renderer/hooks/meshcom',
     'src/main/ipc',
   ]) {
     for (const f of walkTsFiles(path.join(ROOT, rel))) files.add(f);
@@ -94,7 +96,11 @@ function collectScanFiles() {
   for (const rel of [
     'src/renderer/runtime/useMeshtasticRuntime.ts',
     'src/renderer/runtime/useMeshcoreRuntime.ts',
+    'src/renderer/runtime/useMeshcomRuntime.ts',
     'src/renderer/runtime/useReticulumRuntime.ts',
+    'src/renderer/lib/protocols/MeshComProtocol.ts',
+    'src/renderer/lib/protocols/meshcom/MeshComTransport.ts',
+    'src/renderer/components/MeshComDeviceCommandsSection.tsx',
     'src/main/gatt-sidecar-proxy.ts',
     'src/main/mqtt-manager.ts',
     'src/main/meshcore-mqtt-adapter.ts',
@@ -112,7 +118,7 @@ function collectScanFiles() {
   if (fs.existsSync(mainDir)) {
     for (const name of fs.readdirSync(mainDir)) {
       if (
-        /mqtt|meshcore|reticulum|meshtastic|gatt/i.test(name) &&
+        /mqtt|meshcore|meshcom|reticulum|meshtastic|gatt/i.test(name) &&
         /\.ts$/.test(name) &&
         !name.endsWith('.test.ts')
       ) {

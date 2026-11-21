@@ -22,6 +22,7 @@ Touch these in one PR (or a stacked pair: types → runtime → UI):
 | i18n             | English keys only in `en/translation.json`; no hardcoded UI English                                                                                                                                                                     |
 | Docs             | Subsystem page under `docs/development/` + row in [index.md](index.md) + `mkdocs.yml`                                                                                                                                                   |
 | Hide / stop      | `hiddenProtocols`, auto-connect `enabled`, power-resume skip, explicit-disconnect latch (see MeshCom App → Protocols)                                                                                                                   |
+| GitHub triage    | Protocol label + auto-labeler + issue templates + support export / log ownership (see §9)                                                                                                                                               |
 
 `pnpm run test:run` / `check:pr` will not catch every App `selectByProtocol` omission — grep for `meshtastic:` / `meshcore:` maps when adding a peer.
 
@@ -114,6 +115,21 @@ Document justified exceptions in the protocol’s `docs/development/*.md` and in
 - Source-contract / runtime contract tests when full BLE/SQLite integration is impractical (`loadRuntimeSource`, `index.contract.test.ts` for IPC guards).
 - Path-gated pre-commit: staging `src/main/` runs `check:main-bundle`; staging English locale runs `i18n:auto-translate`.
 - Do not leave `setNodeFavorited: async () => {}` (or similar) stubs in the shipped runtime return object.
+
+## 9. GitHub labels, issue templates, and support exports
+
+Maintainers triage by protocol label and by **Export for GitHub** bundles. When adding a protocol:
+
+1. **Create the GitHub label** on `Colorado-Mesh/mesh-client` (same style as `meshtastic` / `meshcore` / `reticulum`):
+   `gh label create <id> --color <hex> --description "Touches <Name> protocol support"`
+   (MeshCom uses `#a2182f`, matching `meshcom-700`.)
+2. **PR auto-labeler** — add the Conventional Commits scope and high-confidence path rules in [`scripts/label-pr.mjs`](../../scripts/label-pr.mjs) (`SCOPE_LABELS` + `PATH_RULES`) and coverage in `scripts/label-pr.test.mjs`. The workflow is [`.github/workflows/labeler.yaml`](../../.github/workflows/labeler.yaml) (same-repo PRs only).
+3. **Issue templates** — add a checkbox under Protocol / Protocol relevance in [`.github/ISSUE_TEMPLATE/bug_report.md`](../../.github/ISSUE_TEMPLATE/bug_report.md) and [`feature_request.md`](../../.github/ISSUE_TEMPLATE/feature_request.md).
+4. **Debug snapshot** — include a `sessionSummary.<id>` entry and a top-level protocol bucket in [`debugSnapshot.ts`](../../src/renderer/lib/debugSnapshot.ts) so Export for GitHub / Developer zips expose identity/MQTT/RF triage for the new stack (not only Meshtastic/MeshCore/Reticulum).
+5. **Log ownership** — register console tags in [`logProtocolScope.ts`](../../src/shared/logProtocolScope.ts) and extend channel/session regexes in [`logProtocolChannelResolve.ts`](../../src/shared/logProtocolChannelResolve.ts) (GATT/BLE/IPC/`stack=`). Add the protocol’s source trees to [`scripts/check-log-panel-filter.mjs`](../../scripts/check-log-panel-filter.mjs) so unregistered tags fail CI. Shared MQTT adapters need a distinct `logTag` (see MeshCom’s `[MeshCom MQTT]`).
+6. **Support-bundle README** — mention the new protocol in [`support-bundle.ts`](../../src/main/support-bundle.ts) GitHub/Developer README text and in [troubleshooting.md](../troubleshooting.md#reporting-bugs-export-for-github-app-tab) when documenting what maintainers read first.
+
+App logs (`mesh-client.log` / `.1`) already ship in every support zip; ownership tags and the debug-snapshot bucket are what make MeshCom (or a fifth protocol) triageable without grepping shared lines.
 
 ## See also
 

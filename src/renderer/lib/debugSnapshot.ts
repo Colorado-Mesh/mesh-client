@@ -172,6 +172,7 @@ export interface DebugSnapshot {
   sessionSummary: {
     meshtastic: DebugSessionSummary;
     meshcore: DebugSessionSummary;
+    meshcom: DebugSessionSummary;
     reticulum: DebugSessionSummary;
   };
   activeTab: DebugActiveTabSummary;
@@ -180,6 +181,7 @@ export interface DebugSnapshot {
   ui: ReturnType<typeof getDebugSnapshotUiContext>;
   meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
+  meshcom: DebugIdentityBucketSnapshot;
   /** MeshCore radio params, path hash mode, and flood scope (radio default + per-view). */
   meshcoreRadio: DebugSnapshotMeshcoreRadioContext;
   reticulum: DebugReticulumSnapshot;
@@ -586,14 +588,16 @@ function buildReticulumSnapshot(
 
 function activeTabSummaryForProtocol(
   protocol: MeshProtocol,
-  snap: Pick<DebugSnapshot, 'meshtastic' | 'meshcore' | 'reticulum'>,
+  snap: Pick<DebugSnapshot, 'meshtastic' | 'meshcore' | 'meshcom' | 'reticulum'>,
 ): DebugActiveTabSummary {
   const bucket =
     protocol === 'reticulum'
       ? snap.reticulum.bucket
       : protocol === 'meshcore'
         ? snap.meshcore
-        : snap.meshtastic;
+        : protocol === 'meshcom'
+          ? snap.meshcom
+          : snap.meshtastic;
   return {
     protocol,
     uiStoreIdentityId: bucket.uiStoreIdentityId,
@@ -619,6 +623,7 @@ function buildDebugSnapshotBase(
 ): Omit<DebugSnapshot, 'warnings'> {
   const meshtastic = buildMeshtasticBucketSnapshot();
   const meshcore = buildProtocolBucketSnapshot('meshcore');
+  const meshcom = buildProtocolBucketSnapshot('meshcom');
   const reticulum = buildReticulumSnapshot(reticulumSidecar);
   const ui = getDebugSnapshotUiContext();
   const storedProtocol = getStoredMeshProtocol();
@@ -629,11 +634,13 @@ function buildDebugSnapshotBase(
     sessionSummary: {
       meshtastic: toSessionSummary(meshtastic),
       meshcore: toSessionSummary(meshcore),
+      meshcom: toSessionSummary(meshcom),
       reticulum: toSessionSummary(reticulum.bucket),
     },
     activeTab: activeTabSummaryForProtocol(ui.activeProtocol, {
       meshtastic,
       meshcore,
+      meshcom,
       reticulum,
     }),
     storedProtocol,
@@ -641,6 +648,7 @@ function buildDebugSnapshotBase(
     ui,
     meshtastic,
     meshcore,
+    meshcom,
     meshcoreRadio: getDebugSnapshotMeshcoreRadioContext(),
     reticulum,
   };
@@ -653,6 +661,7 @@ export function analyzeDebugSnapshot(
   const warnings: DebugSnapshotWarning[] = [
     ...analyzeProtocolBucket('meshtastic', snap.meshtastic),
     ...analyzeProtocolBucket('meshcore', snap.meshcore),
+    ...analyzeProtocolBucket('meshcom', snap.meshcom),
     ...analyzeReticulumSnapshot(snap.reticulum),
   ];
 
