@@ -4628,6 +4628,7 @@ function AppContent() {
               activeConnection.connectAutomatic('serial', undefined, serialPortId),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
             connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
+            connectUdp: (httpAddress) => protocolConnect(protocol, 'udp', httpAddress),
           })
             .catch((err: unknown) => {
               logRfReconnectFailure('[App] handleReconnect failed', err);
