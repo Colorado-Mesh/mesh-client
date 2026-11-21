@@ -203,7 +203,12 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           return;
         }
         const now = Date.now();
-        if (now - inboundWindowStartedAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
+        // Reset when the window elapses — or when wall clock jumps backward (NTP/sleep)
+        // so a skewed start cannot leave the quota blocked until time catches up.
+        if (
+          now < inboundWindowStartedAt ||
+          now - inboundWindowStartedAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS
+        ) {
           inboundWindowStartedAt = now;
           inboundWindowCount = 0;
         }

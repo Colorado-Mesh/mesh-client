@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildMeshcoreConnectionParamsFromLastConnection,
   buildMeshtasticConnectionParamsFromLastConnection,
+  isMeshcomMeshtasticOnlyTcpLastConnection,
   type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
@@ -11,6 +12,7 @@ import {
   resolveLastBlePeripheralId,
   resolveLastHttpAddress,
   resolveLastSerialPortId,
+  resolveMeshcomKissReconnectAddress,
 } from './lastConnectionStorage';
 
 describe('lastConnectionStorage reconnect rehydrate', () => {
@@ -198,5 +200,45 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
       JSON.stringify({ type: 'ble', bleDeviceId: 'aa:bb', httpAddress: '10.0.0.9:5000' }),
     );
     expect(resolveLastHttpAddress('meshcore')).toBeUndefined();
+  });
+
+  it('classifies MeshCom Meshtastic-only tcp bleed vs usable KISS mistyped as tcp', () => {
+    expect(
+      isMeshcomMeshtasticOnlyTcpLastConnection({
+        type: 'tcp',
+        httpAddress: 'meshtastic.local:4403',
+      }),
+    ).toBe(true);
+    expect(
+      isMeshcomMeshtasticOnlyTcpLastConnection({
+        type: 'tcp',
+        httpAddress: '10.0.0.5:4403',
+      }),
+    ).toBe(true);
+    expect(isMeshcomMeshtasticOnlyTcpLastConnection({ type: 'tcp' })).toBe(true);
+    expect(
+      isMeshcomMeshtasticOnlyTcpLastConnection({
+        type: 'tcp',
+        httpAddress: '192.168.1.50:8001',
+      }),
+    ).toBe(false);
+    expect(
+      resolveMeshcomKissReconnectAddress({
+        type: 'tcp',
+        httpAddress: '192.168.1.50:8001',
+      }),
+    ).toBe('192.168.1.50:8001');
+    expect(
+      resolveMeshcomKissReconnectAddress({
+        type: 'tcp',
+        httpAddress: 'meshtastic.local:4403',
+      }),
+    ).toBeNull();
+    expect(
+      resolveMeshcomKissReconnectAddress({
+        type: 'http',
+        httpAddress: '127.0.0.1:8001',
+      }),
+    ).toBe('127.0.0.1:8001');
   });
 });

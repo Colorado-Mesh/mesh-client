@@ -26,14 +26,18 @@ const mocks = vi.hoisted(() => ({
   awaitNobleBleProtocolSettle: vi.fn(),
 }));
 
-vi.mock('@/renderer/lib/lastConnectionStorage', () => ({
-  clearStoredBleSelection: mocks.clearStoredBleSelection,
-  notifyBleSelectionCleared: mocks.notifyBleSelectionCleared,
-  loadLastConnection: mocks.loadLastConnection,
-  loadLastBleDeviceId: mocks.loadLastBleDeviceId,
-  saveLastConnection: mocks.saveLastConnection,
-  clearLastConnection: mocks.clearLastConnection,
-}));
+vi.mock('@/renderer/lib/lastConnectionStorage', async () => {
+  const actual = await vi.importActual('@/renderer/lib/lastConnectionStorage');
+  return {
+    ...(actual as Record<string, unknown>),
+    clearStoredBleSelection: mocks.clearStoredBleSelection,
+    notifyBleSelectionCleared: mocks.notifyBleSelectionCleared,
+    loadLastConnection: mocks.loadLastConnection,
+    loadLastBleDeviceId: mocks.loadLastBleDeviceId,
+    saveLastConnection: mocks.saveLastConnection,
+    clearLastConnection: mocks.clearLastConnection,
+  };
+});
 
 vi.mock('@/renderer/lib/bleReconnectHelper', () => ({
   reconnectBleWithScan: mocks.reconnectBleWithScan,
@@ -309,6 +313,27 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     } finally {
       warn.restore();
     }
+  });
+
+  it('auto-connects MeshCom mistyped tcp lastConnection with a KISS address as http', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'tcp',
+      httpAddress: '192.168.1.50:8001',
+    });
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcom',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('http', '192.168.1.50:8001');
+    });
+    expect(mocks.clearLastConnection).not.toHaveBeenCalled();
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(

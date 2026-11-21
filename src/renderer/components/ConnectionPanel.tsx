@@ -73,6 +73,7 @@ import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import {
   BLE_SELECTION_CLEARED_EVENT,
   clearStoredBleSelection as clearStoredBleSelectionForProtocol,
+  resolveMeshcomKissReconnectAddress,
 } from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -1127,10 +1128,15 @@ export default function ConnectionPanel({
         setConnectionType('ble');
       }
     } else if (protocol === 'meshcom') {
-      // Meshtastic-only `tcp` in storage is stale cross-protocol bleed — ignore it.
-      if (loaded?.httpAddress && (loaded.type === 'http' || loaded.type === 'udp')) {
+      // KISS is stored as `http`; mistyped tcp with a usable address rehydrates as http.
+      // Meshtastic-only tcp bleed is ignored.
+      const kissAddr = loaded ? resolveMeshcomKissReconnectAddress(loaded) : null;
+      if (kissAddr) {
+        setHttpAddress(kissAddr);
+        setConnectionType('http');
+      } else if (loaded?.type === 'udp' && loaded.httpAddress) {
         setHttpAddress(loaded.httpAddress);
-        setConnectionType(loaded.type);
+        setConnectionType('udp');
       } else if (loaded?.type === 'ble' || loaded?.type === 'serial') {
         setConnectionType(loaded.type);
       } else {
@@ -1214,7 +1220,10 @@ export default function ConnectionPanel({
       // must not rewrite lastConnection with a stale tcpHost/httpAddress.
       const becameConfigured = prevStoreStatusRef.current !== 'configured';
       if (state.connectionType && becameConfigured && !protocolChanged) {
-        const conn: LastConnection = { type: state.connectionType };
+        // MeshCom KISS UI is `http` (`meshcomConnectionType`); never persist native `tcp`.
+        const storedType: ConnectionType =
+          protocol === 'meshcom' && state.connectionType === 'tcp' ? 'http' : state.connectionType;
+        const conn: LastConnection = { type: storedType };
         if (
           state.connectionType === 'http' ||
           state.connectionType === 'tcp' ||
@@ -2074,10 +2083,33 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     } else if (lastConnection.type === 'tcp') {
-      // MeshCom has no Meshtastic native TCP — drop cross-protocol bleed.
+      // MeshCom KISS is stored as `http`. Mistyped tcp with a usable address reconnects
+      // as http; Meshtastic-only tcp bleed is cleared.
       if (protocol === 'meshcom') {
-        clearLastConnection(protocol);
-        setLastConnection(null);
+        const kissAddr = resolveMeshcomKissReconnectAddress(lastConnection);
+        if (!kissAddr) {
+          clearLastConnection(protocol);
+          setLastConnection(null);
+          return;
+        }
+        const normalized: LastConnection = { type: 'http', httpAddress: kissAddr };
+        saveLastConnection(protocol, normalized);
+        setLastConnection(normalized);
+        setHttpAddress(kissAddr);
+        setConnectionType('http');
+        setConnecting(true);
+        setBleDevices([]);
+        setSerialPorts([]);
+        setShowBlePicker(false);
+        setShowSerialPicker(false);
+        setConnectionStage('connectionPanel.stagePleaseWait');
+        onConnect('http', kissAddr).catch((err: unknown) => {
+          // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+          const httpErr = humanizeHttpError(kissAddr, err, t);
+          if (httpErr) setError(httpErr);
+          setConnecting(false);
+          setConnectionStage('');
+        });
         return;
       }
       const addr = lastConnection.httpAddress ?? tcpAddress;

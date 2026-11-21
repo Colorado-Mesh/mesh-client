@@ -1,9 +1,13 @@
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
+import { parseConnectHostPort } from '@/shared/connectHost';
 import { isTwelveHexBleMac, normalizeBleMac } from '@/shared/normalizeBleMac';
 
 import { parseStoredJson } from './parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from './serialPortSignature';
 import type { ConnectionType, MeshProtocol } from './types';
+
+/** Meshtastic native TCP streaming port — never a MeshCom KISS endpoint. */
+const MESHTASTIC_NATIVE_TCP_PORT = 4403;
 
 export const BLE_SELECTION_CLEARED_EVENT = 'mesh-client:ble-selection-cleared';
 
@@ -103,6 +107,37 @@ export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefin
   if (last?.type !== 'http' && last?.type !== 'tcp' && last?.type !== 'udp') return undefined;
   const addr = last.httpAddress?.trim();
   return addr || undefined;
+}
+
+/**
+ * MeshCom KISS is stored as `http` (`meshcomConnectionType`). A `tcp` lastConnection on
+ * MeshCom is either Meshtastic native-TCP bleed (drop) or a mistyped KISS record (reconnect as http).
+ */
+export function isMeshcomMeshtasticOnlyTcpLastConnection(
+  last: Pick<LastConnection, 'type' | 'httpAddress'>,
+): boolean {
+  if (last.type !== 'tcp') return false;
+  const addr = last.httpAddress?.trim();
+  if (!addr) return true;
+  const { host, port } = parseConnectHostPort(addr, 0);
+  const normalizedHost = host.toLowerCase();
+  if (normalizedHost === 'meshtastic.local' || normalizedHost.endsWith('.meshtastic.local')) {
+    return true;
+  }
+  // Explicit :4403 is Meshtastic native TCP; bare hosts keep parse default 0 and stay usable.
+  return addr.includes(':') && port === MESHTASTIC_NATIVE_TCP_PORT;
+}
+
+/** KISS host for MeshCom reconnect/auto-connect, or null when the record should be dropped. */
+export function resolveMeshcomKissReconnectAddress(
+  last: Pick<LastConnection, 'type' | 'httpAddress'>,
+): string | null {
+  if (last.type === 'http' || last.type === 'tcp') {
+    if (isMeshcomMeshtasticOnlyTcpLastConnection(last)) return null;
+    const addr = last.httpAddress?.trim();
+    return addr || null;
+  }
+  return null;
 }
 
 export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {

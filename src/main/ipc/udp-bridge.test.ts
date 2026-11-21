@@ -215,6 +215,44 @@ describe('createUdpBridge', () => {
     }
   });
 
+  it('recovers inbound rate quota after a backward wall-clock jump', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_700_000_000_000);
+    const send = vi.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const bridge = createUdpBridge({
+        getMainWindow: () =>
+          ({
+            webContents: { send },
+          }) as never,
+        validateHost,
+      });
+      await bridge.connect(event, '192.168.1.10');
+      const sock = sockets[0];
+      const payload = Buffer.from('{"type":"msg","src":"A-1","dst":"*","msg":"x"}');
+      for (let i = 0; i < UDP_BRIDGE_INBOUND_RATE_MAX; i++) {
+        sock.emit('message', payload, {
+          address: '192.168.1.10',
+          port: MESHCOM_EXTUDP_PORT,
+        });
+      }
+      expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX);
+
+      // NTP/sleep can move wall clock backward; quota must not stay blocked.
+      vi.setSystemTime(1_700_000_000_000 - 5_000);
+      sock.emit('message', payload, {
+        address: '192.168.1.10',
+        port: MESHCOM_EXTUDP_PORT,
+      });
+      expect(send).toHaveBeenCalledTimes(UDP_BRIDGE_INBOUND_RATE_MAX + 1);
+      expect(warn.mock.calls.some((c) => String(c[0] ?? '').includes('rate-limited'))).toBe(false);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('resets inbound rate quota on disconnect→reconnect within the same window', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(1_700_000_000_000);

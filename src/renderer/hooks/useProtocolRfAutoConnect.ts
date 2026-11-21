@@ -5,9 +5,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   clearLastConnection,
   clearStoredBleSelection,
+  isMeshcomMeshtasticOnlyTcpLastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
   notifyBleSelectionCleared,
+  resolveMeshcomKissReconnectAddress,
   saveLastConnection,
 } from '@/renderer/lib/lastConnectionStorage';
 import {
@@ -362,13 +364,29 @@ export function useProtocolRfAutoConnect({
         lastConnection.type === 'tcp' ||
         lastConnection.type === 'udp'
       ) {
-        // MeshCom has no Meshtastic native TCP (:4403). A tcp-typed lastConnection is
-        // cross-protocol bleed from a shared ConnectionPanel — drop it and skip.
+        // MeshCom KISS is stored as `http`. Drop Meshtastic-only tcp bleed; mistyped
+        // tcp records with a usable KISS address reconnect as http.
         if (protocol === 'meshcom' && lastConnection.type === 'tcp') {
-          console.warn(
-            '[useProtocolRfAutoConnect] meshcom auto-connect skipped — ignoring Meshtastic-only tcp lastConnection',
-          );
-          clearLastConnection('meshcom');
+          if (isMeshcomMeshtasticOnlyTcpLastConnection(lastConnection)) {
+            console.warn(
+              '[useProtocolRfAutoConnect] meshcom auto-connect skipped — ignoring Meshtastic-only tcp lastConnection',
+            );
+            clearLastConnection('meshcom');
+            onAutoConnectCancelled();
+            return;
+          }
+          const kissAddr = resolveMeshcomKissReconnectAddress(lastConnection);
+          if (kissAddr) {
+            startAutoConnectTimeout();
+            connectAutomaticRef
+              .current('http', kissAddr)
+              .then(() => {
+                clearAutoConnectTimeout();
+                notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+              })
+              .catch(onTcpAutoConnectFailed);
+            return;
+          }
           onAutoConnectCancelled();
           return;
         }
