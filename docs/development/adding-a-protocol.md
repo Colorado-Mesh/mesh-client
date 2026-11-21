@@ -98,16 +98,46 @@ Shared meter: [`useHostLinkMeter`](../../src/renderer/hooks/useHostLinkMeter.ts)
 Before shipping “protocol X is done,” walk shared surfaces with a matrix (at least smoke):
 
 - Connection (transport matrix you claim: BLE / serial / TCP / UDP / HTTP)
-- Chat (channels / ALL / DM semantics)
+- Chat (address space + channel strip + DM / broadcast semantics — see §7.1)
 - Contacts (list + detail + favorite + delete)
 - Map (positions only vs live traffic)
-- Radio / device config
+- Radio / device config (and any companion CLI catalog — see §7.1)
 - Diagnostics (or explicit off)
 - MQTT (or `hasMqttConnectionPanel: false`)
 - Hide protocol + power resume
 - Node detail OTA / telemetry fields you parse
 
 Document justified exceptions in the protocol’s `docs/development/*.md` and inline `// Protocol-specific: …` where you gate.
+
+### 7.1 Upstream product audit (avoid thin UX)
+
+Transport + codec parity is necessary but not sufficient. A protocol can decode traffic and still feel unfinished when **chat addressing**, **device filters**, **delivery feedback**, or **companion commands** from the upstream docs never reach shared UI. Treat the vendor’s public pages (not this repo’s other stacks) as a checklist before calling the protocol done.
+
+**Chat address space**
+
+1. **Inventory every destination class** the radio/firmware understands (flood / ALL, named or numeric groups, rooms, DMs, digipeater paths, etc.). Wire decode alone is not product parity — each class needs a visible way to open, send, and (when the protocol books it on the node) listen.
+2. **Merge device booking into the chat strip.** If the node holds a listen filter, channel list, or group slots, those ids must appear as pills alongside ALL and any history-discovered destinations. Local “open without booking” tabs are fine; they must not replace the device list.
+3. **Vendor named catalogs when upstream publishes them.** Prefer a typed registry (id → short label + i18n note/reach) over raw numbers in the strip and join picker. Register dynamic `t(\`….\${leaf}\`)`prefixes in`scripts/i18n-unused-keys.mjs` so catalog leaves are not flagged unused.
+4. **Radio Identity / device settings ↔ Chat.** Slot editors, master-first ordering, max-slot limits, and clear-all behavior belong next to other identity knobs **and** must stay consistent with what Chat shows after apply.
+5. **Chat “+” / join UX** should search the catalog, accept custom ids the wire allows, and optionally book the node when Serial/BLE (or equivalent) is available.
+
+**Delivery and status**
+
+1. **Map firmware ACK / NACK / routing events onto chat rows.** If the transport emits delivery proof, wire it through the runtime (typed packet listener or equivalent), keep outbound DMs in `sending` until settle or timeout, and set capability flags honestly (`hasChannelDeliveryAck`, etc.). Fire-and-forget UI on an ACK-capable radio is a product gap, not a transport gap.
+2. **Broadcast vs DM semantics differ** — document which destinations ack on wire-accept vs wait for peer proof; tests should cover both.
+
+**Companion / device command catalog**
+
+1. **Walk the full upstream command list**, not only RF/modem knobs. Flags that change chat behavior (suppress ALL, gateway/APRS inject, group listen, mailbox) need either first-class controls or an explicit “out of scope” note in the protocol’s subsystem doc.
+2. **Capability honesty** — turn flags on only when the UI and side effects exist; leave them off (and document why) when the wire exists but product work is deferred. False negatives hide features; false positives show dead controls.
+3. **Write down non-goals** in the subsystem page (MQTT ingest, embed maps, hardware id ranges, store-and-forward, …). Silence reads as unfinished; an explicit non-goal prevents the next contributor from rediscovering the same gap as a bug.
+
+**Smoke questions before “done”**
+
+- Can a user open every destination class the firmware docs describe without typing opaque wire syntax?
+- After booking listen slots on the node, do those destinations appear in Chat without a reload hack?
+- Does a DM that the radio ACKs leave `sending`, and does a missed ACK eventually fail?
+- Is every chat-affecting companion flag either in Radio UI or listed as a deliberate non-goal?
 
 ## 8. Tests and CI
 
