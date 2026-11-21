@@ -22,6 +22,12 @@ describe('parseMeshcomBleFrames', () => {
     expect(() => JSON.parse((frames[0] as { json: string }).json)).not.toThrow();
   });
 
+  it('returns only the leading @ APRS frame (one notify = one BLE frame)', () => {
+    const chunk = new Uint8Array([0x40, 0x01, 0x02, 0xd0, 0x7b, 0x7d]);
+    expect(parseMeshcomBleFrames(chunk)).toHaveLength(1);
+    expect(parseMeshcomBleFrames(chunk)[0]?.kind).toBe('phone_aprs');
+  });
+
   it('parses unpadded D{ JSON', () => {
     const chunk = new TextEncoder().encode('D{"TYP":"CONFFIN"}');
     expect(parseMeshcomBleFrames(chunk)).toEqual([{ kind: 'json', json: '{"TYP":"CONFFIN"}' }]);

@@ -33,6 +33,7 @@ import {
   noteMacroComposerFocused,
   registerMacroComposer,
 } from '@/renderer/lib/chatMacroKeys';
+import { protocolMqttProvidesChatSend } from '@/renderer/lib/chatMqttHybridSend';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -833,7 +834,8 @@ export function ChatComposer({
       return;
     }
 
-    const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
+    const shouldQueue =
+      allowOutbox && (!isConnected || (isMqttOnly && !protocolMqttProvidesChatSend(protocol)));
 
     if (shouldQueue) {
       if (!queueOutboxProp) return;
@@ -1283,7 +1285,8 @@ export function ChatComposer({
         return;
       }
       text = formatLocationMessage(pos.lat, pos.lon, t('chatPanel.shareLocationLabel'));
-      const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
+      const shouldQueue =
+        allowOutbox && (!isConnected || (isMqttOnly && !protocolMqttProvidesChatSend(protocol)));
       if (shouldQueue) {
         if (await enqueueLocationText(text)) onSendSuccess?.();
         return;
@@ -1480,7 +1483,8 @@ export function ChatComposer({
     ? t('chatPanel.composeLimit.limitHintSingle', { limit: limitStatus.singleMessageLimit })
     : t('chatPanel.composeLimit.limitHint', { limit: limitStatus.singleMessageLimit });
 
-  const showQueueButton = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
+  const showQueueButton =
+    allowOutbox && (!isConnected || (isMqttOnly && !protocolMqttProvidesChatSend(protocol)));
 
   const sendLabel = (() => {
     if (sending) {

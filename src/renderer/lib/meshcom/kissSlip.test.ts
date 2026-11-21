@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { KISS_FEND, KISS_FESC, kissSlipDecode, KissSlipDeframer, kissSlipEncode } from './kissSlip';
+import {
+  KISS_FEND,
+  KISS_FESC,
+  KISS_SLIP_DEFRAME_MAX_BYTES,
+  kissSlipDecode,
+  KissSlipDeframer,
+  kissSlipEncode,
+} from './kissSlip';
 
 describe('kissSlip', () => {
   it('round-trips payload including FEND/FESC bytes', () => {
@@ -27,5 +34,11 @@ describe('kissSlip', () => {
     expect(rest).toHaveLength(1);
     expect(rest[0]).toEqual(payload);
     expect(deframer.push([KISS_FEND, KISS_FEND])).toEqual([]);
+  });
+
+  it('resets when the escape buffer exceeds the cap', () => {
+    const deframer = new KissSlipDeframer();
+    deframer.push(Array.from({ length: KISS_SLIP_DEFRAME_MAX_BYTES + 8 }, () => 0x01));
+    expect(deframer.push([KISS_FEND])).toEqual([]);
   });
 });

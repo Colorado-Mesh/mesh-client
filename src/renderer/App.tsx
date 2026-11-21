@@ -325,6 +325,7 @@ import {
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './lib/chatMessageRoute';
+import { protocolMqttProvidesChatSend } from './lib/chatMqttHybridSend';
 import { playMessageNotification } from './lib/chatNotifications';
 import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
 import { startCoiMemorySampler } from './lib/coiMemorySampler';
@@ -474,13 +475,15 @@ import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
 import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
 import { setVisibleMeshProtocol } from './lib/visibleMeshProtocolStore';
 import { isSupportedLocale } from './locales/languages';
+import { MeshcomRuntimeActive } from './runtime/MeshcomRuntimeActive';
+import { createMeshcomRuntimeDisabledStub } from './runtime/meshcomRuntimeDisabledStub';
 import {
   ProtocolRuntimeProvider,
   type RuntimeMap,
   useAllRuntimes,
   useRuntime,
 } from './runtime/ProtocolRuntimeContext';
-import { useMeshcomRuntime } from './runtime/useMeshcomRuntime';
+import { useMeshcomProtocolEnabled } from './runtime/useMeshcomProtocolEnabled';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
@@ -646,20 +649,7 @@ function HeaderMqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeade
   return <MqttGlobeIcon className={`${ICON_SM_PLUS} ${headerIconClass(variant)}`} />;
 }
 
-export default function App() {
-  const meshtasticRuntime = useMeshtasticRuntime();
-  const meshcoreRuntime = useMeshcoreRuntime();
-  const reticulumRuntime = useReticulumRuntime();
-  const meshcomRuntime = useMeshcomRuntime();
-  const runtimeMap = useMemo<RuntimeMap>(
-    () => ({
-      meshtastic: meshtasticRuntime,
-      meshcore: meshcoreRuntime,
-      reticulum: reticulumRuntime,
-      meshcom: meshcomRuntime,
-    }),
-    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime, meshcomRuntime],
-  );
+function AppProviders({ runtimeMap }: { runtimeMap: RuntimeMap }) {
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
       <ToastProvider>
@@ -672,6 +662,37 @@ export default function App() {
         </RetryableLazy>
       </ToastProvider>
     </ProtocolRuntimeProvider>
+  );
+}
+
+export default function App() {
+  const meshtasticRuntime = useMeshtasticRuntime();
+  const meshcoreRuntime = useMeshcoreRuntime();
+  const reticulumRuntime = useReticulumRuntime();
+  const meshcomEnabled = useMeshcomProtocolEnabled();
+  const meshcomStub = useMemo(() => createMeshcomRuntimeDisabledStub(), []);
+
+  if (!meshcomEnabled) {
+    return (
+      <AppProviders
+        runtimeMap={{
+          meshtastic: meshtasticRuntime,
+          meshcore: meshcoreRuntime,
+          reticulum: reticulumRuntime,
+          meshcom: meshcomStub,
+        }}
+      />
+    );
+  }
+
+  return (
+    <MeshcomRuntimeActive
+      meshtastic={meshtasticRuntime}
+      meshcore={meshcoreRuntime}
+      reticulum={reticulumRuntime}
+    >
+      {(runtimeMap) => <AppProviders runtimeMap={runtimeMap} />}
+    </MeshcomRuntimeActive>
   );
 }
 
@@ -1030,6 +1051,7 @@ function AppContent() {
     setHiddenProtocols((prev) =>
       prev.length === hidden.length && prev.every((p) => hidden.includes(p)) ? prev : hidden,
     );
+    window.dispatchEvent(new CustomEvent('mesh-client:hidden-protocols', { detail: hidden }));
   }, []);
 
   const protocolConnect = useProtocolConnect();
@@ -3081,6 +3103,12 @@ function AppContent() {
           console.warn(
             '[App] MQTT disconnect of disabled meshcore failed ' + errLikeToLogString(e),
           );
+        });
+      }
+      if (hidden === 'meshcom') {
+        console.debug('[App] disconnecting meshcom MQTT: disabled in App → Protocols');
+        void window.electronAPI.mqtt.disconnect('meshcom').catch((e: unknown) => {
+          console.warn('[App] MQTT disconnect of disabled meshcom failed ' + errLikeToLogString(e));
         });
       }
       if (
@@ -5757,11 +5785,13 @@ function AppContent() {
                                     onPeerClick={setSelectedPeerHash}
                                     isConnected={
                                       chatOperational ||
-                                      chatConnectionView.mqttStatus === 'connected'
+                                      (chatConnectionView.mqttStatus === 'connected' &&
+                                        protocolMqttProvidesChatSend(chatProtocol))
                                     }
                                     isMqttOnly={
                                       !chatOperational &&
-                                      chatConnectionView.mqttStatus === 'connected'
+                                      chatConnectionView.mqttStatus === 'connected' &&
+                                      protocolMqttProvidesChatSend(chatProtocol)
                                     }
                                     connectionType={chatConnectionView.state.connectionType}
                                     nodes={chatNodes}

@@ -32,7 +32,7 @@ describe('meshcomExtUdpCodec', () => {
         snr: 5,
       }),
     );
-    expect(msg).toMatchObject({ type: 'msg', src: 'DH1FR-2,OE1ABC-1', dst: '*', msg: 'hello' });
+    expect(msg).toMatchObject({ type: 'msg', dst: '*', msg: 'hello' });
 
     const pos = parseMeshcomExtUdp(
       JSON.stringify({
@@ -47,6 +47,31 @@ describe('meshcomExtUdpCodec', () => {
       }),
     );
     expect(pos).toMatchObject({ type: 'pos', src: 'DH1FR-2', lat: 48.2, long: 16.3 });
+  });
+
+  it('parses inbound tele', () => {
+    const tele = parseMeshcomExtUdp(
+      JSON.stringify({
+        type: 'tele',
+        src: 'OE1WX-1',
+        temp: 19.2,
+        hum: 44,
+        co2: 401,
+      }),
+    );
+    expect(tele).toMatchObject({ type: 'tele', temp: 19.2, hum: 44, co2: 401 });
+  });
+
+  it('clamps oversized msg fields on inbound parse', () => {
+    const longMsg = 'x'.repeat(200);
+    const parsed = parseMeshcomExtUdp(
+      JSON.stringify({ type: 'msg', src: 'ABCDEFGH', dst: 'DESTTOOLONG', msg: longMsg }),
+    );
+    expect(parsed?.type).toBe('msg');
+    if (parsed?.type === 'msg') {
+      expect(parsed.msg.length).toBe(150);
+      expect(parsed.dst.length).toBeLessThanOrEqual(9);
+    }
   });
 
   it('returns null for invalid JSON', () => {

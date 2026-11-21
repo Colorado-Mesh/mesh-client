@@ -725,6 +725,7 @@ export interface ElectronAPI {
       received_at?: number | null;
     }) => Promise<{ changes: number }>;
     getMeshcomContacts: (identityId?: string) => Promise<unknown[]>;
+    getMeshcomDbDegraded: () => Promise<{ degraded: boolean }>;
     saveMeshcomContact: (contact: {
       callsign: string;
       identity_id?: string | null;

@@ -9043,7 +9043,8 @@
     "callsignHint": "Gültiges Rufzeichen im APRS-Stil (SSID optional). Anwenden sendet --setcall an Serial/BLE.",
     "operatorNameFieldLabel": "Name des Bedieners (--operatorname)",
     "operatorNamePlaceholder": "Vorname",
-    "operatorNameHint": "Optional. Wird mit „Anwenden auf Seriennummer“/BLE (max. 19 Zeichen) gesendet."
+    "operatorNameHint": "Optional. Wird mit „Anwenden auf Seriennummer“/BLE (max. 19 Zeichen) gesendet.",
+    "dbStorageDegraded": "Der MeshCom-Nachrichtenverlauf ist nicht verfügbar (das Datenbankmodul konnte nicht geladen werden). Der Chat funktioniert weiterhin; der Verlauf wird erst nach einem Neustart der App gespeichert."
   },
   "meshcomDeviceCommands": {
     "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",

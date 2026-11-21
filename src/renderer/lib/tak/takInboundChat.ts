@@ -69,7 +69,7 @@ export function formatTakMeshText(
 
 export interface TakSendTarget {
   identityId: IdentityId;
-  protocol: 'meshtastic' | 'meshcore' | 'reticulum';
+  protocol: 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom';
   channelIndex: number;
   /** The companion a direct message goes to; unset for a channel message. */
   destination?: number;

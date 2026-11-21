@@ -47,6 +47,21 @@ describe('formatMecpRebroadcastNotice', () => {
   });
 });
 
+describe('parseMecpRebroadcastRules meshcom', () => {
+  it('accepts meshcom ALL/GRC endpoints', () => {
+    const rules = parseMecpRebroadcastRules([
+      {
+        id: 'cm',
+        enabled: true,
+        bidirectional: false,
+        endpointA: { protocol: 'meshcom', channelIndex: 0 },
+        endpointB: { protocol: 'meshtastic', channelIndex: 0 },
+      },
+    ]);
+    expect(rules[0]?.endpointA).toEqual({ protocol: 'meshcom', channelIndex: 0 });
+  });
+});
+
 describe('mecpRebroadcast', () => {
   beforeEach(() => {
     clearMecpRebroadcastFingerprintsForTests();

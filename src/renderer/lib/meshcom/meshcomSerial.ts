@@ -6,12 +6,18 @@
 import { MESHCOM_SERIAL_BAUD } from '@/shared/meshcomConstants';
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
+import { MESHCOM_EXTUDP_MSG_MAX_LEN } from './meshcomExtUdpCodec';
+import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 export { MESHCOM_SERIAL_BAUD };
 
+/** Max buffered serial console bytes before reset (DoS guard). */
+export const MESHCOM_SERIAL_LINE_BUFFER_MAX = 128 * 1024;
+
 /** Build a console line (CRLF terminated). */
 export function encodeMeshcomSerialLine(command: string): Uint8Array {
-  const line = command.endsWith('\n') ? command : `${command}\r\n`;
+  const safe = sanitizeMeshcomWireLine(command);
+  const line = safe.endsWith('\n') ? safe : `${safe}\r\n`;
   return new TextEncoder().encode(line);
 }
 
@@ -42,14 +48,15 @@ export function meshcomSerialEnableKiss(opts?: { tx?: boolean; meta?: boolean })
 /** Outbound chat over serial: `{DST}text` for directed, plain text for ALL. */
 export function meshcomSerialSendText(dst: string, text: string): Uint8Array {
   const dest = dst.trim();
+  const body = text.slice(0, MESHCOM_EXTUDP_MSG_MAX_LEN);
   if (!dest || dest === '*') {
-    return encodeMeshcomSerialLine(text);
+    return encodeMeshcomSerialLine(body);
   }
   if (/^\d+$/.test(dest)) {
-    return encodeMeshcomSerialLine(`{${dest}}${text}`);
+    return encodeMeshcomSerialLine(`{${dest}}${body}`);
   }
   const call = normalizeMeshcomCallsign(dest);
-  return encodeMeshcomSerialLine(`{${call}}${text}`);
+  return encodeMeshcomSerialLine(`{${call}}${body}`);
 }
 
 /**
@@ -59,9 +66,16 @@ export class MeshcomSerialLineBuffer {
   private buf = '';
 
   push(chunk: Uint8Array | string): string[] {
+    if (this.buf.length > MESHCOM_SERIAL_LINE_BUFFER_MAX) {
+      this.reset();
+    }
     const text =
       typeof chunk === 'string' ? chunk : new TextDecoder('utf-8', { fatal: false }).decode(chunk);
     this.buf += text;
+    if (this.buf.length > MESHCOM_SERIAL_LINE_BUFFER_MAX) {
+      this.reset();
+      return [];
+    }
     const lines: string[] = [];
     for (;;) {
       const idx = this.buf.search(/\r\n|\n|\r/);

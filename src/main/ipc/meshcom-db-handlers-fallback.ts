@@ -1,5 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
 
+import { MESHCOM_DB_DEGRADED_CHANNEL, type MeshcomDbDegradedPayload } from './meshcom-db-status';
+
 export interface MeshcomDbIpcFallbackDeps {
   ipcMain: Pick<IpcMain, 'handle'>;
   assertIpcSender: (event: IpcMainInvokeEvent, channel: string) => void;
@@ -20,6 +22,11 @@ const MESHCOM_DB_IPC_CHANNELS = [
  */
 export function registerMeshcomDbIpcFallbackHandlers(deps: MeshcomDbIpcFallbackDeps): void {
   const { ipcMain, assertIpcSender } = deps;
+  ipcMain.handle('meshcom:db-degraded', (event) => {
+    assertIpcSender(event, MESHCOM_DB_DEGRADED_CHANNEL);
+    const payload: MeshcomDbDegradedPayload = { degraded: true };
+    return payload;
+  });
   for (const channel of MESHCOM_DB_IPC_CHANNELS) {
     ipcMain.handle(channel, (event) => {
       assertIpcSender(event, channel);

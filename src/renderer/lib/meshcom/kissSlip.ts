@@ -56,13 +56,27 @@ export function kissSlipDecode(frame: Uint8Array | number[]): Uint8Array | null 
  * Streaming deframer: feed TCP chunks, receive complete deslipped frames
  * (type byte + payload). Empty / consecutive FENDs are ignored (MeshCom §2).
  */
+/** Max bytes retained between FEND delimiters (DoS guard). */
+export const KISS_SLIP_DEFRAME_MAX_BYTES = 128 * 1024;
+
 export class KissSlipDeframer {
   private buffer: number[] = [];
+  /** After overflow, drop bytes until the next FEND (no partial frame emit). */
+  private dropUntilFend = false;
 
   push(chunk: Uint8Array | number[]): Uint8Array[] {
+    if (this.buffer.length > KISS_SLIP_DEFRAME_MAX_BYTES) {
+      this.reset();
+      this.dropUntilFend = true;
+    }
     const frames: Uint8Array[] = [];
     for (const byte of chunk) {
       if (byte === KISS_FEND) {
+        if (this.dropUntilFend) {
+          this.dropUntilFend = false;
+          this.buffer = [];
+          continue;
+        }
         if (this.buffer.length > 0) {
           const decoded = kissSlipDecode(this.buffer);
           if (decoded && decoded.length > 0) {
@@ -70,8 +84,14 @@ export class KissSlipDeframer {
           }
           this.buffer = [];
         }
+      } else if (this.dropUntilFend) {
+        continue;
       } else {
         this.buffer.push(byte);
+        if (this.buffer.length > KISS_SLIP_DEFRAME_MAX_BYTES) {
+          this.reset();
+          this.dropUntilFend = true;
+        }
       }
     }
     return frames;
@@ -79,5 +99,6 @@ export class KissSlipDeframer {
 
   reset(): void {
     this.buffer = [];
+    this.dropUntilFend = false;
   }
 }

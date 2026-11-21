@@ -18,7 +18,11 @@ import {
   mergeMeshcomBleSettingsJson,
   type MeshcomDeviceSettingsAccum,
 } from '../meshcom/meshcomDeviceSettings';
-import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
+import {
+  MESHCOM_EXTUDP_MSG_MAX_LEN,
+  parseMeshcomExtUdp,
+  serializeMeshcomExtUdp,
+} from '../meshcom/meshcomExtUdpCodec';
 import { meshcomFirmwareDisplay, meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import {
   buildMeshcomKissTxMessage,
@@ -28,6 +32,7 @@ import {
 } from '../meshcom/meshcomKissCodec';
 import { parseMeshcomMhJson } from '../meshcom/meshcomMheard';
 import { MeshcomSerialLineBuffer, meshcomSerialSendText } from '../meshcom/meshcomSerial';
+import { sanitizeMeshcomWireLine } from '../meshcom/meshcomWireSanitize';
 import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
 import {
@@ -831,7 +836,7 @@ export const meshcomProtocol: Protocol = {
   async sendMessage(handle: unknown, opts: SendMessageOptions): Promise<SendResult> {
     const device = handle as MeshComDeviceHandle;
     const dst = resolveDestinationCallsign(device, opts);
-    const text = opts.text;
+    const text = opts.text.slice(0, MESHCOM_EXTUDP_MSG_MAX_LEN);
 
     if (device.transport === 'udp') {
       const json = serializeMeshcomExtUdp({ type: 'msg', dst, msg: text });
@@ -947,9 +952,9 @@ export const meshcomProtocol: Protocol = {
     if (device.transport === 'serial' || device.transport === 'ble') {
       const { sendMeshcomDeviceCommand } = await import('../meshcom/meshcomDeviceCommands');
       await sendMeshcomDeviceCommand(device, `--setcall ${callsign}`);
-      const operator = opts.shortName.trim();
+      const operator = sanitizeMeshcomWireLine(opts.shortName).slice(0, 19);
       if (operator) {
-        await sendMeshcomDeviceCommand(device, `--operatorname ${operator.slice(0, 19)}`);
+        await sendMeshcomDeviceCommand(device, `--operatorname ${operator}`);
       }
     }
   },

@@ -944,8 +944,8 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('meshcom-db-handlers.js');
     expect(INDEX_SOURCE).toContain('registerMeshcomDbIpcHandlers');
     expect(INDEX_SOURCE).toContain('meshcom-db-handlers-fallback.js');
-    expect(INDEX_SOURCE).toContain('udp-bridge.js');
-    expect(INDEX_SOURCE).toContain('registerUdpBridgeIpcHandlers');
+    expect(INDEX_SOURCE).toContain('loadMeshcomUdpBridge.js');
+    expect(INDEX_SOURCE).toContain('loadMeshcomUdpBridge');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");

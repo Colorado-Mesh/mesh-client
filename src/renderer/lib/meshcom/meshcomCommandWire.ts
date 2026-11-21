@@ -3,6 +3,8 @@
  * Keep the full ICSSW catalog in `meshcomCommands.ts` (lazy Radio panel only).
  */
 
+import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
+
 /** Official APP shortcut words → equivalent `--` command. */
 export const MESHCOM_APP_SHORTCUTS: Readonly<Record<string, string>> = {
   GATEWAY: '--gateway',
@@ -37,7 +39,7 @@ export function buildMeshcomSettimeCommand(date?: Date): string {
  * Accepts APP shortcuts (GATEWAY, WX-Info) and `--` commands.
  */
 export function normalizeMeshcomCommandInput(raw: string): string {
-  const trimmed = raw.trim();
+  const trimmed = sanitizeMeshcomWireLine(raw);
   if (!trimmed) return '';
   const shortcut = MESHCOM_APP_SHORTCUTS[trimmed] ?? MESHCOM_APP_SHORTCUTS[trimmed.toUpperCase()];
   if (shortcut) return shortcut;

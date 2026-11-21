@@ -5,7 +5,11 @@
 
 import { MESHCOM_EXTUDP_PORT } from '@/shared/meshcomConstants';
 
-import { MESHCOM_EXTUDP_DST_MAX_LEN, normalizeMeshcomCallsign } from './meshcomCallsign';
+import {
+  MESHCOM_CALLSIGN_MAX_LEN,
+  MESHCOM_EXTUDP_DST_MAX_LEN,
+  normalizeMeshcomCallsign,
+} from './meshcomCallsign';
 
 export { MESHCOM_EXTUDP_PORT };
 export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
@@ -151,10 +155,19 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
   if (!isRecord(parsed)) return null;
   const type = parsed.type;
   if (type === 'msg') {
-    const src = asOptionalString(parsed.src);
-    const dst = asOptionalString(parsed.dst);
-    const msg = asOptionalString(parsed.msg);
-    if (src == null || dst == null || msg == null) return null;
+    const srcRaw = asOptionalString(parsed.src);
+    const dstRaw = asOptionalString(parsed.dst);
+    const msgRaw = asOptionalString(parsed.msg);
+    if (srcRaw == null || dstRaw == null || msgRaw == null) return null;
+    const src = normalizeMeshcomCallsign(srcRaw).slice(0, MESHCOM_CALLSIGN_MAX_LEN);
+    const dst =
+      dstRaw === '*'
+        ? '*'
+        : /^\d+$/.test(dstRaw.trim())
+          ? dstRaw.trim().slice(0, MESHCOM_EXTUDP_DST_MAX_LEN)
+          : normalizeMeshcomCallsign(dstRaw).slice(0, MESHCOM_EXTUDP_DST_MAX_LEN);
+    const msg = msgRaw.slice(0, MESHCOM_EXTUDP_MSG_MAX_LEN);
+    if (!src || !dst || !msg) return null;
     return {
       type: 'msg',
       src,
