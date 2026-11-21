@@ -5,6 +5,8 @@ import { meshcomFirmwareDisplay, meshcomHwDisplay, meshcomHwLabel } from './mesh
 describe('meshcomHwIds', () => {
   it('labels known and unknown hardware ids', () => {
     expect(meshcomHwLabel(43)).toBe('HELTEC-V3');
+    expect(meshcomHwLabel(47)).toBe('TBEAM-SUP');
+    expect(meshcomHwLabel(61)).toBe('T-WATCH-S3');
     expect(meshcomHwLabel(999)).toBe('HW#999');
     expect(meshcomHwLabel(undefined)).toBe('');
   });

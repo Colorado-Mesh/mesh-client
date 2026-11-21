@@ -434,6 +434,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['tone', 'volume', 'ringtone'],
   },
   {
+    id: 'app.notifications.meshcomWatchlist',
+    slot: 'App',
+    labelKey: 'meshcomWatchlist.label',
+    sectionKey: 'appPanel.meshcomWatchlistHeading',
+    keywords: ['meshcom', 'watchlist', 'callsign', 'alert', 'ssid'],
+  },
+  {
     id: 'app.notifications.nodeSilenceAlert',
     slot: 'App',
     labelKey: 'appPanel.nodeSilenceAlertMinutes',

@@ -651,6 +651,8 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'autoUpdateDownloadEnabled'");
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
+    expect(INDEX_SOURCE).toContain("'meshcomCallsignWatchlist'");
+    expect(INDEX_SOURCE).toContain('MESHCOM_CALLSIGN_WATCHLIST_MAX_VALUE_LENGTH');
     expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_LAST_POST_SETTING_PREFIX');

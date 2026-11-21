@@ -381,6 +381,7 @@
     "shareLocationSendWaypointHint": "When enabled, Meshtastic location shares send both a text message and a Waypoint packet so official apps show a map pin. Disable on busy meshes to send text only.",
     "notificationsSection": "Notifications",
     "soundNotifications": "Sound notifications",
+    "meshcomWatchlistHeading": "MeshCom callsign watchlist",
     "opsAlertsHeading": "Operational alerts",
     "nodeSilenceAlertMinutes": "Watched-node silence alert (minutes)",
     "nodeSilenceAlertMinutesPlaceholder": "Protocol default",
@@ -2095,7 +2096,10 @@
       "remoteConnecting": "Remote connecting",
       "remoteError": "Remote error",
       "takRemoteWithHost": "{{state}} ({{host}})",
-      "openTak": "Open TAK"
+      "openTak": "Open TAK",
+      "meshcomNetworkTime": "Network time {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "just now",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} min ago"
     },
     "disconnectAll": "Disconnect radio and MQTT",
     "disconnectRadioGroup": "Disconnect radio",
@@ -3294,6 +3298,14 @@
     "waypointDefaultName": "Waypoint",
     "waypointDelete": "Delete Waypoint",
     "noGpsNodes": "No nodes with GPS positions yet",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Open MeshCom MeshMap (meshmap.oevsv.at) in a new tab",
+    "meshcomMeshMapHint": "MeshMap is filled by gateways that hear your POS on RF — not this in-app map alone. Enable --gateway on a site node or be in range of one.",
+    "meshcomSendPosition": "Send POS",
+    "meshcomSendPositionAria": "Send MeshCom position on the air for gateways and MeshMap",
+    "meshcomSendPositionHint": "Pushes known coordinates to the node (when available) and sends --sendpos so a gateway can upload to MeshMap.",
+    "meshcomSendPositionSent": "Position command sent to the MeshCom node.",
+    "meshcomSendPositionFailed": "Could not send position: {{message}}",
     "waypointCreateTitle": "Create waypoint",
     "waypointEditTitle": "Edit waypoint",
     "waypointNameLabel": "Name",
@@ -3360,6 +3372,19 @@
     "extraRfReceptions": "extra RF receptions",
     "originatorPacket": "packet",
     "originatorPackets": "packets"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshCom callsign watchlist",
+    "help": "Alert with sound and an OS notification when a listed base callsign is heard on MeshCom (SSID ignored). Up to {{max}} entries.",
+    "placeholder": "OE1ABC",
+    "add": "Add",
+    "addAria": "Add callsign to MeshCom watchlist",
+    "listAria": "MeshCom watched callsigns",
+    "removeAria": "Remove {{callsign}} from MeshCom watchlist",
+    "empty": "No watched callsigns yet.",
+    "saveFailed": "Could not save the MeshCom watchlist.",
+    "alertTitle": "MeshCom watch: {{callsign}}",
+    "alertBody": "Heard {{callsign}} on MeshCom."
   },
   "meshcom": {
     "licenseNoticeTitle": "MeshCom — licensed amateur radio",
@@ -9175,7 +9200,7 @@
     "requiresSerialBle": "Connect via Serial or BLE to send device commands. EXTUDP and KISS/TCP carry chat only.",
     "filter": "Filter commands",
     "filterPlaceholder": "Search --settime, gateway, neighbors…",
-    "serialOnly": "serial only",
+    "serialOnly": "USB serial console (legacy)",
     "run": "Run",
     "runCommand": "Run {{command}}",
     "runChoice": "Run {{command}} {{value}}",
@@ -9211,6 +9236,6 @@
       "console": "Console",
       "advanced": "Advanced console & filter"
     },
-    "appEligible": "APP / Serial"
+    "appEligible": "Serial / BLE"
   }
 }

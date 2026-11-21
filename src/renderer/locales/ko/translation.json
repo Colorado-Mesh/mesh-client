@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "환경 기록",
     "dangerZoneEnvironmentHistoryDesc": "모든 프로토콜 및 ID에 대해 저장된 온도, 습도, 기압 및 공기질 측정값을 제거합니다.",
     "clearAllRooms": "모든 룸 지우기",
-    "clearAllRoomsConfirm": "이렇게 하면 연결된 라디오와 로컬 데이터베이스에서 즐겨찾기에 등록되지 않은 MeshCore 룸 서버가 모두 제거됩니다. 룸은 다시 광고할 때 다시 나타납니다. 이 작업은 실행 취소할 수 없습니다."
+    "clearAllRoomsConfirm": "이렇게 하면 연결된 라디오와 로컬 데이터베이스에서 즐겨찾기에 등록되지 않은 MeshCore 룸 서버가 모두 제거됩니다. 룸은 다시 광고할 때 다시 나타납니다. 이 작업은 실행 취소할 수 없습니다.",
+    "meshcomWatchlistHeading": "MeshCom 호출 부호 감시 목록"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "원격 연결됨",
       "remoteConnecting": "원격 연결",
       "remoteError": "원격 오류",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "네트워크 시간 {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "바로 지금",
+      "meshcomNetworkTimeAgeMinutes": "{{count}}분 전"
     },
     "disconnectAll": "무전기와 MQTT 연결 해제",
     "disconnectRadioGroup": "무전기 연결 해제",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap(지형)",
     "basemapHot": "인도주의(HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte(대중교통)"
+    "basemapOepnv": "ÖPNVKarte(대중교통)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "새 탭에서 MeshCom MeshMap(meshmap.oevsv.at) 열기",
+    "meshcomMeshMapHint": "MeshMap은 이 앱 내 지도뿐만 아니라 RF에서 POS를 수신하는 게이트웨이에 의해 채워집니다. 사이트 노드에서 --gateway를 활성화하거나 게이트웨이의 범위 내에 있어야 합니다.",
+    "meshcomSendPosition": "POS 전송",
+    "meshcomSendPositionAria": "게이트웨이 및 MeshMap에 대한 MeshCom 위치를 무선으로 전송",
+    "meshcomSendPositionHint": "알려진 좌표를 노드로 푸시하고(사용 가능한 경우) --sendpos를 전송하여 게이트웨이가 MeshMap에 업로드할 수 있도록 합니다.",
+    "meshcomSendPositionSent": "MeshCom 노드로 위치 명령이 전송되었습니다.",
+    "meshcomSendPositionFailed": "위치를 전송할 수 없습니다. {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -9173,7 +9185,7 @@
     "requiresSerialBle": "장치 명령을 보내려면 직렬 또는 BLE을(를) 통해 연결하세요. EXTUDP 및 KISS/TCP는 채팅만 전송합니다.",
     "filter": "명령 필터링",
     "filterPlaceholder": "--settime, 게이트웨이, 이웃... 검색",
-    "serialOnly": "일련번호만",
+    "serialOnly": "USB 직렬 콘솔(레거시)",
     "run": "런",
     "runCommand": "{{command}} 실행",
     "runChoice": "{{command}} {{value}} 실행",
@@ -9209,8 +9221,21 @@
       "clock": "클럭",
       "advanced": "고급 콘솔 및 필터"
     },
-    "appEligible": "앱/일련번호",
+    "appEligible": "일련번호 / BLE",
     "loadingConfig": "장치 구성 로드 중...",
     "currentValue": "현재 {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshCom 호출 부호 감시 목록",
+    "help": "MeshCom에서 목록에 있는 기지 호출부호가 들리면 소리와 OS 알림으로 경고합니다(SSID는 무시됨). 최대 {{max}}개 항목.",
+    "placeholder": "OE1ABC",
+    "add": "추가",
+    "addAria": "MeshCom 주시 목록에 호출 부호 추가",
+    "listAria": "MeshCom에서 관찰한 호출 부호",
+    "removeAria": "MeshCom 관심 목록에서 {{callsign}} 삭제",
+    "empty": "아직 관찰 중인 콜사인이 없습니다.",
+    "saveFailed": "MeshCom 관심 목록을 저장할 수 없습니다.",
+    "alertTitle": "MeshCom 시계: {{callsign}}",
+    "alertBody": "MeshCom에서 {{callsign}}님의 음성을 들었습니다."
   }
 }

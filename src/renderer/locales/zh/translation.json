@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "环境历史记录",
     "dangerZoneEnvironmentHistoryDesc": "删除每个方案和身份的所有已存储温度、湿度、压力和空气质量读数。",
     "clearAllRooms": "清空所有房间",
-    "clearAllRoomsConfirm": "这将从已连接的收音机和本地数据库中移除所有未收藏的MeshCore房间服务器。房间在再次发布时会重新出现。此操作无法撤消。"
+    "clearAllRoomsConfirm": "这将从已连接的收音机和本地数据库中移除所有未收藏的MeshCore房间服务器。房间在再次发布时会重新出现。此操作无法撤消。",
+    "meshcomWatchlistHeading": "MeshCom呼号观察名单"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "远程连接",
       "remoteConnecting": "远程连接",
       "remoteError": "远程访问出错",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "网络时间 {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "刚刚",
+      "meshcomNetworkTimeAgeMinutes": "{{count}}分钟前"
     },
     "disconnectAll": "断开无线电和 MQTT",
     "disconnectRadioGroup": "断开无线电",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap（地形）",
     "basemapHot": "人道主义（HOT）",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte（公共交通卡）"
+    "basemapOepnv": "ÖPNVKarte（公共交通卡）",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "在新标签页中打开 MeshCom MeshMap (meshmap.oevsv.at)",
+    "meshcomMeshMapHint": "MeshMap由在射频上接收到您的POS信号的网关填充，而不仅仅是此应用内地图。在站点节点上启用 --gateway，或位于一个站点节点的范围内。",
+    "meshcomSendPosition": "发送 POS",
+    "meshcomSendPositionAria": "通过无线电向网关和 MeshMap 发送 MeshCom 位置",
+    "meshcomSendPositionHint": "将已知坐标推送至节点（如果可用），并发送--sendpos，以便网关可以上传至MeshMap。",
+    "meshcomSendPositionSent": "位置指令已发送至MeshCom节点。",
+    "meshcomSendPositionFailed": "无法发送位置：{{message}}"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -9173,7 +9185,7 @@
     "requiresSerialBle": "通过串行或BLE连接以发送设备命令。EXTUDP 和 KISS/TCP 仅用于聊天。",
     "filter": "筛选命令",
     "filterPlaceholder": "搜索 --settime、网关、邻居……",
-    "serialOnly": "仅限串行",
+    "serialOnly": "USB串行控制台（旧版）",
     "run": "潛襲",
     "runCommand": "运行{{command}}",
     "runChoice": "运行{{command}} {{value}}",
@@ -9209,8 +9221,21 @@
       "clock": "按点儿",
       "advanced": "高级控制台和筛选器"
     },
-    "appEligible": "应用程序/序列号",
+    "appEligible": "序列号/ BLE",
     "loadingConfig": "正在加载设备配置……",
     "currentValue": "现在{{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshCom呼号观察名单",
+    "help": "当在MeshCom上听到列出的基站呼号时（忽略SSID），发出声音警报和操作系统通知。最多{{max}}个条目。",
+    "placeholder": "OE1ABC",
+    "add": "视需要增加填充棉。",
+    "addAria": "将呼号添加到 MeshCom 观察列表",
+    "listAria": "MeshCom 关注的呼号",
+    "removeAria": "从MeshCom观察列表中移除{{callsign}}",
+    "empty": "尚无已关注的呼号。",
+    "saveFailed": "无法保存 MeshCom 观察列表。",
+    "alertTitle": "MeshCom 腕表：{{callsign}}",
+    "alertBody": "在MeshCom上听到了{{callsign}}。"
   }
 }

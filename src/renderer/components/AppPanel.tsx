@@ -104,6 +104,7 @@ import { AppTranslationSection } from './AppTranslationSection';
 import { ChatNotificationPolicySettings } from './ChatNotificationPolicySettings';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshComCallsignWatchlistSettings } from './MeshComCallsignWatchlistSettings';
 import NotificationSoundSettings from './NotificationSoundSettings';
 import SavedLocationsSection from './SavedLocationsSection';
 import { ThemePicker } from './ThemePicker';
@@ -2413,6 +2414,15 @@ export default function AppPanel({
         </div>
         <div data-setting-anchor="app.notifications.sounds">
           <NotificationSoundSettings />
+        </div>
+        <div
+          className="border-ink-700/60 space-y-2 border-t pt-2"
+          data-setting-anchor="app.notifications.meshcomWatchlist"
+        >
+          <h4 className="text-muted text-xs font-medium">
+            {t('appPanel.meshcomWatchlistHeading')}
+          </h4>
+          <MeshComCallsignWatchlistSettings />
         </div>
         <div className="border-ink-700/60 space-y-2 border-t pt-2">
           <h4 className="text-muted text-xs font-medium">{t('appPanel.opsAlertsHeading')}</h4>

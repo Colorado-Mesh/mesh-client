@@ -536,7 +536,8 @@
     "dangerZoneEnvironmentHistoryHeading": "環境履歴",
     "dangerZoneEnvironmentHistoryDesc": "すべてのプロトコルとアイデンティティについて、保存されている温度・湿度・気圧・空気品質の測定値を削除します。",
     "clearAllRooms": "すべてのルームをクリア",
-    "clearAllRoomsConfirm": "これにより、お気に入り登録されていないMeshCoreルームサーバーがすべて、接続されている無線およびローカルデータベースから削除されます。ルームは、再度アドバタイズされると再表示されます。この操作は元に戻せません。"
+    "clearAllRoomsConfirm": "これにより、お気に入り登録されていないMeshCoreルームサーバーがすべて、接続されている無線およびローカルデータベースから削除されます。ルームは、再度アドバタイズされると再表示されます。この操作は元に戻せません。",
+    "meshcomWatchlistHeading": "MeshComコールサインウォッチリスト"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1938,7 +1939,10 @@
       "remoteConnected": "リモート接続済み",
       "remoteConnecting": "リモート接続",
       "remoteError": "リモートAPIエラー。",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "ネットワーク時間{{time}}（{{age}}）",
+      "meshcomNetworkTimeJustNow": "たった今",
+      "meshcomNetworkTimeAgeMinutes": "{{count}}分前"
     },
     "disconnectAll": "無線機と MQTT を切断",
     "disconnectRadioGroup": "無線機を切断",
@@ -2939,7 +2943,15 @@
     "basemapOpentopo": "OpenTopoMap（地形）",
     "basemapHot": "人道的（HOT）",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte（公共交通機関）"
+    "basemapOepnv": "ÖPNVKarte（公共交通機関）",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "MeshCom MeshMap（meshmap.oevsv.at）を新しいタブで開く",
+    "meshcomMeshMapHint": "MeshMapは、このアプリ内マップだけでなく、RFでPOSを認識するゲートウェイによって埋められます。サイトノードで--gatewayを有効にするか、サイトノードの範囲内にいる必要があります。",
+    "meshcomSendPosition": "POSを送信",
+    "meshcomSendPositionAria": "ゲートウェイとMeshMap向けにMeshComの位置情報を無線で送信",
+    "meshcomSendPositionHint": "既知の座標をノードにプッシュし（利用可能な場合）、--sendposを送信して、ゲートウェイがMeshMapにアップロードできるようにします。",
+    "meshcomSendPositionSent": "位置コマンドがMeshComノードに送信されました。",
+    "meshcomSendPositionFailed": "位置情報を送信できませんでした：{{message}}"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -9173,7 +9185,7 @@
     "requiresSerialBle": "シリアルまたはBLEを介して接続し、デバイスコマンドを送信します。EXTUDPおよびKISS/TCPはチャットのみを伝送します。",
     "filter": "コマンドを絞り込む",
     "filterPlaceholder": "--settime、ゲートウェイ、ネイバーを検索…",
-    "serialOnly": "シリアルのみ",
+    "serialOnly": "USBシリアルコンソール（レガシー）",
     "run": "ラン",
     "runCommand": "{{command}}を実行",
     "runChoice": "{{command}} {{value}}を実行",
@@ -9209,8 +9221,21 @@
       "clock": "時計",
       "advanced": "高度なコンソールとフィルター"
     },
-    "appEligible": "アプリ/シリアル番号",
+    "appEligible": "シリアル番号 / BLE",
     "loadingConfig": "デバイス構成を読み込み中…",
     "currentValue": "現在 {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "MeshComコールサインのウォッチリスト",
+    "help": "MeshComで登録された基地コールサインが聞こえると、音とOS通知でアラートを発します（SSIDは無視されます）。最大{{max}}件のエントリー。",
+    "placeholder": "OE1ABC",
+    "add": "追加",
+    "addAria": "MeshComウォッチリストにコールサインを追加",
+    "listAria": "MeshComの監視対象コールサイン",
+    "removeAria": "MeshComウォッチリストから{{callsign}}を削除",
+    "empty": "まだウォッチ中のコールサインはありません。",
+    "saveFailed": "MeshComウォッチリストを保存できませんでした。",
+    "alertTitle": "MeshComウォッチ：{{callsign}}",
+    "alertBody": "MeshComで{{callsign}}を聞きました。"
   }
 }

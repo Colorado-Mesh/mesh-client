@@ -552,7 +552,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Історія середовища",
     "dangerZoneEnvironmentHistoryDesc": "Видаліть усі збережені показники температури, вологості, тиску та якості повітря для кожного протоколу та ідентифікатора.",
     "clearAllRooms": "Очистити всі кімнати",
-    "clearAllRoomsConfirm": "Це видалить усі сервери кімнат MeshCore, які не додані до вибраного, з під'єднаного радіоприймача та локальної бази даних. Кімнати з'являються знову, коли вони знову оголошуються. Цю дію неможливо скасувати."
+    "clearAllRoomsConfirm": "Це видалить усі сервери кімнат MeshCore, які не додані до вибраного, з під'єднаного радіоприймача та локальної бази даних. Кімнати з'являються знову, коли вони знову оголошуються. Цю дію неможливо скасувати.",
+    "meshcomWatchlistHeading": "Список спостереження за позивними MeshCom"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -1978,7 +1979,10 @@
       "remoteConnected": "Віддалене підключення",
       "remoteConnecting": "Віддалене підключення",
       "remoteError": "Дистанційна помилка",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Мережевий час {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "тільки що",
+      "meshcomNetworkTimeAgeMinutes": "{{count}} хв тому"
     },
     "disconnectAll": "Від'єднати радіо та MQTT",
     "disconnectRadioGroup": "Від'єднати радіо",
@@ -2993,7 +2997,15 @@
     "basemapOpentopo": "OpenTopoMap (рельєф)",
     "basemapHot": "Гуманітарна допомога (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (громадський транспорт)"
+    "basemapOepnv": "ÖPNVKarte (громадський транспорт)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Відкрити MeshCom MeshMap (meshmap.oevsv.at) у новій вкладці",
+    "meshcomMeshMapHint": "MeshMap заповнюється шлюзами, які чують ваш POS-термінал на радіочастоті, а не лише цією картою в застосунку. Увімкніть --gateway на вузлі об'єкта або перебувайте в зоні дії такого вузла.",
+    "meshcomSendPosition": "Надіслати POS-термінал",
+    "meshcomSendPositionAria": "Надіслати положення MeshCom в ефір для шлюзів і MeshMap",
+    "meshcomSendPositionHint": "Передає відомі координати до вузла (за наявності) і надсилає --sendpos, щоб шлюз міг завантажити їх на MeshMap.",
+    "meshcomSendPositionSent": "Команда позиціонування надіслана до вузла MeshCom.",
+    "meshcomSendPositionFailed": "Не вдалося надіслати місцезнаходження: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -9317,7 +9329,7 @@
     "requiresSerialBle": "Під'єднайтеся через послідовний інтерфейс або BLE, щоб надсилати команди пристрою. EXTUDP і KISS/TCP підтримують лише чат.",
     "filter": "Команди фільтра",
     "filterPlaceholder": "Пошук --settime, шлюз, сусіди…",
-    "serialOnly": "лише послідовний",
+    "serialOnly": "Послідовна консоль USB (застаріла)",
     "run": "Біг",
     "runCommand": "Запустити {{command}}",
     "runChoice": "Запустити {{command}} {{value}}",
@@ -9353,8 +9365,21 @@
       "clock": "Годинник",
       "advanced": "Розширена консоль і фільтр"
     },
-    "appEligible": "ДОДАТОК / Серійний номер",
+    "appEligible": "Серійний номер / BLE",
     "loadingConfig": "Завантаження конфігурації пристрою…",
     "currentValue": "зараз {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Список спостереження за позивними MeshCom",
+    "help": "Попередження звуковим сигналом і сповіщенням ОС, коли в MeshCom чутно зазначений базовий позивний (SSID ігнорується). До {{max}} записів.",
+    "placeholder": "OE1ABC",
+    "add": "Додати",
+    "addAria": "Додати позивний до списку спостереження MeshCom",
+    "listAria": "Відстежувані позивні MeshCom",
+    "removeAria": "Видалити {{callsign}} зі списку відстеження MeshCom",
+    "empty": "Поки що немає позивних, за якими ведеться спостереження.",
+    "saveFailed": "Не вдалося зберегти список відстеження MeshCom.",
+    "alertTitle": "Годинник MeshCom: {{callsign}}",
+    "alertBody": "Почуто {{callsign}} на MeshCom."
   }
 }

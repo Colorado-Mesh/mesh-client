@@ -544,7 +544,8 @@
     "dangerZoneEnvironmentHistoryHeading": "Historie prostředí",
     "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu.",
     "clearAllRooms": "Vymazat všechny místnosti",
-    "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět."
+    "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět.",
+    "meshcomWatchlistHeading": "Seznam sledovaných volacích značek MeshCom"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1962,7 +1963,10 @@
       "remoteConnected": "Vzdálené připojení",
       "remoteConnecting": "Vzdálené připojení",
       "remoteError": "Chyba vzdáleného připojení",
-      "takRemoteWithHost": "{{state}} ({{host}})"
+      "takRemoteWithHost": "{{state}} ({{host}})",
+      "meshcomNetworkTime": "Síťový čas {{time}} ({{age}})",
+      "meshcomNetworkTimeJustNow": "právě teď",
+      "meshcomNetworkTimeAgeMinutes": "Před {{count}} min."
     },
     "disconnectAll": "Odpojit rádio a MQTT",
     "disconnectRadioGroup": "Odpojit rádio",
@@ -2970,7 +2974,15 @@
     "basemapOpentopo": "OpenTopoMap (terén)",
     "basemapHot": "Humanitární (HOT)",
     "basemapCyclosm": "CyclOSM",
-    "basemapOepnv": "ÖPNVKarte (veřejná doprava)"
+    "basemapOepnv": "ÖPNVKarte (veřejná doprava)",
+    "meshcomMeshMapLink": "MeshMap ↗",
+    "meshcomMeshMapLinkAria": "Otevřít MeshCom MeshMap (meshmap.oevsv.at) na nové kartě",
+    "meshcomMeshMapHint": "MeshMap je vyplněna gatewayi, které slyší váš POS na RF – nejen touto mapou v aplikaci. Povolte --gateway na uzlu provozovny nebo buďte v jeho dosahu.",
+    "meshcomSendPosition": "Odeslat POS",
+    "meshcomSendPositionAria": "Odeslat polohu MeshComu vzduchem pro brány a MeshMap",
+    "meshcomSendPositionHint": "Přenáší známé souřadnice do uzlu (pokud jsou k dispozici) a odesílá --sendpos, aby je mohla brána nahrát do MeshMapu.",
+    "meshcomSendPositionSent": "Příkaz polohy odeslaný do uzlu MeshCom.",
+    "meshcomSendPositionFailed": "Polohu se nepodařilo odeslat: {{message}}"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -9258,7 +9270,7 @@
     "requiresSerialBle": "Pro odesílání příkazů zařízení se připojte přes sériové rozhraní nebo BLE. EXTUDP a KISS/TCP přenášejí pouze chat.",
     "filter": "Filtrovat příkazy",
     "filterPlaceholder": "Hledat --settime, bránu, sousedy…",
-    "serialOnly": "pouze sériové číslo",
+    "serialOnly": "USB sériová konzole (starší)",
     "run": "Spustit",
     "runCommand": "Spustit {{command}}",
     "runChoice": "Spustit {{command}} {{value}}",
@@ -9294,8 +9306,21 @@
       "clock": "Hodiny",
       "advanced": "Pokročilá konzole a filtr"
     },
-    "appEligible": "Aplikace / Sériové číslo",
+    "appEligible": "Sériové číslo / BLE",
     "loadingConfig": "Načítání konfigurace zařízení…",
     "currentValue": "nyní {{value}}"
+  },
+  "meshcomWatchlist": {
+    "label": "Seznam sledovaných volacích značek MeshCom",
+    "help": "Upozornění zvukovým signálem a oznámením operačního systému, když je na MeshComu slyšet uvedená základní volací značka (SSID je ignorováno). Až {{max}} položek.",
+    "placeholder": "OE1ABC",
+    "add": "Přidat",
+    "addAria": "Přidat volací značku do seznamu sledovaných MeshCom",
+    "listAria": "Sledované volací značky MeshCom",
+    "removeAria": "Odebrat {{callsign}} ze seznamu sledovaných MeshCom",
+    "empty": "Zatím žádné sledované volací značky.",
+    "saveFailed": "Seznam sledovaných položek MeshCom se nepodařilo uložit.",
+    "alertTitle": "Hodinky MeshCom: {{callsign}}",
+    "alertBody": "Slyšel jsem {{callsign}} na MeshComu."
   }
 }
