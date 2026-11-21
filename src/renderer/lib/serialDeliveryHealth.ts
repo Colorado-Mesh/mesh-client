@@ -13,9 +13,39 @@ const NUDGE_COOLDOWN_MS = 5 * 60 * 1000;
 const TRANSPORT_LOSS_WINDOW_MS = 15 * 60 * 1000;
 const DELIVERY_FAIL_THRESHOLD = 2;
 
-let lastTransportLossAt = 0;
-let lastNudgeAt = 0;
-let deliveryFailCountSinceLoss = 0;
+interface SerialDeliveryHealthState {
+  lastTransportLossAt: number;
+  lastNudgeAt: number;
+  deliveryFailCountSinceLoss: number;
+}
+
+const globalSerialHealth: SerialDeliveryHealthState = {
+  lastTransportLossAt: 0,
+  lastNudgeAt: 0,
+  deliveryFailCountSinceLoss: 0,
+};
+
+const perIdentitySerialHealth = new Map<string, SerialDeliveryHealthState>();
+
+function serialHealthKey(identityId?: IdentityId | null): string | null {
+  return identityId != null && identityId !== '' ? identityId : null;
+}
+
+function getSerialHealthState(identityId?: IdentityId | null): SerialDeliveryHealthState {
+  const key = serialHealthKey(identityId);
+  if (key == null) return globalSerialHealth;
+  let state = perIdentitySerialHealth.get(key);
+  if (state == null) {
+    state = {
+      lastTransportLossAt: 0,
+      lastNudgeAt: 0,
+      deliveryFailCountSinceLoss: 0,
+    };
+    perIdentitySerialHealth.set(key, state);
+  }
+  return state;
+}
+
 /**
  * Sticky until {@link clearSerialPostWakeUntrusted}: accelerated dead threshold stays active
  * until a probe succeeds or the session tears down (not wall-clock alone).
@@ -42,10 +72,15 @@ function elevateSerialNeedsReselect(identityId?: IdentityId | null): void {
   }
 }
 
-function maybeNudge(reason: SerialDeliveryFailureReason, identityId?: IdentityId | null): void {
+function maybeNudge(
+  reason: SerialDeliveryFailureReason,
+  identityId?: IdentityId | null,
+  health?: SerialDeliveryHealthState,
+): void {
+  const state = health ?? getSerialHealthState(identityId);
   const now = Date.now();
-  if (now - lastNudgeAt < NUDGE_COOLDOWN_MS) return;
-  lastNudgeAt = now;
+  if (now - state.lastNudgeAt < NUDGE_COOLDOWN_MS) return;
+  state.lastNudgeAt = now;
   console.warn(`[serialDeliveryHealth] nudge reason=${reason}`);
   // Lazy i18n: avoid pulling the locale graph into ACK/runtime import cycles (jsdom tests).
   void import('./i18n')
@@ -67,8 +102,9 @@ export function noteSerialTransportLoss(opts?: {
     opts?.connectionType ??
     (opts?.identityId != null ? (getConnection(opts.identityId)?.connectionType ?? null) : null);
   if (connectionType !== 'serial') return;
-  lastTransportLossAt = Date.now();
-  deliveryFailCountSinceLoss = 0;
+  const state = getSerialHealthState(opts?.identityId);
+  state.lastTransportLossAt = Date.now();
+  state.deliveryFailCountSinceLoss = 0;
   console.warn('[serialDeliveryHealth] transport-loss');
 }
 
@@ -88,6 +124,8 @@ export function noteSerialDeliveryFailure(opts: {
     (opts.identityId != null ? (getConnection(opts.identityId)?.connectionType ?? null) : null);
   if (connectionType !== 'serial') return;
 
+  const state = getSerialHealthState(opts.identityId);
+
   if (opts.reason === 'transport-loss') {
     noteSerialTransportLoss({ connectionType, identityId: opts.identityId });
     return;
@@ -96,22 +134,27 @@ export function noteSerialDeliveryFailure(opts: {
   console.warn(`[serialDeliveryHealth] delivery-failure reason=${opts.reason}`);
 
   if (opts.reason === 'probe-failed' || opts.reason === 'watchdog-dead') {
-    maybeNudge(opts.reason, opts.identityId);
+    maybeNudge(opts.reason, opts.identityId, state);
     return;
   }
 
   const now = Date.now();
-  const recentLoss =
-    lastTransportLossAt > 0 && now - lastTransportLossAt <= TRANSPORT_LOSS_WINDOW_MS;
+  const identityScopedLoss =
+    state.lastTransportLossAt > 0 && now - state.lastTransportLossAt <= TRANSPORT_LOSS_WINDOW_MS;
+  const globalLoss =
+    opts.identityId != null &&
+    globalSerialHealth.lastTransportLossAt > 0 &&
+    now - globalSerialHealth.lastTransportLossAt <= TRANSPORT_LOSS_WINDOW_MS;
+  const recentLoss = identityScopedLoss || globalLoss;
   if (!recentLoss && opts.reason !== 'auto-resend-gave-up') {
     return;
   }
-  deliveryFailCountSinceLoss += 1;
+  state.deliveryFailCountSinceLoss += 1;
   if (
-    deliveryFailCountSinceLoss >= DELIVERY_FAIL_THRESHOLD ||
+    state.deliveryFailCountSinceLoss >= DELIVERY_FAIL_THRESHOLD ||
     opts.reason === 'auto-resend-gave-up'
   ) {
-    maybeNudge(opts.reason, opts.identityId);
+    maybeNudge(opts.reason, opts.identityId, state);
   }
 }
 
@@ -141,9 +184,10 @@ export function isSerialPostWakeGenerationCurrent(generation: number): boolean {
 
 /** Test seam. */
 export function resetSerialDeliveryHealthForTests(): void {
-  lastTransportLossAt = 0;
-  lastNudgeAt = 0;
-  deliveryFailCountSinceLoss = 0;
+  globalSerialHealth.lastTransportLossAt = 0;
+  globalSerialHealth.lastNudgeAt = 0;
+  globalSerialHealth.deliveryFailCountSinceLoss = 0;
+  perIdentitySerialHealth.clear();
   postWakeSerialUntrusted = false;
   postWakeGeneration = 0;
 }

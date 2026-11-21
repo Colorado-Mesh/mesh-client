@@ -104,9 +104,28 @@ function drag(name: string, target: string, side: 'before' | 'after') {
   return accepted;
 }
 
-const savedOrder = (protocol: MeshProtocol) =>
-  JSON.parse(localStorage.getItem(`mesh-client:chatOrder:${protocol}:1:channels`) ?? 'null') as
-    string[] | null;
+const savedOrder = (protocol: MeshProtocol, nodeNum = 1) =>
+  JSON.parse(
+    localStorage.getItem(`mesh-client:chatOrder:${protocol}:${nodeNum}:channels`) ?? 'null',
+  ) as string[] | null;
+
+describe('ChatPanel legacy :0: chat order migration', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(window.electronAPI.chat.outbox.list).mockResolvedValue([]);
+  });
+
+  it('applies legacy channel order on first mount when myNodeNum is known', () => {
+    localStorage.setItem(
+      'mesh-client:chatOrder:meshtastic:0:channels',
+      JSON.stringify(['2', '0', '1', '3']),
+    );
+    renderPanel('meshtastic', { myNodeNum: 5 });
+    expect(order()).toEqual(['Alerts', 'General', 'Ops', 'Wx']);
+    expect(localStorage.getItem('mesh-client:chatOrder:meshtastic:0:channels')).toBeNull();
+    expect(savedOrder('meshtastic', 5)).toEqual(['2', '0', '1', '3']);
+  });
+});
 
 describe.each<MeshProtocol>(['meshtastic', 'meshcore', 'reticulum'])(
   'ChatPanel channel drag to reorder (%s)',

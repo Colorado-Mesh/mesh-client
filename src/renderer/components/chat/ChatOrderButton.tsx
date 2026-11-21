@@ -13,9 +13,11 @@ interface Props {
   ids: readonly string[];
   onSave: (ids: readonly string[]) => void;
   title?: string;
+  /** When false (pre-connect scope), ordering controls stay disabled. */
+  orderingEnabled?: boolean;
 }
 
-export function ChatOrderButton({ items, ids, onSave, title }: Props) {
+export function ChatOrderButton({ items, ids, onSave, title, orderingEnabled = true }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => {
@@ -27,7 +29,7 @@ export function ChatOrderButton({ items, ids, onSave, title }: Props) {
         size="sm"
         aria-label={t('chatOrder.title')}
         title={title}
-        disabled={items.length < 2}
+        disabled={!orderingEnabled || items.length < 2}
         onClick={() => {
           setOpen(true);
         }}

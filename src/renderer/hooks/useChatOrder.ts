@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
@@ -52,17 +52,51 @@ function readOrder(key: string): string[] {
 }
 
 /** Presentation order only: never renumber radio slots or change room membership. */
-export function useChatOrder(scope: string, items: readonly OrderedChat[]) {
-  const key = `mesh-client:chatOrder:${scope}`;
-  const [stored, setStored] = useState(() => ({ key, ids: readOrder(key) }));
-  let current = stored;
-  if (stored.key !== key) {
-    current = { key, ids: readOrder(key) };
-    setStored(current);
-  }
-  const ids = reconcileChatOrder(items, current.ids);
+export function useChatOrder(scope: string | null, items: readonly OrderedChat[]) {
+  const persist = scope != null;
+  const key = persist ? `mesh-client:chatOrder:${scope}` : '';
+  const [pendingWhileUnresolved, setPendingWhileUnresolved] = useState<string[] | null>(null);
+  const [stored, setStored] = useState(() => ({
+    key,
+    ids: persist ? readOrder(key) : items.map((item) => item.id),
+  }));
+
+  useEffect(() => {
+    if (!persist) return;
+    if (stored.key === key) return;
+    // scope change: load order for the new key (replaces render-phase setState)
+    const pending = pendingWhileUnresolved;
+    const fromStorage = readOrder(key);
+    const ids =
+      pending != null && pending.length > 0 ? reconcileChatOrder(items, pending) : fromStorage;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync storage when chat order scope becomes known
+    setStored({ key, ids });
+    if (pending != null && pending.length > 0) {
+      setPendingWhileUnresolved(null);
+      try {
+        localStorage.setItem(key, JSON.stringify(ids));
+      } catch (error) {
+        console.warn('[useChatOrder] flush pending order failed ' + errLikeToLogString(error));
+      }
+    }
+  }, [key, items, pendingWhileUnresolved, persist, stored.key]);
+
+  const ids = persist
+    ? reconcileChatOrder(items, stored.ids)
+    : reconcileChatOrder(
+        items,
+        pendingWhileUnresolved ??
+          (stored.ids.length > 0 ? stored.ids : items.map((item) => item.id)),
+      );
   const save = useCallback(
     (next: readonly string[]) => {
+      if (!persist) {
+        const visible = [...new Set(next)];
+        const reconciled = reconcileChatOrder(items, visible);
+        setPendingWhileUnresolved(reconciled);
+        setStored({ key: '', ids: reconciled });
+        return;
+      }
       // Preserve absent ids so a temporary disconnect/filter cannot erase their chosen position.
       const prior = readOrder(key);
       const visible = [...new Set(next)];
@@ -73,7 +107,7 @@ export function useChatOrder(scope: string, items: readonly OrderedChat[]) {
       localStorage.setItem(key, JSON.stringify(ids));
       setStored({ key, ids });
     },
-    [key],
+    [items, key, persist],
   );
-  return { ids, save };
+  return { ids, save, orderingEnabled: persist };
 }

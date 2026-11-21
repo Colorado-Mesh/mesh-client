@@ -39,10 +39,15 @@ export interface MeshcomAprsPhonePosition {
 
 export interface MeshcomAprsPhoneAck {
   kind: 'ack';
+  /** ACK frame's own id (wire LoRa relay) or same as ackMsgId (phone BLE). */
   msgId: number;
+  /** Wire LoRa: hop byte at [5]. Phone BLE: status (0x00 heard … 0x02 peer). */
   flags: number;
+  /** Quittiert message id — bytes [6..9] on wire, [1..4] on phone BLE. */
   ackMsgId: number;
   ackType: number;
+  /** Phone BLE attribution callsign when appendix present (`ack_attribution.h`). */
+  attributionCall?: string;
 }
 
 export type MeshcomAprsPhoneParse =
@@ -73,16 +78,38 @@ function sourceCallFromPath(sourcePath: string): string {
 export function parseMeshcomAprsPhoneFrame(raw: Uint8Array): MeshcomAprsPhoneParse {
   if (raw.length < 1) return { kind: 'unknown' };
 
-  // ACK: 0x41 | msgId(4) | flags | ackMsgId(4) | ackType | 0x00
   if (raw[0] === 0x41) {
-    if (raw.length < 12) return { kind: 'unknown' };
-    return {
-      kind: 'ack',
-      msgId: readU32Le(raw, 1),
-      flags: raw[5],
-      ackMsgId: readU32Le(raw, 6),
-      ackType: raw[10],
-    };
+    // LoRa wire (12 B): 0x41 | frame id | 0x80|hops | acked msg id | … (`ack_functions.h`)
+    if (raw.length >= 12 && (raw[5] & 0x80) !== 0) {
+      return {
+        kind: 'ack',
+        msgId: readU32Le(raw, 1),
+        flags: raw[5],
+        ackMsgId: readU32Le(raw, 6),
+        ackType: raw[10],
+      };
+    }
+    // Phone BLE (`buildAckPhoneFrame` in `ack_attribution.h`): acked msg id at [1..4], status [5].
+    if (raw.length >= 7) {
+      const ackMsgId = readU32Le(raw, 1);
+      const status = raw[5];
+      const appendixLen = raw[6];
+      let attributionCall: string | undefined;
+      if (appendixLen > 0 && raw.length >= 7 + appendixLen) {
+        attributionCall = new TextDecoder('utf-8', { fatal: false }).decode(
+          raw.subarray(7, 7 + appendixLen),
+        );
+      }
+      return {
+        kind: 'ack',
+        msgId: ackMsgId,
+        flags: status,
+        ackMsgId,
+        ackType: status,
+        attributionCall,
+      };
+    }
+    return { kind: 'unknown' };
   }
 
   const payloadType = raw[0];

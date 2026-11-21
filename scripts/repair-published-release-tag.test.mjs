@@ -22,17 +22,38 @@ describe('resolveRepairReleaseTag', () => {
     });
   });
 
-  it('errors when untagged-* has a non-semver name', () => {
+  it('skips when untagged-* has a non-semver name on release:published', () => {
+    expect(
+      resolveRepairReleaseTag('untagged-abc', 'nightly', { fromReleasePublished: true }),
+    ).toEqual({
+      ok: false,
+      skip: true,
+      message: 'Published release has untagged tag_name and non-semver name=nightly',
+    });
+    expect(
+      resolveRepairReleaseTag('untagged-abc', '6.10.0-beta.1', { fromReleasePublished: true }),
+    ).toEqual({
+      ok: false,
+      skip: true,
+      message: 'Published release has untagged tag_name and non-semver name=6.10.0-beta.1',
+    });
+  });
+
+  it('fails when untagged-* has a non-semver name on manual repair', () => {
     expect(resolveRepairReleaseTag('untagged-abc', 'nightly')).toEqual({
       ok: false,
       message: 'Published release has untagged tag_name and non-semver name=nightly',
     });
   });
 
-  it('skips non-semver tags', () => {
-    expect(resolveRepairReleaseTag('latest', '5.30.0')).toEqual({
+  it('skips non-semver tags on release:published only', () => {
+    expect(resolveRepairReleaseTag('latest', '5.30.0', { fromReleasePublished: true })).toEqual({
       ok: false,
       skip: true,
+      message: 'Skipping non-semver release tag latest',
+    });
+    expect(resolveRepairReleaseTag('latest', '5.30.0')).toEqual({
+      ok: false,
       message: 'Skipping non-semver release tag latest',
     });
   });

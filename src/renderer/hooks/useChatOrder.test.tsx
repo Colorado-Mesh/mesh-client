@@ -1,6 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { migrateLegacyChatOrderScope } from '@/renderer/lib/chatOrderScope';
+
 import { moveChatOrderId, reconcileChatOrder, useChatOrder } from './useChatOrder';
 
 const items = [
@@ -87,6 +89,39 @@ describe('chat display order', () => {
       get.mockRestore();
     }
   });
+  it('migrates legacy :0: chat order when scope gains a node id', () => {
+    localStorage.setItem(
+      'mesh-client:chatOrder:meshcom:0:channels',
+      JSON.stringify(['2', '1', '3']),
+    );
+    const scope = 'meshcom:99';
+    migrateLegacyChatOrderScope('meshcom', '99');
+    const { result } = renderHook(() => useChatOrder(`${scope}:channels`, items));
+    expect(result.current.ids).toEqual(['2', '1', '3']);
+    expect(localStorage.getItem('mesh-client:chatOrder:meshcom:0:channels')).toBeNull();
+  });
+
+  it('keeps pending in-memory order while scope is null without writing :0:', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem');
+    const { result, rerender } = renderHook(
+      ({ scope, entries }: { scope: string | null; entries: typeof items }) =>
+        useChatOrder(scope, entries),
+      { initialProps: { scope: null as string | null, entries: items } },
+    );
+    act(() => {
+      result.current.save(['3', '1', '2']);
+    });
+    expect(setItem).not.toHaveBeenCalled();
+    expect(result.current.ids).toEqual(['3', '1', '2']);
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    expect(result.current.ids).toEqual(['3', '1', '2']);
+    expect(setItem).toHaveBeenCalledWith(
+      'mesh-client:chatOrder:meshcore:7:channels',
+      JSON.stringify(['3', '1', '2']),
+    );
+    setItem.mockRestore();
+  });
+
   it('preserves absent entries in their prior slots while reordering visible entries', () => {
     localStorage.setItem('mesh-client:chatOrder:test', JSON.stringify(['2', '1', '3']));
     const { result, rerender } = renderHook(({ entries }) => useChatOrder('test', entries), {

@@ -82,7 +82,11 @@ describe('sendChatOnIdentity MeshCom', () => {
       createdAt: 1,
       lastSeenAt: 1,
     });
-    setConnection(ID, { status: 'configured', myNodeNum: SELF_NODE });
+    setConnection(ID, {
+      status: 'configured',
+      connectionType: 'ble',
+      myNodeNum: SELF_NODE,
+    });
     upsertNode(ID, { nodeId: SELF_NODE, longName: SELF_CALL });
     upsertNode(ID, { nodeId: peerNode, longName: peerCall });
     vi.spyOn(meshcomProtocol, 'sendMessage').mockResolvedValue({ packetId: 99 });

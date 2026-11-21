@@ -89,6 +89,77 @@ describe('serialDeliveryHealth', () => {
     expect(isSerialPostWakeUntrusted()).toBe(false);
   });
 
+  it('keeps delivery-failure counters scoped per serial identity', async () => {
+    vi.useFakeTimers();
+    try {
+      setConnection('serial-a', {
+        status: 'configured',
+        connectionType: 'serial',
+        mqttStatus: 'disconnected',
+        reconnectAttempt: 0,
+        myNodeNum: 1,
+      });
+      setConnection('serial-b', {
+        status: 'configured',
+        connectionType: 'serial',
+        mqttStatus: 'disconnected',
+        reconnectAttempt: 0,
+        myNodeNum: 2,
+      });
+      noteSerialTransportLoss({ connectionType: 'serial', identityId: 'serial-a' });
+      noteSerialDeliveryFailure({
+        reason: 'delivery-ack-timeout',
+        connectionType: 'serial',
+        identityId: 'serial-a',
+      });
+      noteSerialDeliveryFailure({
+        reason: 'delivery-ack-timeout',
+        connectionType: 'serial',
+        identityId: 'serial-b',
+      });
+      expect(pushAppToast).not.toHaveBeenCalled();
+      noteSerialDeliveryFailure({
+        reason: 'delivery-ack-timeout',
+        connectionType: 'serial',
+        identityId: 'serial-a',
+      });
+      await vi.waitFor(() => {
+        expect(pushAppToast).toHaveBeenCalledTimes(1);
+      });
+      const connB = useConnectionStore.getState().connections['serial-b'];
+      expect(connB.serialNeedsReselect).toBeFalsy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('counts global transport-loss toward an identity serial delivery timeout', async () => {
+    setConnection('id-serial', {
+      status: 'configured',
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+      reconnectAttempt: 0,
+      myNodeNum: 1,
+    });
+    noteSerialTransportLoss({ connectionType: 'serial' });
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: 'serial',
+      identityId: 'id-serial',
+    });
+    expect(pushAppToast).not.toHaveBeenCalled();
+    noteSerialDeliveryFailure({
+      reason: 'delivery-ack-timeout',
+      connectionType: 'serial',
+      identityId: 'id-serial',
+    });
+    await vi.waitFor(() => {
+      expect(pushAppToast).toHaveBeenCalledTimes(1);
+    });
+    const serialConn = useConnectionStore.getState().connections['id-serial'];
+    expect(serialConn.serialNeedsReselect).toBe(true);
+  });
+
   it('does not attribute BLE timeouts to an unrelated serial connection', () => {
     setConnection('id-serial', {
       status: 'configured',

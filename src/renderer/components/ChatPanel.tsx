@@ -83,6 +83,7 @@ import {
 import type { ChatMessageRouteLookup } from '@/renderer/lib/chatMessageRoute';
 import { buildChatMessageRouteView } from '@/renderer/lib/chatMessageRouteView';
 import { protocolMqttProvidesChatSend } from '@/renderer/lib/chatMqttHybridSend';
+import { migrateLegacyChatOrderScope } from '@/renderer/lib/chatOrderScope';
 import {
   clearFloodScopeOverride,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -1075,6 +1076,12 @@ function ChatPanel({
    * belt-and-suspenders, but costs nothing.
    */
   const channelRestoreScopeKey = myNodeNum > 0 ? `${protocol}:${myNodeNum}` : null;
+  const chatOrderScope = channelRestoreScopeKey;
+  const chatOrderMigratedForRef = useRef<string | null>(null);
+  if (myNodeNum > 0 && chatOrderMigratedForRef.current !== chatOrderScope) {
+    migrateLegacyChatOrderScope(protocol, String(myNodeNum));
+    chatOrderMigratedForRef.current = chatOrderScope;
+  }
   interface ChannelRestoreState {
     scope: string | null;
     resolved: boolean;
@@ -3458,12 +3465,15 @@ function ChatPanel({
     );
 
   const channelOrderItems = channels.map((ch) => ({ id: String(ch.index), name: ch.name }));
-  const channelOrder = useChatOrder(`${protocol}:${myNodeNum}:channels`, channelOrderItems);
+  const channelOrder = useChatOrder(
+    chatOrderScope != null ? `${chatOrderScope}:channels` : null,
+    channelOrderItems,
+  );
   // Display order only, like the Order chats dialog. Pinned chips keep pin order, so they are
   // neither dragged nor drop targets.
   const channelDrag = useChipDragReorder({
-    scope: `${protocol}:${myNodeNum}:channels`,
-    canMove: (id) => !conversationPins.pinned.has(`ch:${id}`),
+    scope: chatOrderScope != null ? `${chatOrderScope}:channels` : `${protocol}:pending:channels`,
+    canMove: (id) => channelOrder.orderingEnabled && !conversationPins.pinned.has(`ch:${id}`),
     onMove: (id, target, side) => {
       const next = moveChatOrderId(channelOrder.ids, id, target, side);
       if (!next) return false;
@@ -3472,7 +3482,10 @@ function ChatPanel({
     },
   });
   const dmOrderItems = visibleDmTabs.map((id) => ({ id: String(id), name: getDmLabel(id) }));
-  const dmOrder = useChatOrder(`${protocol}:${myNodeNum}:dms`, dmOrderItems);
+  const dmOrder = useChatOrder(
+    chatOrderScope != null ? `${chatOrderScope}:dms` : null,
+    dmOrderItems,
+  );
   const orderedDmTabs = filterArchived(
     orderPinnedFirst(dmOrder.ids.map(Number), (id) => `dm:${id}`, conversationPins.pinnedOrder),
     (id) => `dm:${id}`,
@@ -3676,6 +3689,7 @@ function ChatPanel({
                 items={channelOrderItems}
                 ids={channelOrder.ids}
                 onSave={channelOrder.save}
+                orderingEnabled={channelOrder.orderingEnabled}
               />
               <WrappingChannelList activeKey={channelViewActive ? channel : null}>
                 {orderedChannels.map((ch) => {
@@ -3795,7 +3809,7 @@ function ChatPanel({
                 <MeshComGrcChatManager
                   listenGroupIds={meshcomGrcListenIds}
                   canApplyToDevice={meshcomGrcCanApplyToDevice}
-                  disabled={composerDisabled || !isConnected}
+                  disabled={composerDisabled}
                   onSelectChannel={(index) => {
                     selectChannel(index);
                     setViewMode('channels');
@@ -3863,6 +3877,7 @@ function ChatPanel({
                 items={dmOrderItems}
                 ids={dmOrder.ids}
                 onSave={dmOrder.save}
+                orderingEnabled={dmOrder.orderingEnabled}
                 title={`${t('chatOrder.title')}: ${t('chatPanel.dms')}`}
               />
             </div>

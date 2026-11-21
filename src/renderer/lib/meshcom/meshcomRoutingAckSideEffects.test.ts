@@ -45,7 +45,7 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     packetRouter.dispatch(
       {
         type: 'meshtastic_routing_ack',
-        payload: { requestId: 42, ackProofStatus: 1, isAck: true },
+        payload: { requestId: 42, ackProofStatus: 1, isAck: true, from: 2 },
       },
       identityId,
     );
@@ -58,6 +58,29 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
       msg_id: '42',
       status: 'acked',
     });
+    detach();
+  });
+
+  it('ignores sender-less BLE ACK for DMs without peer attribution', () => {
+    const identityId = 'meshcom:ble-no-src';
+    upsertMessage(identityId, {
+      id: '42',
+      from: 1,
+      to: 2,
+      payload: 'hi',
+      channelIndex: -1,
+      timestamp: 1,
+      status: 'sending',
+    });
+    const detach = attachMeshcomRoutingAckSideEffects(identityId);
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_routing_ack',
+        payload: { requestId: 42, ackProofStatus: 0, isAck: true },
+      },
+      identityId,
+    );
+    expect(useMessageStore.getState().messages[identityId]['42'].status).toBe('sending');
     detach();
   });
 
@@ -85,6 +108,39 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     detach();
   });
 
+  it('settles a pending row when direct storage id is an ineligible completed row', () => {
+    const identityId = 'meshcom:direct-block';
+    const fullId = 0x00abcd0c;
+    upsertMessage(identityId, {
+      id: String(fullId),
+      from: 1,
+      to: 2,
+      payload: 'pending dm',
+      channelIndex: -1,
+      timestamp: 1,
+      status: 'sending',
+    });
+    upsertMessage(identityId, {
+      id: String(fullId & 0x3ff),
+      from: 1,
+      to: 2,
+      payload: 'old',
+      channelIndex: -1,
+      timestamp: 1,
+      status: 'acked',
+    });
+    const detach = attachMeshcomRoutingAckSideEffects(identityId);
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_routing_ack',
+        payload: { requestId: fullId, ackProofStatus: 0, isAck: true, from: 2 },
+      },
+      identityId,
+    );
+    expect(useMessageStore.getState().messages[identityId][String(fullId)].status).toBe('acked');
+    detach();
+  });
+
   it('marks nack as failed', () => {
     const identityId = 'meshcom:test';
     upsertMessage(identityId, {
@@ -100,7 +156,7 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     packetRouter.dispatch(
       {
         type: 'meshtastic_routing_ack',
-        payload: { requestId: 7, ackProofStatus: 0, isAck: false },
+        payload: { requestId: 7, ackProofStatus: 0, isAck: false, from: 2 },
       },
       identityId,
     );
