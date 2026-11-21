@@ -7214,6 +7214,29 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     },
   );
 
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'enables DM Order chats before myNodeNum is known on %s',
+    async (protocol) => {
+      localStorage.setItem(`mesh-client:openDmTabs:${protocol}`, '[42,43,44]');
+      render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} myNodeNum={0} />
+        </ToastProvider>,
+      );
+      const tools = await screen.findByRole('group', { name: 'Conversation tools' });
+      const order = within(within(tools).getByRole('group', { name: 'DMs' })).getByRole('button', {
+        name: 'Order chats',
+      });
+      expect(order).toBeEnabled();
+      await userEvent.setup().click(order);
+      expect(await screen.findByRole('dialog', { name: 'Order chats' })).toBeVisible();
+      expect(screen.getByRole('dialog').querySelectorAll('li')).toHaveLength(3);
+      expect(
+        Object.keys(localStorage).filter((key) => key.includes('chatOrder') && key.includes(':0:')),
+      ).toEqual([]);
+    },
+  );
+
   it('opens a channel requested from outside (the launcher) and reports it consumed', async () => {
     const consumed = vi.fn();
     render(

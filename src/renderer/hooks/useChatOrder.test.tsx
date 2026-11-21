@@ -108,6 +108,7 @@ describe('chat display order', () => {
         useChatOrder(scope, entries),
       { initialProps: { scope: null as string | null, entries: items } },
     );
+    expect(result.current.orderingEnabled).toBe(true);
     act(() => {
       result.current.save(['3', '1', '2']);
     });

@@ -109,5 +109,8 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
     },
     [items, key, persist],
   );
-  return { ids, save, orderingEnabled: persist };
+  // Ordering UI stays available while scope is null; save() keeps order in memory and
+  // flushes once myNodeNum resolves (see pendingWhileUnresolved). Do not gate the
+  // Order chats control on `persist` — that broke offline DM tabs and E2E.
+  return { ids, save, orderingEnabled: true };
 }

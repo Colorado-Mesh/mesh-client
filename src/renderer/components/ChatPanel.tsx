@@ -3473,7 +3473,7 @@ function ChatPanel({
   // neither dragged nor drop targets.
   const channelDrag = useChipDragReorder({
     scope: chatOrderScope != null ? `${chatOrderScope}:channels` : `${protocol}:pending:channels`,
-    canMove: (id) => channelOrder.orderingEnabled && !conversationPins.pinned.has(`ch:${id}`),
+    canMove: (id) => !conversationPins.pinned.has(`ch:${id}`),
     onMove: (id, target, side) => {
       const next = moveChatOrderId(channelOrder.ids, id, target, side);
       if (!next) return false;

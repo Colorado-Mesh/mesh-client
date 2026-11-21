@@ -1,6 +1,12 @@
 #!/bin/sh
 # Strip Co-authored-by trailers — cloud/editor integrations may add them; this repo rejects them on PRs.
+# sed -i without a suffix is GNU-only; macOS/BSD sed needs an explicit backup extension.
 case "$2" in
   merge | squash | commit) ;;
-  *) [ -f "$1" ] && sed -i '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1" ;;
+  *)
+    if [ -f "$1" ]; then
+      sed -i.bak '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"
+      rm -f "$1.bak"
+    fi
+    ;;
 esac
