@@ -8,11 +8,8 @@ import {
   MESHCOM_BLE_MH_TYPE,
   parseMeshcomBleFrames,
 } from '../meshcom/meshcomBleFrame';
-import {
-  callsignToNodeId,
-  normalizeMeshcomCallsign,
-  parseMeshcomSrcPath,
-} from '../meshcom/meshcomCallsign';
+import { registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
+import { normalizeMeshcomCallsign, parseMeshcomSrcPath } from '../meshcom/meshcomCallsign';
 import { meshcomOutboundDest, resolveMeshcomDestination } from '../meshcom/meshcomChannel';
 import {
   emptyMeshcomDeviceSettingsAccum,
@@ -101,7 +98,9 @@ export interface MeshComDeviceHandle {
 function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number {
   const normalized = normalizeMeshcomCallsign(callsign);
   if (!normalized) return 0;
-  const nodeId = callsignToNodeId(normalized);
+  // Keep the session map and global registry in sync before text_message emit so
+  // ingest can resolve the real callsign even when node_info arrives next.
+  const nodeId = registerMeshcomCallsign(normalized);
   const map = handle.callsignByNodeId;
   const isNew = !map.has(nodeId);
   if (isNew && map.size >= MESHCOM_CONTACT_CAP_DEFAULT) {
@@ -335,6 +334,17 @@ function emitPhoneAprsEvents(
     const from = rememberCallsign(handle, parsed.sourceCall);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.destCall);
     emit({
+      type: 'node_info',
+      payload: {
+        nodeId: from,
+        longName: parsed.sourceCall,
+        shortName: parsed.sourceCall.slice(0, 4),
+        lastHeardAt: now,
+        hopsAway: parsed.hopCount,
+        hwModel: meshcomHwLabel(parsed.hwId) || undefined,
+      },
+    });
+    emit({
       type: 'text_message',
       payload: {
         id: `meshcom-ble-${parsed.msgId.toString(16)}`,
@@ -344,17 +354,6 @@ function emitPhoneAprsEvents(
         channelIndex,
         timestamp: now,
         hopCount: parsed.hopCount,
-      },
-    });
-    emit({
-      type: 'node_info',
-      payload: {
-        nodeId: from,
-        longName: parsed.sourceCall,
-        shortName: parsed.sourceCall.slice(0, 4),
-        lastHeardAt: now,
-        hopsAway: parsed.hopCount,
-        hwModel: meshcomHwLabel(parsed.hwId) || undefined,
       },
     });
     return;
@@ -405,20 +404,6 @@ function emitExtUdpEvents(
     const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
     const from = rememberCallsign(handle, origin || parsed.src);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.dst);
-    emit({
-      type: 'text_message',
-      payload: {
-        id: parsed.msg_id ?? `meshcom-udp-${from}-${now}`,
-        from,
-        to,
-        payload: parsed.msg,
-        channelIndex,
-        timestamp: now,
-        rxSnr: parsed.snr,
-        rxRssi: parsed.rssi,
-        hopCount,
-      },
-    });
     if (origin) {
       emit({
         type: 'node_info',
@@ -435,6 +420,20 @@ function emitExtUdpEvents(
         },
       });
     }
+    emit({
+      type: 'text_message',
+      payload: {
+        id: parsed.msg_id ?? `meshcom-udp-${from}-${now}`,
+        from,
+        to,
+        payload: parsed.msg,
+        channelIndex,
+        timestamp: now,
+        rxSnr: parsed.snr,
+        rxRssi: parsed.rssi,
+        hopCount,
+      },
+    });
     return;
   }
 
@@ -549,6 +548,15 @@ function emitConsoleTextLine(
           ? { to: 0xffffffff, channelIndex: 0 }
           : { to: 0xffffffff, channelIndex: 0 };
     emit({
+      type: 'node_info',
+      payload: {
+        nodeId: from,
+        longName: fromCall,
+        shortName: fromCall.slice(0, 4),
+        lastHeardAt: now,
+      },
+    });
+    emit({
       type: 'text_message',
       payload: {
         id: `meshcom-console-${from}-${now}`,
@@ -557,15 +565,6 @@ function emitConsoleTextLine(
         payload: text,
         channelIndex,
         timestamp: now,
-      },
-    });
-    emit({
-      type: 'node_info',
-      payload: {
-        nodeId: from,
-        longName: fromCall,
-        shortName: fromCall.slice(0, 4),
-        lastHeardAt: now,
       },
     });
     return;
@@ -669,6 +668,18 @@ function emitKissEvents(
       }
       const { to, channelIndex } = textMessageToFromDest(handle, info.addressee);
       emit({
+        type: 'node_info',
+        payload: {
+          nodeId: from,
+          longName: frame.src,
+          shortName: frame.src.slice(0, 4),
+          lastHeardAt: now,
+          snr: frame.meta?.snr,
+          rssi: frame.meta?.rssi,
+          hopsAway: hopCount,
+        },
+      });
+      emit({
         type: 'text_message',
         payload: {
           id: `meshcom-kiss-${from}-${now}-${frame.info.length}`,
@@ -680,18 +691,6 @@ function emitKissEvents(
           rxSnr: frame.meta?.snr,
           rxRssi: frame.meta?.rssi,
           hopCount,
-        },
-      });
-      emit({
-        type: 'node_info',
-        payload: {
-          nodeId: from,
-          longName: frame.src,
-          shortName: frame.src.slice(0, 4),
-          lastHeardAt: now,
-          snr: frame.meta?.snr,
-          rssi: frame.meta?.rssi,
-          hopsAway: hopCount,
         },
       });
       continue;

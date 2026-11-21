@@ -16,7 +16,7 @@ import {
 } from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
-import { registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
+import { meshcomCallForNodeId, registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
 import {
   callsignToNodeId,
   normalizeMeshcomCallsign,
@@ -50,9 +50,12 @@ function nodeRecordFor(
 }
 
 function callsignFromNode(identityId: IdentityId, nodeId: number): string {
+  const fromRegistry = meshcomCallForNodeId(nodeId);
+  if (fromRegistry) return fromRegistry;
   const record = nodeRecordFor(identityId, nodeId);
   const name = record?.longName?.trim() || record?.shortName?.trim();
   if (name) return normalizeMeshcomCallsign(name);
+  // Last resort only — prefer registry / node_info so hydrate does not remint nodeIds.
   return nodeId > 0 ? `N${nodeId.toString(16).toUpperCase()}` : '';
 }
 

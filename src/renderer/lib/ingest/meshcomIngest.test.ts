@@ -7,6 +7,7 @@ import {
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
+import { clearMeshcomCallRegistry, registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
 import { callsignToNodeId } from '../meshcom/meshcomCallsign';
 import {
   clearAllMeshcomLocallyDeletedContactsForTests,
@@ -31,6 +32,7 @@ const ID = 'offline-meshcom';
 describe('meshcomIngest', () => {
   beforeEach(() => {
     clearAllMeshcomLocallyDeletedContactsForTests();
+    clearMeshcomCallRegistry();
     vi.spyOn(window.electronAPI.db, 'saveMeshcomMessage')
       .mockReset()
       .mockResolvedValue({ changes: 1 });
@@ -120,6 +122,49 @@ describe('meshcomIngest', () => {
         from_call: 'DH1FR-2',
         text: 'hello meshcom',
       }),
+    );
+  });
+
+  it('resolves from_call from the callsign registry when node_info has not landed yet', () => {
+    const from = registerMeshcomCallsign('OE1NEW-1');
+    const msgId = 'meshcom-tm-first-contact';
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: msgId,
+        sender_id: from,
+        sender_name: '',
+        payload: 'first',
+        channel: 0,
+        timestamp: 1_700_000_000_000,
+        receivedVia: 'rf',
+      }),
+    );
+
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from,
+          to: 0xffffffff,
+          payload: 'first',
+          channelIndex: 0,
+          timestamp: 1_700_000_000_000,
+        },
+      },
+      { getMyNodeNum: () => 0 },
+    );
+
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from_call: 'OE1NEW-1',
+        msg_id: msgId,
+      }),
+    );
+    expect(window.electronAPI.db.saveMeshcomContact).toHaveBeenCalledWith(
+      expect.objectContaining({ callsign: 'OE1NEW-1', node_id: from }),
     );
   });
 
