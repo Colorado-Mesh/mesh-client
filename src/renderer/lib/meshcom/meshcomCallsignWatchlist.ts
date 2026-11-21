@@ -154,6 +154,7 @@ export function maybeAlertMeshcomWatchlistCallsign(callsign: string): boolean {
   fireNotification(
     i18n.t('meshcomWatchlist.alertTitle', { callsign: base }),
     i18n.t('meshcomWatchlist.alertBody', { callsign: normalizeMeshcomCallsign(callsign) || base }),
+    { silent: muted },
   );
   return true;
 }

@@ -20,11 +20,20 @@ function withNotificationPermission(show: () => void): void {
   }
 }
 
-/** Audible OS notification for node status / operational alerts (no in-app sound path). */
-export function fireNotification(title: string, body: string): void {
+export interface FireNotificationOptions {
+  /** When true, show the banner without the OS notification sound. Default false. */
+  silent?: boolean;
+}
+
+/** OS notification for node status / operational alerts (no in-app sound path). */
+export function fireNotification(
+  title: string,
+  body: string,
+  opts?: FireNotificationOptions,
+): void {
   try {
     withNotificationPermission(() => {
-      new Notification(title, { body, silent: false });
+      new Notification(title, { body, silent: opts?.silent === true });
     });
   } catch {
     // catch-no-log-ok: best-effort desktop notification

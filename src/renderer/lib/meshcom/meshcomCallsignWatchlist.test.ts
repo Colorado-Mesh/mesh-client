@@ -69,10 +69,12 @@ describe('meshcomCallsignWatchlist', () => {
     expect(maybeAlertMeshcomWatchlistCallsign('OE1ABC-1')).toBe(true);
     expect(maybeAlertMeshcomWatchlistCallsign('OE1ABC-2')).toBe(false);
     expect(playMessageNotification).toHaveBeenCalledWith('dm');
-    expect(fireNotification).toHaveBeenCalled();
+    expect(fireNotification).toHaveBeenCalledWith(expect.any(String), expect.any(String), {
+      silent: false,
+    });
   });
 
-  it('skips sound when notifications are muted but still fires OS notify', async () => {
+  it('skips sound when notifications are muted but still fires a silent OS notify', async () => {
     const { playMessageNotification } = await import('../chatNotifications');
     const { fireNotification } = await import('../desktopNotification');
     const { CHAT_NOTIF_MUTED_STORAGE_KEY } = await import('../chatInactiveNotifications');
@@ -92,6 +94,8 @@ describe('meshcomCallsignWatchlist', () => {
     await saveMeshcomCallsignWatchlist(['OE1ABC']);
     expect(maybeAlertMeshcomWatchlistCallsign('OE1ABC-1')).toBe(true);
     expect(playMessageNotification).not.toHaveBeenCalled();
-    expect(fireNotification).toHaveBeenCalled();
+    expect(fireNotification).toHaveBeenCalledWith(expect.any(String), expect.any(String), {
+      silent: true,
+    });
   });
 });

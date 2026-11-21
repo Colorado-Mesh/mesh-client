@@ -96,6 +96,12 @@ describe('fireNotification', () => {
     fireNotification('Alpha is online', 'Meshtastic');
     expect(created[0]?.options).toEqual({ body: 'Meshtastic', silent: false });
   });
+
+  it('honors silent when requested', () => {
+    const { created } = installNotification('granted');
+    fireNotification('Watchlist hit', 'OE1ABC', { silent: true });
+    expect(created[0]?.options).toEqual({ body: 'OE1ABC', silent: true });
+  });
 });
 
 describe('chatNotificationTag', () => {
