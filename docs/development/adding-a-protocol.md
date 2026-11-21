@@ -64,6 +64,19 @@ When adding BLE for a new protocol:
 4. Register `gatt:<protocol>` on `BlePeripheralOwner` and treat it like other LoRa owners when Reticulum holds the scan lease.
 5. Transport / `connectGattWithScanBusyRetry('<session>', …)` must use the **session** id, not only the wire profile.
 6. Update [ble-serial.md](ble-serial.md) session-id wording and LogPanel / logAnalyzer tags if you emit `[GATT:<session>]`.
+7. Wire host-link RSSI end-to-end (Connection panel Signal row) — see §4.1.
+
+### 4.1 Host-link BLE RSSI (Connection panel)
+
+Shared meter: [`useHostLinkMeter`](../../src/renderer/hooks/useHostLinkMeter.ts) + GATT `linkRssi` from [`gatt-sidecar-proxy.ts`](../../src/main/gatt-sidecar-proxy.ts). MeshCom lessons that apply to any new GATT session:
+
+1. **Session filter** — `onGattLinkRssi` / RSSI poll must accept the new session id (`meshtastic` \| `meshcore` \| `meshcom`). Filtering only the older two leaves Signal as `—` forever even when the radio is connected.
+2. **CoreBluetooth has no live connected RSSI** on the LoRa btleplug path (darwin stays on btleplug 0.11; `read_rssi` is 0.13-only and cannot share a process with rsReticulum’s 0.11 Objective-C class). Host Signal must be seeded from **advertisement / scan** RSSI.
+3. **Do not connect-without-scan on reconnect** — a “fast path” that opens GATT when the peripheral is already known skips discovery, so the proxy/sidecar scan-RSSI maps stay empty. [`reconnectBleWithScan`](../../src/renderer/lib/bleReconnectHelper.ts) runs a short discovery-first pass (`BLE_RECONNECT_DISCOVERY_TIMEOUT_SECS`) before connect; auto-connect and Connection panel Reconnect both use it.
+4. **Persist `bleRssi` on picker select** into `lastConnection` (and keep updating from meter/scan) so cold reconnect can seed the UI even after `bleDevices` is cleared.
+5. **Key normalization** — remember scan RSSI under lowercase address, punctuation-stripped / compact hex, and match the same keys at connect (`rememberScanRssi` / sidecar `last_seen_rssi`). UUID vs MAC aliases break seeds when keys diverge.
+6. **Sidecar cache locking** — sync RSSI maps must not use `try_lock` and silently drop samples; prefer a `std::sync::Mutex` for the advertisement cache.
+7. **Tests** — proxy: scan then connect emits seeded `linkRssi` when live `/rssi` is unavailable; helper: discovery-first match + long-scan retry; hook: `bleSeedRssi` until GATT emits.
 
 ## 5. MQTT
 
