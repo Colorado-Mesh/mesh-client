@@ -327,7 +327,7 @@ jobs:
             echo
             echo "- **Bundle:** [${BUNDLE_NAME}](${BUNDLE_URL})"
             echo
-            echo "CLI: \`gh run download ${GITHUB_RUN_ID} -n ${BUNDLE_NAME}\`"
+            echo 'Prefer the link above. gh run download cannot extract archive:false artifacts (see docs/ci-cd.md).'
           } >> "${GITHUB_STEP_SUMMARY}"
 
       # Schema warning beside the bundle for Actions downloads.

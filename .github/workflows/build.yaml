@@ -291,7 +291,7 @@ jobs:
             echo "- **arm64 Setup (WoA):** [${ARM64_NAME}](${ARM64_URL})"
             echo "- **latest.yml + README:** [test-mesh-client-windows-meta](${META_URL})"
             echo
-            echo 'CLI: `gh run download '"${GITHUB_RUN_ID}"' -n '"${X64_NAME}"'`'
+            echo 'Prefer the links above. gh run download cannot extract archive:false artifacts (see docs/ci-cd.md).'
           } >> "${GITHUB_STEP_SUMMARY}"
 
   packaging-smoke:
