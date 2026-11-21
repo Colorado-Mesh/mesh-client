@@ -1,7 +1,7 @@
 /**
  * Apply MeshCom routing / DM ACK events onto outbound chat rows.
  * Firmware emits ACK frames (BLE phone 0x41, KISS ackNN) as `meshtastic_routing_ack`
- * with requestId = message number (matches sendMessage packetId).
+ * with requestId = firmware message id (or low `{NNN}` on KISS ackNN).
  */
 
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
@@ -14,7 +14,11 @@ import {
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { MeshtasticAckProofStatus } from '../meshtastic/meshtasticAckProof';
+import type { MeshtasticRoutingAckEvent } from '../protocols/Protocol';
 import type { IdentityId } from '../types';
+import { meshcomCallForNodeId } from './meshcomCallRegistry';
+import { normalizeMeshcomCallsign } from './meshcomCallsign';
+import { meshcomRoutingAckMatchesOutbound } from './meshcomFwMsgId';
 
 /** FAQ: undelivered DM after ~6 minutes. */
 export const MESHCOM_DM_ACK_TIMEOUT_MS = 6 * MS_PER_MINUTE;
@@ -47,6 +51,71 @@ function readOutboundRow(
 
 function isMeshcomDmRow(row: { to?: number; channelIndex?: number }): boolean {
   return row.channelIndex === -1;
+}
+
+function meshcomDmPeerBoundForAck(
+  row: { to?: number },
+  payload: MeshtasticRoutingAckEvent,
+): boolean {
+  if (payload.from != null && row.to != null && payload.from >>> 0 === row.to >>> 0) {
+    return true;
+  }
+  const attr = payload.attributionCall?.trim();
+  if (!attr || row.to == null) return false;
+  const expected = meshcomCallForNodeId(row.to) || '';
+  return (
+    expected.length > 0 && normalizeMeshcomCallsign(attr) === normalizeMeshcomCallsign(expected)
+  );
+}
+
+function rowEligibleForRoutingAck(
+  row: { status?: string; to?: number; channelIndex?: number },
+  payload: MeshtasticRoutingAckEvent,
+): boolean {
+  if (row.status !== 'sending' && row.status !== 'failed') return false;
+  if (!isMeshcomDmRow(row)) return true;
+  if (payload.from != null && row.to != null && payload.from >>> 0 !== row.to >>> 0) {
+    return false;
+  }
+  if (payload.from == null && !meshcomDmPeerBoundForAck(row, payload)) return false;
+  return true;
+}
+
+function resolveOutboundRowForRoutingAck(
+  identityId: IdentityId,
+  requestId: number,
+  payload: MeshtasticRoutingAckEvent,
+): { messageId: string; row: { status?: string; to?: number; channelIndex?: number } } | null {
+  const candidates: {
+    messageId: string;
+    row: { status?: string; to?: number; channelIndex?: number };
+    exactStorageId: boolean;
+  }[] = [];
+
+  const directId = String(requestId >>> 0);
+  const messages = useMessageStore.getState().messages;
+  if (!Object.hasOwn(messages, identityId)) return null;
+  const bucket = messages[identityId];
+
+  for (const [messageId, row] of Object.entries(bucket)) {
+    if (!rowEligibleForRoutingAck(row, payload)) continue;
+    const pkt = Number.parseInt(messageId, 10);
+    if (!Number.isFinite(pkt)) continue;
+    if (!meshcomRoutingAckMatchesOutbound(pkt >>> 0, requestId)) continue;
+    candidates.push({
+      messageId,
+      row,
+      exactStorageId: messageId === directId,
+    });
+  }
+
+  if (candidates.length === 0) return null;
+
+  const exact = candidates.find((c) => c.exactStorageId);
+  if (exact) return { messageId: exact.messageId, row: exact.row };
+
+  const pending = candidates.find((c) => c.row.status === 'sending');
+  return pending ?? candidates[0];
 }
 
 /**
@@ -115,18 +184,10 @@ export function clearAllMeshcomDmAckTimeouts(): void {
 /** Listen for MeshCom routing ACKs and settle matching outbound chat rows. */
 export function attachMeshcomRoutingAckSideEffects(identityId: IdentityId): () => void {
   return attachTypedPacketListener(identityId, 'meshtastic_routing_ack', (payload) => {
-    const messageId = String(payload.requestId >>> 0);
-    const row = readOutboundRow(identityId, messageId);
-    if (!row) return;
-    // When the peer callsign/node is known, require it to match the outbound DM destination.
-    if (
-      isMeshcomDmRow(row) &&
-      payload.from != null &&
-      row.to != null &&
-      payload.from >>> 0 !== row.to >>> 0
-    ) {
-      return;
-    }
+    const resolved = resolveOutboundRowForRoutingAck(identityId, payload.requestId, payload);
+    if (!resolved) return;
+    const { messageId, row } = resolved;
+
     clearDmAckTimer(identityId, messageId);
     updateMeshtasticDeliveryMeta(identityId, messageId, {
       ackProofStatus: meshcomAckProofStatus(payload.isAck),

@@ -95,7 +95,7 @@ Named catalog: [`meshcomGrcGroups.ts`](../../src/renderer/lib/meshcom/meshcomGrc
 
 **Chat pills:** ALL + device listen slots (`GCB` / `--info`) + locally opened ids + history-discovered ids ([`buildMeshcomChatChannels`](../../src/renderer/lib/meshcom/meshcomGrcGroups.ts)). Chat “+” opens [`MeshComGrcChatManager`](../../src/renderer/components/MeshComGrcChatManager.tsx); Radio → Identity uses [`MeshComGrcEditor`](../../src/renderer/components/MeshComGrcEditor.tsx) (slots + `--nomsgall`).
 
-**DM delivery:** `hasChannelDeliveryAck: true`. Outbound DMs stay `sending` until a routing ACK (`meshcomRoutingAckSideEffects`) or a ~6 minute timeout; ALL/GRC acked on wire accept.
+**DM delivery:** `hasChannelDeliveryAck: true`. On transports that can emit peer delivery ACKs (**BLE** phone `0x41`, **KISS/TCP** `ackNN`), outbound DMs stay `sending` until `meshcomRoutingAckSideEffects` settles the row or a ~6 minute timeout. **EXTUDP** and **USB serial** have no peer-delivery ACK on the wire — DMs ack on wire accept there. Firmware message ids are `((gwId & 0x3FFFFF) << 10) | (node_msgid & 0x3FF)` (`loop_functions.cpp` / `msgid_counter.h`); KISS returns the assigned id in `TX_RESULT`, BLE ACKs reference the full id or the low `{NNN}` suffix. ALL/GRC ack on wire accept on every transport.
 
 ## MHEARD
 

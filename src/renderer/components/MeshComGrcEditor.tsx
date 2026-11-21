@@ -19,7 +19,7 @@ export interface MeshComGrcEditorProps {
   disabled: boolean;
   busy?: boolean;
   /** Apply listen list to the node (`--setgrc`). Empty list clears. */
-  onApplyListen: (ids: readonly number[]) => Promise<void>;
+  onApplyListen: (ids: readonly number[]) => Promise<boolean>;
   /** Toggle `--nomsgall` when Serial/BLE is available. */
   onNomsgallChange?: (value: 'on' | 'off') => Promise<void>;
   /** Also open the group as a chat pill (local). */
@@ -42,15 +42,17 @@ export default function MeshComGrcEditor({
   const slotsKey = slots.join(';');
   const [draftTexts, setDraftTexts] = useState<string[]>(() => padMeshcomGrcSlotTexts(slots));
   const [syncedSlotsKey, setSyncedSlotsKey] = useState(slotsKey);
+  const [slotsDirty, setSlotsDirty] = useState(false);
   const [customId, setCustomId] = useState('');
   const [query, setQuery] = useState('');
   const [localBusy, setLocalBusy] = useState(false);
   const working = busy || localBusy;
 
-  // Adjust draft when the device snapshot changes (React “store info from props” pattern).
   if (slotsKey !== syncedSlotsKey) {
     setSyncedSlotsKey(slotsKey);
-    setDraftTexts(padMeshcomGrcSlotTexts(slots));
+    if (!slotsDirty) {
+      setDraftTexts(padMeshcomGrcSlotTexts(slots));
+    }
   }
 
   const searchHits = useMemo(() => searchMeshcomGrcGroups(query).slice(0, 24), [query]);
@@ -61,6 +63,7 @@ export default function MeshComGrcEditor({
   );
 
   const setSlot = useCallback((index: number, raw: string) => {
+    setSlotsDirty(true);
     setDraftTexts((prev) => {
       const next = [...prev];
       next[index] = raw;
@@ -70,14 +73,17 @@ export default function MeshComGrcEditor({
 
   const addId = useCallback(
     (id: number) => {
+      let added = false;
       setDraftTexts((prev) => {
         if (prev.some((text) => text.trim() === String(id))) return prev;
         const empty = prev.findIndex((text) => !text.trim());
         if (empty < 0) return prev;
         const next = [...prev];
         next[empty] = String(id);
+        added = true;
         return next;
       });
+      if (added) setSlotsDirty(true);
       onOpenInChat?.(id);
     },
     [onOpenInChat],
@@ -86,17 +92,21 @@ export default function MeshComGrcEditor({
   const apply = useCallback(async () => {
     setLocalBusy(true);
     try {
-      await onApplyListen(compactMeshcomGrcDraftSlots(draftTexts));
+      const ok = await onApplyListen(compactMeshcomGrcDraftSlots(draftTexts));
+      if (ok) setSlotsDirty(false);
     } finally {
       setLocalBusy(false);
     }
   }, [draftTexts, onApplyListen]);
 
   const clearAll = useCallback(async () => {
-    setDraftTexts(padMeshcomGrcSlotTexts([]));
     setLocalBusy(true);
     try {
-      await onApplyListen([]);
+      const ok = await onApplyListen([]);
+      if (ok) {
+        setSlotsDirty(false);
+        setDraftTexts(padMeshcomGrcSlotTexts([]));
+      }
     } finally {
       setLocalBusy(false);
     }

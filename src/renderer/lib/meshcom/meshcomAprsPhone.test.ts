@@ -63,25 +63,47 @@ describe('parseMeshcomAprsPhoneFrame', () => {
     });
   });
 
-  it('parses ACK frames', () => {
+  it('parses LoRa wire relay ACK frames (12 B)', () => {
     const frame = new Uint8Array([
-      0x41, // A
+      0x41,
       0x01,
       0x00,
       0x00,
-      0x00, // msg id
-      0x05, // flags
+      0x00, // frame id
+      0x85, // 0x80 | hops
       0x78,
       0x56,
       0x34,
-      0x12, // ack msg id LE
-      0x01, // gateway ack
+      0x12, // acked msg id LE
+      0x01,
       0x00,
     ]);
     expect(parseMeshcomAprsPhoneFrame(frame)).toMatchObject({
       kind: 'ack',
       ackMsgId: 0x12345678,
       ackType: 1,
+    });
+  });
+
+  it('parses BLE phone ACK frames (`buildAckPhoneFrame`)', () => {
+    const callsign = 'OE1ABC-1';
+    const id = 0x00abcd42;
+    const frame = new Uint8Array(7 + callsign.length);
+    frame[0] = 0x41;
+    frame[1] = id & 0xff;
+    frame[2] = (id >> 8) & 0xff;
+    frame[3] = (id >> 16) & 0xff;
+    frame[4] = (id >> 24) & 0xff;
+    frame[5] = 0x02;
+    frame[6] = callsign.length;
+    for (let i = 0; i < callsign.length; i++) {
+      frame[7 + i] = callsign.charCodeAt(i);
+    }
+    expect(parseMeshcomAprsPhoneFrame(frame)).toMatchObject({
+      kind: 'ack',
+      ackMsgId: id,
+      ackType: 0x02,
+      attributionCall: callsign,
     });
   });
 });

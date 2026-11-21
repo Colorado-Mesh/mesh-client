@@ -1,9 +1,10 @@
 {
   "name": "mesh-client",
   "version": "6.10.0",
-  "description": "Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.",
+  "description": "Cross-platform Electron desktop client for Meshtastic, MeshCore, Reticulum, and MeshCom on macOS, Linux, and Windows with BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.",
   "keywords": [
     "meshtastic",
+    "meshcom",
     "mesh-network",
     "bluetooth",
     "mqtt",

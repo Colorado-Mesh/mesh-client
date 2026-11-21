@@ -416,6 +416,8 @@ export interface MeshtasticRoutingAckEvent {
    * mark delivery proven for a different peer.
    */
   from?: number;
+  /** BLE phone 0x41 attribution appendix (`ack_attribution.h`), when present. */
+  attributionCall?: string;
 }
 
 export type DomainEvent =

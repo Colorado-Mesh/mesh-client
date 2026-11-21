@@ -130,9 +130,10 @@ export default function MeshComDeviceCommandsSection({
       const arg = formatMeshcomGrcListenList(ids);
       const line = arg ? `--setgrc ${arg}` : '--setgrc';
       const ok = await sendNow(line);
-      if (!ok) return;
+      if (!ok) return false;
       setArgById((prev) => ({ ...prev, setgrc: arg }));
       void commands.refreshSettings();
+      return true;
     },
     [commands, sendNow],
   );

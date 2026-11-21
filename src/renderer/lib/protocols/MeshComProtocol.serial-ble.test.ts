@@ -19,6 +19,7 @@ import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
 import { kissSlipEncode } from '../meshcom/kissSlip';
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
 import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
+import { composeMeshcomFirmwareMsgId } from '../meshcom/meshcomFwMsgId';
 import { MESHCOM_KISS_TYPE_TX_RESULT, MeshcomKissSession } from '../meshcom/meshcomKissCodec';
 import type { MeshComConnection } from './meshcom/MeshComTransport';
 import { type MeshComDeviceHandle, meshcomProtocol } from './MeshComProtocol';
@@ -60,6 +61,8 @@ function makeHandle(
     callsignByNodeId: new Map(),
     kissSession: null,
     nextMsgNumber: 1,
+    firmwareMsgSeq: 1,
+    firmwareGwIdPrefix: null,
     kissTxWaiters: new Map(),
     deviceSettings: emptyMeshcomDeviceSettingsAccum(),
     deviceSettingsWaiters: [],
@@ -409,6 +412,31 @@ describe('MeshComProtocol serial/BLE', () => {
     conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_TX_RESULT, body));
 
     await expect(pending).resolves.toEqual({ packetId: 1 });
+    expect(handle.kissTxWaiters.size).toBe(0);
+    unsub();
+  });
+
+  it('TCP sendMessage returns firmware RF id when TX_RESULT mid differs from local msgNumber', async () => {
+    const { conn, writes } = mockConnection('tcp');
+    const handle = makeHandle('tcp', conn);
+    handle.kissSession = new MeshcomKissSession();
+    const unsub = meshcomProtocol.subscribe(handle, () => undefined);
+
+    const pending = meshcomProtocol.sendMessage(handle, { text: 'via kiss', channelIndex: 0 });
+    expect(writes).toHaveLength(1);
+    expect(handle.kissTxWaiters.has(1)).toBe(true);
+
+    const firmwareMid = composeMeshcomFirmwareMsgId(0x0a0b0c, 1);
+    const body = new Uint8Array([
+      0x01,
+      firmwareMid & 0xff,
+      (firmwareMid >> 8) & 0xff,
+      (firmwareMid >> 16) & 0xff,
+      (firmwareMid >> 24) & 0xff,
+    ]);
+    conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_TX_RESULT, body));
+
+    await expect(pending).resolves.toEqual({ packetId: firmwareMid });
     expect(handle.kissTxWaiters.size).toBe(0);
     unsub();
   });

@@ -24,6 +24,7 @@ import { isUntaggedPlaceholderTag, SAFE_RELEASE_NAME_RE } from './github-release
  *
  * @param {unknown} eventTag
  * @param {unknown} eventName
+ * @param {{ fromReleasePublished?: boolean }} [opts]
  * @returns {{
  *   ok: true,
  *   tag: string,
@@ -34,24 +35,26 @@ import { isUntaggedPlaceholderTag, SAFE_RELEASE_NAME_RE } from './github-release
  *   message: string,
  * }}
  */
-export function resolveRepairReleaseTag(eventTag, eventName) {
+export function resolveRepairReleaseTag(eventTag, eventName, opts = {}) {
+  const fromReleasePublished = opts.fromReleasePublished === true;
   const tag = typeof eventTag === 'string' ? eventTag : '';
   if (isUntaggedPlaceholderTag(tag)) {
     const name = typeof eventName === 'string' ? eventName : '';
     if (SAFE_RELEASE_NAME_RE.test(name)) {
       return { ok: true, tag: `v${name}`, fromUntagged: tag };
     }
-    return {
-      ok: false,
-      message: `Published release has untagged tag_name and non-semver name=${name}`,
-    };
+    const message = `Published release has untagged tag_name and non-semver name=${name}`;
+    if (fromReleasePublished) {
+      return { ok: false, skip: true, message };
+    }
+    return { ok: false, message };
   }
   if (!SAFE_RELEASE_TAG_RE.test(tag)) {
-    return {
-      ok: false,
-      skip: true,
-      message: `Skipping non-semver release tag ${tag}`,
-    };
+    const message = `Skipping non-semver release tag ${tag}`;
+    if (fromReleasePublished) {
+      return { ok: false, skip: true, message };
+    }
+    return { ok: false, message };
   }
   return { ok: true, tag };
 }
@@ -106,7 +109,9 @@ export async function repairPublishedReleaseTag(tag, token, fallbackToken) {
  */
 export function resolveRepairTagFromArgv(argv, env) {
   if (argv.includes('--from-event')) {
-    const resolved = resolveRepairReleaseTag(env.EVENT_TAG, env.EVENT_NAME);
+    const resolved = resolveRepairReleaseTag(env.EVENT_TAG, env.EVENT_NAME, {
+      fromReleasePublished: true,
+    });
     if (!resolved.ok) {
       return resolved;
     }

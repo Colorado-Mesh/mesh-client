@@ -19,6 +19,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
+import { meshcomTransportSupportsDmDeliveryAck } from './meshcom/meshcomDmDeliveryAck';
 import { scheduleMeshcomDmAckTimeout } from './meshcom/meshcomRoutingAckSideEffects';
 import {
   clearHeardRepeatWindowIfMessage,
@@ -581,14 +582,26 @@ export function sendChatOnIdentity(
           // ALL / GRC: treat wire accept as delivered. DMs wait for OTA ACK
           // (meshcomRoutingAckSideEffects) with a FAQ-aligned timeout.
           if (isMeshcomDm) {
-            persistMeshcomOutboundRow(
-              identityId,
-              { ...record, id: resolvedId, status: 'sending' },
-              myNodeNum,
-              'sending',
-              resolvedId,
-            );
-            scheduleMeshcomDmAckTimeout(identityId, resolvedId);
+            const meshcomTransport = getConnection(identityId)?.connectionType;
+            if (meshcomTransportSupportsDmDeliveryAck(meshcomTransport)) {
+              persistMeshcomOutboundRow(
+                identityId,
+                { ...record, id: resolvedId, status: 'sending' },
+                myNodeNum,
+                'sending',
+                resolvedId,
+              );
+              scheduleMeshcomDmAckTimeout(identityId, resolvedId);
+            } else {
+              updateMessageStatus(identityId, resolvedId, 'acked');
+              persistMeshcomOutboundRow(
+                identityId,
+                { ...record, id: resolvedId },
+                myNodeNum,
+                'acked',
+                resolvedId,
+              );
+            }
           } else {
             updateMessageStatus(identityId, resolvedId, 'acked');
             persistMeshcomOutboundRow(

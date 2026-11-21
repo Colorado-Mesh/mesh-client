@@ -21,6 +21,12 @@ import {
   parseMeshcomExtUdp,
   serializeMeshcomExtUdp,
 } from '../meshcom/meshcomExtUdpCodec';
+import {
+  composeMeshcomFirmwareMsgId,
+  meshcomGwPrefixFromId,
+  meshcomMsgIdAdvance,
+  meshcomMsgSeqFromId,
+} from '../meshcom/meshcomFwMsgId';
 import { meshcomFirmwareDisplay, meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import {
   buildMeshcomKissTxMessage,
@@ -54,13 +60,14 @@ function settleKissTxWaiter(
   msgId: number,
   outcome: 'ack' | 'nack',
   statusByte: number,
+  firmwareMsgId?: number,
 ): void {
   const waiter = handle.kissTxWaiters.get(msgId);
   if (!waiter) return;
   handle.kissTxWaiters.delete(msgId);
   clearTimeout(waiter.timer);
   if (outcome === 'ack') {
-    waiter.resolve();
+    waiter.resolve(firmwareMsgId);
     return;
   }
   waiter.reject(new Error(`KISS TX rejected status=0x${statusByte.toString(16)}`));
@@ -84,15 +91,61 @@ export interface MeshComDeviceHandle {
   callsignByNodeId: Map<number, string>;
   kissSession: MeshcomKissSession | null;
   nextMsgNumber: number;
+  /** Low 10-bit seq (`meshcom_settings.node_msgid`); advanced on each RF inject. */
+  firmwareMsgSeq: number;
+  /** High bits of outbound msg_id when learned from traffic (`_GW_ID & 0x3FFFFF`). */
+  firmwareGwIdPrefix: number | null;
   /** Pending KISS TX_RESULT waiters keyed by msg number (TCP only). */
   kissTxWaiters: Map<
     number,
-    { resolve: () => void; reject: (err: Error) => void; timer: ReturnType<typeof setTimeout> }
+    {
+      resolve: (firmwareMsgId?: number) => void;
+      reject: (err: Error) => void;
+      timer: ReturnType<typeof setTimeout>;
+    }
   >;
   /** BLE `{HELLO}` / `--info` settings accumulator (mutated by subscribe). */
   deviceSettings: MeshcomDeviceSettingsAccum;
   /** Resolvers waiting for BLE `CONFFIN` (or serial collect finish). */
   deviceSettingsWaiters: (() => void)[];
+}
+
+function learnMeshcomGwPrefixFromMsgId(handle: MeshComDeviceHandle, msgId: number): void {
+  if (!Number.isFinite(msgId) || msgId <= 0) return;
+  const prefix = meshcomGwPrefixFromId(msgId);
+  if (prefix !== 0) handle.firmwareGwIdPrefix = prefix;
+}
+
+/** Advance allocation only from authoritative local TX observation (never peer ACKs). */
+function syncMeshcomOutboundSeqFromObserved(handle: MeshComDeviceHandle, msgId: number): void {
+  if (!Number.isFinite(msgId) || msgId <= 0) return;
+  const seq = meshcomMsgSeqFromId(msgId);
+  if (seq > 0 && seq >= handle.firmwareMsgSeq) {
+    handle.firmwareMsgSeq = meshcomMsgIdAdvance(seq);
+  }
+}
+
+function noteLocalMeshcomFirmwareMsgId(handle: MeshComDeviceHandle, msgId: number): void {
+  learnMeshcomGwPrefixFromMsgId(handle, msgId);
+  syncMeshcomOutboundSeqFromObserved(handle, msgId);
+}
+
+function isLocalMeshcomSource(handle: MeshComDeviceHandle, sourceCall: string): boolean {
+  const op = normalizeMeshcomCallsign(handle.operatorCallsign);
+  const src = normalizeMeshcomCallsign(sourceCall);
+  return op.length > 0 && src === op;
+}
+
+function allocateMeshcomOutboundPacketId(handle: MeshComDeviceHandle): number {
+  const seq = handle.firmwareMsgSeq;
+  if (handle.firmwareGwIdPrefix != null) {
+    return composeMeshcomFirmwareMsgId(handle.firmwareGwIdPrefix, seq);
+  }
+  return seq;
+}
+
+function advanceMeshcomOutboundMsgSeq(handle: MeshComDeviceHandle): void {
+  handle.firmwareMsgSeq = meshcomMsgIdAdvance(handle.firmwareMsgSeq);
 }
 
 function rememberCallsign(handle: MeshComDeviceHandle, callsign: string): number {
@@ -320,6 +373,8 @@ function emitPhoneAprsEvents(
         level: 0,
       },
     });
+    const attr = parsed.attributionCall?.trim();
+    const from = attr != null && attr.length > 0 ? rememberCallsign(handle, attr) : undefined;
     emit({
       type: 'meshtastic_routing_ack',
       payload: {
@@ -327,6 +382,8 @@ function emitPhoneAprsEvents(
         // Phone 0x41 has no authenticated sender — never claim Meshtastic VALID.
         ackProofStatus: 0,
         isAck: true,
+        ...(from != null ? { from } : {}),
+        ...(attr ? { attributionCall: attr } : {}),
       },
     });
     return;
@@ -357,6 +414,9 @@ function emitPhoneAprsEvents(
         hopCount: parsed.hopCount,
       },
     });
+    if (isLocalMeshcomSource(handle, parsed.sourceCall)) {
+      noteLocalMeshcomFirmwareMsgId(handle, parsed.msgId);
+    }
     return;
   }
   if (parsed.kind === 'position') {
@@ -611,16 +671,16 @@ function emitKissEvents(
       const { status, msgId } = event.result;
       // Firmware: 0x01 = accepted (+ msg_id); other codes = reject / fail (msg_id often omitted).
       const isAck = status === 0x01;
-      const settleId =
-        msgId != null && Number.isFinite(msgId)
-          ? msgId >>> 0
-          : handle.kissTxWaiters.size === 1
-            ? handle.kissTxWaiters.keys().next().value
-            : undefined;
-      if (settleId != null) {
+      const waiterKeys = [...handle.kissTxWaiters.keys()];
+      const settleKey = waiterKeys.length === 1 ? waiterKeys[0] : undefined;
+      if (settleKey != null) {
         // Local TX accept/reject only — not peer delivery. Do not emit routing_ack
         // (that would settle DMs without an authenticated peer receipt).
-        settleKissTxWaiter(handle, settleId, isAck ? 'ack' : 'nack', status);
+        if (isAck && msgId != null && msgId > 0) {
+          learnMeshcomGwPrefixFromMsgId(handle, msgId);
+          syncMeshcomOutboundSeqFromObserved(handle, msgId);
+        }
+        settleKissTxWaiter(handle, settleKey, isAck ? 'ack' : 'nack', status, msgId);
       }
       emit({
         type: 'device_log',
@@ -745,6 +805,8 @@ export const meshcomProtocol: Protocol = {
       callsignByNodeId: new Map(),
       kissSession: transportParams.transport === 'tcp' ? new MeshcomKissSession() : null,
       nextMsgNumber: 1,
+      firmwareMsgSeq: 1,
+      firmwareGwIdPrefix: null,
       kissTxWaiters: new Map(),
       deviceSettings: emptyMeshcomDeviceSettingsAccum(),
       deviceSettingsWaiters: [],
@@ -846,8 +908,16 @@ export const meshcomProtocol: Protocol = {
 
     if (device.transport === 'udp') {
       const json = serializeMeshcomExtUdp({ type: 'msg', dst, msg: text });
-      await device.connection.write(new TextEncoder().encode(json));
-      return { packetId: device.nextMsgNumber++ };
+      const seq = device.firmwareMsgSeq;
+      advanceMeshcomOutboundMsgSeq(device);
+      const packetId = allocateMeshcomOutboundPacketId({ ...device, firmwareMsgSeq: seq });
+      try {
+        await device.connection.write(new TextEncoder().encode(json));
+      } catch (err) {
+        device.firmwareMsgSeq = seq;
+        throw err;
+      }
+      return { packetId };
     }
 
     if (device.transport === 'tcp') {
@@ -862,16 +932,26 @@ export const meshcomProtocol: Protocol = {
         text,
         msgNumber,
       });
-      const ackPromise = new Promise<void>((resolve, reject) => {
+      const ackPromise = new Promise<number>((resolve, reject) => {
         const timer = setTimeout(() => {
           device.kissTxWaiters.delete(msgNumber);
           reject(new Error('KISS TX timeout'));
         }, MESHCOM_KISS_TX_ACK_TIMEOUT_MS);
-        device.kissTxWaiters.set(msgNumber, { resolve, reject, timer });
+        device.kissTxWaiters.set(msgNumber, {
+          resolve: (firmwareMsgId?: number) => {
+            resolve(firmwareMsgId != null && firmwareMsgId > 0 ? firmwareMsgId >>> 0 : msgNumber);
+          },
+          reject,
+          timer,
+        });
       });
       try {
         await device.connection.write(frame);
-        await ackPromise;
+        const packetId = await ackPromise;
+        if (packetId > 0) {
+          noteLocalMeshcomFirmwareMsgId(device, packetId);
+        }
+        return { packetId };
       } catch (err) {
         const pending = device.kissTxWaiters.get(msgNumber);
         if (pending) {
@@ -880,20 +960,37 @@ export const meshcomProtocol: Protocol = {
         }
         throw err;
       }
-      return { packetId: msgNumber };
     }
 
     if (device.transport === 'serial') {
-      await device.connection.write(meshcomSerialSendText(dst, text));
-      return { packetId: device.nextMsgNumber++ };
+      const seq = device.firmwareMsgSeq;
+      advanceMeshcomOutboundMsgSeq(device);
+      const packetId = allocateMeshcomOutboundPacketId({ ...device, firmwareMsgSeq: seq });
+      try {
+        await device.connection.write(meshcomSerialSendText(dst, text));
+      } catch (err) {
+        device.firmwareMsgSeq = seq;
+        throw err;
+      }
+      return { packetId };
     }
 
     // Remaining MeshCom transport is BLE (udp/tcp/serial handled above).
+    // ICSSW HELLO/settings carry no authoritative outbound msg_id — seed seq=1 until
+    // local TX_RESULT or echoed own traffic is observed (`noteLocalMeshcomFirmwareMsgId`).
+    const seq = device.firmwareMsgSeq;
+    advanceMeshcomOutboundMsgSeq(device);
+    const packetId = allocateMeshcomOutboundPacketId({ ...device, firmwareMsgSeq: seq });
     const line = new TextDecoder('utf-8', { fatal: false }).decode(
       meshcomSerialSendText(dst, text),
     );
-    await device.connection.write(encodeMeshcomBleCommand(line.replace(/\r?\n$/, '')));
-    return { packetId: device.nextMsgNumber++ };
+    try {
+      await device.connection.write(encodeMeshcomBleCommand(line.replace(/\r?\n$/, '')));
+    } catch (err) {
+      device.firmwareMsgSeq = seq;
+      throw err;
+    }
+    return { packetId };
   },
 
   async sendPosition(): Promise<void> {

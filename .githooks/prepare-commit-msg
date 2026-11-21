@@ -1,0 +1,6 @@
+#!/bin/sh
+# Strip Co-authored-by trailers — cloud/editor integrations may add them; this repo rejects them on PRs.
+case "$2" in
+  merge | squash | commit) ;;
+  *) [ -f "$1" ] && sed -i '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1" ;;
+esac
