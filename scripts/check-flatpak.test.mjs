@@ -83,10 +83,13 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
       },
     };
     const violations = flatpakWorkflowTestBuildContractViolations(doc, 'fake.yaml');
-    expect(violations.map((v) => v.message).join('\n')).toMatch(/Build Flatpak \(no release\)/);
-    expect(violations.map((v) => v.message).join('\n')).toMatch(/write-flatpak-ci-build-info/);
-    expect(violations.map((v) => v.message).join('\n')).toMatch(/upload-artifact: false/);
-    expect(violations.map((v) => v.message).join('\n')).toMatch(/rename-test-build-artifacts/);
+    const joined = violations.map((v) => v.message).join('\n');
+    expect(joined).toMatch(/Build Flatpak \(no release\)/);
+    expect(joined).toMatch(/write-flatpak-ci-build-info/);
+    expect(joined).toMatch(/upload-artifact: false/);
+    expect(joined).toMatch(/rename-test-build-artifacts/);
+    expect(joined).toMatch(/arch-suffix the bundle basename/);
+    expect(joined).toMatch(/archive: false for direct UI download/);
   });
 });
 
