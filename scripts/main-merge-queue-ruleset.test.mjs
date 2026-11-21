@@ -41,6 +41,14 @@ describe('main-merge-queue.json contract', () => {
     }
   });
 
+  it('requires no CodeQL Analyze check, since Analyze (swift) skips PRs without Swift changes', () => {
+    // codeql.yaml drops the Swift matrix row when a PR changes no Swift inputs, so a
+    // required Analyze (swift) would never report on those PRs (issue #1519).
+    const status = ruleset.rules.find((r) => r.type === 'required_status_checks');
+    const contexts = (status?.parameters?.required_status_checks ?? []).map((c) => c.context);
+    expect(contexts.filter((context) => context.startsWith('Analyze ('))).toEqual([]);
+  });
+
   it('keeps admin-only bypass (no Actions integration bypass)', () => {
     expect(ruleset.bypass_actors).toEqual([
       { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' },
