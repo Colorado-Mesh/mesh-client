@@ -401,7 +401,8 @@ pub struct BtleplugBackend {
     scan_needs_stop: Arc<AtomicBool>,
     open: Mutex<HashMap<String, OpenConn>>,
     /// RSSI from the most recent advertisement / scan, keyed by normalized connect address.
-    last_seen_rssi: Mutex<HashMap<String, i16>>,
+    /// `std` mutex: sync helpers must not silently drop samples via `try_lock`.
+    last_seen_rssi: std::sync::Mutex<HashMap<String, i16>>,
 }
 
 impl BtleplugBackend {
@@ -424,7 +425,7 @@ impl BtleplugBackend {
             scan_lock: Arc::new(Mutex::new(())),
             scan_needs_stop: Arc::new(AtomicBool::new(false)),
             open: Mutex::new(HashMap::new()),
-            last_seen_rssi: Mutex::new(HashMap::new()),
+            last_seen_rssi: std::sync::Mutex::new(HashMap::new()),
         })
     }
 
@@ -641,22 +642,53 @@ impl BtleplugBackend {
     }
 
     fn remember_scanned_rssi(&self, devices: &[ScannedDevice]) {
-        let Ok(mut map) = self.last_seen_rssi.try_lock() else {
-            return;
-        };
+        let mut map = self
+            .last_seen_rssi
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for d in devices {
-            if let Some(rssi) = d.rssi {
-                map.insert(d.address.to_ascii_lowercase(), rssi);
+            let Some(rssi) = d.rssi else { continue };
+            // Match connect-time `normalize_address` keys (MAC punctuation stripped).
+            if let Ok(norm) = normalize_address(&d.address) {
+                map.insert(norm, rssi);
+            }
+            let lower = d.address.to_ascii_lowercase();
+            map.insert(lower.clone(), rssi);
+            let compact: String = lower.chars().filter(char::is_ascii_hexdigit).collect();
+            if compact.len() >= 12 {
+                map.insert(compact, rssi);
             }
         }
     }
 
     fn cached_rssi_for(&self, address: &str) -> Option<i16> {
+        let map = self
+            .last_seen_rssi
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let key = address.to_ascii_lowercase();
-        self.last_seen_rssi
-            .try_lock()
+        if let Some(rssi) = map.get(&key).copied() {
+            return Some(rssi);
+        }
+        if let Some(rssi) = normalize_address(address)
             .ok()
-            .and_then(|map| map.get(&key).copied())
+            .and_then(|norm| map.get(&norm).copied())
+        {
+            return Some(rssi);
+        }
+        let compact: String = key.chars().filter(char::is_ascii_hexdigit).collect();
+        if compact.len() >= 12 {
+            if let Some(rssi) = map.get(&compact).copied() {
+                return Some(rssi);
+            }
+            for (map_key, rssi) in map.iter() {
+                let map_compact: String = map_key.chars().filter(char::is_ascii_hexdigit).collect();
+                if map_compact == compact {
+                    return Some(*rssi);
+                }
+            }
+        }
+        None
     }
 }
 

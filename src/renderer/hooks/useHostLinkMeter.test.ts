@@ -217,6 +217,36 @@ describe('useHostLinkMeter', () => {
     expect(result.current.rssi).toBeNull();
   });
 
+  it('accepts MeshCom GATT RSSI on the meshcom session (not meshtastic)', async () => {
+    let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {
+      rssiCb = cb;
+      return () => {};
+    });
+    const { result } = renderHook(() =>
+      useHostLinkMeter({
+        protocol: 'meshcom',
+        connectionType: 'ble',
+        status: 'configured',
+        hostAddress: null,
+        platform: 'darwin',
+        bleSeedRssi: -88,
+      }),
+    );
+    expect(result.current.kind).toBe('ble-rssi');
+    expect(result.current.rssi).toBe(-88);
+    act(() => {
+      rssiCb?.({ sessionId: 'meshtastic', rssi: -40 });
+    });
+    expect(result.current.rssi).toBe(-88);
+    act(() => {
+      rssiCb?.({ sessionId: 'meshcom', rssi: -61 });
+    });
+    await waitFor(() => {
+      expect(result.current.rssi).toBe(-61);
+    });
+  });
+
   it('hides meter when disconnected', () => {
     const { result } = renderHook(() =>
       useHostLinkMeter({

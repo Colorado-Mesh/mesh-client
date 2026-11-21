@@ -1118,8 +1118,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('gatt:issue', handler);
     return () => ipcRenderer.off('gatt:issue', handler);
   },
-  startGattScanning: (sessionId: GattBleSessionId) =>
-    ipcRenderer.invoke('gatt:start-scan', sessionId),
+  startGattScanning: (sessionId: GattBleSessionId, opts?: { timeoutSecs?: number }) =>
+    ipcRenderer.invoke('gatt:start-scan', sessionId, opts),
   stopGattScanning: (sessionId: GattBleSessionId): Promise<void> =>
     ipcRenderer.invoke('gatt:stop-scan', sessionId),
   connectGatt: (sessionId: GattBleSessionId, peripheralId: string): Promise<GattBleConnectResult> =>

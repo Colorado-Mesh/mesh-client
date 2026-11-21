@@ -53,6 +53,8 @@ interface LiveSession {
   sidecarSessionId: string;
   profile: GattSessionProfile;
   address: string;
+  /** Scan-time RSSI captured at connect — CoreBluetooth often has no live GATT RSSI. */
+  seedRssi: number | null;
   ws: WebSocket | null;
   rssiPoll: ReturnType<typeof setInterval> | null;
 }
@@ -145,6 +147,8 @@ export class GattSidecarProxy extends EventEmitter {
   private readonly sessions = new Map<GattSessionProfile, LiveSession>();
   private readonly connectAttempts = new Map<GattSessionProfile, symbol>();
   private readonly reservations = new Map<symbol, ConnectionReservation>();
+  /** Scan-time RSSI by deviceId/address — CoreBluetooth often has no live RSSI after GATT open. */
+  private readonly lastScanRssiById = new Map<string, number>();
   private ensureFn: (() => Promise<number>) | null = null;
   private connectionGuard: ((sessionId: GattSessionProfile, address: string) => void) | null = null;
   /** While true, LoRa GATT scan/connect are blocked so RNode owns CoreBluetooth alone. */
@@ -152,6 +156,31 @@ export class GattSidecarProxy extends EventEmitter {
   private rnodeBondRecoveryExclusiveTimer: ReturnType<typeof setTimeout> | null = null;
   /** App quit latch: remote cleanup failures release locally instead of probing/retrying. */
   private quitting = false;
+
+  private rememberScanRssi(
+    deviceId: string,
+    address: string | null | undefined,
+    rssi: number,
+  ): void {
+    if (!Number.isFinite(rssi)) return;
+    for (const id of [deviceId, address]) {
+      if (typeof id !== 'string' || !id.trim()) continue;
+      const key = id.trim().toLowerCase();
+      this.lastScanRssiById.set(key, rssi);
+      const compact = key.replace(/[^0-9a-f]/g, '');
+      if (compact.length >= 12 && compact !== key) this.lastScanRssiById.set(compact, rssi);
+    }
+  }
+
+  private scanRssiFor(address: string): number | null {
+    const key = address.trim().toLowerCase();
+    if (!key) return null;
+    return (
+      this.lastScanRssiById.get(key) ??
+      this.lastScanRssiById.get(key.replace(/[^0-9a-f]/g, '')) ??
+      null
+    );
+  }
 
   setQuitting(): void {
     this.quitting = true;
@@ -313,13 +342,17 @@ export class GattSidecarProxy extends EventEmitter {
     this.emit('issue', { sessionId, code: safeCode, message: safeMessage });
   }
 
-  async startScan(sessionId: GattSessionProfile): Promise<GattStartScanResult> {
+  async startScan(
+    sessionId: GattSessionProfile,
+    opts?: { timeoutSecs?: number },
+  ): Promise<GattStartScanResult> {
     if (this.rnodeBondRecoveryExclusive) {
       return { ok: false, code: 'scan_busy', owner: 'rnode_bond_recovery' };
     }
     const mode = gattWireProfileFromSession(sessionId);
+    const timeoutSecs = Math.max(1, Math.min(30, Math.round(opts?.timeoutSecs ?? 8)));
     const { status, body } = await this.jsonFetch(
-      `/api/v1/gatt/scan?mode=${mode}&timeout_secs=8`,
+      `/api/v1/gatt/scan?mode=${mode}&timeout_secs=${timeoutSecs}`,
       undefined,
       { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS },
     );
@@ -342,12 +375,14 @@ export class GattSidecarProxy extends EventEmitter {
       const d = raw as Record<string, unknown>;
       const address = typeof d.address === 'string' ? d.address : '';
       if (!address) continue;
+      const rssi = typeof d.rssi === 'number' ? d.rssi : null;
       const device: GattDiscoveredDevice = {
         deviceId: address,
         deviceName: typeof d.name === 'string' && d.name ? d.name : address,
-        rssi: typeof d.rssi === 'number' ? d.rssi : null,
+        rssi,
         address,
       };
+      if (rssi != null) this.rememberScanRssi(address, address, rssi);
       this.emit('deviceDiscovered', device);
     }
     // Do not synthesize adapterState here — every reconnect scan was resetting MeshCore's
@@ -423,6 +458,7 @@ export class GattSidecarProxy extends EventEmitter {
       const authToken = reservation.authToken;
       if (!authToken) throw new Error('gatt sidecar authentication is unavailable');
       const { ws, ready } = this.openSessionWs(port, authToken, sidecarSessionId, sessionId);
+      const seedRssi = this.scanRssiFor(peripheralId);
       this.sessions.set(sessionId, {
         port,
         authToken,
@@ -430,11 +466,15 @@ export class GattSidecarProxy extends EventEmitter {
         sidecarSessionId,
         profile: sessionId,
         address: peripheralId,
+        seedRssi,
         ws,
         rssiPoll: null,
       });
       await ready;
       if (!isCurrent() || this.sessions.get(sessionId)?.ws !== ws) return cancelled;
+      if (seedRssi != null) {
+        this.emit('linkRssi', { sessionId, rssi: seedRssi });
+      }
       this.startRssiPoll(sessionId);
       this.emit('connected', { sessionId });
       return { ok: true };
@@ -778,11 +818,15 @@ export class GattSidecarProxy extends EventEmitter {
         undefined,
         { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port, authToken: live.authToken },
       );
-      return typeof body.rssi === 'number' ? body.rssi : null;
+      if (typeof body.rssi === 'number') {
+        live.seedRssi = body.rssi;
+        return body.rssi;
+      }
     } catch {
-      // catch-no-log-ok: RSSI is best-effort; missing value is null
-      return null;
+      // catch-no-log-ok: fall through to scan-time seed
     }
+    // CoreBluetooth often omits live RSSI on a connected peripheral — use last scan sample.
+    return this.scanRssiFor(live.address) ?? live.seedRssi;
   }
 
   /** Disconnect all LoRa GATT sessions (app quit). */

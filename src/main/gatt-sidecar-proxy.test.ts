@@ -446,6 +446,53 @@ describe('GattSidecarProxy', () => {
     vi.useRealTimers();
   });
 
+  it('connect emits scan-seeded linkRssi when live GATT RSSI is unavailable', async () => {
+    vi.useFakeTimers();
+    const linkRssi = vi.fn();
+    proxy.on('linkRssi', linkRssi);
+    fetchMock.mockImplementation((url: unknown) => {
+      const href = typeof url === 'string' ? url : '';
+      if (href.includes('/api/v1/gatt/scan')) {
+        return Promise.resolve({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              ok: true,
+              devices: [
+                {
+                  address: 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890',
+                  name: 'MeshCom',
+                  rssi: -61,
+                },
+              ],
+            }),
+        });
+      }
+      if (href.includes('/rssi')) {
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve({ ok: false, error: 'rssi unavailable' }),
+        });
+      }
+      return Promise.resolve({
+        status: 200,
+        json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-meshcom-seed' }),
+      });
+    });
+
+    await expect(proxy.startScan('meshcom')).resolves.toEqual({ ok: true });
+    await expect(proxy.connect('meshcom', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')).resolves.toEqual(
+      { ok: true },
+    );
+
+    expect(linkRssi).toHaveBeenCalledWith({ sessionId: 'meshcom', rssi: -61 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(linkRssi).toHaveBeenCalledWith({ sessionId: 'meshcom', rssi: -61 });
+
+    await proxy.disconnect('meshcom');
+    vi.useRealTimers();
+  });
+
   it('disconnect clears local session before sidecar DELETE completes', async () => {
     fetchMock.mockImplementation((url: unknown, init?: RequestInit) => {
       if (init?.method === 'DELETE') {

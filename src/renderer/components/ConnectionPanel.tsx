@@ -217,6 +217,8 @@ interface LastConnection {
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
   bleMac?: string;
+  /** Last known BLE host RSSI (dBm) for Connection panel seed after reconnect. */
+  bleRssi?: number;
   serialPortId?: string;
 }
 
@@ -502,21 +504,6 @@ export default function ConnectionPanel({
         : connectionType === 'tcp' || state.connectionType === 'tcp'
           ? tcpAddress
           : httpAddress;
-  const hostLinkMeter = useHostLinkMeter({
-    protocol,
-    connectionType: state.connectionType,
-    status: state.status,
-    hostAddress:
-      state.connectionType === 'tcp'
-        ? tcpAddress
-        : state.connectionType === 'http'
-          ? protocol === 'meshcore'
-            ? `${tcpHost}:${tcpPort}`
-            : httpAddress
-          : activeHostAddress,
-    platform: window.electronAPI.getPlatform() as NodeJS.Platform,
-  });
-
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
   const [meshcoreMqttSettings, setMeshcoreMqttSettings] =
@@ -1038,6 +1025,41 @@ export default function ConnectionPanel({
   const [lastConnection, setLastConnection] = useState<LastConnection | null>(() =>
     loadLastConnection(protocol),
   );
+  const bleHostSeedRssi = useMemo(() => {
+    if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) {
+      return null;
+    }
+    const id = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
+    if (id) {
+      const found = bleDevices.find((d) => d.deviceId === id);
+      if (found?.rssi != null && Number.isFinite(found.rssi)) return found.rssi;
+    }
+    const stored = lastConnection?.bleRssi;
+    return stored != null && Number.isFinite(stored) ? stored : null;
+  }, [
+    bleDevices,
+    connecting,
+    connectionType,
+    lastConnection?.bleDeviceId,
+    lastConnection?.bleRssi,
+    protocol,
+    state.connectionType,
+  ]);
+  const hostLinkMeter = useHostLinkMeter({
+    protocol,
+    connectionType: state.connectionType,
+    status: state.status,
+    hostAddress:
+      state.connectionType === 'tcp'
+        ? tcpAddress
+        : state.connectionType === 'http'
+          ? protocol === 'meshcore'
+            ? `${tcpHost}:${tcpPort}`
+            : httpAddress
+          : activeHostAddress,
+    platform: window.electronAPI.getPlatform() as NodeJS.Platform,
+    bleSeedRssi: bleHostSeedRssi,
+  });
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
@@ -1203,6 +1225,14 @@ export default function ConnectionPanel({
               cachedMac: getBleDeviceMac(bleId) ?? lastConnectionBleMacFallbackRef.current,
             });
             if (bleIdentity.isMac) conn.bleMac = bleIdentity.display;
+            const scanned = bleDevices.find((d) => d.deviceId === bleId)?.rssi;
+            const rssiSeed =
+              scanned != null && Number.isFinite(scanned)
+                ? scanned
+                : hostLinkMeter.rssi != null && Number.isFinite(hostLinkMeter.rssi)
+                  ? hostLinkMeter.rssi
+                  : prev?.bleRssi;
+            if (rssiSeed != null && Number.isFinite(rssiSeed)) conn.bleRssi = rssiSeed;
           }
         } else if (state.connectionType === 'serial') {
           // MeshCom must not inherit the shared Meshtastic/MeshCore serial key.
@@ -1250,6 +1280,40 @@ export default function ConnectionPanel({
     connectionType,
     connecting,
     protocol,
+    bleDevices,
+    hostLinkMeter.rssi,
+  ]);
+
+  // Persist live / scan BLE RSSI onto lastConnection so reconnect can seed the host meter.
+  useEffect(() => {
+    if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) return;
+    const id = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
+    if (!id) return;
+    const scanned = bleDevices.find((d) => d.deviceId === id)?.rssi;
+    const next =
+      scanned != null && Number.isFinite(scanned)
+        ? scanned
+        : hostLinkMeter.rssi != null && Number.isFinite(hostLinkMeter.rssi)
+          ? hostLinkMeter.rssi
+          : null;
+    if (next == null) return;
+    if (lastConnection?.bleRssi === next) return;
+    const updated: LastConnection = {
+      ...(lastConnection ?? { type: 'ble', bleDeviceId: id }),
+      type: 'ble',
+      bleDeviceId: id,
+      bleRssi: next,
+    };
+    saveLastConnection(protocol, updated);
+    setLastConnection(updated);
+  }, [
+    bleDevices,
+    connecting,
+    connectionType,
+    hostLinkMeter.rssi,
+    lastConnection,
+    protocol,
+    state.connectionType,
   ]);
 
   // Listen for sidecar GATT discovery events.
@@ -1744,6 +1808,24 @@ export default function ConnectionPanel({
       } else {
         lastSelectedBleAddressRef.current = getBleDeviceMac(deviceId);
       }
+      // Persist scan RSSI immediately — CoreBluetooth rarely provides live GATT RSSI, and
+      // reconnect clears bleDevices before the host meter can read the picker list.
+      {
+        const bleIdentity = resolveBlePickerIdentity({
+          deviceId,
+          address: lastSelectedBleAddressRef.current,
+          cachedMac: getBleDeviceMac(deviceId) ?? lastConnectionBleMacFallbackRef.current,
+        });
+        const selected: LastConnection = {
+          type: 'ble',
+          bleDeviceId: deviceId,
+          bleDeviceName: found?.deviceName ?? lastConnectionBleDeviceNameFallbackRef.current,
+          ...(bleIdentity.isMac ? { bleMac: bleIdentity.display } : {}),
+          ...(found?.rssi != null && Number.isFinite(found.rssi) ? { bleRssi: found.rssi } : {}),
+        };
+        saveLastConnection(protocol, selected);
+        setLastConnection(selected);
+      }
       // Store MAC address for potential re-pairing on Linux
       lastSelectedBleMacRef.current = deviceId;
       setShowBlePicker(false);
@@ -1813,6 +1895,7 @@ export default function ConnectionPanel({
       showWindowsPairStateBlocked,
       protocol,
       capabilities.hasGattBleScanning,
+      setLastConnection,
     ],
   );
 

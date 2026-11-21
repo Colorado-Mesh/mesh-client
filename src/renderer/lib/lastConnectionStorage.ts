@@ -14,6 +14,11 @@ export interface LastConnection {
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
   bleMac?: string;
+  /**
+   * Last known host↔radio BLE RSSI (dBm) from scan or GATT link meter.
+   * CoreBluetooth often has no live RSSI after connect — used to seed the Connection panel meter.
+   */
+  bleRssi?: number;
   serialPortId?: string;
 }
 

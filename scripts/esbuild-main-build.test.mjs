@@ -44,8 +44,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * the minified main past 815 KiB; budget +3 KiB.
  * MeshCom durable `chatLastRead:meshcom` (+ migration) tipped the minified main past 816 KiB
  * (~+31 B after collapsing reset rows via Object.values); budget +1 KiB.
+ * MeshCom BLE host-Signal scan-RSSI seed (proxy map + connect emit + scan timeout IPC)
+ * tipped the minified main past 817 KiB (~+0.9 KiB after helper trim); budget +1 KiB.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 817 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 818 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.

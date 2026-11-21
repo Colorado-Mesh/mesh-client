@@ -2771,7 +2771,7 @@ ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => 
   return bleCoexistenceCoordinator.getState();
 });
 
-ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
+ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown, opts?: unknown) => {
   assertIpcSender(event, 'gatt:start-scan');
   if (!isGattSessionProfile(sessionId)) {
     throw new Error('gatt:start-scan: sessionId must be meshtastic, meshcore, or meshcom');
@@ -2780,9 +2780,12 @@ ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
     console.debug('[main] gatt:start-scan: ignoring (app is quitting)');
     return { ok: true as const };
   }
+  const rawTimeout =
+    opts && typeof opts === 'object' ? (opts as { timeoutSecs?: unknown }).timeoutSecs : undefined;
+  const scanOpts = typeof rawTimeout === 'number' ? { timeoutSecs: rawTimeout } : undefined;
   try {
     return await bleCoexistenceCoordinator.withScan('gatt', () =>
-      gattSidecarProxy.startScan(sessionId),
+      gattSidecarProxy.startScan(sessionId, scanOpts),
     );
   } catch (err) {
     if (err instanceof BleScanBusyError) {

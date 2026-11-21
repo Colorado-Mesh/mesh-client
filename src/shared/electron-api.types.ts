@@ -1279,7 +1279,10 @@ export interface ElectronAPI {
     cb: (payload: { sessionId: GattBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
   onGattIssue: (cb: (payload: GattBleIssuePayload) => void) => () => void;
-  startGattScanning: (sessionId: GattBleSessionId) => Promise<GattBleStartScanResult>;
+  startGattScanning: (
+    sessionId: GattBleSessionId,
+    opts?: { timeoutSecs?: number },
+  ) => Promise<GattBleStartScanResult>;
   stopGattScanning: (sessionId: GattBleSessionId) => Promise<void>;
   connectGatt: (sessionId: GattBleSessionId, peripheralId: string) => Promise<GattBleConnectResult>;
   disconnectGatt: (sessionId: GattBleSessionId) => Promise<void>;
