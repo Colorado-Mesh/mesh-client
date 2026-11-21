@@ -30,6 +30,7 @@ const TYPE_LABELS = new Map([
 const SCOPE_LABELS = new Map([
   ['meshtastic', 'meshtastic'],
   ['meshcore', 'meshcore'],
+  ['meshcom', 'meshcom'],
   ['reticulum', 'reticulum'],
   ['win', 'windows'],
   ['windows', 'windows'],
@@ -47,6 +48,11 @@ const PATH_RULES = [
   { pattern: /^src\/main\/ipc\/reticulum-[^/]+\.ts$/, label: 'reticulum' },
   { pattern: /^src\/renderer\/lib\/meshcore\//, label: 'meshcore' },
   { pattern: /^src\/main\/meshcore-mqtt-adapter\.ts$/, label: 'meshcore' },
+  { pattern: /^src\/renderer\/lib\/meshcom\//, label: 'meshcom' },
+  { pattern: /^src\/renderer\/lib\/protocols\/[Mm]esh[Cc]om/, label: 'meshcom' },
+  { pattern: /^src\/renderer\/runtime\/useMeshcom/, label: 'meshcom' },
+  { pattern: /^src\/renderer\/hooks\/meshcom\//, label: 'meshcom' },
+  { pattern: /^src\/main\/ipc\/(udp-bridge|meshcom-|loadMeshcom)/, label: 'meshcom' },
   { pattern: /^flatpak\//, label: 'flatpak' },
   { pattern: /^\.github\/workflows\/flatpak\.yaml$/, label: 'flatpak' },
 ];

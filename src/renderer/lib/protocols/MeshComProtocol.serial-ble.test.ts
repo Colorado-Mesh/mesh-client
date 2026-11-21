@@ -3,6 +3,19 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/shared/meshcomConstants', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('@/shared/meshcomConstants')>();
+  return {
+    ...actual,
+    // Shrink caps in this file so eviction / text clamp tests stay fast.
+    MESHCOM_CONTACT_CAP_DEFAULT: 3,
+    MESHCOM_MAX_TEXT_LEN: 32,
+  };
+});
+
+import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
+
 import { kissSlipEncode } from '../meshcom/kissSlip';
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
 import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
@@ -132,6 +145,41 @@ describe('MeshComProtocol serial/BLE', () => {
     const logs = events.filter((e) => e.type === 'device_log');
     expect(logs).toHaveLength(1);
     expect(logs[0]?.payload.message).toBe('Firmware v4.0');
+    unsub();
+  });
+
+  it('clamps oversized serial :: chat and device_log before emit', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const huge = 'z'.repeat(MESHCOM_MAX_TEXT_LEN + 200);
+    conn.onData?.(new TextEncoder().encode(`::${huge}\n`));
+    conn.onData?.(new TextEncoder().encode(`${huge}\n`));
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toHaveLength(MESHCOM_MAX_TEXT_LEN);
+    const logs = events.filter((e) => e.type === 'device_log');
+    expect(logs).toHaveLength(1);
+    expect(logs[0]?.payload.message).toHaveLength(MESHCOM_MAX_TEXT_LEN);
+    unsub();
+  });
+
+  it('evicts oldest callsignByNodeId entries at the contact cap', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const unsub = meshcomProtocol.subscribe(handle, () => {});
+
+    for (const call of ['AA1AA-1', 'BB1BB-1', 'CC1CC-1', 'DD1DD-1']) {
+      conn.onData?.(new TextEncoder().encode(`{${call}}hi\n`));
+    }
+
+    expect(handle.callsignByNodeId.size).toBe(3);
+    const values = [...handle.callsignByNodeId.values()];
+    expect(values).not.toContain('AA1AA-1');
+    expect(values).toEqual(expect.arrayContaining(['BB1BB-1', 'CC1CC-1', 'DD1DD-1']));
     unsub();
   });
 

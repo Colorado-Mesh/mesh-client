@@ -12,16 +12,18 @@ export interface LogLineLike {
   protocol?: MeshProtocol;
 }
 
-const CONNECTION_STACK_RE = /\[Connection\].*\bstack=(meshtastic|meshcore|reticulum)\b/i;
-const IPC_CHANNEL_RE = /\[IPC\]\s+(meshtastic|meshcore|reticulum)(?::|\b)/i;
-const GATT_SESSION_RE = /\[GATT:(meshtastic|meshcore|reticulum|all)\]/i;
-const BLE_SESSION_RE = /\[BLE:(meshtastic|meshcore|reticulum)\]/i;
-const IPC_SIDECAR_RE = /\[IpcSidecarGattConnection:(meshtastic|meshcore|reticulum)\]/i;
-const MAIN_GATT_SESSION_RE = /\[main\]\s+gatt:.*\bsession=(meshtastic|meshcore|reticulum)\b/i;
+const CONNECTION_STACK_RE = /\[Connection\].*\bstack=(meshtastic|meshcore|meshcom|reticulum)\b/i;
+const IPC_CHANNEL_RE = /\[IPC\]\s+(meshtastic|meshcore|meshcom|reticulum)(?::|\b)/i;
+const GATT_SESSION_RE = /\[GATT:(meshtastic|meshcore|meshcom|reticulum|all)\]/i;
+const BLE_SESSION_RE = /\[BLE:(meshtastic|meshcore|meshcom|reticulum)\]/i;
+const IPC_SIDECAR_RE = /\[IpcSidecarGattConnection:(meshtastic|meshcore|meshcom|reticulum)\]/i;
+const MAIN_GATT_SESSION_RE =
+  /\[main\]\s+gatt:.*\bsession=(meshtastic|meshcore|meshcom|reticulum)\b/i;
 /** Only attribute RF auto-connect *failures*; skipped/coexistence lines stay shared. */
 const RF_AUTO_CONNECT_RE =
-  /^\[useProtocolRfAutoConnect\]\s+(meshtastic|meshcore|reticulum)\b(?=.*\b(?:timed out|failed|error)\b)/i;
-export const LOG_SOURCE_PROTOCOL_RE = /(^|[/:.-])(meshtastic|meshcore|reticulum)([/:.-]|$)/i;
+  /^\[useProtocolRfAutoConnect\]\s+(meshtastic|meshcore|meshcom|reticulum)\b(?=.*\b(?:timed out|failed|error)\b)/i;
+export const LOG_SOURCE_PROTOCOL_RE =
+  /(^|[/:.-])(meshtastic|meshcore|meshcom|reticulum)([/:.-]|$)/i;
 
 function parseProtocolToken(raw: string): MeshProtocol | undefined {
   const lower = raw.toLowerCase();

@@ -13,6 +13,12 @@ export const MESHCOM_SERIAL_BAUD = 115200;
  */
 export const MESHCOM_MAX_TEXT_LEN = 4096;
 
+/**
+ * Max EXTUDP / DB `msg_id` length. Bound at parse time so a 64 KiB datagram cannot
+ * use a huge string as the message-store key before DB validation.
+ */
+export const MESHCOM_MAX_MSG_ID_LEN = 128;
+
 /** Soft cap for persisted contacts / in-memory callsign registry / node bucket. */
 export const MESHCOM_CONTACT_CAP_DEFAULT = 10_000;
 

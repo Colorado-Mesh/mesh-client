@@ -41,6 +41,7 @@ import {
 } from './debugSnapshotUiContext';
 import {
   ensureOfflineProtocolIdentities,
+  OFFLINE_MESHCOM_IDENTITY_ID,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
   OFFLINE_RETICULUM_IDENTITY_ID,
@@ -152,6 +153,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ...overrides.ui,
   };
   const meshcore = makeBucketOverrides(overrides.meshcore ?? {});
+  const meshcom = makeBucketOverrides(overrides.meshcom ?? {});
   const meshtastic = makeMeshtasticBucketOverrides(overrides.meshtastic ?? {});
   const reticulum = makeReticulumSnapshot(overrides.reticulum ?? {});
   const base: Omit<DebugSnapshot, 'warnings'> = {
@@ -171,6 +173,13 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
         rfTransportConnected: meshcore.rfTransportConnected,
         mqttConnected: meshcore.mqttConnected,
         uiStoreIdentityId: meshcore.uiStoreIdentityId,
+      },
+      meshcom: {
+        sessionState: meshcom.sessionState,
+        liveSession: meshcom.liveSession,
+        rfTransportConnected: meshcom.rfTransportConnected,
+        mqttConnected: meshcom.mqttConnected,
+        uiStoreIdentityId: meshcom.uiStoreIdentityId,
       },
       reticulum: {
         sessionState: reticulum.bucket.sessionState,
@@ -192,6 +201,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ui,
     meshtastic,
     meshcore,
+    meshcom,
     meshcoreRadio: makeMeshcoreRadio(),
     reticulum,
     ...overrides,
@@ -337,6 +347,18 @@ describe('buildDebugSnapshot', () => {
     expect(snap.activeTab.protocol).toBe('reticulum');
     expect(snap.activeTab.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(snap.sessionSummary.reticulum.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
+  });
+
+  it('includes MeshCom identity bucket and sessionSummary for support exports', () => {
+    ensureOfflineProtocolIdentities();
+    setDebugSnapshotUiContext({ activeProtocol: 'meshcom' });
+
+    const snap = buildDebugSnapshot();
+
+    expect(snap.activeTab.protocol).toBe('meshcom');
+    expect(snap.activeTab.uiStoreIdentityId).toBe(OFFLINE_MESHCOM_IDENTITY_ID);
+    expect(snap.sessionSummary.meshcom.uiStoreIdentityId).toBe(OFFLINE_MESHCOM_IDENTITY_ID);
+    expect(snap.meshcom.hydrationSlotId).toBe(OFFLINE_MESHCOM_IDENTITY_ID);
   });
 
   it('includes resolved and primary identity bucket counts when connected', () => {
