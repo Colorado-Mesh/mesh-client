@@ -181,7 +181,7 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     const end = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:stop-scan'");
     const handler = INDEX_SOURCE.slice(start, end);
     expect(handler).toContain("bleCoexistenceCoordinator.withScan('gatt'");
-    expect(handler).toContain('gattSidecarProxy.startScan(sessionId)');
+    expect(handler).toContain('gattSidecarProxy.startScan(sessionId, scanOpts)');
     expect(handler).toContain("code: 'scan_busy'");
     expect(handler).toContain('isGattSessionProfile(sessionId)');
     expect(handler).toMatch(/meshtastic, meshcore, or meshcom/);

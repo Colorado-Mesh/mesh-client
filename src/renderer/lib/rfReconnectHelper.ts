@@ -59,7 +59,6 @@ export async function reconnectRfFromLastConnection(
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (rfType === 'tcp') {
     const tcpAddress = resolveLastHttpAddress(protocol);
     if (!tcpAddress) {
