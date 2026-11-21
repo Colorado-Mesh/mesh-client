@@ -1,27 +1,18 @@
+import { createInertProtocolRuntimeBase } from './protocolRuntimeAppPaint';
 import type { MeshcomRuntime } from './useMeshcomRuntime';
 
 const asyncVoid = (): Promise<void> => Promise.resolve();
 const asyncNull = (): Promise<null> => Promise.resolve(null);
 
-/** Inert runtime when MeshCom is hidden (keeps `useMeshcomRuntime` out of the default App chunk). */
+/**
+ * Inert runtime when MeshCom is hidden, or briefly while {@link MeshcomRuntimeActive}
+ * has not published the live hook return yet. Spreads
+ * {@link createInertProtocolRuntimeBase} so App's first-paint adapters never see
+ * missing Maps/arrays (`e is not iterable`).
+ */
 export function createMeshcomRuntimeDisabledStub(): MeshcomRuntime {
   return {
-    state: {
-      status: 'disconnected',
-      connectionType: null,
-      myNodeNum: 0,
-      mqttStatus: 'disconnected',
-    },
-    selfNodeId: null,
-    connect: asyncVoid,
-    connectAutomatic: asyncVoid,
-    disconnect: asyncVoid,
-    onPowerSuspend: () => {},
-    onPowerResume: () => {},
-    prepareRfConnect: asyncVoid,
-    attachRfSession: asyncVoid,
-    handleRfConnectFailure: asyncVoid,
-    finalizeDriverDisconnect: asyncVoid,
+    ...createInertProtocolRuntimeBase(),
     deviceCommands: {
       sendDeviceCommand: () => Promise.resolve({ command: '' }),
       supported: false,

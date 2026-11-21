@@ -36,6 +36,13 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message: 'Use loadRuntimeSource() from sourceContractTestHelpers',
   },
   {
+    id: 'runtime-disabled-stub-uses-inert-base',
+    include: ['src/renderer/runtime/*RuntimeDisabledStub.ts'],
+    require: /createInertProtocolRuntimeBase/,
+    message:
+      'Disabled/pre-live runtime stubs must spread createInertProtocolRuntimeBase() so App paint adapters never see missing Maps/arrays',
+  },
+  {
     id: 'chat-export-incremental-cap',
     include: ['src/main/chatExportFormat.ts'],
     forbid: /formatChatExportLinesWithTotalCap[\s\S]*?formatChatExportLines\s*\(/,

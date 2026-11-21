@@ -15,8 +15,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Channel pills App/Chat/AppPanel accept (`index` + `name`). */
 export function asChannelIndexPills(
-  channels: readonly unknown[],
+  channels: readonly unknown[] | null | undefined,
 ): { index: number; name: string }[] {
+  if (!Array.isArray(channels)) return [];
   const pills: { index: number; name: string }[] = [];
   for (const ch of channels) {
     if (!isRecord(ch) || typeof ch.index !== 'number' || typeof ch.name !== 'string') continue;
@@ -60,8 +61,10 @@ export function asTraceRouteResult(value: unknown): ProtocolTraceRouteResult | u
 }
 
 export function asTraceRouteResultsMap(
-  results: Map<number, unknown>,
+  results: Map<number, unknown> | null | undefined,
 ): Map<number, ProtocolTraceRouteResult> {
+  // Disabled / pre-publish MeshCom stub (and any incomplete runtime) may omit the Map.
+  if (!(results instanceof Map)) return new Map();
   const out = new Map<number, ProtocolTraceRouteResult>();
   for (const [id, value] of results) {
     const traced = asTraceRouteResult(value);
