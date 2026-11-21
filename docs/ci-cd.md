@@ -512,7 +512,7 @@ The sidecars reach the packaging jobs as tar archives from the same workflow run
 | Build Binaries Windows meta  | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
 | Build Flatpak                | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
 
-Prefer the job-summary **artifact-url** links (browser download). Do **not** use `gh run download` for `archive: false` artifacts — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). CLI that saves the raw bytes:
+Prefer the job-summary **artifact-url** links (or the Actions Artifacts UI). Do **not** use `gh run download` for `archive: false` Windows Setup / Flatpak uploads — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download`. CLI that saves raw unarchived bytes:
 
 ```bash
 id=$(gh api "repos/Colorado-Mesh/mesh-client/actions/runs/<run-id>/artifacts" \
