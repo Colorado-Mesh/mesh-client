@@ -1173,6 +1173,8 @@
     "delete": "删除",
     "copy": "复制",
     "copied": "已复制",
+    "copyFailed": "无法复制",
+    "copyRoute": "复制路由",
     "botBadge": "机器人",
     "botBadgeLabel": "机器人",
     "botBadgeTooltip": "从其自动回复中检测为机器人",

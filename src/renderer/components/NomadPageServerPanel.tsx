@@ -16,6 +16,7 @@ import {
   setServing as setServingApi,
   setServingContentSource,
 } from '@/renderer/lib/nomad/nomadServingApi';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
 
 import MicronPageEditor from './MicronPageEditor';
@@ -285,7 +286,7 @@ export default function NomadPageServerPanel({
     const hash = status?.destination_hash;
     if (!hash) return;
     try {
-      await navigator.clipboard.writeText(hash);
+      await writeClipboardText(hash);
       setCopied(true);
       window.setTimeout(() => {
         setCopied(false);

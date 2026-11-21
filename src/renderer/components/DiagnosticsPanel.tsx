@@ -60,12 +60,14 @@ import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import { useLocationTrust } from '../lib/ourPositionReference';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import { formatTraceRouteHops } from '../lib/traceRouteCopyText';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 import SetLocationCard from './SetLocationCard';
+import { CopyButton } from './ui/CopyButton';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 import { SettingsSection } from './ui/SettingsSection';
 
@@ -794,14 +796,21 @@ export default function DiagnosticsPanel({
                       </span>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleTraceRoute(anomaly.nodeId)}
-                    disabled={!isConnected}
-                    className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 mt-1 rounded px-2 py-0.5 disabled:opacity-40"
-                  >
-                    {t('diagnosticsPanel.reTrace')}
-                  </button>
+                  <div className="mt-1 flex items-center justify-end gap-1">
+                    <CopyButton
+                      size="sm"
+                      label={t('common.copyRoute')}
+                      text={() => formatTraceRouteHops(traceHops)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleTraceRoute(anomaly.nodeId)}
+                      disabled={!isConnected}
+                      className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 rounded px-2 py-0.5 disabled:opacity-40"
+                    >
+                      {t('diagnosticsPanel.reTrace')}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button

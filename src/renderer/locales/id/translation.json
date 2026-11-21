@@ -1173,6 +1173,8 @@
     "delete": "Menghapus",
     "copy": "Menyalin",
     "copied": "Disalin",
+    "copyFailed": "Gagal menyalin",
+    "copyRoute": "Salin rute",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Terdeteksi sebagai bot dari balasan otomatisnya",

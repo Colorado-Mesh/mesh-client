@@ -1197,6 +1197,8 @@
     "delete": "Vymazat",
     "copy": "Kopírovat",
     "copied": "Zkopírováno",
+    "copyFailed": "Kopírování se nezdařilo",
+    "copyRoute": "Kopírovat trasu",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Zjištěno jako robot ze svých automatických odpovědí",

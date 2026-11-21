@@ -1198,6 +1198,15 @@ describe('RepeatersPanel', () => {
     expect(screen.getByTitle('AA → Relay Alpha')).toHaveTextContent('Relay Alpha');
     expect(screen.getByText('Path:')).toBeInTheDocument();
     expect(screen.getByText(/▣\s*Dest Repeater/)).toBeInTheDocument();
+
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockReset();
+    writeText.mockResolvedValue(undefined);
+    await user.click(screen.getByRole('button', { name: 'Copy route' }));
+    const arrow = String.fromCodePoint(0x2192);
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      `Relay Alpha [AA] +4.50 dB ${arrow} Dest Repeater +2.50 dB`,
+    );
   });
 
   it('shows current route names when no trace result exists', async () => {

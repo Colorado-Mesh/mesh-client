@@ -64,6 +64,8 @@ vi.mock('electron', async () => {
   };
 });
 vi.mock('../validate-ipc-sender', () => ({ validateIpcSender: harness.validate }));
+const attachWindowContextMenu = vi.hoisted(() => vi.fn());
+vi.mock('../windowContextMenu', () => ({ attachWindowContextMenu }));
 
 import { BrowserWindow } from 'electron';
 
@@ -416,6 +418,14 @@ describe('closing and returning', () => {
     expect(popOut.isDestroyed()).toBe(false);
     main.webContents.emit('did-start-navigation', { isMainFrame: true, isSameDocument: false });
     expect(popOut.isDestroyed()).toBe(true);
+  });
+});
+
+describe('context menu', () => {
+  it('gives the pop-out the same right-click menu as the main window', async () => {
+    attachWindowContextMenu.mockClear();
+    const popOut = await openPopOut();
+    expect(attachWindowContextMenu).toHaveBeenCalledExactlyOnceWith(popOut);
   });
 });
 

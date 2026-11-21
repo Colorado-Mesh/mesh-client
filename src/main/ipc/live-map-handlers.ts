@@ -22,6 +22,7 @@ import {
 import { RENDERER_HOST, RENDERER_SCHEME } from '../../shared/rendererOrigin';
 import { sanitizeLogMessage } from '../sanitize-log-message';
 import { validateIpcSender } from '../validate-ipc-sender';
+import { attachWindowContextMenu } from '../windowContextMenu';
 
 const DEFAULT_WIDTH = 1100;
 const DEFAULT_HEIGHT = 760;
@@ -227,6 +228,9 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
       alwaysOnTop: stored?.alwaysOnTop ?? false,
     };
     popOuts.set(protocol, entry);
+
+    // Same right-click menu as the main window (Copy for selected text, edit menu in fields).
+    attachWindowContextMenu(window);
 
     // The page never navigates. Map attribution links go to the system browser.
     window.webContents.setWindowOpenHandler(({ url: target }) => {

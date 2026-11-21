@@ -49,6 +49,7 @@ import {
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
+import { formatTraceRouteHops } from '../lib/traceRouteCopyText';
 import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -58,6 +59,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { EnvironmentSparklines } from './map/EnvironmentSparklines';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
+import { CopyButton } from './ui/CopyButton';
 
 export const CATEGORY_STYLES: Record<string, string> = {
   Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
@@ -898,7 +900,16 @@ export default function NodeInfoBody({
       )}
       {traceRouteHops && (
         <div className="bg-primary-dark mt-3 rounded-lg p-2">
-          <div className="text-ink-400 mb-1 text-xs">{t('nodeInfoBody.routePath')}</div>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-ink-400 text-xs">{t('nodeInfoBody.routePath')}</span>
+            {traceRouteHops.length > 0 && (
+              <CopyButton
+                size="sm"
+                label={t('common.copyRoute')}
+                text={() => formatTraceRouteHops(traceRouteHops)}
+              />
+            )}
+          </div>
           <div className="text-ink-200 flex flex-wrap items-center gap-1 text-sm">
             {traceRouteHops.map((hop, i) => (
               <span key={i} className="flex items-center gap-1">

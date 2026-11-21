@@ -135,8 +135,9 @@ describe('UnifiedInboxDialog', () => {
   it('copies the selected messages to the clipboard', async () => {
     const user = userEvent.setup();
     renderInbox();
-    // userEvent.setup() installs its own clipboard stub; spy on it after setup.
-    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockReset();
+    writeText.mockResolvedValue(undefined);
     await user.click(screen.getByRole('checkbox', { name: 'Select message from Sender1' }));
     await user.click(screen.getByRole('checkbox', { name: 'Select message from Sender3' }));
     await user.click(screen.getByRole('button', { name: 'Copy' }));
