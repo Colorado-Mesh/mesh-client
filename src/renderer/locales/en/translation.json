@@ -542,6 +542,7 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
+      "meshcom": "MeshCom",
       "sky": "Sky",
       "classic": "Classic green"
     },
@@ -585,9 +586,11 @@
     "switchToMeshtastic": "Switch to Meshtastic",
     "switchToMeshCore": "Switch to MeshCore",
     "switchToReticulum": "Switch to Reticulum",
+    "switchToMeshCom": "Switch to MeshCom",
     "switchToMeshtasticWithUnread": "Switch to Meshtastic, {{count}} unread",
     "switchToMeshCoreWithUnread": "Switch to MeshCore, {{count}} unread",
     "switchToReticulumWithUnread": "Switch to Reticulum, {{count}} unread",
+    "switchToMeshComWithUnread": "Switch to MeshCom, {{count}} unread",
     "tabWithUnread": "{{label}}, {{count}} unread",
     "tabWithOpenIncidents": "{{label}}, {{count}} open incidents",
     "backToTop": "Back to top"
@@ -670,7 +673,8 @@
     "openFromChat": "Search all conversations",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Unified inbox",
@@ -707,7 +711,8 @@
     "deleteFailed": "Couldn't save the change. Nothing was removed.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "chatPanel": {
     "channelMenuAria": "Options for {{name}}",
@@ -1424,18 +1429,21 @@
     "topicPrefixHelp": {
       "meshtastic": "msh/[Country]/[State], e.g. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, e.g. meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO",
+      "meshcom": "Broker root topic for your MeshCom gateway, e.g. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "radioMqttRootDivergesWarning": "Radio MQTT root topic is {{radioRoot}} but this panel subscribes to {{appPrefix}}. Match the radio to limit nationwide node traffic — update Topic Prefix and reconnect MQTT.",
     "maxRetries": "Max Retries",
     "maxRetriesHelp": {
       "meshtastic": "Reconnect attempts (1–{{max}}) before giving up.",
-      "meshcore": "Reconnect attempts (1–20) before giving up."
+      "meshcore": "Reconnect attempts (1–20) before giving up.",
+      "meshcom": "Reconnect attempts (1–{{max}}) before giving up."
     },
     "maxRetriesHelpConnected": {
       "meshcore": "Reconnect tries before giving up (1–{{max}}). Saved with settings; press Connect again after changing so the main process picks it up.",
-      "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value."
+      "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value.",
+      "meshcom": "Reconnect tries before giving up (1–{{max}}). Saved with settings; disconnect and Connect again so the running session uses the new value."
     },
     "meshtasticPreset": {
       "officialPlain": "Official",
@@ -1534,7 +1542,8 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "reticulumIdentity": {
       "title": "Reticulum identity",
@@ -1901,10 +1910,13 @@
     "reconnect": "Reconnect",
     "forgetDevice": "Forget this device",
     "bluetooth": "Bluetooth",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
     "usbSerial": "USB Serial",
     "wifiHttp": "WiFi/HTTP",
     "wifiTcp": "WiFi/TCP (fast)",
     "tcpIp": "TCP/IP",
+    "kissTcp": "KISS/TCP",
     "deviceAddress": "Device Address",
     "deviceAddressPlaceholder": "meshtastic.local, 192.168.1.x, or [fd00::1]",
     "deviceAddressHint": "Enter hostname or IP address (without http://)",
@@ -3061,6 +3073,7 @@
     "nameAria": "Profile name",
     "reconnectNeeded": "Disconnect and reconnect MQTT to use this profile's broker settings.",
     "switchLabel": "Saved profile",
+    "listLabel": "Saved custom brokers",
     "noneSelected": "Current settings (not saved)"
   },
   "weatherFilter": {
@@ -3092,7 +3105,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     }
   },
   "sensorLayer": {
@@ -3345,6 +3359,23 @@
     "extraRfReceptions": "extra RF receptions",
     "originatorPacket": "packet",
     "originatorPackets": "packets"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — licensed amateur radio",
+    "licenseNoticeBody": "MeshCom operates on licensed amateur (ham) LoRa frequencies selected by Country Setting (--setctry) worldwide — not EU 433 MHz only. Enable MeshCom only if you are authorized to transmit on the bands configured for your country profile. This notice is separate from Meshtastic’s licensed-ham frequency unlock.",
+    "licenseNoticeAccept": "I understand",
+    "connectionHint": "MeshCom uses ham-band LoRa via Country Setting (--setctry). Ensure your node’s country profile matches your license.",
+    "countrySettingLabel": "Country Setting (--setctry)",
+    "extUdpHint": "EXTUDP needs the node configured with --extudp on and --extudpip pointing at this computer (UDP 1799).",
+    "kissTcpHint": "KISS/TCP uses MeshCom port 8001 — not Reticulum KISS/AX.25.",
+    "channelAll": "ALL (*)",
+    "channelGroup": "Group {{id}}",
+    "callsignFieldLabel": "Callsign (--setcall)",
+    "callsignHint": "Valid APRS-style callsign (SSID optional). Apply sends --setcall on Serial/BLE.",
+    "operatorNameFieldLabel": "Operator name (--operatorname)",
+    "operatorNamePlaceholder": "firstname",
+    "operatorNameHint": "Optional. Sent with Apply on Serial/BLE (max 19 characters).",
+    "dbStorageDegraded": "MeshCom message history is unavailable (database module failed to load). Chat still works; history will not persist until you restart the app."
   },
   "meshcore": {
     "errors": {
@@ -4602,13 +4633,16 @@
   "nodeInfoBody": {
     "longName": "Long Name",
     "shortName": "Short Name",
+    "callsign": "Callsign",
     "type": "Type",
     "hardware": "Hardware",
+    "firmware": "Firmware",
     "role": "Role",
     "pending": "(pending)",
     "pendingTitle": "Waiting for complete NodeInfo packet",
     "notAvailableRemotely": "Not available remotely",
     "snr": "SNR",
+    "rssi": "RSSI",
     "lastHopSnr": "Last-Hop SNR",
     "battery": "Battery",
     "lastHeard": "Last Heard",
@@ -4616,6 +4650,7 @@
     "channelUtil": "Channel Util",
     "source": "Source",
     "position": "Position",
+    "altitude": "Altitude",
     "lastTrackedPosition": "Last Tracked Position",
     "gpsWarningPrefix": "GPS Warning: ",
     "routingHealth": "Routing Health",
@@ -4709,6 +4744,7 @@
     "yourNodeTooltip": "This is your node",
     "signalBarsTooltip": "Signal bars (RSSI) only for direct (0-hop) RF neighbors",
     "meshcoreContactType": "MeshCore contact / advert type",
+    "meshcomHardwareType": "MeshCom hardware (from on-air hw_id)",
     "favoritesColumn": "Favorites",
     "mqttHeardOnlyTooltip": "Heard only via MQTT",
     "mqttConnectedTooltip": "Connected via MQTT",
@@ -7410,6 +7446,7 @@
     "protocolMeshtastic": "Meshtastic",
     "protocolMeshcore": "MeshCore",
     "protocolReticulum": "Reticulum",
+    "protocolMeshcom": "MeshCom",
     "loadFailed": "Could not load contact cards from the database.",
     "loadUnavailable": "Contact Cards are unavailable in this build. Reinstall or update the app.",
     "retryLoad": "Try again",
@@ -9008,5 +9045,53 @@
     "open": "Weak or open channel key on {{channel}}",
     "openLocation": "Open channel key with precise location on {{channel}}",
     "openLocationUplink": "Open channel key with precise location and MQTT uplink on {{channel}}"
+  },
+  "meshcomDeviceCommands": {
+    "loadingConfig": "Loading device configuration…",
+    "description": "Configure this MeshCom node with the full ICSSW command set. Connect via Serial or BLE to apply; EXTUDP/KISS are chat-only. APP-eligible commands match the official MeshCom app; serial-only rows need USB.",
+    "autoSettime": "Set node time automatically on connect",
+    "autoSettimeHint": "When connected over Serial or BLE, send --settime with this computer’s UTC clock (e.g. {{example}}).",
+    "settimeNow": "Set time now (UTC)",
+    "currentValue": "now {{value}}",
+    "requiresSerialBle": "Connect via Serial or BLE to send device commands. EXTUDP and KISS/TCP carry chat only.",
+    "filter": "Filter commands",
+    "filterPlaceholder": "Search --settime, gateway, neighbors…",
+    "serialOnly": "serial only",
+    "run": "Run",
+    "runCommand": "Run {{command}}",
+    "runChoice": "Run {{command}} {{value}}",
+    "argInput": "Argument for {{command}}",
+    "sent": "Command sent to the node.",
+    "sendFailed": "Command failed: {{detail}}",
+    "setctrySent": "Saved and sent --setctry {{code}} to the node.",
+    "setctrySavedLocal": "Saved country preference. Connect via Serial or BLE to apply --setctry on the node.",
+    "consoleHint": "Type any --command or APP shortcut (GATEWAY, GPS, WX-Info). Secrets are redacted in the log.",
+    "consoleLog": "Device command console log",
+    "consoleInput": "Device command input",
+    "consolePlaceholder": "--info",
+    "consoleSend": "Send",
+    "confirmDanger": {
+      "title": "Confirm command",
+      "message": "Send {{command}} to the node? This may reboot or change RF settings.",
+      "confirm": "Send"
+    },
+    "groups": {
+      "clock": "Clock",
+      "display": "Display",
+      "position": "Position & time",
+      "sensors": "Sensors",
+      "identity": "Identity & groups",
+      "network": "Network & Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Neighbors",
+      "mailbox": "Mailbox",
+      "debug": "Status & debug",
+      "power": "Power & OTA",
+      "misc": "KISS / misc",
+      "console": "Console",
+      "advanced": "Advanced console & filter"
+    },
+    "appEligible": "APP / Serial"
   }
 }

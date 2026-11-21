@@ -250,6 +250,7 @@ describe('explicit durable renderer data reset', () => {
       [keys.chatLastRead.meshtastic]: '{}',
       [keys.chatLastRead.meshcore]: '{}',
       [keys.chatLastRead.reticulum]: '{}',
+      [keys.chatLastRead.meshcom]: '{}',
       [keys.roomsLastRead]: '{}',
       [keys.rrcLastRead]: '{}',
       [keys.mecpBlockedSenders]: JSON.stringify({ state: { blocked: {} }, version: 1 }),

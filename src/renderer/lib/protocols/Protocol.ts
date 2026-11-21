@@ -53,6 +53,8 @@ export interface NodeInfoEvent {
   voltage?: number;
   channelUtilization?: number;
   airUtilTx?: number;
+  /** MeshCom EXTUDP / HELLO firmware string when present on-air. */
+  firmwareVersion?: string;
 }
 
 /** MeshCore path-updated push (event 129). */

@@ -8,11 +8,12 @@ import {
   type MeshtasticAckProofStatus,
   type MeshtasticSfppPhase,
 } from '@/renderer/lib/meshtastic/meshtasticAckProof';
+import type { ConnectionType } from '@/renderer/lib/types';
 
 export interface MessageStatusBadgeProps {
   status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
   transport: 'device' | 'mqtt' | 'outbox';
-  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
+  connectionType?: ConnectionType | null;
   error?: string;
   /** Room BBS posts ack on companion SENT, not mesh hop ACK. */
   context?: 'dm' | 'room';

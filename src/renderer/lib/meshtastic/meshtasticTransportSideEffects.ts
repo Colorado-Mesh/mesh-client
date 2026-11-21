@@ -62,7 +62,7 @@ export function isElevatedMeshtasticHeartbeatFailure(
  * this only feeds a diagnostic log line — losing one datum beats throwing from the heartbeat path.
  */
 function readMeshtasticQueueDepth(device: MeshDevice): number | null {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Partially-mocked MeshDevice in tests omits queue.
   const items = device.queue?.getState?.();
   return Array.isArray(items) ? items.length : null;
 }
@@ -84,7 +84,6 @@ export function pushMeshtasticTransportSideEffectUnsubs(
 ): void {
   // Noble BLE disconnect is handled at runtime mount (useMeshtasticRuntime) with storage rehydrate.
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (type === 'serial' || type === 'ble' || type === 'http' || type === 'tcp') {
     push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
   }

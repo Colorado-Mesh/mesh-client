@@ -183,6 +183,7 @@ function removeSupersededBubble(protocol: MeshProtocol, identityId: IdentityId, 
   deleteMessage(identityId, id);
   const packetId = Number(id);
   if (!Number.isInteger(packetId) || packetId < 0) return;
+  if (protocol !== 'meshtastic' && protocol !== 'meshcore') return;
   void window.electronAPI.db
     .deleteFailedOutboundMessage(protocol, packetId >>> 0)
     .catch((err: unknown) => {

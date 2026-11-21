@@ -5,6 +5,7 @@ Build, compile, and local packaging problems are in [development-environment.md 
 ## Contents
 
 - [Quick reference](#quick-reference)
+  - [Electron DevTools (packaged app)](#electron-devtools-packaged-app)
 - [System requirements](#system-requirements)
 - [Development and building](#development-and-building)
 - [Installation and packaged apps](#installation-and-packaged-apps)
@@ -31,9 +32,30 @@ Start here for log analysis, bug reports, and general connection debugging.
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees. Expand **View evidence** on a finding to inspect its timestamped log lines. **Copy troubleshooting report** copies the findings, specific advice, and recent samples for a support request; review the samples before sharing. See [Log analysis](log-analysis.md) for scope and limitations.
 
+### Electron DevTools (packaged app)
+
+Chromium DevTools work in downloaded / packaged builds as well as local `pnpm run dev`. Focus the Mesh Client window, then:
+
+| Platform      | Shortcut                   |
+| ------------- | -------------------------- |
+| macOS         | **⌘⌥I** (Command-Option-I) |
+| Windows/Linux | **Ctrl+Shift+I**           |
+
+Prefer those over bare **F12**. F1–F12 are chat macros app-wide; when a composer macro slot applies, F12 may be consumed instead of opening DevTools.
+
+**Dev vs release:** `pnpm run dev` opens DevTools automatically. Packaged binaries and `pnpm start` do not. There is no in-app View menu entry for Developer Tools today. Release builds do **not** disable DevTools (`devTools: false` is unset), so the shortcuts above still work.
+
+**Good for:** renderer console (same lines the Log panel forwards), React/DOM inspection, `localStorage`, and renderer perf helpers.
+
+**Not for companion wire traffic:** MeshCore / Meshtastic TCP, BLE, and serial sockets live in the Electron **main** process and reach the renderer over IPC. The DevTools **Network** tab will not show companion frames. Use:
+
+1. **Log** panel — enable **debug**, reproduce, then **Analyze** (see above).
+2. On-disk `mesh-client.log` under the userData paths in [Reporting bugs](#reporting-bugs-export-for-github-app-tab).
+3. **Monitor → Sniffer** for raw hex frames — see [Diagnostics — Sniffer](diagnostics.md#17-sniffer-raw-packet-log).
+
 ### Reporting bugs: **Export for GitHub** (App tab)
 
-Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes **Reticulum** sidecar status, interface diagnostics, and config audit when the stack was running at export time (`reticulum` section in `debug-snapshot.json`; `[ReticulumSidecar]` lines in the log).
+Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes **Meshtastic**, **MeshCore**, **MeshCom**, and **Reticulum** identity/session buckets (`sessionSummary` plus matching protocol keys in `debug-snapshot.json`). Reticulum also includes sidecar status, interface diagnostics, and config audit when the stack was running at export time (`reticulum` section; `[ReticulumSidecar]` lines in the log). MeshCom connect/MQTT/GATT lines use `[useMeshcomRuntime]`, `[MeshCom*]`, and `[GATT:meshcom]` tags in `mesh-client.log`.
 
 Open `manifest.json` first when triaging: `appVersion` is package semver; **`buildChannel`** is `test` (Build Binaries / Flatpak no-release), `release` (official Release or Flatpak tag), or `local` (unmarked local dist). For CI builds, `buildInfo.runUrl` links to the exact GitHub Actions run — do not assume `appVersion` alone means an official release. Test-build downloadable installers include `-run{N}` in the filename; if the filename and `runUrl` disagree, trust `runUrl` / the `[Startup] runtime … run=` log line.
 
@@ -836,6 +858,7 @@ Full guide: [MeshCore](meshcore.md). MeshCore-specific problems moved to [MeshCo
 
 - [MeshCore TCP connect stuck or reconnect loop on OpenHop](troubleshooting-meshcore.md#meshcore-tcp-connect-stuck-or-reconnect-loop-on-openhop)
 - [MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused](troubleshooting-meshcore.md#meshcore-tcp--pymc-initial-connect-msgwaiting-drain-slow-or-paused)
+- [MeshCore: DM fails with radio contact table full](troubleshooting-meshcore.md#meshcore-dm-fails-with-radio-contact-table-full)
 - [MeshCore contact delete and sticky Rooms badge](troubleshooting-meshcore.md#meshcore-contact-delete-and-sticky-rooms-badge)
 - [MeshCore contact age prune and favorites](troubleshooting-meshcore.md#meshcore-contact-age-prune-and-favorites)
 - [MeshCore: UI slow or frozen with large repeater lists (USB serial)](troubleshooting-meshcore.md#meshcore-ui-slow-or-frozen-with-large-repeater-lists-usb-serial)

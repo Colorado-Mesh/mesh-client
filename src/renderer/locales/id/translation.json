@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Langit",
-      "classic": "Hijau klasik"
+      "classic": "Hijau klasik",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island",
     "protocolsSection": "Protokol",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
     "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca",
     "tabWithUnread": "{{label}}, {{count}} belum dibaca",
-    "tabWithOpenIncidents": "{{label}}, {{count}} buka MAYDAY atau insiden MENDESAK"
+    "tabWithOpenIncidents": "{{label}}, {{count}} buka MAYDAY atau insiden MENDESAK",
+    "switchToMeshCom": "Beralih ke MeshCom",
+    "switchToMeshComWithUnread": "Beralih ke MeshCom, {{count}} belum dibaca"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -1746,17 +1749,20 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Negara]/[Negara Bagian], mis. msh/CO/AS",
       "meshcoreLetsmesh": "meshcore/{IATA}, mis. inti jaring/DEN",
-      "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO"
+      "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO",
+      "meshcom": "Topik root broker untuk gateway MeshCom Anda, misalnya meshcom"
     },
     "topicPrefixPlaceholder": "msh/AS/",
     "maxRetriesHelp": {
       "meshtastic": "Hubungkan kembali upaya (1–{{max}}) sebelum menyerah.",
-      "meshcore": "Hubungkan kembali upaya (1–20) sebelum menyerah."
+      "meshcore": "Hubungkan kembali upaya (1–20) sebelum menyerah.",
+      "meshcom": "Coba sambungkan kembali (1–{{max}}) sebelum menyerah."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1855,7 +1861,8 @@
     "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
-      "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
+      "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru.",
+      "meshcom": "Coba sambungkan kembali sebelum menyerah (1–{{max}}). Disimpan dengan pengaturan; putuskan sambungan dan Sambungkan lagi agar sesi yang sedang berjalan menggunakan nilai baru."
     },
     "reticulumStackRunningAs": "Berjalan — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…",
@@ -1943,7 +1950,10 @@
     "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang.",
     "mqttPacketTooLarge": "Broker mengirim paket MQTT yang lebih besar dari batas aman {{limit}} byte; sambungan ulang otomatis dinonaktifkan.",
     "protocolGuideLink": "Panduan protokol ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -4037,7 +4047,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Panggilan tanda",
+    "firmware": "Firmware",
+    "rssi": "RSSI",
+    "altitude": "Ketinggian"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -4134,7 +4148,8 @@
     "statusFilterAll": "Semua",
     "buttonExport": "Ekspor",
     "exportMenuLabel": "Format ekspor",
-    "youBadge": "Anda"
+    "youBadge": "Anda",
+    "meshcomHardwareType": "Perangkat keras MeshCom (dari hw_id on-air)"
   },
   "nomadNetwork": {
     "showBrowser": "Tampilkan browser",
@@ -7546,7 +7561,8 @@
     "reconnectNeeded": "Putuskan dan sambungkan kembali MQTT untuk menggunakan pengaturan broker profil ini.",
     "switchLabel": "Profil tersimpan",
     "noneSelected": "Pengaturan saat ini (tidak disimpan)",
-    "nameAria": "Nama profil"
+    "nameAria": "Nama profil",
+    "listLabel": "Pialang bea cukai tersimpan"
   },
   "weatherFilter": {
     "viewTooltip": "Postingan cuaca di saluran ini",
@@ -7672,7 +7688,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Menerima {{when}}"
   },
@@ -8499,7 +8516,8 @@
     "openFromChat": "Cari semua percakapan",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Kotak masuk terpadu",
@@ -8536,7 +8554,8 @@
     "deleteFailed": "Tidak dapat menyimpan perubahan. Tidak ada yang dihapus.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Verifikasi kunci publik",
@@ -8970,7 +8989,8 @@
     "loadFailed": "Tidak dapat memuat kartu kontak dari basis data.",
     "retryLoad": "Coba lagi",
     "retryLoadAria": "Coba muat ulang kartu kontak",
-    "loadUnavailable": "Kartu Kontak tidak tersedia di build ini. Instal ulang atau perbarui aplikasi."
+    "loadUnavailable": "Kartu Kontak tidak tersedia di build ini. Instal ulang atau perbarui aplikasi.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Sembunyikan pesan yang cocok dengan filter kata",
@@ -9008,5 +9028,70 @@
     "openAria": "Buka {{name}}",
     "unknownRoom": "Ruangan {{id}}",
     "hops": "{{count}} transit"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — radio amatir berlisensi",
+    "licenseNoticeBody": "MeshCom beroperasi pada frekuensi amatir (ham) berlisensi LoRa yang dipilih oleh Pengaturan Negara (--setctry) di seluruh dunia — bukan hanya 433 MHz di UE. Aktifkan MeshCom hanya jika Anda diizinkan untuk melakukan transmisi pada pita frekuensi yang dikonfigurasi untuk profil negara Anda. Pemberitahuan ini terpisah dari pembukaan frekuensi amatir berlisensi Meshtastic.",
+    "licenseNoticeAccept": "Saya mengerti",
+    "connectionHint": "MeshCom menggunakan pita frekuensi amatir LoRa melalui Pengaturan Negara (--setctry). Pastikan profil negara node Anda sesuai dengan lisensi Anda.",
+    "countrySettingLabel": "Pengaturan Negara (--setctry)",
+    "extUdpHint": "EXTUDP memerlukan node yang dikonfigurasi dengan --extudp aktif dan --extudpip mengarah ke komputer ini (UDP 1799).",
+    "kissTcpHint": "KISS/TCP menggunakan port MeshCom 8001 — bukan Reticulum KISS/AX.25.",
+    "channelAll": "SEMUA",
+    "channelGroup": "Grup {{id}}",
+    "callsignFieldLabel": "Panggilan tanda (--setcall)",
+    "callsignHint": "Tanda panggilan gaya APRS yang valid (SSID opsional). Terapkan mengirim --setcall pada Serial/BLE.",
+    "operatorNameFieldLabel": "Nama operator (--operatorname)",
+    "operatorNamePlaceholder": "nama depan",
+    "operatorNameHint": "Opsional. Dikirim dengan Terapkan pada Seri/BLE (maksimal 19 karakter).",
+    "dbStorageDegraded": "Riwayat pesan MeshCom tidak tersedia (modul basis data gagal dimuat). Obrolan masih berfungsi; riwayat tidak akan tersimpan hingga Anda memulai ulang aplikasi."
+  },
+  "meshcomDeviceCommands": {
+    "description": "Kirim perintah node ICSSW (--help, --settime, --setctry, …) melalui Serial atau BLE. Perintah yang memenuhi syarat APLIKASI sesuai dengan aplikasi MeshCom resmi; perintah khusus serial memerlukan tautan konsol USB.",
+    "autoSettime": "Atur waktu node secara otomatis saat terhubung",
+    "autoSettimeHint": "Saat terhubung melalui Serial atau BLE, kirim --settime dengan jam UTC komputer ini (misalnya {{example}}).",
+    "settimeNow": "Atur waktu sekarang (UTC)",
+    "requiresSerialBle": "Sambungkan melalui Serial atau BLE untuk mengirim perintah perangkat. EXTUDP dan KISS/TCP hanya untuk obrolan.",
+    "filter": "Perintah filter",
+    "filterPlaceholder": "Cari --settime, gateway, tetangga…",
+    "serialOnly": "hanya serial",
+    "run": "Menjalankan",
+    "runCommand": "Jalankan {{command}}",
+    "runChoice": "Jalankan {{command}} {{value}}",
+    "argInput": "Argumen untuk {{command}}",
+    "sent": "Perintah dikirim ke node.",
+    "sendFailed": "Perintah gagal: {{detail}}",
+    "setctrySent": "Tersimpan dan terkirim --setctry {{code}} ke node.",
+    "setctrySavedLocal": "Preferensi negara tersimpan. Hubungkan melalui Serial atau BLE untuk menerapkan --setctry pada node.",
+    "consoleHint": "Ketik --perintah atau pintasan APLIKASI apa pun (GATEWAY, GPS, Info-WX). Rahasia disamarkan dalam log.",
+    "consoleLog": "Log konsol perintah perangkat",
+    "consoleInput": "Input perintah perangkat",
+    "consolePlaceholder": "info",
+    "consoleSend": "Kirim",
+    "confirmDanger": {
+      "title": "Konfirmasi perintah",
+      "message": "Kirim {{command}} ke node? Ini dapat melakukan reboot atau mengubah pengaturan RF.",
+      "confirm": "Kirim"
+    },
+    "groups": {
+      "display": "Tampilkan",
+      "position": "Posisi & waktu",
+      "sensors": "Sensor",
+      "identity": "Identitas & grup",
+      "network": "Jaringan & Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Tetangga",
+      "mailbox": "Kotak-surat",
+      "debug": "Status & debug",
+      "power": "Daya & OTA",
+      "misc": "KISS / lain-lain",
+      "console": "Konsol",
+      "clock": "Jam",
+      "advanced": "Konsol & filter canggih"
+    },
+    "appEligible": "APP / Seri",
+    "loadingConfig": "Memuat konfigurasi perangkat…",
+    "currentValue": "sekarang {{value}}"
   }
 }

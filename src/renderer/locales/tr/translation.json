@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Gökyüzü",
-      "classic": "Klasik yeşil"
+      "classic": "Klasik yeşil",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama",
     "protocolsSection": "Protokoller",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
     "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı",
     "tabWithUnread": "{{label}}, {{count}} okunmamış",
-    "tabWithOpenIncidents": "{{label}}, {{count}} açık İMDAT veya ACİL OLAYLAR"
+    "tabWithOpenIncidents": "{{label}}, {{count}} açık İMDAT veya ACİL OLAYLAR",
+    "switchToMeshCom": "MeshCom'a geç",
+    "switchToMeshComWithUnread": "MeshCom'a geç, {{count}} okunmamış"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -1746,17 +1749,20 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Ülke]/[Eyalet], ör. msh/CO/ABD",
       "meshcoreLetsmesh": "meshcore/{IATA}, ör. ağ puanı/DEN",
-      "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO"
+      "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO",
+      "meshcom": "MeshCom ağ geçidiniz için aracı kök konusu, ör. meshcom"
     },
     "topicPrefixPlaceholder": "msh/ABD/",
     "maxRetriesHelp": {
       "meshtastic": "Vazgeçmeden önce yeniden bağlanma denemeleri yapın (1–{{max}}).",
-      "meshcore": "Vazgeçmeden önce yeniden bağlanma girişimlerini (1-20) yapın."
+      "meshcore": "Vazgeçmeden önce yeniden bağlanma girişimlerini (1-20) yapın.",
+      "meshcom": "Vazgeçmeden önce yeniden bağlanma denemeleri (1–{{max}})."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1855,7 +1861,8 @@
     "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
-      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
+      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır.",
+      "meshcom": "Vazgeçmeden önce yeniden bağlanma denemeleri (1–{{max}}). Ayarlarla birlikte kaydedildi; devam eden oturumun yeni değeri kullanması için bağlantıyı kesin ve tekrar bağlanın."
     },
     "reticulumStackRunningAs": "Çalışıyor — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…",
@@ -1943,7 +1950,10 @@
     "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın.",
     "mqttPacketTooLarge": "Aracı, {{limit}} baytlık güvenlik sınırından büyük bir MQTT paketi gönderdi; otomatik yeniden bağlanma devre dışı.",
     "protocolGuideLink": "Protokol rehberi ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -4037,7 +4047,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Çağrı kodu",
+    "firmware": "Yazılım",
+    "rssi": "RSSI",
+    "altitude": "Yükseklik"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -4134,7 +4148,8 @@
     "statusFilterAll": "Tümü",
     "buttonExport": "Dışa aktar",
     "exportMenuLabel": "Dışa aktarma biçimleri",
-    "youBadge": "Siz"
+    "youBadge": "Siz",
+    "meshcomHardwareType": "MeshCom donanımı (yayın içi hw_id'den)"
   },
   "nomadNetwork": {
     "showBrowser": "Tarayıcıyı göster",
@@ -7546,7 +7561,8 @@
     "reconnectNeeded": "Bu profilin aracı ayarlarını kullanmak için MQTT bağlantısını kesin ve yeniden bağlayın.",
     "switchLabel": "Kayıtlı profil",
     "noneSelected": "Geçerli ayarlar (kaydedilmedi)",
-    "nameAria": "Profil ismi"
+    "nameAria": "Profil ismi",
+    "listLabel": "Kayıtlı özel gümrük müşavirleri"
   },
   "weatherFilter": {
     "viewTooltip": "Bu kanaldaki hava durumu gönderileri",
@@ -7672,7 +7688,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Alındı {{when}}"
   },
@@ -8499,7 +8516,8 @@
     "reticulum": "Reticulum",
     "openFromChat": "Tüm konuşmaları ara",
     "meshtastic": "Meshtastic",
-    "meshcore": "MeshCore"
+    "meshcore": "MeshCore",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "empty": "Gösterilecek alınan mesaj yok.",
@@ -8536,7 +8554,8 @@
     "meshtastic": "Meshtastic",
     "deleteFailed": "Değişiklik kaydedilemedi. Hiçbir şey kaldırılmadı.",
     "deleted_other": "{{count}} mesajları kaldırıldı.",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Ortak anahtarı doğrulayın",
@@ -8970,7 +8989,8 @@
     "loadFailed": "Kişi kartları veritabanından yüklenemedi.",
     "retryLoad": "Tekrar deneyin",
     "retryLoadAria": "Kişi kartlarını yüklemeyi yeniden deneyin",
-    "loadUnavailable": "Kişi Kartları bu sürümde kullanılamaz. Uygulamayı yeniden yükleyin veya güncelleyin."
+    "loadUnavailable": "Kişi Kartları bu sürümde kullanılamaz. Uygulamayı yeniden yükleyin veya güncelleyin.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Kelime filtresine uyan iletileri gizle",
@@ -9008,5 +9028,70 @@
     "openAria": "{{name}} öğesini açın",
     "unknownRoom": "Oda {{id}}",
     "hops": "{{count}} aktarma"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — lisanslı amatör telsiz",
+    "licenseNoticeBody": "MeshCom, yalnızca AB 433 MHz değil, dünya çapında Ülke Ayarı (--setctry) ile seçilen lisanslı amatör (telsiz) LoRa frekanslarında çalışır. MeshCom'u yalnızca ülke profiliniz için yapılandırılmış bantlarda iletim yapma yetkiniz varsa etkinleştirin. Bu bildirim, Meshtastic tarafından sağlanan lisanslı amatör telsiz frekansı kilidinin açılmasından ayrıdır.",
+    "licenseNoticeAccept": "Anlıyorum.",
+    "connectionHint": "MeshCom, Ülke Ayarı (--setctry) aracılığıyla amatör telsiz bandı LoRa kullanır. Düğümünüzün ülke profilinin lisansınızla eşleştiğinden emin olun.",
+    "countrySettingLabel": "Ülke Ayarı (--setctry)",
+    "extUdpHint": "EXTUDP'nin --extudp açık ve --extudpip bu bilgisayarı (UDP 1799) gösterecek şekilde yapılandırılmış düğüme ihtiyacı var.",
+    "kissTcpHint": "KISS/TCP, Reticulum KISS/AX.25'i değil, MeshCom bağlantı noktası 8001'i kullanır.",
+    "channelAll": "TÜMÜ",
+    "channelGroup": "Grup {{id}}",
+    "callsignFieldLabel": "Çağrı işareti (--setcall)",
+    "callsignHint": "Geçerli APRS tarzı çağrı işareti (SSID isteğe bağlı). Uygula, Seri/BLE üzerinden --setcall gönderir.",
+    "operatorNameFieldLabel": "Operatör adı (--operatorname)",
+    "operatorNamePlaceholder": "Adınız",
+    "operatorNameHint": "İsteğe bağlı. Seri Numarasına Uygula/BLE ile gönderilir (maks. 19 karakter).",
+    "dbStorageDegraded": "MeshCom mesaj geçmişi kullanılamıyor (veritabanı modülü yüklenemedi). Sohbet hâlâ çalışıyor; uygulamayı yeniden başlatana kadar geçmiş kalıcı olmayacaktır."
+  },
+  "meshcomDeviceCommands": {
+    "description": "ICSSW düğüm komutlarını (--help, --settime, --setctry, …) Seri veya BLE üzerinden gönderin. Uygulamaya uygun komutlar, resmî MeshCom uygulamasıyla eşleşir; yalnızca seri bağlantı üzerinden verilen komutlar için bir USB konsol bağlantısı gerekir.",
+    "autoSettime": "Bağlandığında düğüm saatini otomatik olarak ayarla",
+    "autoSettimeHint": "Seri veya BLE üzerinden bağlandığınızda bu bilgisayarın UTC saatini (--settime ile birlikte) gönderin (ör. {{example}}).",
+    "settimeNow": "Şimdi saati ayarlayın (UTC)",
+    "requiresSerialBle": "Cihaz komutlarını göndermek için Seri veya BLE üzerinden bağlanın. EXTUDP ve KISS/TCP yalnızca sohbeti taşır.",
+    "filter": "Komutları filtrele",
+    "filterPlaceholder": "--settime, ağ geçidi, komşular… arayın",
+    "serialOnly": "yalnızca seri",
+    "run": "Koşma",
+    "runCommand": "{{command}} çalıştırın",
+    "runChoice": "{{command}} {{value}} çalıştırın",
+    "argInput": "{{command}} için argüman",
+    "sent": "Komut düğüme gönderildi.",
+    "sendFailed": "Komut başarısız oldu: {{detail}}",
+    "setctrySent": "Kaydedildi ve --setctry {{code}} düğüme gönderildi.",
+    "setctrySavedLocal": "Ülke tercihi kaydedildi. Düğümde --setctry komutunu uygulamak için Seri veya BLE üzerinden bağlanın.",
+    "consoleHint": "Herhangi bir --komut veya UYGULAMA kısayolu (GATEWAY, GPS, WX-Info) yazın. Gizli bilgiler günlükte gizlenir.",
+    "consoleLog": "Cihaz komut konsolu günlüğü",
+    "consoleInput": "Cihaz komutu girişi",
+    "consolePlaceholder": "Bilgi",
+    "consoleSend": "Gönder",
+    "confirmDanger": {
+      "title": "Komutu onayla",
+      "message": "{{command}} düğüme gönderilsin mi? Bu işlem, RF ayarlarını yeniden başlatabilir veya değiştirebilir.",
+      "confirm": "Gönder"
+    },
+    "groups": {
+      "display": "Ekran",
+      "position": "Konum ve saat",
+      "sensors": "Sensörleri",
+      "identity": "Kimlik ve gruplar",
+      "network": "Ağ ve Wi-Fi",
+      "gateway": "Ağ Geçidi",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Komşular",
+      "mailbox": "Posta kutusu",
+      "debug": "Durum ve hata ayıklama",
+      "power": "Güç ve OTA",
+      "misc": "KISS / çeşitli",
+      "console": "Konsol",
+      "clock": "Saat",
+      "advanced": "Gelişmiş konsol ve filtre"
+    },
+    "appEligible": "Uygulama / Seri",
+    "loadingConfig": "Cihaz yapılandırması yükleniyor…",
+    "currentValue": "şimdi {{value}}"
   }
 }

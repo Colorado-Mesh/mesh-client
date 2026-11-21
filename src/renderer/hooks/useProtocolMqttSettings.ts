@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  MESHCOM_MQTT_SETTINGS_KEY,
+  readMeshcomMqttSettingsFromStorage,
+} from '@/renderer/lib/meshcomMqttSettingsStorage';
 import { readMeshcoreMqttSettingsFromStorage } from '@/renderer/lib/meshcoreMqttSettingsStorage';
 import {
   MESHTASTIC_MQTT_SETTINGS_KEY,
@@ -9,6 +13,7 @@ import {
 import {
   getCachedSecureSecret,
   isProtectedSecureSecretUnavailable,
+  MESHCOM_MQTT_SECRET_KEY,
   MESHCORE_MQTT_SECRET_KEY,
   MESHTASTIC_MQTT_SECRET_KEY,
   setSecureSecret,
@@ -19,25 +24,36 @@ const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
 export const MQTT_SETTINGS_PERSIST_DEBOUNCE_MS = 100;
 const pendingMqttSecretWrites = new Map<string, Promise<void>>();
 
+function mqttSecretKeyForStorageKey(key: string): string {
+  if (key === MESHCORE_MQTT_SETTINGS_KEY) return MESHCORE_MQTT_SECRET_KEY;
+  if (key === MESHCOM_MQTT_SETTINGS_KEY) return MESHCOM_MQTT_SECRET_KEY;
+  return MESHTASTIC_MQTT_SECRET_KEY;
+}
+
+function protocolForMqttSecretKey(secretKey: string): MeshProtocol {
+  if (secretKey === MESHCORE_MQTT_SECRET_KEY) return 'meshcore';
+  if (secretKey === MESHCOM_MQTT_SECRET_KEY) return 'meshcom';
+  return 'meshtastic';
+}
+
 export function getMqttSettingsStorageKey(protocol: MeshProtocol): string {
-  return protocol === 'meshcore' ? MESHCORE_MQTT_SETTINGS_KEY : MESHTASTIC_MQTT_SETTINGS_KEY;
+  if (protocol === 'meshcore') return MESHCORE_MQTT_SETTINGS_KEY;
+  if (protocol === 'meshcom') return MESHCOM_MQTT_SETTINGS_KEY;
+  return MESHTASTIC_MQTT_SETTINGS_KEY;
 }
 
 export function loadProtocolMqttSettings(protocol: MeshProtocol): MQTTSettings {
-  return protocol === 'meshcore'
-    ? readMeshcoreMqttSettingsFromStorage()
-    : readMeshtasticMqttSettingsFromStorage();
+  if (protocol === 'meshcore') return readMeshcoreMqttSettingsFromStorage();
+  if (protocol === 'meshcom') return readMeshcomMqttSettingsFromStorage();
+  return readMeshtasticMqttSettingsFromStorage();
 }
 
 export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
-  const secretKey =
-    key === MESHCORE_MQTT_SETTINGS_KEY ? MESHCORE_MQTT_SECRET_KEY : MESHTASTIC_MQTT_SECRET_KEY;
+  const secretKey = mqttSecretKeyForStorageKey(key);
   const { password, channelPsks, ...preferences } = settings;
   const serialized = JSON.stringify({ password, channelPsks });
   if (isProtectedSecureSecretUnavailable(secretKey)) {
-    const loaded = loadProtocolMqttSettings(
-      secretKey === MESHCORE_MQTT_SECRET_KEY ? 'meshcore' : 'meshtastic',
-    );
+    const loaded = loadProtocolMqttSettings(protocolForMqttSecretKey(secretKey));
     if (
       password === loaded.password &&
       JSON.stringify(channelPsks) === JSON.stringify(loaded.channelPsks)
@@ -95,7 +111,7 @@ export function flushPendingMqttSave(
   persistMqttSettingsIfChanged(key, settings);
 }
 
-/** Shared MQTT settings load/persist for ConnectionPanel (Meshtastic + MeshCore). */
+/** Shared MQTT settings load/persist for ConnectionPanel (Meshtastic + MeshCore + MeshCom). */
 export function useProtocolMqttSettings(protocol: MeshProtocol) {
   const storageKey = getMqttSettingsStorageKey(protocol);
   const [settings, setSettings] = useState<MQTTSettings>(() => loadProtocolMqttSettings(protocol));

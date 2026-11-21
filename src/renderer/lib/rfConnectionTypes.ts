@@ -5,7 +5,8 @@ export type RfConnectionTransportOpts =
   | { type: 'ble'; blePeripheralId?: string }
   | { type: 'serial'; lastSerialPortId?: string | null }
   | { type: 'http'; httpAddress?: string }
-  | { type: 'tcp'; httpAddress?: string };
+  | { type: 'tcp'; httpAddress?: string }
+  | { type: 'udp'; httpAddress?: string };
 
 export function rfConnectionTransportOpts(
   type: ConnectionType,
@@ -24,6 +25,8 @@ export function rfConnectionTransportOpts(
       return { type: 'http', httpAddress: fields.httpAddress };
     case 'tcp':
       return { type: 'tcp', httpAddress: fields.httpAddress };
+    case 'udp':
+      return { type: 'udp', httpAddress: fields.httpAddress };
     default: {
       const _exhaustive: never = type;
       throw new Error(`rfConnectionTransportOpts: unsupported type ${String(_exhaustive)}`);
@@ -35,7 +38,7 @@ export function rfConnectionTransportOpts(
 export interface RfConnectFn {
   (type: 'ble', httpAddress?: undefined, blePeripheralId?: string): Promise<void>;
   (type: 'serial', httpAddress?: undefined, blePeripheralId?: undefined): Promise<void>;
-  (type: 'http' | 'tcp', httpAddress?: string, blePeripheralId?: undefined): Promise<void>;
+  (type: 'http' | 'tcp' | 'udp', httpAddress?: string, blePeripheralId?: undefined): Promise<void>;
 }
 
 /** Type-safe auto-connect; serial stores port id, BLE stores peripheral id. */
@@ -52,5 +55,5 @@ export interface RfConnectAutomaticFn {
     lastSerialPortId?: string | null,
     blePeripheralId?: undefined,
   ): Promise<void>;
-  (type: 'http' | 'tcp', httpAddress?: string, lastSerialPortId?: undefined): Promise<void>;
+  (type: 'http' | 'tcp' | 'udp', httpAddress?: string, lastSerialPortId?: undefined): Promise<void>;
 }

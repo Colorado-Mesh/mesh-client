@@ -26,6 +26,7 @@ const PROTOCOL_NAME_KEYS: Readonly<Record<MeshProtocol, string>> = {
   meshtastic: 'weatherForecast.protocol.meshtastic',
   meshcore: 'weatherForecast.protocol.meshcore',
   reticulum: 'weatherForecast.protocol.reticulum',
+  meshcom: 'weatherForecast.protocol.meshcom',
 };
 
 export interface WeatherForecastLayerProps {

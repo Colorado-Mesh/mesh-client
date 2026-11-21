@@ -47,6 +47,7 @@ describe('contactMessageHistory', () => {
           reticulum_sender_hash: 'aa'.repeat(16),
         }),
       ],
+      meshcom: [],
     });
     expect(timeline.map((t) => t.message.payload)).toEqual(['hi rns', 'hi lora']);
     expect(timeline[0]?.protocol).toBe('reticulum');
@@ -77,6 +78,7 @@ describe('contactMessageHistory', () => {
           reticulum_destination_hash: 'bb'.repeat(16),
         }),
       ],
+      meshcom: [],
     });
     expect(timeline).toHaveLength(1);
     expect(timeline[0]?.reticulumPeerHash).toBe('bb'.repeat(16));
@@ -100,6 +102,7 @@ describe('contactMessageHistory', () => {
       ],
       meshcore: [],
       reticulum: [],
+      meshcom: [],
     });
     expect(timeline).toHaveLength(1);
     expect(timeline[0]?.message.payload).toBe('hello');

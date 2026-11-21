@@ -795,6 +795,7 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       meshtastic: 2,
       meshcore: 5,
       reticulum: 7,
+      meshcom: 0,
     });
   });
 
@@ -803,6 +804,7 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       meshtastic: 0,
       meshcore: 0,
       reticulum: 0,
+      meshcom: 0,
     });
   });
 
@@ -811,6 +813,7 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       meshtastic: 0,
       meshcore: 1,
       reticulum: 6,
+      meshcom: 0,
     });
   });
 
@@ -819,6 +822,16 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       meshtastic: 0,
       meshcore: 3,
       reticulum: 7,
+      meshcom: 0,
+    });
+  });
+
+  it('includes meshcom chat unread on the protocol switcher', () => {
+    expect(buildProtocolSwitcherUnreadByProtocol(0, 0, 0, 0, 0, 9)).toEqual({
+      meshtastic: 0,
+      meshcore: 0,
+      reticulum: 0,
+      meshcom: 9,
     });
   });
 });

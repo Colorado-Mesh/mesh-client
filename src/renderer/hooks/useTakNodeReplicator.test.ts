@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { MeshNode } from '@/renderer/lib/types';
+import type { MeshNode, MeshProtocol } from '@/renderer/lib/types';
 
 vi.mock('@/renderer/lib/gpsSource', () => ({
   readStoredStaticGps: vi.fn(() => null),
@@ -36,11 +36,12 @@ function node(id: number, overrides: Partial<MeshNode> = {}): MeshNode {
 function nodesByProtocol(
   meshtastic: MeshNode[] = [],
   meshcore: MeshNode[] = [],
-): Record<'meshtastic' | 'meshcore' | 'reticulum', Map<number, MeshNode>> {
+): Record<MeshProtocol, Map<number, MeshNode>> {
   return {
     meshtastic: new Map(meshtastic.map((n) => [n.node_id, n])),
     meshcore: new Map(meshcore.map((n) => [n.node_id, n])),
     reticulum: new Map(),
+    meshcom: new Map(),
   };
 }
 

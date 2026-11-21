@@ -40,6 +40,7 @@ const PROTOCOL_LABEL_KEYS: Record<MeshProtocol, string> = {
   meshtastic: 'unifiedInbox.meshtastic',
   meshcore: 'unifiedInbox.meshcore',
   reticulum: 'unifiedInbox.reticulum',
+  meshcom: 'unifiedInbox.meshcom',
 };
 
 function formatTime(ts: number): string {

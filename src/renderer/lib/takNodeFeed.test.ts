@@ -55,7 +55,12 @@ function rmapRow(overrides: Partial<ReticulumRmapDiscoveredWireRow> = {}) {
 
 function sources(overrides: Partial<TakFeedSources> = {}): TakFeedSources {
   return {
-    nodesByProtocol: { meshtastic: new Map(), meshcore: new Map(), reticulum: new Map() },
+    nodesByProtocol: {
+      meshtastic: new Map(),
+      meshcore: new Map(),
+      reticulum: new Map(),
+      meshcom: new Map(),
+    },
     rmapRows: [],
     reticulumSelf: null,
     ...overrides,
@@ -165,6 +170,7 @@ describe('collectTakNodeUpdates', () => {
             [2, node({ node_id: 2, latitude: null })],
           ]),
           reticulum: new Map(),
+          meshcom: new Map(),
         },
         rmapRows: [rmapRow()],
         reticulumSelf: { nodeId: 77, name: 'Base', latitude: 39.9, longitude: -105.2 },
@@ -186,6 +192,7 @@ describe('collectTakNodeUpdates', () => {
           meshtastic: new Map([[1, node({ node_id: 1 })]]),
           meshcore: new Map([[2, node({ node_id: 2 })]]),
           reticulum: new Map(),
+          meshcom: new Map(),
         },
       }),
       canDirectMessage: (n, protocol) => protocol === 'meshcore' && n.node_id === 2,

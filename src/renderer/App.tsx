@@ -53,6 +53,7 @@ import {
   getSanitizedMeshtasticChatLastRead,
   getSanitizedReticulumChatLastRead,
   loadMutedViews,
+  loadPersistedLastReadInitial,
   removePersistedLastReadForChannel,
   subscribeMutedViewsChanged,
   subscribePersistedLastRead,
@@ -78,7 +79,10 @@ import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext
 import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
-import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import {
+  hydrateIdentityStoresFromDb,
+  type MessageClearRefreshOptions,
+} from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
@@ -199,6 +203,7 @@ import { useHasLocalSendingMessage, useHasSendingMessage } from './hooks/useHasS
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
+import type { useMeshcomPanelActions } from './hooks/useMeshcomPanelActions';
 import { useMeshcoreChannelsDeviceSync } from './hooks/useMeshcoreChannelsDeviceSync';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
@@ -320,6 +325,7 @@ import {
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './lib/chatMessageRoute';
+import { protocolMqttProvidesChatSend } from './lib/chatMqttHybridSend';
 import { playMessageNotification } from './lib/chatNotifications';
 import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
 import { startCoiMemorySampler } from './lib/coiMemorySampler';
@@ -334,6 +340,7 @@ import {
 } from './lib/connectionHeaderStatus';
 import { statusBarTransportLabel, takStatusBarLabels } from './lib/connectionPanelLabels';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
+import { resolveDetailModalProtocol } from './lib/detailModalProtocol';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
   enabledProtocolsFrom,
@@ -468,12 +475,16 @@ import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
 import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
 import { setVisibleMeshProtocol } from './lib/visibleMeshProtocolStore';
 import { isSupportedLocale } from './locales/languages';
+import { MeshcomRuntimeActive } from './runtime/MeshcomRuntimeActive';
+import { createMeshcomRuntimeDisabledStub } from './runtime/meshcomRuntimeDisabledStub';
 import {
   ProtocolRuntimeProvider,
   type RuntimeMap,
   useAllRuntimes,
   useRuntime,
 } from './runtime/ProtocolRuntimeContext';
+import { useMeshcomProtocolEnabled } from './runtime/useMeshcomProtocolEnabled';
+import type { MeshcomRuntime } from './runtime/useMeshcomRuntime';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
@@ -639,18 +650,7 @@ function HeaderMqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeade
   return <MqttGlobeIcon className={`${ICON_SM_PLUS} ${headerIconClass(variant)}`} />;
 }
 
-export default function App() {
-  const meshtasticRuntime = useMeshtasticRuntime();
-  const meshcoreRuntime = useMeshcoreRuntime();
-  const reticulumRuntime = useReticulumRuntime();
-  const runtimeMap = useMemo<RuntimeMap>(
-    () => ({
-      meshtastic: meshtasticRuntime,
-      meshcore: meshcoreRuntime,
-      reticulum: reticulumRuntime,
-    }),
-    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime],
-  );
+function AppProviders({ runtimeMap }: { runtimeMap: RuntimeMap }) {
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
       <ToastProvider>
@@ -663,6 +663,44 @@ export default function App() {
         </RetryableLazy>
       </ToastProvider>
     </ProtocolRuntimeProvider>
+  );
+}
+
+export default function App() {
+  const meshtasticRuntime = useMeshtasticRuntime();
+  const meshcoreRuntime = useMeshcoreRuntime();
+  const reticulumRuntime = useReticulumRuntime();
+  const meshcomEnabled = useMeshcomProtocolEnabled();
+  const meshcomStub = useMemo(() => createMeshcomRuntimeDisabledStub(), []);
+  const [liveMeshcomRuntime, setLiveMeshcomRuntime] = useState<MeshcomRuntime | null>(null);
+  const onMeshcomRuntime = useCallback((runtime: MeshcomRuntime) => {
+    setLiveMeshcomRuntime(runtime);
+  }, []);
+
+  // Keep AppProviders mounted across MeshCom enable/disable so hide-protocol MQTT/RF
+  // disconnect effects are not lost when default-hidden meshcom flips on.
+  const runtimeMap = useMemo<RuntimeMap>(
+    () => ({
+      meshtastic: meshtasticRuntime,
+      meshcore: meshcoreRuntime,
+      reticulum: reticulumRuntime,
+      meshcom: meshcomEnabled && liveMeshcomRuntime ? liveMeshcomRuntime : meshcomStub,
+    }),
+    [
+      meshtasticRuntime,
+      meshcoreRuntime,
+      reticulumRuntime,
+      meshcomEnabled,
+      liveMeshcomRuntime,
+      meshcomStub,
+    ],
+  );
+
+  return (
+    <>
+      {meshcomEnabled ? <MeshcomRuntimeActive onRuntime={onMeshcomRuntime} /> : null}
+      <AppProviders runtimeMap={runtimeMap} />
+    </>
   );
 }
 
@@ -696,6 +734,7 @@ function AppContent() {
   const meshtasticRuntime = runtimes.meshtastic;
   const meshcoreRuntime = runtimes.meshcore;
   const reticulumRuntime = runtimes.reticulum;
+  const meshcomRuntime = runtimes.meshcom;
   const [activeTab, setActiveTab] = useState(0);
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherPins, setLauncherPins] = useState(readLauncherPins);
@@ -787,6 +826,7 @@ function AppContent() {
     meshtastic: 0,
     meshcore: 0,
     reticulum: 0,
+    meshcom: 0,
   });
   const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
   const [meshcoreMutedViewsRevision, setMeshcoreMutedViewsRevision] = useState(0);
@@ -1019,6 +1059,7 @@ function AppContent() {
     setHiddenProtocols((prev) =>
       prev.length === hidden.length && prev.every((p) => hidden.includes(p)) ? prev : hidden,
     );
+    window.dispatchEvent(new CustomEvent('mesh-client:hidden-protocols', { detail: hidden }));
   }, []);
 
   const protocolConnect = useProtocolConnect();
@@ -1027,6 +1068,7 @@ function AppContent() {
   const meshtasticConnection = allConnectionActions.meshtastic;
   const meshcoreConnection = allConnectionActions.meshcore;
   const reticulumConnection = allConnectionActions.reticulum;
+  const meshcomConnection = allConnectionActions.meshcom;
   const startReticulumStack = useCallback(
     () => reticulumConnection.connectAutomatic('http'),
     [reticulumConnection],
@@ -1051,6 +1093,10 @@ function AppContent() {
         onPowerSuspend: reticulumRuntime.onPowerSuspend,
         onPowerResume: reticulumRuntime.onPowerResume,
       },
+      meshcom: {
+        onPowerSuspend: meshcomRuntime.onPowerSuspend,
+        onPowerResume: meshcomRuntime.onPowerResume,
+      },
     },
     hiddenProtocols,
   });
@@ -1066,6 +1112,7 @@ function AppContent() {
     meshtastic: meshtasticRuntime,
     meshcore: meshcoreRuntime,
     reticulum: reticulumRuntime,
+    meshcom: meshcomRuntime,
   });
   const meshtasticPanelActions = allPanelActions.meshtastic as ReturnType<
     typeof useMeshtasticPanelActions
@@ -1073,6 +1120,7 @@ function AppContent() {
   const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
     typeof useMeshcorePanelActions
   >;
+  const meshcomPanelActions = allPanelActions.meshcom as ReturnType<typeof useMeshcomPanelActions>;
   const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
     typeof useReticulumPanelActions
   >;
@@ -1088,11 +1136,15 @@ function AppContent() {
   } = activeFacade;
   const meshtasticIdentityId = identityIdByProtocol.meshtastic;
   const meshcoreIdentityId = identityIdByProtocol.meshcore;
+  const meshcomIdentityId = identityIdByProtocol.meshcom;
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
   const meshcoreNodesById = useNodeStore((s) =>
     meshcoreIdentityId ? s.nodes[meshcoreIdentityId] : undefined,
+  );
+  const meshcomNodesById = useNodeStore((s) =>
+    meshcomIdentityId ? s.nodes[meshcomIdentityId] : undefined,
   );
   /** Raw store rows for MECP watchers (not the Chat UI pipeline). */
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
@@ -1140,6 +1192,7 @@ function AppContent() {
     meshcoreSelfNodeId: meshcoreRuntime.selfNodeId,
   });
   const reticulumUiMessages = useProtocolChatMessages('reticulum', reticulumIdentityId);
+  const meshcomUiMessages = useProtocolChatMessages('meshcom', meshcomIdentityId);
   const meshtasticUiNodes = useMemo(() => {
     if (!meshtasticNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));
@@ -1148,6 +1201,10 @@ function AppContent() {
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
+  const meshcomUiNodes = useMemo(() => {
+    if (!meshcomNodesById) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(meshcomNodesById));
+  }, [meshcomNodesById]);
   const meshcoreRadioSignature = useIdentityStore((s) =>
     meshcoreIdentityId ? s.identities[meshcoreIdentityId]?.signature : undefined,
   );
@@ -1273,6 +1330,15 @@ function AppContent() {
   }, [reticulumNodesById]);
   const reticulumPathPeerCount = useReticulumPeerStore((s) => s.peers.size);
 
+  // Prefetch MeshCom codecs when the protocol is enabled so the first CM switch
+  // does not block on the lazy chunk (same class of hitch as MC→RN sidecar warm-up).
+  useEffect(() => {
+    if (!enabledProtocols.includes('meshcom')) return;
+    void import('./lib/protocols/meshcomProtocolLoader').then(({ ensureMeshcomProtocolLoaded }) =>
+      ensureMeshcomProtocolLoaded(),
+    );
+  }, [enabledProtocols]);
+
   const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
   const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
   const reticulumDbRefresh = useProtocolDbRefresh('reticulum', reticulumIdentityId);
@@ -1307,11 +1373,17 @@ function AppContent() {
       meshtastic: meshtasticIdentityId,
       meshcore: meshcoreIdentityId,
       reticulum: reticulumIdentityId,
+      meshcom: identityIdByProtocol.meshcom,
     };
     const refreshByProtocol: Record<MeshProtocol, () => Promise<void>> = {
       meshtastic: refreshMeshtasticAllFromDb,
       meshcore: refreshMeshcoreAllFromDb,
       reticulum: refreshReticulumAllFromDb,
+      meshcom: async () => {
+        const id = identityIdByProtocol.meshcom;
+        if (!id) return;
+        await hydrateIdentityStoresFromDb('meshcom', id);
+      },
     };
 
     const shouldSkipProtocol = (p: MeshProtocol): boolean => {
@@ -1385,6 +1457,7 @@ function AppContent() {
     meshtasticIdentityId,
     meshcoreIdentityId,
     reticulumIdentityId,
+    identityIdByProtocol.meshcom,
     refreshMeshtasticAllFromDb,
     refreshMeshcoreAllFromDb,
     refreshReticulumAllFromDb,
@@ -1403,18 +1476,26 @@ function AppContent() {
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
   const reticulumConnectionView = useConnectionView(reticulumIdentityId);
+  const meshcomConnectionView = useConnectionView(meshcomIdentityId);
 
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
   const reticulumCapabilities = useRadioProvider('reticulum');
+  const meshcomCapabilities = useRadioProvider('meshcom');
   useEffect(() => {
     if (!reticulumCapabilities.hasReticulumInterfaceConfig) {
       skipReticulumStartupAutostartGate();
     }
   }, [reticulumCapabilities.hasReticulumInterfaceConfig]);
   const capabilitiesByProtocol = useMemo(
-    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities),
-    [meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
+    () =>
+      protocolRecord(
+        meshtasticCapabilities,
+        meshcoreCapabilities,
+        reticulumCapabilities,
+        meshcomCapabilities,
+      ),
+    [meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities, meshcomCapabilities],
   );
   const tabsByProtocol = useMemo(
     () =>
@@ -1422,28 +1503,58 @@ function AppContent() {
         computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
         computeTabMappings(t, 'meshcore', meshcoreCapabilities),
         computeTabMappings(t, 'reticulum', reticulumCapabilities),
+        computeTabMappings(t, 'meshcom', meshcomCapabilities),
       ),
-    [t, meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
+    [t, meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities, meshcomCapabilities],
   );
   const uiNodesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes),
-    [meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes],
+    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes, meshcomUiNodes),
+    [meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes, meshcomUiNodes],
   );
   const uiMessagesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages),
-    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages],
+    () =>
+      protocolRecord(
+        meshtasticUiMessages,
+        meshcoreUiMessages,
+        reticulumUiMessages,
+        meshcomUiMessages,
+      ),
+    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages, meshcomUiMessages],
   );
   const connectionViewByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
-    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+    () =>
+      protocolRecord(
+        meshtasticConnectionView,
+        meshcoreConnectionView,
+        reticulumConnectionView,
+        meshcomConnectionView,
+      ),
+    [
+      meshtasticConnectionView,
+      meshcoreConnectionView,
+      reticulumConnectionView,
+      meshcomConnectionView,
+    ],
   );
   const panelActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
-    [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],
+    () =>
+      protocolRecord(
+        meshtasticPanelActions,
+        meshcorePanelActions,
+        reticulumPanelActions,
+        meshcomPanelActions,
+      ),
+    [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions, meshcomPanelActions],
   );
   const deviceStateByProtocol = useMemo(
-    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state),
-    [meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state],
+    () =>
+      protocolRecord(
+        meshtasticRuntime.state,
+        meshcoreRuntime.state,
+        reticulumRuntime.state,
+        meshcomRuntime.state,
+      ),
+    [meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state, meshcomRuntime.state],
   );
   const selfNodeIdByProtocol = useMemo(
     () =>
@@ -1451,8 +1562,14 @@ function AppContent() {
         meshtasticRuntime.selfNodeId,
         meshcoreRuntime.selfNodeId,
         typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : null,
+        typeof meshcomRuntime.selfNodeId === 'number' ? meshcomRuntime.selfNodeId : null,
       ),
-    [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, reticulumRuntime.selfNodeId],
+    [
+      meshtasticRuntime.selfNodeId,
+      meshcoreRuntime.selfNodeId,
+      reticulumRuntime.selfNodeId,
+      meshcomRuntime.selfNodeId,
+    ],
   );
   useBotSenderDetection(uiMessagesByProtocol, selfNodeIdByProtocol);
   const securityLocalNodeNumByProtocol = useMemo(
@@ -1687,6 +1804,11 @@ function AppContent() {
       connectionMyNodeNum,
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
+
+  const meshcomOwnNodeIdSet = useMemo(() => {
+    const selfId = asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum);
+    return selfId > 0 ? new Set([selfId]) : new Set<number>();
+  }, [meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum]);
 
   const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
   useEffect(() => {
@@ -2080,12 +2202,19 @@ function AppContent() {
         isChatOutboxSendAvailable('meshtastic', meshtasticConnectionView),
         isChatOutboxSendAvailable('meshcore', meshcoreConnectionView),
         isChatOutboxSendAvailable('reticulum', reticulumConnectionView),
+        isChatOutboxSendAvailable('meshcom', meshcomConnectionView),
       ),
-    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+    [
+      meshtasticConnectionView,
+      meshcoreConnectionView,
+      reticulumConnectionView,
+      meshcomConnectionView,
+    ],
   );
   const meshtasticSendMessage = useSendMessage(meshtasticIdentityId);
   const meshcoreSendMessage = useSendMessage(meshcoreIdentityId);
   const reticulumSendMessage = useSendMessage(reticulumIdentityId);
+  const meshcomSendMessage = useSendMessage(meshcomIdentityId);
   const outboxSendFnByProtocol = useMemo(() => {
     const wrap =
       (send: typeof meshtasticSendMessage): ChatOutboxSendFn =>
@@ -2095,8 +2224,9 @@ function AppContent() {
       wrap(meshtasticSendMessage),
       wrap(meshcoreSendMessage),
       wrap(reticulumSendMessage),
+      wrap(meshcomSendMessage),
     );
-  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage]);
+  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage, meshcomSendMessage]);
   const emergencyOutboxDrains = useMemo(
     () =>
       REGISTERED_MESH_PROTOCOLS.map((p) => ({
@@ -2109,8 +2239,14 @@ function AppContent() {
   );
   useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
   const autoResendSendByProtocol = useMemo(
-    () => protocolRecord(meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage),
-    [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage],
+    () =>
+      protocolRecord(
+        meshtasticSendMessage,
+        meshcoreSendMessage,
+        reticulumSendMessage,
+        meshcomSendMessage,
+      ),
+    [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage, meshcomSendMessage],
   );
   useAutoResend(autoResendSendByProtocol);
 
@@ -2120,17 +2256,22 @@ function AppContent() {
         ...meshtasticOwnNodeIdSet,
         ...meshcoreOwnNodeIdSet,
         ...reticulumOwnNodeIdSet,
+        ...meshcomOwnNodeIdSet,
         meshtasticRuntime.state.myNodeNum,
         meshcoreRuntime.selfNodeId,
         reticulumRuntime.state.myNodeNum,
+        asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum),
       ]),
     [
       meshtasticOwnNodeIdSet,
       meshcoreOwnNodeIdSet,
       reticulumOwnNodeIdSet,
+      meshcomOwnNodeIdSet,
       meshtasticRuntime.state.myNodeNum,
       meshcoreRuntime.selfNodeId,
       reticulumRuntime.state.myNodeNum,
+      meshcomRuntime.selfNodeId,
+      meshcomRuntime.state.myNodeNum,
     ],
   );
 
@@ -2140,8 +2281,9 @@ function AppContent() {
       meshtastic: meshtasticOwnNodeIdSet,
       meshcore: meshcoreOwnNodeIdSet,
       reticulum: reticulumOwnNodeIdSet,
+      meshcom: meshcomOwnNodeIdSet,
     }),
-    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet],
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet, meshcomOwnNodeIdSet],
   );
 
   const ownReticulumHashes = useMemo(() => {
@@ -2267,7 +2409,7 @@ function AppContent() {
   );
 
   const chatUnreadByProtocol = useMemo(
-    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
+    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, 0),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
   );
   const protocolSwitcherUnreadByProtocol = useMemo(
@@ -2278,6 +2420,7 @@ function AppContent() {
         reticulumChatUnread,
         rrcUnread,
         gamesUnread,
+        0,
       ),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread, gamesUnread],
   );
@@ -2287,31 +2430,46 @@ function AppContent() {
   );
   const chatUnreadTotal = selectByProtocol(chatUnreadByProtocol, protocol);
   const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
-  const activeFriendsIdentityId =
-    protocol === 'meshtastic'
-      ? meshtasticIdentityId
-      : protocol === 'meshcore'
-        ? meshcoreIdentityId
-        : reticulumIdentityId;
+  const friendsIdentityByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticIdentityId,
+        meshcoreIdentityId,
+        reticulumIdentityId,
+        meshcomIdentityId,
+      ),
+    [meshtasticIdentityId, meshcoreIdentityId, reticulumIdentityId, meshcomIdentityId],
+  );
+  const activeFriendsIdentityId = selectByProtocol(friendsIdentityByProtocol, protocol);
   const friendsByIdentity = useFriendsStore((s) => s.byIdentity);
   const activeFriendNodeIds = useMemo(() => {
     if (!activeFriendsIdentityId) return new Set<number>();
     return new Set(friendsByIdentity[activeFriendsIdentityId] ?? []);
   }, [activeFriendsIdentityId, friendsByIdentity]);
+  const friendsMessagesByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticUiMessages,
+        meshcoreUiMessages,
+        reticulumUiMessages,
+        meshcomUiMessages,
+      ),
+    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages, meshcomUiMessages],
+  );
+  const friendsOwnNodeIdsByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticOwnNodeIdSet,
+        meshcoreOwnNodeIdSet,
+        reticulumOwnNodeIdSet,
+        meshcomOwnNodeIdSet,
+      ),
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet, meshcomOwnNodeIdSet],
+  );
   const friendsUnread = useMemo(() => {
     if (activeFriendNodeIds.size === 0) return 0;
-    const messages =
-      protocol === 'meshtastic'
-        ? meshtasticUiMessages
-        : protocol === 'meshcore'
-          ? meshcoreUiMessages
-          : reticulumUiMessages;
-    const own =
-      protocol === 'meshtastic'
-        ? meshtasticOwnNodeIdSet
-        : protocol === 'meshcore'
-          ? meshcoreOwnNodeIdSet
-          : reticulumOwnNodeIdSet;
+    const messages = selectByProtocol(friendsMessagesByProtocol, protocol);
+    const own = selectByProtocol(friendsOwnNodeIdsByProtocol, protocol);
     touch(lastReadRevision.meshtastic);
     touch(lastReadRevision.meshcore);
     touch(lastReadRevision.reticulum);
@@ -2323,7 +2481,9 @@ function AppContent() {
         ? getSanitizedMeshtasticChatLastRead(meshtasticUiMessages, meshtasticOwnNodeIdSet)
         : protocol === 'meshcore'
           ? meshcoreChatLastRead
-          : getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
+          : protocol === 'meshcom'
+            ? loadPersistedLastReadInitial('meshcom')
+            : getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     const dm = computeDmUnreadCounts(
       messages,
       persisted,
@@ -2334,13 +2494,13 @@ function AppContent() {
     return partitionDmUnreadByFriends(dm, activeFriendNodeIds).friendsUnread;
   }, [
     activeFriendNodeIds,
+    friendsMessagesByProtocol,
+    friendsOwnNodeIdsByProtocol,
     lastReadRevision.meshtastic,
     lastReadRevision.meshcore,
     lastReadRevision.reticulum,
     meshcoreChatLastRead,
     meshcoreChatUnreadDmOptions,
-    meshcoreOwnNodeIdSet,
-    meshcoreUiMessages,
     meshtasticOwnNodeIdSet,
     meshtasticUiMessages,
     protocol,
@@ -2953,6 +3113,12 @@ function AppContent() {
           );
         });
       }
+      if (hidden === 'meshcom') {
+        console.debug('[App] disconnecting meshcom MQTT: disabled in App → Protocols');
+        void window.electronAPI.mqtt.disconnect('meshcom').catch((e: unknown) => {
+          console.warn('[App] MQTT disconnect of disabled meshcom failed ' + errLikeToLogString(e));
+        });
+      }
       if (
         selectByProtocol(capabilitiesByProtocol, hidden).hasMqttHybrid &&
         meshtasticConnectionView.mqttStatus !== 'disconnected'
@@ -3032,16 +3198,21 @@ function AppContent() {
   ]);
 
   const refreshActiveOurPosition = useCallback(() => {
-    const refresh = capabilities.hasFullPositionConfig
-      ? meshtasticPanelActions.refreshOurPosition
-      : capabilities.prefersDeviceOwnerLongNameInHeader
-        ? meshcorePanelActions.refreshOurPosition
-        : null;
+    // Prefer protocol identity over MeshCore-like capability flags — MeshCom also sets
+    // prefersDeviceOwnerLongNameInHeader and must not call MeshCore's refresh.
+    const refresh =
+      protocol === 'meshtastic'
+        ? meshtasticPanelActions.refreshOurPosition
+        : protocol === 'meshcore'
+          ? meshcorePanelActions.refreshOurPosition
+          : protocol === 'meshcom'
+            ? meshcomPanelActions.refreshOurPosition
+            : null;
     if (!refresh) return;
     void refresh().catch((e: unknown) => {
       console.debug('[App] refreshOurPosition after location change ' + errLikeToLogString(e));
     });
-  }, [capabilities, meshtasticPanelActions, meshcorePanelActions]);
+  }, [protocol, meshtasticPanelActions, meshcorePanelActions, meshcomPanelActions]);
 
   useRefreshPositionOnProtocolSwitch(protocol, refreshActiveOurPosition);
 
@@ -3091,10 +3262,17 @@ function AppContent() {
         return pos ? { lat: pos.lat, lon: pos.lon } : null;
       }
     : undefined;
+  const meshcomChatShareLocation = canTransmitLocation({ protocol: 'meshcom' })
+    ? async () => {
+        const pos = await meshcomPanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      }
+    : undefined;
   const chatShareLocationByProtocol = protocolRecord(
     meshtasticChatShareLocation,
     meshcoreChatShareLocation,
     reticulumChatShareLocation,
+    meshcomChatShareLocation,
   );
 
   const hasLocalMeshtasticRadio =
@@ -3254,9 +3432,10 @@ function AppContent() {
   ]);
 
   const detailModalProtocol = useMemo((): MeshProtocol => {
-    if (selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId)) return 'meshcore';
-    return protocol;
-  }, [selectedNodeId, protocol, meshcoreUiNodes]);
+    return resolveDetailModalProtocol(selectedNodeId, protocol, (p, nodeId) =>
+      selectByProtocol(uiNodesByProtocol, p).has(nodeId),
+    );
+  }, [selectedNodeId, protocol, uiNodesByProtocol]);
 
   const detailModalCapabilities = selectByProtocol(capabilitiesByProtocol, detailModalProtocol);
   const detailModalPanelActions = selectByProtocol(panelActionsByProtocol, detailModalProtocol);
@@ -3273,18 +3452,20 @@ function AppContent() {
     [detailIsOperational, detailConnectionView.state.status],
   );
 
-  const detailModalNodes =
-    selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId) ? meshcoreUiNodes : nodesForUi;
-  const detailHomeNode = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
-    ? (meshcoreUiNodes.get(meshcoreRuntime.selfNodeId) ?? null)
-    : (nodesForUi.get(meshtasticConnectionView.state.myNodeNum) ?? null);
-  const detailMyNodeNum = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
-    ? meshcoreRuntime.selfNodeId
-    : meshtasticConnectionView.state.myNodeNum;
+  const detailModalNodes = selectByProtocol(uiNodesByProtocol, detailModalProtocol);
+  const detailMyNodeNum =
+    detailModalProtocol === 'meshcore'
+      ? meshcoreRuntime.selfNodeId
+      : detailModalProtocol === 'meshcom'
+        ? asNumericNodeId(meshcomRuntime.selfNodeId, meshcomRuntime.state.myNodeNum)
+        : detailModalProtocol === 'reticulum'
+          ? asNumericNodeId(reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum)
+          : meshtasticConnectionView.state.myNodeNum;
+  const detailHomeNode = detailModalNodes.get(detailMyNodeNum) ?? null;
 
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
-    const liveNode = meshcoreUiNodes.get(selectedNodeId) ?? nodesForUi.get(selectedNodeId);
+    const liveNode = detailModalNodes.get(selectedNodeId);
     if (liveNode) return liveNode;
 
     const fallback = meshNodeStubForDetailModal(selectedNodeId);
@@ -3302,7 +3483,7 @@ function AppContent() {
       longitude: latest.lon,
       last_heard: Math.max(fallback.last_heard, Math.floor(latest.t / 1000)),
     };
-  }, [selectedNodeId, nodesForUi, meshcoreUiNodes, selectedNodeHistoryPoints]);
+  }, [selectedNodeId, detailModalNodes, selectedNodeHistoryPoints]);
   const selectedNodeHistory = useMemo(() => {
     if (selectedNodeId == null || !selectedNodeHistoryPoints) return undefined;
     return new Map([[selectedNodeId, selectedNodeHistoryPoints]]);
@@ -3374,6 +3555,19 @@ function AppContent() {
     ],
   );
 
+  /** MeshCom chat: ALL (*) plus any positive GRC group indices seen in messages. */
+  const meshcomChatChannels = useMemo(() => {
+    const pills: { index: number; name: string }[] = [{ index: 0, name: t('meshcom.channelAll') }];
+    const seen = new Set<number>([0]);
+    for (const msg of meshcomUiMessages) {
+      const ch = msg.channel;
+      if (typeof ch !== 'number' || ch <= 0 || seen.has(ch)) continue;
+      seen.add(ch);
+      pills.push({ index: ch, name: t('meshcom.channelGroup', { id: ch }) });
+    }
+    return pills;
+  }, [meshcomUiMessages, t]);
+
   /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannelsByProtocol = useMemo(
     () =>
@@ -3393,8 +3587,10 @@ function AppContent() {
           hasCompanionContactManagementConfig:
             reticulumCapabilities.hasCompanionContactManagementConfig,
         }),
+        meshcomChatChannels,
       ),
     [
+      meshcomChatChannels,
       meshtasticCapabilities.hasCompanionContactManagementConfig,
       meshtasticCapabilities.hasReticulumInterfaceConfig,
       meshtasticRuntime.channels,
@@ -4468,6 +4664,7 @@ function AppContent() {
               activeConnection.connectAutomatic('serial', undefined, serialPortId),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
             connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
+            connectUdp: (httpAddress) => protocolConnect(protocol, 'udp', httpAddress),
           })
             .catch((err: unknown) => {
               logRfReconnectFailure('[App] handleReconnect failed', err);
@@ -4492,7 +4689,9 @@ function AppContent() {
   const handleMessageNode = useCallback(
     (nodeNum: number) => {
       const messageProtocol =
-        detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+        detailModalProtocol === 'meshcore' ||
+        detailModalProtocol === 'meshtastic' ||
+        detailModalProtocol === 'meshcom'
           ? detailModalProtocol
           : protocol;
       setPendingDmTarget({ protocol: messageProtocol, peer: nodeNum });
@@ -4513,12 +4712,20 @@ function AppContent() {
     async (nodeNum: number) => {
       if (detailModalProtocol === 'meshcore') {
         await meshcorePanelActions.deleteNode(nodeNum);
+      } else if (detailModalProtocol === 'meshcom') {
+        await meshcomPanelActions.deleteNode(nodeNum);
       } else {
         await meshtasticPanelActions.deleteNode(nodeNum);
       }
       setSelectedNodeId(null);
     },
-    [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions, setSelectedNodeId],
+    [
+      detailModalProtocol,
+      meshcomPanelActions,
+      meshcorePanelActions,
+      meshtasticPanelActions,
+      setSelectedNodeId,
+    ],
   );
 
   const handleOpenReticulumDmByHash = useCallback(
@@ -4933,7 +5140,9 @@ function AppContent() {
         traceRouteHops={traceRouteHops}
         onShowTraceRouteOnMap={handleShowTraceRouteOnMap}
         onDeleteNode={
-          detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+          detailModalProtocol === 'meshcore' ||
+          detailModalProtocol === 'meshtastic' ||
+          detailModalProtocol === 'meshcom'
             ? handleDeleteNode
             : undefined
         }
@@ -4953,14 +5162,13 @@ function AppContent() {
         }
         isFriend={Boolean(
           selectedNode &&
-          (detailModalProtocol === 'meshtastic'
-            ? meshtasticIdentityId &&
-              (friendsByIdentity[meshtasticIdentityId] ?? []).includes(selectedNode.node_id)
-            : detailModalProtocol === 'meshcore'
-              ? meshcoreIdentityId &&
-                (friendsByIdentity[meshcoreIdentityId] ?? []).includes(selectedNode.node_id)
-              : reticulumIdentityId &&
-                (friendsByIdentity[reticulumIdentityId] ?? []).includes(selectedNode.node_id)),
+          (() => {
+            const identityId = selectByProtocol(friendsIdentityByProtocol, detailModalProtocol);
+            return (
+              identityId != null &&
+              (friendsByIdentity[identityId] ?? []).includes(selectedNode.node_id)
+            );
+          })(),
         )}
         onToggleFriend={
           selectedNode?.node_id !== detailMyNodeNum &&
@@ -4969,12 +5177,7 @@ function AppContent() {
             isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
           )
             ? (nodeNum, next) => {
-                const identityId =
-                  detailModalProtocol === 'meshtastic'
-                    ? meshtasticIdentityId
-                    : detailModalProtocol === 'meshcore'
-                      ? meshcoreIdentityId
-                      : reticulumIdentityId;
+                const identityId = selectByProtocol(friendsIdentityByProtocol, detailModalProtocol);
                 if (!identityId) return;
                 if (next) useFriendsStore.getState().addFriend(identityId, nodeNum);
                 else useFriendsStore.getState().removeFriend(identityId, nodeNum);
@@ -5315,6 +5518,11 @@ function AppContent() {
                         connectAutomatic: meshcoreConnection.connectAutomatic,
                         enabled: enabledProtocols.includes('meshcore'),
                       }}
+                      meshcom={{
+                        state: meshcomConnection.state,
+                        connectAutomatic: meshcomConnection.connectAutomatic,
+                        enabled: enabledProtocols.includes('meshcom'),
+                      }}
                     />
                     {reticulumCapabilities.hasReticulumInterfaceConfig ? (
                       <ReticulumStackAutostartCoordinator
@@ -5502,7 +5710,7 @@ function AppContent() {
                                     identityId={chatIdentityId}
                                     messages={selectByProtocol(uiMessagesByProtocol, chatProtocol)}
                                     getReceptionStats={
-                                      chatCapabilities.hasCompanionContactManagementConfig
+                                      chatProtocol === 'meshcore'
                                         ? (message) =>
                                             meshcoreMessageReceptionStats(
                                               message,
@@ -5512,6 +5720,7 @@ function AppContent() {
                                         : undefined
                                     }
                                     getMessageRoute={
+                                      chatProtocol === 'meshcore' &&
                                       chatCapabilities.messageRouteDetail === 'floodPath'
                                         ? (message) =>
                                             meshcoreChatMessageRoute(
@@ -5519,7 +5728,8 @@ function AppContent() {
                                               meshcoreRuntime.rawPackets,
                                               meshcoreRuntime.channels,
                                             )
-                                        : chatCapabilities.messageRouteDetail === 'lastRelay'
+                                        : chatProtocol === 'meshtastic' &&
+                                            chatCapabilities.messageRouteDetail === 'lastRelay'
                                           ? (message) =>
                                               meshtasticChatMessageRoute(
                                                 message,
@@ -5559,9 +5769,13 @@ function AppContent() {
                                     ownNodeIds={
                                       chatProtocol === 'reticulum'
                                         ? reticulumOwnNodeIdsForChat
-                                        : chatCapabilities.hasMqttHybrid
-                                          ? meshtasticOwnNodeIdsForChat
-                                          : meshcoreOwnNodeIdsForChat
+                                        : chatProtocol === 'meshcom'
+                                          ? chatSelfNodeNum > 0
+                                            ? [chatSelfNodeNum]
+                                            : []
+                                          : chatCapabilities.hasMqttHybrid
+                                            ? meshtasticOwnNodeIdsForChat
+                                            : meshcoreOwnNodeIdsForChat
                                     }
                                     onSend={handleSend}
                                     composerDisabled={protocolSwitchPending || !chatActive}
@@ -5579,11 +5793,13 @@ function AppContent() {
                                     onPeerClick={setSelectedPeerHash}
                                     isConnected={
                                       chatOperational ||
-                                      chatConnectionView.mqttStatus === 'connected'
+                                      (chatConnectionView.mqttStatus === 'connected' &&
+                                        protocolMqttProvidesChatSend(chatProtocol))
                                     }
                                     isMqttOnly={
                                       !chatOperational &&
-                                      chatConnectionView.mqttStatus === 'connected'
+                                      chatConnectionView.mqttStatus === 'connected' &&
+                                      protocolMqttProvidesChatSend(chatProtocol)
                                     }
                                     connectionType={chatConnectionView.state.connectionType}
                                     nodes={chatNodes}
@@ -5983,7 +6199,19 @@ function AppContent() {
                                       }
                                       radioConnected={isConnectedOrOperational}
                                       locationFilter={locationFilter}
-                                      onToggleFavorite={panelActions.setNodeFavorited}
+                                      onToggleFavorite={
+                                        // Prefer the protocol-scoped panel bundle (MeshCom must not
+                                        // fall through to MeshCore/Meshtastic no-op stubs).
+                                        selectByProtocol(
+                                          {
+                                            meshtastic: meshtasticPanelActions.setNodeFavorited,
+                                            meshcore: meshcorePanelActions.setNodeFavorited,
+                                            reticulum: reticulumPanelActions.setNodeFavorited,
+                                            meshcom: meshcomPanelActions.setNodeFavorited,
+                                          },
+                                          protocol,
+                                        )
+                                      }
                                       mode={protocol}
                                       groups={contactGroups.groups}
                                       selectedGroupId={contactGroups.selectedGroupId}
@@ -6087,101 +6315,110 @@ function AppContent() {
                                       }}
                                     />
                                   ) : null}
-                                  {(['meshtastic', 'meshcore'] as const).map((mapProtocol) => {
-                                    const mapCapabilities = selectByProtocol(
-                                      capabilitiesByProtocol,
-                                      mapProtocol,
-                                    );
-                                    const active =
-                                      activePanelIndex === MAP_TAB_PANEL_INDEX &&
-                                      protocol === mapProtocol;
-                                    if (
-                                      !enabledProtocols.includes(mapProtocol) ||
-                                      (!active && !visitedMapProtocols.has(mapProtocol)) ||
-                                      !(
-                                        mapCapabilities.hasFullPositionConfig ||
-                                        mapCapabilities.nodeListTabUsesContactsLabel
+                                  {(['meshtastic', 'meshcore', 'meshcom'] as const).map(
+                                    (mapProtocol) => {
+                                      const mapCapabilities = selectByProtocol(
+                                        capabilitiesByProtocol,
+                                        mapProtocol,
+                                      );
+                                      const active =
+                                        activePanelIndex === MAP_TAB_PANEL_INDEX &&
+                                        protocol === mapProtocol;
+                                      if (
+                                        !enabledProtocols.includes(mapProtocol) ||
+                                        (!active && !visitedMapProtocols.has(mapProtocol)) ||
+                                        !(
+                                          mapCapabilities.hasFullPositionConfig ||
+                                          mapCapabilities.nodeListTabUsesContactsLabel
+                                        )
                                       )
-                                    )
-                                      return null;
-                                    const mapRuntime = runtimes[mapProtocol];
-                                    return (
-                                      <MapPanel
-                                        key={mapProtocol}
-                                        active={active}
-                                        isCurrentProtocol={protocol === mapProtocol}
-                                        nodes={selectByProtocol(uiNodesByProtocol, mapProtocol)}
-                                        myNodeNum={asNumericNodeId(
-                                          mapRuntime.selfNodeId,
-                                          mapRuntime.state.myNodeNum,
-                                        )}
-                                        meshcorePackets={
-                                          mapCapabilities.nodeListTabUsesContactsLabel
-                                            ? meshcoreRuntime.rawPackets
-                                            : undefined
-                                        }
-                                        meshtasticPackets={
-                                          mapCapabilities.hasFullPositionConfig
-                                            ? meshtasticRuntime.rawPackets
-                                            : undefined
-                                        }
-                                        pubKeyByNodeId={
-                                          mapCapabilities.nodeListTabUsesContactsLabel
-                                            ? meshcoreSnifferPubKeyByNodeId
-                                            : undefined
-                                        }
-                                        locationFilter={locationFilter}
-                                        ourPosition={asOurPosition(mapRuntime.ourPosition)}
-                                        onLocateMe={
-                                          mapCapabilities.hasFullPositionConfig
-                                            ? () =>
-                                                meshtasticPanelActions
-                                                  .refreshOurPosition()
-                                                  .then((p) =>
+                                        return null;
+                                      const mapRuntime = runtimes[mapProtocol];
+                                      const mapPanelActions = selectByProtocol(
+                                        panelActionsByProtocol,
+                                        mapProtocol,
+                                      ) as {
+                                        refreshOurPosition?: () => Promise<{
+                                          lat: number;
+                                          lon: number;
+                                        } | null>;
+                                      };
+                                      return (
+                                        <MapPanel
+                                          key={mapProtocol}
+                                          active={active}
+                                          isCurrentProtocol={protocol === mapProtocol}
+                                          nodes={selectByProtocol(uiNodesByProtocol, mapProtocol)}
+                                          myNodeNum={asNumericNodeId(
+                                            mapRuntime.selfNodeId,
+                                            mapRuntime.state.myNodeNum,
+                                          )}
+                                          meshcorePackets={
+                                            mapProtocol === 'meshcore'
+                                              ? meshcoreRuntime.rawPackets
+                                              : undefined
+                                          }
+                                          meshtasticPackets={
+                                            mapProtocol === 'meshtastic'
+                                              ? meshtasticRuntime.rawPackets
+                                              : undefined
+                                          }
+                                          pubKeyByNodeId={
+                                            mapProtocol === 'meshcore'
+                                              ? meshcoreSnifferPubKeyByNodeId
+                                              : undefined
+                                          }
+                                          locationFilter={locationFilter}
+                                          ourPosition={asOurPosition(mapRuntime.ourPosition)}
+                                          onLocateMe={
+                                            mapPanelActions.refreshOurPosition
+                                              ? () =>
+                                                  mapPanelActions.refreshOurPosition!().then((p) =>
                                                     p ? { lat: p.lat, lon: p.lon } : null,
                                                   )
-                                            : undefined
-                                        }
-                                        waypoints={asWaypointMap(mapRuntime.waypoints)}
-                                        onSendWaypoint={
-                                          mapCapabilities.hasFullPositionConfig
-                                            ? meshtasticPanelActions.sendWaypoint
-                                            : undefined
-                                        }
-                                        onDeleteWaypoint={
-                                          mapCapabilities.hasFullPositionConfig
-                                            ? meshtasticPanelActions.deleteWaypoint
-                                            : undefined
-                                        }
-                                        onNodeClick={handleMapNodeClick}
-                                        onForecastSenderClick={(senderProtocol, senderId) => {
-                                          if (
-                                            senderProtocol === mapProtocol ||
-                                            meshcoreUiNodes.has(senderId)
-                                          )
-                                            selectNodeFrom('map', senderId);
-                                        }}
-                                        onLiveWindowNodeClick={(nodeId) => {
-                                          // The modal shows on any panel; the map pane would stay
-                                          // hidden until the Map tab was opened again.
-                                          if (mapProtocol === protocol) {
-                                            setSelectedNodeId(nodeId);
-                                            return;
+                                              : undefined
                                           }
-                                          // Details and their actions (Message opens this protocol's
-                                          // Chat) follow the active protocol, so switch to the window's
-                                          // protocol first. Selecting in the same transition commits
-                                          // both together.
-                                          handleProtocolChange(mapProtocol);
-                                          startProtocolTransition(() => {
-                                            setSelectedNodeId(nodeId);
-                                          });
-                                        }}
-                                        protocol={mapProtocol}
-                                        useFahrenheit={useFahrenheit}
-                                      />
-                                    );
-                                  })}
+                                          waypoints={asWaypointMap(mapRuntime.waypoints)}
+                                          onSendWaypoint={
+                                            mapCapabilities.hasFullPositionConfig
+                                              ? meshtasticPanelActions.sendWaypoint
+                                              : undefined
+                                          }
+                                          onDeleteWaypoint={
+                                            mapCapabilities.hasFullPositionConfig
+                                              ? meshtasticPanelActions.deleteWaypoint
+                                              : undefined
+                                          }
+                                          onNodeClick={handleMapNodeClick}
+                                          onForecastSenderClick={(senderProtocol, senderId) => {
+                                            if (
+                                              senderProtocol === mapProtocol ||
+                                              meshcoreUiNodes.has(senderId)
+                                            )
+                                              selectNodeFrom('map', senderId);
+                                          }}
+                                          onLiveWindowNodeClick={(nodeId) => {
+                                            // The modal shows on any panel; the map pane would stay
+                                            // hidden until the Map tab was opened again.
+                                            if (mapProtocol === protocol) {
+                                              setSelectedNodeId(nodeId);
+                                              return;
+                                            }
+                                            // Details and their actions (Message opens this protocol's
+                                            // Chat) follow the active protocol, so switch to the window's
+                                            // protocol first. Selecting in the same transition commits
+                                            // both together.
+                                            handleProtocolChange(mapProtocol);
+                                            startProtocolTransition(() => {
+                                              setSelectedNodeId(nodeId);
+                                            });
+                                          }}
+                                          protocol={mapProtocol}
+                                          useFahrenheit={useFahrenheit}
+                                        />
+                                      );
+                                    },
+                                  )}
                                 </div>
                                 {nodeDetailPaneOnMap && renderNodeDetail('pane')}
                                 {peerDetailPaneOnMap && renderPeerDetail('pane')}
@@ -6277,12 +6514,14 @@ function AppContent() {
                                       capabilities,
                                       meshtasticPanelActions.sendPositionToDevice,
                                       meshcorePanelActions.sendPositionToDevice,
+                                      meshcomPanelActions.sendPositionToDevice,
                                     )}
                                     deviceOwner={effectiveDeviceOwner}
                                     onSetOwner={resolvePanelSetOwnerHandler(
                                       capabilities,
                                       meshtasticPanelActions.setOwner,
                                       meshcorePanelActions.setOwner,
+                                      meshcomPanelActions.setOwner,
                                     )}
                                     capabilities={capabilities}
                                     onSendLockdownAuth={
@@ -6338,6 +6577,11 @@ function AppContent() {
                                     meshcoreCompanionCli={
                                       capabilities.hasCompanionCli
                                         ? meshcorePanelActions.companionCli
+                                        : undefined
+                                    }
+                                    meshcomDeviceCommands={
+                                      capabilities.hasMeshcomDeviceCommands
+                                        ? meshcomPanelActions.deviceCommands
                                         : undefined
                                     }
                                     meshcoreAutoadd={
@@ -6679,20 +6923,8 @@ function AppContent() {
                                 protocol={protocol}
                                 identityId={activeFriendsIdentityId}
                                 nodes={nodesForUi}
-                                messages={
-                                  protocol === 'meshtastic'
-                                    ? meshtasticUiMessages
-                                    : protocol === 'meshcore'
-                                      ? meshcoreUiMessages
-                                      : reticulumUiMessages
-                                }
-                                ownNodeIds={
-                                  protocol === 'meshtastic'
-                                    ? meshtasticOwnNodeIdSet
-                                    : protocol === 'meshcore'
-                                      ? meshcoreOwnNodeIdSet
-                                      : reticulumOwnNodeIdSet
-                                }
+                                messages={selectByProtocol(friendsMessagesByProtocol, protocol)}
+                                ownNodeIds={selectByProtocol(friendsOwnNodeIdsByProtocol, protocol)}
                                 persistedLastRead={
                                   protocol === 'meshtastic'
                                     ? getSanitizedMeshtasticChatLastRead(
@@ -6701,10 +6933,12 @@ function AppContent() {
                                       )
                                     : protocol === 'meshcore'
                                       ? meshcoreChatLastRead
-                                      : getSanitizedReticulumChatLastRead(
-                                          reticulumUiMessages,
-                                          reticulumOwnNodeIdSet,
-                                        )
+                                      : protocol === 'meshcom'
+                                        ? loadPersistedLastReadInitial('meshcom')
+                                        : getSanitizedReticulumChatLastRead(
+                                            reticulumUiMessages,
+                                            reticulumOwnNodeIdSet,
+                                          )
                                 }
                                 excludeDmPeer={
                                   protocol === 'meshcore'
@@ -7015,11 +7249,13 @@ function AppContent() {
                                   onLocationFilterChange={handleLocationFilterChange}
                                   ourPosition={activeOurPosition}
                                   onRefreshGps={
-                                    capabilities.hasFullPositionConfig
+                                    protocol === 'meshtastic'
                                       ? meshtasticPanelActions.refreshOurPosition
-                                      : capabilities.prefersDeviceOwnerLongNameInHeader
+                                      : protocol === 'meshcore'
                                         ? meshcorePanelActions.refreshOurPosition
-                                        : undefined
+                                        : protocol === 'meshcom'
+                                          ? meshcomPanelActions.refreshOurPosition
+                                          : undefined
                                   }
                                   onLocationChanged={refreshActiveOurPosition}
                                   gpsLoading={activeRuntime.gpsLoading}

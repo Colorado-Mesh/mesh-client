@@ -25,6 +25,7 @@ import {
 } from '@/renderer/lib/protocolRfAutoConnectGate';
 import { awaitReticulumBleCoexistenceClear } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
 import type { RfConnectAutomaticFn } from '@/renderer/lib/rfConnectionTypes';
+import { tryGetMeshcomSession } from '@/renderer/lib/sessions/meshcomSession';
 import { tryGetMeshcoreSession } from '@/renderer/lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSession';
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '@/renderer/lib/timeConstants';
@@ -49,13 +50,18 @@ function sleep(ms: number): Promise<void> {
 }
 
 /** Protocol session is registered in a parent useEffect — wait before RF connect. */
-async function waitForProtocolSession(protocol: 'meshtastic' | 'meshcore'): Promise<boolean> {
+async function waitForProtocolSession(
+  protocol: 'meshtastic' | 'meshcore' | 'meshcom',
+): Promise<boolean> {
   const deadline = Date.now() + SESSION_READY_MAX_WAIT_MS;
   while (Date.now() < deadline) {
     if (protocol === 'meshtastic' && tryGetMeshtasticSession()) {
       return true;
     }
     if (protocol === 'meshcore' && tryGetMeshcoreSession()) {
+      return true;
+    }
+    if (protocol === 'meshcom' && tryGetMeshcomSession()) {
       return true;
     }
     await sleep(SESSION_READY_POLL_MS);
@@ -299,6 +305,10 @@ export function useProtocolRfAutoConnect({
     };
 
     const runStartupAutoConnect = async (): Promise<void> => {
+      if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') {
+        onAutoConnectCancelled();
+        return;
+      }
       const ready = await waitForProtocolSession(protocol);
       if (isCancelled()) {
         onAutoConnectCancelled();
@@ -346,7 +356,11 @@ export function useProtocolRfAutoConnect({
         return;
       }
 
-      if (lastConnection.type === 'http' || lastConnection.type === 'tcp') {
+      if (
+        lastConnection.type === 'http' ||
+        lastConnection.type === 'tcp' ||
+        lastConnection.type === 'udp'
+      ) {
         const addr = lastConnection.httpAddress?.trim();
         if (addr) {
           startAutoConnectTimeout();

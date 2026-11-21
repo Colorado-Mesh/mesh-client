@@ -8,6 +8,8 @@ import type {
 const hasNodeDbRetention = (ctx: SettingsSearchContext) => ctx.capabilities.hasNodeDbReset;
 const hasContactRetention = (ctx: SettingsSearchContext) =>
   ctx.capabilities.nodeListTabUsesContactsLabel;
+const hasMeshcomMessageRetention = (ctx: SettingsSearchContext) =>
+  ctx.capabilities.hasMeshcomDeviceCommands;
 const hasDestinationRetention = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasReticulumPeersList;
 
@@ -217,6 +219,14 @@ const appEntries: readonly SettingSearchEntry[] = [
     sectionKey: RETENTION,
     keywords: ['messages', 'retention', 'database'],
     visible: hasContactRetention,
+  },
+  {
+    id: 'app.retention.meshcomMessageCap',
+    slot: 'App',
+    labelKey: 'appPanel.capStoredMessagesLabel',
+    sectionKey: RETENTION,
+    keywords: ['messages', 'retention', 'database', 'meshcom'],
+    visible: hasMeshcomMessageRetention,
   },
   {
     id: 'app.retention.reticulumMessageCap',
@@ -1045,5 +1055,8 @@ export const appSurface: SettingsSearchSurface = {
     'mecp.section.learnMore': 'external documentation link',
     'mecp.section.protocolSource': 'external source link',
     'mecp.exportLog*': 'result toasts of the indexed MECP log export',
+    'meshcom.licenseNoticeTitle': 'MeshCom license acknowledgment dialog title',
+    'meshcom.licenseNoticeBody': 'MeshCom license acknowledgment dialog body',
+    'meshcom.licenseNoticeAccept': 'MeshCom license acknowledgment confirm button',
   },
 };

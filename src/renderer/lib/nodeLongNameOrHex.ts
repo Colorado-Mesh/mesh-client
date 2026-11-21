@@ -1,9 +1,9 @@
 import type { MeshNode, MeshProtocol } from './types';
 
-/** Same ordering as ChatPanel: MeshCore prefers long then short; Meshtastic prefers short then long. */
+/** Same ordering as ChatPanel: MeshCore/MeshCom/Reticulum prefer long then short; Meshtastic prefers short then long. */
 export function nodeDisplayName(node: MeshNode | undefined, protocol: MeshProtocol): string {
   if (!node) return '';
-  if (protocol === 'meshcore' || protocol === 'reticulum') {
+  if (protocol === 'meshcore' || protocol === 'reticulum' || protocol === 'meshcom') {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime node records may omit display-name fields.
     return node.long_name?.trim() || node.short_name?.trim() || '';
   }

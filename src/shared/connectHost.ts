@@ -35,7 +35,7 @@ function parseIpv4Octets(host: string): number[] | null {
   return octets;
 }
 
-function isValidIpv4Literal(host: string): boolean {
+export function isValidIpv4Literal(host: string): boolean {
   return parseIpv4Octets(host) !== null;
 }
 

@@ -181,8 +181,10 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     const end = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:stop-scan'");
     const handler = INDEX_SOURCE.slice(start, end);
     expect(handler).toContain("bleCoexistenceCoordinator.withScan('gatt'");
-    expect(handler).toContain('gattSidecarProxy.startScan(sessionId)');
+    expect(handler).toContain('gattSidecarProxy.startScan(sessionId, scanOpts)');
     expect(handler).toContain("code: 'scan_busy'");
+    expect(handler).toContain('isGattSessionProfile(sessionId)');
+    expect(handler).toMatch(/meshtastic, meshcore, or meshcom/);
   });
 
   it('returns scan_busy from bleCoexistence:acquireScan without throwing', () => {
@@ -245,15 +247,18 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
     );
+    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is interpolated.
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:status \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(s\)/,
+      /mqtt:status \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(s\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:error \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
+      /mqtt:error \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:clientId \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(id\)/,
+      /mqtt:clientId \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(id\)/,
     );
+    expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcoreMqttAdapter,\s*'meshcore'\)/);
+    expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcomMqttAdapter,\s*'meshcom'\)/);
   });
 
   it('sanitizes Linux BlueZ bluetooth IPC error log paths', () => {
@@ -716,10 +721,18 @@ describe('Persistent app settings IPC (source contract)', () => {
         'reticulumRmapPublishIfac',
       ]),
     );
+    const retentionFlatMap =
+      allowListBlock.includes("['meshtastic', 'meshcore', 'meshcom', 'reticulum', 'rrc']") &&
+      allowListBlock.includes('MessageRetentionEnabled') &&
+      allowListBlock.includes('MessageRetentionCount');
     const missing = rendererKeys.filter(
       (key) =>
         !allowListBlock.includes(`'${key}'`) &&
-        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length),
+        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length) &&
+        !(
+          retentionFlatMap &&
+          /^(meshtastic|meshcore|meshcom|reticulum|rrc)MessageRetention(Enabled|Count)$/.test(key)
+        ),
     );
     expect(missing).toEqual([]);
   });
@@ -936,6 +949,11 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcHandlers');
     expect(INDEX_SOURCE).toContain('team-roster-handlers-fallback.js');
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcFallbackHandlers');
+    expect(INDEX_SOURCE).toContain('meshcom-db-handlers.js');
+    expect(INDEX_SOURCE).toContain('registerMeshcomDbIpcHandlers');
+    expect(INDEX_SOURCE).toContain('meshcom-db-handlers-fallback.js');
+    expect(INDEX_SOURCE).toContain('loadMeshcomUdpBridge.js');
+    expect(INDEX_SOURCE).toContain('loadMeshcomUdpBridge');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");

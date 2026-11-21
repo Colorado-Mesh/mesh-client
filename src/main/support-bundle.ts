@@ -152,14 +152,14 @@ This zip is safe to attach to public GitHub issues.
 ${buildChannelReadmeLine()}
 
 Contents:
-  debug-snapshot.json  — UI/session state for triage (Meshtastic, MeshCore, Reticulum sidecar)
+  debug-snapshot.json  — UI/session state (Meshtastic, MeshCore, MeshCom, Reticulum)
   mesh-client.log      — Application log (current session)
   mesh-client.log.1    — Prior session log (preserved on restart) or size-rotated backup
   manifest.json        — App version, buildChannel, and platform metadata
   README.txt           — This file
 
 Reticulum sidecar health, interface audit, and identity hashes are in debug-snapshot.json
-when the stack was running at export time. [ReticulumSidecar] lines appear in the logs.
+when the stack was running at export time. [ReticulumSidecar] / MeshCom tags appear in logs.
 
 For deeper triage that requires your local database or rnsd config, a maintainer may ask you to
 export "Export for Developer" separately and share it via a private channel only.
@@ -178,7 +178,7 @@ maintainers via a private channel (email, Discord DM, etc.) when they request it
 ${buildChannelReadmeLine()}
 
 Contents:
-  debug-snapshot.json           — UI/session state for triage (includes Reticulum sidecar snapshot)
+  debug-snapshot.json           — UI/session state (Meshtastic, MeshCore, MeshCom, Reticulum)
   mesh-client.db                — SQLite database backup (contains secrets)
   reticulum/config              — rnsd interface config (if present)
   reticulum/mesh_client_stack.json — Sidecar stack state, mnemonic redacted (if present)

@@ -60,7 +60,12 @@ describe('scanForBotSenders', () => {
 describe('useBotSenderDetection', () => {
   beforeEach(() => {
     useBotSendersStore.setState({
-      senders: { meshtastic: new Set(), meshcore: new Set(), reticulum: new Set() },
+      senders: {
+        meshtastic: new Set(),
+        meshcore: new Set(),
+        reticulum: new Set(),
+        meshcom: new Set(),
+      },
     });
   });
 
@@ -69,11 +74,13 @@ describe('useBotSenderDetection', () => {
       meshtastic: 1000,
       meshcore: 2000,
       reticulum: 3000,
+      meshcom: 0,
     };
     const initial: Record<MeshProtocol, ChatMessage[]> = {
       meshtastic: [msg(1, 5, '🤖 Copy, 4 hops at 12:51')],
       meshcore: [],
       reticulum: [],
+      meshcom: [],
     };
     const { rerender } = renderHook(
       ({ m }) => {

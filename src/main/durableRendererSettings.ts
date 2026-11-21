@@ -115,11 +115,9 @@ export function seedDurableRendererSettings(
  */
 export function resetDurableRendererData(db: NodeSqliteDB): void {
   const keys = DURABLE_RENDERER_STORAGE_KEYS;
-  const emptySettings = [
+  const emptySettings: [string, string][] = [
     [keys.preferences, explicitResetPreferenceBaselineJson()],
-    [keys.chatLastRead.meshtastic, '{}'],
-    [keys.chatLastRead.meshcore, '{}'],
-    [keys.chatLastRead.reticulum, '{}'],
+    ...Object.values(keys.chatLastRead).map((key): [string, string] => [key, '{}']),
     [keys.roomsLastRead, '{}'],
     [keys.rrcLastRead, '{}'],
     [keys.mecpBlockedSenders, JSON.stringify({ state: { blocked: {} }, version: 1 })],

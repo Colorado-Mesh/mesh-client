@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "スカイ",
-      "classic": "クラシックグリーン"
+      "classic": "クラシックグリーン",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去",
     "protocolsSection": "プロトコル",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
     "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読",
     "tabWithUnread": "{{label}}、{{count}}未読",
-    "tabWithOpenIncidents": "{{label}}、{{count}} OPEN MAYDAYまたは緊急事態"
+    "tabWithOpenIncidents": "{{label}}、{{count}} OPEN MAYDAYまたは緊急事態",
+    "switchToMeshCom": "MeshComに切り替える",
+    "switchToMeshComWithUnread": "MeshComに切り替える、{{count}}件の未読"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -1746,17 +1749,20 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[国]/[州]、例: msh/コロラド州/米国",
       "meshcoreLetsmesh": "メッシュコア/{IATA}、例:メッシュコア/DEN",
-      "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州"
+      "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州",
+      "meshcom": "MeshComゲートウェイのブローカルートトピック（例：meshcom）"
     },
     "topicPrefixPlaceholder": "msh/米国/",
     "maxRetriesHelp": {
       "meshtastic": "諦める前に再接続を試みます (1–{{max}})。",
-      "meshcore": "諦める前に再接続を試みます (1 ～ 20)。"
+      "meshcore": "諦める前に再接続を試みます (1 ～ 20)。",
+      "meshcom": "諦める前に再接続を試みる回数（1～{{max}}）。"
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1855,7 +1861,8 @@
     "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
-      "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
+      "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。",
+      "meshcom": "諦める前に再接続を試みます（1～{{max}}回）。設定を保存しました。切断して再度接続し、実行中のセッションで新しい値を使用してください。"
     },
     "reticulumStackRunningAs": "実行中— {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…",
@@ -1943,7 +1950,10 @@
     "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。",
     "mqttPacketTooLarge": "ブローカーが安全上限の {{limit}} バイトを超える MQTT パケットを送信したため、自動再接続は無効です。",
     "protocolGuideLink": "プロトコルガイド ↗",
-    "mqttAuthDocsLink": "MQTT AUTH ↗"
+    "mqttAuthDocsLink": "MQTT AUTH ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -4037,7 +4047,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "識別信号",
+    "firmware": "ファームウェア",
+    "rssi": "RSSI",
+    "altitude": "高度"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -4134,7 +4148,8 @@
     "statusFilterAll": "すべて",
     "buttonExport": "エクスポート",
     "exportMenuLabel": "エクスポート形式",
-    "youBadge": "自分"
+    "youBadge": "自分",
+    "meshcomHardwareType": "MeshComハードウェア（オンエアのhw_idから）"
   },
   "nomadNetwork": {
     "showBrowser": "ブラウザーを表示",
@@ -7546,7 +7561,8 @@
     "reconnectNeeded": "このプロファイルのブローカー設定を使用するには、MQTTを切断して再接続します。",
     "switchLabel": "保存されたプロフィール",
     "noneSelected": "現在の設定（保存されていません）",
-    "nameAria": "プロファイル名"
+    "nameAria": "プロファイル名",
+    "listLabel": "保存済みの通関業者"
   },
   "weatherFilter": {
     "viewTooltip": "このチャンネルの天気予報投稿",
@@ -7672,7 +7688,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "{{when}}を受け取りました"
   },
@@ -8499,7 +8516,8 @@
     "openFromChat": "すべての会話を検索",
     "directMessage": "ダイレクトメッセージ",
     "reticulum": "Reticulum",
-    "meshcore": "MeshCore"
+    "meshcore": "MeshCore",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "open": "統合された受信トレイを開く",
@@ -8536,7 +8554,8 @@
     "reticulum": "Reticulum",
     "deleted_one": "{{count}} メッセージを削除しました。",
     "deleted_other": "{{count}} メッセージを削除しました。",
-    "deleteFailed": "変更を保存できませんでした。何も削除されませんでした。"
+    "deleteFailed": "変更を保存できませんでした。何も削除されませんでした。",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "verifyButton": "キーを確認してください…",
@@ -8970,7 +8989,8 @@
     "loadFailed": "データベースから連絡先カードを読み込めませんでした。",
     "retryLoad": "もう一度お試しください。",
     "retryLoadAria": "連絡先カードの読み込みを再試行する",
-    "loadUnavailable": "このビルドでは連絡先カードは利用できません。アプリを再インストールするか、アップデートしてください。"
+    "loadUnavailable": "このビルドでは連絡先カードは利用できません。アプリを再インストールするか、アップデートしてください。",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "単語フィルターに一致するメッセージを非表示にする",
@@ -9008,5 +9028,70 @@
     "openAria": "{{name}}を開く",
     "unknownRoom": "ルーム{{id}}",
     "hops": "{{count}}回の乗り継ぎ"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — ライセンスを受けたアマチュア無線",
+    "licenseNoticeBody": "MeshComは、国別設定（--setctry）によって選択された、世界中のライセンスを受けたアマチュア（ハム）LoRa周波数で動作します。EUの433 MHzのみではありません。MeshComは、お住まいの国のプロファイル用に設定されたバンドで送信する権限がある場合にのみ有効にしてください。この通知は、Meshtasticのアマチュア無線免許周波数ロック解除とは別のものです。",
+    "licenseNoticeAccept": "理解しました",
+    "connectionHint": "MeshComは、国設定（--setctry）を介してハムバンドLoRaを使用します。ノードの国プロファイルがライセンスと一致していることを確認してください。",
+    "countrySettingLabel": "国/地域の設定（--setctry）",
+    "extUdpHint": "EXTUDPには、--extudpがオンで、--extudpipがこのコンピュータ (UDP 1799)を指すように構成されたノードが必要です。",
+    "kissTcpHint": "KISS/TCPはMeshComポート8001を使用します。Reticulum KISS/AX.25ではありません。",
+    "channelAll": "すべて",
+    "channelGroup": "グループ{{id}}",
+    "callsignFieldLabel": "コールサイン（--setcall）",
+    "callsignHint": "有効なAPRSスタイルのコールサイン（SSIDはオプション）。適用すると、Serial/BLEに--setcallを送信します。",
+    "operatorNameFieldLabel": "オペレーター名（--operatorname）",
+    "operatorNamePlaceholder": "名",
+    "operatorNameHint": "オプション。シリアル番号/BLEに適用して送信（最大19文字）。",
+    "dbStorageDegraded": "MeshComメッセージ履歴は利用できません（データベースモジュールの読み込みに失敗しました）。チャットは引き続き利用できます。履歴は、アプリを再起動するまで保持されません。"
+  },
+  "meshcomDeviceCommands": {
+    "description": "ICSSWノードコマンド（--help、--settime、--setctry、…）をシリアルまたはBLE経由で送信します。アプリ対応コマンドは、公式のMeshComアプリと一致します。シリアル専用コマンドには、USBコンソールリンクが必要です。",
+    "autoSettime": "接続時にノード時刻を自動的に設定する",
+    "autoSettimeHint": "シリアルまたはBLE経由で接続している場合は、このコンピュータのUTCクロック（例：{{example}}）で--settimeを送信します。",
+    "settimeNow": "現在時刻を設定（UTC）",
+    "requiresSerialBle": "シリアルまたはBLEを介して接続し、デバイスコマンドを送信します。EXTUDPおよびKISS/TCPはチャットのみを伝送します。",
+    "filter": "コマンドを絞り込む",
+    "filterPlaceholder": "--settime、ゲートウェイ、ネイバーを検索…",
+    "serialOnly": "シリアルのみ",
+    "run": "ラン",
+    "runCommand": "{{command}}を実行",
+    "runChoice": "{{command}} {{value}}を実行",
+    "argInput": "{{command}}の引数",
+    "sent": "ノードにコマンドが送信されました。",
+    "sendFailed": "コマンドに失敗しました：{{detail}}",
+    "setctrySent": "保存して、--setctry {{code}}をノードに送信しました。",
+    "setctrySavedLocal": "国の設定を保存しました。シリアルまたはBLEを介して接続し、ノードに--setctryを適用します。",
+    "consoleHint": "任意の--コマンドまたはアプリのショートカット（ゲートウェイ、GPS、気象情報）を入力します。秘密情報はログで編集されます。",
+    "consoleLog": "デバイスコマンドコンソールログ",
+    "consoleInput": "デバイスコマンド入力",
+    "consolePlaceholder": "情報",
+    "consoleSend": "送信",
+    "confirmDanger": {
+      "title": "%@ コマンドの確認",
+      "message": "{{command}}をノードに送信しますか？これにより、再起動またはRF設定が変更される可能性があります。",
+      "confirm": "送信"
+    },
+    "groups": {
+      "display": "ディスプレー",
+      "position": "位置と時間",
+      "sensors": "センサー",
+      "identity": "IDとグループ",
+      "network": "ネットワークとWi-Fi",
+      "gateway": "ゲートウェイ",
+      "bluetooth": "Bluetooth",
+      "neighbors": "隣人",
+      "mailbox": "ポスト",
+      "debug": "ステータスとデバッグ",
+      "power": "電源とOTA",
+      "misc": "KISS /その他",
+      "console": "ゲーム機:",
+      "clock": "時計",
+      "advanced": "高度なコンソールとフィルター"
+    },
+    "appEligible": "アプリ/シリアル番号",
+    "loadingConfig": "デバイス構成を読み込み中…",
+    "currentValue": "現在 {{value}}"
   }
 }

@@ -35,8 +35,18 @@ function isConnectedStatus(status: ConnectionStatus): boolean {
   );
 }
 
+/** Electron GATT session id for LoRa BLE host-link RSSI (not Reticulum). */
+function gattBleRssiSessionId(
+  protocol: MeshProtocol,
+): 'meshtastic' | 'meshcore' | 'meshcom' | null {
+  if (protocol === 'meshtastic' || protocol === 'meshcore' || protocol === 'meshcom') {
+    return protocol;
+  }
+  return null;
+}
+
 /**
- * Host↔radio link meter state for Meshtastic / MeshCore Connection panels.
+ * Host↔radio link meter state for Meshtastic / MeshCore / MeshCom Connection panels.
  * BLE (all platforms): sidecar GATT link RSSI.
  * Live TCP sessions: passive session meter. Meshtastic HTTP: `/json/report` RTT.
  */
@@ -47,10 +57,16 @@ export function useHostLinkMeter(opts: {
   /** Active HTTP/TCP address (panel local state or last connection). */
   hostAddress: string | null | undefined;
   platform: NodeJS.Platform | null;
+  /**
+   * Last scan-time RSSI for the connected peripheral (CoreBluetooth often has no
+   * live RSSI after connect — seed the meter until GATT emits).
+   */
+  bleSeedRssi?: number | null;
 }): HostLinkMeterState {
-  const { protocol, connectionType, status, hostAddress } = opts;
+  const { protocol, connectionType, status, hostAddress, bleSeedRssi } = opts;
   const [rssi, setRssi] = useState<number | null>(null);
   const [rttMs, setRttMs] = useState<number | null>(null);
+  const [gattRssiSeen, setGattRssiSeen] = useState(false);
 
   const active =
     protocol !== 'reticulum' &&
@@ -66,18 +82,30 @@ export function useHostLinkMeter(opts: {
   useEffect(() => {
     if (!active || connectionType !== 'ble') {
       setRssi(null);
+      setGattRssiSeen(false);
       return;
     }
-    const sessionId = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
+    const sessionId = gattBleRssiSessionId(protocol);
+    if (!sessionId) {
+      setRssi(null);
+      setGattRssiSeen(false);
+      return;
+    }
+    setGattRssiSeen(false);
+    if (bleSeedRssi != null && Number.isFinite(bleSeedRssi)) {
+      setRssi(bleSeedRssi);
+    }
     const unsub = window.electronAPI.onGattLinkRssi((payload) => {
       if (payload.sessionId !== sessionId) return;
+      setGattRssiSeen(true);
       setRssi(payload.rssi != null && Number.isFinite(payload.rssi) ? payload.rssi : null);
     });
     return () => {
       unsub();
       setRssi(null);
+      setGattRssiSeen(false);
     };
-  }, [active, connectionType, protocol]);
+  }, [active, bleSeedRssi, connectionType, protocol, status]);
 
   // HTTP probe or live-TCP session meter
   useEffect(() => {
@@ -124,7 +152,10 @@ export function useHostLinkMeter(opts: {
   if (!active || !connectionType) return IDLE;
 
   if (connectionType === 'ble') {
-    return { kind: 'ble-rssi', rssi, rttMs: null, level: null };
+    const displayRssi =
+      rssi ??
+      (!gattRssiSeen && bleSeedRssi != null && Number.isFinite(bleSeedRssi) ? bleSeedRssi : null);
+    return { kind: 'ble-rssi', rssi: displayRssi, rttMs: null, level: null };
   }
 
   if (connectionType === 'http' || connectionType === 'tcp') {

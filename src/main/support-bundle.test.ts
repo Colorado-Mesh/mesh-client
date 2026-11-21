@@ -318,7 +318,9 @@ describe('buildSupportBundleZip', () => {
       names.map(async (name) => zip.file(name)?.async('string') ?? ''),
     );
     expect(publicContents.join('\n')).not.toContain(mecpSentinel);
-    expect(await zip.file('README.txt')!.async('string')).not.toContain('mecp-received.log');
+    const githubReadme = await zip.file('README.txt')!.async('string');
+    expect(githubReadme).not.toContain('mecp-received.log');
+    expect(githubReadme).toMatch(/MeshCom/);
   });
 
   it('developer bundle includes db after exportDatabase', async () => {

@@ -196,7 +196,18 @@ describe('reconnectBleWithScan', () => {
     };
   });
 
-  it('does not scan when immediate connect fails with MeshCore setup abort', async () => {
+  it('runs discovery-first then connects with the stored id when nothing is advertised', async () => {
+    const connect = vi.fn().mockResolvedValue(undefined);
+
+    await expect(reconnectBleWithScan('meshcom', 'abc', connect)).resolves.toBeUndefined();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledWith('meshcom', {
+      timeoutSecs: 4,
+    });
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledWith(undefined);
+  });
+
+  it('does not retry-scan when connect fails with MeshCore setup abort after discovery', async () => {
     const connect = vi
       .fn()
       .mockRejectedValue(new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError'));
@@ -205,10 +216,10 @@ describe('reconnectBleWithScan', () => {
       name: 'AbortError',
       message: MESHCORE_SETUP_ABORT_MESSAGE,
     });
-    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(1);
   });
 
-  it('does not scan when protocol runtime session is not mounted yet', async () => {
+  it('does not retry-scan when protocol runtime session is not mounted yet', async () => {
     const connect = vi
       .fn()
       .mockRejectedValue(new Error('[meshtasticSession] Meshtastic runtime is not mounted'));
@@ -216,42 +227,83 @@ describe('reconnectBleWithScan', () => {
     await expect(reconnectBleWithScan('meshtastic', 'abc', connect)).rejects.toThrow(
       /runtime is not mounted/,
     );
-    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(1);
   });
 
-  it('does not scan after missing-services failures', async () => {
+  it('does not retry-scan after missing-services failures', async () => {
     const connect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
 
     await expect(reconnectBleWithScan('meshcore', 'bad-device', connect)).rejects.toThrow(
       /Could not find all requested services/,
     );
-    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(1);
   });
 
-  it('matches discovery by hex-normalized UUID / MAC aliases', async () => {
+  it('connects with the discovery-first match when aliases resolve', async () => {
+    const connect = vi.fn().mockResolvedValue(undefined);
+    let liveCb:
+      | ((device: { deviceId: string; deviceName: string; address: string; rssi: number }) => void)
+      | null = null;
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
+      liveCb = cb;
+      return () => {
+        liveCb = null;
+      };
+    });
+    vi.mocked(window.electronAPI.startGattScanning).mockImplementation(() => {
+      if (!liveCb) throw new Error('expected discovery listener before scan');
+      liveCb({
+        deviceId: 'AA:BB:CC:DD:EE:FF',
+        deviceName: 'MeshCore',
+        address: 'AA:BB:CC:DD:EE:FF',
+        rssi: -55,
+      });
+      return Promise.resolve({ ok: true });
+    });
+
+    await expect(
+      reconnectBleWithScan('meshcore', 'ff92959fd78be6f009376829a4d6efdc', connect, {
+        matchIds: ['aa:bb:cc:dd:ee:ff'],
+      }),
+    ).resolves.toBeUndefined();
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledWith('AA:BB:CC:DD:EE:FF');
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
+  });
+
+  it('retries a long scan when connect fails after discovery-first with not-found', async () => {
     const connect = vi
       .fn()
       .mockRejectedValueOnce(new Error('not found — scan first'))
       .mockResolvedValueOnce(undefined);
-    const discovered = vi.fn();
+    let liveCb:
+      ((device: { deviceId: string; deviceName: string; address: string }) => void) | null = null;
     vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
-      discovered.mockImplementation(cb);
-      return () => {};
+      liveCb = cb;
+      return () => {
+        liveCb = null;
+      };
     });
+    vi.mocked(window.electronAPI.startGattScanning)
+      .mockResolvedValueOnce({ ok: true }) // discovery-first: no match
+      .mockImplementationOnce(() => {
+        if (!liveCb) throw new Error('expected discovery listener before retry scan');
+        liveCb({
+          deviceId: 'AA:BB:CC:DD:EE:FF',
+          deviceName: 'MeshCore',
+          address: 'AA:BB:CC:DD:EE:FF',
+        });
+        return Promise.resolve({ ok: true });
+      });
 
-    const pending = reconnectBleWithScan('meshcore', 'ff92959fd78be6f009376829a4d6efdc', connect, {
-      matchIds: ['aa:bb:cc:dd:ee:ff'],
-    });
-    await Promise.resolve();
-    discovered({
-      deviceId: 'AA:BB:CC:DD:EE:FF',
-      deviceName: 'MeshCore',
-      address: 'AA:BB:CC:DD:EE:FF',
-    });
-    await expect(pending).resolves.toBeUndefined();
+    await expect(
+      reconnectBleWithScan('meshcore', 'ff92959fd78be6f009376829a4d6efdc', connect, {
+        matchIds: ['aa:bb:cc:dd:ee:ff'],
+      }),
+    ).resolves.toBeUndefined();
     expect(connect).toHaveBeenCalledTimes(2);
-    expect(connect).toHaveBeenNthCalledWith(1);
+    expect(connect).toHaveBeenNthCalledWith(1, undefined);
     expect(connect).toHaveBeenNthCalledWith(2, 'AA:BB:CC:DD:EE:FF');
-    expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(2);
   });
 });

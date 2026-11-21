@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { getProtocolRegistration } from '../protocols/protocolRegistry';
 import type { MeshProtocol } from '../types';
 import type { ProtocolCapabilities } from './BaseRadioProvider';
-import { MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
+import { MESHCOM_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
 
 export type { ProtocolCapabilities };
 
@@ -11,6 +11,9 @@ export type { ProtocolCapabilities };
 export function getRadioCapabilities(protocol: MeshProtocol): ProtocolCapabilities {
   const registration = getProtocolRegistration(protocol);
   if (registration) return registration.capabilities;
+  // MeshCom codecs stay lazy-loaded; capabilities are static so the shell can gate
+  // tabs (no RRC/Games/Nomad) before `ensureMeshcomProtocolLoaded` finishes.
+  if (protocol === 'meshcom') return MESHCOM_CAPABILITIES;
   if (process.env.NODE_ENV === 'development') {
     console.warn(
       `[getRadioCapabilities] Unknown protocol "${protocol}", falling back to Meshtastic capabilities`,

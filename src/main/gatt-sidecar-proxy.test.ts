@@ -48,8 +48,25 @@ vi.mock('ws', async () => {
 import {
   fetchErrorDetail,
   GattSidecarProxy,
+  gattWireProfileFromSession,
+  isGattSessionProfile,
   isPeripheralNotFoundMessage,
 } from './gatt-sidecar-proxy';
+
+describe('GattSessionProfile helpers', () => {
+  it('accepts meshtastic, meshcore, and meshcom session ids', () => {
+    expect(isGattSessionProfile('meshtastic')).toBe(true);
+    expect(isGattSessionProfile('meshcore')).toBe(true);
+    expect(isGattSessionProfile('meshcom')).toBe(true);
+    expect(isGattSessionProfile('reticulum')).toBe(false);
+  });
+
+  it('maps meshcom sessions to the MeshCore NUS wire profile', () => {
+    expect(gattWireProfileFromSession('meshtastic')).toBe('meshtastic');
+    expect(gattWireProfileFromSession('meshcore')).toBe('meshcore');
+    expect(gattWireProfileFromSession('meshcom')).toBe('meshcore');
+  });
+});
 
 describe('fetchErrorDetail', () => {
   it('appends the undici cause code and message to "fetch failed"', () => {
@@ -377,6 +394,30 @@ describe('GattSidecarProxy', () => {
     expect(adapterState).not.toHaveBeenCalled();
   });
 
+  it('startScan for meshcom uses the meshcore sidecar scan mode', async () => {
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, devices: [] }),
+    });
+    await expect(proxy.startScan('meshcom')).resolves.toEqual({ ok: true });
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('mode=meshcore');
+  });
+
+  it('connect for meshcom posts the meshcore wire profile and keeps a meshcom owner slot', async () => {
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-meshcom-1' }),
+    });
+    await expect(proxy.connect('meshcom', 'AA:BB:CC:DD:EE:42')).resolves.toEqual({ ok: true });
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).endsWith('/api/v1/gatt/sessions') && init?.method === 'POST',
+    );
+    expect(post?.[1]?.body).toBe(
+      JSON.stringify({ profile: 'meshcore', address: 'AA:BB:CC:DD:EE:42' }),
+    );
+    expect(proxy.getConnections()).toEqual([{ mac: 'AA:BB:CC:DD:EE:42', owner: 'gatt:meshcom' }]);
+  });
+
   it('connect starts RSSI poll and emits linkRssi', async () => {
     vi.useFakeTimers();
     const linkRssi = vi.fn();
@@ -402,6 +443,53 @@ describe('GattSidecarProxy', () => {
     expect(linkRssi).toHaveBeenCalledWith({ sessionId: 'meshtastic', rssi: -72 });
 
     await proxy.disconnect('meshtastic');
+    vi.useRealTimers();
+  });
+
+  it('connect emits scan-seeded linkRssi when live GATT RSSI is unavailable', async () => {
+    vi.useFakeTimers();
+    const linkRssi = vi.fn();
+    proxy.on('linkRssi', linkRssi);
+    fetchMock.mockImplementation((url: unknown) => {
+      const href = typeof url === 'string' ? url : '';
+      if (href.includes('/api/v1/gatt/scan')) {
+        return Promise.resolve({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              ok: true,
+              devices: [
+                {
+                  address: 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890',
+                  name: 'MeshCom',
+                  rssi: -61,
+                },
+              ],
+            }),
+        });
+      }
+      if (href.includes('/rssi')) {
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve({ ok: false, error: 'rssi unavailable' }),
+        });
+      }
+      return Promise.resolve({
+        status: 200,
+        json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-meshcom-seed' }),
+      });
+    });
+
+    await expect(proxy.startScan('meshcom')).resolves.toEqual({ ok: true });
+    await expect(proxy.connect('meshcom', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')).resolves.toEqual(
+      { ok: true },
+    );
+
+    expect(linkRssi).toHaveBeenCalledWith({ sessionId: 'meshcom', rssi: -61 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(linkRssi).toHaveBeenCalledWith({ sessionId: 'meshcom', rssi: -61 });
+
+    await proxy.disconnect('meshcom');
     vi.useRealTimers();
   });
 

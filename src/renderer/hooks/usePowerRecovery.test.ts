@@ -30,6 +30,10 @@ describe('usePowerRecovery', () => {
     onPowerSuspend: vi.fn(),
     onPowerResume: vi.fn(),
   };
+  const meshcom = {
+    onPowerSuspend: vi.fn(),
+    onPowerResume: vi.fn(),
+  };
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -40,6 +44,8 @@ describe('usePowerRecovery', () => {
     meshcore.onPowerResume.mockClear();
     reticulum.onPowerSuspend.mockClear();
     reticulum.onPowerResume.mockClear();
+    meshcom.onPowerSuspend.mockClear();
+    meshcom.onPowerResume.mockClear();
     suspendCb = null;
     resumeCb = null;
 
@@ -108,7 +114,7 @@ describe('usePowerRecovery', () => {
   describe('Reticulum resume schedule (callbacksByProtocol shape)', () => {
     it('notifies Reticulum onPowerSuspend alongside Meshtastic/MeshCore on suspend', () => {
       renderHook(() => {
-        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum } });
+        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum, meshcom } });
       });
       suspendCb!();
       expect(meshtastic.onPowerSuspend).toHaveBeenCalledTimes(1);
@@ -118,7 +124,7 @@ describe('usePowerRecovery', () => {
 
     it('schedules Reticulum resume last, after the Meshtastic + MeshCore stagger', async () => {
       renderHook(() => {
-        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum } });
+        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum, meshcom } });
       });
       suspendCb!();
       resumeCb!();
@@ -141,7 +147,7 @@ describe('usePowerRecovery', () => {
 
     it('cancels the pending Reticulum resume when suspend fires again before its delay elapses', async () => {
       renderHook(() => {
-        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum } });
+        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum, meshcom } });
       });
       suspendCb!();
       resumeCb!();
@@ -164,7 +170,7 @@ describe('usePowerRecovery', () => {
       const { rerender } = renderHook(
         ({ hiddenProtocols }: { hiddenProtocols: MeshProtocol[] }) => {
           usePowerRecovery({
-            callbacksByProtocol: { meshtastic, meshcore, reticulum },
+            callbacksByProtocol: { meshtastic, meshcore, reticulum, meshcom },
             hiddenProtocols,
           });
         },
@@ -192,7 +198,7 @@ describe('usePowerRecovery', () => {
 
     it('reschedules Reticulum resume from the new resume event after a re-suspend', async () => {
       renderHook(() => {
-        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum } });
+        usePowerRecovery({ callbacksByProtocol: { meshtastic, meshcore, reticulum, meshcom } });
       });
       suspendCb!();
       resumeCb!();

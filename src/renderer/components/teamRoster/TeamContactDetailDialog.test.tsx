@@ -76,6 +76,7 @@ describe('TeamContactDetailDialog', () => {
           ],
           meshcore: [],
           reticulum: [],
+          meshcom: [],
         }}
         onClose={() => {}}
         onOpenChat={() => {}}
@@ -100,7 +101,7 @@ describe('TeamContactDetailDialog', () => {
       <TeamContactDetailDialog
         member={member}
         presence={presence}
-        messagesByProtocol={{ meshtastic: [], meshcore: [], reticulum: [] }}
+        messagesByProtocol={{ meshtastic: [], meshcore: [], reticulum: [], meshcom: [] }}
         onClose={() => {}}
         onOpenChat={() => {}}
         onSendDm={() => true}

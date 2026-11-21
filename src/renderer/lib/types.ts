@@ -18,13 +18,13 @@ export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
-export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp';
+export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp';
 
 export type ConnectionStatus =
   'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
 
 /** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
-export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
+export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'mqtt';
 
 export type TransportStatus =
   'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'stale';
@@ -35,6 +35,7 @@ export type TransportParams =
   | { type: 'serial'; portSignature?: string }
   | { type: 'http'; host: string }
   | { type: 'tcp'; host: string }
+  | { type: 'udp'; host: string }
   | { type: 'mqtt'; broker: string; topic?: string; pubkey?: string };
 
 export interface TransportRef {
@@ -255,6 +256,8 @@ export interface MeshNode {
   key_manually_verified?: boolean;
   /** `NodeInfo.has_xeddsa_signed`: radio has verified an XEdDSA signature from this node */
   has_xeddsa_signed?: boolean;
+  /** MeshCom: firmware string from EXTUDP / HELLO when heard on-air (session). */
+  firmware_version?: string;
 }
 
 export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';

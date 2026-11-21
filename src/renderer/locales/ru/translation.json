@@ -481,7 +481,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Небо",
-      "classic": "Классический зелёный"
+      "classic": "Классический зелёный",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Удалить узлы без позиции / Zero Island",
     "protocolsSection": "Протоколы",
@@ -568,7 +569,9 @@
     "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
     "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано",
     "tabWithUnread": "{{label}}, {{count}} НЕ прочитано",
-    "tabWithOpenIncidents": "{{label}}, {{count}} открытые ПЕРВОМАЙСКИЕ или СРОЧНЫЕ ПРОИСШЕСТВИЯ"
+    "tabWithOpenIncidents": "{{label}}, {{count}} открытые ПЕРВОМАЙСКИЕ или СРОЧНЫЕ ПРОИСШЕСТВИЯ",
+    "switchToMeshCom": "Переключиться на MeshCom",
+    "switchToMeshComWithUnread": "Перейти в MeshCom, {{count}} непрочитанных"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -1786,17 +1789,20 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Страна]/[Штат], например. мш/Колорадо/США",
       "meshcoreLetsmesh": "meshcore/{IATA}, например. сетка/DEN",
-      "meshcoreDefault": "MESHCORE/[Страна]/[Штат], например. МЕШКОР/США/КО"
+      "meshcoreDefault": "MESHCORE/[Страна]/[Штат], например. МЕШКОР/США/КО",
+      "meshcom": "Корневая тема брокера для вашего шлюза MeshCom, например, meshcom"
     },
     "topicPrefixPlaceholder": "мш/США/",
     "maxRetriesHelp": {
       "meshtastic": "Повторите попытки подключения (1–{{max}}), прежде чем сдаваться.",
-      "meshcore": "Повторите попытки (1–20), прежде чем сдаваться."
+      "meshcore": "Повторите попытки (1–20), прежде чем сдаваться.",
+      "meshcom": "Повторные попытки подключения (1–{{max}}) перед прекращением."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
@@ -1895,7 +1901,8 @@
     "topicPrefixInvalidIata": "Префикс темы должен быть meshcore/test или meshcore/{IATA} (3 буквы), например meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
-      "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение."
+      "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение.",
+      "meshcom": "Количество попыток повторного подключения, прежде чем система прекратит их (1–{{max}}). Сохранено с настройками; отключитесь и подключитесь снова, чтобы в текущем сеансе использовалось новое значение."
     },
     "reticulumStackRunningAs": "Работает — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не отвечает — перезапуск…",
@@ -1983,7 +1990,10 @@
     "meshtasticSilentAfterConfigure": "Подключен к радиоприемнику, но он перестал отправлять сетевой трафик после установки. Повторное подключение автоматически. Если это продолжается, проверьте сетевое подключение радиоприемника или перезапустите его.",
     "mqttPacketTooLarge": "Брокер отправил пакет MQTT больше предела безопасности в {{limit}} байт; автоматическое переподключение отключено.",
     "protocolGuideLink": "Руководство по протоколу ↗",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -4103,7 +4113,11 @@
     "pm10": "PM1.0",
     "co2": "CO₂",
     "voc": "VOC index",
-    "nox": "NOx index"
+    "nox": "NOx index",
+    "callsign": "Позывной",
+    "firmware": "Прошивка",
+    "rssi": "RSSI",
+    "altitude": "Высота над уровнем моря"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -4206,7 +4220,8 @@
     "statusFilterAll": "Все",
     "buttonExport": "Экспорт",
     "exportMenuLabel": "Форматы экспорта",
-    "youBadge": "Вы"
+    "youBadge": "Вы",
+    "meshcomHardwareType": "Оборудование MeshCom (из hw_id в эфире)"
   },
   "nomadNetwork": {
     "showBrowser": "Показать браузер",
@@ -7664,7 +7679,8 @@
     "reconnectNeeded": "Отключите и повторно подключите MQTT, чтобы использовать настройки брокера этого профиля.",
     "switchLabel": "Сохраненный профиль",
     "noneSelected": "Текущие настройки сохранены.",
-    "nameAria": "Имя профиля"
+    "nameAria": "Имя профиля",
+    "listLabel": "Сохраненные таможенные брокеры"
   },
   "weatherFilter": {
     "viewTooltip": "Посты о погоде в этом канале",
@@ -7790,7 +7806,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Получено {{when}}"
   },
@@ -8633,7 +8650,8 @@
     "meshcore": "MeshCore",
     "reticulum": "Reticulum",
     "openFromChat": "Искать все разговоры",
-    "unavailable": "Поиск сообщений недоступен в этой среде."
+    "unavailable": "Поиск сообщений недоступен в этой среде.",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "open": "Открыть единый почтовый ящик",
@@ -8680,7 +8698,8 @@
     "deleteConfirm_few": "Удалить сообщения {{count}} из этого почтового ящика? История чатов Meshtastic и MeshCore сохраняется.",
     "deleteConfirm_many": "Удалить сообщения {{count}} из этого почтового ящика? История чатов Meshtastic и MeshCore сохраняется.",
     "deleted_few": "Удалены сообщения {{count}}.",
-    "deleted_many": "Удалены сообщения {{count}}."
+    "deleted_many": "Удалены сообщения {{count}}.",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "verifyButton": "Подтвердить ключ…",
@@ -9114,7 +9133,8 @@
     "loadFailed": "Не удалось загрузить контактные карты из базы данных.",
     "retryLoad": "Попробовать еще раз",
     "retryLoadAria": "Повторить попытку загрузки контактных карт",
-    "loadUnavailable": "Визитные карточки недоступны в этой сборке. Переустановите или обновите приложение."
+    "loadUnavailable": "Визитные карточки недоступны в этой сборке. Переустановите или обновите приложение.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Скрыть сообщения, соответствующие фильтру слов",
@@ -9152,5 +9172,70 @@
     "openAria": "Открыть {{name}}",
     "unknownRoom": "Комната {{id}}",
     "hops": "{{count}} пересадок"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom — лицензированная любительская радиосвязь",
+    "licenseNoticeBody": "MeshCom работает на лицензированных любительских (HAM) частотах LoRa, выбранных в настройке страны (--setctry) по всему миру, а не только на частоте 433 МГц в ЕС. Включайте MeshCom, только если у вас есть разрешение на передачу на диапазонах, настроенных для профиля вашей страны. Это уведомление не связано с разблокировкой частоты Meshtastic для лицензированных радиолюбителей.",
+    "licenseNoticeAccept": "Понятно",
+    "connectionHint": "MeshCom использует любительский диапазон LoRa через настройку страны (--setctry). Убедитесь, что профиль страны вашего узла соответствует вашей лицензии.",
+    "countrySettingLabel": "Настройка страны (--setctry)",
+    "extUdpHint": "Для EXTUDP требуется, чтобы узел был настроен с параметрами --extudp on и --extudpip, указывающими на этот компьютер (UDP 1799).",
+    "kissTcpHint": "KISS/TCP использует порт MeshCom 8001, а не Reticulum KISS/AX.25.",
+    "channelAll": "ALL",
+    "channelGroup": "Группа {{id}}",
+    "callsignFieldLabel": "Позывной (--setcall)",
+    "callsignHint": "Действительный позывной в формате APRS (SSID необязателен). Применить отправку --setcall на Serial/BLE.",
+    "operatorNameFieldLabel": "Имя оператора (--operatorname)",
+    "operatorNamePlaceholder": "имя",
+    "operatorNameHint": "Необязательно. Отправляется с параметром «Применить к серийному номеру»/BLE (не более 19 символов).",
+    "dbStorageDegraded": "История сообщений MeshCom недоступна (не удалось загрузить модуль базы данных). Чат по-прежнему работает; история не будет сохраняться до тех пор, пока вы не перезапустите приложение."
+  },
+  "meshcomDeviceCommands": {
+    "description": "Отправляйте команды узла ICSSW (--help, --settime, --setctry, …) по последовательному интерфейсу или через BLE. Команды, поддерживаемые приложением, соответствуют официальному приложению MeshCom; для команд, доступных только через последовательный интерфейс, требуется подключение к консоли USB.",
+    "autoSettime": "Автоматически устанавливать время узла при подключении",
+    "autoSettimeHint": "При подключении по последовательному интерфейсу или через BLE отправьте команду --settime с указанием времени по UTC на этом компьютере (например, {{example}}).",
+    "settimeNow": "Установить текущее время (UTC)",
+    "requiresSerialBle": "Подключитесь через последовательный порт или BLE, чтобы отправлять команды устройству. EXTUDP и KISS/TCP предназначены только для чата.",
+    "filter": "Команды фильтра",
+    "filterPlaceholder": "Поиск --settime, шлюз, соседи…",
+    "serialOnly": "только последовательный",
+    "run": "Работа",
+    "runCommand": "Запустить {{command}}",
+    "runChoice": "Запустить {{command}} {{value}}",
+    "argInput": "Аргумент для {{command}}",
+    "sent": "Команда отправлена на узел.",
+    "sendFailed": "Ошибка команды: {{detail}}",
+    "setctrySent": "Сохранено и отправлено --setctry {{code}} в узел.",
+    "setctrySavedLocal": "Предпочтительная страна сохранена. Подключитесь через последовательный порт или BLE, чтобы применить команду --setctry к узлу.",
+    "consoleHint": "Введите любую команду --command или ярлык приложения (GATEWAY, GPS, WX-Info). Секретные данные в журнале скрыты.",
+    "consoleLog": "Журнал консоли команд устройства",
+    "consoleInput": "Ввод команды устройства",
+    "consolePlaceholder": "Информация",
+    "consoleSend": "Отправить",
+    "confirmDanger": {
+      "title": "Подтвердить команду",
+      "message": "Отправить {{command}} на узел? Это может привести к перезагрузке или изменению настроек радиочастоты.",
+      "confirm": "Отправить"
+    },
+    "groups": {
+      "display": "Экран",
+      "position": "Позиция, время",
+      "sensors": "Датчики",
+      "identity": "Идентификация и группы",
+      "network": "Сеть и Wi-Fi",
+      "gateway": "Шлюз",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Соседи",
+      "mailbox": "Почтовый ящик",
+      "debug": "Статус и отладка",
+      "power": "Питание и OTA",
+      "misc": "KISS / прочее",
+      "console": "консоль",
+      "clock": "Часы",
+      "advanced": "Расширенная консоль и фильтр"
+    },
+    "appEligible": "Приложение / Серийный номер",
+    "loadingConfig": "Загрузка конфигурации устройства…",
+    "currentValue": "сейчас {{value}}"
   }
 }

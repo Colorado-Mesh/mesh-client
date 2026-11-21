@@ -950,7 +950,8 @@ describe('App shell layout', () => {
     ) => void;
 
     act(() => {
-      setHidden(['meshcore']);
+      // Keep MeshCom hidden (default) so this case stays a three→two protocol drop.
+      setHidden(['meshcore', 'meshcom']);
     });
     const group = within(appRail()).getByRole('radiogroup', { name: 'Protocol switcher' });
     expect(
@@ -960,7 +961,7 @@ describe('App shell layout', () => {
     ).toEqual(['MT', 'RN']);
 
     act(() => {
-      setHidden(['meshtastic', 'meshcore']);
+      setHidden(['meshtastic', 'meshcore', 'meshcom']);
     });
     expect(within(appRail()).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
     // The active protocol was disabled, so the app moved to the one still enabled.
@@ -1031,6 +1032,11 @@ describe('App shell layout', () => {
     await waitFor(() => {
       expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshtastic');
     });
+  });
+
+  it('wires meshcom into hide-protocol MQTT disconnect (parity with meshcore)', () => {
+    const appSource = readFileSync(join(import.meta.dirname, 'App.tsx'), 'utf8');
+    expect(appSource).toMatch(/hidden === 'meshcom'[\s\S]{0,220}mqtt\.disconnect\('meshcom'\)/);
   });
 
   it('disconnects an already-connected MeshCore MQTT session when MeshCore is hidden', async () => {

@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 
 import type { MeshProtocol } from '../lib/types';
-import type { MeshcoreRuntime, MeshtasticRuntime, ReticulumRuntime } from '../runtime/runtimeTypes';
+import type {
+  MeshcomRuntime,
+  MeshcoreRuntime,
+  MeshtasticRuntime,
+  ReticulumRuntime,
+} from '../runtime/runtimeTypes';
+import { useMeshcomPanelActions } from './useMeshcomPanelActions';
 import { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 import type { PanelActions } from './usePanelActions';
@@ -17,16 +23,19 @@ export function useAllProtocolPanelActions(runtimes: {
   meshtastic: MeshtasticRuntime;
   meshcore: MeshcoreRuntime;
   reticulum: ReticulumRuntime;
+  meshcom: MeshcomRuntime;
 }): PanelActionsByProtocol {
   const meshtasticActions = useMeshtasticPanelActions(runtimes.meshtastic);
   const meshcoreActions = useMeshcorePanelActions(runtimes.meshcore);
   const reticulumActions = useReticulumPanelActions(runtimes.reticulum);
+  const meshcomActions = useMeshcomPanelActions(runtimes.meshcom);
   return useMemo(
     () => ({
       meshtastic: meshtasticActions,
       meshcore: meshcoreActions,
       reticulum: reticulumActions,
+      meshcom: meshcomActions,
     }),
-    [meshtasticActions, meshcoreActions, reticulumActions],
+    [meshtasticActions, meshcoreActions, reticulumActions, meshcomActions],
   );
 }

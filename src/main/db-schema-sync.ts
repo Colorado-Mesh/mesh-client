@@ -24,7 +24,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 54;
+export const CURRENT_SCHEMA_VERSION = 55;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -143,6 +143,37 @@ export const CANONICAL_TABLES_DDL = `
         room_server_id INTEGER,
         radio_node_id INTEGER,
         channel_key TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS meshcom_messages (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        identity_id      TEXT    NOT NULL DEFAULT '',
+        msg_id           TEXT,
+        from_call        TEXT,
+        to_call_or_group TEXT,
+        text             TEXT    NOT NULL,
+        channel_idx      INTEGER DEFAULT 0,
+        path             TEXT,
+        rssi             REAL,
+        snr              REAL,
+        hw_id            INTEGER,
+        received_via     TEXT,
+        timestamp        INTEGER NOT NULL,
+        status           TEXT    DEFAULT 'acked',
+        received_at      INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS meshcom_contacts (
+        callsign     TEXT    NOT NULL,
+        identity_id  TEXT    NOT NULL DEFAULT '',
+        node_id      INTEGER NOT NULL,
+        lat          REAL,
+        lon          REAL,
+        batt         INTEGER,
+        hw_id        INTEGER,
+        last_heard   INTEGER,
+        favorited    INTEGER DEFAULT 0,
+        PRIMARY KEY (identity_id, callsign)
       );
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -424,6 +455,14 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_radio_channel_key ON meshcore_messages(radio_node_id, channel_key)',
+  'CREATE INDEX IF NOT EXISTS idx_meshcom_msgs_ts ON meshcom_messages(timestamp)',
+  'CREATE INDEX IF NOT EXISTS idx_meshcom_msgs_identity_ts ON meshcom_messages(identity_id, timestamp DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_meshcom_msgs_channel ON meshcom_messages(channel_idx, id DESC)',
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_meshcom_msg_id
+        ON meshcom_messages(identity_id, msg_id)
+        WHERE msg_id IS NOT NULL`,
+  'CREATE INDEX IF NOT EXISTS idx_meshcom_contacts_node ON meshcom_contacts(node_id)',
+  'CREATE INDEX IF NOT EXISTS idx_meshcom_contacts_last_heard ON meshcom_contacts(last_heard)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
         ON meshcore_messages(sender_id, timestamp, channel_idx, payload, COALESCE(to_node, -1))
         WHERE sender_id IS NOT NULL`,
@@ -541,6 +580,33 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     radio_node_id: 'INTEGER',
     channel_key: 'TEXT',
     received_at: 'INTEGER',
+  },
+  meshcom_messages: {
+    identity_id: "TEXT NOT NULL DEFAULT ''",
+    msg_id: 'TEXT',
+    from_call: 'TEXT',
+    to_call_or_group: 'TEXT',
+    text: 'TEXT NOT NULL',
+    channel_idx: 'INTEGER DEFAULT 0',
+    path: 'TEXT',
+    rssi: 'REAL',
+    snr: 'REAL',
+    hw_id: 'INTEGER',
+    received_via: 'TEXT',
+    timestamp: 'INTEGER NOT NULL',
+    status: "TEXT DEFAULT 'acked'",
+    received_at: 'INTEGER',
+  },
+  meshcom_contacts: {
+    callsign: 'TEXT NOT NULL',
+    identity_id: "TEXT NOT NULL DEFAULT ''",
+    node_id: 'INTEGER NOT NULL',
+    lat: 'REAL',
+    lon: 'REAL',
+    batt: 'INTEGER',
+    hw_id: 'INTEGER',
+    last_heard: 'INTEGER',
+    favorited: 'INTEGER DEFAULT 0',
   },
   reticulum_messages: {
     identity_id: 'TEXT NOT NULL',
@@ -1129,6 +1195,8 @@ function seedAppSettings(db: NodeSqliteDB): void {
   seed.run('meshtasticMessageRetentionCount', '4000');
   seed.run('meshcoreMessageRetentionEnabled', '1');
   seed.run('meshcoreMessageRetentionCount', '4000');
+  seed.run('meshcomMessageRetentionEnabled', '1');
+  seed.run('meshcomMessageRetentionCount', '4000');
   seed.run('reticulumMessageRetentionEnabled', '1');
   seed.run('reticulumMessageRetentionCount', '4000');
   seed.run('rrcMessageRetentionEnabled', '1');
@@ -1249,10 +1317,39 @@ function backfillReticulumIsContactFromLastHeard(db: NodeSqliteDB): void {
   ).run();
 }
 
+/**
+ * Remove duplicate MeshCom rows before idx_meshcom_msg_id (partial UNIQUE on identity_id, msg_id).
+ * Idempotent when the index already exists.
+ */
+function ensureMeshcomMessagesDedup(db: NodeSqliteDB): void {
+  const idx = db
+    .prepare(`SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_meshcom_msg_id' LIMIT 1`)
+    .get();
+  if (idx !== undefined) return;
+  if (!tableExists(db, 'meshcom_messages')) return;
+
+  db.prepare(
+    `DELETE FROM meshcom_messages
+         WHERE id NOT IN (
+           SELECT MIN(id) FROM meshcom_messages
+           WHERE msg_id IS NOT NULL
+           GROUP BY identity_id, msg_id
+         )
+         AND msg_id IS NOT NULL`,
+  ).run();
+
+  db.execScript(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_meshcom_msg_id
+           ON meshcom_messages(identity_id, msg_id)
+           WHERE msg_id IS NOT NULL`,
+  );
+}
+
 function structuralUpgrades(db: NodeSqliteDB): void {
   ensureMessagesPacketDedup(db);
   ensureMessagesReactionDedup(db);
   ensureMeshcoreMessagesDedupIndex(db);
+  ensureMeshcomMessagesDedup(db);
   migrateLegacyContactGroups(db);
   rebuildMeshcoreTraceHistoryIfNeeded(db);
   repairNodesLastHeardUnits(db);

@@ -14,6 +14,11 @@ export interface LastConnection {
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
   bleMac?: string;
+  /**
+   * Last known host↔radio BLE RSSI (dBm) from scan or GATT link meter.
+   * CoreBluetooth often has no live RSSI after connect — used to seed the Connection panel meter.
+   */
+  bleRssi?: number;
   serialPortId?: string;
 }
 
@@ -92,10 +97,10 @@ export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | und
   return deviceId ?? mac ?? undefined;
 }
 
-/** Meshtastic HTTP/TCP or MeshCore TCP host (stored as `http`/`tcp` connection type). */
+/** Meshtastic HTTP/TCP, MeshCore TCP, or MeshCom KISS/TCP / EXTUDP host. */
 export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
-  if (last?.type !== 'http' && last?.type !== 'tcp') return undefined;
+  if (last?.type !== 'http' && last?.type !== 'tcp' && last?.type !== 'udp') return undefined;
   const addr = last.httpAddress?.trim();
   return addr || undefined;
 }
@@ -103,6 +108,9 @@ export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefin
 export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {
   const last = loadLastConnection(protocol);
   if (last?.serialPortId) return last.serialPortId;
+  // MeshCom must not inherit the shared Meshtastic/MeshCore last-serial key — that opens the
+  // wrong USB radio and makes CM look like it is routing MeshCore traffic.
+  if (protocol === 'meshcom') return null;
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
   } catch {
@@ -180,7 +188,7 @@ export function buildMeshtasticConnectionParamsFromLastConnection(
     if (!httpAddress) return null;
     return { type: 'http', httpAddress, serialPort: null };
   }
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+
   if (last.type === 'tcp') {
     const httpAddress = last.httpAddress?.trim();
     if (!httpAddress) return null;

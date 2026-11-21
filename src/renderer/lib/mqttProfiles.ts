@@ -2,16 +2,29 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { parseStoredJson } from './parseStoredJson';
 import {
   getCachedSecureSecret,
+  MESHCOM_MQTT_PROFILES_SECRET_KEY,
   MQTT_PROFILES_SECRET_KEY,
   removeSecureSecret,
   setSecureSecret,
 } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
+/** Protocols that store a user-managed custom MQTT profile list (no network presets for MeshCom). */
+export type MqttProfilesProtocol = 'meshtastic' | 'meshcom';
+
 /** Non-secret profile metadata only; passwords are held by the main-owned credential service. */
 export const MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshtastic';
+export const MESHCOM_MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshcom';
 export const MQTT_PROFILE_NAME_MAX_LENGTH = 60;
 export const MQTT_PROFILES_MAX = 50;
+
+export function getMqttProfilesStorageKey(protocol: MqttProfilesProtocol): string {
+  return protocol === 'meshcom' ? MESHCOM_MQTT_PROFILES_STORAGE_KEY : MQTT_PROFILES_STORAGE_KEY;
+}
+
+export function getMqttProfilesSecretKey(protocol: MqttProfilesProtocol): string {
+  return protocol === 'meshcom' ? MESHCOM_MQTT_PROFILES_SECRET_KEY : MQTT_PROFILES_SECRET_KEY;
+}
 
 /** Connection fields a profile stores; `MQTTSettings` satisfies this shape. */
 export interface MqttProfileFields {
@@ -26,7 +39,7 @@ export interface MqttProfileFields {
   wsPath?: string;
 }
 
-/** User-saved Meshtastic MQTT broker + root topic, switchable from the network preset picker. */
+/** User-saved MQTT broker + root topic for Meshtastic or MeshCom custom lists. */
 export interface MqttProfile extends MqttProfileFields {
   id: string;
   name: string;
@@ -46,7 +59,10 @@ export function normalizeMqttProfileName(name: string): string {
 }
 
 type StoredMqttProfile = Omit<MqttProfile, 'password'>;
-let mqttProfileSaveQueue: Promise<void> = Promise.resolve();
+const mqttProfileSaveQueues = new Map<MqttProfilesProtocol, Promise<void>>([
+  ['meshtastic', Promise.resolve()],
+  ['meshcom', Promise.resolve()],
+]);
 
 function isStoredMqttProfile(v: unknown): v is StoredMqttProfile {
   if (!v || typeof v !== 'object') return false;
@@ -67,17 +83,16 @@ function isStoredMqttProfile(v: unknown): v is StoredMqttProfile {
   );
 }
 
-export function loadMqttProfiles(): MqttProfile[] {
+export function loadMqttProfiles(protocol: MqttProfilesProtocol = 'meshtastic'): MqttProfile[] {
+  const storageKey = getMqttProfilesStorageKey(protocol);
+  const secretKey = getMqttProfilesSecretKey(protocol);
   try {
     const passwords =
       parseStoredJson<Record<string, string>>(
-        getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY),
+        getCachedSecureSecret(secretKey),
         'loadMqttProfiles passwords',
       ) ?? {};
-    const parsed = parseStoredJson<unknown>(
-      localStorage.getItem(MQTT_PROFILES_STORAGE_KEY),
-      'loadMqttProfiles',
-    );
+    const parsed = parseStoredJson<unknown>(localStorage.getItem(storageKey), 'loadMqttProfiles');
     if (Array.isArray(parsed)) {
       return parsed
         .filter(isStoredMqttProfile)
@@ -90,15 +105,20 @@ export function loadMqttProfiles(): MqttProfile[] {
   return [];
 }
 
-async function saveMqttProfilesNow(profiles: readonly MqttProfile[]): Promise<void> {
-  const previousPasswords = getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY);
+async function saveMqttProfilesNow(
+  protocol: MqttProfilesProtocol,
+  profiles: readonly MqttProfile[],
+): Promise<void> {
+  const storageKey = getMqttProfilesStorageKey(protocol);
+  const secretKey = getMqttProfilesSecretKey(protocol);
+  const previousPasswords = getCachedSecureSecret(secretKey);
   try {
     const limited = profiles.slice(0, MQTT_PROFILES_MAX);
     const passwords = Object.fromEntries(limited.map((profile) => [profile.id, profile.password]));
-    if (limited.length === 0) await removeSecureSecret(MQTT_PROFILES_SECRET_KEY);
-    else await setSecureSecret(MQTT_PROFILES_SECRET_KEY, JSON.stringify(passwords));
+    if (limited.length === 0) await removeSecureSecret(secretKey);
+    else await setSecureSecret(secretKey, JSON.stringify(passwords));
     localStorage.setItem(
-      MQTT_PROFILES_STORAGE_KEY,
+      storageKey,
       JSON.stringify(
         limited.map((profile) => ({
           id: profile.id,
@@ -116,8 +136,8 @@ async function saveMqttProfilesNow(profiles: readonly MqttProfile[]): Promise<vo
     );
   } catch (e) {
     try {
-      if (previousPasswords == null) await removeSecureSecret(MQTT_PROFILES_SECRET_KEY);
-      else await setSecureSecret(MQTT_PROFILES_SECRET_KEY, previousPasswords);
+      if (previousPasswords == null) await removeSecureSecret(secretKey);
+      else await setSecureSecret(secretKey, previousPasswords);
     } catch (rollbackError) {
       console.warn('[mqttProfiles] password rollback failed ' + errLikeToLogString(rollbackError));
     }
@@ -126,10 +146,17 @@ async function saveMqttProfilesNow(profiles: readonly MqttProfile[]): Promise<vo
   }
 }
 
-export function saveMqttProfiles(profiles: readonly MqttProfile[]): Promise<void> {
+export function saveMqttProfiles(
+  profiles: readonly MqttProfile[],
+  protocol: MqttProfilesProtocol = 'meshtastic',
+): Promise<void> {
   const snapshot = profiles.map((profile) => ({ ...profile }));
-  const operation = mqttProfileSaveQueue.then(() => saveMqttProfilesNow(snapshot));
-  mqttProfileSaveQueue = operation.catch(() => undefined);
+  const previous = mqttProfileSaveQueues.get(protocol) ?? Promise.resolve();
+  const operation = previous.then(() => saveMqttProfilesNow(protocol, snapshot));
+  mqttProfileSaveQueues.set(
+    protocol,
+    operation.catch(() => undefined),
+  );
   return operation;
 }
 

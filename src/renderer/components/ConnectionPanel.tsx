@@ -93,6 +93,8 @@ import {
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
+import { looksLikeRnodeBleName, meshcomBlePickerDisplayName } from '../lib/meshcom/meshcomBleName';
+import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
@@ -183,6 +185,7 @@ import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshComConnectionHints } from './MeshComConnectionHints';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { MqttProfileControls } from './MqttProfileControls';
 import { PickerSortControls } from './PickerSortControls';
@@ -214,6 +217,8 @@ interface LastConnection {
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
   bleMac?: string;
+  /** Last known BLE host RSSI (dBm) for Connection panel seed after reconnect. */
+  bleRssi?: number;
   serialPortId?: string;
 }
 
@@ -379,6 +384,10 @@ function loadMeshcoreMqttSettings(): MQTTSettings {
   return loadProtocolMqttSettings('meshcore');
 }
 
+function loadMeshcomMqttSettings(): MQTTSettings {
+  return loadProtocolMqttSettings('meshcom');
+}
+
 interface Props {
   state: DeviceState;
   onConnect: RfConnectFn;
@@ -448,7 +457,11 @@ export default function ConnectionPanel({
   const [connectionType, setConnectionType] = useState<ConnectionType>('ble');
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
-    return last?.type === 'http' && last.httpAddress ? last.httpAddress : 'meshtastic.local';
+    if (last?.httpAddress && (last.type === 'http' || last.type === 'udp')) {
+      return last.httpAddress;
+    }
+    if (protocol === 'meshcom') return '127.0.0.1:8001';
+    return 'meshtastic.local';
   });
   const [tcpAddress, setTcpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
@@ -456,7 +469,11 @@ export default function ConnectionPanel({
   });
   const [tcpHost, setTcpHost] = useState(() => {
     const last = loadLastConnection(protocol);
-    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
+    if (
+      last?.httpAddress &&
+      (protocol === 'meshcore' || protocol === 'meshcom') &&
+      (last.type === 'http' || last.type === 'tcp' || last.type === 'udp')
+    ) {
       return parseTcpAddress(last.httpAddress).host;
     }
     return 'localhost';
@@ -466,9 +483,12 @@ export default function ConnectionPanel({
     if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
       return String(parseTcpAddress(last.httpAddress).port);
     }
-    return '5000';
+    if (last?.type === 'http' && last.httpAddress && protocol === 'meshcom') {
+      return String(parseTcpAddress(last.httpAddress).port);
+    }
+    return protocol === 'meshcom' ? '8001' : '5000';
   });
-  const tcpPort = parseTcpPortFromString(tcpPortStr, 5000);
+  const tcpPort = parseTcpPortFromString(tcpPortStr, protocol === 'meshcom' ? 8001 : 5000);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
@@ -479,43 +499,40 @@ export default function ConnectionPanel({
   const activeHostAddress =
     protocol === 'meshcore'
       ? `${tcpHost}:${tcpPort}`
-      : connectionType === 'tcp' || state.connectionType === 'tcp'
-        ? tcpAddress
-        : httpAddress;
-  const hostLinkMeter = useHostLinkMeter({
-    protocol,
-    connectionType: state.connectionType,
-    status: state.status,
-    hostAddress:
-      state.connectionType === 'tcp'
-        ? tcpAddress
-        : state.connectionType === 'http'
-          ? protocol === 'meshcore'
-            ? `${tcpHost}:${tcpPort}`
-            : httpAddress
-          : activeHostAddress,
-    platform: window.electronAPI.getPlatform() as NodeJS.Platform,
-  });
-
+      : protocol === 'meshcom' && (connectionType === 'http' || connectionType === 'udp')
+        ? httpAddress
+        : connectionType === 'tcp' || state.connectionType === 'tcp'
+          ? tcpAddress
+          : httpAddress;
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
   const [meshcoreMqttSettings, setMeshcoreMqttSettings] =
     useState<MQTTSettings>(loadMeshcoreMqttSettings);
+  const [meshcomMqttSettings, setMeshcomMqttSettings] =
+    useState<MQTTSettings>(loadMeshcomMqttSettings);
   const [showMqttPassword, setShowMqttPassword] = useState(false);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
   const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
   const [channelPskDraft, setChannelPskDraft] = useState(() =>
     formatChannelPskInput(
-      (protocol === 'meshcore' ? loadMeshcoreMqttSettings() : loadMqttSettings()).channelPsks,
+      (protocol === 'meshcore'
+        ? loadMeshcoreMqttSettings()
+        : protocol === 'meshcom'
+          ? loadMeshcomMqttSettings()
+          : loadMqttSettings()
+      ).channelPsks,
     ),
   );
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const meshcomMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mqttSettingsRef = useRef(mqttSettings);
   mqttSettingsRef.current = mqttSettings;
   const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
   meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
+  const meshcomMqttSettingsRef = useRef(meshcomMqttSettings);
+  meshcomMqttSettingsRef.current = meshcomMqttSettings;
   const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() =>
     readStoredMeshcoreMqttPreset(),
   );
@@ -532,23 +549,35 @@ export default function ConnectionPanel({
       return 'custom';
     },
   );
-  const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(loadMqttProfiles);
+  const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(() =>
+    loadMqttProfiles('meshtastic'),
+  );
   const mqttProfilesRef = useRef(mqttProfiles);
   mqttProfilesRef.current = mqttProfiles;
   const persistedMqttProfilesRef = useRef(mqttProfiles);
   const mqttProfileSaveRequestRef = useRef(0);
+  const [meshcomMqttProfiles, setMeshcomMqttProfiles] = useState<MqttProfile[]>(() =>
+    loadMqttProfiles('meshcom'),
+  );
+  const meshcomMqttProfilesRef = useRef(meshcomMqttProfiles);
+  meshcomMqttProfilesRef.current = meshcomMqttProfiles;
+  const persistedMeshcomMqttProfilesRef = useRef(meshcomMqttProfiles);
+  const meshcomMqttProfileSaveRequestRef = useRef(0);
   // Profile chosen while connected whose broker/credentials differ; applied once MQTT disconnects
   // so the live session's settings and matched profile stay accurate.
   const [pendingMqttProfile, setPendingMqttProfile] = useState<MqttProfile | null>(null);
   const activeMqttProfile = useMemo(
-    () => matchMqttProfile(mqttProfiles, mqttSettings),
-    [mqttProfiles, mqttSettings],
+    () =>
+      protocol === 'meshcom'
+        ? matchMqttProfile(meshcomMqttProfiles, meshcomMqttSettings)
+        : matchMqttProfile(mqttProfiles, mqttSettings),
+    [protocol, meshcomMqttProfiles, meshcomMqttSettings, mqttProfiles, mqttSettings],
   );
   const updateMqttProfiles = (next: MqttProfile[]) => {
     const requestId = ++mqttProfileSaveRequestRef.current;
     mqttProfilesRef.current = next;
     setMqttProfiles(next);
-    void saveMqttProfiles(next)
+    void saveMqttProfiles(next, 'meshtastic')
       .then(() => {
         persistedMqttProfilesRef.current = next;
       })
@@ -558,6 +587,25 @@ export default function ConnectionPanel({
           const persisted = persistedMqttProfilesRef.current;
           mqttProfilesRef.current = persisted;
           setMqttProfiles(persisted);
+        }
+      });
+  };
+  const updateMeshcomMqttProfiles = (next: MqttProfile[]) => {
+    const requestId = ++meshcomMqttProfileSaveRequestRef.current;
+    meshcomMqttProfilesRef.current = next;
+    setMeshcomMqttProfiles(next);
+    void saveMqttProfiles(next, 'meshcom')
+      .then(() => {
+        persistedMeshcomMqttProfilesRef.current = next;
+      })
+      .catch((e: unknown) => {
+        console.warn(
+          '[ConnectionPanel] MeshCom MQTT profile persistence failed ' + errLikeToLogString(e),
+        );
+        if (meshcomMqttProfileSaveRequestRef.current === requestId) {
+          const persisted = persistedMeshcomMqttProfilesRef.current;
+          meshcomMqttProfilesRef.current = persisted;
+          setMeshcomMqttProfiles(persisted);
         }
       });
   };
@@ -611,10 +659,27 @@ export default function ConnectionPanel({
 
   useEffect(() => {
     if (mqttStatus !== 'disconnected' || !pendingMqttProfile) return;
-    setMeshtasticPreset('custom');
-    setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    if (protocol === 'meshcom') {
+      setMeshcomMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    } else {
+      setMeshtasticPreset('custom');
+      setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    }
     setPendingMqttProfile(null);
-  }, [mqttStatus, pendingMqttProfile]);
+  }, [mqttStatus, pendingMqttProfile, protocol]);
+
+  const applyMeshcomMqttProfile = (profile: MqttProfile) => {
+    if (mqttStatus === 'connecting') return;
+    const next = applyMqttProfile(meshcomMqttSettings, profile);
+    const effect = mqttProfileApplyEffect(meshcomMqttSettings, next);
+    // MeshCom has no live topicPrefix IPC — any live change needs reconnect.
+    if (mqttStatus === 'connected' && effect !== 'none') {
+      setPendingMqttProfile(profile);
+      return;
+    }
+    setPendingMqttProfile(null);
+    setMeshcomMqttSettings(next);
+  };
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -692,6 +757,40 @@ export default function ConnectionPanel({
     };
   }, []);
 
+  // Persist MeshCom MQTT settings with debounce
+  useEffect(() => {
+    if (meshcomMqttSaveTimerRef.current) clearTimeout(meshcomMqttSaveTimerRef.current);
+    meshcomMqttSaveTimerRef.current = setTimeout(() => {
+      persistMqttSettingsIfChanged(MESHCOM_MQTT_SETTINGS_KEY, meshcomMqttSettingsRef.current);
+      meshcomMqttSaveTimerRef.current = null;
+    }, 300);
+    return () => {
+      if (meshcomMqttSaveTimerRef.current) {
+        clearTimeout(meshcomMqttSaveTimerRef.current);
+        meshcomMqttSaveTimerRef.current = null;
+      }
+    };
+  }, [meshcomMqttSettings]);
+
+  useEffect(() => {
+    const flushMeshcomMqtt = () => {
+      flushPendingMqttSave(
+        meshcomMqttSaveTimerRef,
+        MESHCOM_MQTT_SETTINGS_KEY,
+        meshcomMqttSettingsRef.current,
+      );
+    };
+    window.addEventListener('beforeunload', flushMeshcomMqtt);
+    return () => {
+      window.removeEventListener('beforeunload', flushMeshcomMqtt);
+      flushPendingMqttSave(
+        meshcomMqttSaveTimerRef,
+        MESHCOM_MQTT_SETTINGS_KEY,
+        meshcomMqttSettingsRef.current,
+      );
+    };
+  }, []);
+
   // Listen for MQTT events from main process (dual-mode: only errors for the active protocol)
   useEffect(() => {
     return window.electronAPI.mqtt.onError(({ error, protocol: mqttProtocol }) => {
@@ -699,7 +798,9 @@ export default function ConnectionPanel({
       setMqttError(
         protocol === 'meshcore'
           ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
-          : meshtasticMqttErrorUserHint(error, t),
+          : protocol === 'meshcom'
+            ? error
+            : meshtasticMqttErrorUserHint(error, t),
       );
     });
   }, [protocol, t]);
@@ -765,8 +866,18 @@ export default function ConnectionPanel({
     };
   }, []);
 
-  const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
-  const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
+  const activeMqttSettings =
+    protocol === 'meshcore'
+      ? meshcoreMqttSettings
+      : protocol === 'meshcom'
+        ? meshcomMqttSettings
+        : mqttSettings;
+  const setActiveMqttSettings =
+    protocol === 'meshcore'
+      ? setMeshcoreMqttSettings
+      : protocol === 'meshcom'
+        ? setMeshcomMqttSettings
+        : setMqttSettings;
   const activeMqttTls = mqttUsesTls(activeMqttSettings);
   const { focusedIdentityId } = useActiveMeshIdentity(protocol);
   const radioModuleConfigs = useDeviceStore((s) =>
@@ -794,7 +905,7 @@ export default function ConnectionPanel({
     if (affectsPreset) {
       if (protocol === 'meshcore') {
         setMeshcorePreset('custom');
-      } else {
+      } else if (protocol === 'meshtastic') {
         setMeshtasticPreset('custom');
       }
     }
@@ -855,13 +966,19 @@ export default function ConnectionPanel({
     return cache;
   }, [bleDevices]);
   const getBlePickerName = useCallback(
-    (device: GattBleDevice) =>
-      blePickerDisplayName(
-        device.deviceId,
-        device.deviceName,
-        bleDeviceNamesCache[device.deviceId],
-      ),
-    [bleDeviceNamesCache],
+    (device: GattBleDevice) => {
+      const cached = bleDeviceNamesCache[device.deviceId];
+      if (protocol === 'meshcom') {
+        return meshcomBlePickerDisplayName(
+          device.deviceId,
+          device.deviceName,
+          cached,
+          blePickerDisplayName,
+        );
+      }
+      return blePickerDisplayName(device.deviceId, device.deviceName, cached);
+    },
+    [bleDeviceNamesCache, protocol],
   );
   const getBlePickerId = useCallback((device: GattBleDevice) => device.deviceId, []);
   const getBlePickerRssi = useCallback((device: GattBleDevice) => device.rssi, []);
@@ -871,6 +988,12 @@ export default function ConnectionPanel({
     blePickerSort.dir,
     { getName: getBlePickerName, getId: getBlePickerId, getRssi: getBlePickerRssi },
   );
+  // MeshCom reuses MeshCore NUS scan (unfiltered) — hide obvious RNode adverts so users
+  // do not GATT-connect a Reticulum radio and get a silent HELLO (no MeshCom TYP JSON).
+  const visibleBleDevices = useMemo(() => {
+    if (protocol !== 'meshcom') return sortedBleDevices;
+    return sortedBleDevices.filter((d) => !looksLikeRnodeBleName(d.deviceName));
+  }, [protocol, sortedBleDevices]);
   const isLinux = window.electronAPI.getPlatform() === 'linux';
   const isWindows = window.electronAPI.getPlatform() === 'win32';
 
@@ -902,6 +1025,41 @@ export default function ConnectionPanel({
   const [lastConnection, setLastConnection] = useState<LastConnection | null>(() =>
     loadLastConnection(protocol),
   );
+  const bleHostSeedRssi = useMemo(() => {
+    if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) {
+      return null;
+    }
+    const id = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
+    if (id) {
+      const found = bleDevices.find((d) => d.deviceId === id);
+      if (found?.rssi != null && Number.isFinite(found.rssi)) return found.rssi;
+    }
+    const stored = lastConnection?.bleRssi;
+    return stored != null && Number.isFinite(stored) ? stored : null;
+  }, [
+    bleDevices,
+    connecting,
+    connectionType,
+    lastConnection?.bleDeviceId,
+    lastConnection?.bleRssi,
+    protocol,
+    state.connectionType,
+  ]);
+  const hostLinkMeter = useHostLinkMeter({
+    protocol,
+    connectionType: state.connectionType,
+    status: state.status,
+    hostAddress:
+      state.connectionType === 'tcp'
+        ? tcpAddress
+        : state.connectionType === 'http'
+          ? protocol === 'meshcore'
+            ? `${tcpHost}:${tcpPort}`
+            : httpAddress
+          : activeHostAddress,
+    platform: window.electronAPI.getPlatform() as NodeJS.Platform,
+    bleSeedRssi: bleHostSeedRssi,
+  });
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
@@ -1039,7 +1197,11 @@ export default function ConnectionPanel({
       const becameConfigured = prevStoreStatusRef.current !== 'configured';
       if (state.connectionType && becameConfigured && !protocolChanged) {
         const conn: LastConnection = { type: state.connectionType };
-        if (state.connectionType === 'http' || state.connectionType === 'tcp') {
+        if (
+          state.connectionType === 'http' ||
+          state.connectionType === 'tcp' ||
+          state.connectionType === 'udp'
+        ) {
           // Prefer the address field for the configured transport (not UI radio selection).
           conn.httpAddress =
             protocol === 'meshcore'
@@ -1063,9 +1225,20 @@ export default function ConnectionPanel({
               cachedMac: getBleDeviceMac(bleId) ?? lastConnectionBleMacFallbackRef.current,
             });
             if (bleIdentity.isMac) conn.bleMac = bleIdentity.display;
+            const scanned = bleDevices.find((d) => d.deviceId === bleId)?.rssi;
+            const rssiSeed =
+              scanned != null && Number.isFinite(scanned)
+                ? scanned
+                : hostLinkMeter.rssi != null && Number.isFinite(hostLinkMeter.rssi)
+                  ? hostLinkMeter.rssi
+                  : prev?.bleRssi;
+            if (rssiSeed != null && Number.isFinite(rssiSeed)) conn.bleRssi = rssiSeed;
           }
         } else if (state.connectionType === 'serial') {
-          const serialId = loadLastSerialPort();
+          // MeshCom must not inherit the shared Meshtastic/MeshCore serial key.
+          const serialId =
+            lastConnectionRef.current?.serialPortId ??
+            (protocol === 'meshcom' ? null : loadLastSerialPort());
           if (serialId) conn.serialPortId = serialId;
         }
         saveLastConnection(protocol, conn);
@@ -1107,6 +1280,40 @@ export default function ConnectionPanel({
     connectionType,
     connecting,
     protocol,
+    bleDevices,
+    hostLinkMeter.rssi,
+  ]);
+
+  // Persist live / scan BLE RSSI onto lastConnection so reconnect can seed the host meter.
+  useEffect(() => {
+    if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) return;
+    const id = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
+    if (!id) return;
+    const scanned = bleDevices.find((d) => d.deviceId === id)?.rssi;
+    const next =
+      scanned != null && Number.isFinite(scanned)
+        ? scanned
+        : hostLinkMeter.rssi != null && Number.isFinite(hostLinkMeter.rssi)
+          ? hostLinkMeter.rssi
+          : null;
+    if (next == null) return;
+    if (lastConnection?.bleRssi === next) return;
+    const updated: LastConnection = {
+      ...(lastConnection ?? { type: 'ble', bleDeviceId: id }),
+      type: 'ble',
+      bleDeviceId: id,
+      bleRssi: next,
+    };
+    saveLastConnection(protocol, updated);
+    setLastConnection(updated);
+  }, [
+    bleDevices,
+    connecting,
+    connectionType,
+    hostLinkMeter.rssi,
+    lastConnection,
+    protocol,
+    state.connectionType,
   ]);
 
   // Listen for sidecar GATT discovery events.
@@ -1448,7 +1655,10 @@ export default function ConnectionPanel({
     return window.electronAPI.onSerialPortsDiscovered((ports) => {
       setSerialPorts(ports);
       if (isAutoConnecting) {
-        const lastId = lastConnection?.serialPortId ?? loadLastSerialPort();
+        // MeshCom: only match this protocol's remembered port — never the shared last-serial key
+        // (that belongs to Meshtastic/MeshCore and would open the wrong USB radio).
+        const lastId =
+          lastConnection?.serialPortId ?? (protocol === 'meshcom' ? null : loadLastSerialPort());
         if (lastId) {
           const match = ports.find((p) => p.portId === lastId);
           if (match) {
@@ -1465,7 +1675,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(true);
       setConnectionStage('connectionPanel.stageSelectSerial');
     });
-  }, [isAutoConnecting, lastConnection]);
+  }, [isAutoConnecting, lastConnection, protocol]);
 
   const handleConnect = useCallback(async () => {
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
@@ -1516,6 +1726,8 @@ export default function ConnectionPanel({
         await onConnect('http', activeHostAddress);
       } else if (connectionType === 'tcp') {
         await onConnect('tcp', activeHostAddress);
+      } else if (connectionType === 'udp') {
+        await onConnect('udp', activeHostAddress);
       } else {
         await onConnect('serial');
       }
@@ -1524,7 +1736,11 @@ export default function ConnectionPanel({
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t);
-      } else if (connectionType === 'http' || connectionType === 'tcp') {
+      } else if (
+        connectionType === 'http' ||
+        connectionType === 'tcp' ||
+        connectionType === 'udp'
+      ) {
         errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
         errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
@@ -1591,6 +1807,24 @@ export default function ConnectionPanel({
         lastSelectedBleAddressRef.current = found.address;
       } else {
         lastSelectedBleAddressRef.current = getBleDeviceMac(deviceId);
+      }
+      // Persist scan RSSI immediately — CoreBluetooth rarely provides live GATT RSSI, and
+      // reconnect clears bleDevices before the host meter can read the picker list.
+      {
+        const bleIdentity = resolveBlePickerIdentity({
+          deviceId,
+          address: lastSelectedBleAddressRef.current,
+          cachedMac: getBleDeviceMac(deviceId) ?? lastConnectionBleMacFallbackRef.current,
+        });
+        const selected: LastConnection = {
+          type: 'ble',
+          bleDeviceId: deviceId,
+          bleDeviceName: found?.deviceName ?? lastConnectionBleDeviceNameFallbackRef.current,
+          ...(bleIdentity.isMac ? { bleMac: bleIdentity.display } : {}),
+          ...(found?.rssi != null && Number.isFinite(found.rssi) ? { bleRssi: found.rssi } : {}),
+        };
+        saveLastConnection(protocol, selected);
+        setLastConnection(selected);
       }
       // Store MAC address for potential re-pairing on Linux
       lastSelectedBleMacRef.current = deviceId;
@@ -1661,15 +1895,25 @@ export default function ConnectionPanel({
       showWindowsPairStateBlocked,
       protocol,
       capabilities.hasGattBleScanning,
+      setLastConnection,
     ],
   );
 
-  const handleSelectSerialPort = useCallback((portId: string) => {
-    saveLastSerialPort(portId);
-    window.electronAPI.selectSerialPort(portId);
-    setShowSerialPicker(false);
-    setConnectionStage('connectionPanel.stageConnecting');
-  }, []);
+  const handleSelectSerialPort = useCallback(
+    (portId: string) => {
+      // Keep the shared key for Meshtastic/MeshCore reconnect UX; MeshCom only stores per-protocol.
+      if (protocol !== 'meshcom') {
+        saveLastSerialPort(portId);
+      }
+      const conn: LastConnection = { type: 'serial', serialPortId: portId };
+      saveLastConnection(protocol, conn);
+      setLastConnection(conn);
+      window.electronAPI.selectSerialPort(portId);
+      setShowSerialPicker(false);
+      setConnectionStage('connectionPanel.stageConnecting');
+    },
+    [protocol, setLastConnection],
+  );
 
   // Cold-start RF auto-connect (serial/BLE/TCP/HTTP) is owned by
   // ProtocolAutoConnectCoordinator / useProtocolRfAutoConnect — not this panel.
@@ -1968,9 +2212,9 @@ export default function ConnectionPanel({
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-ink-300 text-xs" aria-live="polite">
-                  {t('connectionPanel.devicesFound', { count: bleDevices.length })}
+                  {t('connectionPanel.devicesFound', { count: visibleBleDevices.length })}
                 </span>
-                {bleDevices.length > 0 ? (
+                {visibleBleDevices.length > 0 ? (
                   <PickerSortControls
                     mode="ble"
                     sortKey={blePickerSort.key}
@@ -1983,15 +2227,20 @@ export default function ConnectionPanel({
               </div>
             </div>
             <div className="max-h-60 overflow-y-auto">
-              {bleDevices.length === 0 ? (
+              {visibleBleDevices.length === 0 ? (
                 <div className="text-muted px-4 py-6 text-center text-sm">
                   <SpinnerIcon className="text-muted mx-auto mb-2 h-5 w-5" />
                   {t('connectionPanel.scanningDevices', {
-                    protocol: protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic',
+                    protocol:
+                      protocol === 'meshcore'
+                        ? 'MeshCore'
+                        : protocol === 'meshcom'
+                          ? 'MeshCom'
+                          : 'Meshtastic',
                   })}
                 </div>
               ) : (
-                sortedBleDevices.map((device) => {
+                visibleBleDevices.map((device) => {
                   const displayName = getBlePickerName(device);
                   const identity = resolveBlePickerIdentity({
                     deviceId: device.deviceId,
@@ -2160,13 +2409,13 @@ export default function ConnectionPanel({
   // ─── Shared MQTT section ────────────────────────────────────────
   const disconnectMqtt = (reason: string) => {
     markMqttUserDisconnect();
-    window.electronAPI.mqtt
-      .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
-      .catch((err: unknown) => {
-        console.warn(
-          `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
-        );
-      });
+    const mqttProtocol =
+      protocol === 'meshcore' ? 'meshcore' : protocol === 'meshcom' ? 'meshcom' : 'meshtastic';
+    window.electronAPI.mqtt.disconnect(mqttProtocol).catch((err: unknown) => {
+      console.warn(
+        `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
+      );
+    });
   };
 
   const mqttAuthDocsLink =
@@ -2228,7 +2477,7 @@ export default function ConnectionPanel({
               #
             </LabelValue>
           </LabelValueGrid>
-          {protocol !== 'meshcore' && mqttProfiles.length > 0 ? (
+          {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
             <div data-setting-anchor="connection.mqtt.switchProfile" className="space-y-1">
               <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
                 {t('mqttProfiles.switchLabel')}
@@ -2259,6 +2508,37 @@ export default function ConnectionPanel({
               ) : null}
             </div>
           ) : null}
+          {protocol === 'meshcom' && meshcomMqttProfiles.length > 0 ? (
+            <div data-setting-anchor="connection.mqtt.meshcomSwitchProfile" className="space-y-1">
+              <p id="conn-meshcom-live-profile" className="text-muted text-xs">
+                {t('mqttProfiles.switchLabel')}
+              </p>
+              <MqttNetworkPresetSelect
+                id="conn-meshcom-live-profile-select"
+                labelledById="conn-meshcom-live-profile"
+                value={activeMqttProfile ? mqttProfileSelectValue(activeMqttProfile.id) : ''}
+                options={[
+                  ...(activeMqttProfile
+                    ? []
+                    : [{ value: '', label: t('mqttProfiles.noneSelected') }]),
+                  ...meshcomMqttProfiles.map((p) => ({
+                    value: mqttProfileSelectValue(p.id),
+                    label: p.name,
+                  })),
+                ]}
+                onSelect={(value) => {
+                  const profileId = mqttProfileIdFromSelectValue(value);
+                  const profile = meshcomMqttProfiles.find((p) => p.id === profileId);
+                  if (profile) applyMeshcomMqttProfile(profile);
+                }}
+              />
+              {pendingMqttProfile ? (
+                <p className="text-xs text-orange-400" role="status">
+                  {t('mqttProfiles.reconnectNeeded')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <Stepper
             id="mqtt-max-retries-when-connected"
             label={t('connectionPanel.maxReconnectAttempts')}
@@ -2273,9 +2553,13 @@ export default function ConnectionPanel({
                 ? t('connectionPanel.maxRetriesHelpConnected.meshcore', {
                     max: MQTT_MAX_RECONNECT_ATTEMPTS,
                   })
-                : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
-                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                  })
+                : protocol === 'meshcom'
+                  ? t('connectionPanel.maxRetriesHelpConnected.meshcom', {
+                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                    })
+                  : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
+                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                    })
             }
           />
         </div>
@@ -2288,7 +2572,7 @@ export default function ConnectionPanel({
               {mqttError}
             </div>
           )}
-          {protocol !== 'meshcore' && (
+          {protocol === 'meshtastic' && (
             <div data-setting-anchor="connection.mqtt.meshtasticPreset" className="space-y-1">
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
@@ -2351,6 +2635,50 @@ export default function ConnectionPanel({
                 }}
                 onDelete={(id) => {
                   updateMqttProfiles(deleteMqttProfile(mqttProfiles, id));
+                }}
+              />
+            </div>
+          )}
+          {protocol === 'meshcom' && (
+            <div data-setting-anchor="connection.mqtt.meshcomProfiles" className="space-y-1">
+              <p id="conn-meshcom-saved-profiles" className="text-muted text-xs">
+                {t('mqttProfiles.listLabel')}
+              </p>
+              {meshcomMqttProfiles.length > 0 ? (
+                <MqttNetworkPresetSelect
+                  id="conn-meshcom-saved-profiles-select"
+                  labelledById="conn-meshcom-saved-profiles"
+                  disabled={mqttStatus === 'connecting'}
+                  value={activeMqttProfile ? mqttProfileSelectValue(activeMqttProfile.id) : ''}
+                  options={[
+                    ...(activeMqttProfile
+                      ? []
+                      : [{ value: '', label: t('mqttProfiles.noneSelected') }]),
+                    ...meshcomMqttProfiles.map((p) => ({
+                      value: mqttProfileSelectValue(p.id),
+                      label: t('mqttProfiles.optionLabel', { name: p.name }),
+                    })),
+                  ]}
+                  onSelect={(value) => {
+                    const profileId = mqttProfileIdFromSelectValue(value);
+                    if (profileId == null) return;
+                    const profile = meshcomMqttProfiles.find((p) => p.id === profileId);
+                    if (profile) applyMeshcomMqttProfile(profile);
+                  }}
+                />
+              ) : null}
+              <MqttProfileControls
+                activeProfile={activeMqttProfile}
+                onSave={(name) => {
+                  updateMeshcomMqttProfiles(
+                    createMqttProfile(meshcomMqttProfiles, name, meshcomMqttSettings),
+                  );
+                }}
+                onRename={(id, name) => {
+                  updateMeshcomMqttProfiles(renameMqttProfile(meshcomMqttProfiles, id, name));
+                }}
+                onDelete={(id) => {
+                  updateMeshcomMqttProfiles(deleteMqttProfile(meshcomMqttProfiles, id));
                 }}
               />
             </div>
@@ -2701,10 +3029,12 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : isDeviceSigningMeshcorePreset(meshcorePreset) ||
-                        isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
-                      ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
-                      : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
+                    : protocol === 'meshcom'
+                      ? t('connectionPanel.topicPrefixHelp.meshcom')
+                      : isDeviceSigningMeshcorePreset(meshcorePreset) ||
+                          isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
+                        ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
+                        : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
                 }
               />
             </div>
@@ -2760,13 +3090,17 @@ export default function ConnectionPanel({
               hint={
                 protocol === 'meshcore'
                   ? t('connectionPanel.maxRetriesHelp.meshcore')
-                  : t('connectionPanel.maxRetriesHelp.meshtastic', {
-                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                    })
+                  : protocol === 'meshcom'
+                    ? t('connectionPanel.maxRetriesHelp.meshcom', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
+                    : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
               }
             />
           </div>
-          {protocol !== 'meshcore' && (
+          {protocol === 'meshtastic' && (
             <div data-setting-anchor="connection.mqtt.channelPsks" className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <label htmlFor="mqtt-channel-psks" className="text-muted text-xs">
@@ -2830,8 +3164,16 @@ export default function ConnectionPanel({
                 const committedPsks = commitChannelPskDraft();
                 const settings: Parameters<typeof window.electronAPI.mqtt.connect>[0] = {
                   ...activeMqttSettings,
-                  channelPsks: committedPsks.length > 0 ? committedPsks : undefined,
-                  mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
+                  channelPsks:
+                    protocol === 'meshtastic' && committedPsks.length > 0
+                      ? committedPsks
+                      : undefined,
+                  mqttTransportProtocol:
+                    protocol === 'meshcore'
+                      ? 'meshcore'
+                      : protocol === 'meshcom'
+                        ? 'meshcom'
+                        : 'meshtastic',
                 };
                 if (protocol === 'meshcore') {
                   const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, settings);
@@ -2994,7 +3336,12 @@ export default function ConnectionPanel({
         state.connectionType
           ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
           : null,
-        state.myNodeNum > 0 ? (myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)) : null,
+        state.myNodeNum > 0
+          ? (myNodeLabel ??
+            (protocol === 'meshtastic'
+              ? formatMeshtasticNodeId(state.myNodeNum)
+              : String(state.myNodeNum)))
+          : null,
       ]
         .filter((part): part is string => !!part)
         .join(' · ')
@@ -3108,6 +3455,7 @@ export default function ConnectionPanel({
       <div data-panel-anchor="Connection" className="w-full space-y-4">
         {statusTiles}
         {renderAutoReconnectBanner()}
+        {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
 
         {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
         <div className="grid items-start gap-4 xl:grid-cols-2">
@@ -3156,7 +3504,10 @@ export default function ConnectionPanel({
                 ) : null}
                 {state.myNodeNum > 0 && (
                   <LabelValue label={t('connectionPanel.myNode')} mono>
-                    {myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)}
+                    {myNodeLabel ??
+                      (protocol === 'meshtastic'
+                        ? formatMeshtasticNodeId(state.myNodeNum)
+                        : String(state.myNodeNum))}
                   </LabelValue>
                 )}
                 {state.myNodeNum > 0 && state.batteryPercent !== undefined && (
@@ -3227,7 +3578,9 @@ export default function ConnectionPanel({
   const connectionTypeOptions: SegmentedOption<ConnectionType>[] = (
     protocol === 'meshtastic'
       ? (['ble', 'serial', 'http', 'tcp'] as const)
-      : (['ble', 'serial', 'http'] as const)
+      : protocol === 'meshcom'
+        ? (['udp', 'http', 'ble', 'serial'] as const) // http UI = MeshCom KISS/TCP :8001
+        : (['ble', 'serial', 'http'] as const)
   ).map((type) => ({
     value: type,
     label: connectionPanelConnectionTypeLabel(t, type, protocol),
@@ -3237,6 +3590,7 @@ export default function ConnectionPanel({
     <div data-panel-anchor="Connection" className="w-full space-y-4">
       {statusTiles}
       {renderAutoReconnectBanner()}
+      {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
 
       {/* Last Connection — one-click reconnect card */}
       {showLastConnection && (
@@ -3417,6 +3771,32 @@ export default function ConnectionPanel({
                 <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
               </div>
             )}
+            {(connectionType === 'udp' ||
+              (connectionType === 'http' && protocol === 'meshcom')) && (
+              <div
+                data-setting-anchor="connection.radio.meshcomHost"
+                className="max-w-md space-y-1"
+              >
+                <label htmlFor="connection-meshcom-host" className="text-muted text-xs">
+                  {t('connectionPanel.deviceAddress')}
+                </label>
+                <input
+                  id="connection-meshcom-host"
+                  type="text"
+                  value={httpAddress}
+                  onChange={(e) => {
+                    setHttpAddress(e.target.value);
+                  }}
+                  placeholder={connectionType === 'udp' ? '192.168.1.x' : '192.168.1.x:8001'}
+                  className={INPUT_CLASS}
+                  autoComplete="off"
+                  aria-label={t('connectionPanel.deviceAddress')}
+                />
+                <p className="text-muted text-xs">
+                  {connectionType === 'udp' ? t('meshcom.extUdpHint') : t('meshcom.kissTcpHint')}
+                </p>
+              </div>
+            )}
 
             {/* Connection hints */}
             <div className={`space-y-1 ${NOTICE_CLASS.info}`}>
@@ -3470,7 +3850,9 @@ export default function ConnectionPanel({
                 disabled={
                   connecting ||
                   state.status === 'connecting' ||
-                  ((connectionType === 'http' || connectionType === 'tcp') &&
+                  ((connectionType === 'http' ||
+                    connectionType === 'tcp' ||
+                    connectionType === 'udp') &&
                     !activeHostAddress.trim())
                 }
               >

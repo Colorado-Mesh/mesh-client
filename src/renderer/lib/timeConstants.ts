@@ -29,6 +29,19 @@ export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;
  */
 export const MESHCORE_OWNER_INFO_FETCH_DEBOUNCE_MS = 800;
 
+/** Collect Serial `--info` console lines after MeshCom connect before parsing settings. */
+export const MESHCOM_SERIAL_INFO_COLLECT_MS = 2500;
+
+/** Collect Serial `--wx` weather lines (and BLE TYP W settle) for Telemetry. */
+export const MESHCOM_SERIAL_WX_COLLECT_MS = 1500;
+
+/**
+ * Wait for BLE companion `CONFFIN` (or fall back to `--info`) after MeshCom connect.
+ * Firmware holds the config burst ~3s after `{HELLO}`, then drains TYP JSON at ~300ms
+ * each (plus MH list) before `CONFFIN` — 5s was often too short.
+ */
+export const MESHCOM_BLE_SETTINGS_WAIT_MS = 15 * MS_PER_SECOND;
+
 /**
  * TracePath / ping TraceData wait after SENT (radio estimate for 1–2 hops is a few seconds).
  * Kept here with the end-to-end ping cap so UI copy and settle budgets cannot drift.

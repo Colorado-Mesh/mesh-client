@@ -15,6 +15,8 @@ import { withMeshtasticChannelIdentity } from './channelIdentity';
 import { nextChatReceivedAt } from './chatReceiveOrder';
 import { connectionDriver } from './drivers/ConnectionDriver';
 import { errLikeToLogString } from './errLikeToLogString';
+import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
+import { meshcomOutboundDest } from './meshcom/meshcomChannel';
 import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
@@ -67,6 +69,50 @@ function persistMeshcoreOutboundRow(
     .saveMeshcoreMessage(messageToDbRow(chat, myNodeNum))
     .catch((e: unknown) => {
       console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+    });
+}
+
+function meshcomCallForOutboundNode(identityId: IdentityId, nodeId: number | undefined): string {
+  if (nodeId == null || nodeId === 0 || nodeId === 0xffffffff) return '';
+  const fromRegistry = meshcomCallForNodeId(nodeId);
+  if (fromRegistry) return fromRegistry;
+  const longName = nodesOf(identityId)?.[nodeId]?.longName?.trim();
+  return longName || '';
+}
+
+function persistMeshcomOutboundRow(
+  identityId: IdentityId,
+  record: MessageRecord,
+  myNodeNum: number,
+  status: 'sending' | 'acked' | 'failed',
+  msgId?: string,
+): void {
+  const fromCall =
+    meshcomCallForOutboundNode(identityId, myNodeNum) ||
+    meshcomCallForOutboundNode(identityId, record.from) ||
+    null;
+  const toCallOrGroup =
+    record.channelIndex > 0
+      ? meshcomOutboundDest({ channelIndex: record.channelIndex })
+      : record.to !== 0xffffffff
+        ? meshcomCallForOutboundNode(identityId, record.to) || null
+        : '*';
+  void window.electronAPI.db
+    .saveMeshcomMessage({
+      identity_id: identityId,
+      msg_id: msgId ?? record.id,
+      from_call: fromCall,
+      to_call_or_group: toCallOrGroup,
+      text: record.payload,
+      channel_idx: record.channelIndex,
+      // MeshCom DB only accepts rf|mqtt|both — outbound RF chat is 'rf' (not 'local').
+      received_via: 'rf',
+      timestamp: record.timestamp,
+      status,
+      received_at: record.receivedAt ?? Date.now(),
+    })
+    .catch((e: unknown) => {
+      console.warn('[useSendMessage] saveMeshcomMessage failed ' + errLikeToLogString(e));
     });
 }
 
@@ -254,7 +300,9 @@ export function sendChatOnIdentity(
   }
 
   const isMeshtastic = identity.protocol.type === 'meshtastic';
+  const isMeshcom = identity.protocol.type === 'meshcom';
   const isMeshcoreDm = identity.protocol.type === 'meshcore' && destination != null;
+  const isMeshcomDm = isMeshcom && destination != null;
   const { provisionalId, meshtasticTempPacketId } = allocateOutboundProvisionalId(
     isMeshtastic,
     isMeshcoreDm,
@@ -286,7 +334,7 @@ export function sendChatOnIdentity(
     ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
     to: destination ?? 0xffffffff,
     payload: resolvedOutbound.displayPayload,
-    channelIndex: isMeshcoreDm ? -1 : channelIndex,
+    channelIndex: isMeshcoreDm || isMeshcomDm ? -1 : channelIndex,
     ...(isMeshcoreDm ? { localOrder: nextMeshcoreMessageLocalOrder() } : {}),
     timestamp: Date.now(),
     // Taken here, not by the store, so every save of this row carries the receipt the live row
@@ -330,6 +378,9 @@ export function sendChatOnIdentity(
       .catch((e: unknown) => {
         console.debug('[useSendMessage] saveMessage failed ' + errLikeToLogString(e));
       });
+  }
+  if (isMeshcom) {
+    persistMeshcomOutboundRow(identityId, record, myNodeNum, 'sending');
   }
 
   let destinationPubKey: Uint8Array | undefined;
@@ -527,7 +578,17 @@ export function sendChatOnIdentity(
             destination,
           });
         } else {
+          // MeshCom TCP sendMessage awaits KISS TX_RESULT; other transports resolve on write.
           updateMessageStatus(identityId, resolvedId, 'acked');
+          if (isMeshcom) {
+            persistMeshcomOutboundRow(
+              identityId,
+              { ...record, id: resolvedId },
+              myNodeNum,
+              'acked',
+              resolvedId,
+            );
+          }
         }
         if (isMeshtastic && meshtasticTempPacketId != null) {
           const rowPacketId = res.packetId ?? meshtasticTempPacketId;
@@ -544,6 +605,9 @@ export function sendChatOnIdentity(
         updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
         if (identity.protocol.type === 'meshcore') {
           persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+        }
+        if (isMeshcom) {
+          persistMeshcomOutboundRow(identityId, record, myNodeNum, 'failed');
         }
         abandonMeshcoreHeardRepeat();
         if (isMeshtastic && meshtasticTempPacketId != null) {

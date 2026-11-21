@@ -12,7 +12,7 @@ export const LIVE_SESSION_STALE_MS = 120 * MS_PER_SECOND;
 /** EWMA smoothing factor for write→first-data latency samples. */
 export const LIVE_SESSION_EWMA_ALPHA = 0.3;
 
-export type LiveSessionMeterProtocol = 'meshtastic' | 'meshcore';
+export type LiveSessionMeterProtocol = 'meshtastic' | 'meshcore' | 'meshcom';
 
 export interface LiveSessionMeterSnapshot {
   rttMs: number | null;

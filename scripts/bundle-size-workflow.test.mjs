@@ -289,6 +289,45 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const meshcomDbPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/meshcom-db-handlers.ts'),
+            [
+              'export function registerMeshcomDbIpcHandlers() {',
+              `  return 'CREATE TABLE IF NOT EXISTS meshcom_messages ${meshcomDbPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/meshcom-db-handlers-fallback.ts'),
+            ['export function registerMeshcomDbIpcFallbackHandlers() {}', ''].join('\n'),
+          );
+          const udpBridgePad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/udp-bridge.ts'),
+            [
+              'export function registerUdpBridgeIpcHandlers() {',
+              `  return 'meshcom:udp-connect ${udpBridgePad}';`,
+              '}',
+              'export function destroyRegisteredUdpBridgeSockets() {}',
+              '',
+            ].join('\n'),
+          );
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/udp-bridge-fallback.ts'),
+            ['export function registerUdpBridgeIpcFallbackHandlers() {}', ''].join('\n'),
+          );
+          const loadUdpPad = 'x'.repeat(200);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/loadMeshcomUdpBridge.ts'),
+            [
+              'export async function loadMeshcomUdpBridge() {',
+              `  return 'loadMeshcomUdpBridge ${loadUdpPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

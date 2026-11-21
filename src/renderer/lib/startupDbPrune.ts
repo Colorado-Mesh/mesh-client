@@ -1,3 +1,4 @@
+import { MESHCOM_CONTACT_CAP_DEFAULT } from '@/shared/meshcomConstants';
 import { MS_PER_DAY } from '@/shared/timeConstants';
 
 import { getAppSettingsRaw } from './appSettingsStorage';
@@ -273,6 +274,27 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               }),
           );
         }
+        if (r.meshcomEnabled) {
+          innerOps.push(
+            window.electronAPI.db
+              .pruneMeshcomMessagesByCount(r.meshcomCount)
+              .catch((e: unknown) => {
+                console.warn(
+                  `[App] ${label} pruneMeshcomMessagesByCount failed ` + errLikeToLogString(e),
+                );
+              }),
+          );
+        }
+        // Always bound MeshCom contacts (DoS: unique spoofed callsigns).
+        innerOps.push(
+          window.electronAPI.db
+            .pruneMeshcomContactsByCount(MESHCOM_CONTACT_CAP_DEFAULT)
+            .catch((e: unknown) => {
+              console.warn(
+                `[App] ${label} pruneMeshcomContactsByCount failed ` + errLikeToLogString(e),
+              );
+            }),
+        );
         if (r.reticulumEnabled) {
           innerOps.push(
             window.electronAPI.db

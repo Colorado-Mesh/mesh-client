@@ -1,12 +1,14 @@
 import type { TFunction } from 'i18next';
 
+import type { ConnectionType, MeshProtocol } from './types';
+
 export interface MeshcoreWaitingMessagesStatusInput {
   waitingMessagesCount: number;
   waitingMessagesSyncActive: boolean;
   waitingMessagesSyncProgress: { processed: number; total: number } | null;
   waitingMessagesSilentDrainActive: boolean;
   waitingMessagesDrainDeferred: boolean;
-  connectionType?: 'serial' | 'ble' | 'tcp' | 'http' | null;
+  connectionType?: ConnectionType | null;
 }
 
 function appendSerialHint(
@@ -98,7 +100,7 @@ export function meshcoreWaitingMessagesVisible(input: MeshcoreWaitingMessagesSta
 
 export function meshcoreWaitingMessagesVisibleForProtocol(
   input: MeshcoreWaitingMessagesStatusInput,
-  activeProtocol: 'meshtastic' | 'meshcore' | 'reticulum',
+  activeProtocol: MeshProtocol,
 ): boolean {
   if (!meshcoreWaitingMessagesVisible(input)) return false;
   if (activeProtocol !== 'meshcore') {

@@ -56,6 +56,7 @@ import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../li
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import { meshcomCallForNodeId } from '../lib/meshcom/meshcomCallRegistry';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
   MESHCORE_BUILTIN_CONTACT_TYPE_CHAT,
@@ -143,10 +144,18 @@ type NodeListTab = 'all' | 'history';
 
 function stubDmHistoryNode(nodeId: number, lastMessageAt: number, mode: MeshProtocol): MeshNode {
   const hex = formatMeshtasticNodeId(nodeId).replace(/^!/, '');
+  // MeshCom identity is callsign (hash is only a store key). MeshCore uses bare hex; Meshtastic uses !hex.
+  const meshcomCall = mode === 'meshcom' ? meshcomCallForNodeId(nodeId) : undefined;
+  const longName =
+    mode === 'meshcom'
+      ? (meshcomCall ?? hex)
+      : mode === 'meshcore' || mode === 'reticulum'
+        ? hex
+        : `!${hex}`;
   return {
     node_id: nodeId,
-    long_name: mode === 'meshcore' ? hex : `!${hex}`,
-    short_name: hex.slice(-4),
+    long_name: longName,
+    short_name: mode === 'meshcom' && meshcomCall ? meshcomCall.slice(0, 4) : hex.slice(-4),
     hw_model: mode === 'meshcore' ? 'Chat' : '',
     snr: 0,
     battery: 0,
@@ -278,6 +287,10 @@ function NodeListPanel({
   const iconTrigger = useIconTrigger();
   const capabilities = useRadioProvider(mode);
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
+  /** Compact Contacts columns (MeshCore / MeshCom) — not Meshtastic Nodes layout. */
+  const contactsLayout = capabilities.nodeListTabUsesContactsLabel;
+  /** Meshtastic-only: hashed callsign / pubkey-derived ids must not show as `!xxxxxxxx`. */
+  const showNodeHexIdColumn = capabilities.showsNodeNumHexId && !contactsLayout;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const botSenders = useBotSendersStore((s) => s.senders[mode]);
   const positionHistory = usePositionHistoryStore((s) => s.history);
@@ -335,7 +348,9 @@ function NodeListPanel({
         const rows =
           mode === 'meshcore'
             ? await window.electronAPI.db.listMeshcoreDmPeers(myNodeNum)
-            : await window.electronAPI.db.listMeshtasticDmPeers(myNodeNum);
+            : mode === 'meshtastic'
+              ? await window.electronAPI.db.listMeshtasticDmPeers(myNodeNum)
+              : [];
         if (!cancelled) {
           const next = Array.isArray(rows) ? rows : [];
           setDbDmPeers((prev) => (prev.length === 0 && next.length === 0 ? prev : next));
@@ -405,11 +420,11 @@ function NodeListPanel({
   } = useMeshcoreContactCapacity({ enabled: mode === 'meshcore' });
 
   useEffect(() => {
-    if (mode === 'meshcore' && MESHCORE_INAPPLICABLE_SORT_FIELDS.has(sortField)) {
+    if (contactsLayout && MESHCORE_INAPPLICABLE_SORT_FIELDS.has(sortField)) {
       setSortField('last_heard');
       setSortAsc(false);
     }
-  }, [mode, sortField]);
+  }, [contactsLayout, sortField]);
   const handleRefreshContacts = async () => {
     if (!onRefreshContacts) return;
     setRefreshLoading(true);
@@ -539,9 +554,9 @@ function NodeListPanel({
           n.long_name.toLowerCase().includes(q) ||
           n.short_name.toLowerCase().includes(q) ||
           n.hw_model?.toLowerCase().includes(q) ||
-          (mode === 'meshcore'
-            ? n.node_id.toString(16).includes(q.replace(/^!/, ''))
-            : meshtasticNodeIdMatchesHexQuery(n.node_id, q)),
+          (mode === 'meshtastic'
+            ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
+            : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
       );
     }
 
@@ -721,7 +736,7 @@ function NodeListPanel({
   );
 
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
-  const nodeTableColSpan = (mode === 'meshcore' ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
+  const nodeTableColSpan = (contactsLayout ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
   const shouldVirtualizeNodeRows = nodeList.length > 100;
   const nodeRowVirtualizer = useVirtualizer({
     count: nodeList.length,
@@ -1100,7 +1115,7 @@ function NodeListPanel({
         className="bg-deep-black border-ink-800 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border"
       >
         <table
-          style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
+          style={{ minWidth: contactsLayout ? '1000px' : '1600px' }}
           className="text-sm whitespace-nowrap"
         >
           <caption className="sr-only">{t('nodeListPanel.tableCaptionMeshNodes')}</caption>
@@ -1109,10 +1124,15 @@ function NodeListPanel({
               <th scope="col" className="w-16 px-3 py-2">
                 {t('nodeListPanel.columnHealth')}
               </th>
-              <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
+              <th scope="col" className="w-8 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
                 <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
+                <Star
+                  aria-hidden
+                  size={14}
+                  className={`${ICON_SM_PLUS} ${contactsLayout ? 'text-ink-400' : 'text-muted'}`}
+                />
               </th>
-              {mode !== 'meshcore' && (
+              {showNodeHexIdColumn && (
                 <th
                   scope="col"
                   aria-sort={
@@ -1140,7 +1160,7 @@ function NodeListPanel({
                 {t('nodeListPanel.columnLongName')}{' '}
                 <SortIcon field="long_name" sortField={sortField} sortAsc={sortAsc} />
               </th>
-              {mode !== 'meshcore' && (
+              {!contactsLayout && (
                 <th
                   scope="col"
                   aria-sort={
@@ -1168,7 +1188,7 @@ function NodeListPanel({
                 {t('nodeListPanel.columnLastHeard')}{' '}
                 <SortIcon field="last_heard" sortField={sortField} sortAsc={sortAsc} />
               </th>
-              {mode === 'meshcore' ? (
+              {contactsLayout ? (
                 <th
                   scope="col"
                   aria-sort={
@@ -1178,7 +1198,11 @@ function NodeListPanel({
                   onClick={() => {
                     handleSort('hw_model');
                   }}
-                  title={t('nodeListPanel.meshcoreContactType')}
+                  title={
+                    mode === 'meshcom'
+                      ? t('nodeListPanel.meshcomHardwareType')
+                      : t('nodeListPanel.meshcoreContactType')
+                  }
                 >
                   {t('nodeListPanel.columnType')}{' '}
                   <SortIcon field="hw_model" sortField={sortField} sortAsc={sortAsc} />
@@ -1209,7 +1233,7 @@ function NodeListPanel({
                 {t('nodeListPanel.columnHops')}{' '}
                 <SortIcon field="hops_away" sortField={sortField} sortAsc={sortAsc} />
               </th>
-              {mode !== 'meshcore' && (
+              {!contactsLayout && (
                 <th
                   scope="col"
                   aria-sort={
@@ -1290,7 +1314,7 @@ function NodeListPanel({
                 {t('nodeListPanel.columnBattery')}{' '}
                 <SortIcon field="battery" sortField={sortField} sortAsc={sortAsc} />
               </th>
-              {mode !== 'meshcore' && (
+              {!contactsLayout && (
                 <>
                   <th
                     scope="col"
@@ -1498,13 +1522,15 @@ function NodeListPanel({
                               className={`${ICON_MD} ${
                                 node.favorited
                                   ? 'fill-current text-yellow-400'
-                                  : 'text-muted hover:text-yellow-400'
+                                  : contactsLayout
+                                    ? 'text-ink-400 hover:text-yellow-400'
+                                    : 'text-muted hover:text-yellow-400'
                               }`}
                             />
                           </button>
                         )}
                       </td>
-                      {mode !== 'meshcore' && (
+                      {showNodeHexIdColumn && (
                         <td className="text-muted px-3 py-2 font-mono text-xs">
                           {formatMeshtasticNodeId(node.node_id)}
                         </td>
@@ -1522,7 +1548,7 @@ function NodeListPanel({
                               }}
                               aria-current={isSelected ? 'true' : undefined}
                               className={`focus-visible:outline-brand-green rounded text-left hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                                mode === 'meshcore' ? 'break-words whitespace-normal' : 'truncate'
+                                contactsLayout ? 'break-words whitespace-normal' : 'truncate'
                               }`}
                             >
                               {mode === 'meshcore'
@@ -1584,7 +1610,7 @@ function NodeListPanel({
                             )}
                         </div>
                       </td>
-                      {mode !== 'meshcore' && (
+                      {!contactsLayout && (
                         <td
                           className={`text-ink-300 px-3 py-2 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                         >
@@ -1593,8 +1619,9 @@ function NodeListPanel({
                       )}
                       <td className="text-muted px-3 py-2">{formatTime(node.last_heard)}</td>
                       <td className="px-3 py-2 text-xs">
-                        {mode === 'meshcore' ? (
-                          node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
+                        {contactsLayout ? (
+                          mode === 'meshcore' &&
+                          (node.hw_model === 'Repeater' || node.hw_model === 'Room') ? (
                             <span className="text-ink-300 inline-flex items-center gap-1">
                               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
@@ -1609,11 +1636,15 @@ function NodeListPanel({
                                 trigger={iconTrigger}
                                 size={14}
                               />
-                              {meshcoreContactTypeLabel(t, node.hw_model)}
+                              {mode === 'meshcore'
+                                ? meshcoreContactTypeLabel(t, node.hw_model)
+                                : node.hw_model || '—'}
                             </span>
                           ) : (
                             <span className="text-ink-300">
-                              {meshcoreContactTypeLabel(t, node.hw_model)}
+                              {mode === 'meshcore'
+                                ? meshcoreContactTypeLabel(t, node.hw_model)
+                                : node.hw_model || '—'}
                             </span>
                           )
                         ) : node.hw_model === 'Chat' ? (
@@ -1639,7 +1670,7 @@ function NodeListPanel({
                           (node.hops_away ?? (isSelf ? 0 : '-'))
                         )}
                       </td>
-                      {mode !== 'meshcore' && (
+                      {!contactsLayout && (
                         <td className="text-ink-300 px-3 py-2 text-xs">
                           <div className="flex justify-center">
                             {(() => {
@@ -1776,7 +1807,7 @@ function NodeListPanel({
                           </span>
                         </div>
                       </td>
-                      {mode !== 'meshcore' && (
+                      {!contactsLayout && (
                         <>
                           <td className="text-ink-300 px-3 py-2 text-right text-xs">
                             {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}

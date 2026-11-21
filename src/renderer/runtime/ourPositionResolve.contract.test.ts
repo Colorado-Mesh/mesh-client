@@ -12,6 +12,7 @@ function refreshBody(source: string, declaration: string): string {
 describe.each([
   ['useMeshtasticRuntime.ts', 'const refreshOurPosition = useCallback', 'meshtastic'],
   ['useMeshcoreRuntime.ts', 'const refreshOurPositionNoop = useCallback', 'meshcore'],
+  ['useMeshcomRuntime.ts', 'const refreshOurPosition = useCallback', 'meshcom'],
 ])('%s our-position resolve', (file, declaration, protocol) => {
   const body = refreshBody(loadRuntimeSource(file), declaration);
 
@@ -89,5 +90,29 @@ describe('useMeshcoreRuntime radio self position', () => {
     const recordNearAdvert = source.slice(Math.max(0, advertIdx - 400), advertIdx + 800);
     expect(recordNearAdvert).not.toContain('recordRadioSelfPosition');
     expect(source).toMatch(/applyMeshcoreTelemetryLpp[\s\S]*?recordRadioSelfPosition\('meshcore'/);
+  });
+});
+
+describe('useMeshcomRuntime radio self position', () => {
+  it('feeds only this session radio fix to the resolver', () => {
+    const body = refreshBody(
+      loadRuntimeSource('useMeshcomRuntime.ts'),
+      'const refreshOurPosition = useCallback',
+    );
+    expect(body).toContain("readRadioSelfPosition('meshcom')");
+  });
+
+  it('drops superseded refresh commits after await', () => {
+    const body = refreshBody(
+      loadRuntimeSource('useMeshcomRuntime.ts'),
+      'const refreshOurPosition = useCallback',
+    );
+    expect(body).toContain('refreshOurPositionGenerationRef');
+    expect(body).toMatch(
+      /await resolveOurPosition\([\s\S]*?generation !== refreshOurPositionGenerationRef\.current/,
+    );
+    expect(body).toMatch(
+      /generation !== refreshOurPositionGenerationRef\.current[\s\S]*?return null/,
+    );
   });
 });

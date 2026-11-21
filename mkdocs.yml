@@ -1,7 +1,7 @@
 site_name: Colorado Mesh Client
 site_url: https://colorado-mesh.github.io/mesh-client/
 site_description: >-
-  Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.
+  Cross-platform desktop client for Meshtastic, MeshCore, Reticulum (LXMF), and MeshCom mesh networks.
 repo_url: https://github.com/Colorado-Mesh/mesh-client
 repo_name: Colorado-Mesh/mesh-client
 edit_uri: edit/main/docs/
@@ -129,6 +129,7 @@ nav:
       - Troubleshooting: troubleshooting.md
       - MeshCore Troubleshooting: troubleshooting-meshcore.md
       - Reticulum Troubleshooting: troubleshooting-reticulum.md
+      - MeshCom Troubleshooting: troubleshooting-meshcom.md
       - Diagnostics: diagnostics.md
       - Log Analysis: log-analysis.md
       - Community: https://coloradomesh.org/
@@ -167,6 +168,8 @@ nav:
           - MeshCore Repeaters: development/meshcore-repeaters.md
           - MeshCore Rooms: development/meshcore-rooms.md
           - MeshCore companion CLI: development/meshcore-companion-cli.md
+          - MeshCom: development/meshcom.md
+          - Adding a MeshProtocol: development/adding-a-protocol.md
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
           - TAK gateway: development/tak.md

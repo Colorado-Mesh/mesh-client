@@ -5,6 +5,12 @@ export interface MecpLoraEndpoint {
   channelIndex: number;
 }
 
+export interface MecpMeshcomEndpoint {
+  protocol: 'meshcom';
+  /** 0 = ALL, positive = GRC group id. */
+  channelIndex: number;
+}
+
 /**
  * Reticulum has no numbered channels. An endpoint is either an RRC hub room (`kind: 'rrc'`) or an
  * LXMF peer (`kind: 'lxmf'`, direct message to `destinationHash`). As a rule's *source* an LXMF
@@ -27,7 +33,8 @@ export interface MecpReticulumLxmfEndpoint {
 
 export type MecpReticulumEndpoint = MecpReticulumRrcEndpoint | MecpReticulumLxmfEndpoint;
 
-export type MecpRebroadcastEndpoint = MecpLoraEndpoint | MecpReticulumEndpoint;
+export type MecpRebroadcastEndpoint =
+  MecpLoraEndpoint | MecpMeshcomEndpoint | MecpReticulumEndpoint;
 
 export const MECP_REBROADCAST_ANY_PEER = '*';
 
@@ -94,6 +101,12 @@ function parseEndpoint(raw: unknown): MecpRebroadcastEndpoint | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
   if (o.protocol === 'reticulum') return parseReticulumEndpoint(o);
+  if (o.protocol === 'meshcom') {
+    if (typeof o.channelIndex !== 'number' || !Number.isFinite(o.channelIndex)) return null;
+    const channelIndex = Math.trunc(o.channelIndex);
+    if (channelIndex < 0 || channelIndex > 99999) return null;
+    return { protocol: 'meshcom', channelIndex };
+  }
   if (o.protocol !== 'meshtastic' && o.protocol !== 'meshcore') return null;
   if (typeof o.channelIndex !== 'number' || !Number.isFinite(o.channelIndex)) return null;
   const channelIndex = Math.trunc(o.channelIndex);
@@ -118,10 +131,12 @@ export function fingerprintKey(
 
 /** Stable identity of an endpoint's destination (channel index, RRC room, or LXMF peer). */
 export function mecpEndpointKey(endpoint: MecpRebroadcastEndpoint): string | number {
-  if (endpoint.protocol !== 'reticulum') return endpoint.channelIndex;
-  return endpoint.kind === 'rrc'
-    ? `rrc:${endpoint.hubDestHash}:${endpoint.room.toLowerCase()}`
-    : `lxmf:${endpoint.destinationHash}`;
+  if (endpoint.protocol === 'reticulum') {
+    return endpoint.kind === 'rrc'
+      ? `rrc:${endpoint.hubDestHash}:${endpoint.room.toLowerCase()}`
+      : `lxmf:${endpoint.destinationHash}`;
+  }
+  return endpoint.channelIndex;
 }
 
 /** @internal */
@@ -151,7 +166,7 @@ export interface MecpRebroadcastCandidate {
 }
 
 export interface MecpRebroadcastSendTarget {
-  protocol: 'meshtastic' | 'meshcore' | 'reticulum';
+  protocol: 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom';
   /** LoRa channel index; always 0 for Reticulum targets (see {@link reticulum}). */
   channelIndex: number;
   /** Set when `protocol === 'reticulum'`: concrete RRC room or LXMF peer to send to. */
@@ -190,7 +205,7 @@ function sanitizeNoticeToken(value: string, maxLen = NOTICE_TOKEN_MAX): string {
  */
 export function formatMecpRebroadcastNotice(args: {
   senderLabel: string;
-  fromProtocol: 'meshtastic' | 'meshcore' | 'reticulum';
+  fromProtocol: 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom';
   fromChannelName: string;
 }): string {
   const sender = sanitizeNoticeToken(args.senderLabel) || 'unknown';
@@ -200,7 +215,9 @@ export function formatMecpRebroadcastNotice(args: {
       ? 'Meshtastic'
       : args.fromProtocol === 'reticulum'
         ? 'Reticulum'
-        : 'MeshCore';
+        : args.fromProtocol === 'meshcom'
+          ? 'MeshCom'
+          : 'MeshCore';
   return `MECP from ${sender} via ${protocolLabel} (${channel})`;
 }
 

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireReticulumBleScan,
   BLE_ADAPTER_LEASE_RELEASED_EVENT,
+  bleOwnerI18nKey,
   releaseReticulumBleRnodeConnect,
 } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 
@@ -49,6 +50,10 @@ describe('reticulumBleAdapterLease', () => {
     } finally {
       window.removeEventListener(BLE_ADAPTER_LEASE_RELEASED_EVENT, listener);
     }
+  });
+
+  it('bleOwnerI18nKey maps gatt:meshcom', () => {
+    expect(bleOwnerI18nKey('gatt:meshcom')).toBe('connectionPanel.bleOwner.meshcom');
   });
 
   it('releases the scan lease without dispatching when notify is false', async () => {

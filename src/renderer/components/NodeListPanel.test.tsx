@@ -761,24 +761,86 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByText(hex)).toBeInTheDocument();
   });
 
-  it('drops the MeshCore ID column (no ID header, no !-prefixed id text)', () => {
-    const nodeId = 0xdeadbeef;
+  it.each(['meshcore', 'meshcom'] as const)(
+    'drops the %s ID column (no ID header, no !-prefixed id text)',
+    (mode) => {
+      const nodeId = 0xdeadbeef;
+      const nodes = new Map<number, MeshNode>([
+        [
+          nodeId,
+          makeNode({
+            node_id: nodeId,
+            long_name: mode === 'meshcom' ? 'OE1ABC-1' : 'Peer',
+            hw_model: mode === 'meshcom' ? 'HELTEC-V3' : 'Chat',
+          }),
+        ],
+      ]);
+      render(
+        <NodeListPanel
+          nodes={nodes}
+          myNodeNum={0}
+          onNodeClick={vi.fn()}
+          locationFilter={defaultFilter}
+          onToggleFavorite={vi.fn()}
+          mode={mode}
+          meshcorePublicKeyHexByNodeId={
+            mode === 'meshcore' ? new Map([[nodeId, 'aa'.repeat(32)]]) : undefined
+          }
+        />,
+      );
+      expect(screen.queryByRole('columnheader', { name: /^ID$/ })).not.toBeInTheDocument();
+      expect(screen.queryByText(/^!/)).not.toBeInTheDocument();
+      expect(screen.queryByText('!deadbeef')).not.toBeInTheDocument();
+    },
+  );
+
+  it('MeshCom Contacts exposes a favorite toggle on peer rows', async () => {
+    const user = userEvent.setup();
+    const onToggleFavorite = vi.fn();
+    const peerId = 0x1111;
     const nodes = new Map<number, MeshNode>([
-      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: 'Chat' })],
+      [1, makeNode({ node_id: 1, long_name: 'OE1SELF-1', favorited: false })],
+      [
+        peerId,
+        makeNode({
+          node_id: peerId,
+          long_name: 'OE1PEER-1',
+          hw_model: 'HELTEC-V3',
+          favorited: false,
+        }),
+      ],
     ]);
-    render(
+    const { rerender } = render(
       <NodeListPanel
         nodes={nodes}
-        myNodeNum={0}
+        myNodeNum={1}
         onNodeClick={vi.fn()}
         locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshcore"
-        meshcorePublicKeyHexByNodeId={new Map([[nodeId, 'aa'.repeat(32)]])}
+        onToggleFavorite={onToggleFavorite}
+        mode="meshcom"
       />,
     );
-    expect(screen.queryByRole('columnheader', { name: /^ID$/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/^!/)).not.toBeInTheDocument();
+    const addBtn = screen.getByRole('button', { name: /add to favorites/i });
+    expect(addBtn).toBeInTheDocument();
+    await user.click(addBtn);
+    expect(onToggleFavorite).toHaveBeenCalledWith(peerId, true);
+
+    const favorited = new Map(nodes);
+    favorited.set(peerId, { ...nodes.get(peerId)!, favorited: true });
+    rerender(
+      <NodeListPanel
+        nodes={favorited}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={onToggleFavorite}
+        mode="meshcom"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /remove from favorites/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it.each(['Chat', 'Sensor', 'Repeater', 'Room'])(

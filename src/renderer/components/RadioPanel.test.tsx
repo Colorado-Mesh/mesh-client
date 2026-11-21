@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 
 import type { MeshCoreSelfInfo } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import {
+  MESHCOM_CAPABILITIES,
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
   RETICULUM_CAPABILITIES,
@@ -196,6 +197,63 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
     expect(await axe(container)).toHaveNoViolations();
 
     expect(screen.getByLabelText('Name')).toHaveValue('TagName');
+  });
+});
+
+describe('RadioPanel MeshCom identity and device commands', () => {
+  it('shows callsign / country / device commands and hides Meshtastic LoRa', async () => {
+    const user = userEvent.setup();
+    const deviceCommands = {
+      available: true,
+      transport: 'serial' as const,
+      settings: null,
+      run: vi.fn().mockResolvedValue({ command: '--help' }),
+      settimeNow: vi.fn().mockResolvedValue({ command: '--settime' }),
+      refreshSettings: vi.fn().mockResolvedValue(null),
+    };
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCOM_CAPABILITIES}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+          meshcomDeviceCommands={deviceCommands}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByRole('button', { name: /Apply LoRa/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Country Setting (--setctry)').length).toBeGreaterThan(0);
+    expect(screen.getByText('Device Configuration')).toBeInTheDocument();
+    // ICSSW command groups render as first-class Radio sections (not a buried CLI dump).
+    expect(await screen.findByText('Display')).toBeInTheDocument();
+    expect(screen.getByText('Position & time')).toBeInTheDocument();
+    expect(screen.getByText('Network & Wi-Fi')).toBeInTheDocument();
+    expect(screen.getByText('Bluetooth')).toBeInTheDocument();
+    expect(screen.getByText('--setcall')).toBeInTheDocument();
+    expect(screen.getByText('--btcode')).toBeInTheDocument();
+    // Device setting sections start collapsed.
+    for (const title of ['Clock', 'Display', 'Position & time', 'Network & Wi-Fi', 'Bluetooth']) {
+      const details = [...document.querySelectorAll('details')].find((d) => {
+        const span = d.querySelector(':scope > summary > span');
+        return span?.textContent?.trim() === title;
+      });
+      expect(details, title).toBeDefined();
+      expect(details!.open, title).toBe(false);
+    }
+
+    const userDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device User / Identity';
+    });
+    expect(userDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+    expect(screen.getByLabelText(/Callsign/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Operator name/)).toBeInTheDocument();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

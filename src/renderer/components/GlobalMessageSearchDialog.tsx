@@ -40,6 +40,7 @@ const PROTOCOL_LABEL_KEYS: Record<MeshProtocol, string> = {
   meshtastic: 'globalMessageSearch.meshtastic',
   meshcore: 'globalMessageSearch.meshcore',
   reticulum: 'globalMessageSearch.reticulum',
+  meshcom: 'globalMessageSearch.meshcom',
 };
 
 function protocolLabelKey(protocol: MeshProtocol): string {

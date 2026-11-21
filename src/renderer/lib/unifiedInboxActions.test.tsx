@@ -30,6 +30,7 @@ describe('starInboxItems', () => {
         meshtastic: [msg(1), msg(2, { to: 9 })],
         meshcore: [msg(3)],
         reticulum: [],
+        meshcom: [],
       },
     });
     const events: string[] = [];
@@ -71,7 +72,7 @@ describe('starInboxItems', () => {
     );
     const items = buildUnifiedInboxItems({
       enabledProtocols: ['meshtastic'],
-      messagesByProtocol: { meshtastic: [msg(1)], meshcore: [], reticulum: [] },
+      messagesByProtocol: { meshtastic: [msg(1)], meshcore: [], reticulum: [], meshcom: [] },
     });
     expect(starInboxItems(items)).toBe(1);
     expect(loadStarred('meshtastic').map((s) => s.starId)).toEqual(['99', '1']);

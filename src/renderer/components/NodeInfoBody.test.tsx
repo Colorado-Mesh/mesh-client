@@ -165,6 +165,68 @@ describe('NodeInfoBody', () => {
     expect(screen.getByText('4.2 dB')).toBeInTheDocument();
   });
 
+  it('MeshCom detail shows OTA fields and omits Role / Type / empty Hardware', () => {
+    const node = makeNode({
+      node_id: 0x1111,
+      long_name: 'OE1ABC-1',
+      short_name: 'OE1A',
+      hw_model: 'HELTEC-V3',
+      snr: 5.5,
+      rssi: -91,
+      hops_away: 0,
+      battery: 72,
+      voltage: 3.95,
+      altitude: 512,
+      firmware_version: '4.35p',
+      latitude: 48.2,
+      longitude: 16.3,
+    });
+    render(<NodeInfoBody node={node} protocol="meshcom" />);
+
+    expect(screen.getByText('Callsign')).toBeInTheDocument();
+    expect(screen.getByText('OE1ABC-1')).toBeInTheDocument();
+    expect(screen.getByText('Hardware')).toBeInTheDocument();
+    expect(screen.getByText(/HELTEC-V3/)).toBeInTheDocument();
+    expect(screen.getByText('Firmware')).toBeInTheDocument();
+    expect(screen.getByText('4.35p')).toBeInTheDocument();
+    expect(screen.getByText('RSSI')).toBeInTheDocument();
+    expect(screen.getByText('-91 dBm')).toBeInTheDocument();
+    expect(screen.getByText('Altitude')).toBeInTheDocument();
+    expect(screen.getByText('512 m')).toBeInTheDocument();
+    expect(screen.getByText(/3\.95 V/)).toBeInTheDocument();
+
+    expect(screen.queryByText('Role')).not.toBeInTheDocument();
+    expect(screen.queryByText('Type')).not.toBeInTheDocument();
+    expect(screen.queryByText('Short Name')).not.toBeInTheDocument();
+    expect(screen.queryByText('Source')).not.toBeInTheDocument();
+    expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();
+  });
+
+  it('hides RF Diagnostics when protocol hasRfStats is false', () => {
+    const self = makeNode({
+      node_id: 7,
+      long_name: 'OE1SELF-1',
+      channel_utilization: 0.1,
+    });
+    render(<NodeInfoBody node={self} homeNode={self} protocol="meshcom" />);
+    expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();
+    expect(screen.queryByText('All RF diagnostics OK')).not.toBeInTheDocument();
+  });
+
+  it('MeshCom detail omits Hardware when hw_model is empty', () => {
+    const node = makeNode({
+      node_id: 0x2222,
+      long_name: 'OE9XYZ-7',
+      hw_model: '',
+      hops_away: 1,
+    });
+    render(<NodeInfoBody node={node} protocol="meshcom" />);
+    expect(screen.getByText('Callsign')).toBeInTheDocument();
+    expect(screen.queryByText('Hardware')).not.toBeInTheDocument();
+    expect(screen.queryByText('Role')).not.toBeInTheDocument();
+    expect(screen.queryByText('Type')).not.toBeInTheDocument();
+  });
+
   it('renders the environment section when only PM10 is present', () => {
     const node = makeNode({
       node_id: 11,

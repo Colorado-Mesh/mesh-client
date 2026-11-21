@@ -244,6 +244,64 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // MeshCom SQLite IPC — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/meshcom-db-handlers.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'meshcom-db-handlers.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  // MeshCom SQLite IPC failure stubs — sibling chunk loaded only when the primary bundle fails.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/meshcom-db-handlers-fallback.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'meshcom-db-handlers-fallback.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  // MeshCom EXTUDP bridge — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/udp-bridge.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'udp-bridge.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/loadMeshcomUdpBridge.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'loadMeshcomUdpBridge.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/udp-bridge-fallback.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'udp-bridge-fallback.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
 
   const noticeDirectory = path.resolve(
     absWorkingDir,

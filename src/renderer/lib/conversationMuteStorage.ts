@@ -98,7 +98,7 @@ function notificationDeviceSignature(protocol: MeshProtocol): string {
 // Chat keeps its last channel layout visible while RF is disconnected.
 const retainedLayouts = new Map<string, Readonly<Record<number, string>>>();
 function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number, string>> | null {
-  if (protocol === 'reticulum') return null;
+  if (protocol === 'reticulum' || protocol === 'meshcom') return null;
   const device = notificationDeviceSignature(protocol);
   if (!device) return null;
   if (protocol === 'meshtastic' && device.includes(':mqtt:client:')) {

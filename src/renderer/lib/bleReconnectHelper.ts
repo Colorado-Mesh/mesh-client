@@ -45,15 +45,18 @@ function sleep(ms: number): Promise<void> {
 /** Start sidecar GATT scan; retry when Reticulum or another owner holds the scan mutex. */
 export async function startGattScanningWithRetry(
   sessionId: GattBleSessionId,
-  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number; timeoutSecs?: number },
 ): Promise<void> {
   const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
   const deadline = Date.now() + maxWaitMs;
   let lastOwner = 'unknown';
+  const scanOpts = opts?.timeoutSecs != null ? { timeoutSecs: opts.timeoutSecs } : undefined;
 
   while (Date.now() < deadline) {
-    const result = await window.electronAPI.startGattScanning(sessionId);
+    const result = scanOpts
+      ? await window.electronAPI.startGattScanning(sessionId, scanOpts)
+      : await window.electronAPI.startGattScanning(sessionId);
     if (result.ok) {
       return;
     }
@@ -162,9 +165,14 @@ function shouldScanAfterConnectFailure(message: string): boolean {
   return false;
 }
 
+/** Short discovery pass before reconnect so CoreBluetooth scan RSSI seeds the host meter. */
+export const BLE_RECONNECT_DISCOVERY_TIMEOUT_SECS = 4;
+
 /**
- * Connect immediately (sidecar may already know the peripheral), then scan until the
- * peripheral appears if connect fails, then retry connect. Serial/HTTP/TCP reconnect use
+ * Discover then connect. CoreBluetooth only exposes host RSSI in advertisements — connecting
+ * without a prior scan leaves the Connection panel signal meter empty forever.
+ * If discovery misses, fall back to connect with the stored id; if that fails with a
+ * scan-needed error, run a longer discovery retry. Serial/HTTP/TCP reconnect use
  * {@link rfReconnectHelper} instead.
  *
  * @param matchIds — optional aliases (e.g. stored Noble UUID + bleMac) matched against
@@ -176,11 +184,53 @@ export async function reconnectBleWithScan(
   protocol: MeshProtocol,
   peripheralId: string,
   connect: (resolvedPeripheralId?: string) => Promise<void>,
-  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number; matchIds?: string[] },
+  opts?: {
+    scanTimeoutMs?: number;
+    scanBusyMaxWaitMs?: number;
+    matchIds?: string[];
+    discoveryTimeoutSecs?: number;
+  },
 ): Promise<void> {
-  // Fast path: connect resolves without a new discovery event.
+  const sessionId: GattBleSessionId = protocol;
+  const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
+  const scanBusyMaxWaitMs = opts?.scanBusyMaxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
+  const discoveryTimeoutSecs = opts?.discoveryTimeoutSecs ?? BLE_RECONNECT_DISCOVERY_TIMEOUT_SECS;
+  const wantedIds = [peripheralId, ...(opts?.matchIds ?? [])].filter(
+    (id): id is string => typeof id === 'string' && id.trim().length > 0,
+  );
+
+  const deviceMatches = (device: { deviceId: string; address?: string | null }): boolean => {
+    const candidates = [device.deviceId, device.address ?? ''];
+    return wantedIds.some((want) => candidates.some((c) => c && bleIdsMatch(want, c)));
+  };
+
+  let resolvedFromScan: string | undefined;
+  {
+    let offDiscovered: (() => void) | null = null;
+    try {
+      offDiscovered = window.electronAPI.onGattDeviceDiscovered((device) => {
+        if (!deviceMatches(device)) return;
+        resolvedFromScan = device.deviceId.trim() || peripheralId;
+      });
+      await startGattScanningWithRetry(sessionId, {
+        maxWaitMs: scanBusyMaxWaitMs,
+        timeoutSecs: discoveryTimeoutSecs,
+      });
+    } catch (err) {
+      console.debug(
+        '[bleReconnectHelper] discovery-first scan failed — connecting with stored id ' +
+          errLikeToLogString(err),
+      );
+    } finally {
+      offDiscovered?.();
+      void window.electronAPI.stopGattScanning(sessionId).catch((e: unknown) => {
+        console.debug('[bleReconnectHelper] stopGattScanning ' + errLikeToLogString(e));
+      });
+    }
+  }
+
   try {
-    await connect();
+    await connect(resolvedFromScan);
     return;
   } catch (err) {
     // AbortError (setup cancel / RF auto-connect cancel) must not fall through to scan.
@@ -194,21 +244,10 @@ export async function reconnectBleWithScan(
     if (!shouldScanAfterConnectFailure(message)) {
       throw err instanceof Error ? err : new Error(message);
     }
-    console.debug('[bleReconnectHelper] immediate connect failed — scanning ' + message);
+    console.debug('[bleReconnectHelper] connect failed after discovery — scanning ' + message);
   }
 
-  const sessionId: GattBleSessionId = protocol;
-  const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
-  const scanBusyMaxWaitMs = opts?.scanBusyMaxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const scanStartedAt = Date.now();
-  const wantedIds = [peripheralId, ...(opts?.matchIds ?? [])].filter(
-    (id): id is string => typeof id === 'string' && id.trim().length > 0,
-  );
-
-  const deviceMatches = (device: { deviceId: string; address?: string | null }): boolean => {
-    const candidates = [device.deviceId, device.address ?? ''];
-    return wantedIds.some((want) => candidates.some((c) => c && bleIdsMatch(want, c)));
-  };
 
   return new Promise<void>((resolve, reject) => {
     const abortController = new AbortController();

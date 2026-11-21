@@ -82,6 +82,7 @@ import {
 } from '@/renderer/lib/chatComposerLimits';
 import type { ChatMessageRouteLookup } from '@/renderer/lib/chatMessageRoute';
 import { buildChatMessageRouteView } from '@/renderer/lib/chatMessageRouteView';
+import { protocolMqttProvidesChatSend } from '@/renderer/lib/chatMqttHybridSend';
 import {
   clearFloodScopeOverride,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -271,7 +272,7 @@ import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
-import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
+import type { ChatMessage, ConnectionType, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useBotSendersStore } from '../stores/botSendersStore';
@@ -852,7 +853,7 @@ export interface ChatPanelProps {
   onPeerClick?: (destinationHash: string) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
+  connectionType?: ConnectionType | null;
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
@@ -1704,7 +1705,10 @@ function ChatPanel({
     (nodeNum: number) => {
       const node = nodes.get(nodeNum);
       const label = nodeDisplayName(node, protocol);
-      return label || formatMeshtasticNodeId(nodeNum);
+      if (label) return label;
+      // MeshCom/MeshCore/Reticulum store keys are not Meshtastic node nums — never invent `!xxxxxxxx`.
+      if (protocol === 'meshtastic') return formatMeshtasticNodeId(nodeNum);
+      return nodeNum.toString(16);
     },
     [nodes, protocol],
   );
@@ -2281,7 +2285,8 @@ function ChatPanel({
     ],
   );
 
-  const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
+  const outboxSendAvailable =
+    isConnected && !(isMqttOnly && !protocolMqttProvidesChatSend(protocol));
   // Hop pill tooltip: capture lookup and name resolution run on hover/focus only.
   const describeMessageRoute = useCallback(
     (message: ChatMessage) => {
@@ -3233,7 +3238,7 @@ function ChatPanel({
     [aiEnabled, viewMessages],
   );
   const summary = useConversationSummary({
-    key: `${identityId ?? protocol}:${protocol}:${viewKey}:${viewMode === 'channels' && protocol !== 'reticulum' ? (getLiveChannelKey(protocol, channel) ?? '') : ''}`,
+    key: `${identityId ?? protocol}:${protocol}:${viewKey}:${viewMode === 'channels' && (protocol === 'meshtastic' || protocol === 'meshcore') ? (getLiveChannelKey(protocol, channel) ?? '') : ''}`,
     label: viewMode === 'dm' ? getDmLabel(activeDmNode ?? 0) : `#${channel}`,
     protocol,
     surface: viewMode === 'dm' ? 'dm' : 'channel',
@@ -3255,11 +3260,14 @@ function ChatPanel({
       channel,
       peerId: activeDmNode ?? undefined,
       ownNodeIds: [...ownNodeIdSet],
-      radioNodeId: protocol !== 'reticulum' && myNodeNum > 0 ? myNodeNum : undefined,
+      radioNodeId:
+        (protocol === 'meshtastic' || protocol === 'meshcore') && myNodeNum > 0
+          ? myNodeNum
+          : undefined,
       identityId: identityId ?? undefined,
       peerHash: reticulumDmDestinationHash ?? undefined,
       channelKey:
-        viewMode === 'channels' && protocol !== 'reticulum'
+        viewMode === 'channels' && (protocol === 'meshtastic' || protocol === 'meshcore')
           ? (getLiveChannelKey(protocol, channel) ?? undefined)
           : undefined,
     },

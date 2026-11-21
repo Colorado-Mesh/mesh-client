@@ -18,6 +18,8 @@ export interface RfReconnectHandlers {
   connectSerialAutomatic: (serialPortId: string | null | undefined) => Promise<void>;
   connectHttp: (httpAddress: string) => Promise<void>;
   connectTcp: (httpAddress: string) => Promise<void>;
+  /** MeshCom EXTUDP (and other UDP RF links) — same address storage as HTTP/TCP. */
+  connectUdp: (httpAddress: string) => Promise<void>;
 }
 
 /**
@@ -59,7 +61,6 @@ export async function reconnectRfFromLastConnection(
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (rfType === 'tcp') {
     const tcpAddress = resolveLastHttpAddress(protocol);
     if (!tcpAddress) {
@@ -69,7 +70,12 @@ export async function reconnectRfFromLastConnection(
     return;
   }
 
-  throw new Error(`[rfReconnectHelper] unsupported connection type ${rfType}`);
+  // Remaining ConnectionType after ble/serial/http/tcp is MeshCom EXTUDP.
+  const udpAddress = resolveLastHttpAddress(protocol);
+  if (!udpAddress) {
+    throw new Error(`[rfReconnectHelper] missing UDP address for ${protocol}`);
+  }
+  await handlers.connectUdp(udpAddress);
 }
 
 export function logRfReconnectFailure(context: string, err: unknown): void {

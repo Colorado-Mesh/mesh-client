@@ -209,7 +209,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     heard_via_mqtt: record.heardViaMqtt,
     source: record.source,
     on_radio: record.onRadio,
-    favorited: record.favorited,
+    favorited: record.favorited ?? false,
     voltage: record.voltage,
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
@@ -248,6 +248,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     meshcore_local_stats: record.meshcoreLocalStats,
     key_manually_verified: record.keyManuallyVerified,
     has_xeddsa_signed: record.hasXeddsaSigned,
+    firmware_version: record.firmwareVersion,
     ...(record.publicKeyHex ? { public_key_hex: record.publicKeyHex } : {}),
     ...(record.reticulumDestinationHash
       ? { reticulum_destination_hash: record.reticulumDestinationHash }
@@ -321,7 +322,8 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.mcuTemperature === b.mcuTemperature &&
     a.co2 === b.co2 &&
     a.keyManuallyVerified === b.keyManuallyVerified &&
-    a.hasXeddsaSigned === b.hasXeddsaSigned
+    a.hasXeddsaSigned === b.hasXeddsaSigned &&
+    a.firmwareVersion === b.firmwareVersion
   );
 }
 
@@ -432,6 +434,7 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     keyManuallyVerified: node.key_manually_verified,
     hasXeddsaSigned: node.has_xeddsa_signed,
     reticulumDestinationHash: node.reticulum_destination_hash,
+    firmwareVersion: node.firmware_version,
   };
 }
 

@@ -465,7 +465,8 @@
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
       "sky": "Himmel",
-      "classic": "Klassisches Grün"
+      "classic": "Klassisches Grün",
+      "meshcom": "MeshCom"
     },
     "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen",
     "protocolsSection": "Protokolle",
@@ -552,7 +553,9 @@
     "switchToMeshCoreWithUnread": "Wechseln Sie zu MeshCore, {{count}} ungelesen",
     "switchToReticulumWithUnread": "Zu Reticulum wechseln, {{count}} ungelesen",
     "tabWithUnread": "{{label}}, {{count}} ungelesen",
-    "tabWithOpenIncidents": "{{label}}, {{count}} offener MAITAG oder DRINGENDE VORFÄLLE"
+    "tabWithOpenIncidents": "{{label}}, {{count}} offener MAITAG oder DRINGENDE VORFÄLLE",
+    "switchToMeshCom": "Zu MeshCom wechseln",
+    "switchToMeshComWithUnread": "Zu MeshCom wechseln, {{count}} ungelesen"
   },
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
@@ -1744,17 +1747,20 @@
     "bleOwner": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Bundesland], z.B. msh/CO/US",
       "meshcoreLetsmesh": "meshcore/{IATA}, z.B. Meshcore/DEN",
-      "meshcoreDefault": "MESHCORE/[Land]/[Staat], z.B. MESHCORE/US/CO"
+      "meshcoreDefault": "MESHCORE/[Land]/[Staat], z.B. MESHCORE/US/CO",
+      "meshcom": "Broker-Stam-Topic für Ihr MeshCom-Gateway, z. B. meshcom"
     },
     "topicPrefixPlaceholder": "msh/US/",
     "maxRetriesHelp": {
       "meshtastic": "Wiederholen Sie die Verbindungsversuche (1–{{max}}), bevor Sie aufgeben.",
-      "meshcore": "Wiederholen Sie die Versuche (1–20), bevor Sie aufgeben."
+      "meshcore": "Wiederholen Sie die Versuche (1–20), bevor Sie aufgeben.",
+      "meshcom": "Wiederherstellungsversuche (1–{{max}}) vor dem Abbruch."
     },
     "meshtasticPreset": {
       "officialPlain": "MQTT:1883",
@@ -1853,7 +1859,8 @@
     "topicPrefixInvalidIata": "Das Themenpräfix muss meshcore/test oder meshcore/{IATA} (3 Buchstaben) sein, z. B. meshcore/DEN.",
     "maxRetriesHelpConnected": {
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
-      "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
+      "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet.",
+      "meshcom": "Versuche, erneut eine Verbindung herzustellen, bevor Sie aufgeben (1–{{max}}). Mit Einstellungen gespeichert; trennen Sie die Verbindung und stellen Sie sie erneut her, damit die laufende Sitzung den neuen Wert verwendet."
     },
     "reticulumStackRunningAs": "Läuft — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…",
@@ -1943,7 +1950,10 @@
     "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu.",
     "mqttPacketTooLarge": "Der Broker hat ein MQTT-Paket gesendet, das größer als das Sicherheitslimit von {{limit}} Byte ist; die automatische Wiederverbindung ist deaktiviert.",
     "protocolGuideLink": "Protokollfuhrer:",
-    "mqttAuthDocsLink": "MQTT auth ↗"
+    "mqttAuthDocsLink": "MQTT auth ↗",
+    "extUdp": "EXTUDP",
+    "udp": "UDP",
+    "kissTcp": "KISS/TCP"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -4037,7 +4047,11 @@
     "pm10": "PM1",
     "co2": "CO₂",
     "voc": "VOC-Index",
-    "nox": "NOx-Index"
+    "nox": "NOx-Index",
+    "callsign": "Rufzeichen",
+    "firmware": "Firmware",
+    "rssi": "RSSI",
+    "altitude": "Höhenlage"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
@@ -4134,7 +4148,8 @@
     "statusFilterAll": "Alle",
     "buttonExport": "Exportieren",
     "exportMenuLabel": "Exportformate",
-    "youBadge": "Du"
+    "youBadge": "Du",
+    "meshcomHardwareType": "MeshCom-Hardware (von on-air hw_id)"
   },
   "nomadNetwork": {
     "showBrowser": "Browser anzeigen",
@@ -7546,7 +7561,8 @@
     "reconnectNeeded": "Trennen und verbinden Sie MQTT erneut, um die Brokereinstellungen dieses Profils zu verwenden.",
     "switchLabel": "GESPEICHERTES PROFIL",
     "noneSelected": "Aktuelle Einstellungen (nicht gespeichert)",
-    "nameAria": "Profil Name"
+    "nameAria": "Profil Name",
+    "listLabel": "Gespeicherte Zollagenten"
   },
   "weatherFilter": {
     "viewTooltip": "Wetterbeiträge in diesem Kanal",
@@ -7672,7 +7688,8 @@
     "protocol": {
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "meshcom": "MeshCom"
     },
     "received": "Empfangen {{when}}"
   },
@@ -8499,7 +8516,8 @@
     "openFromChat": "Alle Unterhaltungen durchsuchen",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "unifiedInbox": {
     "title": "Einheitlicher Posteingang",
@@ -8536,7 +8554,8 @@
     "deleteFailed": "Die Änderung konnte nicht gespeichert werden. Es wurde nichts entfernt.",
     "meshtastic": "Meshtastic",
     "meshcore": "MeshCore",
-    "reticulum": "Reticulum"
+    "reticulum": "Reticulum",
+    "meshcom": "MeshCom"
   },
   "keyVerification": {
     "sectionTitle": "Öffentlichen Schlüssel verifizieren",
@@ -8970,7 +8989,8 @@
     "loadFailed": "Die Kontaktkarten konnten nicht aus der Datenbank geladen werden.",
     "retryLoad": "Erneut versuchen",
     "retryLoadAria": "Laden der Kontaktkarten erneut versuchen",
-    "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie."
+    "loadUnavailable": "Visitenkarten sind in dieser Version nicht verfügbar. Installieren Sie die App neu oder aktualisieren Sie sie.",
+    "protocolMeshcom": "MeshCom"
   },
   "wordFilter": {
     "enabled": "Nachrichten ausblenden, die dem Wortfilter entsprechen",
@@ -9008,5 +9028,70 @@
     "openAria": "{{name}} öffnen",
     "unknownRoom": "Raum {{id}}",
     "hops": "{{count}} Umstiege"
+  },
+  "meshcom": {
+    "licenseNoticeTitle": "MeshCom – lizenzierter Amateurfunk",
+    "licenseNoticeBody": "MeshCom arbeitet weltweit auf lizenzierten Amateurfrequenzen (Ham) LoRa, die über die Ländereinstellung (--setctry) ausgewählt werden – nicht nur auf den in der EU genutzten 433 MHz. Aktivieren Sie MeshCom nur, wenn Sie berechtigt sind, auf den für Ihr Länderprofil konfigurierten Frequenzbändern zu senden. Dieser Hinweis steht in keinem Zusammenhang mit der Freischaltung der lizenzierten Amateurfunkfrequenz von Meshtastic.",
+    "licenseNoticeAccept": "Ich verstehe",
+    "connectionHint": "MeshCom verwendet das Amateurfunkband LoRa über die Ländereinstellung (--setctry). Stellen Sie sicher, dass das Länderprofil Ihres Knotens mit Ihrer Lizenz übereinstimmt.",
+    "countrySettingLabel": "Ländereinstellung (--setctry)",
+    "extUdpHint": "EXTUDP benötigt den Knoten, der mit --extudp on und --extudpip konfiguriert ist, der auf diesen Computer verweist (UDP 1799).",
+    "kissTcpHint": "KISS/TCP verwendet den MeshCom-Port 8001 – nicht Reticulum KISS/AX.25.",
+    "channelAll": "ALLE",
+    "channelGroup": "Gruppe {{id}}",
+    "callsignFieldLabel": "Rufzeichen (--setcall)",
+    "callsignHint": "Gültiges Rufzeichen im APRS-Stil (SSID optional). Anwenden sendet --setcall an Serial/BLE.",
+    "operatorNameFieldLabel": "Name des Bedieners (--operatorname)",
+    "operatorNamePlaceholder": "Vorname",
+    "operatorNameHint": "Optional. Wird mit „Anwenden auf Seriennummer“/BLE (max. 19 Zeichen) gesendet.",
+    "dbStorageDegraded": "Der MeshCom-Nachrichtenverlauf ist nicht verfügbar (das Datenbankmodul konnte nicht geladen werden). Der Chat funktioniert weiterhin; der Verlauf wird erst nach einem Neustart der App gespeichert."
+  },
+  "meshcomDeviceCommands": {
+    "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",
+    "autoSettime": "Knotenzeit bei Verbindung automatisch einstellen",
+    "autoSettimeHint": "Wenn die Verbindung über seriell oder BLE hergestellt wird, senden Sie --settime mit der UTC-Uhr dieses Computers (z. B. {{example}}).",
+    "settimeNow": "Zeit jetzt einstellen (UTC)",
+    "requiresSerialBle": "Stellen Sie eine Verbindung über Serial oder BLE her, um Gerätebefehle zu senden. EXTUDP und KISS/TCP übertragen nur den Chat.",
+    "filter": "Befehle filtern",
+    "filterPlaceholder": "Suche --settime, Gateway, Nachbarn …",
+    "serialOnly": "nur seriell",
+    "run": "Ausführen",
+    "runCommand": "{{command}} ausführen",
+    "runChoice": "{{command}} {{value}} ausführen",
+    "argInput": "Argument für {{command}}",
+    "sent": "Befehl an den Knoten gesendet.",
+    "sendFailed": "Befehl fehlgeschlagen: {{detail}}",
+    "setctrySent": "Gespeichert und an den Knoten gesendet – --setctry {{code}}.",
+    "setctrySavedLocal": "Ländereinstellung gespeichert. Stellen Sie eine Verbindung über seriell oder BLE her, um --setctry auf dem Knoten anzuwenden.",
+    "consoleHint": "Geben Sie einen beliebigen --Befehl oder eine beliebige APP-Verknüpfung ein (GATEWAY, GPS, WX-Info). Geheime Informationen werden im Protokoll geschwärzt.",
+    "consoleLog": "Protokoll der Gerätebefehlskonsole",
+    "consoleInput": "Eingabe von Gerätebefehlen",
+    "consolePlaceholder": "Hinweise",
+    "consoleSend": "Senden",
+    "confirmDanger": {
+      "title": "Befehl bestätigen",
+      "message": "{{command}} an den Knoten senden? Dies kann einen Neustart verursachen oder die RF-Einstellungen ändern.",
+      "confirm": "Senden"
+    },
+    "groups": {
+      "display": "Displayanzeige",
+      "position": "Laoezeitl",
+      "sensors": "Sensorik",
+      "identity": "Identität und Gruppen",
+      "network": "Netzwerk & Wi-Fi",
+      "gateway": "Gateway",
+      "bluetooth": "Bluetooth",
+      "neighbors": "Nachbar_innen",
+      "mailbox": "Mailbox, Posteingang",
+      "debug": "Status und Debuggen",
+      "power": "Stromversorgung und OTA",
+      "misc": "KISS / Sonstiges",
+      "console": "Konsole",
+      "clock": "Uhr",
+      "advanced": "Erweiterte Konsole und Filter"
+    },
+    "appEligible": "APP/Seriennummer",
+    "loadingConfig": "Gerätekonfiguration wird geladen …",
+    "currentValue": "jetzt {{value}}"
   }
 }

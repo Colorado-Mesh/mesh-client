@@ -5,6 +5,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
  * Independent caps per protocol live in the `app_settings` KV table:
  *   - meshtasticMessageRetentionEnabled / meshtasticMessageRetentionCount
  *   - meshcoreMessageRetentionEnabled  / meshcoreMessageRetentionCount
+ *   - meshcomMessageRetentionEnabled / meshcomMessageRetentionCount
  *   - reticulumMessageRetentionEnabled / reticulumMessageRetentionCount
  *   - rrcMessageRetentionEnabled / rrcMessageRetentionCount
  *
@@ -28,6 +29,8 @@ export interface MessageRetentionSettings {
   meshtasticCount: number;
   meshcoreEnabled: boolean;
   meshcoreCount: number;
+  meshcomEnabled: boolean;
+  meshcomCount: number;
   reticulumEnabled: boolean;
   reticulumCount: number;
   rrcEnabled: boolean;
@@ -39,6 +42,8 @@ export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
   meshtasticCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   meshcoreEnabled: true,
   meshcoreCount: MESSAGE_RETENTION_DEFAULT_COUNT,
+  meshcomEnabled: true,
+  meshcomCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   reticulumEnabled: true,
   reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   rrcEnabled: true,
@@ -50,6 +55,8 @@ export const MESSAGE_RETENTION_KEYS = {
   meshtasticCount: 'meshtasticMessageRetentionCount',
   meshcoreEnabled: 'meshcoreMessageRetentionEnabled',
   meshcoreCount: 'meshcoreMessageRetentionCount',
+  meshcomEnabled: 'meshcomMessageRetentionEnabled',
+  meshcomCount: 'meshcomMessageRetentionCount',
   reticulumEnabled: 'reticulumMessageRetentionEnabled',
   reticulumCount: 'reticulumMessageRetentionCount',
   rrcEnabled: 'rrcMessageRetentionEnabled',
@@ -69,7 +76,13 @@ function parseCount(v: string | undefined, fallback: number): number {
   return Math.max(MESSAGE_RETENTION_MIN_COUNT, Math.min(MESSAGE_RETENTION_MAX_COUNT, n));
 }
 
-const MESSAGE_RETENTION_PROTOCOLS = ['meshtastic', 'meshcore', 'reticulum', 'rrc'] as const;
+const MESSAGE_RETENTION_PROTOCOLS = [
+  'meshtastic',
+  'meshcore',
+  'meshcom',
+  'reticulum',
+  'rrc',
+] as const;
 
 export function parseMessageRetention(
   raw: Record<string, string> | null | undefined,

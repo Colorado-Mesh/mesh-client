@@ -6,9 +6,11 @@ import { getDatabase } from './database';
 
 export const MESHTASTIC_MQTT_CLIENT_ID_SETTING_KEY = 'meshtasticMqttClientId';
 export const MESHCORE_MQTT_CLIENT_ID_SETTING_KEY = 'meshcoreMqttClientId';
+export const MESHCOM_MQTT_CLIENT_ID_SETTING_KEY = 'meshcomMqttClientId';
 
 const MESHTASTIC_CLIENT_ID_PREFIX = 'meshtastic-electron-';
 const MESHCORE_CLIENT_ID_PREFIX = 'meshcore-mqtt-';
+const MESHCOM_CLIENT_ID_PREFIX = 'meshcom-mqtt-';
 const CLIENT_ID_HEX_BYTES = 8;
 
 const V1_USERNAME_PATTERN = /^v1_[0-9a-f]{64}$/i;
@@ -39,6 +41,10 @@ function generateMeshcoreClientId(): string {
   return `${MESHCORE_CLIENT_ID_PREFIX}${randomBytes(CLIENT_ID_HEX_BYTES).toString('hex')}`;
 }
 
+function generateMeshcomClientId(): string {
+  return `${MESHCOM_CLIENT_ID_PREFIX}${randomBytes(CLIENT_ID_HEX_BYTES).toString('hex')}`;
+}
+
 function isValidMeshtasticClientId(id: string): boolean {
   return new RegExp(`^${MESHTASTIC_CLIENT_ID_PREFIX}[0-9a-f]{${CLIENT_ID_HEX_BYTES * 2}}$`).test(
     id,
@@ -49,6 +55,10 @@ function isValidMeshcoreClientId(id: string): boolean {
   return new RegExp(`^${MESHCORE_CLIENT_ID_PREFIX}[0-9a-f]{${CLIENT_ID_HEX_BYTES * 2}}$`).test(id);
 }
 
+function isValidMeshcomClientId(id: string): boolean {
+  return new RegExp(`^${MESHCOM_CLIENT_ID_PREFIX}[0-9a-f]{${CLIENT_ID_HEX_BYTES * 2}}$`).test(id);
+}
+
 /**
  * Resolve a stable MQTT broker clientId for this install.
  * MeshCore LetsMesh v1 usernames double as clientId (unchanged).
@@ -56,6 +66,14 @@ function isValidMeshcoreClientId(id: string): boolean {
 export function resolveMqttBrokerClientId(protocol: MeshProtocol, settings: MQTTSettings): string {
   if (protocol === 'meshcore' && V1_USERNAME_PATTERN.test(settings.username ?? '')) {
     return settings.username;
+  }
+
+  if (protocol === 'meshcom') {
+    const existing = readAppSetting(MESHCOM_MQTT_CLIENT_ID_SETTING_KEY);
+    if (existing && isValidMeshcomClientId(existing)) return existing;
+    const clientId = generateMeshcomClientId();
+    writeAppSetting(MESHCOM_MQTT_CLIENT_ID_SETTING_KEY, clientId);
+    return clientId;
   }
 
   const settingKey =

@@ -10,6 +10,7 @@ describe('radioSelfPosition', () => {
   afterEach(() => {
     clearRadioSelfPosition('meshtastic');
     clearRadioSelfPosition('meshcore');
+    clearRadioSelfPosition('meshcom');
   });
 
   it('records a valid fix per protocol', () => {

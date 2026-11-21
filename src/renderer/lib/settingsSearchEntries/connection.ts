@@ -10,11 +10,15 @@ const hasLoraConnection = (ctx: SettingsSearchContext) =>
 const hasMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttConnectionPanel;
 const hasMeshtasticMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttHybrid;
 const hasMeshcoreMqtt = (ctx: SettingsSearchContext) =>
-  ctx.capabilities.hasMqttConnectionPanel && !ctx.capabilities.hasMqttHybrid;
+  ctx.capabilities.protocol === 'meshcore' && ctx.capabilities.hasMqttConnectionPanel;
+const hasMeshcomMqtt = (ctx: SettingsSearchContext) =>
+  ctx.capabilities.protocol === 'meshcom' && ctx.capabilities.hasMqttConnectionPanel;
 // HTTP/TCP host fields: Meshtastic nodes on Wi-Fi vs MeshCore companion TCP.
 const hasNetworkNodeAddress = (ctx: SettingsSearchContext) => ctx.capabilities.hasWifiConfig;
 const hasCompanionTcpHost = (ctx: SettingsSearchContext) =>
   hasLoraConnection(ctx) && !ctx.capabilities.hasWifiConfig;
+const hasMeshcomHost = (ctx: SettingsSearchContext) =>
+  hasLoraConnection(ctx) && ctx.capabilities.hasMeshcomDeviceCommands;
 
 const RADIO = 'connectionPanel.radioConnection';
 const MQTT = 'connectionPanel.mqttConnection';
@@ -60,6 +64,14 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     sectionKey: RADIO,
     keywords: ['tcp', 'port'],
     visible: hasCompanionTcpHost,
+  },
+  {
+    id: 'connection.radio.meshcomHost',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.deviceAddress',
+    sectionKey: RADIO,
+    keywords: ['meshcom', 'udp', 'extudp', 'kiss', 'tcp', 'host', '1799', '8001'],
+    visible: hasMeshcomHost,
   },
   {
     id: 'connection.radio.connect',
@@ -108,6 +120,22 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     sectionKey: MQTT,
     keywords: ['mqtt', 'profile', 'switch'],
     visible: hasMeshtasticMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcomSwitchProfile',
+    slot: 'Connection',
+    labelKey: 'mqttProfiles.switchLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'profile', 'switch', 'custom'],
+    visible: hasMeshcomMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcomProfiles',
+    slot: 'Connection',
+    labelKey: 'mqttProfiles.listLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'profile', 'custom', 'broker', 'saved'],
+    visible: hasMeshcomMqtt,
   },
   {
     id: 'connection.mqtt.meshcoreCaBroker',
@@ -243,6 +271,8 @@ export const connectionSurface: SettingsSearchSurface = {
   entries: connectionEntries,
   files: [{ path: 'src/renderer/components/ConnectionPanel.tsx', sweepAllKeys: true }],
   exempt: {
+    'meshcom.extUdpHint': 'help text under the indexed MeshCom host field',
+    'meshcom.kissTcpHint': 'help text under the indexed MeshCom host field',
     'connectionPanel.*Hint': 'help text under a control; the control is indexed',
     'connectionPanel.*Placeholder': 'placeholder of an indexed field',
     'connectionPanel.*Warning': 'warning text, not a control',

@@ -1,6 +1,6 @@
 import type { GattSidecarProxy } from './gatt-sidecar-proxy';
 
-export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'gatt:meshcom' | 'reticulum';
 
 export type BleScanOwner = 'gatt' | 'reticulum';
 
@@ -105,7 +105,7 @@ export class BleCoexistenceCoordinator {
     // Reticulum discovery/pairing holds the interactive scan lease.
     if (
       this.scanOwner === 'reticulum' &&
-      (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore')
+      (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore' || owner === 'gatt:meshcom')
     ) {
       throw new BleScanBusyError('reticulum');
     }

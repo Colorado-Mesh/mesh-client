@@ -26,6 +26,7 @@ const COT_UID_PREFIX: Record<MeshProtocol, string> = {
   meshtastic: 'MESH-',
   meshcore: 'MC-',
   reticulum: 'RN-',
+  meshcom: 'CM-',
 };
 
 /** Every uid prefix this app writes; inbound CoT with one of these is our own node echoed back. */
@@ -37,11 +38,12 @@ export const COT_UID_PREFIXES: readonly string[] = Object.values(COT_UID_PREFIX)
  */
 export const COT_CHAT_ENDPOINT = '*:-1:stcp';
 
-const MESH_NODE_UID_RE = /^(MESH|MC|RN)-([1-9]\d{0,9})$/;
+const MESH_NODE_UID_RE = /^(MESH|MC|RN|CM)-([1-9]\d{0,9})$/;
 const PROTOCOL_BY_PREFIX: Record<string, MeshProtocol> = {
   MESH: 'meshtastic',
   MC: 'meshcore',
   RN: 'reticulum',
+  CM: 'meshcom',
 };
 
 /** The mesh node a marker uid (`MC-123`) names, or null for any other uid. */
@@ -57,6 +59,7 @@ const PROTOCOL_LABEL: Record<MeshProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
   reticulum: 'Reticulum',
+  meshcom: 'MeshCom',
 };
 
 /**
@@ -67,6 +70,7 @@ const CALLSIGN_FIELD: Record<MeshProtocol, 'short_name' | 'long_name'> = {
   meshtastic: 'short_name',
   meshcore: 'long_name',
   reticulum: 'long_name',
+  meshcom: 'long_name',
 };
 
 export type CotRelayNode = MeshNode & TakRelayExtras;

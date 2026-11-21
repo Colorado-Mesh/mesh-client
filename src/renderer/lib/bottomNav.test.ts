@@ -6,6 +6,7 @@ import { BOTTOM_NAV_SECTION_IDS, splitBottomNavSections } from './bottomNav';
 import { sectionBadge, sumNavBadges } from './navBadges';
 import { computeNavSections } from './navSections';
 import {
+  MESHCOM_CAPABILITIES,
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
   RETICULUM_CAPABILITIES,
@@ -17,6 +18,7 @@ const CAPS = {
   meshtastic: MESHTASTIC_CAPABILITIES,
   meshcore: MESHCORE_CAPABILITIES,
   reticulum: RETICULUM_CAPABILITIES,
+  meshcom: MESHCOM_CAPABILITIES,
 } as const;
 
 function sectionsFor(protocol: MeshProtocol) {

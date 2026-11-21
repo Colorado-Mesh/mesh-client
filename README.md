@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote). EMCOMM support via MECP & TAK.
+> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, **MeshCom** (CM), and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote). EMCOMM support via MECP & TAK.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -29,16 +29,16 @@ Releases and build artifacts are published on [GitHub](https://github.com/Colora
 
 Reliable Desktop Power. Local Persistence. Total Insight.
 
-While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited desktop options for MeshCore and Reticulum (LXMF), inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience that unifies **Meshtastic**, **MeshCore**, and **Reticulum** in one app.
+While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited desktop options for MeshCore, MeshCom, and Reticulum (LXMF), inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience that unifies **Meshtastic**, **MeshCore**, **MeshCom**, and **Reticulum** in one app.
 
-With a dedicated local SQLite database, Mesh-Client keeps message and node history across restarts, subject to configurable retention limits. Diagnostic logs are stored separately in rotating local files. It provides one reliable hub for Meshtastic, MeshCore, and Reticulum (via an AGPL Rust sidecar), delivering a unified workflow regardless of protocol or hardware.
+With a dedicated local SQLite database, Mesh-Client keeps message and node history across restarts, subject to configurable retention limits. Diagnostic logs are stored separately in rotating local files. It provides one reliable hub for Meshtastic, MeshCore, MeshCom, and Reticulum (via an AGPL Rust sidecar), delivering a unified workflow regardless of protocol or hardware.
 
 **Why Mesh-Client?**
 
 - **Durable message history:** Local SQLite storage with configurable retention limits.
-- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (rail protocol switcher, MT / MC / RN; Reticulum yellow; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
+- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, MeshCom, and Reticulum (rail protocol switcher, MT / MC / CM / RN; MeshCom burgundy; Reticulum yellow; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
-- **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore); for Reticulum, LXMF DMs / encrypted paper / propagation, RRC, LRGP Games, LXST voice, and rnsh/rncp Remote — aimed at Ratspeak-compatible peers.
+- **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore/MeshCom custom brokers); for Reticulum, LXMF DMs / encrypted paper / propagation, RRC, LRGP Games, LXST voice, and rnsh/rncp Remote — aimed at Ratspeak-compatible peers.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
 
 From real-time diagnostics to durable local history, Mesh-Client delivers the desktop visibility serious mesh users require.
@@ -128,12 +128,13 @@ Select any image to view it at full size.
 
 <!-- docs-site:features:start -->
 
-Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / RN; Meshtastic green, MeshCore cyan, Reticulum yellow) to focus a tab; the other sessions stay connected in the background.
+Mesh-Client supports **four mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / CM / RN; Meshtastic green, MeshCore cyan, MeshCom burgundy, Reticulum yellow) to focus a tab; the other sessions stay connected in the background. Opt in to MeshCom under App → Protocols (licensed amateur-radio notice on first enable).
 
 | Protocol   | Transport focus                                    | Deep-dive doc                                                                                                      |
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Meshtastic | BLE, USB serial, HTTP, TCP (4403), MQTT (protobuf) | Sections below + [diagnostics](docs/diagnostics.md)                                                                |
 | MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)               | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                                                           |
+| MeshCom    | EXTUDP (:1799), KISS/TCP (:8001), USB serial, BLE  | [MeshCom development](docs/development/meshcom.md) — callsign mesh; worldwide `--setctry` bands                    |
 | Reticulum  | Sidecar stack: TCP, I2P, Auto, RNode USB/BLE/Wi‑Fi | [reticulum.md](docs/reticulum.md) · [Games](docs/reticulum-games-parity.md) · [IPC](docs/reticulum-sidecar-ipc.md) |
 
 ### Meshtastic Features
@@ -215,8 +216,8 @@ Operator guide: [Meshtastic guide](docs/meshtastic.md).
 
 **TAK Server (CoT Gateway)**
 
-- **TAK** tab (Network rail section) on Meshtastic, MeshCore, and Reticulum: local CoT TLS gateway (port 8089) so ATAK / WinTAK / iTAK clients can see mesh nodes on their maps
-- Feeds all three protocols at once (node online windows, RMAP interfaces, optional own Reticulum position); positions refresh every 5 minutes
+- **TAK** tab (Network rail section) on Meshtastic, MeshCore, MeshCom, and Reticulum: local CoT TLS gateway (port 8089) so ATAK / WinTAK / iTAK clients can see mesh nodes on their maps
+- Feeds enabled protocols at once (node online windows, RMAP interfaces, optional own Reticulum position); positions refresh every 5 minutes
 - Certificates, ATAK data package, remote TAK server relay (mTLS or plain TCP), channel and DM messaging in ATAK, unit filters/icons, and Meshtastic ATAK plugin messages — full operator guide: [TAK gateway](docs/tak.md)
 - **MECP in ATAK**: served-channel / DM reports and incident spot markers; optional MAYDAY alarm — see [TAK messaging](docs/tak.md#messaging-in-atak) and [EMCOMM: Reports in ATAK](docs/emcomm.md#reports-in-atak)
 
@@ -224,7 +225,7 @@ Operator guide: [Meshtastic guide](docs/meshtastic.md).
 
 ### Desktop shell (all protocols)
 
-- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (Meshtastic green, MeshCore cyan, Reticulum yellow — the Reticulum total is LXMF Chat + **RRC** + **Games**; Games also has its own tab badge); passive toast notifications when an inactive protocol receives traffic
+- **Multi-protocol switcher**: Meshtastic, MeshCore, MeshCom, and Reticulum run simultaneously; per-protocol unread badges (Meshtastic green, MeshCore cyan, MeshCom burgundy, Reticulum yellow — the Reticulum total is LXMF Chat + **RRC** + **Games**; Games also has its own tab badge); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Colors** (App → Appearance): customize theme tokens including chat/RRC **message action** bar and button hover colors; optional **Show background** on the action bar and **Always show message actions**
@@ -232,21 +233,21 @@ Operator guide: [Meshtastic guide](docs/meshtastic.md).
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: update status in the status bar; system tray unread badge when the window is backgrounded
 - **Launcher settings search**: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it — see [Settings and shortcuts](docs/settings.md)
-- **Stats** (packet distribution) and **Sniffer** (raw packet log) in the Monitor section on all three protocols — see [Diagnostics: Stats](docs/diagnostics.md#16-stats-panel-packet-distribution) and [Diagnostics: Sniffer](docs/diagnostics.md#17-sniffer-raw-packet-log)
+- **Stats** (packet distribution) and **Sniffer** (raw packet log) in the Monitor section on Meshtastic, MeshCore, and Reticulum (MeshCom omits them — no companion packet sniffer) — see [Diagnostics: Stats](docs/diagnostics.md#16-stats-panel-packet-distribution) and [Diagnostics: Sniffer](docs/diagnostics.md#17-sniffer-raw-packet-log)
 - **Enable / disable protocols** (App → Protocols): turn off protocols you don't use. A disabled protocol is hidden from the switcher, disconnected, and skipped by auto-connect, autostart, and sleep/wake recovery; with one protocol left, the switcher is hidden
 - **Firmware update toast**: **Don't remind me** silences the toast for that release (per protocol); it returns when a newer release ships — see [Firmware guide](docs/firmware.md#firmware-update-toast)
 - **Developer announcements**: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See [`docs/service-announcements.md`](docs/service-announcements.md)
 
-### Shared RF features (Meshtastic & MeshCore)
+### Shared RF features (Meshtastic, MeshCore & MeshCom)
 
-These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/chat.md), [Maps](docs/maps.md), [TAK](docs/tak.md), and [Firmware](docs/firmware.md). Reticulum uses the sidecar model documented under [Reticulum Features](#reticulum-features) below.
+These sections apply to the LoRa companion-radio stacks (MeshCom joins the shared Chat / Contacts / Map / Connection shell; see [MeshCom Features](#meshcom-features) for CM-specific transports). See [Chat](docs/chat.md), [Maps](docs/maps.md), [TAK](docs/tak.md), and [Firmware](docs/firmware.md). Reticulum uses the sidecar model documented under [Reticulum Features](#reticulum-features) below.
 
 **Connectivity**
 
 - **Bluetooth LE**: pair wirelessly via sidecar **btleplug** GATT on all platforms; startup auto-reconnect can run without a user gesture. **Reticulum** BLE (RNode / BLE Peer) shares the same sidecar process and may coexist on a **different** MAC — see [Reticulum BLE coexistence](docs/reticulum.md#interface-management-connection-tab).
 - **USB Serial**: plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
 - **WiFi / HTTP / TCP**: Meshtastic offers **WiFi/HTTP** (REST, one packet per request) and **WiFi/TCP (fast)** (native binary streaming on port **4403**, same framing as USB serial — much faster NodeDB sync on large networks); MeshCore uses TCP on port **5000** by default; remembered addresses **auto-connect on launch** (same coordinator as serial/BLE) and support quick reconnect after drops
-- **Dual LoRa mode**: Meshtastic and MeshCore stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic
+- **Multi LoRa mode**: Meshtastic, MeshCore, and MeshCom stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic
 - **Connection status in the status bar**: device, MQTT, and TAK indicators pulse **red** after an unexpected disconnect; manual stop/disconnect stays gray; in-progress connect keeps yellow
 
 **Chat**
@@ -293,8 +294,8 @@ These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/cha
 
 **EMCOMM / Incident Command**
 
-- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
-- **Incident** tab (always visible on all three protocols; pinned at the bottom of the rail next to **App** — rarely needed day-to-day, but the red badge counts every open row including drills so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed and badge the tab, but never alert. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
+- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, MeshCom, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
+- **Incident** tab (always visible on all enabled protocols; pinned at the bottom of the rail next to **App** — rarely needed day-to-day, but the red badge counts every open row including drills so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed and badge the tab, but never alert. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
 - **Emergency outbox**: MECP / MAYDAY reports are queued as emergency priority and keep retrying until the network acknowledges them (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes). **Stop retrying** cancels a stuck report
 - **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
 - **Ops alerts** (App → Notifications): watched-node silence escalation, battery low (where telemetry exists), and unexpected link-down (never on manual disconnect or during reconnect)
@@ -319,9 +320,25 @@ These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/cha
 
 ---
 
+### MeshCom Features
+
+Developer / wire guide: [MeshCom development](docs/development/meshcom.md). **MeshCom (CM)** is the fourth RF stack — ICSSW MeshCom 4.0 callsign mesh. Opt in under **App → Protocols** (licensed amateur-radio notice on first enable). It shares the Chat / Contacts / Map / Connection / Diagnostics shell with Meshtastic and MeshCore; there is **no** MeshCom npm SDK (first-party codecs under `src/renderer/lib/meshcom/`).
+
+- **Transports**: **EXTUDP** (UDP **1799**), **KISS/TCP** (TCP **8001**), **USB serial** (115200 console), and **BLE** (NUS phone framing via sidecar GATT session `gatt:meshcom`, same NUS UUID as MeshCore)
+- **Identity**: soft-normalized callsigns; Chat `*` = ALL, groups = GRC ids, DM = channel `-1`
+- **Radio tab**: first-class ICSSW `--` device commands (Display, GPS, Sensors, Identity, WiFi, Gateway, Bluetooth, …) over Serial/BLE; country Apply (`--setctry`); optional auto `--settime`
+- **Telemetry / MHEARD / phone APRS**: device battery and weather from Serial/BLE/EXTUDP; BLE `@` APRS phone frames; MHEARD into Contacts
+- **MQTT**: custom brokers only (own settings + profile list — no Meshtastic/MeshCore network presets)
+- **Host Signal**: Connection panel BLE RSSI is scan-seeded on CoreBluetooth (no live connected GATT RSSI on the LoRa btleplug path)
+- **Not in MeshCom**: Rooms, MeshCore Repeaters RPC, Stats/Sniffer packet log, Meshtastic channel-crypto / remote admin
+
+Adding another protocol? See [adding-a-protocol.md](docs/development/adding-a-protocol.md).
+
+---
+
 ### MeshCore Features
 
-Operator guide: [MeshCore guide](docs/meshcore.md). MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. **Meshtastic** shows **17** panels (including **Administration**, **Security**, **TAK**, **Incident** next to **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **18** panels (**TAK**, and **Incident** next to **App**; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **17** panels (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **TAK**, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+Operator guide: [MeshCore guide](docs/meshcore.md). MeshCore runs simultaneously alongside Meshtastic, MeshCom, and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. **Meshtastic** shows **17** panels (including **Administration**, **Security**, **TAK**, **Incident** next to **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **18** panels (**TAK**, and **Incident** next to **App**; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **MeshCom** uses the shared LoRa shell (Connection, Chat, Contacts, Map, Radio device commands, Diagnostics, TAK, Incident, App) without Rooms / Repeaters / Stats / Sniffer. **Reticulum** shows **17** panels (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **TAK**, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are on Meshtastic, MeshCore, and Reticulum; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: status-bar badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -468,7 +485,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 **Transport notes**
 
 - No Meshtastic/MeshCore-style MQTT `ConnectionDriver` path; connect by starting the sidecar, then enabling interfaces
-- **BLE coexistence:** Meshtastic, MeshCore, and Reticulum run Bluetooth in the same sidecar process and can use **different devices** concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See [BLE coexistence](docs/development/ble-serial.md#multi-protocol-ble-coexistence-incl-reticulum).
+- **BLE coexistence:** Meshtastic, MeshCore, MeshCom, and Reticulum run Bluetooth in the same sidecar process and can use **different devices** concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See [BLE coexistence](docs/development/ble-serial.md#multi-protocol-ble-coexistence-incl-reticulum).
 - Packaged builds bundle `mesh-client-reticulum` beside the Electron app; dev builds: `pnpm run reticulum:sidecar:build` — see [development-environment.md](docs/development-environment.md#reticulum-sidecar-optional)
 
 <!-- docs-site:features:end -->
@@ -591,7 +608,7 @@ For OS-specific steps; BLE permissions on macOS, serial port group on Linux, Vis
 
 ### Choosing a Protocol
 
-All three protocols can run at the same time. Use the **MT / MC / RN** protocol switcher at the top of the rail to bring the desired view into focus; the other sessions remain connected in the background. Meshtastic and MeshCore each store last-connection settings and auto-reconnect on startup; Reticulum can **Auto-start** the sidecar from the Connection tab.
+All four protocols can run at the same time. Use the **MT / MC / CM / RN** protocol switcher at the top of the rail to bring the desired view into focus; the other sessions remain connected in the background. Meshtastic, MeshCore, and MeshCom each store last-connection settings and auto-reconnect on startup (enable MeshCom under App → Protocols first); Reticulum can **Auto-start** the sidecar from the Connection tab.
 
 ### Connecting Your Device
 
@@ -612,6 +629,14 @@ All three protocols can run at the same time. Use the **MT / MC / RN** protocol 
 4. Click **Connect**; the app fetches self info, contacts, and channels from the device
 5. Wait for status to show **Configured**; contacts and channels are loaded
 
+**MeshCom:**
+
+1. Enable **MeshCom** under **App → Protocols** (accept the licensed amateur-radio notice if prompted)
+2. Select **CM** (MeshCom, burgundy) at the top of the rail
+3. In the Connection tab, choose **EXTUDP**, **KISS/TCP** (default port **8001**), **Serial**, or **Bluetooth**
+4. Click **Connect** (BLE/serial: pick the radio; EXTUDP/KISS: ensure the node has ExtUDP/KISS enabled)
+5. Wait for status to show **Configured**; device settings and telemetry load over Serial/BLE when available
+
 **Reticulum:**
 
 1. Select **RN** (Reticulum, yellow) at the top of the rail
@@ -626,10 +651,10 @@ For a fresh development checkout, install Rust, run `bash scripts/clone-ratspeak
 
 After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
-- **Serial**: auto-connects silently in the background (Meshtastic and MeshCore)
+- **Serial**: auto-connects silently in the background (Meshtastic, MeshCore, and MeshCom)
 - **Bluetooth (all platforms)**: sidecar GATT auto-scans on launch and reconnects when the last device is discovered (no user gesture required). On Windows, unpaired radios are paired in the app (PIN prompt) before connecting.
-- **WiFi / HTTP / TCP**: remembered Meshtastic HTTP/TCP and MeshCore TCP addresses **auto-connect silently on launch** via `ProtocolAutoConnectCoordinator` (stays alive across tab switches). A one-click **Reconnect** card appears only when auto-connect fails or was cancelled by a manual Connect. Manual Connect cancels any in-flight auto-connect first (`cancelProtocolRfAutoConnect`).
-- **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; select transport when connecting)
+- **WiFi / HTTP / TCP**: remembered Meshtastic HTTP/TCP, MeshCore TCP, and MeshCom KISS/TCP or EXTUDP addresses **auto-connect silently on launch** via `ProtocolAutoConnectCoordinator` (stays alive across tab switches). A one-click **Reconnect** card appears only when auto-connect fails or was cancelled by a manual Connect. Manual Connect cancels any in-flight auto-connect first (`cancelProtocolRfAutoConnect`).
+- **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; MeshCom custom brokers; select transport when connecting)
 - **Reticulum**: with **Auto-start** enabled, the sidecar starts on launch; otherwise click **Start stack** on the Connection tab after opening the app
 
 When both Meshtastic and MeshCore have different saved BLE peripherals, dual-radio wake/startup staggers auto-connect (active protocol first via `mesh-client:protocol`). Sleep/wake reconnect staggers Meshtastic (~4s) then MeshCore (~8s), with up to ~30s dual-radio settle — see [Troubleshooting — macOS sleep / wake](docs/troubleshooting.md#macos-sleep--wake-and-auto-reconnect).
@@ -660,7 +685,15 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Windows  | Yes       | Yes    | Yes | Yes            |
 | Linux    | Yes       | Yes    | Yes | Yes            |
 
-**Reticulum** uses the AGPL sidecar (no Meshtastic/MeshCore MQTT card). Common interfaces are configured on the Connection tab after **Start stack**; see the [full interface list](docs/reticulum.md#interface-management-connection-tab):
+**MeshCom** supports EXTUDP, KISS/TCP, USB serial, BLE, and optional custom MQTT:
+
+| Platform | EXTUDP (:1799) | KISS/TCP (:8001) | Serial | Bluetooth | MQTT (custom) |
+| -------- | -------------- | ---------------- | ------ | --------- | ------------- |
+| macOS    | Yes            | Yes              | Yes    | Yes       | Yes           |
+| Windows  | Yes            | Yes              | Yes    | Yes       | Yes           |
+| Linux    | Yes            | Yes              | Yes    | Yes       | Yes           |
+
+**Reticulum** uses the AGPL sidecar (no Meshtastic/MeshCore/MeshCom MQTT card). Common interfaces are configured on the Connection tab after **Start stack**; see the [full interface list](docs/reticulum.md#interface-management-connection-tab):
 
 | Platform | TCP client | I2P | Auto (discovery) | RNode USB serial | RNode BLE | RNode Wi‑Fi (`tcp://:7633`) |
 | -------- | ---------- | --- | ---------------- | ---------------- | --------- | --------------------------- |
@@ -672,19 +705,20 @@ Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/
 
 ### Tech Stack
 
-| Component    | Technology                                                                                                                                                                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop      | Electron                                                                                                                                                                                                                                          |
-| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                                                                                                                 |
-| Styling      | Tailwind CSS v4                                                                                                                                                                                                                                   |
-| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                                                                                                        |
-| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via reticulum-sidecar btleplug GATT (all platforms)                                                                                                                            |
-| MeshCore     | @liamcottle/meshcore.js (Web Serial, TCP via main-process IPC); BLE via reticulum-sidecar btleplug GATT (all platforms)                                                                                                                           |
-| Reticulum    | Sidecar (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs): LXMF paper, LXST, LRGP Games, Nomad/RRC/Remote                                                                                                                                               |
-| Maps         | Leaflet + OpenStreetMap / Dark OpenStreetMap / USGS Topo via privileged `mesh-tiles:` + userData tile cache (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
-| Charts       | Recharts                                                                                                                                                                                                                                          |
-| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                                                                                                              |
-| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + Nix flake + optional `cargo` sidecar                                                                                                                         |
+| Component    | Technology                                                                                                                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                                                                                                                                                                                                  |
+| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                                                                                                                         |
+| Styling      | Tailwind CSS v4                                                                                                                                                                                                                                           |
+| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                                                                                                                |
+| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via reticulum-sidecar btleplug GATT (all platforms)                                                                                                                                    |
+| MeshCore     | @liamcottle/meshcore.js (Web Serial, TCP via main-process IPC); BLE via reticulum-sidecar btleplug GATT (all platforms)                                                                                                                                   |
+| MeshCom      | First-party EXTUDP / KISS / serial / BLE codecs (`src/renderer/lib/meshcom/`); BLE via reticulum-sidecar GATT session `gatt:meshcom` (NUS wire = MeshCore)                                                                                                |
+| Reticulum    | Sidecar (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs): LXMF paper, LXST, LRGP Games, Nomad/RRC/Remote                                                                                                                                                       |
+| Maps         | Leaflet + OpenStreetMap / Dark OpenStreetMap / USGS Topo via privileged `mesh-tiles:` + userData tile cache (Meshtastic/MeshCore/MeshCom node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
+| Charts       | Recharts                                                                                                                                                                                                                                                  |
+| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                                                                                                                      |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + Nix flake + optional `cargo` sidecar                                                                                                                                 |
 
 ### Architecture
 

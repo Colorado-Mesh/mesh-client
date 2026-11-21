@@ -51,4 +51,13 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     nameTextClass: 'text-reticulum-500',
     unreadBadgeFillClass: 'bg-reticulum-700 text-white',
   },
+  meshcom: {
+    displayName: 'MeshCom',
+    monogram: 'CM',
+    ariaSwitchKey: 'aria.switchToMeshCom',
+    ariaSwitchWithUnreadKey: 'aria.switchToMeshComWithUnread',
+    railActiveClass: 'bg-meshcom-500/15 text-meshcom-500 ring-[1.5px] ring-inset ring-meshcom-500',
+    nameTextClass: 'text-meshcom-500',
+    unreadBadgeFillClass: 'bg-meshcom-700 text-white',
+  },
 };

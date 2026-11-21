@@ -6,9 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ensureOfflineProtocolIdentities,
+  OFFLINE_MESHCOM_IDENTITY_ID,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_RETICULUM_IDENTITY_ID,
 } from '../lib/offlineProtocolIdentities';
+import { meshcomProtocol } from '../lib/protocols/MeshComProtocol';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import type { Protocol } from '../lib/protocols/Protocol';
@@ -29,12 +31,14 @@ const PROTOCOL_ADAPTER: Record<MeshProtocol, Protocol> = {
   meshtastic: meshtasticProtocol,
   meshcore: meshcoreProtocol,
   reticulum: reticulumProtocol,
+  meshcom: meshcomProtocol,
 };
 
 const CONNECTED_IDS: Record<MeshProtocol, IdentityId> = {
   meshtastic: 'id-facade-mt-live',
   meshcore: 'id-facade-mc-live',
   reticulum: 'id-facade-rn-live',
+  meshcom: 'id-facade-cm-live',
 };
 
 function panelActionsStub() {
@@ -85,6 +89,7 @@ function panelPrebuilt(): PanelActionsByProtocol {
     meshtastic: meshtasticActions,
     meshcore: meshcoreActions,
     reticulum: reticulumPanelActionsStub(),
+    meshcom: reticulumPanelActionsStub(),
   } as unknown as PanelActionsByProtocol;
 }
 
@@ -103,6 +108,7 @@ function connectionPrebuilt(): ConnectionActionsByProtocol {
     meshtastic: connectionActionsStub(),
     meshcore: connectionActionsStub(),
     reticulum: connectionActionsStub(),
+    meshcom: connectionActionsStub(),
   };
 }
 
@@ -176,7 +182,7 @@ describe('useProtocolFacade', () => {
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'resolves focused and per-protocol identity IDs for %s',
     (protocol) => {
-      for (const p of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+      for (const p of ['meshtastic', 'meshcore', 'reticulum', 'meshcom'] as const) {
         addConnectedIdentity(p, CONNECTED_IDS[p]);
       }
 
@@ -204,6 +210,7 @@ describe('useProtocolFacade', () => {
     expect(result.current.reticulumIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(result.current.identityIdByProtocol.reticulum).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(result.current.identityIdByProtocol.meshcore).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
+    expect(result.current.identityIdByProtocol.meshcom).toBe(OFFLINE_MESHCOM_IDENTITY_ID);
     expect(result.current.reticulumIdentityId).not.toBe(
       result.current.identityIdByProtocol.meshcore,
     );

@@ -145,6 +145,8 @@ function defaultEndpointFor(protocol: EndpointProtocol): MecpRebroadcastEndpoint
       return { protocol: 'reticulum', kind: 'lxmf', destinationHash: MECP_REBROADCAST_ANY_PEER };
     case 'meshcore':
       return { protocol: 'meshcore', channelIndex: 0 };
+    case 'meshcom':
+      return { protocol: 'meshcom', channelIndex: 0 };
     default:
       return { protocol: 'meshtastic', channelIndex: 0 };
   }
@@ -185,6 +187,7 @@ function EndpointEditors({
         <option value="meshtastic">Meshtastic</option>
         <option value="meshcore">MeshCore</option>
         <option value="reticulum">Reticulum</option>
+        <option value="meshcom">MeshCom</option>
       </select>
       {isReticulumEndpoint(endpoint) ? (
         <ReticulumEndpointFields endpoint={endpoint} onChange={onChange} />
@@ -192,13 +195,14 @@ function EndpointEditors({
         <input
           type="number"
           min={0}
-          max={7}
+          max={endpoint.protocol === 'meshcom' ? 99999 : 7}
           className={`${INPUT_BOX_SM_CLASS} w-full`}
           value={endpoint.channelIndex}
           onChange={(e) => {
+            const max = endpoint.protocol === 'meshcom' ? 99999 : 7;
             onChange({
               ...endpoint,
-              channelIndex: Math.min(7, Math.max(0, Math.trunc(Number(e.target.value) || 0))),
+              channelIndex: Math.min(max, Math.max(0, Math.trunc(Number(e.target.value) || 0))),
             });
           }}
           aria-label={t('mecp.rebroadcast.channelIndex')}

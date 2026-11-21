@@ -42,7 +42,12 @@ export function connectionPanelConnectionTypeLabel(
     case 'http':
       // MeshCore reuses the `'http'` ConnectionType for its WiFi companion TCP link
       // (binary protocol on TCP :5000 — not HTTP). Meshtastic `'http'` is WiFi/HTTP.
-      return protocol === 'meshcore' ? t('connectionPanel.tcpIp') : t('connectionPanel.wifiHttp');
+      // MeshCom reuses `'http'` for KISS/TCP (:8001).
+      if (protocol === 'meshcore') return t('connectionPanel.tcpIp');
+      if (protocol === 'meshcom') return t('connectionPanel.kissTcp');
+      return t('connectionPanel.wifiHttp');
+    case 'udp':
+      return protocol === 'meshcom' ? t('connectionPanel.extUdp') : t('connectionPanel.udp');
     default: {
       const _x: never = type;
       return _x;

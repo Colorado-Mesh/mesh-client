@@ -26,6 +26,7 @@ function byProtocol(meshcoreCount: number): Record<MeshProtocol, ChatMessage[]> 
     meshtastic: [],
     meshcore: Array.from({ length: meshcoreCount }, (_, i) => msg(i + 1)),
     reticulum: [],
+    meshcom: [],
   };
 }
 

@@ -208,6 +208,8 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
     const rows = db.prepare('SELECT key FROM app_settings ORDER BY key').all() as { key: string }[];
     expect(rows.map((r) => r.key)).toEqual([
+      'meshcomMessageRetentionCount',
+      'meshcomMessageRetentionEnabled',
       'meshcoreMessageRetentionCount',
       'meshcoreMessageRetentionEnabled',
       'meshtasticMessageRetentionCount',

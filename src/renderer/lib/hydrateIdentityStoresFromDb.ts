@@ -44,6 +44,7 @@ import {
 } from './meshtasticDbCacheHydration';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
 import { lastHeardToUnixSeconds } from './nodeStatus';
+import { registerReticulumDestinationHash, reticulumHashToNodeId } from './reticulum/destHash';
 import {
   chatMessageToMessageRecord,
   meshNodeToNodeRecord,
@@ -429,7 +430,7 @@ async function hydrateMeshcoreIdentity(
 }
 
 /** Map Reticulum destination rows into node records (skips invalid hashes). */
-async function applyReticulumDestinationRows(
+function applyReticulumDestinationRows(
   identityId: IdentityId,
   rows: {
     destination_hash: string;
@@ -438,10 +439,8 @@ async function applyReticulumDestinationRows(
     favorited?: number | null;
   }[],
   isCurrent: () => boolean,
-): Promise<void> {
+): void {
   if (!isCurrent()) return;
-  const { reticulumHashToNodeId, registerReticulumDestinationHash } =
-    await import('./reticulum/destHash');
   const records: NodeRecord[] = [];
   for (const row of rows) {
     // A row without a canonical hash cannot be keyed or displayed; skipping it
@@ -485,7 +484,7 @@ function hydrateReticulumIdentity(
               last_heard?: number | null;
               favorited?: number | null;
             }[];
-            await applyReticulumDestinationRows(identityId, rows, isCurrent);
+            applyReticulumDestinationRows(identityId, rows, isCurrent);
           } catch (e) {
             console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
           }
@@ -518,10 +517,16 @@ function hydrateReticulumIdentity(
   })();
 }
 
+const hydrateMeshcomIdentity: IdentityHydratorFn = async (identityId, opts, isCurrent) => {
+  const { hydrateMeshcomIdentity: load } = await import('./hydrateMeshcomIdentityStores');
+  await load(identityId, opts, isCurrent);
+};
+
 const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
   meshtastic: hydrateMeshtasticIdentity,
   meshcore: hydrateMeshcoreIdentity,
   reticulum: hydrateReticulumIdentity,
+  meshcom: hydrateMeshcomIdentity,
 };
 
 /**

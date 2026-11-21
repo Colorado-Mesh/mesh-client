@@ -12,6 +12,7 @@ interface ProtocolAutoConnectTarget {
 interface ProtocolAutoConnectCoordinatorProps {
   meshtastic: ProtocolAutoConnectTarget;
   meshcore: ProtocolAutoConnectTarget;
+  meshcom: ProtocolAutoConnectTarget;
 }
 
 /**
@@ -21,6 +22,7 @@ interface ProtocolAutoConnectCoordinatorProps {
 export function ProtocolAutoConnectCoordinator({
   meshtastic,
   meshcore,
+  meshcom,
 }: ProtocolAutoConnectCoordinatorProps) {
   useProtocolRfAutoConnect({
     protocol: 'meshtastic',
@@ -33,6 +35,12 @@ export function ProtocolAutoConnectCoordinator({
     state: meshcore.state,
     connectAutomatic: meshcore.connectAutomatic,
     enabled: meshcore.enabled ?? true,
+  });
+  useProtocolRfAutoConnect({
+    protocol: 'meshcom',
+    state: meshcom.state,
+    connectAutomatic: meshcom.connectAutomatic,
+    enabled: meshcom.enabled ?? true,
   });
 
   return null;

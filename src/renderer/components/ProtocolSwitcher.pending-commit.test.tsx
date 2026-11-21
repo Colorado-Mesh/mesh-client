@@ -82,7 +82,7 @@ function PendingCommitHarness({ hold }: { hold: DestinationHold }) {
       <ProtocolSwitcher
         followPendingSelection
         protocol={protocol}
-        unreadByProtocol={{ meshtastic: 0, meshcore: 0, reticulum: 0 }}
+        unreadByProtocol={{ meshtastic: 0, meshcore: 0, reticulum: 0, meshcom: 0 }}
         onProtocolChange={onProtocolChange}
       />
       <span data-testid="committed-protocol">{protocol}</span>

@@ -13,13 +13,18 @@ export type ProtocolRecord<M, C = M> = ProtocolValues<M | C> & {
   meshcore: C;
 };
 
-/** Build a per-protocol map; pass `reticulum` when the third protocol needs a distinct value. */
-export function protocolRecord<M, C = M, R = C>(
+/**
+ * Build a per-protocol map. Optional `reticulum` defaults to `meshcore`; optional
+ * `meshcom` defaults to `meshcore` (never `reticulum` — that leaked RRC/Games/Nomad/Peers
+ * into the MeshCom shell when three-arg call sites omitted the fourth value).
+ */
+export function protocolRecord<M, C = M, R = C, CM = C>(
   meshtastic: M,
   meshcore: C,
   reticulum: R = meshcore as unknown as R,
-): ProtocolValues<M | C | R> {
-  return { meshtastic, meshcore, reticulum };
+  meshcom: CM = meshcore as unknown as CM,
+): ProtocolValues<M | C | R | CM> {
+  return { meshtastic, meshcore, reticulum, meshcom };
 }
 
 /** Type-safe lookup without `protocol ===` ternaries in App. */

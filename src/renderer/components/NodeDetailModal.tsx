@@ -33,6 +33,7 @@ import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemot
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
+import { meshcomHwDisplay } from '../lib/meshcom/meshcomHwIds';
 import {
   getMeshcoreRadioMaxContacts,
   subscribeMeshcoreRadioMaxContacts,
@@ -596,6 +597,7 @@ export default function NodeDetailModal({
     protocol: activeProtocol,
     hasKeyVerification,
     hasRepeaterStatus,
+    showsNodeNumHexId,
   } = useRadioProvider(protocol ?? 'meshtastic');
   const meshtasticIdentityId =
     protocol === 'meshtastic' ? getIdentityIdForProtocol('meshtastic') : null;
@@ -911,7 +913,9 @@ export default function NodeDetailModal({
   const displayName =
     protocol === 'meshcore'
       ? meshcoreContactDisplayName(node.node_id, node.long_name)
-      : node.short_name || node.long_name || hexId;
+      : protocol === 'meshcom'
+        ? node.long_name || node.short_name || hexId
+        : node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
   const bearingRange = isOurNode
     ? null
@@ -945,9 +949,11 @@ export default function NodeDetailModal({
   const headerHardwareSubtitle =
     protocol === 'meshtastic'
       ? meshtasticHwModelDisplay(node.hw_model)
-      : protocol === 'meshcore' && isOurNode && meshcoreManufacturerModel
-        ? meshcoreManufacturerModel
-        : node.hw_model?.trim() || null;
+      : protocol === 'meshcom'
+        ? meshcomHwDisplay(node.hw_model)
+        : protocol === 'meshcore' && isOurNode && meshcoreManufacturerModel
+          ? meshcoreManufacturerModel
+          : node.hw_model?.trim() || null;
 
   const headerHopsDisplay =
     protocol === 'meshcore' && meshcoreTraceResult != null
@@ -1427,9 +1433,7 @@ export default function NodeDetailModal({
             )}
           </div>
           <div className="mt-0.5 flex items-center gap-2">
-            {protocol !== 'meshcore' && (
-              <span className="text-muted font-mono text-xs">{hexId}</span>
-            )}
+            {showsNodeNumHexId && <span className="text-muted font-mono text-xs">{hexId}</span>}
             {headerHopsDisplay != null && (
               <span
                 className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-ink-400'}`}
@@ -2957,53 +2961,55 @@ export default function NodeDetailModal({
               {t('nodeDetailModal.forgetAdvert')}
             </Button>
           ) : null}
-          {!showDeleteConfirm ? (
-            <Button
-              variant="danger"
-              size="sm"
-              className="mt-2"
-              onClick={() => {
-                setShowDeleteConfirm(true);
-              }}
-            >
-              {t('nodeDetailModal.deleteNode')}
-            </Button>
-          ) : (
-            <div className={`mt-2 ${NOTICE_CLASS.error}`}>
-              <p className="mb-2">{t('nodeDetailModal.deleteNodeConfirm')}</p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                  }}
-                >
-                  {t('nodeDetailModal.cancel')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => {
-                    onDeleteNode?.(node.node_id)
-                      .then(onClose)
-                      .catch((e: unknown) => {
-                        setActionStatusIsDeleteMqttError(isDeleteActiveMqttIdentityError(e));
-                        setActionStatus(
-                          isDeleteActiveMqttIdentityError(e)
-                            ? t('nodeDetailModal.deleteFailedMqtt')
-                            : e instanceof Error
-                              ? e.message
-                              : t('nodeDetailModal.deleteFailedMqtt'),
-                        );
-                        setShowDeleteConfirm(false);
-                      });
-                  }}
-                >
-                  {t('nodeDetailModal.confirmDelete')}
-                </Button>
+          {onDeleteNode ? (
+            !showDeleteConfirm ? (
+              <Button
+                variant="danger"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                }}
+              >
+                {t('nodeDetailModal.deleteNode')}
+              </Button>
+            ) : (
+              <div className={`mt-2 ${NOTICE_CLASS.error}`}>
+                <p className="mb-2">{t('nodeDetailModal.deleteNodeConfirm')}</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    {t('nodeDetailModal.cancel')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      void onDeleteNode(node.node_id)
+                        .then(onClose)
+                        .catch((e: unknown) => {
+                          setActionStatusIsDeleteMqttError(isDeleteActiveMqttIdentityError(e));
+                          setActionStatus(
+                            isDeleteActiveMqttIdentityError(e)
+                              ? t('nodeDetailModal.deleteFailedMqtt')
+                              : e instanceof Error
+                                ? e.message
+                                : t('nodeDetailModal.deleteFailedMqtt'),
+                          );
+                          setShowDeleteConfirm(false);
+                        });
+                    }}
+                  >
+                    {t('nodeDetailModal.confirmDelete')}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          ) : null}
         </div>
       </div>
     </>

@@ -65,6 +65,15 @@ export function updateIdentity(
   });
 }
 
+/** Swap the protocol adapter (e.g. MeshCom offline stub → loaded implementation). */
+export function replaceIdentityProtocol(id: IdentityId, protocol: Protocol): void {
+  useIdentityStore.setState((s) => {
+    const existing = s.identities[id];
+    if (!existing) return s;
+    return { identities: { ...s.identities, [id]: { ...existing, protocol } } };
+  });
+}
+
 export function getIdentity(id: IdentityId): IdentityRecord | null {
   return useIdentityStore.getState().identities[id] ?? null;
 }

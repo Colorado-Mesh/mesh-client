@@ -131,6 +131,19 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('file:languages@2d43243a9f20');
     expect(result.stdout).toContain('file:freetext@eab95105cad1');
     expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
+    expect(result.stdout).toContain('MESHCOM_UPSTREAM_WATCH_ENTRIES:');
+    expect(result.stdout).toContain(
+      'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.14',
+    );
+  });
+
+  it('wires check_meshcom_upstream after check_mecp_prs', () => {
+    expect(updateScript).toContain('check_meshcom_upstream()');
+    expect(updateScript).toContain('MESHCOM_UPSTREAM_WATCH_ENTRIES');
+    const mecpPrsCall = updateScript.lastIndexOf('\ncheck_mecp_prs\n');
+    const meshcomCall = updateScript.lastIndexOf('\ncheck_meshcom_upstream\n');
+    expect(mecpPrsCall).toBeGreaterThanOrEqual(0);
+    expect(meshcomCall).toBeGreaterThan(mecpPrsCall);
   });
 
   it('tracks ReplyFile and multi-file attachment overlays in RATSPEAK_PATCH_ENTRIES', () => {

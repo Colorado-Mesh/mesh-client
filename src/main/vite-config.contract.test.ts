@@ -65,6 +65,7 @@ describe('vite build config', () => {
       'meshcore',
       'meshcore-decoder',
       'esptool-js',
+      'meshcom-runtime',
     ]) {
       expect(VITE_CONFIG).toContain(`name: '${name}'`);
     }

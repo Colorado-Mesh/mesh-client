@@ -1,9 +1,14 @@
 import { useCallback, useMemo } from 'react';
 
 import { isMeshtasticAttachSupersededError } from '../lib/meshtastic/meshtasticAttachSuperseded';
-import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
+import {
+  meshcomConnectionType,
+  meshcoreConnectionType,
+  protocolTransportParams,
+} from '../lib/protocolTransportParams';
 import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
+import { getMeshcomSession } from '../lib/sessions/meshcomSession';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { getReticulumSession } from '../lib/sessions/reticulumSession';
@@ -70,6 +75,12 @@ export function useProtocolConnect(): (
         return;
       }
 
+      if (protocol === 'meshcom') {
+        const mcType = meshcomConnectionType(type);
+        await getMeshcomSession().connect(mcType, httpAddress, blePeripheralId);
+        return;
+      }
+
       if (protocol === 'reticulum') {
         await getReticulumSession().connect();
         return;
@@ -112,6 +123,8 @@ export function useProtocolDisconnect() {
   return useCallback(async (protocol: MeshProtocol) => {
     if (protocol === 'meshcore') {
       await getMeshcoreSession().finalizeDriverDisconnect({ disconnectDriver: true });
+    } else if (protocol === 'meshcom') {
+      await getMeshcomSession().finalizeDriverDisconnect({ disconnectDriver: true });
     } else if (protocol === 'reticulum') {
       await getReticulumSession().finalizeDriverDisconnect();
     } else {
@@ -142,6 +155,23 @@ export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolCo
           meshType,
           httpAddress,
           lastSerialPortId ?? null,
+        );
+      }
+      if (protocol === 'meshcom') {
+        if (
+          type !== 'ble' &&
+          type !== 'serial' &&
+          type !== 'http' &&
+          type !== 'udp' &&
+          type !== 'tcp'
+        ) {
+          return Promise.reject(new Error(`MeshCom connectAutomatic: unsupported type ${type}`));
+        }
+        return getMeshcomSession().connectAutomatic(
+          type,
+          httpAddress,
+          lastSerialPortId ?? null,
+          blePeripheralId,
         );
       }
       if (protocol === 'reticulum') {
