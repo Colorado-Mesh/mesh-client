@@ -5,6 +5,7 @@ import {
   mergeMeshcomBleSettingsJson,
   mergeMeshcomSerialInfoText,
   mergeMeshcomSerialWxText,
+  meshcomListenGroupIdsFromSnapshot,
   meshcomSettingsToCommandValues,
   snapshotMeshcomDeviceSettings,
 } from './meshcomDeviceSettings';
@@ -129,6 +130,9 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.txPower).toBe('20');
     expect(accum.battVoltage).toBe(3.95);
     expect(accum.battPercent).toBe(72);
+    expect(meshcomListenGroupIdsFromSnapshot(snapshotMeshcomDeviceSettings(accum))).toEqual([
+      232, 20,
+    ]);
   });
 
   it('parses serial --wx weather dump', () => {

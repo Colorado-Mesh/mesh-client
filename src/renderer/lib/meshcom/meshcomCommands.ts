@@ -144,6 +144,14 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     argKind: 'number',
     argHint: '300',
   },
+  {
+    id: 'aprsmc',
+    token: '--aprsmc',
+    channel: 'app',
+    group: 'position',
+    argKind: 'text',
+    argHint: 'APRSMC',
+  },
   { id: 'pos', token: '--pos', channel: 'app', group: 'position', argKind: 'none' },
 
   // ── Sensors (APP) ──

@@ -20,6 +20,7 @@ describe('meshcomCommands catalog', () => {
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--symid')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--io')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--aht20')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--aprsmc')).toBe(true);
   });
 
   it('builds command lines including empty setgrc', () => {
@@ -27,5 +28,6 @@ describe('meshcomCommands catalog', () => {
     expect(buildMeshcomCommandLine(volt, 'on')).toBe('--volt on');
     const setgrc = getMeshcomCommandById('setgrc')!;
     expect(buildMeshcomCommandLine(setgrc, '')).toBe('--setgrc');
+    expect(buildMeshcomCommandLine(setgrc, '232;20')).toBe('--setgrc 232;20');
   });
 });

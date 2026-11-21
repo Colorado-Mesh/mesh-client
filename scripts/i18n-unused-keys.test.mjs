@@ -19,6 +19,12 @@ describe('i18n-unused-keys', () => {
     expect(unused).toEqual([]);
   });
 
+  it('registers MeshCom GRC note/reach dynamic prefixes', () => {
+    const prefixes = DYNAMIC_T_PREFIXES.map((e) => e.prefix);
+    expect(prefixes).toContain('meshcom.grc.notes.');
+    expect(prefixes).toContain('meshcom.grc.reach.');
+  });
+
   it('registers gamesPanel chess promoteTo and delivery dynamic prefixes', () => {
     const prefixes = DYNAMIC_T_PREFIXES.map((e) => e.prefix);
     expect(prefixes).toContain('gamesPanel.chess.promoteTo.');

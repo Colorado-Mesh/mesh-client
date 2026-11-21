@@ -225,10 +225,20 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           ].slice(-MAX_TELEMETRY_POINTS),
         );
       });
+      const routingAckHolder: { detach: (() => void) | null } = { detach: null };
+      void import('../lib/meshcom/meshcomRoutingAckSideEffects')
+        .then(({ attachMeshcomRoutingAckSideEffects }) => {
+          if (identityIdRef.current !== identityId) return;
+          routingAckHolder.detach = attachMeshcomRoutingAckSideEffects(identityId);
+        })
+        .catch((e: unknown) => {
+          console.warn('[useMeshcomRuntime] routing ACK attach failed ' + errLikeToLogString(e));
+        });
       const prevTelemetryDetach = telemetryDetachRef.current;
       telemetryDetachRef.current = () => {
         prevTelemetryDetach?.();
         detachSignal();
+        routingAckHolder.detach?.();
       };
     },
     [detachIngest, pushEnvTelemetry, pushLocalTelemetry, state.myNodeNum],

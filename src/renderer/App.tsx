@@ -96,6 +96,17 @@ import {
   incidentNeedsBeaconAck,
   resolveIncidentAckRoute,
 } from '@/renderer/lib/mecp/incidentAck';
+import { meshcomListenGroupIdsFromSnapshot } from '@/renderer/lib/meshcom/meshcomDeviceSettings';
+import {
+  buildMeshcomChatChannels,
+  formatMeshcomGrcListenList,
+  MESHCOM_GRC_MAX_SLOTS,
+  parseMeshcomGrcListenList,
+} from '@/renderer/lib/meshcom/meshcomGrcGroups';
+import {
+  getMeshcomGrcLocalChannels,
+  subscribeMeshcomGrcLocalChannels,
+} from '@/renderer/lib/meshcom/meshcomGrcLocalChannels';
 import {
   readMeshcoreAutoOffloadWhenFull,
   writeMeshcoreAutoOffloadWhenFull,
@@ -3562,18 +3573,34 @@ function AppContent() {
     ],
   );
 
-  /** MeshCom chat: ALL (*) plus any positive GRC group indices seen in messages. */
+  const meshcomGrcLocalEpoch = useSyncExternalStore(
+    subscribeMeshcomGrcLocalChannels,
+    () => getMeshcomGrcLocalChannels().join(';'),
+    () => '',
+  );
+
+  /** MeshCom chat: ALL (*) + device listen + local opens + history-discovered GRC ids. */
   const meshcomChatChannels = useMemo(() => {
-    const pills: { index: number; name: string }[] = [{ index: 0, name: t('meshcom.channelAll') }];
-    const seen = new Set<number>([0]);
+    const historyIds: number[] = [];
+    const seenHist = new Set<number>();
     for (const msg of meshcomUiMessages) {
       const ch = msg.channel;
-      if (typeof ch !== 'number' || ch <= 0 || seen.has(ch)) continue;
-      seen.add(ch);
-      pills.push({ index: ch, name: t('meshcom.channelGroup', { id: ch }) });
+      if (typeof ch !== 'number' || ch <= 0 || seenHist.has(ch)) continue;
+      seenHist.add(ch);
+      historyIds.push(ch);
     }
-    return pills;
-  }, [meshcomUiMessages, t]);
+    const listenGroupIds = meshcomListenGroupIdsFromSnapshot(
+      meshcomPanelActions.deviceCommands.settings,
+    );
+    return buildMeshcomChatChannels({
+      listenGroupIds,
+      // meshcomGrcLocalEpoch is the subscribe snapshot (semicolon-joined ids).
+      localGroupIds: parseMeshcomGrcListenList(meshcomGrcLocalEpoch),
+      historyGroupIds: historyIds,
+      labelAll: t('meshcom.channelAll'),
+      labelGroup: (id) => t('meshcom.channelGroup', { id }),
+    });
+  }, [meshcomGrcLocalEpoch, meshcomPanelActions.deviceCommands.settings, meshcomUiMessages, t]);
 
   /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannelsByProtocol = useMemo(
@@ -5759,6 +5786,30 @@ function AppContent() {
                                     onDeleteMeshcoreChannel={
                                       chatCapabilities.hasCompanionContactManagementConfig
                                         ? meshcorePanelActions.meshcoreDeleteChannel
+                                        : undefined
+                                    }
+                                    meshcomGrcListenIds={
+                                      chatProtocol === 'meshcom'
+                                        ? meshcomListenGroupIdsFromSnapshot(
+                                            meshcomPanelActions.deviceCommands.settings,
+                                          )
+                                        : undefined
+                                    }
+                                    meshcomGrcCanApplyToDevice={
+                                      chatProtocol === 'meshcom' &&
+                                      meshcomPanelActions.deviceCommands.available
+                                    }
+                                    onMeshcomBookGrc={
+                                      chatProtocol === 'meshcom' &&
+                                      meshcomPanelActions.deviceCommands.available
+                                        ? async (ids) => {
+                                            const arg = formatMeshcomGrcListenList(
+                                              ids.slice(0, MESHCOM_GRC_MAX_SLOTS),
+                                            );
+                                            const line = arg ? `--setgrc ${arg}` : '--setgrc';
+                                            await meshcomPanelActions.deviceCommands.run(line);
+                                            await meshcomPanelActions.deviceCommands.refreshSettings();
+                                          }
                                         : undefined
                                     }
                                     onImportContactFromQr={
