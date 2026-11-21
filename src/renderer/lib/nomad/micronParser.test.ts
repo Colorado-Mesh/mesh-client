@@ -1128,6 +1128,17 @@ describe('buildNomadLinkRequest', () => {
       embeddedFieldsSpec: 'a=1|b=2',
     });
   });
+
+  it('parses multi-variable forum thread destinations with cat and thread specs', () => {
+    const destination =
+      '9ce92808be498e9e05590ff27cbfdfe4:/page/forum/thread.mu`cat=general|thread=rns-161-released';
+    const result = buildNomadLinkRequest(destination, null, null);
+    expect(result.destination).toBe('9ce92808be498e9e05590ff27cbfdfe4:/page/forum/thread.mu');
+    expect(result.requestData).toEqual({
+      var_cat: 'general',
+      var_thread: 'rns-161-released',
+    });
+  });
 });
 
 describe('nomad page requestData helpers', () => {
