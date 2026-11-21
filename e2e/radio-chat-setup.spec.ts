@@ -21,6 +21,11 @@ test.afterEach(async () => {
   if (radio) await radio.close();
 });
 
+/** The sync button's own announcement in the header; the matching toast carries the same role. */
+function syncAnnouncement(page: LaunchedApp['page'], role: 'status' | 'alert', text: string) {
+  return page.getByRole('banner').getByRole(role).filter({ hasText: text });
+}
+
 async function resizeChatWindow({ app, page }: LaunchedApp, width: number, height: number) {
   await app.evaluate(
     ({ BrowserWindow }, size) => {
@@ -92,26 +97,20 @@ test('fresh opt-in defaults, radio import/sync, drag/A–Z and restart persisten
 
   radio.setChats(['Zulu', 'Alpha', 'Beta', 'Delta'], ['Zulu Room', 'Alpha Room', 'Delta Room']);
   await page.getByRole('button', { name: 'Sync chats from radio', exact: true }).click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeVisible();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Delta', exact: true })).toBeVisible();
   radio.setReadFailure(true);
   await page.getByRole('button', { name: 'Sync chats from radio', exact: true }).click();
-  await expect(page.getByRole('alert').filter({ hasText: 'Could not read chats' })).toBeVisible();
+  await expect(syncAnnouncement(page, 'alert', 'Could not read chats')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Delta', exact: true })).toBeVisible();
   radio.setReadFailure(false);
   await page.getByRole('button', { name: 'Sync chats from radio', exact: true }).click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeVisible();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeVisible();
 
   // A complete snapshot clears stale on-radio flags without deleting stored rooms.
   radio.setChats(['Zulu', 'Alpha', 'Beta', 'Delta'], ['Zulu Room', 'Delta Room']);
   await page.getByRole('button', { name: 'Sync chats from radio', exact: true }).click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeVisible();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeVisible();
   await expect
     .poll(async () =>
       page.evaluate(async () => {
@@ -327,7 +326,7 @@ test('stalled radio sync closes the old stream and reconnect recovers', async ()
   await sync.click();
   await expect(sync).toHaveAttribute('aria-busy', 'true');
   await expect(sync).toBeDisabled();
-  await expect(page.getByRole('alert').filter({ hasText: 'Could not read chats' })).toBeVisible({
+  await expect(syncAnnouncement(page, 'alert', 'Could not read chats')).toBeVisible({
     timeout: 35_000,
   });
   await expect(sync).toBeDisabled();
@@ -337,9 +336,7 @@ test('stalled radio sync closes the old stream and reconnect recovers', async ()
   await openPanel(page, 'Chat');
   await expect(sync).toBeEnabled();
   await sync.click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeVisible();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeVisible();
   expect(radio.commands).not.toContain(14);
   expect(launched.crashed).toBe(false);
 });
@@ -376,9 +373,7 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
     page.getByRole('tooltip').filter({ hasText: 'Sync chats from radio' }),
   ).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeAttached();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeAttached();
   await page.evaluate(async () => {
     const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
     await api.ai.setEnabled(true);
@@ -514,7 +509,7 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
   }
   radio.setReadFailure(true);
   await sync.click();
-  await expect(page.getByRole('alert').filter({ hasText: 'Could not read chats' })).toBeAttached();
+  await expect(syncAnnouncement(page, 'alert', 'Could not read chats')).toBeAttached();
   const toast = page.locator('[data-toast-stack]').getByText(/Could not read chats/);
   await expect(toast).toBeVisible();
   await expect(
@@ -530,8 +525,6 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
   await expect(region.getByRole('button')).toHaveCount(24);
   radio.setReadFailure(false);
   await sync.click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
-  ).toBeAttached();
+  await expect(syncAnnouncement(page, 'status', 'Chats synced from radio.')).toBeAttached();
   expect(launched.crashed).toBe(false);
 });
