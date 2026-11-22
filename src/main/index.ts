@@ -153,6 +153,7 @@ import {
   updateContactGroup,
   upsertMeshcorePathHistory,
   upsertNodePath,
+  wasDatabaseCreatedThisLaunch,
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { resetDurableRendererData, seedDurableRendererSettings } from './durableRendererSettings';
@@ -5543,6 +5544,7 @@ void (async () => {
       assertIpcSender: typeof assertIpcSender;
       getDbForIpc: typeof getDbForIpc;
       finishDbIpcHandler: typeof finishDbIpcHandler;
+      wasDatabaseCreatedThisLaunch: typeof wasDatabaseCreatedThisLaunch;
     }) => void;
   };
   mod.registerIdentityHydrationIpcHandlers({
@@ -5550,6 +5552,7 @@ void (async () => {
     assertIpcSender,
     getDbForIpc,
     finishDbIpcHandler,
+    wasDatabaseCreatedThisLaunch,
   });
 })().catch((err: unknown) => {
   console.error(

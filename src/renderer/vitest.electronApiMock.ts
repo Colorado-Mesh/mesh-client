@@ -90,6 +90,8 @@ export function createElectronAPIMock(): ElectronAPI {
       onPackProgress: vi.fn().mockReturnValue(() => {}),
     },
     db: {
+      // Existing install: renderer tests never see the first-run picker unless they opt in.
+      wasCreatedThisLaunch: vi.fn().mockResolvedValue(false),
       getIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),
       saveIncidents: vi.fn().mockResolvedValue(undefined),
       seedIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),

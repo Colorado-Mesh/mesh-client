@@ -116,11 +116,20 @@ export interface IdentityHydrationIpcDeps {
   assertIpcSender: (event: unknown, channel: string) => void;
   getDbForIpc: (channel: string) => NodeSqliteDB | null;
   finishDbIpcHandler: (channel: string, err: unknown) => void;
+  /** `wasDatabaseCreatedThisLaunch` from database.ts (first-run setup, issue #1542). */
+  wasDatabaseCreatedThisLaunch: () => boolean;
 }
 
 /** Register batched identity-hydration IPC (called from main after sibling load). */
 export function registerIdentityHydrationIpcHandlers(deps: IdentityHydrationIpcDeps): void {
   const { ipcMain, assertIpcSender, getDbForIpc, finishDbIpcHandler } = deps;
+
+  // Lives in this sibling (not index.js) to keep the measured main bundle under budget. Lets the
+  // renderer offer first-run protocol setup only on a fresh install.
+  ipcMain.handle('db:wasCreatedThisLaunch', (event) => {
+    assertIpcSender(event, 'db:wasCreatedThisLaunch');
+    return deps.wasDatabaseCreatedThisLaunch();
+  });
 
   ipcMain.handle('db:getMessages', (event, channel?: unknown, limit: unknown = 200) => {
     try {

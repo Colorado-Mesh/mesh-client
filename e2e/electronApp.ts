@@ -31,6 +31,11 @@ export interface LaunchAppOptions {
   userDataDir?: string;
   /** When true, closeApp/teardown will not delete userDataDir. */
   retainUserData?: boolean;
+  /**
+   * When true, the app sees its real fresh-database answer and shows the first-run protocol
+   * picker. Otherwise the fixture reports an existing install so specs start on the app.
+   */
+  firstRun?: boolean;
 }
 
 export interface LaunchedApp {
@@ -153,6 +158,8 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   env.MESH_E2E_PROFILE_TOKEN = profileToken;
   env.MESH_E2E_PACKAGED = '0';
   delete env.MESH_E2E_SEED_LEGACY;
+  if (options.firstRun) env.MESH_E2E_FIRST_RUN = '1';
+  else delete env.MESH_E2E_FIRST_RUN;
   // Test the production build even when another project is serving on port 5173.
   env.VITE_DEV_SERVER_URL = pathToFileURL(
     path.join(repoRoot, 'dist', 'renderer', 'index.html'),

@@ -80,6 +80,20 @@ test.describe('actual packaged renderer artifact', () => {
     await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible({
       timeout: 45000,
     });
+    // A launch that creates the database opens the first-run protocol picker over the app.
+    // This spec covers upgrades, so skip setup; skipping marks it done for later launches.
+    const freshDatabase = await page.evaluate(() =>
+      (
+        window as unknown as {
+          electronAPI: { db: { wasCreatedThisLaunch: () => Promise<boolean> } };
+        }
+      ).electronAPI.db.wasCreatedThisLaunch(),
+    );
+    if (freshDatabase) {
+      const picker = page.getByRole('dialog', { name: 'Choose your protocols' });
+      await picker.getByRole('button', { name: 'Skip setup' }).click({ timeout: 45000 });
+      await expect(picker).toBeHidden();
+    }
     expect(
       await app.evaluate(({ app: native }) => ({
         packaged: native.isPackaged,
