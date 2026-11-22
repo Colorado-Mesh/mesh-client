@@ -3512,7 +3512,8 @@
 <li>Select the radio in mesh-client and enter the <strong>PIN shown on the radio's screen</strong> when asked. If the connect fails again, press <strong>Remove &amp; Re-pair Device</strong> in the connection panel: mesh-client removes the stale Windows bond, asks for the PIN, pairs, and connects.</li>
 <li>A wrong PIN keeps the PIN prompt open so you can retry.</li>
 <li>If pairing still fails, clear the radio's stored pairings from the MeshCore app or CLI, or connect over USB serial (Companion USB firmware) to confirm the radio works.</li>
-<li><strong>Try in the official MeshCore app first</strong>: if the device connects there, it will work in Mesh-Client.</li>
+<li><strong>Windows: PIN pairing succeeds, then connect times out</strong> (<code>Bluetooth connection timed out while opening MeshCore over sidecar GATT</code> / logs show <code>gatt connect stage</code> stuck at <code>discover_services</code>, or <code>Uncached characteristic discovery timed out, falling back to cached mode</code> → <code>write characteristic missing</code>): this is a WinRT GATT discovery failure after a good bond (<a href="https://github.com/deviceplug/btleplug/issues/325">btleplug#325</a>), not a wrong PIN. mesh-client recovers with an early GATT keep-alive, one disconnect/rediscover, and a UUID-targeted WinRT cache warm-up (see <a href="../development/ble-serial/#sidecar-gatt-btleplug">BLE and serial</a>). Still try <strong>Remove &amp; Re-pair Device</strong>, toggle Windows Bluetooth, and power-cycle the radio; MeshCore desktop (Chrome Web Bluetooth) working on the same PC does not rule this out.</li>
+<li><strong>Try in the official MeshCore app first</strong>: success there confirms the radio and companion firmware are healthy, but it does <strong>not</strong> guarantee Mesh Client will connect (Windows GATT discovery can still fail after a good bond — see the PIN-then-timeout bullet above).</li>
 <li>If Bluetooth fails, try serial (USB) or HTTP as alternatives.</li>
 </ul>
 <p><strong>USB (Serial):</strong></p>
@@ -3628,7 +3629,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 02:36:14 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 20:02:42 UTC">November 22, 2026</span>
   </span>
 
     
