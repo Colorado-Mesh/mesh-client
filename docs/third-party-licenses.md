@@ -112,11 +112,11 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 
 ## Rust sidecar dependencies
 
-Licenses for all 397 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
+Licenses for all 399 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
 
 | License                                             | Crates |
 | --------------------------------------------------- | ------ |
-| MIT OR Apache-2.0                                   | 197    |
+| MIT OR Apache-2.0                                   | 199    |
 | MIT                                                 | 75     |
 | Apache-2.0 OR MIT                                   | 29     |
 | MIT/Apache-2.0                                      | 12     |

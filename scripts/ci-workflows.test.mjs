@@ -539,6 +539,43 @@ describe('CI workflow contracts', () => {
     expect(metaDl?.with?.name).toContain('test-mesh-client-windows-meta-');
   });
 
+  it('release uploads Windows Setup installers like Build Binaries (split artifacts)', () => {
+    const workflow = load(read('.github/workflows/release.yaml'));
+    const releaseSteps = workflow.jobs.release.steps;
+    const resolve = releaseSteps.find(
+      (step) => step.name === 'Resolve Windows Setup paths for upload',
+    );
+    expect(resolve?.if).toBe("matrix.os == 'windows-latest'");
+    expect(resolve?.run).toContain('assertWinSetupInstallers');
+
+    const x64 = releaseSteps.find(
+      (step) => step.name === 'Upload Windows x64 Setup (direct download)',
+    );
+    expect(x64?.with?.archive).toBe(false);
+    expect(x64?.with?.path).toContain('win_setup.outputs.x64');
+
+    const arm64 = releaseSteps.find(
+      (step) => step.name === 'Upload Windows arm64 Setup (direct download)',
+    );
+    expect(arm64?.with?.archive).toBe(false);
+    expect(arm64?.with?.path).toContain('win_setup.outputs.arm64');
+
+    const meta = releaseSteps.find((step) => step.name === 'Upload Windows meta (latest.yml)');
+    expect(meta?.with?.name).toContain('mesh-client-windows-meta-');
+    expect(meta?.with?.path).toContain('latest.yml');
+
+    const smokeSteps = workflow.jobs['packaging-smoke'].steps;
+    const setupDl = smokeSteps.find((step) => step.name === 'Download Windows Setup installers');
+    expect(setupDl?.if).toBe("matrix.artifact_mode == 'windows-split'");
+    expect(setupDl?.with?.pattern).toBe('Mesh-client-Setup-*');
+
+    const metaDl = smokeSteps.find((step) => step.name === 'Download Windows meta artifact');
+    expect(metaDl?.with?.name).toContain('mesh-client-windows-meta-');
+    expect(releaseSteps.find((s) => s.with?.name === 'mesh-client-windows-${{ github.sha }}')).toBe(
+      undefined,
+    );
+  });
+
   it('requires macOS signing and notarization for every release path', () => {
     const workflow = load(read('.github/workflows/release.yaml'));
     const releaseSteps = workflow.jobs.release.steps;

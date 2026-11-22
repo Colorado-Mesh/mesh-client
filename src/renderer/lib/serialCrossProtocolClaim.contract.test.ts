@@ -107,6 +107,28 @@ describe('cross-protocol serial claim contracts', () => {
     );
   });
 
+  const HANDLE_RF_CONNECT_FAILURE_RE =
+    /const handleRfConnectFailure = useCallback\([\s\S]*?\n {2}\);/;
+
+  it('keeps reconnect params on RF connect failure while dropping failed serial holders', () => {
+    const meshtasticFailure = HANDLE_RF_CONNECT_FAILURE_RE.exec(MESHTASTIC_RUNTIME)?.[0];
+    expect(meshtasticFailure).toBeDefined();
+    expect(meshtasticFailure).toContain('connectionParamsRef.current.serialPort = null');
+    expect(meshtasticFailure).not.toContain('connectionParamsRef.current = null');
+
+    const meshcoreFailure = HANDLE_RF_CONNECT_FAILURE_RE.exec(MESHCORE_RUNTIME)?.[0];
+    expect(meshcoreFailure).toBeDefined();
+    expect(meshcoreFailure).toContain('meshcoreConnectionParamsRef.current.serialPort = null');
+    expect(meshcoreFailure).not.toContain('meshcoreConnectionParamsRef.current = null');
+
+    const meshcomFailure = HANDLE_RF_CONNECT_FAILURE_RE.exec(MESHCOM_RUNTIME)?.[0];
+    expect(meshcomFailure).toBeDefined();
+    expect(meshcomFailure).not.toContain('connectionParamsRef.current = null');
+    expect(MESHCOM_RUNTIME).toMatch(
+      /isSerialConnected:\s*\(\)\s*=>[\s\S]*?driverIdentityIdRef\.current != null/,
+    );
+  });
+
   it('runtimes register releaseHold for serial disconnect targets', () => {
     expect(MESHTASTIC_RUNTIME).toMatch(
       /registerMeshtasticSerialDisconnectTarget\(\{[\s\S]*?releaseHold:/,

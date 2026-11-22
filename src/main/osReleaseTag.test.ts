@@ -64,6 +64,14 @@ describe('osReleaseTag', () => {
     expect(execFile).not.toHaveBeenCalled();
   });
 
+  it('readWindowsUpdateBuildRevision parses REG_DWORD decimal from reg.exe', () => {
+    const execFile = vi.fn(
+      () =>
+        '\nHKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\n    UBR    REG_DWORD    9974\n',
+    ) as unknown as typeof execFileSync;
+    expect(readWindowsUpdateBuildRevision(execFile, 'win32')).toBe(9974);
+  });
+
   it('readWindowsUpdateBuildRevision parses REG_DWORD hex from reg.exe', () => {
     const execFile = vi.fn(
       () =>

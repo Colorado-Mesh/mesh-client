@@ -55,15 +55,19 @@ export function routeSerialServiceDisconnect(port: SerialPort): void {
   const now = Date.now();
   if (now - lastSerialDisconnectNotifyAt < SERIAL_DISCONNECT_DEBOUNCE_MS) return;
 
-  let notified = false;
   const tryNotify = (target: SerialDisconnectTarget | null | undefined) => {
-    if (notified || !target?.isSerialConnected()) return;
-    notified = true;
+    if (!target?.isSerialConnected()) return false;
     lastSerialDisconnectNotifyAt = now;
     target.onDisconnected();
+    return true;
   };
 
   for (const target of serialDisconnectTargets.values()) {
-    tryNotify(target);
+    const open = target?.getOpenSerialPort?.() ?? null;
+    if (open != null && open === port && tryNotify(target)) return;
+  }
+
+  for (const target of serialDisconnectTargets.values()) {
+    if (tryNotify(target)) return;
   }
 }

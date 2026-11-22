@@ -35,10 +35,15 @@ export function readWindowsUpdateBuildRevision(
       ['query', 'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', '/v', 'UBR'],
       { encoding: 'utf8', windowsHide: true, timeout: 3_000 },
     );
-    const m = /\bUBR\s+REG_DWORD\s+0x([0-9a-fA-F]+)\b/i.exec(out);
-    if (!m?.[1]) return null;
-    const n = Number.parseInt(m[1], 16);
-    return Number.isFinite(n) && n >= 0 ? n : null;
+    const hex = /\bUBR\s+REG_DWORD\s+0x([0-9a-fA-F]+)\b/i.exec(out);
+    if (hex?.[1]) {
+      const n = Number.parseInt(hex[1], 16);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    }
+    const decimal = /\bUBR\s+REG_DWORD\s+(?!0x)(\d+)\b/i.exec(out);
+    if (!decimal?.[1]) return null;
+    const n = Number.parseInt(decimal[1], 10);
+    return Number.isFinite(n) && n >= 0 && n <= 65_535 ? n : null;
   } catch {
     // catch-no-log-ok registry query optional for triage tags
     return null;

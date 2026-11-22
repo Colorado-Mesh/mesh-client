@@ -1313,7 +1313,7 @@
         "openFailedLinuxHint": "在Linux ，这通常意味着您的用户不在拨出组中（ sudo usermod -aG dialout $ USER ，然后注销并重新登录） ，或者其他程序正在使用端口（关闭闪光灯、ModemManager或串行终端）。",
         "openFailedWindowsHint": "确保安装了正确的USB驱动程序（ CH340、CP210x或FTDI ） ，使用COM端口关闭任何其他应用程序，然后拔下并重新插入电缆。",
         "openFailedGenericHint": "使用串行端口关闭任何其他应用程序，然后拔下并重新插入USB电缆，然后重试。",
-        "inAppHoldHint": "{{protocols}} 在网格客户端中仍有USB个串行连接。断开该协议的串行会话（或切换协议并断开连接），然后重试。"
+        "inAppHoldHint": "{{protocols}} 在 Mesh Client 中仍占用 USB 串口。请断开该协议的串口会话（或切换协议并断开连接）后重试。"
       },
       "http": {
         "timeoutMdnsWindows": "在 Windows 上，meshtastic.local 需要 Bonjour（与 iTunes 一起安装）。请改用设备的 IP 地址。",
