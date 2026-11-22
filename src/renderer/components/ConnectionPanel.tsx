@@ -25,6 +25,7 @@ import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnec
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
+import { cancelAllLoraRfAutoConnect } from '@/renderer/lib/serialPortClaim';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   LETSMESH_MQTT_AUTH_DOCS_URL,
@@ -1724,7 +1725,13 @@ export default function ConnectionPanel({
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
     // a manual TCP/serial/HTTP connect (orphan TCP socket + connectType flip).
     // Mount auto-connect lives in ProtocolAutoConnectCoordinator — cancel that gate too.
-    cancelProtocolRfAutoConnect(protocol);
+    // Serial: cancel every LoRa protocol so a background Meshtastic serial auto-connect cannot
+    // re-grab the port while the MeshCore/MeshCom picker is open.
+    if (connectionType === 'serial') {
+      cancelAllLoraRfAutoConnect();
+    } else {
+      cancelProtocolRfAutoConnect(protocol);
+    }
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for manual connect');
     }

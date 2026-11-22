@@ -1,0 +1,154 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('./protocolRfAutoConnectGate', () => ({
+  cancelProtocolRfAutoConnect: vi.fn(),
+}));
+
+vi.mock('./serialPortSignature', () => ({
+  getPortSignature: vi.fn((port: SerialPort) => port.getInfo()),
+  loadLastSerialPortSignature: vi.fn(() => null),
+  signaturesEqual: vi.fn(
+    (
+      a: { usbVendorId?: number; usbProductId?: number; bluetoothServiceClassId?: string } | null,
+      b: { usbVendorId?: number; usbProductId?: number; bluetoothServiceClassId?: string },
+    ) => {
+      if (!a) return false;
+      return (
+        a.usbVendorId === b.usbVendorId &&
+        a.usbProductId === b.usbProductId &&
+        (a.bluetoothServiceClassId ?? null) === (b.bluetoothServiceClassId ?? null)
+      );
+    },
+  ),
+}));
+
+import { cancelProtocolRfAutoConnect } from './protocolRfAutoConnectGate';
+import {
+  registerMeshcomSerialDisconnectTarget,
+  registerMeshcoreSerialDisconnectTarget,
+  registerMeshtasticSerialDisconnectTarget,
+} from './serialDisconnectRouter';
+import { cancelAllLoraRfAutoConnect, releaseConflictingSerialSessions } from './serialPortClaim';
+import { loadLastSerialPortSignature } from './serialPortSignature';
+
+function makePort(info: {
+  usbVendorId?: number;
+  usbProductId?: number;
+  bluetoothServiceClassId?: string;
+}): SerialPort {
+  return {
+    readable: null,
+    writable: null,
+    open: vi.fn(),
+    close: vi.fn(),
+    forget: vi.fn(),
+    getInfo: () => info,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  } as unknown as SerialPort;
+}
+
+describe('serialPortClaim', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    registerMeshtasticSerialDisconnectTarget(null);
+    registerMeshcoreSerialDisconnectTarget(null);
+    registerMeshcomSerialDisconnectTarget(null);
+    vi.mocked(loadLastSerialPortSignature).mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    registerMeshtasticSerialDisconnectTarget(null);
+    registerMeshcoreSerialDisconnectTarget(null);
+    registerMeshcomSerialDisconnectTarget(null);
+  });
+
+  it('releaseConflictingSerialSessions releases a same-port holder and cancels its auto-connect', async () => {
+    const shared = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => shared,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcore', shared);
+
+    expect(releaseHold).toHaveBeenCalledTimes(1);
+    expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('releaseConflictingSerialSessions yields on matching USB signature without live port handle', async () => {
+    const claim = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    vi.mocked(loadLastSerialPortSignature).mockReturnValue({
+      usbVendorId: 0x303a,
+      usbProductId: 0x1001,
+    });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcore', claim);
+
+    expect(releaseHold).toHaveBeenCalledTimes(1);
+    expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('releaseConflictingSerialSessions leaves a different USB device alone', async () => {
+    const held = makePort({ usbVendorId: 0x1111, usbProductId: 0x2222 });
+    const claim = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => held,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcore', claim);
+
+    expect(releaseHold).not.toHaveBeenCalled();
+    expect(cancelProtocolRfAutoConnect).not.toHaveBeenCalled();
+  });
+
+  it('releaseConflictingSerialSessions skips the claiming protocol itself', async () => {
+    const port = makePort({ usbVendorId: 1, usbProductId: 2 });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshcoreSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => port,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcore', port);
+
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('releaseConflictingSerialSessions skips disconnected protocols', async () => {
+    const port = makePort({ usbVendorId: 1, usbProductId: 2 });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => false,
+      getOpenSerialPort: () => port,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcore', port);
+
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('cancelAllLoraRfAutoConnect cancels meshtastic, meshcore, and meshcom', () => {
+    cancelAllLoraRfAutoConnect();
+    expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshtastic');
+    expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshcore');
+    expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshcom');
+  });
+});

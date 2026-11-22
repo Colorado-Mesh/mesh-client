@@ -5068,14 +5068,6 @@ export function useMeshtasticRuntime() {
     });
   }, [meshtasticIdentityId, state, mqttStatus]);
 
-  useEffect(() => {
-    registerMeshtasticSerialDisconnectTarget({
-      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
-      onDisconnected: () => handleConnectionLostRef.current(),
-    });
-    return () => registerMeshtasticSerialDisconnectTarget(null);
-  }, []);
-
   const latchExplicitDisconnect = useCallback(() => {
     const already = meshtasticExplicitDisconnectRef.current;
     meshtasticExplicitDisconnectRef.current = true;
@@ -5083,6 +5075,27 @@ export function useMeshtasticRuntime() {
   }, []);
   const clearExplicitDisconnectLatch = useCallback(() => {
     meshtasticExplicitDisconnectRef.current = false;
+  }, []);
+
+  const releaseSerialHoldRef = useRef<() => Promise<void>>(async () => {});
+  releaseSerialHoldRef.current = async () => {
+    latchExplicitDisconnect();
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  };
+
+  useEffect(() => {
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
+      getOpenSerialPort: () => {
+        const fromParams = connectionParamsRef.current?.serialPort ?? null;
+        if (fromParams) return fromParams;
+        const device = deviceRef.current;
+        return device ? getSerialPortFromMeshTransport(device.transport) : null;
+      },
+      onDisconnected: () => handleConnectionLostRef.current(),
+      releaseHold: () => releaseSerialHoldRef.current(),
+    });
+    return () => registerMeshtasticSerialDisconnectTarget(null);
   }, []);
 
   useEffect(() => {

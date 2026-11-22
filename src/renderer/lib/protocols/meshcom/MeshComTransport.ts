@@ -10,6 +10,7 @@ import { closeSerialPortIfOpen } from '../../connection';
 import { encodeMeshcomBleCommand, MESHCOM_BLE_HELLO } from '../../meshcom/meshcomBleFrame';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { noteSerialTransportLoss } from '../../serialDeliveryHealth';
+import { releaseConflictingSerialSessions } from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
@@ -141,6 +142,7 @@ class WebSerialMeshComConnection implements MeshComConnection {
       port = await navigator.serial.requestPort();
     }
 
+    await releaseConflictingSerialSessions('meshcom', port);
     await closeSerialPortIfOpen(port);
     persistSerialPortIdentity(port);
     await openSerialPortWithTimeout(port, MESHCOM_SERIAL_BAUD, 'MeshCom serial open');

@@ -21,6 +21,7 @@ import {
   isBleScanBusyErrorMessage,
 } from './reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from './reticulum/reticulumBleBondDesync';
+import { releaseConflictingSerialSessions } from './serialPortClaim';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -234,6 +235,8 @@ export async function createConnection(
       serialApi.requestPort = async (options?: { filters?: unknown[] }) => {
         const p = await origRequestPort(options);
         capturedSerialPort = p;
+        await releaseConflictingSerialSessions('meshtastic', p);
+        await closeSerialPortIfOpen(p);
         return p;
       };
       try {
@@ -353,9 +356,29 @@ export function getBlePeripheralIdFromMeshTransport(transport: unknown): string 
   return null;
 }
 
-/** Best-effort close of an open Web Serial port before reconnect. */
+/** Best-effort cancel/abort of Web Serial streams, then close (orphaned locks). */
 export async function closeSerialPortIfOpen(port: SerialPort): Promise<void> {
   if (!port.readable && !port.writable) return;
+  const readable = port.readable;
+  if (readable && typeof readable.cancel === 'function') {
+    try {
+      await readable.cancel();
+    } catch (e) {
+      console.debug(
+        `[connection] closeSerialPortIfOpen readable.cancel ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+  const writable = port.writable;
+  if (writable && typeof writable.abort === 'function') {
+    try {
+      await writable.abort();
+    } catch (e) {
+      console.debug(
+        `[connection] closeSerialPortIfOpen writable.abort ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
   try {
     await port.close();
   } catch (e) {
@@ -383,6 +406,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
   const port = selectGrantedSerialPort(ports, lastPortId);
+  await releaseConflictingSerialSessions('meshtastic', port);
   await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);
   console.debug(

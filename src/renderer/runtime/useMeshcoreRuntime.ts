@@ -242,7 +242,10 @@ import {
   runRadioChatOperation,
   waitForRadioChatSetup,
 } from '../lib/meshcore/meshcoreRadioChatSync';
-import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
+import {
+  attachMeshcoreSerialTransportLossWatch,
+  getSerialPortFromMeshcoreConnection,
+} from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
   clearMeshcoreOpenHopPendingUserTx,
   decideOpenHopUserTxAfterEnsureFailure,
@@ -10370,14 +10373,6 @@ export function useMeshcoreRuntime() {
     return () => setMeshcorePubKeyRegistryRefSync(null);
   }, []);
 
-  useEffect(() => {
-    registerMeshcoreSerialDisconnectTarget({
-      isSerialConnected: () => meshcoreConnectionParamsRef.current?.rfType === 'serial',
-      onDisconnected: () => handleMeshcoreConnectionLostRef.current(),
-    });
-    return () => registerMeshcoreSerialDisconnectTarget(null);
-  }, []);
-
   // Main reports the raw TCP socket's own 'close'/'error' event within milliseconds of the
   // real network failure (clean FIN or RST alike). Without this, TCP relied solely on the
   // passive stale/dead watchdog — which, unlike serial, doesn't exist for MeshCore's TCP
@@ -10470,6 +10465,26 @@ export function useMeshcoreRuntime() {
   }, []);
   const clearExplicitDisconnectLatch = useCallback(() => {
     meshcoreExplicitDisconnectRef.current = false;
+  }, []);
+
+  const releaseSerialHoldRef = useRef<() => Promise<void>>(async () => {});
+  releaseSerialHoldRef.current = async () => {
+    latchExplicitDisconnect();
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  };
+
+  useEffect(() => {
+    registerMeshcoreSerialDisconnectTarget({
+      isSerialConnected: () => meshcoreConnectionParamsRef.current?.rfType === 'serial',
+      getOpenSerialPort: () => {
+        const fromParams = meshcoreConnectionParamsRef.current?.serialPort ?? null;
+        if (fromParams) return fromParams;
+        return getSerialPortFromMeshcoreConnection(connRef.current);
+      },
+      onDisconnected: () => handleMeshcoreConnectionLostRef.current(),
+      releaseHold: () => releaseSerialHoldRef.current(),
+    });
+    return () => registerMeshcoreSerialDisconnectTarget(null);
   }, []);
 
   useEffect(() => {

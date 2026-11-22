@@ -26,11 +26,16 @@ vi.mock('../../connection', () => ({
   closeSerialPortIfOpen: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../serialPortClaim', () => ({
+  releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { closeSerialPortIfOpen } from '../../connection';
 import {
   type MeshcoreEchoFilterableConnection,
   patchMeshcoreCompanionTxEchoFilter,
 } from '../../meshcoreCompanionTxEchoFilter';
+import { releaseConflictingSerialSessions } from '../../serialPortClaim';
 import {
   createMeshCoreConnection,
   patchMeshcoreWebSerialWritable,
@@ -155,6 +160,7 @@ describe('createMeshCoreConnection serial', () => {
 
     await createMeshCoreConnection({ transport: 'serial' });
 
+    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcore', port);
     expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
     expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
   });

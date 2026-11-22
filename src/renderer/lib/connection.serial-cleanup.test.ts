@@ -1,6 +1,6 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSerialPortIfOpen, reconnectSerial, safeDisconnect } from './connection';
 import {
@@ -15,6 +15,12 @@ vi.mock('@meshtastic/transport-web-serial', () => ({
     createFromPort: vi.fn(),
   },
 }));
+
+vi.mock('./serialPortClaim', () => ({
+  releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { releaseConflictingSerialSessions } from './serialPortClaim';
 
 interface MockSerialPort {
   portId?: string;
@@ -56,6 +62,19 @@ describe('connection serial cleanup', () => {
     expect(port.close).toHaveBeenCalledTimes(1);
   });
 
+  it('closeSerialPortIfOpen cancels readable and aborts writable before close', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    const abort = vi.fn().mockResolvedValue(undefined);
+    const port = makeMockSerialPort({
+      readable: { cancel } as unknown as ReadableStream,
+      writable: { abort } as unknown as WritableStream,
+    });
+    await closeSerialPortIfOpen(port as unknown as SerialPort);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(abort).toHaveBeenCalledTimes(1);
+    expect(port.close).toHaveBeenCalledTimes(1);
+  });
+
   it('closeSerialPortIfOpen skips close when port is already closed', async () => {
     const port = makeMockSerialPort({ readable: null, writable: null });
     await closeSerialPortIfOpen(port as unknown as SerialPort);
@@ -72,7 +91,7 @@ describe('connection serial cleanup', () => {
     expect(port.close).toHaveBeenCalledTimes(1);
   });
 
-  it('reconnectSerial closes an open port before createFromPort', async () => {
+  it('reconnectSerial releases conflicts then closes before createFromPort', async () => {
     const port = makeMockSerialPort({ portId: 'saved-port' });
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
@@ -88,6 +107,7 @@ describe('connection serial cleanup', () => {
 
     await reconnectSerial('saved-port');
 
+    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshtastic', port);
     expect(port.close).toHaveBeenCalledTimes(1);
     expect(TransportWebSerial.createFromPort).toHaveBeenCalledWith(port, 115200);
   });

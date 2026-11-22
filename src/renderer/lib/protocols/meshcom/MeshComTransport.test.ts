@@ -14,6 +14,10 @@ vi.mock('../../connection', () => ({
   closeSerialPortIfOpen: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../serialPortClaim', () => ({
+  releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../../serialPortRecovery', () => ({
   openSerialPortWithTimeout: vi.fn().mockResolvedValue(undefined),
 }));
