@@ -186,6 +186,7 @@ jobs:
       # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
+        id: upload_macos
         # actions/upload-artifact v7.0.2
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -205,8 +206,25 @@ jobs:
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
+      - name: Summarize macOS download links
+        if: matrix.os == 'macos-latest'
+        env:
+          ARTIFACT_URL: ${{ steps.upload_macos.outputs.artifact-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '### macOS test-build downloads'
+            echo
+            echo "- **DMG/ZIP + latest-mac.yml + README:** [test-mesh-client-macos](${ARTIFACT_URL})"
+            echo
+            echo 'Prefer the link above (or the Actions Artifacts UI).'
+            echo 'Multi-file zip works with gh run download (see docs/ci-cd.md).'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Upload Linux Artifact
         if: matrix.os == 'ubuntu-latest'
+        id: upload_linux
         # actions/upload-artifact v7.0.2
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -219,6 +237,22 @@ jobs:
             release/latest-linux-arm64.yml
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
+
+      - name: Summarize Linux download links
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          ARTIFACT_URL: ${{ steps.upload_linux.outputs.artifact-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '### Linux test-build downloads'
+            echo
+            echo "- **AppImage/deb/rpm + updater yml + README:** [test-mesh-client-linux](${ARTIFACT_URL})"
+            echo
+            echo 'Prefer the link above (or the Actions Artifacts UI).'
+            echo 'Multi-file zip works with gh run download (see docs/ci-cd.md).'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       # archive: false ignores `name` and uses the file basename as the artifact name so
       # Actions UI click downloads the Setup .exe directly (multi-file zips look empty/broken).

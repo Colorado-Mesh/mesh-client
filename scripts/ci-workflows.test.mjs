@@ -478,6 +478,29 @@ describe('CI workflow contracts', () => {
     expect(read('.github/workflows/release.yaml')).toContain('assert-win-setup-installers.mjs');
   });
 
+  it('writes job-summary download links for macOS, Linux, and Windows Package jobs', () => {
+    const workflow = load(read('.github/workflows/build.yaml'));
+    const buildSteps = workflow.jobs.build.steps;
+
+    const macosUpload = buildSteps.find((step) => step.name === 'Upload macOS Artifact');
+    expect(macosUpload?.id).toBe('upload_macos');
+    const macosSummary = buildSteps.find((step) => step.name === 'Summarize macOS download links');
+    expect(macosSummary?.if).toBe("matrix.os == 'macos-latest'");
+    expect(macosSummary?.env?.ARTIFACT_URL).toContain('upload_macos.outputs.artifact-url');
+    expect(macosSummary?.run).toContain('GITHUB_STEP_SUMMARY');
+
+    const linuxUpload = buildSteps.find((step) => step.name === 'Upload Linux Artifact');
+    expect(linuxUpload?.id).toBe('upload_linux');
+    const linuxSummary = buildSteps.find((step) => step.name === 'Summarize Linux download links');
+    expect(linuxSummary?.if).toBe("matrix.os == 'ubuntu-latest'");
+    expect(linuxSummary?.env?.ARTIFACT_URL).toContain('upload_linux.outputs.artifact-url');
+    expect(linuxSummary?.run).toContain('GITHUB_STEP_SUMMARY');
+
+    const winSummary = buildSteps.find((step) => step.name === 'Summarize Windows download links');
+    expect(winSummary?.if).toBe("matrix.os == 'windows-latest'");
+    expect(winSummary?.run).toContain('GITHUB_STEP_SUMMARY');
+  });
+
   it('uploads Windows Setup installers as archive:false direct-download artifacts', () => {
     const workflow = load(read('.github/workflows/build.yaml'));
     const buildSteps = workflow.jobs.build.steps;

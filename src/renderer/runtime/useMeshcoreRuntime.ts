@@ -7127,11 +7127,13 @@ export function useMeshcoreRuntime() {
                 },
                 async ({ escalated }) => {
                   if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
+                  // Escalated resend already waited on the first attempt; skip another full idle.
                   return runMeshcoreRepeaterStatusRequest(conn, pubKey, {
                     hopsAway,
                     runSerialized: repeaterRemoteRpcRef.current,
-                    beforeSend: () =>
-                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    beforeSend: escalated
+                      ? undefined
+                      : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                   });
                 },
               );
@@ -7449,12 +7451,14 @@ export function useMeshcoreRuntime() {
                   repeaterRemoteRpcRef.current,
                   makeRepeaterLoginOpts(conn, nodeId, pubKey),
                 );
+                // Escalated resend already waited on the first attempt; skip another full idle.
                 const raw = await runMeshcoreRepeaterTelemetryRequest(conn, pubKey, {
                   hopsAway,
                   ...(opts?.timeoutMs != null ? { replyWaitCapMs: opts.timeoutMs } : {}),
                   runSerialized: repeaterRemoteRpcRef.current,
-                  beforeSend: () =>
-                    awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  beforeSend: escalated
+                    ? undefined
+                    : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                 });
                 applyMeshcoreTelemetryLpp(nodeId, raw.lppSensorData, 'rpc');
               },
@@ -7687,13 +7691,16 @@ export function useMeshcoreRuntime() {
                 },
                 async ({ escalated }) => {
                   if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
+                  // Escalated resend already waited on the first attempt; skip another full idle.
                   return runMeshcoreRepeaterBinaryRequest(
                     conn,
                     pubKey,
                     reqBytes,
                     { hopsAway },
                     repeaterRemoteRpcRef.current,
-                    () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    escalated
+                      ? undefined
+                      : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                   );
                 },
               );

@@ -321,9 +321,11 @@ test('ping reaches a zero-hop repeater after a status request reset its route', 
 
   const before = radio.events.length;
   await startRequest(page, 'Request status', 'none');
+  // Worst-case (settle + RF idle × attempts + reply wait + reset) can exceed 60s on
+  // slower runners (seen on macOS CI); keep asserting flood, not just resetPath.
   await expect
     .poll(() => trace(radio.events.slice(before)), {
-      timeout: 60_000,
+      timeout: 120_000,
       message: 'status never reset the route and flooded',
     })
     .toEqual(expect.arrayContaining(['resetPath', 'status:flood']));

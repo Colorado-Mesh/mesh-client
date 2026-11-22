@@ -174,6 +174,12 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     expect(statusBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
     expect(telemetryBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
     expect(neighborsBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
+    // Escalated flood/direct retry skips a second full RF-idle wait.
+    for (const body of [statusBody, telemetryBody, neighborsBody]) {
+      expect(body).toMatch(
+        /escalated\s*\?\s*undefined\s*:\s*\(\)\s*=>\s*awaitMeshcoreRepeaterAdminRfIdle/,
+      );
+    }
   });
 
   it('status and telemetry throw when disconnected (toast path), same as neighbors', () => {
