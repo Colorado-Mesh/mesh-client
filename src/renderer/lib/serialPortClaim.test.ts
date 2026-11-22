@@ -28,7 +28,12 @@ import {
   registerMeshcoreSerialDisconnectTarget,
   registerMeshtasticSerialDisconnectTarget,
 } from './serialDisconnectRouter';
-import { cancelAllLoraRfAutoConnect, releaseConflictingSerialSessions } from './serialPortClaim';
+import {
+  cancelAllLoraRfAutoConnect,
+  listInAppSerialHolders,
+  releaseConflictingSerialSessions,
+  snapshotLoraSerialConnected,
+} from './serialPortClaim';
 import { loadLastSerialPortSignature } from './serialPortSignature';
 
 function makePort(info: {
@@ -61,6 +66,66 @@ describe('serialPortClaim', () => {
     registerMeshtasticSerialDisconnectTarget(null);
     registerMeshcoreSerialDisconnectTarget(null);
     registerMeshcomSerialDisconnectTarget(null);
+  });
+
+  it('snapshotLoraSerialConnected reports each registered LoRa hold', () => {
+    expect(snapshotLoraSerialConnected()).toEqual({
+      meshtastic: false,
+      meshcore: false,
+      meshcom: false,
+    });
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      onDisconnected: vi.fn(),
+    });
+    registerMeshcomSerialDisconnectTarget({
+      isSerialConnected: () => false,
+      onDisconnected: vi.fn(),
+    });
+    expect(snapshotLoraSerialConnected()).toEqual({
+      meshtastic: true,
+      meshcore: false,
+      meshcom: false,
+    });
+  });
+
+  it('listInAppSerialHolders skips the claiming protocol and unmatched ports', () => {
+    const shared = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    const other = makePort({ usbVendorId: 0x1234, usbProductId: 0x5678 });
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => shared,
+      onDisconnected: vi.fn(),
+    });
+    registerMeshcomSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => other,
+      onDisconnected: vi.fn(),
+    });
+
+    expect(listInAppSerialHolders('meshcore')).toEqual(['meshtastic', 'meshcom']);
+    expect(listInAppSerialHolders('meshcore', shared)).toEqual(['meshtastic']);
+    expect(listInAppSerialHolders('meshtastic', shared)).toEqual([]);
+  });
+
+  it('releaseConflictingSerialSessions logs isSerialConnected before yield', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const shared = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => shared,
+      onDisconnected: vi.fn(),
+      releaseHold: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await releaseConflictingSerialSessions('meshcore', shared);
+
+    expect(debug).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '[serialPortClaim] open for meshcore; isSerialConnected={"meshtastic":true,"meshcore":false,"meshcom":false}',
+      ),
+    );
+    debug.mockRestore();
   });
 
   it('releaseConflictingSerialSessions releases a same-port holder and cancels its auto-connect', async () => {

@@ -1312,7 +1312,8 @@
         "portStillOpenHint": "El puerto serie USB no se liberó limpiamente. Salga de mesh-client por completo y vuelva a abrirlo, o desconecte y vuelva a enchufar el cable USB, luego conéctelo nuevamente.",
         "openFailedLinuxHint": "En Linux, esto a menudo significa que su usuario no está en el grupo de marcado (sudo usermod -aG dialout $USER, luego cierre la sesión y vuelva a iniciarla), u otro programa está utilizando el puerto (cerrar intermitentes, ModemManager o terminales serie).",
         "openFailedWindowsHint": "Asegúrese de que el controlador USB correcto esté instalado (CH340, CP210x o FTDI), cierre cualquier otra aplicación usando el puerto COM, luego desenchufe y vuelva a enchufar el cable.",
-        "openFailedGenericHint": "Cierre cualquier otra aplicación utilizando el puerto serie, luego desenchufe y vuelva a enchufar el cable USB e inténtelo de nuevo."
+        "openFailedGenericHint": "Cierre cualquier otra aplicación utilizando el puerto serie, luego desenchufe y vuelva a enchufar el cable USB e inténtelo de nuevo.",
+        "inAppHoldHint": "{{protocols}} todavía tiene una conexión serie USB en el cliente de malla. Desconecte la sesión serie de ese protocolo (o cambie de protocolo y desconecte) y, a continuación, inténtelo de nuevo."
       },
       "http": {
         "timeoutMdnsWindows": "En Windows, meshtastic.local requiere Bonjour (instalado con iTunes). Utilice la dirección IP del dispositivo en su lugar.",

@@ -18,6 +18,7 @@ vi.mock('@meshtastic/transport-web-serial', () => ({
 
 vi.mock('./serialPortClaim', () => ({
   releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+  logLoraSerialConnectedSnapshot: vi.fn(),
 }));
 
 import { releaseConflictingSerialSessions } from './serialPortClaim';

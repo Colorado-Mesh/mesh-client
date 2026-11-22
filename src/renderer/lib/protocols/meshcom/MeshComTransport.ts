@@ -10,7 +10,10 @@ import { closeSerialPortIfOpen } from '../../connection';
 import { encodeMeshcomBleCommand, MESHCOM_BLE_HELLO } from '../../meshcom/meshcomBleFrame';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { noteSerialTransportLoss } from '../../serialDeliveryHealth';
-import { releaseConflictingSerialSessions } from '../../serialPortClaim';
+import {
+  logLoraSerialConnectedSnapshot,
+  releaseConflictingSerialSessions,
+} from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
@@ -145,7 +148,12 @@ class WebSerialMeshComConnection implements MeshComConnection {
     await releaseConflictingSerialSessions('meshcom', port);
     await closeSerialPortIfOpen(port);
     persistSerialPortIdentity(port);
-    await openSerialPortWithTimeout(port, MESHCOM_SERIAL_BAUD, 'MeshCom serial open');
+    try {
+      await openSerialPortWithTimeout(port, MESHCOM_SERIAL_BAUD, 'MeshCom serial open');
+    } catch (err) {
+      logLoraSerialConnectedSnapshot('open failed', 'meshcom');
+      throw err;
+    }
 
     this.port = port;
     const rawWritable = port.writable;

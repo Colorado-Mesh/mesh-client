@@ -21,7 +21,10 @@ import {
   isBleScanBusyErrorMessage,
 } from './reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from './reticulum/reticulumBleBondDesync';
-import { releaseConflictingSerialSessions } from './serialPortClaim';
+import {
+  logLoraSerialConnectedSnapshot,
+  releaseConflictingSerialSessions,
+} from './serialPortClaim';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -254,6 +257,7 @@ export async function createConnection(
           console.debug(
             `[connection] TransportWebSerial.create failed ${err instanceof Error ? err.message : String(err)}`,
           );
+          logLoraSerialConnectedSnapshot('open failed', 'meshtastic');
           rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.create');
         }
       } finally {
@@ -429,6 +433,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     console.warn(
       `[connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,
     );
+    logLoraSerialConnectedSnapshot('open failed', 'meshtastic');
     logMeshtasticSerialStreamDiagnostics('reconnectSerial createFromPort failed', null, port);
     rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.createFromPort');
   }

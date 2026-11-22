@@ -25,7 +25,7 @@ import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnec
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
-import { cancelAllLoraRfAutoConnect } from '@/renderer/lib/serialPortClaim';
+import { cancelAllLoraRfAutoConnect, listInAppSerialHolders } from '@/renderer/lib/serialPortClaim';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   LETSMESH_MQTT_AUTH_DOCS_URL,
@@ -1785,7 +1785,9 @@ export default function ConnectionPanel({
       console.warn('[ConnectionPanel] handleConnect failed ' + errLikeToLogString(err));
       let errorMsg: string;
       if (connectionType === 'serial') {
-        errorMsg = humanizeSerialError(err, t);
+        errorMsg = humanizeSerialError(err, t, {
+          inAppHolders: listInAppSerialHolders(protocol),
+        });
       } else if (
         connectionType === 'http' ||
         connectionType === 'tcp' ||
@@ -2158,7 +2160,11 @@ export default function ConnectionPanel({
       onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err: unknown) => {
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
-        setError(humanizeSerialError(err, t));
+        setError(
+          humanizeSerialError(err, t, {
+            inAppHolders: listInAppSerialHolders(protocol),
+          }),
+        );
         setConnecting(false);
         setConnectionStage('');
       });

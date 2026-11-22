@@ -70,7 +70,8 @@ describe('cross-protocol serial claim contracts', () => {
   });
 
   it('ConnectionPanel serial Connect cancels all LoRa RF auto-connects', () => {
-    expect(CONNECTION_PANEL).toContain('import { cancelAllLoraRfAutoConnect }');
+    expect(CONNECTION_PANEL).toContain('cancelAllLoraRfAutoConnect');
+    expect(CONNECTION_PANEL).toMatch(/from ['"]@\/renderer\/lib\/serialPortClaim['"]/);
     expect(CONNECTION_PANEL).toMatch(
       /if \(connectionType === 'serial'\) \{\s*cancelAllLoraRfAutoConnect\(\);/,
     );
@@ -80,6 +81,23 @@ describe('cross-protocol serial claim contracts', () => {
     expect(SERIAL_PORT_CLAIM).toContain('cancelProtocolRfAutoConnect(protocol)');
     expect(SERIAL_PORT_CLAIM).toContain('await target.releaseHold()');
     expect(SERIAL_PORT_CLAIM).toMatch(/'meshtastic',\s*'meshcore',\s*'meshcom'/);
+  });
+
+  it('serial open paths log isSerialConnected snapshot on claim and open failure', () => {
+    expect(SERIAL_PORT_CLAIM).toContain('logLoraSerialConnectedSnapshot(');
+    expect(SERIAL_PORT_CLAIM).toContain("logLoraSerialConnectedSnapshot('open', claimingProtocol)");
+    expect(MESHCORE_TRANSPORT).toContain(
+      "logLoraSerialConnectedSnapshot('open failed', 'meshcore')",
+    );
+    expect(CONNECTION).toContain("logLoraSerialConnectedSnapshot('open failed', 'meshtastic')");
+    expect(MESHCOM_TRANSPORT).toContain("logLoraSerialConnectedSnapshot('open failed', 'meshcom')");
+  });
+
+  it('ConnectionPanel passes inAppHolders into humanizeSerialError', () => {
+    expect(CONNECTION_PANEL).toContain('listInAppSerialHolders');
+    expect(CONNECTION_PANEL).toMatch(
+      /humanizeSerialError\(err, t, \{\s*inAppHolders: listInAppSerialHolders\(protocol\)/,
+    );
   });
 
   it('runtimes register releaseHold for serial disconnect targets', () => {

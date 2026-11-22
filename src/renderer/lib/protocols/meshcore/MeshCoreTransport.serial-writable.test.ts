@@ -28,6 +28,7 @@ vi.mock('../../connection', () => ({
 
 vi.mock('../../serialPortClaim', () => ({
   releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+  logLoraSerialConnectedSnapshot: vi.fn(),
 }));
 
 import { closeSerialPortIfOpen } from '../../connection';
