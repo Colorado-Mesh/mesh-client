@@ -2310,7 +2310,7 @@ export function useMeshcoreRuntime() {
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
   const teardownMeshcoreConnEventListeners = useCallback(
-    (opts?: { driverDisconnect?: boolean; driverIdentityId?: string }) => {
+    (opts?: { driverDisconnect?: boolean; driverIdentityId?: string }): Promise<void> => {
       if (meshcoreIngestDetachRef.current) {
         meshcoreIngestDetachRef.current();
         meshcoreIngestDetachRef.current = null;
@@ -2325,12 +2325,15 @@ export function useMeshcoreRuntime() {
           ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
           : null);
       const shouldDriverDisconnect = opts?.driverDisconnect !== false;
+      let driverDisconnectPromise = Promise.resolve();
       if (driverIdentity && shouldDriverDisconnect) {
         meshcoreDriverConnectedRef.current = false;
         meshcorePendingDriverIdentityRef.current = null;
-        void connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
-          console.debug('[useMeshcoreRuntime] driver disconnect ' + errLikeToLogString(e));
-        });
+        driverDisconnectPromise = connectionDriver
+          .disconnect(driverIdentity)
+          .catch((e: unknown) => {
+            console.debug('[useMeshcoreRuntime] driver disconnect ' + errLikeToLogString(e));
+          });
       } else if (meshcoreIngressDetachRef.current) {
         try {
           meshcoreIngressDetachRef.current();
@@ -2352,6 +2355,7 @@ export function useMeshcoreRuntime() {
       clearMeshcorePubKeyRegistry();
       meshcoreConnEventListenersTeardownRef.current?.();
       meshcoreConnEventListenersTeardownRef.current = null;
+      return driverDisconnectPromise;
     },
     [],
   );
@@ -3643,7 +3647,7 @@ export function useMeshcoreRuntime() {
       if (driverIdentity) {
         meshcoreDriverConnectedRef.current = false;
         meshcorePendingDriverIdentityRef.current = null;
-        teardownMeshcoreConnEventListeners({
+        void teardownMeshcoreConnEventListeners({
           driverDisconnect: false,
           driverIdentityId: driverIdentity,
         });
@@ -3653,7 +3657,7 @@ export function useMeshcoreRuntime() {
           );
         });
       } else if (staleConn) {
-        teardownMeshcoreConnEventListeners({ driverDisconnect: false });
+        void teardownMeshcoreConnEventListeners({ driverDisconnect: false });
         await staleConn.close().catch((e: unknown) => {
           console.debug('[useMeshcoreRuntime] prepareRfConnect close ' + errLikeToLogString(e));
         });
@@ -3821,7 +3825,7 @@ export function useMeshcoreRuntime() {
           '[useMeshcoreRuntime] OpenHop user-TX reopen failed — restore OpenHop-accepted configured',
         );
         clearMeshcoreOpenHopPendingUserTx(new Error('MeshCore OpenHop user-TX reopen failed'));
-        teardownMeshcoreConnEventListeners({
+        void teardownMeshcoreConnEventListeners({
           driverDisconnect: true,
           driverIdentityId,
         });
@@ -3835,7 +3839,7 @@ export function useMeshcoreRuntime() {
         type === 'ble',
         resolveLastBlePeripheralId('meshcore') ?? null,
       );
-      teardownMeshcoreConnEventListeners({
+      void teardownMeshcoreConnEventListeners({
         driverDisconnect: true,
         driverIdentityId,
       });
@@ -3888,7 +3892,7 @@ export function useMeshcoreRuntime() {
         roomAutoLoginRetryTimerRef.current = null;
       }
       resetMeshcoreRoomAutoLoginSingleFlight();
-      teardownMeshcoreConnEventListeners({ driverDisconnect: disconnectDriver });
+      await teardownMeshcoreConnEventListeners({ driverDisconnect: disconnectDriver });
       if (!usedDriverConnect) {
         try {
           await connRef.current?.close();
@@ -4326,7 +4330,7 @@ export function useMeshcoreRuntime() {
     void (async () => {
       const driverIdentity =
         meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current;
-      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      await teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       connRef.current = null;
       meshcoreDriverConnectedRef.current = false;
       meshcorePendingDriverIdentityRef.current = null;
@@ -4367,7 +4371,7 @@ export function useMeshcoreRuntime() {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
       resetMeshcoreRoomAutoLoginSingleFlight();
-      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      void teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
       if (conn) {
@@ -7127,13 +7131,12 @@ export function useMeshcoreRuntime() {
                 },
                 async ({ escalated }) => {
                   if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
-                  // Escalated resend already waited on the first attempt; skip another full idle.
+                  // Bounded idle returns promptly when no TraceData is in flight.
                   return runMeshcoreRepeaterStatusRequest(conn, pubKey, {
                     hopsAway,
                     runSerialized: repeaterRemoteRpcRef.current,
-                    beforeSend: escalated
-                      ? undefined
-                      : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    beforeSend: () =>
+                      awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                   });
                 },
               );
@@ -7451,14 +7454,13 @@ export function useMeshcoreRuntime() {
                   repeaterRemoteRpcRef.current,
                   makeRepeaterLoginOpts(conn, nodeId, pubKey),
                 );
-                // Escalated resend already waited on the first attempt; skip another full idle.
+                // Bounded idle returns promptly when no TraceData is in flight.
                 const raw = await runMeshcoreRepeaterTelemetryRequest(conn, pubKey, {
                   hopsAway,
                   ...(opts?.timeoutMs != null ? { replyWaitCapMs: opts.timeoutMs } : {}),
                   runSerialized: repeaterRemoteRpcRef.current,
-                  beforeSend: escalated
-                    ? undefined
-                    : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                  beforeSend: () =>
+                    awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                 });
                 applyMeshcoreTelemetryLpp(nodeId, raw.lppSensorData, 'rpc');
               },
@@ -7691,16 +7693,14 @@ export function useMeshcoreRuntime() {
                 },
                 async ({ escalated }) => {
                   if (escalated) markMeshcoreRepeaterTimingPhase(timing, 'escalated');
-                  // Escalated resend already waited on the first attempt; skip another full idle.
+                  // Bounded idle returns promptly when no TraceData is in flight.
                   return runMeshcoreRepeaterBinaryRequest(
                     conn,
                     pubKey,
                     reqBytes,
                     { hopsAway },
                     repeaterRemoteRpcRef.current,
-                    escalated
-                      ? undefined
-                      : () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
+                    () => awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_REPEATER_ADMIN_RF_IDLE_MS),
                   );
                 },
               );

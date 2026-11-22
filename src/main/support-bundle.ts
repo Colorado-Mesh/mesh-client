@@ -11,7 +11,7 @@ import {
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
-import { readWindowsUpdateBuildRevision, resolveOsReleaseTag } from './osReleaseTag';
+import { resolveOsReleaseObservation } from './osReleaseTag';
 import { readUtf8FileBounded } from './reticulum-config-read';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
@@ -108,6 +108,7 @@ export function validateDebugSnapshotJson(debugSnapshotJson: string): Record<str
 function buildManifest(mode: SupportBundleMode): Record<string, unknown> {
   const kind = mode === 'github' ? 'mesh-client-github-report' : 'mesh-client-developer-bundle';
   const stamped = buildInfoForManifest(getBuildInfo());
+  const osObservation = resolveOsReleaseObservation();
   const manifest: Record<string, unknown> = {
     kind,
     bundleVersion: 1,
@@ -118,16 +119,13 @@ function buildManifest(mode: SupportBundleMode): Record<string, unknown> {
     buildChannel: stamped.buildChannel,
     platform: process.platform,
     arch: process.arch,
-    os: resolveOsReleaseTag(),
+    os: osObservation.tag,
     packaged:
       typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false,
     capturedAt: new Date().toISOString(),
   };
-  if (process.platform === 'win32') {
-    const ubr = readWindowsUpdateBuildRevision();
-    if (ubr != null) {
-      manifest.osUpdateRevision = ubr;
-    }
+  if (osObservation.ubr != null) {
+    manifest.osUpdateRevision = osObservation.ubr;
   }
   if (stamped.buildInfo) {
     manifest.buildInfo = stamped.buildInfo;

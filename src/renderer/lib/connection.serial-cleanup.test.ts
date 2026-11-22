@@ -106,9 +106,21 @@ describe('connection serial cleanup', () => {
       fromDevice: new ReadableStream(),
     } as Awaited<ReturnType<typeof TransportWebSerial.createFromPort>>);
 
-    await reconnectSerial('saved-port');
+    let releaseResolve: (() => void) | undefined;
+    const releasePending = new Promise<void>((resolve) => {
+      releaseResolve = resolve;
+    });
+    vi.mocked(releaseConflictingSerialSessions).mockImplementationOnce(() => releasePending);
 
-    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshtastic', port);
+    const reconnectPromise = reconnectSerial('saved-port');
+    await vi.waitFor(() => {
+      expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshtastic', port);
+    });
+    expect(port.close).not.toHaveBeenCalled();
+    expect(TransportWebSerial.createFromPort).not.toHaveBeenCalled();
+    releaseResolve?.();
+    await reconnectPromise;
+
     expect(port.close).toHaveBeenCalledTimes(1);
     expect(TransportWebSerial.createFromPort).toHaveBeenCalledWith(port, 115200);
   });

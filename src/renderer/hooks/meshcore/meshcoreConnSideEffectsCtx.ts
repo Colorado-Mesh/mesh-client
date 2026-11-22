@@ -78,7 +78,9 @@ export interface MeshcoreConnSideEffectsCtx {
   setWaitingMessagesDrainDeferred: Dispatch<SetStateAction<boolean>>;
   addMessagesBatch: (msgs: ChatMessage[]) => void;
   addCliHistoryEntry: (nodeId: number, entry: CliHistoryEntry) => void;
-  teardownMeshcoreConnEventListeners: (opts?: { driverDisconnect?: boolean }) => void;
+  teardownMeshcoreConnEventListeners: (opts?: {
+    driverDisconnect?: boolean;
+  }) => void | Promise<void>;
   handleConnectionLostRef: RefObject<() => void>;
   meshcoreExplicitDisconnectRef: RefObject<boolean>;
   bumpLastDataReceived?: () => void;

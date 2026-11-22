@@ -103,7 +103,7 @@ describe('serialPortClaim', () => {
       onDisconnected: vi.fn(),
     });
 
-    expect(listInAppSerialHolders('meshcore')).toEqual(['meshtastic', 'meshcom']);
+    expect(listInAppSerialHolders('meshcore', null)).toEqual([]);
     expect(listInAppSerialHolders('meshcore', shared)).toEqual(['meshtastic']);
     expect(listInAppSerialHolders('meshtastic', shared)).toEqual([]);
   });

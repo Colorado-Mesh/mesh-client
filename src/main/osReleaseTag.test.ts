@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   readWindowsUpdateBuildRevision,
   resetOsReleaseTagCacheForTests,
+  resolveOsReleaseObservation,
   resolveOsReleaseTag,
 } from './osReleaseTag';
 
@@ -36,6 +37,25 @@ describe('osReleaseTag', () => {
     const second = resolveOsReleaseTag(process.platform, '10.0.26200', readUbr);
     expect(first).toBe(second);
     expect(readUbr).toHaveBeenCalledTimes(process.platform === 'win32' ? 1 : 0);
+  });
+
+  it('resolveOsReleaseObservation retains UBR from the same registry read as the tag', () => {
+    const readUbr = vi.fn(() => 9974);
+    const first = resolveOsReleaseObservation('win32', '10.0.26200', readUbr);
+    expect(first).toEqual({ tag: '10.0.26200.9974', ubr: 9974 });
+    // Process-lifetime cache only applies when `platform` matches the live OS.
+    if (process.platform === 'win32') {
+      const second = resolveOsReleaseObservation('win32', '10.0.26200', readUbr);
+      expect(second).toBe(first);
+      expect(readUbr).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('resolveOsReleaseObservation omits UBR when the registry read fails', () => {
+    expect(resolveOsReleaseObservation('win32', '10.0.26200', () => null)).toEqual({
+      tag: '10.0.26200',
+      ubr: null,
+    });
   });
 
   it('readWindowsUpdateBuildRevision returns null on non-Windows', () => {

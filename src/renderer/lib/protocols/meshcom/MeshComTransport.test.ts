@@ -23,7 +23,9 @@ vi.mock('../../serialPortRecovery', () => ({
   openSerialPortWithTimeout: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { closeSerialPortIfOpen } from '../../connection';
 import { releaseConflictingSerialSessions } from '../../serialPortClaim';
+import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 
 vi.mock('../../serialPortSignature', () => ({
   persistSerialPortIdentity: vi.fn(),
@@ -38,6 +40,8 @@ import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
 import { createMeshComConnection, transportParamsToMeshCom } from './MeshComTransport';
 
 const connectGattWithScanBusyRetryMock = vi.mocked(connectGattWithScanBusyRetry);
+const openMock = vi.mocked(openSerialPortWithTimeout);
+const closeMock = vi.mocked(closeSerialPortIfOpen);
 
 describe('MeshComTransport', () => {
   beforeEach(() => {
@@ -127,9 +131,15 @@ describe('MeshComTransport', () => {
   });
 
   it('serial opens Web Serial at 115200 and pipes readable chunks', async () => {
-    const { openSerialPortWithTimeout } = await import('../../serialPortRecovery');
-    const openMock = vi.mocked(openSerialPortWithTimeout);
     openMock.mockClear();
+    closeMock.mockClear();
+    vi.mocked(releaseConflictingSerialSessions).mockClear();
+
+    let releaseResolve: (() => void) | undefined;
+    const releasePending = new Promise<void>((resolve) => {
+      releaseResolve = resolve;
+    });
+    vi.mocked(releaseConflictingSerialSessions).mockImplementationOnce(() => releasePending);
 
     const written: Uint8Array[] = [];
     let readResolve: ((result: ReadableStreamReadResult<Uint8Array>) => void) | undefined;
@@ -169,12 +179,17 @@ describe('MeshComTransport', () => {
       },
     });
 
-    const conn = await createMeshComConnection({ transport: 'serial' });
-    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcom', port);
+    const connectPromise = createMeshComConnection({ transport: 'serial' });
+    await vi.waitFor(() => {
+      expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcom', port);
+    });
+    expect(closeMock).not.toHaveBeenCalled();
+    expect(openMock).not.toHaveBeenCalled();
+    releaseResolve?.();
+    const conn = await connectPromise;
+    expect(closeMock).toHaveBeenCalledWith(port);
     expect(openMock).toHaveBeenCalledWith(port, 115200, 'MeshCom serial open');
-    expect(vi.mocked(releaseConflictingSerialSessions).mock.invocationCallOrder[0]).toBeLessThan(
-      openMock.mock.invocationCallOrder[0],
-    );
+    expect(conn.getSerialPort?.()).toBe(port);
 
     const onData = vi.fn();
     conn.onData = onData;

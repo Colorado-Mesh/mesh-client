@@ -7,11 +7,17 @@
 import { execFileSync } from 'node:child_process';
 import { release as nodeOsRelease } from 'node:os';
 
-let cachedTag: string | null = null;
+interface OsReleaseObservation {
+  tag: string;
+  /** Windows UBR from the same registry read used to build `tag`, when available. */
+  ubr: number | null;
+}
+
+let cachedObservation: OsReleaseObservation | null = null;
 
 /** Test isolation — clear the process-lifetime cache. */
 export function resetOsReleaseTagCacheForTests(): void {
-  cachedTag = null;
+  cachedObservation = null;
 }
 
 /**
@@ -40,6 +46,36 @@ export function readWindowsUpdateBuildRevision(
 }
 
 /**
+ * Compact OS identity plus optional Windows UBR from one registry observation.
+ * Windows tag: `10.0.{CurrentBuild}.{UBR}` when UBR is available; otherwise `os.release()`.
+ */
+export function resolveOsReleaseObservation(
+  platform: NodeJS.Platform = process.platform,
+  baseRelease: string = nodeOsRelease(),
+  readUbr: () => number | null = readWindowsUpdateBuildRevision,
+): OsReleaseObservation {
+  if (cachedObservation != null && platform === process.platform) {
+    return cachedObservation;
+  }
+  let tag = baseRelease;
+  let ubr: number | null = null;
+  if (platform === 'win32') {
+    ubr = readUbr();
+    if (ubr != null) {
+      const suffix = `.${ubr}`;
+      if (!baseRelease.endsWith(suffix)) {
+        tag = `${baseRelease}${suffix}`;
+      }
+    }
+  }
+  const observation: OsReleaseObservation = { tag, ubr };
+  if (platform === process.platform) {
+    cachedObservation = observation;
+  }
+  return observation;
+}
+
+/**
  * Compact OS identity for `os=` log/manifest fields.
  * Windows: `10.0.{CurrentBuild}.{UBR}` when UBR is available; otherwise `os.release()`.
  */
@@ -48,21 +84,5 @@ export function resolveOsReleaseTag(
   baseRelease: string = nodeOsRelease(),
   readUbr: () => number | null = readWindowsUpdateBuildRevision,
 ): string {
-  if (cachedTag != null && platform === process.platform) {
-    return cachedTag;
-  }
-  let tag = baseRelease;
-  if (platform === 'win32') {
-    const ubr = readUbr();
-    if (ubr != null) {
-      const suffix = `.${ubr}`;
-      if (!baseRelease.endsWith(suffix)) {
-        tag = `${baseRelease}${suffix}`;
-      }
-    }
-  }
-  if (platform === process.platform) {
-    cachedTag = tag;
-  }
-  return tag;
+  return resolveOsReleaseObservation(platform, baseRelease, readUbr).tag;
 }

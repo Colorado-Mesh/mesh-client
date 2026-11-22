@@ -682,7 +682,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   useEffect(() => {
     registerMeshcomSerialDisconnectTarget({
       isSerialConnected: () => connectionParamsRef.current?.rfType === 'serial',
-      // Port handle lives on MeshComTransport; same-USB yield uses shared signature fallback.
+      getOpenSerialPort: () => {
+        const identityId = driverIdentityIdRef.current ?? identityIdRef.current;
+        if (!identityId) return null;
+        const handle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
+        return handle?.connection.getSerialPort?.() ?? null;
+      },
       onDisconnected: () => {
         noteSerialDeliveryFailure({ reason: 'transport-loss', connectionType: 'serial' });
         handleConnectionLostRef.current();

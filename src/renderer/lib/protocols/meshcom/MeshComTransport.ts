@@ -28,6 +28,8 @@ export interface MeshComConnection {
   /** Invoked when the underlying IPC bridge reports disconnect. */
   onDisconnected: (() => void) | null;
   close(): Promise<void>;
+  /** Live Web Serial port for this session (serial transport only). */
+  getSerialPort?(): SerialPort | null;
 }
 
 export interface MeshComConnectionParams {
@@ -170,6 +172,10 @@ class WebSerialMeshComConnection implements MeshComConnection {
     port.addEventListener('disconnect', this.disconnectListener);
 
     void this.startReadLoop(port);
+  }
+
+  getSerialPort(): SerialPort | null {
+    return this.port;
   }
 
   private async startReadLoop(port: SerialPort): Promise<void> {

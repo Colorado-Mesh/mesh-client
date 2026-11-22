@@ -43,24 +43,32 @@ export function logLoraSerialConnectedSnapshot(
   );
 }
 
+let lastSerialClaimAttempt: { protocol: MeshProtocol; port: SerialPort } | null = null;
+
+/** Last port passed to {@link releaseConflictingSerialSessions} for `claimingProtocol`, if any. */
+export function peekLastSerialClaimPort(claimingProtocol: MeshProtocol): SerialPort | null {
+  if (lastSerialClaimAttempt?.protocol !== claimingProtocol) return null;
+  return lastSerialClaimAttempt.port;
+}
+
 /**
- * Other LoRa protocols that still report a serial hold (optionally matching `claimPort`).
- * Used after yield/open failure to choose in-app vs external humanize copy.
+ * Other LoRa protocols that still report a serial hold matching `claimPort`.
+ * When `claimPort` is null (attempted device unknown), returns [] so UI keeps the generic
+ * external-lock hint instead of blaming an unrelated in-app session.
  */
 export function listInAppSerialHolders(
   claimingProtocol: MeshProtocol,
-  claimPort?: SerialPort | null,
+  claimPort: SerialPort | null,
 ): MeshProtocol[] {
+  if (!claimPort) return [];
   const targets = getRegisteredSerialDisconnectTargets();
   const holders: MeshProtocol[] = [];
   for (const protocol of LORA_SERIAL_PROTOCOLS) {
     if (protocol === claimingProtocol) continue;
     const target = targets.get(protocol);
     if (!target?.isSerialConnected()) continue;
-    if (claimPort) {
-      const held = target.getOpenSerialPort?.() ?? null;
-      if (!portConflictsWithClaim(held, claimPort)) continue;
-    }
+    const held = target.getOpenSerialPort?.() ?? null;
+    if (!portConflictsWithClaim(held, claimPort)) continue;
     holders.push(protocol);
   }
   return holders;
@@ -74,6 +82,7 @@ export async function releaseConflictingSerialSessions(
   claimingProtocol: MeshProtocol,
   port: SerialPort,
 ): Promise<void> {
+  lastSerialClaimAttempt = { protocol: claimingProtocol, port };
   logLoraSerialConnectedSnapshot('open', claimingProtocol);
   const targets = getRegisteredSerialDisconnectTargets();
   for (const protocol of LORA_SERIAL_PROTOCOLS) {

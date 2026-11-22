@@ -146,6 +146,11 @@ describe('createMeshCoreConnection serial', () => {
     webSerialInstances.length = 0;
     vi.mocked(releaseConflictingSerialSessions).mockClear();
     vi.mocked(closeSerialPortIfOpen).mockClear();
+    let releaseResolve: (() => void) | undefined;
+    const releasePending = new Promise<void>((resolve) => {
+      releaseResolve = resolve;
+    });
+    vi.mocked(releaseConflictingSerialSessions).mockImplementationOnce(() => releasePending);
     const port = {
       writable: new WritableStream<Uint8Array>({ write: vi.fn() }),
       readable: new ReadableStream(),
@@ -161,17 +166,17 @@ describe('createMeshCoreConnection serial', () => {
       },
     });
 
-    await createMeshCoreConnection({ transport: 'serial' });
+    const connectPromise = createMeshCoreConnection({ transport: 'serial' });
+    await vi.waitFor(() => {
+      expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcore', port);
+    });
+    expect(closeSerialPortIfOpen).not.toHaveBeenCalled();
+    expect(port.open).not.toHaveBeenCalled();
+    releaseResolve?.();
+    await connectPromise;
 
-    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcore', port);
     expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
     expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
-    expect(vi.mocked(releaseConflictingSerialSessions).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(closeSerialPortIfOpen).mock.invocationCallOrder[0],
-    );
-    expect(vi.mocked(closeSerialPortIfOpen).mock.invocationCallOrder[0]).toBeLessThan(
-      port.open.mock.invocationCallOrder[0],
-    );
   });
 
   it('reconnectMeshcoreSerial yields conflicting holders before close/open', async () => {

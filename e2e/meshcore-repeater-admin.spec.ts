@@ -311,7 +311,8 @@ test('ping falls back to the route when a far repeater does not answer the direc
 });
 
 test('ping reaches a zero-hop repeater after a status request reset its route', async () => {
-  test.setTimeout(180_000);
+  // Setup + 120s status poll + subsequent ping poll (worst-case settle/idle stacks).
+  test.setTimeout(300_000);
   const page = await start((fixture) => {
     // The repeater does not know this companion, so status is dropped direct and by flood,
     // and the path is never relearned.

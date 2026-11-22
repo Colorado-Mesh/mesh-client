@@ -95,8 +95,15 @@ describe('cross-protocol serial claim contracts', () => {
 
   it('ConnectionPanel passes inAppHolders into humanizeSerialError', () => {
     expect(CONNECTION_PANEL).toContain('listInAppSerialHolders');
+    expect(CONNECTION_PANEL).toContain('peekLastSerialClaimPort');
     expect(CONNECTION_PANEL).toMatch(
-      /humanizeSerialError\(err, t, \{\s*inAppHolders: listInAppSerialHolders\(protocol\)/,
+      /humanizeSerialError\(err, t, \{\s*inAppHolders: listInAppSerialHolders\(protocol, peekLastSerialClaimPort\(protocol\)\)/,
+    );
+  });
+
+  it('ConnectionPanel serial Reconnect cancels all LoRa RF auto-connects', () => {
+    expect(CONNECTION_PANEL).toMatch(
+      /if \(lastConnection\.type === 'serial'\) \{\s*cancelAllLoraRfAutoConnect\(\);/,
     );
   });
 

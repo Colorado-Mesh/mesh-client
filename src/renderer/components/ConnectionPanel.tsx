@@ -25,7 +25,11 @@ import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnec
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
-import { cancelAllLoraRfAutoConnect, listInAppSerialHolders } from '@/renderer/lib/serialPortClaim';
+import {
+  cancelAllLoraRfAutoConnect,
+  listInAppSerialHolders,
+  peekLastSerialClaimPort,
+} from '@/renderer/lib/serialPortClaim';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   LETSMESH_MQTT_AUTH_DOCS_URL,
@@ -1786,7 +1790,7 @@ export default function ConnectionPanel({
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t, {
-          inAppHolders: listInAppSerialHolders(protocol),
+          inAppHolders: listInAppSerialHolders(protocol, peekLastSerialClaimPort(protocol)),
         });
       } else if (
         connectionType === 'http' ||
@@ -1982,7 +1986,11 @@ export default function ConnectionPanel({
     if (!lastConnection) return;
     // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
     // BLE/serial auto-connect (orphan socket / connectType flip).
-    cancelProtocolRfAutoConnect(protocol);
+    if (lastConnection.type === 'serial') {
+      cancelAllLoraRfAutoConnect();
+    } else {
+      cancelProtocolRfAutoConnect(protocol);
+    }
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
     }
@@ -2162,7 +2170,7 @@ export default function ConnectionPanel({
         setIsAutoConnecting(false);
         setError(
           humanizeSerialError(err, t, {
-            inAppHolders: listInAppSerialHolders(protocol),
+            inAppHolders: listInAppSerialHolders(protocol, peekLastSerialClaimPort(protocol)),
           }),
         );
         setConnecting(false);
