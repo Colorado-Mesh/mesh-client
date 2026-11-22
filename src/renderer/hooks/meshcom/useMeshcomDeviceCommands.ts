@@ -32,6 +32,8 @@ export interface UseMeshcomDeviceCommandsDeps {
 interface SettingsByConnection {
   /** `${identityId}:${transport}` that owns `snap`. */
   key: string;
+  /** Radio handle that produced `snap` (object identity); null when cleared. */
+  handle: MeshComDeviceHandle | null;
   snap: MeshcomDeviceSettingsSnapshot | null;
 }
 
@@ -48,6 +50,7 @@ export function useMeshcomDeviceCommands(
   const { resolveIdentityId, connectionType, onSettings } = deps;
   const [settingsByConnection, setSettingsByConnection] = useState<SettingsByConnection>({
     key: '',
+    handle: null,
     snap: null,
   });
 
@@ -67,8 +70,15 @@ export function useMeshcomDeviceCommands(
   const available = transport === 'serial' || transport === 'ble';
   const identityId = resolveIdentityId();
   const settingsKey = connectionSettingsKey(identityId, transport);
-  // Keyed snapshot: when identity/transport changes, expose null without an effect.
-  const settings = settingsByConnection.key === settingsKey ? settingsByConnection.snap : null;
+  const activeHandle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
+  // Expose snapshot only for the same identity/transport *and* the same radio handle that
+  // produced it — reconnect on the same key must not reuse a prior FWVER for the RM gate.
+  const settings =
+    settingsByConnection.key === settingsKey &&
+    settingsByConnection.handle != null &&
+    settingsByConnection.handle === activeHandle
+      ? settingsByConnection.snap
+      : null;
 
   const run = useCallback(
     async (command: string): Promise<{ command: string }> => {
@@ -109,6 +119,7 @@ export function useMeshcomDeviceCommands(
     if (!handle || (handle.transport !== 'serial' && handle.transport !== 'ble')) {
       setSettingsByConnection({
         key: connectionSettingsKey(refreshIdentityId, handle?.transport ?? null),
+        handle: null,
         snap: null,
       });
       return null;
@@ -131,12 +142,13 @@ export function useMeshcomDeviceCommands(
         if (!current || (current.transport !== 'serial' && current.transport !== 'ble')) {
           setSettingsByConnection({
             key: connectionSettingsKey(currentIdentity, current?.transport ?? null),
+            handle: null,
             snap: null,
           });
         }
         return null;
       }
-      setSettingsByConnection({ key: startedKey, snap });
+      setSettingsByConnection({ key: startedKey, handle, snap });
       onSettings?.(snap);
       console.debug(
         '[useMeshcomDeviceCommands] settings refreshed call=' +
