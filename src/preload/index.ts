@@ -278,6 +278,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // ─── Database operations ────────────────────────────────────────
   db: {
+    wasCreatedThisLaunch: () => ipcRenderer.invoke('db:wasCreatedThisLaunch'),
     getIncidents: () => ipcRenderer.invoke('db:getIncidents'),
     saveIncidents: (snapshot: IncidentSnapshot) => ipcRenderer.invoke('db:saveIncidents', snapshot),
     seedIncidents: (legacyJson: string | null) =>

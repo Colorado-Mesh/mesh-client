@@ -176,6 +176,8 @@ import { hexToBytesExact } from '../shared/hexBytes';
 import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
+import { FirstRunProtocolPicker } from './components/FirstRunProtocolPicker';
+import { FirstRunSetupTourBar } from './components/FirstRunSetupTourBar';
 import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import GlobalScanQrControl from './components/GlobalScanQrControl';
 import { HelpTooltip } from './components/HelpTooltip';
@@ -210,6 +212,7 @@ import { useContactGroups } from './hooks/useContactGroups';
 import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useDiagnosticSeverityAlerts } from './hooks/useDiagnosticSeverityAlerts';
+import { useFirstRunWizardLauncher } from './hooks/useFirstRunWizardLauncher';
 import { useHasLocalSendingMessage, useHasSendingMessage } from './hooks/useHasSendingMessage';
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
@@ -301,7 +304,11 @@ import {
   resolvePanelSetOwnerHandler,
 } from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
-import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appSettingsStorage';
+import {
+  getAppSettingsRaw,
+  isRrcUnreadAllRoomMessagesEnabled,
+  mergeAppSetting,
+} from './lib/appSettingsStorage';
 import {
   ADMIN_PANEL_INDEX,
   APP_PANEL_INDEX,
@@ -358,12 +365,14 @@ import {
   getStoredEnabledMeshProtocol,
   loadHiddenProtocols,
   newlyHiddenProtocols,
+  sanitizeHiddenProtocols,
 } from './lib/enabledProtocols';
 import {
   type FirmwareCheckResult,
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
+import { hiddenProtocolsForSelection, tourProtocolsForSelection } from './lib/firstRunWizard';
 import { buildDetectedFlashDevice } from './lib/flasher/deviceFirmwareBoards';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import {
@@ -501,6 +510,7 @@ import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { useFirstRunWizardStore } from './stores/firstRunWizardStore';
 import { useFriendsStore } from './stores/friendsStore';
 import { setActiveIdentity, useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
@@ -1123,6 +1133,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  useFirstRunWizardLauncher();
   useConversationMuteMqttIdentity();
   useEffect(() => startCoiMemorySampler(), []);
   useWeatherForecastIngest();
@@ -3089,6 +3100,75 @@ function AppContent() {
 
     handleProtocolChange(fallback);
   }, [enabledProtocols, protocol, handleProtocolChange]);
+
+  // ─── First-run wizard (issue #1542) ───────────────────────────────────────
+  const firstRunPickerOpen = useFirstRunWizardStore((s) => s.pickerOpen);
+  const firstRunTour = useFirstRunWizardStore((s) => s.tour);
+  const firstRunTourStep = useFirstRunWizardStore((s) => s.tourStep);
+
+  /**
+   * Shows `target`'s Connection panel, switching protocol through the same commit path as the
+   * protocol switcher so the tab lands with the protocol. When `target` has the Reticulum
+   * stack (capability-gated), its setup guide opens too.
+   */
+  const openProtocolConnectionForTour = useCallback(
+    (target: MeshProtocol) => {
+      const targetTabs = selectByProtocol(tabsByProtocol, target);
+      const connectionTab = findFilteredTabIndexForPanel(targetTabs, 0);
+      if (connectionTab < 0) return;
+      if (selectByProtocol(capabilitiesByProtocol, target).hasReticulumInterfaceConfig) {
+        useReticulumSetupGuideStore.getState().setOpen(true);
+      }
+      const effectiveProtocol = getPendingProtocolSelection() ?? protocol;
+      if (effectiveProtocol === protocol && target === protocol) {
+        setActiveTab(connectionTab);
+        return;
+      }
+      if (target !== protocol) {
+        lastTabByProtocol.current.set(protocol, activeTab);
+        lastPanelByProtocol.current.set(protocol, activePanelIndex);
+      }
+      scheduleProtocolCommit({
+        pending: target === protocol ? null : target,
+        nextProtocol: target,
+        nextTab: connectionTab,
+        destinationPanel: 0,
+        protocolChanged: target !== protocol,
+        enablePeers: selectByProtocol(capabilitiesByProtocol, target).hasReticulumPeersList,
+      });
+    },
+    [
+      protocol,
+      activeTab,
+      activePanelIndex,
+      tabsByProtocol,
+      capabilitiesByProtocol,
+      scheduleProtocolCommit,
+    ],
+  );
+
+  const handleFirstRunContinue = useCallback(
+    (selected: MeshProtocol[]) => {
+      const hidden = hiddenProtocolsForSelection(selected);
+      if (!hidden) return;
+      const next = sanitizeHiddenProtocols(hidden);
+      mergeAppSetting('hiddenProtocols', next, 'FirstRunProtocolPicker');
+      handleHiddenProtocolsChange(next);
+      useFirstRunWizardStore.getState().startTour(tourProtocolsForSelection(selected));
+    },
+    [handleHiddenProtocolsChange],
+  );
+
+  // Navigate only when the tour step changes, so a person who wanders to another tab
+  // mid-tour is not pulled back; Next takes them to the next protocol's Connection panel.
+  const openTourStepRef = useRef(openProtocolConnectionForTour);
+  useEffect(() => {
+    openTourStepRef.current = openProtocolConnectionForTour;
+  }, [openProtocolConnectionForTour]);
+  useEffect(() => {
+    const target = firstRunTour?.[firstRunTourStep];
+    if (target) openTourStepRef.current(target);
+  }, [firstRunTour, firstRunTourStep]);
 
   // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
   // whose commit can block for hundreds of ms after time away. Rendering the
@@ -5393,6 +5473,12 @@ function AppContent() {
       {/* Global live regions written by lib/a11yAnnouncer (assertive: critical; polite: chat) */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
       <div aria-live="polite" aria-atomic="true" className="sr-only" id="app-announcer-polite" />
+      {firstRunPickerOpen ? (
+        <FirstRunProtocolPicker
+          onContinue={handleFirstRunContinue}
+          onSkip={useFirstRunWizardStore.getState().skip}
+        />
+      ) : null}
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         activeProtocol={protocol}
@@ -5503,6 +5589,14 @@ function AppContent() {
                 onDismiss={serviceAnnouncements.dismiss}
                 onOpenUrl={serviceAnnouncements.openUrl}
               />
+              {firstRunTour ? (
+                <FirstRunSetupTourBar
+                  protocols={firstRunTour}
+                  step={firstRunTourStep}
+                  onNext={useFirstRunWizardStore.getState().nextTourStep}
+                  onSkip={useFirstRunWizardStore.getState().endTour}
+                />
+              ) : null}
               {/* Telemetry disabled notice */}
               {isOperational &&
                 activeRuntime.telemetryEnabled === false &&

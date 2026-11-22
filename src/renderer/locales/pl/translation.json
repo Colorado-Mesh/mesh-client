@@ -9382,5 +9382,30 @@
     "saveFailed": "Nie udało się zapisać listy obserwowanych w MeshCom.",
     "alertTitle": "Zegarek MeshCom: {{callsign}}",
     "alertBody": "Słyszano {{callsign}} na MeshCom."
+  },
+  "firstRun": {
+    "title": "Wybierz protokoły",
+    "intro": "Wybierz sieci, z których chcesz korzystać. Możesz to zmienić w dowolnym momencie w sekcji Aplikacja > Protokoły.",
+    "listLabel": "Protokoły",
+    "needs": {
+      "meshtastic": "Działa tylko przez MQTT, ale zalecane jest radio Meshtastic.",
+      "meshcore": "Wymaga radia MeshCore.",
+      "reticulum": "Zalecane. Działa tylko przez Internet i obsługuje radia RNode.",
+      "meshcom": "Wyłącznie licencjonowani operatorzy krótkofalarstwa. Wymagane jest radio MeshCom."
+    },
+    "noneSelected": "Wybierz co najmniej jeden protokół.",
+    "skip": "Pomiń konfigurację",
+    "continue": "Kontynuuj",
+    "tourLabel": "Konfiguracja protokołu",
+    "tourStep": "Skonfiguruj {{name}} ({{step}} z {{total}})",
+    "tourHint": {
+      "meshtastic": "Podłącz poniżej radio Meshtastic lub używaj tylko MQTT.",
+      "meshcore": "Podłącz poniżej swoje radio MeshCore.",
+      "reticulum": "Postępuj zgodnie z poniższym przewodnikiem konfiguracji Reticulum.",
+      "meshcom": "Podłącz poniżej swoje radio MeshCom."
+    },
+    "tourLastHint": "Protokoły można zmieniać w dowolnym momencie w sekcji Aplikacja > Protokoły.",
+    "next": "Dalej",
+    "done": "Gotowe"
   }
 }

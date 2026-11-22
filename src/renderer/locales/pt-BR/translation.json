@@ -9238,5 +9238,30 @@
     "saveFailed": "Não foi possível salvar a lista de observação do MeshCom.",
     "alertTitle": "Relógio MeshCom: {{callsign}}",
     "alertBody": "Ouvi {{callsign}} no MeshCom."
+  },
+  "firstRun": {
+    "title": "Escolha seus protocolos",
+    "intro": "Escolha as redes que deseja usar. Você pode alterar isso a qualquer momento em Aplicativo > Protocolos.",
+    "listLabel": "Protocolos",
+    "needs": {
+      "meshtastic": "Funciona apenas com MQTT, mas é recomendado um rádio Meshtastic.",
+      "meshcore": "Precisa de um rádio MeshCore.",
+      "reticulum": "Recomendado. Funciona apenas pela Internet e é compatível com rádios RNode.",
+      "meshcom": "Apenas operadores de rádio amadores licenciados. Precisa de um rádio MeshCom."
+    },
+    "noneSelected": "Escolha pelo menos um protocolo.",
+    "skip": "Pular configuração",
+    "continue": "Continuar",
+    "tourLabel": "Configuração de protocolo",
+    "tourStep": "Configurar {{name}} ({{step}} de {{total}})",
+    "tourHint": {
+      "meshtastic": "Conecte um rádio Meshtastic abaixo ou use apenas MQTT.",
+      "meshcore": "Conecte seu rádio MeshCore abaixo.",
+      "reticulum": "Siga o guia de configuração do Reticulum abaixo.",
+      "meshcom": "Conecte seu rádio MeshCom abaixo."
+    },
+    "tourLastHint": "Você pode alterar os protocolos a qualquer momento em Aplicativo > Protocolos.",
+    "next": "Avançar",
+    "done": "Concluído"
   }
 }

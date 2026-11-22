@@ -2501,6 +2501,31 @@
     "updateAvailable": "Firmware update available",
     "updateAvailableVersion": "Firmware update available: v{{version}}"
   },
+  "firstRun": {
+    "title": "Choose your protocols",
+    "intro": "Pick the networks you want to use. You can change this any time in App > Protocols.",
+    "listLabel": "Protocols",
+    "needs": {
+      "meshtastic": "Works over MQTT alone, but a Meshtastic radio is recommended.",
+      "meshcore": "Needs a MeshCore radio.",
+      "reticulum": "Recommended. Works over the internet alone, and supports RNode radios.",
+      "meshcom": "Licensed amateur radio operators only. Needs a MeshCom radio."
+    },
+    "noneSelected": "Choose at least one protocol.",
+    "skip": "Skip setup",
+    "continue": "Continue",
+    "tourLabel": "Protocol setup",
+    "tourStep": "Set up {{name}} ({{step}} of {{total}})",
+    "tourHint": {
+      "meshtastic": "Connect a Meshtastic radio below, or use MQTT only.",
+      "meshcore": "Connect your MeshCore radio below.",
+      "reticulum": "Follow the Reticulum setup guide below.",
+      "meshcom": "Connect your MeshCom radio below."
+    },
+    "tourLastHint": "You can change protocols any time in App > Protocols.",
+    "next": "Next",
+    "done": "Done"
+  },
   "flasher": {
     "title": "RNode Firmware Flasher",
     "selectSerialPort": "Select serial port",

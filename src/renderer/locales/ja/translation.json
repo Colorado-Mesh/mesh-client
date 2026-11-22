@@ -9238,5 +9238,30 @@
     "saveFailed": "MeshComウォッチリストを保存できませんでした。",
     "alertTitle": "MeshComウォッチ：{{callsign}}",
     "alertBody": "MeshComで{{callsign}}を聞きました。"
+  },
+  "firstRun": {
+    "title": "プロトコルを選択してください",
+    "intro": "使用するネットワークを選択してください。これは、アプリ > プロトコルでいつでも変更できます。",
+    "listLabel": "プロトコル",
+    "needs": {
+      "meshtastic": "MQTTのみで動作しますが、Meshtasticラジオの使用をお勧めします。",
+      "meshcore": "MeshCoreラジオが必要です。",
+      "reticulum": "推奨。インターネットのみで動作し、RNodeラジオに対応しています。",
+      "meshcom": "免許を持つアマチュア無線オペレーターのみ。MeshCom無線が必要です。"
+    },
+    "noneSelected": "少なくとも1つのプロトコルを選択してください。",
+    "skip": "設定をスキップ",
+    "continue": "はい",
+    "tourLabel": "プロトコルの設定",
+    "tourStep": "{{name}}を設定（{{step}}／{{total}}）",
+    "tourHint": {
+      "meshtastic": "以下にMeshtasticラジオを接続するか、MQTTのみを使用してください。",
+      "meshcore": "以下でMeshCoreラジオを接続してください。",
+      "reticulum": "以下のReticulum設定ガイドに従ってください。",
+      "meshcom": "以下のMeshCom無線を接続してください。"
+    },
+    "tourLastHint": "プロトコルは、アプリ > プロトコルでいつでも変更できます。",
+    "next": "次へ",
+    "done": "完了"
   }
 }

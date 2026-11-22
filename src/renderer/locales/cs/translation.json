@@ -9323,5 +9323,30 @@
     "saveFailed": "Seznam sledovaných položek MeshCom se nepodařilo uložit.",
     "alertTitle": "Hodinky MeshCom: {{callsign}}",
     "alertBody": "Slyšel jsem {{callsign}} na MeshComu."
+  },
+  "firstRun": {
+    "title": "Vyberte si protokoly",
+    "intro": "Vyberte sítě, které chcete používat. Toto nastavení můžete kdykoli změnit v části Aplikace > Protokoly.",
+    "listLabel": "Protokoly",
+    "needs": {
+      "meshtastic": "Funguje pouze přes MQTT, ale doporučuje se rádio Meshtastic.",
+      "meshcore": "Potřebuje rádio MeshCore.",
+      "reticulum": "Doporučeno. Funguje pouze přes internet a podporuje rádia RNode.",
+      "meshcom": "Pouze licencovaní radioamatéři. Vyžaduje vysílačku MeshCom."
+    },
+    "noneSelected": "Vyberte alespoň jeden protokol.",
+    "skip": "Přeskočit instalaci",
+    "continue": "Pokračovat",
+    "tourLabel": "Nastavení protokolu",
+    "tourStep": "Nastavit {{name}} ({{step}} z {{total}})",
+    "tourHint": {
+      "meshtastic": "Připojte níže uvedené rádio Meshtastic nebo použijte pouze MQTT.",
+      "meshcore": "Níže připojte své rádio MeshCore.",
+      "reticulum": "Postupujte podle níže uvedeného průvodce nastavením Reticulum.",
+      "meshcom": "Níže připojte své rádio MeshCom."
+    },
+    "tourLastHint": "Protokoly můžete kdykoli změnit v části Aplikace > Protokoly.",
+    "next": "Následující",
+    "done": "Hotovo"
   }
 }

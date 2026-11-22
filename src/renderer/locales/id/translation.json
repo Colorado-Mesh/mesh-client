@@ -9238,5 +9238,30 @@
     "saveFailed": "Tidak dapat menyimpan daftar pantau MeshCom.",
     "alertTitle": "Jam tangan MeshCom: {{callsign}}",
     "alertBody": "Mendengar {{callsign}} di MeshCom."
+  },
+  "firstRun": {
+    "title": "Pilih protokol Anda",
+    "intro": "Pilih jaringan yang ingin Anda gunakan. Anda dapat mengubahnya kapan saja di Aplikasi > Protokol.",
+    "listLabel": "Protokol",
+    "needs": {
+      "meshtastic": "Hanya berfungsi dengan MQTT, tetapi disarankan menggunakan radio Meshtastic.",
+      "meshcore": "Memerlukan radio MeshCore.",
+      "reticulum": "Direkomendasikan. Hanya berfungsi melalui internet, dan mendukung radio RNode.",
+      "meshcom": "Hanya untuk operator radio amatir berlisensi. Memerlukan radio MeshCom."
+    },
+    "noneSelected": "Pilih setidaknya satu protokol.",
+    "skip": "Lewati pengaturan",
+    "continue": "Lanjutkan",
+    "tourLabel": "Pengaturan protokol",
+    "tourStep": "Atur {{name}} ({{step}} dari {{total}})",
+    "tourHint": {
+      "meshtastic": "Sambungkan radio Meshtastic di bawah ini, atau gunakan MQTT saja.",
+      "meshcore": "Hubungkan radio MeshCore Anda di bawah ini.",
+      "reticulum": "Ikuti panduan pengaturan Reticulum di bawah ini.",
+      "meshcom": "Hubungkan radio MeshCom Anda di bawah ini."
+    },
+    "tourLastHint": "Anda dapat mengubah protokol kapan saja di Aplikasi > Protokol.",
+    "next": "Berikutnya",
+    "done": "Selesai"
   }
 }

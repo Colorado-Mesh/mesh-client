@@ -445,6 +445,8 @@ export interface ElectronAPI {
   ai: AiAPI;
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
+    /** True when this launch created the SQLite database (a fresh install). */
+    wasCreatedThisLaunch: () => Promise<boolean>;
     getIncidents: () => Promise<IncidentSnapshot>;
     saveIncidents: (snapshot: IncidentSnapshot) => Promise<void>;
     seedIncidents: (legacyJson: string | null) => Promise<IncidentSnapshot>;
