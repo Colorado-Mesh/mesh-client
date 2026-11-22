@@ -62,6 +62,35 @@ describe('meshcomExtUdpCodec', () => {
     expect(tele).toMatchObject({ type: 'tele', temp: 19.2, hum: 44, co2: 401 });
   });
 
+  it('aliases firmware outbound tele keys temp1/qfe/gas', () => {
+    const tele = parseMeshcomExtUdp(
+      JSON.stringify({
+        type: 'tele',
+        src: 'SP2ONG-1',
+        src_type: 'lora',
+        temp1: 19.5,
+        temp2: 0,
+        hum: 43.1,
+        qfe: 997.9,
+        qnh: 1006.0,
+        gas: 12.5,
+        co2: 0,
+        batt: 70,
+      }),
+    );
+    expect(tele).toMatchObject({
+      type: 'tele',
+      temp: 19.5,
+      temp2: 0,
+      hum: 43.1,
+      press: 997.9,
+      qnh: 1006.0,
+      gasres: 12.5,
+      co2: 0,
+      batt: 70,
+    });
+  });
+
   it('clamps oversized msg fields on inbound parse', () => {
     const longMsg = 'x'.repeat(200);
     const parsed = parseMeshcomExtUdp(

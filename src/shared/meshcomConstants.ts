@@ -22,6 +22,17 @@ export const MESHCOM_MAX_MSG_ID_LEN = 128;
 /** Soft cap for persisted contacts / in-memory callsign registry / node bucket. */
 export const MESHCOM_CONTACT_CAP_DEFAULT = 10_000;
 
+/**
+ * Max MeshCom GRC group id (ICSSW). Chat `channel_idx` is -1 (DM), 0 (ALL), or 1..this.
+ * Not a Meshtastic/MeshCore 0–255 PSK slot index.
+ */
+export const MESHCOM_GRC_ID_MAX = 99_999;
+
+/** True when `channel_idx` is valid for MeshCom SQLite / IPC (-1 DM, 0 ALL, 1..GRC max). */
+export function isValidMeshcomDbChannelIdx(channelIdx: number): boolean {
+  return Number.isInteger(channelIdx) && channelIdx >= -1 && channelIdx <= MESHCOM_GRC_ID_MAX;
+}
+
 /** Reviewed firmware release pin mirrored in `scripts/update.sh`. */
 export const MESHCOM_FIRMWARE_REVIEWED_REF = 'v4.40a.11.14';
 
