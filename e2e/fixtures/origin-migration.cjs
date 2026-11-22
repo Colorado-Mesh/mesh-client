@@ -1,5 +1,5 @@
 // Test-only bootstrap: exercise the production packaged startup with an isolated profile.
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
@@ -60,6 +60,13 @@ if (process.env.MESH_E2E_SEED_LEGACY === '1') {
     fs.writeFileSync(path.join(app.getPath('userData'), 'seed-complete'), 'ok');
   });
 } else {
+  // Every E2E profile has a fresh database, which opens the first-run protocol picker over the
+  // whole app. Report an existing install unless a spec opts in with MESH_E2E_FIRST_RUN=1.
+  if (process.env.MESH_E2E_FIRST_RUN !== '1') {
+    const handle = ipcMain.handle.bind(ipcMain);
+    ipcMain.handle = (channel, listener) =>
+      handle(channel, channel === 'db:wasCreatedThisLaunch' ? () => false : listener);
+  }
   // Electron was launched with this fixture, so retain the repository as the app root.
   app.getAppPath = () => root;
   app.getVersion = () => require(path.join(root, 'package.json')).version;

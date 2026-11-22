@@ -9237,5 +9237,30 @@
     "saveFailed": "MeshCom izleme listesi kaydedilemedi.",
     "alertTitle": "MeshCom saati: {{callsign}}",
     "alertBody": "MeshCom'da {{callsign}} duyuldu."
+  },
+  "firstRun": {
+    "title": "Protokollerinizi seçin",
+    "intro": "Kullanmak istediğiniz ağları seçin. Bunu istediğiniz zaman Uygulama > Protokoller bölümünden değiştirebilirsiniz.",
+    "listLabel": "Protokoller",
+    "needs": {
+      "meshtastic": "Yalnızca MQTT üzerinden çalışır, ancak bir Meshtastic telsizi önerilir.",
+      "meshcore": "Bir MeshCore radyosuna ihtiyaç var.",
+      "reticulum": "Önerilir. Yalnızca internet üzerinden çalışır ve RNode radyosunu destekler.",
+      "meshcom": "Yalnızca lisanslı amatör telsiz operatörleri. Bir MeshCom telsizi gerekir."
+    },
+    "noneSelected": "En az bir protokol seçin.",
+    "skip": "Kurulumu atla",
+    "continue": "Devam et",
+    "tourLabel": "Protokol ayarı",
+    "tourStep": "{{name}} ayarla ({{total}} içinde {{step}})",
+    "tourHint": {
+      "meshtastic": "Aşağıdan bir Meshtastic radyosu bağlayın veya yalnızca MQTT kullanın.",
+      "meshcore": "MeshCore radyonuzu aşağıdan bağlayın.",
+      "reticulum": "Aşağıdaki Reticulum kurulum kılavuzunu izleyin.",
+      "meshcom": "MeshCom telsizinizi aşağıdan bağlayın."
+    },
+    "tourLastHint": "Protokolleri istediğiniz zaman Uygulama > Protokoller bölümünden değiştirebilirsiniz.",
+    "next": "İleri",
+    "done": "Bitti"
   }
 }

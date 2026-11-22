@@ -31,14 +31,39 @@ describe('identity hydration IPC handlers', () => {
     });
     const getDbForIpc = vi.fn(() => null);
     const finishDbIpcHandler = vi.fn();
+    const wasDatabaseCreatedThisLaunch = vi.fn(() => true);
     registerIdentityHydrationIpcHandlers({
       ipcMain,
       assertIpcSender,
       getDbForIpc,
       finishDbIpcHandler,
+      wasDatabaseCreatedThisLaunch,
     });
-    return { handlers, refused, assertIpcSender, getDbForIpc, finishDbIpcHandler };
+    return {
+      handlers,
+      refused,
+      assertIpcSender,
+      getDbForIpc,
+      finishDbIpcHandler,
+      wasDatabaseCreatedThisLaunch,
+    };
   }
+
+  it.each([true, false])(
+    'db:wasCreatedThisLaunch answers the main-process flag (%s)',
+    (created) => {
+      const { handlers, wasDatabaseCreatedThisLaunch, assertIpcSender } = register();
+      wasDatabaseCreatedThisLaunch.mockReturnValue(created);
+      expect(handlers.get('db:wasCreatedThisLaunch')?.('trusted')).toBe(created);
+      expect(assertIpcSender).toHaveBeenCalledWith('trusted', 'db:wasCreatedThisLaunch');
+    },
+  );
+
+  it('db:wasCreatedThisLaunch refuses an untrusted sender before reading the flag', () => {
+    const { handlers, refused, wasDatabaseCreatedThisLaunch } = register();
+    expect(() => handlers.get('db:wasCreatedThisLaunch')?.('untrusted')).toThrow(refused);
+    expect(wasDatabaseCreatedThisLaunch).not.toHaveBeenCalled();
+  });
 
   it.each(CHANNELS)('%s checks the sender before it opens the database', (channel) => {
     const { handlers, refused, assertIpcSender, getDbForIpc, finishDbIpcHandler } = register();

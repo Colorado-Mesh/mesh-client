@@ -9237,5 +9237,30 @@
     "saveFailed": "Kon de MeshCom-watchlist niet opslaan.",
     "alertTitle": "MeshCom-horloge: {{callsign}}",
     "alertBody": "{{callsign}} gehoord op MeshCom."
+  },
+  "firstRun": {
+    "title": "Kies je protocollen",
+    "intro": "Kies de netwerken die je wilt gebruiken. Je kunt dit op elk moment wijzigen in App > Protocollen.",
+    "listLabel": "Protocollen",
+    "needs": {
+      "meshtastic": "Werkt alleen via MQTT, maar een Meshtastic-radio wordt aanbevolen.",
+      "meshcore": "Heeft een MeshCore-radio nodig.",
+      "reticulum": "Aanbevolen. Werkt alleen via internet en ondersteunt RNode-radio's.",
+      "meshcom": "Alleen gelicentieerde amateurradio-operators. Heeft een MeshCom-radio nodig."
+    },
+    "noneSelected": "Kies ten minste één protocol.",
+    "skip": "Instellen overslaan",
+    "continue": "Doorgaan",
+    "tourLabel": "Protocolinstellingen",
+    "tourStep": "{{name}} instellen ({{step}} van {{total}})",
+    "tourHint": {
+      "meshtastic": "Sluit hieronder een Meshtastic-radio aan of gebruik alleen MQTT.",
+      "meshcore": "Koppel hieronder je MeshCore-radio.",
+      "reticulum": "Volg de Reticulum installatiehandleiding hieronder.",
+      "meshcom": "Koppel hieronder uw MeshCom-radio."
+    },
+    "tourLastHint": "Je kunt protocollen op elk moment wijzigen in App > Protocollen.",
+    "next": "Volgende",
+    "done": "Klaar"
   }
 }

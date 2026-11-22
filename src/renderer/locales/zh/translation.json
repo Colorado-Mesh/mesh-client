@@ -9237,5 +9237,30 @@
     "saveFailed": "无法保存 MeshCom 观察列表。",
     "alertTitle": "MeshCom 腕表：{{callsign}}",
     "alertBody": "在MeshCom上听到了{{callsign}}。"
+  },
+  "firstRun": {
+    "title": "选择您的协议",
+    "intro": "选择您想要使用的网络。您可以随时在“应用”>“协议”中更改此设置。",
+    "listLabel": "协议",
+    "needs": {
+      "meshtastic": "仅通过MQTT即可工作，但建议使用Meshtastic无线电。",
+      "meshcore": "需要一个MeshCore收音机。",
+      "reticulum": "推荐。仅通过互联网工作，并支持RNode无线电。",
+      "meshcom": "仅限持证业余无线电操作员。需要一台MeshCom无线电设备。"
+    },
+    "noneSelected": "请至少选择一个协议。",
+    "skip": "跳过设置",
+    "continue": "继续",
+    "tourLabel": "协议设置",
+    "tourStep": "设置{{name}}（第{{step}}个，共{{total}}个）",
+    "tourHint": {
+      "meshtastic": "在下方连接Meshtastic收音机，或仅使用MQTT。",
+      "meshcore": "在下方连接您的MeshCore收音机。",
+      "reticulum": "请按照下方的Reticulum设置指南操作。",
+      "meshcom": "在下方连接您的MeshCom无线电。"
+    },
+    "tourLastHint": "您可以随时在“应用”>“协议”中更改协议。",
+    "next": "下一頁",
+    "done": "完成"
   }
 }

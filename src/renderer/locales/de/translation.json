@@ -9237,5 +9237,30 @@
     "saveFailed": "Die MeshCom-Beobachtungsliste konnte nicht gespeichert werden.",
     "alertTitle": "MeshCom-Uhr: {{callsign}}",
     "alertBody": "{{callsign}} auf MeshCom gehört."
+  },
+  "firstRun": {
+    "title": "Wählen Sie Ihre Protokolle aus",
+    "intro": "Wähle die Netzwerke aus, die du verwenden möchtest. Du kannst dies jederzeit unter App > Protokolle ändern.",
+    "listLabel": "Protokolle",
+    "needs": {
+      "meshtastic": "Funktioniert allein über MQTT, aber ein Meshtastic-Funkgerät wird empfohlen.",
+      "meshcore": "Benötigt ein MeshCore-Radio.",
+      "reticulum": "Empfohlen. Funktioniert nur über das Internet und unterstützt RNode-Funkgeräte.",
+      "meshcom": "Nur lizenzierte Funkamateure. Benötigt ein MeshCom-Funkgerät."
+    },
+    "noneSelected": "Wählen Sie mindestens ein Protokoll aus.",
+    "skip": "Einrichtung überspringen",
+    "continue": "Fortfahren",
+    "tourLabel": "Protokolleinrichtung",
+    "tourStep": "{{name}} einrichten ({{step}} von {{total}})",
+    "tourHint": {
+      "meshtastic": "Schließen Sie unten ein Meshtastic-Radio an oder verwenden Sie nur MQTT.",
+      "meshcore": "Verbinden Sie Ihr MeshCore-Radio unten.",
+      "reticulum": "Befolge die Reticulum Einrichtungsanleitung unten.",
+      "meshcom": "Verbinden Sie Ihr MeshCom-Funkgerät unten."
+    },
+    "tourLastHint": "Sie können die Protokolle jederzeit unter App > Protokolle ändern.",
+    "next": "Weiter",
+    "done": "Erledigt"
   }
 }

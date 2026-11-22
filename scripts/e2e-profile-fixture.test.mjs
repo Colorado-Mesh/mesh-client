@@ -38,6 +38,12 @@ describe('isolated Electron E2E bootstrap', () => {
       getLoginItemSettings: originalSystemCall,
     };
     const shell = { openExternal: originalSystemCall };
+    const handlers = new Map();
+    const ipcMain = {
+      handle: vi.fn((channel, listener) => {
+        handlers.set(channel, listener);
+      }),
+    };
     const autoUpdater = {
       checkForUpdates: originalSystemCall,
       downloadUpdate: originalSystemCall,
@@ -52,7 +58,7 @@ describe('isolated Electron E2E bootstrap', () => {
           cwd: () => root,
         },
         require: (id) => {
-          if (id === 'electron') return { app, shell };
+          if (id === 'electron') return { app, ipcMain, shell };
           if (id === 'electron-updater') {
             loadUpdater();
             return { autoUpdater };
@@ -66,8 +72,37 @@ describe('isolated Electron E2E bootstrap', () => {
           throw new Error(`Unexpected fixture module: ${id}`);
         },
       });
-    return { run, app, shell, autoUpdater, loadMain, loadUpdater, originalSystemCall };
+    return {
+      run,
+      app,
+      ipcMain,
+      handlers,
+      shell,
+      autoUpdater,
+      loadMain,
+      loadUpdater,
+      originalSystemCall,
+    };
   }
+
+  it('reports an existing install to the first-run check unless a spec opts in', () => {
+    const real = () => true;
+    const other = () => 'other';
+    const h = harness({ MESH_E2E_PACKAGED: '0' });
+    h.run();
+    h.ipcMain.handle('db:wasCreatedThisLaunch', real);
+    h.ipcMain.handle('db:getIncidents', other);
+    expect(h.handlers.get('db:wasCreatedThisLaunch')()).toBe(false);
+    expect(h.handlers.get('db:getIncidents')).toBe(other);
+  });
+
+  it('keeps the real first-run check when MESH_E2E_FIRST_RUN=1', () => {
+    const real = () => true;
+    const h = harness({ MESH_E2E_PACKAGED: '0', MESH_E2E_FIRST_RUN: '1' });
+    h.run();
+    h.ipcMain.handle('db:wasCreatedThisLaunch', real);
+    expect(h.handlers.get('db:wasCreatedThisLaunch')).toBe(real);
+  });
 
   it('contains storage and OS mutations while loading the real packaged entrypoint', async () => {
     const h = harness();

@@ -9237,5 +9237,30 @@
     "saveFailed": "MeshCom 관심 목록을 저장할 수 없습니다.",
     "alertTitle": "MeshCom 시계: {{callsign}}",
     "alertBody": "MeshCom에서 {{callsign}}님의 음성을 들었습니다."
+  },
+  "firstRun": {
+    "title": "프로토콜 선택",
+    "intro": "사용하려는 네트워크를 선택하세요. 언제든지 앱 > 프로토콜에서 이를 변경할 수 있습니다.",
+    "listLabel": "프로토콜",
+    "needs": {
+      "meshtastic": "MQTT에서만 작동하지만 Meshtastic 라디오를 사용하는 것이 좋습니다.",
+      "meshcore": "MeshCore 라디오가 필요합니다.",
+      "reticulum": "권장 사항. 인터넷에서만 작동하며 RNode 라디오를 지원합니다.",
+      "meshcom": "허가받은 아마추어 무선사만 해당. MeshCom 무선 장치가 필요합니다."
+    },
+    "noneSelected": "프로토콜을 하나 이상 선택하세요.",
+    "skip": "설정 건너 뛰기",
+    "continue": "계속하기",
+    "tourLabel": "프로토콜 설정",
+    "tourStep": "{{name}} 설정({{step}} / {{total}})",
+    "tourHint": {
+      "meshtastic": "아래에서 Meshtastic 라디오를 연결하거나 MQTT만 사용하세요.",
+      "meshcore": "아래에서 MeshCore 라디오를 연결하세요.",
+      "reticulum": "아래의 Reticulum 설정 가이드를 따르세요.",
+      "meshcom": "아래에서 MeshCom 무전기를 연결하세요."
+    },
+    "tourLastHint": "앱 > 프로토콜에서 언제든지 프로토콜을 변경할 수 있습니다.",
+    "next": "다음",
+    "done": "완료"
   }
 }

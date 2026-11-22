@@ -55,6 +55,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       dock: noopAsync,
     },
     db: {
+      // The browser lane has no database file, so it never offers first-run setup.
+      wasCreatedThisLaunch: async () => false,
       getIncidents: async () => incidents ?? { incidents: {}, resolvedTombstones: {} },
       saveIncidents: async (snapshot: IncidentSnapshot) => {
         incidents = structuredClone(snapshot);

@@ -82,6 +82,13 @@ function isMergeSourceInvalidError(err: unknown): err is MergeSourceInvalidError
 
 let db: NodeSqliteDB | null = null;
 let dbClosed = false;
+/** True when this launch found no schema in the database file (a fresh install). */
+let databaseCreatedThisLaunch = false;
+
+/** Whether `initDatabase` found an empty database (no schema yet) on this launch. */
+export function wasDatabaseCreatedThisLaunch(): boolean {
+  return databaseCreatedThisLaunch;
+}
 
 export const DATABASE_CLOSED_MESSAGE = '[db] Database is closed';
 
@@ -115,6 +122,7 @@ export function initDatabase(): void {
 
     // Confirm irreversible upgrades before any writable DB configuration (chmod / WAL / sync).
     const userVersion = db.pragma('user_version', { simple: true }) as number;
+    databaseCreatedThisLaunch = userVersion === 0;
     if (userVersion > 0 && userVersion < CURRENT_SCHEMA_VERSION) {
       if (!confirmDatabaseSchemaUpgrade(userVersion, CURRENT_SCHEMA_VERSION)) {
         try {
