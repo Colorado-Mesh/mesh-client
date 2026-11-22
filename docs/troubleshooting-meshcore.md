@@ -122,7 +122,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
   5. A wrong PIN keeps the PIN prompt open so you can retry.
   6. If pairing still fails, clear the radio's stored pairings from the MeshCore app or CLI, or connect over USB serial (Companion USB firmware) to confirm the radio works.
 - **Windows: PIN pairing succeeds, then connect times out** (`Bluetooth connection timed out while opening MeshCore over sidecar GATT` / logs show `gatt connect stage` stuck at `discover_services`, or `Uncached characteristic discovery timed out, falling back to cached mode` → `write characteristic missing`): this is a WinRT GATT discovery failure after a good bond ([btleplug#325](https://github.com/deviceplug/btleplug/issues/325)), not a wrong PIN. mesh-client recovers with an early GATT keep-alive, one disconnect/rediscover, and a UUID-targeted WinRT cache warm-up (see [BLE and serial](development/ble-serial.md#sidecar-gatt-btleplug)). Still try **Remove & Re-pair Device**, toggle Windows Bluetooth, and power-cycle the radio; MeshCore desktop (Chrome Web Bluetooth) working on the same PC does not rule this out.
-- **Try in the official MeshCore app first**: if the device connects there, it will work in Mesh-Client.
+- **Try in the official MeshCore app first**: success there confirms the radio and companion firmware are healthy, but it does **not** guarantee Mesh Client will connect (Windows GATT discovery can still fail after a good bond — see the PIN-then-timeout bullet above).
 - If Bluetooth fails, try serial (USB) or HTTP as alternatives.
 
 **USB (Serial):**
