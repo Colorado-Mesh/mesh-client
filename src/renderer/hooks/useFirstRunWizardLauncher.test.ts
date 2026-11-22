@@ -123,4 +123,44 @@ describe('useFirstRunWizardLauncher', () => {
       expect(useFirstRunWizardStore.getState().pickerOpen).toBe(true);
     });
   });
+
+  it('defers the launch decision until hydration finishes', async () => {
+    const ask = vi.fn(() => Promise.resolve(false));
+    setBridge(ask);
+    const persist = useFirstRunWizardStore.persist;
+    useFirstRunWizardStore.setState({
+      status: 'unseen',
+      pickerOpen: false,
+      tour: null,
+      tourStep: 0,
+    });
+
+    let hydrationRun: (() => void) | undefined;
+    vi.spyOn(persist, 'hasHydrated').mockReturnValue(false);
+    vi.spyOn(persist, 'onFinishHydration').mockImplementation((run) => {
+      hydrationRun = () => {
+        run(useFirstRunWizardStore.getState());
+      };
+      return () => {
+        hydrationRun = undefined;
+      };
+    });
+
+    renderHook(() => {
+      useFirstRunWizardLauncher();
+    });
+
+    expect(ask).not.toHaveBeenCalled();
+    expect(useFirstRunWizardStore.getState().pickerOpen).toBe(false);
+
+    useFirstRunWizardStore.setState({ status: 'pending' });
+    hydrationRun?.();
+
+    await waitFor(() => {
+      expect(useFirstRunWizardStore.getState().pickerOpen).toBe(true);
+    });
+    expect(ask).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
 });

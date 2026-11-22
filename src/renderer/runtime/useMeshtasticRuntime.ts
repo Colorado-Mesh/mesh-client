@@ -3093,7 +3093,9 @@ export function useMeshtasticRuntime() {
         batteryCharging: undefined,
       });
       myNodeNumRef.current = 0;
-      connectionParamsRef.current = null;
+      if (connectionParamsRef.current?.type === 'serial') {
+        connectionParamsRef.current.serialPort = null;
+      }
       pushMqttChannelKeys();
     },
     [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, pushMqttChannelKeys],

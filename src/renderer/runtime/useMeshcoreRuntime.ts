@@ -3847,7 +3847,9 @@ export function useMeshcoreRuntime() {
       if (type === 'ble') {
         bleConnectInProgressRef.current = false;
       }
-      meshcoreConnectionParamsRef.current = null;
+      if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
+        meshcoreConnectionParamsRef.current.serialPort = null;
+      }
       return Promise.resolve();
     },
     [teardownMeshcoreConnEventListeners],

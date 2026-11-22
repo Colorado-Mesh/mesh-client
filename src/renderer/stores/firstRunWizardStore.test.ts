@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FIRST_RUN_WIZARD_STORAGE_KEY } from '@/renderer/lib/firstRunWizard';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import { useFirstRunWizardStore } from './firstRunWizardStore';
 
@@ -61,6 +62,17 @@ describe('first-run wizard store', () => {
     store.getState().nextTourStep();
     store.getState().endTour();
     expect(store.getState()).toMatchObject({ tour: null, tourStep: 0 });
+  });
+
+  it('recovers defaults when persisted JSON is malformed and still completes hydration', async () => {
+    const warn = mockConsoleWarn();
+    localStorage.setItem(FIRST_RUN_WIZARD_STORAGE_KEY, '{not-json');
+    await useFirstRunWizardStore.persist.rehydrate();
+    expect(useFirstRunWizardStore.getState().status).toBe('unseen');
+    expect(useFirstRunWizardStore.persist.hasHydrated()).toBe(true);
+    expect(localStorage.getItem(FIRST_RUN_WIZARD_STORAGE_KEY)).toBeNull();
+    expect(warn.spy).toHaveBeenCalled();
+    warn.restore();
   });
 
   it('restores a pending status after restart without restoring an open picker or tour', async () => {

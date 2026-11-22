@@ -103,7 +103,16 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(failureBlock).toContain('isReconnectingRef.current = false');
     expect(failureBlock).toContain('reconnectGenerationRef.current += 1');
     expect(failureBlock).toContain('clearMeshtasticConfigureState()');
-    expect(failureBlock).toContain('connectionParamsRef.current = null');
+    expect(failureBlock).toContain('connectionParamsRef.current.serialPort = null');
+    expect(failureBlock).not.toContain('connectionParamsRef.current = null');
+  });
+
+  it('preserves BLE connection params in handleRfConnectFailure for lease-yield reconnect', () => {
+    const failureBlock = extractUseCallbackBody(SOURCE, 'handleRfConnectFailure');
+    expect(failureBlock).not.toContain('connectionParamsRef.current = null');
+    expect(SOURCE).toMatch(
+      /onBleLeaseReleased[\s\S]*?connectionParamsRef\.current\?\.type !== 'ble'/,
+    );
   });
 
   it('serial disconnect registration requires a live device or driver session', () => {

@@ -107,16 +107,26 @@ describe('cross-protocol serial claim contracts', () => {
     );
   });
 
-  it('clears provisional serial params when RF connect fails', () => {
-    expect(MESHTASTIC_RUNTIME).toMatch(
-      /handleRfConnectFailure[\s\S]*?connectionParamsRef\.current = null/,
-    );
-    expect(MESHCORE_RUNTIME).toMatch(
-      /handleRfConnectFailure[\s\S]*?meshcoreConnectionParamsRef\.current = null/,
-    );
-    expect(MESHCOM_RUNTIME).toMatch(
-      /handleRfConnectFailure[\s\S]*?connectionParamsRef\.current = null/,
-    );
+  it('keeps reconnect params on RF connect failure while dropping failed serial holders', () => {
+    const meshtasticFailure = MESHTASTIC_RUNTIME.match(
+      /const handleRfConnectFailure = useCallback\([\s\S]*?\n  \);/,
+    )?.[0];
+    expect(meshtasticFailure).toBeDefined();
+    expect(meshtasticFailure).toContain('connectionParamsRef.current.serialPort = null');
+    expect(meshtasticFailure).not.toContain('connectionParamsRef.current = null');
+
+    const meshcoreFailure = MESHCORE_RUNTIME.match(
+      /const handleRfConnectFailure = useCallback\([\s\S]*?\n  \);/,
+    )?.[0];
+    expect(meshcoreFailure).toBeDefined();
+    expect(meshcoreFailure).toContain('meshcoreConnectionParamsRef.current.serialPort = null');
+    expect(meshcoreFailure).not.toContain('meshcoreConnectionParamsRef.current = null');
+
+    const meshcomFailure = MESHCOM_RUNTIME.match(
+      /const handleRfConnectFailure = useCallback\([\s\S]*?\n  \);/,
+    )?.[0];
+    expect(meshcomFailure).toBeDefined();
+    expect(meshcomFailure).not.toContain('connectionParamsRef.current = null');
     expect(MESHCOM_RUNTIME).toMatch(
       /isSerialConnected:\s*\(\)\s*=>[\s\S]*?driverIdentityIdRef\.current != null/,
     );

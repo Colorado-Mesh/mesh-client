@@ -308,7 +308,6 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         status: 'disconnected',
         connectionType: toUiConnectionType(type),
       });
-      connectionParamsRef.current = null;
     },
     [detachIngest, resolveIdentityId],
   );

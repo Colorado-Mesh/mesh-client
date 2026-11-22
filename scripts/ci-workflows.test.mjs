@@ -548,6 +548,18 @@ describe('CI workflow contracts', () => {
     expect(resolve?.if).toBe("matrix.os == 'windows-latest'");
     expect(resolve?.run).toContain('assertWinSetupInstallers');
 
+    const x64 = releaseSteps.find(
+      (step) => step.name === 'Upload Windows x64 Setup (direct download)',
+    );
+    expect(x64?.with?.archive).toBe(false);
+    expect(x64?.with?.path).toContain('win_setup.outputs.x64');
+
+    const arm64 = releaseSteps.find(
+      (step) => step.name === 'Upload Windows arm64 Setup (direct download)',
+    );
+    expect(arm64?.with?.archive).toBe(false);
+    expect(arm64?.with?.path).toContain('win_setup.outputs.arm64');
+
     const meta = releaseSteps.find((step) => step.name === 'Upload Windows meta (latest.yml)');
     expect(meta?.with?.name).toContain('mesh-client-windows-meta-');
     expect(meta?.with?.path).toContain('latest.yml');
