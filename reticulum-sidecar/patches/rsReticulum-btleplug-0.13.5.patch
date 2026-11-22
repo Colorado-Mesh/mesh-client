@@ -1,0 +1,11 @@
+--- a/crates/rns-interface/Cargo.toml
++++ b/crates/rns-interface/Cargo.toml
+@@ -29,7 +29,7 @@
+ socket2 = { workspace = true }
+ if-addrs = { workspace = true }
+ serialport = { workspace = true, optional = true }
+-btleplug = { version = "=0.13.4", optional = true }
++btleplug = { version = "=0.13.5", optional = true }
+ futures = { version = "0.3", optional = true }
+ uuid = { version = "1", optional = true }
+ rand = { workspace = true }

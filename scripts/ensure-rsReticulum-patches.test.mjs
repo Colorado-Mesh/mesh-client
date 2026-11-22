@@ -74,6 +74,7 @@ const APPLY_SCRIPTS = [
   'apply-rsReticulum-slow-rf-announce-filter.sh',
   'apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh',
   'apply-rsReticulum-ble-rnode-host-rssi-cache.sh',
+  'apply-rsReticulum-btleplug-0.13.5.sh',
   'apply-rsReticulum-response-resource-window-fast.sh',
   'apply-rsReticulum-rncp-picker-pinned-jail.sh',
   'apply-rsReticulum-rncp-inbound-admission.sh',

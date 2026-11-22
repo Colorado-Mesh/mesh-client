@@ -77,8 +77,16 @@ export function shouldClearMeshcoreBleSelectionForError(error: unknown): boolean
 const MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE =
   /unreachable while discovering services|unreachable while discovering characteristics|gatt.*unreachable/i;
 
+/**
+ * Sidecar IsolatedExecutor latched after a WinRT call overran CONNECT_BUDGET.
+ * A second MeshCoreTransport attempt at 1.5s is refused (`still stuck`) and only
+ * lengthens the wedge — wait for user retry / Remove & Re-pair instead (#1528).
+ */
+const MESHCORE_BLE_STACK_UNRESPONSIVE_RE = /Bluetooth stack unresponsive|still stuck/i;
+
 export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
   if (isReticulumSidecarResolveErrorMessage(message)) return false;
+  if (MESHCORE_BLE_STACK_UNRESPONSIVE_RE.test(message)) return false;
   if (classifyMeshcoreBleTimeoutStage(message) !== 'unknown') return true;
   if (MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE.test(message)) return true;
   return /already in progress|gatt server is disconnected|disconnected during gatt init|disconnected during handshake|pairing step finished|fromRadio characteristic supports neither notify nor read/i.test(
