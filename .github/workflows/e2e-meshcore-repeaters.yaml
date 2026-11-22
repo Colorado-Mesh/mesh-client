@@ -24,6 +24,7 @@ on:
       - 'patches/@liamcottle__meshcore.js@*.patch'
       - 'e2e/meshcore-repeater-admin.spec.ts'
       - 'e2e/fixtures/meshcore-repeater-radio.ts'
+      - 'e2e/fixtures/origin-migration.cjs'
       - 'e2e/electronApp.ts'
       - 'playwright.config.ts'
       - '.github/workflows/e2e-meshcore-repeaters.yaml'

@@ -3847,6 +3847,9 @@ export function useMeshcoreRuntime() {
       if (type === 'ble') {
         bleConnectInProgressRef.current = false;
       }
+      if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
+        meshcoreConnectionParamsRef.current.serialPort = null;
+      }
       return Promise.resolve();
     },
     [teardownMeshcoreConnEventListeners],
@@ -10482,7 +10485,8 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     registerMeshcoreSerialDisconnectTarget({
-      isSerialConnected: () => meshcoreConnectionParamsRef.current?.rfType === 'serial',
+      isSerialConnected: () =>
+        meshcoreConnectionParamsRef.current?.rfType === 'serial' && connRef.current != null,
       getOpenSerialPort: () => {
         const fromParams = meshcoreConnectionParamsRef.current?.serialPort ?? null;
         if (fromParams) return fromParams;

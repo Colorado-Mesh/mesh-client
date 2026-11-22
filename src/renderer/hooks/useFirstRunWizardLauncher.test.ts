@@ -88,16 +88,79 @@ describe('useFirstRunWizardLauncher', () => {
     expect(useFirstRunWizardStore.getState().pickerOpen).toBe(false);
   });
 
-  it('logs and stays closed when the check fails', async () => {
+  it('retries once and fails open when the check keeps failing', async () => {
     const warn = mockConsoleWarn();
-    setBridge(() => Promise.reject(new Error('ipc down')));
+    const ask = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('ipc down'))
+      .mockRejectedValueOnce(new Error('ipc down'));
+    setBridge(ask);
     renderHook(() => {
       useFirstRunWizardLauncher();
     });
     await waitFor(() => {
-      expect(warn.spy).toHaveBeenCalled();
+      expect(ask).toHaveBeenCalledTimes(2);
     });
-    expect(useFirstRunWizardStore.getState().pickerOpen).toBe(false);
+    await waitFor(() => {
+      expect(useFirstRunWizardStore.getState().pickerOpen).toBe(true);
+    });
+    expect(useFirstRunWizardStore.getState().status).toBe('pending');
+    expect(warn.spy).toHaveBeenCalled();
     warn.restore();
+  });
+
+  it('opens pending after hydration when persisted status was pending', async () => {
+    setBridge(undefined);
+    localStorage.setItem(
+      'mesh-client:firstRunWizard',
+      JSON.stringify({ state: { status: 'pending' }, version: 0 }),
+    );
+    await useFirstRunWizardStore.persist.rehydrate();
+    renderHook(() => {
+      useFirstRunWizardLauncher();
+    });
+    await waitFor(() => {
+      expect(useFirstRunWizardStore.getState().pickerOpen).toBe(true);
+    });
+  });
+
+  it('defers the launch decision until hydration finishes', async () => {
+    const ask = vi.fn(() => Promise.resolve(false));
+    setBridge(ask);
+    const persist = useFirstRunWizardStore.persist;
+    useFirstRunWizardStore.setState({
+      status: 'unseen',
+      pickerOpen: false,
+      tour: null,
+      tourStep: 0,
+    });
+
+    let hydrationRun: (() => void) | undefined;
+    vi.spyOn(persist, 'hasHydrated').mockReturnValue(false);
+    vi.spyOn(persist, 'onFinishHydration').mockImplementation((run) => {
+      hydrationRun = () => {
+        run(useFirstRunWizardStore.getState());
+      };
+      return () => {
+        hydrationRun = undefined;
+      };
+    });
+
+    renderHook(() => {
+      useFirstRunWizardLauncher();
+    });
+
+    expect(ask).not.toHaveBeenCalled();
+    expect(useFirstRunWizardStore.getState().pickerOpen).toBe(false);
+
+    useFirstRunWizardStore.setState({ status: 'pending' });
+    hydrationRun?.();
+
+    await waitFor(() => {
+      expect(useFirstRunWizardStore.getState().pickerOpen).toBe(true);
+    });
+    expect(ask).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
   });
 });

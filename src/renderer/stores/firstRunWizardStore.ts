@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { FIRST_RUN_WIZARD_STORAGE_KEY, type FirstRunStatus } from '@/renderer/lib/firstRunWizard';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
@@ -20,6 +21,36 @@ interface FirstRunWizardState {
   /** Moves to the next tour step; past the last step the tour ends. */
   nextTourStep: () => void;
   endTour: () => void;
+}
+
+function isFirstRunStatus(value: unknown): value is FirstRunStatus {
+  return value === 'unseen' || value === 'pending' || value === 'done';
+}
+
+/** Drop corrupted localStorage so persist still finishes hydration with defaults. */
+export function createFirstRunWizardPersistStorage(): StateStorage {
+  return {
+    getItem: (name) => {
+      try {
+        const raw = localStorage.getItem(name);
+        if (raw == null) return null;
+        JSON.parse(raw);
+        return raw;
+      } catch (err) {
+        console.warn(
+          '[FirstRunWizardStore] malformed persisted state — resetting ' + errLikeToLogString(err),
+        );
+        localStorage.removeItem(name);
+        return null;
+      }
+    },
+    setItem: (name, value) => {
+      localStorage.setItem(name, value);
+    },
+    removeItem: (name) => {
+      localStorage.removeItem(name);
+    },
+  };
 }
 
 export const useFirstRunWizardStore = create<FirstRunWizardState>()(
@@ -56,8 +87,23 @@ export const useFirstRunWizardStore = create<FirstRunWizardState>()(
     }),
     {
       name: FIRST_RUN_WIZARD_STORAGE_KEY,
+      storage: createJSONStorage(() => createFirstRunWizardPersistStorage()),
       // A restart ends an unfinished tour; only the progress marker survives.
       partialize: (state) => ({ status: state.status }),
+      merge: (persisted, current) => {
+        const status = (persisted as { status?: unknown } | undefined)?.status;
+        if (isFirstRunStatus(status)) {
+          return { ...current, status };
+        }
+        return current;
+      },
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.warn(
+            '[FirstRunWizardStore] rehydrate failed — using defaults ' + errLikeToLogString(error),
+          );
+        }
+      },
     },
   ),
 );

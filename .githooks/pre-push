@@ -1,0 +1,19 @@
+#!/bin/sh
+# Branch gate before push: Prettier/ESLint/typecheck/vitest on every path changed vs main.
+# To skip in an emergency: git push --no-verify
+#
+# Agents on Cursor VMs: run `git config core.hooksPath .githooks` first — the VM
+# overrides hooksPath and `.githooks/pre-commit` will not run otherwise.
+
+REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ -d "$REPO_ROOT/.githooks/bin" ]; then
+  export PATH="$REPO_ROOT/.githooks/bin:$PATH"
+fi
+
+cd "$REPO_ROOT" || exit 1
+
+printf 'pre-push: running pnpm run check:changed\n' >&2
+pnpm run check:changed || {
+  printf 'pre-push: FAILED — pnpm run check:changed\n' >&2
+  exit 1
+}

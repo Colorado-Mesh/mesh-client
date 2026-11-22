@@ -3093,6 +3093,9 @@ export function useMeshtasticRuntime() {
         batteryCharging: undefined,
       });
       myNodeNumRef.current = 0;
+      if (connectionParamsRef.current?.type === 'serial') {
+        connectionParamsRef.current.serialPort = null;
+      }
       pushMqttChannelKeys();
     },
     [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, pushMqttChannelKeys],
@@ -5097,7 +5100,9 @@ export function useMeshtasticRuntime() {
 
   useEffect(() => {
     registerMeshtasticSerialDisconnectTarget({
-      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
+      isSerialConnected: () =>
+        connectionParamsRef.current?.type === 'serial' &&
+        (deviceRef.current != null || meshtasticDriverConnectedRef.current),
       getOpenSerialPort: () => {
         const fromParams = connectionParamsRef.current?.serialPort ?? null;
         if (fromParams) return fromParams;

@@ -171,11 +171,17 @@ describe('packaging sidecar workflow gates', () => {
     expect(build).toContain('pattern: Mesh-client-Setup-*');
     expect(build).not.toContain('name: test-mesh-client-windows-${{ github.sha }}');
     expect(build).not.toContain('artifact: test-mesh-client-windows-${{ github.sha }}');
-    for (const os of ['macos', 'linux', 'windows']) {
+    for (const os of ['macos', 'linux']) {
       expect(release).toContain(`name: mesh-client-${os}-\${{ github.sha }}`);
       expect(release).toContain(`artifact: mesh-client-${os}-\${{ github.sha }}`);
       expect(release).not.toContain(`test-mesh-client-${os}-`);
     }
+    expect(release).toContain('name: mesh-client-windows-meta-${{ github.sha }}');
+    expect(release).toContain('archive: false');
+    expect(release).toContain('artifact_mode: windows-split');
+    expect(release).toContain('pattern: Mesh-client-Setup-*');
+    expect(release).not.toContain('name: mesh-client-windows-${{ github.sha }}');
+    expect(release).not.toContain('artifact: mesh-client-windows-${{ github.sha }}');
     expect(build).toContain('name: Stage Reticulum');
     expect(release).toContain('name: Stage Reticulum');
     expect(build).toContain('name: Package ${{ matrix.sidecar_platform }}');
