@@ -543,7 +543,7 @@ To test sidecar staging or compare cold and warm cache timings without building 
 
 **CI wiring:**
 
-- `packaging-sidecars.yaml` installs Zig via [`mlugg/setup-zig`](https://github.com/mlugg/setup-zig) with **`version: latest`** (no Zig version pin) and **latest** `cargo-zigbuild` (`cargo install cargo-zigbuild --locked`) on Linux jobs, then `scripts/build-reticulum-sidecar-release.mjs` runs `cargo zigbuild` for `platform === 'linux'` (macOS/Windows stay on plain `cargo build`; host `cargo test` stays plain). Pin Zig or cargo-zigbuild only if packaging breaks or a security floor requires it. The action still _declares_ Node 20 (CI annotation) until upstream ships node24; `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` already runs it on Node 24.
+- `packaging-sidecars.yaml` installs a **pinned** Zig (`0.15.1` via [`mlugg/setup-zig`](https://github.com/mlugg/setup-zig)) and **pinned** `cargo-zigbuild` (`0.24.1`, `cargo install … --version … --locked`) on Linux jobs, then `scripts/build-reticulum-sidecar-release.mjs` runs `cargo zigbuild` for `platform === 'linux'` (macOS/Windows stay on plain `cargo build`; host `cargo test` stays plain). Do **not** float `version: latest` / unversioned `cargo install` on this release path — bump pins deliberately after review. The action still _declares_ Node 20 (CI annotation) until upstream ships node24; `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` already runs it on Node 24.
 - Shared constant: `MAX_SIDECAR_GLIBC = '2.35'` in `scripts/check-reticulum-sidecar-glibc.mjs` (also `linuxZigbuildTarget()`). Fail-closed step asserts the staged ELF; HTTP smoke still runs on the (newer) runner glibc — that is fine.
 - Do **not** “fix” a floor failure by removing zigbuild or raising the max without an intentional support-policy change.
 
