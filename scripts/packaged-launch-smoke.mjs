@@ -15,6 +15,8 @@ import { spawn, spawnSync } from 'child_process';
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
 import path from 'path';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 export const LOG_FILENAME = 'mesh-client.log';
 /** How long the process must stay alive to count as "booted" (ms). */
 export const STARTUP_ALIVE_MS = 20_000;
@@ -90,6 +92,17 @@ export function baseLaunchArgs(userDataDir) {
   return [`--user-data-dir=${userDataDir}`];
 }
 
+/**
+ * Smoke spawns must use absolute binaries (AppRun, .app Mach-O, installers) or an allowlisted basename.
+ * @param {string} command
+ * @returns {string}
+ */
+export function assertSmokeSpawnCommand(command) {
+  if (path.isAbsolute(command)) return command;
+  if (command === 'node') return command;
+  fail(`refusing to spawn non-absolute command: ${command}`);
+}
+
 /** @param {string} text @param {number} [max] */
 export function tailText(text, max = 8192) {
   if (text.length <= max) return text;
@@ -126,7 +139,7 @@ function listDirDepth2(dir, maxEntries = 40) {
         lines.push('…');
         break;
       }
-      const full = path.join(dir, entry.name);
+      const full = joinUnderRoot(dir, entry.name);
       if (entry.isDirectory()) {
         lines.push(`${entry.name}/`);
         try {
@@ -136,7 +149,7 @@ function listDirDepth2(dir, maxEntries = 40) {
               lines.push('…');
               break;
             }
-            const childPath = path.join(full, child.name);
+            const childPath = joinUnderRoot(full, child.name);
             let suffix = child.isDirectory() ? '/' : '';
             try {
               if (child.isFile()) suffix = ` (${statSync(childPath).size}b)`;
@@ -302,7 +315,7 @@ export async function launchAndAssert({
   pollMs = LOG_POLL_MS,
   killGraceMs = KILL_GRACE_MS,
 }) {
-  const logPath = path.join(userDataDir, LOG_FILENAME);
+  const logPath = joinUnderRoot(userDataDir, LOG_FILENAME);
   let stdioBuf = '';
   /** Sticky: renderer-failure seen in uncapped stdio (survives appendCapped trim). */
   let rendererFailureFromStdio = false;
@@ -312,7 +325,9 @@ export async function launchAndAssert({
   let crashExit = null;
 
   const spawnedAt = Date.now();
-  const child = spawn(command, args, {
+  const executable = assertSmokeSpawnCommand(command);
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- command validated by assertSmokeSpawnCommand (absolute path or node).
+  const child = spawn(executable, args, {
     cwd,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],

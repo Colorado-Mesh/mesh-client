@@ -3,6 +3,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { assertPathInsideRoot, joinUnderRoot } from '../shared/pathUnderRoot';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
 
@@ -26,8 +27,8 @@ export function findReticulumSidecarProjectDir(extraRoots: string[] = []): strin
   searchRoots.add(path.resolve(__dirname, '../../..'));
 
   for (const root of searchRoots) {
-    const projectDir = path.join(root, 'reticulum-sidecar');
-    if (fs.existsSync(path.join(projectDir, 'Cargo.toml'))) {
+    const projectDir = joinUnderRoot(root, 'reticulum-sidecar');
+    if (fs.existsSync(joinUnderRoot(projectDir, 'Cargo.toml'))) {
       return projectDir;
     }
   }
@@ -38,12 +39,12 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
   const name = sidecarBinaryName();
 
   if (process.resourcesPath) {
-    const bundled = path.join(process.resourcesPath, 'reticulum-sidecar', name);
+    const bundled = joinUnderRoot(process.resourcesPath, 'reticulum-sidecar', name);
     if (fs.existsSync(bundled)) return bundled;
   }
 
   try {
-    const appBundled = path.join(app.getAppPath(), 'resources', 'reticulum-sidecar', name);
+    const appBundled = joinUnderRoot(app.getAppPath(), 'resources', 'reticulum-sidecar', name);
     if (fs.existsSync(appBundled)) return appBundled;
   } catch {
     // catch-no-log-ok app path unavailable in unit tests without electron ready
@@ -52,22 +53,33 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
   const projectDir = findReticulumSidecarProjectDir(extraRoots);
   if (projectDir) {
     for (const profile of ['debug', 'release'] as const) {
-      const candidate = path.join(projectDir, 'target', profile, name);
+      const candidate = joinUnderRoot(projectDir, 'target', profile, name);
       if (fs.existsSync(candidate)) return candidate;
     }
-    return path.join(projectDir, 'target', 'debug', name);
+    return joinUnderRoot(projectDir, 'target', 'debug', name);
   }
 
-  return path.join(app.getAppPath(), 'reticulum-sidecar', 'target', 'debug', name);
+  return joinUnderRoot(app.getAppPath(), 'reticulum-sidecar', 'target', 'debug', name);
 }
 
 /** True when repo-local `.rsstack` has the minimal rns-stack path deps (rsReticulum + rsLXMF). */
 export function hasRsstackWorkspace(projectDir: string): boolean {
-  const rnsRuntime = path.normalize(
-    path.join(projectDir, '../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml'),
+  const repoRoot = reticulumSidecarRepoRoot(projectDir);
+  const rnsRuntime = joinUnderRoot(
+    repoRoot,
+    '.rsstack',
+    'rsReticulum',
+    'crates',
+    'rns-runtime',
+    'Cargo.toml',
   );
-  const lxmfCore = path.normalize(
-    path.join(projectDir, '../.rsstack/rsLXMF/crates/lxmf-core/Cargo.toml'),
+  const lxmfCore = joinUnderRoot(
+    repoRoot,
+    '.rsstack',
+    'rsLXMF',
+    'crates',
+    'lxmf-core',
+    'Cargo.toml',
   );
   return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
 }
@@ -131,7 +143,7 @@ export function formatReticulumCargoBuildError(code: number | null, stderr: stri
 }
 
 export function ensureRsReticulumPatchesScriptPath(projectDir: string): string {
-  return path.join(
+  return joinUnderRoot(
     reticulumSidecarRepoRoot(projectDir),
     'scripts',
     'ensure-rsReticulum-patches.sh',
@@ -143,14 +155,18 @@ export function ensureRsReticulumPatches(projectDir: string): void {
   if (!hasRsstackWorkspace(projectDir)) return;
 
   const repoRoot = reticulumSidecarRepoRoot(projectDir);
-  const scriptPath = ensureRsReticulumPatchesScriptPath(projectDir);
+  const scriptPath = assertPathInsideRoot(repoRoot, ensureRsReticulumPatchesScriptPath(projectDir));
   if (!fs.existsSync(scriptPath)) {
     throw new Error(
       `RETICULUM_RNS_PATCH_SCRIPT_MISSING: expected ${scriptPath}. Run \`pnpm run reticulum:sidecar:build\` from the mesh-client repo root.`,
     );
   }
 
-  const result = spawnSync('bash', [scriptPath], {
+  // Run the shebang script directly (argv-only). Avoid spawn('bash', …) so a
+  // shell is never interposed between us and the validated script path.
+  // scriptPath is assertPathInsideRoot(repoRoot, …) above.
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
+  const result = spawnSync(scriptPath, [], {
     cwd: repoRoot,
     env: process.env,
     encoding: 'utf8',
@@ -239,16 +255,16 @@ export const runCargoBuildForTests = runCargoBuild;
 /** Newest mtime among Cargo.toml and reticulum-sidecar/src Rust sources. */
 export function newestReticulumSidecarSourceMtimeMs(projectDir: string): number {
   let newest = 0;
-  const cargoToml = path.join(projectDir, 'Cargo.toml');
+  const cargoToml = joinUnderRoot(projectDir, 'Cargo.toml');
   if (fs.existsSync(cargoToml)) {
     newest = Math.max(newest, fs.statSync(cargoToml).mtimeMs);
   }
-  const srcDir = path.join(projectDir, 'src');
+  const srcDir = joinUnderRoot(projectDir, 'src');
   if (!fs.existsSync(srcDir)) return newest;
 
   const walk = (dir: string): void => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+      const full = joinUnderRoot(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.name.endsWith('.rs')) {

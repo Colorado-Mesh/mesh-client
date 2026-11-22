@@ -178,7 +178,8 @@ describe('createUdpBridge', () => {
         String(c[0] ?? '').includes('oversized datagram'),
       );
       expect(oversizedLogs).toHaveLength(2);
-      expect(String(oversizedLogs[1]?.[0] ?? '')).toContain('+3 dropped');
+      // Format: '[IPC] %s oversized … +%d dropped', channel, maxBytes, suppressedCount
+      expect(oversizedLogs[1]?.[3]).toBe(3);
     } finally {
       warn.mockRestore();
       vi.useRealTimers();
@@ -309,8 +310,8 @@ describe('createUdpBridge', () => {
         port: MESHCOM_EXTUDP_PORT,
       });
     }
-    const ignoreLogs = debug.mock.calls.filter((c) =>
-      String(c[0] ?? '').includes('meshcom:udp-data ignore from'),
+    const ignoreLogs = debug.mock.calls.filter(
+      (c) => c[1] === 'meshcom:udp-data' && c[2] === 'ignore from',
     );
     expect(ignoreLogs.length).toBe(1);
     debug.mockRestore();

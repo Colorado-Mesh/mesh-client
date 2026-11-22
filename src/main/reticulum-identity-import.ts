@@ -7,6 +7,7 @@ import type {
   ReticulumIdentityExportSaveResult,
   ReticulumIdentityImportDialogResult,
 } from '../shared/electron-api.types';
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { RETICULUM_CONFIG_MAX_READ_BYTES } from '../shared/reticulumProxyLimits';
 import { readUtf8FileBounded } from './reticulum-config-read';
 
@@ -163,7 +164,10 @@ function unlinkQuiet(filePath: string): void {
 /** Atomically write identity export bytes with exclusive 0o600 temp + rename. */
 export function writeIdentityExportAtomic(destPath: string, data: Buffer): void {
   const dir = path.dirname(destPath);
-  const tmpPath = path.join(dir, `.${path.basename(destPath)}.${process.pid}.${Date.now()}.tmp`);
+  const tmpPath = joinUnderRoot(
+    dir,
+    `.${path.basename(destPath)}.${process.pid}.${Date.now()}.tmp`,
+  );
   let fd: number | undefined;
   try {
     fd = fs.openSync(

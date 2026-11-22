@@ -2974,7 +2974,8 @@ function attachMqttAdapterUiEvents(
     if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol });
     else
       console.debug(
-        `[main] mqtt:status (${protocol}) dropped (mainWindow not ready)`,
+        '[main] mqtt:status (%s) dropped (mainWindow not ready)',
+        protocol,
         sanitizeLogMessage(s),
       );
   });
@@ -2982,7 +2983,8 @@ function attachMqttAdapterUiEvents(
     if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol });
     else
       console.debug(
-        `[main] mqtt:error (${protocol}) dropped (mainWindow not ready)`,
+        '[main] mqtt:error (%s) dropped (mainWindow not ready)',
+        protocol,
         sanitizeLogMessage(msg),
       );
   });
@@ -2990,7 +2992,8 @@ function attachMqttAdapterUiEvents(
     if (mainWindow) mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol });
     else
       console.debug(
-        `[main] mqtt:clientId (${protocol}) dropped (mainWindow not ready)`,
+        '[main] mqtt:clientId (%s) dropped (mainWindow not ready)',
+        protocol,
         sanitizeLogMessage(id),
       );
   });
@@ -2998,7 +3001,8 @@ function attachMqttAdapterUiEvents(
     if (mainWindow) mainWindow.webContents.send('mqtt:warning', { warning: msg, protocol });
     else
       console.debug(
-        `[main] mqtt:warning (${protocol}) dropped (mainWindow not ready)`,
+        '[main] mqtt:warning (%s) dropped (mainWindow not ready)',
+        protocol,
         sanitizeLogMessage(msg),
       );
   });

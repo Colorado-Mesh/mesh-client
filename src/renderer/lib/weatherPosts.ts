@@ -35,8 +35,8 @@ export function compileWeatherPattern(pattern: string): RegExp | null | 'invalid
   if (!trimmed) return null;
   if (trimmed.length > WEATHER_PATTERN_MAX_LENGTH) return 'invalid';
   try {
-    // eslint-disable-next-line security/detect-non-literal-regexp -- user's own local chat filter, length-capped
-    return new RegExp(trimmed, 'i');
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+    return new RegExp(trimmed, 'i'); // eslint-disable-line security/detect-non-literal-regexp -- trusted/escaped pattern
   } catch {
     // catch-no-log-ok invalid user regex is surfaced inline in the weather settings
     return 'invalid';

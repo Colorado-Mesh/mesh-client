@@ -11,10 +11,11 @@ import { cpSync, existsSync, mkdirSync, rmSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isElectronBinaryInstalled } from './electron-binary.mjs';
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(__dirname, '..');
-export const FLATPAK_ELECTRON_PREBUILT = path.join(projectRoot, 'electron-prebuilt');
+export const FLATPAK_ELECTRON_PREBUILT = joinUnderRoot(projectRoot, 'electron-prebuilt');
 
 /**
  * @param {object} [opts]
@@ -30,7 +31,7 @@ export function stageFlatpakElectron({
     process.exit(1);
   }
 
-  const distDir = path.join(root, 'node_modules', 'electron', 'dist');
+  const distDir = joinUnderRoot(root, 'node_modules', 'electron', 'dist');
   mkdirSync(path.dirname(distDir), { recursive: true });
   rmSync(distDir, { recursive: true, force: true });
   cpSync(prebuiltDir, distDir, { recursive: true });

@@ -1,11 +1,16 @@
 // @vitest-environment node
 import { readdirSync, readFileSync } from 'fs';
-import { dirname, join, normalize } from 'path';
+import path, { dirname, join, normalize } from 'path';
 import { describe, expect, it } from 'vitest';
 
-const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
-const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
-const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+import { assertPathInsideRoot, joinUnderRoot, resolveUnderRoot } from '../shared/pathUnderRoot';
+
+const INDEX_SOURCE = readFileSync(joinUnderRoot(__dirname, 'index.ts'), 'utf-8');
+const PRELOAD_SOURCE = readFileSync(
+  joinUnderRoot(dirname(__dirname), 'preload', 'index.ts'),
+  'utf-8',
+);
+const TCP_BRIDGE_SOURCE = readFileSync(joinUnderRoot(__dirname, 'ipc', 'tcp-bridge.ts'), 'utf-8');
 
 describe('renderer origin cutover (source contract)', () => {
   it('registers the secure renderer protocol before creating a window', () => {
@@ -167,7 +172,7 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
     expect(TCP_BRIDGE_SOURCE).toMatch(
-      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\(`\[IPC\] \$\{writeChannel\}: no active socket`\)[\s\S]{0,80}return 'no-socket'/,
+      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\('\[IPC]', writeChannel \+ ': no active socket'\)[\s\S]{0,80}return 'no-socket'/,
     );
     expect(TCP_BRIDGE_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
     expect(TCP_BRIDGE_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
@@ -247,15 +252,16 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
     );
-    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is interpolated.
+    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is a %s arg
+    // (literal format string; avoids unsafe-formatstring).
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:status \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(s\)/,
+      /mqtt:status \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(s\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:error \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
+      /mqtt:error \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:clientId \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(id\)/,
+      /mqtt:clientId \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(id\)/,
     );
     expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcoreMqttAdapter,\s*'meshcore'\)/);
     expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcomMqttAdapter,\s*'meshcom'\)/);
@@ -331,13 +337,13 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 });
 
-const RENDERER_ROOT = join(__dirname, '../renderer');
-const SRC_ROOT = join(__dirname, '..');
+const SRC_ROOT = dirname(__dirname);
+const RENDERER_ROOT = joinUnderRoot(SRC_ROOT, 'renderer');
 
 function listRendererSources(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
+    const full = joinUnderRoot(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...listRendererSources(full));
       continue;
@@ -535,18 +541,42 @@ function localInitializers(source: string, name: string): string[] {
   return out;
 }
 
+function resolveModuleBase(fromFile: string, spec: string): string | null {
+  if (spec.startsWith('@/')) {
+    return resolveUnderRoot(SRC_ROOT, spec.slice(2));
+  }
+  if (!spec.startsWith('.')) return null;
+  const normalized = spec.replace(/\\/g, '/');
+  if (!normalized.includes('..')) {
+    const relative = normalized.replace(/^\.\//, '');
+    return resolveUnderRoot(dirname(fromFile), relative);
+  }
+  const parts = dirname(fromFile).split(/[/\\]/);
+  for (const segment of normalized.split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      if (parts.length === 0) return null;
+      parts.pop();
+      continue;
+    }
+    parts.push(segment);
+  }
+  const resolved = parts.join(path.sep);
+  try {
+    return assertPathInsideRoot(SRC_ROOT, resolved);
+  } catch {
+    return null;
+  }
+}
+
 function resolveModule(
   fromFile: string,
   spec: string,
   sources: ReadonlyMap<string, string>,
 ): string | null {
-  const base = spec.startsWith('@/')
-    ? join(SRC_ROOT, spec.slice(2))
-    : spec.startsWith('.')
-      ? join(dirname(fromFile), spec)
-      : null;
+  const base = resolveModuleBase(fromFile, spec);
   if (!base) return null;
-  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')]) {
+  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, joinUnderRoot(base, 'index.ts')]) {
     const normalized = normalize(candidate);
     if (sources.has(normalized)) return normalized;
   }

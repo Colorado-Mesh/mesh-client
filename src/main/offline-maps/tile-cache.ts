@@ -12,6 +12,7 @@ import {
   isCustomMapSourceId,
 } from '@/shared/offlineMaps/customMapSources';
 import { TILE_CACHE_MAX_BYTES } from '@/shared/offlineMaps/tileMath';
+import { joinUnderRoot } from '@/shared/pathUnderRoot';
 
 export interface TileCacheCoords {
   basemapId: MapSourceId;
@@ -96,18 +97,14 @@ export class TileCache {
   ) {}
 
   private manifestPath(): string {
-    return path.join(this.rootDir, 'manifest.json');
+    return joinUnderRoot(this.rootDir, 'manifest.json');
   }
 
   private tilePath(c: TileCacheCoords): string {
-    return path.join(
-      this.rootDir,
-      c.basemapId,
-      ...(c.basemapId === 'dark' ? [DARK_BASEMAP_CACHE_REVISION] : []),
-      String(c.z),
-      String(c.x),
-      tileFileName(c.y, c.retina === true),
-    );
+    const segments: string[] = [c.basemapId];
+    if (c.basemapId === 'dark') segments.push(DARK_BASEMAP_CACHE_REVISION);
+    segments.push(String(c.z), String(c.x), tileFileName(c.y, c.retina === true));
+    return joinUnderRoot(this.rootDir, ...segments);
   }
 
   async ensureRoot(): Promise<void> {
@@ -160,7 +157,7 @@ export class TileCache {
     await this.ensureRoot();
     manifest.lastUpdated = Date.now();
     const dest = this.manifestPath();
-    const tmp = path.join(this.rootDir, `manifest.${process.pid}.${Date.now()}.tmp`);
+    const tmp = joinUnderRoot(this.rootDir, `manifest.${process.pid}.${Date.now()}.tmp`);
     try {
       await fs.writeFile(tmp, JSON.stringify(manifest, null, 2), 'utf8');
       await fs.rename(tmp, dest);
@@ -304,7 +301,7 @@ export class TileCache {
 
   async clearSource(basemapId: MapSourceId): Promise<void> {
     await this.ensureStats();
-    await fs.rm(path.join(this.rootDir, basemapId), { recursive: true, force: true });
+    await fs.rm(joinUnderRoot(this.rootDir, basemapId), { recursive: true, force: true });
     const removed = this.sourceStats.get(basemapId);
     if (removed) {
       this.totalBytes = Math.max(0, this.totalBytes - removed.diskBytes);
@@ -341,7 +338,7 @@ export class TileCache {
       }
       for (const name of names) {
         if (name === 'manifest.json' || name.endsWith('.tmp')) continue;
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
@@ -403,7 +400,7 @@ export class TileCache {
         return;
       }
       for (const name of names) {
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
@@ -417,7 +414,7 @@ export class TileCache {
         }
       }
     };
-    await walk(path.join(this.rootDir, id));
+    await walk(joinUnderRoot(this.rootDir, id));
     entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
     let removed = 0;
     for (const e of entries) {
@@ -456,7 +453,7 @@ export class TileCache {
       }
       for (const name of names) {
         if (name === 'manifest.json' || name.endsWith('.tmp')) continue;
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
@@ -497,5 +494,5 @@ export function createTileCache(
   maxBytes?: number,
   customSourceMaxBytes?: number,
 ): TileCache {
-  return new TileCache(path.join(userDataPath, 'tile-cache'), maxBytes, customSourceMaxBytes);
+  return new TileCache(joinUnderRoot(userDataPath, 'tile-cache'), maxBytes, customSourceMaxBytes);
 }

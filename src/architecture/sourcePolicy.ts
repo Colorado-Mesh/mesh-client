@@ -81,8 +81,8 @@ function globToRegExp(pattern: string): RegExp {
     i += 1;
   }
   out += '$';
-  // eslint-disable-next-line security/detect-non-literal-regexp -- glob→regex from trusted rule include patterns
-  return new RegExp(out);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(out); // eslint-disable-line security/detect-non-literal-regexp -- trusted/escaped pattern
 }
 
 function collectFilesForRule(root: string, rule: SourcePolicyRule): string[] {
@@ -128,8 +128,8 @@ function fileHasSuppress(source: string, ruleId: string): boolean {
 }
 
 function cloneRegExp(re: RegExp): RegExp {
-  // eslint-disable-next-line security/detect-non-literal-regexp -- clone compiled SourcePolicyRule pattern with /g
-  return new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`); // eslint-disable-line security/detect-non-literal-regexp -- trusted/escaped pattern
 }
 
 /**
@@ -151,7 +151,7 @@ export function collectSourcePolicyViolations(
       try {
         source = readFileSync(abs, 'utf-8');
       } catch (err) {
-        console.error(`[source-policy] failed to read ${rel}:`, err);
+        console.error('[source-policy] failed to read %s:', rel, err);
         throw err;
       }
 

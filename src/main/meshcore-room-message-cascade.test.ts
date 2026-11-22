@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -9,6 +8,7 @@ import {
   MESHCORE_ROOM_MESSAGE_CHANNEL,
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_DM_MESSAGE_CHANNEL } from '../shared/meshcoreMessageChannel';
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import {
   clearMeshcoreRoomsOn,
   deleteMeshcoreContactOn,
@@ -35,8 +35,8 @@ describe('meshcore room message cascade SQL', () => {
   });
 
   it('deletes room BBS rows for pruned room server ids and orphans', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-room-cascade-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-mc-room-cascade-'));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
 
@@ -90,8 +90,8 @@ describe('meshcore room message cascade SQL', () => {
   });
 
   it('deleteMeshcoreContactOn cascades room messages in one transaction', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-contact-on-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-mc-contact-on-'));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
 
@@ -116,8 +116,8 @@ describe('meshcore room message cascade SQL', () => {
   });
 
   it('clearMeshcoreRoomsOn cascades BBS rows for all cleared rooms', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-clear-rooms-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-mc-clear-rooms-'));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
 
@@ -151,8 +151,8 @@ describe('meshcore room message cascade SQL', () => {
   });
 
   it('clearMeshcoreRoomsOn removes legacy DM-shaped room rows for cleared room ids', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-clear-legacy-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-mc-clear-legacy-'));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
     const ROOM = 0x1001;
@@ -209,8 +209,8 @@ describe('meshcore room message cascade SQL', () => {
   });
 
   it('deleteMeshcoreContactOn keeps ordinary DMs when removing a Chat contact', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-mc-contact-chat-dm-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-mc-contact-chat-dm-'));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
     const CHAT_PEER = 0x2002;
@@ -248,8 +248,8 @@ describe('meshcore room message cascade SQL', () => {
     const sixtyDaysAgo = nowSec - 60 * 86_400;
 
     function openDb(prefix: string, lastAdvert: number | null): NodeSqliteDB {
-      dir = mkdtempSync(join(tmpdir(), prefix));
-      const db = new NodeSqliteDB(join(dir, 'test.db'));
+      dir = mkdtempSync(joinUnderRoot(tmpdir(), prefix));
+      const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
       db.pragma('journal_mode = WAL');
       runSchemaUpgrade(db);
       const insertContact = db.prepareOnce(

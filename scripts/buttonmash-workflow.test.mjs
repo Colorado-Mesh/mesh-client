@@ -8,10 +8,10 @@ const config = JSON.parse(readFileSync('buttonmash.config.json', 'utf8'));
 
 // Buttonmash compiles every ignore pattern case-insensitively.
 const isIgnored = (message) =>
-  config.detectors.ignorePatterns.some((pattern) =>
-    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
-    new RegExp(pattern, 'i').test(message),
-  );
+  config.detectors.ignorePatterns.some((pattern) => {
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+    return new RegExp(pattern, 'i').test(message); // eslint-disable-line security/detect-non-literal-regexp -- checked-in CI config
+  });
 
 // "Reset <sound event>" in App > Notification sounds: the event names the settings screen shows.
 const soundSettings = readFileSync('src/renderer/components/NotificationSoundSettings.tsx', 'utf8');
@@ -24,10 +24,10 @@ const soundStrings = JSON.parse(
   readFileSync('src/renderer/locales/en/translation.json', 'utf8'),
 ).notificationSounds;
 const isSafeName = (name) =>
-  config.guardrails.destructive.safeNames.some((pattern) =>
-    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
-    new RegExp(pattern, 'i').test(name),
-  );
+  config.guardrails.destructive.safeNames.some((pattern) => {
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+    return new RegExp(pattern, 'i').test(name); // eslint-disable-line security/detect-non-literal-regexp -- checked-in CI config
+  });
 
 describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {

@@ -32,7 +32,11 @@ describe('getDbForIpc', () => {
   it('returns null and logs when database is closed', () => {
     vi.mocked(getDatabaseIfOpen).mockReturnValue(null);
     expect(getDbForIpc('db:getNodes')).toBeNull();
-    expect(console.debug).toHaveBeenCalledWith('[IPC] db:getNodes: skipped (database closed)');
+    expect(console.debug).toHaveBeenCalledWith(
+      '[IPC]',
+      'db:getNodes',
+      ': skipped (database closed)',
+    );
   });
 });
 
@@ -52,7 +56,11 @@ describe('finishDbIpcHandler', () => {
     expect(() => {
       finishDbIpcHandler('db:saveMessage', new Error('boom'));
     }).not.toThrow();
-    expect(console.debug).toHaveBeenCalledWith('[IPC] db:saveMessage: skipped (database closed)');
+    expect(console.debug).toHaveBeenCalledWith(
+      '[IPC]',
+      'db:saveMessage',
+      ': skipped (database closed)',
+    );
   });
 
   it('rethrows real failures', () => {

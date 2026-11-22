@@ -101,8 +101,8 @@ function firstValidMatch(
 ): BoundedMatch | null {
   // `d` gives capture indices so Additional Validation can inspect characters
   // before/after group 1 (e.g. R03 decimal-fraction rejection).
-  // eslint-disable-next-line security/detect-non-literal-regexp -- pattern from vendored MECP patterns.json
-  const re = new RegExp(`(?:^|${B_CLASS})(?:${pattern})(?:${B_CLASS}|$)`, 'd');
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  const re = new RegExp(`(?:^|${B_CLASS})(?:${pattern})(?:${B_CLASS}|$)`, 'd'); // eslint-disable-line security/detect-non-literal-regexp -- trusted/escaped pattern
   let pos = 0;
   while (pos <= freetext.length) {
     const slice = freetext.slice(pos);

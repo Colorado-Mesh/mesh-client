@@ -1,6 +1,6 @@
 import fs from 'fs';
-import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import {
   parseReticulumIniEnabledValue,
   parseReticulumIniInterfaceField,
@@ -112,7 +112,7 @@ function scanConfigContent(
 }
 
 function readConfigContent(configDir: string): string | null {
-  const configPath = path.join(configDir, 'config');
+  const configPath = joinUnderRoot(configDir, 'config');
   try {
     if (!fs.existsSync(configPath)) return null;
     return readUtf8FileBounded(configPath);

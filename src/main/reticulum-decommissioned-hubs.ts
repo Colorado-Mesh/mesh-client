@@ -1,6 +1,6 @@
 import fs from 'fs';
-import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { isDecommissionedReticulumTcpHub } from '../shared/reticulumDecommissionedHubs';
 import {
   parseReticulumIniEnabledValue,
@@ -99,7 +99,7 @@ export function disableDecommissionedReticulumHubsInConfigContent(content: strin
 
 /** Patch mesh-client reticulum config on disk before sidecar start. */
 export function disableDecommissionedReticulumHubsInConfigDir(configDir: string): string[] {
-  const configPath = path.join(configDir, 'config');
+  const configPath = joinUnderRoot(configDir, 'config');
   try {
     if (!fs.existsSync(configPath)) return [];
     const content = readUtf8FileBounded(configPath);

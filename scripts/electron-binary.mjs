@@ -8,6 +8,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(__dirname, '..');
 
@@ -22,17 +24,17 @@ export function resolveLocalElectronBin(
   fileExists = existsSync,
   root = projectRoot,
 ) {
-  const distDir = path.join(root, 'node_modules', 'electron', 'dist');
+  const distDir = joinUnderRoot(root, 'node_modules', 'electron', 'dist');
   const platformCandidates =
     platform === 'darwin'
-      ? [path.join(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron')]
+      ? [joinUnderRoot(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron')]
       : platform === 'win32'
-        ? [path.join(distDir, 'electron.exe')]
-        : [path.join(distDir, 'electron')];
+        ? [joinUnderRoot(distDir, 'electron.exe')]
+        : [joinUnderRoot(distDir, 'electron')];
   const fallbackCandidates = [
-    path.join(distDir, 'electron'),
-    path.join(distDir, 'electron.exe'),
-    path.join(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron'),
+    joinUnderRoot(distDir, 'electron'),
+    joinUnderRoot(distDir, 'electron.exe'),
+    joinUnderRoot(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron'),
   ];
   const candidates = [...platformCandidates, ...fallbackCandidates];
   for (const candidate of candidates) {
@@ -107,7 +109,7 @@ export function ensureElectronBinaryInstalled({
     return { installed: true, skipped: true };
   }
 
-  const installJs = path.join(root, 'node_modules', 'electron', 'install.js');
+  const installJs = joinUnderRoot(root, 'node_modules', 'electron', 'install.js');
   if (!fileExists(installJs)) {
     throw new Error(
       'Electron binary is missing and node_modules/electron/install.js was not found. Run pnpm install first.',

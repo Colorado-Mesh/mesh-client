@@ -64,7 +64,10 @@ export async function ensureMediaAccess(
       await deps.openExternal(privacyUrls.darwin);
     } catch (e) {
       console.warn(
-        `${logTag} Failed to open macOS ${mediaType} privacy settings:`,
+        logTag,
+        'Failed to open macOS',
+        mediaType,
+        'privacy settings:',
         e instanceof Error ? e.message : String(e),
       );
     }
@@ -78,7 +81,10 @@ export async function ensureMediaAccess(
         await deps.openExternal(privacyUrls.win32);
       } catch (e) {
         console.warn(
-          `${logTag} Failed to open Windows ${mediaType} privacy settings:`,
+          logTag,
+          'Failed to open Windows',
+          mediaType,
+          'privacy settings:',
           e instanceof Error ? e.message : String(e),
         );
       }

@@ -133,7 +133,7 @@ export function isCargoAvailable(io = {}) {
   const spawn = io.spawn ?? spawnSync;
   const result = spawn('cargo', ['--version'], {
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   return !result.error && result.status === 0;
 }
@@ -149,7 +149,7 @@ export function runCargoMetadata(io = {}) {
   const result = spawn('cargo', [...CARGO_METADATA_ARGS], {
     cwd: io.cwd ?? SIDECAR_DIR,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
     maxBuffer: 256 * 1024 * 1024,
   });
   if (result.error) {

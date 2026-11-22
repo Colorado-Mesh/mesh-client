@@ -24,6 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** SPDX / npm license ids permitted for installed packages. */
@@ -489,10 +491,10 @@ export function evaluatePnpmLicensesJson(licensesJson) {
  * @returns {Record<string, unknown>}
  */
 export function loadPnpmLicensesJson(spawnOpts = {}) {
-  const result = spawnSync('pnpm', ['licenses', 'list', '--json'], {
+  const result = spawnSync(pnpmExecutable(), ['licenses', 'list', '--json'], {
     cwd: ROOT,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
     ...spawnOpts,
   });
   if (result.error) {

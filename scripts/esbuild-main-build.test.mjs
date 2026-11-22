@@ -49,8 +49,11 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows Update Build Revision (UBR) OS tag for support-bundle manifests / runtime logs
  * tipped the minified main past 818 KiB (~+0.6 KiB); budget +1 KiB (sibling loader would
  * cost more than the helper).
+ * Shared `pathUnderRoot` containment helpers (Semgrep path-join hardening across
+ * attachments / offline maps / TAK / Reticulum) tipped the minified main past 819 KiB
+ * (~+0.45 KiB); budget +1 KiB (a sibling chunk would cost more than the helper).
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 819 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 820 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.

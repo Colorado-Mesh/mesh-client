@@ -21,9 +21,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const SCAN_ROOT = path.join(ROOT, 'src');
+const SCAN_ROOT = joinUnderRoot(ROOT, 'src');
 
 // Patterns are defined without literal dangerous strings to avoid tripping
 // the project's own code-scanning hooks on this script file itself.
@@ -56,10 +58,10 @@ function collectSourceFiles(dir) {
   if (!fs.existsSync(dir)) return results;
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.isDirectory()) {
-      results.push(...collectSourceFiles(path.join(dir, ent.name)));
+      results.push(...collectSourceFiles(joinUnderRoot(dir, ent.name)));
     } else if (ent.isFile() && /\.(ts|tsx)$/.test(ent.name)) {
       if (ent.name.endsWith('.test.ts') || ent.name.endsWith('.test.tsx')) continue;
-      results.push(path.join(dir, ent.name));
+      results.push(joinUnderRoot(dir, ent.name));
     }
   }
   return results;

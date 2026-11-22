@@ -17,12 +17,12 @@ import {
 describe('check-environment resolvePnpmBinCandidates', () => {
   it('returns Windows PNPM_HOME shim paths including bin/', () => {
     expect(resolvePnpmBinCandidates('C:\\pnpm-home', 'win32')).toEqual([
+      'C:\\pnpm-home\\pnpm.exe',
+      'C:\\pnpm-home\\bin\\pnpm.exe',
       'C:\\pnpm-home\\pnpm.CMD',
       'C:\\pnpm-home\\pnpm.cmd',
-      'C:\\pnpm-home\\pnpm.exe',
       'C:\\pnpm-home\\bin\\pnpm.CMD',
       'C:\\pnpm-home\\bin\\pnpm.cmd',
-      'C:\\pnpm-home\\bin\\pnpm.exe',
     ]);
   });
 

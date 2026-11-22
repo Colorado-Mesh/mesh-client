@@ -1,7 +1,7 @@
 /**
  * Path helpers for per-arch Reticulum sidecar staging during electron-builder packaging.
  */
-import path from 'path';
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 
 /** @typedef {'win32' | 'linux' | 'darwin'} ElectronPlatform */
 /** @typedef {'x64' | 'arm64'} SidecarArchKey */
@@ -48,7 +48,7 @@ export function archKeyFromElectronBuilder(arch) {
  * @param {SidecarArchKey} archKey
  */
 export function stagedSidecarDir(projectRoot, platform, archKey) {
-  return path.join(
+  return joinUnderRoot(
     projectRoot,
     'resources',
     'reticulum-sidecar',
@@ -63,7 +63,7 @@ export function stagedSidecarDir(projectRoot, platform, archKey) {
  * @param {SidecarArchKey} archKey
  */
 export function stagedSidecarPath(projectRoot, platform, archKey) {
-  return path.join(
+  return joinUnderRoot(
     stagedSidecarDir(projectRoot, platform, archKey),
     sidecarBinaryFileName(platform),
   );
@@ -85,7 +85,12 @@ export function resolveStagedSidecarPathForPackContext(projectRoot, platform, ar
  * @param {ElectronPlatform} platform
  */
 export function packSidecarResourcePath(projectRoot, platform) {
-  return path.join(projectRoot, 'resources', 'reticulum-sidecar', sidecarBinaryFileName(platform));
+  return joinUnderRoot(
+    projectRoot,
+    'resources',
+    'reticulum-sidecar',
+    sidecarBinaryFileName(platform),
+  );
 }
 
 /** @param {string} value */

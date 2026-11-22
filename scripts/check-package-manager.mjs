@@ -7,6 +7,7 @@
  * Zero dependencies — safe to run before node_modules exists.
  */
 import { spawnSync } from 'node:child_process';
+import { corepackExecutable, pnpmExecutable } from './ci-verify-pnpm.mjs';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,11 +64,10 @@ export function pnpmVersionFromUserAgent(userAgent) {
 
 /** @returns {boolean} */
 export function hasCorepack() {
-  const res = spawnSync('corepack', ['--version'], {
+  const res = spawnSync(corepackExecutable(), ['--version'], {
     encoding: 'utf8',
     stdio: 'pipe',
-    // Windows: corepack is a .cmd shim; spawn without shell cannot resolve it.
-    shell: process.platform === 'win32',
+    shell: false,
   });
   return res.status === 0 && !res.error;
 }
@@ -212,12 +212,10 @@ function currentPnpmVersion() {
   const fromUa = pnpmVersionFromUserAgent(process.env.npm_config_user_agent);
   if (fromUa) return fromUa;
 
-  const res = spawnSync('pnpm', ['--version'], {
+  const res = spawnSync(pnpmExecutable(), ['--version'], {
     encoding: 'utf8',
     stdio: 'pipe',
-    // Windows: pnpm/action-setup and Corepack install .cmd shims; without shell,
-    // spawnSync cannot find them and preinstall reports "You have: not found".
-    shell: process.platform === 'win32',
+    shell: false,
   });
   if (res.error || res.status !== 0) return null;
   return String(res.stdout || '').trim() || null;

@@ -1061,7 +1061,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     } catch (e: unknown) {
       console.debug(
-        `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
+        '[ReticulumSidecar] %s failed — continuing with SIGTERM: %s',
+        operation,
         timedOut
           ? `Timed out after ${timeoutMs}ms`
           : sanitizeLogMessage(e instanceof Error ? e.message : String(e)),

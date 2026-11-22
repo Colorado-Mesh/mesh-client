@@ -1,6 +1,5 @@
 import { randomBytes } from 'crypto';
 import fs from 'fs/promises';
-import path from 'path';
 
 import {
   type AddXyzSourceRequest,
@@ -16,6 +15,7 @@ import {
   sanitizeCustomSourceName,
   validateXyzTemplate,
 } from '@/shared/offlineMaps/customMapSources';
+import { joinUnderRoot } from '@/shared/pathUnderRoot';
 
 import { sanitizeLogMessage } from '../log-service';
 
@@ -67,18 +67,18 @@ export class CustomMapSourceStore {
   constructor(private readonly baseDir: string) {}
 
   private filePath(): string {
-    return path.join(this.baseDir, 'custom-sources.json');
+    return joinUnderRoot(this.baseDir, 'custom-sources.json');
   }
 
   mbtilesDir(): string {
-    return path.join(this.baseDir, 'mbtiles');
+    return joinUnderRoot(this.baseDir, 'mbtiles');
   }
 
   mbtilesPath(id: string): string {
     if (!isCustomMapSourceId(id) || customMapSourceKind(id) !== 'mbtiles') {
       throw new Error('Invalid MBTiles source id');
     }
-    return path.join(this.mbtilesDir(), `${id}.mbtiles`);
+    return joinUnderRoot(this.mbtilesDir(), `${id}.mbtiles`);
   }
 
   private async ensureLoaded(): Promise<CustomMapSourceRecord[]> {
@@ -167,7 +167,7 @@ export class CustomMapSourceStore {
 
   private async persist(records: CustomMapSourceRecord[]): Promise<void> {
     await fs.mkdir(this.baseDir, { recursive: true });
-    const tmp = path.join(this.baseDir, `custom-sources.${process.pid}.${Date.now()}.tmp`);
+    const tmp = joinUnderRoot(this.baseDir, `custom-sources.${process.pid}.${Date.now()}.tmp`);
     const body: CustomSourcesFile = { version: 1, sources: records };
     try {
       await fs.writeFile(tmp, JSON.stringify(body, null, 2), 'utf8');

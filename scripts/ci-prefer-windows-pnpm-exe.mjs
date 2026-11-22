@@ -185,7 +185,11 @@ export function findPinnedPnpmHomeShim(pnpmHome, pinned, opts = {}) {
     for (const name of ['pnpm.cmd', 'pnpm.CMD']) {
       const shim = path.join(dir, name);
       if (!existsSync(shim)) continue;
-      const version = probePnpmExeVersion(shim, spawnSyncFn, { shell: true });
+      const resolved = resolvePnpmExeFromCmdShim(shim, { existsSync });
+      const version = resolved
+        ? probePnpmExeVersion(resolved, spawnSyncFn, { shell: false })
+        : // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- probe opaque .cmd only when shim does not resolve to pnpm.exe
+          probePnpmExeVersion(shim, spawnSyncFn, { shell: true });
       if (version === pinned) {
         return { shim, dir, version };
       }

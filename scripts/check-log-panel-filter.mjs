@@ -13,10 +13,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot, resolveUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const REGISTRY_PATH = path.join(ROOT, 'src', 'shared', 'logProtocolScope.ts');
+const REGISTRY_PATH = joinUnderRoot(ROOT, 'src', 'shared', 'logProtocolScope.ts');
 
 const SUPPRESSED = /\/\/\s*log-filter-ok\b/;
 
@@ -63,7 +65,7 @@ function walkTsFiles(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
   for (const name of fs.readdirSync(dir)) {
     if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue;
-    const full = path.join(dir, name);
+    const full = joinUnderRoot(dir, name);
     const st = fs.statSync(full);
     if (st.isDirectory()) {
       walkTsFiles(full, out);
@@ -90,7 +92,7 @@ function collectScanFiles() {
     'src/renderer/hooks/meshcom',
     'src/main/ipc',
   ]) {
-    for (const f of walkTsFiles(path.join(ROOT, rel))) files.add(f);
+    for (const f of walkTsFiles(resolveUnderRoot(ROOT, rel))) files.add(f);
   }
 
   for (const rel of [
@@ -110,11 +112,11 @@ function collectScanFiles() {
     'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.ts',
     'src/renderer/hooks/meshcore/meshcoreConnSideEffects.ts',
   ]) {
-    files.add(path.join(ROOT, rel));
+    files.add(resolveUnderRoot(ROOT, rel));
   }
 
   // Extra main-process protocol-named modules
-  const mainDir = path.join(ROOT, 'src', 'main');
+  const mainDir = joinUnderRoot(ROOT, 'src', 'main');
   if (fs.existsSync(mainDir)) {
     for (const name of fs.readdirSync(mainDir)) {
       if (
@@ -122,7 +124,7 @@ function collectScanFiles() {
         /\.ts$/.test(name) &&
         !name.endsWith('.test.ts')
       ) {
-        files.add(path.join(mainDir, name));
+        files.add(joinUnderRoot(mainDir, name));
       }
     }
   }

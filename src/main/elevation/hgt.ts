@@ -1,11 +1,11 @@
 import { lookup } from 'dns/promises';
 import { createReadStream, createWriteStream } from 'fs';
 import fs from 'fs/promises';
-import path from 'path';
 import { pipeline } from 'stream/promises';
 import { fetch as undiciFetch } from 'undici';
 import { createGunzip } from 'zlib';
 
+import { joinUnderRoot } from '@/shared/pathUnderRoot';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { sanitizeLogMessage } from '../log-service';
@@ -63,7 +63,7 @@ export function hgtTilesForBounds(bounds: {
 }
 
 function hgtPath(cacheDir: string, tileName: string): string {
-  return path.join(cacheDir, 'hgt', `${tileName}.hgt`);
+  return joinUnderRoot(cacheDir, 'hgt', `${tileName}.hgt`);
 }
 
 export async function hgtTileExists(cacheDir: string, tileName: string): Promise<boolean> {
@@ -79,7 +79,7 @@ export async function hgtTileExists(cacheDir: string, tileName: string): Promise
 export async function listHgtTiles(
   cacheDir: string,
 ): Promise<{ count: number; bytes: number; names: string[] }> {
-  const dir = path.join(cacheDir, 'hgt');
+  const dir = joinUnderRoot(cacheDir, 'hgt');
   let names: string[];
   try {
     names = (await fs.readdir(dir)).filter((n) => n.endsWith('.hgt'));
@@ -90,7 +90,7 @@ export async function listHgtTiles(
   let bytes = 0;
   for (const name of names) {
     try {
-      bytes += (await fs.stat(path.join(dir, name))).size;
+      bytes += (await fs.stat(joinUnderRoot(dir, name))).size;
     } catch {
       // catch-no-log-ok race
     }
@@ -207,14 +207,14 @@ export async function downloadHgtTile(
   deps: HgtDownloadDeps,
 ): Promise<boolean> {
   if (!/^[NS]\d{2}[EW]\d{3}$/.test(tileName)) return false;
-  const destDir = path.join(cacheDir, 'hgt');
+  const destDir = joinUnderRoot(cacheDir, 'hgt');
   await fs.mkdir(destDir, { recursive: true });
   const dest = hgtPath(cacheDir, tileName);
   if (await hgtTileExists(cacheDir, tileName)) return true;
 
   const url = hgtRemoteUrl(tileName);
-  const tmpGz = path.join(destDir, `${tileName}.hgt.gz.partial`);
-  const tmpHgt = path.join(destDir, `${tileName}.hgt.partial`);
+  const tmpGz = joinUnderRoot(destDir, `${tileName}.hgt.gz.partial`);
+  const tmpHgt = joinUnderRoot(destDir, `${tileName}.hgt.partial`);
 
   try {
     let response: Response;

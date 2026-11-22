@@ -14,6 +14,8 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, realpathSync, statSync 
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { parseArgs } from 'node:util';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { linuxZigbuildTarget, MAX_SIDECAR_GLIBC } from './check-reticulum-sidecar-glibc.mjs';
 import {
   MIN_SIDECAR_BYTES,
@@ -25,22 +27,37 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const sidecarDir = path.join(projectRoot, 'reticulum-sidecar');
+const sidecarDir = joinUnderRoot(projectRoot, 'reticulum-sidecar');
 const SIDECAR_FEATURES = 'rns-stack,rns-ble,rns-rnode-tcp';
 
 /** @param {string} msg */
 function fail(msg) {
-  console.error(`[build-reticulum-sidecar-release] ${msg}`);
+  console.error('[build-reticulum-sidecar-release]', msg);
   process.exit(1);
+}
+
+/** Toolchain basenames allowed without an absolute path (avoid PATH hijack). */
+const SPAWN_CMD_ALLOWLIST = new Set(['cargo']);
+
+/**
+ * @param {string} cmd
+ * @returns {string}
+ */
+function assertSpawnExecutable(cmd) {
+  if (path.isAbsolute(cmd)) return cmd;
+  if (SPAWN_CMD_ALLOWLIST.has(cmd)) return cmd;
+  fail(`refusing to spawn non-absolute command: ${cmd}`);
 }
 
 /** @param {string} cmd @param {string[]} args @param {NodeJS.ProcessEnv} [extraEnv] */
 function run(cmd, args, extraEnv = {}) {
-  const result = spawnSync(cmd, args, {
+  const executable = assertSpawnExecutable(cmd);
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- cmd validated by assertSpawnExecutable (absolute or cargo allowlist).
+  const result = spawnSync(executable, args, {
     cwd: sidecarDir,
     stdio: 'inherit',
     env: { ...process.env, ...extraEnv },
-    shell: process.platform === 'win32',
+    shell: false,
   });
   if (result.error) {
     fail(`Failed to run ${cmd}: ${result.error.message}`);
@@ -59,7 +76,7 @@ function runSidecarTests() {
 }
 
 function cloneRatspeakStack() {
-  const scriptPath = path.join(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
+  const scriptPath = joinUnderRoot(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
   // Absolute bash path avoids Sonar javascript:S4036 (PATH lookup for OS commands).
   const bash =
     process.platform === 'win32'
@@ -76,7 +93,7 @@ function cloneRatspeakStack() {
     stdio: 'inherit',
     env: {
       ...process.env,
-      WORKSPACE_ROOT: process.env.WORKSPACE_ROOT ?? path.join(projectRoot, '.rsstack'),
+      WORKSPACE_ROOT: process.env.WORKSPACE_ROOT ?? joinUnderRoot(projectRoot, '.rsstack'),
     },
   });
   if (result.error) {
@@ -175,7 +192,7 @@ function buildAndStage(cargoTarget, platform, archKey) {
 
   const builtName = sidecarBinaryFileName(platform);
   // zigbuild writes to the Rust triple dir (without the .2.35 suffix).
-  const builtPath = path.join(sidecarDir, 'target', cargoTarget, 'release', builtName);
+  const builtPath = joinUnderRoot(sidecarDir, 'target', cargoTarget, 'release', builtName);
   if (!existsSync(builtPath)) {
     fail(`Built sidecar missing: ${builtPath}`);
   }

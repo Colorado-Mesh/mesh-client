@@ -28,7 +28,8 @@ export async function probeHttpRttMs(host: string, tls: boolean): Promise<number
     return rtt;
   } catch (err) {
     console.debug(
-      `[hostLink] HTTP probe failed for ${sanitizeLogMessage(host)}:`,
+      '[hostLink] HTTP probe failed for',
+      sanitizeLogMessage(host) + ':',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return null;
@@ -65,7 +66,8 @@ export function probeTcpRttMs(host: string, port: number): Promise<number | null
     });
     socket.once('error', (err) => {
       console.debug(
-        `[hostLink] TCP probe failed for ${sanitizeLogMessage(socketHost)}:${port}:`,
+        '[hostLink] TCP probe failed for',
+        `${sanitizeLogMessage(socketHost)}:${port}:`,
         sanitizeLogMessage(err.message),
       );
       finish(null);
@@ -74,7 +76,8 @@ export function probeTcpRttMs(host: string, port: number): Promise<number | null
       socket.connect(port, socketHost);
     } catch (err) {
       console.debug(
-        `[hostLink] TCP probe connect threw for ${sanitizeLogMessage(socketHost)}:${port}:`,
+        '[hostLink] TCP probe connect threw for',
+        `${sanitizeLogMessage(socketHost)}:${port}:`,
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       finish(null);

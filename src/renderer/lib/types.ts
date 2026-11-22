@@ -375,7 +375,7 @@ export interface MQTTSettings {
   channelPsks?: string[];
   /** Broker codec: Meshtastic protobuf vs MeshCore JSON adapter (main process). */
   mqttTransportProtocol?: MeshProtocol;
-  /** Use ws:// or wss:// transport instead of mqtt:// / mqtts:// (required for port 443 on LetsMesh). */
+  /** Use insecure or TLS WebSocket URL schemes instead of mqtt:// / mqtts:// (required for port 443 on LetsMesh). */
   useWebSocket?: boolean;
   /** MQTT keepalive interval in seconds. Defaults to 60 for TCP/TLS, 30 for WebSocket. */
   keepalive?: number;

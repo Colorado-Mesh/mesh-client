@@ -113,7 +113,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       prev.close();
     } catch (err) {
       console.debug(
-        `[IPC] ${DISCONNECT_CHANNEL} close:`,
+        '[IPC]',
+        DISCONNECT_CHANNEL,
+        'close:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     }
@@ -151,7 +153,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           socket.close();
         } catch (closeErr) {
           console.debug(
-            `[IPC] ${CONNECT_CHANNEL} close after error:`,
+            '[IPC]',
+            CONNECT_CHANNEL,
+            'close after error:',
             sanitizeLogMessage(closeErr instanceof Error ? closeErr.message : String(closeErr)),
           );
         }
@@ -159,7 +163,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       };
 
       socket.once('error', (err) => {
-        console.error(`[IPC] ${CONNECT_CHANNEL} error:`, sanitizeLogMessage(err.message));
+        console.error('[IPC]', CONNECT_CHANNEL, 'error:', sanitizeLogMessage(err.message));
         failConnect(err);
       });
 
@@ -170,9 +174,10 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           suppressedOversizedDrops += 1;
           if (now - lastOversizedLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
             console.warn(
-              `[IPC] ${DATA_CHANNEL} oversized datagram` +
-                ` (>${UDP_BRIDGE_INBOUND_MAX_BYTES} bytes;` +
-                ` +${suppressedOversizedDrops} dropped)`,
+              '[IPC] %s oversized datagram (>%d bytes; +%d dropped)',
+              DATA_CHANNEL,
+              UDP_BRIDGE_INBOUND_MAX_BYTES,
+              suppressedOversizedDrops,
             );
             lastOversizedLogAt = now;
             suppressedOversizedDrops = 0;
@@ -191,9 +196,11 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
             const suppressed =
               suppressedRejectedPeerLogs > 0 ? ` (+${suppressedRejectedPeerLogs} suppressed)` : '';
             console.debug(
-              `[IPC] ${DATA_CHANNEL} ignore from`,
+              '[IPC]',
+              DATA_CHANNEL,
+              'ignore from',
               sanitizeLogMessage(rinfo.address),
-              `(expected ${sanitizeLogMessage(remoteHost)})${suppressed}`,
+              '(expected ' + sanitizeLogMessage(remoteHost) + ')' + suppressed,
             );
             lastRejectedPeerLogAt = now;
             suppressedRejectedPeerLogs = 0;
@@ -216,8 +223,10 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           suppressedInboundRateDrops += 1;
           if (now - lastInboundRateLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
             console.warn(
-              `[IPC] ${DATA_CHANNEL} rate-limited peer flood (${UDP_BRIDGE_INBOUND_RATE_MAX}/s;` +
-                ` +${suppressedInboundRateDrops} dropped)`,
+              '[IPC] %s rate-limited peer flood (%d/s; +%d dropped)',
+              DATA_CHANNEL,
+              UDP_BRIDGE_INBOUND_RATE_MAX,
+              suppressedInboundRateDrops,
             );
             lastInboundRateLogAt = now;
             suppressedInboundRateDrops = 0;
@@ -249,7 +258,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
         socket.bind(MESHCOM_EXTUDP_PORT, () => {
           socket.removeAllListeners('error');
           socket.on('error', (err) => {
-            console.error(`[IPC] meshcom:udp error:`, sanitizeLogMessage(err.message));
+            console.error('[IPC] meshcom:udp error:', sanitizeLogMessage(err.message));
             if (activeSocket === socket) {
               closeSocket(true);
             }
@@ -263,7 +272,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
             } catch (connectErr) {
               peerConnected = false;
               console.warn(
-                `[IPC] ${CONNECT_CHANNEL} UDP connect failed; peer filter remains in handler:`,
+                '[IPC]',
+                CONNECT_CHANNEL,
+                'UDP connect failed; peer filter remains in handler:',
                 sanitizeLogMessage(
                   connectErr instanceof Error ? connectErr.message : String(connectErr),
                 ),
@@ -271,7 +282,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
             }
           }
           console.debug(
-            `[IPC] ${CONNECT_CHANNEL} bound :${MESHCOM_EXTUDP_PORT} →`,
+            '[IPC] %s bound :%d → %s',
+            CONNECT_CHANNEL,
+            MESHCOM_EXTUDP_PORT,
             sanitizeLogMessage(remoteHost ?? host),
           );
           resolve();
@@ -294,7 +307,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     }
     if (!activeSocket || !remoteHost) {
       const msg = `${WRITE_CHANNEL}: no active socket`;
-      console.warn(`[IPC] ${msg}`);
+      console.warn('[IPC]', msg);
       return Promise.reject(new Error(msg));
     }
     const sock = activeSocket;
@@ -303,7 +316,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     return new Promise<void>((resolve, reject) => {
       const onSent = (err?: Error | null): void => {
         if (err) {
-          console.error(`[IPC] ${WRITE_CHANNEL} error:`, sanitizeLogMessage(err.message));
+          console.error('[IPC]', WRITE_CHANNEL, 'error:', sanitizeLogMessage(err.message));
           reject(err);
         } else {
           resolve();
@@ -322,7 +335,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
   const disconnect = (event: IpcMainInvokeEvent): void => {
     assertIpcSender(event, DISCONNECT_CHANNEL);
     if (activeSocket) {
-      console.debug(`[IPC] ${DISCONNECT_CHANNEL}`);
+      console.debug('[IPC]', DISCONNECT_CHANNEL);
       // Null before close so the close handler does not double-emit disconnected.
       const prev = activeSocket;
       activeSocket = null;
@@ -333,7 +346,9 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
         prev.close();
       } catch (err) {
         console.debug(
-          `[IPC] ${DISCONNECT_CHANNEL} close:`,
+          '[IPC]',
+          DISCONNECT_CHANNEL,
+          'close:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       }
@@ -349,7 +364,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     try {
       prev.close();
     } catch (err) {
-      console.debug(`[main] ${logLabel}:`, err instanceof Error ? err.message : err); // log-injection-ok internal Node.js socket error during cleanup
+      console.debug('[main]', logLabel + ':', err instanceof Error ? err.message : err); // log-injection-ok internal Node.js socket error during cleanup
     }
   };
 

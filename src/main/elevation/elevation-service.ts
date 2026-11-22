@@ -1,5 +1,4 @@
 import { net } from 'electron';
-import path from 'path';
 
 import { computeTerrainClearance, sampleGreatCirclePoints } from '@/shared/elevation/profileMath';
 import type {
@@ -13,6 +12,7 @@ import type {
   ElevationResult,
 } from '@/shared/elevation/types';
 import { MAX_PATH_KM } from '@/shared/elevation/validation';
+import { joinUnderRoot } from '@/shared/pathUnderRoot';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { sanitizeLogMessage } from '../log-service';
@@ -63,7 +63,7 @@ function isOnline(deps: ElevationServiceDeps): boolean {
 }
 
 export function createElevationService(deps: ElevationServiceDeps): ElevationService {
-  const cacheDir = path.join(deps.userDataPath, 'elevation-cache');
+  const cacheDir = joinUnderRoot(deps.userDataPath, 'elevation-cache');
   const sampleCache = new ElevationSampleCache(cacheDir);
   const abortByJob = new Map<string, AbortController>();
   let loadPromise: Promise<void> | null = null;
@@ -353,7 +353,7 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
       const hgt = await listHgtTiles(cacheDir);
       const fs = await import('fs/promises');
       for (const name of hgt.names) {
-        await fs.unlink(path.join(cacheDir, 'hgt', `${name}.hgt`)).catch(() => {
+        await fs.unlink(joinUnderRoot(cacheDir, 'hgt', `${name}.hgt`)).catch(() => {
           // catch-no-log-ok
         });
       }

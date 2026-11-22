@@ -26,7 +26,7 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-sidecar-build-'));
   fixtures.push(root);
-  for (const dir of ['scripts', 'reticulum-sidecar', 'bin']) {
+  for (const dir of ['scripts', 'scripts/lib', 'reticulum-sidecar', 'bin']) {
     mkdirSync(path.join(root, dir));
   }
   for (const file of [
@@ -36,6 +36,10 @@ function fixture() {
   ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
+  copyFileSync(
+    new URL('./lib/path-under-root.mjs', import.meta.url),
+    path.join(root, 'scripts/lib/path-under-root.mjs'),
+  );
   writeFileSync(path.join(root, 'scripts/clone-ratspeak-stack.sh'), 'exit "${FAIL_CLONE:-0}"\n');
   const cargo = path.join(root, 'bin/cargo');
   writeFileSync(

@@ -107,7 +107,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
       }, TCP_BRIDGE_CONNECT_TIMEOUT_MS);
       socket.connect(p, socketHost, () => {
         clearTimeout(connectTimeout);
-        console.debug(`[IPC] ${connectChannel} connected to`, sanitizeLogMessage(socketHost), p);
+        console.debug('[IPC]', connectChannel, 'connected to', sanitizeLogMessage(socketHost), p);
         logDeviceConnection(
           `transport=tcp stack=${protocol} host=${sanitizeLogMessage(socketHost)} port=${p}`,
           protocol,
@@ -122,14 +122,22 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
         const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
         if (chunk.length > TCP_BRIDGE_DATA_MAX_BYTES) {
           console.warn(
-            `[IPC] ${dataChannel} oversized chunk (${chunk.length} > ${TCP_BRIDGE_DATA_MAX_BYTES}); dropping socket`,
+            '[IPC]',
+            dataChannel,
+            'oversized chunk (',
+            chunk.length,
+            '>',
+            TCP_BRIDGE_DATA_MAX_BYTES,
+            '); dropping socket',
           );
           try {
             socket.destroy();
           } catch (e) {
             console.debug(
-              `[IPC] ${dataChannel} destroy after oversize ` +
-                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+              '[IPC]',
+              dataChannel,
+              'destroy after oversize',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
             );
           }
           return;
@@ -148,11 +156,12 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
           ? `${socket.remoteAddress}:${socket.remotePort ?? '?'}`
           : 'unknown';
         console.debug(
-          `[IPC] ${protocol}:tcp socket closed`,
+          '[IPC]',
+          protocol + ':tcp socket closed',
           hadError ? '(hadError)' : '(clean)',
-          `remote=${sanitizeLogMessage(remote)}`,
-          `readableEnded=${socket.readableEnded}`,
-          `writableEnded=${socket.writableEnded}`,
+          'remote=' + sanitizeLogMessage(remote),
+          'readableEnded=' + String(socket.readableEnded),
+          'writableEnded=' + String(socket.writableEnded),
         );
         // Only notify when this socket is still the active bridge. connect/disconnect clear the
         // ref before destroy(), so superseded closes must not look like a live link drop
@@ -171,7 +180,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
       });
       socket.on('error', (err) => {
         clearTimeout(connectTimeout);
-        console.error(`[IPC] ${connectChannel} error:`, sanitizeLogMessage(err.message));
+        console.error('[IPC]', connectChannel, 'error:', sanitizeLogMessage(err.message));
         if (!settled) {
           settled = true;
           reject(err);
@@ -202,27 +211,27 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
     if (!activeSocket) {
       if (writeMissing === 'no-socket') {
         // Expected reconnect race — resolve so Electron does not log handler [error].
-        console.debug(`[IPC] ${writeChannel}: no active socket`);
+        console.debug('[IPC]', writeChannel + ': no active socket');
         return 'no-socket';
       }
       const msg = `${writeChannel}: no active socket`;
-      console.warn(`[IPC] ${msg}`);
+      console.warn('[IPC]', msg);
       return Promise.reject(new Error(msg));
     }
     const sock = activeSocket;
     if (writeMissing === 'no-socket' && (sock.destroyed || sock.writableEnded)) {
-      console.debug(`[IPC] ${writeChannel}: no active socket`);
+      console.debug('[IPC]', writeChannel + ': no active socket');
       return 'no-socket';
     }
     return new Promise<'no-socket' | undefined>((resolve, reject) => {
       sock.write(new Uint8Array(bytes), (err) => {
         if (err) {
           if (writeMissing === 'no-socket' && meshtasticTcpWriteErrorIsNoSocket(sock, err)) {
-            console.debug(`[IPC] ${writeChannel}: no active socket`);
+            console.debug('[IPC]', writeChannel + ': no active socket');
             resolve('no-socket');
             return;
           }
-          console.error(`[IPC] ${writeChannel} error:`, sanitizeLogMessage(err.message));
+          console.error('[IPC]', writeChannel, 'error:', sanitizeLogMessage(err.message));
           reject(err);
         } else {
           // Ignore write completions from a superseded socket.
@@ -238,7 +247,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
   const disconnect = (event: IpcMainInvokeEvent): void => {
     assertIpcSender(event, disconnectChannel);
     if (activeSocket) {
-      console.debug(`[IPC] ${disconnectChannel}`);
+      console.debug('[IPC]', disconnectChannel);
       // Null before destroy so this teardown close is not reported as a live link drop.
       const prev = activeSocket;
       activeSocket = null;
@@ -255,7 +264,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
     try {
       prev.destroy();
     } catch (err) {
-      console.debug(`[main] ${logLabel}:`, err instanceof Error ? err.message : err); // log-injection-ok internal Node.js socket error during cleanup
+      console.debug('[main]', logLabel + ':', err instanceof Error ? err.message : err); // log-injection-ok internal Node.js socket error during cleanup
     }
   };
 

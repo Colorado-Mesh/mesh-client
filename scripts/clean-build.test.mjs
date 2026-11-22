@@ -15,6 +15,7 @@ import {
   runClean,
   runCmd,
 } from './clean-build.mjs';
+import { PathEscapesRootError } from './lib/path-under-root.mjs';
 
 const RAW_TIERS = [
   { name: 'dist', tier: 1 },
@@ -63,7 +64,7 @@ describe('clean-build', () => {
     const resolved = resolvePaths(root, RAW_TIERS);
     for (const entry of resolved) expect(entry.abs.startsWith(root)).toBe(true);
     expect(() => resolvePaths(root, [{ name: '../outside', tier: 2 }])).toThrow(
-      /outside repo root/,
+      PathEscapesRootError,
     );
   });
 

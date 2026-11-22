@@ -1,6 +1,8 @@
 import { readdirSync } from 'fs';
 import path from 'path';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 /**
  * Recursively find the electron-builder NSIS app payload archive inside a 7z NSIS extract.
  * Prefers app*.7z or app*.zip under $PLUGINSDIR (electron-builder layout).
@@ -15,7 +17,7 @@ export function findAppArchive(rootDir) {
   /** @param {string} dir */
   function walk(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+      const full = joinUnderRoot(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.name.endsWith('.7z') || entry.name.endsWith('.zip')) {

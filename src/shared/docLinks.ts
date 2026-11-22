@@ -1,5 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join, relative } from 'path';
+import { relative } from 'path';
+
+import { joinUnderRoot, resolveUnderRoot } from './pathUnderRoot';
 
 export interface BrokenDocLink {
   sourceFile: string;
@@ -45,7 +47,7 @@ function collectFilesRecursive(dir: string, extensions: string[]): string[] {
   const results: string[] = [];
   if (!existsSync(dir)) return results;
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, ent.name);
+    const full = joinUnderRoot(dir, ent.name);
     if (ent.isDirectory()) {
       results.push(...collectFilesRecursive(full, extensions));
     } else if (extensions.some((ext) => ent.name.endsWith(ext))) {
@@ -58,16 +60,20 @@ function collectFilesRecursive(dir: string, extensions: string[]): string[] {
 function collectScanFiles(repoRoot: string): string[] {
   const files: string[] = [];
 
-  files.push(...collectFilesRecursive(join(repoRoot, 'src/renderer'), ['.ts', '.tsx']));
-  files.push(...collectFilesRecursive(join(repoRoot, 'src/main'), ['.ts']));
+  files.push(...collectFilesRecursive(resolveUnderRoot(repoRoot, 'src/renderer'), ['.ts', '.tsx']));
+  files.push(...collectFilesRecursive(resolveUnderRoot(repoRoot, 'src/main'), ['.ts']));
 
-  for (const name of [...ROOT_MARKDOWN, ...EXTRA_SCAN_FILES]) {
-    const path = join(repoRoot, name);
-    if (existsSync(path)) files.push(path);
+  for (const name of ROOT_MARKDOWN) {
+    const filePath = joinUnderRoot(repoRoot, name);
+    if (existsSync(filePath)) files.push(filePath);
+  }
+  for (const name of EXTRA_SCAN_FILES) {
+    const filePath = resolveUnderRoot(repoRoot, name);
+    if (existsSync(filePath)) files.push(filePath);
   }
 
-  files.push(...collectFilesRecursive(join(repoRoot, 'docs'), ['.md']));
-  files.push(...collectFilesRecursive(join(repoRoot, '.github'), ['.md']));
+  files.push(...collectFilesRecursive(resolveUnderRoot(repoRoot, 'docs'), ['.md']));
+  files.push(...collectFilesRecursive(resolveUnderRoot(repoRoot, '.github'), ['.md']));
 
   return files;
 }
@@ -171,7 +177,7 @@ export function findBrokenDocLinks(repoRoot: string): BrokenDocLink[] {
   const anchorsFor = (target: string): Set<string> => {
     let anchors = anchorCache.get(target);
     if (anchors === undefined) {
-      anchors = markdownHeadingAnchors(readFileSync(join(repoRoot, target), 'utf8'));
+      anchors = markdownHeadingAnchors(readFileSync(resolveUnderRoot(repoRoot, target), 'utf8'));
       anchorCache.set(target, anchors);
     }
     return anchors;
@@ -183,7 +189,7 @@ export function findBrokenDocLinks(repoRoot: string): BrokenDocLink[] {
 
     for (const link of findDocLinkMatches(content)) {
       if (isGeneratedSitePage(link.target)) continue;
-      const exists = existsSync(join(repoRoot, link.target));
+      const exists = existsSync(resolveUnderRoot(repoRoot, link.target));
       const anchorMissing =
         exists && link.anchor !== undefined && !anchorsFor(link.target).has(link.anchor);
       if (!exists || anchorMissing) {

@@ -17,8 +17,13 @@ function runCheckOnSnippet(source) {
     fs.writeFileSync(path.join(srcMain, 'sample.test.ts'), source, 'utf8');
 
     const scriptsDir = path.join(fakeRoot, 'scripts');
-    fs.mkdirSync(scriptsDir, { recursive: true });
+    const scriptsLibDir = path.join(scriptsDir, 'lib');
+    fs.mkdirSync(scriptsLibDir, { recursive: true });
     fs.copyFileSync(CHECK, path.join(scriptsDir, 'check-insecure-temp-files.mjs'));
+    fs.copyFileSync(
+      path.join(__dirname, 'lib/path-under-root.mjs'),
+      path.join(scriptsLibDir, 'path-under-root.mjs'),
+    );
 
     return spawnSync(process.execPath, [path.join(scriptsDir, 'check-insecure-temp-files.mjs')], {
       cwd: fakeRoot,

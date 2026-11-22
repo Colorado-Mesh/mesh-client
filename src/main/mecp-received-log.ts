@@ -7,6 +7,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const MECP_RECEIVED_LOG_FILENAME = 'mecp-received.log';
@@ -37,7 +38,7 @@ let appendChain: Promise<void> = Promise.resolve();
 
 export function getMecpReceivedLogPath(): string {
   if (!logFilePath) {
-    logFilePath = path.join(app.getPath('userData'), MECP_RECEIVED_LOG_FILENAME);
+    logFilePath = joinUnderRoot(app.getPath('userData'), MECP_RECEIVED_LOG_FILENAME);
   }
   return logFilePath;
 }
@@ -57,7 +58,7 @@ function rotateIfNeeded(filePath: string): void {
     if (!fs.existsSync(filePath)) return;
     const { size } = fs.statSync(filePath);
     if (size < MECP_RECEIVED_LOG_MAX_BYTES) return;
-    const backup = path.join(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
+    const backup = joinUnderRoot(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
     if (fs.existsSync(backup)) {
       fs.unlinkSync(backup);
     }
@@ -110,7 +111,7 @@ export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): Promise<void
 export async function readMecpReceivedLogForExport(): Promise<string> {
   await appendChain.catch(() => undefined);
   const filePath = getMecpReceivedLogPath();
-  const backup = path.join(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
+  const backup = joinUnderRoot(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
   const parts: string[] = [];
   try {
     if (fs.existsSync(backup)) {

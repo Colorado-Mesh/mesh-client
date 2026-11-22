@@ -19,6 +19,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { fileURLToPath } from 'url';
 
 import {
@@ -38,7 +40,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const releaseDir = path.join(projectRoot, 'release');
+const releaseDir = joinUnderRoot(projectRoot, 'release');
 const APP_NAME = process.env.MESH_CLIENT_APP_NAME || 'Mesh-client';
 const KEEP_TEMP = process.env.MESH_CLIENT_KEEP_TEMP === '1';
 
@@ -68,11 +70,11 @@ export function pickHostArchZip(matches, hostArch) {
 function resolveLaunchDiagnosticsDir() {
   const runnerTemp = process.env.RUNNER_TEMP;
   if (runnerTemp) {
-    const outDir = path.join(runnerTemp, 'mesh-client-mac-launch-diagnostics');
+    const outDir = joinUnderRoot(runnerTemp, 'mesh-client-mac-launch-diagnostics');
     mkdirSync(outDir, { recursive: true });
     return outDir;
   }
-  return mkdtempSync(path.join(tmpdir(), 'mesh-client-mac-launch-diagnostics-'));
+  return mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-client-mac-launch-diagnostics-'));
 }
 
 /**
@@ -81,12 +83,12 @@ function resolveLaunchDiagnosticsDir() {
  */
 function writeLaunchDiagnostics(userDataDir, message) {
   const outDir = resolveLaunchDiagnosticsDir();
-  writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
-  const logPath = path.join(userDataDir, LOG_FILENAME);
+  writeFileSync(joinUnderRoot(outDir, 'launch-error.txt'), message, 'utf-8');
+  const logPath = joinUnderRoot(userDataDir, LOG_FILENAME);
   if (existsSync(logPath)) {
     try {
       const text = readFileSync(logPath, 'utf-8');
-      writeFileSync(path.join(outDir, LOG_FILENAME), tailText(text, 64 * 1024), 'utf-8');
+      writeFileSync(joinUnderRoot(outDir, LOG_FILENAME), tailText(text, 64 * 1024), 'utf-8');
     } catch {
       // catch-no-log-ok best-effort diagnostics
     }
@@ -113,12 +115,12 @@ async function main() {
   }
 
   const zipPath = pickHostArchZip(matches, hostArch);
-  const extractDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-mac-launch-'));
-  const userDataDir = mkdtempSync(path.join(tmpdir(), `mesh-client-userdata-mac-${hostArch}-`));
+  const extractDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-client-mac-launch-'));
+  const userDataDir = mkdtempSync(joinUnderRoot(tmpdir(), `mesh-client-userdata-mac-${hostArch}-`));
 
   try {
     const bundleRoot = extractZipToTemp(zipPath, extractDir);
-    const exec = path.join(bundleRoot, 'Contents', 'MacOS', APP_NAME);
+    const exec = joinUnderRoot(bundleRoot, 'Contents', 'MacOS', APP_NAME);
     if (!existsSync(exec)) {
       fail(`Missing macOS launcher: ${exec}`);
     }

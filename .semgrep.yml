@@ -1,0 +1,25 @@
+# Mesh Client Semgrep policy (complements `semgrep --config auto`).
+#
+# Catch-block hygiene (log / rethrow / `// catch-no-log-ok <reason>`) for
+# src/main + src/renderer is enforced by `pnpm run check:silent-catches`.
+# Do not add a catch-body regex or “empty catch” AST rule here: comment-only
+# bodies with `catch-no-log-ok` are intentional and would false-positive.
+rules:
+  # AES-GCM must pin authTagLength so truncated tags are rejected.
+  - id: mesh-client-aes-gcm-auth-tag-length
+    message: >
+      AES-256-GCM createCipheriv/createDecipheriv must pass
+      `{ authTagLength: 16 }` so authentication tags cannot be truncated.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-347'
+      likelihood: LOW
+      impact: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createCipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: crypto.createDecipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: crypto.createCipheriv('aes-256-gcm', $KEY, $IV)
+          - pattern: crypto.createDecipheriv('aes-256-gcm', $KEY, $IV)

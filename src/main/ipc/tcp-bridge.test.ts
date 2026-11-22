@@ -147,9 +147,9 @@ describe('createTcpBridge', () => {
     await expect(meshcore.write(event, [1])).rejects.toThrow(
       'meshcore:tcp-write: no active socket',
     );
-    expect(console.warn).toHaveBeenCalledWith('[IPC] meshcore:tcp-write: no active socket');
+    expect(console.warn).toHaveBeenCalledWith('[IPC]', 'meshcore:tcp-write: no active socket');
     expect(meshtastic.write(event, [1])).toBe('no-socket');
-    expect(console.debug).toHaveBeenCalledWith('[IPC] meshtastic:tcp-write: no active socket');
+    expect(console.debug).toHaveBeenCalledWith('[IPC]', 'meshtastic:tcp-write: no active socket');
   });
 
   it('keeps independent sockets so one protocol teardown does not affect the other', async () => {

@@ -1,14 +1,22 @@
 // @vitest-environment node
 import { readdirSync, readFileSync } from 'fs';
-import { join, relative } from 'path';
+import { dirname, relative } from 'path';
 import { describe, expect, it } from 'vitest';
+
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 
 /**
  * Guard: the incoming-call ring paints above every other fixed overlay in the renderer, so an
  * open dialog or panel can never hide a call. Cross-file, so not a sourcePolicyRules regex.
  */
-const RENDERER_DIR = join(__dirname, '../renderer');
-const RING_FILE = join(RENDERER_DIR, 'components/reticulum/ReticulumVoiceOverlay.tsx');
+const SRC_ROOT = dirname(__dirname);
+const RENDERER_DIR = joinUnderRoot(SRC_ROOT, 'renderer');
+const RING_FILE = joinUnderRoot(
+  RENDERER_DIR,
+  'components',
+  'reticulum',
+  'ReticulumVoiceOverlay.tsx',
+);
 const Z_CLASS = /\bz-(?:\[(\d+)\]|(\d+)(?![\w-]))/g;
 
 function ringZIndex(): number {
@@ -22,7 +30,7 @@ function ringZIndex(): number {
 
 function rendererSources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
+    const path = joinUnderRoot(dir, entry.name);
     if (entry.isDirectory()) return rendererSources(path);
     return /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [path] : [];
   });

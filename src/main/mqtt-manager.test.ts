@@ -1230,7 +1230,7 @@ describe('_doConnect — WebSocket scheme', () => {
     vi.mocked(mqtt.connect).mockClear();
   });
 
-  it('uses ws:// for port 1883 (plaintext MQTT port, no TLS)', () => {
+  it('uses plaintext WebSocket scheme for port 1883 (MQTT port, no TLS)', () => {
     new MQTTManager().connect({
       server: 'broker.example.com',
       port: 1883,
@@ -1290,7 +1290,7 @@ describe('_doConnect — WebSocket scheme', () => {
     ).toBe(false);
   });
 
-  it('uses ws:// when tlsInsecure is true on port 8883', () => {
+  it('uses plaintext WebSocket scheme when tlsInsecure is true on port 8883', () => {
     new MQTTManager().connect({
       server: 'mqtt.example.com',
       port: 8883,

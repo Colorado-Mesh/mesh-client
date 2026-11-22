@@ -1548,7 +1548,8 @@ describe('ReticulumSidecarManager', () => {
         await stopping;
         expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
         expect(debug).toHaveBeenCalledWith(
-          `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
+          '[ReticulumSidecar] %s failed — continuing with SIGTERM: %s',
+          operation,
           outcome === 'timeout'
             ? `Timed out after ${budgetMs}ms`
             : 'Sidecar did not confirm state flush',
@@ -1641,7 +1642,8 @@ describe('ReticulumSidecarManager', () => {
       expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
       if (!flushOk) {
         expect(debug).toHaveBeenCalledWith(
-          '[ReticulumSidecar] flush-state failed — continuing with SIGTERM:',
+          '[ReticulumSidecar] %s failed — continuing with SIGTERM: %s',
+          'flush-state',
           expect.any(String),
         );
       }

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { existsSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 
@@ -22,8 +22,9 @@ import {
   troubleshootingDocsUrl,
 } from './docsSite';
 import { REGISTERED_MESH_PROTOCOLS } from './meshProtocol';
+import { resolveUnderRoot } from './pathUnderRoot';
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const repoRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 const NEW_USER_GUIDE_URLS: readonly (readonly [string, string])[] = [
   ['chat', CHAT_DOCS_URL],
@@ -52,7 +53,7 @@ describe('docsSitePageUrl', () => {
 
   it.each(NEW_USER_GUIDE_URLS)('%s docs URL maps to an existing page file', (page, url) => {
     expect(url).toBe(docsSitePageUrl(page));
-    expect(existsSync(join(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
+    expect(existsSync(resolveUnderRoot(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
   });
 });
 
@@ -60,6 +61,6 @@ describe('troubleshootingDocsUrl', () => {
   it.each(REGISTERED_MESH_PROTOCOLS)('%s links to an existing troubleshooting page', (protocol) => {
     const page = TROUBLESHOOTING_PAGE_BY_PROTOCOL[protocol];
     expect(troubleshootingDocsUrl(protocol)).toBe(`${DOCS_SITE_URL}${page}/`);
-    expect(existsSync(join(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
+    expect(existsSync(resolveUnderRoot(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
   });
 });

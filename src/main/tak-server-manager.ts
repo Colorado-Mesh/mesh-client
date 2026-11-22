@@ -990,7 +990,11 @@ export class TakServerManager extends EventEmitter {
     try {
       client.socket.write(cot + '\n');
     } catch (err) {
-      console.warn(`[TakServer] Failed to write to client ${id}:`, sanitizeLogMessage(String(err)));
+      console.warn(
+        '[TakServer] Failed to write to client',
+        id + ':',
+        sanitizeLogMessage(String(err)),
+      );
     }
   }
 

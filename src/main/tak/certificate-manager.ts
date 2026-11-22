@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 import { app } from 'electron';
 import fs from 'fs';
 import * as forge from 'node-forge';
-import path from 'path';
+
+import { joinUnderRoot } from '../../shared/pathUnderRoot';
 
 export interface CertBundle {
   caCert: string;
@@ -36,7 +37,7 @@ interface ForgeCertField {
 }
 
 export function getCertsDir(): string {
-  return path.join(app.getPath('userData'), 'tak-certs');
+  return joinUnderRoot(app.getPath('userData'), 'tak-certs');
 }
 
 function isIpv4Literal(value: string): boolean {
@@ -166,12 +167,12 @@ const PRIVATE_KEY_FIELDS = ['caKey', 'serverKey', 'clientKey'] as const;
 
 function certPaths(certsDir: string) {
   return {
-    caCert: path.join(certsDir, 'ca-cert.pem'),
-    caKey: path.join(certsDir, 'ca-key.pem'),
-    serverCert: path.join(certsDir, 'server-cert.pem'),
-    serverKey: path.join(certsDir, 'server-key.pem'),
-    clientCert: path.join(certsDir, 'client-cert.pem'),
-    clientKey: path.join(certsDir, 'client-key.pem'),
+    caCert: joinUnderRoot(certsDir, 'ca-cert.pem'),
+    caKey: joinUnderRoot(certsDir, 'ca-key.pem'),
+    serverCert: joinUnderRoot(certsDir, 'server-cert.pem'),
+    serverKey: joinUnderRoot(certsDir, 'server-key.pem'),
+    clientCert: joinUnderRoot(certsDir, 'client-cert.pem'),
+    clientKey: joinUnderRoot(certsDir, 'client-key.pem'),
   };
 }
 
@@ -342,7 +343,7 @@ export async function regenerateCerts(identity: TakServerIdentity): Promise<Cert
   const certsDir = getCertsDir();
   if (fs.existsSync(certsDir)) {
     for (const file of fs.readdirSync(certsDir)) {
-      fs.rmSync(path.join(certsDir, file));
+      fs.rmSync(joinUnderRoot(certsDir, file));
     }
   }
   return generateAndPersistCerts(resolved);

@@ -2,7 +2,8 @@
  * Shared assertions for packaged Reticulum sidecar binaries in Electron bundles.
  */
 import { existsSync, statSync } from 'fs';
-import path from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { assertBinaryArch } from './binary-arch.mjs';
 import { MIN_SIDECAR_BYTES, sidecarBinaryFileName } from './reticulum-sidecar-staging.mjs';
 
@@ -15,7 +16,7 @@ import { MIN_SIDECAR_BYTES, sidecarBinaryFileName } from './reticulum-sidecar-st
  */
 export function resolveBundledSidecarPath(platform, bundleRoot) {
   if (platform === 'darwin') {
-    return path.join(
+    return joinUnderRoot(
       bundleRoot,
       'Contents',
       'Resources',
@@ -23,7 +24,12 @@ export function resolveBundledSidecarPath(platform, bundleRoot) {
       sidecarBinaryFileName(platform),
     );
   }
-  return path.join(bundleRoot, 'resources', 'reticulum-sidecar', sidecarBinaryFileName(platform));
+  return joinUnderRoot(
+    bundleRoot,
+    'resources',
+    'reticulum-sidecar',
+    sidecarBinaryFileName(platform),
+  );
 }
 
 /**

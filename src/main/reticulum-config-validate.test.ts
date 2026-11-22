@@ -1,7 +1,8 @@
 import fs from 'fs';
 import os from 'os';
-import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 
 const spawnMock = vi.hoisted(() => vi.fn());
 const resolveBinaryMock = vi.hoisted(() => vi.fn());
@@ -16,7 +17,7 @@ vi.mock('child_process', () => ({
 
 vi.mock('electron', () => ({
   app: {
-    getPath: () => path.join(os.tmpdir(), 'mesh-client-validate-test-userdata'),
+    getPath: () => joinUnderRoot(os.tmpdir(), 'mesh-client-validate-test-userdata'),
     isPackaged: false,
   },
 }));
@@ -38,8 +39,8 @@ import { validateReticulumUserConfig } from './reticulum-config-validate';
 
 /** Unique temp dir + empty stub binary (CodeQL `js/insecure-temporary-file`). */
 function makeFakeSidecarBinary(label: string): { dir: string; binary: string } {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `mesh-validate-${label}-`));
-  const binary = path.join(dir, 'fake-sidecar');
+  const dir = fs.mkdtempSync(joinUnderRoot(os.tmpdir(), `mesh-validate-${label}-`));
+  const binary = joinUnderRoot(dir, 'fake-sidecar');
   fs.writeFileSync(binary, '');
   return { dir, binary };
 }
@@ -128,7 +129,7 @@ describe('validateReticulumUserConfig', () => {
         closeCode: 0,
       });
 
-      const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reticulum-config-validate-'));
+      const configDir = fs.mkdtempSync(joinUnderRoot(os.tmpdir(), 'reticulum-config-validate-'));
       tempDirs.push(configDir);
       const result = await validateReticulumUserConfig({
         configDir,

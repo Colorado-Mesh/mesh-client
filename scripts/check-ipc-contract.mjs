@@ -17,26 +17,28 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const PRELOAD_FILE = path.join(ROOT, 'src', 'preload', 'index.ts');
+const PRELOAD_FILE = joinUnderRoot(ROOT, 'src', 'preload', 'index.ts');
 const MAIN_FILES = [
-  path.join(ROOT, 'src', 'main', 'index.ts'),
-  path.join(ROOT, 'src', 'main', 'updater.ts'),
-  path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
+  joinUnderRoot(ROOT, 'src', 'main', 'index.ts'),
+  joinUnderRoot(ROOT, 'src', 'main', 'updater.ts'),
+  joinUnderRoot(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
   // Sibling-loaded identity hydration IPC (built as identity-hydration.js).
-  path.join(ROOT, 'src', 'main', 'identityHydrationSnapshot.ts'),
+  joinUnderRoot(ROOT, 'src', 'main', 'identityHydrationSnapshot.ts'),
   // Sibling-loaded Windows notification SoundPlayer IPC (built as notification-sound-play-wav.js).
-  path.join(ROOT, 'src', 'main', 'notificationSoundPlayWav.ts'),
-  ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
+  joinUnderRoot(ROOT, 'src', 'main', 'notificationSoundPlayWav.ts'),
+  ...collectIpcHandlerFiles(joinUnderRoot(ROOT, 'src', 'main', 'ipc')),
 ];
 
 function collectIpcHandlerFiles(dir) {
   const results = [];
   if (!fs.existsSync(dir)) return results;
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, ent.name);
+    const full = joinUnderRoot(dir, ent.name);
     if (ent.isDirectory()) {
       results.push(...collectIpcHandlerFiles(full));
     } else if (ent.isFile() && ent.name.endsWith('.ts') && !ent.name.endsWith('.test.ts')) {

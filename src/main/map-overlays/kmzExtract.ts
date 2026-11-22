@@ -13,6 +13,7 @@ import {
   MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES,
   MAP_OVERLAY_MAX_BYTES,
 } from '@/shared/mapOverlays/types';
+import { joinUnderRoot, resolveUnderRoot } from '@/shared/pathUnderRoot';
 
 export class KmzExtractError extends Error {
   readonly code: 'too_large' | 'unsafe_zip' | 'empty' | 'io';
@@ -35,16 +36,15 @@ export function assertSafeZipEntryName(name: string, destRoot: string): string {
   if (normalizedPosix.split('/').some((seg) => seg === '..')) {
     throw new KmzExtractError('unsafe_zip', 'Zip path traversal is not allowed');
   }
-  const dest = path.resolve(destRoot, normalizedPosix);
-  const rootWithSep = destRoot.endsWith(path.sep) ? destRoot : destRoot + path.sep;
-  if (dest !== destRoot && !dest.startsWith(rootWithSep)) {
+  try {
+    return resolveUnderRoot(destRoot, normalizedPosix);
+  } catch {
     throw new KmzExtractError('unsafe_zip', 'Zip entry escapes extract directory');
   }
-  return dest;
 }
 
 async function findKmlFile(dir: string): Promise<string> {
-  const preferred = path.join(dir, 'doc.kml');
+  const preferred = joinUnderRoot(dir, 'doc.kml');
   try {
     await fsp.access(preferred);
     return preferred;
@@ -56,7 +56,7 @@ async function findKmlFile(dir: string): Promise<string> {
     const entries = await fsp.readdir(current, { withFileTypes: true });
     const files: string[] = [];
     for (const entry of entries) {
-      const full = path.join(current, entry.name);
+      const full = joinUnderRoot(current, entry.name);
       if (entry.isDirectory()) {
         const nested = await walk(full);
         if (nested) return nested;

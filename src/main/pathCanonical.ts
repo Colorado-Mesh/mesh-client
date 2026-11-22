@@ -2,12 +2,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
+ * Normalize a native picker / dialog absolute path when realpath is not yet possible.
+ * Not for root-relative joins — use `joinUnderRoot` / `resolveUnderRoot` instead.
+ */
+export function resolveAbsoluteFsPath(p: string): string {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  return path.resolve(p);
+}
+
+/**
  * Resolve a filesystem path to its canonical realpath, walking up parents when
  * the leaf (or intermediate) path does not exist yet (e.g. a fetch save target
  * under a picked directory). Returns null when no existing ancestor can be resolved.
  */
 export function canonicalizePath(candidate: string): string | null {
-  const resolved = path.resolve(candidate);
+  const resolved = resolveAbsoluteFsPath(candidate);
   try {
     return fs.realpathSync.native(resolved);
   } catch {
@@ -22,12 +31,29 @@ export function canonicalizePath(candidate: string): string | null {
     if (parent === current) return null;
     try {
       const realParent = fs.realpathSync.native(parent);
-      return path.join(realParent, ...suffix);
+      // Ancestor + basename segments are from path.basename of an already-resolved path.
+      return joinUnderRootSafe(realParent, suffix);
     } catch {
       // catch-no-log-ok: keep walking toward filesystem root
       current = parent;
     }
   }
+}
+
+/** Join basename segments under an already-canonical parent (no `..`). */
+function joinUnderRootSafe(root: string, segments: string[]): string {
+  let out = root;
+  for (const segment of segments) {
+    if (!segment || segment === '.' || segment === '..') {
+      throw new Error('invalid path segment during canonicalize');
+    }
+    if (segment.includes('/') || segment.includes('\\') || segment.includes('\0')) {
+      throw new Error('invalid path segment during canonicalize');
+    }
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+    out = path.join(out, segment);
+  }
+  return out;
 }
 
 /** True when `candidate` is exactly `allowed` after both are canonicalized. */

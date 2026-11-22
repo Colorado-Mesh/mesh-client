@@ -14,9 +14,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const SCAN_ROOTS = [path.join(ROOT, 'src'), path.join(ROOT, 'scripts')];
+const SCAN_ROOTS = [joinUnderRoot(ROOT, 'src'), joinUnderRoot(ROOT, 'scripts')];
 
 const WRITE_FNS = [
   'writeFileSync',
@@ -40,11 +42,11 @@ function collectSourceFiles(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.isDirectory()) {
       if (SKIP_DIRS.has(ent.name)) continue;
-      results.push(...collectSourceFiles(path.join(dir, ent.name)));
+      results.push(...collectSourceFiles(joinUnderRoot(dir, ent.name)));
     } else if (ent.isFile() && /\.(ts|tsx|mjs|js|cjs)$/.test(ent.name)) {
       if (ent.name === 'check-insecure-temp-files.mjs') continue;
       if (ent.name.endsWith('.test.mjs') && ent.name.startsWith('check-insecure-temp')) continue;
-      results.push(path.join(dir, ent.name));
+      results.push(joinUnderRoot(dir, ent.name));
     }
   }
   return results;

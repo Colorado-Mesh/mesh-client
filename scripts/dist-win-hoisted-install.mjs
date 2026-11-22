@@ -10,6 +10,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { cleanJsrTempDirs } from './clean-jsr-temp-dirs.mjs';
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -27,10 +28,10 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     cleanJsrTempDirs(path.join(projectRoot, 'node_modules'));
   }
 
-  const result = spawnSync('pnpm', ['install', '--config.node-linker=hoisted'], {
+  const result = spawnSync(pnpmExecutable(), ['install', '--config.node-linker=hoisted'], {
     cwd: projectRoot,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   lastStatus = result.status ?? 1;
   if (lastStatus === 0) {

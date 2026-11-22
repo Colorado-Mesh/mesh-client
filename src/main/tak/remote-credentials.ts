@@ -5,6 +5,7 @@ import fs from 'fs';
 import * as forge from 'node-forge';
 import path from 'path';
 
+import { joinUnderRoot } from '../../shared/pathUnderRoot';
 import type { TAKRemoteCredentialSummary } from '../../shared/tak-types';
 
 /** PEM credentials for `tls.connect`. */
@@ -41,7 +42,7 @@ interface ParsedCredentials {
 }
 
 export function getRemoteCertsDir(): string {
-  return path.join(app.getPath('userData'), 'tak-remote-certs');
+  return joinUnderRoot(app.getPath('userData'), 'tak-remote-certs');
 }
 
 function commonName(subject: string): string {
@@ -185,8 +186,8 @@ function writeAtomic(file: string, contents: string | Buffer, mode: number): voi
  * protection the local server's keys in tak-certs get.
  */
 async function writeClientKey(dir: string, keyPem: string): Promise<void> {
-  const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
-  const plain = path.join(dir, CREDENTIAL_FILES.key);
+  const encrypted = joinUnderRoot(dir, CREDENTIAL_FILES.encryptedKey);
+  const plain = joinUnderRoot(dir, CREDENTIAL_FILES.key);
   if (await safeStorage.isAsyncEncryptionAvailable()) {
     writeAtomic(encrypted, await safeStorage.encryptStringAsync(keyPem), 0o600);
     fs.rmSync(plain, { force: true });
@@ -197,7 +198,7 @@ async function writeClientKey(dir: string, keyPem: string): Promise<void> {
 }
 
 async function readClientKey(dir: string): Promise<string | undefined> {
-  const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
+  const encrypted = joinUnderRoot(dir, CREDENTIAL_FILES.encryptedKey);
   if (fs.existsSync(encrypted)) {
     try {
       const { result } = await safeStorage.decryptStringAsync(fs.readFileSync(encrypted));
@@ -209,7 +210,7 @@ async function readClientKey(dir: string): Promise<string | undefined> {
       );
     }
   }
-  const plain = path.join(dir, CREDENTIAL_FILES.key);
+  const plain = joinUnderRoot(dir, CREDENTIAL_FILES.key);
   return fs.existsSync(plain) ? fs.readFileSync(plain, 'utf-8') : undefined;
 }
 
@@ -220,10 +221,10 @@ async function readClientKey(dir: string): Promise<string | undefined> {
 export async function saveTakRemoteCredentials(creds: TakRemoteCredentials): Promise<void> {
   const dir = getRemoteCertsDir();
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  if (creds.ca) writeAtomic(path.join(dir, CREDENTIAL_FILES.ca), creds.ca, 0o644);
+  if (creds.ca) writeAtomic(joinUnderRoot(dir, CREDENTIAL_FILES.ca), creds.ca, 0o644);
   if (creds.cert && creds.key) {
     await writeClientKey(dir, creds.key);
-    writeAtomic(path.join(dir, CREDENTIAL_FILES.cert), creds.cert, 0o644);
+    writeAtomic(joinUnderRoot(dir, CREDENTIAL_FILES.cert), creds.cert, 0o644);
   }
 }
 
@@ -241,7 +242,7 @@ function keyMatchesCert(certPem: string, keyPem: string): boolean {
 export async function loadTakRemoteCredentials(): Promise<TakRemoteCredentials> {
   const dir = getRemoteCertsDir();
   const read = (name: string): string | undefined => {
-    const file = path.join(dir, name);
+    const file = joinUnderRoot(dir, name);
     return fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined;
   };
   const cert = read(CREDENTIAL_FILES.cert);
@@ -265,7 +266,7 @@ export async function loadTakRemoteCredentials(): Promise<TakRemoteCredentials> 
 export function clearTakRemoteCredentials(): void {
   const dir = getRemoteCertsDir();
   for (const name of Object.values(CREDENTIAL_FILES)) {
-    fs.rmSync(path.join(dir, name), { force: true });
+    fs.rmSync(joinUnderRoot(dir, name), { force: true });
   }
 }
 

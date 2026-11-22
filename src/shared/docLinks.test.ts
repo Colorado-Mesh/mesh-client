@@ -21,13 +21,14 @@ import {
   githubHeadingSlug,
   markdownHeadingAnchors,
 } from './docLinks';
+import { joinUnderRoot } from './pathUnderRoot';
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const repoRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 function collectMarkdownFiles(dir: string): string[] {
   const out: string[] = [];
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, ent.name);
+    const full = joinUnderRoot(dir, ent.name);
     if (ent.isDirectory()) out.push(...collectMarkdownFiles(full));
     else if (ent.name.endsWith('.md')) out.push(full);
   }

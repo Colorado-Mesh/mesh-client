@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { MS_PER_DAY } from '../shared/timeConstants';
 import {
   MAX_POSITION_PRUNE_EXEMPT_IDS,
@@ -19,7 +19,7 @@ const NODE_A = 0xabcd1234;
 const NODE_B = 0x0000beef;
 
 function openDb(dir: string): NodeSqliteDB {
-  const db = new NodeSqliteDB(join(dir, 'test.db'));
+  const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
   db.pragma('journal_mode = WAL');
   runSchemaUpgrade(db);
   return db;
@@ -94,7 +94,7 @@ describe('position history prune exemptions', () => {
   });
 
   it('age prune skips exempt node ids and keeps existing behavior without them', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-pos-prune-age-'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-pos-prune-age-'));
     const db = openDb(dir);
     const old = Date.now() - 40 * MS_PER_DAY;
     const fresh = Date.now();
@@ -111,7 +111,7 @@ describe('position history prune exemptions', () => {
   });
 
   it('per-node cap skips exempt node ids', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-pos-prune-cap-'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-pos-prune-cap-'));
     const db = openDb(dir);
     const base = Date.now();
     insertPositions(db, NODE_A, [base - 3000, base - 2000, base - 1000]);
@@ -127,7 +127,7 @@ describe('position history prune exemptions', () => {
   });
 
   it('exempts incident sender ids in the renderer String(msg.from) decimal form', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-pos-prune-decimal-'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-pos-prune-decimal-'));
     const db = openDb(dir);
     const highNode = 0xdeadbeef;
     const old = Date.now() - 40 * MS_PER_DAY;

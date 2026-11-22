@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 
 import { resolveDockerSocket } from './run-act.mjs';
 import { formatPnpmPrepareHint, parseEngineFloor } from './check-package-manager.mjs';
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
+import { resolvePnpmExeFromCmdShim } from './ci-prefer-windows-pnpm-exe.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -149,26 +151,30 @@ export function resolvePnpmBinCandidates(pnpmHome, platform = process.platform) 
   if (!pnpmHome || platform !== 'win32') return [];
   // Always use win32 separators so unit tests on darwin/linux match CI paths.
   return [
+    pathWin32.join(pnpmHome, 'pnpm.exe'),
+    pathWin32.join(pnpmHome, 'bin', 'pnpm.exe'),
     pathWin32.join(pnpmHome, 'pnpm.CMD'),
     pathWin32.join(pnpmHome, 'pnpm.cmd'),
-    pathWin32.join(pnpmHome, 'pnpm.exe'),
     pathWin32.join(pnpmHome, 'bin', 'pnpm.CMD'),
     pathWin32.join(pnpmHome, 'bin', 'pnpm.cmd'),
-    pathWin32.join(pnpmHome, 'bin', 'pnpm.exe'),
   ];
 }
 
 function resolvePnpmVersionOutput() {
-  const fromPath = commandOutput('pnpm', ['--version']);
+  const fromPath = commandOutput(pnpmExecutable(), ['--version']);
   if (fromPath) return fromPath;
   for (const candidate of resolvePnpmBinCandidates(process.env.PNPM_HOME)) {
     if (!existsSync(candidate)) continue;
-    // Windows .CMD/.cmd shims need shell:true for spawnSync.
-    const needsShell = /\.cmd$/i.test(candidate);
-    const res = spawnSync(candidate, ['--version'], {
+    let executable = candidate;
+    if (/\.cmd$/i.test(candidate)) {
+      const resolved = resolvePnpmExeFromCmdShim(candidate);
+      if (!resolved) continue;
+      executable = resolved;
+    }
+    const res = spawnSync(executable, ['--version'], {
       encoding: 'utf8',
       stdio: 'pipe',
-      shell: needsShell,
+      shell: false,
     });
     if (res.status !== 0) continue;
     const out = (res.stdout || res.stderr || '').trim();

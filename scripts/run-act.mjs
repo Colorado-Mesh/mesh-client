@@ -143,14 +143,12 @@ export const NATIVE_TARGETS = {
       name: 'Reticulum sidecar tests (stub)',
       command: 'cargo',
       args: ['test'],
-      shell: true,
       optionalTool: 'cargo',
     },
     {
       name: 'Reticulum sidecar build (stub)',
       command: 'cargo',
       args: ['build', '--release'],
-      shell: true,
       optionalTool: 'cargo',
     },
   ],
@@ -392,10 +390,17 @@ export function runNativeStep(step, options = {}) {
   const args = step.args ?? [];
   console.log(`$ ${step.command} ${args.join(' ')}`.trim());
 
+  if (step.shell === true) {
+    // Native CI steps must use argv arrays (shell:false). A shell would reintroduce
+    // injection risk for interpolated workflow commands.
+    console.error(`run-act: refusing shell spawn for ${step.command} (shell:false only)`);
+    return 1;
+  }
+
   const res = spawnSync(step.command, args, {
     cwd,
     stdio: 'inherit',
-    shell: step.shell,
+    shell: false,
   });
   return res.status ?? 1;
 }

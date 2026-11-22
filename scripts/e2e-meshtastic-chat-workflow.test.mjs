@@ -37,8 +37,8 @@ function globToRegExp(glob) {
       source += ch;
     }
   }
-  // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in workflow.
-  return new RegExp(`^${source}$`);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(`^${source}$`); // eslint-disable-line security/detect-non-literal-regexp -- glob escaped above
 }
 
 const includeRes = included.map(globToRegExp);
