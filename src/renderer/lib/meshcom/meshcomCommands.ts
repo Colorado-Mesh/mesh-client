@@ -63,6 +63,11 @@ export interface MeshcomCommandDescriptor {
   danger?: boolean;
   /** Firmware #ifdef or hardware note (UI hint only). */
   restriction?: string;
+  /**
+   * When true, Device Configuration blocks send on known stock ICSSW firmware
+   * (MeshCom RM / kocel only — e.g. `--battcal`, `--e22pa`).
+   */
+  requiresRmFirmware?: boolean;
 }
 
 /**
@@ -632,6 +637,34 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
 
   // ── Power / OTA / mesh (APP + serial) ──
   {
+    id: 'txpower',
+    token: '--txpower',
+    channel: 'app',
+    group: 'power',
+    argKind: 'number',
+    argHint: 'dBm',
+  },
+  {
+    id: 'battcal',
+    token: '--battcal',
+    channel: 'app',
+    group: 'power',
+    argKind: 'number',
+    argHint: 'V',
+    requiresRmFirmware: true,
+    restriction: 'MeshCom RM / kocel',
+  },
+  {
+    id: 'e22pa',
+    token: '--e22pa',
+    channel: 'app',
+    group: 'power',
+    argKind: 'choice',
+    choices: ['0', '22', '30', '33'],
+    requiresRmFirmware: true,
+    restriction: 'MeshCom RM / kocel (0=unknown, 22=M22S, 30=M30S, 33=M33S)',
+  },
+  {
     id: 'mesh',
     token: '--mesh',
     channel: 'app',
@@ -712,6 +745,11 @@ export const MESHCOM_COMMAND_GROUPS: readonly MeshcomCommandGroup[] = [
 ];
 
 const BY_ID = new Map(MESHCOM_COMMANDS.map((c) => [c.id, c]));
+
+/** Catalog tokens that require MeshCom RM / kocel firmware (`requiresRmFirmware`). */
+export const MESHCOM_RM_ONLY_COMMAND_TOKENS: ReadonlySet<string> = new Set(
+  MESHCOM_COMMANDS.filter((c) => c.requiresRmFirmware).map((c) => c.token.toLowerCase()),
+);
 
 export function getMeshcomCommandById(id: string): MeshcomCommandDescriptor | undefined {
   return BY_ID.get(id);

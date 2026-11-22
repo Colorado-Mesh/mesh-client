@@ -933,7 +933,7 @@ const radioEntries: readonly SettingSearchEntry[] = [
     id: 'radio.meshcomCommands.power',
     slot: 'Radio',
     labelKey: 'meshcomDeviceCommands.groups.power',
-    keywords: ['reboot', 'deepsleep', 'ota', 'mesh', 'meshcom'],
+    keywords: ['reboot', 'deepsleep', 'ota', 'mesh', 'meshcom', 'txpower', 'battcal', 'e22pa'],
     visible: hasMeshcomDeviceCommands,
   },
   {
@@ -1402,6 +1402,12 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcomDeviceCommands.argInput': 'aria-label of a command argument field',
     'meshcomDeviceCommands.sent': 'success toast, not a control',
     'meshcomDeviceCommands.sendFailed': 'error toast or section status, not a control',
+    'meshcomDeviceCommands.rmFirmwareOnlyHint':
+      'RM-only firmware hint on command rows, not a control',
+    'meshcomDeviceCommands.rmFirmwareRequired':
+      'stock-firmware block toast/row error, not a control',
+    'meshcomDeviceCommands.rmFirmwareUnknownVersion':
+      'interpolation fallback for stock version in RM block message',
     'meshcomDeviceCommands.setctrySent': 'country Apply success status, not a control',
     'meshcomDeviceCommands.setctrySavedLocal': 'country Apply local-only status, not a control',
     'meshcomDeviceCommands.consoleHint': 'help text of the indexed console group',

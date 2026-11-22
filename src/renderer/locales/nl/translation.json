@@ -9224,7 +9224,10 @@
     },
     "appEligible": "Serienummer / BLE",
     "loadingConfig": "Apparaatconfiguratie wordt geladen…",
-    "currentValue": "nu {{value}}"
+    "currentValue": "nu {{value}}",
+    "rmFirmwareOnlyHint": "Alleen beschikbaar op MeshCom RM-/kocel-firmware",
+    "rmFirmwareRequired": "{{command}} heeft MeshCom RM-firmware nodig (bijv. kocel 4.40a-rm5). Dit knooppunt rapporteert {{version}}.",
+    "rmFirmwareUnknownVersion": "voorraad (niet-RM)"
   },
   "meshcomWatchlist": {
     "label": "Watchlist voor MeshCom-roepnamen",

@@ -14,6 +14,12 @@ export const MESHCOM_SERIAL_BAUD = 115200;
 export const MESHCOM_MAX_TEXT_LEN = 4096;
 
 /**
+ * Max UTF-8 bytes for serial/BLE chat address prefix + body (`{260}text` / `{CALL}text`).
+ * EXTUDP JSON `msg` stays at 150 in `MESHCOM_EXTUDP_MSG_MAX_LEN` (EXTUDP codec).
+ */
+export const MESHCOM_WIRE_MAX_BYTES = 160;
+
+/**
  * Max EXTUDP / DB `msg_id` length. Bound at parse time so a 64 KiB datagram cannot
  * use a huge string as the message-store key before DB validation.
  */

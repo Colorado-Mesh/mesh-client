@@ -9233,6 +9233,10 @@
     "argInput": "Argument for {{command}}",
     "sent": "Command sent to the node.",
     "sendFailed": "Command failed: {{detail}}",
+    "rmFirmwareOnlyHint": "Only available on MeshCom RM / kocel firmware",
+    "rmFirmwareRequired": "{{command}} needs MeshCom RM firmware (e.g. kocel 4.40a-rm5). This node reports {{version}}.",
+    "rmFirmwareUnknownVersion": "stock (non-RM)",
+
     "setctrySent": "Saved and sent --setctry {{code}} to the node.",
     "setctrySavedLocal": "Saved country preference. Connect via Serial or BLE to apply --setctry on the node.",
     "consoleHint": "Type any --command or APP shortcut (GATEWAY, GPS, WX-Info). Secrets are redacted in the log.",

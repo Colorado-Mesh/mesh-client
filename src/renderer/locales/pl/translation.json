@@ -9368,7 +9368,10 @@
     },
     "appEligible": "Numer seryjny / BLE",
     "loadingConfig": "Ładowanie konfiguracji urządzenia…",
-    "currentValue": "teraz {{value}}"
+    "currentValue": "teraz {{value}}",
+    "rmFirmwareOnlyHint": "Dostępne tylko w oprogramowaniu sprzętowym MeshCom RM / Kocel",
+    "rmFirmwareRequired": "{{command}} wymaga oprogramowania sprzętowego MeshCom RM (np. kocel 4.40a-rm5). Ten węzeł zgłasza {{version}}.",
+    "rmFirmwareUnknownVersion": "zapasy (nie-RM)"
   },
   "meshcomWatchlist": {
     "label": "Lista obserwowanych sygnałów wywoławczych MeshCom",

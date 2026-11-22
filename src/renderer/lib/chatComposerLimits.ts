@@ -1,3 +1,4 @@
+import { MESHCOM_WIRE_MAX_BYTES, meshcomBodyBudgetBytes } from './meshcom/meshcomWireLimits';
 import {
   formatMeshcoreWireReplyPrefix,
   formatMeshcoreWireTapbackPrefix,
@@ -10,6 +11,8 @@ export const MESHTASTIC_PAYLOAD_LIMIT = 228;
 export const MESHCORE_PAYLOAD_LIMIT = 133;
 /** LXMF DM text limit for composer (sidecar handles wire encoding; no Meshtastic-style chunking). */
 export const RETICULUM_LXMF_PAYLOAD_LIMIT = 4096;
+/** MeshCom ALL (`*`) body budget when destination is unknown (full 160-byte wire). */
+export const MESHCOM_PAYLOAD_LIMIT = MESHCOM_WIRE_MAX_BYTES;
 /** Keep in sync with `ProtocolCapabilities.composerMaxChunks` for Meshtastic/Reticulum. */
 export const MAX_CHUNKS = 9;
 
@@ -52,6 +55,7 @@ export interface ComposerLimitStatus {
 export function getChatPayloadLimit(protocol: MeshProtocol, override?: number): number {
   if (override != null) return override;
   if (protocol === 'reticulum') return RETICULUM_LXMF_PAYLOAD_LIMIT;
+  if (protocol === 'meshcom') return MESHCOM_PAYLOAD_LIMIT;
   return protocol === 'meshcore' ? MESHCORE_PAYLOAD_LIMIT : MESHTASTIC_PAYLOAD_LIMIT;
 }
 
@@ -76,10 +80,19 @@ export function getComposerPayloadLimit(opts: {
   composerContext?: ComposerWireContext;
   senderDisplayName?: string;
   payloadLimitOverride?: number;
+  /** MeshCom wire destination (`*`, GRC id, or callsign) for address overhead. */
+  meshcomWireDest?: string;
+  /** When true, also clamp MeshCom body to EXTUDP JSON msg max (150). */
+  meshcomCapExtUdp?: boolean;
 }): number {
   if (opts.payloadLimitOverride != null) return opts.payloadLimitOverride;
   if (opts.protocol === 'meshtastic') return MESHTASTIC_PAYLOAD_LIMIT;
   if (opts.protocol === 'reticulum') return RETICULUM_LXMF_PAYLOAD_LIMIT;
+  if (opts.protocol === 'meshcom') {
+    return meshcomBodyBudgetBytes(opts.meshcomWireDest ?? '*', {
+      capExtUdp: opts.meshcomCapExtUdp,
+    });
+  }
   const ctx = opts.composerContext ?? 'channel';
   if (ctx === 'room') return getMeshcoreRoomPayloadLimit();
   if (ctx === 'dm') return getMeshcoreDmPayloadLimit();
@@ -178,6 +191,8 @@ export function computeComposerLimitStatus(
     useWireByteCount?: boolean;
     /** When true, skip limit chrome (RRC slash commands that bypass multi-part send). */
     suppressLimits?: boolean;
+    meshcomWireDest?: string;
+    meshcomCapExtUdp?: boolean;
   },
 ): ComposerLimitStatus {
   const singleMessageLimit = getComposerPayloadLimit({
@@ -185,6 +200,8 @@ export function computeComposerLimitStatus(
     composerContext: opts?.composerContext,
     senderDisplayName: opts?.senderDisplayName,
     payloadLimitOverride: opts?.payloadLimitOverride,
+    meshcomWireDest: opts?.meshcomWireDest,
+    meshcomCapExtUdp: opts?.meshcomCapExtUdp,
   });
   const wireOverheadFirstChunk = getComposerWireOverhead({
     protocol,

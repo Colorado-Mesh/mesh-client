@@ -9224,7 +9224,10 @@
     },
     "appEligible": "シリアル番号 / BLE",
     "loadingConfig": "デバイス構成を読み込み中…",
-    "currentValue": "現在 {{value}}"
+    "currentValue": "現在 {{value}}",
+    "rmFirmwareOnlyHint": "MeshCom RM / kocelファームウェアでのみ利用可能",
+    "rmFirmwareRequired": "{{command}}にはMeshCom RMファームウェア（例：kocel 4.40a-rm5）が必要です。このノードは{{version}}を報告します。",
+    "rmFirmwareUnknownVersion": "在庫（RM以外）"
   },
   "meshcomWatchlist": {
     "label": "MeshComコールサインのウォッチリスト",

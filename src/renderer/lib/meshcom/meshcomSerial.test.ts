@@ -19,6 +19,12 @@ describe('meshcomSerial encode/decode', () => {
     expect(group).toBe('all\r\n');
   });
 
+  it('meshcomSerialSendText truncates body to 160-byte address+body budget', () => {
+    // `{260}` is 5 bytes → 155 body max
+    const framed = new TextDecoder().decode(meshcomSerialSendText('260', 'a'.repeat(200)));
+    expect(framed).toBe(`{260}${'a'.repeat(155)}\r\n`);
+  });
+
   it('MeshcomSerialLineBuffer splits CRLF chunks', () => {
     const buf = new MeshcomSerialLineBuffer();
     expect(buf.push('line1\r\nline2')).toEqual(['line1']);

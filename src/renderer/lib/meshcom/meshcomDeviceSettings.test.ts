@@ -38,6 +38,7 @@ describe('meshcomDeviceSettings', () => {
       CALL: 'oe1abc-12',
       BATP: 87,
       BATV: 4.12,
+      FWVER: '4.40a-rm5',
     });
     mergeMeshcomBleSettingsJson(accum, {
       TYP: 'W',
@@ -73,6 +74,7 @@ describe('meshcomDeviceSettings', () => {
     expect(values.aprscomment).toBe('mesh test');
     const snap = snapshotMeshcomDeviceSettings(accum, 42);
     expect(snap.countryCode).toBe('EU');
+    expect(snap.firmwareVersion).toBe('4.40a-rm5');
     expect(snap.batteryLevel).toBe(87);
     expect(snap.voltage).toBe(4.12);
     expect(snap.temperatureC).toBe(21.5);

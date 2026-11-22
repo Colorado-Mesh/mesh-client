@@ -6,11 +6,13 @@ import {
   countMessageChars,
   countMessageWireBytes,
   getChatPayloadLimit,
+  getComposerPayloadLimit,
   getComposerWireOverhead,
   getMaxChunks,
   getMeshcoreChannelPayloadLimit,
   getMeshcoreRoomPayloadLimit,
   MAX_CHUNKS,
+  MESHCOM_PAYLOAD_LIMIT,
   MESHCORE_PAYLOAD_LIMIT,
   MESHTASTIC_PAYLOAD_LIMIT,
   MESHTASTIC_REPLY_ID_WIRE_BYTES,
@@ -25,6 +27,10 @@ describe('getChatPayloadLimit', () => {
 
   it('returns 133 for meshcore', () => {
     expect(getChatPayloadLimit('meshcore')).toBe(MESHCORE_PAYLOAD_LIMIT);
+  });
+
+  it('returns 160 for meshcom ALL default', () => {
+    expect(getChatPayloadLimit('meshcom')).toBe(MESHCOM_PAYLOAD_LIMIT);
   });
 
   it('returns LXMF limit for reticulum', () => {
@@ -215,6 +221,26 @@ describe('computeComposerLimitStatus', () => {
     });
     // Single-packet: the whole payload limit is usable text, no prefix reserved.
     expect(status.totalMaxChars).toBe(status.singleMessageLimit);
+  });
+
+  it('meshcom body limit reserves address prefix bytes and blocks over-budget text', () => {
+    expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: '*' })).toBe(160);
+    expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: '260' })).toBe(155);
+    expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: 'SP5DH-1' })).toBe(151);
+
+    const ok = computeComposerLimitStatus('a'.repeat(155), 'meshcom', {
+      meshcomWireDest: '260',
+      useWireByteCount: true,
+    });
+    expect(ok.singleMessageLimit).toBe(155);
+    expect(ok.phase).not.toBe('overMax');
+
+    const over = computeComposerLimitStatus('a'.repeat(156), 'meshcom', {
+      meshcomWireDest: '260',
+      useWireByteCount: true,
+    });
+    expect(over.phase).toBe('overMax');
+    expect(over.chunkCount).toBe(0);
   });
 
   it('returns overMax when text exceeds total max chars', () => {

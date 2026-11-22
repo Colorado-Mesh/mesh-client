@@ -58,6 +58,10 @@ Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPAB
 
 Radio → **Device Configuration** renders first-class sections (Display, Position / GPS, Sensors, Identity & groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status & debug, Power & OTA, KISS / misc) from the catalog in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).
 
+**Chat wire length:** Serial/BLE outbound text is capped at **160 UTF-8 bytes** for address prefix + body (`{260}…` / `{CALL}…`; ALL has no braces). The composer uses a UTF-8 byte counter. EXTUDP JSON `msg` remains capped at 150 characters in the codec.
+
+**MeshCom RM / kocel commands:** `--battcal` and `--e22pa` (plus stock `--txpower`) live in the Power group. RM-only rows are gated with [`meshcomRmFirmware.ts`](../../src/renderer/lib/meshcom/meshcomRmFirmware.ts) using `FWVER` / settings `firmwareVersion` (e.g. `4.40a-rm5`). Known **stock** firmware blocks those sends with an error toast; **unknown** firmware still allows send and shows an “only on MeshCom RM / kocel” hint.
+
 ### Serial / BLE command badges
 
 Each catalog row carries a `channel` in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts): **`app`** means the command can be sent from Serial **and** the BLE companion (`0xA0`); the Device Configuration UI labels these as App+Serial. **`serial`** is reserved for USB-console-only entries (none in the current ICSSW catalog). `meshcomCommandWire.ts` stays in the hot App path; load the full catalog only from the lazy Radio panel.

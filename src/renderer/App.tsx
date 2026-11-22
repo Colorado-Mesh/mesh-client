@@ -7657,6 +7657,7 @@ function AppContent() {
                                 nodes={nodesForUi}
                                 myNodeId={activeSelfNodeNum}
                                 hopLimitMax={capabilities.hopLimitRange[1]}
+                                protocol={protocol}
                                 onNodeClick={setSelectedNodeId}
                               />
                             </Suspense>

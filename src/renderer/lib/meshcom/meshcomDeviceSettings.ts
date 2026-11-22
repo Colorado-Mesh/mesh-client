@@ -72,6 +72,8 @@ export interface MeshcomDeviceSettingsSnapshot {
   callsign: string;
   operatorName: string;
   countryCode: string;
+  /** Firmware revision from BLE `FWVER` / serial `--info` (e.g. `4.40a` or `4.40a-rm5`). */
+  firmwareVersion?: string;
   batteryLevel?: number;
   voltage?: number;
   temperatureC?: number;
@@ -463,6 +465,7 @@ export function snapshotMeshcomDeviceSettings(
     callsign: accum.call ?? '',
     operatorName: accum.operatorName ?? '',
     countryCode: accum.country ?? '',
+    firmwareVersion: accum.fwver,
     batteryLevel: accum.battPercent,
     voltage: accum.battVoltage,
     temperatureC: accum.temperatureC,

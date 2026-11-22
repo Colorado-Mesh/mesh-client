@@ -12,12 +12,13 @@ import {
   type SimNodeState,
   startForceSimulationLoop,
 } from '@/renderer/lib/forceDirectedGraphLayout';
+import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   topologyGraphVisibleNodeCap,
   topologyHopFilterOptions,
 } from '@/renderer/lib/topologyGraphLimits';
-import type { MeshNode } from '@/renderer/lib/types';
+import type { MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import { useSvgPanZoom } from '@/renderer/lib/useSvgPanZoom';
 
 import { TopologyHopFilterControls } from './TopologyHopFilterControls';
@@ -28,6 +29,8 @@ interface PeerGraphPanelProps {
   myNodeId: number;
   /** Protocol hop-limit max (Meshtastic 7, MeshCore 64). Drives Max hops presets. */
   hopLimitMax?: number;
+  /** When `meshcom`, graph labels prefer full callsign over 4-char short. */
+  protocol?: MeshProtocol;
   onNodeClick?: (nodeId: number) => void;
 }
 
@@ -78,6 +81,7 @@ export default function PeerGraphPanel({
   nodes,
   myNodeId,
   hopLimitMax = 7,
+  protocol,
   onNodeClick,
 }: PeerGraphPanelProps) {
   const { t } = useTranslation();
@@ -178,7 +182,9 @@ export default function PeerGraphPanel({
   const rebuildGraph = useCallback(() => {
     const selfNode = nodes.get(myNodeId);
     const selfLabel =
-      selfNode?.short_name?.trim() || selfNode?.long_name?.trim() || t('peerGraph.meShort');
+      protocol === 'meshcom'
+        ? nodeDisplayName(selfNode, 'meshcom') || t('peerGraph.meShort')
+        : selfNode?.short_name?.trim() || selfNode?.long_name?.trim() || t('peerGraph.meShort');
     const width = svgRef.current?.clientWidth ?? 800;
     const height = svgRef.current?.clientHeight ?? 600;
     const graph = buildMeshPeerTopologyGraph(nodes, {
@@ -187,9 +193,10 @@ export default function PeerGraphPanel({
       cx: width / 2,
       cy: height / 2,
       filter: { maxHops },
+      protocol,
     });
     applyGraph(graph);
-  }, [applyGraph, maxHops, myNodeId, nodes, t]);
+  }, [applyGraph, maxHops, myNodeId, nodes, protocol, t]);
 
   useEffect(() => {
     rebuildGraph();
