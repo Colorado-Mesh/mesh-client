@@ -198,13 +198,18 @@ describe('Windows packaging (contract)', () => {
     const buildVerifyIdx = buildWorkflow.indexOf('ci-verify-pnpm.mjs');
     const buildInstallIdx = buildWorkflow.indexOf('pnpm install --frozen-lockfile');
     const buildAssertIdx = buildWorkflow.indexOf('assert-win-setup-installers.mjs');
-    const buildUploadWinIdx = buildWorkflow.indexOf('Upload Windows Artifact');
+    // Build Binaries splits Windows into archive:false Setup uploads + a meta zip (PR #1540).
+    const buildUploadWinIdx = buildWorkflow.indexOf('Upload Windows x64 Setup (direct download)');
     expect(buildPreferIdx).toBeGreaterThan(-1);
     expect(buildSetupNodeIdx).toBeGreaterThan(-1);
     expect(buildVerifyIdx).toBeGreaterThan(-1);
     expect(buildInstallIdx).toBeGreaterThan(-1);
     expect(buildAssertIdx).toBeGreaterThan(-1);
     expect(buildUploadWinIdx).toBeGreaterThan(-1);
+    expect(buildWorkflow.indexOf('Upload Windows arm64 Setup (direct download)')).toBeGreaterThan(
+      -1,
+    );
+    expect(buildWorkflow.indexOf('Upload Windows meta (latest.yml + README)')).toBeGreaterThan(-1);
     expect(buildPreferIdx).toBeLessThan(buildSetupNodeIdx);
     expect(buildSetupNodeIdx).toBeLessThan(buildInstallIdx);
     expect(buildVerifyIdx).toBeLessThan(buildInstallIdx);
@@ -220,7 +225,11 @@ describe('Windows packaging (contract)', () => {
     expect(stageReadmeIdx).toBeGreaterThan(-1);
     const firstUploadIdx = Math.min(
       ...(
-        ['Upload macOS Artifact', 'Upload Linux Artifact', 'Upload Windows Artifact'] as const
+        [
+          'Upload macOS Artifact',
+          'Upload Linux Artifact',
+          'Upload Windows x64 Setup (direct download)',
+        ] as const
       ).map((name) => {
         const idx = buildWorkflow.indexOf(name);
         expect(idx, name).toBeGreaterThan(-1);
@@ -228,10 +237,12 @@ describe('Windows packaging (contract)', () => {
       }),
     );
     expect(stageReadmeIdx).toBeLessThan(firstUploadIdx);
+    // macOS/Linux zip README with the platform artifact; Windows Setup uploads are
+    // archive:false .exe only — README rides in the Windows meta zip.
     for (const uploadName of [
       'Upload macOS Artifact',
       'Upload Linux Artifact',
-      'Upload Windows Artifact',
+      'Upload Windows meta (latest.yml + README)',
     ] as const) {
       const start = buildWorkflow.indexOf(`- name: ${uploadName}`);
       expect(start, uploadName).toBeGreaterThan(-1);
