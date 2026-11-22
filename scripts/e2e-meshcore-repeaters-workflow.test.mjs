@@ -80,6 +80,7 @@ describe('MeshCore repeater E2E PR workflow', () => {
     'src/shared/meshcorePathHash.ts',
     SPEC_PATH,
     'e2e/fixtures/meshcore-repeater-radio.ts',
+    'e2e/fixtures/origin-migration.cjs',
   ])('runs for a change to %s', (file) => {
     expect(trackedFiles).toContain(file);
     expect(triggers(file)).toBe(true);

@@ -308,6 +308,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         status: 'disconnected',
         connectionType: toUiConnectionType(type),
       });
+      connectionParamsRef.current = null;
     },
     [detachIngest, resolveIdentityId],
   );
@@ -681,7 +682,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
   useEffect(() => {
     registerMeshcomSerialDisconnectTarget({
-      isSerialConnected: () => connectionParamsRef.current?.rfType === 'serial',
+      isSerialConnected: () =>
+        connectionParamsRef.current?.rfType === 'serial' && driverIdentityIdRef.current != null,
       getOpenSerialPort: () => {
         const identityId = driverIdentityIdRef.current ?? identityIdRef.current;
         if (!identityId) return null;

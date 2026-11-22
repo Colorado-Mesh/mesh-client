@@ -103,6 +103,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(failureBlock).toContain('isReconnectingRef.current = false');
     expect(failureBlock).toContain('reconnectGenerationRef.current += 1');
     expect(failureBlock).toContain('clearMeshtasticConfigureState()');
+    expect(failureBlock).toContain('connectionParamsRef.current = null');
+  });
+
+  it('serial disconnect registration requires a live device or driver session', () => {
+    expect(SOURCE).toMatch(
+      /isSerialConnected:\s*\(\)\s*=>[\s\S]*?connectionParamsRef\.current\?\.type === 'serial'[\s\S]*?meshtasticDriverConnectedRef\.current/,
+    );
   });
 
   it('clears configure phase on reconnect attempt error', () => {

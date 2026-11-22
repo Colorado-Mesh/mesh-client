@@ -287,7 +287,9 @@ describe('Windows packaging (contract)', () => {
     const releaseVerifyIdx = releaseWorkflow.indexOf('ci-verify-pnpm.mjs');
     const releaseInstallIdx = releaseWorkflow.indexOf('pnpm install --frozen-lockfile');
     const releaseAssertIdx = releaseWorkflow.indexOf('assert-win-setup-installers.mjs');
-    const releaseUploadWinIdx = releaseWorkflow.indexOf('Upload Windows Artifact');
+    const releaseUploadWinIdx = releaseWorkflow.indexOf(
+      'Upload Windows x64 Setup (direct download)',
+    );
     expect(releasePreferIdx).toBeGreaterThan(-1);
     expect(releaseSetupNodeIdx).toBeGreaterThan(-1);
     expect(releaseVerifyIdx).toBeGreaterThan(-1);
@@ -298,6 +300,12 @@ describe('Windows packaging (contract)', () => {
     expect(releaseSetupNodeIdx).toBeLessThan(releaseInstallIdx);
     expect(releaseVerifyIdx).toBeLessThan(releaseInstallIdx);
     expect(releaseAssertIdx).toBeLessThan(releaseUploadWinIdx);
+    expect(releaseWorkflow.indexOf('Upload Windows arm64 Setup (direct download)')).toBeGreaterThan(
+      -1,
+    );
+    expect(releaseWorkflow.indexOf('Upload Windows meta (latest.yml)')).toBeGreaterThan(-1);
+    expect(releaseWorkflow).toContain('artifact_mode: windows-split');
+    expect(releaseWorkflow).toContain('mesh-client-windows-meta-${{ github.sha }}');
     expect(releaseWorkflow).toMatch(
       /Prefer native pnpm\.exe on Windows PATH[\s\S]*?if: runner\.os == 'Windows'[\s\S]*?ci-prefer-windows-pnpm-exe\.mjs/,
     );

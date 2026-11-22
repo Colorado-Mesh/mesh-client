@@ -107,6 +107,21 @@ describe('cross-protocol serial claim contracts', () => {
     );
   });
 
+  it('clears provisional serial params when RF connect fails', () => {
+    expect(MESHTASTIC_RUNTIME).toMatch(
+      /handleRfConnectFailure[\s\S]*?connectionParamsRef\.current = null/,
+    );
+    expect(MESHCORE_RUNTIME).toMatch(
+      /handleRfConnectFailure[\s\S]*?meshcoreConnectionParamsRef\.current = null/,
+    );
+    expect(MESHCOM_RUNTIME).toMatch(
+      /handleRfConnectFailure[\s\S]*?connectionParamsRef\.current = null/,
+    );
+    expect(MESHCOM_RUNTIME).toMatch(
+      /isSerialConnected:\s*\(\)\s*=>[\s\S]*?driverIdentityIdRef\.current != null/,
+    );
+  });
+
   it('runtimes register releaseHold for serial disconnect targets', () => {
     expect(MESHTASTIC_RUNTIME).toMatch(
       /registerMeshtasticSerialDisconnectTarget\(\{[\s\S]*?releaseHold:/,

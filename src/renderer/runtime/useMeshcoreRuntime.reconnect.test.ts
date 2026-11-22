@@ -190,6 +190,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(prepareBody).not.toContain('setConnectedMeshcoreBleMac(null)');
     const failureBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleRfConnectFailure');
     expect(failureBody).toContain('preserveOrClearMeshcoreBleSuppression');
+    expect(failureBody).toContain('meshcoreConnectionParamsRef.current = null');
+  });
+
+  it('serial disconnect registration requires an active connection handle', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /isSerialConnected:\s*\(\)\s*=>[\s\S]*?meshcoreConnectionParamsRef\.current\?\.rfType === 'serial'[\s\S]*?connRef\.current != null/,
+    );
   });
 
   it('pre-arms MeshCore BLE MAC suppress on runtime mount before Meshtastic NodeDB race', () => {

@@ -51,6 +51,27 @@ describe('serialDisconnectRouter', () => {
     expect(meshcoreOnDisconnected).not.toHaveBeenCalled();
   });
 
+  it('prefers the target whose open port matches the disconnected port', () => {
+    const port = {} as SerialPort;
+    const meshtasticOnDisconnected = vi.fn();
+    const meshcoreOnDisconnected = vi.fn();
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => ({}) as SerialPort,
+      onDisconnected: meshtasticOnDisconnected,
+    });
+    registerMeshcoreSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => port,
+      onDisconnected: meshcoreOnDisconnected,
+    });
+
+    routeSerialServiceDisconnect(port);
+
+    expect(meshcoreOnDisconnected).toHaveBeenCalledTimes(1);
+    expect(meshtasticOnDisconnected).not.toHaveBeenCalled();
+  });
+
   it('skips targets that are not serial-connected', () => {
     const meshcoreOnDisconnected = vi.fn();
     registerMeshtasticSerialDisconnectTarget({

@@ -4,6 +4,21 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { shouldOpenFirstRunPicker } from '../lib/firstRunWizard';
 import { useFirstRunWizardStore } from '../stores/firstRunWizardStore';
 
+const FRESH_INSTALL_IPC_RETRIES = 1;
+
+async function wasDatabaseCreatedThisLaunch(ask: () => Promise<unknown>): Promise<unknown> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= FRESH_INSTALL_IPC_RETRIES; attempt += 1) {
+    try {
+      return await ask();
+    } catch (err) {
+      // catch-no-log-ok transient IPC — outer catch logs after retries exhaust
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * Opens the first-run protocol picker once per launch when this is a fresh install (the main
  * process created the database this launch) or an earlier launch quit on the picker.
@@ -12,27 +27,41 @@ import { useFirstRunWizardStore } from '../stores/firstRunWizardStore';
 export function useFirstRunWizardLauncher(): void {
   useEffect(() => {
     let cancelled = false;
+
     const decide = (databaseCreated: unknown) => {
       if (cancelled) return;
       const { status, openPicker } = useFirstRunWizardStore.getState();
       if (shouldOpenFirstRunPicker(status, databaseCreated)) openPicker();
     };
-    if (useFirstRunWizardStore.getState().status === 'pending') {
-      decide(false);
-      return () => {
-        cancelled = true;
-      };
+
+    const run = () => {
+      if (useFirstRunWizardStore.getState().status === 'pending') {
+        decide(false);
+        return;
+      }
+      const ask = window.electronAPI?.db?.wasCreatedThisLaunch;
+      if (typeof ask !== 'function') return;
+      void wasDatabaseCreatedThisLaunch(ask)
+        .then(decide)
+        .catch((err: unknown) => {
+          console.warn('[FirstRunWizard] fresh-install check failed ' + errLikeToLogString(err));
+          if (cancelled) return;
+          if (useFirstRunWizardStore.getState().status !== 'unseen') return;
+          // IPC failed after retry — fail open so onboarding is not permanently skipped.
+          decide(true);
+        });
+    };
+
+    let unsubHydration: (() => void) | undefined;
+    if (useFirstRunWizardStore.persist.hasHydrated()) {
+      run();
+    } else {
+      unsubHydration = useFirstRunWizardStore.persist.onFinishHydration(run);
     }
-    const ask = window.electronAPI?.db?.wasCreatedThisLaunch;
-    if (typeof ask !== 'function') return;
-    void Promise.resolve()
-      .then(() => ask())
-      .then(decide)
-      .catch((err: unknown) => {
-        console.warn('[FirstRunWizard] fresh-install check failed ' + errLikeToLogString(err));
-      });
+
     return () => {
       cancelled = true;
+      unsubHydration?.();
     };
   }, []);
 }

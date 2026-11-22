@@ -504,13 +504,15 @@ The sidecars reach the packaging jobs as tar archives from the same workflow run
 
 **Actions artifact names (installer downloads):**
 
-| Surface                      | Artifact name                                                   | Notes                                                                                                                        |
-| ---------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Release Electron             | `mesh-client-{macos,linux,windows}-{sha}`                       | Multi-file zip (installers + updater yml)                                                                                    |
-| Build Binaries macOS / Linux | `test-mesh-client-{macos,linux}-{sha}`                          | Multi-file zip; filenames inside stamped `-run{N}`                                                                           |
-| Build Binaries Windows Setup | `Mesh-client-Setup-{version}-run{N}.exe` / `…-run{N}-arm64.exe` | **`archive: false`** — click downloads the NSIS `.exe` directly (unsigned test builds: SmartScreen → More info → Run anyway) |
-| Build Binaries Windows meta  | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
-| Build Flatpak                | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
+| Surface                        | Artifact name                                                   | Notes                                                                                                                        |
+| ------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Release Electron macOS/Linux   | `mesh-client-{macos,linux}-{sha}`                               | Multi-file zip (installers + updater yml)                                                                                    |
+| Release Electron Windows Setup | `Mesh-client-Setup-{version}.exe` / `…-arm64.exe`               | **`archive: false`** — direct-download NSIS installers per arch                                                              |
+| Release Electron Windows meta  | `mesh-client-windows-meta-{sha}`                                | Small zip: `latest.yml` only                                                                                                 |
+| Build Binaries macOS / Linux   | `test-mesh-client-{macos,linux}-{sha}`                          | Multi-file zip; filenames inside stamped `-run{N}`                                                                           |
+| Build Binaries Windows Setup   | `Mesh-client-Setup-{version}-run{N}.exe` / `…-run{N}-arm64.exe` | **`archive: false`** — click downloads the NSIS `.exe` directly (unsigned test builds: SmartScreen → More info → Run anyway) |
+| Build Binaries Windows meta    | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
+| Build Flatpak                  | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
 
 **Build Binaries** Package jobs (macOS, Linux, and Windows) each write job-summary **artifact-url** download links. Prefer those (or the Actions Artifacts UI). Do **not** use `gh run download` for `archive: false` Windows Setup / Flatpak uploads — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download`. CLI that saves raw unarchived bytes:
 
