@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { FIRST_RUN_WIZARD_STORAGE_KEY } from '@/renderer/lib/firstRunWizard';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
