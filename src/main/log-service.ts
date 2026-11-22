@@ -1,5 +1,3 @@
-import { release as osRelease } from 'node:os';
-
 import type { BrowserWindow } from 'electron';
 import { app } from 'electron';
 import fs from 'fs';
@@ -10,6 +8,7 @@ import type { LogEntry } from '../shared/electron-api.types';
 import { formatLogFileTimestamp } from '../shared/formatLogTimestamp';
 import { resolveLogProtocolFromChannel } from '../shared/logProtocolChannelResolve';
 import type { MeshProtocol } from '../shared/meshProtocol';
+import { resolveOsReleaseTag } from './osReleaseTag';
 import {
   sanitizeForConsoleEcho,
   sanitizeForLogSink,
@@ -27,7 +26,7 @@ export function formatRuntimeLogTag(): string {
       : 'unknown';
   const packaged =
     typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false;
-  return `platform=${process.platform} arch=${process.arch} os=${osRelease()} electron=${process.versions.electron} node=${process.versions.node} app=${appVersion} packaged=${packaged} ${formatBuildInfoLogFragment()}`;
+  return `platform=${process.platform} arch=${process.arch} os=${resolveOsReleaseTag()} electron=${process.versions.electron} node=${process.versions.node} app=${appVersion} packaged=${packaged} ${formatBuildInfoLogFragment()}`;
 }
 
 /**

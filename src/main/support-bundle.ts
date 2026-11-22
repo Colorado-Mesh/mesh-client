@@ -11,6 +11,7 @@ import {
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
+import { readWindowsUpdateBuildRevision, resolveOsReleaseTag } from './osReleaseTag';
 import { readUtf8FileBounded } from './reticulum-config-read';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
@@ -117,10 +118,17 @@ function buildManifest(mode: SupportBundleMode): Record<string, unknown> {
     buildChannel: stamped.buildChannel,
     platform: process.platform,
     arch: process.arch,
+    os: resolveOsReleaseTag(),
     packaged:
       typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false,
     capturedAt: new Date().toISOString(),
   };
+  if (process.platform === 'win32') {
+    const ubr = readWindowsUpdateBuildRevision();
+    if (ubr != null) {
+      manifest.osUpdateRevision = ubr;
+    }
+  }
   if (stamped.buildInfo) {
     manifest.buildInfo = stamped.buildInfo;
   }
