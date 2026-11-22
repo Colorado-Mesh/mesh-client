@@ -373,4 +373,31 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     expect(graph.nodes).toHaveLength(101);
     expect(graph.hiddenCount).toBe(0);
   });
+
+  it('prefers full MeshCom callsign (long_name) over 4-char short_name', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0, long_name: 'SP5DH-1', short_name: 'SP5D' })],
+      [
+        2,
+        node(2, {
+          hops_away: 1,
+          long_name: 'SP5DH-2',
+          short_name: 'SP5D',
+        }),
+      ],
+    ]);
+    const meshcomGraph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'SP5DH-1',
+      protocol: 'meshcom',
+    });
+    expect(meshcomGraph.nodes.find((n) => n.nodeId === 2)?.label).toBe('SP5DH-2');
+
+    const meshtasticGraph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'SP5D',
+      protocol: 'meshtastic',
+    });
+    expect(meshtasticGraph.nodes.find((n) => n.nodeId === 2)?.label).toBe('SP5D');
+  });
 });

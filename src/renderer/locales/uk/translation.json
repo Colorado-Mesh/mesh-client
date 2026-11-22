@@ -9368,7 +9368,10 @@
     },
     "appEligible": "Серійний номер / BLE",
     "loadingConfig": "Завантаження конфігурації пристрою…",
-    "currentValue": "зараз {{value}}"
+    "currentValue": "зараз {{value}}",
+    "rmFirmwareOnlyHint": "Доступно лише для мікропрограмного забезпечення MeshCom RM / Kocel",
+    "rmFirmwareRequired": "{{command}} потребує мікропрограми MeshCom RM (наприклад, kocel 4.40a-rm5). Цей вузол повідомляє про {{version}}.",
+    "rmFirmwareUnknownVersion": "запас (не RM)"
   },
   "meshcomWatchlist": {
     "label": "Список спостереження за позивними MeshCom",

@@ -9224,7 +9224,10 @@
     },
     "appEligible": "Serial / BLE",
     "loadingConfig": "Memuat konfigurasi perangkat…",
-    "currentValue": "sekarang {{value}}"
+    "currentValue": "sekarang {{value}}",
+    "rmFirmwareOnlyHint": "Hanya tersedia di firmware MeshCom RM / kocel",
+    "rmFirmwareRequired": "{{command}} memerlukan firmware MeshCom RM (misalnya kocel 4.40a-rm5). Node ini melaporkan {{version}}.",
+    "rmFirmwareUnknownVersion": "stok (bukan RM)"
   },
   "meshcomWatchlist": {
     "label": "Daftar pantau nama panggilan MeshCom",

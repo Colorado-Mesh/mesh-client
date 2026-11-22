@@ -9,6 +9,7 @@ import {
   formatMeshcomSettimeUtc,
   MESHCOM_COMMAND_GROUPS,
   MESHCOM_COMMANDS,
+  MESHCOM_RM_ONLY_COMMAND_TOKENS,
   type MeshcomCommandDescriptor,
   type MeshcomCommandGroup,
   redactMeshcomCommandForLog,
@@ -18,6 +19,10 @@ import {
   parseMeshcomGrcListenList,
 } from '../lib/meshcom/meshcomGrcGroups';
 import { addMeshcomGrcLocalChannel } from '../lib/meshcom/meshcomGrcLocalChannels';
+import {
+  classifyMeshcomFirmware,
+  isMeshcomRmOnlyCommandLine,
+} from '../lib/meshcom/meshcomRmFirmware';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { ConfirmModal } from './ConfirmModal';
 import MeshComGrcEditor from './MeshComGrcEditor';
@@ -104,8 +109,30 @@ export default function MeshComDeviceCommandsSection({
       : null
   ) as 'on' | 'off' | null;
 
+  const firmwareKind = classifyMeshcomFirmware(commands.settings?.firmwareVersion);
+  const firmwareVersionLabel = commands.settings?.firmwareVersion?.trim() || '';
+
+  /** Block RM-only commands only when firmware is known stock ICSSW. */
+  const rmStockBlockMessage = useCallback(
+    (command: string): string | null => {
+      if (!isMeshcomRmOnlyCommandLine(command, MESHCOM_RM_ONLY_COMMAND_TOKENS)) return null;
+      if (firmwareKind !== 'stock') return null;
+      return t('meshcomDeviceCommands.rmFirmwareRequired', {
+        command: command.trim().split(/\s+/)[0] ?? command,
+        version: firmwareVersionLabel || t('meshcomDeviceCommands.rmFirmwareUnknownVersion'),
+      });
+    },
+    [firmwareKind, firmwareVersionLabel, t],
+  );
+
   const sendNow = useCallback(
     async (command: string): Promise<boolean> => {
+      const blocked = rmStockBlockMessage(command);
+      if (blocked) {
+        pushConsole('error', blocked);
+        onToast?.(blocked, 'error');
+        return false;
+      }
       setBusy(true);
       try {
         const result = await commands.run(command);
@@ -122,7 +149,7 @@ export default function MeshComDeviceCommandsSection({
         setBusy(false);
       }
     },
-    [commands, onToast, pushConsole, t],
+    [commands, onToast, pushConsole, rmStockBlockMessage, t],
   );
 
   const applyGrcListen = useCallback(
@@ -161,22 +188,31 @@ export default function MeshComDeviceCommandsSection({
 
   const runDescriptor = useCallback(
     async (descriptor: MeshcomCommandDescriptor) => {
-      setBusy(true);
       try {
         const line = buildMeshcomCommandLine(descriptor, argValueOf(descriptor.id));
-        const result = await commands.run(line);
-        pushConsole('sent', redactMeshcomCommandForLog(result.command));
-        onToast?.(t('meshcomDeviceCommands.sent'), 'success');
+        const blocked = rmStockBlockMessage(line);
+        if (blocked) {
+          pushConsole('error', blocked);
+          onToast?.(blocked, 'error');
+          return;
+        }
+        setBusy(true);
+        try {
+          const result = await commands.run(line);
+          pushConsole('sent', redactMeshcomCommandForLog(result.command));
+          onToast?.(t('meshcomDeviceCommands.sent'), 'success');
+        } finally {
+          setBusy(false);
+        }
       } catch (e) {
         const msg = errLikeToLogString(e);
         console.warn('[MeshComDeviceCommands] descriptor send failed ' + msg);
         pushConsole('error', msg);
         onToast?.(t('meshcomDeviceCommands.sendFailed', { detail: msg }), 'error');
-      } finally {
         setBusy(false);
       }
     },
-    [argValueOf, commands, onToast, pushConsole, t],
+    [argValueOf, commands, onToast, pushConsole, rmStockBlockMessage, t],
   );
 
   const onConfirmDanger = useCallback(() => {
@@ -189,6 +225,12 @@ export default function MeshComDeviceCommandsSection({
   const runConsole = useCallback(async () => {
     const line = consoleInput.trim();
     if (!line) return;
+    const blocked = rmStockBlockMessage(line);
+    if (blocked) {
+      pushConsole('error', blocked);
+      onToast?.(blocked, 'error');
+      return;
+    }
     setConsoleBusy(true);
     try {
       const result = await commands.run(line);
@@ -201,7 +243,7 @@ export default function MeshComDeviceCommandsSection({
     } finally {
       setConsoleBusy(false);
     }
-  }, [commands, consoleInput, pushConsole]);
+  }, [commands, consoleInput, onToast, pushConsole, rmStockBlockMessage]);
 
   const settimePreview = formatMeshcomSettimeUtc();
   const linkOk = commands.available && !disabled;
@@ -243,6 +285,8 @@ export default function MeshComDeviceCommandsSection({
     const needsArg = cmd.argKind !== 'none' && cmd.argKind !== 'settime';
     const argValue = argValueOf(cmd.id);
     const deviceValue = commands.settings?.valuesByCommandId[cmd.id];
+    const rmBlockedOnStock = Boolean(cmd.requiresRmFirmware) && firmwareKind === 'stock';
+    const showRmOnlyHint = Boolean(cmd.requiresRmFirmware) && firmwareKind !== 'rm';
     return (
       <div key={cmd.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
@@ -254,6 +298,19 @@ export default function MeshComDeviceCommandsSection({
               <span>{t('meshcomDeviceCommands.appEligible')}</span>
             )}
             {cmd.restriction ? <span className="text-muted"> · {cmd.restriction}</span> : null}
+            {showRmOnlyHint ? (
+              <span className={rmBlockedOnStock ? 'text-orange-400' : 'text-muted'}>
+                {' '}
+                ·{' '}
+                {rmBlockedOnStock
+                  ? t('meshcomDeviceCommands.rmFirmwareRequired', {
+                      command: cmd.token,
+                      version:
+                        firmwareVersionLabel || t('meshcomDeviceCommands.rmFirmwareUnknownVersion'),
+                    })
+                  : t('meshcomDeviceCommands.rmFirmwareOnlyHint')}
+              </span>
+            ) : null}
             {deviceValue ? (
               <span className="text-bright-green">
                 {' '}
@@ -270,7 +327,7 @@ export default function MeshComDeviceCommandsSection({
                 <button
                   key={choice}
                   type="button"
-                  disabled={!linkOk || busy}
+                  disabled={!linkOk || busy || rmBlockedOnStock}
                   aria-label={t('meshcomDeviceCommands.runChoice', {
                     command: cmd.token,
                     value: choice,
@@ -315,7 +372,10 @@ export default function MeshComDeviceCommandsSection({
             <button
               type="button"
               disabled={
-                !linkOk || busy || (needsArg && !argValue.trim() && cmd.argKind !== 'custom')
+                !linkOk ||
+                busy ||
+                rmBlockedOnStock ||
+                (needsArg && !argValue.trim() && cmd.argKind !== 'custom')
               }
               aria-label={t('meshcomDeviceCommands.runCommand', { command: cmd.token })}
               onClick={() => {

@@ -1,5 +1,6 @@
 import type { ForceEdge } from './forceDirectedGraphLayout';
 import { nodeHealthScore, type NodeHealthTier, nodeHealthTier } from './nodeHealthScore';
+import { nodeDisplayName } from './nodeLongNameOrHex';
 import { effectiveLastHeardMs } from './nodeStatus';
 import { MS_PER_HOUR } from './timeConstants';
 import {
@@ -7,7 +8,7 @@ import {
   topologyGraphVisibleNodeCap,
   topologyPeerPassesHopFilters,
 } from './topologyGraphLimits';
-import type { MeshNode } from './types';
+import type { MeshNode, MeshProtocol } from './types';
 
 export type MeshPeerGraphNodeKind = 'self' | 'relay' | 'peer';
 
@@ -48,6 +49,8 @@ export interface BuildMeshPeerTopologyGraphOptions {
   cy?: number;
   filter?: MeshPeerTopologyFilterOptions;
   nowMs?: number;
+  /** When `meshcom`, peer labels prefer full callsign (`long_name`) over 4-char short. */
+  protocol?: MeshProtocol;
 }
 
 /** Visible node budget after hop filters (Show all still truncates here). */
@@ -72,7 +75,12 @@ export function isMeshPeerOnline(node: MeshNode, nowMs: number = Date.now()): bo
   return nowMs - effectiveMs < MS_PER_HOUR;
 }
 
-function nodeLabel(node: MeshNode): string {
+function nodeLabel(node: MeshNode, protocol?: MeshProtocol): string {
+  if (protocol === 'meshcom') {
+    const display = nodeDisplayName(node, 'meshcom');
+    if (display) return display;
+    return `!${node.node_id.toString(16).slice(-4)}`;
+  }
   return (
     node.short_name.trim() || node.long_name.trim() || `!${node.node_id.toString(16).slice(-4)}`
   );
@@ -222,12 +230,13 @@ function buildGraphNode(
   cx: number,
   cy: number,
   nowMs: number,
+  protocol?: MeshProtocol,
 ): MeshPeerTopologyGraphNode {
   const pos = positions.get(node.node_id) ?? { x: cx, y: cy };
   return {
     id: String(node.node_id),
     nodeId: node.node_id,
-    label: nodeLabel(node),
+    label: nodeLabel(node, protocol),
     kind,
     depth,
     hops: effectiveHops(node),
@@ -252,6 +261,7 @@ export function buildMeshPeerTopologyGraph(
   const cy = opts.cy ?? 300;
   const myNodeId = opts.myNodeId;
   const nowMs = opts.nowMs ?? Date.now();
+  const protocol = opts.protocol;
   const selfNode = nodes.get(myNodeId);
 
   const allPeers = [...nodes.values()].filter((n) => n.node_id !== myNodeId);
@@ -343,7 +353,9 @@ export function buildMeshPeerTopologyGraph(
     const relayNode = nodes.get(relayId);
     if (!relayNode) continue;
     const childCount = peersByRelay.get(relayId)?.length ?? 0;
-    graphNodes.push(buildGraphNode(relayNode, 'relay', 1, childCount, positions, cx, cy, nowMs));
+    graphNodes.push(
+      buildGraphNode(relayNode, 'relay', 1, childCount, positions, cx, cy, nowMs, protocol),
+    );
     visibleNodeIds.add(relayId);
     forceEdges.push({
       source: String(myNodeId),
@@ -354,7 +366,7 @@ export function buildMeshPeerTopologyGraph(
   }
 
   for (const peer of demotedDirectPeers) {
-    graphNodes.push(buildGraphNode(peer, 'peer', 1, 0, positions, cx, cy, nowMs));
+    graphNodes.push(buildGraphNode(peer, 'peer', 1, 0, positions, cx, cy, nowMs, protocol));
     visibleNodeIds.add(peer.node_id);
     forceEdges.push({
       source: String(myNodeId),
@@ -367,7 +379,7 @@ export function buildMeshPeerTopologyGraph(
   for (const peer of distantPeers) {
     // Multi-hop path hubs may already be emitted as relays; do not duplicate them as peers.
     if (visibleNodeIds.has(peer.node_id)) continue;
-    graphNodes.push(buildGraphNode(peer, 'peer', 2, 0, positions, cx, cy, nowMs));
+    graphNodes.push(buildGraphNode(peer, 'peer', 2, 0, positions, cx, cy, nowMs, protocol));
     visibleNodeIds.add(peer.node_id);
 
     const relayId = resolveMeshPeerRelayId(peer, nodes, myNodeId);

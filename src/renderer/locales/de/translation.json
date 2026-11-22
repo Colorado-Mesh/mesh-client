@@ -9224,7 +9224,10 @@
     },
     "appEligible": "Seriennummer / BLE",
     "loadingConfig": "Gerätekonfiguration wird geladen …",
-    "currentValue": "jetzt {{value}}"
+    "currentValue": "jetzt {{value}}",
+    "rmFirmwareOnlyHint": "Nur verfügbar mit MeshCom RM-/Kocel-Firmware",
+    "rmFirmwareRequired": "{{command}} benötigt die MeshCom-RM-Firmware (z. B. kocel 4.40a-rm5). Dieser Knoten meldet {{version}}.",
+    "rmFirmwareUnknownVersion": "Lagerbestand (nicht RM)"
   },
   "meshcomWatchlist": {
     "label": "MeshCom-Rufzeichen-Beobachtungsliste",

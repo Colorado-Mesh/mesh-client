@@ -102,6 +102,8 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { meshcomCallForNodeId } from '@/renderer/lib/meshcom/meshcomCallRegistry';
+import { meshcomBodyBudgetForChat } from '@/renderer/lib/meshcom/meshcomWireLimits';
 import { hasMeshcoreDestinationPubKey } from '@/renderer/lib/meshcore/meshcoreDestinationPubKey';
 import type { MeshcoreQrImportResult } from '@/renderer/lib/meshcore/meshcoreQrIngest';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
@@ -2350,7 +2352,7 @@ function ChatPanel({
           protocol,
           composerContext: destination == null ? 'channel' : 'dm',
           senderDisplayName: composerSelfDisplayName,
-          payloadLimitOverride: composerPayloadLimit,
+          payloadLimitOverride: effectiveComposerPayloadLimit,
         }) -
         getComposerWireOverhead({
           protocol,
@@ -3293,6 +3295,24 @@ function ChatPanel({
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const nowMs = useNowMs(isDmMode);
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
+
+  /** MeshCom: body UTF-8 budget after `{addr}` overhead (UDP also caps at EXTUDP 150). */
+  const meshcomComposerPayloadLimit = useMemo(() => {
+    if (protocol !== 'meshcom') return undefined;
+    const dmCall =
+      viewMode === 'dm' && activeDmNode != null
+        ? meshcomCallForNodeId(activeDmNode) ||
+          nodes.get(activeDmNode)?.long_name?.trim() ||
+          undefined
+        : undefined;
+    return meshcomBodyBudgetForChat({
+      channelIndex: viewMode === 'dm' ? undefined : channel,
+      destinationCallsign: dmCall,
+      capExtUdp: connectionType === 'udp',
+    });
+  }, [protocol, viewMode, activeDmNode, nodes, channel, connectionType]);
+
+  const effectiveComposerPayloadLimit = meshcomComposerPayloadLimit ?? composerPayloadLimit;
 
   const reticulumDmBoundHash = useMemo(() => {
     if (protocol !== 'reticulum' || activeDmNode == null) return null;
@@ -5730,7 +5750,8 @@ function ChatPanel({
           queueOutbox={queueOutbox}
           allowScheduledSend
           onSendChunk={handleSendChunk}
-          payloadLimit={composerPayloadLimit}
+          payloadLimit={effectiveComposerPayloadLimit}
+          useWireByteCount={protocol === 'meshcom'}
           lxmfReplyHashReplies={lxmfReplyHashReplies}
           showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
           floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}

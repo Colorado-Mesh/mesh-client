@@ -6,7 +6,7 @@
 import { MESHCOM_SERIAL_BAUD } from '@/shared/meshcomConstants';
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
-import { MESHCOM_EXTUDP_MSG_MAX_LEN } from './meshcomExtUdpCodec';
+import { meshcomBodyBudgetBytes, truncateToWireBytes } from './meshcomWireLimits';
 import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 export { MESHCOM_SERIAL_BAUD };
@@ -48,7 +48,7 @@ export function meshcomSerialEnableKiss(opts?: { tx?: boolean; meta?: boolean })
 /** Outbound chat over serial: `{DST}text` for directed, plain text for ALL. */
 export function meshcomSerialSendText(dst: string, text: string): Uint8Array {
   const dest = dst.trim();
-  const body = text.slice(0, MESHCOM_EXTUDP_MSG_MAX_LEN);
+  const body = truncateToWireBytes(text, meshcomBodyBudgetBytes(dest));
   if (!dest || dest === '*') {
     return encodeMeshcomSerialLine(body);
   }

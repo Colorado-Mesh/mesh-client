@@ -9224,7 +9224,10 @@
     },
     "appEligible": "일련번호 / BLE",
     "loadingConfig": "장치 구성 로드 중...",
-    "currentValue": "현재 {{value}}"
+    "currentValue": "현재 {{value}}",
+    "rmFirmwareOnlyHint": "MeshCom RM / kocel 펌웨어에서만 사용 가능",
+    "rmFirmwareRequired": "{{command}}에 MeshCom RM 펌웨어(예: kocel 4.40a-rm5)가 필요합니다. 이 노드는 {{version}}을(를) 보고합니다.",
+    "rmFirmwareUnknownVersion": "재고(RM 아님)"
   },
   "meshcomWatchlist": {
     "label": "MeshCom 호출 부호 감시 목록",

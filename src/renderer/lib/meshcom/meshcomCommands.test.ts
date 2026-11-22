@@ -22,6 +22,10 @@ describe('meshcomCommands catalog', () => {
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--io')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--aht20')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--aprsmc')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--txpower')).toBe(true);
+    expect(getMeshcomCommandById('battcal')?.requiresRmFirmware).toBe(true);
+    expect(getMeshcomCommandById('e22pa')?.requiresRmFirmware).toBe(true);
+    expect(getMeshcomCommandById('txpower')?.requiresRmFirmware).toBeFalsy();
     for (const token of ['--parm', '--unit', '--eqns', '--values', '--ptime', '--tel'] as const) {
       expect(MESHCOM_COMMANDS.some((c) => c.token === token && c.group === 'sensors')).toBe(true);
     }
