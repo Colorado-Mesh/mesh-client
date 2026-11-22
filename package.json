@@ -182,7 +182,7 @@
     "readable-stream": "^4.8.0",
     "semver": "^7.8.6",
     "systeminformation": "^5.33.23",
-    "undici": "^8.12.4",
+    "undici": "^8.13.1",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -198,7 +198,7 @@
     "@tanstack/react-virtual": "^3.14.26",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.12",
+    "@testing-library/user-event": "^14.6.13",
     "@types/js-md5": "^0.8.0",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^25.9.9",
@@ -212,7 +212,7 @@
     "@vitest/coverage-v8": "^4.1.12",
     "@wllama/wllama": "3.8.1",
     "concurrently": "^9.2.5",
-    "electron": "^45.3.4",
+    "electron": "^45.4.1",
     "electron-builder": "^26.18.0",
     "emoji-picker-element-data": "^1.8.0",
     "esbuild": "^0.28.2",

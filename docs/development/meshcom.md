@@ -95,6 +95,8 @@ The MeshCom **Map** panel links to MeshMap and offers **Send POS** (push known c
 | Serial `--info` (`BATT`) + `--wx` (`TEMP`/`HUM`/`QFE`/…) | yes     | yes            |
 | EXTUDP `tele` / `pos` (`batt`)                           | yes     | `tele` sensors |
 
+Outbound firmware `tele` JSON (`extern_tele_json.h` TLM-04) uses `temp1` / `qfe` / `gas`; client→node injection still uses `temp` / `press` / `gasres`. [`meshcomExtUdpCodec`](../../src/renderer/lib/meshcom/meshcomExtUdpCodec.ts) accepts both shapes (`temp1`→`temp`, `qfe`→`press`, `gas`→`gasres`).
+
 `MeshComProtocol` emits `telemetry` DomainEvents; `meshcomIngest` patches the node row and `recordEnvironmentReading('meshcom', …)`. The runtime also listens for chart points and seeds from the settings snapshot after connect / Telemetry refresh (HELLO can race ahead of ingest attach).
 
 ## BLE phone APRS (`@` frames)
@@ -109,7 +111,7 @@ Firmware prepends `0x40` to LoRa APRS buffers for the APP (`ble_phone_frame.h`).
 | GRC group   | `{n}text` / EXTUDP `dst` digits | positive `n`   |
 | DM          | `{CALL}text`                    | `-1`           |
 
-Send honors `SendMessageOptions.channelIndex` for groups ([`meshcomChannel.ts`](../../src/renderer/lib/meshcom/meshcomChannel.ts)).
+Send honors `SendMessageOptions.channelIndex` for groups ([`meshcomChannel.ts`](../../src/renderer/lib/meshcom/meshcomChannel.ts)). When a DM peer `destination` is set, that callsign wins over a stale positive GRC `channelIndex` (Chat keeps the last group pill when opening a DM tab). SQLite `channel_idx` allows **-1..99999** (GRC ids, not Meshtastic 0–255 slots).
 
 ### GRC groups (ICSSW)
 

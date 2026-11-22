@@ -7,7 +7,9 @@ import type { IpcMain } from 'electron';
 import { chatReceivedAtForDb } from '../../shared/chatReceivedAt';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import {
+  isValidMeshcomDbChannelIdx,
   MESHCOM_CONTACT_CAP_DEFAULT,
+  MESHCOM_GRC_ID_MAX,
   MESHCOM_MAX_MSG_ID_LEN,
   MESHCOM_MAX_TEXT_LEN,
 } from '../../shared/meshcomConstants';
@@ -188,8 +190,8 @@ export function validateSaveMeshcomMessage(msg: unknown): asserts msg is Meshcom
   }
   if (m.channel_idx != null) {
     const ch = Number(m.channel_idx);
-    if (!Number.isInteger(ch) || ch < -1 || ch > 255) {
-      throw new Error('db:saveMeshcomMessage: channel_idx must be -1..255');
+    if (!isValidMeshcomDbChannelIdx(ch)) {
+      throw new Error(`db:saveMeshcomMessage: channel_idx must be -1..${MESHCOM_GRC_ID_MAX}`);
     }
   }
 }

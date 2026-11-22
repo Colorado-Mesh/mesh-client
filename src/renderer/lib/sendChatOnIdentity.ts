@@ -545,7 +545,8 @@ export function sendChatOnIdentity(
         ? sendMeshcoreProtocolMessage(sendHandle, dmKey)
         : identity.protocol.sendMessage(sendHandle, {
             text: wireText,
-            channelIndex,
+            // MeshCom DM: match the store row (-1). Chat may still pass the last GRC pill.
+            channelIndex: isMeshcomDm ? -1 : channelIndex,
             destination,
             destinationPubKey: dmKey ?? destinationPubKey,
             replyTo,

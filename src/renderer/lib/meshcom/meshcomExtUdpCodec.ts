@@ -227,17 +227,19 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
   }
   if (type === 'tele') {
     const teleSrc = asOptionalString(parsed.src);
+    // Firmware outbound (extern_tele_json.h TLM-04) uses temp1/qfe/gas; client→node
+    // injection (ext_udp_telemetry.md) still uses temp/press/gasres — accept both.
     return {
       type: 'tele',
       src: teleSrc
         ? normalizeMeshcomCallsign(teleSrc).slice(0, MESHCOM_CALLSIGN_MAX_LEN) || undefined
         : undefined,
-      temp: asOptionalNumber(parsed.temp),
+      temp: asOptionalNumber(parsed.temp) ?? asOptionalNumber(parsed.temp1),
       hum: asOptionalNumber(parsed.hum),
-      press: asOptionalNumber(parsed.press),
+      press: asOptionalNumber(parsed.press) ?? asOptionalNumber(parsed.qfe),
       temp2: asOptionalNumber(parsed.temp2),
       qnh: asOptionalNumber(parsed.qnh),
-      gasres: asOptionalNumber(parsed.gasres),
+      gasres: asOptionalNumber(parsed.gasres) ?? asOptionalNumber(parsed.gas),
       co2: asOptionalNumber(parsed.co2),
       batt: asOptionalNumber(parsed.batt),
     };

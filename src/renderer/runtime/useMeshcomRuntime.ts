@@ -671,13 +671,28 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     handleConnectionLostRef.current();
   }, []);
 
+  const releaseSerialHoldRef = useRef<() => Promise<void>>(async () => {});
+  releaseSerialHoldRef.current = async () => {
+    if (!explicitDisconnectRef.current) {
+      explicitDisconnectRef.current = true;
+    }
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  };
+
   useEffect(() => {
     registerMeshcomSerialDisconnectTarget({
       isSerialConnected: () => connectionParamsRef.current?.rfType === 'serial',
+      getOpenSerialPort: () => {
+        const identityId = driverIdentityIdRef.current ?? identityIdRef.current;
+        if (!identityId) return null;
+        const handle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
+        return handle?.connection.getSerialPort?.() ?? null;
+      },
       onDisconnected: () => {
         noteSerialDeliveryFailure({ reason: 'transport-loss', connectionType: 'serial' });
         handleConnectionLostRef.current();
       },
+      releaseHold: () => releaseSerialHoldRef.current(),
     });
     return () => {
       registerMeshcomSerialDisconnectTarget(null);

@@ -55,12 +55,15 @@ jobs:
           bash scripts/ci-setup-linux-arm64-apt.sh
           sudo apt-get install -y libdbus-1-dev libdbus-1-dev:arm64 pkg-config gcc-aarch64-linux-gnu
       # Zig + cargo-zigbuild: glibc ABI floor on ubuntu-latest (docs/ci-cd.md#linux-sidecar-glibc).
+      # Pin exact reviewed versions (do not float `latest`) so release Linux sidecars cannot
+      # silently pull a compromised or unreviewed toolchain. Bump both deliberately after review.
+      # mlugg still declares node20 (annotation until upstream node24); FORCE_* runs it on 24.
       - name: Setup Zig
         if: matrix.platform == 'linux'
         # mlugg/setup-zig v2.2.1
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29
         with:
-          version: 0.14.1
+          version: 0.15.1
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.target }}

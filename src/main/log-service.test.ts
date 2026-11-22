@@ -652,11 +652,12 @@ describe('isDroppableRendererConsoleNoise', () => {
 });
 
 describe('formatRuntimeLogTag', () => {
-  it('includes platform, arch, electron, node, packaged, and buildChannel fields', async () => {
+  it('includes platform, arch, os, electron, node, packaged, and buildChannel fields', async () => {
     const { formatRuntimeLogTag } = await import('./log-service');
     const tag = formatRuntimeLogTag();
     expect(tag).toContain('platform=');
     expect(tag).toContain('arch=');
+    expect(tag).toMatch(/\bos=\S+/);
     expect(tag).toContain('electron=');
     expect(tag).toContain('node=');
     expect(tag).toContain('packaged=');

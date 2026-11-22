@@ -26,11 +26,17 @@ vi.mock('../../connection', () => ({
   closeSerialPortIfOpen: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../serialPortClaim', () => ({
+  releaseConflictingSerialSessions: vi.fn().mockResolvedValue(undefined),
+  logLoraSerialConnectedSnapshot: vi.fn(),
+}));
+
 import { closeSerialPortIfOpen } from '../../connection';
 import {
   type MeshcoreEchoFilterableConnection,
   patchMeshcoreCompanionTxEchoFilter,
 } from '../../meshcoreCompanionTxEchoFilter';
+import { releaseConflictingSerialSessions } from '../../serialPortClaim';
 import {
   createMeshCoreConnection,
   patchMeshcoreWebSerialWritable,
@@ -138,6 +144,13 @@ describe('createMeshCoreConnection serial', () => {
 
   it('closes a stale open port before openSerialPort on first connect', async () => {
     webSerialInstances.length = 0;
+    vi.mocked(releaseConflictingSerialSessions).mockClear();
+    vi.mocked(closeSerialPortIfOpen).mockClear();
+    let releaseResolve: (() => void) | undefined;
+    const releasePending = new Promise<void>((resolve) => {
+      releaseResolve = resolve;
+    });
+    vi.mocked(releaseConflictingSerialSessions).mockImplementationOnce(() => releasePending);
     const port = {
       writable: new WritableStream<Uint8Array>({ write: vi.fn() }),
       readable: new ReadableStream(),
@@ -153,8 +166,43 @@ describe('createMeshCoreConnection serial', () => {
       },
     });
 
-    await createMeshCoreConnection({ transport: 'serial' });
+    const connectPromise = createMeshCoreConnection({ transport: 'serial' });
+    await vi.waitFor(() => {
+      expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcore', port);
+    });
+    expect(closeSerialPortIfOpen).not.toHaveBeenCalled();
+    expect(port.open).not.toHaveBeenCalled();
+    releaseResolve?.();
+    await connectPromise;
 
+    expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
+    expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
+  });
+
+  it('reconnectMeshcoreSerial yields conflicting holders before close/open', async () => {
+    webSerialInstances.length = 0;
+    vi.mocked(releaseConflictingSerialSessions).mockClear();
+    vi.mocked(closeSerialPortIfOpen).mockClear();
+    const portId = 'meshcore-serial-reconnect';
+    const port = {
+      portId,
+      writable: new WritableStream<Uint8Array>({ write: vi.fn() }),
+      readable: new ReadableStream(),
+      open: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      getInfo: vi.fn().mockReturnValue({ usbVendorId: 0x1234, usbProductId: 0x5678 }),
+    };
+
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        getPorts: vi.fn().mockResolvedValue([port]),
+      },
+    });
+
+    await reconnectMeshcoreSerial(portId);
+
+    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcore', port);
     expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
     expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
   });

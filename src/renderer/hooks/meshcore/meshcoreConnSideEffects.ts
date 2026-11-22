@@ -844,7 +844,7 @@ export function attachMeshcoreConnSideEffects(
     const usedDriverConnect = meshcoreDriverConnectedRef.current;
     const staleConn = connRef.current;
     connRef.current = null;
-    teardownMeshcoreConnEventListeners({ driverDisconnect: usedDriverConnect });
+    void teardownMeshcoreConnEventListeners({ driverDisconnect: usedDriverConnect });
     queueMicrotask(() => {
       meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
       setMeshcorePingRouteReadyEpoch((e) => e + 1);

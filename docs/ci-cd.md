@@ -512,7 +512,7 @@ The sidecars reach the packaging jobs as tar archives from the same workflow run
 | Build Binaries Windows meta  | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
 | Build Flatpak                | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
 
-Prefer the job-summary **artifact-url** links (or the Actions Artifacts UI). Do **not** use `gh run download` for `archive: false` Windows Setup / Flatpak uploads — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download`. CLI that saves raw unarchived bytes:
+**Build Binaries** Package jobs (macOS, Linux, and Windows) each write job-summary **artifact-url** download links. Prefer those (or the Actions Artifacts UI). Do **not** use `gh run download` for `archive: false` Windows Setup / Flatpak uploads — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download`. CLI that saves raw unarchived bytes:
 
 ```bash
 id=$(gh api "repos/Colorado-Mesh/mesh-client/actions/runs/<run-id>/artifacts" \
@@ -543,7 +543,7 @@ To test sidecar staging or compare cold and warm cache timings without building 
 
 **CI wiring:**
 
-- `packaging-sidecars.yaml` installs a **pinned** Zig + `cargo-zigbuild` on Linux jobs, then `scripts/build-reticulum-sidecar-release.mjs` runs `cargo zigbuild` for `platform === 'linux'` (macOS/Windows stay on plain `cargo build`; host `cargo test` stays plain).
+- `packaging-sidecars.yaml` installs a **pinned** Zig (`0.15.1` via [`mlugg/setup-zig`](https://github.com/mlugg/setup-zig)) and **pinned** `cargo-zigbuild` (`0.24.1`, `cargo install … --version … --locked`) on Linux jobs, then `scripts/build-reticulum-sidecar-release.mjs` runs `cargo zigbuild` for `platform === 'linux'` (macOS/Windows stay on plain `cargo build`; host `cargo test` stays plain). Do **not** float `version: latest` / unversioned `cargo install` on this release path — bump pins deliberately after review. The action still _declares_ Node 20 (CI annotation) until upstream ships node24; `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` already runs it on Node 24.
 - Shared constant: `MAX_SIDECAR_GLIBC = '2.35'` in `scripts/check-reticulum-sidecar-glibc.mjs` (also `linuxZigbuildTarget()`). Fail-closed step asserts the staged ELF; HTTP smoke still runs on the (newer) runner glibc — that is fine.
 - Do **not** “fix” a floor failure by removing zigbuild or raising the max without an intentional support-policy change.
 

@@ -21,12 +21,11 @@
  * "remember my choice" preference is captured as an explicit button instead of a
  * checkbox.
  */
-import { release as osRelease } from 'node:os';
-
 import { app, dialog, shell } from 'electron';
 
 import { getDatabase } from './database';
 import { sanitizeLogMessage } from './log-service';
+import { resolveOsReleaseTag } from './osReleaseTag';
 
 const REPO_OWNER = 'Colorado-Mesh';
 const REPO_NAME = 'mesh-client';
@@ -156,7 +155,7 @@ export function describeReportContents(ctx: CrashContext): string {
     'Reporting opens your web browser on a new GitHub issue with these details filled in:',
     '',
     `• Crash source: ${ctx.source}`,
-    `• Operating system: ${platform} ${osRelease()} (${process.arch})`,
+    `• Operating system: ${platform} ${resolveOsReleaseTag()} (${process.arch})`,
     `• App version: ${getAppVersion()} (packaged: ${packaged})`,
     '• Error message and stack trace',
     '',
@@ -181,7 +180,7 @@ function formatErrorForBody(ctx: CrashContext): string {
     '**Crash source:** `' + ctx.source + '`',
     '',
     '**Desktop:**',
-    `- OS: ${platform} ${osRelease()} (${process.arch})`,
+    `- OS: ${platform} ${resolveOsReleaseTag()} (${process.arch})`,
     `- App version: ${getAppVersion()}`,
     `- Packaged: ${packaged}`,
     '',

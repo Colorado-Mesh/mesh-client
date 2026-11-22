@@ -2009,12 +2009,13 @@
       "serial": {
         "accessDeniedWindowsHint": "Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Check Device Manager for a yellow warning on the COM port.",
         "accessDeniedLinuxHint": "On Linux, add your user to the dialout group: sudo usermod -aG dialout $USER (then log out and back in)",
-        "openFailedLinuxHint": "On Linux this often means your user is not in the dialout group (sudo usermod -aG dialout $USER, then log out and back in), or another program is using the port (close flashers, ModemManager, or serial terminals).",
-        "openFailedWindowsHint": "Ensure the correct USB driver is installed (CH340, CP210x, or FTDI), close any other app using the COM port, then unplug and replug the cable.",
-        "openFailedGenericHint": "Close any other app using the serial port, then unplug and replug the USB cable and try again.",
+        "openFailedLinuxHint": "On Linux this often means your user is not in the dialout group (sudo usermod -aG dialout $USER, then log out and back in), or another program outside Mesh Client is using the port (close flashers, ModemManager, or serial terminals).",
+        "openFailedWindowsHint": "Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Close any other program outside Mesh Client that may be using the COM port, then unplug and replug the cable.",
+        "openFailedGenericHint": "Close any other program outside Mesh Client that may be using the serial port, then unplug and replug the USB cable and try again.",
         "disconnectedHint": "Ensure the USB cable is connected and the device is powered on.",
         "timeoutHint": "If the port appeared briefly, try reconnecting the USB cable.",
-        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
+        "portStillOpenHint": "No other Mesh Client protocol holds this USB port. The OS or another program may still have it locked — quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again.",
+        "inAppHoldHint": "{{protocols}} still has a USB serial connection in Mesh Client. Disconnect that protocol's serial session (or switch protocols and disconnect), then try again."
       },
       "http": {
         "timeoutMdnsWindows": "On Windows, meshtastic.local requires Bonjour (installed with iTunes). Use the device's IP address instead.",

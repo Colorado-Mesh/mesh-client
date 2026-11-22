@@ -46,8 +46,11 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * (~+31 B after collapsing reset rows via Object.values); budget +1 KiB.
  * MeshCom BLE host-Signal scan-RSSI seed (proxy map + connect emit + scan timeout IPC)
  * tipped the minified main past 817 KiB (~+0.9 KiB after helper trim); budget +1 KiB.
+ * Windows Update Build Revision (UBR) OS tag for support-bundle manifests / runtime logs
+ * tipped the minified main past 818 KiB (~+0.6 KiB); budget +1 KiB (sibling loader would
+ * cost more than the helper).
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 818 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 819 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.

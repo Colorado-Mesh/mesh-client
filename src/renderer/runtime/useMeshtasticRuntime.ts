@@ -253,6 +253,7 @@ import { mergeMeshtasticTraceRouteIntoResultsMap } from '../lib/meshtasticTraceR
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { isProtocolRfAutoConnectCancelled } from '../lib/protocolRfAutoConnectGate';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import { clearRadioSelfPosition, readRadioSelfPosition } from '../lib/radioSelfPosition';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
@@ -3281,6 +3282,15 @@ export function useMeshtasticRuntime() {
           await new Promise<void>((resolve) => {
             setTimeout(resolve, RF_SERIAL_OPEN_RETRY_DELAY_MS);
           });
+          if (
+            reconnectGenerationRef.current !== attemptGeneration ||
+            isProtocolRfAutoConnectCancelled('meshtastic')
+          ) {
+            console.debug(
+              '[useMeshtasticRuntime] connectAutomatic serial retry skipped — superseded or cancelled',
+            );
+            throw firstErr;
+          }
           opened = undefined;
           await openAndAttach();
         }
@@ -5068,14 +5078,6 @@ export function useMeshtasticRuntime() {
     });
   }, [meshtasticIdentityId, state, mqttStatus]);
 
-  useEffect(() => {
-    registerMeshtasticSerialDisconnectTarget({
-      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
-      onDisconnected: () => handleConnectionLostRef.current(),
-    });
-    return () => registerMeshtasticSerialDisconnectTarget(null);
-  }, []);
-
   const latchExplicitDisconnect = useCallback(() => {
     const already = meshtasticExplicitDisconnectRef.current;
     meshtasticExplicitDisconnectRef.current = true;
@@ -5083,6 +5085,29 @@ export function useMeshtasticRuntime() {
   }, []);
   const clearExplicitDisconnectLatch = useCallback(() => {
     meshtasticExplicitDisconnectRef.current = false;
+  }, []);
+
+  const releaseSerialHoldRef = useRef<() => Promise<void>>(async () => {});
+  releaseSerialHoldRef.current = async () => {
+    serialRediscoveryStopRef.current?.();
+    serialRediscoveryStopRef.current = null;
+    latchExplicitDisconnect();
+    await finalizeDriverDisconnect({ disconnectDriver: true });
+  };
+
+  useEffect(() => {
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
+      getOpenSerialPort: () => {
+        const fromParams = connectionParamsRef.current?.serialPort ?? null;
+        if (fromParams) return fromParams;
+        const device = deviceRef.current;
+        return device ? getSerialPortFromMeshTransport(device.transport) : null;
+      },
+      onDisconnected: () => handleConnectionLostRef.current(),
+      releaseHold: () => releaseSerialHoldRef.current(),
+    });
+    return () => registerMeshtasticSerialDisconnectTarget(null);
   }, []);
 
   useEffect(() => {

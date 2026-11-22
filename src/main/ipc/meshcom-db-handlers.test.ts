@@ -33,6 +33,40 @@ describe('validateSaveMeshcomMessage', () => {
       });
     }).toThrow(/received_via/);
   });
+
+  it('accepts GRC group channel_idx above 255 (e.g. SP 260)', () => {
+    expect(() => {
+      validateSaveMeshcomMessage({
+        text: 'siema',
+        timestamp: 1,
+        channel_idx: 260,
+      });
+    }).not.toThrow();
+    expect(() => {
+      validateSaveMeshcomMessage({
+        text: 'siema',
+        timestamp: 1,
+        channel_idx: 99999,
+      });
+    }).not.toThrow();
+  });
+
+  it('rejects channel_idx outside -1..99999', () => {
+    expect(() => {
+      validateSaveMeshcomMessage({
+        text: 'x',
+        timestamp: 1,
+        channel_idx: 100000,
+      });
+    }).toThrow(/channel_idx/);
+    expect(() => {
+      validateSaveMeshcomMessage({
+        text: 'x',
+        timestamp: 1,
+        channel_idx: 1.5,
+      });
+    }).toThrow(/channel_idx/);
+  });
 });
 
 describe('validateSaveMeshcomContact', () => {

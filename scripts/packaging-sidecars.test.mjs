@@ -106,7 +106,8 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).toContain('node scripts/check-reticulum-sidecar-glibc.mjs');
     expect(sidecars).toContain('Setup Zig');
     expect(sidecars).toContain('mlugg/setup-zig@');
-    expect(sidecars).toContain('version: 0.14.1');
+    expect(sidecars).toContain('version: 0.15.1');
+    expect(sidecars).not.toContain('version: latest');
     expect(sidecars).toContain('Install cargo-zigbuild');
     expect(sidecars).toContain('cargo install cargo-zigbuild --version 0.24.1 --locked');
     expect(sidecars).toContain('docs/ci-cd.md#linux-sidecar-glibc');

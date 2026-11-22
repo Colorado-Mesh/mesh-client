@@ -486,7 +486,7 @@ describe('buildSupportBundleZip', () => {
     expect(entry.subarray(entry.byteLength - 15).toString('utf8')).toBe('TAIL-MARKER-END');
   });
 
-  it('manifest records github kind and buildChannel', async () => {
+  it('manifest records github kind, buildChannel, and os release tag', async () => {
     const dest = path.join(workDir, 'manifest.zip');
     await buildSupportBundleZip(dest, 'github', '{"ok":true}');
     const buf = await fs.promises.readFile(dest);
@@ -496,10 +496,22 @@ describe('buildSupportBundleZip', () => {
       kind: string;
       appVersion: string;
       buildChannel: string;
+      os: string;
+      osUpdateRevision?: number;
     };
     expect(manifest.kind).toBe('mesh-client-github-report');
     expect(manifest.appVersion).toBe('9.9.9-test');
     expect(manifest.buildChannel).toBe('local');
+    expect(typeof manifest.os).toBe('string');
+    expect(manifest.os.length).toBeGreaterThan(0);
+    if (process.platform === 'win32') {
+      // UBR is best-effort; when present it must also appear in the os tag.
+      if (typeof manifest.osUpdateRevision === 'number') {
+        expect(manifest.os.endsWith(`.${manifest.osUpdateRevision}`)).toBe(true);
+      }
+    } else {
+      expect(manifest.osUpdateRevision).toBeUndefined();
+    }
 
     const readme = await zip.file('README.txt')!.async('string');
     expect(readme).toContain('Build channel: local');

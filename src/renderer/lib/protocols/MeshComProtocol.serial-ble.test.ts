@@ -270,6 +270,33 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
+  it('EXTUDP firmware tele temp1 wins over outdoor temp2=0', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const tele = `${JSON.stringify({
+      type: 'tele',
+      src: 'SP2ONG-1',
+      temp1: 19.5,
+      temp2: 0,
+      hum: 43.1,
+      qfe: 997.9,
+      qnh: 1006.0,
+      gas: 0,
+    })}\r\n`;
+    conn.onData?.(new TextEncoder().encode(tele));
+
+    const telemetry = events.filter((e) => e.type === 'telemetry');
+    expect(telemetry[0]?.payload).toMatchObject({
+      temperature: 19.5,
+      relativeHumidity: 43.1,
+      barometricPressure: 997.9,
+    });
+    unsub();
+  });
+
   it('KISS TX_RESULT does not emit peer routing_ack (local TX only)', () => {
     const { conn } = mockConnection('tcp');
     const handle = makeHandle('tcp', conn);
@@ -384,6 +411,19 @@ describe('MeshComProtocol serial/BLE', () => {
     const handle = makeHandle('serial', conn);
     await meshcomProtocol.sendMessage(handle, { text: 'grp', channelIndex: 20 });
     expect(new TextDecoder().decode(writes[0])).toBe('{20}grp\r\n');
+  });
+
+  it('sendMessage DM peer wins over stale positive channelIndex', async () => {
+    const { conn, writes } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    handle.callsignByNodeId.set(42, 'W9GIL');
+
+    await meshcomProtocol.sendMessage(handle, {
+      text: 'dm hi',
+      channelIndex: 312,
+      destination: 42,
+    });
+    expect(new TextDecoder().decode(writes[0])).toBe('{W9GIL}dm hi\r\n');
   });
 
   it('BLE TYP MH updates a heard station node_info', () => {

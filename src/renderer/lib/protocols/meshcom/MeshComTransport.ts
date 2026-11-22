@@ -10,6 +10,10 @@ import { closeSerialPortIfOpen } from '../../connection';
 import { encodeMeshcomBleCommand, MESHCOM_BLE_HELLO } from '../../meshcom/meshcomBleFrame';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { noteSerialTransportLoss } from '../../serialDeliveryHealth';
+import {
+  logLoraSerialConnectedSnapshot,
+  releaseConflictingSerialSessions,
+} from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
@@ -24,6 +28,8 @@ export interface MeshComConnection {
   /** Invoked when the underlying IPC bridge reports disconnect. */
   onDisconnected: (() => void) | null;
   close(): Promise<void>;
+  /** Live Web Serial port for this session (serial transport only). */
+  getSerialPort?(): SerialPort | null;
 }
 
 export interface MeshComConnectionParams {
@@ -141,9 +147,15 @@ class WebSerialMeshComConnection implements MeshComConnection {
       port = await navigator.serial.requestPort();
     }
 
+    await releaseConflictingSerialSessions('meshcom', port);
     await closeSerialPortIfOpen(port);
     persistSerialPortIdentity(port);
-    await openSerialPortWithTimeout(port, MESHCOM_SERIAL_BAUD, 'MeshCom serial open');
+    try {
+      await openSerialPortWithTimeout(port, MESHCOM_SERIAL_BAUD, 'MeshCom serial open');
+    } catch (err) {
+      logLoraSerialConnectedSnapshot('open failed', 'meshcom');
+      throw err;
+    }
 
     this.port = port;
     const rawWritable = port.writable;
@@ -160,6 +172,10 @@ class WebSerialMeshComConnection implements MeshComConnection {
     port.addEventListener('disconnect', this.disconnectListener);
 
     void this.startReadLoop(port);
+  }
+
+  getSerialPort(): SerialPort | null {
+    return this.port;
   }
 
   private async startReadLoop(port: SerialPort): Promise<void> {

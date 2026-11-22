@@ -95,4 +95,20 @@ describe('serialDisconnectRouter', () => {
     routeSerialServiceDisconnect({} as SerialPort);
     expect(onDisconnected).toHaveBeenCalledTimes(2);
   });
+
+  it('accepts optional getOpenSerialPort and releaseHold on registration', async () => {
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    const port = {} as SerialPort;
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      getOpenSerialPort: () => port,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+    const { getRegisteredSerialDisconnectTargets } = await import('./serialDisconnectRouter');
+    const target = getRegisteredSerialDisconnectTargets().get('meshtastic');
+    expect(target?.getOpenSerialPort?.()).toBe(port);
+    await target?.releaseHold?.();
+    expect(releaseHold).toHaveBeenCalledTimes(1);
+  });
 });

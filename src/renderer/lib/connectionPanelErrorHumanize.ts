@@ -20,6 +20,7 @@ import {
   isBlePeripheralConflictErrorMessage,
   isBleScanBusyErrorMessage,
 } from './reticulum/reticulumBleAdapterLease';
+import type { MeshProtocol } from './types';
 
 export function hostFromAddressInput(address: string): string {
   const raw = address.trim();
@@ -57,10 +58,31 @@ function runtimePlatform(): RuntimePlatform {
   return 'unknown';
 }
 
-export function humanizeSerialError(err: unknown, t: TFunction): string {
+export interface HumanizeSerialErrorOptions {
+  /**
+   * Other Mesh Client LoRa protocols that still report `isSerialConnected` for this
+   * port (or any serial hold when the port is unknown). Prefer over "other app" copy.
+   */
+  inAppHolders?: readonly MeshProtocol[];
+}
+
+function inAppSerialHoldHint(holders: readonly MeshProtocol[], t: TFunction): string {
+  const names = holders
+    .map((p) => t(`connectionPanel.bleOwner.${p}`))
+    .filter((name) => typeof name === 'string' && name.length > 0);
+  const protocols = names.length > 0 ? names.join(', ') : holders.join(', ');
+  return t('connectionPanel.humanize.serial.inAppHoldHint', { protocols });
+}
+
+export function humanizeSerialError(
+  err: unknown,
+  t: TFunction,
+  options?: HumanizeSerialErrorOptions,
+): string {
   if (isDeviceChooserCancel(err)) return '';
   const msg = err instanceof Error ? err.message : String(err);
   const platform = runtimePlatform();
+  const inAppHolders = options?.inAppHolders ?? [];
   if (/access denied|permission|not allowed/i.test(msg)) {
     const hint =
       platform === 'win32'
@@ -72,6 +94,12 @@ export function humanizeSerialError(err: unknown, t: TFunction): string {
   }
   // Chromium often reports EACCES/EBUSY as this generic string (no "access denied").
   if (/failed to open serial port/i.test(msg)) {
+    if (inAppHolders.length > 0) {
+      return t('connectionPanel.humanize.prefixedHint', {
+        message: msg,
+        hint: inAppSerialHoldHint(inAppHolders, t),
+      });
+    }
     const hint =
       platform === 'linux'
         ? t('connectionPanel.humanize.serial.openFailedLinuxHint')
@@ -93,6 +121,12 @@ export function humanizeSerialError(err: unknown, t: TFunction): string {
     });
   }
   if (/already open|locked stream|cannot cancel a locked/i.test(msg)) {
+    if (inAppHolders.length > 0) {
+      return t('connectionPanel.humanize.prefixedHint', {
+        message: msg,
+        hint: inAppSerialHoldHint(inAppHolders, t),
+      });
+    }
     return t('connectionPanel.humanize.prefixedHint', {
       message: msg,
       hint: t('connectionPanel.humanize.serial.portStillOpenHint'),

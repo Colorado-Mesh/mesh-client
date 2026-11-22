@@ -1590,6 +1590,47 @@ describe('ConnectionPanel ProtocolAutoConnectCoordinator cancel', () => {
       localStorage.removeItem(lastConnKey);
     }
   });
+
+  it('cancels all LoRa RF auto-connects before manual serial Connect (cross-protocol USB race)', async () => {
+    const user = userEvent.setup();
+    const claim = await import('../lib/serialPortClaim');
+    const cancelAllSpy = vi.spyOn(claim, 'cancelAllLoraRfAutoConnect');
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      const connectionField = screen
+        .getByRole('radiogroup', { name: 'Connection Type' })
+        .closest('fieldset')?.parentElement;
+      expect(connectionField).toBeTruthy();
+      await user.click(within(connectionField!).getByRole('radio', { name: /USB Serial/i }));
+      await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
+
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('serial');
+      });
+      // Must cancel every LoRa protocol (not only meshcore) so Meshtastic cannot keep COM locked.
+      expect(cancelAllSpy).toHaveBeenCalled();
+      const cancelOrder = cancelAllSpy.mock.invocationCallOrder[0];
+      const connectOrder = onConnect.mock.invocationCallOrder[0];
+      if (cancelOrder === undefined || connectOrder === undefined) {
+        throw new Error('expected cancelAllLoraRfAutoConnect and onConnect call order');
+      }
+      expect(cancelOrder).toBeLessThan(connectOrder);
+    } finally {
+      cancelAllSpy.mockRestore();
+    }
+  });
 });
 
 describe('ConnectionPanel last-connection restoration across protocol switches', () => {

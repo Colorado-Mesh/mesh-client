@@ -1335,7 +1335,8 @@
         "portStillOpenHint": "Sériový port USB se neuvolnil čistě. Úplně ukončete mesh-client a znovu jej otevřete, nebo odpojte a znovu připojte kabel USB a poté jej znovu připojte.",
         "openFailedLinuxHint": "Dne Linux to často znamená, že váš uživatel není ve skupině vytáčených čísel (sudo usermod -aG vytáčený UŽIVATEL $, poté se odhlásí a znovu přihlásí) nebo jiný program používá port (blikače, ModemManager nebo sériové terminály).",
         "openFailedWindowsHint": "Ujistěte se, že je nainstalován správný ovladač USB (CH340, CP210x nebo FTDI), zavřete jakoukoli jinou aplikaci pomocí portu COM, poté odpojte a znovu zapojte kabel.",
-        "openFailedGenericHint": "Zavřete jakoukoli jinou aplikaci pomocí sériového portu, odpojte a znovu připojte kabel USB a zkuste to znovu."
+        "openFailedGenericHint": "Zavřete jakoukoli jinou aplikaci pomocí sériového portu, odpojte a znovu připojte kabel USB a zkuste to znovu.",
+        "inAppHoldHint": "{{protocols}} má stále sériové připojení USB v klientu Mesh. Odpojte sériovou relaci tohoto protokolu (nebo přepněte protokoly a odpojte se) a zkuste to znovu."
       },
       "http": {
         "timeoutMdnsWindows": "Ve Windows vyžaduje meshtastic.local Bonjour (nainstalovaný s iTunes). Místo toho použijte IP adresu zařízení.",

@@ -4,6 +4,13 @@ import type { MeshProtocol } from './types';
 export interface SerialDisconnectTarget {
   isSerialConnected: () => boolean;
   onDisconnected: () => void;
+  /** Live Web Serial port for this protocol's RF session, when known. */
+  getOpenSerialPort?: () => SerialPort | null;
+  /**
+   * Tear down this protocol's serial RF hold (latch explicit disconnect + driver disconnect)
+   * so another protocol can open the same USB device.
+   */
+  releaseHold?: () => Promise<void>;
 }
 
 const serialDisconnectTargets = new Map<MeshProtocol, SerialDisconnectTarget | null>();
@@ -33,6 +40,14 @@ export function registerMeshcoreSerialDisconnectTarget(
 
 export function registerMeshcomSerialDisconnectTarget(target: SerialDisconnectTarget | null): void {
   registerSerialDisconnectTarget('meshcom', target);
+}
+
+/** Snapshot of registered serial disconnect targets (for same-port claim / yield). */
+export function getRegisteredSerialDisconnectTargets(): ReadonlyMap<
+  MeshProtocol,
+  SerialDisconnectTarget | null
+> {
+  return serialDisconnectTargets;
 }
 
 export function routeSerialServiceDisconnect(port: SerialPort): void {

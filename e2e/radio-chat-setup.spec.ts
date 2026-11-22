@@ -263,8 +263,12 @@ test('same-session DM tab order across protocols with keyboard and touch reorder
       await resizeChatWindow(launched, width, height);
       if (height === 645) {
         await expect.poll(() => page.evaluate(() => innerHeight)).toBe(645);
+        // Inactive-protocol Chat panels stay mounted; scope to the visible panel.
+        const conversationRow = page.locator(
+          '[data-panel-anchor="Chat"]:visible [data-testid="chat-conversation-row"]',
+        );
         await expect
-          .poll(() => page.getByTestId('chat-conversation-row').evaluate((row) => row.clientHeight))
+          .poll(() => conversationRow.evaluate((row) => row.clientHeight))
           .toBeGreaterThan(0);
       }
       if (height === 645 && name !== 'Reticulum') {

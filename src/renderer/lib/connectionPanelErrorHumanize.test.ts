@@ -105,6 +105,33 @@ describe('humanizeSerialError', () => {
     mockPlatform('linux');
     expect(humanizeSerialError(new Error('unknown serial fault'), t)).toBe('unknown serial fault');
   });
+
+  it('uses in-app hold hint when another protocol still holds serial', () => {
+    mockPlatform('win32');
+    const result = humanizeSerialError(new Error('Failed to open serial port.'), t, {
+      inAppHolders: ['meshtastic'],
+    });
+    expect(result).toContain('connectionPanel.humanize.serial.inAppHoldHint');
+    expect(result).not.toContain('openFailedWindowsHint');
+  });
+
+  it('keeps external open-failed hint when no in-app holders', () => {
+    mockPlatform('win32');
+    const result = humanizeSerialError(new Error('Failed to open serial port.'), t, {
+      inAppHolders: [],
+    });
+    expect(result).toContain('openFailedWindowsHint');
+    expect(result).not.toContain('inAppHoldHint');
+  });
+
+  it('uses in-app hold hint for already-open when holders are present', () => {
+    mockPlatform('darwin');
+    const result = humanizeSerialError(new Error('The port is already open.'), t, {
+      inAppHolders: ['meshcore', 'meshcom'],
+    });
+    expect(result).toContain('connectionPanel.humanize.serial.inAppHoldHint');
+    expect(result).not.toContain('portStillOpenHint');
+  });
 });
 
 describe('humanizeHttpError', () => {

@@ -20,6 +20,10 @@ import { notifyBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
 import { getReticulumBleBondDesyncActive } from '../../reticulum/reticulumBleBondDesync';
+import {
+  logLoraSerialConnectedSnapshot,
+  releaseConflictingSerialSessions,
+} from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
@@ -243,7 +247,12 @@ export function patchMeshcoreWebSerialWritable(
 
 async function openSerialPort(port: SerialPort): Promise<Connection> {
   persistSerialPortIdentity(port);
-  await openSerialPortWithTimeout(port, 115200, 'MeshCore serial open');
+  try {
+    await openSerialPortWithTimeout(port, 115200, 'MeshCore serial open');
+  } catch (err) {
+    logLoraSerialConnectedSnapshot('open failed', 'meshcore');
+    throw err;
+  }
   const rawWritable = port.writable;
   const conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshcoreWebSerialConn)(
     port,
@@ -258,6 +267,7 @@ async function openSerialPort(port: SerialPort): Promise<Connection> {
 async function connectSerial(): Promise<Connection> {
   if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
   const port = await navigator.serial.requestPort();
+  await releaseConflictingSerialSessions('meshcore', port);
   await closeSerialPortIfOpen(port);
   return openSerialPort(port);
 }
@@ -269,6 +279,7 @@ export async function reconnectMeshcoreSerial(lastPortId?: string | null): Promi
   }
   const ports = await navigator.serial.getPorts();
   const port = selectGrantedSerialPort(ports, lastPortId);
+  await releaseConflictingSerialSessions('meshcore', port);
   await closeSerialPortIfOpen(port);
   return openSerialPort(port);
 }

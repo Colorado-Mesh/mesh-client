@@ -332,17 +332,19 @@ function tryIngestSettingsJson(
 }
 
 function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessageOptions): string {
+  // DM peer wins over a stale positive GRC channelIndex (Chat keeps the last group pill
+  // when opening a DM tab).
+  if (opts.destination != null && opts.destination !== 0xffffffff) {
+    const known = handle.callsignByNodeId.get(opts.destination);
+    if (known) return known;
+    throw new Error(
+      `meshcom sendMessage: unknown destination nodeId ${opts.destination} (no callsign mapping)`,
+    );
+  }
   if (opts.channelIndex != null && opts.channelIndex > 0) {
     return meshcomOutboundDest({ channelIndex: opts.channelIndex });
   }
-  if (opts.destination == null || opts.destination === 0xffffffff) {
-    return '*';
-  }
-  const known = handle.callsignByNodeId.get(opts.destination);
-  if (known) return known;
-  throw new Error(
-    `meshcom sendMessage: unknown destination nodeId ${opts.destination} (no callsign mapping)`,
-  );
+  return '*';
 }
 
 function textMessageToFromDest(

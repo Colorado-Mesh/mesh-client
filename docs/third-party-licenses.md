@@ -42,7 +42,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.6          | 7.8.6             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.23        | 5.33.23           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
-| undici                     | MIT                           | ^8.12.4         | 8.12.4            | git+https://github.com/nodejs/undici.git                                       |
+| undici                     | MIT                           | ^8.13.1         | 8.13.1            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.23.0            | git+https://github.com/websockets/ws.git                                       |
 
 ## Development dependencies
@@ -61,7 +61,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
-| @testing-library/user-event           | MIT             | ^14.6.12        | 14.6.12           | git+https://github.com/testing-library/user-event.git                                |
+| @testing-library/user-event           | MIT             | ^14.6.13        | 14.6.13           | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node                           | MIT             | ^25.9.9         | 25.9.9            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -75,7 +75,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^45.3.4         | 45.3.4            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^45.4.1         | 45.4.1            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |

@@ -106,6 +106,43 @@ describe('sendChatOnIdentity MeshCom', () => {
     );
   });
 
+  it('passes channelIndex -1 for MeshCom DM even when Chat left a GRC pill selected', async () => {
+    const peerCall = 'W9GIL';
+    const peerNode = callsignToNodeId(peerCall);
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, {
+      status: 'configured',
+      connectionType: 'ble',
+      myNodeNum: SELF_NODE,
+    });
+    upsertNode(ID, { nodeId: SELF_NODE, longName: SELF_CALL });
+    upsertNode(ID, { nodeId: peerNode, longName: peerCall });
+    const sendSpy = vi.spyOn(meshcomProtocol, 'sendMessage').mockResolvedValue({ packetId: 77 });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+
+    sendChatOnIdentity(ID, { text: 'dm hi', channelIndex: 312, destination: peerNode });
+
+    await vi.waitFor(() => {
+      expect(sendSpy).toHaveBeenCalled();
+    });
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        text: 'dm hi',
+        channelIndex: -1,
+        destination: peerNode,
+      }),
+    );
+    expect(useMessageStore.getState().messages[ID]?.['77']?.channelIndex).toBe(-1);
+  });
+
   it('persists failed status when MeshCom send rejects', async () => {
     addIdentity({
       id: ID,
