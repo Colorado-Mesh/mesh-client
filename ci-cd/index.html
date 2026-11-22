@@ -4232,7 +4232,7 @@ The workflow does not change repository security settings. Existing global cover
 <li>Builds the Reticulum sidecar on bare Ubuntu runners, then generates <code>flatpak/generated-sources.json</code> via <code>flatpak-node-generator</code></li>
 <li>Stamps CI build info (<code>test</code> on dispatch / <code>release</code> on tag), builds from <code>org.coloradomesh.MeshClient.yml</code> with offline pnpm sources</li>
 <li>Smoke-installs the unstamped local bundle; on <strong>dispatch only</strong>, renames to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code></li>
-<li>Uploads <code>org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak</code> artifacts (file basename stamped on test builds) plus per-arch <code>flatpak-schema-warning-*</code></li>
+<li>Uploads each arch as an <strong><code>archive: false</code></strong> artifact named <code>org.coloradomesh.MeshClient.flatpak-{arch}.flatpak</code> (test dispatch: <code>…-{arch}-run{N}.flatpak</code>) plus per-arch <code>flatpak-schema-warning-*</code></li>
 </ol>
 <p>On <strong>version tag pushes</strong>, a bare <code>publish</code> job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron <code>prepare-github-release</code> draft (<code>ci-wait-github-draft-release.mjs</code>) and attaching the <strong>clean-named</strong> bundles plus attestation with <code>ci-upload-release-assets.mjs</code> (never creates a release). aarch64 is the primary ARM Linux install path (release <code>build.yaml</code> only produces x86_64 AppImage/deb/rpm).</p>
 <p><code>flatpak/generated-sources.json</code> is generated automatically in CI by <code>flatpak-node-generator</code> before each build — it does not need to be committed to the repo. For local builds, generate it manually; see <a href="../development-environment/">development-environment.md</a> for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.</p>
@@ -4582,7 +4582,56 @@ The workflow does not change repository security settings. Existing global cover
 <h2 id="packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml">Packaging smoke builds (<code>build.yaml</code> / <code>flatpak.yaml</code> / <code>release.yaml</code>)<a class="headerlink" href="#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml" title="Permanent link">&para;</a></h2>
 <p><code>build.yaml</code> and <code>release.yaml</code> call <code>packaging-sidecars.yaml</code> to build the x64 and ARM64 Reticulum sidecars in parallel on separate runners (job UI: <strong>Stage Reticulum</strong>). Each OS runs the full-feature host tests once in its native architecture job. Release platform selection applies to both the sidecar and Electron matrices. Packaging starts after the selected sidecars succeed, so a failed build or test blocks the installers.</p>
 <p>The sidecars reach the packaging jobs as tar archives from the same workflow run (<code>ci-reticulum-staged-{platform}-{arch}</code> — internal handoff only; not installer downloads). Tar preserves Unix executable permissions; each architecture also carries its own <code>RESOLVED_SHAS.txt</code> for the freshly cloned Ratspeak sources. The download action verifies that both platform binaries are staged before Electron packaging. Installer names, signing, updater metadata, and the four packaging smoke jobs remain the same. The existing <code>reticulum-sidecar.yaml</code> checks remain independent.</p>
-<p><strong>Actions artifact zip names (installer downloads):</strong> Release keeps <code>mesh-client-{macos|linux|windows}-{sha}</code>. Build Binaries (always <code>workflow_dispatch</code>) uses the same names with a <code>test-</code> prefix (<code>test-mesh-client-…</code>) so testers can tell them apart from official packaging runs. Filenames <em>inside</em> those zips still get <code>-run{N}</code> on Build Binaries (see below).</p>
+<p><strong>Actions artifact names (installer downloads):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Artifact name</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Release Electron</td>
+<td><code>mesh-client-{macos,linux,windows}-{sha}</code></td>
+<td>Multi-file zip (installers + updater yml)</td>
+</tr>
+<tr>
+<td>Build Binaries macOS / Linux</td>
+<td><code>test-mesh-client-{macos,linux}-{sha}</code></td>
+<td>Multi-file zip; filenames inside stamped <code>-run{N}</code></td>
+</tr>
+<tr>
+<td>Build Binaries Windows Setup</td>
+<td><code>Mesh-client-Setup-{version}-run{N}.exe</code> / <code>…-run{N}-arm64.exe</code></td>
+<td><strong><code>archive: false</code></strong> — click downloads the NSIS <code>.exe</code> directly (unsigned test builds: SmartScreen → More info → Run anyway)</td>
+</tr>
+<tr>
+<td>Build Binaries Windows meta</td>
+<td><code>test-mesh-client-windows-meta-{sha}</code></td>
+<td>Small zip: <code>latest.yml</code> + <code>READ-ME-FIRST-test-build.md</code></td>
+</tr>
+<tr>
+<td>Build Flatpak</td>
+<td><code>org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak</code></td>
+<td><strong><code>archive: false</code></strong> — click downloads the <code>.flatpak</code> directly</td>
+</tr>
+</tbody>
+</table>
+<p>Prefer the job-summary <strong>artifact-url</strong> links (or the Actions Artifacts UI). Do <strong>not</strong> use <code>gh run download</code> for <code>archive: false</code> Windows Setup / Flatpak uploads — current <code>gh</code> always tries to unzip and fails with <code>zip: not a valid zip file</code> (<a href="https://github.com/cli/cli/issues/13012">cli/cli#13012</a>). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with <code>gh run download</code>. CLI that saves raw unarchived bytes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">id</span><span class="o">=</span><span class="k">$(</span>gh<span class="w"> </span>api<span class="w"> </span><span class="s2">"repos/Colorado-Mesh/mesh-client/actions/runs/&lt;run-id&gt;/artifacts"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--jq<span class="w"> </span><span class="s1">'</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s1">    [.artifacts[] | select(.name == "&lt;artifact-name&gt;")]</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s1">    | sort_by(.created_at) | reverse | .[0].id // empty</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s1">  '</span><span class="k">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">id</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"no artifact named &lt;artifact-name&gt; for that run"</span><span class="w"> </span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">fi</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>gh<span class="w"> </span>api<span class="w"> </span><span class="s2">"repos/Colorado-Mesh/mesh-client/actions/artifacts/</span><span class="si">${</span><span class="nv">id</span><span class="si">}</span><span class="s2">/zip"</span><span class="w"> </span>&gt;<span class="w"> </span><span class="s2">"&lt;artifact-name&gt;"</span>
+</code></pre></div>
+<p>(The Actions API path still ends in <code>/zip</code>; for unarchived uploads the body is the raw file. Reruns can leave duplicate names — the jq picks the newest.)</p>
 <p>Local <code>node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin</code> still runs host tests and builds both architectures. <code>--arch x64|arm64</code> selects one target; CI uses <code>--skip-tests</code> only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.</p>
 <p>Packaging sidecars cache Cargo dependencies with <code>Swatinem/rust-cache</code>, separately by target triple, runner OS/architecture, and Rust toolchain. The packaging key is separate from validation jobs. The sidecar workspace crate and Cargo-installed tools are excluded. Every run still clones the current Ratspeak sources, applies overlays, runs the native host tests, and builds/stages the selected target; a cache hit never skips those steps. Missing caches fall back to a normal build.</p>
 <p>To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run <strong>Packaging sidecars</strong> manually and select <code>all</code>, <code>mac</code>, <code>linux</code>, or <code>win</code>. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.</p>
@@ -4646,12 +4695,12 @@ The workflow does not change repository security settings. Existing global cover
 <tr>
 <td><code>flatpak.yaml</code></td>
 <td><code>workflow_dispatch</code> only</td>
-<td>After in-job smoke, rename to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code>, then upload</td>
+<td>After in-job smoke + arch suffix: <code>org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak</code> (<code>archive: false</code> artifact name = basename)</td>
 </tr>
 <tr>
 <td><code>flatpak.yaml</code></td>
 <td>tag <code>v*</code> (release publish)</td>
-<td>Clean <code>org.coloradomesh.MeshClient.flatpak</code> (no <code>-run{N}</code>)</td>
+<td>Clean <code>org.coloradomesh.MeshClient.flatpak-{arch}.flatpak</code> (no <code>-run{N}</code>; same basename as the Actions artifact / release asset)</td>
 </tr>
 <tr>
 <td><code>release.yaml</code></td>
@@ -4718,7 +4767,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 15:40:33 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 01:33:19 UTC">November 22, 2026</span>
   </span>
 
     
