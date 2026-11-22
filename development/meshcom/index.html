@@ -3816,6 +3816,7 @@
 </tr>
 </tbody>
 </table>
+<p>Outbound firmware <code>tele</code> JSON (<code>extern_tele_json.h</code> TLM-04) uses <code>temp1</code> / <code>qfe</code> / <code>gas</code>; client→node injection still uses <code>temp</code> / <code>press</code> / <code>gasres</code>. <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomExtUdpCodec.ts"><code>meshcomExtUdpCodec</code></a> accepts both shapes (<code>temp1</code>→<code>temp</code>, <code>qfe</code>→<code>press</code>, <code>gas</code>→<code>gasres</code>).</p>
 <p><code>MeshComProtocol</code> emits <code>telemetry</code> DomainEvents; <code>meshcomIngest</code> patches the node row and <code>recordEnvironmentReading('meshcom', …)</code>. The runtime also listens for chart points and seeds from the settings snapshot after connect / Telemetry refresh (HELLO can race ahead of ingest attach).</p>
 <h2 id="ble-phone-aprs--frames">BLE phone APRS (<code>@</code> frames)<a class="headerlink" href="#ble-phone-aprs--frames" title="Permanent link">&para;</a></h2>
 <p>Firmware prepends <code>0x40</code> to LoRa APRS buffers for the APP (<code>ble_phone_frame.h</code>). Client decoder: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomAprsPhone.ts"><code>meshcomAprsPhone.ts</code></a> — text (<code>:</code>), position (<code>!</code>), ACK (<code>0x41</code>). After CONFFIN refresh, BLE sends a <code>0x20</code> UTC timestamp packet (<code>phone_commands</code>).</p>
@@ -3846,7 +3847,7 @@
 </tr>
 </tbody>
 </table>
-<p>Send honors <code>SendMessageOptions.channelIndex</code> for groups (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomChannel.ts"><code>meshcomChannel.ts</code></a>).</p>
+<p>Send honors <code>SendMessageOptions.channelIndex</code> for groups (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomChannel.ts"><code>meshcomChannel.ts</code></a>). When a DM peer <code>destination</code> is set, that callsign wins over a stale positive GRC <code>channelIndex</code> (Chat keeps the last group pill when opening a DM tab). SQLite <code>channel_idx</code> allows <strong>-1..99999</strong> (GRC ids, not Meshtastic 0–255 slots).</p>
 <h3 id="grc-groups-icssw">GRC groups (ICSSW)<a class="headerlink" href="#grc-groups-icssw" title="Permanent link">&para;</a></h3>
 <p>Named catalog: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomGrcGroups.ts"><code>meshcomGrcGroups.ts</code></a> (from <a href="https://icssw.org/en/meshcom-grc-gruppen/">ICSSW GRC Gruppen</a>). Firmware listen filter is up to <strong>six</strong> ids via <code>--setgrc a;b;…</code> (first = master); bare <code>--setgrc</code> clears. Empty filter shows all GRCs; with ≥1 booking, only matching groups reach the APP. Group <strong>9</strong> (LOC) is HF-cloud only.</p>
 <p><strong>Chat pills:</strong> ALL + device listen slots (<code>GCB</code> / <code>--info</code>) + locally opened ids + history-discovered ids (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomGrcGroups.ts"><code>buildMeshcomChatChannels</code></a>). Chat “+” opens <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshComGrcChatManager.tsx"><code>MeshComGrcChatManager</code></a>; Radio → Identity uses <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshComGrcEditor.tsx"><code>MeshComGrcEditor</code></a> (slots + <code>--nomsgall</code>).</p>
@@ -3930,7 +3931,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 14:39:31 UTC">November 22, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 17:52:34 UTC">November 22, 2026</span>
   </span>
 
     
