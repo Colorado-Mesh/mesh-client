@@ -368,8 +368,8 @@ describe('always-on bundle workflow', () => {
             expect(output).toContain('sibling esbuild entry');
             expect(output).toContain('esbuild-main-externals.mjs');
             expect(output).toContain('build:main:minify-meta');
-            expect(output).toContain('ONLY if there is absolutely no other way');
-            expect(output).toContain('Never raise the budget for convenience');
+            expect(output).toContain('unless the human developer explicitly');
+            expect(output).toContain('never bump the budget on their own');
           }
         }
         for (const file of artifacts) {

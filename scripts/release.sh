@@ -725,6 +725,11 @@ if ! pnpm run check:silent-catches; then
   exit 1
 fi
 
+if ! pnpm run check:semgrep; then
+  print_error "Semgrep check failed (auto + .semgrep.yml). Research findings before dismissing; update .semgrep.yml if a rule is wrong for this repo."
+  exit 1
+fi
+
 if ! pnpm run check:url-hostname-sanitization; then
   print_error "URL hostname sanitization check failed."
   exit 1

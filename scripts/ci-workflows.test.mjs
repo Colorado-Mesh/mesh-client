@@ -213,6 +213,7 @@ describe('CI workflow contracts', () => {
       'check:ipc-contract',
       'check:console-log',
       'check:silent-catches',
+      'check:semgrep',
       'check:url-hostname-sanitization',
       'check:xss-patterns',
       'check:protocol-string-gates',

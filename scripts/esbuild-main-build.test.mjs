@@ -49,15 +49,15 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows Update Build Revision (UBR) OS tag for support-bundle manifests / runtime logs
  * tipped the minified main past 818 KiB (~+0.6 KiB); budget +1 KiB (sibling loader would
  * cost more than the helper).
- * Shared `pathUnderRoot` containment helpers (Semgrep path-join hardening across
- * attachments / offline maps / TAK / Reticulum) tipped the minified main past 819 KiB
- * (~+0.45 KiB); budget +1 KiB (a sibling chunk would cost more than the helper).
+ * Shared `pathUnderRoot` containment helpers stay in index.js (sibling chunk costs more);
+ * keep that module compact so the budget remains 819 KiB — do not raise without an
+ * explicit developer ask (see AGENTS.md Bundle CI).
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 820 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 819 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
- * Prefer sibling chunks and externals; raise the budget only as a last resort.
+ * Prefer sibling chunks and externals; never raise the budget unless the developer asks.
  * @param {number} size
  * @returns {string}
  */
@@ -78,10 +78,10 @@ export function formatMainBundleOverBudgetMessage(size) {
     '   (same pattern as undici/ws).',
     '3. Analyze composition: pnpm run build:main:minify-meta then inspect dist-electron/main/meta.json',
     '   (upload to https://esbuild.github.io/analyze/).',
-    '4. ONLY if there is absolutely no other way after exhausting (1)-(3), raise',
-    '   MAIN_BUNDLE_SIZE_BUDGET_BYTES in scripts/esbuild-main-build.test.mjs and document the KiB',
-    '   delta + reason in the comment block above that constant and in the PR body.',
-    '   Never raise the budget for convenience.',
+    '4. Do NOT raise MAIN_BUNDLE_SIZE_BUDGET_BYTES unless the human developer explicitly',
+    '   asks you to. Agents must stop and prompt — never bump the budget on their own,',
+    '   even after exhausting (1)-(3). If raised by request: document the KiB delta + reason',
+    '   in the comment block above that constant and in the PR body.',
   ].join('\n');
 }
 
@@ -153,8 +153,8 @@ describe('esbuild-main-build', () => {
     expect(message).toContain('sibling esbuild entry');
     expect(message).toContain('esbuild-main-externals.mjs');
     expect(message).toContain('build:main:minify-meta');
-    expect(message).toContain('ONLY if there is absolutely no other way');
-    expect(message).toContain('Never raise the budget for convenience');
+    expect(message).toContain('unless the human developer explicitly');
+    expect(message).toContain('never bump the budget on their own');
   });
 
   it('uses the esbuild JS API instead of spawning bin/esbuild (Windows shim)', () => {

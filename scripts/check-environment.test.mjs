@@ -6,6 +6,7 @@ import {
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
   evaluatePlaywrightCheck,
+  evaluateSemgrepCheck,
   evaluateWindowsBuildDepsCheck,
   parseCheckEnvironmentArgs,
   parseVersion,
@@ -389,5 +390,25 @@ describe('check-environment evaluatePlaywrightCheck', () => {
     });
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('pass');
+  });
+});
+
+describe('check-environment evaluateSemgrepCheck', () => {
+  it('passes when semgrep reports a version', () => {
+    expect(evaluateSemgrepCheck({ versionOutput: '1.186.0' })).toMatchObject({
+      status: 'pass',
+      severity: 'optional',
+      label: 'semgrep',
+      detail: '1.186.0',
+    });
+  });
+
+  it('warns with install hint when semgrep is missing', () => {
+    expect(evaluateSemgrepCheck({ versionOutput: null })).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      label: 'semgrep not found (optional)',
+      hint: expect.stringContaining('check:semgrep'),
+    });
   });
 });

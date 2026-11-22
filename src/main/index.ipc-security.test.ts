@@ -462,14 +462,16 @@ describe('tcp-bridge protocol wiring (source contract)', () => {
   it('destroys the socket on oversized tcp-data chunks without emitting', () => {
     const dataIdx = TCP_BRIDGE_SOURCE.indexOf("socket.on('data'");
     expect(dataIdx).toBeGreaterThan(-1);
-    const dataBody = TCP_BRIDGE_SOURCE.slice(dataIdx, dataIdx + 900);
+    // Multi-arg console.warn (Semgrep unsafe-formatstring) lengthens this handler — keep a
+    // wide window so destroy/return/send stay inside the slice under review.
+    const dataBody = TCP_BRIDGE_SOURCE.slice(dataIdx, dataIdx + 1600);
     expect(dataBody).toContain('TCP_BRIDGE_DATA_MAX_BYTES');
     expect(dataBody).toContain('oversized chunk');
     expect(dataBody).toContain('socket.destroy()');
     const oversizeIdx = dataBody.indexOf('chunk.length > TCP_BRIDGE_DATA_MAX_BYTES');
-    const destroyIdx = dataBody.indexOf('socket.destroy()');
-    const emitIdx = dataBody.indexOf('getMainWindow()?.webContents.send(dataChannel');
     expect(oversizeIdx).toBeGreaterThan(-1);
+    const destroyIdx = dataBody.indexOf('socket.destroy()', oversizeIdx);
+    const emitIdx = dataBody.indexOf('getMainWindow()?.webContents.send(dataChannel', oversizeIdx);
     expect(destroyIdx).toBeGreaterThan(oversizeIdx);
     expect(emitIdx).toBeGreaterThan(destroyIdx);
     const returnAfterDestroy = dataBody.slice(destroyIdx, emitIdx);

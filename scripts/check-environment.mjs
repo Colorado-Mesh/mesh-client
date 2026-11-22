@@ -522,6 +522,37 @@ function checkYamllint() {
 }
 
 /**
+ * Pure evaluator for optional Semgrep readiness (unit-tested).
+ * Pre-commit / release / CI require Semgrep via `pnpm run check:semgrep`.
+ *
+ * @param {{ versionOutput: string | null }} input
+ * @returns {CheckResult}
+ */
+export function evaluateSemgrepCheck(input) {
+  const out = input.versionOutput;
+  if (!out) {
+    return {
+      status: 'warn',
+      severity: 'optional',
+      label: 'semgrep not found (optional)',
+      hint: 'brew install semgrep — or pipx install semgrep / pip install semgrep (required for pre-commit check:semgrep)',
+    };
+  }
+  return {
+    status: 'pass',
+    severity: 'optional',
+    label: 'semgrep',
+    detail: out.split('\n')[0],
+  };
+}
+
+function checkSemgrep() {
+  return evaluateSemgrepCheck({
+    versionOutput: commandOutput('semgrep', ['--version']),
+  });
+}
+
+/**
  * Evaluate optional container-engine readiness for act.
  * Prefers Podman when its daemon is ready (`podmanOk`); otherwise Docker when ready.
  * Matches `resolveContainerEngine()` in scripts/run-act.mjs.
@@ -809,6 +840,7 @@ export function runChecks(options = {}) {
     checkCargoLlvmCov(),
     checkActionlint(),
     checkYamllint(),
+    checkSemgrep(),
     checkDocker(),
     checkAct(),
     ...checkPlaywright(),

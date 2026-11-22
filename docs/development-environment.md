@@ -34,7 +34,7 @@ pnpm run dev
 
 **Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, and platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows).
 
-**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, a Docker-compatible container engine (Podman preferred), act, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, local CI parity, or USB serial on Linux.
+**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, Semgrep, a Docker-compatible container engine (Podman preferred), act, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, pre-commit hooks (Semgrep is required for always-on `check:semgrep`), Reticulum sidecar work, local CI parity, or USB serial on Linux.
 
 Use the printed `→` hints and `setup:*` scripts (`setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
 
@@ -462,6 +462,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                             |
 | `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                    |
 | `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)     |
+| `check:semgrep`                       | Semgrep `auto` + `.semgrep.yml` (research FPs before updating policy)     |
 | `check:silent-catches`                | Detect empty or unlogged catch blocks                                     |
 | `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                  |
 | `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                       |
@@ -570,6 +571,7 @@ Not installed by pnpm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
+- **Semgrep** (required for always-on pre-commit / release / CI `pnpm run check:semgrep`; install via `brew install semgrep` or `pipx install semgrep` / `pip install semgrep`). Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings (especially `--config auto`) may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`).
 - **Rust / `cargo`** (optional; Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/)). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
 - Podman or Docker (Docker-compatible engine) and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without a container engine)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
@@ -682,8 +684,8 @@ pnpm run check:main-bundle
 
 Pre-commit path-gates this when `src/main/` or the esbuild main-build scripts are staged. On
 failure, follow the printed remediation: move bulky code into a sibling esbuild entry, prefer
-externals, analyze the metafile — raise `MAIN_BUNDLE_SIZE_BUDGET_BYTES` only if there is
-absolutely no other way.
+externals, analyze the metafile. **Do not raise** `MAIN_BUNDLE_SIZE_BUDGET_BYTES` unless the
+developer explicitly asks (agents must prompt — see [AGENTS.md](../AGENTS.md) Bundle CI).
 
 To analyze the main process bundle size and composition:
 
@@ -714,7 +716,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
 7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
-8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
+8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:semgrep` (auto + `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:main-bundle` (when `src/main/` or esbuild main-build scripts staged), `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
@@ -777,11 +779,16 @@ These scripts try to install optional tooling automatically. If they fail (for e
    - Install manually via pip: `pip install yamllint`
    - macOS alternative: `brew install yamllint`
    - Linux alternative: `sudo apt install yamllint` (Debian/Ubuntu) or `sudo dnf install yamllint` (Fedora)
-3. Install native build dependencies:
+3. Install Semgrep (required by always-on pre-commit `check:semgrep`):
+   - macOS: `brew install semgrep`
+   - pipx: `pipx install semgrep`
+   - pip: `pip install semgrep`
+   - Policy file [`.semgrep.yml`](../.semgrep.yml) is tracked in git (do not ignore it).
+4. Install native build dependencies:
    - `pnpm run setup:build-deps`
    - Linux/macOS: attempts to install what native builds need (requires sudo where applicable).
    - Windows: prints a message to install Visual Studio Build Tools manually.
-4. (Linux only) Fix serial port permissions:
+5. (Linux only) Fix serial port permissions:
    - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 

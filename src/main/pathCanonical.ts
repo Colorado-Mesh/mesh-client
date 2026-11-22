@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { joinUnderRoot, PathEscapesRootError } from '../shared/pathUnderRoot';
+
 /**
  * Normalize a native picker / dialog absolute path when realpath is not yet possible.
  * Not for root-relative joins — use `joinUnderRoot` / `resolveUnderRoot` instead.
@@ -32,28 +34,13 @@ export function canonicalizePath(candidate: string): string | null {
     try {
       const realParent = fs.realpathSync.native(parent);
       // Ancestor + basename segments are from path.basename of an already-resolved path.
-      return joinUnderRootSafe(realParent, suffix);
-    } catch {
-      // catch-no-log-ok: keep walking toward filesystem root
+      return joinUnderRoot(realParent, ...suffix);
+    } catch (err) {
+      // catch-no-log-ok: keep walking toward filesystem root (PathEscapesRootError is fatal)
+      if (err instanceof PathEscapesRootError) throw err;
       current = parent;
     }
   }
-}
-
-/** Join basename segments under an already-canonical parent (no `..`). */
-function joinUnderRootSafe(root: string, segments: string[]): string {
-  let out = root;
-  for (const segment of segments) {
-    if (!segment || segment === '.' || segment === '..') {
-      throw new Error('invalid path segment during canonicalize');
-    }
-    if (segment.includes('/') || segment.includes('\\') || segment.includes('\0')) {
-      throw new Error('invalid path segment during canonicalize');
-    }
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
-    out = path.join(out, segment);
-  }
-  return out;
 }
 
 /** True when `candidate` is exactly `allowed` after both are canonicalized. */
