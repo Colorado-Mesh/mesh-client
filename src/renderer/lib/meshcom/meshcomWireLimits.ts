@@ -60,7 +60,10 @@ export function meshcomBodyBudgetForChat(opts: {
   return meshcomBodyBudgetBytes(wireDest, { capExtUdp: opts.capExtUdp });
 }
 
-/** Truncate `text` so its UTF-8 length is ≤ `maxBytes` (at least one codepoint when non-empty). */
+/**
+ * Truncate `text` so its UTF-8 length is ≤ `maxBytes`.
+ * A first codepoint that alone exceeds the budget yields `''` (no force-include).
+ */
 export function truncateToWireBytes(text: string, maxBytes: number): string {
   if (maxBytes <= 0) return '';
   if (utf8ByteLength(text) <= maxBytes) return text;
@@ -69,7 +72,7 @@ export function truncateToWireBytes(text: string, maxBytes: number): string {
   let count = 0;
   for (const ch of chars) {
     const chBytes = utf8ByteLength(ch);
-    if (count > 0 && bytes + chBytes > maxBytes) break;
+    if (bytes + chBytes > maxBytes) break;
     bytes += chBytes;
     count++;
   }

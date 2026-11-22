@@ -43,4 +43,10 @@ describe('meshcomWireLimits', () => {
     expect(truncateToWireBytes(eighty, 160)).toBe(eighty);
     expect(truncateToWireBytes('ą'.repeat(81), 160)).toBe(eighty);
   });
+
+  it('returns empty when the first codepoint alone exceeds maxBytes', () => {
+    // 😀 is 4 UTF-8 bytes; a 1-byte budget cannot hold it.
+    expect(truncateToWireBytes('😀', 1)).toBe('');
+    expect(truncateToWireBytes('😀abc', 1)).toBe('');
+  });
 });

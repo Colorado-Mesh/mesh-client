@@ -29,11 +29,27 @@ export interface UseMeshcomDeviceCommandsDeps {
   onSettings?: (snap: MeshcomDeviceSettingsSnapshot) => void;
 }
 
+interface SettingsByConnection {
+  /** `${identityId}:${transport}` that owns `snap`. */
+  key: string;
+  snap: MeshcomDeviceSettingsSnapshot | null;
+}
+
+function connectionSettingsKey(
+  identityId: IdentityId,
+  transport: MeshComDeviceHandle['transport'] | null,
+): string {
+  return `${identityId}:${transport ?? ''}`;
+}
+
 export function useMeshcomDeviceCommands(
   deps: UseMeshcomDeviceCommandsDeps,
 ): MeshcomDeviceCommandsActions {
   const { resolveIdentityId, connectionType, onSettings } = deps;
-  const [settings, setSettings] = useState<MeshcomDeviceSettingsSnapshot | null>(null);
+  const [settingsByConnection, setSettingsByConnection] = useState<SettingsByConnection>({
+    key: '',
+    snap: null,
+  });
 
   const transport = useMemo((): MeshComDeviceHandle['transport'] | null => {
     if (
@@ -49,6 +65,10 @@ export function useMeshcomDeviceCommands(
   }, [connectionType, resolveIdentityId]);
 
   const available = transport === 'serial' || transport === 'ble';
+  const identityId = resolveIdentityId();
+  const settingsKey = connectionSettingsKey(identityId, transport);
+  // Keyed snapshot: when identity/transport changes, expose null without an effect.
+  const settings = settingsByConnection.key === settingsKey ? settingsByConnection.snap : null;
 
   const run = useCallback(
     async (command: string): Promise<{ command: string }> => {
@@ -84,17 +104,39 @@ export function useMeshcomDeviceCommands(
   }, [run]);
 
   const refreshSettings = useCallback(async (): Promise<MeshcomDeviceSettingsSnapshot | null> => {
-    const identityId = resolveIdentityId();
-    const handle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
+    const refreshIdentityId = resolveIdentityId();
+    const handle = connectionDriver.getHandle(refreshIdentityId) as MeshComDeviceHandle | null;
     if (!handle || (handle.transport !== 'serial' && handle.transport !== 'ble')) {
-      setSettings(null);
+      setSettingsByConnection({
+        key: connectionSettingsKey(refreshIdentityId, handle?.transport ?? null),
+        snap: null,
+      });
       return null;
     }
+    const startedTransport = handle.transport;
+    const startedKey = connectionSettingsKey(refreshIdentityId, startedTransport);
     try {
       const { refreshMeshcomDeviceSettings } =
         await import('../../lib/meshcom/refreshMeshcomDeviceSettings');
-      const snap = await refreshMeshcomDeviceSettings(handle, identityId);
-      setSettings(snap);
+      const snap = await refreshMeshcomDeviceSettings(handle, refreshIdentityId);
+      const currentIdentity = resolveIdentityId();
+      const current = connectionDriver.getHandle(currentIdentity) as MeshComDeviceHandle | null;
+      // Do not commit if the user switched radios / transports while the refresh ran.
+      if (
+        currentIdentity !== refreshIdentityId ||
+        !current ||
+        current !== handle ||
+        current.transport !== startedTransport
+      ) {
+        if (!current || (current.transport !== 'serial' && current.transport !== 'ble')) {
+          setSettingsByConnection({
+            key: connectionSettingsKey(currentIdentity, current?.transport ?? null),
+            snap: null,
+          });
+        }
+        return null;
+      }
+      setSettingsByConnection({ key: startedKey, snap });
       onSettings?.(snap);
       console.debug(
         '[useMeshcomDeviceCommands] settings refreshed call=' +

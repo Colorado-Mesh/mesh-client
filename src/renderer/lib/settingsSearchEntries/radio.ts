@@ -933,7 +933,7 @@ const radioEntries: readonly SettingSearchEntry[] = [
     id: 'radio.meshcomCommands.power',
     slot: 'Radio',
     labelKey: 'meshcomDeviceCommands.groups.power',
-    keywords: ['reboot', 'deepsleep', 'ota', 'mesh', 'meshcom'],
+    keywords: ['reboot', 'deepsleep', 'ota', 'mesh', 'meshcom', 'txpower', 'battcal', 'e22pa'],
     visible: hasMeshcomDeviceCommands,
   },
   {

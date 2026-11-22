@@ -12,6 +12,7 @@ import {
   MESHCOM_RM_ONLY_COMMAND_TOKENS,
   type MeshcomCommandDescriptor,
   type MeshcomCommandGroup,
+  normalizeMeshcomCommandInput,
   redactMeshcomCommandForLog,
 } from '../lib/meshcom/meshcomCommands';
 import {
@@ -127,7 +128,9 @@ export default function MeshComDeviceCommandsSection({
 
   const sendNow = useCallback(
     async (command: string): Promise<boolean> => {
-      const blocked = rmStockBlockMessage(command);
+      const line = normalizeMeshcomCommandInput(command);
+      if (!line) return false;
+      const blocked = rmStockBlockMessage(line);
       if (blocked) {
         pushConsole('error', blocked);
         onToast?.(blocked, 'error');
@@ -135,7 +138,7 @@ export default function MeshComDeviceCommandsSection({
       }
       setBusy(true);
       try {
-        const result = await commands.run(command);
+        const result = await commands.run(line);
         pushConsole('sent', redactMeshcomCommandForLog(result.command));
         onToast?.(t('meshcomDeviceCommands.sent'), 'success');
         return true;
@@ -189,7 +192,10 @@ export default function MeshComDeviceCommandsSection({
   const runDescriptor = useCallback(
     async (descriptor: MeshcomCommandDescriptor) => {
       try {
-        const line = buildMeshcomCommandLine(descriptor, argValueOf(descriptor.id));
+        const line = normalizeMeshcomCommandInput(
+          buildMeshcomCommandLine(descriptor, argValueOf(descriptor.id)),
+        );
+        if (!line) return;
         const blocked = rmStockBlockMessage(line);
         if (blocked) {
           pushConsole('error', blocked);
@@ -223,7 +229,7 @@ export default function MeshComDeviceCommandsSection({
   }, [pending, sendNow]);
 
   const runConsole = useCallback(async () => {
-    const line = consoleInput.trim();
+    const line = normalizeMeshcomCommandInput(consoleInput);
     if (!line) return;
     const blocked = rmStockBlockMessage(line);
     if (blocked) {
