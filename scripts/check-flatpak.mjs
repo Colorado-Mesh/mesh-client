@@ -624,6 +624,8 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
   let sawBuildInfoWriter = false;
   let sawDeferredUpload = false;
   let sawDispatchRename = false;
+  let sawArchNamedBundle = false;
+  let sawDirectFlatpakUpload = false;
 
   for (const step of steps) {
     if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
@@ -639,6 +641,13 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
     ) {
       sawDispatchRename = true;
     }
+    if (
+      typeof step.name === 'string' &&
+      step.name.includes('Name Flatpak bundle for direct download') &&
+      run.includes('FLATPAK_ARCH')
+    ) {
+      sawArchNamedBundle = true;
+    }
     const withBlock =
       step.with && typeof step.with === 'object' && !Array.isArray(step.with) ? step.with : null;
     if (
@@ -648,6 +657,16 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
       (withBlock['upload-artifact'] === false || withBlock['upload-artifact'] === 'false')
     ) {
       sawDeferredUpload = true;
+    }
+    if (
+      typeof step.uses === 'string' &&
+      step.uses.includes('upload-artifact@') &&
+      withBlock &&
+      (withBlock.archive === false || withBlock.archive === 'false') &&
+      typeof withBlock.path === 'string' &&
+      withBlock.path.includes('flatpak_bundle.outputs.bundle')
+    ) {
+      sawDirectFlatpakUpload = true;
     }
   }
 
@@ -670,6 +689,20 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
       file: fileLabel,
       message:
         'flatpak.yaml must rename dispatch bundles with rename-test-build-artifacts.mjs --flatpak gated on workflow_dispatch',
+    });
+  }
+  if (!sawArchNamedBundle) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must arch-suffix the bundle basename before archive:false upload (unique per matrix arch)',
+    });
+  }
+  if (!sawDirectFlatpakUpload) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must upload the named bundle with upload-artifact archive: false for direct UI download',
     });
   }
   return violations;

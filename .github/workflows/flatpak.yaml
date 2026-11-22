@@ -271,16 +271,64 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: node scripts/rename-test-build-artifacts.mjs --flatpak .
 
-      # Artifact name ends with .flatpak so publish flatten → flatpak-dist/*.flatpak matches.
+      # archive: false uses the file basename as the artifact name (unique per arch).
+      # Release: org.coloradomesh.MeshClient.flatpak-{arch}.flatpak
+      # Test:    org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak
+      - name: Name Flatpak bundle for direct download
+        id: flatpak_bundle
+        env:
+          FLATPAK_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(org.coloradomesh.MeshClient*.flatpak)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "expected exactly one .flatpak, found ${#files[@]}" >&2
+            printf ' %s\n' "${files[@]:-}" >&2
+            exit 1
+          fi
+          src="${files[0]}"
+          base="$(basename "${src}" .flatpak)"
+          run_suffix=""
+          if [[ "${base}" =~ -run([0-9]+)$ ]]; then
+            run_suffix="-run${BASH_REMATCH[1]}"
+            base="${base%-run*}"
+          fi
+          # Normalize to org.coloradomesh.MeshClient.flatpak-{arch}[-runN].flatpak
+          if [[ "${base}" == "org.coloradomesh.MeshClient" ]]; then
+            base="org.coloradomesh.MeshClient.flatpak"
+          fi
+          dest="${base}-${FLATPAK_ARCH}${run_suffix}.flatpak"
+          if [ "${src}" != "./${dest}" ] && [ "${src}" != "${dest}" ]; then
+            mv "${src}" "${dest}"
+          fi
+          echo "bundle=${dest}" >> "${GITHUB_OUTPUT}"
+          ls -lh "${dest}"
+
       - name: Upload Flatpak bundle
+        id: upload_flatpak
         # actions/upload-artifact v7.0.2
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}.flatpak
-          path: |
-            org.coloradomesh.MeshClient*.flatpak
+          path: ${{ steps.flatpak_bundle.outputs.bundle }}
+          archive: false
           if-no-files-found: error
           retention-days: 30
+
+      - name: Summarize Flatpak download link
+        env:
+          BUNDLE_NAME: ${{ steps.flatpak_bundle.outputs.bundle }}
+          BUNDLE_URL: ${{ steps.upload_flatpak.outputs.artifact-url }}
+          FLATPAK_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Flatpak (${FLATPAK_ARCH}) download"
+            echo
+            echo "- **Bundle:** [${BUNDLE_NAME}](${BUNDLE_URL})"
+            echo
+            echo 'Prefer the link above. gh run download cannot extract archive:false artifacts (see docs/ci-cd.md).'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       # Schema warning beside the bundle for Actions downloads.
       - name: Upload READ-ME-FIRST with Flatpak artifacts
@@ -328,16 +376,19 @@ jobs:
           ref: ${{ github.sha }}
 
       # actions/download-artifact v8.0.2
+      # archive:false uploads use the .flatpak basename as the artifact name; merge into one dir.
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: 'org.coloradomesh.MeshClient.flatpak-*.flatpak'
           path: flatpak-dist
+          merge-multiple: true
 
-      - name: Flatten arch-suffixed bundles for release
+      - name: Assert Flatpak release bundles present
         run: |
           set -euo pipefail
           shopt -s nullglob
+          # Compat: if merge-multiple left per-artifact dirs, flatten once.
           for dir in flatpak-dist/*/; do
             name=$(basename "$dir")
             flatpak=$(find "$dir" -maxdepth 1 -type f -name '*.flatpak' -print -quit)
@@ -350,6 +401,14 @@ jobs:
             rm -rf "$dir"
             mv "$staging" "flatpak-dist/${name}"
           done
+          bundles=(flatpak-dist/org.coloradomesh.MeshClient.flatpak-*.flatpak)
+          if [ "${#bundles[@]}" -lt 1 ]; then
+            echo "no Flatpak bundles in flatpak-dist/" >&2
+            ls -la flatpak-dist >&2 || true
+            exit 1
+          fi
+          printf 'release bundles:\n'
+          ls -lh "${bundles[@]}"
 
       - name: Write reviewed Flatpak builder predicate
         run: |

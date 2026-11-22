@@ -200,7 +200,7 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
 3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
 4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
-5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
+5. Uploads each arch as an **`archive: false`** artifact named `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (test dispatch: `…-{arch}-run{N}.flatpak`) plus per-arch `flatpak-schema-warning-*`
 
 On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`) and attaching the **clean-named** bundles plus attestation with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
@@ -502,7 +502,32 @@ CI focuses on lint, typecheck, build, cheap always-on policy scanners, Flatpak m
 
 The sidecars reach the packaging jobs as tar archives from the same workflow run (`ci-reticulum-staged-{platform}-{arch}` — internal handoff only; not installer downloads). Tar preserves Unix executable permissions; each architecture also carries its own `RESOLVED_SHAS.txt` for the freshly cloned Ratspeak sources. The download action verifies that both platform binaries are staged before Electron packaging. Installer names, signing, updater metadata, and the four packaging smoke jobs remain the same. The existing `reticulum-sidecar.yaml` checks remain independent.
 
-**Actions artifact zip names (installer downloads):** Release keeps `mesh-client-{macos|linux|windows}-{sha}`. Build Binaries (always `workflow_dispatch`) uses the same names with a `test-` prefix (`test-mesh-client-…`) so testers can tell them apart from official packaging runs. Filenames _inside_ those zips still get `-run{N}` on Build Binaries (see below).
+**Actions artifact names (installer downloads):**
+
+| Surface                      | Artifact name                                                   | Notes                                                                                                                        |
+| ---------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Release Electron             | `mesh-client-{macos,linux,windows}-{sha}`                       | Multi-file zip (installers + updater yml)                                                                                    |
+| Build Binaries macOS / Linux | `test-mesh-client-{macos,linux}-{sha}`                          | Multi-file zip; filenames inside stamped `-run{N}`                                                                           |
+| Build Binaries Windows Setup | `Mesh-client-Setup-{version}-run{N}.exe` / `…-run{N}-arm64.exe` | **`archive: false`** — click downloads the NSIS `.exe` directly (unsigned test builds: SmartScreen → More info → Run anyway) |
+| Build Binaries Windows meta  | `test-mesh-client-windows-meta-{sha}`                           | Small zip: `latest.yml` + `READ-ME-FIRST-test-build.md`                                                                      |
+| Build Flatpak                | `org.coloradomesh.MeshClient.flatpak-{arch}[-run{N}].flatpak`   | **`archive: false`** — click downloads the `.flatpak` directly                                                               |
+
+Prefer the job-summary **artifact-url** links (or the Actions Artifacts UI). Do **not** use `gh run download` for `archive: false` Windows Setup / Flatpak uploads — current `gh` always tries to unzip and fails with `zip: not a valid zip file` ([cli/cli#13012](https://github.com/cli/cli/issues/13012)). Zipped artifacts (Release Electron, Build Binaries macOS/Linux, Windows meta) still work with `gh run download`. CLI that saves raw unarchived bytes:
+
+```bash
+id=$(gh api "repos/Colorado-Mesh/mesh-client/actions/runs/<run-id>/artifacts" \
+  --jq '
+    [.artifacts[] | select(.name == "<artifact-name>")]
+    | sort_by(.created_at) | reverse | .[0].id // empty
+  ')
+if [ -z "${id}" ]; then
+  echo "no artifact named <artifact-name> for that run" >&2
+  exit 1
+fi
+gh api "repos/Colorado-Mesh/mesh-client/actions/artifacts/${id}/zip" > "<artifact-name>"
+```
+
+(The Actions API path still ends in `/zip`; for unarchived uploads the body is the raw file. Reruns can leave duplicate names — the jq picks the newest.)
 
 Local `node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin` still runs host tests and builds both architectures. `--arch x64|arm64` selects one target; CI uses `--skip-tests` only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.
 
@@ -547,8 +572,8 @@ User-facing self-check: [troubleshooting-reticulum.md](troubleshooting-reticulum
 | Workflow       | When                       | Filename stamp                                                                                                                                                                                                                            |
 | -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client-Setup-5.26.0-run214.exe`) |
-| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `org.coloradomesh.MeshClient-run{N}.flatpak`, then upload                                                                                                                                                   |
-| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak` (no `-run{N}`)                                                                                                                                                                                |
+| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke + arch suffix: `org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak` (`archive: false` artifact name = basename)                                                                                                 |
+| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (no `-run{N}`; same basename as the Actions artifact / release asset)                                                                                                          |
 | `release.yaml` | tag publish                | Clean electron-builder names (no rename step)                                                                                                                                                                                             |
 
 `packaging-smoke` on Build Binaries downloads **stamped** names (Windows Setup matcher accepts default or `-run{N}`). Flatpak smoke always uses the unstamped local path **before** rename. Manual Flatpak runs use Actions run title **`Build Flatpak (no release)`**; tag runs use **`Build Flatpak`**.

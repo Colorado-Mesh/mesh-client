@@ -11,6 +11,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
 const SETUP_NODE_SHA = '249970729cb0ef3589644e2896645e5dc5ba9c38';
 const DOWNLOAD_ARTIFACT_V7_SHA = '37930b1c2abaa49bbe596cd826c3c89aef350131';
+const DOWNLOAD_ARTIFACT_V8_SHA = '9000827ccba6bdab643e8b6fd33ac0654aef8333';
 /** pnpm/action-setup v6.1.0 — required for pnpm 12 native bootstrap (esp. Windows). */
 const PNPM_ACTION_SETUP_SHA = 'ea17c68df8912ef543352723c149a84f56e3d413';
 const ACTION_CONFIG_ROOTS = ['.github/workflows', '.github/actions'];
@@ -475,6 +476,44 @@ describe('CI workflow contracts', () => {
     }
     expect(read('.github/workflows/build.yaml')).toContain('assert-win-setup-installers.mjs');
     expect(read('.github/workflows/release.yaml')).toContain('assert-win-setup-installers.mjs');
+  });
+
+  it('uploads Windows Setup installers as archive:false direct-download artifacts', () => {
+    const workflow = load(read('.github/workflows/build.yaml'));
+    const buildSteps = workflow.jobs.build.steps;
+    const resolve = buildSteps.find(
+      (step) => step.name === 'Resolve Windows Setup paths for upload',
+    );
+    expect(resolve?.if).toBe("matrix.os == 'windows-latest'");
+    expect(resolve?.run).toContain('assertWinSetupInstallers');
+
+    const x64 = buildSteps.find(
+      (step) => step.name === 'Upload Windows x64 Setup (direct download)',
+    );
+    expect(x64?.with?.archive).toBe(false);
+    expect(x64?.with?.path).toContain('win_setup.outputs.x64');
+
+    const arm64 = buildSteps.find(
+      (step) => step.name === 'Upload Windows arm64 Setup (direct download)',
+    );
+    expect(arm64?.with?.archive).toBe(false);
+    expect(arm64?.with?.path).toContain('win_setup.outputs.arm64');
+
+    const meta = buildSteps.find(
+      (step) => step.name === 'Upload Windows meta (latest.yml + README)',
+    );
+    expect(meta?.with?.name).toContain('test-mesh-client-windows-meta-');
+    expect(meta?.with?.archive).toBeUndefined();
+
+    const smokeSteps = workflow.jobs['packaging-smoke'].steps;
+    const setupDl = smokeSteps.find((step) => step.name === 'Download Windows Setup installers');
+    expect(setupDl?.uses).toContain(`actions/download-artifact@${DOWNLOAD_ARTIFACT_V8_SHA}`);
+    expect(setupDl?.with?.pattern).toBe('Mesh-client-Setup-*');
+    expect(setupDl?.with?.['merge-multiple']).toBe(true);
+
+    const metaDl = smokeSteps.find((step) => step.name === 'Download Windows meta artifact');
+    expect(metaDl?.uses).toContain(`actions/download-artifact@${DOWNLOAD_ARTIFACT_V8_SHA}`);
+    expect(metaDl?.with?.name).toContain('test-mesh-client-windows-meta-');
   });
 
   it('requires macOS signing and notarization for every release path', () => {
