@@ -24,6 +24,7 @@ export function meshcomWatchlistBaseCall(raw: string): string {
 
 const EMPTY_WATCHLIST: readonly string[] = Object.freeze([]);
 let cachedWatchlist: readonly string[] = EMPTY_WATCHLIST;
+let watchlistStorageSynced = false;
 
 function sameWatchlist(a: readonly string[], b: readonly string[]): boolean {
   if (a === b) return true;
@@ -59,18 +60,30 @@ function cacheWatchlist(next: string[]): readonly string[] {
   return cachedWatchlist;
 }
 
-/** Stable snapshot for `useSyncExternalStore` (same reference when contents unchanged). */
-export function getMeshcomCallsignWatchlist(): readonly string[] {
+function syncWatchlistFromStorage(): void {
   try {
     const settings = parseStoredJson<Record<string, unknown>>(
       getAppSettingsRaw(),
       'meshcom callsign watchlist',
     );
-    return cacheWatchlist(normalizeWatchlist(settings?.[MESHCOM_CALLSIGN_WATCHLIST_KEY]));
+    cacheWatchlist(normalizeWatchlist(settings?.[MESHCOM_CALLSIGN_WATCHLIST_KEY]));
+    watchlistStorageSynced = true;
   } catch {
-    // catch-no-log-ok blocked storage must not break ingest
-    return cacheWatchlist([]);
+    // catch-no-log-ok blocked storage must not break ingest; leave unsynced so later reads retry
+    cacheWatchlist([]);
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('mesh-client:appSettings', () => {
+    watchlistStorageSynced = false;
+  });
+}
+
+/** Stable snapshot for `useSyncExternalStore` (same reference when contents unchanged). */
+export function getMeshcomCallsignWatchlist(): readonly string[] {
+  if (!watchlistStorageSynced) syncWatchlistFromStorage();
+  return cachedWatchlist;
 }
 
 let revision = 0;
@@ -91,14 +104,16 @@ export function subscribeMeshcomCallsignWatchlist(listener: () => void): () => v
 export function saveMeshcomCallsignWatchlist(callsigns: readonly string[]): Promise<void> {
   revision++;
   const normalized = normalizeWatchlist([...callsigns]);
-  cacheWatchlist(normalized);
-  notify();
   const save = writes.then(async () => {
     await window.electronAPI.appSettings.set(
       MESHCOM_CALLSIGN_WATCHLIST_KEY,
       JSON.stringify(normalized),
     );
+    const prev = cachedWatchlist;
     mergeAppSetting(MESHCOM_CALLSIGN_WATCHLIST_KEY, normalized, 'meshcom callsign watchlist save');
+    cacheWatchlist(normalized);
+    watchlistStorageSynced = true;
+    if (!sameWatchlist(prev, cachedWatchlist)) notify();
   });
   writes = save.catch(() => {
     // catch-no-log-ok caller surfaces errors; keep next write usable
@@ -117,6 +132,7 @@ export async function loadMeshcomCallsignWatchlist(): Promise<void> {
   const normalized = normalizeWatchlist(stored);
   const prev = cachedWatchlist;
   cacheWatchlist(normalized);
+  watchlistStorageSynced = true;
   mergeAppSetting(MESHCOM_CALLSIGN_WATCHLIST_KEY, normalized, 'meshcom callsign watchlist hydrate');
   if (!sameWatchlist(prev, cachedWatchlist)) notify();
 }
@@ -163,4 +179,5 @@ export function maybeAlertMeshcomWatchlistCallsign(callsign: string): boolean {
 export function resetMeshcomCallsignWatchlistAlertsForTests(): void {
   lastAlertAtByBase.clear();
   cachedWatchlist = EMPTY_WATCHLIST;
+  watchlistStorageSynced = false;
 }

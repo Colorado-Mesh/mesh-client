@@ -13,6 +13,7 @@ describe('meshcomNetworkTime', () => {
 
   it('records {CET} beacon text as network time', () => {
     expect(noteMeshcomNetworkTimeFromText('hello')).toBe(false);
+    expect(noteMeshcomNetworkTimeFromText('chat mentions {CET} mid-message')).toBe(false);
     expect(getMeshcomNetworkTime()).toBeNull();
     expect(noteMeshcomNetworkTimeFromText('{CET}2026-11-21 20:15:00')).toBe(true);
     const snap = getMeshcomNetworkTime();

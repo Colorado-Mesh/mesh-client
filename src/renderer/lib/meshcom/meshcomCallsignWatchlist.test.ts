@@ -30,6 +30,7 @@ import {
   getMeshcomCallsignWatchlist,
   isMeshcomWatchlistCallsign,
   maybeAlertMeshcomWatchlistCallsign,
+  MESHCOM_CALLSIGN_WATCHLIST_KEY,
   meshcomWatchlistBaseCall,
   resetMeshcomCallsignWatchlistAlertsForTests,
   saveMeshcomCallsignWatchlist,
@@ -60,6 +61,26 @@ describe('meshcomCallsignWatchlist', () => {
     expect(getMeshcomCallsignWatchlist()).toEqual(['OE1ABC', 'DL1XYZ']);
     expect(isMeshcomWatchlistCallsign('OE1ABC-99')).toBe(true);
     expect(isMeshcomWatchlistCallsign('W1AW-1')).toBe(false);
+  });
+
+  it('retries watchlist read after blocked storage recovers', () => {
+    mergeAppSetting(MESHCOM_CALLSIGN_WATCHLIST_KEY, ['KEEP']);
+    getAppSettingsRaw.mockImplementationOnce(() => {
+      throw new Error('blocked');
+    });
+    expect(getMeshcomCallsignWatchlist()).toEqual([]);
+    getAppSettingsRaw.mockReturnValue(
+      JSON.stringify({ [MESHCOM_CALLSIGN_WATCHLIST_KEY]: ['KEEP'] }),
+    );
+    expect(getMeshcomCallsignWatchlist()).toEqual(['KEEP']);
+  });
+
+  it('rolls back cached watchlist when appSettings.set rejects', async () => {
+    mergeAppSetting(MESHCOM_CALLSIGN_WATCHLIST_KEY, ['KEEP']);
+    expect(getMeshcomCallsignWatchlist()).toEqual(['KEEP']);
+    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('disk full'));
+    await expect(saveMeshcomCallsignWatchlist(['NEW'])).rejects.toThrow('disk full');
+    expect(getMeshcomCallsignWatchlist()).toEqual(['KEEP']);
   });
 
   it('alerts once per cooldown window', async () => {

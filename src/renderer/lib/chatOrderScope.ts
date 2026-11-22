@@ -48,11 +48,20 @@ export function migrateLegacyChatOrderScope(protocol: string, nodeScope: string)
         console.warn('[chatOrderScope] verify dest key failed ' + errLikeToLogString(error));
         continue;
       }
+      try {
+        localStorage.removeItem(fromKey);
+      } catch (error) {
+        console.warn('[chatOrderScope] remove legacy key failed ' + errLikeToLogString(error));
+      }
+      continue;
     }
     try {
-      localStorage.removeItem(fromKey);
+      const destRaw = localStorage.getItem(toKey);
+      if (destRaw === raw) {
+        localStorage.removeItem(fromKey);
+      }
     } catch (error) {
-      console.warn('[chatOrderScope] remove legacy key failed ' + errLikeToLogString(error));
+      console.warn('[chatOrderScope] compare dest key failed ' + errLikeToLogString(error));
     }
   }
 }

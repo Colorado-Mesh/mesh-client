@@ -58,6 +58,10 @@ Capability `hasMeshcomDeviceCommands` also unlocks the **Radio** tab (`TAB_CAPAB
 
 Radio → **Device Configuration** renders first-class sections (Display, Position / GPS, Sensors, Identity & groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status & debug, Power & OTA, KISS / misc) from the catalog in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts). UI: [`MeshComDeviceCommandsSection.tsx`](../../src/renderer/components/MeshComDeviceCommandsSection.tsx). Wire: Serial CRLF or BLE `0xA0` via [`meshcomDeviceCommands.ts`](../../src/renderer/lib/meshcom/meshcomDeviceCommands.ts). EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).
 
+### Serial / BLE command badges
+
+Each catalog row carries a `channel` in [`meshcomCommands.ts`](../../src/renderer/lib/meshcom/meshcomCommands.ts): **`app`** means the command can be sent from Serial **and** the BLE companion (`0xA0`); the Device Configuration UI labels these as App+Serial. **`serial`** is reserved for USB-console-only entries (none in the current ICSSW catalog). `meshcomCommandWire.ts` stays in the hot App path; load the full catalog only from the lazy Radio panel.
+
 - **Read on connect**: after Serial/BLE attach, `refreshMeshcomDeviceSettings` loads the node’s current values — Serial via `--info` text parse + `--wx` weather dump, BLE via `{HELLO}` companion JSON (`TYP` I/SN/SW/G/SA/W/… then `CONFFIN`) with `--info` / `--wx` fallback. Firmware waits ~3s after HELLO before draining the config burst, so the BLE `CONFFIN` wait is 15s. Snapshot prefills Device User / Country and Radio command rows (`meshcomDeviceSettings.ts`) and seeds Telemetry.
 - **Country Apply** (above Device Configuration) saves `meshcomCountryCode` and, on Serial/BLE, sends `--setctry <code>` (reboots after ~15s on the node).
 - **Auto `--settime`**: app setting `meshcomAutoSettime` (default off). When enabled, after each Serial/BLE connect the runtime sends `--settime yyyy.mm.dd hh:mm:ss` in host UTC.
@@ -69,11 +73,11 @@ ICSSW [dynamic telemetry compilation](https://icssw.org/en/telemetrie-dynamisch-
 
 ## Callsign watchlist
 
-App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching `msg`/`pos` (`node_info`), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).
+App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching **`msg`** or **`pos`** (not bare `node_info` POS refreshes), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).
 
 ## Network time liveness
 
-Inbound text containing `{CET}` (gateway/network clock, ~every 5 minutes) updates [`meshcomNetworkTime.ts`](../../src/renderer/lib/meshcom/meshcomNetworkTime.ts). Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).
+Inbound text whose payload **starts with** `{CET}` (gateway/network clock, ~every 5 minutes — firmware prefix match) updates [`meshcomNetworkTime.ts`](../../src/renderer/lib/meshcom/meshcomNetworkTime.ts). Live traffic: `PacketRouter` records the beacon and skips the message store; ingest only drops `{CET}` rows that arrive as in-memory **`text_message`** events (it does not delete SQLite/history). **Hydration** copies stored messages straight into the message store, so legacy `{CET}` rows saved before this filter may still appear in chat after restart until manually cleared or aged out. Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).
 
 ## MeshMap (meshmap.oevsv.at)
 

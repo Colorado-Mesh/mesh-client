@@ -34,6 +34,7 @@ import {
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { isLoraSenderBlocked } from '../loraBlocklist';
+import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { nextMeshcoreMessageLocalOrder } from '../meshcoreMessageOrder';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
@@ -207,6 +208,10 @@ class PacketRouter {
         const isMeshtastic = protocolType === 'meshtastic';
         // Fully blocked LoRa sender: never stored, persisted, alerted, or seen by MECP.
         if (protocolType && isLoraSenderBlocked(protocolType, event.payload.from)) {
+          skipListeners = true;
+          break;
+        }
+        if (protocolType === 'meshcom' && noteMeshcomNetworkTimeFromText(event.payload.payload)) {
           skipListeners = true;
           break;
         }

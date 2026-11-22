@@ -1,20 +1,15 @@
 #!/bin/sh
 # Strip Co-authored-by trailers — cloud/editor integrations may add them; this repo rejects them on PRs.
 # sed -i without a suffix is GNU-only; macOS/BSD sed needs an explicit backup extension.
-case "$2" in
-  merge | squash | commit) ;;
-  *)
-    if [ -f "$1" ]; then
-      if sed -i.bak '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"; then
-        rm -f "$1.bak"
-      else
-        status=$?
-        # Keep the backup (and restore it if sed removed the original message file).
-        if [ ! -f "$1" ] && [ -f "$1.bak" ]; then
-          mv "$1.bak" "$1"
-        fi
-        exit "$status"
-      fi
+if [ -f "$1" ]; then
+  if sed -i.bak '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"; then
+    rm -f "$1.bak"
+  else
+    status=$?
+    # Keep the backup (and restore it if sed removed the original message file).
+    if [ ! -f "$1" ] && [ -f "$1.bak" ]; then
+      mv "$1.bak" "$1"
     fi
-    ;;
-esac
+    exit "$status"
+  fi
+fi
