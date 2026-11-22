@@ -22,6 +22,8 @@ vi.mock('../../serialPortRecovery', () => ({
   openSerialPortWithTimeout: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { releaseConflictingSerialSessions } from '../../serialPortClaim';
+
 vi.mock('../../serialPortSignature', () => ({
   persistSerialPortIdentity: vi.fn(),
   selectGrantedSerialPort: vi.fn(),
@@ -167,7 +169,11 @@ describe('MeshComTransport', () => {
     });
 
     const conn = await createMeshComConnection({ transport: 'serial' });
+    expect(releaseConflictingSerialSessions).toHaveBeenCalledWith('meshcom', port);
     expect(openMock).toHaveBeenCalledWith(port, 115200, 'MeshCom serial open');
+    expect(vi.mocked(releaseConflictingSerialSessions).mock.invocationCallOrder[0]).toBeLessThan(
+      openMock.mock.invocationCallOrder[0],
+    );
 
     const onData = vi.fn();
     conn.onData = onData;

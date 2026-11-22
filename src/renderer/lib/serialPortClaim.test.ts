@@ -151,4 +151,37 @@ describe('serialPortClaim', () => {
     expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshcore');
     expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshcom');
   });
+
+  it('MeshCore claim releases Meshtastic before open would see a locked port (bundle regression)', async () => {
+    // Reproduces developer-bundle timeline: Meshtastic auto-open holds COM2 streams;
+    // MeshCore select then open must yield Meshtastic first or Chromium throws already-open.
+    const shared = makePort({ usbVendorId: 12346, usbProductId: 4097 });
+    let meshtasticStillHolding = true;
+    const releaseHold = vi.fn(() => {
+      meshtasticStillHolding = false;
+      return Promise.resolve();
+    });
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => meshtasticStillHolding,
+      getOpenSerialPort: () => (meshtasticStillHolding ? shared : null),
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    const open = vi.fn(() => {
+      if (meshtasticStillHolding) {
+        return Promise.reject(
+          new Error("Failed to execute 'open' on 'SerialPort': The port is already open."),
+        );
+      }
+      return Promise.resolve();
+    });
+
+    await expect(open()).rejects.toThrow(/already open/);
+
+    await releaseConflictingSerialSessions('meshcore', shared);
+    expect(releaseHold).toHaveBeenCalledTimes(1);
+    expect(meshtasticStillHolding).toBe(false);
+    await expect(open()).resolves.toBeUndefined();
+  });
 });
