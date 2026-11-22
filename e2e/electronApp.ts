@@ -214,9 +214,9 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
     }
 
     await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
-    await page
-      .getByRole('radiogroup', { name: 'Protocol switcher' })
-      .waitFor({ state: 'visible', timeout: 45_000 });
+    // The app shell, not the protocol switcher: the switcher is hidden when only one protocol
+    // is enabled (a profile the first-run picker can produce).
+    await page.locator('[data-app-shell]').waitFor({ state: 'visible', timeout: 45_000 });
 
     return launched;
   } catch (err) {
