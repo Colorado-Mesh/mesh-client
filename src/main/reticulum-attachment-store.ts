@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import fs from 'fs';
 
 import { joinUnderRoot } from '../shared/pathUnderRoot';
@@ -38,11 +39,8 @@ export async function writeReticulumAttachmentCacheFile(
     await fs.promises.writeFile(resolved, data, { flag: 'wx', mode: 0o600 });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
-    // Same-millisecond twin: disambiguate rather than clobber.
-    const alt = joinUnderRoot(
-      dir,
-      `${now}-${Math.random().toString(36).slice(2, 8)}-${plan.fileName}`,
-    );
+    // Same-millisecond twin: disambiguate rather than clobber (crypto random, not Math.random).
+    const alt = joinUnderRoot(dir, `${now}-${randomBytes(4).toString('hex')}-${plan.fileName}`);
     await fs.promises.writeFile(alt, data, { flag: 'wx', mode: 0o600 });
     return { path: alt, quarantined: plan.quarantined };
   }

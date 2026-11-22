@@ -37,6 +37,8 @@ describe('check:semgrep gate', () => {
     expect(wrapper).toMatch(/false-positive/i);
     expect(wrapper).toMatch(/\.semgrep\.yml/);
     expect(wrapper).toMatch(/Research the rule/i);
+    expect(wrapper).toMatch(/Semgrep fixes vs ESLint/i);
+    expect(wrapper).toMatch(/do not replace eslint/i);
     expect(policy).toMatch(/false positives/i);
     expect(policy).toMatch(/Tracked in git/);
   });
@@ -52,5 +54,17 @@ describe('check:semgrep gate', () => {
   it('package.json exposes check:semgrep', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
     expect(pkg.scripts['check:semgrep']).toBe('node scripts/check-semgrep.mjs');
+  });
+
+  it('runs auto + p/nodejs + .semgrep.yml', () => {
+    const wrapper = fs.readFileSync(CHECK_SEMGREP, 'utf8');
+    expect(wrapper).toMatch(/--config',\s*'auto'/);
+    expect(wrapper).toMatch(/--config',\s*'p\/nodejs'/);
+    expect(wrapper).toMatch(/--config',\s*'\.semgrep\.yml'/);
+    const policy = fs.readFileSync(SEMGREP_YML, 'utf8');
+    expect(policy).toMatch(/mesh-client-aes-gcm-auth-tag-length/);
+    expect(policy).toMatch(/mesh-client-electron-node-integration-true/);
+    expect(policy).toMatch(/mesh-client-no-weak-hash/);
+    expect(policy).toMatch(/mesh-client-main-no-math-random/);
   });
 });

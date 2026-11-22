@@ -3,7 +3,10 @@
  * Semgrep gate (pre-commit / release / CI).
  *
  * Runs the same scan agents and humans use locally:
- *   semgrep scan --config auto --config .semgrep.yml --error
+ *   semgrep scan --config auto --config p/nodejs --config .semgrep.yml --error
+ *
+ * `p/nodejs` is belt-and-suspenders beyond `auto` (currently clean on this tree).
+ * Custom Electron/crypto rules live in `.semgrep.yml`.
  *
  * ## When a finding looks wrong
  *
@@ -19,6 +22,19 @@
  *    `.semgrep.yml` (tighten/relax a custom rule, or document an intentional
  *    policy) and/or add a **narrow** `// nosemgrep: <rule-id> -- <reason>` on
  *    the validated sink. Never blanket-ignore a rule for convenience.
+ *
+ * ## Semgrep fixes vs ESLint (same files, different tools)
+ *
+ * After changing code for Semgrep, run ESLint on those paths before commit —
+ * pre-commit will fail on the same fallout. Common collisions:
+ *
+ * - **non-literal-regexp:** stack BOTH suppressions (do not replace eslint with
+ *   nosemgrep). Pattern used in-tree:
+ *     // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+ *     return new RegExp(...); // eslint-disable-line security/detect-non-literal-regexp -- <reason>
+ * - **path → joinUnderRoot / resolveUnderRoot:** remove unused `path` imports.
+ * - **unsafe-formatstring (`%s` / `%d`):** literal format string; `%d` needs a
+ *   number, `%s` a string — satisfies restrict-plus-operands too.
  *
  * Catch-block hygiene is owned by `pnpm run check:silent-catches`, not by a
  * naive catch regex in `.semgrep.yml`.
@@ -62,7 +78,16 @@ function main() {
     process.exit(1);
   }
 
-  const args = ['scan', '--config', 'auto', '--config', '.semgrep.yml', '--error'];
+  const args = [
+    'scan',
+    '--config',
+    'auto',
+    '--config',
+    'p/nodejs',
+    '--config',
+    '.semgrep.yml',
+    '--error',
+  ];
   console.error(`check-semgrep: ${bin} ${args.join(' ')}`);
   const result = spawnSync(bin, args, {
     cwd: ROOT,

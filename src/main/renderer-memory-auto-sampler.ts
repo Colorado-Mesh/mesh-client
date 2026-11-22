@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import type { BrowserWindow } from 'electron';
 
 import {
@@ -9,6 +10,11 @@ import type { NodeSqliteDB } from './db-compat';
 import { insertRendererMemorySample } from './renderer-memory-samples';
 import { rendererProcessMemoryBytes } from './rendererProcessMemory';
 import { sanitizeLogMessage } from './sanitize-log-message';
+
+/** Unit interval in [0, 1) for sampler jitter — crypto random, not Math.random. */
+function unitIntervalRandom(): number {
+  return randomInt(0, 1_000_000) / 1_000_000;
+}
 
 export { RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL, type RendererMemoryAutoSamplePayload };
 
@@ -31,7 +37,7 @@ export interface RendererMemoryAutoSamplerDeps {
 
 export function createRendererMemoryAutoSampler(deps: RendererMemoryAutoSamplerDeps) {
   const now = deps.now ?? Date.now;
-  const random = deps.random ?? Math.random;
+  const random = deps.random ?? unitIntervalRandom;
   const intervalMs = deps.intervalMs ?? RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS;
   const initialDelayMs = deps.initialDelayMs ?? RENDERER_MEMORY_AUTO_SAMPLE_INITIAL_DELAY_MS;
   const schedule: (fn: () => void, ms: number) => unknown =
