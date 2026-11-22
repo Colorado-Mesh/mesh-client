@@ -4,22 +4,25 @@ import {
   selectEnvironmentSeries,
   useEnvironmentTelemetryStore,
 } from '../../stores/environmentTelemetryStore';
+import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { clearMeshcomCallRegistry, registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
 import { callsignToNodeId } from '../meshcom/meshcomCallsign';
+import * as meshcomCallsignWatchlist from '../meshcom/meshcomCallsignWatchlist';
 import {
   clearAllMeshcomLocallyDeletedContactsForTests,
   markMeshcomLocallyDeletedContact,
 } from '../meshcom/meshcomLocallyDeletedContacts';
+import {
+  getMeshcomNetworkTime,
+  resetMeshcomNetworkTimeForTests,
+} from '../meshcom/meshcomNetworkTime';
+import { meshcomProtocol } from '../protocols/MeshComProtocol';
 import { clearRadioSelfPosition, readRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord } from '../storeRecordAdapters';
-import {
-  attachMeshcomIngest,
-  ingestMeshcomExtUdpFrame,
-  meshcomIngestHandleTextMessage,
-} from './meshcomIngest';
+import { attachMeshcomIngest, meshcomIngestHandleTextMessage } from './meshcomIngest';
 
 vi.mock('../dbPersistRetry', () => ({
   persistDbWrite: (_label: string, fn: () => unknown) => {
@@ -31,6 +34,7 @@ const ID = 'offline-meshcom';
 
 describe('meshcomIngest', () => {
   beforeEach(() => {
+    resetMeshcomNetworkTimeForTests();
     clearAllMeshcomLocallyDeletedContactsForTests();
     clearMeshcomCallRegistry();
     vi.spyOn(window.electronAPI.db, 'saveMeshcomMessage')
@@ -49,26 +53,6 @@ describe('meshcomIngest', () => {
     const detach = attachMeshcomIngest(ID);
     expect(typeof detach).toBe('function');
     detach();
-  });
-
-  it('ingestMeshcomExtUdpFrame persists a msg frame', () => {
-    ingestMeshcomExtUdpFrame(ID, {
-      type: 'msg',
-      src: 'OE1KFR-1',
-      dst: '*',
-      msg: 'cq',
-      msg_id: 'abc123',
-      rssi: -90,
-      snr: 5,
-      hw_id: 1,
-    });
-    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalled();
-    expect(window.electronAPI.db.saveMeshcomContact).toHaveBeenCalledWith(
-      expect.objectContaining({
-        callsign: 'OE1KFR-1',
-        node_id: callsignToNodeId('OE1KFR-1'),
-      }),
-    );
   });
 
   it('text_message persist path writes via electronAPI.db.saveMeshcomMessage', () => {
@@ -168,6 +152,102 @@ describe('meshcomIngest', () => {
     );
   });
 
+  it('keeps chat lines that mention {CET} but are not beacons', () => {
+    const from = callsignToNodeId('OE3BEF-1');
+    const msgId = 'meshcom-cet-negative';
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: msgId,
+        sender_id: from,
+        sender_name: 'OE3BEF-1',
+        payload: 'FYI gateway sends {CET} beacons',
+        channel: 0,
+        timestamp: Date.now(),
+      }),
+    );
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from,
+          to: 0,
+          payload: 'FYI gateway sends {CET} beacons',
+          channelIndex: 0,
+          timestamp: Date.now(),
+        },
+      },
+      { getMyNodeNum: () => 0 },
+    );
+    expect(useMessageStore.getState().messages[ID][msgId]).toBeDefined();
+    expect(getMeshcomNetworkTime()).toBeNull();
+  });
+
+  it('strips prefix {CET} beacons in ingest after PacketRouter skipped the store write', () => {
+    const from = callsignToNodeId('GW1-1');
+    const msgId = 'meshcom-cet-beacon';
+    // Rare path when a row exists before ingest deletes it.
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: msgId,
+        sender_id: from,
+        sender_name: 'GW1-1',
+        payload: '{CET}2026-11-21 20:15:00',
+        channel: 0,
+        timestamp: Date.now(),
+      }),
+    );
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from,
+          to: 0,
+          payload: '{CET}2026-11-21 20:15:00',
+          channelIndex: 0,
+          timestamp: Date.now(),
+        },
+      },
+      { getMyNodeNum: () => 0 },
+    );
+    expect(useMessageStore.getState().messages[ID][msgId]).toBeUndefined();
+    expect(getMeshcomNetworkTime()).toMatchObject({ text: '2026-11-21 20:15:00' });
+  });
+
+  it('PacketRouter does not store MeshCom {CET} prefix beacons', () => {
+    const meshcomId = 'meshcom-packet-router-cet';
+    addIdentity({
+      id: meshcomId,
+      protocol: meshcomProtocol,
+      signature: 'sig',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    const msgId = 'cet-only';
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from: 1,
+          to: 0,
+          payload: '{CET}2026-11-21 20:15:00',
+          channelIndex: 0,
+          timestamp: Date.now(),
+        },
+      },
+      meshcomId,
+    );
+    expect(useMessageStore.getState().messages[meshcomId]).toBeUndefined();
+    expect(getMeshcomNetworkTime()).toMatchObject({ text: '2026-11-21 20:15:00' });
+  });
+
   it('packetRouter text_message reaches ingest when attached', () => {
     const from = callsignToNodeId('OE3BEF-1');
     const msgId = 'meshcom-router-1';
@@ -228,6 +308,28 @@ describe('meshcomIngest', () => {
       ID,
     );
     expect(readRadioSelfPosition('meshcom')).toMatchObject({ lat: 48.2, lon: 16.37 });
+    detach();
+  });
+
+  it('does not watchlist-alert on bare node_info refreshes', () => {
+    const call = 'OE9XYZ-7';
+    const nodeId = callsignToNodeId(call);
+    const alert = vi.spyOn(meshcomCallsignWatchlist, 'maybeAlertMeshcomWatchlistCallsign');
+    const detach = attachMeshcomIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: {
+          nodeId,
+          longName: call,
+          shortName: 'OE9X',
+          lastHeardAt: 1_700_000_100,
+        },
+      },
+      ID,
+    );
+    expect(alert).not.toHaveBeenCalled();
+    alert.mockRestore();
     detach();
   });
 

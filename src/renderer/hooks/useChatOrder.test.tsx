@@ -144,6 +144,77 @@ describe('chat display order', () => {
     setItem.mockRestore();
   });
 
+  it('keeps pending when scope flush fails and retries after persistence toggles', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key) => {
+      if (key === 'mesh-client:chatOrder:meshcore:7:channels') {
+        throw new Error('quota');
+      }
+    });
+    const { result, rerender } = renderHook(
+      ({ scope, entries }: { scope: string | null; entries: typeof items }) =>
+        useChatOrder(scope, entries),
+      { initialProps: { scope: null as string | null, entries: items } },
+    );
+    act(() => {
+      result.current.save(['3', '1', '2']);
+    });
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    expect(result.current.ids).toEqual(['3', '1', '2']);
+    expect(localStorage.getItem('mesh-client:chatOrder:meshcore:7:channels')).toBeNull();
+    setItem.mockRestore();
+    rerender({ scope: null, entries: items });
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    expect(localStorage.getItem('mesh-client:chatOrder:meshcore:7:channels')).toBe(
+      JSON.stringify(['3', '1', '2']),
+    );
+  });
+
+  it('clears stale pending after a persisted save succeeds', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key) => {
+      if (key === 'mesh-client:chatOrder:meshcore:7:channels') {
+        throw new Error('quota');
+      }
+    });
+    const { result, rerender } = renderHook(
+      ({ scope, entries }: { scope: string | null; entries: typeof items }) =>
+        useChatOrder(scope, entries),
+      { initialProps: { scope: null as string | null, entries: items } },
+    );
+    act(() => {
+      result.current.save(['3', '1', '2']);
+    });
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    setItem.mockRestore();
+    act(() => {
+      result.current.save(['1', '3', '2']);
+    });
+    expect(localStorage.getItem('mesh-client:chatOrder:meshcore:7:channels')).toBe(
+      JSON.stringify(['1', '3', '2']),
+    );
+    rerender({ scope: null, entries: items });
+    rerender({ scope: 'meshcore:7:channels', entries: items });
+    expect(result.current.ids).toEqual(['1', '3', '2']);
+  });
+
+  it('re-reads storage when persistence transitions false to true on the same scope', () => {
+    const scopeKey = 'meshcom:42:channels' as string | null;
+    localStorage.setItem(
+      `mesh-client:chatOrder:meshcom:42:channels`,
+      JSON.stringify(['3', '1', '2']),
+    );
+    const { result, rerender } = renderHook(({ scopeKey: key }) => useChatOrder(key, items), {
+      initialProps: { scopeKey },
+    });
+    expect(result.current.ids).toEqual(['3', '1', '2']);
+    rerender({ scopeKey: null });
+    localStorage.setItem(
+      `mesh-client:chatOrder:meshcom:42:channels`,
+      JSON.stringify(['2', '3', '1']),
+    );
+    rerender({ scopeKey: 'meshcom:42:channels' });
+    expect(result.current.ids).toEqual(['2', '3', '1']);
+  });
+
   it('preserves absent entries in their prior slots while reordering visible entries', () => {
     localStorage.setItem('mesh-client:chatOrder:test', JSON.stringify(['2', '1', '3']));
     const { result, rerender } = renderHook(({ entries }) => useChatOrder('test', entries), {

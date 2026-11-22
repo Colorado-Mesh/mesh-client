@@ -199,8 +199,8 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
 3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
-4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
-5. Uploads each arch as an **`archive: false`** artifact named `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (test dispatch: `…-{arch}-run{N}.flatpak`) plus per-arch `flatpak-schema-warning-*`
+4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames the **intermediate** smoke-install basename to `org.coloradomesh.MeshClient-run{N}.flatpak` (repo-root intermediate — not the Actions artifact name).
+5. Uploads each arch as an **`archive: false`** artifact whose **final** basename is `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (test dispatch: `org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak`) plus per-arch `flatpak-schema-warning-*`
 
 On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`) and attaching the **clean-named** bundles plus attestation with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 

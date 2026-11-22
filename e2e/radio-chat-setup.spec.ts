@@ -177,7 +177,7 @@ test('fresh opt-in defaults, radio import/sync, drag/A–Z and restart persisten
   expect(launched.crashed).toBe(false);
 });
 
-test('shared DM ordering works across protocols, reload, keyboard and touch', async () => {
+test('same-session DM tab order across protocols with keyboard and touch reorder', async () => {
   const testInfo = test.info();
   test.setTimeout(120_000);
   launched = await launchApp();

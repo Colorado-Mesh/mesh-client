@@ -17,13 +17,8 @@ import {
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
-import {
-  callsignToNodeId,
-  normalizeMeshcomCallsign,
-  parseMeshcomSrcPath,
-} from '../meshcom/meshcomCallsign';
+import { normalizeMeshcomCallsign } from '../meshcom/meshcomCallsign';
 import { maybeAlertMeshcomWatchlistCallsign } from '../meshcom/meshcomCallsignWatchlist';
-import { meshcomHwLabel } from '../meshcom/meshcomHwIds';
 import { shouldApplyMeshcomContact } from '../meshcom/meshcomLocallyDeletedContacts';
 import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
 import type { DomainEvent } from '../protocols/Protocol';
@@ -186,8 +181,6 @@ function handleNodeInfo(
     return;
   }
 
-  if (callsign) maybeAlertMeshcomWatchlistCallsign(callsign);
-
   // MeshCom node_info carries POS/MHEARD fields upsertNode drops — use full record merge.
   upsertNodeRecord(identityId, {
     nodeId: resolvedId,
@@ -303,6 +296,8 @@ function handlePosition(
     lastHeardAt: Math.floor(timestamp / 1000),
   });
 
+  if (callsign) maybeAlertMeshcomWatchlistCallsign(callsign);
+
   persistContact(identityId, {
     callsign,
     nodeId,
@@ -310,123 +305,6 @@ function handlePosition(
     lon: longitude,
     lastHeard: Math.floor(timestamp / 1000),
   });
-}
-
-/**
- * Apply a parsed EXTUDP inbound frame into stores + SQLite (transport → DomainEvent bridge).
- * Exported for the MeshCom runtime / transport layer.
- */
-export function ingestMeshcomExtUdpFrame(
-  identityId: IdentityId,
-  frame: {
-    type: string;
-    src?: string;
-    dst?: string;
-    msg?: string;
-    msg_id?: string;
-    rssi?: number;
-    snr?: number;
-    hw_id?: number;
-    lat?: number;
-    long?: number;
-    batt?: number;
-  },
-): void {
-  const pathParse = parseMeshcomSrcPath(frame.src ?? '');
-  const origin = pathParse.origin;
-  if (!origin) return;
-  const nodeId = registerMeshcomCallsign(origin);
-  const now = Date.now();
-
-  const allowContact = shouldApplyMeshcomContact(origin);
-
-  if (frame.type === 'msg' && frame.msg != null && frame.dst != null) {
-    const dst = normalizeMeshcomCallsign(frame.dst === '*' ? '' : frame.dst) || frame.dst;
-    if (dst && dst !== '*') registerMeshcomCallsign(dst);
-    const channelIdx = frame.dst === '*' || frame.dst === '0' ? 0 : -1;
-    const msgId = frame.msg_id ?? `meshcom:${origin}:${now}`;
-    if (allowContact) {
-      upsertNodeRecord(identityId, {
-        nodeId,
-        longName: origin,
-        lastHeardAt: Math.floor(now / 1000),
-        snr: frame.snr,
-        rssi: frame.rssi,
-        hopsAway: pathParse.hopCount,
-        hwModel: meshcomHwLabel(frame.hw_id) || undefined,
-        source: 'rf',
-      });
-    }
-    upsertMessage(
-      identityId,
-      chatMessageToMessageRecord({
-        storeId: msgId,
-        sender_id: nodeId,
-        sender_name: origin,
-        payload: frame.msg,
-        channel: channelIdx,
-        timestamp: now,
-        to: dst && dst !== '*' ? callsignToNodeId(dst) : undefined,
-        rxSnr: frame.snr,
-        rxRssi: frame.rssi,
-        receivedVia: 'rf',
-        rxHops: pathParse.hopCount,
-      }),
-    );
-    if (allowContact) {
-      persistContact(identityId, {
-        callsign: origin,
-        nodeId,
-        hwId: frame.hw_id ?? null,
-        lastHeard: Math.floor(now / 1000),
-      });
-    }
-    persistDbWrite('meshcom EXTUDP msg', () =>
-      window.electronAPI.db.saveMeshcomMessage({
-        identity_id: identityId,
-        msg_id: msgId,
-        from_call: origin,
-        to_call_or_group: dst || '*',
-        text: frame.msg!,
-        channel_idx: channelIdx,
-        path: pathParse.digis.length ? pathParse.digis.join(',') : null,
-        rssi: frame.rssi ?? null,
-        snr: frame.snr ?? null,
-        hw_id: frame.hw_id ?? null,
-        received_via: 'rf',
-        timestamp: now,
-        status: 'acked',
-        received_at: now,
-      }),
-    );
-    return;
-  }
-
-  if (frame.type === 'pos') {
-    if (!allowContact) return;
-    upsertNodeRecord(identityId, {
-      nodeId,
-      longName: origin,
-      latitude: frame.lat,
-      longitude: frame.long,
-      lastHeardAt: Math.floor(now / 1000),
-      batteryLevel: frame.batt,
-      snr: frame.snr,
-      rssi: frame.rssi,
-      hopsAway: pathParse.hopCount,
-      hwModel: meshcomHwLabel(frame.hw_id) || undefined,
-      source: 'rf',
-    });
-    persistContact(identityId, {
-      callsign: origin,
-      nodeId,
-      lat: frame.lat ?? null,
-      lon: frame.long ?? null,
-      batt: frame.batt ?? null,
-      hwId: frame.hw_id ?? null,
-      lastHeard: Math.floor(now / 1000),
-    });
-  }
 }
 
 function createListener(

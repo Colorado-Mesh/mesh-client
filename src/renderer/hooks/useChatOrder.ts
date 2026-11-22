@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
@@ -60,22 +60,29 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
     key,
     ids: persist ? readOrder(key) : items.map((item) => item.id),
   }));
+  const hadPersistRef = useRef(persist);
 
   useEffect(() => {
-    if (!persist) return;
-    if (stored.key === key) return;
+    if (!persist) {
+      hadPersistRef.current = false;
+      return;
+    }
+    const regainedPersist = !hadPersistRef.current;
+    hadPersistRef.current = true;
+    if (!regainedPersist && stored.key === key) return;
     // scope change: load order for the new key (replaces render-phase setState).
     // Persist the full pending sequence (including ids absent from current items); the
     // render path below still reconciles to the visible set.
     const pending = pendingWhileUnresolved;
     const fromStorage = readOrder(key);
     const ids = pending != null && pending.length > 0 ? [...pending] : fromStorage;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync storage when chat order scope becomes known
+
     setStored({ key, ids });
     if (pending != null && pending.length > 0) {
-      setPendingWhileUnresolved(null);
       try {
         localStorage.setItem(key, JSON.stringify(ids));
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- clear pending after durable flush (#1538)
+        setPendingWhileUnresolved(null);
       } catch (error) {
         console.warn('[useChatOrder] flush pending order failed ' + errLikeToLogString(error));
       }
@@ -105,8 +112,13 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
       let index = 0;
       const ids = prior.map((id) => (visibleSet.has(id) ? visible[index++] : id));
       ids.push(...visible.slice(index));
-      localStorage.setItem(key, JSON.stringify(ids));
-      setStored({ key, ids });
+      try {
+        localStorage.setItem(key, JSON.stringify(ids));
+        setStored({ key, ids });
+        setPendingWhileUnresolved(null);
+      } catch (error) {
+        console.warn('[useChatOrder] persist order failed ' + errLikeToLogString(error));
+      }
     },
     [items, key, persist],
   );
