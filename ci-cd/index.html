@@ -4231,8 +4231,8 @@ The workflow does not change repository security settings. Existing global cover
 <li><strong><code>schema-release-compare</code></strong> — same compare as Build Binaries / Release; uploads <code>READ-ME-FIRST-flatpak.md</code> and feeds <code>write-schema-upgrade-notice.mjs</code> so bumped schemas embed <code>SCHEMA-UPGRADE.txt</code> under Flatpak <code>resources/</code></li>
 <li>Builds the Reticulum sidecar on bare Ubuntu runners, then generates <code>flatpak/generated-sources.json</code> via <code>flatpak-node-generator</code></li>
 <li>Stamps CI build info (<code>test</code> on dispatch / <code>release</code> on tag), builds from <code>org.coloradomesh.MeshClient.yml</code> with offline pnpm sources</li>
-<li>Smoke-installs the unstamped local bundle; on <strong>dispatch only</strong>, renames to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code></li>
-<li>Uploads each arch as an <strong><code>archive: false</code></strong> artifact named <code>org.coloradomesh.MeshClient.flatpak-{arch}.flatpak</code> (test dispatch: <code>…-{arch}-run{N}.flatpak</code>) plus per-arch <code>flatpak-schema-warning-*</code></li>
+<li>Smoke-installs the unstamped local bundle; on <strong>dispatch only</strong>, renames the <strong>intermediate</strong> smoke-install basename to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code> (repo-root intermediate — not the Actions artifact name).</li>
+<li>Uploads each arch as an <strong><code>archive: false</code></strong> artifact whose <strong>final</strong> basename is <code>org.coloradomesh.MeshClient.flatpak-{arch}.flatpak</code> (test dispatch: <code>org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak</code>) plus per-arch <code>flatpak-schema-warning-*</code></li>
 </ol>
 <p>On <strong>version tag pushes</strong>, a bare <code>publish</code> job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron <code>prepare-github-release</code> draft (<code>ci-wait-github-draft-release.mjs</code>) and attaching the <strong>clean-named</strong> bundles plus attestation with <code>ci-upload-release-assets.mjs</code> (never creates a release). aarch64 is the primary ARM Linux install path (release <code>build.yaml</code> only produces x86_64 AppImage/deb/rpm).</p>
 <p><code>flatpak/generated-sources.json</code> is generated automatically in CI by <code>flatpak-node-generator</code> before each build — it does not need to be committed to the repo. For local builds, generate it manually; see <a href="../development-environment/">development-environment.md</a> for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.</p>
@@ -4767,7 +4767,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 01:33:19 UTC">November 22, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 14:39:31 UTC">November 22, 2026</span>
   </span>
 
     

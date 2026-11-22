@@ -2764,6 +2764,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Device configuration (Radio panel)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serial--ble-command-badges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial / BLE command badges
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3448,6 +3465,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Device configuration (Radio panel)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serial--ble-command-badges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial / BLE command badges
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3737,6 +3771,8 @@
 <h2 id="device-configuration-radio-panel">Device configuration (Radio panel)<a class="headerlink" href="#device-configuration-radio-panel" title="Permanent link">&para;</a></h2>
 <p>Capability <code>hasMeshcomDeviceCommands</code> also unlocks the <strong>Radio</strong> tab (<code>TAB_CAPABILITY_REQUIREMENTS</code> — MeshCom has neither <code>hasChannelConfig</code> nor MeshCore <code>hasJsonRadioConfigImport</code>). MeshCom has <strong>no</strong> Meshtastic protobuf config slices — every ICSSW <a href="https://icssw.org/en/meshcom-kommandos-cl-gw/">node command</a> is applied as a <code>--</code> console line over Serial/BLE.</p>
 <p>Radio → <strong>Device Configuration</strong> renders first-class sections (Display, Position / GPS, Sensors, Identity &amp; groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status &amp; debug, Power &amp; OTA, KISS / misc) from the catalog in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a>. UI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshComDeviceCommandsSection.tsx"><code>MeshComDeviceCommandsSection.tsx</code></a>. Wire: Serial CRLF or BLE <code>0xA0</code> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomDeviceCommands.ts"><code>meshcomDeviceCommands.ts</code></a>. EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).</p>
+<h3 id="serial--ble-command-badges">Serial / BLE command badges<a class="headerlink" href="#serial--ble-command-badges" title="Permanent link">&para;</a></h3>
+<p>Each catalog row carries a <code>channel</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a>: <strong><code>app</code></strong> means the command can be sent from Serial <strong>and</strong> the BLE companion (<code>0xA0</code>); the Device Configuration UI labels these as App+Serial. <strong><code>serial</code></strong> is reserved for USB-console-only entries (none in the current ICSSW catalog). <code>meshcomCommandWire.ts</code> stays in the hot App path; load the full catalog only from the lazy Radio panel.</p>
 <ul>
 <li><strong>Read on connect</strong>: after Serial/BLE attach, <code>refreshMeshcomDeviceSettings</code> loads the node’s current values — Serial via <code>--info</code> text parse + <code>--wx</code> weather dump, BLE via <code>{HELLO}</code> companion JSON (<code>TYP</code> I/SN/SW/G/SA/W/… then <code>CONFFIN</code>) with <code>--info</code> / <code>--wx</code> fallback. Firmware waits ~3s after HELLO before draining the config burst, so the BLE <code>CONFFIN</code> wait is 15s. Snapshot prefills Device User / Country and Radio command rows (<code>meshcomDeviceSettings.ts</code>) and seeds Telemetry.</li>
 <li><strong>Country Apply</strong> (above Device Configuration) saves <code>meshcomCountryCode</code> and, on Serial/BLE, sends <code>--setctry &lt;code&gt;</code> (reboots after ~15s on the node).</li>
@@ -3746,9 +3782,9 @@
 <h2 id="dynamic-aprs-telemetry-commands">Dynamic APRS telemetry commands<a class="headerlink" href="#dynamic-aprs-telemetry-commands" title="Permanent link">&para;</a></h2>
 <p>ICSSW <a href="https://icssw.org/en/telemetrie-dynamisch-zusammenstellen/">dynamic telemetry compilation</a> (<code>--parm</code> / <code>--unit</code> / <code>--eqns</code> / <code>--values</code> / <code>--ptime</code> / <code>--tel</code>) is in the Sensors group of <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a> (Device Configuration / console). Packets go RF→MeshCom server→aprs.fi and are hidden from the APP by design — no dedicated builder UI. Value token names include <code>press</code>, <code>hum</code>, <code>temp</code>, <code>onewire</code>, <code>co2</code>, <code>gasres</code>, <code>batt</code>, <code>proz</code>, <code>vbus</code>, <code>vcurrent</code>, <code>qnh</code>.</p>
 <h2 id="callsign-watchlist">Callsign watchlist<a class="headerlink" href="#callsign-watchlist" title="Permanent link">&para;</a></h2>
-<p>App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching <code>msg</code>/<code>pos</code> (<code>node_info</code>), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).</p>
+<p>App → Notifications → MeshCom callsign watchlist stores base callsigns (SSID ignored). When MeshCom ingest hears a matching <strong><code>msg</code></strong> or <strong><code>pos</code></strong> (not bare <code>node_info</code> POS refreshes), it plays the DM notification tone and fires an OS notification (30s cooldown per base call).</p>
 <h2 id="network-time-liveness">Network time liveness<a class="headerlink" href="#network-time-liveness" title="Permanent link">&para;</a></h2>
-<p>Inbound text containing <code>{CET}</code> (gateway/network clock, ~every 5 minutes) updates <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomNetworkTime.ts"><code>meshcomNetworkTime.ts</code></a>. Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).</p>
+<p>Inbound text whose payload <strong>starts with</strong> <code>{CET}</code> (gateway/network clock, ~every 5 minutes — firmware prefix match) updates <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomNetworkTime.ts"><code>meshcomNetworkTime.ts</code></a>. Live traffic: <code>PacketRouter</code> records the beacon and skips the message store; ingest only drops <code>{CET}</code> rows that arrive as in-memory <strong><code>text_message</code></strong> events (it does not delete SQLite/history). <strong>Hydration</strong> copies stored messages straight into the message store, so legacy <code>{CET}</code> rows saved before this filter may still appear in chat after restart until manually cleared or aged out. Connection → radio link tile shows the last network time and age as a mesh/gateway liveness hint (distinct from BLE/serial link-up).</p>
 <h2 id="meshmap-meshmapoevsvat">MeshMap (meshmap.oevsv.at)<a class="headerlink" href="#meshmap-meshmapoevsvat" title="Permanent link">&para;</a></h2>
 <p>Companions do <strong>not</strong> POST to <a href="https://meshmap.oevsv.at/">MeshMap</a>. Gateways upload POS/telemetry to MeshCom servers over UDP; MeshMap reads that server feed. Mesh Client feeds MeshMap only by causing the linked node to TX POS that a gateway hears (<code>--sendpos</code>, GPS/<code>--setlat</code>/<code>--setlon</code> push, <code>--track</code>, or <code>--gateway on</code> on a site node).</p>
 <p>The MeshCom <strong>Map</strong> panel links to MeshMap and offers <strong>Send POS</strong> (push known coords when available, then <code>--sendpos</code>). The in-app map is local contacts only — it is not MeshMap.</p>
@@ -3894,7 +3930,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 21, 2026 21:30:32 UTC">November 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 14:39:31 UTC">November 22, 2026</span>
   </span>
 
     
