@@ -316,7 +316,27 @@ dependencies = [
  "dbus",
  "dbus-tokio",
  "futures",
- "itertools",
+ "itertools 0.14.0",
+ "log",
+ "serde",
+ "serde-xml-rs",
+ "thiserror 2.0.21",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "bluez-async"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23a32d8f6aedb42c4ec4ed4e39720ee0e807e72c93feb7cd6483f51d08ca1f65"
+dependencies = [
+ "bitflags 2.13.2",
+ "bluez-generated",
+ "dbus",
+ "dbus-tokio",
+ "futures",
+ "itertools 0.15.0",
  "log",
  "serde",
  "serde-xml-rs",
@@ -342,7 +362,7 @@ checksum = "c9a11621cb2c8c024e444734292482b1ad86fb50ded066cf46252e46643c8748"
 dependencies = [
  "async-trait",
  "bitflags 2.13.2",
- "bluez-async",
+ "bluez-async 0.8.2",
  "dashmap 6.2.1",
  "dbus",
  "futures",
@@ -364,13 +384,13 @@ dependencies = [
 
 [[package]]
 name = "btleplug"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f48faeeeb43498bf6f58a610cb92e68ac3ebef7dd723963fd172e67f045b058c"
+checksum = "3d836502de731602ea87cbb307065e8feaed4fd10f0855a75b0b87944ee011dc"
 dependencies = [
  "async-trait",
  "bitflags 2.13.2",
- "bluez-async",
+ "bluez-async 0.9.0",
  "dashmap 6.2.1",
  "dbus",
  "futures",
@@ -1407,6 +1427,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1745,7 +1774,7 @@ dependencies = [
  "axum",
  "base64",
  "btleplug 0.11.8",
- "btleplug 0.13.4",
+ "btleplug 0.13.5",
  "bytes",
  "ciborium",
  "clap",
@@ -2404,7 +2433,7 @@ name = "rns-interface"
 version = "1.5.0"
 dependencies = [
  "bluer",
- "btleplug 0.13.4",
+ "btleplug 0.13.5",
  "bytes",
  "futures",
  "hex",

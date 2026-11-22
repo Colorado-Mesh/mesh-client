@@ -303,6 +303,7 @@ check_ratspeak_patches() {
     'rsReticulum-slow-rf-announce-filter.patch|ratspeak/rsReticulum||rsReticulum slow-RF announce filter (local + RF-learned + on-demand only)|'
     'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
     'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
+    'rsReticulum-btleplug-0.13.5.patch|ratspeak/rsReticulum||rsReticulum btleplug exact pin 0.13.4→0.13.5 (shared with mesh-client btleplug_win)|'
     'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'
     'rsReticulum-rncp-picker-pinned-jail.patch|ratspeak/rsReticulum||rsReticulum RNCP native-picker pinned fetch jail|'
     'rsReticulum-rncp-inbound-admission.patch|ratspeak/rsReticulum||rsReticulum RNCP pre-advertisement inbound admission|'
@@ -746,6 +747,51 @@ check_mecp_upstream() {
   fi
 }
 
+# Warn when crates.io btleplug is newer than reticulum-sidecar Windows pin (btleplug_win).
+# Non-Windows LoRa GATT stays on 0.11 (rsReticulum ObjC class conflict). rns-interface may
+# exact-pin the same 0.13.x — bump via overlay (rsReticulum-btleplug-*.patch) until upstream floats.
+check_btleplug_upstream() {
+  local toml='reticulum-sidecar/Cargo.toml'
+  local pinned latest
+  local url='https://crates.io/crates/btleplug'
+
+  echo ''
+  echo 'Checking btleplug (Windows btleplug_win) on crates.io...'
+
+  if [ ! -f "${toml}" ]; then
+    echo '  reticulum-sidecar/Cargo.toml missing — skipping btleplug watch.'
+    return 0
+  fi
+  if ! command -v cargo > /dev/null 2>&1; then
+    echo '  cargo not on PATH — skipping btleplug watch.'
+    return 0
+  fi
+
+  pinned="$(
+    sed -n 's/^btleplug_win = { package = "btleplug", version = "\([^"]*\)".*/\1/p' "${toml}" | head -1
+  )"
+  if [ -z "${pinned}" ]; then
+    echo '  btleplug_win pin not found in Cargo.toml — skipping.'
+    return 0
+  fi
+
+  latest="$(cargo search btleplug --limit 1 2> /dev/null | sed -n 's/^btleplug = "\([^"]*\)".*/\1/p' | head -1)"
+  if [ -z "${latest}" ]; then
+    echo '  could not query crates.io for btleplug — skipping.'
+    return 0
+  fi
+
+  if [ "${pinned}" = "${latest}" ]; then
+    echo "  btleplug_win ${pinned} matches crates.io latest."
+    return 0
+  fi
+
+  warn_box 'btleplug (btleplug_win)' "${pinned}" "${latest}" "${url}"
+  echo '  Reason tracked: Windows LoRa GATT / shared rsReticulum BLE stack — bump Cargo.toml,'
+  echo '  refresh rsReticulum exact-pin overlay if present, then cargo update -p btleplug@OLD --precise NEW.'
+  HAS_WARNING=1
+}
+
 # Warn when a published MeshCom firmware release differs from reviewed-ref.
 check_meshcom_upstream() {
   local entry repo stub label reviewed summary tag published first four url
@@ -1082,6 +1128,7 @@ check_ratspeak_upstream
 check_mecp_upstream
 check_mecp_prs
 check_meshcom_upstream
+check_btleplug_upstream
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'

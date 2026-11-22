@@ -171,6 +171,20 @@ describe('isMeshcoreRetryableBleErrorMessage', () => {
     );
   });
 
+  it('does not retry while the Bluetooth stack is latched unresponsive', () => {
+    expect(
+      isMeshcoreRetryableBleErrorMessage(
+        'connect_timeout: connect timed out: Bluetooth stack unresponsive',
+      ),
+    ).toBe(false);
+    expect(
+      isMeshcoreRetryableBleErrorMessage(
+        'connect_timeout: connect refused: Bluetooth stack unresponsive (1 earlier call(s) still stuck)',
+      ),
+    ).toBe(false);
+    expect(isMeshcoreRetryableBleErrorMessage('Bluetooth stack unresponsive')).toBe(false);
+  });
+
   it('does not treat vague unreachable wording without discovery context as retryable', () => {
     expect(isMeshcoreRetryableBleErrorMessage('Device is unreachable')).toBe(false);
   });

@@ -699,6 +699,25 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 After upstream rsReticulum exposes equivalent host-RSSI caching for connected BLE RNodes, advance `RS_RETICULUM_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
 
+## rsReticulum-btleplug-0.13.5.patch
+
+Bump `rns-interface`'s exact crates.io pin `btleplug = "=0.13.4"` → `"=0.13.5"`. mesh-client Windows LoRa GATT (`btleplug_win`) and rsReticulum BLE share the same crates.io package name, so the exact pin blocked `cargo update` from taking the latest 0.13.x.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `5976f6bccef81851d3186e889e5924665283f21c` (`ratspeak/rsReticulum` reviewed pin / `origin/main` at overlay creation) |
+| **Upstream PR** | none yet (ask ratspeak/rsReticulum to float or bump the exact pin) |
+
+```bash
+./scripts/apply-rsReticulum-btleplug-0.13.5.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Keep mesh-client `reticulum-sidecar/Cargo.toml` `btleplug_win` on the same 0.13.5.
+
+### Sunset
+
+After upstream rsReticulum pins `btleplug` to `=0.13.5` (or a caret that allows latest 0.13.x) on the reviewed `RS_RETICULUM_PIN`, remove this overlay and its apply step in the same change.
+
 ## rsReticulum-response-resource-window-fast.patch
 
 Promote inbound **response** Resources to `WINDOW_MAX_FAST` (75) when Link RTT is ≤ 1s. `grow()` only leaves `WINDOW_MAX_SLOW` (10) after four rounds above `RATE_FAST` (6250 B/s). A 2-hop TCP hub at ~200–300ms RTT stays around 8–20 KB/s, so a ~480 KB Nomad `/media` Resource crawls ~16–20s. Jumping the window matches the observed TCP-class path without changing RF slow-start.

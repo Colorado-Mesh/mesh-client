@@ -21,6 +21,8 @@ mod isolated;
 mod lazy_backend;
 #[cfg(all(feature = "gatt-ble", target_os = "windows"))]
 mod windows_gatt_session;
+#[cfg(all(feature = "gatt-ble", target_os = "windows"))]
+mod windows_gatt_uuid_probe;
 
 pub use events::GattSessionEvent;
 pub use manager::{GattBackend, GattManager};

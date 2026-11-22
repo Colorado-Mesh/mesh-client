@@ -83,13 +83,23 @@ fn classify_setup_error(msg: String, fallback: GattErrorCode) -> GattError {
     GattError::new(code, msg)
 }
 
+/// When `ignore_recovery_disconnect` is set, swallow `DeviceDisconnected` for this
+/// peripheral (Windows rediscover intentionally disconnects while setup still races this waiter).
 async fn wait_for_disconnect(
     events: &mut (impl Stream<Item = CentralEvent> + Unpin),
     peripheral_id: &str,
+    ignore_recovery_disconnect: Option<&AtomicBool>,
 ) -> &'static str {
     while let Some(event) = events.next().await {
         match event {
             CentralEvent::DeviceDisconnected(id) if id.to_string() == peripheral_id => {
+                if ignore_recovery_disconnect.is_some_and(|flag| flag.load(Ordering::SeqCst)) {
+                    tracing::debug!(
+                        target: "gatt",
+                        "gatt: ignoring expected recovery DeviceDisconnected"
+                    );
+                    continue;
+                }
                 return "link_lost";
             }
             CentralEvent::StateUpdate(CentralState::PoweredOff) => return "adapter_powered_off",
@@ -361,6 +371,129 @@ impl<T> Drop for AbortOnDrop<T> {
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 fn wants_windows_keep_alive(profile: GattProfile) -> bool {
     matches!(profile, GattProfile::Meshtastic | GattProfile::Meshcore)
+}
+
+/// Settle after a forced disconnect before reconnecting (WinRT stale service cache / #484).
+#[cfg(target_os = "windows")]
+const WINDOWS_REDISCOVER_SETTLE: Duration = Duration::from_millis(300);
+/// Skip rediscover when the connect deadline has less than this remaining.
+#[cfg(target_os = "windows")]
+const WINDOWS_RECOVERY_MIN_REMAINING: Duration = Duration::from_secs(8);
+#[cfg(target_os = "windows")]
+const WINDOWS_RECOVERY_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+#[cfg(target_os = "windows")]
+const WINDOWS_RECOVERY_DISCOVERY_TIMEOUT: Duration = Duration::from_secs(10);
+
+fn profile_pipe_uuids(profile: GattProfile) -> Result<(Uuid, Uuid, Option<Uuid>), GattError> {
+    match profile {
+        GattProfile::Meshtastic => Ok((
+            profile::meshtastic::to_radio(),
+            profile::meshtastic::from_num(),
+            Some(profile::meshtastic::from_radio()),
+        )),
+        GattProfile::Meshcore | GattProfile::Rnode => {
+            Ok((profile::nus::rx(), profile::nus::tx(), None))
+        }
+        GattProfile::Peer => Err(GattError::new(
+            GattErrorCode::InvalidProfile,
+            "peer profile has no gatt pipe",
+        )),
+    }
+}
+
+/// Used from the Windows rediscover path and unit tests (not referenced in non-Windows builds).
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn is_missing_characteristic_error(err: &GattError) -> bool {
+    err.code == GattErrorCode::GattDiscoverFailed && err.message.contains("characteristic missing")
+}
+
+/// WinRT/btleplug discovery failures that may recover after disconnect + rediscover (#1528 / #325).
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn is_windows_discovery_recoverable(err: &GattError) -> bool {
+    cfg!(target_os = "windows")
+        && matches!(
+            err.code,
+            GattErrorCode::GattDiscoverFailed | GattErrorCode::ConnectTimeout
+        )
+}
+
+fn remaining_until(deadline: tokio::time::Instant) -> Duration {
+    deadline.saturating_duration_since(tokio::time::Instant::now())
+}
+
+fn clamp_timeout(budget: Duration, preferred: Duration) -> Duration {
+    preferred.min(budget)
+}
+
+#[cfg(target_os = "windows")]
+async fn windows_peripheral_address_u64(peripheral: &Peripheral) -> Option<u64> {
+    peripheral
+        .properties()
+        .await
+        .ok()
+        .flatten()
+        .map(|props| u64::from(props.address))
+}
+
+#[cfg(target_os = "windows")]
+async fn open_windows_keep_alive(
+    peripheral: &Peripheral,
+    profile: GattProfile,
+) -> Option<GattKeepAlive> {
+    if !wants_windows_keep_alive(profile) {
+        return None;
+    }
+    match windows_peripheral_address_u64(peripheral).await {
+        Some(addr) => GattKeepAlive::open(addr).await,
+        None => {
+            tracing::warn!(
+                target: "gatt",
+                "gatt: windows keep-alive skipped — peripheral address unavailable"
+            );
+            None
+        }
+    }
+}
+
+/// Disconnect → settle → reconnect so btleplug clears `ble_services` and discovers again.
+/// Holds `ignore_recovery_disconnect` for the whole cycle so setup's parallel
+/// `wait_for_disconnect` does not treat the intentional drop as `link_lost`.
+#[cfg(target_os = "windows")]
+async fn windows_recovery_reconnect(
+    peripheral: &Peripheral,
+    profile: GattProfile,
+    deadline: tokio::time::Instant,
+    ignore_recovery_disconnect: &AtomicBool,
+) -> Result<Option<GattKeepAlive>, GattError> {
+    ignore_recovery_disconnect.store(true, Ordering::SeqCst);
+    let outcome = async {
+        match tokio::time::timeout(SETUP_CLEANUP_TIMEOUT, peripheral.disconnect()).await {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => {
+                tracing::warn!(target: "gatt", "gatt: rediscover disconnect: {e}")
+            }
+            Err(_) => {
+                tracing::warn!(target: "gatt", "gatt: rediscover disconnect timed out")
+            }
+        }
+        tokio::time::sleep(WINDOWS_REDISCOVER_SETTLE).await;
+        tokio::time::timeout(
+            clamp_timeout(remaining_until(deadline), WINDOWS_RECOVERY_CONNECT_TIMEOUT),
+            peripheral.connect(),
+        )
+        .await
+        .map_err(|_| {
+            GattError::new(
+                GattErrorCode::ConnectTimeout,
+                "rediscover connect timed out",
+            )
+        })?
+        .map_err(|e| classify_setup_error(e.to_string(), GattErrorCode::ConnectTimeout))?;
+        Ok(open_windows_keep_alive(peripheral, profile).await)
+    }
+    .await;
+    ignore_recovery_disconnect.store(false, Ordering::SeqCst);
+    outcome
 }
 
 /// Prefer a real MAC when CoreBluetooth/WinRT exposes one; otherwise compact peripheral UUID hex
@@ -754,81 +887,189 @@ impl BleBackend for BtleplugBackend {
             .await
             .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "adapter events timed out"))?
             .map_err(|e| GattError::new(GattErrorCode::Internal, format!("adapter events: {e}")))?;
+        // Windows rediscover disconnects intentionally while setup races wait_for_disconnect.
+        let ignore_recovery_disconnect = AtomicBool::new(false);
 
         let setup = async {
+            let (write_uuid, notify_uuid, from_radio_uuid) = profile_pipe_uuids(profile)?;
+
             stage("connect");
-            tokio::time::timeout(connect_timeout(), peripheral.connect())
-                .await
-                .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "connect timed out"))?
-                .map_err(|e| classify_setup_error(e.to_string(), GattErrorCode::ConnectTimeout))?;
+            tokio::time::timeout(
+                clamp_timeout(remaining_until(deadline), connect_timeout()),
+                peripheral.connect(),
+            )
+            .await
+            .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "connect timed out"))?
+            .map_err(|e| classify_setup_error(e.to_string(), GattErrorCode::ConnectTimeout))?;
 
-            stage("discover_services");
-            tokio::time::timeout(discovery_timeout(), peripheral.discover_services())
-                .await
-                .map_err(|_| {
-                    GattError::new(
-                        GattErrorCode::GattDiscoverFailed,
-                        "service discovery timed out",
-                    )
-                })?
-                .map_err(|e| {
-                    classify_setup_error(e.to_string(), GattErrorCode::GattDiscoverFailed)
-                })?;
+            // OS-specific: open MaintainConnection before discover so WinRT discovery
+            // does not race an idle link (btleplug#325 / mesh-client#1528).
+            #[cfg(target_os = "windows")]
+            let mut keep_alive = open_windows_keep_alive(&peripheral, profile).await;
+            #[cfg(not(target_os = "windows"))]
+            let keep_alive: Option<()> = None;
 
-            let chars = peripheral.characteristics();
-            let (write_uuid, notify_uuid, from_radio_uuid) = match profile {
-                GattProfile::Meshtastic => (
-                    profile::meshtastic::to_radio(),
-                    profile::meshtastic::from_num(),
-                    Some(profile::meshtastic::from_radio()),
+            let resolve_chars = |peripheral: &Peripheral| -> Result<
+                (
+                    Characteristic,
+                    WriteType,
+                    Characteristic,
+                    Option<Characteristic>,
                 ),
-                GattProfile::Meshcore | GattProfile::Rnode => {
-                    (profile::nus::rx(), profile::nus::tx(), None)
-                }
-                GattProfile::Peer => {
-                    return Err(GattError::new(
-                        GattErrorCode::InvalidProfile,
-                        "peer profile has no gatt pipe",
-                    ));
+                GattError,
+            > {
+                let chars = peripheral.characteristics();
+                let find_char = |uuid, label| {
+                    chars
+                        .iter()
+                        .find(|c| c.uuid == uuid)
+                        .cloned()
+                        .ok_or_else(|| {
+                            GattError::new(
+                                GattErrorCode::GattDiscoverFailed,
+                                format!("{label} characteristic missing"),
+                            )
+                        })
+                };
+                let write_char = find_char(write_uuid, "write")?;
+                let write_type = characteristic_write_type(write_char.properties)?;
+                let notify_char = find_char(notify_uuid, "notify")?;
+                let from_radio_char = from_radio_uuid
+                    .map(|uuid| find_char(uuid, "fromRadio"))
+                    .transpose()?;
+                Ok((write_char, write_type, notify_char, from_radio_char))
+            };
+
+            let discover_once = |discovery_budget: Duration| {
+                let peripheral = &peripheral;
+                async move {
+                    stage("discover_services");
+                    tokio::time::timeout(discovery_budget, peripheral.discover_services())
+                        .await
+                        .map_err(|_| {
+                            GattError::new(
+                                GattErrorCode::GattDiscoverFailed,
+                                "service discovery timed out",
+                            )
+                        })?
+                        .map_err(|e| {
+                            classify_setup_error(e.to_string(), GattErrorCode::GattDiscoverFailed)
+                        })?;
+                    let resolved = resolve_chars(peripheral)?;
+                    stage("characteristics");
+                    Ok(resolved)
                 }
             };
 
-            let find_char = |uuid, label| {
-                chars
-                    .iter()
-                    .find(|c| c.uuid == uuid)
-                    .cloned()
-                    .ok_or_else(|| {
-                        GattError::new(
-                            GattErrorCode::GattDiscoverFailed,
-                            format!("{label} characteristic missing"),
-                        )
-                    })
-            };
-            let write_char = find_char(write_uuid, "write")?;
-            let write_type = characteristic_write_type(write_char.properties)?;
-            let notify_char = find_char(notify_uuid, "notify")?;
-            let from_radio_char = from_radio_uuid
-                .map(|uuid| find_char(uuid, "fromRadio"))
-                .transpose()?;
-            stage("characteristics");
+            #[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
+            let mut chars_result = discover_once(clamp_timeout(
+                remaining_until(deadline),
+                discovery_timeout(),
+            ))
+            .await;
+
+            #[cfg(target_os = "windows")]
+            if let Err(ref first_err) = chars_result
+                && is_windows_discovery_recoverable(first_err)
+                && remaining_until(deadline) >= WINDOWS_RECOVERY_MIN_REMAINING
+            {
+                tracing::warn!(
+                    target: "gatt",
+                    error = %first_err,
+                    profile = %profile,
+                    "gatt: windows discovery failed — disconnect/reconnect/rediscover once"
+                );
+                stage("rediscover");
+                keep_alive = None;
+                keep_alive = windows_recovery_reconnect(
+                    &peripheral,
+                    profile,
+                    deadline,
+                    &ignore_recovery_disconnect,
+                )
+                .await?;
+                chars_result = discover_once(clamp_timeout(
+                    remaining_until(deadline),
+                    WINDOWS_RECOVERY_DISCOVERY_TIMEOUT,
+                ))
+                .await;
+
+                if let Err(ref after_rediscover) = chars_result
+                    && is_missing_characteristic_error(after_rediscover)
+                    && remaining_until(deadline)
+                        >= super::windows_gatt_uuid_probe::UUID_PROBE_TIMEOUT
+                            + WINDOWS_RECOVERY_CONNECT_TIMEOUT
+                            + WINDOWS_REDISCOVER_SETTLE
+                            + WINDOWS_RECOVERY_DISCOVERY_TIMEOUT
+                {
+                    stage("uuid_probe");
+                    if let Some(addr) = windows_peripheral_address_u64(&peripheral).await {
+                        match super::windows_gatt_uuid_probe::UuidProbeRequest::for_profile(
+                            addr, profile,
+                        ) {
+                            Ok(req) => {
+                                match super::windows_gatt_uuid_probe::probe_profile_characteristics(
+                                    req,
+                                )
+                                .await
+                                {
+                                    super::windows_gatt_uuid_probe::UuidProbeOutcome::Found => {
+                                        tracing::info!(
+                                            target: "gatt",
+                                            profile = %profile,
+                                            "gatt: windows UUID probe found characteristics — reconnecting to refresh btleplug cache"
+                                        );
+                                        // btleplug skips service UUIDs already in ble_services
+                                        // (including empty char sets). disconnect/connect clears
+                                        // that map so the warmed WinRT cache is fetched again.
+                                        keep_alive = None;
+                                        keep_alive = windows_recovery_reconnect(
+                                            &peripheral,
+                                            profile,
+                                            deadline,
+                                            &ignore_recovery_disconnect,
+                                        )
+                                        .await?;
+                                        chars_result = discover_once(clamp_timeout(
+                                            remaining_until(deadline),
+                                            WINDOWS_RECOVERY_DISCOVERY_TIMEOUT,
+                                        ))
+                                        .await;
+                                    }
+                                    outcome => {
+                                        tracing::warn!(
+                                            target: "gatt",
+                                            ?outcome,
+                                            profile = %profile,
+                                            "gatt: windows UUID probe did not warm cache"
+                                        );
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                tracing::debug!(target: "gatt", "gatt: skip UUID probe: {e}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            let (write_char, write_type, notify_char, from_radio_char) = chars_result?;
 
             // Subscribe the receiver before CCCD so early notifications stay queued.
             let notifications = peripheral.notifications().await.map_err(|e| {
                 GattError::new(GattErrorCode::Internal, format!("notifications: {e}"))
             })?;
             stage("subscribe");
-            tokio::time::timeout(discovery_timeout(), peripheral.subscribe(&notify_char))
-                .await
-                .map_err(|_| {
-                    GattError::new(GattErrorCode::GattDiscoverFailed, "subscribe timed out")
-                })?
-                .map_err(|e| {
-                    classify_setup_error(
-                        format!("subscribe: {e}"),
-                        GattErrorCode::GattDiscoverFailed,
-                    )
-                })?;
+            tokio::time::timeout(
+                clamp_timeout(remaining_until(deadline), discovery_timeout()),
+                peripheral.subscribe(&notify_char),
+            )
+            .await
+            .map_err(|_| GattError::new(GattErrorCode::GattDiscoverFailed, "subscribe timed out"))?
+            .map_err(|e| {
+                classify_setup_error(format!("subscribe: {e}"), GattErrorCode::GattDiscoverFailed)
+            })?;
             let seed_rssi = peripheral
                 .properties()
                 .await
@@ -843,6 +1084,7 @@ impl BleBackend for BtleplugBackend {
                 from_radio_char,
                 notifications,
                 seed_rssi,
+                keep_alive,
             ))
         };
         let setup_until_disconnect = async {
@@ -850,29 +1092,30 @@ impl BleBackend for BtleplugBackend {
                 result = tokio::time::timeout_at(deadline, setup) => {
                     result.unwrap_or_else(|_| Err(GattError::new(GattErrorCode::ConnectTimeout, "GATT setup timed out")))
                 },
-                reason = wait_for_disconnect(&mut central_events, &peripheral_id) => {
+                reason = wait_for_disconnect(
+                    &mut central_events,
+                    &peripheral_id,
+                    Some(&ignore_recovery_disconnect),
+                ) => {
                     Err(GattError::new(GattErrorCode::GattDiscoverFailed, reason))
                 }
             }
         };
-        let (write_char, write_type, notify_uuid, from_radio_char, mut notifications, seed_rssi) =
-            setup_with_cleanup(setup_until_disconnect, peripheral.disconnect())
-                .await
-                .inspect_err(|e| {
-                    let elapsed_ms =
-                        u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
-                    tracing::warn!(target: "gatt", elapsed_ms, profile = %profile, "gatt connect failed: {e}");
-                })?;
-        // OS-specific: only Windows idles a btleplug link without a held GattSession.
-        #[cfg(target_os = "windows")]
-        let keep_alive = if wants_windows_keep_alive(profile) {
-            match peripheral.properties().await.ok().flatten() {
-                Some(props) => GattKeepAlive::open(u64::from(props.address)).await,
-                None => None,
-            }
-        } else {
-            None
-        };
+        let (
+            write_char,
+            write_type,
+            notify_uuid,
+            from_radio_char,
+            mut notifications,
+            seed_rssi,
+            keep_alive,
+        ) = setup_with_cleanup(setup_until_disconnect, peripheral.disconnect())
+            .await
+            .inspect_err(|e| {
+                let elapsed_ms =
+                    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+                tracing::warn!(target: "gatt", elapsed_ms, profile = %profile, "gatt connect failed: {e}");
+            })?;
         stage("ready");
 
         let (tx, rx) = mpsc::unbounded_channel();
@@ -932,7 +1175,7 @@ impl BleBackend for BtleplugBackend {
             // Notifications survive disconnects in btleplug. Central events must also
             // interrupt a pending FromRadio read, while Notify coalesces queue drains.
             let reason = tokio::select! {
-                reason = wait_for_disconnect(&mut central_events, &peripheral_id) => reason,
+                reason = wait_for_disconnect(&mut central_events, &peripheral_id, None) => reason,
                 () = forward_notifications => "notifications_ended",
                 () = drain_reads => "read_pump_stalled",
                 () = poll_rssi => "rssi_poll_ended",
@@ -944,6 +1187,8 @@ impl BleBackend for BtleplugBackend {
         });
 
         let conn = BackendConnId(Uuid::new_v4().to_string());
+        #[cfg(not(target_os = "windows"))]
+        let _ = keep_alive;
         self.open.lock().await.insert(
             conn.0.clone(),
             OpenConn {
@@ -1130,6 +1375,59 @@ mod tests {
         assert!(wants_windows_keep_alive(GattProfile::Meshcore));
         assert!(!wants_windows_keep_alive(GattProfile::Rnode));
         assert!(!wants_windows_keep_alive(GattProfile::Peer));
+    }
+
+    #[test]
+    fn missing_characteristic_errors_are_detectable() {
+        assert!(is_missing_characteristic_error(&GattError::new(
+            GattErrorCode::GattDiscoverFailed,
+            "write characteristic missing",
+        )));
+        assert!(!is_missing_characteristic_error(&GattError::new(
+            GattErrorCode::GattDiscoverFailed,
+            "service discovery timed out",
+        )));
+    }
+
+    #[test]
+    fn windows_discovery_recoverable_codes() {
+        let discover = GattError::new(
+            GattErrorCode::GattDiscoverFailed,
+            "write characteristic missing",
+        );
+        let timeout = GattError::new(GattErrorCode::ConnectTimeout, "connect timed out");
+        let pairing = GattError::new(GattErrorCode::PairingRequired, "pair");
+        if cfg!(target_os = "windows") {
+            assert!(is_windows_discovery_recoverable(&discover));
+            assert!(is_windows_discovery_recoverable(&timeout));
+            assert!(!is_windows_discovery_recoverable(&pairing));
+        } else {
+            assert!(!is_windows_discovery_recoverable(&discover));
+            assert!(!is_windows_discovery_recoverable(&timeout));
+        }
+    }
+
+    #[test]
+    fn profile_pipe_uuids_cover_lora_profiles() {
+        let (w, n, fr) = profile_pipe_uuids(GattProfile::Meshcore).unwrap();
+        assert_eq!(w, profile::nus::rx());
+        assert_eq!(n, profile::nus::tx());
+        assert!(fr.is_none());
+        let (_, _, fr) = profile_pipe_uuids(GattProfile::Meshtastic).unwrap();
+        assert!(fr.is_some());
+        assert!(profile_pipe_uuids(GattProfile::Peer).is_err());
+    }
+
+    #[test]
+    fn clamp_timeout_respects_remaining_budget() {
+        assert_eq!(
+            clamp_timeout(Duration::from_secs(3), Duration::from_secs(30)),
+            Duration::from_secs(3)
+        );
+        assert_eq!(
+            clamp_timeout(Duration::from_secs(60), Duration::from_secs(10)),
+            Duration::from_secs(10)
+        );
     }
 
     #[test]
@@ -1465,7 +1763,7 @@ mod tests {
         ])
         .chain(futures_util::stream::pending());
         assert_eq!(
-            wait_for_disconnect(&mut events, "device").await,
+            wait_for_disconnect(&mut events, "device", None).await,
             "adapter_powered_off"
         );
     }
@@ -1481,7 +1779,39 @@ mod tests {
         ])
         .chain(futures_util::stream::pending());
         assert_eq!(
-            wait_for_disconnect(&mut events, &target.to_string()).await,
+            wait_for_disconnect(&mut events, &target.to_string(), None).await,
+            "link_lost"
+        );
+    }
+
+    // CoreBluetooth exposes UUID construction; BlueZ's PeripheralId constructor is private.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    async fn recovery_disconnect_flag_swallows_disconnect_but_not_power_off() {
+        let target = Uuid::new_v4();
+        let ignore = AtomicBool::new(true);
+        let mut events = futures_util::stream::iter([
+            CentralEvent::DeviceDisconnected(target.into()),
+            CentralEvent::StateUpdate(CentralState::PoweredOff),
+        ])
+        .chain(futures_util::stream::pending());
+        assert_eq!(
+            wait_for_disconnect(&mut events, &target.to_string(), Some(&ignore)).await,
+            "adapter_powered_off"
+        );
+    }
+
+    // CoreBluetooth exposes UUID construction; BlueZ's PeripheralId constructor is private.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    async fn recovery_disconnect_flag_off_reports_link_lost() {
+        let target = Uuid::new_v4();
+        let ignore = AtomicBool::new(false);
+        let mut events =
+            futures_util::stream::iter([CentralEvent::DeviceDisconnected(target.into())])
+                .chain(futures_util::stream::pending());
+        assert_eq!(
+            wait_for_disconnect(&mut events, &target.to_string(), Some(&ignore)).await,
             "link_lost"
         );
     }
