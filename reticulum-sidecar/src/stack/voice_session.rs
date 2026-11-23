@@ -160,7 +160,6 @@ impl VoiceSessionManager {
                 mut event_rx,
             }) => {
                 let (voice_audio_tx, _) = broadcast::channel::<String>(VOICE_AUDIO_BROADCAST_CAP);
-                let startup_announce_tx = control_tx.clone();
                 let shared = Arc::new(ManagerShared {
                     identity: Some(identity.clone()),
                     control_tx: Some(control_tx),
@@ -176,13 +175,9 @@ impl VoiceSessionManager {
 
                 let tasks = LiveTasks::default();
                 tasks.spawn(service.run());
-                // Nudge the destination manager once attach_live finishes (rsLXST still defers
-                // periodic announces by TELEPHONY_JOB_INTERVAL; startup_announce_retries covers
-                // late interfaces without custom Outbound packet builders).
-                tasks.spawn(async move {
-                    tokio::time::sleep(Duration::from_millis(250)).await;
-                    let _ = startup_announce_tx.send(TelephonyControl::Announce).await;
-                });
+                // No early TelephonyControl::Announce — that resets
+                // startup_announce_retries_remaining and defers the retry window
+                // for late interfaces. rsLXST's startup retry loop covers attach.
                 let bridge = Arc::clone(&shared);
                 tasks.spawn(async move {
                     while let Some(evt) = event_rx.recv().await {

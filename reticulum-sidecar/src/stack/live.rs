@@ -1103,36 +1103,96 @@ impl LiveBridge {
         self.voice_session.telephony_announce_wire_bytes()
     }
 
-    /// Learn a wire Reticulum packet as if it arrived on every known interface.
+    /// Learn a wire Reticulum packet as inbound on a temporary owned interface.
     ///
-    /// Dual-TCP fixtures can briefly report the peer interface offline; fan-out
-    /// avoids a single stale `InterfaceId` silently dropping the announce.
+    /// Ratspeak 1.5+ refuses bare `TransportMessage::Inbound` ("unowned interface
+    /// event"). Register a producer, admit via `InterfaceEvent`, and keep the
+    /// interface up with a TX forwarder onto a live peer interface — otherwise
+    /// deregister drops paths learned from the announce and calls cannot egress.
     #[cfg_attr(not(test), allow(dead_code))]
     pub async fn ingest_inbound_wire_packet(&self, raw: &[u8]) -> Result<(), String> {
+        use std::sync::atomic::Ordering;
+
         use bytes::Bytes;
-        use rns_transport::messages::{InboundPacket, TransportMessage};
-        let interface_ids = self.interface_ids_for_inbound_ingest().await?;
-        for interface_id in interface_ids {
-            self.handle
-                .transport_tx
-                .send(TransportMessage::Inbound(InboundPacket {
-                    raw: Bytes::copy_from_slice(raw),
-                    interface_id,
-                    rssi: None,
-                    snr: None,
-                    q: None,
-                }))
-                .await
-                .map_err(|e| format!("transport closed: {e}"))?;
+        use rns_transport::InterfaceTransportSender;
+        use rns_transport::constants::{InterfaceDirection, InterfaceMode};
+        use rns_transport::messages::{
+            InboundPacket, InterfaceEntry, OutboundRequest, TransportMessage,
+        };
+        use rns_wire::header::PacketHeader;
+
+        let forward_ids = self.online_interface_ids_for_ingest().await?;
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<Bytes>(32);
+        let entry = InterfaceEntry::new(
+            "voice-ingest".into(),
+            InterfaceMode::Full,
+            InterfaceDirection::bidirectional(),
+            1_000_000,
+            500,
+            tx,
+        );
+        let owner = entry.owner.clone();
+        let interface_id = self.handle.id_gen.fetch_add(1, Ordering::Relaxed);
+        let producer =
+            InterfaceTransportSender::bind(interface_id, owner, self.handle.transport_tx.clone());
+        // Queue RegisterInterface before any owned event so FIFO installs the
+        // entry; producer.ready() waits for the actor's mark_registered.
+        self.handle
+            .transport_tx
+            .send(TransportMessage::RegisterInterface {
+                id: interface_id,
+                entry,
+            })
+            .await
+            .map_err(|e| format!("transport closed: {e}"))?;
+        if !producer.ready().await {
+            return Err("voice-ingest interface registration failed".into());
         }
-        // Give the transport actor a turn to process Inbound before RecallDestination.
+
+        // Keep the ingest iface registered: path stays valid, and egress that
+        // targets it is relayed onto a real TCP (or other) interface.
+        let transport_tx = self.handle.transport_tx.clone();
+        let relay_targets = forward_ids;
+        tokio::spawn(async move {
+            while let Some(frame) = rx.recv().await {
+                let Ok((header, _)) = PacketHeader::unpack(&frame) else {
+                    continue;
+                };
+                let request = OutboundRequest {
+                    raw: frame,
+                    destination_hash: header.destination_hash,
+                };
+                for &target in &relay_targets {
+                    let _ = transport_tx
+                        .send(TransportMessage::OutboundAttached {
+                            request: OutboundRequest {
+                                raw: request.raw.clone(),
+                                destination_hash: request.destination_hash,
+                            },
+                            interface_id: target,
+                        })
+                        .await;
+                }
+            }
+        });
+
+        producer
+            .send(TransportMessage::Inbound(InboundPacket {
+                raw: Bytes::copy_from_slice(raw),
+                interface_id,
+                rssi: None,
+                snr: None,
+                q: None,
+            }))
+            .await
+            .map_err(|_| "owned inbound send failed".to_string())?;
+        // Allow the transport actor to cache the announce before RecallDestination.
         tokio::task::yield_now().await;
         tokio::time::sleep(Duration::from_millis(50)).await;
         Ok(())
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
-    async fn interface_ids_for_inbound_ingest(
+    async fn online_interface_ids_for_ingest(
         &self,
     ) -> Result<Vec<rns_transport::messages::InterfaceId>, String> {
         let resp = self
@@ -1141,12 +1201,12 @@ impl LiveBridge {
         let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
             return Err("interface stats unavailable".into());
         };
-        if stats.is_empty() {
-            return Err("no interfaces for inbound ingest".into());
-        }
         let mut ids: Vec<_> = stats.iter().filter(|s| s.online).map(|s| s.id).collect();
         if ids.is_empty() {
             ids = stats.iter().map(|s| s.id).collect();
+        }
+        if ids.is_empty() {
+            return Err("no interfaces for inbound ingest relay".into());
         }
         Ok(ids)
     }

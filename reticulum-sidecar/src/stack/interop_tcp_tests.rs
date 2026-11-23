@@ -242,17 +242,33 @@ async fn wait_voice_peer_discoverable(
     answerer_identity_hex: &str,
     timeout: Duration,
 ) -> Result<(), String> {
-    let _ = answerer.voice_announce_now().await;
-    let wire = answerer.voice_telephony_announce_wire_bytes()?;
     let identity = super::live::parse_hash16(answerer_identity_hex)?;
     let dest_hex = hex::encode(lxst_telephony::telephony_destination_hash(&identity));
     let deadline = Instant::now() + timeout;
     let mut last_err = String::from("telephony peer not discoverable");
+    let mut ingested = false;
     while Instant::now() < deadline {
-        if let Err(e) = dialer.ingest_inbound_wire_packet(&wire).await {
-            last_err = e;
-            tokio::time::sleep(READY_POLL).await;
-            continue;
+        // Fresh signed bytes — announce_now may refresh app data / timing.
+        let _ = answerer.voice_announce_now().await;
+        if !ingested {
+            let wire = match answerer.voice_telephony_announce_wire_bytes() {
+                Ok(w) => w,
+                Err(e) => {
+                    last_err = e;
+                    tokio::time::sleep(READY_POLL).await;
+                    continue;
+                }
+            };
+            // Owner-bound InterfaceEvent ingest (bare Inbound is refused in 1.5+).
+            // Keep a single ingest iface — each call leaves a TX relay registered.
+            match dialer.ingest_inbound_wire_packet(&wire).await {
+                Ok(()) => ingested = true,
+                Err(e) => {
+                    last_err = e;
+                    tokio::time::sleep(READY_POLL).await;
+                    continue;
+                }
+            }
         }
         let _ = dialer.request_peer_path_with_opts(&dest_hex, false).await;
         let remaining = deadline.saturating_duration_since(Instant::now());
