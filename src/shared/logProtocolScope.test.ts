@@ -97,6 +97,19 @@ describe('logProtocolScope registry', () => {
         line('[useProtocolRfAutoConnect] meshtastic auto-connect timed out after 30s'),
       ),
     ).toBe('meshtastic');
+    // Warn-level failures carry their mcL#### log ID (useProtocolRfAutoConnect.ts).
+    expect(
+      resolveLogProtocol(
+        line('mcL0762 [useProtocolRfAutoConnect] meshcore auto-connect timed out after 30s'),
+      ),
+    ).toBe('meshcore');
+    expect(
+      resolveLogProtocol(
+        line(
+          'mcL0763 [useProtocolRfAutoConnect] reticulum ble auto-connect failed: Error: no device',
+        ),
+      ),
+    ).toBe('reticulum');
     expect(
       resolveLogProtocol(
         line(

@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import { app } from 'electron';
 import { EventEmitter } from 'events';
 import fs from 'fs';
@@ -26,6 +27,7 @@ vi.mock('child_process', () => ({
 
 import {
   ensureDevSidecarBinary,
+  ensureRsReticulumPatches,
   findReticulumSidecarProjectDir,
   formatReticulumCargoBuildError,
   hasRsstackWorkspace,
@@ -136,6 +138,29 @@ describe('reticulum-sidecar-path', () => {
     fs.mkdirSync(projectDir, { recursive: true });
     expect(hasRsstackWorkspace(projectDir)).toBe(false);
     expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build']);
+  });
+
+  it('ensureRsReticulumPatches runs the patch script through bash (works without +x and on Windows)', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-patches-'));
+    const meshRoot = path.join(tmpDir, 'mesh-client');
+    const projectDir = path.join(meshRoot, 'reticulum-sidecar');
+    const stackRoot = path.join(meshRoot, '.rsstack');
+    fs.mkdirSync(path.join(stackRoot, 'rsReticulum', 'crates', 'rns-runtime'), { recursive: true });
+    fs.mkdirSync(path.join(stackRoot, 'rsLXMF', 'crates', 'lxmf-core'), { recursive: true });
+    fs.writeFileSync(path.join(stackRoot, 'rsReticulum/crates/rns-runtime/Cargo.toml'), '');
+    fs.writeFileSync(path.join(stackRoot, 'rsLXMF/crates/lxmf-core/Cargo.toml'), '');
+    fs.mkdirSync(projectDir, { recursive: true });
+    const scriptPath = path.join(meshRoot, 'scripts', 'ensure-rsReticulum-patches.sh');
+    fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
+    // Deliberately not executable: the old direct spawn needed +x.
+    fs.writeFileSync(scriptPath, 'exit 0\n', { mode: 0o644 });
+    vi.mocked(spawnSync).mockClear();
+
+    ensureRsReticulumPatches(projectDir);
+
+    expect(spawnSync).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(spawnSync).mock.calls[0]?.[0]).toBe('bash');
+    expect(vi.mocked(spawnSync).mock.calls[0]?.[1]).toEqual([path.resolve(scriptPath)]);
   });
 
   it('sidecarBinaryLacksRnsBle detects sidecars built without rns-ble', () => {
