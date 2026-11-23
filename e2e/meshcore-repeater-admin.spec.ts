@@ -55,6 +55,13 @@ async function connect(page: Page, port: number) {
   await page.locator('[data-setting-anchor="connection.radio.connect"]').click();
   await openPanel(page, 'Network', 'Repeaters');
   await page.getByRole('button', { name: `More actions for ${radio.repeaterName}` }).waitFor();
+  // Optional GPS prompt can cover the Repeaters table on hosts without a fix (seen on macOS CI).
+  await page
+    .getByRole('button', { name: 'Dismiss location prompt for this session' })
+    .click({ timeout: 2_000 })
+    .catch(() => {
+      // catch-no-log-ok location prompt is optional by host GPS state
+    });
 }
 
 /** Choose a row-menu request and answer the admin password dialog if it opens. */

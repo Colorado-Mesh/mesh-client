@@ -44,6 +44,28 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(toolchain).toMatch(/\.local\/bin.*GITHUB_PATH|GITHUB_PATH.*\.local\/bin/);
   });
 
+  it('installs clippy with the Rust toolchain for check:environment', () => {
+    expect(toolchain).toContain('dtolnay/rust-toolchain');
+    expect(toolchain).toMatch(/components:\s*clippy/);
+  });
+
+  it('Electron E2E job installs Rust, yamllint, and Semgrep before check:environment', () => {
+    const e2eJob = e2e.slice(0, e2e.indexOf('\n  release-preflight:'));
+    expect(e2eJob).toContain('dtolnay/rust-toolchain');
+    expect(e2eJob).toMatch(/components:\s*clippy/);
+    expect(e2eJob).toContain('scripts/requirements-yamllint.txt');
+    // Isolated venv — system/Homebrew Python may be externally managed (PEP 668).
+    expect(e2eJob).toContain('python3 -m venv');
+    expect(e2eJob).toMatch(/"\$PIP" install semgrep|\$PIP install semgrep/);
+    expect(e2eJob).not.toContain('pip install --user semgrep');
+    expect(e2eJob.indexOf('Setup Rust')).toBeLessThan(
+      e2eJob.indexOf('Check environment (pre-install)'),
+    );
+    expect(e2eJob.indexOf('Install yamllint and Semgrep')).toBeLessThan(
+      e2eJob.indexOf('Check environment (pre-install)'),
+    );
+  });
+
   it('runs release.sh pre-flight only, with tags and without push credentials', () => {
     expect(preflightJob).toContain('run: pnpm run release -- --preflight-only');
     expect(preflightJob).toMatch(/fetch-depth: 0/);

@@ -1313,7 +1313,9 @@
         "openFailedLinuxHint": "Auf Linux bedeutet dies oft, dass sich dein Benutzer nicht in der Dialout-Gruppe befindet (sudo usermod -aG dialout $USER, dann abmelden und wieder einloggen) oder ein anderes Programm den Port verwendet (Close Flashers, ModemManager oder serielle Terminals).",
         "openFailedWindowsHint": "Stelle sicher, dass der richtige USB -Treiber installiert ist (CH340, CP210x oder FTDI). Schließe jede andere App über den COM-Port, ziehe dann den Stecker und stecke das Kabel erneut ein.",
         "openFailedGenericHint": "Schließen Sie eine andere App über den seriellen Anschluss, ziehen Sie dann den Netzstecker und stecken Sie das USB -Kabel erneut ein, und versuchen Sie es erneut.",
-        "inAppHoldHint": "{{protocols}} hat im Mesh-Client immer noch eine USB-Serienverbindung. Trennen Sie die serielle Sitzung dieses Protokolls (oder wechseln Sie die Protokolle und trennen Sie die Verbindung) und versuchen Sie es dann erneut."
+        "inAppHoldHint": "{{protocols}} hat im Mesh-Client immer noch eine USB-Serienverbindung. Trennen Sie die serielle Sitzung dieses Protokolls (oder wechseln Sie die Protokolle und trennen Sie die Verbindung) und versuchen Sie es dann erneut.",
+        "noMatchHint": "Verwenden Sie „Serielle Schnittstelle auswählen“ und wählen Sie den COM-Port für Ihr Funkgerät aus. Dual-UART-Chips (z. B. Silicon Labs CP2105 Standard und Enhanced) sehen identisch aus – probieren Sie jeden aus, bis das Funkgerät konfiguriert ist.",
+        "ambiguousMatchHint": "Mehr als ein USB-Serial-Port stimmt mit dem letzten Gerät überein (häufig bei Dual CP2105 Standard vs. Enhanced). Verwenden Sie „Serielle Schnittstelle auswählen“ und probieren Sie jeden Silicon-Labs-COM-Anschluss aus, bis das Funkgerät konfiguriert ist."
       },
       "http": {
         "timeoutMdnsWindows": "Unter Windows erfordert meshtastic.local Bonjour (installiert mit iTunes). Verwenden Sie stattdessen die IP-Adresse des Geräts.",

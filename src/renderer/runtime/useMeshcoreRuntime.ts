@@ -7008,10 +7008,10 @@ export function useMeshcoreRuntime() {
         identity: meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null,
         connection: connRef.current,
       }),
-      isEscalationContextCurrent: (ctx) =>
-        ctx.connection === connRef.current &&
-        ctx.identity ===
-          (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null),
+      // Only the live connection gates the flood retry. Identity can be rewritten after
+      // configure (driver slot → pubkey id) while the same TCP/BLE handle stays up; treating
+      // that as stale left the radio at 0xFF with no flood resend (macOS E2E flake).
+      isEscalationContextCurrent: (ctx) => ctx.connection === connRef.current,
     }),
     [
       resetContactPathForEscalation,

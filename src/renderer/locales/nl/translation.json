@@ -1314,7 +1314,9 @@
         "openFailedLinuxHint": "Op Linux betekent dit vaak dat je gebruiker niet in de belgroep zit (sudo usermod -aG dialout $USER, log dan uit en weer in), of dat een ander programma de poort gebruikt (sluit flashers, ModemManager of seriële terminals).",
         "openFailedWindowsHint": "Zorg ervoor dat het juiste USB -stuurprogramma is geïnstalleerd (CH340, CP210x of FTDI), sluit elke andere app met behulp van de COM-poort en koppel vervolgens de kabel los en weer aan.",
         "openFailedGenericHint": "Sluit een andere app via de seriële poort, trek de stekker uit het stopcontact, sluit de USB -kabel weer aan en probeer het opnieuw.",
-        "inAppHoldHint": "{{protocols}} heeft nog steeds een seriële USB-verbinding in Mesh Client. Verbreek de seriële sessie van dat protocol (of wissel van protocol en verbreek de verbinding) en probeer het vervolgens opnieuw."
+        "inAppHoldHint": "{{protocols}} heeft nog steeds een seriële USB-verbinding in Mesh Client. Verbreek de seriële sessie van dat protocol (of wissel van protocol en verbreek de verbinding) en probeer het vervolgens opnieuw.",
+        "noMatchHint": "Gebruik Seriële poort selecteren en kies de COM-poort voor uw radio. Dual-UART-chips (bijvoorbeeld Silicon Labs CP2105 Standard en Enhanced) zien er identiek uit — probeer ze allebei totdat de radio is geconfigureerd.",
+        "ambiguousMatchHint": "Meer dan één USB seriële poort komt overeen met het laatste apparaat (komt vaak voor bij Dual CP2105 Standard vs Enhanced). Gebruik Seriële poort selecteren en probeer elke Silicon Labs COM totdat de radio is geconfigureerd."
       },
       "http": {
         "timeoutMdnsWindows": "Op Windows vereist meshtastic.local Bonjour (geïnstalleerd met iTunes). Gebruik in plaats daarvan het IP-adres van het apparaat.",

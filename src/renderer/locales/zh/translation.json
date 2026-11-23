@@ -1315,7 +1315,9 @@
         "openFailedLinuxHint": "在Linux ，这通常意味着您的用户不在拨出组中（ sudo usermod -aG dialout $ USER ，然后注销并重新登录） ，或者其他程序正在使用端口（关闭闪光灯、ModemManager或串行终端）。",
         "openFailedWindowsHint": "确保安装了正确的USB驱动程序（ CH340、CP210x或FTDI ） ，使用COM端口关闭任何其他应用程序，然后拔下并重新插入电缆。",
         "openFailedGenericHint": "使用串行端口关闭任何其他应用程序，然后拔下并重新插入USB电缆，然后重试。",
-        "inAppHoldHint": "{{protocols}} 在 Mesh Client 中仍占用 USB 串口。请断开该协议的串口会话（或切换协议并断开连接）后重试。"
+        "inAppHoldHint": "{{protocols}} 在 Mesh Client 中仍占用 USB 串口。请断开该协议的串口会话（或切换协议并断开连接）后重试。",
+        "noMatchHint": "使用“选择串行端口”，然后选择您的无线电的 COM 端口。双 UART 芯片（例如 Silicon Labs CP2105 标准版和增强版）看起来一样——请逐一尝试，直到无线电配置成功。",
+        "ambiguousMatchHint": "有多个 USB 串行端口与最后一个设备匹配（常见于双 CP2105 标准版与增强版）。使用“选择串行端口”并尝试每个 Silicon Labs COM，直至无线电配置完成。"
       },
       "http": {
         "timeoutMdnsWindows": "在 Windows 上，meshtastic.local 需要 Bonjour（与 iTunes 一起安装）。请改用设备的 IP 地址。",

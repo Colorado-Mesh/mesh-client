@@ -546,6 +546,19 @@ See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wak
 
 See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.
 
+### Windows: Dual CP2105 Standard and Enhanced COM ports
+
+**Symptoms:** Device Manager shows **Silicon Labs Dual CP2105 USB to UART Bridge: Standard COM Port (COMx)** and **Enhanced COM Port (COMy)** with healthy drivers. Auto-reconnect opens a port but Configure never finishes, or the Log shows `Multiple matching serial devices found` / `No matching previously used serial device found`.
+
+**Cause:** Both interfaces share the same USB VID/PID (Silicon Labs' CP2105 default is often `10C4:EA70`; manufacturers may customize it, e.g. `10C4:EA60`). When Chromium `portId` is missing or unstable, gesture-free reconnect cannot tell Standard from Enhanced and must not guess.
+
+**What to do:**
+
+1. Ignore unrelated COMs (LTE modems, Intel SOL, etc.).
+2. Connection → **Select serial port** (do not rely only on Restore / auto-connect).
+3. Grant **Standard** first; if Configure hangs, Disconnect and grant **Enhanced**. Keep whichever reaches configured — board wiring decides which UART is the companion link.
+4. If both hang, quit mesh-client, unplug/replug USB, or reboot Windows once, then retry Standard → Enhanced.
+
 ### Linux: serial port access denied
 
 **Symptom**: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`

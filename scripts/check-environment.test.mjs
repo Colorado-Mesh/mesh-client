@@ -6,8 +6,11 @@ import {
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
   evaluatePlaywrightCheck,
+  evaluateRustCheck,
+  evaluateRustClippyCheck,
   evaluateSemgrepCheck,
   evaluateWindowsBuildDepsCheck,
+  evaluateYamllintCheck,
   parseCheckEnvironmentArgs,
   parseVersion,
   resolveExitCode,
@@ -397,18 +400,93 @@ describe('check-environment evaluateSemgrepCheck', () => {
   it('passes when semgrep reports a version', () => {
     expect(evaluateSemgrepCheck({ versionOutput: '1.186.0' })).toMatchObject({
       status: 'pass',
-      severity: 'optional',
+      severity: 'required',
       label: 'semgrep',
       detail: '1.186.0',
     });
   });
 
-  it('warns with install hint when semgrep is missing', () => {
+  it('fails with install hint when semgrep is missing', () => {
     expect(evaluateSemgrepCheck({ versionOutput: null })).toMatchObject({
-      status: 'warn',
-      severity: 'optional',
-      label: 'semgrep not found (optional)',
-      hint: expect.stringContaining('check:semgrep'),
+      status: 'fail',
+      severity: 'required',
+      label: 'semgrep not found',
+      hint: expect.stringContaining('setup:semgrep'),
+    });
+  });
+});
+
+describe('check-environment evaluateYamllintCheck', () => {
+  it('passes when yamllint reports a version', () => {
+    expect(evaluateYamllintCheck({ versionOutput: 'yamllint 1.37.1' })).toMatchObject({
+      status: 'pass',
+      severity: 'required',
+      label: 'yamllint',
+      detail: 'yamllint 1.37.1',
+    });
+  });
+
+  it('fails with install hint when yamllint is missing', () => {
+    expect(evaluateYamllintCheck({ versionOutput: null })).toMatchObject({
+      status: 'fail',
+      severity: 'required',
+      label: 'yamllint not found',
+      hint: expect.stringContaining('setup:yamllint'),
+    });
+  });
+});
+
+describe('check-environment evaluateRustCheck', () => {
+  it('passes when cargo reports a version', () => {
+    expect(
+      evaluateRustCheck({ versionOutput: 'cargo 1.88.0 (873a06493 2025-05-10)' }),
+    ).toMatchObject({
+      status: 'pass',
+      severity: 'required',
+      label: 'Rust/cargo',
+    });
+  });
+
+  it('fails with rustup hint when cargo is missing', () => {
+    expect(evaluateRustCheck({ versionOutput: null })).toMatchObject({
+      status: 'fail',
+      severity: 'required',
+      label: 'Rust/cargo not found',
+      hint: expect.stringContaining('rustup.rs'),
+    });
+  });
+});
+
+describe('check-environment evaluateRustClippyCheck', () => {
+  it('returns null when cargo is missing', () => {
+    expect(
+      evaluateRustClippyCheck({ cargoPresent: false, clippyOk: false, versionOutput: null }),
+    ).toBeNull();
+  });
+
+  it('passes when clippy is ready', () => {
+    expect(
+      evaluateRustClippyCheck({
+        cargoPresent: true,
+        clippyOk: true,
+        versionOutput: 'clippy 0.1.88',
+      }),
+    ).toMatchObject({
+      status: 'pass',
+      severity: 'required',
+      label: 'cargo clippy',
+      detail: 'clippy 0.1.88',
+    });
+  });
+
+  it('fails when cargo is present but clippy is missing', () => {
+    expect(
+      evaluateRustClippyCheck({ cargoPresent: true, clippyOk: false, versionOutput: null }),
+    ).toMatchObject({
+      status: 'fail',
+      severity: 'required',
+      label: 'cargo clippy not ready',
+      hint: expect.stringContaining('clippy'),
     });
   });
 });

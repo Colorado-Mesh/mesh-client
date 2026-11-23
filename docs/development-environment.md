@@ -21,6 +21,19 @@ node --version
 pnpm --version
 ```
 
+### First run (humans and AIs)
+
+Use this short recipe on a fresh clone (agents: same order):
+
+1. `node scripts/check-environment.mjs` (works before pnpm is installed).
+2. After Node/pnpm exist, prefer `pnpm run setup:dev` — installs Semgrep, yamllint, native build deps, and actionlint; ensures Rust/`cargo` + clippy; sets `git config core.hooksPath .githooks`; re-runs `check:environment`; then smokes with `pnpm run typecheck` when `node_modules` exists. Or follow printed `→` hints / individual `setup:*` scripts.
+3. `pnpm install` (or `pnpm install --frozen-lockfile` on a clean clone).
+4. `pnpm run setup:dev` again (or at least `pnpm run check:environment`) — must exit 0.
+5. Optional UI smoke: `pnpm run dev`.
+6. Before commit/push: confirm `git config core.hooksPath` is `.githooks`; run `pnpm run check:changed` before push.
+
+OS-specific install notes are below. Deeper tooling tables live in [Helper scripts](#8-helper-scripts-auto-install-where-possible).
+
 ### Environment check
 
 Run the automated checklist after cloning (works before pnpm is installed):
@@ -28,15 +41,16 @@ Run the automated checklist after cloning (works before pnpm is installed):
 ```bash
 node scripts/check-environment.mjs # before pnpm install
 pnpm install
-pnpm run check:environment # re-check after install
+pnpm run setup:dev # preferred: install required tools, re-check, typecheck smoke
+# or: pnpm run check:environment
 pnpm run dev
 ```
 
-**Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, and platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows).
+**Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows), **Semgrep**, **yamllint**, **Rust/`cargo`**, and **cargo clippy**. Semgrep App login / `SEMGREP_APP_TOKEN` are **not** required (registry network access is needed for the public rule packs).
 
-**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, Semgrep, a Docker-compatible container engine (Podman preferred), act, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, pre-commit hooks (Semgrep is required for always-on `check:semgrep`), Reticulum sidecar work, local CI parity, or USB serial on Linux.
+**Optional** checks (warnings only): Python/pip, `cargo llvm-cov`, actionlint, a Docker-compatible container engine (Podman preferred), act, Playwright, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, workflow linting, local CI parity, sidecar coverage reports, or USB serial on Linux.
 
-Use the printed `→` hints and `setup:*` scripts (`setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
+Use the printed `→` hints and `setup:*` scripts (`setup:dev`, `setup:semgrep`, `setup:yamllint`, `setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
 
 ### MkDocs (documentation) tooling
 
@@ -64,9 +78,9 @@ If `pnpm run docs:install` fails with `externally-managed-environment`, activate
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
-node scripts/check-environment.mjs # optional but recommended on first clone
+node scripts/check-environment.mjs # recommended on first clone
 pnpm install
-pnpm run check:environment # re-check after install
+pnpm run setup:dev # required tools + check:environment + typecheck smoke
 ```
 
 If you are updating from an older clone, use a clean install when troubleshooting native module issues:
@@ -517,7 +531,10 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `reticulum:sidecar:test`        | Full-feature `cargo test` (clones the `.rsstack/` workspace if needed)                                                          |
 | `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
 | `setup:build-deps`              | Install native build dependencies                                                                                               |
+| `setup:dev`                     | First-run: required tools + hooksPath + `check:environment` + typecheck smoke                                                   |
 | `setup:dialout`                 | Add user to dialout group for serial port access (Linux)                                                                        |
+| `setup:semgrep`                 | Install Semgrep (App login not required)                                                                                        |
+| `setup:yamllint`                | Install yamllint (brew/apt/hash-locked pip)                                                                                     |
 | `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar                                                                      |
 
 #### Lifecycle (automatic)
@@ -570,10 +587,10 @@ Installed via `pnpm install` (from `package.json`):
 
 Not installed by pnpm (install separately when needed):
 
-- `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
-- `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
-- **Semgrep** (required for always-on pre-commit / release / CI `pnpm run check:semgrep`; install via `brew install semgrep` or `pipx install semgrep` / `pip install semgrep`). Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings (especially from broad default packs) may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — `nosemgrep` does not replace `eslint-disable` (see AGENTS.md **Semgrep × ESLint**).
-- **Rust / `cargo`** (optional; Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/)). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
+- `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or `pnpm run setup:dev`)
+- `yamllint` (**required** for `check:environment` and pre-commit YAML lint; `pnpm run setup:yamllint` or brew/apt/pip)
+- **Semgrep** (**required** for `check:environment` and always-on pre-commit / release / CI `pnpm run check:semgrep`; `pnpm run setup:semgrep` or brew/pipx/pip). App login is **not** required. Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — `nosemgrep` does not replace `eslint-disable` (see AGENTS.md **Semgrep × ESLint**).
+- **Rust / `cargo` + clippy** (**required** for `check:environment`; prefer [rustup](https://rustup.rs/); `pnpm run setup:dev` prints a non-interactive rustup recipe and can `rustup component add clippy`). Needed for the Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
 - Podman or Docker (Docker-compatible engine) and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without a container engine)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
@@ -768,28 +785,31 @@ macOS and Windows **installer** builds still require native `pnpm run dist:mac` 
 
 ### 8) Helper scripts (auto-install where possible)
 
-These scripts try to install optional tooling automatically. If they fail (for example, missing `sudo`/admin rights), follow the manual steps in this doc instead.
+These scripts try to install required and optional tooling automatically. If they fail (for example, missing `sudo`/admin rights), follow the manual steps in this doc instead.
 
-0. Verify your environment (recommended after a fresh clone):
+0. Preferred one-shot after Node/pnpm exist (and again after `pnpm install`):
+   - `pnpm run setup:dev` — build-deps, Semgrep, yamllint, Rust/clippy hints, actionlint, `core.hooksPath=.githooks`, then `check:environment` + typecheck smoke
+1. Verify your environment only:
    - `node scripts/check-environment.mjs` (before `pnpm install`)
    - `pnpm run check:environment` (after `pnpm install`)
-1. Install `actionlint` (used by the git pre-commit hook):
+2. Install `actionlint` (used by the git pre-commit hook when workflows are staged):
    - `pnpm run setup:actionlint`
    - This installs into `.githooks/bin` so the hook can find it.
-2. Install `yamllint` (required by the git pre-commit hook):
-   - Install manually via pip: `pip install yamllint`
-   - macOS alternative: `brew install yamllint`
-   - Linux alternative: `sudo apt install yamllint` (Debian/Ubuntu) or `sudo dnf install yamllint` (Fedora)
-3. Install Semgrep (required by always-on pre-commit `check:semgrep`):
-   - macOS: `brew install semgrep`
-   - pipx: `pipx install semgrep`
-   - pip: `pip install semgrep`
+3. Install `yamllint` (**required** by `check:environment` and the git pre-commit hook):
+   - `pnpm run setup:yamllint`
+   - Or: `brew install yamllint` / `sudo apt install yamllint` / hash-locked `pip install --user --require-hashes --only-binary=:all: -r scripts/requirements-yamllint.txt`
+4. Install Semgrep (**required** by `check:environment` and always-on pre-commit `check:semgrep`):
+   - `pnpm run setup:semgrep`
+   - Or: macOS `brew install semgrep` / `pipx install semgrep` / `pip install semgrep`
+   - Semgrep App login / `SEMGREP_APP_TOKEN` are **not** required.
    - Policy file [`.semgrep.yml`](../.semgrep.yml) is tracked in git (do not ignore it).
-4. Install native build dependencies:
+5. Install native build dependencies:
    - `pnpm run setup:build-deps`
    - Linux/macOS: attempts to install what native builds need (requires sudo where applicable).
    - Windows: prints a message to install Visual Studio Build Tools manually.
-5. (Linux only) Fix serial port permissions:
+6. Install Rust (**required** for `check:environment`; prefer [rustup](https://rustup.rs/)):
+   - `pnpm run setup:dev` prints a non-interactive rustup recipe when `cargo` is missing and runs `rustup component add clippy` when needed.
+7. (Linux only) Fix serial port permissions:
    - `pnpm run setup:dialout`
    - Adds your user to the `dialout` group (requires sudo + re-login).
 

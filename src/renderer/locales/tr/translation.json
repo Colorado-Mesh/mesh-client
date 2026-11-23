@@ -1315,7 +1315,9 @@
         "openFailedLinuxHint": "Linux tarihinde bu genellikle kullanıcınızın arama grubunda olmadığı (sudo usermod - aG dialout $USER, ardından çıkış yapıp tekrar giriş yaptığı) veya başka bir programın bağlantı noktasını kullandığı (flaşörleri, ModemManager'ı veya seri terminalleri kapattığı) anlamına gelir.",
         "openFailedWindowsHint": "Doğru USB sürücüsünün (CH340, CP210x veya FTDI) yüklendiğinden emin olun, com bağlantı noktasını kullanarak diğer uygulamaları kapatın, ardından kabloyu çıkarıp yeniden takın.",
         "openFailedGenericHint": "Seri bağlantı noktasını kullanarak diğer uygulamaları kapatın, ardından USB kablosunu çıkarıp yeniden takın ve tekrar deneyin.",
-        "inAppHoldHint": "{{protocols}} hâlâ Mesh İstemcisinde bir USB seri bağlantısına sahip. O protokolün seri oturumunu kesin (veya protokolleri değiştirip bağlantıyı kesin), ardından tekrar deneyin."
+        "inAppHoldHint": "{{protocols}} hâlâ Mesh İstemcisinde bir USB seri bağlantısına sahip. O protokolün seri oturumunu kesin (veya protokolleri değiştirip bağlantıyı kesin), ardından tekrar deneyin.",
+        "noMatchHint": "Seri bağlantı noktasını seçin seçeneğini kullanın ve telsiziniz için COM bağlantı noktasını seçin. Çift UART çipleri (örneğin Silicon Labs CP2105 Standard ve Enhanced) aynı görünür — telsiz yapılandırılana kadar her birini deneyin.",
+        "ambiguousMatchHint": "Birden fazla USB seri bağlantı noktası son cihazla eşleşiyor (Çift CP2105 Standart ve Gelişmiş'te yaygındır). Seri bağlantı noktasını seçin ve telsiz yapılandırılana kadar her bir Silicon Labs COM'u deneyin."
       },
       "http": {
         "timeoutMdnsWindows": "Windows'ta meshtastic.local, Bonjour'u (iTunes ile birlikte yüklenir) gerektirir. Bunun yerine cihazın IP adresini kullanın.",

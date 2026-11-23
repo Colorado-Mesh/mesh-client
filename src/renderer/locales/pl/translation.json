@@ -1353,7 +1353,9 @@
         "openFailedLinuxHint": "W dniu Linux często oznacza to, że Twój użytkownik nie znajduje się w grupie dial-out (UŻYTKOWNIK sudo usermod -aG dialout $, a następnie wylogowuje się i ponownie wchodzi) lub inny program korzysta z portu (migacze zamykania, ModemManager lub terminale szeregowe).",
         "openFailedWindowsHint": "Upewnij się, że zainstalowany jest prawidłowy sterownik USB (CH340, CP210x lub FTDI), zamknij dowolną inną aplikację za pomocą portu COM, a następnie odłącz i ponownie podłącz kabel.",
         "openFailedGenericHint": "Zamknij dowolną inną aplikację za pomocą portu szeregowego, a następnie odłącz i ponownie podłącz kabel USB i spróbuj ponownie.",
-        "inAppHoldHint": "{{protocols}} nadal ma połączenie szeregowe USB w kliencie sieci Mesh. Odłącz sesję szeregową tego protokołu (lub zmień protokoły i odłącz), a następnie spróbuj ponownie."
+        "inAppHoldHint": "{{protocols}} nadal ma połączenie szeregowe USB w kliencie sieci Mesh. Odłącz sesję szeregową tego protokołu (lub zmień protokoły i odłącz), a następnie spróbuj ponownie.",
+        "noMatchHint": "Użyj opcji Wybierz port szeregowy i wybierz port COM dla swojego radia. Układy z dwoma interfejsami UART (na przykład Silicon Labs CP2105 Standard i Enhanced) wyglądają identycznie – wypróbuj każdy z nich, aż radio zostanie skonfigurowane.",
+        "ambiguousMatchHint": "Do ostatniego urządzenia pasuje więcej niż jeden port szeregowy USB (często występuje w przypadku podwójnego układu CP2105 w wersji standardowej i rozszerzonej). Użyj opcji „Wybierz port szeregowy” i wypróbuj każdy port COM Silicon Labs, aż radio zostanie skonfigurowane."
       },
       "http": {
         "timeoutMdnsWindows": "W systemie Windows meshtastic.local wymaga Bonjour (instalowanego z iTunes). Zamiast tego użyj adresu IP urządzenia.",

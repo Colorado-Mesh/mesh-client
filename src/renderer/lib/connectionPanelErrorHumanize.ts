@@ -109,10 +109,23 @@ export function humanizeSerialError(
           : t('connectionPanel.humanize.serial.openFailedGenericHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
-  if (/no port|not found|disconnected|device not found/i.test(msg)) {
+  if (/multiple matching serial devices/i.test(msg)) {
     return t('connectionPanel.humanize.prefixedHint', {
       message: msg,
-      hint: t('connectionPanel.humanize.serial.disconnectedHint'),
+      hint: t('connectionPanel.humanize.serial.ambiguousMatchHint'),
+    });
+  }
+  if (
+    /no matching previously used serial|no previously granted serial|no port|not found|disconnected|device not found/i.test(
+      msg,
+    )
+  ) {
+    const hint = /no matching previously used serial|no previously granted serial/i.test(msg)
+      ? t('connectionPanel.humanize.serial.noMatchHint')
+      : t('connectionPanel.humanize.serial.disconnectedHint');
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint,
     });
   }
   if (/timed out/i.test(msg)) {

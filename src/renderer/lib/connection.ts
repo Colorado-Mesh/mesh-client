@@ -28,6 +28,7 @@ import {
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
+  isAmbiguousSerialPortMatchError,
   persistSerialPortIdentity,
   selectGrantedSerialPort,
 } from './serialPortSignature';
@@ -235,8 +236,24 @@ export async function createConnection(
       const serialApi = navigator.serial;
       const origRequestPort = serialApi.requestPort.bind(serialApi);
       let capturedSerialPort: SerialPort | null = null;
+      // Open deadline starts after the user finishes requestPort — picker wait must not
+      // burn SERIAL_OPEN_TIMEOUT_MS (Dual CP2105 ambiguous match → picker).
+      let openTimeoutId: ReturnType<typeof setTimeout> | undefined;
+      let rejectOpenTimeout: ((err: Error) => void) | undefined;
+      const openTimeoutPromise = new Promise<never>((_, reject) => {
+        rejectOpenTimeout = reject;
+      });
+      const startSerialOpenDeadline = (): void => {
+        if (openTimeoutId !== undefined) return;
+        openTimeoutId = setTimeout(() => {
+          rejectOpenTimeout?.(
+            new Error(`Serial connection timed out after ${SERIAL_OPEN_TIMEOUT_MS / 1000}s`),
+          );
+        }, SERIAL_OPEN_TIMEOUT_MS);
+      };
       serialApi.requestPort = async (options?: { filters?: unknown[] }) => {
         const p = await origRequestPort(options);
+        startSerialOpenDeadline();
         capturedSerialPort = p;
         await releaseConflictingSerialSessions('meshtastic', p);
         await closeSerialPortIfOpen(p);
@@ -244,15 +261,8 @@ export async function createConnection(
       };
       try {
         const serialPromise = TransportWebSerial.create(115200);
-        const serialTimeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => {
-            reject(
-              new Error(`Serial connection timed out after ${SERIAL_OPEN_TIMEOUT_MS / 1000}s`),
-            );
-          }, SERIAL_OPEN_TIMEOUT_MS),
-        );
         try {
-          transport = await Promise.race([serialPromise, serialTimeoutPromise]);
+          transport = await Promise.race([serialPromise, openTimeoutPromise]);
         } catch (err) {
           console.debug(
             `[connection] TransportWebSerial.create failed ${err instanceof Error ? err.message : String(err)}`,
@@ -261,6 +271,7 @@ export async function createConnection(
           rethrowIfTransportWebSerialPipeToFailed(err, 'TransportWebSerial.create');
         }
       } finally {
+        if (openTimeoutId !== undefined) clearTimeout(openTimeoutId);
         serialApi.requestPort = origRequestPort;
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
@@ -409,7 +420,20 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   console.debug(
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
-  const port = selectGrantedSerialPort(ports, lastPortId);
+  let port: SerialPort;
+  try {
+    port = selectGrantedSerialPort(ports, lastPortId);
+  } catch (err) {
+    // Dual CP2105 (Standard + Enhanced) share VID/PID — open the picker instead of
+    // binding the first match (Configure hangs on the non-companion UART).
+    if (isAmbiguousSerialPortMatchError(err)) {
+      console.warn(
+        'mcL1499 [connection] reconnectSerial ambiguous serial match — opening port picker',
+      );
+      return createConnection('serial');
+    }
+    throw err;
+  }
   await releaseConflictingSerialSessions('meshtastic', port);
   await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);
