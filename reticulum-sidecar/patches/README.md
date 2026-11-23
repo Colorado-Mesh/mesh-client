@@ -490,7 +490,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `5e35c9f9d9f4` (`ratspeak/rsReticulum` v1.5.1) + prior mesh-client overlays through discovery-announce-egress |
+| **Base commit** | `306eaa8` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
@@ -532,10 +532,10 @@ Expose host outbound TX mpsc fill on `GetInterfaceStats` as `tx_queue_used` / `t
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `5e35c9f9d9f4` (`ratspeak/rsReticulum` v1.5.1) + prior mesh-client overlays through inbound-raw-saturation-log |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` at regeneration time |
 | **Upstream PR** | none yet (mesh-client-local) |
 
-**Touches:** `crates/rns-transport/src/messages.rs`, `crates/rns-transport/src/actor/rpc.rs`, `crates/rns-runtime/src/rpc.rs`
+**Touches:** `crates/rns-transport/src/messages.rs`, `crates/rns-transport/src/actor/rpc.rs`
 
 ### Apply locally
 
@@ -555,7 +555,7 @@ Non-standard mesh-client announce policy (default **on**; stack setting `slow_rf
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `5e35c9f9d9f4` (`ratspeak/rsReticulum` v1.5.1) + prior mesh-client overlays through interface-tx-queue-stats |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` at regeneration time |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `crates/rns-transport/src/messages.rs`, `crates/rns-transport/src/actor/mod.rs`, `crates/rns-transport/src/actor/rpc.rs`

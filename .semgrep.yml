@@ -1,10 +1,9 @@
-# Mesh Client Semgrep policy (complements p/typescript p/javascript p/nodejs p/security-audit + .semgrep.yml).
+# Mesh Client Semgrep policy (complements `semgrep --config auto` + `p/nodejs`).
 #
 # Tracked in git — do not add to .gitignore / exclude. Gate:
-#   pnpm run check:semgrep  (full scan: release / CI policy-scanners)
-#   pnpm run check:semgrep -- <file...>  (staged-only scan: pre-commit)
+#   pnpm run check:semgrep  (pre-commit, release, CI policy-scanners)
 #
-# Findings (especially from broad default packs) may be false positives. Research
+# Findings (especially from `--config auto`) may be false positives. Research
 # the rule and call path before dismissing. Prefer a real fix; if the finding
 # is wrong for this codebase, update this file and/or add a narrow nosemgrep
 # with a reason. See scripts/check-semgrep.mjs.

@@ -98,8 +98,7 @@ async fn init_once(
     options: InitOptions,
 ) -> Result<(ReticulumHandle, ShutdownSignal), (InstanceStartupError, ShutdownSignal)> {
     let shutdown = ShutdownSignal::new();
-    // rsReticulum 1.5.1 grew init_with_policy's future past clippy::large_futures.
-    match Box::pin(reticulum::init_with_policy(
+    match reticulum::init_with_policy(
         Some(config_dir),
         None,
         shutdown.clone(),
@@ -107,7 +106,7 @@ async fn init_once(
         options,
         rns_runtime::prelude::RNodeStartupOptions::default(),
         policy,
-    ))
+    )
     .await
     {
         Ok(handle) => Ok((handle, shutdown)),
