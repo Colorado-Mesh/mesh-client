@@ -1505,6 +1505,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1492: 'src/renderer/stores/wordFilterStore.ts:79',
   mcL1494: 'src/renderer/workers/analysis.worker.ts:24',
   mcL1495: 'src/renderer/workers/messageEncoder.worker.ts:81',
+  mcL1496: 'src/renderer/lib/connectionHistoryStorage.ts:93',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

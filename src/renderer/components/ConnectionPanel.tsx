@@ -69,6 +69,14 @@ import {
 import { reconnectBleWithScan, startGattScanningWithRetry } from '../lib/bleReconnectHelper';
 import { deviceHeaderVariant } from '../lib/connectionHeaderStatus';
 import {
+  connectionHistoryIdentityKey,
+  deleteConnectionHistory,
+  loadConnectionHistory,
+  type SavedConnection,
+  savedConnectionPrimaryLabel,
+  upsertConnectionHistory,
+} from '../lib/connectionHistoryStorage';
+import {
   humanizeBleError,
   humanizeHttpError,
   humanizeReticulumSidecarError,
@@ -1057,6 +1065,9 @@ export default function ConnectionPanel({
   const [lastConnection, setLastConnection] = useState<LastConnection | null>(() =>
     loadLastConnection(protocol),
   );
+  const [connectionHistory, setConnectionHistory] = useState<SavedConnection[]>(() =>
+    loadConnectionHistory(protocol),
+  );
   const bleHostSeedRssi = useMemo(() => {
     if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) {
       return null;
@@ -1121,13 +1132,31 @@ export default function ConnectionPanel({
   const lastConnectionRef = useRef(lastConnection);
   lastConnectionRef.current = lastConnection;
 
+  const removeMatchingHistoryEntry = useCallback(
+    (conn: LastConnection | null) => {
+      if (!conn) return;
+      const key = connectionHistoryIdentityKey(conn);
+      if (!key) return;
+      let next = loadConnectionHistory(protocol);
+      for (const entry of [...next]) {
+        if (connectionHistoryIdentityKey(entry) === key) {
+          next = deleteConnectionHistory(protocol, entry.id);
+        }
+      }
+      setConnectionHistory(next);
+    },
+    [protocol],
+  );
+
   const clearMeshcoreBleSelectionOnMissingServices = useCallback(
     (err: unknown) => {
       if (protocol !== 'meshcore' || !shouldClearMeshcoreBleSelectionForError(err)) return;
+      const prev = lastConnectionRef.current;
       clearStoredBleSelectionForProtocol('meshcore');
       setLastConnection(null);
+      removeMatchingHistoryEntry(prev);
     },
-    [protocol, setLastConnection],
+    [protocol, setLastConnection, removeMatchingHistoryEntry],
   );
   const connectionTypeRef = useRef(connectionType);
   connectionTypeRef.current = connectionType;
@@ -1141,6 +1170,7 @@ export default function ConnectionPanel({
   useEffect(() => {
     const loaded = loadLastConnection(protocol);
     setLastConnection(loaded);
+    setConnectionHistory(loadConnectionHistory(protocol));
     if (protocol === 'meshcore') {
       if (loaded?.type === 'http' && loaded.httpAddress) {
         const { host, port } = parseTcpAddress(loaded.httpAddress);
@@ -1189,13 +1219,15 @@ export default function ConnectionPanel({
     const handleBleSelectionCleared = (event: Event) => {
       const detail = (event as CustomEvent<{ protocol: MeshProtocol }>).detail;
       if (detail?.protocol !== protocol) return;
+      const prev = lastConnectionRef.current;
       setLastConnection(null);
+      removeMatchingHistoryEntry(prev);
     };
     window.addEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
     return () => {
       window.removeEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
     };
-  }, [protocol]);
+  }, [protocol, removeMatchingHistoryEntry, setLastConnection]);
 
   useEffect(() => {
     // ConnectionPanel is one instance for every protocol. A Windows Reconnect that is
@@ -1298,6 +1330,8 @@ export default function ConnectionPanel({
         }
         saveLastConnection(protocol, conn);
         setLastConnection(conn);
+        // Auto-save into multi-device history (all transports); MRU stays in lastConnection.
+        setConnectionHistory(upsertConnectionHistory(protocol, conn));
       }
     } else if (state.status === 'disconnected') {
       const prevStatus = prevStoreStatusRef.current;
@@ -1997,219 +2031,230 @@ export default function ConnectionPanel({
     [],
   );
 
-  const handleReconnect = useCallback(() => {
-    if (!lastConnection) return;
-    // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
-    // BLE/serial auto-connect (orphan socket / connectType flip).
-    if (lastConnection.type === 'serial') {
-      cancelAllLoraRfAutoConnect();
-    } else {
-      cancelProtocolRfAutoConnect(protocol);
-    }
-    if (isAutoConnectingRef.current) {
-      console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
-    }
-    isAutoConnectingRef.current = false;
-    setIsAutoConnecting(false);
-    setAutoConnectBleTarget(null);
-    if (autoConnectTimeoutRef.current) {
-      clearTimeout(autoConnectTimeoutRef.current);
-      autoConnectTimeoutRef.current = null;
-    }
-    setError(null);
+  const reconnectFromSaved = useCallback(
+    (target: LastConnection) => {
+      // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
+      // BLE/serial auto-connect (orphan socket / connectType flip).
+      if (target.type === 'serial') {
+        cancelAllLoraRfAutoConnect();
+      } else {
+        cancelProtocolRfAutoConnect(protocol);
+      }
+      if (isAutoConnectingRef.current) {
+        console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
+      }
+      isAutoConnectingRef.current = false;
+      setIsAutoConnecting(false);
+      setAutoConnectBleTarget(null);
+      if (autoConnectTimeoutRef.current) {
+        clearTimeout(autoConnectTimeoutRef.current);
+        autoConnectTimeoutRef.current = null;
+      }
+      setError(null);
+      setLastConnection(target);
 
-    if (lastConnection.type === 'ble') {
-      void (async () => {
-        if (!lastConnection.bleDeviceId) return;
-        setConnectionType('ble');
-        setBleDevices([]);
-        setShowBlePicker(false);
-        manualBleScanActiveRef.current = false;
-        pendingPairBleDeviceRef.current = null;
-        isAutoConnectingRef.current = true;
-        setIsAutoConnecting(true);
-        setConnecting(true);
-        const bleDeviceId = lastConnection.bleDeviceId;
-        const matchIds = [bleDeviceId, lastConnection.bleMac].filter(
-          (id): id is string => typeof id === 'string' && id.trim().length > 0,
-        );
-        lastSelectedBleMacRef.current = bleDeviceId;
-        if (isWindows && capabilities.hasGattBleScanning) {
-          // OS-specific: skip a doomed WinRT connect (wedges for ~41s) when the bond is gone.
-          setConnectionStage('connectionPanel.stageCheckingPairing');
-          const attempt = {};
-          windowsReconnectAttemptRef.current = attempt;
-          const pairState = await getWindowsBlePairState(bleDeviceId);
-          // Cancel, manual connect, protocol change, or a newer Reconnect superseded this attempt.
-          if (windowsReconnectAttemptRef.current !== attempt || !isAutoConnectingRef.current) {
-            // Flags were set just before this await. A newer Reconnect or a manual scan
-            // already owns them; clearing would stick that attempt. Otherwise this
-            // return left Connecting on (the panel is not remounted on protocol change).
-            const supersededByNewerReconnect =
-              isAutoConnectingRef.current &&
-              windowsReconnectAttemptRef.current !== null &&
-              windowsReconnectAttemptRef.current !== attempt;
-            if (!supersededByNewerReconnect && !manualBleScanActiveRef.current) {
+      if (target.type === 'ble') {
+        void (async () => {
+          if (!target.bleDeviceId) return;
+          setConnectionType('ble');
+          setBleDevices([]);
+          setShowBlePicker(false);
+          manualBleScanActiveRef.current = false;
+          pendingPairBleDeviceRef.current = null;
+          isAutoConnectingRef.current = true;
+          setIsAutoConnecting(true);
+          setConnecting(true);
+          const bleDeviceId = target.bleDeviceId;
+          const matchIds = [bleDeviceId, target.bleMac].filter(
+            (id): id is string => typeof id === 'string' && id.trim().length > 0,
+          );
+          lastSelectedBleMacRef.current = bleDeviceId;
+          if (isWindows && capabilities.hasGattBleScanning) {
+            // OS-specific: skip a doomed WinRT connect (wedges for ~41s) when the bond is gone.
+            setConnectionStage('connectionPanel.stageCheckingPairing');
+            const attempt = {};
+            windowsReconnectAttemptRef.current = attempt;
+            const pairState = await getWindowsBlePairState(bleDeviceId);
+            // Cancel, manual connect, protocol change, or a newer Reconnect superseded this attempt.
+            if (windowsReconnectAttemptRef.current !== attempt || !isAutoConnectingRef.current) {
+              // Flags were set just before this await. A newer Reconnect or a manual scan
+              // already owns them; clearing would stick that attempt. Otherwise this
+              // return left Connecting on (the panel is not remounted on protocol change).
+              const supersededByNewerReconnect =
+                isAutoConnectingRef.current &&
+                windowsReconnectAttemptRef.current !== null &&
+                windowsReconnectAttemptRef.current !== attempt;
+              if (!supersededByNewerReconnect && !manualBleScanActiveRef.current) {
+                isAutoConnectingRef.current = false;
+                setIsAutoConnecting(false);
+                setConnecting(false);
+                setConnectionStage('');
+              }
+              return;
+            }
+            windowsReconnectAttemptRef.current = null;
+            if (pairState === 'unpaired') {
               isAutoConnectingRef.current = false;
               setIsAutoConnecting(false);
+              promptWindowsPairing(bleDeviceId);
+              return;
+            }
+            if (pairState === 'blocked') {
+              showWindowsPairStateBlocked(bleDeviceId);
+              return;
+            }
+          }
+          setConnectionStage('connectionPanel.stageConnecting');
+          try {
+            await reconnectBleWithScan(
+              protocol,
+              bleDeviceId,
+              (resolvedId) => onConnect('ble', undefined, resolvedId ?? bleDeviceId),
+              { matchIds },
+            );
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          } catch (err: unknown) {
+            console.debug('[renderer/components/ConnectionPanel] catch:', err);
+
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            clearMeshcoreBleSelectionOnMissingServices(err);
+            const bleErrMsg = humanizeBleError(err, t);
+            if (bleErrMsg) setError(bleErrMsg);
+            const isPairingRelatedError = isWindows
+              ? shouldOfferWindowsRePair(err)
+              : shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+            if ((isLinux || isWindows) && isPairingRelatedError) {
+              setShowRePairButton(true);
+              setShowBlePicker(false);
+              setConnectionStage('connectionPanel.stagePairingFailed');
+              setConnecting(false);
+            } else {
               setConnecting(false);
               setConnectionStage('');
             }
-            return;
           }
-          windowsReconnectAttemptRef.current = null;
-          if (pairState === 'unpaired') {
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            promptWindowsPairing(bleDeviceId);
-            return;
-          }
-          if (pairState === 'blocked') {
-            showWindowsPairStateBlocked(bleDeviceId);
-            return;
-          }
+        })();
+      } else if (target.type === 'http' || target.type === 'udp') {
+        const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
+        const addr = target.httpAddress ?? fallbackAddress;
+        if (protocol === 'meshcore') {
+          const { host, port } = parseTcpAddress(addr);
+          setTcpHost(host);
+          setTcpPortStr(String(port));
+        } else {
+          setHttpAddress(addr);
         }
-        setConnectionStage('connectionPanel.stageConnecting');
-        try {
-          await reconnectBleWithScan(
-            protocol,
-            bleDeviceId,
-            (resolvedId) => onConnect('ble', undefined, resolvedId ?? bleDeviceId),
-            { matchIds },
-          );
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          setConnecting(false);
-          setConnectionStage('');
-        } catch (err: unknown) {
-          console.debug('[renderer/components/ConnectionPanel] catch:', err);
-
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          clearMeshcoreBleSelectionOnMissingServices(err);
-          const bleErrMsg = humanizeBleError(err, t);
-          if (bleErrMsg) setError(bleErrMsg);
-          const isPairingRelatedError = isWindows
-            ? shouldOfferWindowsRePair(err)
-            : shouldShowLinuxRePairFromBleError(err, bleErrMsg);
-          if ((isLinux || isWindows) && isPairingRelatedError) {
-            setShowRePairButton(true);
-            setShowBlePicker(false);
-            setConnectionStage('connectionPanel.stagePairingFailed');
-            setConnecting(false);
-          } else {
-            setConnecting(false);
-            setConnectionStage('');
-          }
-        }
-      })();
-    } else if (lastConnection.type === 'http') {
-      const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
-      const addr = lastConnection.httpAddress ?? fallbackAddress;
-      if (protocol === 'meshcore') {
-        const { host, port } = parseTcpAddress(addr);
-        setTcpHost(host);
-        setTcpPortStr(String(port));
-      } else {
-        setHttpAddress(addr);
-      }
-      setConnectionType('http');
-      setConnecting(true);
-      setBleDevices([]);
-      setSerialPorts([]);
-      setShowBlePicker(false);
-      setShowSerialPicker(false);
-      setConnectionStage('connectionPanel.stagePleaseWait');
-      onConnect('http', addr).catch((err: unknown) => {
-        console.debug('[renderer/components/ConnectionPanel] catch:', err);
-        // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
-        const httpErr = humanizeHttpError(addr, err, t);
-        if (httpErr) setError(httpErr);
-        setConnecting(false);
-        setConnectionStage('');
-      });
-    } else if (lastConnection.type === 'tcp') {
-      // MeshCom KISS is stored as `http`. Mistyped tcp with a usable address reconnects
-      // as http; Meshtastic-only tcp bleed is cleared.
-      if (protocol === 'meshcom') {
-        const kissAddr = resolveMeshcomKissReconnectAddress(lastConnection);
-        if (!kissAddr) {
-          clearLastConnection(protocol);
-          setLastConnection(null);
-          return;
-        }
-        const normalized: LastConnection = { type: 'http', httpAddress: kissAddr };
-        saveLastConnection(protocol, normalized);
-        setLastConnection(normalized);
-        setHttpAddress(kissAddr);
-        setConnectionType('http');
+        setConnectionType(target.type);
         setConnecting(true);
         setBleDevices([]);
         setSerialPorts([]);
         setShowBlePicker(false);
         setShowSerialPicker(false);
         setConnectionStage('connectionPanel.stagePleaseWait');
-        onConnect('http', kissAddr).catch((err: unknown) => {
+        onConnect(target.type, addr).catch((err: unknown) => {
           console.debug('[renderer/components/ConnectionPanel] catch:', err);
-          const httpErr = humanizeHttpError(kissAddr, err, t);
+          // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
+          const httpErr = humanizeHttpError(addr, err, t);
           if (httpErr) setError(httpErr);
           setConnecting(false);
           setConnectionStage('');
         });
-        return;
+      } else if (target.type === 'tcp') {
+        // MeshCom KISS is stored as `http`. Mistyped tcp with a usable address reconnects
+        // as http; Meshtastic-only tcp bleed is cleared.
+        if (protocol === 'meshcom') {
+          const kissAddr = resolveMeshcomKissReconnectAddress(target);
+          if (!kissAddr) {
+            clearLastConnection(protocol);
+            setLastConnection(null);
+            return;
+          }
+          const normalized: LastConnection = { type: 'http', httpAddress: kissAddr };
+          saveLastConnection(protocol, normalized);
+          setLastConnection(normalized);
+          setHttpAddress(kissAddr);
+          setConnectionType('http');
+          setConnecting(true);
+          setBleDevices([]);
+          setSerialPorts([]);
+          setShowBlePicker(false);
+          setShowSerialPicker(false);
+          setConnectionStage('connectionPanel.stagePleaseWait');
+          onConnect('http', kissAddr).catch((err: unknown) => {
+            console.debug('[renderer/components/ConnectionPanel] catch:', err);
+            const httpErr = humanizeHttpError(kissAddr, err, t);
+            if (httpErr) setError(httpErr);
+            setConnecting(false);
+            setConnectionStage('');
+          });
+          return;
+        }
+        const addr = target.httpAddress ?? tcpAddress;
+        setTcpAddress(addr);
+        setConnectionType('tcp');
+        setConnecting(true);
+        setBleDevices([]);
+        setSerialPorts([]);
+        setShowBlePicker(false);
+        setShowSerialPicker(false);
+        setConnectionStage('connectionPanel.stagePleaseWait');
+        onConnect('tcp', addr).catch((err: unknown) => {
+          console.debug('[renderer/components/ConnectionPanel] catch:', err);
+          // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
+          const tcpErr = humanizeHttpError(addr, err, t);
+          if (tcpErr) setError(tcpErr);
+          setConnecting(false);
+          setConnectionStage('');
+        });
+      } else if (target.type === 'serial') {
+        isAutoConnectingRef.current = true;
+        setIsAutoConnecting(true);
+        setConnectionType('serial');
+        setConnecting(true);
+        setConnectionStage('connectionPanel.stagePleaseWait');
+        onAutoConnect('serial', undefined, target.serialPortId).catch((err: unknown) => {
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setError(
+            humanizeSerialError(err, t, {
+              inAppHolders: listInAppSerialHolders(protocol, peekLastSerialClaimPort(protocol)),
+            }),
+          );
+          setConnecting(false);
+          setConnectionStage('');
+        });
       }
-      const addr = lastConnection.httpAddress ?? tcpAddress;
-      setTcpAddress(addr);
-      setConnectionType('tcp');
-      setConnecting(true);
-      setBleDevices([]);
-      setSerialPorts([]);
-      setShowBlePicker(false);
-      setShowSerialPicker(false);
-      setConnectionStage('connectionPanel.stagePleaseWait');
-      onConnect('tcp', addr).catch((err: unknown) => {
-        console.debug('[renderer/components/ConnectionPanel] catch:', err);
-        // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
-        const tcpErr = humanizeHttpError(addr, err, t);
-        if (tcpErr) setError(tcpErr);
-        setConnecting(false);
-        setConnectionStage('');
-      });
-    } else if (lastConnection.type === 'serial') {
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnectionType('serial');
-      setConnecting(true);
-      setConnectionStage('connectionPanel.stagePleaseWait');
-      onAutoConnect('serial', undefined, lastConnection.serialPortId).catch((err: unknown) => {
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setError(
-          humanizeSerialError(err, t, {
-            inAppHolders: listInAppSerialHolders(protocol, peekLastSerialClaimPort(protocol)),
-          }),
-        );
-        setConnecting(false);
-        setConnectionStage('');
-      });
-    }
-  }, [
-    lastConnection,
-    setLastConnection,
-    onConnect,
-    onAutoConnect,
-    httpAddress,
-    tcpAddress,
-    protocol,
-    tcpHost,
-    isLinux,
-    isWindows,
-    capabilities.hasGattBleScanning,
-    promptWindowsPairing,
-    showWindowsPairStateBlocked,
-    clearMeshcoreBleSelectionOnMissingServices,
-    t,
-  ]);
+    },
+    [
+      setLastConnection,
+      onConnect,
+      onAutoConnect,
+      httpAddress,
+      tcpAddress,
+      protocol,
+      tcpHost,
+      isLinux,
+      isWindows,
+      capabilities.hasGattBleScanning,
+      promptWindowsPairing,
+      showWindowsPairStateBlocked,
+      clearMeshcoreBleSelectionOnMissingServices,
+      t,
+    ],
+  );
+
+  const handleDeleteSavedConnection = useCallback(
+    (id: string) => {
+      const next = deleteConnectionHistory(protocol, id);
+      setConnectionHistory(next);
+      setLastConnection(loadLastConnection(protocol));
+    },
+    [protocol, setLastConnection],
+  );
 
   const isConnected =
     state.status === 'connected' ||
@@ -3713,7 +3758,7 @@ export default function ConnectionPanel({
   }
 
   // ─── Disconnected View ─────────────────────────────────────────
-  const showLastConnection = lastConnection !== null && !connecting;
+  const showSavedDevices = connectionHistory.length > 0 && !connecting;
   const connectionTypeOptions: SegmentedOption<ConnectionType>[] = (
     protocol === 'meshtastic'
       ? (['ble', 'serial', 'http', 'tcp'] as const)
@@ -3731,49 +3776,70 @@ export default function ConnectionPanel({
       {renderAutoReconnectBanner()}
       {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
 
-      {/* Last Connection — one-click reconnect card */}
-      {showLastConnection && (
-        <div className="bg-deep-black border-ink-800 flex flex-wrap items-center gap-3 rounded-xl border px-4.5 py-4">
-          <span className="bg-sidebar-active-bg text-ink-300 flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]">
-            <ConnectionIcon type={lastConnection.type} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-muted text-xs">{t('connectionPanel.lastConnectionLabel')}</p>
-            <p className="text-ink-200 truncate text-sm font-semibold">
-              {lastConnection.type === 'ble'
-                ? (lastConnection.bleDeviceName ?? t('connectionPanel.bluetoothDevice'))
-                : lastConnection.type === 'serial'
-                  ? t('connectionPanel.serialDevice')
-                  : (lastConnection.httpAddress ?? t('connectionPanel.wifiDevice'))}
-            </p>
-            {lastConnection.type === 'ble' && lastBleIdentity ? (
-              <p className="text-muted font-mono text-xs">{lastBleIdentity.display}</p>
-            ) : (
-              <p className="text-muted text-xs">
-                {connectionPanelConnectionTypeLabel(t, lastConnection.type, protocol)}
-              </p>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              data-setting-anchor="connection.lastConnection.forget"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                clearLastConnection(protocol);
-                setLastConnection(null);
-              }}
-            >
-              {t('connectionPanel.forgetDevice')}
-            </Button>
-            <Button
-              data-setting-anchor="connection.lastConnection.reconnect"
-              variant="primary"
-              onClick={handleReconnect}
-            >
-              {t('connectionPanel.reconnect')}
-            </Button>
-          </div>
+      {/* Saved devices — multi-endpoint history with connect / delete */}
+      {showSavedDevices && (
+        <div
+          data-setting-anchor="connection.savedDevices"
+          className="bg-deep-black border-ink-800 space-y-3 rounded-xl border px-4.5 py-4"
+        >
+          <p className="text-muted text-xs">{t('connectionPanel.savedDevicesLabel')}</p>
+          <ul className="space-y-2">
+            {connectionHistory.map((entry) => {
+              const primary =
+                savedConnectionPrimaryLabel(entry) ??
+                (entry.type === 'ble'
+                  ? t('connectionPanel.bluetoothDevice')
+                  : entry.type === 'serial'
+                    ? t('connectionPanel.serialDevice')
+                    : t('connectionPanel.wifiDevice'));
+              const bleIdentity =
+                entry.type === 'ble' ? resolveLastBleIdentity(entry, protocol) : null;
+              return (
+                <li
+                  key={entry.id}
+                  className="border-ink-800 bg-ink-900 rounded-control flex flex-wrap items-center gap-3 border px-3 py-2.5"
+                >
+                  <span className="bg-sidebar-active-bg text-ink-300 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]">
+                    <ConnectionIcon type={entry.type} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-ink-200 truncate text-sm font-semibold">{primary}</p>
+                    {bleIdentity ? (
+                      <p className="text-muted font-mono text-xs">{bleIdentity.display}</p>
+                    ) : (
+                      <p className="text-muted text-xs">
+                        {connectionPanelConnectionTypeLabel(t, entry.type, protocol)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      data-setting-anchor="connection.savedDevices.delete"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={t('connectionPanel.savedDevicesDeleteAria', { name: primary })}
+                      onClick={() => {
+                        handleDeleteSavedConnection(entry.id);
+                      }}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                    <Button
+                      data-setting-anchor="connection.savedDevices.connect"
+                      variant="primary"
+                      size="sm"
+                      aria-label={t('connectionPanel.savedDevicesConnectAria', { name: primary })}
+                      onClick={() => {
+                        reconnectFromSaved(entry);
+                      }}
+                    >
+                      {t('connectionPanel.reconnect')}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
@@ -3984,7 +4050,7 @@ export default function ConnectionPanel({
             <div className="pt-1">
               <Button
                 data-setting-anchor="connection.radio.connect"
-                variant={showLastConnection ? 'secondary' : 'primary'}
+                variant={showSavedDevices ? 'secondary' : 'primary'}
                 onClick={handleConnect}
                 disabled={
                   connecting ||

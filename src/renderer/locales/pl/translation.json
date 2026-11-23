@@ -1303,7 +1303,6 @@
     "serialDevice": "Urządzenie szeregowe",
     "wifiDevice": "Urządzenie Wi-Fi",
     "reconnect": "Na nowo połączyć",
-    "forgetDevice": "Zapomnij o tym urządzeniu",
     "bluetooth": "Bluetooth",
     "usbSerial": "Szeregowy USB",
     "wifiHttp": "Wi-Fi/HTTP",
@@ -1992,7 +1991,6 @@
     "disconnectRadioGroup": "Rozłącz radio",
     "moreDisconnectOptions": "Więcej opcji rozłączania",
     "disconnectOptions": "Opcje rozłączania",
-    "lastConnectionLabel": "Ostatnie połączenie",
     "meshcoreBleWindowsInAppPairingHint": "W systemie Windows wybierz tutaj radio i wprowadź KOD PIN pokazany na jego ekranie. mesh-client sparuje je za Ciebie, więc nie musisz parować go w ustawieniach systemu Windows. Najpierw zamknij aplikację MeshCore w telefonie; radio akceptuje tylko jedno połączenie Bluetooth na raz.",
     "stageEnterPinWindows": "Wprowadź KOD PIN widoczny w radiu, aby sparować je z systemem Windows",
     "stagePairingWindows": "Parowanie z Windows…",
@@ -2002,7 +2000,10 @@
     "mqttAuthDocsLink": "MQTT autoryzacja ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "Zapisane urządzenia",
+    "savedDevicesConnectAria": "Połącz się ponownie z {{name}}",
+    "savedDevicesDeleteAria": "Usuń zapisane urządzenie {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

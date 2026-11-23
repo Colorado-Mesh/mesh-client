@@ -1263,7 +1263,6 @@
     "serialDevice": "Serielles Gerät",
     "wifiDevice": "WiFi-Gerät",
     "reconnect": "Wieder verbinden",
-    "forgetDevice": "Vergessen Sie dieses Gerät",
     "bluetooth": "Bluetooth",
     "usbSerial": "USB seriell",
     "wifiHttp": "WLAN/HTTP",
@@ -1952,7 +1951,6 @@
     "disconnectRadioGroup": "Funkgerät trennen",
     "moreDisconnectOptions": "Weitere Trennoptionen",
     "disconnectOptions": "Trennoptionen",
-    "lastConnectionLabel": "Letzte Verbindung",
     "meshcoreBleWindowsInAppPairingHint": "Wählen Sie unter Windows das Radio hier aus und geben Sie die auf dem Bildschirm angezeigte PIN ein. mesh-client koppelt es für Sie, sodass Sie es nicht in den Windows-Einstellungen koppeln müssen. Schließen Sie zuerst die MeshCore-App auf Ihrem Telefon; das Radio akzeptiert jeweils nur eine Bluetooth-Verbindung.",
     "stageEnterPinWindows": "Geben Sie die auf Ihrem Radio angezeigte PIN ein, um sie mit Windows zu koppeln",
     "stagePairingWindows": "Wird mit Windows gekoppelt...",
@@ -1962,7 +1960,10 @@
     "mqttAuthDocsLink": "MQTT auth ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "Gespeicherte Geräte",
+    "savedDevicesConnectAria": "Erneut mit {{name}} verbinden",
+    "savedDevicesDeleteAria": "Gespeichertes Gerät {{name}} löschen"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

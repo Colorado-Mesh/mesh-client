@@ -1264,7 +1264,6 @@
     "serialDevice": "串口设备",
     "wifiDevice": "WiFi设备",
     "reconnect": "重新连接",
-    "forgetDevice": "忘记这个设备",
     "bluetooth": "蓝牙",
     "usbSerial": "USB串口",
     "wifiHttp": "无线网络/HTTP",
@@ -1952,7 +1951,6 @@
     "disconnectRadioGroup": "断开无线电",
     "moreDisconnectOptions": "更多断开选项",
     "disconnectOptions": "断开选项",
-    "lastConnectionLabel": "上次连接",
     "meshcoreBleWindowsInAppPairingHint": "在Windows上，在此处选择收音机并输入其屏幕上显示的PIN。mesh-client为您配对，因此您无需在Windows设置中进行配对。首先关闭手机上的MeshCore应用程序；收音机一次只接受一个蓝牙连接。",
     "stageEnterPinWindows": "输入收音机上显示的PIN码，以便与Windows配对",
     "stagePairingWindows": "正在与Windows配对…",
@@ -1962,7 +1960,10 @@
     "mqttAuthDocsLink": "MQTT AUTH ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "已保存的设备",
+    "savedDevicesConnectAria": "重新连接到{{name}}",
+    "savedDevicesDeleteAria": "删除已保存的设备{{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

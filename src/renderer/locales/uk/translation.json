@@ -1305,7 +1305,6 @@
     "serialDevice": "Послідовний пристрій",
     "wifiDevice": "пристрій WiFi",
     "reconnect": "Повторне підключення",
-    "forgetDevice": "Забудьте про цей пристрій",
     "bluetooth": "Bluetooth",
     "usbSerial": "Послідовний порт USB",
     "wifiHttp": "Wi-Fi/HTTP",
@@ -1992,7 +1991,6 @@
     "disconnectRadioGroup": "Від'єднати радіо",
     "moreDisconnectOptions": "Інші варіанти від'єднання",
     "disconnectOptions": "Варіанти від'єднання",
-    "lastConnectionLabel": "Останнє з'єднання",
     "meshcoreBleWindowsInAppPairingHint": "У Windows виберіть радіо тут і введіть PIN-КОД, показаний на екрані. mesh-client з'єднує його для вас, тому вам не потрібно з'єднувати його в налаштуваннях Windows. Спочатку закрийте програму MeshCore на телефоні; радіоприймач одночасно приймає лише одне з'єднання Bluetooth.",
     "stageEnterPinWindows": "Введіть PIN-КОД, який відображається на радіо, щоб з'єднати його з Windows",
     "stagePairingWindows": "З'єднання з Windows…",
@@ -2002,7 +2000,10 @@
     "mqttAuthDocsLink": "MQTT авт. ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "Збережені пристрої",
+    "savedDevicesConnectAria": "Повторно під'єднатися до {{name}}",
+    "savedDevicesDeleteAria": "Видалити збережений пристрій {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

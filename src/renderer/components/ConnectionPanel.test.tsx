@@ -38,6 +38,13 @@ const disconnectedState: DeviceState = {
   connectionType: null,
 };
 
+afterEach(() => {
+  for (const protocol of ['meshtastic', 'meshcore', 'meshcom'] as const) {
+    localStorage.removeItem(`mesh-client:connectionHistory:${protocol}`);
+    localStorage.removeItem(`mesh-client:lastConnection:${protocol}`);
+  }
+});
+
 const NOBLE_PLATFORM_USER_AGENT = {
   darwin:
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -902,10 +909,10 @@ describe('ConnectionPanel Linux BLE path', () => {
         );
 
         await waitFor(() => {
-          expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
         });
 
-        await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+        await user.click(screen.getByRole('button', { name: /Reconnect/i }));
 
         await waitFor(() => {
           expect(onConnect).toHaveBeenCalledWith('ble', undefined, 'bad-device');
@@ -1129,9 +1136,8 @@ describe('ConnectionPanel status i18n and pulse', () => {
           protocol="meshtastic"
         />,
       );
-      const lastCard = screen
-        .getByRole('button', { name: /^Reconnect$/i })
-        .closest('.bg-deep-black');
+      const reconnect = screen.getByRole('button', { name: 'Reconnect to 192.168.1.20' });
+      const lastCard = reconnect.closest('li') ?? reconnect.closest('.bg-deep-black');
       expect(lastCard).toBeTruthy();
       expect(within(lastCard as HTMLElement).getByText('WiFi/HTTP')).toBeInTheDocument();
       expect(within(lastCard as HTMLElement).queryByText(/^http$/i)).not.toBeInTheDocument();
@@ -1411,7 +1417,7 @@ describe('ConnectionPanel connect views', () => {
           />,
         );
 
-        await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+        await user.click(screen.getByRole('button', { name: 'Reconnect to 192.168.1.10' }));
 
         await waitFor(() => {
           expect(
@@ -1573,7 +1579,9 @@ describe('ConnectionPanel ProtocolAutoConnectCoordinator cancel', () => {
         />,
       );
 
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Reconnect to 192.168.1.50:4403' }),
+      );
 
       expect(cancelSpy).toHaveBeenCalledWith('meshtastic');
       await waitFor(() => {
@@ -2508,7 +2516,7 @@ describe('ConnectionPanel BLE MAC identity', () => {
           />,
         );
 
-        expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
         const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
         expect(radioCard).toBeTruthy();
         await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
@@ -2534,7 +2542,7 @@ describe('ConnectionPanel BLE MAC identity', () => {
           expect(localStorage.getItem(lastBleKey)).toBeNull();
         });
         await waitFor(() => {
-          expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+          expect(screen.queryByRole('button', { name: /Reconnect/i })).not.toBeInTheDocument();
         });
       });
     } finally {
@@ -2632,12 +2640,12 @@ describe('ConnectionPanel BLE MAC identity', () => {
         />,
       );
 
-      expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
       window.dispatchEvent(
         new CustomEvent('mesh-client:ble-selection-cleared', { detail: { protocol: 'meshcore' } }),
       );
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Reconnect/i })).not.toBeInTheDocument();
       });
     } finally {
       localStorage.removeItem(lastConnKey);
@@ -3105,5 +3113,144 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
       JSON.stringify(storedProfiles),
     );
     warn.mockRestore();
+  });
+});
+
+describe('ConnectionPanel saved device history', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('lists multiple saved TCP hosts and reconnects the selected one', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-2',
+          lastUsedAt: 2000,
+          type: 'tcp',
+          httpAddress: '10.0.0.2:4403',
+        },
+        {
+          id: 'tcp-1',
+          lastUsedAt: 1000,
+          type: 'tcp',
+          httpAddress: '10.0.0.1:4403',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.2:4403' }),
+    );
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(screen.getByText('Saved devices')).toBeInTheDocument();
+    expect(screen.getByText('10.0.0.2:4403')).toBeInTheDocument();
+    expect(screen.getByText('10.0.0.1:4403')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reconnect to 10.0.0.1:4403' }));
+    await waitFor(() => {
+      expect(onConnect).toHaveBeenCalledWith('tcp', '10.0.0.1:4403');
+    });
+  });
+
+  it('deletes a saved device from history', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-keep',
+          lastUsedAt: 2000,
+          type: 'tcp',
+          httpAddress: '10.0.0.2:4403',
+        },
+        {
+          id: 'tcp-drop',
+          lastUsedAt: 1000,
+          type: 'tcp',
+          httpAddress: '10.0.0.1:4403',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.2:4403' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Delete saved device 10.0.0.1:4403' }));
+    expect(screen.queryByText('10.0.0.1:4403')).not.toBeInTheDocument();
+    expect(screen.getByText('10.0.0.2:4403')).toBeInTheDocument();
+  });
+
+  it('upserts history when a second TCP host becomes configured', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.1:4403' }),
+    );
+    const { rerender } = render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'connected',
+          connectionType: 'tcp',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    rerender(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'tcp',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:connectionHistory:meshtastic');
+      expect(raw).toBeTruthy();
+      const parsed = JSON.parse(raw!) as { httpAddress?: string }[];
+      expect(parsed.some((e) => e.httpAddress === '10.0.0.1:4403')).toBe(true);
+    });
   });
 });

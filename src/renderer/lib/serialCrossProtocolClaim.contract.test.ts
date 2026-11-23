@@ -103,7 +103,7 @@ describe('cross-protocol serial claim contracts', () => {
 
   it('ConnectionPanel serial Reconnect cancels all LoRa RF auto-connects', () => {
     expect(CONNECTION_PANEL).toMatch(
-      /if \(lastConnection\.type === 'serial'\) \{\s*cancelAllLoraRfAutoConnect\(\);/,
+      /if \(target\.type === 'serial'\) \{\s*cancelAllLoraRfAutoConnect\(\);/,
     );
   });
 
