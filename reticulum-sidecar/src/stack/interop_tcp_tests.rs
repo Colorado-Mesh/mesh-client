@@ -230,6 +230,48 @@ fn session_meta_str<'a>(session: &'a serde_json::Value, key: &str) -> Option<&'a
         .and_then(|v| v.as_str())
 }
 
+/// Seed the caller's announce cache with the callee's signed `lxst.telephony` announce.
+///
+/// Loopback TCPServer↔TCPClient often fails to learn telephony announces from outbound
+/// bursts (LXMF delivery announce still lands). Ingest as `TransportMessage::Inbound` on
+/// the dialer, then poll recall. Re-ingest on each attempt — macOS CI can miss a single
+/// inbound under load before `RecallDestination` observes the announce.
+async fn wait_voice_peer_discoverable(
+    dialer: &StackHandle,
+    answerer: &StackHandle,
+    answerer_identity_hex: &str,
+    timeout: Duration,
+) -> Result<(), String> {
+    let _ = answerer.voice_announce_now().await;
+    let wire = answerer.voice_telephony_announce_wire_bytes()?;
+    let identity = super::live::parse_hash16(answerer_identity_hex)?;
+    let dest_hex = hex::encode(lxst_telephony::telephony_destination_hash(&identity));
+    let deadline = Instant::now() + timeout;
+    let mut last_err = String::from("telephony peer not discoverable");
+    while Instant::now() < deadline {
+        if let Err(e) = dialer.ingest_inbound_wire_packet(&wire).await {
+            last_err = e;
+            tokio::time::sleep(READY_POLL).await;
+            continue;
+        }
+        let _ = dialer.request_peer_path_with_opts(&dest_hex, false).await;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        let slice = remaining.min(Duration::from_secs(3));
+        match dialer
+            .voice_peer_discoverable(answerer_identity_hex, slice)
+            .await
+        {
+            Ok(()) => return Ok(()),
+            Err(e) => last_err = e,
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    Err(last_err)
+}
+
 async fn bootstrap_dual_tcp() -> (TcpStackFixture, TcpStackFixture) {
     let port = ephemeral_loopback_port();
     let server = spawn_tcp_stack(true, port).await;
@@ -245,6 +287,16 @@ async fn bootstrap_dual_tcp() -> (TcpStackFixture, TcpStackFixture) {
     wait_peer_lxmf_path(&server.handle, &client_id.lxmf_hash, PEER_TIMEOUT)
         .await
         .expect("server path to client");
+    server
+        .handle
+        .announce_now()
+        .await
+        .expect("server lxmf announce");
+    client
+        .handle
+        .announce_now()
+        .await
+        .expect("client lxmf announce");
     (server, client)
 }
 
@@ -458,6 +510,14 @@ async fn dual_tcp_four_in_a_row_wire_interop() {
 async fn dual_tcp_voice_signalling_smoke() {
     let (server, client) = bootstrap_dual_tcp().await;
     let server_id = server.handle.identity_status().await;
+    wait_voice_peer_discoverable(
+        &client.handle,
+        &server.handle,
+        &server_id.identity_hash,
+        PEER_TIMEOUT,
+    )
+    .await
+    .expect("client recalls server telephony");
     let call = client.handle.voice_call(&server_id.identity_hash).await;
     assert_eq!(call.get("ok"), Some(&serde_json::Value::Bool(true)));
 
@@ -497,6 +557,14 @@ async fn dual_tcp_voice_audio_round_trip() {
 
     let (server, client) = bootstrap_dual_tcp().await;
     let server_id = server.handle.identity_status().await;
+    wait_voice_peer_discoverable(
+        &client.handle,
+        &server.handle,
+        &server_id.identity_hash,
+        PEER_TIMEOUT,
+    )
+    .await
+    .expect("client recalls server telephony");
     let call = client.handle.voice_call(&server_id.identity_hash).await;
     assert_eq!(call.get("ok"), Some(&serde_json::Value::Bool(true)));
 
@@ -720,9 +788,19 @@ async fn dual_tcp_nomad_page_and_file() {
         .unwrap_or_default();
     assert_eq!(got, probe_bytes, "nomad_file body: {file:?}");
 
+    // Re-ensure path after the file Link — v1.5.1 dual-TCP can drop the cached
+    // Nomad dest between successive Link queries when force_path_refresh is false.
+    client
+        .handle
+        .request_peer_path_with_opts(&dest, true)
+        .await
+        .expect("refresh nomad path before page");
+    wait_peer_lxmf_path(&client.handle, &dest, PEER_TIMEOUT)
+        .await
+        .expect("client path to nomad dest before page");
     let page = client
         .handle
-        .nomad_page(&dest, "/page/index.mu", None, false, None, false)
+        .nomad_page(&dest, "/page/index.mu", None, true, None, false)
         .await;
     assert_eq!(
         page.get("ok"),

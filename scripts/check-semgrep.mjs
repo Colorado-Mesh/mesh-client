@@ -2,42 +2,31 @@
 /**
  * Semgrep gate (pre-commit / release / CI).
  *
- * Runs the same scan agents and humans use locally:
- *   semgrep scan --config auto --config p/nodejs --config .semgrep.yml --error
+ * Full scan (release / CI / manual):
+ *   pnpm run check:semgrep
+ *     -> semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off
+ *
+ * Staged scan (pre-commit): pass staged file paths as arguments:
+ *   pnpm run check:semgrep -- <file1> <file2> ...
  *
  * `p/nodejs` is belt-and-suspenders beyond `auto` (currently clean on this tree).
  * Custom Electron/crypto rules live in `.semgrep.yml`.
  *
- * ## When a finding looks wrong
+ * `auto` was dropped because it resolves to the Semgrep Registry's Pro rule
+ * set, which the community engine (no Pro engine available locally) cannot run:
+ * it loads ~2000 rules that can never produce a finding and slows every scan by
+ * minutes. The community packs above are bounded and loadable locally.
  *
- * Semgrep (especially `--config auto`) can false-positive on Electron/Node
- * patterns that are already safe. Do **not** dismiss a finding casually:
+ * ## When a finding looks wrong (false-positive remediation)
  *
- * 1. Research the rule (CWE / Semgrep docs) and whether the sink is attacker-
- *    controlled in this call path.
- * 2. Prefer a real fix (path containment via `joinUnderRoot` /
- *    `resolveUnderRoot`, literal console format strings, argv-only spawn,
- *    `authTagLength` on AES-GCM, etc.).
- * 3. Only if you are sure the finding is incorrect for this codebase, update
- *    `.semgrep.yml` (tighten/relax a custom rule, or document an intentional
- *    policy) and/or add a **narrow** `// nosemgrep: <rule-id> -- <reason>` on
- *    the validated sink. Never blanket-ignore a rule for convenience.
+ * Research the rule and call path before dismissing. Prefer a real fix; if the
+ * finding is wrong for this codebase, update `.semgrep.yml` and/or add a narrow
+ * `nosemgrep` with a reason.
  *
- * ## Semgrep fixes vs ESLint (same files, different tools)
+ * ## Semgrep fixes vs ESLint
  *
- * After changing code for Semgrep, run ESLint on those paths before commit —
- * pre-commit will fail on the same fallout. Common collisions:
- *
- * - **non-literal-regexp:** stack BOTH suppressions (do not replace eslint with
- *   nosemgrep). Pattern used in-tree:
- *     // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
- *     return new RegExp(...); // eslint-disable-line security/detect-non-literal-regexp -- <reason>
- * - **path → joinUnderRoot / resolveUnderRoot:** remove unused `path` imports.
- * - **unsafe-formatstring (`%s` / `%d`):** literal format string; `%d` needs a
- *   number, `%s` a string — satisfies restrict-plus-operands too.
- *
- * Catch-block hygiene is owned by `pnpm run check:silent-catches`, not by a
- * naive catch regex in `.semgrep.yml`.
+ * After Semgrep-driven edits, run ESLint on the touched paths — do not replace eslint
+ * suppressions with nosemgrep alone (stack both for non-literal RegExp).
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -61,7 +50,7 @@ function printInstallHint() {
   console.error('check-semgrep: `semgrep` not found on PATH.');
   console.error('  Install (pick one):');
   console.error('    macOS:  brew install semgrep');
-  console.error('    pip:    pipx install semgrep   # or: pip install semgrep');
+  console.error('    pip:    pipx install semgrep   # or: pip install semgrep   ');
   console.error('  Then re-run: pnpm run check:semgrep');
   console.error('  (pnpm run check:environment also reports Semgrep readiness.)');
 }
@@ -81,35 +70,60 @@ function main() {
   const args = [
     'scan',
     '--config',
-    'auto',
+    'p/typescript',
+    '--config',
+    'p/javascript',
     '--config',
     'p/nodejs',
     '--config',
+    'p/security-audit',
+    '--config',
     '.semgrep.yml',
     '--error',
+    '--disable-version-check',
+    '--metrics=off',
   ];
-  console.error(`check-semgrep: ${bin} ${args.join(' ')}`);
-  const result = spawnSync(bin, args, {
-    cwd: ROOT,
-    encoding: 'utf8',
-    stdio: 'inherit',
-  });
 
-  if (result.error) {
-    console.error('check-semgrep: failed to spawn semgrep:', result.error.message);
-    process.exit(1);
+  // Positional targets: everything after the option-separator `--`.
+  const idx = process.argv.indexOf('--');
+  let targets = null;
+  if (idx !== -1) {
+    targets = process.argv.slice(idx + 1).filter((arg) => !arg.startsWith('-'));
   }
 
-  const code = result.status ?? 1;
-  if (code !== 0) {
-    console.error('');
-    console.error('check-semgrep: findings or scan failure. Prefer a real fix; if you believe a');
-    console.error(
-      'finding is wrong, research the rule first, then update .semgrep.yml and/or add a',
-    );
-    console.error('narrow nosemgrep with a reason. See scripts/check-semgrep.mjs header.');
+  if (targets && targets.length > 0) {
+    // Staged scan: pass the paths as explicit targets so semgrep only scans them.
+    const result = spawnSync(bin, [...args, '--', ...targets], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: 'inherit',
+    });
+
+    if (result.error) {
+      console.error('check-semgrep: failed to spawn semgrep:', result.error.message);
+      process.exit(1);
+    }
+
+    const statusCode = result.status ?? 1;
+    if (statusCode !== 0) {
+      console.error('');
+      console.error(
+        'check-semgrep: findings or scan failure. Prefer a real fix; if you believe a finding is wrong, research the rule first, then update .semgrep.yml and/or add a narrow nosemgrep with a reason. See scripts/check-semgrep.mjs header.',
+      );
+      process.exit(statusCode);
+    }
+    process.exit(0);
+  } else {
+    // Full repository scan (no targets) — used by CI policy-scanners and release.sh.
+    const result = spawnSync(bin, args, { cwd: ROOT, encoding: 'utf8', stdio: 'inherit' });
+
+    if (result.error) {
+      console.error('check-semgrep: failed to spawn semgrep:', result.error.message);
+      process.exit(1);
+    }
+
+    process.exit(result.status ?? 1);
   }
-  process.exit(code);
 }
 
 main();

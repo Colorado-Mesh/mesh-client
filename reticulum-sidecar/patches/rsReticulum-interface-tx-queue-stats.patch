@@ -1,8 +1,8 @@
 diff --git a/crates/rns-runtime/src/rpc.rs b/crates/rns-runtime/src/rpc.rs
-index 5239d79..8f3fb19 100644
+index f30c130..c9eaa2b 100644
 --- a/crates/rns-runtime/src/rpc.rs
 +++ b/crates/rns-runtime/src/rpc.rs
-@@ -327,6 +327,10 @@ struct InterfaceStatWire {
+@@ -342,6 +342,10 @@ struct InterfaceStatWire {
      tx_stalled: bool,
      #[serde(default)]
      tx_buffered: u64,
@@ -10,28 +10,28 @@ index 5239d79..8f3fb19 100644
 +    tx_queue_used: u64,
 +    #[serde(default)]
 +    tx_queue_max: u64,
- }
- 
- impl From<&InterfaceStatRpcEntry> for InterfaceStatWire {
-@@ -406,6 +410,8 @@ impl From<&InterfaceStatRpcEntry> for InterfaceStatWire {
+     /// Python 1.6.1 `frxb`, `ftxb` and `afrxc`.
+     #[serde(default)]
+     filtered_rx_bytes: u64,
+@@ -446,6 +450,8 @@ impl From<&InterfaceStatRpcEntry> for InterfaceStatWire {
                  .map(|state| i2p_tunnel_state_text(state).to_string()),
              tx_stalled: e.tx_stalled,
              tx_buffered: e.tx_buffered,
 +            tx_queue_used: e.tx_queue_used,
 +            tx_queue_max: e.tx_queue_max,
-         }
-     }
- }
-@@ -483,6 +489,8 @@ impl From<InterfaceStatWire> for InterfaceStatRpcEntry {
+             filtered_rx_bytes: e.filtered_rx_bytes,
+             filtered_tx_bytes: e.filtered_tx_bytes,
+             announces_filtered: e.announces_filtered,
+@@ -537,6 +543,8 @@ impl From<InterfaceStatWire> for InterfaceStatRpcEntry {
          e.i2p_tunnel_state = w.tunnel_state.as_deref().map(i2p_tunnel_state_code);
          e.tx_stalled = w.tx_stalled;
          e.tx_buffered = w.tx_buffered;
 +        e.tx_queue_used = w.tx_queue_used;
 +        e.tx_queue_max = w.tx_queue_max;
-         e
-     }
- }
-@@ -1391,6 +1399,8 @@ fn interface_stat_value(e: &InterfaceStatWire) -> PyValue {
+         e.filtered_rx_bytes = w.filtered_rx_bytes;
+         e.filtered_tx_bytes = w.filtered_tx_bytes;
+         e.announces_filtered = w.announces_filtered;
+@@ -1618,6 +1626,8 @@ fn interface_stat_value(e: &InterfaceStatWire) -> PyValue {
          ("txdrb", int(e.tx_dropped_bytes)),
          ("txstalled", PyValue::Bool(e.tx_stalled)),
          ("txbuffered", int(e.tx_buffered)),
@@ -40,16 +40,16 @@ index 5239d79..8f3fb19 100644
          ("tx_drops", int(e.tx_drops)),
          ("gravity", PyValue::Int(i128::from(e.gravity))),
          (
-@@ -1736,6 +1746,8 @@ fn parse_interface_stats(value: &PyValue) -> Result<Vec<InterfaceStatRpcEntry>,
+@@ -2002,6 +2012,8 @@ fn parse_interface_stats(value: &PyValue) -> Result<Vec<InterfaceStatRpcEntry>,
                  tunnel_state: dict_get(m, "tunnelstate").and_then(py_string),
                  tx_stalled: dict_get(m, "txstalled").and_then(py_bool).unwrap_or(false),
                  tx_buffered: dict_get(m, "txbuffered").and_then(py_u64).unwrap_or(0),
 +                tx_queue_used: dict_get(m, "tx_queue_used").and_then(py_u64).unwrap_or(0),
 +                tx_queue_max: dict_get(m, "tx_queue_max").and_then(py_u64).unwrap_or(0),
-             }))
-         })
-         .collect()
-@@ -2907,6 +2919,22 @@ mod tests {
+                 filtered_rx_bytes: dict_get(m, "frxb").and_then(py_u64).unwrap_or(0),
+                 filtered_tx_bytes: dict_get(m, "ftxb").and_then(py_u64).unwrap_or(0),
+                 announces_filtered: dict_get(m, "afrxc").and_then(py_u64).unwrap_or(0),
+@@ -3299,6 +3311,22 @@ mod tests {
              .collect()
      }
  
@@ -70,26 +70,26 @@ index 5239d79..8f3fb19 100644
 +    }
 +
      #[test]
-     fn interface_stats_carry_every_python_155_key() {
+     fn interface_stats_carry_every_python_161_key() {
          let encoded =
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index 6cd5b94..a94cb77 100644
+index c3e1b92..5210a42 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -173,6 +173,8 @@ impl TransportActor {
+@@ -178,6 +178,8 @@ impl TransportActor {
                              i2p_tunnel_state: inspection.i2p_tunnel_state,
                              tx_stalled: inspection.tx_stalled,
                              tx_buffered: inspection.tx_buffered,
 +                            tx_queue_used: (entry.tx.max_capacity() - entry.tx.capacity()) as u64,
 +                            tx_queue_max: entry.tx.max_capacity() as u64,
                              radio: inspection.radio,
-                         })
-                     })
+                             last_connect_error: inspection.last_connect_error.map(str::to_string),
+                             connect_failures: inspection.connect_failures,
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index efab96b..88b3ca5 100644
+index 7a5e637..76d222f 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -1475,6 +1475,10 @@ pub struct InterfaceStatRpcEntry {
+@@ -1628,6 +1628,10 @@ pub struct InterfaceStatRpcEntry {
      pub i2p_tunnel_state: Option<u8>,
      pub tx_stalled: bool,
      pub tx_buffered: u64,
@@ -99,4 +99,4 @@ index efab96b..88b3ca5 100644
 +    pub tx_queue_max: u64,
      /// Driver radio keys; these replace the generic `rssi`/`snr`/`signal_quality`.
      pub radio: Vec<(&'static str, InterfaceStatValue)>,
- }
+     /// Why a reconnecting TCP or Backbone client's latest attempt failed:

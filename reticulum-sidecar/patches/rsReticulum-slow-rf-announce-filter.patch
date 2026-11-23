@@ -1,8 +1,8 @@
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index a9ced72..3483845 100644
+index be5ddd5..ccee240 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
-@@ -45,6 +45,11 @@ use rpc::InterfaceEvent;
+@@ -46,6 +46,11 @@ use rpc::InterfaceEvent;
  // endpoints are owned by this actor. Real interface ids are allocated upward
  // from one by the runtime, so reserve the top two values for this private
  // duplex route. They never appear on the wire or in the interface registry.
@@ -13,8 +13,8 @@ index a9ced72..3483845 100644
 +
  const LOCAL_LINK_INITIATOR_INTERFACE: InterfaceId = InterfaceId::MAX;
  const LOCAL_LINK_RESPONDER_INTERFACE: InterfaceId = InterfaceId::MAX - 1;
- 
-@@ -232,6 +237,13 @@ pub struct TransportActor {
+ /// `Transport.register_destination`'s wait before a shared-instance client's
+@@ -242,6 +247,13 @@ pub struct TransportActor {
      last_held_announce_check: f64,
  
      pub(crate) is_transport_enabled: bool,
@@ -28,7 +28,7 @@ index a9ced72..3483845 100644
      /// Hash used for wire-facing transport identifiers and local next-hop
      /// answers. Derived from the internal or ephemeral hash by identity policy;
      /// it is not itself a signing key.
-@@ -582,6 +594,7 @@ impl TransportActor {
+@@ -595,6 +607,7 @@ impl TransportActor {
              last_rate_cull: 0.0,
              last_held_announce_check: 0.0,
              is_transport_enabled: false,
@@ -36,7 +36,7 @@ index a9ced72..3483845 100644
              transport_identity_hash: None,
              internal_identity_hash: None,
              ephemeral_identity_hash: options.ephemeral_identity_hash,
-@@ -2425,6 +2438,43 @@ impl TransportActor {
+@@ -2434,6 +2447,43 @@ impl TransportActor {
          accepted
      }
  
@@ -45,7 +45,7 @@ index a9ced72..3483845 100644
 +    ///
 +    /// Python queues every mode-eligible announce onto every interface. On a
 +    /// node bridging fast boundary hubs (thousands of destinations) onto a
-+    /// LoRa RNode (~3 kbps, `ANNOUNCE_CAP` spacing \u2248 2-3 announces/min), that
++    /// LoRa RNode (~3 kbps, `ANNOUNCE_CAP` spacing ≈ 2-3 announces/min), that
 +    /// backlog can never drain and starves fresh local announces. When the
 +    /// filter is enabled, a slow-RF target only accepts destinations that are
 +    /// local to this instance or whose live path was learned over an RF or
@@ -80,15 +80,18 @@ index a9ced72..3483845 100644
      /// Python `Transport._outbound` for a broadcast announce (Transport.py:
      /// 1676-1791): offline interfaces are skipped; Roaming, Boundary and
      /// non-local Internal egress and hop-0 announces send at once, uncapped.
-@@ -2449,6 +2499,7 @@ impl TransportActor {
+@@ -2464,7 +2514,9 @@ impl TransportActor {
              .keys()
              .copied()
-             .filter(|id| self.interface_allows_announce(*id, &destination_hash, except))
-+            .filter(|id| self.slow_rf_announce_admitted(*id, &destination_hash))
+             .filter(|id| {
+-                !skip.contains(id) && self.interface_allows_announce(*id, &destination_hash, except)
++                !skip.contains(id)
++                    && self.interface_allows_announce(*id, &destination_hash, except)
++                    && self.slow_rf_announce_admitted(*id, &destination_hash)
+             })
              .collect();
  
-         for id in ids {
-@@ -8970,6 +9021,88 @@ mod tests {
+@@ -8990,6 +9042,88 @@ mod tests {
      }
  
      /// Python 1.3.8 Transport.py keeps one queued announce per
@@ -178,10 +181,10 @@ index a9ced72..3483845 100644
      #[test]
      fn rebroadcast_queue_coalesces_destination_to_freshest_announce() {
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index a94cb77..3b97b66 100644
+index 5210a42..f2da832 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -400,6 +400,42 @@ impl TransportActor {
+@@ -416,6 +416,42 @@ impl TransportActor {
                  }
                  TransportQueryResponse::Ok
              }
@@ -225,10 +228,10 @@ index a94cb77..3b97b66 100644
                  let cleared = self.path_table.len();
                  self.path_table = crate::path_table::PathTable::new();
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 88b3ca5..bad842b 100644
+index 76d222f..6ba31f6 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -1171,6 +1171,17 @@ pub enum TransportQuery {
+@@ -1271,6 +1271,17 @@ pub enum TransportQuery {
          duration: f64,
      },
      DropAnnounceQueues,

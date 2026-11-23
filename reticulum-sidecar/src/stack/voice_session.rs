@@ -9,13 +9,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use base64::Engine as _;
-use lxst_core::{CallRole, Profile, RawAudioFrame, SignallingStatus};
+use lxst_core::{CallRole, Profile, RawAudioFrame, SignallingStatus, TELEPHONY_DESTINATION_NAME};
 use lxst_telephony::{
-    IdentityHash, TelephonyControl, TelephonyService, TelephonyServiceEvent, TelephonyServiceParts,
-    request_answer,
+    IdentityHash, TELEPHONY_STARTUP_ANNOUNCE_RETRIES, TelephonyControl, TelephonyService,
+    TelephonyServiceChannelConfig, TelephonyServiceConfig, TelephonyServiceEvent,
+    TelephonyServiceParts, request_answer, telephony_destination_hash,
 };
+use rns_identity::announce::AnnounceData;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
+use rns_wire::context::PacketContext;
+use rns_wire::flags::{DestinationType, HeaderType, PacketFlags, PacketType, TransportType};
+use rns_wire::header::PacketHeader;
 use serde_json::json;
 use tokio::sync::{RwLock, broadcast, mpsc};
 
@@ -85,7 +90,35 @@ fn insert_dest_identity_bounded(cache: &mut HashMap<String, String>, dest: Strin
     cache.insert(dest, id);
 }
 
+/// Build a broadcast `lxst.telephony` announce packet (lxmd delivery announce shape).
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn build_telephony_destination_announce_packet(
+    identity: &Identity,
+) -> Result<(Vec<u8>, [u8; 16]), String> {
+    let destination_hash = telephony_destination_hash(&identity.hash);
+    let announce = AnnounceData::create(identity, TELEPHONY_DESTINATION_NAME, None, None)
+        .map_err(|e| format!("Failed to create telephony announce: {e}"))?;
+    let flags = PacketFlags {
+        header_type: HeaderType::Header1,
+        context_flag: false,
+        transport_type: TransportType::Broadcast,
+        destination_type: DestinationType::Single,
+        packet_type: PacketType::Announce,
+    };
+    let header = PacketHeader {
+        flags,
+        hops: 0,
+        transport_id: None,
+        destination_hash,
+        context: PacketContext::None,
+    };
+    let mut raw = header.pack();
+    raw.extend_from_slice(&announce.pack());
+    Ok((raw, destination_hash))
+}
+
 struct ManagerShared {
+    identity: Option<Identity>,
     control_tx: Option<mpsc::Sender<TelephonyControl>>,
     event_tx: broadcast::Sender<String>,
     /// Dedicated bus for `voice.audio` PCM frames (not shared `event_tx` / `/ws`).
@@ -106,18 +139,30 @@ impl VoiceSessionManager {
     /// Register telephony on the live transport and spawn the service + event bridge.
     /// On registration failure returns a disabled manager (stack stays up).
     pub fn spawn(
-        transport_tx: mpsc::Sender<TransportMessage>,
+        transport_tx: &mpsc::Sender<TransportMessage>,
         identity: &Identity,
         event_tx: broadcast::Sender<String>,
     ) -> Self {
-        match TelephonyService::registered(transport_tx, identity) {
+        // Upstream default leaves startup_announce_retries at 0; match lxmd/Python budget.
+        let telephony_config = TelephonyServiceConfig {
+            startup_announce_retries: TELEPHONY_STARTUP_ANNOUNCE_RETRIES,
+            ..TelephonyServiceConfig::default()
+        };
+        match TelephonyService::registered_with_config(
+            transport_tx.clone(),
+            identity,
+            telephony_config,
+            TelephonyServiceChannelConfig::default(),
+        ) {
             Ok(TelephonyServiceParts {
                 service,
                 control_tx,
                 mut event_rx,
             }) => {
                 let (voice_audio_tx, _) = broadcast::channel::<String>(VOICE_AUDIO_BROADCAST_CAP);
+                let startup_announce_tx = control_tx.clone();
                 let shared = Arc::new(ManagerShared {
+                    identity: Some(identity.clone()),
                     control_tx: Some(control_tx),
                     event_tx: event_tx.clone(),
                     voice_audio_tx,
@@ -131,7 +176,13 @@ impl VoiceSessionManager {
 
                 let tasks = LiveTasks::default();
                 tasks.spawn(service.run());
-
+                // Nudge the destination manager once attach_live finishes (rsLXST still defers
+                // periodic announces by TELEPHONY_JOB_INTERVAL; startup_announce_retries covers
+                // late interfaces without custom Outbound packet builders).
+                tasks.spawn(async move {
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                    let _ = startup_announce_tx.send(TelephonyControl::Announce).await;
+                });
                 let bridge = Arc::clone(&shared);
                 tasks.spawn(async move {
                     while let Some(evt) = event_rx.recv().await {
@@ -151,6 +202,7 @@ impl VoiceSessionManager {
                 Self {
                     tasks: LiveTasks::default(),
                     shared: Arc::new(ManagerShared {
+                        identity: None,
                         control_tx: None,
                         event_tx,
                         voice_audio_tx,
@@ -201,6 +253,24 @@ impl VoiceSessionManager {
             "active_call": st.active_call,
             "last_error": st.last_error,
         })
+    }
+
+    pub async fn announce_now(&self) -> serde_json::Value {
+        if self.shared.identity.is_none() {
+            return json!({ "ok": false, "error": "voice not available" });
+        }
+        self.send_control(TelephonyControl::Announce).await
+    }
+
+    /// Signed `lxst.telephony` announce wire bytes (for tests / manual ingest on a peer).
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn telephony_announce_wire_bytes(&self) -> Result<Vec<u8>, String> {
+        let identity = self
+            .shared
+            .identity
+            .as_ref()
+            .ok_or_else(|| "voice not available".to_string())?;
+        build_telephony_destination_announce_packet(identity).map(|(raw, _)| raw)
     }
 
     pub async fn call(&self, identity_or_dest_hex: &str) -> serde_json::Value {
@@ -980,7 +1050,7 @@ mod tests {
         let identity = Identity::new();
         let (event_tx, _event_rx) = broadcast::channel::<String>(8);
         tokio::spawn(async move { while transport_rx.recv().await.is_some() {} });
-        let mgr = VoiceSessionManager::spawn(transport_tx, &identity, event_tx);
+        let mgr = VoiceSessionManager::spawn(&transport_tx, &identity, event_tx);
         let status = mgr.status().await;
         assert_eq!(status["available"], true);
         assert_eq!(status["codec"], "opus");
@@ -993,7 +1063,7 @@ mod tests {
         let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(8);
         tokio::spawn(async move { while transport_rx.recv().await.is_some() {} });
         let (event_tx, _) = broadcast::channel::<String>(8);
-        let mgr = VoiceSessionManager::spawn(transport_tx, &Identity::new(), event_tx);
+        let mgr = VoiceSessionManager::spawn(&transport_tx, &Identity::new(), event_tx);
         let mut audio = mgr.subscribe_voice_audio();
         let old_shared = Arc::downgrade(&mgr.shared);
         mgr.shutdown().await;
@@ -1012,7 +1082,7 @@ mod tests {
         let identity = Identity::new();
         let (event_tx, _event_rx) = broadcast::channel::<String>(8);
         tokio::spawn(async move { while transport_rx.recv().await.is_some() {} });
-        let mgr = VoiceSessionManager::spawn(transport_tx, &identity, event_tx);
+        let mgr = VoiceSessionManager::spawn(&transport_tx, &identity, event_tx);
         let resp = mgr.call("not-a-hash").await;
         assert_eq!(resp["ok"], false);
         let err = resp["error"].as_str().unwrap_or("");
@@ -1028,7 +1098,7 @@ mod tests {
         let identity = Identity::new();
         let (event_tx, _event_rx) = broadcast::channel::<String>(8);
         tokio::spawn(async move { while transport_rx.recv().await.is_some() {} });
-        let mgr = VoiceSessionManager::spawn(transport_tx, &identity, event_tx);
+        let mgr = VoiceSessionManager::spawn(&transport_tx, &identity, event_tx);
         let empty = mgr.send_audio(None, 1, "").await;
         assert_eq!(empty["ok"], false);
         let _ = mgr.set_mute(true).await;
@@ -1046,6 +1116,7 @@ mod tests {
         VoiceSessionManager {
             tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
+                identity: None,
                 control_tx: None,
                 event_tx,
                 voice_audio_tx,
@@ -1086,6 +1157,7 @@ mod tests {
         VoiceSessionManager {
             tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
+                identity: None,
                 control_tx: Some(control_tx),
                 event_tx,
                 voice_audio_tx,
@@ -1237,6 +1309,7 @@ mod tests {
         let (event_tx, mut event_rx) = broadcast::channel::<String>(16);
         let (voice_audio_tx, mut voice_audio_rx) = broadcast::channel::<String>(16);
         let shared = Arc::new(ManagerShared {
+            identity: None,
             control_tx: None,
             event_tx,
             voice_audio_tx,
@@ -1403,6 +1476,7 @@ mod tests {
         let mgr = VoiceSessionManager {
             tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
+                identity: None,
                 control_tx: Some(control_tx),
                 event_tx,
                 voice_audio_tx,
@@ -1445,6 +1519,7 @@ mod tests {
         let mgr = VoiceSessionManager {
             tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
+                identity: None,
                 control_tx: Some(control_tx),
                 event_tx,
                 voice_audio_tx,
