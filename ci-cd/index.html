@@ -4164,7 +4164,7 @@ The workflow does not change repository security settings. Existing global cover
 <h3 id="electron-e2e-e2eyaml">Electron E2E (<code>e2e.yaml</code>)<a class="headerlink" href="#electron-e2e-e2eyaml" title="Permanent link">&para;</a></h3>
 <p>Not a PR gate. Runs on a <strong>daily schedule</strong> (default branch only) and on <strong>manual</strong> <code>workflow_dispatch</code>:</p>
 <ol>
-<li>Checkout (<code>persist-credentials: false</code>), setup pnpm + Node 22, <code>node scripts/check-environment.mjs --skip-node-modules</code>, <code>pnpm install --frozen-lockfile</code>, then <code>pnpm run check:environment</code> (<code>PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</code>)</li>
+<li>Checkout (<code>persist-credentials: false</code>), setup pnpm + Node 22, install Rust (clippy) + yamllint + Semgrep (required by <code>check:environment</code>), <code>node scripts/check-environment.mjs --skip-node-modules</code>, <code>pnpm install --frozen-lockfile</code>, then <code>pnpm run check:environment</code> (<code>PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</code>)</li>
 <li>Linux (<code>ubuntu-24.04</code>): install Electron runtime libraries (<code>libatk-bridge2.0-0t64</code>, <code>libgtk-3-0t64</code>, <code>libasound2t64</code>, …) + <code>xvfb</code></li>
 <li><code>pnpm run build</code> (unpackaged <code>dist-electron</code> + renderer)</li>
 <li><code>pnpm run test:e2e</code> (Linux under <code>xvfb-run -a</code>; macOS/Windows plain) — Playwright launches the local Electron binary via <code>resolveLocalElectronBin()</code> with an isolated <code>--user-data-dir</code></li>
@@ -4779,7 +4779,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 04:40:45 UTC">November 23, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 22:41:15 UTC">November 23, 2026</span>
   </span>
 
     

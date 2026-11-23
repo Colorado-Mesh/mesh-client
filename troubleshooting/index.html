@@ -1764,6 +1764,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#windows-dual-cp2105-standard-and-enhanced-com-ports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: Dual CP2105 Standard and Enhanced COM ports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#linux-serial-port-access-denied" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4633,6 +4644,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#windows-dual-cp2105-standard-and-enhanced-com-ports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: Dual CP2105 Standard and Enhanced COM ports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#linux-serial-port-access-denied" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5917,6 +5939,16 @@ LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to mig
 <h2 id="usb-serial">USB serial<a class="headerlink" href="#usb-serial" title="Permanent link">&para;</a></h2>
 <h3 id="serial-port-not-detected">Serial port not detected<a class="headerlink" href="#serial-port-not-detected" title="Permanent link">&para;</a></h3>
 <p>See <a href="../development-environment/">development-environment.md</a> for OS-specific serial setup and driver guidance.</p>
+<h3 id="windows-dual-cp2105-standard-and-enhanced-com-ports">Windows: Dual CP2105 Standard and Enhanced COM ports<a class="headerlink" href="#windows-dual-cp2105-standard-and-enhanced-com-ports" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms:</strong> Device Manager shows <strong>Silicon Labs Dual CP2105 USB to UART Bridge: Standard COM Port (COMx)</strong> and <strong>Enhanced COM Port (COMy)</strong> with healthy drivers. Auto-reconnect opens a port but Configure never finishes, or the Log shows <code>Multiple matching serial devices found</code> / <code>No matching previously used serial device found</code>.</p>
+<p><strong>Cause:</strong> Both interfaces share the same USB VID/PID (Silicon Labs' CP2105 default is often <code>10C4:EA70</code>; manufacturers may customize it, e.g. <code>10C4:EA60</code>). When Chromium <code>portId</code> is missing or unstable, gesture-free reconnect cannot tell Standard from Enhanced and must not guess.</p>
+<p><strong>What to do:</strong></p>
+<ol>
+<li>Ignore unrelated COMs (LTE modems, Intel SOL, etc.).</li>
+<li>Connection → <strong>Select serial port</strong> (do not rely only on Restore / auto-connect).</li>
+<li>Grant <strong>Standard</strong> first; if Configure hangs, Disconnect and grant <strong>Enhanced</strong>. Keep whichever reaches configured — board wiring decides which UART is the companion link.</li>
+<li>If both hang, quit mesh-client, unplug/replug USB, or reboot Windows once, then retry Standard → Enhanced.</li>
+</ol>
 <h3 id="linux-serial-port-access-denied">Linux: serial port access denied<a class="headerlink" href="#linux-serial-port-access-denied" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: <code>Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED</code></p>
 <p><strong>Fix</strong>:</p>
@@ -6564,7 +6596,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 20:02:42 UTC">November 22, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 22:41:15 UTC">November 23, 2026</span>
   </span>
 
     
