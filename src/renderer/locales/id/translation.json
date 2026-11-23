@@ -1265,7 +1265,6 @@
     "serialDevice": "Perangkat serial",
     "wifiDevice": "perangkat WiFi",
     "reconnect": "Hubungkan kembali",
-    "forgetDevice": "Lupakan perangkat ini",
     "bluetooth": "Bluetooth",
     "usbSerial": "Serial USB",
     "wifiHttp": "Wi-Fi/HTTP",
@@ -1952,7 +1951,6 @@
     "disconnectRadioGroup": "Putuskan radio",
     "moreDisconnectOptions": "Opsi pemutusan lainnya",
     "disconnectOptions": "Opsi pemutusan",
-    "lastConnectionLabel": "Koneksi terakhir",
     "meshcoreBleWindowsInAppPairingHint": "Di Windows, pilih radio di sini dan masukkan PIN yang ditampilkan di layarnya. mesh-client memasangkannya untuk Anda, jadi Anda tidak perlu memasangkannya di Pengaturan Windows. Tutup aplikasi MeshCore di ponsel Anda terlebih dahulu; radio hanya menerima satu koneksi Bluetooth pada satu waktu.",
     "stageEnterPinWindows": "Masukkan PIN yang ditampilkan di radio Anda untuk memasangkannya dengan Windows",
     "stagePairingWindows": "Memasangkan dengan Windows…",
@@ -1962,7 +1960,10 @@
     "mqttAuthDocsLink": "MQTT auth ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "Perangkat tersimpan",
+    "savedDevicesConnectAria": "Sambungkan kembali ke {{name}}",
+    "savedDevicesDeleteAria": "Hapus perangkat tersimpan {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

@@ -252,9 +252,37 @@ if [ "$manifest_only" -eq 0 ]; then
   pnpm run check:console-log || fail 'pnpm run check:console-log'
   pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
   pnpm run check:log-ids || fail 'pnpm run check:log-ids'
-  # Semgrep: auto + .semgrep.yml. Findings may be wrong — research before dismissing;
-  # if truly wrong, update .semgrep.yml (see scripts/check-semgrep.mjs).
-  pnpm run check:semgrep || fail 'pnpm run check:semgrep'
+  # Semgrep: scan only staged JS/TS/JSX/MJS/CJS/TSX/CTS/MTS files.
+  # Falls back to no-op when no code is staged, so manifest-only commits keep their green.
+  SEMGREP_LIST=$(mktemp)
+  trap 'rm -f "$STAGED_LIST" "$MARKDOWN_LIST" "$ESLINT_LIST" "$SEMGREP_LIST"' EXIT
+  : > "$SEMGREP_LIST"
+  if [ -s "$STAGED_LIST" ]; then
+    while IFS= read -r f || [ -n "$f" ]; do
+      case "$f" in
+        *.js | *.jsx | *.mjs | *.cjs | *.ts | *.tsx | *.mts | *.cts)
+          [ -e "$f" ] || continue
+          printf '%s\n' "$f" >> "$SEMGREP_LIST"
+          ;;
+      esac
+    done < "$STAGED_LIST"
+  fi
+  if [ -s "$SEMGREP_LIST" ]; then
+    (
+      set --
+      while IFS= read -r f || [ -n "$f" ]; do
+        set -- "$@" "$f"
+        if [ "$#" -eq 50 ]; then
+          pnpm exec semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off -- "$@" || exit 1
+          set --
+        fi
+      done < "$SEMGREP_LIST"
+      [ "$#" -eq 0 ] || pnpm exec semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off -- "$@"
+    ) || fail 'semgrep (staged)'
+  else
+    printf 'pre-commit: skip semgrep (no staged JS/TS)\n' >&2
+  fi
+
   pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sanitization'
   pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
   pnpm run check:protocol-string-gates || fail 'pnpm run check:protocol-string-gates'

@@ -22,7 +22,7 @@ const hasMeshcomHost = (ctx: SettingsSearchContext) =>
 
 const RADIO = 'connectionPanel.radioConnection';
 const MQTT = 'connectionPanel.mqttConnection';
-const LAST = 'connectionPanel.lastConnectionLabel';
+const SAVED = 'connectionPanel.savedDevicesLabel';
 
 const connectionEntries: readonly SettingSearchEntry[] = [
   {
@@ -82,19 +82,27 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     visible: hasLoraConnection,
   },
   {
-    id: 'connection.lastConnection.reconnect',
+    id: 'connection.savedDevices',
     slot: 'Connection',
-    labelKey: 'connectionPanel.reconnect',
-    sectionKey: LAST,
-    keywords: ['last device', 'reconnect', 'recent'],
+    labelKey: 'connectionPanel.savedDevicesLabel',
+    sectionKey: SAVED,
+    keywords: ['saved device', 'history', 'recent', 'last connection', 'tcp', 'ip'],
     visible: hasLoraConnection,
   },
   {
-    id: 'connection.lastConnection.forget',
+    id: 'connection.savedDevices.connect',
     slot: 'Connection',
-    labelKey: 'connectionPanel.forgetDevice',
-    sectionKey: LAST,
-    keywords: ['last device', 'remove', 'clear'],
+    labelKey: 'connectionPanel.reconnect',
+    sectionKey: SAVED,
+    keywords: ['saved device', 'reconnect', 'connect', 'history'],
+    visible: hasLoraConnection,
+  },
+  {
+    id: 'connection.savedDevices.delete',
+    slot: 'Connection',
+    labelKey: 'common.delete',
+    sectionKey: SAVED,
+    keywords: ['saved device', 'remove', 'forget', 'delete', 'history'],
     visible: hasLoraConnection,
   },
   {
@@ -299,9 +307,10 @@ export const connectionSurface: SettingsSearchSurface = {
     'connectionPanel.pairWithDevice': 'BLE pairing PIN prompt heading',
     'connectionPanel.submit': 'BLE pairing PIN submit button',
     'connectionPanel.rePairDevice': 'pairing recovery button shown only after a BLE error',
-    'connectionPanel.bluetoothDevice': 'device name fallback in the indexed last-connection card',
-    'connectionPanel.serialDevice': 'device name fallback in the indexed last-connection card',
-    'connectionPanel.wifiDevice': 'device name fallback in the indexed last-connection card',
+    'connectionPanel.bluetoothDevice': 'device name fallback in the indexed saved-devices list',
+    'connectionPanel.serialDevice': 'device name fallback in the indexed saved-devices list',
+    'connectionPanel.wifiDevice': 'device name fallback in the indexed saved-devices list',
+    'connectionPanel.savedDevices*Aria': 'accessible-name variant of a saved-devices row action',
     'connectionPanel.battery': 'read-only connected-radio value',
     'connectionPanel.firmware': 'read-only connected-radio value',
     'connectionPanel.lastData': 'read-only connected-radio value',

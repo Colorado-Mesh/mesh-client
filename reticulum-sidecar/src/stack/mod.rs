@@ -3566,6 +3566,76 @@ impl StackHandle {
         })
     }
 
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub async fn voice_announce_now(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            live.voice_announce_now().await
+        } else {
+            Err("live RNS bridge unavailable; start stack with identity configured".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("voice announce requires an rns-stack sidecar build".into())
+        }
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn voice_telephony_announce_wire_bytes(&self) -> Result<Vec<u8>, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.voice_telephony_announce_wire_bytes();
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            Err("live RNS bridge unavailable; start stack with identity configured".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("voice announce wire requires an rns-stack sidecar build".into())
+        }
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub async fn ingest_inbound_wire_packet(&self, raw: &[u8]) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.ingest_inbound_wire_packet(raw).await;
+        }
+        let _ = raw;
+        #[cfg(feature = "rns-stack")]
+        {
+            Err("live RNS bridge unavailable; start stack with identity configured".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("inbound wire ingest requires an rns-stack sidecar build".into())
+        }
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub async fn voice_peer_discoverable(
+        &self,
+        remote_identity_hex: &str,
+        timeout: std::time::Duration,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live
+                .voice_peer_discoverable(remote_identity_hex, timeout)
+                .await;
+        }
+        let _ = (remote_identity_hex, timeout);
+        #[cfg(feature = "rns-stack")]
+        {
+            Err("live RNS bridge unavailable; start stack with identity configured".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("voice peer discover requires an rns-stack sidecar build".into())
+        }
+    }
+
     pub async fn voice_call(&self, identity_hash: &str) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {

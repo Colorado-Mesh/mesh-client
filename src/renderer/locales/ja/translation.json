@@ -1265,7 +1265,6 @@
     "serialDevice": "シリアルデバイス",
     "wifiDevice": "WiFiデバイス",
     "reconnect": "再接続",
-    "forgetDevice": "このデバイスを忘れてください",
     "bluetooth": "ブルートゥース",
     "usbSerial": "USBシリアル",
     "wifiHttp": "Wi-Fi/HTTP",
@@ -1952,7 +1951,6 @@
     "disconnectRadioGroup": "無線機を切断",
     "moreDisconnectOptions": "その他の切断オプション",
     "disconnectOptions": "切断オプション",
-    "lastConnectionLabel": "前回の接続",
     "meshcoreBleWindowsInAppPairingHint": "Windowsでは、ここでラジオを選択し、画面に表示されているPINを入力します。mesh-clientがペアリングするため、Windows設定でペアリングする必要はありません。最初にスマートフォンのMeshCoreアプリを閉じます。ラジオは一度に1つのBluetooth接続のみを受け入れます。",
     "stageEnterPinWindows": "ラジオに表示されている暗証番号を入力して、Windowsとペアリングします",
     "stagePairingWindows": "Windowsとペアリングしています…",
@@ -1962,7 +1960,10 @@
     "mqttAuthDocsLink": "MQTT AUTH ↗",
     "extUdp": "EXTUDP",
     "udp": "UDP",
-    "kissTcp": "KISS/TCP"
+    "kissTcp": "KISS/TCP",
+    "savedDevicesLabel": "保存されたデバイス",
+    "savedDevicesConnectAria": "{{name}}に再接続する",
+    "savedDevicesDeleteAria": "保存したデバイス{{name}}を削除"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

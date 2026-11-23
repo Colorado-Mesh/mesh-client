@@ -1913,7 +1913,6 @@
     "serialDevice": "Serial device",
     "wifiDevice": "WiFi device",
     "reconnect": "Reconnect",
-    "forgetDevice": "Forget this device",
     "bluetooth": "Bluetooth",
     "extUdp": "EXTUDP",
     "udp": "UDP",
@@ -2109,7 +2108,9 @@
     "disconnectRadioGroup": "Disconnect radio",
     "moreDisconnectOptions": "More disconnect options",
     "disconnectOptions": "Disconnect options",
-    "lastConnectionLabel": "Last connection",
+    "savedDevicesLabel": "Saved devices",
+    "savedDevicesConnectAria": "Reconnect to {{name}}",
+    "savedDevicesDeleteAria": "Delete saved device {{name}}",
     "mqttPacketTooLarge": "Broker sent an MQTT packet larger than the {{limit}}-byte safety limit; automatic reconnect is disabled."
   },
   "contactGroupsModal": {
@@ -9248,7 +9249,6 @@
     "rmFirmwareOnlyHint": "Only available on MeshCom RM / kocel firmware",
     "rmFirmwareRequired": "{{command}} needs MeshCom RM firmware (e.g. kocel 4.40a-rm5). This node reports {{version}}.",
     "rmFirmwareUnknownVersion": "stock (non-RM)",
-
     "setctrySent": "Saved and sent --setctry {{code}} to the node.",
     "setctrySavedLocal": "Saved country preference. Connect via Serial or BLE to apply --setctry on the node.",
     "consoleHint": "Type any --command or APP shortcut (GATEWAY, GPS, WX-Info). Secrets are redacted in the log.",

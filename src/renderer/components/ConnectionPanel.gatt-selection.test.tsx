@@ -326,7 +326,7 @@ describe('ConnectionPanel manual GATT selection', () => {
         }),
       );
       const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
       await user.click(await screen.findByRole('button', { name: 'Cancel' }));
       resolvePairState({ ok: true, paired: false });
       await new Promise((r) => setTimeout(r, 0));
@@ -358,7 +358,7 @@ describe('ConnectionPanel manual GATT selection', () => {
           onDisconnect: vi.fn().mockResolvedValue(undefined),
         };
         const view = render(<ConnectionPanel {...props} protocol="meshcore" />);
-        await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+        await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
         await waitFor(() => {
           expect(window.electronAPI.gattPairState).toHaveBeenCalled();
         });
@@ -412,7 +412,7 @@ describe('ConnectionPanel manual GATT selection', () => {
         error: 'windows pair-state timed out',
       });
       const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
       expect(
         await screen.findByRole('button', { name: 'Remove & Re-pair Device' }),
       ).toBeInTheDocument();
@@ -457,14 +457,14 @@ describe('ConnectionPanel manual GATT selection', () => {
         onDisconnect: vi.fn().mockResolvedValue(undefined),
       };
       const view = render(<ConnectionPanel {...props} protocol="meshcore" />);
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
       expect(await screen.findByText('Checking Bluetooth pairing…')).toBeInTheDocument();
       view.rerender(<ConnectionPanel {...props} protocol="meshtastic" />);
       await waitFor(() => {
         expect(screen.queryByText('Auto-connecting…')).not.toBeInTheDocument();
         expect(screen.queryByText('Checking Bluetooth pairing…')).not.toBeInTheDocument();
       });
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
       expect(await screen.findByText('Checking Bluetooth pairing…')).toBeInTheDocument();
       await act(async () => {
         resolveFirst({ ok: true, paired: true });
@@ -547,7 +547,7 @@ describe('ConnectionPanel manual GATT selection', () => {
       );
       vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({ ok: true, paired: false });
       const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
-      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: /Reconnect/i }));
       await user.type(await screen.findByPlaceholderText('PIN'), '445566');
       expect(onConnect).not.toHaveBeenCalled();
       expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();

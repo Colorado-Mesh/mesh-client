@@ -1,11 +1,14 @@
 diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
-index 708d318..3c40ba4 100644
+index 1a5b8ba..2b019fc 100644
 --- a/crates/rns-transport/src/actor/inbound.rs
 +++ b/crates/rns-transport/src/actor/inbound.rs
-@@ -805,36 +805,64 @@ impl TransportActor {
+@@ -971,40 +971,74 @@ impl TransportActor {
              .unwrap_or_default();
          let suppressed =
              self.is_path_interface_suppressed(header.destination_hash, interface_id, now_f64());
+-        // Transport.py: an unresponsive path takes the same emission with more
+-        // hops, but the announce is not rebroadcast.
+-        let mut table_insertion_only = false;
 -        let should_add = if suppressed {
 -            false
 -        } else if let Some(existing) = self.path_table.get(&header.destination_hash) {
@@ -34,8 +37,9 @@ index 708d318..3c40ba4 100644
 -            } else if existing.is_expired() || announce_emitted > path_timebase {
 -                !random_seen
 -            } else if announce_emitted == path_timebase {
--                self.path_table.get_state(&header.destination_hash)
--                    == crate::constants::PathState::Unresponsive
+-                table_insertion_only = self.path_table.get_state(&header.destination_hash)
+-                    == crate::constants::PathState::Unresponsive;
+-                table_insertion_only
 -            } else {
 -                false
 -            }
@@ -68,6 +72,16 @@ index 708d318..3c40ba4 100644
 +            return;
 +        }
 +        let should_add = rank == crate::path_table::PathRank::Activate;
++        // Transport.py: an unresponsive path takes the same emission with more
++        // hops, but the announce is not rebroadcast.
++        let table_insertion_only = should_add
++            && self.path_table.get(&header.destination_hash).is_some_and(|existing| {
++                let path_timebase = path_timebase_from_random_blobs(existing.random_blobs.iter());
++                announce_emitted == path_timebase
++                    && header.hops > existing.hops
++                    && self.path_table.get_state(&header.destination_hash)
++                        == crate::constants::PathState::Unresponsive
++            });
 +
 +        // For Header2 announces via a transport node, next_hop is the relay's
 +        // hash from transport_id; for Header1 announces the destination is
@@ -91,7 +105,7 @@ index 708d318..3c40ba4 100644
  
          if should_add {
              // Only path-updating announces on interfaces with a rate target
-@@ -905,31 +933,11 @@ impl TransportActor {
+@@ -1078,31 +1112,11 @@ impl TransportActor {
                      .insert(header.destination_hash, announce_entry);
              }
  
@@ -123,7 +137,7 @@ index 708d318..3c40ba4 100644
              if rate_blocked {
                  // Rate-blocked announces update routing fields only, never
                  // liveness, and create no entry (Transport.py).
-@@ -938,11 +946,17 @@ impl TransportActor {
+@@ -1111,11 +1125,17 @@ impl TransportActor {
                      existing.hops = entry.hops;
                      existing.random_blobs = entry.random_blobs;
                      existing.interface_id = entry.interface_id;
@@ -141,7 +155,7 @@ index 708d318..3c40ba4 100644
                  }
              } else {
                  let tunnel_path = crate::tunnel::TunnelPath {
-@@ -954,7 +968,12 @@ impl TransportActor {
+@@ -1127,7 +1147,12 @@ impl TransportActor {
                      packet_hash: entry.packet_hash,
                      used: entry.used,
                  };
@@ -155,7 +169,7 @@ index 708d318..3c40ba4 100644
                  if let Some(tunnel) = self.tunnel_table.get_mut_by_interface(interface_id) {
                      tunnel
                          .tunnel_paths
-@@ -995,13 +1014,24 @@ impl TransportActor {
+@@ -1172,6 +1197,19 @@ impl TransportActor {
                  "path learned from announce"
              );
          } else {
@@ -172,6 +186,11 @@ index 708d318..3c40ba4 100644
 +                preference,
 +            );
 +            self.state_dirty = true;
+             // Transport.py: a copy of the queued announce from an interface
+             // off a shared medium needs no rebroadcast back onto it.
+             if self
+@@ -1186,11 +1224,9 @@ impl TransportActor {
+             }
              debug!(
                  dest = hex::encode(header.destination_hash),
 -                hops = header.hops,
@@ -185,7 +204,7 @@ index 708d318..3c40ba4 100644
              return;
          }
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index 9fbe74d..0faf097 100644
+index 05ca52c..be5ddd5 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
 @@ -20,6 +20,7 @@ use crate::messages::{
@@ -196,7 +215,7 @@ index 9fbe74d..0faf097 100644
  use crate::rate_limit::RateTable;
  use crate::reverse_table::ReverseTable;
  use crate::tunnel::TunnelTable;
-@@ -193,6 +194,11 @@ pub struct TransportActor {
+@@ -203,6 +204,11 @@ pub struct TransportActor {
      /// Unix-seconds deadline. Suppression does not remove an existing path or
      /// guarantee discovery of an alternative.
      pub(crate) path_interface_suppressions: HashMap<([u8; 16], InterfaceId), f64>,
@@ -208,7 +227,7 @@ index 9fbe74d..0faf097 100644
      last_discovery_pr_tx: f64,
      /// External interface waiting for a path response from a local shared client.
      pending_local_path_requests: HashMap<[u8; 16], InterfaceId>,
-@@ -557,6 +563,8 @@ impl TransportActor {
+@@ -570,6 +576,8 @@ impl TransportActor {
              pending_discovery_prs: VecDeque::new(),
              pending_path_request_admissions: VecDeque::new(),
              path_interface_suppressions: HashMap::new(),
@@ -217,7 +236,7 @@ index 9fbe74d..0faf097 100644
              last_discovery_pr_tx: 0.0,
              pending_local_path_requests: HashMap::new(),
              path_states: HashMap::new(),
-@@ -1886,15 +1894,92 @@ impl TransportActor {
+@@ -1895,15 +1903,92 @@ impl TransportActor {
          let until = now_f64() + duration;
          self.path_interface_suppressions
              .insert((dest, interface_id), until);
@@ -310,7 +329,7 @@ index 9fbe74d..0faf097 100644
      fn is_path_interface_suppressed(
          &mut self,
          dest: [u8; 16],
-@@ -2584,12 +2669,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
+@@ -2607,12 +2692,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
          .unwrap_or(false)
  }
  
@@ -323,7 +342,7 @@ index 9fbe74d..0faf097 100644
  fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      let (header, data_offset) = rns_wire::header::PacketHeader::unpack(raw).ok()?;
      if header.flags.packet_type != rns_wire::flags::PacketType::Announce || data_offset >= raw.len()
-@@ -2604,10 +2683,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
+@@ -2627,10 +2706,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      Some(announce_timebase(&announce.random_hash))
  }
  
@@ -334,7 +353,7 @@ index 9fbe74d..0faf097 100644
  /// Random jitter in `[0, PATHFINDER_RW)` for announce rebroadcast timing.
  /// The jitter avoids synchronized retransmits when many nodes learn the
  /// same announce in the same tick.
-@@ -2989,6 +3064,14 @@ mod tests {
+@@ -2983,6 +3058,14 @@ mod tests {
          (entry, rx)
      }
  
@@ -737,7 +756,7 @@ index 9fbe74d..0faf097 100644
      #[test]
      fn test_newer_equal_or_higher_hop_announce_replaces_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -9476,6 +9896,7 @@ mod tests {
+@@ -9497,6 +9917,7 @@ mod tests {
                  expires: now - 1.0,
                  random_blobs: Default::default(),
                  interface_id: 7,
@@ -746,10 +765,10 @@ index 9fbe74d..0faf097 100644
              },
          );
 diff --git a/crates/rns-transport/src/actor/outbound.rs b/crates/rns-transport/src/actor/outbound.rs
-index 9dc4cd6..d0b5bec 100644
+index 1917505..2b68a0f 100644
 --- a/crates/rns-transport/src/actor/outbound.rs
 +++ b/crates/rns-transport/src/actor/outbound.rs
-@@ -1276,6 +1276,12 @@ impl TransportActor {
+@@ -1350,6 +1350,12 @@ impl TransportActor {
                      expires: tunnel_path.expires,
                      random_blobs: tunnel_path.random_blobs.iter().copied().collect(),
                      interface_id,
@@ -763,10 +782,10 @@ index 9dc4cd6..d0b5bec 100644
                      used: tunnel_path.used,
                  };
 diff --git a/crates/rns-transport/src/actor/persistence.rs b/crates/rns-transport/src/actor/persistence.rs
-index 85847ad..a5a710f 100644
+index 29b11ce..a8a530a 100644
 --- a/crates/rns-transport/src/actor/persistence.rs
 +++ b/crates/rns-transport/src/actor/persistence.rs
-@@ -1016,6 +1016,14 @@ impl TransportActor {
+@@ -1058,6 +1058,14 @@ impl TransportActor {
          name: &str,
          upstream_name: &str,
      ) {
@@ -780,8 +799,8 @@ index 85847ad..a5a710f 100644
 +        );
          if !self.pending_path_entries.is_empty() {
              let mut promoted = 0usize;
-             let hashes = [
-@@ -1067,6 +1075,7 @@ impl TransportActor {
+             let mut filtered = 0usize;
+@@ -1126,6 +1134,7 @@ impl TransportActor {
                          })
                          .collect(),
                      interface_id: id,
@@ -789,7 +808,7 @@ index 85847ad..a5a710f 100644
                      packet_hash: pe.packet_hash.as_ref().and_then(|h| {
                          if h.len() == 32 {
                              let mut arr = [0u8; 32];
-@@ -1170,6 +1179,7 @@ mod announce_clean_tests {
+@@ -1231,6 +1240,7 @@ mod announce_clean_tests {
                      expires: now + 600.0,
                      random_blobs: std::collections::VecDeque::new(),
                      interface_id: 7,
@@ -797,7 +816,7 @@ index 85847ad..a5a710f 100644
                      packet_hash: Some(hash),
                  },
              );
-@@ -1383,6 +1393,7 @@ mod async_save_tests {
+@@ -1444,6 +1454,7 @@ mod async_save_tests {
                  expires: crate::now_f64() + 600.0,
                  random_blobs: std::collections::VecDeque::new(),
                  interface_id: 7,
@@ -805,7 +824,7 @@ index 85847ad..a5a710f 100644
                  packet_hash: Some([0x33; 32]),
              },
          );
-@@ -1609,6 +1620,7 @@ mod async_save_tests {
+@@ -1670,6 +1681,7 @@ mod async_save_tests {
                      expires: crate::now_f64() + 600.0,
                      random_blobs: std::collections::VecDeque::new(),
                      interface_id: 7,
@@ -814,10 +833,10 @@ index 85847ad..a5a710f 100644
                  },
              );
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index 56d7b88..6cd5b94 100644
+index d1ddeb2..c3e1b92 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -357,6 +357,41 @@ impl TransportActor {
+@@ -373,6 +373,41 @@ impl TransportActor {
                      self.suppress_path_interface(dest, interface_id, duration)
                  }))
              }
@@ -872,10 +891,10 @@ index bbd828c..5468d3d 100644
          },
      );
 diff --git a/crates/rns-transport/src/constants.rs b/crates/rns-transport/src/constants.rs
-index d16f960..6bec5bd 100644
+index a596c2e..aa1621b 100644
 --- a/crates/rns-transport/src/constants.rs
 +++ b/crates/rns-transport/src/constants.rs
-@@ -78,6 +78,12 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
+@@ -84,6 +84,12 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
  /// Max local rebroadcasts before stopping.
  pub const LOCAL_REBROADCASTS_MAX: u32 = 2;
  
@@ -888,7 +907,7 @@ index d16f960..6bec5bd 100644
  /// Base timeout for recursive path discovery, in seconds. A discovered
  /// slow-media return budget can extend the actual admission deadline.
  pub const PATH_REQUEST_TIMEOUT: f64 = 15.0;
-@@ -312,6 +318,72 @@ pub enum PathState {
+@@ -322,6 +328,72 @@ pub enum PathState {
      Responsive = 0x02,
  }
  
@@ -962,10 +981,10 @@ index d16f960..6bec5bd 100644
  /// These modes are not a reachability signal transmitted to upstream peers.
  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 19d6a08..eff62f5 100644
+index 9663ccf..7a5e637 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -1066,6 +1066,23 @@ pub fn msg_variant_name(msg: &TransportMessage) -> &'static str {
+@@ -1163,6 +1163,23 @@ pub enum DetachReason {
  pub enum TransportQuery {
      /// Return currently non-expired paths; presence is not proof of reachability.
      GetPathTable,
@@ -989,15 +1008,15 @@ index 19d6a08..eff62f5 100644
      /// Read metadata, counters and optional synchronous driver inspection.
      /// Missing counters report zero; absent online state reports true. Rate fields
      /// are currently zero placeholders, not measured throughput.
-@@ -1297,6 +1314,7 @@ pub enum TransportQuery {
+@@ -1408,6 +1425,7 @@ pub enum TransportQuery {
  #[non_exhaustive]
  pub enum TransportQueryResponse {
      PathTable(Vec<PathTableRpcEntry>),
 +    PathSlots(PathSlotsRpcEntry),
      InterfaceStats(Vec<InterfaceStatRpcEntry>),
      TrafficTotals(TrafficTotalsRpcEntry),
-     RateTable(Vec<RateTableRpcEntry>),
-@@ -1345,6 +1363,32 @@ pub struct PathTableRpcEntry {
+     LinkDistribution(Vec<LinkDistributionRpcEntry>),
+@@ -1479,6 +1497,32 @@ pub struct PathTableRpcEntry {
      pub interface_role: InterfaceRole,
  }
  
@@ -1031,10 +1050,10 @@ index 19d6a08..eff62f5 100644
  /// them and as a shared instance's `interface_stats` RPC carries them. Driver
  /// counters use independent atomic reads, so this is not a coherent instant
 diff --git a/crates/rns-transport/src/path_table.rs b/crates/rns-transport/src/path_table.rs
-index 975c2cc..66b2f4b 100644
+index 567be1b..92a9b28 100644
 --- a/crates/rns-transport/src/path_table.rs
 +++ b/crates/rns-transport/src/path_table.rs
-@@ -8,6 +8,8 @@ use crate::constants::{
+@@ -9,6 +9,8 @@ use crate::constants::{
  use crate::messages::InterfaceId;
  use rns_wire::types::DestHash;
  
@@ -1043,7 +1062,7 @@ index 975c2cc..66b2f4b 100644
  /// Stored route metadata for a destination. Fields are caller-writable; this
  /// record alone does not establish a live interface or reachable peer.
  #[derive(Debug, Clone)]
-@@ -24,6 +26,9 @@ pub struct PathEntry {
+@@ -25,6 +27,9 @@ pub struct PathEntry {
      /// exceed that size. The helper does not authenticate or deduplicate blobs.
      pub random_blobs: VecDeque<[u8; 10]>,
      pub interface_id: InterfaceId,
@@ -1053,7 +1072,7 @@ index 975c2cc..66b2f4b 100644
      /// Hash used to locate a cached announce packet. The record does not own
      /// its bytes, and a corresponding cache file may be unavailable.
      pub packet_hash: Option<[u8; 32]>,
-@@ -48,6 +53,7 @@ impl PathEntry {
+@@ -49,6 +54,7 @@ impl PathEntry {
              expires,
              random_blobs: VecDeque::new(),
              interface_id,
@@ -1061,7 +1080,7 @@ index 975c2cc..66b2f4b 100644
              packet_hash: None,
              used: 0.0,
          }
-@@ -81,30 +87,95 @@ impl PathEntry {
+@@ -88,31 +94,96 @@ impl PathEntry {
      }
  }
  
@@ -1101,8 +1120,9 @@ index 975c2cc..66b2f4b 100644
 +}
 +
  /// Destination-keyed routes and separately stored path-state labels. Ordinary
- /// lookup/iteration includes expired entries; `get_live`/`iter_live` checks
- /// expiry only, not interface health or reachability. State labels are supplied
+ /// lookup/iteration includes expired entries; `get_live`/`iter_live` keep
+ /// retained entries (`PathEntry::is_retained`) and check neither interface
+ /// health nor reachability. State labels are supplied
  /// by callers and can exist without a route. This table does not probe peers.
 +///
 +/// `entries` holds the active route per destination — every legacy accessor
@@ -1157,7 +1177,7 @@ index 975c2cc..66b2f4b 100644
          self.entries.insert(hash, entry);
      }
  
-@@ -135,31 +206,39 @@ impl PathTable {
+@@ -143,31 +214,39 @@ impl PathTable {
          self.get_live(dest_hash).map(|e| e.hops)
      }
  
@@ -1196,7 +1216,7 @@ index 975c2cc..66b2f4b 100644
 -    /// Set a present route's expiry to zero, then run a full expired-route cull
 -    /// across the table. Return whether the target entry existed before the
 -    /// operation. The cull uses the current wall clock and can remove other
--    /// expired entries too.
+-    /// expired entries too. A 0-hop route survives, as upstream's does.
 +    /// Force-drop a destination's route and cull immediately. Useful when the
 +    /// caller already knows the path is bad (e.g. a link proof failed) and
 +    /// shouldn't wait for the periodic cull cycle.
@@ -1210,11 +1230,11 @@ index 975c2cc..66b2f4b 100644
          if let Some(entry) = self.entries.get_mut(dest_hash) {
              entry.expires = 0.0;
              self.cull_expired();
-@@ -180,19 +259,18 @@ impl PathTable {
+@@ -188,19 +267,18 @@ impl PathTable {
              .unwrap_or(PathState::Unknown)
      }
  
--    /// Scan all routes, remove expired entries and remove every state label
+-    /// Scan all routes, remove unretained entries and remove every state label
 -    /// without a remaining route. Return the number of routes removed.
 +    /// Full cull pass. Prefer `cull_expired_batch` on the hot path to bound
 +    /// per-tick work. Expired alternates are dropped first so a destination
@@ -1222,15 +1242,15 @@ index 975c2cc..66b2f4b 100644
 +    /// Returns the number of expired active paths removed.
      pub fn cull_expired(&mut self) -> usize {
 -        let before = self.entries.len();
--        self.entries.retain(|_, entry| !entry.is_expired());
+-        self.entries.retain(|_, entry| entry.is_retained());
 -        self.states
 -            .retain(|hash, _| self.entries.contains_key(hash));
 -        before - self.entries.len()
-+        self.retain_backups(|entry| !entry.is_expired());
-+        self.drop_active_where(|entry| entry.is_expired())
++        self.retain_backups(|entry| entry.is_retained());
++        self.drop_active_where(|entry| !entry.is_retained())
      }
  
--    /// Remove at most `limit` expired routes and their state labels. The limit
+-    /// Remove at most `limit` unretained routes and their state labels. The limit
 -    /// bounds removals, not scanning time: finding those entries can examine
 -    /// the entire table. Unrelated orphan state labels are not cleaned here.
 +    /// Batched cull — removes at most `limit` expired entries so the actor
@@ -1239,7 +1259,7 @@ index 975c2cc..66b2f4b 100644
      pub fn cull_expired_batch(&mut self, limit: usize) -> usize {
          let to_remove: Vec<DestHash> = self
              .entries
-@@ -205,6 +283,7 @@ impl PathTable {
+@@ -213,6 +291,7 @@ impl PathTable {
          for hash in &to_remove {
              self.entries.remove(hash.as_bytes());
              self.states.remove(hash.as_bytes());
@@ -1247,10 +1267,10 @@ index 975c2cc..66b2f4b 100644
          }
          count
      }
-@@ -231,6 +310,10 @@ impl PathTable {
-     /// paths beyond `PATH_POOL_UNUSED_TARGET` are dropped too, fast-interface
-     /// and earliest-expiring first. Returns the removed count and, with
-     /// `check_unused`, the never-used count before removal.
+@@ -243,6 +322,10 @@ impl PathTable {
+     /// than `PATH_POOL_USED_TARGET` paths are used. Returns the removed count
+     /// and, with `check_unused`, the never-used count before removal and the
+     /// target.
 +    ///
 +    /// Alternates are held to the same expiry / missing-interface / linger
 +    /// rules first, so a destination whose active slot is culled promotes the
@@ -1258,39 +1278,40 @@ index 975c2cc..66b2f4b 100644
      pub fn cull(
          &mut self,
          now: f64,
-@@ -238,6 +321,18 @@ impl PathTable {
-         check_unused: bool,
+@@ -251,6 +334,17 @@ impl PathTable {
+         hop_limiter: u8,
          bitrate_of: impl Fn(InterfaceId) -> Option<u64>,
-     ) -> (usize, Option<usize>) {
+     ) -> (usize, Option<(usize, usize)>) {
 +        let is_stale = |entry: &PathEntry| {
 +            let bitrate = bitrate_of(entry.interface_id);
 +            let slow = bitrate.is_some_and(|b| b > 0 && b < PATH_SLOW_BITRATE);
 +            let factor = if slow { PATH_SLOW_LINGER_FACTOR } else { 1.0 };
-+            now > entry.expires
++            let local = entry.hops == 0;
++            (!local && now > entry.expires)
 +                || bitrate.is_none()
-+                || (entry.used == 0.0 && now > entry.timestamp + linger * factor)
++                || (!local && entry.used == 0.0 && now > entry.timestamp + linger * factor)
++                || entry.hops > hop_limiter
 +        };
-+        self.backups.retain(|_, backups| {
-+            backups.retain(|entry| !is_stale(entry));
-+            !backups.is_empty()
-+        });
++        self.retain_backups(|entry| !is_stale(entry));
          let mut stale: Vec<DestHash> = Vec::new();
          let mut unused: Vec<(u8, f64, DestHash)> = Vec::new();
-         for (hash, entry) in &self.entries {
-@@ -246,11 +341,7 @@ impl PathTable {
-             if check_unused && entry.used == 0.0 {
+         let mut used_count = 0usize;
+@@ -262,13 +356,7 @@ impl PathTable {
+             } else if check_unused {
                  unused.push((u8::from(slow), entry.expires, *hash));
              }
 -            let factor = if slow { PATH_SLOW_LINGER_FACTOR } else { 1.0 };
--            if now > entry.expires
+-            let local = entry.hops == 0;
+-            if (!local && now > entry.expires)
 -                || bitrate.is_none()
--                || (entry.used == 0.0 && now > entry.timestamp + linger * factor)
+-                || (!local && entry.used == 0.0 && now > entry.timestamp + linger * factor)
+-                || entry.hops > hop_limiter
 -            {
 +            if is_stale(entry) {
                  stale.push(*hash);
              }
          }
-@@ -264,27 +355,340 @@ impl PathTable {
+@@ -285,27 +373,340 @@ impl PathTable {
              });
              stale.extend(unused.into_iter().take(cull_count).map(|(_, _, hash)| hash));
          }
@@ -1636,7 +1657,7 @@ index 975c2cc..66b2f4b 100644
      }
  
      pub fn len(&self) -> usize {
-@@ -321,10 +725,154 @@ fn path_expiry(mode: InterfaceMode) -> u64 {
+@@ -342,10 +743,154 @@ fn path_expiry(mode: InterfaceMode) -> u64 {
      }
  }
  
@@ -1791,7 +1812,7 @@ index 975c2cc..66b2f4b 100644
      #[test]
      fn test_path_table_basic() {
          let mut table = PathTable::new();
-@@ -456,6 +1004,448 @@ mod tests {
+@@ -541,6 +1086,448 @@ mod tests {
          assert!(!result);
      }
  
