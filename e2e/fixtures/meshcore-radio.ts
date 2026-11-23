@@ -40,9 +40,13 @@ export async function startMeshcoreRadio(selfId = 171) {
   ]);
   const server = createServer((socket) => {
     sockets.add(socket);
+    socket.on('error', () => {
+      // Teardown/close can emit ECONNRESET; ignore so Playwright does not see uncaught exceptions.
+    });
     socket.on('close', () => sockets.delete(socket));
     let buffer = Buffer.alloc(0);
     const send = (payload: Buffer) => {
+      if (socket.destroyed || !socket.writable) return;
       const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
       socket.write(Buffer.concat([header, payload]));
     };
@@ -188,7 +192,10 @@ export async function startMeshcoreRadio(selfId = 171) {
         Buffer.from(body),
       ]);
       const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
-      for (const socket of sockets) socket.write(Buffer.concat([header, payload]));
+      const frame = Buffer.concat([header, payload]);
+      for (const socket of sockets) {
+        if (!socket.destroyed && socket.writable) socket.write(frame);
+      }
     },
     setChats: (nextChannels: string[], nextRooms: string[]) => {
       channels = [...nextChannels];
@@ -219,10 +226,15 @@ export async function startMeshcoreRadio(selfId = 171) {
       signal.writeInt8(rssi, 1);
       const payload = Buffer.concat([Buffer.from([0x88]), signal, raw]);
       const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
-      for (const socket of sockets) socket.write(Buffer.concat([header, payload]));
+      const frame = Buffer.concat([header, payload]);
+      for (const socket of sockets) {
+        if (!socket.destroyed && socket.writable) socket.write(frame);
+      }
     },
     close: async () => {
-      for (const socket of sockets) socket.destroy();
+      for (const socket of sockets) {
+        socket.destroy();
+      }
       await new Promise<void>((resolve) =>
         server.close(() => {
           resolve();

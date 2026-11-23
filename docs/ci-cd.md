@@ -120,7 +120,7 @@ Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manua
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
 
-A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
+A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. The toolchain composite installs Semgrep (`pip install --user semgrep` + `~/.local/bin` on `PATH`) so always-on `check:semgrep` matches `ci.yaml` policy-scanners. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 
@@ -199,9 +199,10 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 
 1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
-3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
-4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames the **intermediate** smoke-install basename to `org.coloradomesh.MeshClient-run{N}.flatpak` (repo-root intermediate — not the Actions artifact name).
-5. Uploads each arch as an **`archive: false`** artifact whose **final** basename is `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (test dispatch: `org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak`) plus per-arch `flatpak-schema-warning-*`
+3. Stamps CI build info (`test` on dispatch / `release` on tag), then **copies the image’s Flatpak runtimes into a writable overlay layer** so Sdk/Platform updates do not fail with overlayfs `EXDEV` (`Invalid cross-device link`) when Flathub is ahead of the pinned builder image
+4. Builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
+5. Smoke-installs the unstamped local bundle; on **dispatch only**, renames the **intermediate** smoke-install basename to `org.coloradomesh.MeshClient-run{N}.flatpak` (repo-root intermediate — not the Actions artifact name).
+6. Uploads each arch as an **`archive: false`** artifact whose **final** basename is `org.coloradomesh.MeshClient.flatpak-{arch}.flatpak` (test dispatch: `org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak`) plus per-arch `flatpak-schema-warning-*`
 
 On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`) and attaching the **clean-named** bundles plus attestation with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 

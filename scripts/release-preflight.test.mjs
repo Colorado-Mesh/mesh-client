@@ -28,6 +28,7 @@ describe('Release preflight (e2e.yaml job)', () => {
       'setup:actionlint',
       'pip install --require-hashes --only-binary=:all:',
       'scripts/requirements-yamllint.txt',
+      'pip install --user semgrep',
     ]) {
       expect(toolchain).toContain(tool);
       expect(cutRelease).not.toContain(tool);
@@ -35,6 +36,12 @@ describe('Release preflight (e2e.yaml job)', () => {
     }
     expect(cutRelease).not.toMatch(/uses: actions\/setup-node@/);
     expect(cutRelease).not.toMatch(/uses: pnpm\/action-setup@/);
+  });
+
+  it('installs Semgrep into PATH for release.sh check:semgrep', () => {
+    expect(toolchain).toContain('Install Semgrep');
+    expect(toolchain).toContain('pip install --user semgrep');
+    expect(toolchain).toMatch(/\.local\/bin.*GITHUB_PATH|GITHUB_PATH.*\.local\/bin/);
   });
 
   it('runs release.sh pre-flight only, with tags and without push credentials', () => {
