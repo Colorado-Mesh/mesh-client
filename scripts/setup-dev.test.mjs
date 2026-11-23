@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { planHooksPathFix, planRustSetup } from './setup-dev.mjs';
@@ -19,7 +21,8 @@ describe('planHooksPathFix', () => {
   });
 
   it('is ok when absolute hooksPath resolves to this checkout', () => {
-    const repoHooks = '/Users/me/repos/mesh-client/.githooks';
+    // Resolve once so win32 path.resolve matches both sides (planHooksPathFix resolve()'s current).
+    const repoHooks = resolve('/Users/me/repos/mesh-client/.githooks');
     expect(
       planHooksPathFix({
         gitDirExists: true,
@@ -33,8 +36,8 @@ describe('planHooksPathFix', () => {
     expect(
       planHooksPathFix({
         gitDirExists: true,
-        currentHooksPath: '/Users/me/other-repo/.githooks',
-        repoHooksPathResolved: '/Users/me/repos/mesh-client/.githooks',
+        currentHooksPath: resolve('/Users/me/other-repo/.githooks'),
+        repoHooksPathResolved: resolve('/Users/me/repos/mesh-client/.githooks'),
       }),
     ).toEqual({ action: 'set', target: '.githooks' });
   });

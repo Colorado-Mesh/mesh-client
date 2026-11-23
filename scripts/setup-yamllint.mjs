@@ -3,12 +3,33 @@
  * Install yamllint for local check:environment / pre-commit YAML lint.
  */
 import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, symlinkSync, unlinkSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
 const REQUIREMENTS = join(repoRoot, 'scripts', 'requirements-yamllint.txt');
+const HASH_ARGS = ['--require-hashes', '--only-binary=:all:', '-r', REQUIREMENTS];
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {{ inherit?: boolean }} [opts]
+ * @returns {{ status: number, stdout: string, stderr: string }}
+ */
+function runCapture(command, args, opts = {}) {
+  const res = spawnSync(command, args, {
+    encoding: 'utf8',
+    stdio: opts.inherit ? 'inherit' : 'pipe',
+  });
+  return {
+    status: res.status ?? 1,
+    stdout: (res.stdout || '').toString(),
+    stderr: (res.stderr || '').toString(),
+  };
+}
 
 /**
  * @param {string} command
@@ -16,7 +37,7 @@ const REQUIREMENTS = join(repoRoot, 'scripts', 'requirements-yamllint.txt');
  * @returns {string | null}
  */
 function commandOutput(command, args) {
-  const res = spawnSync(command, args, { encoding: 'utf8', stdio: 'pipe' });
+  const res = runCapture(command, args);
   if (res.status !== 0) return null;
   return (res.stdout || res.stderr || '').trim();
 }
@@ -27,8 +48,7 @@ function commandOutput(command, args) {
  * @returns {boolean}
  */
 function commandOk(command, args) {
-  const res = spawnSync(command, args, { stdio: 'ignore' });
-  return res.status === 0;
+  return runCapture(command, args).status === 0;
 }
 
 /**
@@ -108,39 +128,133 @@ function runInstall(strategy) {
  * @returns {boolean}
  */
 function pythonRunsInVirtualEnv(python, prefixArgs = []) {
-  const res = spawnSync(
-    python,
-    [
-      ...prefixArgs,
-      '-c',
-      'import sys; raise SystemExit(0 if sys.prefix != getattr(sys, "base_prefix", sys.prefix) else 1)',
-    ],
-    { stdio: 'ignore' },
-  );
+  const res = runCapture(python, [
+    ...prefixArgs,
+    '-c',
+    'import sys; raise SystemExit(0 if sys.prefix != getattr(sys, "base_prefix", sys.prefix) else 1)',
+  ]);
   return res.status === 0;
+}
+
+/**
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function looksExternallyManaged(text) {
+  return /externally-managed-environment|PEP 668/i.test(text);
+}
+
+/**
+ * @param {string} venvDir
+ * @returns {{ pip: string, yamllint: string, binDir: string }}
+ */
+function venvPaths(venvDir) {
+  if (process.platform === 'win32') {
+    return {
+      pip: join(venvDir, 'Scripts', 'pip.exe'),
+      yamllint: join(venvDir, 'Scripts', 'yamllint.exe'),
+      binDir: join(venvDir, 'Scripts'),
+    };
+  }
+  return {
+    pip: join(venvDir, 'bin', 'pip'),
+    yamllint: join(venvDir, 'bin', 'yamllint'),
+    binDir: join(venvDir, 'bin'),
+  };
+}
+
+/**
+ * Best-effort: put venv yamllint on PATH via ~/.local/bin (same place --user uses).
+ * @param {string} yamllintBin
+ */
+function linkYamllintIntoLocalBin(yamllintBin) {
+  if (!existsSync(yamllintBin)) return;
+  const localBin = join(homedir(), '.local', 'bin');
+  try {
+    mkdirSync(localBin, { recursive: true });
+  } catch {
+    return;
+  }
+  const linkName = process.platform === 'win32' ? 'yamllint.exe' : 'yamllint';
+  const dest = join(localBin, linkName);
+  try {
+    if (existsSync(dest)) unlinkSync(dest);
+  } catch {
+    // catch-no-log-ok replace existing link/file best-effort
+  }
+  try {
+    symlinkSync(yamllintBin, dest);
+    console.log(`setup-yamllint: linked ${dest} → ${yamllintBin}`);
+  } catch {
+    console.error(
+      `setup-yamllint: could not link into ${localBin}. Add to PATH: ${dirname(yamllintBin)}`,
+    );
+  }
+}
+
+/** Prepend a directory to this process PATH so the post-install version check can see it. */
+function prependPath(dir) {
+  const delim = process.platform === 'win32' ? ';' : ':';
+  process.env.PATH = `${dir}${delim}${process.env.PATH || ''}`;
+}
+
+/**
+ * @returns {[string, string[]] | null}
+ */
+function resolvePythonInvoker() {
+  if (commandOk('python3', ['-m', 'pip', '--version'])) return ['python3', []];
+  if (commandOk('py', ['-3', '-m', 'pip', '--version'])) return ['py', ['-3']];
+  return null;
 }
 
 /** @returns {number} */
 function installYamllintViaPip() {
-  const hashArgs = ['--require-hashes', '--only-binary=:all:', '-r', REQUIREMENTS];
-  /** @type {[string, string[]] | null} */
-  const invoker = commandOk('python3', ['-m', 'pip', '--version'])
-    ? ['python3', []]
-    : commandOk('py', ['-3', '-m', 'pip', '--version'])
-      ? ['py', ['-3']]
-      : null;
-
+  const invoker = resolvePythonInvoker();
   if (!invoker) {
-    const res = spawnSync('pip', ['install', '--user', ...hashArgs], { stdio: 'inherit' });
+    const res = spawnSync('pip', ['install', '--user', ...HASH_ARGS], { stdio: 'inherit' });
     return res.status ?? 1;
   }
 
   const [python, prefix] = invoker;
-  const userFlag = pythonRunsInVirtualEnv(python, prefix) ? [] : ['--user'];
-  const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', ...userFlag, ...hashArgs], {
-    stdio: 'inherit',
-  });
-  return res.status ?? 1;
+  if (pythonRunsInVirtualEnv(python, prefix)) {
+    const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', ...HASH_ARGS], {
+      stdio: 'inherit',
+    });
+    return res.status ?? 1;
+  }
+
+  const userAttempt = runCapture(
+    python,
+    [...prefix, '-m', 'pip', 'install', '--user', ...HASH_ARGS],
+    { inherit: false },
+  );
+  if (userAttempt.status === 0) {
+    console.log('setup-yamllint: installed yamllint with pip --user');
+    return 0;
+  }
+  const combined = `${userAttempt.stdout}\n${userAttempt.stderr}`;
+  process.stderr.write(userAttempt.stderr || userAttempt.stdout);
+  if (!looksExternallyManaged(combined)) {
+    return userAttempt.status;
+  }
+
+  const venvDir = join(homedir(), '.cache', 'mesh-client', 'yamllint-venv');
+  console.log(
+    `setup-yamllint: system Python is externally managed — using isolated venv at ${venvDir}`,
+  );
+  mkdirSync(dirname(venvDir), { recursive: true });
+  const venvCreate = spawnSync(python, [...prefix, '-m', 'venv', venvDir], { stdio: 'inherit' });
+  if ((venvCreate.status ?? 1) !== 0) return venvCreate.status ?? 1;
+  const { pip, yamllint, binDir } = venvPaths(venvDir);
+  const install = spawnSync(pip, ['install', ...HASH_ARGS], { stdio: 'inherit' });
+  if ((install.status ?? 1) !== 0) return install.status ?? 1;
+  linkYamllintIntoLocalBin(yamllint);
+  prependPath(binDir);
+  prependPath(join(homedir(), '.local', 'bin'));
+  if (!commandOutput('yamllint', ['--version'])) {
+    console.error(`setup-yamllint: add to PATH then re-run: ${binDir}`);
+  }
+  return 0;
 }
 
 function main() {
