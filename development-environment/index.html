@@ -4863,7 +4863,7 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
 </code></pre></div>
 <p><strong>Required</strong> checks (must pass): Git, Node.js, pnpm, <code>node_modules</code>, and platform-native build tools (Xcode CLT on macOS, <code>g++</code>/<code>make</code> on Linux, MSVC <code>cl</code> on Windows).</p>
-<p><strong>Optional</strong> checks (warnings only): Python/pip, Rust, actionlint, yamllint, a Docker-compatible container engine (Podman preferred), act, and Linux <code>dialout</code> group membership. For local CI you can use <strong>container mode</strong> (<code>pnpm run act:ci</code> — act + Podman/Docker) or <strong>host mode</strong> (<code>pnpm run act:ci:native</code> — no container engine). Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, local CI parity, or USB serial on Linux.</p>
+<p><strong>Optional</strong> checks (warnings only): Python/pip, Rust, actionlint, yamllint, Semgrep, a Docker-compatible container engine (Podman preferred), act, and Linux <code>dialout</code> group membership. For local CI you can use <strong>container mode</strong> (<code>pnpm run act:ci</code> — act + Podman/Docker) or <strong>host mode</strong> (<code>pnpm run act:ci:native</code> — no container engine). Fix optional items when you need docs builds, pre-commit hooks (Semgrep is required for always-on <code>check:semgrep</code>), Reticulum sidecar work, local CI parity, or USB serial on Linux.</p>
 <p>Use the printed <code>→</code> hints and <code>setup:*</code> scripts (<code>setup:build-deps</code>, <code>setup:actionlint</code>, <code>setup:dialout</code>) to fix failures. See <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts (auto-install where possible)</a> below.</p>
 <h3 id="mkdocs-documentation-tooling">MkDocs (documentation) tooling<a class="headerlink" href="#mkdocs-documentation-tooling" title="Permanent link">&para;</a></h3>
 <p>Docs are built with MkDocs Material.</p>
@@ -5363,6 +5363,10 @@ to verify each mode.</p>
 <td>Fail on bare <code>console.log</code> in production paths</td>
 </tr>
 <tr>
+<td><code>check:log-ids</code></td>
+<td>Require unique registered <code>mcL####</code> on production <code>console.warn</code>/<code>error</code></td>
+</tr>
+<tr>
 <td><code>check:db-migrations</code></td>
 <td>Verify SQLite migrations are valid</td>
 </tr>
@@ -5404,7 +5408,7 @@ to verify each mode.</p>
 </tr>
 <tr>
 <td><code>check:log-injection</code></td>
-<td>Detect unsanitized user data in log calls</td>
+<td>Unsanitized error args in <code>console.*</code> under recursive <code>src/main/**</code> (includes debug)</td>
 </tr>
 <tr>
 <td><code>check:log-panel-filter</code></td>
@@ -5437,6 +5441,10 @@ to verify each mode.</p>
 <tr>
 <td><code>check:reticulum-sidecar</code></td>
 <td>Full-feature <code>cargo fmt</code> + Clippy + test (skips when <code>cargo</code> missing)</td>
+</tr>
+<tr>
+<td><code>check:semgrep</code></td>
+<td>Semgrep <code>auto</code> + <code>.semgrep.yml</code> (research FPs before updating policy)</td>
 </tr>
 <tr>
 <td><code>check:silent-catches</code></td>
@@ -5692,6 +5700,7 @@ to verify each mode.</p>
 <ul>
 <li><code>actionlint</code> (recommended for workflow linting; run <code>pnpm run setup:actionlint</code> or install system-wide)</li>
 <li><code>yamllint</code> (required for YAML linting; install via <code>pip install yamllint</code> or <code>brew install yamllint</code> on macOS)</li>
+<li><strong>Semgrep</strong> (required for always-on pre-commit / release / CI <code>pnpm run check:semgrep</code>; install via <code>brew install semgrep</code> or <code>pipx install semgrep</code> / <code>pip install semgrep</code>). Config is tracked at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.semgrep.yml"><code>.semgrep.yml</code></a>. Findings (especially <code>--config auto</code>) may be false positives — research before dismissing; if wrong for this repo, update <code>.semgrep.yml</code> or add a narrow <code>nosemgrep</code> with a reason (see <code>scripts/check-semgrep.mjs</code>). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — <code>nosemgrep</code> does not replace <code>eslint-disable</code> (see AGENTS.md <strong>Semgrep × ESLint</strong>).</li>
 <li><strong>Rust / <code>cargo</code></strong> (optional; Reticulum sidecar — see <a href="#reticulum-sidecar-optional">Reticulum sidecar</a>; prefer <a href="https://rustup.rs/">rustup</a>). <code>rust-toolchain.toml</code> installs clippy/rustfmt/llvm-tools-preview on first build in <code>reticulum-sidecar/</code>. Optional: <code>cargo install cargo-llvm-cov</code> for <code>pnpm run reticulum:sidecar:coverage</code>.</li>
 <li>Podman or Docker (Docker-compatible engine) and <code>act</code> (optional for container CI — <code>act:*</code>; host CI uses <code>act:*:native</code> without a container engine)</li>
 <li>Python 3 + <code>venv</code> + MkDocs Python deps (for docs checks/builds)</li>
@@ -5812,8 +5821,8 @@ to verify each mode.</p>
 </code></pre></div>
 <p>Pre-commit path-gates this when <code>src/main/</code> or the esbuild main-build scripts are staged. On
 failure, follow the printed remediation: move bulky code into a sibling esbuild entry, prefer
-externals, analyze the metafile — raise <code>MAIN_BUNDLE_SIZE_BUDGET_BYTES</code> only if there is
-absolutely no other way.</p>
+externals, analyze the metafile. <strong>Do not raise</strong> <code>MAIN_BUNDLE_SIZE_BUDGET_BYTES</code> unless the
+developer explicitly asks (agents must prompt — see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md">AGENTS.md</a> Bundle CI).</p>
 <p>To analyze the main process bundle size and composition:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build:main:minify-meta
 </code></pre></div>
@@ -5836,7 +5845,7 @@ absolutely no other way.</p>
 <li>When <code>src/renderer/locales/en/translation.json</code> is staged: <code>pnpm run i18n:auto-translate</code> (incremental vs <code>HEAD</code> English, not <code>--all</code>) and re-stage <code>src/renderer/locales/</code> — see <a href="#9-internationalization-i18n">Internationalization</a></li>
 <li>ESLint on <strong>staged</strong> JS/TS with <code>--cache</code> (skip when none staged)</li>
 <li><code>pnpm run typecheck</code> (full tree); path-gated <code>typecheck:strict-shared</code> when <code>src/shared/</code> or <code>tsconfig.strict.json</code> staged</li>
-<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
+<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:log-ids</code>, <code>check:semgrep</code> (auto + <code>.semgrep.yml</code>; findings may be wrong — research before dismissing, then update <code>.semgrep.yml</code> / narrow <code>nosemgrep</code> if truly incorrect), <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
 <li>Path-gated: <code>check:flatpak</code>, <code>check:db-migrations</code>, <code>check:main-bundle</code> (when <code>src/main/</code> or esbuild main-build scripts staged), <code>check:ipc-contract</code>, <code>check:reticulum-interface-modes</code>, <code>check:reticulum-decommissioned-hubs</code>, <code>check:reticulum-sidecar</code> (when <code>cargo</code> on <code>PATH</code> and sidecar paths staged)</li>
 <li><code>pnpm audit --audit-level=high</code> only when dependency manifests staged; <code>actionlint</code> when <code>.github/workflows/*</code> staged; <code>yamllint</code> when any <code>*.yaml</code> / <code>*.yml</code> staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
@@ -5921,6 +5930,11 @@ absolutely no other way.</p>
 <li>Install manually via pip: <code>pip install yamllint</code></li>
 <li>macOS alternative: <code>brew install yamllint</code></li>
 <li>Linux alternative: <code>sudo apt install yamllint</code> (Debian/Ubuntu) or <code>sudo dnf install yamllint</code> (Fedora)</li>
+<li>Install Semgrep (required by always-on pre-commit <code>check:semgrep</code>):</li>
+<li>macOS: <code>brew install semgrep</code></li>
+<li>pipx: <code>pipx install semgrep</code></li>
+<li>pip: <code>pip install semgrep</code></li>
+<li>Policy file <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.semgrep.yml"><code>.semgrep.yml</code></a> is tracked in git (do not ignore it).</li>
 <li>Install native build dependencies:</li>
 <li><code>pnpm run setup:build-deps</code></li>
 <li>Linux/macOS: attempts to install what native builds need (requires sudo where applicable).</li>
@@ -6199,7 +6213,7 @@ absolutely no other way.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 15, 2026 17:25:55 UTC">November 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 03:37:34 UTC">November 23, 2026</span>
   </span>
 
     

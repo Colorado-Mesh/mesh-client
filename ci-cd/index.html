@@ -4100,7 +4100,7 @@
 <li><strong>Typecheck:</strong> <code>pnpm run typecheck</code></li>
 <li><strong>Application build:</strong> <code>pnpm run build</code></li>
 <li><strong>Flatpak checks:</strong> only when Flatpak inputs change; runs <code>check:flatpak</code>, <code>check:flatpak-offline-pnpm</code>, <code>desktop-file-validate</code>, and <code>appstreamcli validate</code></li>
-<li><strong>Policy scanners:</strong> cheap always-on <code>check:*</code> set from pre-commit/release (<code>check:electron-security</code>, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) so <code>--no-verify</code> and GitHub-only edits cannot skip them</li>
+<li><strong>Policy scanners:</strong> cheap always-on <code>check:*</code> set from pre-commit/release (<code>check:electron-security</code>, log/XSS/console/IPC/protocol-string gates, <code>check:semgrep</code>, and the matching cheap scanners) so <code>--no-verify</code> and GitHub-only edits cannot skip them</li>
 </ul>
 <p>Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. Actionlint is downloaded from a fixed release URL and verified against a reviewed per-platform SHA-256 digest before extraction. Yamllint and its transitive dependencies install from exact wheel hashes in <code>scripts/requirements-yamllint.txt</code>. The final <code>Build &amp; Test</code> job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.</p>
 <hr />
@@ -4153,8 +4153,9 @@ to Vitest's import-based related selection. The test builds the production minif
 checks worker/license artifacts and enforces the strict <code>MAIN_BUNDLE_SIZE_BUDGET_BYTES</code> budget
 defined in that test. Locally and in pre-commit, the same suite runs via <code>pnpm run check:main-bundle</code>
 when <code>src/main/</code> or the esbuild main-build scripts are staged. An over-budget failure prints
-AI-friendly remediation (prefer sibling esbuild entries / externals / metafile analysis; raise
-the budget only as a last resort).
+AI-friendly remediation (prefer sibling esbuild entries / externals / metafile analysis).
+Agents must <strong>not</strong> raise <code>MAIN_BUNDLE_SIZE_BUDGET_BYTES</code> unless the developer explicitly asks —
+see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md">AGENTS.md</a> Bundle CI.
 An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
 The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
 it uses no repository secrets or privileged <code>pull_request_target</code> execution.</p>
@@ -4540,7 +4541,7 @@ The workflow does not change repository security settings. Existing global cover
 <p>All PRs (and merge-queue groups) for <code>main</code> must pass the <strong>required check names</strong> listed above. Those jobs cover:</p>
 <ul>
 <li>Lint, format, markdown, licenses, actionlint, yamllint (<code>pnpm run lint</code> and related steps in <code>ci.yaml</code>)</li>
-<li>Cheap always-on policy scanners (<code>check:electron-security</code>, log/XSS/console/IPC/protocol-string gates, and the matching cheap <code>check:*</code> set)</li>
+<li>Cheap always-on policy scanners (<code>check:electron-security</code>, log/XSS/console/IPC/protocol-string gates, <code>check:semgrep</code>, and the matching cheap <code>check:*</code> set)</li>
 <li>Typecheck and build (<code>pnpm run typecheck</code>, <code>pnpm run build</code>)</li>
 <li>Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on <code>merge_group</code>, <code>main</code>, and manual runs</li>
 </ul>
@@ -4777,7 +4778,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 22, 2026 20:22:31 UTC">November 22, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 03:37:34 UTC">November 23, 2026</span>
   </span>
 
     
