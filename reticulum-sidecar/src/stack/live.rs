@@ -1103,41 +1103,52 @@ impl LiveBridge {
         self.voice_session.telephony_announce_wire_bytes()
     }
 
-    /// Learn a wire Reticulum packet as if it arrived on the first online interface.
+    /// Learn a wire Reticulum packet as if it arrived on every known interface.
+    ///
+    /// Dual-TCP fixtures can briefly report the peer interface offline; fan-out
+    /// avoids a single stale `InterfaceId` silently dropping the announce.
     #[cfg_attr(not(test), allow(dead_code))]
     pub async fn ingest_inbound_wire_packet(&self, raw: &[u8]) -> Result<(), String> {
         use bytes::Bytes;
         use rns_transport::messages::{InboundPacket, TransportMessage};
-        let interface_id = self.preferred_online_interface_id().await?;
-        self.handle
-            .transport_tx
-            .send(TransportMessage::Inbound(InboundPacket {
-                raw: Bytes::copy_from_slice(raw),
-                interface_id,
-                rssi: None,
-                snr: None,
-                q: None,
-            }))
-            .await
-            .map_err(|e| format!("transport closed: {e}"))
+        let interface_ids = self.interface_ids_for_inbound_ingest().await?;
+        for interface_id in interface_ids {
+            self.handle
+                .transport_tx
+                .send(TransportMessage::Inbound(InboundPacket {
+                    raw: Bytes::copy_from_slice(raw),
+                    interface_id,
+                    rssi: None,
+                    snr: None,
+                    q: None,
+                }))
+                .await
+                .map_err(|e| format!("transport closed: {e}"))?;
+        }
+        // Give the transport actor a turn to process Inbound before RecallDestination.
+        tokio::task::yield_now().await;
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        Ok(())
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
-    async fn preferred_online_interface_id(
+    async fn interface_ids_for_inbound_ingest(
         &self,
-    ) -> Result<rns_transport::messages::InterfaceId, String> {
+    ) -> Result<Vec<rns_transport::messages::InterfaceId>, String> {
         let resp = self
             .query_control_timed(TransportQuery::GetInterfaceStats)
             .await;
         let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
             return Err("interface stats unavailable".into());
         };
-        stats
-            .iter()
-            .find(|s| s.online)
-            .map(|s| s.id)
-            .or_else(|| stats.first().map(|s| s.id))
-            .ok_or_else(|| "no interfaces for inbound ingest".into())
+        if stats.is_empty() {
+            return Err("no interfaces for inbound ingest".into());
+        }
+        let mut ids: Vec<_> = stats.iter().filter(|s| s.online).map(|s| s.id).collect();
+        if ids.is_empty() {
+            ids = stats.iter().map(|s| s.id).collect();
+        }
+        Ok(ids)
     }
 
     /// Poll until `lxst.telephony` for `remote_identity_hex` is in the transport recall cache.
@@ -1147,8 +1158,6 @@ impl LiveBridge {
         timeout: Duration,
     ) -> Result<(), String> {
         use lxst_telephony::telephony_destination_hash;
-        use rns_identity::destination::Destination;
-        use rns_identity::identity::Identity;
 
         let identity_hash = parse_hash16(remote_identity_hex)?;
         let telephony_dest = telephony_destination_hash(&identity_hash);
@@ -1157,35 +1166,10 @@ impl LiveBridge {
         if let Err(e) = self.request_path(&telephony_hex).await {
             tracing::debug!(target: "voice", dest = %telephony_hex, "telephony path request: {e}");
         }
-        match discover_destination(&self.handle.transport_tx, telephony_dest, timeout).await {
-            Ok(_) => Ok(()),
-            Err(first_err) => {
-                let lxmf_dest =
-                    Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity_hash));
-                let lxmf_budget = timeout.min(Duration::from_secs(8));
-                let seed = async {
-                    let recalled =
-                        discover_destination(&self.handle.transport_tx, lxmf_dest, lxmf_budget)
-                            .await
-                            .ok()?;
-                    let pubkey = recalled.public_key?;
-                    let derived = Identity::from_public_key(&pubkey).ok()?.hash == identity_hash;
-                    if !derived {
-                        return None;
-                    }
-                    let _ = self.request_path(&telephony_hex).await;
-                    discover_destination(&self.handle.transport_tx, telephony_dest, lxmf_budget)
-                        .await
-                        .ok()?;
-                    Some(())
-                };
-                if seed.await.is_some() {
-                    Ok(())
-                } else {
-                    Err(first_err.to_string())
-                }
-            }
-        }
+        discover_destination(&self.handle.transport_tx, telephony_dest, timeout)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
 
     /// Always send an LXMF delivery announce so remote PNs have a reverse path for LRPROOF.

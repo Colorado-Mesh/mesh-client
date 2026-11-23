@@ -234,7 +234,8 @@ fn session_meta_str<'a>(session: &'a serde_json::Value, key: &str) -> Option<&'a
 ///
 /// Loopback TCPServer↔TCPClient often fails to learn telephony announces from outbound
 /// bursts (LXMF delivery announce still lands). Ingest as `TransportMessage::Inbound` on
-/// the caller, then run normal recall/path discovery.
+/// the dialer, then poll recall. Re-ingest on each attempt — macOS CI can miss a single
+/// inbound under load before `RecallDestination` observes the announce.
 async fn wait_voice_peer_discoverable(
     dialer: &StackHandle,
     answerer: &StackHandle,
@@ -243,13 +244,32 @@ async fn wait_voice_peer_discoverable(
 ) -> Result<(), String> {
     let _ = answerer.voice_announce_now().await;
     let wire = answerer.voice_telephony_announce_wire_bytes()?;
-    dialer.ingest_inbound_wire_packet(&wire).await?;
     let identity = super::live::parse_hash16(answerer_identity_hex)?;
     let dest_hex = hex::encode(lxst_telephony::telephony_destination_hash(&identity));
-    let _ = dialer.request_peer_path_with_opts(&dest_hex, false).await;
-    dialer
-        .voice_peer_discoverable(answerer_identity_hex, timeout)
-        .await
+    let deadline = Instant::now() + timeout;
+    let mut last_err = String::from("telephony peer not discoverable");
+    while Instant::now() < deadline {
+        if let Err(e) = dialer.ingest_inbound_wire_packet(&wire).await {
+            last_err = e;
+            tokio::time::sleep(READY_POLL).await;
+            continue;
+        }
+        let _ = dialer.request_peer_path_with_opts(&dest_hex, false).await;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        let slice = remaining.min(Duration::from_secs(3));
+        match dialer
+            .voice_peer_discoverable(answerer_identity_hex, slice)
+            .await
+        {
+            Ok(()) => return Ok(()),
+            Err(e) => last_err = e,
+        }
+        tokio::time::sleep(READY_POLL).await;
+    }
+    Err(last_err)
 }
 
 async fn bootstrap_dual_tcp() -> (TcpStackFixture, TcpStackFixture) {
