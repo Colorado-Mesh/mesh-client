@@ -176,11 +176,13 @@ export function ensureRsReticulumPatches(projectDir: string): void {
     );
   }
 
-  // Run the shebang script directly (argv-only). Avoid spawn('bash', …) so a
-  // shell is never interposed between us and the validated script path.
-  // scriptPath is assertPathInsideRoot(repoRoot, …) above.
-  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
-  const result = spawnSync(scriptPath, [], {
+  // Argv-only spawn of a fixed interpreter with the validated script path as its one
+  // argument (no shell string, no `shell: true`). Going through `bash` keeps this working on
+  // Windows (Git Bash) and in checkouts where the script lost its executable bit.
+  // scriptPath is assertPathInsideRoot(repoRoot, ...) above. dangerous-spawn-shell flags any
+  // non-literal argument to a shell; here the argument is a file bash runs, never `-c` code.
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process, javascript.lang.security.audit.dangerous-spawn-shell.dangerous-spawn-shell
+  const result = spawnSync('bash', [scriptPath], {
     cwd: repoRoot,
     env: process.env,
     encoding: 'utf8',

@@ -38,7 +38,26 @@ function resolvePair(root, candidate) {
  */
 export function isPathInsideRoot(root, candidate) {
   const { rootResolved, resolved } = resolvePair(root, candidate);
-  return resolved === rootResolved || resolved.startsWith(`${rootResolved}${path.sep}`);
+  return isResolvedInside(rootResolved, resolved);
+}
+
+/**
+ * Prefix every descendant of `rootResolved` starts with. A filesystem root (`/`, `C:\`)
+ * already ends in the separator, so appending another would reject all of its children.
+ * @param {string} rootResolved
+ * @returns {string}
+ */
+function descendantPrefix(rootResolved) {
+  return rootResolved.endsWith(path.sep) ? rootResolved : `${rootResolved}${path.sep}`;
+}
+
+/**
+ * @param {string} rootResolved
+ * @param {string} resolved
+ * @returns {boolean}
+ */
+function isResolvedInside(rootResolved, resolved) {
+  return resolved === rootResolved || resolved.startsWith(descendantPrefix(rootResolved));
 }
 
 /**
@@ -80,7 +99,7 @@ export function assertSafePathSegment(segment) {
  * @returns {string}
  */
 function assertResolvedInsideRoot(rootResolved, candidate) {
-  if (candidate !== rootResolved && !candidate.startsWith(`${rootResolved}${path.sep}`)) {
+  if (!isResolvedInside(rootResolved, candidate)) {
     throw new PathEscapesRootError();
   }
   return candidate;

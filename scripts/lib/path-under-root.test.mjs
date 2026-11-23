@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  assertPathInsideRoot,
   assertSafePathSegment,
   isPathInsideRoot,
   joinUnderRoot,
@@ -43,5 +44,26 @@ describe('path-under-root', () => {
     expect(isPathInsideRoot(root, root)).toBe(true);
     expect(isPathInsideRoot(root, path.join(root, 'x'))).toBe(true);
     expect(isPathInsideRoot(root, path.join(root, '..', 'other'))).toBe(false);
+  });
+
+  describe('when the root is the filesystem root', () => {
+    // `/` on POSIX, the current drive (for example `C:\`) on Windows: ends in the separator.
+    const fsRoot = path.parse(path.resolve(os.tmpdir())).root;
+
+    it('joinUnderRoot accepts a direct child', () => {
+      expect(joinUnderRoot(fsRoot, 'identity.json')).toBe(path.resolve(fsRoot, 'identity.json'));
+    });
+
+    it('isPathInsideRoot and assertPathInsideRoot accept descendants', () => {
+      const nested = path.join(fsRoot, 'a', 'b.txt');
+      expect(isPathInsideRoot(fsRoot, nested)).toBe(true);
+      expect(isPathInsideRoot(fsRoot, fsRoot)).toBe(true);
+      expect(assertPathInsideRoot(fsRoot, nested)).toBe(path.resolve(nested));
+    });
+
+    it('still rejects traversal segments', () => {
+      expect(() => joinUnderRoot(fsRoot, '..')).toThrow(PathEscapesRootError);
+      expect(() => resolveUnderRoot(fsRoot, '../x')).toThrow(PathEscapesRootError);
+    });
   });
 });

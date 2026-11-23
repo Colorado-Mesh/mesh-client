@@ -41,8 +41,20 @@ export function assertSafePathSegment(segment: string): string {
   return segment;
 }
 
+/**
+ * Prefix every descendant of `rootResolved` starts with. A filesystem root (`/`, `C:\`)
+ * already ends in the separator, so appending another would reject all of its children.
+ */
+function descendantPrefix(rootResolved: string): string {
+  return rootResolved.endsWith(path.sep) ? rootResolved : `${rootResolved}${path.sep}`;
+}
+
+function isInside(rootResolved: string, resolved: string): boolean {
+  return resolved === rootResolved || resolved.startsWith(descendantPrefix(rootResolved));
+}
+
 function assertInside(rootResolved: string, resolved: string): string {
-  if (resolved !== rootResolved && !resolved.startsWith(`${rootResolved}${path.sep}`)) {
+  if (!isInside(rootResolved, resolved)) {
     fail();
   }
   return resolved;
@@ -54,7 +66,7 @@ export function isPathInsideRoot(root: string, candidate: string): boolean {
   const rootResolved = path.resolve(root);
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const resolved = path.resolve(candidate);
-  return resolved === rootResolved || resolved.startsWith(`${rootResolved}${path.sep}`);
+  return isInside(rootResolved, resolved);
 }
 
 /** Resolve `candidate` and throw when it escapes `root`. */
