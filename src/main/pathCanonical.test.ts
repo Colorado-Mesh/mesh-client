@@ -18,6 +18,16 @@ describe('pathCanonical', () => {
     }
   });
 
+  it('canonicalizes a missing path whose nearest existing ancestor is the filesystem root', () => {
+    const fsRoot = path.parse(path.resolve(os.tmpdir())).root;
+    const missing = path.join(fsRoot, `mesh-canon-missing-${process.pid}-${Date.now()}`, 'x.bin');
+    expect(fs.existsSync(path.dirname(missing))).toBe(false);
+    const realRoot = fs.realpathSync.native(fsRoot);
+    expect(canonicalizePath(missing)).toBe(
+      path.join(realRoot, path.basename(path.dirname(missing)), 'x.bin'),
+    );
+  });
+
   it('canonicalizes a missing leaf under an existing parent', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-canon-'));
     try {

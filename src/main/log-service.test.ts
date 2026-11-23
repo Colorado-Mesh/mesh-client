@@ -404,6 +404,65 @@ describe('stripConsoleStyles (via appendLine + getRecentLines)', () => {
   });
 });
 
+describe('patchMainConsole format strings', () => {
+  it('expands %s / %d / %% placeholders instead of logging them literally', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    const quiet = () => {};
+    console.warn = quiet;
+    console.error = quiet;
+    console.debug = quiet;
+    process.stderr.write = vi.fn(() => true);
+    try {
+      vi.resetModules();
+      const { patchMainConsole, getRecentLines, setVerboseLoggingEnabled } =
+        await import('./log-service');
+      setVerboseLoggingEnabled(true);
+      patchMainConsole();
+
+      console.warn(
+        'mcL0221 [IPC] %s rate-limited peer flood (%d/s; +%d dropped)',
+        'meshcom:udp:data',
+        50,
+        12,
+      );
+      console.debug('[caughtErrorPolicy] soft catch: %s %s', 'tag', 'boom', 'extra');
+      console.warn('[test] 100%% full %s');
+      console.warn('[test] %s left %s', 'one');
+
+      const messages = getRecentLines().map((l) => l.message);
+      expect(messages).toContainEqual(
+        expect.stringContaining(
+          'mcL0221 [IPC] meshcom:udp:data rate-limited peer flood (50/s; +12 dropped)',
+        ),
+      );
+      expect(messages).toContainEqual(
+        expect.stringContaining('[caughtErrorPolicy] soft catch: tag boom extra'),
+      );
+      // A lone string is left exactly as written (util.format behavior).
+      expect(messages).toContainEqual(expect.stringContaining('[test] 100%% full %s'));
+      // Placeholders with no argument left stay literal; supplied ones are filled.
+      expect(messages).toContainEqual(expect.stringContaining('[test] one left %s'));
+      expect(messages.some((m) => m.includes('%s rate-limited'))).toBe(false);
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
+  });
+});
+
 describe('patchMainConsole stderr capture', () => {
   it('records console.warn/error once (terminal echo is not re-captured as [stderr])', async () => {
     const saved = {

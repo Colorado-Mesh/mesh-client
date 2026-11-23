@@ -22,6 +22,12 @@ const MAIN_GATT_SESSION_RE =
 /** Only attribute RF auto-connect *failures*; skipped/coexistence lines stay shared. */
 const RF_AUTO_CONNECT_RE =
   /^\[useProtocolRfAutoConnect\]\s+(meshtastic|meshcore|meshcom|reticulum)\b(?=.*\b(?:timed out|failed|error)\b)/i;
+/**
+ * Leading warn/error log ID (`mcL0762 `). RF auto-connect failures carry one, so it is
+ * removed before the anchored match above. Local copy: `logMessageIds.ts` is too large
+ * for the main bundle budget this module is kept out of.
+ */
+const LEADING_LOG_ID_RE = /^mcL\d{4,} +/;
 export const LOG_SOURCE_PROTOCOL_RE =
   /(^|[/:.-])(meshtastic|meshcore|meshcom|reticulum)([/:.-]|$)/i;
 
@@ -77,7 +83,7 @@ export function resolveLogProtocolFromChannel(line: LogLineLike): MeshProtocol |
     if (p) return p;
   }
 
-  const rfAuto = RF_AUTO_CONNECT_RE.exec(message.trimStart());
+  const rfAuto = RF_AUTO_CONNECT_RE.exec(message.trimStart().replace(LEADING_LOG_ID_RE, ''));
   if (rfAuto?.[1]) {
     const p = parseProtocolToken(rfAuto[1]);
     if (p) return p;

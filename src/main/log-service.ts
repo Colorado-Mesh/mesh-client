@@ -366,24 +366,64 @@ function debugLogService(context: string, err: unknown): void {
   original.debug(sanitizeForConsoleEcho(`${context} ${detail}`));
 }
 
+function stringifyArg(a: unknown): string {
+  let piece: string;
+  if (a instanceof Error) piece = a.stack ?? a.message;
+  else if (typeof a === 'object' && a !== null) {
+    try {
+      piece = JSON.stringify(a);
+    } catch (e) {
+      debugLogService('[log-service] stringifyArgs JSON.stringify failed', e);
+      piece = '[unserializable]';
+    }
+  } else {
+    piece = String(a);
+  }
+  return sanitizeForLogSink(piece);
+}
+
+const CONSOLE_FORMAT_TOKEN_RE = /%[sdifjoOc%]/g;
+
+/**
+ * Expand one console format token the way Node's `util.format` does, using the same
+ * stringification as plain arguments. `%c` (CSS) consumes its argument and prints nothing.
+ */
+function formatConsoleToken(token: string, value: unknown): string {
+  switch (token) {
+    case '%d':
+      return typeof value === 'bigint' ? `${value}n` : String(Number(value));
+    case '%i':
+      return typeof value === 'bigint' ? `${value}n` : String(parseInt(String(value), 10));
+    case '%f':
+      return String(parseFloat(String(value)));
+    case '%c':
+      return '';
+    default:
+      return stringifyArg(value);
+  }
+}
+
+/**
+ * Join console arguments for the disk log / Log panel. When the first argument is a string,
+ * `%s` / `%d` / `%i` / `%f` / `%j` / `%o` / `%O` / `%c` / `%%` are expanded from the following
+ * arguments (AGENTS.md asks for literal format strings in main); leftovers are appended.
+ */
 function stringifyArgs(args: unknown[]): string {
-  return args
-    .map((a) => {
-      let piece: string;
-      if (a instanceof Error) piece = a.stack ?? a.message;
-      else if (typeof a === 'object' && a !== null) {
-        try {
-          piece = JSON.stringify(a);
-        } catch (e) {
-          debugLogService('[log-service] stringifyArgs JSON.stringify failed', e);
-          piece = '[unserializable]';
-        }
-      } else {
-        piece = String(a);
-      }
-      return sanitizeForLogSink(piece);
-    })
-    .join(' ');
+  const [first, ...rest] = args;
+  // Like util.format: a lone string (no arguments to substitute) is left exactly as written.
+  if (typeof first !== 'string' || rest.length === 0 || !first.includes('%')) {
+    return args.map(stringifyArg).join(' ');
+  }
+  let next = 0;
+  const formatted = first.replace(CONSOLE_FORMAT_TOKEN_RE, (token) => {
+    // `%%` is the only token ending in `%`; it is an escaped percent sign and takes no argument.
+    if (token.endsWith('%')) return '%';
+    if (next >= rest.length) return token;
+    const value = rest[next];
+    next += 1;
+    return formatConsoleToken(token, value);
+  });
+  return [sanitizeForLogSink(formatted), ...rest.slice(next).map(stringifyArg)].join(' ');
 }
 
 let consolePatched = false;
