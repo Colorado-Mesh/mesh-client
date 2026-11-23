@@ -11,6 +11,7 @@
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+.cursor/rules/use-i18n-no-hardcoded-english.mdc
 .claudeignore
 .cursorignore
 .cursorrules
