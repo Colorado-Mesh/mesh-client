@@ -3,7 +3,7 @@ import http from 'http';
 import https from 'https';
 import si from 'systeminformation';
 
-import { sanitizeLogMessage } from './log-service';
+import { sanitizeForConsoleEcho, sanitizeLogMessage } from './sanitize-log-message';
 
 export type GpsFixSource = 'native' | 'ip';
 
@@ -141,7 +141,7 @@ async function inetChecksitePreflight(): Promise<void> {
   try {
     await withTimeout(si.inetChecksite('https://ipwho.is'), GPS_SYSTEM_CHECK_TIMEOUT_MS, undefined);
   } catch (e) {
-    const msg = sanitizeLogMessage((e as Error).message);
+    const msg = sanitizeForConsoleEcho(e instanceof Error ? e.message : String(e));
     console.warn(`mcL0037 [gps] inetChecksite preflight failed: ${msg}`);
   }
 }
@@ -179,8 +179,9 @@ export async function getGpsFix(): Promise<GpsFixResult> {
     );
     return fix;
   } catch (e) {
-    const msg = sanitizeLogMessage((e as Error).message);
-    console.warn(`mcL0038 [gps] ip fix failed: msg="${msg}"`); // codeql[js/log-injection] -- msg is sanitized by sanitizeLogMessage (strips control chars)
+    // sanitizeForConsoleEcho uses CodeQL's built-in newline-replace barrier (js/log-injection).
+    const msg = sanitizeForConsoleEcho(e instanceof Error ? e.message : String(e));
+    console.warn(`mcL0038 [gps] ip fix failed: msg="${msg}"`);
     return {
       status: 'error',
       message: 'Location unavailable (network or service error).',
