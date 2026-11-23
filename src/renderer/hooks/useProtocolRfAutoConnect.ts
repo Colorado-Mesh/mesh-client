@@ -167,7 +167,9 @@ export function useProtocolRfAutoConnect({
         shouldClearMeshcoreBleSelectionForError(error)
       ) {
         clearStoredBleSelection('meshcore');
-        notifyBleSelectionCleared('meshcore');
+        notifyBleSelectionCleared('meshcore', {
+          bleDeviceId: lastBleId ?? undefined,
+        });
       }
       clearAutoConnectTimeout();
       console.warn(

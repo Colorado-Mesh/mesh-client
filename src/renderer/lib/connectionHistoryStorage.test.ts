@@ -110,8 +110,9 @@ describe('connectionHistoryStorage', () => {
       'id-2',
     );
     const after = deleteConnectionHistory('meshtastic', 'id-2');
+    expect(after).not.toBeNull();
     expect(after).toHaveLength(1);
-    expect(after[0]?.id).toBe('id-1');
+    expect(after?.[0]?.id).toBe('id-1');
     expect(loadLastConnection('meshtastic')?.httpAddress).toBe('10.0.0.1:4403');
   });
 
@@ -169,5 +170,78 @@ describe('connectionHistoryStorage', () => {
     const raw = localStorage.getItem(connectionHistoryStorageKey('meshtastic'));
     expect(raw).toContain('ble-1');
     expect(localStorage.getItem(connectionHistoryStorageKey('meshcore'))).toBeNull();
+  });
+
+  it('resolves omitted ports with protocol-aware defaults', () => {
+    expect(connectionHistoryIdentityKey({ type: 'tcp', httpAddress: '10.0.0.1' })).toBe(
+      'tcp:10.0.0.1:4403',
+    );
+    expect(
+      connectionHistoryIdentityKey({ type: 'http', httpAddress: '10.0.0.1' }, 'meshcore'),
+    ).toBe('http:10.0.0.1:5000');
+    expect(connectionHistoryIdentityKey({ type: 'http', httpAddress: '10.0.0.1' }, 'meshcom')).toBe(
+      'http:10.0.0.1:8001',
+    );
+    expect(
+      connectionHistoryIdentityKey({ type: 'http', httpAddress: '10.0.0.1' }, 'meshtastic'),
+    ).toBe('http:10.0.0.1:80');
+    expect(connectionHistoryIdentityKey({ type: 'tcp', httpAddress: '10.0.0.1:4404' })).toBe(
+      'tcp:10.0.0.1:4404',
+    );
+  });
+
+  it('does not seed or overwrite when history read throws', () => {
+    saveLastConnection('meshtastic', { type: 'tcp', httpAddress: '10.0.0.1:4403' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('quota');
+      },
+      setItem: () => {
+        throw new Error('should not write');
+      },
+      removeItem: () => {},
+      clear: () => {},
+    });
+    expect(loadConnectionHistory('meshtastic')).toEqual([]);
+    expect(
+      upsertConnectionHistory('meshtastic', { type: 'tcp', httpAddress: '10.0.0.9:4403' }),
+    ).toEqual([]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('skips malformed legacy lastConnection fields during seed', () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: 4403 }),
+    );
+    expect(loadConnectionHistory('meshtastic')).toEqual([]);
+  });
+
+  it('returns null from delete when persist fails and leaves MRU unchanged', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.1:4403' },
+      1000,
+      'id-1',
+    );
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.2:4403' },
+      2000,
+      'id-2',
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key: string, value: string) => {
+      if (key.includes('connectionHistory')) {
+        throw new Error('persist fail');
+      }
+      originalSetItem(key, value);
+    });
+    expect(deleteConnectionHistory('meshtastic', 'id-2')).toBeNull();
+    expect(loadLastConnection('meshtastic')?.httpAddress).toBe('10.0.0.2:4403');
+    warn.mockRestore();
   });
 });

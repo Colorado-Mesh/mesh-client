@@ -207,6 +207,7 @@ import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useBotSenderDetection } from './hooks/useBotSenderDetection';
 import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
+import { useConnectionHistoryRecorder } from './hooks/useConnectionHistoryRecorder';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
@@ -1135,6 +1136,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  useConnectionHistoryRecorder();
   useFirstRunWizardLauncher();
   useConversationMuteMqttIdentity();
   useEffect(() => startCoiMemorySampler(), []);

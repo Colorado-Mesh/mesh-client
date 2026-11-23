@@ -169,6 +169,35 @@ describe('ConnectionPanel accessibility', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('has no axe violations with populated Saved devices', async () => {
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-axe',
+          lastUsedAt: 2000,
+          type: 'tcp',
+          httpAddress: '10.0.0.9:4403',
+        },
+      ]),
+    );
+    const { container } = render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByText('Saved devices')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });
 
 describe('ConnectionPanel MQTT connect error', () => {
@@ -2626,6 +2655,7 @@ describe('ConnectionPanel BLE MAC identity', () => {
 
   it('clears reconnect card when BLE selection-cleared event is emitted', async () => {
     const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const historyKey = 'mesh-client:connectionHistory:meshcore';
     localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: darwinUuid }));
 
     try {
@@ -2641,14 +2671,19 @@ describe('ConnectionPanel BLE MAC identity', () => {
       );
 
       expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
-      window.dispatchEvent(
-        new CustomEvent('mesh-client:ble-selection-cleared', { detail: { protocol: 'meshcore' } }),
-      );
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent('mesh-client:ble-selection-cleared', {
+            detail: { protocol: 'meshcore', bleDeviceId: darwinUuid },
+          }),
+        );
+      });
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /Reconnect/i })).not.toBeInTheDocument();
       });
     } finally {
       localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(historyKey);
     }
   });
 
@@ -3211,10 +3246,78 @@ describe('ConnectionPanel saved device history', () => {
     expect(screen.getByText('10.0.0.2:4403')).toBeInTheDocument();
   });
 
+  it('shows Saved devices and transport controls after disconnecting a configured radio', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshcore',
+      JSON.stringify([
+        {
+          id: 'mc-tcp',
+          lastUsedAt: 2000,
+          type: 'http',
+          httpAddress: '192.168.1.172:5000',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcore',
+      JSON.stringify({ type: 'http', httpAddress: '192.168.1.172:5000' }),
+    );
+    const onDisconnect = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'http',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={onDisconnect}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    expect(screen.queryByText('Saved devices')).not.toBeInTheDocument();
+    const radio = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
+    await user.click(within(radio).getByRole('button', { name: 'Disconnect' }));
+    expect(onDisconnect).toHaveBeenCalled();
+
+    rerender(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={onDisconnect}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    expect(screen.getByText('Saved devices')).toBeInTheDocument();
+    expect(screen.getByText('192.168.1.172:5000')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reconnect/i })).toBeInTheDocument();
+    const radioAfter = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
+    expect(within(radioAfter).getByRole('button', { name: /^Connect$/i })).toBeInTheDocument();
+    expect(within(radioAfter).getByRole('radio', { name: /TCP\/IP/i })).toBeInTheDocument();
+  });
+
   it('upserts history when a second TCP host becomes configured', async () => {
     localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-seed',
+          lastUsedAt: 1000,
+          type: 'tcp',
+          httpAddress: '10.0.0.1:4403',
+        },
+      ]),
+    );
+    localStorage.setItem(
       'mesh-client:lastConnection:meshtastic',
-      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.1:4403' }),
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.2:4403' }),
     );
     const { rerender } = render(
       <ConnectionPanel
@@ -3250,7 +3353,7 @@ describe('ConnectionPanel saved device history', () => {
       const raw = localStorage.getItem('mesh-client:connectionHistory:meshtastic');
       expect(raw).toBeTruthy();
       const parsed = JSON.parse(raw!) as { httpAddress?: string }[];
-      expect(parsed.some((e) => e.httpAddress === '10.0.0.1:4403')).toBe(true);
+      expect(parsed.map((e) => e.httpAddress)).toEqual(['10.0.0.2:4403', '10.0.0.1:4403']);
     });
   });
 });

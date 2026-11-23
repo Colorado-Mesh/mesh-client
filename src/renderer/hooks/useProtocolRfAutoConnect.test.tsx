@@ -969,6 +969,8 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     await waitFor(() => {
       expect(mocks.clearStoredBleSelection).toHaveBeenCalledWith('meshcore');
     });
-    expect(mocks.notifyBleSelectionCleared).toHaveBeenCalledWith('meshcore');
+    expect(mocks.notifyBleSelectionCleared).toHaveBeenCalledWith('meshcore', {
+      bleDeviceId: 'meshcore-ble',
+    });
   });
 });

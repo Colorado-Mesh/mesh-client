@@ -80,11 +80,21 @@ export function clearStoredBleSelection(protocol: MeshProtocol): void {
   clearLastBleDeviceId(protocol);
 }
 
-export function notifyBleSelectionCleared(protocol: MeshProtocol): void {
+/** Optional BLE endpoint identity so listeners can remove one history row without using MRU. */
+export interface BleSelectionClearedDetail {
+  protocol: MeshProtocol;
+  bleDeviceId?: string;
+  bleMac?: string;
+}
+
+export function notifyBleSelectionCleared(
+  protocol: MeshProtocol,
+  endpoint?: Pick<BleSelectionClearedDetail, 'bleDeviceId' | 'bleMac'>,
+): void {
   if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
   window.dispatchEvent(
-    new CustomEvent<{ protocol: MeshProtocol }>(BLE_SELECTION_CLEARED_EVENT, {
-      detail: { protocol },
+    new CustomEvent<BleSelectionClearedDetail>(BLE_SELECTION_CLEARED_EVENT, {
+      detail: { protocol, ...endpoint },
     }),
   );
 }

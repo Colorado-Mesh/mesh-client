@@ -1,7 +1,8 @@
 # Build environment for Anthropic's OSS Scanner (https://github.com/anthropics/oss-scanner).
 # The scanner builds this with the repository checkout as the context and network access; everything after
 # this build runs offline, so every dependency the build and tests need is fetched here.
-FROM node:22-bookworm
+# Pin a brotli-patched Node 22 line (CVE-2026-111497); floating `node:22-bookworm` fails Semgrep.
+FROM node:22.23.4-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
   CI=1 \
