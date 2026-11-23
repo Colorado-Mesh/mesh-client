@@ -48,9 +48,11 @@ function resolveSemgrepBin() {
 
 function printInstallHint() {
   console.error('check-semgrep: `semgrep` not found on PATH.');
-  console.error('  Install (pick one):');
+  console.error('  Install: pnpm run setup:semgrep');
+  console.error('  Or manually:');
   console.error('    macOS:  brew install semgrep');
-  console.error('    pip:    pipx install semgrep   # or: pip install semgrep   ');
+  console.error('    pip:    pipx install semgrep   # or: pip install semgrep');
+  console.error('  Semgrep App login / SEMGREP_APP_TOKEN are not required.');
   console.error('  Then re-run: pnpm run check:semgrep');
   console.error('  (pnpm run check:environment also reports Semgrep readiness.)');
 }

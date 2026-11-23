@@ -417,42 +417,72 @@ function checkPip() {
   };
 }
 
-function checkRust() {
-  const out = commandOutput('cargo', ['--version']);
+/**
+ * Pure evaluator for required Rust/cargo readiness (unit-tested).
+ *
+ * @param {{ versionOutput: string | null }} input
+ * @returns {CheckResult}
+ */
+export function evaluateRustCheck(input) {
+  const out = input.versionOutput;
   if (!out) {
     return {
-      status: 'warn',
-      severity: 'optional',
-      label: 'Rust/cargo not found (optional)',
-      hint: 'Needed for Reticulum sidecar — install via https://rustup.rs/; pre-commit skips Rust checks when cargo is missing',
+      status: 'fail',
+      severity: 'required',
+      label: 'Rust/cargo not found',
+      hint: 'Install via https://rustup.rs/ (curl … | sh -s -- -y) or pnpm run setup:dev — required for Reticulum sidecar and check:environment',
     };
   }
   return {
     status: 'pass',
-    severity: 'optional',
+    severity: 'required',
     label: 'Rust/cargo',
     detail: out,
   };
 }
 
-function checkRustClippy() {
-  if (!commandOutput('cargo', ['--version'])) return null;
+function checkRust() {
+  return evaluateRustCheck({
+    versionOutput: commandOutput('cargo', ['--version']),
+  });
+}
 
-  if (commandOk('cargo', ['clippy', '--version'])) {
-    const out = commandOutput('cargo', ['clippy', '--version']);
+/**
+ * Pure evaluator for required cargo clippy when cargo is present (unit-tested).
+ * Returns null when cargo is missing (the Rust/cargo check already fails).
+ *
+ * @param {{ cargoPresent: boolean, clippyOk: boolean, versionOutput: string | null }} input
+ * @returns {CheckResult | null}
+ */
+export function evaluateRustClippyCheck(input) {
+  if (!input.cargoPresent) return null;
+
+  if (input.clippyOk) {
     return {
       status: 'pass',
-      severity: 'optional',
+      severity: 'required',
       label: 'cargo clippy',
-      detail: out?.split('\n')[0] ?? 'found',
+      detail: input.versionOutput?.split('\n')[0] ?? 'found',
     };
   }
   return {
-    status: 'warn',
-    severity: 'optional',
-    label: 'cargo clippy not ready (optional)',
-    hint: 'cd reticulum-sidecar once — rust-toolchain.toml installs clippy/rustfmt/llvm-tools-preview via rustup',
+    status: 'fail',
+    severity: 'required',
+    label: 'cargo clippy not ready',
+    hint: 'rustup component add clippy — or cd reticulum-sidecar once (rust-toolchain.toml installs clippy/rustfmt); pnpm run setup:dev',
   };
+}
+
+function checkRustClippy() {
+  const cargoOut = commandOutput('cargo', ['--version']);
+  if (!cargoOut) return null;
+
+  const clippyOk = commandOk('cargo', ['clippy', '--version']);
+  return evaluateRustClippyCheck({
+    cargoPresent: true,
+    clippyOk,
+    versionOutput: clippyOk ? commandOutput('cargo', ['clippy', '--version']) : null,
+  });
 }
 
 function checkCargoLlvmCov() {
@@ -503,27 +533,40 @@ function checkActionlint() {
   };
 }
 
-function checkYamllint() {
-  const out = commandOutput('yamllint', ['--version']);
+/**
+ * Pure evaluator for required yamllint readiness (unit-tested).
+ *
+ * @param {{ versionOutput: string | null }} input
+ * @returns {CheckResult}
+ */
+export function evaluateYamllintCheck(input) {
+  const out = input.versionOutput;
   if (!out) {
     return {
-      status: 'warn',
-      severity: 'optional',
-      label: 'yamllint not found (optional)',
-      hint: 'pip install yamllint — or brew install yamllint / sudo apt install yamllint',
+      status: 'fail',
+      severity: 'required',
+      label: 'yamllint not found',
+      hint: 'pnpm run setup:yamllint — or brew/pip/apt install yamllint (required for pre-commit YAML lint)',
     };
   }
   return {
     status: 'pass',
-    severity: 'optional',
+    severity: 'required',
     label: 'yamllint',
     detail: out.split('\n')[0],
   };
 }
 
+function checkYamllint() {
+  return evaluateYamllintCheck({
+    versionOutput: commandOutput('yamllint', ['--version']),
+  });
+}
+
 /**
- * Pure evaluator for optional Semgrep readiness (unit-tested).
- * Pre-commit / release / CI require Semgrep via `pnpm run check:semgrep`.
+ * Pure evaluator for required Semgrep readiness (unit-tested).
+ * Pre-commit / release / CI also require Semgrep via `pnpm run check:semgrep`.
+ * Semgrep App login / SEMGREP_APP_TOKEN are not required.
  *
  * @param {{ versionOutput: string | null }} input
  * @returns {CheckResult}
@@ -532,15 +575,15 @@ export function evaluateSemgrepCheck(input) {
   const out = input.versionOutput;
   if (!out) {
     return {
-      status: 'warn',
-      severity: 'optional',
-      label: 'semgrep not found (optional)',
-      hint: 'brew install semgrep — or pipx install semgrep / pip install semgrep (required for pre-commit check:semgrep)',
+      status: 'fail',
+      severity: 'required',
+      label: 'semgrep not found',
+      hint: 'pnpm run setup:semgrep — or brew/pipx/pip install semgrep (App login not required; needed for check:semgrep)',
     };
   }
   return {
     status: 'pass',
-    severity: 'optional',
+    severity: 'required',
     label: 'semgrep',
     detail: out.split('\n')[0],
   };

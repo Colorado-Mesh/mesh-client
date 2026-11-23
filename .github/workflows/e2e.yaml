@@ -51,7 +51,22 @@ jobs:
       - name: Verify pnpm
         run: node scripts/ci-verify-pnpm.mjs
 
-      # After toolchain is on PATH; skip node_modules until install (still fatal on git/node/pnpm).
+      # Required by check:environment (same bars as local setup:dev / pre-commit).
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          components: clippy
+
+      - name: Install yamllint and Semgrep
+        shell: bash
+        run: |
+          python3 -m pip install --user --require-hashes --only-binary=:all: \
+            -r scripts/requirements-yamllint.txt
+          python3 -m pip install --user semgrep
+          # User Scripts dir differs by OS (e.g. ~/.local/bin vs Windows AppData).
+          python3 -c 'import sysconfig; print(sysconfig.get_path("scripts"))' >> "$GITHUB_PATH"
+
+      # After toolchain is on PATH; skip node_modules until install.
       - name: Check environment (pre-install)
         run: node scripts/check-environment.mjs --skip-node-modules
 

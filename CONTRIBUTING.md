@@ -2,12 +2,12 @@
 
 Thank you for your interest in contributing.
 
-| Topic                                                         | Document                                                           |
-| ------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Clone, prerequisites, commands, test harness, git hooks, i18n | [docs/development-environment.md](docs/development-environment.md) |
-| Code style, testing, architecture, security (AI assistants)   | [AGENTS.md](AGENTS.md)                                             |
-| Protocol additions (RF mesh only)                             | [Protocol scope](#protocol-scope)                                  |
-| PR flow and contribution expectations                         | [CONTRIBUTING.md](CONTRIBUTING.md#pr-process)                      |
+| Topic                                                       | Document                                                                                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| First-run setup (humans and AIs), then full env docs        | [First run](docs/development-environment.md#first-run-humans-and-ais) · [development-environment.md](docs/development-environment.md) |
+| Code style, testing, architecture, security (AI assistants) | [AGENTS.md](AGENTS.md) (includes Fresh clone checklist)                                                                               |
+| Protocol additions (RF mesh only)                           | [Protocol scope](#protocol-scope)                                                                                                     |
+| PR flow and contribution expectations                       | [CONTRIBUTING.md](CONTRIBUTING.md#pr-process)                                                                                         |
 
 ## Code style & standards
 
