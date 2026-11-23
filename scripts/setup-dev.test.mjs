@@ -11,17 +11,32 @@ describe('planHooksPathFix', () => {
     });
   });
 
-  it('is ok when hooksPath is already .githooks', () => {
+  it('is ok when hooksPath is exactly .githooks', () => {
     expect(planHooksPathFix({ gitDirExists: true, currentHooksPath: '.githooks' })).toEqual({
       action: 'ok',
       target: '.githooks',
     });
+  });
+
+  it('is ok when absolute hooksPath resolves to this checkout', () => {
+    const repoHooks = '/Users/me/repos/mesh-client/.githooks';
     expect(
       planHooksPathFix({
         gitDirExists: true,
-        currentHooksPath: '/Users/me/repos/mesh-client/.githooks',
+        currentHooksPath: repoHooks,
+        repoHooksPathResolved: repoHooks,
       }),
     ).toEqual({ action: 'ok', target: '.githooks' });
+  });
+
+  it('sets hooksPath when another checkout ends in /.githooks', () => {
+    expect(
+      planHooksPathFix({
+        gitDirExists: true,
+        currentHooksPath: '/Users/me/other-repo/.githooks',
+        repoHooksPathResolved: '/Users/me/repos/mesh-client/.githooks',
+      }),
+    ).toEqual({ action: 'set', target: '.githooks' });
   });
 
   it('sets hooksPath when missing or wrong', () => {

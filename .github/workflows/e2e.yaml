@@ -60,11 +60,19 @@ jobs:
       - name: Install yamllint and Semgrep
         shell: bash
         run: |
-          python3 -m pip install --user --require-hashes --only-binary=:all: \
+          # Isolated venv: Homebrew/system Python may be externally managed (PEP 668).
+          VENV="${RUNNER_TEMP}/mesh-client-ci-tools"
+          python3 -m venv "$VENV"
+          if [[ -x "$VENV/bin/pip" ]]; then
+            PIP="$VENV/bin/pip"
+            echo "$VENV/bin" >> "$GITHUB_PATH"
+          else
+            PIP="$VENV/Scripts/pip.exe"
+            echo "$VENV/Scripts" >> "$GITHUB_PATH"
+          fi
+          "$PIP" install --require-hashes --only-binary=:all: \
             -r scripts/requirements-yamllint.txt
-          python3 -m pip install --user semgrep
-          # User Scripts dir differs by OS (e.g. ~/.local/bin vs Windows AppData).
-          python3 -c 'import sysconfig; print(sysconfig.get_path("scripts"))' >> "$GITHUB_PATH"
+          "$PIP" install semgrep
 
       # After toolchain is on PATH; skip node_modules until install.
       - name: Check environment (pre-install)

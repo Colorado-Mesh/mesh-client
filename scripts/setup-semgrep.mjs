@@ -4,8 +4,28 @@
  * Semgrep App login / SEMGREP_APP_TOKEN are not required.
  */
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, symlinkSync, unlinkSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {{ inherit?: boolean }} [opts]
+ * @returns {{ status: number, stdout: string, stderr: string }}
+ */
+function runCapture(command, args, opts = {}) {
+  const res = spawnSync(command, args, {
+    encoding: 'utf8',
+    stdio: opts.inherit ? 'inherit' : 'pipe',
+  });
+  return {
+    status: res.status ?? 1,
+    stdout: (res.stdout || '').toString(),
+    stderr: (res.stderr || '').toString(),
+  };
+}
 
 /**
  * @param {string} command
@@ -13,7 +33,7 @@ import { fileURLToPath } from 'node:url';
  * @returns {string | null}
  */
 function commandOutput(command, args) {
-  const res = spawnSync(command, args, { encoding: 'utf8', stdio: 'pipe' });
+  const res = runCapture(command, args);
   if (res.status !== 0) return null;
   return (res.stdout || res.stderr || '').trim();
 }
@@ -24,7 +44,30 @@ function commandOutput(command, args) {
  * @returns {boolean}
  */
 function commandOk(command, args) {
-  const res = spawnSync(command, args, { stdio: 'ignore' });
+  return runCapture(command, args).status === 0;
+}
+
+/**
+ * @returns {[string, string[]] | null} python executable + prefix args (e.g. py -3)
+ */
+function resolvePythonInvoker() {
+  if (commandOk('python3', ['-m', 'pip', '--version'])) return ['python3', []];
+  if (commandOk('py', ['-3', '-m', 'pip', '--version'])) return ['py', ['-3']];
+  if (commandOk('pip', ['--version'])) return null;
+  return null;
+}
+
+/**
+ * @param {string} python
+ * @param {string[]} prefixArgs
+ * @returns {boolean}
+ */
+export function pythonRunsInVirtualEnv(python, prefixArgs = []) {
+  const res = runCapture(python, [
+    ...prefixArgs,
+    '-c',
+    'import sys; raise SystemExit(0 if sys.prefix != getattr(sys, "base_prefix", sys.prefix) else 1)',
+  ]);
   return res.status === 0;
 }
 
@@ -76,6 +119,112 @@ export function planSemgrepInstall(input = {}) {
 }
 
 /**
+ * @param {string} text
+ * @returns {boolean}
+ */
+function looksExternallyManaged(text) {
+  return /externally-managed-environment|PEP 668/i.test(text);
+}
+
+/**
+ * @param {string} venvDir
+ * @returns {{ pip: string, semgrep: string, binDir: string }}
+ */
+function venvPaths(venvDir) {
+  if (process.platform === 'win32') {
+    return {
+      pip: join(venvDir, 'Scripts', 'pip.exe'),
+      semgrep: join(venvDir, 'Scripts', 'semgrep.exe'),
+      binDir: join(venvDir, 'Scripts'),
+    };
+  }
+  return {
+    pip: join(venvDir, 'bin', 'pip'),
+    semgrep: join(venvDir, 'bin', 'semgrep'),
+    binDir: join(venvDir, 'bin'),
+  };
+}
+
+/**
+ * Best-effort: put venv semgrep on PATH via ~/.local/bin (same place --user uses).
+ * @param {string} semgrepBin
+ */
+function linkSemgrepIntoLocalBin(semgrepBin) {
+  if (!existsSync(semgrepBin)) return;
+  const localBin = join(homedir(), '.local', 'bin');
+  try {
+    mkdirSync(localBin, { recursive: true });
+  } catch {
+    return;
+  }
+  const linkName = process.platform === 'win32' ? 'semgrep.exe' : 'semgrep';
+  const dest = join(localBin, linkName);
+  try {
+    if (existsSync(dest)) unlinkSync(dest);
+  } catch {
+    // catch-no-log-ok replace existing link/file best-effort
+  }
+  try {
+    symlinkSync(semgrepBin, dest);
+    console.log(`setup-semgrep: linked ${dest} → ${semgrepBin}`);
+  } catch {
+    console.error(
+      `setup-semgrep: could not link into ${localBin}. Add to PATH: ${dirname(semgrepBin)}`,
+    );
+  }
+}
+
+/**
+ * @returns {number}
+ */
+function installSemgrepViaPip() {
+  const invoker = resolvePythonInvoker();
+  if (!invoker) {
+    const res = spawnSync('pip', ['install', '--user', 'semgrep'], { stdio: 'inherit' });
+    return res.status ?? 1;
+  }
+  const [python, prefix] = invoker;
+  const inVenv = pythonRunsInVirtualEnv(python, prefix);
+
+  if (inVenv) {
+    const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', 'semgrep'], {
+      stdio: 'inherit',
+    });
+    return res.status ?? 1;
+  }
+
+  const userAttempt = runCapture(python, [...prefix, '-m', 'pip', 'install', '--user', 'semgrep'], {
+    inherit: false,
+  });
+  if (userAttempt.status === 0) {
+    // Re-run with inherit so the user sees success noise consistent with other strategies.
+    console.log('setup-semgrep: installed semgrep with pip --user');
+    return 0;
+  }
+  const combined = `${userAttempt.stdout}\n${userAttempt.stderr}`;
+  process.stderr.write(userAttempt.stderr || userAttempt.stdout);
+  if (!looksExternallyManaged(combined)) {
+    return userAttempt.status;
+  }
+
+  const venvDir = join(homedir(), '.cache', 'mesh-client', 'semgrep-venv');
+  console.log(
+    `setup-semgrep: system Python is externally managed — using isolated venv at ${venvDir}`,
+  );
+  mkdirSync(dirname(venvDir), { recursive: true });
+  const venvCreate = spawnSync(python, [...prefix, '-m', 'venv', venvDir], { stdio: 'inherit' });
+  if ((venvCreate.status ?? 1) !== 0) return venvCreate.status ?? 1;
+  const { pip, semgrep, binDir } = venvPaths(venvDir);
+  const install = spawnSync(pip, ['install', 'semgrep'], { stdio: 'inherit' });
+  if ((install.status ?? 1) !== 0) return install.status ?? 1;
+  linkSemgrepIntoLocalBin(semgrep);
+  if (!commandOutput('semgrep', ['--version'])) {
+    console.error(`setup-semgrep: add to PATH then re-run: ${binDir}`);
+  }
+  return 0;
+}
+
+/**
  * @param {'brew' | 'pipx' | 'pip' | 'none'} strategy
  * @returns {number}
  */
@@ -89,14 +238,7 @@ function runInstall(strategy) {
     return res.status ?? 1;
   }
   if (strategy === 'pip') {
-    /** @type {[string, string[]]} */
-    const py = commandOk('python3', ['-m', 'pip', '--version'])
-      ? ['python3', ['-m', 'pip', 'install', '--user', 'semgrep']]
-      : commandOk('py', ['-3', '-m', 'pip', '--version'])
-        ? ['py', ['-3', '-m', 'pip', 'install', '--user', 'semgrep']]
-        : ['pip', ['install', '--user', 'semgrep']];
-    const res = spawnSync(py[0], py[1], { stdio: 'inherit' });
-    return res.status ?? 1;
+    return installSemgrepViaPip();
   }
   return 1;
 }

@@ -97,44 +97,50 @@ function runInstall(strategy) {
     return res.status ?? 1;
   }
   if (strategy === 'pip') {
-    /** @type {[string, string[]]} */
-    const py = commandOk('python3', ['-m', 'pip', '--version'])
-      ? [
-          'python3',
-          [
-            '-m',
-            'pip',
-            'install',
-            '--user',
-            '--require-hashes',
-            '--only-binary=:all:',
-            '-r',
-            REQUIREMENTS,
-          ],
-        ]
-      : commandOk('py', ['-3', '-m', 'pip', '--version'])
-        ? [
-            'py',
-            [
-              '-3',
-              '-m',
-              'pip',
-              'install',
-              '--user',
-              '--require-hashes',
-              '--only-binary=:all:',
-              '-r',
-              REQUIREMENTS,
-            ],
-          ]
-        : [
-            'pip',
-            ['install', '--user', '--require-hashes', '--only-binary=:all:', '-r', REQUIREMENTS],
-          ];
-    const res = spawnSync(py[0], py[1], { stdio: 'inherit' });
-    return res.status ?? 1;
+    return installYamllintViaPip();
   }
   return 1;
+}
+
+/**
+ * @param {string} python
+ * @param {string[]} prefixArgs
+ * @returns {boolean}
+ */
+function pythonRunsInVirtualEnv(python, prefixArgs = []) {
+  const res = spawnSync(
+    python,
+    [
+      ...prefixArgs,
+      '-c',
+      'import sys; raise SystemExit(0 if sys.prefix != getattr(sys, "base_prefix", sys.prefix) else 1)',
+    ],
+    { stdio: 'ignore' },
+  );
+  return res.status === 0;
+}
+
+/** @returns {number} */
+function installYamllintViaPip() {
+  const hashArgs = ['--require-hashes', '--only-binary=:all:', '-r', REQUIREMENTS];
+  /** @type {[string, string[]] | null} */
+  const invoker = commandOk('python3', ['-m', 'pip', '--version'])
+    ? ['python3', []]
+    : commandOk('py', ['-3', '-m', 'pip', '--version'])
+      ? ['py', ['-3']]
+      : null;
+
+  if (!invoker) {
+    const res = spawnSync('pip', ['install', '--user', ...hashArgs], { stdio: 'inherit' });
+    return res.status ?? 1;
+  }
+
+  const [python, prefix] = invoker;
+  const userFlag = pythonRunsInVirtualEnv(python, prefix) ? [] : ['--user'];
+  const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', ...userFlag, ...hashArgs], {
+    stdio: 'inherit',
+  });
+  return res.status ?? 1;
 }
 
 function main() {

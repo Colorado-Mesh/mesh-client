@@ -2,7 +2,12 @@ import type { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { closeSerialPortIfOpen, reconnectSerial, safeDisconnect } from './connection';
+import {
+  closeSerialPortIfOpen,
+  createConnection,
+  reconnectSerial,
+  safeDisconnect,
+} from './connection';
 import {
   MESHTASTIC_LATE_CONFIGURE_RETRYABLE_SWALLOW_MS,
   resetMeshtasticLateConfigureRetryableSwallowForTests,
@@ -13,6 +18,7 @@ import { SERIAL_OPEN_TIMEOUT_MS } from './serialPortRecovery';
 vi.mock('@meshtastic/transport-web-serial', () => ({
   TransportWebSerial: {
     createFromPort: vi.fn(),
+    create: vi.fn(),
   },
 }));
 
@@ -144,6 +150,38 @@ describe('connection serial cleanup', () => {
       );
       await vi.advanceTimersByTimeAsync(SERIAL_OPEN_TIMEOUT_MS);
       await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('createConnection serial does not time out while requestPort is still pending', async () => {
+    vi.useFakeTimers();
+    try {
+      const port = makeMockSerialPort({ portId: 'picked' });
+      let resolvePort: ((value: SerialPort) => void) | undefined;
+      const portPending = new Promise<SerialPort>((resolve) => {
+        resolvePort = resolve;
+      });
+      Object.defineProperty(navigator, 'serial', {
+        configurable: true,
+        value: {
+          requestPort: vi.fn().mockReturnValue(portPending),
+        },
+      });
+      vi.mocked(TransportWebSerial.create).mockImplementation(async () => {
+        await navigator.serial!.requestPort({ filters: [] });
+        return {
+          toDevice: new WritableStream(),
+          fromDevice: new ReadableStream(),
+        } as Awaited<ReturnType<typeof TransportWebSerial.create>>;
+      });
+
+      const connectPromise = createConnection('serial');
+      await vi.advanceTimersByTimeAsync(SERIAL_OPEN_TIMEOUT_MS + 5_000);
+      resolvePort?.(port as unknown as SerialPort);
+      await expect(connectPromise).resolves.toBeTruthy();
+      expect(TransportWebSerial.create).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

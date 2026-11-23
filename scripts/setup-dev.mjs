@@ -55,7 +55,11 @@ function commandOk(command, args) {
 /**
  * Decide whether to set core.hooksPath to .githooks.
  *
- * @param {{ gitDirExists: boolean, currentHooksPath: string | null }} input
+ * @param {{
+ *   gitDirExists: boolean,
+ *   currentHooksPath: string | null,
+ *   repoHooksPathResolved?: string | null,
+ * }} input
  * @returns {{ action: 'skip-no-git' | 'ok' | 'set', target: string }}
  */
 export function planHooksPathFix(input) {
@@ -64,8 +68,14 @@ export function planHooksPathFix(input) {
     return { action: 'skip-no-git', target };
   }
   const current = (input.currentHooksPath || '').trim().replace(/\\/g, '/');
-  // Bare `.githooks` (prepare script) or an absolute path ending in /.githooks.
-  if (current === target || current.endsWith('/.githooks')) {
+  // Exact relative value from prepare / prior setup:dev.
+  if (current === target) {
+    return { action: 'ok', target };
+  }
+  // Absolute path only when it resolves to *this* checkout's hooks dir (not any
+  // other repo whose path ends in /.githooks).
+  const repoHooks = (input.repoHooksPathResolved || '').trim().replace(/\\/g, '/');
+  if (current && repoHooks && resolve(current).replace(/\\/g, '/') === repoHooks) {
     return { action: 'ok', target };
   }
   return { action: 'set', target };
@@ -101,27 +111,32 @@ function runNodeScript(relPath) {
   return res.status;
 }
 
+/**
+ * @returns {0 | 1} 0 = success / skip / already correct; 1 = git config failed
+ */
 function ensureHooksPath() {
   const gitDirExists = existsSync(join(repoRoot, '.git'));
   const current = commandOutput('git', ['config', '--get', 'core.hooksPath']);
   const plan = planHooksPathFix({
     gitDirExists,
     currentHooksPath: current,
+    repoHooksPathResolved: resolve(join(repoRoot, '.githooks')),
   });
   if (plan.action === 'skip-no-git') {
     console.log('setup-dev: no .git directory — skipping hooksPath.');
-    return;
+    return 0;
   }
   if (plan.action === 'ok') {
     console.log(`setup-dev: core.hooksPath already ${plan.target}`);
-    return;
+    return 0;
   }
   const res = run('git', ['config', 'core.hooksPath', plan.target], { inherit: true });
   if (res.status !== 0) {
     console.error('setup-dev: failed to set git config core.hooksPath .githooks');
-    return;
+    return 1;
   }
   console.log('setup-dev: set git config core.hooksPath .githooks');
+  return 0;
 }
 
 function ensureRust() {
@@ -179,7 +194,10 @@ function main() {
     }
   }
 
-  ensureHooksPath();
+  console.log('── hooksPath ──');
+  if (ensureHooksPath() !== 0) {
+    failed.push('hooksPath');
+  }
   console.log('');
 
   const nodeModules = existsSync(join(repoRoot, 'node_modules'));

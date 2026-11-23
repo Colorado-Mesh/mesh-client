@@ -550,7 +550,7 @@ See [development-environment.md](development-environment.md) for OS-specific ser
 
 **Symptoms:** Device Manager shows **Silicon Labs Dual CP2105 USB to UART Bridge: Standard COM Port (COMx)** and **Enhanced COM Port (COMy)** with healthy drivers. Auto-reconnect opens a port but Configure never finishes, or the Log shows `Multiple matching serial devices found` / `No matching previously used serial device found`.
 
-**Cause:** Both interfaces share the same USB VID/PID (`10C4:EA60`). When Chromium `portId` is missing or unstable, gesture-free reconnect cannot tell Standard from Enhanced and must not guess.
+**Cause:** Both interfaces share the same USB VID/PID (Silicon Labs' CP2105 default is often `10C4:EA70`; manufacturers may customize it, e.g. `10C4:EA60`). When Chromium `portId` is missing or unstable, gesture-free reconnect cannot tell Standard from Enhanced and must not guess.
 
 **What to do:**
 
