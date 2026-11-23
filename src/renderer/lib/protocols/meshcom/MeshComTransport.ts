@@ -15,7 +15,11 @@ import {
   releaseConflictingSerialSessions,
 } from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
-import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
+import {
+  isAmbiguousSerialPortMatchError,
+  persistSerialPortIdentity,
+  selectGrantedSerialPort,
+} from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
 
 export type MeshComTransportKind = 'udp' | 'tcp' | 'serial' | 'ble';
@@ -142,7 +146,16 @@ class WebSerialMeshComConnection implements MeshComConnection {
     let port: SerialPort;
     if (this.portSignature) {
       const ports = await navigator.serial.getPorts();
-      port = selectGrantedSerialPort(ports, this.portSignature);
+      try {
+        port = selectGrantedSerialPort(ports, this.portSignature);
+      } catch (err) {
+        if (isAmbiguousSerialPortMatchError(err)) {
+          console.warn('mcL1501 [MeshComTransport] ambiguous serial match — opening port picker');
+          port = await navigator.serial.requestPort();
+        } else {
+          throw err;
+        }
+      }
     } else {
       port = await navigator.serial.requestPort();
     }

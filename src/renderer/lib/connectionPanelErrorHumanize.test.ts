@@ -132,6 +132,23 @@ describe('humanizeSerialError', () => {
     expect(result).toContain('connectionPanel.humanize.serial.inAppHoldHint');
     expect(result).not.toContain('portStillOpenHint');
   });
+
+  it('maps multiple matching serial devices to the ambiguous-match hint', () => {
+    mockPlatform('win32');
+    const result = humanizeSerialError(new Error('Multiple matching serial devices found'), t);
+    expect(result).toContain('Multiple matching serial devices found');
+    expect(result).toContain('connectionPanel.humanize.serial.ambiguousMatchHint');
+  });
+
+  it('maps no matching previously used serial device to the no-match hint', () => {
+    mockPlatform('win32');
+    const result = humanizeSerialError(
+      new Error('No matching previously used serial device found'),
+      t,
+    );
+    expect(result).toContain('No matching previously used serial device found');
+    expect(result).toContain('connectionPanel.humanize.serial.noMatchHint');
+  });
 });
 
 describe('humanizeHttpError', () => {

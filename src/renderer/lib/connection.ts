@@ -28,6 +28,7 @@ import {
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
+  isAmbiguousSerialPortMatchError,
   persistSerialPortIdentity,
   selectGrantedSerialPort,
 } from './serialPortSignature';
@@ -409,7 +410,20 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   console.debug(
     `[connection] reconnectSerial: getPorts returned ${ports.length} port(s), lastPortId=${lastPortId ?? 'none'}`,
   );
-  const port = selectGrantedSerialPort(ports, lastPortId);
+  let port: SerialPort;
+  try {
+    port = selectGrantedSerialPort(ports, lastPortId);
+  } catch (err) {
+    // Dual CP2105 (Standard + Enhanced) share VID/PID — open the picker instead of
+    // binding the first match (Configure hangs on the non-companion UART).
+    if (isAmbiguousSerialPortMatchError(err)) {
+      console.warn(
+        'mcL1499 [connection] reconnectSerial ambiguous serial match — opening port picker',
+      );
+      return createConnection('serial');
+    }
+    throw err;
+  }
   await releaseConflictingSerialSessions('meshtastic', port);
   await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);

@@ -1315,7 +1315,9 @@
         "openFailedLinuxHint": "Linuxでは、これは多くの場合、ユーザーがダイヤルアウトグループ（ sudo usermod - aG dialout $ USER、ログアウトして再度ログイン）に属していないこと、または他のプログラムがポート（ close flashers、ModemManager、またはシリアル端末）を使用していることを意味します。",
         "openFailedWindowsHint": "正しいUSBドライバ（ CH 340、CP 210 x、またはFTDI ）がインストールされていることを確認し、COMポートを使用して他のアプリを閉じてから、ケーブルを抜き差しします。",
         "openFailedGenericHint": "シリアルポートを使用して他のアプリを閉じ、USBケーブルのプラグを抜いて交換してから、もう一度やり直してください。",
-        "inAppHoldHint": "{{protocols}}には、メッシュクライアントにUSBのシリアル接続がまだあります。そのプロトコルのシリアルセッションを切断する（またはプロトコルを切り替えて切断する）か、もう一度お試しください。"
+        "inAppHoldHint": "{{protocols}}には、メッシュクライアントにUSBのシリアル接続がまだあります。そのプロトコルのシリアルセッションを切断する（またはプロトコルを切り替えて切断する）か、もう一度お試しください。",
+        "noMatchHint": "[シリアルポートの選択] を使用して、無線機のCOMポートを選択します。デュアルUARTチップ（Silicon Labs CP2105 StandardおよびEnhancedなど）は見た目が同じです。無線が構成されるまで、それぞれを試してみてください。",
+        "ambiguousMatchHint": "複数のUSBシリアルポートが最後のデバイスと一致しています（デュアルCP2105スタンダードとエンハンスドで共通）。「シリアルポートの選択」を使用して、無線が設定されるまで各Silicon Labs COMを試してください。"
       },
       "http": {
         "timeoutMdnsWindows": "Windows では、meshtastic.local には Bonjour (iTunes とともにインストールされる) が必要です。代わりにデバイスの IP アドレスを使用してください。",

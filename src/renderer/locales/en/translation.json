@@ -2015,6 +2015,8 @@
         "openFailedWindowsHint": "Ensure the correct USB driver is installed (CH340, CP210x, or FTDI). Close any other program outside Mesh Client that may be using the COM port, then unplug and replug the cable.",
         "openFailedGenericHint": "Close any other program outside Mesh Client that may be using the serial port, then unplug and replug the USB cable and try again.",
         "disconnectedHint": "Ensure the USB cable is connected and the device is powered on.",
+        "noMatchHint": "Use Select serial port and choose the COM port for your radio. Dual-UART chips (for example Silicon Labs CP2105 Standard and Enhanced) look identical — try each until the radio configures.",
+        "ambiguousMatchHint": "More than one USB serial port matches the last device (common with Dual CP2105 Standard vs Enhanced). Use Select serial port and try each Silicon Labs COM until the radio configures.",
         "timeoutHint": "If the port appeared briefly, try reconnecting the USB cable.",
         "portStillOpenHint": "No other Mesh Client protocol holds this USB port. The OS or another program may still have it locked — quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again.",
         "inAppHoldHint": "{{protocols}} still has a USB serial connection in Mesh Client. Disconnect that protocol's serial session (or switch protocols and disconnect), then try again."

@@ -1315,7 +1315,9 @@
         "openFailedLinuxHint": "Pada Linux ini sering berarti pengguna Anda tidak berada dalam grup dialout (sudo usermod - aG dialout $USER, lalu keluar dan masuk kembali), atau program lain menggunakan port (close flasher, ModemManager, atau terminal serial).",
         "openFailedWindowsHint": "Pastikan driver USB yang benar terpasang (CH340, CP210x, atau FTDI), tutup aplikasi lain menggunakan port com, lalu cabut dan pasang kembali kabelnya.",
         "openFailedGenericHint": "Tutup aplikasi lain menggunakan port serial, lalu cabut dan pasang kembali kabel USB dan coba lagi.",
-        "inAppHoldHint": "{{protocols}} masih memiliki koneksi serial USB di Klien Mesh. Putuskan koneksi sesi serial protokol tersebut (atau ganti protokol dan putuskan koneksi), lalu coba lagi."
+        "inAppHoldHint": "{{protocols}} masih memiliki koneksi serial USB di Klien Mesh. Putuskan koneksi sesi serial protokol tersebut (atau ganti protokol dan putuskan koneksi), lalu coba lagi.",
+        "noMatchHint": "Gunakan Pilih port serial dan pilih port COM untuk radio Anda. Chip Dual-UART (misalnya Silicon Labs CP2105 Standard dan Enhanced) terlihat identik — coba masing-masing hingga radio terkonfigurasi.",
+        "ambiguousMatchHint": "Lebih dari satu port serial USB cocok dengan perangkat terakhir (umum pada Dual CP2105 Standar vs. Enhanced). Gunakan Pilih port serial dan coba setiap Silicon Labs COM hingga radio terkonfigurasi."
       },
       "http": {
         "timeoutMdnsWindows": "Di Windows, meshtastic.local memerlukan Bonjour (diinstal dengan iTunes). Gunakan alamat IP perangkat sebagai gantinya.",

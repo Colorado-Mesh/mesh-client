@@ -25,7 +25,11 @@ import {
   releaseConflictingSerialSessions,
 } from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
-import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
+import {
+  isAmbiguousSerialPortMatchError,
+  persistSerialPortIdentity,
+  selectGrantedSerialPort,
+} from '../../serialPortSignature';
 import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
 import type { GattBleSessionId } from '../../types';
 
@@ -278,7 +282,18 @@ export async function reconnectMeshcoreSerial(lastPortId?: string | null): Promi
     throw new Error('Web Serial API not available');
   }
   const ports = await navigator.serial.getPorts();
-  const port = selectGrantedSerialPort(ports, lastPortId);
+  let port: SerialPort;
+  try {
+    port = selectGrantedSerialPort(ports, lastPortId);
+  } catch (err) {
+    if (isAmbiguousSerialPortMatchError(err)) {
+      console.warn(
+        'mcL1500 [MeshCoreTransport] reconnectMeshcoreSerial ambiguous serial match — opening port picker',
+      );
+      return connectSerial();
+    }
+    throw err;
+  }
   await releaseConflictingSerialSessions('meshcore', port);
   await closeSerialPortIfOpen(port);
   return openSerialPort(port);

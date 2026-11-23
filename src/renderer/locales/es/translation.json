@@ -1315,7 +1315,9 @@
         "openFailedLinuxHint": "En Linux, esto a menudo significa que su usuario no está en el grupo de marcado (sudo usermod -aG dialout $USER, luego cierre la sesión y vuelva a iniciarla), u otro programa está utilizando el puerto (cerrar intermitentes, ModemManager o terminales serie).",
         "openFailedWindowsHint": "Asegúrese de que el controlador USB correcto esté instalado (CH340, CP210x o FTDI), cierre cualquier otra aplicación usando el puerto COM, luego desenchufe y vuelva a enchufar el cable.",
         "openFailedGenericHint": "Cierre cualquier otra aplicación utilizando el puerto serie, luego desenchufe y vuelva a enchufar el cable USB e inténtelo de nuevo.",
-        "inAppHoldHint": "{{protocols}} todavía tiene una conexión serie USB en el cliente de malla. Desconecte la sesión serie de ese protocolo (o cambie de protocolo y desconecte) y, a continuación, inténtelo de nuevo."
+        "inAppHoldHint": "{{protocols}} todavía tiene una conexión serie USB en el cliente de malla. Desconecte la sesión serie de ese protocolo (o cambie de protocolo y desconecte) y, a continuación, inténtelo de nuevo.",
+        "noMatchHint": "Utilice Seleccionar puerto serie y elija el puerto COM de su radio. Los chips UART dobles (por ejemplo, Silicon Labs CP2105 Standard y Enhanced) tienen un aspecto idéntico. Pruebe con cada uno hasta que la radio se configure.",
+        "ambiguousMatchHint": "Más de un puerto serie USB coincide con el último dispositivo (habitual con Dual CP2105 estándar frente a mejorado). Utilice «Seleccionar puerto serie» y pruebe cada puerto COM de Silicon Labs hasta que se configure la radio."
       },
       "http": {
         "timeoutMdnsWindows": "En Windows, meshtastic.local requiere Bonjour (instalado con iTunes). Utilice la dirección IP del dispositivo en su lugar.",

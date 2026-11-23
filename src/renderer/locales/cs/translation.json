@@ -1338,7 +1338,9 @@
         "openFailedLinuxHint": "Dne Linux to často znamená, že váš uživatel není ve skupině vytáčených čísel (sudo usermod -aG vytáčený UŽIVATEL $, poté se odhlásí a znovu přihlásí) nebo jiný program používá port (blikače, ModemManager nebo sériové terminály).",
         "openFailedWindowsHint": "Ujistěte se, že je nainstalován správný ovladač USB (CH340, CP210x nebo FTDI), zavřete jakoukoli jinou aplikaci pomocí portu COM, poté odpojte a znovu zapojte kabel.",
         "openFailedGenericHint": "Zavřete jakoukoli jinou aplikaci pomocí sériového portu, odpojte a znovu připojte kabel USB a zkuste to znovu.",
-        "inAppHoldHint": "{{protocols}} má stále sériové připojení USB v klientu Mesh. Odpojte sériovou relaci tohoto protokolu (nebo přepněte protokoly a odpojte se) a zkuste to znovu."
+        "inAppHoldHint": "{{protocols}} má stále sériové připojení USB v klientu Mesh. Odpojte sériovou relaci tohoto protokolu (nebo přepněte protokoly a odpojte se) a zkuste to znovu.",
+        "noMatchHint": "Použijte možnost Vybrat sériový port a vyberte COM port pro své rádio. Čipy s dvěma UART (například Silicon Labs CP2105 Standard a Enhanced) vypadají totožně – zkuste každý z nich, dokud se rádio nenakonfiguruje.",
+        "ambiguousMatchHint": "K poslednímu zařízení odpovídá více než jeden sériový port USB (běžné u Dual CP2105 Standard vs. Enhanced). Použijte možnost Vybrat sériový port a zkoušejte každý port COM Silicon Labs, dokud se rádio nenakonfiguruje."
       },
       "http": {
         "timeoutMdnsWindows": "Ve Windows vyžaduje meshtastic.local Bonjour (nainstalovaný s iTunes). Místo toho použijte IP adresu zařízení.",
