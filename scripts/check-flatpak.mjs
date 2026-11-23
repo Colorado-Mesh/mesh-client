@@ -622,16 +622,23 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
   }
 
   let sawBuildInfoWriter = false;
+  let sawRuntimeWritableCopy = false;
   let sawDeferredUpload = false;
   let sawDispatchRename = false;
   let sawArchNamedBundle = false;
   let sawDirectFlatpakUpload = false;
+  let builderStepIndex = -1;
 
-  for (const step of steps) {
+  for (let i = 0; i < steps.length; i += 1) {
+    const step = steps[i];
     if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
     const run = typeof step.run === 'string' ? step.run : '';
     if (/(?:^|\n)\s*node\s+scripts\/write-flatpak-ci-build-info\.mjs\b/.test(run)) {
       sawBuildInfoWriter = true;
+    }
+    // Overlayfs EXDEV: copy image runtimes into the writable layer before builder updates.
+    if (run.includes('/var/lib/flatpak') && run.includes('cp -a')) {
+      sawRuntimeWritableCopy = true;
     }
     if (
       /(?:^|\n)\s*node\s+scripts\/rename-test-build-artifacts\.mjs\b/.test(run) &&
@@ -657,6 +664,7 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
       (withBlock['upload-artifact'] === false || withBlock['upload-artifact'] === 'false')
     ) {
       sawDeferredUpload = true;
+      builderStepIndex = i;
     }
     if (
       typeof step.uses === 'string' &&
@@ -676,6 +684,30 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
       message:
         'flatpak.yaml must write flatpak/ci-build-info.json via write-flatpak-ci-build-info.mjs',
     });
+  }
+  if (!sawRuntimeWritableCopy) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder (overlayfs EXDEV / Invalid cross-device link)',
+    });
+  } else if (builderStepIndex !== -1) {
+    const copyIdx = steps.findIndex(
+      (step) =>
+        step &&
+        typeof step === 'object' &&
+        !Array.isArray(step) &&
+        typeof step.run === 'string' &&
+        step.run.includes('/var/lib/flatpak') &&
+        step.run.includes('cp -a'),
+    );
+    if (copyIdx === -1 || copyIdx > builderStepIndex) {
+      violations.push({
+        file: fileLabel,
+        message:
+          'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder',
+      });
+    }
   }
   if (!sawDeferredUpload) {
     violations.push({

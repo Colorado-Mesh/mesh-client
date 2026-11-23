@@ -10,7 +10,12 @@ import {
   selectWindowsPnpmExe,
   windowsPnpmExeCandidates,
 } from './ci-prefer-windows-pnpm-exe.mjs';
-import { parsePnpmVersionOutput, verifyPnpmVersion } from './ci-verify-pnpm.mjs';
+import {
+  parsePnpmVersionOutput,
+  pnpmExecutable,
+  resolvePnpmSpawnCommand,
+  verifyPnpmVersion,
+} from './ci-verify-pnpm.mjs';
 import { assertWinSetupInstallers } from './assert-win-setup-installers.mjs';
 
 /** @type {string[]} */
@@ -258,6 +263,56 @@ describe('ci-verify-pnpm', () => {
     expect(parsePnpmVersionOutput('12.3.4\n')).toBe('12.3.4');
     expect(parsePnpmVersionOutput('')).toBeNull();
     expect(parsePnpmVersionOutput('not-a-version')).toBeNull();
+  });
+
+  it('never returns pnpm.cmd (Node shell:false EINVAL on Windows)', () => {
+    expect(pnpmExecutable()).not.toMatch(/\.cmd$/i);
+    expect(resolvePnpmSpawnCommand({ platform: 'linux' })).toBe('pnpm');
+    expect(resolvePnpmSpawnCommand({ platform: 'win32', pnpmHome: '' })).toBe('pnpm.exe');
+  });
+
+  it('resolves an absolute pnpm.exe under PNPM_HOME on Windows', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-pnpm-home-'));
+    tempDirs.push(home);
+    const exe = path.join(home, 'pnpm.exe');
+    fs.writeFileSync(exe, '');
+    expect(
+      resolvePnpmSpawnCommand({
+        platform: 'win32',
+        pnpmHome: home,
+        existsSync: fs.existsSync,
+        readdirSync: fs.readdirSync,
+      }),
+    ).toBe(exe);
+  });
+
+  it('spawns the resolved Windows exe, not pnpm.cmd', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-verify-spawn-'));
+    tempDirs.push(home);
+    const exe = path.join(home, 'pnpm.exe');
+    fs.writeFileSync(exe, '');
+    const packageJsonPath = path.join(home, 'package.json');
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify({ packageManager: 'pnpm@12.3.4+sha512.deadbeef' }),
+    );
+    /** @type {string[]} */
+    const spawned = [];
+    expect(
+      verifyPnpmVersion({
+        packageJsonPath,
+        platform: 'win32',
+        pnpmHome: home,
+        existsSync: fs.existsSync,
+        readdirSync: fs.readdirSync,
+        spawnSyncFn: (cmd) => {
+          spawned.push(String(cmd));
+          return { status: 0, stdout: '12.9.0\n', stderr: '', error: undefined };
+        },
+        log: () => {},
+      }),
+    ).toBe('12.9.0');
+    expect(spawned).toEqual([exe]);
   });
 
   it('accepts matching major and rejects empty or wrong-major output', () => {

@@ -86,10 +86,38 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
     const joined = violations.map((v) => v.message).join('\n');
     expect(joined).toMatch(/Build Flatpak \(no release\)/);
     expect(joined).toMatch(/write-flatpak-ci-build-info/);
+    expect(joined).toMatch(/writable layer/);
     expect(joined).toMatch(/upload-artifact: false/);
     expect(joined).toMatch(/rename-test-build-artifacts/);
     expect(joined).toMatch(/arch-suffix the bundle basename/);
     expect(joined).toMatch(/archive: false for direct UI download/);
+  });
+
+  it('rejects when the overlayfs runtime copy runs after flatpak-builder', () => {
+    const doc = yaml.load(
+      fs.readFileSync(path.join(ROOT, '.github/workflows/flatpak.yaml'), 'utf8'),
+    );
+    const steps = doc.jobs.flatpak.steps;
+    const copyIdx = steps.findIndex(
+      (step) =>
+        typeof step.run === 'string' &&
+        step.run.includes('/var/lib/flatpak') &&
+        step.run.includes('cp -a'),
+    );
+    const builderIdx = steps.findIndex(
+      (step) => typeof step.uses === 'string' && step.uses.includes('flatpak-builder'),
+    );
+    expect(copyIdx).toBeGreaterThanOrEqual(0);
+    expect(builderIdx).toBeGreaterThan(copyIdx);
+    const [copyStep] = steps.splice(copyIdx, 1);
+    const builderAfterRemove = steps.findIndex(
+      (step) => typeof step.uses === 'string' && step.uses.includes('flatpak-builder'),
+    );
+    steps.splice(builderAfterRemove + 1, 0, copyStep);
+    const joined = flatpakWorkflowTestBuildContractViolations(doc, 'fake.yaml')
+      .map((v) => v.message)
+      .join('\n');
+    expect(joined).toMatch(/before flatpak-builder/);
   });
 });
 

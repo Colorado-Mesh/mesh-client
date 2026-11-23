@@ -227,6 +227,21 @@ jobs:
           node scripts/ci-write-build-info-env.mjs
           node scripts/write-flatpak-ci-build-info.mjs
 
+      # The flathub-infra image ships runtimes in a read-only overlayfs layer. When Flathub
+      # publishes a newer Sdk/Platform than the image, flatpak tries to rename those lower-
+      # layer dirs and fails with EXDEV ("Invalid cross-device link"), then xvfb-run can
+      # segfault (exit 139). Copy into the writable layer so updates can proceed.
+      - name: Make the image's Flatpak runtimes updatable
+        run: |
+          set -euo pipefail
+          for d in /var/lib/flatpak "$HOME/.local/share/flatpak"; do
+            [ -d "$d" ] || continue
+            du -sh "$d" || true
+            cp -a "$d" "$d.rw"
+            rm -rf "$d"
+            mv "$d.rw" "$d"
+          done
+
       # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
       # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.
       # upload-artifact: false — we upload once after smoke (+ optional -run{N} rename on dispatch).
