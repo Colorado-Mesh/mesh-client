@@ -43,12 +43,11 @@ describe('check:semgrep gate', () => {
     expect(policy).toMatch(/Tracked in git/);
   });
 
-  it('is wired into always-on pre-commit (skipped only for manifest-only)', () => {
+  it('wires semgrep into always-on pre-commit for staged files', () => {
     const hook = fs.readFileSync(PRE_COMMIT, 'utf8');
-    expect(hook).toContain('pnpm run check:semgrep');
-    expect(hook).toMatch(/Findings may be wrong/);
-    expect(hook).toContain('skip_manifest_only');
-    expect(hook).toMatch(/check:semgrep/);
+    expect(hook).toMatch(/semgrep scan --config p\/typescript/);
+    expect(hook).toMatch(/skip semgrep \(no staged JS\/TS\)/);
+    expect(hook).toMatch(/manifest_only/);
   });
 
   it('package.json exposes check:semgrep', () => {
@@ -56,10 +55,13 @@ describe('check:semgrep gate', () => {
     expect(pkg.scripts['check:semgrep']).toBe('node scripts/check-semgrep.mjs');
   });
 
-  it('runs auto + p/nodejs + .semgrep.yml', () => {
+  it('runs community packs + .semgrep.yml (no Pro auto)', () => {
     const wrapper = fs.readFileSync(CHECK_SEMGREP, 'utf8');
-    expect(wrapper).toMatch(/--config',\s*'auto'/);
+    expect(wrapper).not.toMatch(/--config',\s*'auto'/);
+    expect(wrapper).toMatch(/--config',\s*'p\/typescript'/);
+    expect(wrapper).toMatch(/--config',\s*'p\/javascript'/);
     expect(wrapper).toMatch(/--config',\s*'p\/nodejs'/);
+    expect(wrapper).toMatch(/--config',\s*'p\/security-audit'/);
     expect(wrapper).toMatch(/--config',\s*'\.semgrep\.yml'/);
     const policy = fs.readFileSync(SEMGREP_YML, 'utf8');
     expect(policy).toMatch(/mesh-client-aes-gcm-auth-tag-length/);

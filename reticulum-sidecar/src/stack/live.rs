@@ -732,7 +732,7 @@ impl LiveBridge {
                 config_dir.clone(),
             )),
             voice_session: Arc::new(VoiceSessionManager::spawn(
-                handle.transport_tx.clone(),
+                &handle.transport_tx,
                 &identity,
                 event_tx.clone(),
             )),
@@ -1076,7 +1076,116 @@ impl LiveBridge {
         if let Ok(mut slot) = self.last_lxmf_announce_at.lock() {
             *slot = Some(Instant::now());
         }
+        // Best-effort: LXMF announce must not fail closed if telephony is unavailable.
+        if let Err(e) = self.voice_announce_now().await {
+            tracing::debug!(target: "voice", "telephony announce after LXMF announce: {e}");
+        }
         Ok(())
+    }
+
+    /// Emit an lxst.telephony destination announce on the live transport.
+    pub async fn voice_announce_now(&self) -> Result<(), String> {
+        let resp = self.voice_session.announce_now().await;
+        if resp.get("ok") == Some(&serde_json::Value::Bool(true)) {
+            Ok(())
+        } else {
+            Err(resp
+                .get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("voice announce failed")
+                .to_string())
+        }
+    }
+
+    /// Signed `lxst.telephony` announce bytes for this identity (inter-stack handoff / tests).
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn voice_telephony_announce_wire_bytes(&self) -> Result<Vec<u8>, String> {
+        self.voice_session.telephony_announce_wire_bytes()
+    }
+
+    /// Learn a wire Reticulum packet as if it arrived on the first online interface.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub async fn ingest_inbound_wire_packet(&self, raw: &[u8]) -> Result<(), String> {
+        use bytes::Bytes;
+        use rns_transport::messages::{InboundPacket, TransportMessage};
+        let interface_id = self.preferred_online_interface_id().await?;
+        self.handle
+            .transport_tx
+            .send(TransportMessage::Inbound(InboundPacket {
+                raw: Bytes::copy_from_slice(raw),
+                interface_id,
+                rssi: None,
+                snr: None,
+                q: None,
+            }))
+            .await
+            .map_err(|e| format!("transport closed: {e}"))
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    async fn preferred_online_interface_id(
+        &self,
+    ) -> Result<rns_transport::messages::InterfaceId, String> {
+        let resp = self
+            .query_control_timed(TransportQuery::GetInterfaceStats)
+            .await;
+        let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
+            return Err("interface stats unavailable".into());
+        };
+        stats
+            .iter()
+            .find(|s| s.online)
+            .map(|s| s.id)
+            .or_else(|| stats.first().map(|s| s.id))
+            .ok_or_else(|| "no interfaces for inbound ingest".into())
+    }
+
+    /// Poll until `lxst.telephony` for `remote_identity_hex` is in the transport recall cache.
+    pub async fn voice_peer_discoverable(
+        &self,
+        remote_identity_hex: &str,
+        timeout: Duration,
+    ) -> Result<(), String> {
+        use lxst_telephony::telephony_destination_hash;
+        use rns_identity::destination::Destination;
+        use rns_identity::identity::Identity;
+
+        let identity_hash = parse_hash16(remote_identity_hex)?;
+        let telephony_dest = telephony_destination_hash(&identity_hash);
+        let telephony_hex = hex::encode(telephony_dest);
+        // Prefer a normal path request — DropPath (force) races other dual-TCP fixtures.
+        if let Err(e) = self.request_path(&telephony_hex).await {
+            tracing::debug!(target: "voice", dest = %telephony_hex, "telephony path request: {e}");
+        }
+        match discover_destination(&self.handle.transport_tx, telephony_dest, timeout).await {
+            Ok(_) => Ok(()),
+            Err(first_err) => {
+                let lxmf_dest =
+                    Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity_hash));
+                let lxmf_budget = timeout.min(Duration::from_secs(8));
+                let seed = async {
+                    let recalled =
+                        discover_destination(&self.handle.transport_tx, lxmf_dest, lxmf_budget)
+                            .await
+                            .ok()?;
+                    let pubkey = recalled.public_key?;
+                    let derived = Identity::from_public_key(&pubkey).ok()?.hash == identity_hash;
+                    if !derived {
+                        return None;
+                    }
+                    let _ = self.request_path(&telephony_hex).await;
+                    discover_destination(&self.handle.transport_tx, telephony_dest, lxmf_budget)
+                        .await
+                        .ok()?;
+                    Some(())
+                };
+                if seed.await.is_some() {
+                    Ok(())
+                } else {
+                    Err(first_err.to_string())
+                }
+            }
+        }
     }
 
     /// Always send an LXMF delivery announce so remote PNs have a reverse path for LRPROOF.

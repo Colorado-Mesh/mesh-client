@@ -219,6 +219,55 @@ describe('connectionHistoryStorage', () => {
     expect(loadConnectionHistory('meshtastic')).toEqual([]);
   });
 
+  it('preserves serial path case in identity keys while trimming', () => {
+    expect(
+      connectionHistoryIdentityKey({ type: 'serial', serialPortId: '  /dev/tty.usbmodem14201  ' }),
+    ).toBe('serial:/dev/tty.usbmodem14201');
+    expect(
+      connectionHistoryIdentityKey({ type: 'serial', serialPortId: '/dev/tty.UsbModem14201' }),
+    ).toBe('serial:/dev/tty.UsbModem14201');
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'serial', serialPortId: '/dev/tty.usbmodem14201' },
+      1,
+      'ser-1',
+    );
+    const next = upsertConnectionHistory(
+      'meshtastic',
+      { type: 'serial', serialPortId: '/dev/tty.usbmodem14201' },
+      2,
+      'ser-2',
+    );
+    expect(next).toHaveLength(1);
+    expect(next[0]?.id).toBe('ser-1');
+  });
+
+  it('returns null from delete when history read throws without wiping storage', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.1:4403' },
+      1000,
+      'id-1',
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const originalGetItem = localStorage.getItem.bind(localStorage);
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      if (key.includes('connectionHistory')) {
+        throw new Error('read fail');
+      }
+      return originalGetItem(key);
+    });
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('should not write');
+    });
+    expect(deleteConnectionHistory('meshtastic', 'id-1')).toBeNull();
+    expect(setItem).not.toHaveBeenCalled();
+    warn.mockRestore();
+    getItem.mockRestore();
+    setItem.mockRestore();
+    expect(loadConnectionHistory('meshtastic')).toHaveLength(1);
+  });
+
   it('returns null from delete when persist fails and leaves MRU unchanged', () => {
     upsertConnectionHistory(
       'meshtastic',

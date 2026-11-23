@@ -438,35 +438,35 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Quality checks
 
-| Script                                | Description                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------ |
-| `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)                          |
-| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                                 |
-| `check:console-log`                   | Fail on bare `console.log` in production paths                                       |
-| `check:log-ids`                       | Require unique registered `mcL####` on production `console.warn`/`error`             |
-| `check:db-migrations`                 | Verify SQLite migrations are valid                                                   |
-| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                               |
-| `check:environment`                   | Verify local dev prerequisites (run after clone)                                     |
-| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                                            |
-| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage                         |
-| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules                           |
-| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only                           |
-| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)               |
-| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer                           |
-| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)                   |
-| `check:log-injection`                 | Unsanitized error args in `console.*` under recursive `src/main/**` (includes debug) |
-| `check:log-panel-filter`              | Verify log panel filter wiring                                                       |
-| `check:log-service-sinks`             | Verify log service sink configuration                                                |
-| `check:main-bundle`                   | Production main `index.js` size budget (same suite as `bundle-size.yaml`)            |
-| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network)              |
-| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                               |
-| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                                        |
-| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                               |
-| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)                |
-| `check:semgrep`                       | Semgrep `auto` + `.semgrep.yml` (research FPs before updating policy)                |
-| `check:silent-catches`                | Detect empty or unlogged catch blocks                                                |
-| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                             |
-| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                                  |
+| Script                                | Description                                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)                                                                    |
+| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                                                                           |
+| `check:console-log`                   | Fail on bare `console.log` in production paths                                                                                 |
+| `check:log-ids`                       | Require unique registered `mcL####` on production `console.warn`/`error`                                                       |
+| `check:db-migrations`                 | Verify SQLite migrations are valid                                                                                             |
+| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                                                                         |
+| `check:environment`                   | Verify local dev prerequisites (run after clone)                                                                               |
+| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                                                                                      |
+| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage                                                                   |
+| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules                                                                     |
+| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only                                                                     |
+| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)                                                         |
+| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer                                                                     |
+| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)                                                             |
+| `check:log-injection`                 | Unsanitized error args in `console.*` under recursive `src/main/**` (includes debug)                                           |
+| `check:log-panel-filter`              | Verify log panel filter wiring                                                                                                 |
+| `check:log-service-sinks`             | Verify log service sink configuration                                                                                          |
+| `check:main-bundle`                   | Production main `index.js` size budget (same suite as `bundle-size.yaml`)                                                      |
+| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network)                                                        |
+| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                                                                         |
+| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                                                                                  |
+| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                                                                         |
+| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)                                                          |
+| `check:semgrep`                       | Semgrep `p/typescript` `p/javascript` `p/nodejs` `p/security-audit` + `.semgrep.yml` (research FPs; staged-only in pre-commit) |
+| `check:silent-catches`                | Detect empty or unlogged catch blocks                                                                                          |
+| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                                                                       |
+| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                                                                            |
 
 #### Documentation
 
@@ -572,7 +572,7 @@ Not installed by pnpm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
-- **Semgrep** (required for always-on pre-commit / release / CI `pnpm run check:semgrep`; install via `brew install semgrep` or `pipx install semgrep` / `pip install semgrep`). Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings (especially `--config auto`) may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — `nosemgrep` does not replace `eslint-disable` (see AGENTS.md **Semgrep × ESLint**).
+- **Semgrep** (required for always-on pre-commit / release / CI `pnpm run check:semgrep`; install via `brew install semgrep` or `pipx install semgrep` / `pip install semgrep`). Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings (especially from broad default packs) may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — `nosemgrep` does not replace `eslint-disable` (see AGENTS.md **Semgrep × ESLint**).
 - **Rust / `cargo`** (optional; Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/)). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
 - Podman or Docker (Docker-compatible engine) and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without a container engine)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)

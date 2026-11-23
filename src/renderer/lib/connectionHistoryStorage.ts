@@ -67,7 +67,8 @@ export function connectionHistoryIdentityKey(
     return id ? `ble:${id}` : null;
   }
   if (conn.type === 'serial') {
-    const id = (conn.serialPortId ?? '').trim().toLowerCase();
+    // Preserve path case (Linux/macOS paths are case-sensitive); still trim for dedup.
+    const id = (conn.serialPortId ?? '').trim();
     return id ? `serial:${id}` : null;
   }
   // Remaining: http | tcp | udp
@@ -222,7 +223,10 @@ export function deleteConnectionHistory(
   id: string,
 ): SavedConnection[] | null {
   if (!isConnectionHistoryProtocol(protocol)) return [];
-  const prev = loadConnectionHistory(protocol);
+  const read = readRawHistory(protocol);
+  // Failed read must not wipe the list by persisting [].
+  if (read.status === 'error') return null;
+  const prev = read.status === 'ok' ? read.entries : [];
   const removed = prev.find((entry) => entry.id === id);
   const next = prev.filter((entry) => entry.id !== id);
   if (!persistHistory(protocol, next)) return null;
